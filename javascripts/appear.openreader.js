@@ -9,7 +9,7 @@ $(function() {
 
   $(document.body).on('appear', 'section h3', function(e, $affected) {
     // this code is executed for each appeared element
-    $(this).yellowFade();
+    //$(this).yellowFade();
     var id = $(this).attr('id');
     console.log("appeared item: " + id);
 

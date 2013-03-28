@@ -103,17 +103,19 @@ top-nav {
   height:40px;
   margin-top: -8px;
   margin-left: -8px;
-  background: #333;
+  background: #394A5A;
 }
 
 header {
   margin-top: 34px;
-  padding-top:25px;
+  padding-top:26px;
   height:100%;
   width:190px;
   float:left;
   position:fixed;
-  border: 1px solid #E8E8E8;
+  /* border: 1px solid #E8E8E8; */
+  background: #EAEAEA;
+  overflow:auto;
 }
 
 header ul {
@@ -199,9 +201,35 @@ footer {
 .article {
   padding-left: 5px;
   padding-right: 5px;
-  border-style:solid;
-  border-color:#E8E8E8;
-  border-width:1px;
+  /* border-style:solid;
+  border-color:#B4B7BD;
+  border-width:1px; */
+  border-right: 1px solid #B4B7BD;
+  border-bottom: 1px solid #B4B7BD;
+}
+
+.article h3 {
+  font-size:20px;
+  padding-top: 5px;
+  padding-left: 5px;
+}
+
+div.article hr {
+  margin-top: 3px;
+  margin-left: 5px;
+  width: 640px;
+}
+
+div.feedname {
+  margin-top: -19px;
+  font-size:11px;
+  padding-top: 5px;
+  padding-left: 5px;
+}
+
+div.page-content {
+  padding-left: 5px;
+  color: #333344;
 }
 
 div.category {
@@ -212,6 +240,12 @@ div.category {
 span.category-name, span.feed-name {
   margin-left:3px;
   float: left;
+  color: #333333;
+}
+
+span.category-name a, span.feed-name a {
+  font-weight:bold;
+  color: #333333;
 }
 
 span.category-count {
@@ -228,8 +262,6 @@ div.feed {
   border: 1px solid #E8E8E8;
 }
 
-
-
 span.feed-count {
   margin-right:8px;
   float: right;
@@ -239,3 +271,14 @@ div.feed-section {
   margin-top: 0px;
 }
 
+div.category-main, div.feed-main {
+  height: 25px;
+  color: #333333;
+  background-color: #C7C7C7;
+}
+
+div.category-main span, div.feed-main span {
+  margin-left: 3px;
+  font-weight: bold;
+  color: #333333;
+}

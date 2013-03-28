@@ -3,9 +3,6 @@
 include 'config.php';
 include 'functions.php';
 
-$url = 'http://'.$_SERVER['HTTP_HOST'].dirname($_SERVER['PHP_SELF']);
-$url = preg_replace('/\s+/', '', $url);
-
 ?>
 
 <!doctype html>
@@ -60,18 +57,22 @@ $url = preg_replace('/\s+/', '', $url);
     <div class="wrapper">
 
       <header>
-        <!-- <h1>phppaper</h1> -->
-        <!-- <p></p> -->
 
 <?php
 
 echo "<div class='category-section'>";
 
-//query data
-$query = "SELECT category, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' GROUP BY category ORDER BY category";
-$sql = mysql_query($query);
+echo "<div class='category-main'>";
+echo "<span>Categories</span>";
+echo "</div>";
 
-while($row = mysql_fetch_array($sql)) {
+$data = '{"jsonrpc": "2.0", "request": "overview-categories"}';
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+$array = json_decode(curl_exec($ch),true);
+
+if (!empty($array)) {
+  foreach ($array as $row) {
+    if (!empty($row)) {
 
 		echo "<div class='category'>";
                 echo "<span class='category-name'>";
@@ -85,18 +86,25 @@ while($row = mysql_fetch_array($sql)) {
 		echo $row['count'];
                 echo "</span>";
 		echo "</div>";
-
+    }
+  }
 }
 
 echo "</div>";
 
 echo "<div class='feed-section'>";
 
-//query data
-$query = "SELECT name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' GROUP BY name ORDER BY name";
-$sql = mysql_query($query);
+echo "<div class='feed-main'>";
+echo "<span>Feeds</span>";
+echo "</div>";
 
-while($row = mysql_fetch_array($sql)) {
+$data = '{"jsonrpc": "2.0", "request": "overview-feeds"}';
+curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+$array = json_decode(curl_exec($ch),true);
+
+if (!empty($array)) {
+  foreach ($array as $row) {
+    if (!empty($row)) {
 
                 echo "<div class='feed'>";
                 echo "<span class='feed-name'>";
@@ -110,6 +118,8 @@ while($row = mysql_fetch_array($sql)) {
                 echo $row['count'];
                 echo "</span>";
                 echo "</div>";
+    }
+  }
 }
 
 echo "</div>";
@@ -117,11 +127,6 @@ echo "</div>";
 ?>
         <br/>
         <br />
-       <!-- <h3>Appeared elements</h3> -->
-       <!-- <pre><code id="appeared"></code></pre> -->
-       <!-- <h3>Disappeared elements</h3> -->
-       <!-- <pre><code id="disappeared"></code></pre> -->
-
       </header>
 
       <section>
