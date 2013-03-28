@@ -1,6 +1,10 @@
 <?php
 
 include 'config.php';
+include 'functions.php';
+
+$url = 'http://'.$_SERVER['HTTP_HOST'].dirname($_SERVER['PHP_SELF']);
+$url = preg_replace('/\s+/', '', $url);
 
 ?>
 
@@ -15,11 +19,11 @@ include 'config.php';
     <script src="javascripts/jquery.yellow_fade.js"></script>
     <script src="javascripts/jquery.appear.js"></script>
     <script src="javascripts/appear.openreader.js"></script>
-    <script src="javascripts/scale.fix.js"></script>
+<!--    <script src="javascripts/scale.fix.js"></script> -->
     <script src="javascripts/infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+<!--    <link rel="stylesheet" href="stylesheets/pygment_trac.css"> -->
+<!--    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"> -->
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -49,12 +53,19 @@ include 'config.php';
   </head>
 
   <body>
+
+      <top-nav>
+      </top-nav>
+
     <div class="wrapper">
+
       <header>
-        <h1>phppaper</h1>
-        <p></p>
+        <!-- <h1>phppaper</h1> -->
+        <!-- <p></p> -->
 
 <?php
+
+echo "<div class='category-section'>";
 
 //query data
 $query = "SELECT category, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' GROUP BY category ORDER BY category";
@@ -62,13 +73,46 @@ $sql = mysql_query($query);
 
 while($row = mysql_fetch_array($sql)) {
 
-                $category = $row['category'];
+		echo "<div class='category'>";
+                echo "<span class='category-name'>";
+		$category = $row['category'];
+		echo "<a href=\"$url";
+		echo "/index.php?category=$category\">";
                 echo $category;
-		echo " ";
+		echo "</a>";
+                echo "</span>";
+                echo "<span class='category-count'>";
 		echo $row['count'];
-		echo "<br>";
+                echo "</span>";
+		echo "</div>";
 
 }
+
+echo "</div>";
+
+echo "<div class='feed-section'>";
+
+//query data
+$query = "SELECT name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' GROUP BY name ORDER BY name";
+$sql = mysql_query($query);
+
+while($row = mysql_fetch_array($sql)) {
+
+                echo "<div class='feed'>";
+                echo "<span class='feed-name'>";
+                $feed = $row['name'];
+                echo "<a href=\"$url";
+                echo "/index.php?feed=$feed\">";
+                echo $feed;
+                echo "</a>";
+                echo "</span>";
+                echo "<span class='feed-count'>";
+                echo $row['count'];
+                echo "</span>";
+                echo "</div>";
+}
+
+echo "</div>";
 
 ?>
         <br/>

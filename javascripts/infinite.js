@@ -1,6 +1,23 @@
+function gup(name)
+{
+  name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
+  var regexS = "[\\?&]"+name+"=([^&#]*)";
+  var regex = new RegExp( regexS );
+  var results = regex.exec( window.location.href );
+  if( results == null )
+    return "";
+  else
+    return results[1];
+}
+
+var feed_param = gup('feed');
+var category_param = gup('category');
+
 (function($) {
 
 	$.fn.scrollPagination = function(options) {
+
+		//var feedname = window.location.getParameter("feed"); //bob
 		
 		var settings = { 
 			nop     : 10, // The number of posts per scroll to be loaded
@@ -40,9 +57,11 @@
 				// Post data to ajax.php
 				$.post('ajax.php', {
 						
-					action        : 'scrollpagination',
+				    action        : 'scrollpagination',
 				    number        : $settings.nop,
 				    offset        : offset,
+				    feed_name	  : feed_param,
+				    category_name : category_param,
 					    
 				}, function(data) {
 						
