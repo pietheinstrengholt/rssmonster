@@ -8,8 +8,7 @@
 #require_once('../simplepie.inc');
 require_once('simplepie/autoloader.php');
 
-mysql_connect("localhost", "openreader", "openreader") or die(mysql_error());
-mysql_select_db("openreader") or die(mysql_error());
+include 'config.php';
 
 $query = "select * from feeds";
 $sql = mysql_query($query);
