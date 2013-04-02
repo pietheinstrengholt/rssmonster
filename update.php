@@ -65,7 +65,7 @@ while($row = mysql_fetch_array($sql)) {
  <th><?php echo $feed_name; ?></th>
  <th><?php echo $comparedate; ?></th>
  <th><?php echo $date; ?></th>
- <th><?php if ($date > $comparedate) { 
+ <th><?php if (strtotime($date) > strtotime($comparedate)) { 
 			echo "new article";
 	                mysql_query("INSERT INTO articles
 	                (feed_id, status, url, subject, content, insert_date, publish_date)

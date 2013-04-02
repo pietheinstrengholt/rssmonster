@@ -57,6 +57,12 @@ if ($arr[update] == "mark-all-as-read") {
   echo json_encode("done");
 }
 
+if ($arr[request] == "count-all") {
+  $sql=mysql_query("SELECT count(*) as count FROM articles WHERE status = 'unread'");
+  while($r[]=mysql_fetch_array($sql));
+  echo json_encode($r);
+}
+
 if ($arr[request] == "overview-categories") {
   $sql=mysql_query("SELECT category, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE category <> '' AND status = 'unread' GROUP BY category ORDER BY category");
   while($r[]=mysql_fetch_array($sql));

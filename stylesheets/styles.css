@@ -47,7 +47,8 @@ a small {
 
 .wrapper {
   /* border: 1px solid red; */
-  width:860px;
+  /* width:860px; */
+  width: 100%;
   margin:0 auto; 
 }
 
@@ -108,14 +109,15 @@ top-nav {
 
 header {
   margin-top: 34px;
-  padding-top:26px;
+  /* padding-top:26px; */
   height:100%;
   width:190px;
   float:left;
-  position:fixed;
+  position:fixed; 
   /* border: 1px solid #E8E8E8; */
   background: #EAEAEA;
   overflow:auto;
+  margin-left: -8px;
 }
 
 header ul {
@@ -152,6 +154,17 @@ header ul a {
   height:40px;
 }
 
+short {
+  float: left;
+  width: 230px;
+  background: silver;
+  margin-left: 181px;
+  height: 100%;
+  position: fixed;
+  margin-top: 34px;
+  overflow: auto;
+}
+
 strong {
   color:#222;
   font-weight:700;
@@ -175,9 +188,16 @@ header ul a strong {
 
 section {
   padding-top: 34px;
-  width:669px;
-  float:right;
+  /* width:669px;
+  float:right; */
+  /* width: 800px; */
+  /* width: 100%; */
+  width: 700px;
+  float: left;
+  padding-left: 420px;
   padding-bottom:50px;
+  overflow:auto;
+  postion:fixed;
 }
 
 small {
@@ -254,7 +274,7 @@ span.category-count {
 }
 
 div.category-section {
-  margin-top: -26px;
+  /* margin-top: -26px; */
 }
 
 div.feed {
@@ -274,11 +294,47 @@ div.feed-section {
 div.category-main, div.feed-main {
   height: 25px;
   color: #333333;
-  background-color: #C7C7C7;
+  background-color: #C7C7AA;
 }
 
 div.category-main span, div.feed-main span {
   margin-left: 3px;
   font-weight: bold;
   color: #333333;
+}
+
+.article-short {
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+div.article-block hr {
+  margin-top: 3px;
+  margin-left: 5px;
+  width: 180px;
+}
+
+div.feedname-short {
+  margin-top: -19px;
+  font-size:11px;
+  padding-top: 5px;
+  padding-left: 1px;
+}
+
+div.category-all {
+  /* margin-top: -26px; */
+  background: #EAEAEA;
+  height: 25px;
+  font-weight: bold;
+  color: #333;
+  margin-left: 2px;
+}
+
+div.category-all a {
+  font-weight:bold;
+  color: #333333;
+}
+
+section h1 {
+  margin-left: 9px;
 }

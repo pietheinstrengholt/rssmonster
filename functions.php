@@ -6,8 +6,8 @@ $url = preg_replace('/\s+/', '', $url);
 $jsonurl = $url . "/json.php";
 
 //display errors and warnings
-ini_set('display_errors', 1);
-error_reporting(-1);
+//ini_set('display_errors', 1);
+//error_reporting(-1);
 
 //init json rpc
 $ch = curl_init();
