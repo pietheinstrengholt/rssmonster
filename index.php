@@ -58,6 +58,13 @@ include 'functions.php';
 
       <header>
 
+<!-- <div class="debug"> -->
+<!-- <h3>Appeared elements</h3> -->
+<!-- <pre><code id="appeared"></code></pre> -->
+<!-- <h3>Disappeared elements</h3> -->
+<!-- <pre><code id="disappeared"></code></pre> -->
+<!-- </div> -->
+
 <?php
 
 echo "<div class='category-section'>";
@@ -125,12 +132,12 @@ if (!empty($array)) {
 echo "</div>";
 
 ?>
-        <br/>
-        <br />
+
       </header>
 
       <section>
 
+<br><br><br><br>
 <div id="content">
 </div>
 

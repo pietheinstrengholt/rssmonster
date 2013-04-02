@@ -44,9 +44,16 @@ if ($arr[update] == "read-status") {
   echo json_encode("done");
 }
 
+//http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" update="mark-all-as-read" -b
 if ($arr[update] == "mark-all-as-read") {
-  //$sql = "UPDATE articles set status = 'read'";
-  //$result = mysql_query($sql);
+  if (!empty($arr[input_feed]) && empty($arr[input_category])) {
+    $sql = "UPDATE articles set status = 'read' WHERE feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]')";
+  } elseif (!empty($arr[input_category]) && empty($arr[input_feed])) {
+    $sql = "UPDATE articles set status = 'read' WHERE feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]')";
+  } else {
+    $sql = "UPDATE articles set status = 'read'";
+  }
+  $result = mysql_query($sql);
   echo json_encode("done");
 }
 
@@ -64,11 +71,11 @@ if ($arr[request] == "overview-feeds") {
 
 //http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" request="get-all-articles" offset="0" postnumbers="10" -b
 if ($arr[request] == "get-all-articles") {
-  if (!empty($arr[input_feed])) {
+  if (!empty($arr[input_feed]) && empty($arr[input_category])) {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE status = 'unread'
     AND feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]')
     ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
-  } elseif (!empty($arr[input_category])) {
+  } elseif (!empty($arr[input_category]) && empty($arr[input_feed])) {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread'
     AND feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]')
     ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
@@ -76,7 +83,13 @@ if ($arr[request] == "get-all-articles") {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
   }
   while($r[]=mysql_fetch_array($sql));
-  echo json_encode($r);
+  $r = array_filter($r);
+
+  if (empty($r)) {
+    echo json_encode("no-results");
+  } else {
+    echo json_encode($r);
+  }
 }
 
 mysql_close($con);

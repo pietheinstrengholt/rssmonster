@@ -12,23 +12,43 @@ $input_category = htmlspecialchars($_POST["category_name"]);
 $input_feed = urldecode($input_feed);
 $input_category = urldecode($input_category);
 
-//receive number of posts to receive from infinite.js
+//receive numbers of posts to load from infinite.js
 $offset = is_numeric($_POST['offset']) ? $_POST['offset'] : die();
 $postnumbers = is_numeric($_POST['number']) ? $_POST['number'] : die();
 
-//prepare the field values being posted to the service
-if (!empty($input_feed)) {
-  $data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": 0, "postnumbers": 10, "input_feed": "' . $input_feed . '"}';
-} elseif (!empty($input_category)) {
-  $data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": 0, "postnumbers": 10, "input_category": "' . $input_category . '"}';
-} else {
-  $data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": 0, "postnumbers": 10}';
-}
-
+//retrieve content
+$data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' . $_POST['number'] . '", "input_feed": "' . $input_feed . '"}';
 curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 $array = json_decode(curl_exec($ch),true);
 
-if (!empty($array)) {
+//echo "<pre>";
+//print_r ($array);
+//echo "</pre>";
+
+//if no results are returned, mark items as read
+//if (empty($array) { 
+  //echo "array is now empty";
+  //$data = '{"jsonrpc": "2.0", "update": "mark-all-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}';
+  //curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  //$array = json_decode(curl_exec($ch),true);
+  //unset($array);
+//}
+
+//if !is_array($array) { "dit is geen array"; }
+
+//if (empty($array) {
+//  echo "array is now empty";
+//}
+
+if ($array == "no-results" ) {
+  //echo "array is empty";
+  $data = '{"jsonrpc": "2.0", "update": "mark-all-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}';
+  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
+  $array = json_decode(curl_exec($ch),true);
+  die();
+}
+
+if (!empty($array) && $array != "no-results") {
   foreach ($array as $row) {
 
     echo "<div id=block>";

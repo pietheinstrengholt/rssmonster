@@ -72,17 +72,17 @@ var category_param = gup('category');
 					if(data == "") { 
 						$this.find('.loading-bar').html($settings.error);	
 
-						    $.ajax(
-						     {
-						      type: "POST",
-						      url: "json.php",
-						      data: JSON.stringify({ "jsonrpc": "2.0","update": "mark-all-as-read" }),
-						      contentType: "application/json; charset=utf-8",
-						      dataType: "json",
-						      success: function(data){},
-						      failure: function(errMsg) {}
-						     }
-						    );
+						    //$.ajax(
+						    // {
+						    //  type: "POST",
+						    //  url: "json.php",
+						    //  data: JSON.stringify({ "jsonrpc": "2.0","update": "mark-all-as-read" }),
+						    //  contentType: "application/json; charset=utf-8",
+						    //  dataType: "json",
+						    //  success: function(data){},
+						    //  failure: function(errMsg) {}
+						    // }
+						    //);
 					}
 					else {
 						

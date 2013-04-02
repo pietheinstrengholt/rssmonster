@@ -15,6 +15,4 @@ curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 curl_setopt($ch, CURLOPT_POST, 1);
 curl_setopt($ch, CURLOPT_URL, $jsonurl);
 
-
-
 ?>
