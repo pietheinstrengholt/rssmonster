@@ -3,34 +3,26 @@
 //retrieve content
 $array = get_json('{"jsonrpc": "2.0", "request": "count-all"}');
 
-echo "<div class='category-overview'>";
-
-echo "<div class='category-main'>";
-echo "<span>Overview</span>";
-echo "</div>";
-
-echo "<div class='category-all'>";
-echo "<a href=\"$url";
-echo "/index.php\">";
-echo "<span>All</span>";
-echo "</a>";
-echo "<span class='category-count'>";
-echo $array[0][count];
-echo "</span>";
-
-echo "</div>";
-
-echo "</div>";
-
 ?>
 
+<div class='category-overview'>
+ <div class='category-main'>
+  <span>Overview</span>
+ </div>
+ <div class='category-all'>
+  <a href="<?php echo $url; ?>/index.php"><span>All</span></a>
+  <span class='category-count'>
+  <?php echo $array[0][count]; ?>
+  </span>
+ </div>
+</div>
+
+<div class='category-section'>
+ <div class='category-main'>
+  <span>Categories</span>
+ </div>
+
 <?php
-
-echo "<div class='category-section'>";
-
-echo "<div class='category-main'>";
-echo "<span>Categories</span>";
-echo "</div>";
 
 $array = get_json('{"jsonrpc": "2.0", "request": "overview-categories"}');
 
@@ -38,18 +30,20 @@ if (!empty($array)) {
   foreach ($array as $row) {
     if (!empty($row)) {
 
-		echo "<div class='category'>";
-                echo "<span class='category-name'>";
 		$category = $row['category'];
-		echo "<a href=\"$url";
-		echo "/index.php?category=$category\">";
-                echo $category;
-		echo "</a>";
-                echo "</span>";
-                echo "<span class='category-count'>";
-		echo $row['count'];
-                echo "</span>";
-		echo "</div>";
+
+                ?>
+		<div class='category'>
+                <span class='category-name'>
+		<a href="<?php echo $url; ?>/index.php?category=<?php echo $category; ?>">
+                <?php echo $category; ?>
+		</a>
+                </span>
+                <span class='category-count'>
+		<?php echo $row['count']; ?>
+                </span>
+		</div> 
+		<?
     }
   }
 }
@@ -68,18 +62,22 @@ if (!empty($array)) {
   foreach ($array as $row) {
     if (!empty($row)) {
 
-                echo "<div class='feed'>";
-                echo "<span class='feed-name'>";
-                $feed = $row['name'];
-                echo "<a href=\"$url";
-                echo "/index.php?feed=$feed\">";
-                echo $feed;
-                echo "</a>";
-                echo "</span>";
-                echo "<span class='feed-count'>";
-                echo $row['count'];
-                echo "</span>";
-                echo "</div>";
+		$feed = $row['name'];
+
+		?>
+                <div class='feed'>
+                <span class='feed-name'>
+		<a href="<?php echo $url; ?>/index.php?feed=<?php echo $feed; ?>">
+		<?php 
+		echo $feed; 
+		?>
+                </a>
+                </span>
+                <span class='feed-count'>
+		<?php echo $row['count']; ?>
+                </span>
+                </div>
+		<?php
     }
   }
 }
