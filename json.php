@@ -85,6 +85,9 @@ if ($arr[request] == "get-all-articles") {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread'
     AND feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]')
     ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+  } elseif (!empty($arr[article_id])) {
+    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE 
+t1.id = '$arr[article_id]'");
   } else {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
   }

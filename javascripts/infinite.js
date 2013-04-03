@@ -12,6 +12,7 @@ function gup(name)
 
 var feed_param = gup('feed');
 var category_param = gup('category');
+var article_id = gup('article_id');
 
 (function($) {
 
@@ -62,6 +63,7 @@ var category_param = gup('category');
 				    offset        : offset,
 				    feed_name	  : feed_param,
 				    category_name : category_param,
+				    article_id    : article_id,
 					    
 				}, function(data) {
 						

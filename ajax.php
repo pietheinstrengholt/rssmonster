@@ -7,6 +7,7 @@ include 'functions.php';
 //retrieve feed or category information from infinite.js
 $input_feed = htmlspecialchars($_POST["feed_name"]);
 $input_category = htmlspecialchars($_POST["category_name"]);
+$article_id = htmlspecialchars($_POST["article_id"]);
 
 //urldecode post input
 $input_feed = urldecode($input_feed);
@@ -17,28 +18,13 @@ $offset = is_numeric($_POST['offset']) ? $_POST['offset'] : die();
 $postnumbers = is_numeric($_POST['number']) ? $_POST['number'] : die();
 
 //retrieve content
-$data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' . $_POST['number'] . '", "input_feed": "' . $input_feed . '"}';
+$data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' . 
+$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '"}';
 curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
 $array = json_decode(curl_exec($ch),true);
 
-//echo "<pre>";
-//print_r ($array);
-//echo "</pre>";
-
-//if no results are returned, mark items as read
-//if (empty($array) { 
-  //echo "array is now empty";
-  //$data = '{"jsonrpc": "2.0", "update": "mark-all-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}';
-  //curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-  //$array = json_decode(curl_exec($ch),true);
-  //unset($array);
-//}
-
-//if !is_array($array) { "dit is geen array"; }
-
-//if (empty($array) {
-//  echo "array is now empty";
-//}
+//only get article once
+if (!empty($article_id) && $offset != "0") { die(); }
 
 if ($array == "no-results" ) {
   //echo "array is empty";
@@ -84,6 +70,15 @@ if (!empty($array) && $array != "no-results") {
 
     echo "</div>";
   }
+
+?>
+
+<script type="text/javascript">
+  $.force_appear();
+</script>
+
+<?php
+
 }
 
 ?>

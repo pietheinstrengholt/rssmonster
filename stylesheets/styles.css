@@ -165,6 +165,11 @@ short {
   overflow: auto;
 }
 
+short a {
+  font-weight:bold;
+  color: #333333;
+}
+
 strong {
   color:#222;
   font-weight:700;
