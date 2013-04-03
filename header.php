@@ -1,9 +1,7 @@
 <?php
 
 //retrieve content
-$data = '{"jsonrpc": "2.0", "request": "count-all"}';
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-$array = json_decode(curl_exec($ch),true);
+$array = get_json('{"jsonrpc": "2.0", "request": "count-all"}');
 
 echo "<div class='category-overview'>";
 
@@ -17,9 +15,6 @@ echo "/index.php\">";
 echo "<span>All</span>";
 echo "</a>";
 echo "<span class='category-count'>";
-//echo "<pre>";
-//print_r($array);
-//echo "</pre>";
 echo $array[0][count];
 echo "</span>";
 
@@ -37,9 +32,7 @@ echo "<div class='category-main'>";
 echo "<span>Categories</span>";
 echo "</div>";
 
-$data = '{"jsonrpc": "2.0", "request": "overview-categories"}';
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-$array = json_decode(curl_exec($ch),true);
+$array = get_json('{"jsonrpc": "2.0", "request": "overview-categories"}');
 
 if (!empty($array)) {
   foreach ($array as $row) {
@@ -69,9 +62,7 @@ echo "<div class='feed-main'>";
 echo "<span>Feeds</span>";
 echo "</div>";
 
-$data = '{"jsonrpc": "2.0", "request": "overview-feeds"}';
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-$array = json_decode(curl_exec($ch),true);
+$array = get_json('{"jsonrpc": "2.0", "request": "overview-feeds"}');
 
 if (!empty($array)) {
   foreach ($array as $row) {

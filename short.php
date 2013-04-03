@@ -11,10 +11,7 @@ if(isset($_GET['category'])) {
 }
 
 //retrieve content
-$data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset":"0", "postnumbers":"100", "input_category": "' . $input_category . '", 
-"input_feed": "' . $input_feed . '"}';
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-$array = json_decode(curl_exec($ch),true);
+$array = get_json('{"jsonrpc": "2.0", "request": "get-all-articles", "offset":"0", "postnumbers":"100", "input_category": "' . $input_category . '","input_feed": "' . $input_feed . '"}');
 
 if (!empty($array) && $array != "no-results") {
   foreach ($array as $row) {

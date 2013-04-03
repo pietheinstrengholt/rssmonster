@@ -18,19 +18,13 @@ $offset = is_numeric($_POST['offset']) ? $_POST['offset'] : die();
 $postnumbers = is_numeric($_POST['number']) ? $_POST['number'] : die();
 
 //retrieve content
-$data = '{"jsonrpc": "2.0", "request": "get-all-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' . 
-$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '"}';
-curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-$array = json_decode(curl_exec($ch),true);
+$array = get_json('{"jsonrpc": "2.0", "request": "get-all-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' .$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '"}');
 
 //only get article once
 if (!empty($article_id) && $offset != "0") { die(); }
 
 if ($array == "no-results" ) {
-  //echo "array is empty";
-  $data = '{"jsonrpc": "2.0", "update": "mark-all-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}';
-  curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-  $array = json_decode(curl_exec($ch),true);
+  $array = get_json('{"jsonrpc": "2.0", "update": "mark-all-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}');
   die();
 }
 

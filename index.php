@@ -16,9 +16,11 @@ include 'functions.php';
     <script src="javascripts/jquery.yellow_fade.js"></script>
     <script src="javascripts/jquery.appear.js"></script>
     <script src="javascripts/appear.openreader.js"></script>
+    <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
 <!--    <script src="javascripts/scale.fix.js"></script> -->
     <script src="javascripts/infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css">
 <!--    <link rel="stylesheet" href="stylesheets/pygment_trac.css"> -->
 <!--    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"> -->
     <!--[if lt IE 9]>
@@ -46,6 +48,16 @@ include 'functions.php';
     });
 
     </script>
+
+
+<script>
+    (function($){
+        $(window).load(function(){
+            $("header").mCustomScrollbar();
+            $("short").mCustomScrollbar();
+        });
+    })(jQuery);
+</script>
 
   </head>
 
@@ -75,8 +87,7 @@ include 'functions.php';
         <section>
 
           <br>
-          <h1>New articles</h1>
-          <br>
+          <!-- <h1>New articles</h1><br> -->
           <div id="content">
           </div>
 
