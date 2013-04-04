@@ -1,87 +1,30 @@
 <?php
 
-//retrieve content
-$array = get_json('{"jsonrpc": "2.0", "request": "count-all"}');
+function header_section($input, $name) {
+  if (!empty($input)) {
 
-?>
+    echo "<ul class='feedbar main $name'><li class='index-name'>$name</li>";
 
-<div class='category-overview'>
- <div class='category-main'>
-  <span>Overview</span>
- </div>
- <div class='category-all'>
-  <a href="<?php echo $url; ?>/index.php"><span>All</span></a>
-  <span class='category-count'>
-  <?php echo $array[0][count]; ?>
-  </span>
- </div>
-</div>
+    foreach ($input as $row) {
+      if (!empty($row)) {
 
-<div class='category-section'>
- <div class='category-main'>
-  <span>Categories</span>
- </div>
-
-<?php
-
-$array = get_json('{"jsonrpc": "2.0", "request": "overview-categories"}');
-
-if (!empty($array)) {
-  foreach ($array as $row) {
-    if (!empty($row)) {
-
-		$category = $row['category'];
-
-                ?>
-		<div class='category'>
-                <span class='category-name'>
-		<a href="<?php echo $url; ?>/index.php?category=<?php echo $category; ?>">
-                <?php echo $category; ?>
-		</a>
-                </span>
-                <span class='category-count'>
-		<?php echo $row['count']; ?>
-                </span>
-		</div> 
-		<?
+        echo "<li class='feedbar sub $name'>";
+        echo "<span class=\"title\"><a href=\"$url?$name=$row[name]\">$row[name]</a></span>";
+        echo "<span class=\"count\">$row[count]</span>";
+        echo "</li>";
+      }
     }
-  }
+  } 
+  echo "</ul>";
 }
 
-echo "</div>";
+$array = get_json('{"jsonrpc": "2.0", "overview": "status"}');
+header_section($array,'status');
 
-echo "<div class='feed-section'>";
+$array = get_json('{"jsonrpc": "2.0", "overview": "categories"}');
+header_section($array,'categories');
 
-echo "<div class='feed-main'>";
-echo "<span>Feeds</span>";
-echo "</div>";
-
-$array = get_json('{"jsonrpc": "2.0", "request": "overview-feeds"}');
-
-if (!empty($array)) {
-  foreach ($array as $row) {
-    if (!empty($row)) {
-
-		$feed = $row['name'];
-
-		?>
-                <div class='feed'>
-                <span class='feed-name'>
-		<a href="<?php echo $url; ?>/index.php?feed=<?php echo $feed; ?>">
-		<?php 
-		echo $feed; 
-		?>
-                </a>
-                </span>
-                <span class='feed-count'>
-		<?php echo $row['count']; ?>
-                </span>
-                </div>
-		<?php
-    }
-  }
-}
-
-echo "</div>";
+$array = get_json('{"jsonrpc": "2.0", "overview": "feeds"}');
+header_section($array,'feeds');
 
 ?>

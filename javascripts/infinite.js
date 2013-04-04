@@ -10,8 +10,8 @@ function gup(name)
     return results[1];
 }
 
-var feed_param = gup('feed');
-var category_param = gup('category');
+var feed_param = gup('feeds');
+var category_param = gup('categories');
 var article_id = gup('article_id');
 
 (function($) {

@@ -17,12 +17,11 @@ include 'functions.php';
     <script src="javascripts/jquery.appear.js"></script>
     <script src="javascripts/appear.openreader.js"></script>
     <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
-<!--    <script src="javascripts/scale.fix.js"></script> -->
+    <script src="javascripts/scale.fix.js"></script>
     <script src="javascripts/infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css">
-<!--    <link rel="stylesheet" href="stylesheets/pygment_trac.css"> -->
-<!--    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"> -->
+    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"> 
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -53,7 +52,7 @@ include 'functions.php';
 <script>
     (function($){
         $(window).load(function(){
-            $("header").mCustomScrollbar();
+            $("feedbar").mCustomScrollbar();
             $("short").mCustomScrollbar();
         });
     })(jQuery);
@@ -68,7 +67,7 @@ include 'functions.php';
 
       <div class="wrapper">
 
-        <header>
+        <feedbar>
 
 <!-- <div class="debug"> -->
 <!-- <h3>Appeared elements</h3> -->
@@ -78,7 +77,7 @@ include 'functions.php';
 <!-- </div> -->
 
           <?php include 'header.php'; ?>
-        </header>
+        </feedbar>
 
 	<short>
           <?php include 'short.php'; ?>

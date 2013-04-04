@@ -18,16 +18,18 @@ $offset = is_numeric($_POST['offset']) ? $_POST['offset'] : die();
 $postnumbers = is_numeric($_POST['number']) ? $_POST['number'] : die();
 
 //retrieve content
-$array = get_json('{"jsonrpc": "2.0", "request": "get-all-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' .$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '"}');
+$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' .$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '"}');
 
 //only get article once
 if (!empty($article_id) && $offset != "0") { die(); }
 
+//if no results are returned mark items as read
 if ($array == "no-results" ) {
-  $array = get_json('{"jsonrpc": "2.0", "update": "mark-all-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}');
+  $array = get_json('{"jsonrpc": "2.0", "update": "mark-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '"}');
   die();
 }
 
+//load content
 if (!empty($array) && $array != "no-results") {
   foreach ($array as $row) {
 
@@ -35,28 +37,15 @@ if (!empty($array) && $array != "no-results") {
 
     if (!empty($row)) {
 
-                $id = $row['id'];
-                echo "<div class='article' id=$id>";
+                echo "<div class='article' id=$row[id]>";
 
-                echo "<h3 id=$id>";
-                $subject = $row['subject'];
-                echo $subject;
-                echo "</h3>";
+                echo "<h3 id=$id>$row[subject]</h3>";
 
-                echo "<div class='feedname'>";
-                $feed_name = $row['feed_name'];
-                echo $feed_name;
-                echo " | ";
-                $publish_date = $row['publish_date'];
-                echo $publish_date;
-                echo "</div>";
+                echo "<div class='feedname'>$row[feed_name] | $row[publish_date]</div>";
 
                 echo "<hr>";
-                echo "<div class=page-content>";
-                $content = $row['content'];
-                echo $content;
-                echo "<br><br>";
-                echo "</div>";
+
+                echo "<div class=page-content>$row[content]<br><br></div>";
 
                 echo "</div>";
 

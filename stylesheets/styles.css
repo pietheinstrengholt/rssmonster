@@ -107,51 +107,15 @@ top-nav {
   background: #394A5A;
 }
 
-header {
+feedbar {
   margin-top: 34px;
-  /* padding-top:26px; */
   height:100%;
   width:190px;
   float:left;
   position:fixed; 
-  /* border: 1px solid #E8E8E8; */
   background: #EAEAEA;
   overflow:auto;
   margin-left: -8px;
-}
-
-header ul {
-  list-style:none;
-  height:40px;
-  padding:0;
-  background: #eee;
-  background: -moz-linear-gradient(top, #f8f8f8 0%, #dddddd 100%);
-  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#f8f8f8), color-stop(100%,#dddddd));
-  background: -webkit-linear-gradient(top, #f8f8f8 0%,#dddddd 100%);
-  background: -o-linear-gradient(top, #f8f8f8 0%,#dddddd 100%);
-  background: -ms-linear-gradient(top, #f8f8f8 0%,#dddddd 100%);
-  background: linear-gradient(top, #f8f8f8 0%,#dddddd 100%);
-  border-radius:5px;
-  border:1px solid #d2d2d2;
-  box-shadow:inset #fff 0 1px 0, inset rgba(0,0,0,0.03) 0 -1px 0;
-  width:270px;
-}
-
-header li {
-  width:89px;
-  float:left;
-  border-right:1px solid #d2d2d2;
-  height:40px;
-}
-
-header ul a {
-  line-height:1;
-  font-size:11px;
-  color:#999;
-  display:block;
-  text-align:center;
-  padding-top:6px;
-  height:40px;
 }
 
 short {
@@ -175,28 +139,9 @@ strong {
   font-weight:700;
 }
 
-header ul li + li {
-  width:88px;
-  border-left:1px solid #fff;
-}
-
-header ul li + li + li {
-  border-right:none;
-  width:89px;
-}
-
-header ul a strong {
-  font-size:14px;
-  display:block;
-  color:#222;
-}
-
 section {
   padding-top: 34px;
-  /* width:669px;
   float:right; */
-  /* width: 800px; */
-  /* width: 100%; */
   width: 700px;
   float: left;
   padding-left: 420px;
@@ -226,7 +171,6 @@ footer {
 .article {
   padding-left: 5px;
   padding-right: 5px;
-  /* border-style:solid;
   border-color:#B4B7BD;
   border-width:1px; */
   border-right: 1px solid #B4B7BD;
@@ -262,52 +206,6 @@ div.category {
   border: 1px solid #E8E8E8;
 }
 
-span.category-name, span.feed-name {
-  margin-left:3px;
-  float: left;
-  color: #333333;
-}
-
-span.category-name a, span.feed-name a {
-  font-weight:bold;
-  color: #333333;
-}
-
-span.category-count {
-  margin-right:8px;
-  float: right;
-}
-
-div.category-section {
-  /* margin-top: -26px; */
-}
-
-div.feed {
-  height: 25px;
-  border: 1px solid #E8E8E8;
-}
-
-span.feed-count {
-  margin-right:8px;
-  float: right;
-}
-
-div.feed-section {
-  margin-top: 0px;
-}
-
-div.category-main, div.feed-main {
-  height: 25px;
-  color: #333333;
-  background-color: #C7C7AA;
-}
-
-div.category-main span, div.feed-main span {
-  margin-left: 3px;
-  font-weight: bold;
-  color: #333333;
-}
-
 .article-short {
   padding-left: 5px;
   padding-right: 5px;
@@ -326,20 +224,37 @@ div.feedname-short {
   padding-left: 1px;
 }
 
-div.category-all {
-  /* margin-top: -26px; */
-  background: #EAEAEA;
-  height: 25px;
-  font-weight: bold;
-  color: #333;
-  margin-left: 2px;
-}
-
-div.category-all a {
-  font-weight:bold;
-  color: #333333;
-}
-
 section h1 {
   margin-left: 9px;
+}
+
+li.feedbar.sub {
+  list-style-type: none;
+}
+
+li.feedbar.sub {
+  height: 20px;
+  float: left;
+  width: 157px;
+  margin-left: -36px;
+}
+
+li.feedbar.sub span.title a {
+  font-weight: bold;
+  color: #333;
+}
+
+li.feedbar.sub span.count {
+  float:right;
+}
+
+feedbar li.index-name {
+  list-style-type: none;
+  height: 20px;
+  float: left;
+  width: 180px;
+  margin-left: -36px;
+  background-color: #C7C7AA;
+  font-weight: bold;
+  color: #333;
 }
