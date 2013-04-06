@@ -1,11 +1,11 @@
 <html>
 <head>
-<link rel="stylesheet" href="stylesheets/styles.css">
+ <?php include 'header.php'; ?>
 </head>
 <body>
 
 <top-nav>
-<?php include 'top-nav.php'; ?>
+ <?php include 'top-nav.php'; ?>
 </top-nav>
 <br><br>
 <?php 

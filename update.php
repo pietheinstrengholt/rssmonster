@@ -1,13 +1,10 @@
 <html>
 <head>
-    <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/pygment_trac.css">
+ <?php include 'header.php'; ?>
 </head>
 <body>
 <top-nav>
-<?php
-include 'top-nav.php';
-?>
+ <?php include 'top-nav.php'; ?>
 </top-nav>
 
 <br><br>

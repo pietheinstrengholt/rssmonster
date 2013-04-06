@@ -7,12 +7,11 @@ include 'functions.php';
 
 <html>
 <head>
-<title>OPML Parser</title>
-<link rel="stylesheet" href="stylesheets/styles.css">
+ <?php include 'header.php'; ?>
 </head>
 <body>
 <top-nav>
-<?php include 'top-nav.php'; ?>
+ <?php include 'top-nav.php'; ?>
 </top-nav>
 
 <result>
