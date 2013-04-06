@@ -104,7 +104,7 @@ top-nav {
   height:40px;
   margin-top: -8px;
   margin-left: -8px;
-  background: #394A5A;
+  background: #777;
 }
 
 feedbar {
@@ -113,9 +113,11 @@ feedbar {
   width:190px;
   float:left;
   position:fixed; 
-  background: #EAEAEA;
+  /* position: absolute; */
+  background: #F2F2F2;
   overflow:auto;
   margin-left: -8px;
+  font-family: "Open Sans",sans-serif;
 }
 
 short {
@@ -124,7 +126,7 @@ short {
   background: silver;
   margin-left: 181px;
   height: 100%;
-  position: fixed;
+  position: fixed; 
   margin-top: 34px;
   overflow: auto;
 }
@@ -141,13 +143,16 @@ strong {
 
 section {
   padding-top: 34px;
-  float:right; */
-  width: 700px;
-  float: left;
-  padding-left: 420px;
+  /* float:right; */
+  /* width: 700px; */
+  /* left: 200px; */
+  right: 0;
+  float: right;
+  margin-left: 420px; 
+  /* left: 420px; */
   padding-bottom:50px;
   overflow:auto;
-  postion:fixed;
+  postion:fixed; 
 }
 
 small {
@@ -194,6 +199,7 @@ div.feedname {
   font-size:11px;
   padding-top: 5px;
   padding-left: 5px;
+  font-weight: bold;
 }
 
 div.page-content {
@@ -208,7 +214,7 @@ div.category {
 
 .article-short {
   padding-left: 5px;
-  padding-right: 5px;
+  padding-right: 10px;
 }
 
 div.article-block hr {
@@ -222,6 +228,8 @@ div.feedname-short {
   font-size:11px;
   padding-top: 5px;
   padding-left: 1px;
+  color: #777;
+  font-weight: bold;
 }
 
 section h1 {
@@ -246,6 +254,7 @@ li.feedbar.sub span.title a {
 
 li.feedbar.sub span.count {
   float:right;
+  margin-right: -15px;
 }
 
 feedbar li.index-name {
@@ -253,8 +262,82 @@ feedbar li.index-name {
   height: 20px;
   float: left;
   width: 180px;
-  margin-left: -36px;
+  margin-left: -40px;
   background-color: #C7C7AA;
   font-weight: bold;
   color: #333;
 }
+
+li.index-name {
+  padding-left: 4px;
+  background-color: #C7C7AA;
+}
+
+div.mCSB_container {
+  margin-right: 0px;  
+}
+
+div.topnav-button p {
+  padding-top: 9px;
+  font-family: Helvetica, sans-serif;
+}
+
+
+div.topnav-button a {
+  padding-right: 18px;
+  /* padding-left: 14px; */
+  color:#FFF;
+}
+
+div.first-topnav-button {
+  border-left: 1px solid #fff;
+  padding-left: 14px;
+}
+
+div.topnav-button {
+  height:40px;
+  border-right: 1px solid #fff;
+  /* border-left: 1px solid #fff; */
+  margin-right: 26px;
+  float:right;
+}
+
+top-nav form input {
+  /* padding-top: 5px; */
+  padding-left: 5px;
+  height: 25px;
+  width: 200px;
+  left:right;
+}
+
+top-nav form {
+  color:#FFF;
+  padding-left: 20px;
+  padding-top: 5px;
+}
+
+top-nav form input.button {
+  /*  padding-top: 5px; */
+  height: 27px;
+  width: 80px;
+}
+
+result {
+  color: #777;  
+}
+
+result p {
+  padding-top: 50px;
+}
+
+home-topnav-button {
+  float:left;
+}
+
+//todo: fix mobile device styling
+@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
+  short {
+    display:none;
+  }
+}
+ 

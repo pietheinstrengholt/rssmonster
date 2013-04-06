@@ -39,7 +39,7 @@ if (!empty($array) && $array != "no-results") {
 
                 echo "<div class='article' id=$row[id]>";
 
-                echo "<h3 id=$id>$row[subject]</h3>";
+                echo "<h3 id=$row[id]>$row[subject]</h3>";
 
                 echo "<div class='feedname'>$row[feed_name] | $row[publish_date]</div>";
 
@@ -56,8 +56,37 @@ if (!empty($array) && $array != "no-results") {
 
 ?>
 
+
 <script type="text/javascript">
-  $.force_appear();
+
+var pool = new Array();
+
+// Create your event handlers
+function myHandler(e) {
+    var id = $(this).attr('id');
+
+    if(jQuery.inArray(id,pool) == -1) {
+      // the element is not in the array
+      console.log($(this).attr('id') + ': ' + e.type);
+      pool.push(id);
+
+      $.ajax(
+       {
+        type: "POST",
+        url: "json.php",
+        data: JSON.stringify({ "jsonrpc": "2.0","update": "read-status", "value": id }),
+        contentType: "application/json; charset=utf-8",
+        dataType: "json",
+        success: function(data){},
+        failure: function(errMsg) {}
+       }
+     );
+  };
+}
+
+// Inside DOM-Loaded event
+$('div#block h3').bind('leaveviewport', myHandler).bullseye();
+
 </script>
 
 <?php

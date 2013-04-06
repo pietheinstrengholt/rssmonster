@@ -11,8 +11,8 @@ INSTALLATION
 
 1. Upload all files and unpack
 2. Create a database, use the database.sql script
-3. Insert database access config.php
-4. Insert new feeds in the feeds, table (TODO: manage feeds)
+3. Configure the config.php by using the correct mysql database settings
+4. Manual add feeds or import OPML
 5. Point to http://yourselfossurl.com/update.php
 
 CREDITS
@@ -22,17 +22,15 @@ The following scripts are used within phppaper
 
 * SimplePie: http://simplepie.org/
 * jQuery: http://jquery.com/
-* jQuery Appear: https://github.com/morr/jquery.appear
+* jQuery Bullseye: http://static.pixeltango.com/jQuery/Bullseye/
 
 TODO
 ----
 
-* Improve GUI
-* Manage feeds/categories from menu
-* Pull per category or per feed
-* Marking all as read when reaching last item
-* OPML import
-* Complete JSON events, replace database select by JSON
-* Create functions, instead of everything in index.php
+* Further improve GUI
+* Manage feeds/categories from menu (tag, delete, sort, etc)
+* More JSON events: add feeds, update event
+* Clean up by creating more functions or using a proper framework
+* Highlight active section in feedbar
 
 

@@ -5,7 +5,6 @@ include 'functions.php';
 
 ?>
 
-<!doctype html>
 <html>
   <head>
     <meta charset="utf-8">
@@ -13,15 +12,13 @@ include 'functions.php';
     <title>phppaper by Piethein Strengholt</title>
     <script src="javascripts/jquery.min.js"></script>
     <script src="javascripts/jquery.color.js"></script>
-    <script src="javascripts/jquery.yellow_fade.js"></script>
-    <script src="javascripts/jquery.appear.js"></script>
-    <script src="javascripts/appear.openreader.js"></script>
+    <script src="javascripts/jquery.bullseye-1.0-min.js"></script> 
     <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
-    <script src="javascripts/scale.fix.js"></script>
+    <!-- <script src="javascripts/scale.fix.js"></script> -->
+    <!-- <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"> -->
     <script src="javascripts/infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css">
-    <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no"> 
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -48,7 +45,6 @@ include 'functions.php';
 
     </script>
 
-
 <script>
     (function($){
         $(window).load(function(){
@@ -63,21 +59,16 @@ include 'functions.php';
   <body>
 
       <top-nav>
+          <?php include 'top-nav.php'; ?>
       </top-nav>
 
       <div class="wrapper">
 
         <feedbar>
-
-<!-- <div class="debug"> -->
-<!-- <h3>Appeared elements</h3> -->
-<!-- <pre><code id="appeared"></code></pre> -->
-<!-- <h3>Disappeared elements</h3> -->
-<!-- <pre><code id="disappeared"></code></pre> -->
-<!-- </div> -->
-
           <?php include 'header.php'; ?>
         </feedbar>
+
+
 
 	<short>
           <?php include 'short.php'; ?>

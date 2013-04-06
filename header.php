@@ -8,8 +8,9 @@ function header_section($input, $name) {
     foreach ($input as $row) {
       if (!empty($row)) {
 
+	$title = substr($row[name], 0, 16);
         echo "<li class='feedbar sub $name'>";
-        echo "<span class=\"title\"><a href=\"$url?$name=$row[name]\">$row[name]</a></span>";
+        echo "<span class=\"title\"><a href=\"$url?$name=$row[name]\">$title</a></span>";
         echo "<span class=\"count\">$row[count]</span>";
         echo "</li>";
       }

@@ -1,6 +1,13 @@
 <html>
+<head>
+<link rel="stylesheet" href="stylesheets/styles.css">
+</head>
 <body>
 
+<top-nav>
+<?php include 'top-nav.php'; ?>
+</top-nav>
+<br><br>
 <?php 
 
 include 'config.php';
