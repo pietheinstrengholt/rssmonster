@@ -3,6 +3,11 @@
 include 'config.php';
 include 'functions.php';
 
+if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AGENT'],'iPod') || strstr($_SERVER['HTTP_USER_AGENT'],'iPad'))
+{
+ header("Location: $mobile");
+}
+
 ?>
 
 <html>
@@ -24,9 +29,7 @@ include 'functions.php';
    </short>
 
    <section>
-    <br>
-    <div id="content">
-    </div>
+    <br><div id="content"></div>
    </section>
 
    <footer>
