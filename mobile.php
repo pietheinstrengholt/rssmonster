@@ -32,11 +32,13 @@ $matches = implode(',', $stack);
 
 <head>
 <meta charset="utf-8" />
-<title>PHPpaper mobile</title>
+<title>PHPPaper mobile</title>
 
 <link href="stylesheets/mobile.css" rel="stylesheet" />
 
 <?php
+
+//TODO: proper viewport handling for iOS and other mobile browsers
 if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AGENT'],'iPod')) {
 ?> 
   <meta name="viewport" content="width=450, initial-scale=0.6, user-scalable=no">
@@ -57,16 +59,7 @@ jQuery(document).ready(function() {
     var id = $(this).attr('id');
     console.log('clicked on id:' + id);
 
-    if ( $(this).hasClass("collapsed") ) {
-      $(this).addClass("uncollapsed");
-      $(this).removeClass("collapsed")
-      $(this).find(".header-content").show();
-      //TODO: remove hyperlink
-
-    } else {
-      $(this).addClass("collapsed");
-    }
-
+    //mark item as read and retrieve external url
     $.ajax(
        {
         type: "POST",
@@ -82,10 +75,32 @@ jQuery(document).ready(function() {
        }
      );
     console.log("reponse: "+ result);
-    //TODO: avoid toggle?
+    //TODO: avoid toggle or toggle back when clicking on another item like google reader
     $(this).find("span.subject").css( "color","#24b" );
     var quotelink = "<a href=" + result + " target=\"_blank\"></a>";
-    $(this).find("span.subject").wrap(quotelink);
+
+    //avoid adding many links
+    if (!$(this).find("span.subject").hasClass("added-link") ) {
+      $(this).find("span.subject").addClass("added-link");
+      $(this).find("span.subject").wrap(quotelink);
+    }
+
+    //undo classes so we know if a item is collapsed or not
+    if ( $(this).hasClass("collapsed") ) {
+      $(this).addClass("uncollapsed");
+      $(this).removeClass("collapsed")
+      $(this).find(".header-content").show();
+      //TODO: remove hyperlink
+      //$(this).find("div.heading-top a").remove();
+    } else {
+      if ( $(this).hasClass("uncollapsed") ) {
+        $(this).removeClass("uncollapsed")
+      }
+      $(this).addClass("collapsed");
+    }
+
+    //scroll item to top of page when clicking
+    $(window).scrollTop($(this).position().top)
 
   });
 });
@@ -95,27 +110,55 @@ jQuery(document).ready(function() {
 <script type="text/javascript">
 
 jQuery(document).ready(function() {
-  jQuery("img.nostar").click(function() {
+  jQuery("img.item-star").click(function() {
     var id = $(this).attr('id');
-    console.log('starred item: ' + id);
+
     //TODO: remove starred id from array, avoid marked as read when pushing mark-all-as-read button
-    //TODO: unstar items
-    $.ajax(
-       {
-        type: "POST",
-        url: "json.php",
-        data: JSON.stringify({ "jsonrpc": "2.0", "update": "star-mark", "value": id }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        async: false,
-        success: function(json) {
-         result = json;
-        },
-        failure: function(errMsg) {}
-       }
-     );
-    $(this).attr('src', 'images/star_selected.png');
-    $(this).attr('class', 'star');
+
+    if ( $(this).hasClass("unstar") ) {
+      console.log('starred item: ' + id);
+
+      $.ajax(
+         {
+          type: "POST",
+          url: "json.php",
+          data: JSON.stringify({ "jsonrpc": "2.0", "update": "star-mark", "value": id }),
+          contentType: "application/json; charset=utf-8",
+          dataType: "json",
+          async: false,
+          success: function(json) {
+           result = json;
+          },
+          failure: function(errMsg) {}
+         }
+       );
+
+      $(this).attr('src', 'images/star_selected.png');
+      $(this).removeClass("unstar");
+      $(this).addClass("star");
+
+    } else if ( $(this).hasClass("star") ) {
+      console.log('unstarred item: ' + id);
+
+      $.ajax(
+         {
+          type: "POST",
+          url: "json.php",
+          data: JSON.stringify({ "jsonrpc": "2.0", "update": "star-unmark", "value": id }),
+          contentType: "application/json; charset=utf-8",
+          dataType: "json",
+          async: false,
+          success: function(json) {
+           result = json;
+          },
+          failure: function(errMsg) {}
+         }
+       );
+
+      $(this).attr('src', 'images/star_unselected.png');
+      $(this).removeClass("star");
+      $(this).addClass("unstar");
+    }
   });
 });
 
@@ -125,7 +168,7 @@ jQuery(document).ready(function() {
 
 jQuery(document).ready(function() {
   jQuery("span#mark-these-read").click(function() {
-    $(this).css( "background-color", "yellow" );
+    //$(this).css( "background-color", "yellow" );
     $.ajax(
        {
         type: "POST",
@@ -136,8 +179,9 @@ jQuery(document).ready(function() {
         async: false,
         success: function(json) {
          result = json;
-
-         //refresh page
+         //scroll to top before refresh
+	 document.body.scrollTop = document.documentElement.scrollTop = 0;
+         //refresh page to load new articles
          location.reload();
         },
         failure: function(errMsg) {}
@@ -152,11 +196,16 @@ jQuery(document).ready(function() {
 </head>
 <body>
 
+<div id="top">
+ All items
+</div>
+
 <?php
 
 //load content
 if (!empty($array) && $array != "no-results") {
 
+//TODO: show message when there no items unread
 echo "<div id=layer1>";
 
   foreach ($array as $row) {
@@ -165,7 +214,7 @@ echo "<div id=layer1>";
 
 		echo "<div class='newsitem'>";
 
-		echo "<img class='nostar' id=$row[id] src='images/star_unselected.png'>";
+		echo "<img class='item-star unstar' id=$row[id] src='images/star_unselected.png'>";
 
                 echo "<div class='heading' id=$row[id]>";
 		echo "<div class='heading-top'>";

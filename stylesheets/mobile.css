@@ -1,3 +1,23 @@
+div#top {
+  z-index: 3;
+  position: relative;
+  border-top: 1px solid #a0b6e6;
+  padding: 4px;
+  background: -webkit-gradient(linear,left top,left bottom,from(#d9e2fa),to(#b5c8f9));
+  background: -webkit-linear-gradient(top,#d9e2fa,#b5c8f9);
+  background: -moz-linear-gradient(top,#d9e2fa,#b5c8f9);
+  background: -ms-linear-gradient(top,#d9e2fa,#b5c8f9);
+  background: -o-linear-gradient(top,#d9e2fa,#b5c8f9);
+  background-color: #dbe3fa;
+  border-bottom: solid 1px #9eadd2;
+  font-family: sans-serif;
+  font-size: 17px;
+  font-weight: bold;
+  text-align: center;
+  vertical-align: middle;
+  border-color: inherit;
+}
+
 .layer1 {
   margin: 0;
   padding: 0;
@@ -7,6 +27,8 @@
 body {
   font-family: sans-serif;
   font-size: 13px;
+  margin: 0;
+  padding: 0;
 }
 
 .heading {
@@ -15,7 +37,7 @@ body {
   cursor: pointer;
   position: relative;
   width: 98%;
-  margin-left: 25px;
+  margin-left: 33px;
 }
 
 .heading.collapsed, .heading.uncollapsed {
@@ -98,9 +120,10 @@ span#mark-these-read {
   float: right;
 }
 
-div.newsitem img.nostar, div.newsitem img.star {
+div.newsitem img.item-star {
   position: absolute;
   padding-top: 8px;
+  margin-left: 8px;
 }
 
 div.mark-as-read {
