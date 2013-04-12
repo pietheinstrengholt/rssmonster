@@ -87,26 +87,6 @@ var status_param = gup('status');
 						// Append the data to the content div
 					   	$this.find('.content').append(data);
 						
-					//WIP
-                                        //if (!$("div.content").hasClass('loaded') ) {
-                                        //	console.log('initialize functions');
-                                                //$("div.content").addClass("loaded");
-                                                //$("div.content").find('img.item-star').css( "background-color", "yellow" );
-
-					//	if ( $('div#block').hasClass(offset) ) {
-
-					//	  console.log('offset found');
-					//	  $(".content").find("img.item-star").click(function() {
-
-					//	    var id = $(this).attr('id');
-					//	    console.log('starred item: ' + id);
-					//	    $(this).css( "background-color", "yellow" );
-					//	    console.log(offset);
-
-					//	  });
-
-					//	}
-                                        //}
                                                 // Offset increases
                                                 offset = offset+$settings.nop;
 
@@ -126,8 +106,14 @@ var status_param = gup('status');
 				$(window).scroll(function() {
 					
 					// Check the user is at the bottom of the element
-					//TODO: rewrite to use viewport detection
-					if($(window).scrollTop() + $(window).height() > $this.height() && !busy) {
+					//TODO: rewrite to use viewport detection or fix scrollTop
+
+					var scrollheight = $(window).scrollTop() + $(window).height();
+			
+					if(scrollheight > $this.height() && !busy) {
+
+						console.log('height scrollheight: ' + scrollheight);
+						console.log('height this: ' + $this.height());
 						
 						// Now we are working, so busy is true
 						busy = true;
@@ -147,6 +133,9 @@ var status_param = gup('status');
 					}	
 				});
 			}
+
+			//Add Bulseye function
+			//$('.loading-bar').bind('viewportenter').bullseye().css({'background-color' : 'yellow'}); 
 			
 			// Also content can be loaded by clicking the loading bar/
 			$this.find('.loading-bar').click(function() {
@@ -162,3 +151,4 @@ var status_param = gup('status');
 	}
 
 })(jQuery);
+

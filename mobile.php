@@ -6,6 +6,10 @@
 include 'config.php';
 include 'functions.php';
 
+//input
+$input_feed = htmlspecialchars($_GET["feed_name"]);
+$input_category = htmlspecialchars($_GET["input_category"]);
+
 $offset = 0;
 //number of items to load from db
 $number = 25;
@@ -197,7 +201,14 @@ jQuery(document).ready(function() {
 <body>
 
 <div id="top">
- All items
+<?php if (!empty($input_feed)) { 
+	echo $input_feed; 
+	} elseif (!empty($input_category)) {
+	echo $input_category;
+	} else {
+	echo "All items";
+	}
+?>
 </div>
 
 <?php
