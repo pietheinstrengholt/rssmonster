@@ -125,6 +125,14 @@ LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id
   }
 }
 
+//usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","delete": "feed", "value": "1"}' 
+http://openreaderurl/json.php
+if ($arr[delete] == "feed") {
+  $sql = "DELETE from feeds WHERE id = $arr[value]";
+  $result = mysql_query($sql);
+  echo json_encode("done");
+}
+
 mysql_close($con);
 
 ?>

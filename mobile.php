@@ -220,7 +220,6 @@ jQuery(document).ready(function() {
 //load content
 if (!empty($array) && $array != "no-results") {
 
-//TODO: show message when there are no items unread
 echo "<div id=layer1>";
 
   foreach ($array as $row) {

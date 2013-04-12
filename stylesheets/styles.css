@@ -345,3 +345,29 @@ div.page-content img, div.page-content pre {
   margin-left: 2px;
 }
 
+div.feed-manage {
+  margin-left: 20px;
+  height: 14px;
+  display:table-cell;
+}
+
+div.feed-manage-overview {
+  padding: 50px;
+}
+
+div.feed-delete {
+  width: 20px;
+  padding-top: 3px;
+  overflow: hidden;
+  display:table-cell;
+  cursor: pointer;
+}
+
+div.feed-edit {
+  width: 20px;
+  padding-top: 3px;
+  overflow: hidden;
+  display:table-cell;
+  cursor: pointer;
+}
+

@@ -1,6 +1,7 @@
 <html>
 <head>
  <?php include 'header.php'; ?>
+ <title>Update page</title>
 </head>
 <body>
 <top-nav>
@@ -110,10 +111,6 @@ mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date')") or die(my
 echo "</table>";
 
 ?>
-
-<head>
-        <title>Update page</title>
-</head>
 
 </body>
 </html>
