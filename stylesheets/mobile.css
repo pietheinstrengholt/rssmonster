@@ -17,6 +17,7 @@ div#top {
   vertical-align: middle;
   border-color: inherit;
   width: 100%;
+  height: 30px;
 }
 
 .layer1 {
@@ -140,4 +141,95 @@ div.heading-top a {
 
 div.content div img {
   margin-bottom:5px;
+}
+
+.m-button {
+  height: 15px;
+  border: solid 1px #99b1ed;
+  background-color: #e4eafa;
+  background-repeat: repeat-x;
+  padding: 7px;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+  color: #2e4987;
+  border-radius: 4px;
+  text-shadow: #fff 0 1px 0;
+  box-shadow: 0 1px 0 #e1e9fc;
+  float: left;
+  white-space: nowrap;
+  font-size: 13px;
+  font-weight: bold;
+  color: #2e4987;
+  text-shadow: #fff 0 1px 0;
+}
+
+.m-button-contents a {
+  text-decoration:none;
+  color: #2e4987;
+  font-size: 13px;
+  font-weight: bold;
+  color: #2e4987;
+  text-shadow: #fff 0 1px 0;
+}
+
+#nav-title {
+  margin-top: 5px;
+}
+
+li.feedbar.sub {
+  list-style-type: none;
+}
+
+span.title a {
+  padding-left: 0;
+  color: #000;
+  font-size: 15px;
+  overflow: hidden;
+  font-weight: bold;
+  padding: 8px 5px;
+  margin-left: 20px;
+  vertical-align: middle;
+  margin-top: 5px;
+}
+
+div.main a {
+  padding-left: 0;
+  font-size: 15px;
+  overflow: hidden;
+  font-weight: bold;
+  padding: 8px 5px;
+  margin-left: 5px;
+  vertical-align: middle;
+  margin-top: 5px;
+  height: 30px;
+}
+
+div.main a:visited {
+  color: blue;
+}
+
+
+li.feedbar.sub {
+  border-bottom: 1px solid #c2cff1;
+  height: 20px;
+  margin-left: -40px;
+}
+
+div.main {
+  border-bottom: 1px solid #c2cff1;
+  height: 20px;
+  margin-left: -40px;
+}
+
+span.count {
+  text-align: right;
+  display: table-cell;
+  vertical-align: middle;
+  float: right;
+  margin-right: 20px;
+  font-weight: bold;
+  color: #666;
+  font-size: 15px;
+  /* line-height: 24px; */
 }

@@ -7,15 +7,17 @@ include 'config.php';
 include 'functions.php';
 
 //input
-$input_feed = htmlspecialchars($_GET["feed_name"]);
-$input_category = htmlspecialchars($_GET["input_category"]);
+$input_feed = htmlspecialchars($_GET["feeds"]);
+$input_category = htmlspecialchars($_GET["categories"]);
+$status = htmlspecialchars($_GET["status"]);
+
 
 $offset = 0;
 //number of items to load from db
 $number = 25;
 
 //retrieve content
-$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $offset . '", "input_category": "' . $input_category . '", "postnumbers": "' .$number . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '"}');
+$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $offset . '", "input_category": "' . $input_category . '", "postnumbers": "' .$number . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '", "status": "' . $status . '"}');
 
 //create new array for id of loaded articles
 $stack = array();
@@ -201,14 +203,18 @@ jQuery(document).ready(function() {
 <body>
 
 <div id="top">
-<?php if (!empty($input_feed)) { 
+ <div class="m-button back-to-feeds" id="back-to-feeds"><span class="m-button-contents"><a href="mobile-feeds.php">Feeds</a></span></div>
+
+ <div id="nav-title">
+ <?php if (!empty($input_feed)) { 
 	echo $input_feed; 
 	} elseif (!empty($input_category)) {
 	echo $input_category;
 	} else {
 	echo "All items";
 	}
-?>
+ ?>
+ </div>
 </div>
 
 <?php
