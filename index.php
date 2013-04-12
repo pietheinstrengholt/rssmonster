@@ -5,7 +5,7 @@ include 'functions.php';
 
 if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AGENT'],'iPod') || strstr($_SERVER['HTTP_USER_AGENT'],'iPad'))
 {
- header("Location: $mobile");
+ //header("Location: $mobile");
 }
 
 ?>
@@ -24,17 +24,10 @@ if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AG
     <?php include 'feedbar.php'; ?>
    </feedbar>
 
-   <short>
-    <?php include 'short.php'; ?>
-   </short>
-
    <section>
-    <br><div id="content"></div>
+    <div id="content"></div>
    </section>
 
-   <footer>
-    <!-- <p><small>by Piethein Strengholt</small></p> -->
-   </footer>
   </div>
  </body>
 </html>

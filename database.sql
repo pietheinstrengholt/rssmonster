@@ -13,6 +13,7 @@ CREATE TABLE IF NOT EXISTS `articles` (
   `id` mediumint(9) NOT NULL AUTO_INCREMENT,
   `feed_id` mediumint(9) DEFAULT NULL,
   `status` varchar(10) DEFAULT NULL,
+  `star_ind` int(1) NOT NULL DEFAULT '0',
   `url` varchar(400) DEFAULT NULL,
   `subject` varchar(400) DEFAULT NULL,
   `content` text,
@@ -34,7 +35,7 @@ CREATE TABLE IF NOT EXISTS `feeds` (
   `name_desc` varchar(2000) DEFAULT NULL,
   `url` varchar(200) NOT NULL,
   `category` varchar(200) DEFAULT NULL,
-  `last_update` date DEFAULT NULL,
+  `last_update` datetime DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 

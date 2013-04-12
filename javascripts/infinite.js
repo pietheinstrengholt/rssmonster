@@ -13,6 +13,7 @@ function gup(name)
 var feed_param = gup('feeds');
 var category_param = gup('categories');
 var article_id = gup('article_id');
+var status_param = gup('status');
 
 (function($) {
 
@@ -64,8 +65,12 @@ var article_id = gup('article_id');
 				    feed_name	  : feed_param,
 				    category_name : category_param,
 				    article_id    : article_id,
-					    
+				    status        : status_param,
+				    
 				}, function(data) {
+
+					//log message
+					console.log('fetching data:' + offset);
 						
 					// Change loading bar content (it may have been altered)
 					$this.find('.loading-bar').html($initmessage);
@@ -73,27 +78,38 @@ var article_id = gup('article_id');
 					// If there is no data returned, there are no more posts to be shown. Show error
 					if(data == "") { 
 						$this.find('.loading-bar').html($settings.error);	
-
-						    //$.ajax(
-						    // {
-						    //  type: "POST",
-						    //  url: "json.php",
-						    //  data: JSON.stringify({ "jsonrpc": "2.0","update": "mark-all-as-read" }),
-						    //  contentType: "application/json; charset=utf-8",
-						    //  dataType: "json",
-						    //  success: function(data){},
-						    //  failure: function(errMsg) {}
-						    // }
-						    //);
 					}
 					else {
 						
 						// Offset increases
-					    offset = offset+$settings.nop; 
+  					        //offset = offset+$settings.nop; 
 						    
 						// Append the data to the content div
 					   	$this.find('.content').append(data);
 						
+					//WIP
+                                        //if (!$("div.content").hasClass('loaded') ) {
+                                        //	console.log('initialize functions');
+                                                //$("div.content").addClass("loaded");
+                                                //$("div.content").find('img.item-star').css( "background-color", "yellow" );
+
+					//	if ( $('div#block').hasClass(offset) ) {
+
+					//	  console.log('offset found');
+					//	  $(".content").find("img.item-star").click(function() {
+
+					//	    var id = $(this).attr('id');
+					//	    console.log('starred item: ' + id);
+					//	    $(this).css( "background-color", "yellow" );
+					//	    console.log(offset);
+
+					//	  });
+
+					//	}
+                                        //}
+                                                // Offset increases
+                                                offset = offset+$settings.nop;
+
 						// No longer busy!	
 						busy = false;
 					}	
@@ -110,6 +126,7 @@ var article_id = gup('article_id');
 				$(window).scroll(function() {
 					
 					// Check the user is at the bottom of the element
+					//TODO: rewrite to use viewport detection
 					if($(window).scrollTop() + $(window).height() > $this.height() && !busy) {
 						
 						// Now we are working, so busy is true

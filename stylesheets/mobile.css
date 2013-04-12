@@ -16,6 +16,7 @@ div#top {
   text-align: center;
   vertical-align: middle;
   border-color: inherit;
+  width: 100%;
 }
 
 .layer1 {
@@ -129,6 +130,7 @@ div.newsitem img.item-star {
 div.mark-as-read {
   height: 40px;
   margin-top: 10px;
+  margin-right: 10px;
 }
 
 div.heading-top a {

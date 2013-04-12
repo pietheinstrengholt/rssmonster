@@ -214,7 +214,11 @@ echo "<div id=layer1>";
 
 		echo "<div class='newsitem'>";
 
-		echo "<img class='item-star unstar' id=$row[id] src='images/star_unselected.png'>";
+		if ($row[star_ind] == '1') {
+			echo "<img class='item-star star' id=$row[id] src='images/star_selected.png'>";
+		} else {
+			echo "<img class='item-star unstar' id=$row[id] src='images/star_unselected.png'>";
+		}
 
                 echo "<div class='heading' id=$row[id]>";
 		echo "<div class='heading-top'>";

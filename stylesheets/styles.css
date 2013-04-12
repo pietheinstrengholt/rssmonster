@@ -1,10 +1,11 @@
 @import url(https://fonts.googleapis.com/css?family=Lato:300italic,700italic,300,700);
 
 body {
-  /* padding:25px; */
   font:14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
   color:#777;
   font-weight:300;
+  margin: 0;
+  padding: 0;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -46,8 +47,6 @@ a small {
 }
 
 .wrapper {
-  /* border: 1px solid red; */
-  /* width:860px; */
   width: 100%;
   margin:0 auto; 
 }
@@ -99,41 +98,10 @@ img {
 
 top-nav {
   position:fixed;
-  border: 1px solid #000;
   width:100%;
   height:40px;
-  margin-top: -8px;
-  margin-left: -8px;
   background: #777;
-}
-
-feedbar {
-  margin-top: 34px;
-  height:100%;
-  width:190px;
-  float:left;
-  position:fixed; 
-  /* position: absolute; */
-  background: #F2F2F2;
-  overflow:auto;
-  margin-left: -8px;
-  font-family: "Open Sans",sans-serif;
-}
-
-short {
-  float: left;
-  width: 230px;
-  background: silver;
-  margin-left: 181px;
-  height: 100%;
-  position: fixed; 
-  margin-top: 34px;
-  overflow: auto;
-}
-
-short a {
-  font-weight:bold;
-  color: #333333;
+  z-index: 999;
 }
 
 strong {
@@ -143,16 +111,12 @@ strong {
 
 section {
   padding-top: 34px;
-  /* float:right; */
-  /* width: 700px; */
-  /* left: 200px; */
   right: 0;
   float: right;
-  margin-left: 420px; 
-  /* left: 420px; */
+  margin-left: 220px; 
   padding-bottom:50px;
   overflow:auto;
-  postion:fixed; 
+  margin-right: 50px;
 }
 
 small {
@@ -177,7 +141,7 @@ footer {
   padding-left: 5px;
   padding-right: 5px;
   border-color:#B4B7BD;
-  border-width:1px; */
+  border-width:1px; 
   border-right: 1px solid #B4B7BD;
   border-bottom: 1px solid #B4B7BD;
 }
@@ -185,7 +149,8 @@ footer {
 .article h3 {
   font-size:20px;
   padding-top: 5px;
-  padding-left: 5px;
+  padding-left: 26px;
+  cursor: pointer;
 }
 
 div.article hr {
@@ -205,6 +170,7 @@ div.feedname {
 div.page-content {
   padding-left: 5px;
   color: #333344;
+  padding-bottom: 4px;
 }
 
 div.category {
@@ -236,52 +202,10 @@ section h1 {
   margin-left: 9px;
 }
 
-li.feedbar.sub {
-  list-style-type: none;
-}
-
-li.feedbar.sub {
-  height: 20px;
-  float: left;
-  width: 157px;
-  margin-left: -36px;
-}
-
-li.feedbar.sub span.title a {
-  font-weight: bold;
-  color: #333;
-}
-
-li.feedbar.sub span.count {
-  float:right;
-  margin-right: -15px;
-}
-
-feedbar li.index-name {
-  list-style-type: none;
-  height: 20px;
-  float: left;
-  width: 180px;
-  margin-left: -40px;
-  background-color: #C7C7AA;
-  font-weight: bold;
-  color: #333;
-}
-
-li.index-name {
-  padding-left: 4px;
-  background-color: #C7C7AA;
-}
-
-div.mCSB_container {
-  margin-right: 0px;  
-}
-
 div.topnav-button p {
   padding-top: 9px;
   font-family: Helvetica, sans-serif;
 }
-
 
 div.topnav-button a {
   padding-right: 18px;
@@ -334,10 +258,90 @@ home-topnav-button {
   float:left;
 }
 
-//todo: fix mobile device styling
-@media only screen and (min-device-width: 768px) and (max-device-width: 1024px) {
-  short {
-    display:none;
-  }
+div#block {
+  border: 1px solid #ddd;
+  box-shadow: 0 0 4px #e3e5eb;
+  margin-top: 20px;
 }
- 
+
+feedbar {
+  margin-top: 40px;
+  height:100%;
+  width:190px;
+  float:left;
+  position:fixed;
+  overflow:auto;
+  font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+li.feedbar.sub {
+  list-style-type: none;
+}
+
+li.feedbar.sub span.count {
+  float:right;
+  margin-right: 1px;
+}
+
+li.feedbar.sub {
+  height: 20px;
+  float: left;
+  width: 170px;
+  margin-left: -36px;
+}
+
+div.main {
+  height: 20px;
+  float: left;
+  width: 180px;
+  margin-left: -40px;
+  background: rgb(226,226,226); /* Old browsers */
+  background: -moz-linear-gradient(top,  rgba(226,226,226,1) 0%, rgba(219,219,219,1) 50%, rgba(209,209,209,1) 51%, rgba(254,254,254,1) 100%); /* FF3.6+ */
+  background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,rgba(226,226,226,1)), color-stop(50%,rgba(219,219,219,1)), color-stop(51%,rgba(209,209,209,1)), color-stop(100%,rgba(254,254,254,1)))$
+  background: -webkit-linear-gradient(top,  rgba(226,226,226,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); /* Chrome10+,Safari5.1+ */
+  background: -o-linear-gradient(top,  rgba(226,226,226,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); /* Opera 11.10+ */
+  background: -ms-linear-gradient(top,  rgba(226,226,226,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); /* IE10+ */
+  background: linear-gradient(to bottom,  rgba(226,226,226,1) 0%,rgba(219,219,219,1) 50%,rgba(209,209,209,1) 51%,rgba(254,254,254,1) 100%); /* W3C */
+  filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#e2e2e2', endColorstr='#fefefe',GradientType=0 ); /* IE6-9 */
+  border-top: 1px solid #ddd;
+  border-bottom: 1px solid #ddd;
+  padding-top: 1px;
+  padding-bottom: 1px;
+}
+
+li.feedbar.sub span.title a {
+  font-weight: bold;
+  color: #333;
+}
+
+div.nav-main {
+  width:190px;
+  height: 100%;
+  margin-top: -20px;
+}
+
+div.nav-main a {
+  font-weight: bold;
+  color: #333;
+  margin-left: 6px;
+  margin-bottom: 10px;
+}
+
+div.mCSB_container {
+  margin-right: 0px;
+}
+
+div.page-content br {
+  /* display: none; */
+}
+
+div.page-content img, div.page-content pre {
+  max-width:880px;
+}
+
+.article img.item-star {
+  position: absolute;
+  padding-top: 3px;
+  margin-left: 2px;
+}
+
