@@ -1,0 +1,54 @@
+<html>
+<head>
+<link rel="stylesheet" href="stylesheets/styles.css">
+</head>
+
+<body>
+<top-nav>
+<?php include 'top-nav.php'; ?>
+</top-nav>
+<result>
+<?php 
+
+require_once('simplepie/autoloader.php');
+include 'config.php';
+include 'functions.php';
+
+$feed = $_POST["feedname"];
+
+$feed = new SimplePie($feed);
+$feed->init();
+$feed->handle_content_type();
+
+$title = $feed->get_title();
+$desc = $feed->get_description();
+$feedurl = $feed->get_permalink();
+
+echo "<p>";
+echo $url;
+echo "<br>";
+echo $title;
+echo "<br>";
+echo $desc;
+echo "<br>";
+echo "</p>";
+
+if (empty($title)) {
+  echo "<br><br><br>Title is empty, rss feed might be invalid!<br>";
+} else {
+
+  $sql=mysql_query("SELECT DISTINCT name FROM feeds ORDER BY name");
+  while($r[]=mysql_fetch_array($sql));
+
+  if (in_multiarray($title, $r)) {
+    echo "<br><br><br>Error adding \"$title\", feedname already exists or rss is invalid!<br>";
+  } else { 
+    $sql = "INSERT INTO feeds (name, name_desc, url) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($desc)."','".mysql_real_escape_string($feedurl)."')";
+    mysql_query($sql);
+    echo "<br><br><br>Feedname \"$title\" added to list with rss feeds!<br>";
+  }
+}
+?>
+</result>
+</body>
+</html>
