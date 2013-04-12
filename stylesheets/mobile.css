@@ -175,6 +175,7 @@ div.content div img {
 
 #nav-title {
   margin-top: 5px;
+  margin-right: 60px;
 }
 
 li.feedbar.sub {
@@ -232,4 +233,10 @@ span.count {
   color: #666;
   font-size: 15px;
   /* line-height: 24px; */
+}
+
+div.all-read {
+  text-align: center;
+  padding: 10px;
+  font-weight: bold;
 }

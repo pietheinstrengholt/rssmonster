@@ -119,8 +119,6 @@ jQuery(document).ready(function() {
   jQuery("img.item-star").click(function() {
     var id = $(this).attr('id');
 
-    //TODO: remove starred id from array, avoid marked as read when pushing mark-all-as-read button
-
     if ( $(this).hasClass("unstar") ) {
       console.log('starred item: ' + id);
 
@@ -222,7 +220,7 @@ jQuery(document).ready(function() {
 //load content
 if (!empty($array) && $array != "no-results") {
 
-//TODO: show message when there no items unread
+//TODO: show message when there are no items unread
 echo "<div id=layer1>";
 
   foreach ($array as $row) {
@@ -266,6 +264,10 @@ echo "<div id=layer1>";
     }
 
     echo "</div>";
+} else {
+  echo "<div class=\"all-read\">";
+  echo "All items marked as read";
+  echo "<div>";
 }
 
 ?>
