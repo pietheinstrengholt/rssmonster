@@ -261,7 +261,7 @@ home-topnav-button {
 div#block {
   border: 1px solid #ddd;
   box-shadow: 0 0 4px #e3e5eb;
-  margin-top: 20px;
+  margin-top: 20px; 
 }
 
 feedbar {
@@ -371,3 +371,6 @@ div.feed-edit {
   cursor: pointer;
 }
 
+div.opml-form {
+  padding: 60px;
+}

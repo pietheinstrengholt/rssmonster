@@ -1,14 +1,12 @@
 <html>
 <head>
  <?php include 'header.php'; ?>
-  <script src="http://code.jquery.com/jquery-1.9.1.js"></script>
-  <script src="http://code.jquery.com/ui/1.10.2/jquery-ui.js"></script>
-
-<script>
-function myFunction(feed_name,feed_id)
-{
-var r=confirm("Are you sure to delete this feed: \"" + feed_name + "\"");
-if (r==true)
+  <script src="javascripts/jquery-min.js"></script>
+ <script>
+ function myFunction(feed_name,feed_id)
+ {
+ var r=confirm("Are you sure to delete this feed: \"" + feed_name + "\"");
+ if (r==true)
   {
 
     $.ajax(
@@ -29,10 +27,8 @@ if (r==true)
         failure: function(errMsg) {}
        }
      );
-
   }
-document.getElementById("demo").innerHTML=x;
-}
+ }
 </script>
 
 
