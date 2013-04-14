@@ -27,7 +27,7 @@ The following scripts are used within phppaper
 TODO
 ----
 
-* Desktop mode: Bug scrolling and loading bug
+* Desktop: fix dirty javascript ajax.php
 * General: Manage feeds/categories from menu (tag, delete, sort, etc)
 * General: More JSON events: add feeds, update event
 * General: Clean up by creating more functions or using a proper framework
