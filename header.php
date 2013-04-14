@@ -39,8 +39,8 @@
 <script>
     (function($){
         $(window).load(function(){
-            $("feedbar").mCustomScrollbar();
-            $("short").mCustomScrollbar();
+           $("feedbar").mCustomScrollbar();
+           // $("short").mCustomScrollbar();
         });
     })(jQuery);
 
