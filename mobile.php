@@ -269,6 +269,8 @@ echo "<div id=layer1>";
   echo "<div>";
 }
 
+if (!empty($array) && $array != "no-results") {
+
 ?>
 
 <div class="mark-as-read">
@@ -276,6 +278,8 @@ echo "<div id=layer1>";
 </div>
 
 <?php
+
+}
 
 ?>
 

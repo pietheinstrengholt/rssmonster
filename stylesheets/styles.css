@@ -163,8 +163,10 @@ div.feedname {
 }
 
 div.page-content {
+  margin-top: -15px;
   padding-left: 5px;
   color: #333344;
+  margin-bottom: 10px;
 }
 
 div.article-block hr {

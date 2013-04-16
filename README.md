@@ -27,11 +27,10 @@ The following scripts are used within phppaper
 TODO
 ----
 
-* Desktop: fix dirty javascript ajax.php
+* Desktop mode: fix dirty javascript infinite & ajax.php
 * General: Manage feeds/categories from menu (tag, delete, sort, etc)
 * General: More JSON events: add feeds, update event
 * General: Clean up by creating more functions or using a proper framework
 * Desktop mode: Highlight active section in feedbar
 * Android redirect to mobile, make it possible to return to desktop/normale view
 * Desktop mode: mark as read, unread
-
