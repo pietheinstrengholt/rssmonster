@@ -167,6 +167,7 @@ div.page-content {
   padding-left: 5px;
   color: #333344;
   margin-bottom: 10px;
+  margin-right: 20px;
 }
 
 div.article-block hr {
@@ -311,30 +312,49 @@ div.mCSB_container {
 
 /* FEED MANAGE SCREEN */
 
+div.feed-overview {
+  border: 1px solid #ddd;
+  width: 100%;
+  margin-bottom: 10px;
+  //height: 40px;
+}
+
 div.feed-manage {
   margin-left: 20px;
   height: 14px;
   display:table-cell;
 }
 
+div.form-name, div.form-category {
+  margin-left: 5px;
+}
+
 div.feed-manage-overview {
   padding: 50px;
 }
 
-div.feed-delete {
-  width: 20px;
-  padding-top: 3px;
-  overflow: hidden;
-  display:table-cell;
-  cursor: pointer;
+div.feed-manage {
+  height: 20px;
 }
 
-div.feed-edit {
-  width: 20px;
-  padding-top: 3px;
-  overflow: hidden;
-  display:table-cell;
+div.feed-manage div.content {
+  margin-bottom: 20px;
+}
+
+p.heading {
+  height: 10px;
   cursor: pointer;
+  padding-top: 8px;
+  margin-left: 5px;
+}
+
+div.form-name input, div.form-category input {
+  font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+}
+
+input.botton-submit {
+  padding-top: 5px;
+  margin-left: 5px;
 }
 
 /* OPML FORM */

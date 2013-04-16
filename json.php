@@ -13,6 +13,11 @@ $error = array('response'=>"Incorrect JSON message");
 header('Content-Type: application/json');
 $arr = json_decode(file_get_contents('php://input'), true);
 
+//time
+$today = date('Y-m-d H:i:s', time());
+$yesterday = date('Y-m-d H:i:s', strtotime(' -1 day'));
+$lasthour = date('Y-m-d H:i:s', strtotime(' -1 hour'));
+
 //if json argument isn't given exit
 if ($arr[jsonrpc] != "2.0") { 
   echo json_encode($error);
@@ -83,7 +88,12 @@ if ($arr[overview] == "feeds") {
 } elseif ($arr[overview] == "status") {
   $sql=mysql_query("select name, count from (select status as name, count(*) as count from articles GROUP BY status ORDER BY status DESC) a
                     union
-                    select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') b");
+                    select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') b
+		    union
+		    select name, count from (select 'last 24 hours' as name, count(*) as count from articles where status = 'unread' and publish_date between '$yesterday' and '$today') c
+                    union
+                    select name, count from (select 'last hour' as name, count(*) as count from articles where status = 'unread' and publish_date between '$lasthour' and '$today') d
+		    ");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r);
 }
@@ -111,6 +121,10 @@ LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id
   } else {
     if ($status == 'starred') {
       $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.star_ind = '1' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+    } else if (urldecode($status) == 'last 24 hours') {
+      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND publish_date between '$yesterday' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+    } else if (urldecode($status) == 'last hour') {
+      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND  publish_date between '$lasthour' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
     } else {
       $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name,star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
     }
