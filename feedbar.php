@@ -5,14 +5,25 @@ echo "<div class=\"nav-main\">";
 function header_section($input, $name) {
   if (!empty($input)) {
 
+    $compare = htmlspecialchars($_GET[$name]);
+    
     $displayname = ucfirst($name);
     echo "<ul class='feedbar main $name'><div class=\"main\"><a href=\"#\">$displayname</a></div>";
 
     foreach ($input as $row) {
       if (!empty($row)) {
 
+	//if ($row[name] == $compare) { echo "test"; }
 	$title = substr($row[name], 0, 16);
-        echo "<li class='feedbar sub $name'>";
+
+	if ($row[name] == $compare) { 
+          echo "<li class='feedbar active sub $name'>";
+	} else {
+          echo "<li class='feedbar sub $name'>";
+        }
+
+	//echo $compare;
+
         echo "<span class=\"title\"><a href=\"$url?$name=$row[name]\">$title</a></span>";
         echo "<span class=\"count\">$row[count]</span>";
         echo "</li>";

@@ -16,6 +16,8 @@ include 'functions.php';
 
 <result>
 <div class="opml-form">
+Coming from Google Reader? Use Google Reader export to get your Google Reader subscriptions into a .xml file.<br>
+
 <form action="opmlhandler.php" method="post" enctype="multipart/form-data">
 <label for="file">Filename:</label>
 <input type="file" name="file" id="file"><br>

@@ -46,7 +46,7 @@ if (!empty($array) && $array != "no-results") {
                         echo "<img class='item-star unstar $offset' id=$row[id] src='images/star_unselected.png'>";
 		}
 
-                echo "<h3 class='heading' id=$row[id]>$row[subject]</h3>";
+                echo "<h3 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$row[subject]</a></h3>";
                 echo "<div class='feedname'>$row[feed_name] | $row[publish_date]</div>";
                 echo "<hr>";
                 echo "<div class='page-content'>$row[content]</div>";

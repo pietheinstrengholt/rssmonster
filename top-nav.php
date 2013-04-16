@@ -9,7 +9,7 @@ echo "<p><a href=\"$url/manage-feeds.php\">Manage feeds</a><p>";
 echo "</div>";
 
 echo "<div class='topnav-button'>";
-echo "<p><a href=\"$url/preferences.php\">Preferences</a><p>";
+echo "<p><a href=\"$url/update.php\">Update feeds</a><p>";
 echo "</div>";
 
 echo "<div class='topnav-button'>";
