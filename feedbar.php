@@ -13,7 +13,6 @@ function header_section($input, $name) {
     foreach ($input as $row) {
       if (!empty($row)) {
 
-	//if ($row[name] == $compare) { echo "test"; }
 	$title = substr($row[name], 0, 16);
 
 	if ($row[name] == $compare) { 
@@ -21,8 +20,6 @@ function header_section($input, $name) {
 	} else {
           echo "<li class='feedbar sub $name'>";
         }
-
-	//echo $compare;
 
         echo "<span class=\"title\"><a href=\"$url?$name=$row[name]\">$title</a></span>";
         echo "<span class=\"count\">$row[count]</span>";

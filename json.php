@@ -29,6 +29,26 @@ if ($arr[request] == "debug") {
   echo json_encode($debug);
 }
 
+if ($arr[request] == "get-feeds") {
+  $sql=mysql_query("SELECT * from feeds order by name");
+  while($r[]=mysql_fetch_array($sql));
+  echo json_encode($r);
+}
+
+if ($arr[update] == "feeds") {
+  if (empty($arr[value])) {
+    exit;
+  } 
+  else if (empty($arr[new_feed_name]) && empty($arr[new_feed_category])) {
+    exit;
+  } 
+  else { 
+    $sql = "UPDATE feeds set name='$arr[new_feed_name]',category='$arr[new_feed_category]' WHERE id = $arr[value]";
+    $result = mysql_query($sql);
+    echo json_encode("done");
+  }
+}
+
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","request": "read-status", "value": "1"}' http://openreaderurl/json.php
 if ($arr[request] == "read-status") {
   $sql = "SELECT status from articles WHERE id = $arr[value]";

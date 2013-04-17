@@ -64,15 +64,13 @@ $new_feed_id = $_POST["new_feed_id"];
 
 if (!empty($new_feed_name) || !empty($new_feed_category)) {
 
-  $sql = "UPDATE feeds set name='$new_feed_name', category='$new_feed_category' WHERE id = $new_feed_id";
-  $result = mysql_query($sql);
+  $update = get_json('{"jsonrpc": "2.0", "update": "feeds", "new_feed_name": "' . $new_feed_name . '", "new_feed_category": "' . $new_feed_category . '", "value": "' . $new_feed_id . '"}');
 
 }
 
-$query = "select * from feeds order by name";
-$sql = mysql_query($query);
+$results = get_json('{"jsonrpc": "2.0", "request": "get-feeds"}');
 
-while ($row = mysql_fetch_array($sql)) {
+foreach ($results as $row) {
 
     $feed          = $row['url'];
     $feed_id       = $row['id'];
@@ -80,8 +78,6 @@ while ($row = mysql_fetch_array($sql)) {
     $feed_category = $row['category'];
 
     echo "<div class='feed-overview $feed_id'>";
-
-    //echo "<div class='feed-delete'><img class='item-delete' src='images/delete.png' onclick=\"DeleteFunction('$feed_name','$feed_id')\"></div>";
 
     echo "<div class='feed-manage'>";
 
