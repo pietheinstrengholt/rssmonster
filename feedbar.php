@@ -1,5 +1,8 @@
 <?php
 
+include 'config.php';
+include 'functions.php';
+
 echo "<div class=\"nav-main\">";
 
 function header_section($input, $name) {

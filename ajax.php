@@ -72,6 +72,8 @@ function myHandler(e) {
       // the element is not in the array
       console.log($(this).attr('id') + ': ' + e.type);
       pool.push(id);
+      //$("feedbar").load("feedbar.php");
+
 
       $.ajax(
        {

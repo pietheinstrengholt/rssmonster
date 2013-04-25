@@ -1,7 +1,7 @@
 div#top {
   z-index: 3;
   position: relative;
-  border-top: 1px solid #a0b6e6;
+  //border-top: 1px solid #a0b6e6;
   padding: 4px;
   background: -webkit-gradient(linear,left top,left bottom,from(#d9e2fa),to(#b5c8f9));
   background: -webkit-linear-gradient(top,#d9e2fa,#b5c8f9);
@@ -9,7 +9,7 @@ div#top {
   background: -ms-linear-gradient(top,#d9e2fa,#b5c8f9);
   background: -o-linear-gradient(top,#d9e2fa,#b5c8f9);
   background-color: #dbe3fa;
-  border-bottom: solid 1px #9eadd2;
+  //border-bottom: solid 1px #9eadd2;
   font-family: sans-serif;
   font-size: 17px;
   font-weight: bold;
@@ -20,10 +20,11 @@ div#top {
   height: 30px;
 }
 
-.layer1 {
-  margin: 0;
-  padding: 0;
-  width: 500px;
+div#layer1 {
+  //margin: 0;
+  //padding: 0;
+  //width: 500px;
+  border-bottom: 1px solid #c2cff1;
 }
 
 body {
@@ -120,6 +121,7 @@ span#mark-these-read {
   text-decoration: underline;
   white-space: nowrap;
   float: right;
+  margin-top: 20px;
 }
 
 div.newsitem img.item-star {
@@ -129,7 +131,7 @@ div.newsitem img.item-star {
 }
 
 div.mark-as-read {
-  height: 40px;
+  height: 60px;
   margin-top: 10px;
   margin-right: 10px;
 }
@@ -239,4 +241,44 @@ div.all-read {
   text-align: center;
   padding: 10px;
   font-weight: bold;
+}
+
+div#header-refresh.m-button {
+  border: solid 1px #99b1ed;
+  background-color: #e4eafa;
+  box-shadow: 0 1px 0 #e1e9fc;
+  float: right;
+  margin-right: 20px;
+  width: 20px;
+  margin-top: -25px;
+  height: 15px;
+  background-repeat: no-repeat;
+  background-position: 50% 50%;
+  background-image: url(images/arrow.png);
+  cursor: pointer;
+}
+
+div#nav-bar-shadow {
+  position: absolute;
+  left: 0;
+  //bottom: -4px;
+  height: 3px;
+  width: 100%;
+  background: -webkit-gradient(linear,left top,left bottom,from(rgba(0,0,0,0.2)),to(rgba(0,0,0,0)));
+  background: -webkit-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
+  background: -moz-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
+  background: -ms-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
+  background: -o-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
+}
+
+div#entries-footer.nav-bar {
+  background: -webkit-linear-gradient(top,#d9e2fa,#b5c8f9);
+  height: 40px;
+  border-top: 1px solid #a0b6e6;
+  border-bottom: solid 1px #9eadd2;
+}
+
+div#entries-footer.nav-bar div#back-to-feeds.m-button.back-to-feeds {
+  margin-top: 4px;
+  margin-left: 4px;
 }

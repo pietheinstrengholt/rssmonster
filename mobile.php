@@ -197,12 +197,25 @@ jQuery(document).ready(function() {
 
 </script>
 
+<script type="text/javascript">
+
+jQuery(document).ready(function() {
+  jQuery("div#header-refresh.m-button").click(function() {
+
+      //refresh page to load new articles
+      location.reload();
+
+  });
+});
+
+</script>
+
 </head>
 <body>
 
 <div id="top">
  <div class="m-button back-to-feeds" id="back-to-feeds"><span class="m-button-contents"><a href="mobile-feeds.php">Feeds</a></span></div>
-
+ 
  <div id="nav-title">
  <?php if (!empty($input_feed)) { 
 	echo $input_feed; 
@@ -213,7 +226,10 @@ jQuery(document).ready(function() {
 	}
  ?>
  </div>
+ <div class="m-button" id="header-refresh" style="background-image: url(images/arrow.png);"><span class="m-button-contents"></span></div>
 </div>
+
+<div id="nav-bar-shadow"></div>
 
 <?php
 
@@ -275,6 +291,10 @@ if (!empty($array) && $array != "no-results") {
 
 <div class="mark-as-read">
 <span id="mark-these-read" class="">Mark these items as read</span>
+</div>
+
+<div id="entries-footer" class="nav-bar">
+  <div class="m-button back-to-feeds" id="back-to-feeds"><span class="m-button-contents"><a href="mobile-feeds.php">Feeds</a></span></div>
 </div>
 
 <?php
