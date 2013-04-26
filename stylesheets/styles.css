@@ -206,9 +206,10 @@ div.topnav-button p {
   font-family: Helvetica, sans-serif;
 }
 
-div.topnav-button a {
+div.topnav-button p, div.topnav-button a {
   padding-right: 18px;
   color:#FFF;
+  cursor: pointer;
 }
 
 div.first-topnav-button {
@@ -390,4 +391,51 @@ div.opml-form form input {
   background: -moz-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
   background: -ms-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
   background: -o-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
+}
+
+/* LIST VIEW */
+
+span#mark-these-read {
+  color: #24b;
+  text-decoration: underline;
+  white-space: nowrap;
+  float: right;
+}
+
+div.newsitem img.item-star {
+  position: absolute;
+  padding-top: 8px;
+  margin-left: 8px;
+}
+
+div#layer1 .heading {
+  margin: 1px;
+  padding: 9px 10px 0px 0px;
+  cursor: pointer;
+  position: relative;
+  margin-left: 33px;
+}
+
+div#layer1 .heading.collapsed, div#layer1 .heading.uncollapsed {
+  min-height: 37px;
+}
+
+div#layer1 .heading-bottom {
+  width: 97%;
+}
+
+div#layer1 div.content {
+  padding: 0px 10px 10px;
+  clear: left;
+  vertical-align: middle;
+  overflow: auto;
+  color: #000;
+}
+
+div#layer1 p { 
+  padding: 5px 0; 
+}
+
+div#layer1 .subject {
+  font-weight:bold;
 }
