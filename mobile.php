@@ -1,3 +1,12 @@
+<?php 
+
+//input
+$input_feed = htmlspecialchars($_GET["feeds"]);
+$input_category = htmlspecialchars($_GET["categories"]);
+$status = htmlspecialchars($_GET["status"]);
+
+?>
+
 <html>
 <head>
 
@@ -9,7 +18,7 @@
 
 <script type="text/javascript">
   $(document).ready(function() {
-    $('#content').load('list-view.php');
+    //$('#content').load('list-view.php');
   });
 </script>
 
@@ -48,6 +57,7 @@ if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AG
 <div id="nav-bar-shadow"></div>
 
 <div id="content">
+<?php include 'list-view.php'; ?>
 </div>
 
 <div id="entries-footer" class="nav-bar">

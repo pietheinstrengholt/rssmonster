@@ -1,3 +1,15 @@
+<script>
+
+$(document).ready(function() {
+
+$('div.main a').each(function() {
+    this.href = this.href + window.location.hash;
+});
+
+});
+
+</script>
+
 <?php
 
 include 'config.php';

@@ -7,6 +7,7 @@ jQuery(document).ready(function() {
 
       //change detailed view to list view
       $('section').load('list-view.php');
+      window.location.hash = 'listview';
 
   });
 });

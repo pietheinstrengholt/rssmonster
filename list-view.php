@@ -1,5 +1,3 @@
-<html>
-
 <?php
 
 //include
@@ -7,9 +5,9 @@ include 'config.php';
 include 'functions.php';
 
 //input
-$input_feed = htmlspecialchars($_GET["feeds"]);
-$input_category = htmlspecialchars($_GET["categories"]);
-$status = htmlspecialchars($_GET["status"]);
+//$input_feed = htmlspecialchars($_GET["feeds"]);
+//$input_category = htmlspecialchars($_GET["categories"]);
+//$status = htmlspecialchars($_GET["status"]);
 
 $offset = 0;
 //number of items to load from db
@@ -195,7 +193,6 @@ jQuery(document).ready(function() {
 </script>
 
 </head>
-<body>
 
 <?php
 
@@ -279,5 +276,3 @@ if (!empty($array) && $array != "no-results") {
 
 ?>
 
-</body>
-</html>

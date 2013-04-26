@@ -25,7 +25,18 @@
 
     <script type="text/javascript">
      $(document).ready(function() {
-      $('section').load('detailed-view.php');
+     // //$('section').load('detailed-view.php');
+     });
+    </script>
+
+    <script>
+     $(document).ready(function() {
+      if(window.location.hash) { 
+       var thehash = window.location.hash;
+       if (thehash == "#listview") {
+       //  //$('section').load('list-view.php');
+       }
+      }
      });
     </script>
 
@@ -46,6 +57,7 @@
         </feedbar>
 
         <section>
+          <?php include 'detailed-view.php'; ?>
         </section>
 
      </div>
