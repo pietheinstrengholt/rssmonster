@@ -47,7 +47,8 @@ $matches = implode(',', $stack);
 //TODO: proper viewport handling for iOS and other mobile browsers
 if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AGENT'],'iPod')) {
 ?> 
-  <meta name="viewport" content="width=450, initial-scale=0.6, user-scalable=no">
+  <meta name="viewport" content="initial-scale=0.6, user-scalable=no">
+  <!-- <meta name="viewport" content="width=device-width, initial-scale=0.6, user-scalable=no"> -->
 <?php } elseif (strstr($_SERVER['HTTP_USER_AGENT'],'iPad')) { ?>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
 <?php } ?>
@@ -64,6 +65,7 @@ jQuery(document).ready(function() {
     jQuery(this).next(".content").slideToggle(50);
     var id = $(this).attr('id');
     console.log('clicked on id:' + id);
+    $(this).addClass("clicked");
 
     //mark item as read and retrieve external url
     $.ajax(
@@ -200,7 +202,7 @@ jQuery(document).ready(function() {
 <script type="text/javascript">
 
 jQuery(document).ready(function() {
-  jQuery("div#header-refresh.m-button").click(function() {
+  jQuery("div#header-refresh.r-button").click(function() {
 
       //refresh page to load new articles
       location.reload();
@@ -226,7 +228,7 @@ jQuery(document).ready(function() {
 	}
  ?>
  </div>
- <div class="m-button" id="header-refresh" style="background-image: url(images/arrow.png);"><span class="m-button-contents"></span></div>
+ <div class="r-button" id="header-refresh" style="background-image: url(images/arrow.png);"><span class="m-button-contents"></span></div>
 </div>
 
 <div id="nav-bar-shadow"></div>
@@ -263,7 +265,7 @@ echo "<div id=layer1>";
 		echo "<div class='heading-bottom'>";
 		$content = strip_tags($row[content]);
                 $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $content);
-		$content = substr($content, 0, 70);
+		$content = substr($content, 0, 90);
 
 		echo "<div class='header-content'>$content....</div>";
 		echo "</div>";
@@ -288,6 +290,20 @@ echo "<div id=layer1>";
 if (!empty($array) && $array != "no-results") {
 
 ?>
+
+<div id="result-dialog">
+<?php 
+
+if (!empty($array) && $array != "no-results") {
+  print count($array); 
+  echo " item";
+  if (count($array) > 1) {
+    echo "s";
+  }
+}
+
+?>
+</div>
 
 <div class="mark-as-read">
 <span id="mark-these-read" class="">Mark these items as read</span>

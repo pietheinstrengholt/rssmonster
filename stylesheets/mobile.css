@@ -1,35 +1,31 @@
 div#top {
   z-index: 3;
   position: relative;
-  //border-top: 1px solid #a0b6e6;
-  padding: 4px;
+  /* padding: 4px; */
   background: -webkit-gradient(linear,left top,left bottom,from(#d9e2fa),to(#b5c8f9));
   background: -webkit-linear-gradient(top,#d9e2fa,#b5c8f9);
   background: -moz-linear-gradient(top,#d9e2fa,#b5c8f9);
   background: -ms-linear-gradient(top,#d9e2fa,#b5c8f9);
   background: -o-linear-gradient(top,#d9e2fa,#b5c8f9);
   background-color: #dbe3fa;
-  //border-bottom: solid 1px #9eadd2;
   font-family: sans-serif;
-  font-size: 17px;
+  font-size: 18px;
   font-weight: bold;
   text-align: center;
   vertical-align: middle;
   border-color: inherit;
   width: 100%;
-  height: 30px;
+  min-width:480px;
+  height: 40px;
 }
 
 div#layer1 {
-  //margin: 0;
-  //padding: 0;
-  //width: 500px;
   border-bottom: 1px solid #c2cff1;
 }
 
 body {
   font-family: sans-serif;
-  font-size: 13px;
+  font-size: 15px;
   margin: 0;
   padding: 0;
 }
@@ -39,7 +35,6 @@ body {
   padding: 9px 10px 0px 0px;
   cursor: pointer;
   position: relative;
-  width: 98%;
   margin-left: 33px;
 }
 
@@ -47,9 +42,12 @@ body {
   min-height: 37px;
 }
 
+.heading-bottom {
+  width: 97%;
+}
+
 .subject {
   height: 20px;
-  /* float:left; */
   margin-right:6px;
   font-weight:bold;
   color: #000;
@@ -64,15 +62,12 @@ body {
 
 .feedname {
   height: 20px;
-  /* float:left; */
   color: #666;
   font-size: 10pt;
-  /* padding-top: 0px; */
 }
 
 .header-content {
   clear: left;
-  white-space:nowrap;
   padding-left: 0px;
   color: #666;
   padding-bottom: 4px;
@@ -90,9 +85,6 @@ body {
 
 div.content {
   padding: 0px 10px 10px;
-  /* background-color:#fafafa; */
-  /* margin-top: -46px; */
-  /* margin-left: 1px; */
   clear: left;
   vertical-align: middle;
   overflow: auto;
@@ -109,8 +101,6 @@ section {
 }
 
 .heading-top img {
-  /* float: left; */
-  /* position: absolute; */
   margin-left: -4px;
   margin-top: -3px;
   vertical-align: middle;
@@ -121,7 +111,6 @@ span#mark-these-read {
   text-decoration: underline;
   white-space: nowrap;
   float: right;
-  margin-top: 20px;
 }
 
 div.newsitem img.item-star {
@@ -131,7 +120,7 @@ div.newsitem img.item-star {
 }
 
 div.mark-as-read {
-  height: 60px;
+  height: 40px;
   margin-top: 10px;
   margin-right: 10px;
 }
@@ -152,18 +141,15 @@ div.content div img {
   background-repeat: repeat-x;
   padding: 7px;
   white-space: nowrap;
-  font-size: 13px;
+  font-size: 15px;
   font-weight: bold;
   color: #2e4987;
   border-radius: 4px;
   text-shadow: #fff 0 1px 0;
   box-shadow: 0 1px 0 #e1e9fc;
   float: left;
-  white-space: nowrap;
-  font-size: 13px;
-  font-weight: bold;
-  color: #2e4987;
-  text-shadow: #fff 0 1px 0;
+  margin-left: 5px;
+  margin-top: 5px;
 }
 
 .m-button-contents a {
@@ -176,8 +162,10 @@ div.content div img {
 }
 
 #nav-title {
-  margin-top: 5px;
   margin-right: 60px;
+  margin-top: 10;
+  position: absolute;
+  margin-left: 43%;
 }
 
 li.feedbar.sub {
@@ -234,7 +222,6 @@ span.count {
   font-weight: bold;
   color: #666;
   font-size: 15px;
-  /* line-height: 24px; */
 }
 
 div.all-read {
@@ -243,15 +230,16 @@ div.all-read {
   font-weight: bold;
 }
 
-div#header-refresh.m-button {
+div#header-refresh.r-button {
   border: solid 1px #99b1ed;
   background-color: #e4eafa;
   box-shadow: 0 1px 0 #e1e9fc;
+  border-radius: 4px;
   float: right;
   margin-right: 20px;
-  width: 20px;
-  margin-top: -25px;
-  height: 15px;
+  width: 28px;
+  margin-top: 5px;
+  height: 28px;
   background-repeat: no-repeat;
   background-position: 50% 50%;
   background-image: url(images/arrow.png);
@@ -260,10 +248,9 @@ div#header-refresh.m-button {
 
 div#nav-bar-shadow {
   position: absolute;
-  left: 0;
-  //bottom: -4px;
   height: 3px;
   width: 100%;
+  min-width:480px;
   background: -webkit-gradient(linear,left top,left bottom,from(rgba(0,0,0,0.2)),to(rgba(0,0,0,0)));
   background: -webkit-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
   background: -moz-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
@@ -281,4 +268,45 @@ div#entries-footer.nav-bar {
 div#entries-footer.nav-bar div#back-to-feeds.m-button.back-to-feeds {
   margin-top: 4px;
   margin-left: 4px;
+}
+
+div#result-dialog {
+  padding: 10px;
+}
+
+@media only screen and (max-device-width: 480px) {
+  div#top {
+    height:70px;
+  }
+  div#nav-title {
+    margin-top: 20px;
+    font-size: 25px;
+  }
+  .m-button {
+    margin-top: 14px;
+    margin-left: 14px;
+    height:26px;
+    width:70px;
+  }
+  span.m-button-contents a {
+    font-size: 22px;
+  }
+  div#header-refresh.r-button {
+    margin-top: 14px;
+    height:40px;
+    width:40px;
+  }
+  div.content img {
+    max-width: 480px;
+  }
+  div.content {
+    font-size: 22px;
+  }
+  img.item-star {
+    margin-top: 3px;
+    width: 32px;
+  }
+  .heading {
+    margin-left: 44px;
+  }
 }
