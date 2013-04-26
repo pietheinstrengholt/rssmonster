@@ -1,7 +1,8 @@
 <html>
 <head>
- <?php include 'header.php'; ?>
  <title>Update page</title>
+ <link rel="stylesheet" href="stylesheets/styles.css">
+ <script src="javascripts/jquery.min.js"></script>
 </head>
 <body>
 <top-nav>
@@ -16,6 +17,7 @@
 require_once('simplepie/autoloader.php');
 
 include 'config.php';
+include 'functions.php';
 
 $query = "select * from feeds";
 $sql   = mysql_query($query);

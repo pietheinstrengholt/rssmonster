@@ -1,12 +1,3 @@
-<?php 
-
-//input
-$input_feed = htmlspecialchars($_GET["feeds"]);
-$input_category = htmlspecialchars($_GET["categories"]);
-$status = htmlspecialchars($_GET["status"]);
-
-?>
-
 <html>
 <head>
 
@@ -15,12 +6,6 @@ $status = htmlspecialchars($_GET["status"]);
 
 <link href="stylesheets/mobile.css" rel="stylesheet" />
 <script type="text/javascript" src="javascripts/jquery.min.js"></script>
-
-<script type="text/javascript">
-  $(document).ready(function() {
-    //$('#content').load('list-view.php');
-  });
-</script>
 
 <?php
 

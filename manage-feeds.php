@@ -1,7 +1,8 @@
 <html>
 <head>
- <?php include 'header.php'; ?>
+  <link rel="stylesheet" href="stylesheets/styles.css">
   <script src="javascripts/jquery-min.js"></script>
+  <script src="javascripts/jquery.min.js"></script>
 
   <script>
   function DeleteFunction(feed_name,feed_id)

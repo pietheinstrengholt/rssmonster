@@ -1,6 +1,7 @@
 <html>
 <head>
- <?php include 'header.php'; ?>
+ <script src="javascripts/jquery.min.js"></script>
+ <link rel="stylesheet" href="stylesheets/styles.css">
 </head>
 <body>
 

@@ -5,9 +5,9 @@ include 'config.php';
 include 'functions.php';
 
 //input
-//$input_feed = htmlspecialchars($_GET["feeds"]);
-//$input_category = htmlspecialchars($_GET["categories"]);
-//$status = htmlspecialchars($_GET["status"]);
+$input_feed = htmlspecialchars($_GET["feeds"]);
+$input_category = htmlspecialchars($_GET["categories"]);
+$status = htmlspecialchars($_GET["status"]);
 
 $offset = 0;
 //number of items to load from db
@@ -245,7 +245,7 @@ echo "<div id=layer1>";
 } else {
   echo "<div class=\"all-read\">";
   echo "All items marked as read";
-  echo "<div>";
+  echo "</div>";
 }
 
 if (!empty($array) && $array != "no-results") {
@@ -275,4 +275,3 @@ if (!empty($array) && $array != "no-results") {
 }
 
 ?>
-

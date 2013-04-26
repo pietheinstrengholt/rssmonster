@@ -226,8 +226,10 @@ span.count {
 
 div.all-read {
   text-align: center;
-  padding: 10px;
   font-weight: bold;
+  margin-top: 30px;
+  margin-bottom: 30px;
+  margin-right: 90px;
 }
 
 div#header-refresh.r-button {

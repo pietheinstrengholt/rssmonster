@@ -21,6 +21,8 @@ function header_section($input, $name) {
   if (!empty($input)) {
 
     $compare = htmlspecialchars($_GET[$name]);
+    $view = $_GET[view];
+    if (empty($view)) { $view = "detailed"; }
     
     $displayname = ucfirst($name);
     echo "<ul class='feedbar main $name'><div class=\"main\"><a href=\"#\">$displayname</a></div>";
@@ -36,7 +38,7 @@ function header_section($input, $name) {
           echo "<li class='feedbar sub $name'>";
         }
 
-        echo "<span class=\"title\"><a href=\"$url?$name=$row[name]\">$title</a></span>";
+        echo "<span class=\"title\"><a href=\"$url?$name=$row[name]&view=$view\">$title</a></span>";
         echo "<span class=\"count\">$row[count]</span>";
         echo "</li>";
       }

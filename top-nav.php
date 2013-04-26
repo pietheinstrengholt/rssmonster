@@ -1,25 +1,17 @@
-<head>
-
-<script type="text/javascript">
-
-jQuery(document).ready(function() {
-  jQuery("div.change-view").click(function() {
-
-      //change detailed view to list view
-      $('section').load('list-view.php');
-      window.location.hash = 'listview';
-
-  });
-});
-
-</script>
-
-</head>
-
 <?php
 
 include 'config.php';
 include 'functions.php';
+
+//url with arg
+$viewurl = $_SERVER['REQUEST_URI'];
+if (strpos($viewurl, 'view=') == false) {
+  if (strpos($viewurl, '?') !== false) {
+    $viewurl = $viewurl . "&view=list";
+  } else {
+    $viewurl = $viewurl . "?view=list";
+  }
+}
 
 echo "<div class='topnav-button'>";
 echo "<p><a href=\"$url/manage-feeds.php\">Manage feeds</a><p>";
@@ -34,7 +26,7 @@ echo "<p><a href=\"$url/opml.php\">Import opml</a><p>";
 echo "</div>";
 
 echo "<div class='topnav-button change-view'>";
-echo "<p>List view<p>";
+echo "<p><a href=\"$viewurl\">List view</a><p>";
 echo "</div>";
 
 echo "<div class='topnav-button home-topnav-button'>";

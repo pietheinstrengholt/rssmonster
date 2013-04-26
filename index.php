@@ -17,27 +17,9 @@
      (function($){
         $(window).load(function(){
            $("feedbar").mCustomScrollbar();
-           // $("short").mCustomScrollbar();
         });
      })(jQuery);
 
-    </script>
-
-    <script type="text/javascript">
-     $(document).ready(function() {
-     // //$('section').load('detailed-view.php');
-     });
-    </script>
-
-    <script>
-     $(document).ready(function() {
-      if(window.location.hash) { 
-       var thehash = window.location.hash;
-       if (thehash == "#listview") {
-       //  //$('section').load('list-view.php');
-       }
-      }
-     });
     </script>
 
   </head>
@@ -57,7 +39,16 @@
         </feedbar>
 
         <section>
-          <?php include 'detailed-view.php'; ?>
+          <?php 
+
+	    if ($_GET[view] == "list") {
+		include 'list-view.php'; 
+	    } else {
+		include 'detailed-view.php';
+	    }
+
+	  ?>
+
         </section>
 
      </div>

@@ -7,7 +7,8 @@ include 'functions.php';
 
 <html>
 <head>
- <?php include 'header.php'; ?>
+ <link rel="stylesheet" href="stylesheets/styles.css">
+ <script src="javascripts/jquery.min.js"></script>
 </head>
 <body>
 <top-nav>
