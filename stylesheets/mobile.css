@@ -89,7 +89,7 @@ div.content {
   vertical-align: middle;
   overflow: auto;
   color: #000;
-  font-size: 9pt;
+  font-size: 11pt;
 }
 
 p { 
@@ -302,7 +302,7 @@ div#result-dialog {
     max-width: 480px;
   }
   div.content {
-    font-size: 22px;
+    font-size: 24px;
   }
   img.item-star {
     margin-top: 3px;
@@ -310,5 +310,11 @@ div#result-dialog {
   }
   .heading {
     margin-left: 44px;
+  }
+  div#entries-footer.nav-bar {
+    height: 70px; 
+  }
+  #mark-these-read {
+    font-size: 24px;
   }
 }

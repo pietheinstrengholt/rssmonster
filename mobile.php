@@ -13,7 +13,6 @@
 if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AGENT'],'iPod')) {
 ?> 
   <meta name="viewport" content="initial-scale=0.6, user-scalable=no">
-  <!-- <meta name="viewport" content="width=device-width, initial-scale=0.6, user-scalable=no"> -->
 <?php } elseif (strstr($_SERVER['HTTP_USER_AGENT'],'iPad')) { ?>
   <meta name="viewport" content="initial-scale=1.0, user-scalable=no">
 <?php } 
@@ -46,7 +45,7 @@ if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AG
 </div>
 
 <div id="entries-footer" class="nav-bar">
-  <div class="m-button back-to-feeds" id="back-to-feeds"><span class="m-button-contents"><a href="mobile-feeds.php">Feeds</a></span></div>
+  <!-- <div class="m-button back-to-feeds" id="back-to-feeds"><span class="m-button-contents"><a href="mobile-feeds.php">Feeds</a></span></div> -->
 </div>
 
 </body>

@@ -1,3 +1,4 @@
+//function to parse input arguments from url
 function gup(name)
 {
   name = name.replace(/[\[]/,"\\\[").replace(/[\]]/,"\\\]");
@@ -10,6 +11,7 @@ function gup(name)
     return results[1];
 }
 
+//arguments needed for ajax.php
 var feed_param = gup('feeds');
 var category_param = gup('categories');
 var article_id = gup('article_id');
@@ -18,8 +20,6 @@ var status_param = gup('status');
 (function($) {
 
 	$.fn.scrollPagination = function(options) {
-
-		//var feedname = window.location.getParameter("feed"); //bob
 		
 		var settings = { 
 			nop     : 10, // The number of posts per scroll to be loaded
@@ -44,8 +44,7 @@ var status_param = gup('status');
 			$this = $(this);
 			$settings = settings;
 			var offset = $settings.offset;
-			var busy = false; // Checks if the scroll action is happening 
-			                  // so we don't run it multiple times
+			var busy = false; // Checks if the scroll action is happening so we don't run it multiple times
 			
 			// Custom messages based on settings
 			if($settings.scroll == true) $initmessage = 'Scroll for more or click here';
@@ -70,7 +69,7 @@ var status_param = gup('status');
 				}, function(data) {
 
 					//log message
-					console.log('fetching data:' + offset);
+					console.log('fetching data for offset:' + offset);
 						
 					// Change loading bar content (it may have been altered)
 					$this.find('.loading-bar').html($initmessage);
@@ -80,13 +79,14 @@ var status_param = gup('status');
 						$this.find('.loading-bar').html($settings.error);	
 					}
 					else {
-						
-						// Offset increases
-  					        //offset = offset+$settings.nop; 
-						    
+					    
 						// Append the data to the content div
 					   	$this.find('.content').append(data);
-						
+
+						// Add bullseye function to article headers
+						// TODO: do not target previous added article headers
+						$('div#block h3').on('leaveviewport', myHandler).bullseye();
+
                                                 // Offset increases
                                                 offset = offset+$settings.nop;
 
@@ -112,8 +112,7 @@ var status_param = gup('status');
 			
 					if(scrollheight > $this.height() && !busy) {
 
-						console.log('height scrollheight: ' + scrollheight);
-						console.log('height this: ' + $this.height());
+						console.log('maximum scrollheight reached, reloading ajax.php');
 						
 						// Now we are working, so busy is true
 						busy = true;
@@ -133,9 +132,6 @@ var status_param = gup('status');
 					}	
 				});
 			}
-
-			//Add Bulseye function
-			//$('.loading-bar').bind('viewportenter').bullseye().css({'background-color' : 'yellow'}); 
 			
 			// Also content can be loaded by clicking the loading bar/
 			$this.find('.loading-bar').click(function() {

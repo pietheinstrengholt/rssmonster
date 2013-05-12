@@ -1,0 +1,114 @@
+<html>
+
+<?php
+
+//include
+include 'config.php';
+include 'functions.php';
+
+?>
+
+<head>
+    <title>jQuery Bullseye - Viewport detection plug-in for jQuery! | Documentation and Demos</title>
+    <script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.4/jquery.min.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.bullseye-1.0.js"></script>
+    <link rel="Stylesheet" type="text/css" href="samples-global.css" />
+
+    <script type="text/javascript">
+
+	//set minimum start of counting items
+	if (typeof items === 'undefined') {
+	    var items=7;
+	}
+
+	//create pool with all items
+	var pool = new Array();
+
+	function Handler(e) {
+
+		console.log("viewport detection for id: " + $(this).attr('id'));
+
+                if (e.type == 'leaveviewport') {
+                    console.log("leaveviewport: " + $(this).attr('id'));
+                }
+
+                if (e.type == 'enterviewport') {
+                    console.log("enterviewport: " + $(this).attr('id'));
+                }
+
+                //declare id
+                var id = $(this).attr('id');
+
+                //push to pool
+                if(jQuery.inArray(id,pool) == -1) {
+                    pool.push(id);
+
+                    //get new id
+                    items++;
+                    $('.block').append("<div class=\"box bullseye\" id=" + items + "><h2>Box " + items + "</h2><p>Check the output log for events.</p></div>");
+		    activatebullseye(items);
+
+                }
+	}
+
+	function activatebullseye(id) {
+	    //in plaats van op alle bullseye elementen de functie te plaatsen maak specifiek voor alleen nieuw id
+	    if (id) {
+              $('.bullseye#' + id).bind('enterviewport', Handler).bind('leaveviewport', Handler).bullseye();
+	      console.log("initialize bullseye for id: " + id);
+            } else {
+              console.log("initialize bullseye for all items in the block");
+              $('.bullseye').bind('enterviewport', Handler).bind('leaveviewport', Handler).bullseye();
+            }
+	}
+
+	$(document).ready(function() {
+	    activatebullseye();
+	});
+		
+    </script>
+</head>
+<body>
+
+  <div class="block">
+
+    <div class="box bullseye" id="1">
+        <h2>Box 1</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+    <div class="box bullseye" id="2">
+        <h2>Box 2</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+    <div class="box bullseye" id="3">
+        <h2>Box 3</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+    <div class="box bullseye" id="4">
+        <h2>Box 4</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+    <div class="box bullseye" id="5">
+        <h2>Box 5</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+    <div class="box bullseye" id="6">
+        <h2>Box 6</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+    <div class="box bullseye" id="7">
+        <h2>Box 7</h2>
+        <p>Check the output log for events.</p>
+    </div>
+
+  </div>
+
+</body>
+</html>
+
