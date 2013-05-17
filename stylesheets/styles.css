@@ -300,8 +300,46 @@ home-topnav-button {
 
 /* FEEDBAR */
 
+span.count {
+  float: right;
+}
+
+ul.feedbar {
+  list-style-type: none;
+}
+
+li.main {
+  height: 24px;
+  background-image:url(images/fd/selector-right-arrow.png);
+  background-repeat:no-repeat;
+  background-position: -6px 0px;
+  background-size: 26px 26px;
+  padding-left: 14px;
+  padding-top: 3px;
+}
+
+li.sub {
+  list-style-type: none;
+  background-image: none;
+}
+
+img.pointer {
+  cursor: pointer;
+  width: 28px;
+  height: 28px;
+}
+
+img.favicon {
+  width: 16px;
+  height: 16px;
+}
+
+ul.feedbar ul {
+  padding-top: 4px;
+}
+
 div.nav-main {
-  width:290px;
+  width:260px;
   height: 100%;
   margin-top: 20px;
 }
