@@ -8,7 +8,7 @@
     <script src="javascripts/jquery.color.js"></script>
     <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
-    <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css">
+    <!-- <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css"> -->
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
     <![endif]-->
@@ -16,7 +16,7 @@
     <script>
      (function($){
         $(window).load(function(){
-           $("feedbar").mCustomScrollbar();
+           // $("feedbar").mCustomScrollbar();
         });
      })(jQuery);
 
@@ -38,18 +38,7 @@
           <?php include 'feedbar.php'; ?>
         </feedbar>
 
-        <section>
-          <?php 
-
-	    if ($_GET[view] == "list") {
-		include 'list-view.php'; 
-	    } else {
-		include 'detailed-view.php';
-	    }
-
-	  ?>
-
-        </section>
+        <section></section>
 
      </div>
   </body>

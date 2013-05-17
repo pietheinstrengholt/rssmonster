@@ -1,3 +1,5 @@
+//source: http://www.inserthtml.com/2013/01/scroll-pagination/
+
 //function to parse input arguments from url
 function gup(name)
 {
@@ -20,16 +22,17 @@ var status_param = gup('status');
 (function($) {
 
 	$.fn.scrollPagination = function(options) {
+
+		console.log("fn.scrollPagination initialized");
 		
 		var settings = { 
 			nop     : 10, // The number of posts per scroll to be loaded
 			offset  : 0, // Initial offset, begins at 0 in this case
 			error   : 'No More Posts!', // When the user reaches the end this is the message that is
-			                            // displayed. You can change this if you want.
 			delay   : 500, // When you scroll down the posts will load after a delayed amount of time.
-			               // This is mainly for usability concerns. You can alter this as you see fit
-			scroll  : true // The main bit, if set to false posts will not load as the user scrolls. 
-			               // but will still load if the user clicks.
+			scroll  : true, // The main bit, if set to false posts will not load as the user scrolls.
+			category: '',
+			feed	: ''
 		}
 		
 		// Extend the options so they work with the plugin
@@ -55,14 +58,14 @@ var status_param = gup('status');
 			
 			function getData() {
 				
-				// Post data to ajax.php
-				$.post('ajax.php', {
+				// Post data to detailed-view.php
+				$.post('detailed-view.php', {
 						
 				    action        : 'scrollpagination',
 				    number        : $settings.nop,
 				    offset        : offset,
-				    feed_name	  : feed_param,
-				    category_name : category_param,
+				    feed_name     : $settings.feed,
+				    category_name : $settings.category,
 				    article_id    : article_id,
 				    status        : status_param,
 				    
@@ -103,11 +106,11 @@ var status_param = gup('status');
 			// If scrolling is enabled
 			if($settings.scroll == true) {
 				// .. and the user is scrolling
-				$(window).scroll(function() {
+				
+				//using on and off to avoid loading multiple instances
+				$(window).on('scroll', function() {
 					
 					// Check the user is at the bottom of the element
-					//TODO: rewrite to use viewport detection or fix scrollTop
-
 					var scrollheight = $(window).scrollTop() + $(window).height();
 			
 					if(scrollheight > $this.height() && !busy) {
@@ -127,10 +130,10 @@ var status_param = gup('status');
 							
 							getData();
 							
-						}, $settings.delay);
-							
+						}, $settings.delay);					
 					}	
 				});
+
 			}
 			
 			// Also content can be loaded by clicking the loading bar/

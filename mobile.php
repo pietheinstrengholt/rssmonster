@@ -41,7 +41,7 @@ if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AG
 <div id="nav-bar-shadow"></div>
 
 <div id="content">
-<?php include 'list-view.php'; ?>
+<?php include 'mobile-view.php'; ?>
 </div>
 
 <div id="entries-footer" class="nav-bar">

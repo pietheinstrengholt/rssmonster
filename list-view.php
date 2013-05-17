@@ -5,8 +5,8 @@ include 'config.php';
 include 'functions.php';
 
 //input
-$input_feed = htmlspecialchars($_GET["feeds"]);
-$input_category = htmlspecialchars($_GET["categories"]);
+$input_feed = htmlspecialchars($_GET["feed"]);
+$input_category = htmlspecialchars($_GET["category"]);
 $status = htmlspecialchars($_GET["status"]);
 
 $offset = 0;
@@ -98,63 +98,7 @@ jQuery(document).ready(function() {
 <script type="text/javascript">
 
 jQuery(document).ready(function() {
-  jQuery("img.item-star").click(function() {
-    var id = $(this).attr('id');
-
-    if ( $(this).hasClass("unstar") ) {
-      console.log('starred item: ' + id);
-
-      $.ajax(
-         {
-          type: "POST",
-          url: "json.php",
-          data: JSON.stringify({ "jsonrpc": "2.0", "update": "star-mark", "value": id }),
-          contentType: "application/json; charset=utf-8",
-          dataType: "json",
-          async: false,
-          success: function(json) {
-           result = json;
-          },
-          failure: function(errMsg) {}
-         }
-       );
-
-      $(this).attr('src', 'images/star_selected.png');
-      $(this).removeClass("unstar");
-      $(this).addClass("star");
-
-    } else if ( $(this).hasClass("star") ) {
-      console.log('unstarred item: ' + id);
-
-      $.ajax(
-         {
-          type: "POST",
-          url: "json.php",
-          data: JSON.stringify({ "jsonrpc": "2.0", "update": "star-unmark", "value": id }),
-          contentType: "application/json; charset=utf-8",
-          dataType: "json",
-          async: false,
-          success: function(json) {
-           result = json;
-          },
-          failure: function(errMsg) {}
-         }
-       );
-
-      $(this).attr('src', 'images/star_unselected.png');
-      $(this).removeClass("star");
-      $(this).addClass("unstar");
-    }
-  });
-});
-
-</script>
-
-<script type="text/javascript">
-
-jQuery(document).ready(function() {
   jQuery("span#mark-these-read").click(function() {
-    //$(this).css( "background-color", "yellow" );
     $.ajax(
        {
         type: "POST",

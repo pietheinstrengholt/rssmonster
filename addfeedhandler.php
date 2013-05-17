@@ -23,14 +23,15 @@ $feed->handle_content_type();
 $title = $feed->get_title();
 $desc = $feed->get_description();
 $feedurl = $feed->get_permalink();
+$favicon = $feed->get_favicon();
 
 echo "<p>";
 echo $url;
 echo "<br>";
 echo $title;
-echo "<br>";
+echo "<br><br>";
 echo $desc;
-echo "<br>";
+echo "<br><br>";
 echo "</p>";
 
 if (empty($title)) {
@@ -45,7 +46,7 @@ if (empty($title)) {
     echo "<br><br><br>Error adding \"$title\", feedname already exists or rss is invalid!<br>";
   } else { 
     //TODO: replace with json
-    $sql = "INSERT INTO feeds (name, name_desc, url) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($desc)."','".mysql_real_escape_string($feedurl)."')";
+    $sql = "INSERT INTO feeds (name, name_desc, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($desc)."','".mysql_real_escape_string($feedurl)."','".mysql_real_escape_string($favicon)."')";
     mysql_query($sql);
     echo "<br><br><br>Feedname \"$title\" added to list with rss feeds!<br>";
   }

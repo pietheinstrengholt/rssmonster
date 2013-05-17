@@ -19,8 +19,13 @@ require_once('simplepie/autoloader.php');
 include 'config.php';
 include 'functions.php';
 
+//limit to 2500 read articles history
 mysql_query("DELETE FROM articles WHERE id NOT IN (select * from (SELECT id FROM `articles` WHERE star_ind <>  '1' AND STATUS =  'read' ORDER BY insert_date desc LIMIT 0 , 2500) a UNION select * from (SELECT id FROM `articles`  WHERE star_ind =  '1') b UNION select * from (SELECT id FROM  `articles` WHERE status =  'unread') c)");
 
+//delete articles with no ref to feed_id
+mysql_query("DELETE FROM `articles` WHERE feed_id not in (select distinct id from feeds)");
+
+//update last 25 feeds
 $query = "select * from feeds order by last_update limit 0, 15";
 $sql   = mysql_query($query);
 

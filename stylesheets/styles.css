@@ -120,7 +120,7 @@ section {
   padding-top: 44px;
   margin-right: 50px;
   float: left;
-  padding-left: 220px;
+  padding-left: 300px;
   padding-bottom:50px;
   overflow:auto;
   postion:fixed;
@@ -279,8 +279,6 @@ top-nav form input {
   font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
   padding-left: 5px;
   width: 200px;
-  left:right;
-  height: 18px;
 }
 
 top-nav form {
@@ -303,9 +301,9 @@ home-topnav-button {
 /* FEEDBAR */
 
 div.nav-main {
-  width:190px;
+  width:290px;
   height: 100%;
-  margin-top: -20px;
+  margin-top: 20px;
 }
 
 div.nav-main a {
@@ -335,9 +333,9 @@ div.main {
 }
 
 feedbar {
-  margin-top: 40px;
+  padding-top: 90px;
   height:100%;
-  width:190px;
+  width:290px;
   float:left;
   position:fixed;
   overflow:auto;
@@ -371,6 +369,10 @@ li.feedbar.active.sub {
 
 div.mCSB_container {
   margin-right: 0px;
+}
+
+ul.feedbar ul {
+  list-style-type: none;
 }
 
 /* FEED MANAGE SCREEN */

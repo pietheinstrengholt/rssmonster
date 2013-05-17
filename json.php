@@ -113,6 +113,25 @@ if ($arr[overview] == "feeds") {
   $sql=mysql_query("SELECT category as name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE category <> '' AND status = 'unread' GROUP BY category ORDER BY category");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r); 
+} elseif ($arr[overview] == "categories-detailed") {
+  $sql=mysql_query("SELECT a.category, IFNULL(count_all,0) as count_all, IFNULL(count_unread,0) as count_unread FROM (SELECT category, 
+	sum(count_all) as count_all FROM 
+	 (SELECT feed_id, count(*) as count_all FROM articles 
+	  GROUP BY feed_id) t1
+	LEFT JOIN (SELECT id, IFNULL(category,'Overig') as category FROM feeds) t2 
+	ON t1.feed_id = t2.id
+	GROUP BY category) a
+	LEFT JOIN
+	(SELECT IFNULL(category,'Overig') as category, sum(count_unread) as count_unread FROM 
+	 (SELECT feed_id, count(*) as count_unread FROM articles WHERE status = 'unread'
+	  GROUP BY feed_id) t1
+	LEFT JOIN (SELECT id, category FROM feeds) t2 
+	ON t1.feed_id = t2.id
+	GROUP BY category) b
+	ON a.category = b.category
+	ORDER BY a.category");
+  while($r[]=mysql_fetch_array($sql));
+  echo json_encode($r);
 } elseif ($arr[overview] == "status") {
   $sql=mysql_query("select name, count from (select status as name, count(*) as count from articles GROUP BY status ORDER BY status DESC) a
                     union

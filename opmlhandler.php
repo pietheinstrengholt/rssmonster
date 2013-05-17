@@ -13,6 +13,7 @@
 
 include 'config.php';
 include 'functions.php';
+require_once('simplepie/autoloader.php');
 
 if ($_FILES["file"]["error"] > 0) {
     echo "Error: " . $_FILES["file"]["error"] . "<br>";
@@ -56,7 +57,14 @@ if ($_FILES["file"]["error"] > 0) {
               echo "SKIPPED: $title <br>";
             } else { 
               echo "ADDED: $title $data[url] <br>"; 
-              $sql = "INSERT INTO feeds (name, url) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($data[url])."')";
+
+	      //get favoicon for each rss feed
+	      //$feed = new SimplePie($data[url]);
+	      //$feed->init();
+              //$feed->handle_content_type();
+	      //$favicon = $feed->get_favicon();
+
+              $sql = "INSERT INTO feeds (name, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($data[url])."','".mysql_real_escape_string($favicon)."')";
               mysql_query($sql);
             }
         }
@@ -73,8 +81,6 @@ if ($_FILES["file"]["error"] > 0) {
         
         foreach ($xml->outline as $outline) {
             if ((string) $outline['type']) {
-                
-                //echo "Added RSS feed:<br>";
                 
                 $ret = addSubscription($outline, $tags);
                 if ($ret !== true) {
