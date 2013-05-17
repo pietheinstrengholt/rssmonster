@@ -1,4 +1,3 @@
-<link href="feedbar.css" rel="stylesheet" />
 <script type="text/javascript" src="javascripts/jquery.min.js"></script>
 <script type="text/javascript" src="javascripts/jquery.cookie.js"></script>
 <script src="javascripts/jquery.bullseye-1.0-min.js"></script>
@@ -30,6 +29,21 @@ function loadscrollPagination(category,feed) {
 var request = window.location.hash;
 request = request.slice( 1 );
 console.log("hashtag value from url:" + request);
+
+function getFirstPart(str) {
+    return str.split('=')[0];
+}
+
+function getSecondPart(str) {
+    return str.split('=')[1];
+}
+
+hashtype = getFirstPart(request);
+hashvalue = getSecondPart(request);
+
+console.log(hashtype);
+console.log(hashvalue);
+
 
 //set cookie for view, if not set
 if ($.cookie('view') == 'undefined') {
@@ -80,6 +94,10 @@ jQuery("ul.feedbar ul").hide();
     }
 
     window.location.hash = '#category=' + encoded_category;
+
+    hashtype = "category";
+    hashvalue = encoded_category;
+
     jQuery(this).next("ul.feedbar ul").slideToggle(200);
 
     if ( $(this).hasClass("clicked") ) {
@@ -97,6 +115,10 @@ jQuery("li.sub").click(function() {
   console.log("Clicked on feed: " + feed);
   var encoded_feed = encodeURIComponent(feed);
   window.location.hash = '#feed=' + encoded_feed;
+
+  hashtype = "feed";
+  hashvalue = encoded_feed;
+
   if (viewtype == 'detailed') {
 
     $('section #content').remove();
@@ -115,7 +137,13 @@ jQuery("div.list").click(function() {
   console.log("switched to list view");
   $.cookie('view', 'list', { expires: 14 });
   viewtype="list";
-  $('section').load('list-view.php?' + request);
+
+  console.log("request=" + request);
+
+  //$('section').load('list-view.php?' + request);
+  $('section').load('list-view.php?' + hashtype + "=" + hashvalue);
+
+
 });
 
 //Detailed view button
@@ -133,8 +161,14 @@ jQuery("div.detailed").click(function() {
 
   //disable existing scroll and load loadscrollPagination
   $(window).off("scroll");
-  loadscrollPagination();
 
+  console.log("switched to detailed view with hashtype: " + hashtype + " and hashvalue: " + hashvalue );
+
+  if (hashtype == 'category') {
+   loadscrollPagination(hashvalue,'');
+  } else if (hashtype == 'feed') {
+   loadscrollPagination('',hashvalue);
+  }
 });
 
 });
