@@ -7,6 +7,10 @@
     <script src="javascripts/jquery.min.js"></script>
     <script src="javascripts/jquery.color.js"></script>
     <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
+    <script type="text/javascript" src="javascripts/jquery.cookie.js"></script>
+    <script src="javascripts/jquery.bullseye-1.0-min.js"></script>
+    <script src="javascripts/infinite.js"></script>
+    <script src="javascripts/phppaper.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <!-- <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css"> -->
     <!--[if lt IE 9]>
