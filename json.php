@@ -105,15 +105,15 @@ if ($arr[update] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] 
 }
 
 //provide overview with feeds, e.g. names, categories, count unreaded number of articles
-if ($arr[overview] == "feeds") {
+if ($arr[overview] == "feed") {
   $sql=mysql_query("SELECT name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND t2.name != '' GROUP BY name ORDER BY name");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r);
-} elseif ($arr[overview] == "categories") {
+} elseif ($arr[overview] == "category") {
   $sql=mysql_query("SELECT category as name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE category <> '' AND status = 'unread' GROUP BY category ORDER BY category");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r); 
-} elseif ($arr[overview] == "categories-detailed") {
+} elseif ($arr[overview] == "category-detailed") {
   $sql=mysql_query("SELECT a.category, IFNULL(count_all,0) as count_all, IFNULL(count_unread,0) as count_unread FROM (SELECT category, 
 	sum(count_all) as count_all FROM 
 	 (SELECT feed_id, count(*) as count_all FROM articles 

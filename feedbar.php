@@ -48,7 +48,7 @@ function header_section($input, $name) {
   }
 }
 
-$array = get_json('{"jsonrpc": "2.0", "overview": "categories-detailed"}');
+$array = get_json('{"jsonrpc": "2.0", "overview": "category-detailed"}');
 header_section($array,'category');
 
 echo "</div>";

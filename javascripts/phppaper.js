@@ -76,7 +76,7 @@ jQuery("ul.feedbar ul").hide();
   jQuery("li.main").click(function()
   {
 
-    var category = $(this).find("span.title").text();
+    var category = $(this).find("div.title").text();
     console.log("Clicked on category: " + category);
     console.log("viewtype = " + viewtype);
     var encoded_category = encodeURIComponent(category);

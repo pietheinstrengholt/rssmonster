@@ -42,11 +42,11 @@ function header_section($input, $name) {
 $array = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 header_section($array,'status');
 
-$array = get_json('{"jsonrpc": "2.0", "overview": "categories"}');
-header_section($array,'categories');
+$array = get_json('{"jsonrpc": "2.0", "overview": "category"}');
+header_section($array,'category');
 
-$array = get_json('{"jsonrpc": "2.0", "overview": "feeds"}');
-header_section($array,'feeds');
+$array = get_json('{"jsonrpc": "2.0", "overview": "feed"}');
+header_section($array,'feed');
 
 echo "</div>";
 

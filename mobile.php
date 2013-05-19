@@ -9,6 +9,10 @@
 
 <?php
 
+//input
+$input_feed = htmlspecialchars($_GET["feed"]);
+$input_category = htmlspecialchars($_GET["category"]);
+
 //TODO: proper viewport handling for iOS and other mobile browsers
 if(strstr($_SERVER['HTTP_USER_AGENT'],'iPhone') || strstr($_SERVER['HTTP_USER_AGENT'],'iPod')) {
 ?> 
