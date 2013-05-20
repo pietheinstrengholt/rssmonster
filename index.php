@@ -34,7 +34,7 @@
           <?php include 'top-nav.php'; ?>
       </top-nav>
 
-      <div id="nav-bar-shadow"></div>
+      <!-- <div id="nav-bar-shadow"></div> -->
 
       <div class="wrapper">
 

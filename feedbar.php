@@ -3,9 +3,6 @@
 include 'config.php';
 include 'functions.php';
 
-echo "<div class=\"list\">List view</div>";
-echo "<div class=\"detailed\">Detailed view</div>";
-
 echo "<div class=\"nav-main\">";
 
 function header_section($input, $name) {

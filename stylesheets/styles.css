@@ -2,6 +2,11 @@
 
 /* GENERAL */
 
+html {
+  overflow-y: -moz-scrollbars-vertical;
+  overflow-y: scroll;
+}
+
 body {
   font:14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
   color:#777;
@@ -126,9 +131,13 @@ section {
   postion:fixed;
 }
 
+div#content {
+  margin-top: 50px;
+}
+
 div.blockcontainer {
-margin-left: 20px;
-margin-right: 20px;
+  margin-left: 20px;
+  margin-right: 20px;
 }
 
 div#block {
@@ -200,6 +209,7 @@ section h1 {
   position: absolute;
   padding-top: 3px;
   margin-left: 2px;
+  cursor: pointer;
 }
 
 /* TOPNAV */
@@ -208,8 +218,21 @@ top-nav {
   position:fixed;
   width:100%;
   height:40px;
-  background: #777;
+  background: #E8E8E8;
   z-index: 999;
+}
+
+div.second-bar {
+  background-color: #FFF;
+  height: 40px; 
+  width: 100%;
+  margin-left: 290px;
+  //border: 1px solid black;
+}
+
+div.list, div.detailed {
+  float:right;
+  cursor:pointer;
 }
 
 div.topnav-button p {
@@ -219,7 +242,7 @@ div.topnav-button p {
 
 div.topnav-button p, div.topnav-button a {
   padding-right: 18px;
-  color:#FFF;
+  color:#777;
   cursor: pointer;
 }
 
@@ -300,9 +323,14 @@ home-topnav-button {
 
 /* FEEDBAR */
 
+feedbar {
+  background: #E8E8E8;
+  overflow-y: hidden;
+}
+
 div.nav-main {
   width:260px;
-  margin-top: 20px;
+  margin-top: 3px;
 }
 
 span.count {
@@ -317,7 +345,7 @@ div.pointer {
   height: 24px;
   background-image:url(../images/fd/selector-right-arrow.png);
   background-repeat:no-repeat;
-  background-position: -6px 0px;
+  background-position: -6px -2px;
   background-size: 26px 26px;
   width: 20px;
   float: left;
@@ -327,12 +355,12 @@ div.pointer {
 div.title {
   width: 130px;
   float: left;
-  padding-top: 2px;
+  padding-top: 0px;
   cursor:pointer;
 }
 
 div.count {
-  padding-top: 2px;
+  padding-top: 0px;
 }
 
 li.main {
@@ -362,6 +390,7 @@ feedbar {
   position:fixed;
   overflow:auto;
   font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
+  color: rgba( 0, 0, 0, 0.5 );
 }
 
 div.mCSB_container {
@@ -458,6 +487,11 @@ div.newsitem img.item-star {
   position: absolute;
   padding-top: 8px;
   margin-left: 8px;
+  cursor: pointer;
+}
+
+div#layer1 {
+  margin-top: 50px;
 }
 
 div#layer1 .heading {

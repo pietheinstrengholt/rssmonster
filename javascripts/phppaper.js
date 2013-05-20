@@ -1,4 +1,3 @@
-
 //TODO: read window.location.hash and if set reload section with post parameters
 
 $(document).ready(function() {
@@ -58,12 +57,18 @@ console.log("current view type = " + viewtype);
 
 //load list view is cookie is set to list view
 if (viewtype == 'list') {
- var encoded = encodeURIComponent(request);
- $('section').load(viewtype + '-view.php?category=' + encoded);
+
+ //TODO: fix first load for viewlist
+ console.log("first load, load view list items for: " + request);
+ $('section').load(viewtype + '-view.php?' + request);
 } else {
+ console.log("first load, load detailed list items for: " + request);
  var encoded = encodeURIComponent(request);
  viewtype="detailed";
- $('section').load(viewtype + '-view.php');
+ $('section #content').remove();
+ $('section').append('<div id="content"></div>');
+ $(window).off("scroll");
+ loadscrollPagination('','');
 }
 
 //remember windows location hash (obsolete)
@@ -76,6 +81,7 @@ jQuery("ul.feedbar ul").hide();
   jQuery("li.main").click(function()
   {
 
+    $('feedbar').css({'overflow-y':'hidden'});
     var category = $(this).find("div.title").text();
     console.log("Clicked on category: " + category);
     console.log("viewtype = " + viewtype);
@@ -102,9 +108,11 @@ jQuery("ul.feedbar ul").hide();
     if ( $(this).hasClass("clicked") ) {
       $(this).removeClass("clicked");
       $(this).css( "background-color", "" );
+      $(this).find('div.pointer').css( "background-image", 'url("images/fd/selector-right-arrow.png")' );
     } else {
       $(this).addClass("clicked");
-      $(this).css( "background-color", "#E8E8E8" );
+      $(this).css( "background-color", "rgba( 0,0,0,0.04 )" );
+      $(this).find('div.pointer').css( "background-image", 'url("images/fd/selector-down-arrow.png")' );
     }
 });
 
@@ -172,8 +180,6 @@ jQuery("div.detailed").click(function() {
   }
 });
 
-});
-
 //event when marking item as starred
 $("body").on("click", "img.item-star.unstar", function(event){
     var id = $(this).attr('id');
@@ -223,6 +229,10 @@ $("body").on("click", "img.item-star.star", function(event){
     $(this).addClass("unstar");
 
 });
+
+
+});
+
 
 //infinite.js script is used to call the myHandler function
 

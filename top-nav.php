@@ -16,6 +16,9 @@ if (strpos($viewurl, 'view=list') == false) {
   }
 }
 
+//echo "<div class=\"list\">List view</div>";
+//echo "<div class=\"detailed\">Detailed view</div>";
+
 echo "<div class='topnav-button'>";
 echo "<p><a href=\"$url/manage-feeds.php\">Manage feeds</a></p>";
 echo "</div>";
@@ -26,26 +29,6 @@ echo "</div>";
 
 echo "<div class='topnav-button'>";
 echo "<p><a href=\"$url/opml.php\">Import opml</a></p>";
-echo "</div>";
-
-if ((strpos($valurl, 'view=detailed') == true) || (strpos($valurl, 'view=list') == false)) {
-  echo "<div class='topnav-button detailed-change-view active'>";
-} else {
-  echo "<div class='topnav-button detailed-change-view'>";
-}
-
-$detailurl = str_replace("&view=list", "", $valurl);
-$detailurl = str_replace("?view=list", "", $detailurl);
-
-echo "<a href=\"$detailurl\"><img src=\"images/view_options_details.png\" style=\"width: 21px; height: 21px;\" class=\"jfk-button-img\"></a>";
-echo "</div>";
-
-if (strpos($valurl, 'view=list') == true) {
-  echo "<div class='topnav-button list-change-view active'>";
-} else {
-  echo "<div class='topnav-button list-change-view'>";
-}
-echo "<a href=\"$viewurl\"><img src=\"images/view_options_list.png\" style=\"width: 21px; height: 21px;\" class=\"jfk-button-img\"></a>";
 echo "</div>";
 
 echo "<div class='topnav-button home-topnav-button'>";
@@ -59,3 +42,13 @@ echo "</div>";
 <input type="submit" value="submit" name="submit" class="button">
 </form>
 
+<?php
+
+echo "<div class='second-bar'>";
+
+echo "<div class=\"list\">List view</div>";
+echo "<div class=\"detailed\">Detailed view</div>";
+
+echo "</div>";
+
+?>
