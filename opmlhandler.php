@@ -5,9 +5,6 @@
 </head>
 <body>
 
-<top-nav>
- <?php include 'top-nav.php'; ?>
-</top-nav>
 <br><br>
 <?php 
 
