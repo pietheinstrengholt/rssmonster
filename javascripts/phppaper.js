@@ -140,6 +140,11 @@ jQuery("li.sub").click(function() {
 
 });
 
+//Selection and load sub menu items from feedbar
+jQuery("div.opml").click(function() {
+  $('section').load('opml.php');
+});
+
 //List view button
 jQuery("div.list").click(function() {
   console.log("switched to list view");

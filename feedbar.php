@@ -3,6 +3,9 @@
 include 'config.php';
 include 'functions.php';
 
+echo "<div class=\"organize\"><a href=\"$url/manage-feeds.php\">Organize</a></div>";
+echo "<hr>";
+
 echo "<div class=\"nav-main\">";
 
 function header_section($input, $name) {

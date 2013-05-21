@@ -233,6 +233,12 @@ div.second-bar {
 div.list, div.detailed {
   float:right;
   cursor:pointer;
+  padding-top: 9px;
+  padding-right: 10px;
+}
+
+div.list {
+  padding-right: 80px;
 }
 
 div.topnav-button p {
@@ -306,7 +312,7 @@ top-nav form input {
 
 top-nav form {
   color:#FFF;
-  padding-left: 20px;
+  padding-left: 290px;
   padding-top: 5px;
 }
 
@@ -361,6 +367,10 @@ div.title {
 
 div.count {
   padding-top: 0px;
+}
+
+div.organize {
+  padding-left: 20px;
 }
 
 li.main {

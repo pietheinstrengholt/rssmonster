@@ -170,7 +170,7 @@ echo "<div id=layer1>";
 		echo "<div class='heading-bottom'>";
 		$content = strip_tags($row[content]);
                 $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $content);
-		$content = substr($content, 0, 90);
+		$content = substr($content, 0, 150);
 
 		echo "<div class='header-content'>$content....</div>";
 		echo "</div>";

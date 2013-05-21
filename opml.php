@@ -11,9 +11,6 @@ include 'functions.php';
  <script src="javascripts/jquery.min.js"></script>
 </head>
 <body>
-<top-nav>
- <?php include 'top-nav.php'; ?>
-</top-nav>
 
 <result>
 <div class="opml-form">
