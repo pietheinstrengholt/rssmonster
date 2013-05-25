@@ -61,7 +61,7 @@ console.log("current view type = " + viewtype);
 //load list view is cookie is set to list view
 if (viewtype == 'list') {
 
- //TODO: fix first load for viewlist
+ //TODO: scrollpagination is still active when switching to list view
  console.log("first load, load view list items for: " + request);
  $('section').load(viewtype + '-view.php?' + request);
 } else {
@@ -98,6 +98,7 @@ jQuery("div.menu-sub").hide();
       loadscrollPagination(encoded_category,'');
 
     } else {
+      $(window).off("scroll");
       $('section').load('list-view.php?category=' + encoded_category);
     }
 
@@ -145,6 +146,7 @@ jQuery("div.menu-sub-item").click(function() {
     loadscrollPagination('',encoded_feed);
 
   } else {
+    $(window).off("scroll");
     $('section').load('list-view.php?feed=' + encoded_feed);
   }
 
@@ -163,9 +165,8 @@ jQuery("div.list").click(function() {
 
   //console.log("request=" + request);
   //$('section').load('list-view.php?' + request);
-  //$(window).off("scroll");
+  $(window).off("scroll");
   $('section').load('list-view.php?' + hashtype + "=" + hashvalue);
-
 
 });
 

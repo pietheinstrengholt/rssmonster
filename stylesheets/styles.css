@@ -129,7 +129,7 @@ section {
 }
 
 div#content {
-  margin-top: 50px;
+  margin-top: 30px;
 }
 
 div.blockcontainer {
@@ -574,7 +574,7 @@ div.newsitem img.item-star {
 }
 
 div#layer1 {
-  margin-top: 50px;
+  margin-top: 30px;
 }
 
 div#layer1 .heading {
@@ -593,7 +593,7 @@ div#layer1 .heading-bottom {
   width: 97%;
 }
 
-div#layer1 div.content {
+div#layer1 div.news-content {
   padding: 0px 10px 10px;
   clear: left;
   vertical-align: middle;

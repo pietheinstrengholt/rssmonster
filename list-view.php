@@ -37,12 +37,12 @@ $matches = implode(',', $stack);
 
 <script type="text/javascript">
 jQuery(document).ready(function() {
-  jQuery(".content").hide();
+  jQuery(".news-content").hide();
   //toggle the componenet with class msg_body
   jQuery(".heading").click(function()
   {
     $(this).find(".header-content").hide();
-    jQuery(this).next(".content").slideToggle(50);
+    jQuery(this).next(".news-content").slideToggle(50);
     var id = $(this).attr('id');
     console.log('clicked on id:' + id);
     $(this).addClass("clicked");
@@ -177,7 +177,7 @@ echo "<div id=layer1>";
 
                 echo "</div>";
 
-                echo "<div class=content>$row[content]<br></div>";
+                echo "<div class=news-content>$row[content]<br></div>";
 
                 echo "</div>";
 
