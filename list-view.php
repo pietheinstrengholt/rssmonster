@@ -149,7 +149,7 @@ echo "<div id=layer1>";
 
     if (!empty($row)) {
 
-		echo "<div class='newsitem'>";
+		echo "<div class='newsitem' id=$row[id]>";
 
 		if ($row[star_ind] == '1') {
 			echo "<img class='item-star star' id=$row[id] src='images/star_selected.png'>";
@@ -170,7 +170,7 @@ echo "<div id=layer1>";
 		echo "<div class='heading-bottom'>";
 		$content = strip_tags($row[content]);
                 $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $content);
-		$content = substr($content, 0, 150);
+		$content = substr($content, 0, 250);
 
 		echo "<div class='header-content'>$content....</div>";
 		echo "</div>";

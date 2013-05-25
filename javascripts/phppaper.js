@@ -2,6 +2,9 @@
 
 $(document).ready(function() {
 
+//remove scrollbar
+$('feedbar').css({'overflow-y':'hidden'});
+
 //loadscrollPagination function to load items when scrolling. Remember to use: $(window).off("scroll");
 function loadscrollPagination(category,feed) {
   setTimeout(function() {
@@ -77,8 +80,8 @@ $('div.main a').each(function() {
 });
 
 //Drop down menu items from feedbar
-jQuery("ul.feedbar ul").hide();
-  jQuery("li.main").click(function()
+jQuery("div.menu-sub").hide();
+  jQuery("div.menu-heading").click(function()
   {
 
     $('feedbar').css({'overflow-y':'hidden'});
@@ -103,22 +106,25 @@ jQuery("ul.feedbar ul").hide();
     hashtype = "category";
     hashvalue = encoded_category;
 
-    jQuery(this).next("ul.feedbar ul").slideToggle(200);
+    jQuery(this).next("div.menu-sub").slideToggle(200);
 
     if ( $(this).hasClass("clicked") ) {
       $(this).removeClass("clicked");
       $(this).css( "background-color", "" );
+      $(this).css( "color", "" );
       $(this).find('div.pointer').css( "background-image", 'url("images/fd/selector-right-arrow.png")' );
     } else {
       $(this).addClass("clicked");
-      $(this).css( "background-color", "rgba( 0,0,0,0.04 )" );
+      //$(this).css( "background-color", "rgba( 0,0,0,0.04 )" );
+      $(this).css( "background-color", "#0088cc" );
+      $(this).css( "color", "#ffffff" );
       $(this).find('div.pointer').css( "background-image", 'url("images/fd/selector-down-arrow.png")' );
     }
 });
 
 
 //Selection and load sub menu items from feedbar
-jQuery("li.sub").click(function() {
+jQuery("div.menu-sub-item").click(function() {
   var feed = $(this).find("span.title").text();
   console.log("Clicked on feed: " + feed);
   var encoded_feed = encodeURIComponent(feed);
@@ -126,6 +132,10 @@ jQuery("li.sub").click(function() {
 
   hashtype = "feed";
   hashvalue = encoded_feed;
+
+  //only one menu-sub-item can be active
+  $("div.feedbar").find("div.menu-sub-item").css('background-color', '');
+  $(this).css( "background-color", "#dceaf4" );
 
   if (viewtype == 'detailed') {
 
@@ -153,6 +163,7 @@ jQuery("div.list").click(function() {
 
   //console.log("request=" + request);
   //$('section').load('list-view.php?' + request);
+  //$(window).off("scroll");
   $('section').load('list-view.php?' + hashtype + "=" + hashvalue);
 
 

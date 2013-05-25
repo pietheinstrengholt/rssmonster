@@ -16,25 +16,17 @@ if (strpos($viewurl, 'view=list') == false) {
   }
 }
 
-echo "<div class=\"list\">List view</div>";
-echo "<div class=\"detailed\">Detailed view</div>";
-
-//echo "<div class='topnav-button'>";
-//echo "<p><a href=\"$url/manage-feeds.php\">Manage feeds</a></p>";
-//echo "</div>";
-
-echo "<div class='topnav-button'>";
-echo "<p><a href=\"$url/update.php\">Update feeds</a></p>";
-echo "</div>";
-
-echo "<div class='topnav-button opml'>";
-//echo "<p><a href=\"$url/opml.php\">Import opml</a></p>";
-echo "<p>Import opml</p>";
-echo "</div>";
-
-echo "<div class='topnav-button home-topnav-button'>";
+echo "<div class='topnav home'>";
 echo "<p><a href=\"$url/index.php\">Home</a></p>";
 echo "</div>";
+
+//echo "<div class='topnav update'>";
+//echo "<p><a href=\"$url/update.php\">Update feeds</a></p>";
+//echo "</div>";
+
+echo "<div class='topnav opml'>Import opml</div>";
+echo "<div class='topnav list'>List view</div>";
+echo "<div class='topnav detailed'>Detailed view</div>";
 
 ?>
 
@@ -45,7 +37,8 @@ echo "</div>";
 
 <?php
 
-//echo "<div class=\"list\">List view</div>";
-//echo "<div class=\"detailed\">Detailed view</div>";
+echo "<div class='topnav update'>";
+echo "<p><a href=\"$url/update.php\">Update feeds</a></p>";
+echo "</div>";
 
 ?>

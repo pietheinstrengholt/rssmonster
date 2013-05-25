@@ -3,8 +3,7 @@
 include 'config.php';
 include 'functions.php';
 
-echo "<div class=\"organize\"><a href=\"$url/manage-feeds.php\">Organize</a></div>";
-echo "<hr>";
+echo "<div class=\"organize\"><a href=\"$url/manage-feeds.php\">Organize Feeds</a></div>";
 
 echo "<div class=\"nav-main\">";
 
@@ -12,39 +11,39 @@ function header_section($input, $name) {
   if (!empty($input)) {
   
     $displayname = ucfirst($name);
-    echo "<ul class='feedbar'>";
+    echo "<div class='feedbar'>";
 
     foreach ($input as $row) {
       if (!empty($row)) {
 
 	$title = substr($row[category], 0, 16);
 
-        echo "<li class='main' id='$title'>";
-        echo "<div class=\"pointer\"></div>";
-	echo "<div class=\"title\">$title</div>";
-	echo "<div class=\"count\">";
-        echo "<span class=\"count\">$row[count_all]</span>";
-	echo "<span class=\"count\"> / </span>";
-        echo "<span class=\"count\">$row[count_unread]</span>";
+	echo "<div class=\"menu-heading\" id='$title'>";
+          echo "<div class=\"pointer\"></div>";
+	  echo "<div class=\"title\">$title</div>";
+	  echo "<div class=\"count\">";
+          echo "<span class=\"count\">$row[count_all]</span>";
+	  echo "<span class=\"count\"> / </span>";
+          echo "<span class=\"count\">$row[count_unread]</span>";
+	  echo "</div>";
 	echo "</div>";
-        echo "</li>";
-
-        echo "<ul>";
 
 	$result = mysql_query("SELECT name, id, favicon FROM feeds WHERE category = '$row[category]'");
 
+	echo "<div class=\"menu-sub\" id='$title'>";
+
 	while ($row = mysql_fetch_array($result, MYSQL_NUM)) {
-		echo "<li class=\"sub\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span></li>";
+		echo "<div class=\"menu-sub-item\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span></div>";
 
 	}
 
 	mysql_free_result($result);
 
-        echo "</ul>";
+        echo "</div>";
 
       }
     }
-    echo "</ul>";
+    echo "</div>";
   }
 }
 
