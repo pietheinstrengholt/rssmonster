@@ -73,6 +73,8 @@ $results = get_json('{"jsonrpc": "2.0", "request": "get-feeds"}');
 
 foreach ($results as $row) {
 
+ if (!empty($row['id'])) {
+
     $feed          = $row['url'];
     $feed_id       = $row['id'];
     $feed_name     = $row['name'];
@@ -112,6 +114,7 @@ foreach ($results as $row) {
 
     echo "</div>";
 
+  }
 }
 
 
