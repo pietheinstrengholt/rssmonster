@@ -32,7 +32,7 @@ echo "<div class='topnav detailed'>Detailed view</div>";
 
 <form method="post" action="addfeedhandler.php">
 <input type="text" name="feedname" value="Add feed or url">
-<input type="submit" value="submit" name="submit" class="button">
+<input type="submit" value="submit" name="submit" class="btn button">
 </form>
 
 <?php

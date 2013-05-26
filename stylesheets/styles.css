@@ -496,8 +496,7 @@ div.form-name input, div.form-category input {
   font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-input.botton-submit {
-  padding-top: 5px;
+input.btn.button-submit {
   margin-left: 5px;
 }
 

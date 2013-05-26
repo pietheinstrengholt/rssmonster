@@ -98,9 +98,9 @@ foreach ($results as $row) {
     <div class='form-category'>Category name: <input type="text" name="new_feed_category" value="<?php echo $feed_category; ?>"></div>
 
     <input type="hidden" name="new_feed_id" value="<?php echo $feed_id; ?>">
-    <input type="submit" value="submit" name="submit" class="button-submit">
+    <input type="submit" value="submit" name="submit" class="btn button-submit">
 
-    <input type="submit" value="delete" name="delete" class="button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
+    <input type="submit" value="delete" name="delete" class="btn button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
 
     </form>
     </div>
