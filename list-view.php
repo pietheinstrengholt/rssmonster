@@ -36,102 +36,98 @@ $matches = implode(',', $stack);
 <head>
 
 <script type="text/javascript">
-jQuery(document).ready(function() {
-  jQuery(".news-content").hide();
-  //toggle the componenet with class msg_body
-  jQuery(".heading").click(function()
-  {
-    $(this).find(".header-content").hide();
-    jQuery(this).next(".news-content").slideToggle(50);
-    var id = $(this).attr('id');
-    console.log('clicked on id:' + id);
-    $(this).addClass("clicked");
 
-    //mark item as read and retrieve external url
-    $.ajax(
-       {
-        type: "POST",
-        url: "json.php",
-        data: JSON.stringify({ "jsonrpc": "2.0","update": "read-status", "value": id }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        async: false,
-        success: function(json) { 
-         result = json;
-        },
-        failure: function(errMsg) {}
-       }
-     );
-    console.log("reponse: "+ result);
-    //TODO: avoid toggle or toggle back when clicking on another item like google reader
-    $(this).find("span.subject").css( "color","#24b" );
-    var quotelink = "<a href=" + result + " target=\"_blank\"></a>";
+jQuery(document).ready(function () {
+    jQuery(".news-content").hide();
+    //toggle the componenet with class msg_body
+    jQuery(".heading").click(function () {
+        $(this).find(".header-content").hide();
+        jQuery(this).next(".news-content").slideToggle(50);
+        var id = $(this).attr('id');
+        console.log('clicked on id:' + id);
+        $(this).addClass("clicked");
 
-    //avoid adding many links
-    if (!$(this).find("span.subject").hasClass("added-link") ) {
-      $(this).find("span.subject").addClass("added-link");
-      $(this).find("span.subject").wrap(quotelink);
-    }
+        //mark item as read and retrieve external url
+        $.ajax({
+            type: "POST",
+            url: "json.php",
+            data: JSON.stringify({
+                "jsonrpc": "2.0",
+                "update": "read-status",
+                "value": id
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            async: false,
+            success: function (json) {
+                result = json;
+            },
+            failure: function (errMsg) {}
+        });
+        console.log("reponse: " + result);
+        //TODO: avoid toggle or toggle back when clicking on another item like google reader
+        $(this).find("span.subject").css("color", "#24b");
+        var quotelink = "<a href=" + result + " target=\"_blank\"></a>";
 
-    //undo classes so we know if a item is collapsed or not
-    if ( $(this).hasClass("collapsed") ) {
-      $(this).addClass("uncollapsed");
-      $(this).removeClass("collapsed")
-      $(this).find(".header-content").show();
-      //TODO: remove hyperlink
-      //$(this).find("div.heading-top a").remove();
-    } else {
-      if ( $(this).hasClass("uncollapsed") ) {
-        $(this).removeClass("uncollapsed")
-      }
-      $(this).addClass("collapsed");
-    }
+        //avoid adding many links
+        if (!$(this).find("span.subject").hasClass("added-link")) {
+            $(this).find("span.subject").addClass("added-link");
+            $(this).find("span.subject").wrap(quotelink);
+        }
 
-    //scroll item to top of page when clicking
-    //$(window).scrollTop($(this).position().top)
+        //undo classes so we know if a item is collapsed or not
+        if ($(this).hasClass("collapsed")) {
+            $(this).addClass("uncollapsed");
+            $(this).removeClass("collapsed")
+            $(this).find(".header-content").show();
+            //TODO: remove hyperlink
+            //$(this).find("div.heading-top a").remove();
+        } else {
+            if ($(this).hasClass("uncollapsed")) {
+                $(this).removeClass("uncollapsed")
+            }
+            $(this).addClass("collapsed");
+        }
 
-  });
+        //scroll item to top of page when clicking
+        //$(window).scrollTop($(this).position().top)
+
+    });
 });
 
-</script>
+jQuery(document).ready(function () {
+    jQuery("span#mark-these-read").click(function () {
+        $.ajax({
+            type: "POST",
+            url: "json.php",
+            data: JSON.stringify({
+                "jsonrpc": "2.0",
+                "update": "mark-as-read",
+                "value": "<?php echo $matches; ?>"
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            async: false,
+            success: function (json) {
+                result = json;
+                //scroll to top before refresh
+                document.body.scrollTop = document.documentElement.scrollTop = 0;
+                //refresh page to load new articles
+                location.reload();
+            },
+            failure: function (errMsg) {}
+        });
 
-<script type="text/javascript">
-
-jQuery(document).ready(function() {
-  jQuery("span#mark-these-read").click(function() {
-    $.ajax(
-       {
-        type: "POST",
-        url: "json.php",
-        data: JSON.stringify({ "jsonrpc": "2.0", "update": "mark-as-read", "value": "<?php echo $matches; ?>" }),
-        contentType: "application/json; charset=utf-8",
-        dataType: "json",
-        async: false,
-        success: function(json) {
-         result = json;
-         //scroll to top before refresh
-	 document.body.scrollTop = document.documentElement.scrollTop = 0;
-         //refresh page to load new articles
-         location.reload();
-        },
-        failure: function(errMsg) {}
-       }
-     );
-
-  });
+    });
 });
 
-</script>
+jQuery(document).ready(function () {
+    jQuery("div#header-refresh.r-button").click(function () {
 
-<script type="text/javascript">
+        //refresh page to load new articles
+        location.reload();
 
-jQuery(document).ready(function() {
-  jQuery("div#header-refresh.r-button").click(function() {
-
-      //refresh page to load new articles
-      location.reload();
-
-  });
+    });
 });
 
 </script>

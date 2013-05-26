@@ -11,7 +11,9 @@
     <script src="javascripts/jquery.bullseye-1.0-min.js"></script>
     <script src="javascripts/infinite.js"></script>
     <script src="javascripts/phppaper.js"></script>
+    <script src="javascripts/bootstrap.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap.css">
     <!-- <link rel="stylesheet" href="stylesheets/jquery.mCustomScrollbar.css"> -->
     <!--[if lt IE 9]>
     <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>

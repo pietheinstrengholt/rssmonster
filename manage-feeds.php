@@ -47,9 +47,6 @@ jQuery(document).ready(function() {
 
 </head>
 <body>
-<top-nav>
- <?php include 'top-nav.php'; ?>
-</top-nav>
 
 <div class='feed-manage-overview'>
 

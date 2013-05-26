@@ -3,7 +3,11 @@
 include 'config.php';
 include 'functions.php';
 
-echo "<div class=\"organize\"><a href=\"$url/manage-feeds.php\">Organize Feeds</a></div>";
+//echo "<div class=\"organize\"><a href=\"$url/manage-feeds.php\">Organize Feeds</a></div>";
+
+echo "<div class=\"organize\">";
+echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
+echo "</div>";
 
 echo "<div class=\"nav-main\">";
 
