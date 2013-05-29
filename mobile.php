@@ -5,7 +5,7 @@
 <title>PHPPaper mobile</title>
 
 <link href="stylesheets/mobile.css" rel="stylesheet" />
-<script type="text/javascript" src="javascripts/jquery.min.js"></script>
+<script type="text/javascript" src="javascripts/jquery-1.9.1.min.js"></script>
 
 <?php
 

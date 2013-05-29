@@ -213,30 +213,22 @@ $(document).ready(function () {
 
 
     //List view button
-    //jQuery("div.list").click(function () {
     jQuery("a#list-view").click(function () {
         console.log("switched to list view");
-        $.cookie('view', 'list', {
-            expires: 14
-        });
+        $.cookie('view', 'list', { expires: 14 });
         viewtype = "list";
 
-        //console.log("request=" + request);
-        //$('section').load('list-view.php?' + request);
         $(window).off("scroll");
         $('section').load('list-view.php?' + hashtype + "=" + hashvalue);
 
     });
 
     //Detailed view button
-    //jQuery("div.detailed").click(function () {
     jQuery("a#detailed-view").click(function () {
 
         //set cookie and variable to detailed view
         console.log("switched to detailed view");
-        $.cookie('view', 'detailed', {
-            expires: 14
-        });
+        $.cookie('view', 'detailed', { expires: 14 });
         viewtype = "detailed";
 
         //remove existing content and add empty again
@@ -253,6 +245,8 @@ $(document).ready(function () {
             loadscrollPagination(hashvalue, '');
         } else if (hashtype == 'feed') {
             loadscrollPagination('', hashvalue);
+        } else if (hashtype == 'status') {
+            loadscrollPagination('', '', hashvalue);
         } else if (typeof hashvalue === "undefined") {
             loadscrollPagination('', '');
         }

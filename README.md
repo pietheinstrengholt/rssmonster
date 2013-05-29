@@ -29,7 +29,6 @@ The following scripts are used within phppaper
 
 * SimplePie: http://simplepie.org/
 * jQuery: http://jquery.com/
-* jQuery UI: http://jqueryui.com
 * jQuery Bullseye: http://static.pixeltango.com/jQuery/Bullseye/
 * Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
 * Twitter bootstrap: http://twitter.github.io/bootstrap/

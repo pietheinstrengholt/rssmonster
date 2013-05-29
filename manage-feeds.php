@@ -1,6 +1,6 @@
 <html>
 <head>
-  <script src="javascripts/jquery.min.js"></script>
+  <script src="javascripts/jquery-1.9.1.min.js"></script>
 
   <script>
   function DeleteFunction(feed_name,feed_id)

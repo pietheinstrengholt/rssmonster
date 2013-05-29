@@ -1,6 +1,6 @@
 <head>
  <title>Update page</title>
- <script src="javascripts/jquery.min.js"></script>
+ <script src="javascripts/jquery-1.9.1.min.js"></script>
 </head>
 
 
