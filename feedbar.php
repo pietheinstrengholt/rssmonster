@@ -3,13 +3,35 @@
 include 'config.php';
 include 'functions.php';
 
-//echo "<div class=\"organize\"><a href=\"$url/manage-feeds.php\">Organize Feeds</a></div>";
-
 echo "<div class=\"organize\">";
 echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
 echo "</div>";
 
 echo "<div class=\"nav-main\">";
+
+// Get overview of Article status
+echo "<li class=\"nav-header\">Articles</li>";
+$status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
+
+foreach ($status as $row) {
+      if (!empty($row)) {
+
+        $cssid = str_replace(" ", "-", $row[name]);  
+	echo "<div class=\"menu-heading-status\" id='$cssid'>";
+          echo "<div class=\"pointer-$cssid\"></div>";
+	  //echo "<i class=\"icon-search\"></i>";
+	  echo "<div class=\"title\">$row[name]</div>";
+	  echo "<div class=\"count\">";
+          echo "<span class=\"count\">$row[count]</span>";
+	  echo "</div>";
+	echo "</div>";
+
+      }
+    }
+
+
+// Get overview of all categories
+echo "<li class=\"nav-header\">Categories</li>";
 
 function header_section($input, $name) {
   if (!empty($input)) {
@@ -23,7 +45,7 @@ function header_section($input, $name) {
 	$title = substr($row[category], 0, 16);
 
 	echo "<div class=\"menu-heading\" id='$title'>";
-          echo "<div class=\"pointer\"></div>";
+          echo "<div class=\"pointer-category\"></div>";
 	  echo "<div class=\"title\">$title</div>";
 	  echo "<div class=\"count\">";
           echo "<span class=\"count\">$row[count_all]</span>";
@@ -32,12 +54,19 @@ function header_section($input, $name) {
 	  echo "</div>";
 	echo "</div>";
 
-	$result = mysql_query("SELECT name, id, favicon FROM feeds WHERE category = '$row[category]'");
+	//$result = mysql_query("SELECT name, id, favicon FROM feeds WHERE category = '$row[category]'");
+        $result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category = '$row[category]') a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
+
 
 	echo "<div class=\"menu-sub\" id='$title'>";
 
 	while ($row = mysql_fetch_array($result, MYSQL_NUM)) {
-		echo "<div class=\"menu-sub-item\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span></div>";
+
+		if (empty($row[3])) {
+			$row[3] = "0";
+		}
+
+		echo "<div class=\"menu-sub-item\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span><span class=\"count-sub\">$row[3]</span></div>";
 
 	}
 
@@ -51,6 +80,7 @@ function header_section($input, $name) {
   }
 }
 
+// Get overview of all categories and call function to feed feedbar
 $array = get_json('{"jsonrpc": "2.0", "overview": "category-detailed"}');
 header_section($array,'category');
 

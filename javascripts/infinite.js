@@ -1,23 +1,6 @@
 //source: http://www.inserthtml.com/2013/01/scroll-pagination/
 //function to parse input arguments from url
 
-function gup(name) {
-    name = name.replace(/[\[]/, "\\\[").replace(/[\]]/, "\\\]");
-    var regexS = "[\\?&]" + name + "=([^&#]*)";
-    var regex = new RegExp(regexS);
-    var results = regex.exec(window.location.href);
-    if (results == null)
-        return "";
-    else
-        return results[1];
-}
-
-//arguments needed for ajax.php
-var feed_param = gup('feeds');
-var category_param = gup('categories');
-var article_id = gup('article_id');
-var status_param = gup('status');
-
 (function ($) {
 
     $.fn.scrollPagination = function (options) {
@@ -53,7 +36,8 @@ var status_param = gup('status');
             else $initmessage = 'Click for more';
 
             // Append custom messages and extra UI
-            $this.append('<div class="content"></div><div class="loading-bar" id="loading-bar">' + $initmessage + '</div>');
+            //$this.append('<div class="content"></div><div class="loading-bar" id="loading-bar">' + $initmessage + '</div>');
+	    $this.append('<div class="content"></div><div class="loading-bar progress progress-striped active" id="loading-bar"><div class="bar" style="width: 50%;"></div></div>');
 
             function getData() {
 
@@ -65,8 +49,7 @@ var status_param = gup('status');
                     offset: offset,
                     feed_name: $settings.feed,
                     category_name: $settings.category,
-                    article_id: article_id,
-                    status: status_param,
+		    status: $settings.status,
 
                 }, function (data) {
 
@@ -78,6 +61,7 @@ var status_param = gup('status');
 
                     // If there is no data returned, there are no more posts to be shown. Show error
                     if (data == "") {
+			$this.find('.loading-bar').removeClass('progress progress-striped active')
                         $this.find('.loading-bar').html($settings.error);
                     } else {
 

@@ -1,12 +1,7 @@
-<html>
 <head>
 <link rel="stylesheet" href="stylesheets/styles.css">
 </head>
 
-<body>
-<top-nav>
-<?php include 'top-nav.php'; ?>
-</top-nav>
 <result>
 <?php 
 
@@ -53,5 +48,4 @@ if (empty($title)) {
 }
 ?>
 </result>
-</body>
-</html>
+

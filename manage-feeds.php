@@ -1,7 +1,5 @@
 <html>
 <head>
-  <link rel="stylesheet" href="stylesheets/styles.css">
-  <script src="javascripts/jquery-min.js"></script>
   <script src="javascripts/jquery.min.js"></script>
 
   <script>
@@ -63,7 +61,8 @@ $new_feed_id = $_POST["new_feed_id"];
 if (!empty($new_feed_name) || !empty($new_feed_category)) {
 
   $update = get_json('{"jsonrpc": "2.0", "update": "feeds", "new_feed_name": "' . $new_feed_name . '", "new_feed_category": "' . $new_feed_category . '", "value": "' . $new_feed_id . '"}');
-
+  header("Location: $url");
+  exit;
 }
 
 $results = get_json('{"jsonrpc": "2.0", "request": "get-feeds"}');

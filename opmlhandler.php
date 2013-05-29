@@ -1,9 +1,7 @@
-<html>
 <head>
  <script src="javascripts/jquery.min.js"></script>
  <link rel="stylesheet" href="stylesheets/styles.css">
 </head>
-<body>
 
 <br><br>
 <?php 
@@ -106,5 +104,3 @@ if ($_FILES["file"]["error"] > 0) {
 
 ?> 
 
-</body>
-</html>

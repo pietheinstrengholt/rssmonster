@@ -10,18 +10,22 @@ include 'functions.php';
  <link rel="stylesheet" href="stylesheets/styles.css">
  <script src="javascripts/jquery.min.js"></script>
 </head>
-<body>
 
 <result>
 <div class="opml-form">
-Coming from Google Reader? Use Google Reader export to get your Google Reader subscriptions into a .xml file.<br>
+
+<div class="alert alert-info">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Coming from Google Reader?</strong>  Use Google Reader export to get your Google Reader subscriptions into a .xml file.
+</div>
 
 <form action="opmlhandler.php" method="post" enctype="multipart/form-data">
-<label for="file">Filename:</label>
-<input type="file" name="file" id="file"><br>
-<input type="submit" name="submit" value="Submit">
+ <fieldset>
+   <legend>OPML Wizard</legend>
+   <label>Filename</label>
+   <input type="file" title="Search for a file to add">
+ </fieldset>
+<button type="submit" class="btn">Submit</button>
 </form>
 </div>
 </result>
-</body>
-</html>

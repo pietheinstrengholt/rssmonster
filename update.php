@@ -1,13 +1,8 @@
-<html>
 <head>
  <title>Update page</title>
- <link rel="stylesheet" href="stylesheets/styles.css">
  <script src="javascripts/jquery.min.js"></script>
 </head>
-<body>
-<top-nav>
- <?php include 'top-nav.php'; ?>
-</top-nav>
+
 
 <br><br>
 
@@ -121,5 +116,3 @@ echo "</table>";
 
 ?>
 
-</body>
-</html>

@@ -32,9 +32,9 @@
 
   <body>
 
-      <top-nav>
+      <!-- <top-nav> -->
           <?php include 'top-nav.php'; ?>
-      </top-nav>
+      <!-- </top-nav> -->
 
       <!-- <div id="nav-bar-shadow"></div> -->
 

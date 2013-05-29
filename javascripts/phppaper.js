@@ -1,6 +1,9 @@
 //TODO: read window.location.hash and if set reload section with post parameters
 $(document).ready(function () {
 
+    //dropdown toggle
+    $('.dropdown-toggle').dropdown();
+
     //remove scrollbar
     $('feedbar').css({
         'overflow-y': 'hidden'
@@ -8,7 +11,7 @@ $(document).ready(function () {
 
     //loadscrollPagination function to load items when scrolling. Remember to use: $(window).off("scroll");
 
-    function loadscrollPagination(category, feed) {
+    function loadscrollPagination(category, feed, status) {
         setTimeout(function () {
 
             $('#content').scrollPagination({
@@ -18,7 +21,8 @@ $(document).ready(function () {
                 delay: 500, // When you scroll down the posts will load after a delayed amount of time.
                 scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
                 category: category, // Catch category from menu
-                feed: feed // Catch feedname from menu
+                feed: feed, // Catch feedname from menu
+                status: status // Catch status from menu
             });
         }, 100);
     }
@@ -46,7 +50,6 @@ $(document).ready(function () {
 
     console.log(hashtype);
     console.log(hashvalue);
-
 
     //set cookie for view, if not set
     if ($.cookie('view') == 'undefined') {
@@ -83,13 +86,45 @@ $(document).ready(function () {
         this.href = this.href + window.location.hash;
     });
 
-    //Drop down menu items from feedbar
+    //Status function on feed
+    jQuery("div.menu-heading-status").click(function () {
+        var status = $(this).find("div.title").text();
+        console.log("Clicked on status: " + status);
+        var encoded_status = encodeURIComponent(status);
+        window.location.hash = '#status=' + encoded_status;
+
+        hashtype = "status";
+        hashvalue = encoded_status;
+
+	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
+	$(this).addClass("status-clicked");
+
+	if (viewtype == 'detailed') {
+
+            $('section #content').remove();
+            $('section').append('<div id="content"></div>');
+            $(window).off("scroll");
+            loadscrollPagination('', '', encoded_status);
+
+        } else {
+            $(window).off("scroll");
+            $('section').load('list-view.php?status=' + encoded_status);
+        }
+
+    });
+
+    //Categorie function on feedbar: Drop down menu sub-menu items when categorie is clicked
     jQuery("div.menu-sub").hide();
     jQuery("div.menu-heading").click(function () {
 
+	//avoid scrollbar
         $('feedbar').css({
             'overflow-y': 'hidden'
         });
+
+	//remove any active clicked classes from status overview
+	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
+
         var category = $(this).find("div.title").text();
         console.log("Clicked on category: " + category);
         console.log("viewtype = " + viewtype);
@@ -118,19 +153,23 @@ $(document).ready(function () {
             $(this).removeClass("clicked");
             $(this).css("background-color", "");
             $(this).css("color", "");
-            $(this).find('div.pointer').css("background-image", 'url("images/fd/selector-right-arrow.png")');
+            $(this).find('div.pointer-category').css("background-image", 'url("images/fd/selector-right-arrow.png")');
         } else {
             $(this).addClass("clicked");
             //$(this).css( "background-color", "rgba( 0,0,0,0.04 )" );
             $(this).css("background-color", "#0088cc");
             $(this).css("color", "#ffffff");
-            $(this).find('div.pointer').css("background-image", 'url("images/fd/selector-down-arrow.png")');
+            $(this).find('div.pointer-category').css("background-image", 'url("images/fd/selector-down-arrow.png")');
         }
     });
 
 
-    //Selection and load sub menu items from feedbar
+    //Functionality when sub menu item from categories is clicked
     jQuery("div.menu-sub-item").click(function () {
+
+        //remove any active clicked classes from status overview
+        $('div.nav-main').find('.status-clicked').removeClass("status-clicked");
+
         var feed = $(this).find("span.title").text();
         console.log("Clicked on feed: " + feed);
         var encoded_feed = encodeURIComponent(feed);
@@ -157,19 +196,25 @@ $(document).ready(function () {
 
     });
 
-    //Selection and load sub menu items from feedbar
-    jQuery("div.opml").click(function () {
+    //Load opml import screen in section
+    jQuery("a#import-opml").click(function () {
         $('section').load('opml.php');
     });
 
-    //Selection and load sub menu items from feedbar
+    //Load opml import screen in section
+    jQuery("a#update").click(function () {
+        $('section').load('update.php');
+    });
+
+    //Load organize feeds section
     jQuery("div.organize").click(function () {
         $('section').load('manage-feeds.php');
     });
 
 
     //List view button
-    jQuery("div.list").click(function () {
+    //jQuery("div.list").click(function () {
+    jQuery("a#list-view").click(function () {
         console.log("switched to list view");
         $.cookie('view', 'list', {
             expires: 14
@@ -184,7 +229,8 @@ $(document).ready(function () {
     });
 
     //Detailed view button
-    jQuery("div.detailed").click(function () {
+    //jQuery("div.detailed").click(function () {
+    jQuery("a#detailed-view").click(function () {
 
         //set cookie and variable to detailed view
         console.log("switched to detailed view");
