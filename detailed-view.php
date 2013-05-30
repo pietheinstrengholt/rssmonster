@@ -5,10 +5,10 @@ include 'config.php';
 include 'functions.php';
 
 //retrieve feed or category information from infinite.js
-$input_feed = htmlspecialchars($_POST["feed_name"]);
-$input_category = htmlspecialchars($_POST["category_name"]);
-$article_id = htmlspecialchars($_POST["article_id"]);
-$status = htmlspecialchars($_POST["status"]);
+$input_feed = htmlspecialchars($_POST['feed_name']);
+$input_category = htmlspecialchars($_POST['category_name']);
+$article_id = htmlspecialchars($_POST['article_id']);
+$status = htmlspecialchars($_POST['status']);
 
 //urldecode post input
 $input_feed = urldecode($input_feed);
@@ -40,7 +40,7 @@ if (!empty($array) && $array != "no-results") {
 
                 echo "<div class='article' id=$row[id]>";
 
-		if ($row[star_ind] == '1') {
+		if ($row['star_ind'] == '1') {
 	                echo "<img class='item-star star $offset' id=$row[id] src='images/star_selected.png'>";
 		} else {
                         echo "<img class='item-star unstar $offset' id=$row[id] src='images/star_unselected.png'>";

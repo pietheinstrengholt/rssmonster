@@ -5,9 +5,9 @@ include 'config.php';
 include 'functions.php';
 
 //input
-$input_feed = htmlspecialchars($_GET["feed"]);
-$input_category = htmlspecialchars($_GET["category"]);
-$status = htmlspecialchars($_GET["status"]);
+$input_feed = htmlspecialchars($_GET['feed']);
+$input_category = htmlspecialchars($_GET['category']);
+$status = htmlspecialchars($_GET['status']);
 
 $offset = 0;
 //number of items to load from db
@@ -147,7 +147,7 @@ echo "<div id=layer1>";
 
 		echo "<div class='newsitem' id=$row[id]>";
 
-		if ($row[star_ind] == '1') {
+		if ($row['star_ind'] == '1') {
 			echo "<img class='item-star star' id=$row[id] src='images/star_selected.png'>";
 		} else {
 			echo "<img class='item-star unstar' id=$row[id] src='images/star_unselected.png'>";
