@@ -1,8 +1,10 @@
+<html>
 <head>
  <title>Update page</title>
+ <link rel="stylesheet" href="stylesheets/bootstrap.css">
+ <link rel="stylesheet" href="stylesheets/styles.css">
  <script src="javascripts/jquery-1.9.1.min.js"></script>
 </head>
-
 
 <br><br>
 
@@ -26,7 +28,7 @@ $sql   = mysql_query($query);
 
 ?>
 
-<table border='1'>
+<table id="update" class="table table-bordered table-condensed">
 <tr>
  <th>ID</th>
  <th>Feed_Name</th>
@@ -116,3 +118,4 @@ echo "</table>";
 
 ?>
 
+</html>

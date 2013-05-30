@@ -7,6 +7,7 @@ $url = preg_replace('/\s+/', '', $url);
 $jsonurl = $url . "/json.php";
 $mobile = $url . "/mobile.php";
 
+if (!function_exists('get_json')) {
 function get_json($input)
 	{
 
@@ -25,7 +26,9 @@ function get_json($input)
 	curl_setopt($ch, CURLOPT_POSTFIELDS, $input);
 	return json_decode(curl_exec($ch) , true);
 	}
+}
 
+if (!function_exists('in_multiarray')) {
 function in_multiarray($elem, $array)
 	{
 	$top = sizeof($array) - 1;
@@ -41,5 +44,6 @@ function in_multiarray($elem, $array)
 
 	return false;
 	}
+}
 
 ?>

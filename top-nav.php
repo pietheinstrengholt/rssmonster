@@ -30,7 +30,7 @@ include 'functions.php';
     </form>
 
     <ul class="nav">
-      <?php echo "<li><a class=\"update\" href=\"$url/update.php\">Update feeds</a></li>"; ?>
+      <li><a class="update" href="#">Update feeds</a></li>
     </ul>
 
   </div>

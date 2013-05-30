@@ -17,7 +17,7 @@ $(document).ready(function () {
             $('#content').scrollPagination({
                 nop: 10, // The number of posts per scroll to be loaded
                 offset: 0, // Initial offset, begins at 0 in this case
-                error: 'No More Posts!', // When the user reaches the end this is the message that is
+                error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
                 delay: 500, // When you scroll down the posts will load after a delayed amount of time.
                 scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
                 category: category, // Catch category from menu
@@ -202,15 +202,44 @@ $(document).ready(function () {
     });
 
     //Load opml import screen in section
-    jQuery("a#update").click(function () {
+    jQuery("a.update").click(function () {
+	//show progress bar while loading
+	console.log("update.php called");
+	$(window).off("scroll");
+	$('section').empty();
+	$('section').append('<div class="update-content"></div><div class="loading-bar progress progress-striped active" id="loading-bar"><div class="bar" style="width: 50%;"></div></div>');
         $('section').load('update.php');
     });
 
     //Load organize feeds section
-    jQuery("div.organize").click(function () {
+    jQuery("div.organize button.btn.btn-small.btn-primary").click(function () {
+	$(window).off("scroll");
         $('section').load('manage-feeds.php');
     });
 
+    //Load organize feeds section
+    jQuery("div.organize button.btn.btn-small.btn-warning").click(function () {
+	console.log("mark-as-read button clicked");
+        $.ajax({
+            type: "POST",
+            url: "json.php",
+            data: JSON.stringify({
+                "jsonrpc": "2.0",
+                "update": "mark-as-read"
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            async: false,
+            success: function (json) {
+                result = json;
+                //scroll to top before refresh
+                document.body.scrollTop = document.documentElement.scrollTop = 0;
+                //refresh page to load new articles
+                location.reload();
+            },
+            failure: function (errMsg) {}
+        });
+    });
 
     //List view button
     jQuery("a#list-view").click(function () {

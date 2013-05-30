@@ -107,6 +107,10 @@ a.brand {
 
 /* FEEDBAR */
 
+div.organize button.btn.btn-small.btn-primary {
+  margin-left: 8px;
+}
+
 div.menu-heading-status.status-clicked, div.menu-heading-status.status-clicked:hover {
   background-color: rgb(220, 234, 244);
 }
@@ -316,22 +320,6 @@ div.opml-form form input {
   font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
 
-
-/* SHADOW */
-
-#nav-bar-shadow {
-  margin-top: 40px;
-  position: absolute;
-  left: 0;
-  height: 3px;
-  width: 100%;
-  background: -webkit-gradient(linear,left top,left bottom,from(rgba(0,0,0,0.2)),to(rgba(0,0,0,0)));
-  background: -webkit-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
-  background: -moz-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
-  background: -ms-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
-  background: -o-linear-gradient(top,rgba(0,0,0,0.2),rgba(0,0,0,0));
-}
-
 /* LIST VIEW */
 
 span#mark-these-read {
@@ -386,4 +374,15 @@ div#layer1 p {
 
 div#layer1 .subject {
   font-weight:bold;
+}
+
+/* UPDATE SCREEN */
+
+div.update-content {
+  margin-top: 50px;
+}
+
+table#update {
+  width: 80%;
+  margin-left: 7%;
 }
