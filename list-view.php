@@ -5,9 +5,10 @@ include 'config.php';
 include 'functions.php';
 
 //input
-$input_feed = htmlspecialchars($_GET['feed']);
-$input_category = htmlspecialchars($_GET['category']);
-$status = htmlspecialchars($_GET['status']);
+if(isset($_GET["feed"])){ $input_feed = htmlspecialchars($_GET["feed"]); } else { $input_feed = NULL; }
+if(isset($_GET["feed"])){ $input_category = htmlspecialchars($_GET["category"]); } else { $input_category = NULL; }
+if(isset($_GET["feed"])){ $status = htmlspecialchars($_GET["status"]); } else { $status = NULL; }
+if(isset($_GET["article_id"])){ $status = htmlspecialchars($_GET["article_id"]); } else { $article_id = NULL; }
 
 $offset = 0;
 //number of items to load from db
@@ -23,7 +24,7 @@ $stack = array();
 if (!empty($array) && $array != "no-results") {
   foreach ($array as $row) {
     if (!empty($row)) {
-      array_push($stack, $row[id]);
+      array_push($stack, $row['id']);
     }
   }
 }
@@ -156,7 +157,7 @@ echo "<div id=layer1>";
                 echo "<div class='heading' id=$row[id]>";
 		echo "<div class='heading-top'>";
 		
-		$subject = strip_tags($row[subject]);
+		$subject = strip_tags($row['subject']);
                 $subject = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $subject);
 		
 		echo "<span class='subject'>$subject</span>";
@@ -164,7 +165,7 @@ echo "<div id=layer1>";
 		echo "</div>";
 
 		echo "<div class='heading-bottom'>";
-		$content = strip_tags($row[content]);
+		$content = strip_tags($row['content']);
                 $content = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $content);
 		$content = substr($content, 0, 250);
 
