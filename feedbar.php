@@ -21,9 +21,9 @@ foreach ($status as $row) {
 	echo "<div class=\"menu-heading-status\" id='$cssid'>";
           echo "<div class=\"pointer-$cssid\"></div>";
 	  //echo "<i class=\"icon-search\"></i>";
-	  echo "<div class=\"title\">$row['name']</div>";
+	  echo "<div class=\"title\">$row[name]</div>";
 	  echo "<div class=\"count\">";
-          echo "<span class=\"count\">$row['count']</span>";
+          echo "<span class=\"count\">$row[count]</span>";
 	  echo "</div>";
 	echo "</div>";
 
@@ -49,9 +49,9 @@ function header_section($input, $name) {
           echo "<div class=\"pointer-category\"></div>";
 	  echo "<div class=\"title\">$title</div>";
 	  echo "<div class=\"count\">";
-          echo "<span class=\"count\">$row['count_all']</span>";
+          echo "<span class=\"count\">$row[count_all]</span>";
 	  echo "<span class=\"count\"> / </span>";
-          echo "<span class=\"count\">$row['count_unread']</span>";
+          echo "<span class=\"count\">$row[count_unread]</span>";
 	  echo "</div>";
 	echo "</div>";
 
