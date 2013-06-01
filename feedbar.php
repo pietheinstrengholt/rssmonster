@@ -17,13 +17,13 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 foreach ($status as $row) {
       if (!empty($row)) {
 
-        $cssid = str_replace(" ", "-", $row[name]);  
+        $cssid = str_replace(" ", "-", $row['name']);  
 	echo "<div class=\"menu-heading-status\" id='$cssid'>";
           echo "<div class=\"pointer-$cssid\"></div>";
 	  //echo "<i class=\"icon-search\"></i>";
-	  echo "<div class=\"title\">$row[name]</div>";
+	  echo "<div class=\"title\">$row['name']</div>";
 	  echo "<div class=\"count\">";
-          echo "<span class=\"count\">$row[count]</span>";
+          echo "<span class=\"count\">$row['count']</span>";
 	  echo "</div>";
 	echo "</div>";
 
@@ -43,19 +43,19 @@ function header_section($input, $name) {
     foreach ($input as $row) {
       if (!empty($row)) {
 
-	$title = substr($row[category], 0, 16);
+	$title = substr($row['category'], 0, 16);
 
 	echo "<div class=\"menu-heading\" id='$title'>";
           echo "<div class=\"pointer-category\"></div>";
 	  echo "<div class=\"title\">$title</div>";
 	  echo "<div class=\"count\">";
-          echo "<span class=\"count\">$row[count_all]</span>";
+          echo "<span class=\"count\">$row['count_all']</span>";
 	  echo "<span class=\"count\"> / </span>";
-          echo "<span class=\"count\">$row[count_unread]</span>";
+          echo "<span class=\"count\">$row['count_unread']</span>";
 	  echo "</div>";
 	echo "</div>";
 
-	//$result = mysql_query("SELECT name, id, favicon FROM feeds WHERE category = '$row[category]'");
+	//$result = mysql_query("SELECT name, id, favicon FROM feeds WHERE category = '$row['category']'");
         $result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category = '$row[category]') a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
 
 
