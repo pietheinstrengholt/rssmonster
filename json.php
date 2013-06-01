@@ -19,25 +19,25 @@ $yesterday = date('Y-m-d H:i:s', strtotime(' -1 day'));
 $lasthour = date('Y-m-d H:i:s', strtotime(' -1 hour'));
 
 //if json argument isn't given exit
-if ($arr[jsonrpc] != "2.0") { 
+if ($arr['jsonrpc'] != "2.0") { 
   echo json_encode($error);
   //exit;
  }
 
 //debug message
-if ($arr[request] == "debug") { 
+if ($arr['request'] == "debug") { 
   echo json_encode($debug);
 }
 
 //get overview with all feeds, sorted by name
-if ($arr[request] == "get-feeds") {
+if ($arr['request'] == "get-feeds") {
   $sql=mysql_query("SELECT * from feeds order by name");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r);
 }
 
 //update feedname or feed category
-if ($arr[update] == "feeds") {
+if ($arr['update'] == "feeds") {
   if (empty($arr[value])) {
     exit;
   } 
@@ -53,14 +53,14 @@ if ($arr[update] == "feeds") {
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","request": "read-status", "value": "1"}' http://openreaderurl/json.php
 //get article status, read or unread
-if ($arr[request] == "read-status") {
+if ($arr['request'] == "read-status") {
   $sql = "SELECT status from articles WHERE id = $arr[value]";
   $result = mysql_query($sql);
   echo json_encode(mysql_result($result,0));
 }
 
 //get article content
-if ($arr[request] == "read-content") {
+if ($arr['request'] == "read-content") {
   $sql = "SELECT content from articles WHERE id = $arr[value]";
   $result = mysql_query($sql);
   echo json_encode(mysql_result($result,0));
@@ -68,7 +68,7 @@ if ($arr[request] == "read-content") {
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","update": "read-status", "value": "1"}' http://openreaderurl/json.php
 //update read status and return url as success value
-if ($arr[update] == "read-status") {
+if ($arr['update'] == "read-status") {
   $sql = "UPDATE articles set status = 'read' WHERE id = $arr[value]";
   $result = mysql_query($sql);
   $response = "SELECT url FROM articles WHERE id = $arr[value]";
@@ -78,11 +78,11 @@ if ($arr[update] == "read-status") {
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","update": "star-mark", "value": "1"}' http://openreaderurl/json.php
 //update article to mark as star or unstar
-if ($arr[update] == "star-mark") {
+if ($arr['update'] == "star-mark") {
   $sql = "UPDATE articles set star_ind = '1' WHERE id = $arr[value]";
   $result = mysql_query($sql);
   echo json_encode("done");
-} elseif ($arr[update] == "star-unmark") {
+} elseif ($arr['update'] == "star-unmark") {
   $sql = "UPDATE articles set star_ind = '0' WHERE id = $arr[value]";
   $result = mysql_query($sql);
   echo json_encode("done");
@@ -90,7 +90,7 @@ if ($arr[update] == "star-mark") {
 
 //http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" update="mark-as-read" -b
 //update read status for article
-if ($arr[update] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] != 'read') {
+if ($arr['update'] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] != 'read') {
   if (!empty($arr[value])) {
     $sql = "UPDATE articles set status = 'read' WHERE id in ($arr[value])";
   } elseif (!empty($arr[input_feed]) && empty($arr[input_category])) {
@@ -105,15 +105,15 @@ if ($arr[update] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] 
 }
 
 //provide overview with feeds, e.g. names, categories, count unreaded number of articles
-if ($arr[overview] == "feed") {
+if ($arr['overview'] == "feed") {
   $sql=mysql_query("SELECT name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND t2.name != '' GROUP BY name ORDER BY name");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r);
-} elseif ($arr[overview] == "category") {
+} elseif ($arr['overview'] == "category") {
   $sql=mysql_query("SELECT category as name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE category <> '' AND status = 'unread' GROUP BY category ORDER BY category");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r); 
-} elseif ($arr[overview] == "category-detailed") {
+} elseif ($arr['overview'] == "category-detailed") {
   $sql=mysql_query("SELECT a.category, IFNULL(count_all,0) as count_all, IFNULL(count_unread,0) as count_unread FROM (SELECT category, 
 	sum(count_all) as count_all FROM 
 	 (SELECT feed_id, count(*) as count_all FROM articles 
@@ -132,7 +132,7 @@ if ($arr[overview] == "feed") {
 	ORDER BY a.category");
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r);
-} elseif ($arr[overview] == "status") {
+} elseif ($arr['overview'] == "status") {
   $sql=mysql_query("select name, count from (select status as name, count(*) as count from articles GROUP BY status ORDER BY status DESC) a
                     union
                     select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') b
@@ -147,22 +147,22 @@ if ($arr[overview] == "feed") {
 
 //http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" request="get-articles" offset="0" postnumbers="10" -b
 //get article content and other information
-if ($arr[request] == "get-articles") {
+if ($arr['request'] == "get-articles") {
 
-  if (empty($arr[status])) {
+  if (empty($arr['status'])) {
     $status = 'unread';
   } else {
-    $status = $arr[status];
+    $status = $arr['status'];
   }
 
   //article id is filled in
-  if (!empty($arr[article_id])) {
+  if (!empty($arr['article_id'])) {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.id = '$arr[article_id]'");
   //per feed
-  } elseif (!empty($arr[input_feed]) && empty($arr[input_category])) {
+  } elseif (!empty($arr['input_feed']) && empty($arr['input_category'])) {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE status = '$status' AND feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]') ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
   //per category
-  } elseif (!empty($arr[input_category]) && empty($arr[input_feed])) {
+  } elseif (!empty($arr['input_category']) && empty($arr['input_feed'])) {
     $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 
 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]') ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
   //last unread 25 or 50
@@ -189,7 +189,7 @@ LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","delete": "feed", "value": "1"}' http://openreaderurl/json.php
 //delete feed
-if ($arr[delete] == "feed") {
+if ($arr['delete'] == "feed") {
   $sql = "DELETE from feeds WHERE id = $arr[value]";
   $result = mysql_query($sql);
   echo json_encode("done");
