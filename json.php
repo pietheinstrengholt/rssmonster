@@ -25,6 +25,7 @@ if ($arr['jsonrpc'] != "2.0") {
  }
 
 //debug message
+if(isset($arr['request'])){
 if ($arr['request'] == "debug") { 
   echo json_encode($debug);
 }
@@ -36,7 +37,10 @@ if ($arr['request'] == "get-feeds") {
   echo json_encode($r);
 }
 
+}
+
 //update feedname or feed category
+if(isset($arr['update'])){
 if ($arr['update'] == "feeds") {
   if (empty($arr[value])) {
     exit;
@@ -50,9 +54,11 @@ if ($arr['update'] == "feeds") {
     echo json_encode("done");
   }
 }
+}
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","request": "read-status", "value": "1"}' http://openreaderurl/json.php
 //get article status, read or unread
+if(isset($arr['request'])){
 if ($arr['request'] == "read-status") {
   $sql = "SELECT status from articles WHERE id = $arr[value]";
   $result = mysql_query($sql);
@@ -65,9 +71,11 @@ if ($arr['request'] == "read-content") {
   $result = mysql_query($sql);
   echo json_encode(mysql_result($result,0));
 }
+}
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","update": "read-status", "value": "1"}' http://openreaderurl/json.php
 //update read status and return url as success value
+if(isset($arr['update'])){
 if ($arr['update'] == "read-status") {
   $sql = "UPDATE articles set status = 'read' WHERE id = $arr[value]";
   $result = mysql_query($sql);
@@ -87,9 +95,11 @@ if ($arr['update'] == "star-mark") {
   $result = mysql_query($sql);
   echo json_encode("done");
 }
+}
 
 //http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" update="mark-as-read" -b
 //update read status for article
+if(isset($arr['update'])){
 if ($arr['update'] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] != 'read') {
   if (!empty($arr[value])) {
     $sql = "UPDATE articles set status = 'read' WHERE id in ($arr[value])";
@@ -103,8 +113,10 @@ if ($arr['update'] == "mark-as-read" && $arr[status] != 'starred' && $arr[status
   $result = mysql_query($sql);
   echo json_encode("done");
 }
+}
 
 //provide overview with feeds, e.g. names, categories, count unreaded number of articles
+if(isset($arr['overview'])){
 if ($arr['overview'] == "feed") {
   $sql=mysql_query("SELECT name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND t2.name != '' GROUP BY name ORDER BY name");
   while($r[]=mysql_fetch_array($sql));
@@ -144,9 +156,11 @@ if ($arr['overview'] == "feed") {
   while($r[]=mysql_fetch_array($sql));
   echo json_encode($r);
 }
+}
 
 //http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" request="get-articles" offset="0" postnumbers="10" -b
 //get article content and other information
+if(isset($arr['request'])){
 if ($arr['request'] == "get-articles") {
 
   if (empty($arr['status'])) {
@@ -186,13 +200,16 @@ LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id
     echo json_encode($r);
   }
 }
+}
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","delete": "feed", "value": "1"}' http://openreaderurl/json.php
 //delete feed
+if(isset($arr['delete'])){
 if ($arr['delete'] == "feed") {
   $sql = "DELETE from feeds WHERE id = $arr[value]";
   $result = mysql_query($sql);
   echo json_encode("done");
+}
 }
 
 mysql_close();
