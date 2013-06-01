@@ -38,14 +38,14 @@ if ($arr['request'] == "get-feeds") {
 
 //update feedname or feed category
 if ($arr['update'] == "feeds") {
-  if (empty($arr[value])) {
+  if (empty($arr['value'])) {
     exit;
   } 
-  else if (empty($arr[new_feed_name]) && empty($arr[new_feed_category])) {
+  else if (empty($arr['new_feed_name']) && empty($arr['new_feed_category'])) {
     exit;
   } 
   else { 
-    $sql = "UPDATE feeds set name='$arr[new_feed_name]',category='$arr[new_feed_category]' WHERE id = $arr[value]";
+    $sql = "UPDATE feeds set name='$arr['new_feed_name']',category='$arr['new_feed_category']' WHERE id = $arr['value']";
     $result = mysql_query($sql);
     echo json_encode("done");
   }
@@ -54,14 +54,14 @@ if ($arr['update'] == "feeds") {
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","request": "read-status", "value": "1"}' http://openreaderurl/json.php
 //get article status, read or unread
 if ($arr['request'] == "read-status") {
-  $sql = "SELECT status from articles WHERE id = $arr[value]";
+  $sql = "SELECT status from articles WHERE id = $arr['value']";
   $result = mysql_query($sql);
   echo json_encode(mysql_result($result,0));
 }
 
 //get article content
 if ($arr['request'] == "read-content") {
-  $sql = "SELECT content from articles WHERE id = $arr[value]";
+  $sql = "SELECT content from articles WHERE id = $arr['value']";
   $result = mysql_query($sql);
   echo json_encode(mysql_result($result,0));
 }
@@ -69,9 +69,9 @@ if ($arr['request'] == "read-content") {
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","update": "read-status", "value": "1"}' http://openreaderurl/json.php
 //update read status and return url as success value
 if ($arr['update'] == "read-status") {
-  $sql = "UPDATE articles set status = 'read' WHERE id = $arr[value]";
+  $sql = "UPDATE articles set status = 'read' WHERE id = $arr['value']";
   $result = mysql_query($sql);
-  $response = "SELECT url FROM articles WHERE id = $arr[value]";
+  $response = "SELECT url FROM articles WHERE id = $arr['value']";
   $r = mysql_query($response);
   echo json_encode(mysql_result($r,0));
 }
@@ -79,25 +79,25 @@ if ($arr['update'] == "read-status") {
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","update": "star-mark", "value": "1"}' http://openreaderurl/json.php
 //update article to mark as star or unstar
 if ($arr['update'] == "star-mark") {
-  $sql = "UPDATE articles set star_ind = '1' WHERE id = $arr[value]";
+  $sql = "UPDATE articles set star_ind = '1' WHERE id = $arr['value']";
   $result = mysql_query($sql);
   echo json_encode("done");
 } elseif ($arr['update'] == "star-unmark") {
-  $sql = "UPDATE articles set star_ind = '0' WHERE id = $arr[value]";
+  $sql = "UPDATE articles set star_ind = '0' WHERE id = $arr['value']";
   $result = mysql_query($sql);
   echo json_encode("done");
 }
 
 //http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" update="mark-as-read" -b
 //update read status for article
-if ($arr['update'] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] != 'read') {
-  if (!empty($arr[value])) {
-    $sql = "UPDATE articles set status = 'read' WHERE id in ($arr[value])";
-  } elseif (!empty($arr[input_feed]) && empty($arr[input_category])) {
-    $sql = "UPDATE articles set status = 'read' WHERE feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]')";
-  } elseif (!empty($arr[input_category]) && empty($arr[input_feed])) {
-    $sql = "UPDATE articles set status = 'read' WHERE feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]')";
-  } elseif ($arr[status] == 'unread' || empty($arr[status])) {
+if ($arr['update'] == "mark-as-read" && $arr['status'] != 'starred' && $arr['status'] != 'read') {
+  if (!empty($arr['value'])) {
+    $sql = "UPDATE articles set status = 'read' WHERE id in ($arr['value'])";
+  } elseif (!empty($arr['input_feed']) && empty($arr['input_category'])) {
+    $sql = "UPDATE articles set status = 'read' WHERE feed_id = (SELECT id FROM `feeds` WHERE name = '$arr['input_feed']')";
+  } elseif (!empty($arr['input_category']) && empty($arr['input_feed'])) {
+    $sql = "UPDATE articles set status = 'read' WHERE feed_id in (SELECT id FROM `feeds` WHERE category = '$arr['input_category']')";
+  } elseif ($arr['status'] == 'unread' || empty($arr['status'])) {
     $sql = "UPDATE articles set status = 'read'";
   }
   $result = mysql_query($sql);
