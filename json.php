@@ -195,6 +195,6 @@ if ($arr['delete'] == "feed") {
   echo json_encode("done");
 }
 
-//mysql_close($con);
+mysql_close();
 
 ?>

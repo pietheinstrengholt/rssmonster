@@ -5,10 +5,10 @@ include 'config.php';
 include 'functions.php';
 
 //retrieve feed or category information from infinite.js
-$input_feed = htmlspecialchars($_POST['feed_name']);
-$input_category = htmlspecialchars($_POST['category_name']);
-$article_id = htmlspecialchars($_POST['article_id']);
-$status = htmlspecialchars($_POST['status']);
+if(isset($_POST['feed_name'])){ $input_feed = htmlspecialchars($_POST['feed_name']); }
+if(isset($_POST['category_name'])){ $input_category = htmlspecialchars($_POST['category_name']); }
+if(isset($_POST['article_id'])){ $article_id = htmlspecialchars($_POST['article_id']); }
+if(isset($_POST['status'])){ $status = htmlspecialchars($_POST['status']); }
 
 //urldecode post input
 $input_feed = urldecode($input_feed);
