@@ -1,5 +1,5 @@
 <a href="http://www.phppaper.com">
-  <img src="http://www.phppaper.com/wp-content/uploads/phppaper2.png" width="600px">
+  <img src="http://www.phppaper.com/wp-content/uploads/phppaper2.png" width="700px">
 </a>
 
 phppaper
@@ -38,9 +38,14 @@ The following scripts are used within phppaper
 TODO
 ----
 
-* Desktop: finish design
+* Desktop: finish design, cleanup json, functions in phppaper.js, dynamic count by using mark as read bullseye function, enabling responsive features bootstrap
 * General: Complete JSON events: add feeds, update event
 * General: Clean up by creating more functions or using a proper framework
 * Android redirect to mobile, make it possible to return to desktop/normale view
 * Desktop mode: mark as read, unread
 * Desktop mode: dynamic changing count
+* Desktop mode: move js from list-view to phppaper.js
+* Desktop mode: use bootstrap icons and use classes for image-star properties
+* Desktop mode: drag and dropstyle manage feeds section
+* Desktop mode: sort asc and desc from menu
+* Desktop mode: opml-handler, download icons. Functionality is currently disabled for performance reasons

@@ -19,10 +19,22 @@
 
   <body>
       <?php include 'top-nav.php'; ?>
+
+
+<div class="container-fluid">
+  <div class="row-fluid">
+    <div class="span3">
       <feedbar>
+<i class="icon-align-left"></i>
+
         <?php include 'feedbar.php'; ?>
       </feedbar>
+    </div>
+    <div class="span9">
       <section></section>
+    </div>
+  </div>
+</div>
   </body>
 
 </html>

@@ -171,24 +171,23 @@ if ($arr['request'] == "get-articles") {
 
   //article id is filled in
   if (!empty($arr['article_id'])) {
-    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.id = '$arr[article_id]'");
+    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.id = '$arr[article_id]'");
   //per feed
   } elseif (!empty($arr['input_feed']) && empty($arr['input_category'])) {
-    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE status = '$status' AND feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]') ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE status = '$status' AND feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]') ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
   //per category
   } elseif (!empty($arr['input_category']) && empty($arr['input_feed'])) {
-    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 
-LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]') ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+    $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]') ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
   //last unread 25 or 50
   } else {
     if ($status == 'starred') {
-      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.star_ind = '1' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.star_ind = '1' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
     } else if (urldecode($status) == 'last 24 hours') {
-      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND publish_date between '$yesterday' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND publish_date between '$yesterday' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
     } else if (urldecode($status) == 'last hour') {
-      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND  publish_date between '$lasthour' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND  publish_date between '$lasthour' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
     } else {
-      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name,star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+      $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
     }
   }
   while($r[]=mysql_fetch_array($sql));
@@ -212,6 +211,6 @@ if ($arr['delete'] == "feed") {
 }
 }
 
-mysql_close();
+//mysql_close();
 
 ?>

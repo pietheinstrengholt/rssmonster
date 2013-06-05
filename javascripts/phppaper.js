@@ -306,6 +306,12 @@ $(document).ready(function () {
         $(this).removeClass("unstar");
         $(this).addClass("star");
 
+	//increase count in menu
+        var starredcount = $('div.nav-main div#starred.menu-heading-status span.count').text();
+        var starredcountnew = parseFloat(starredcount)+1;
+        $('div.nav-main div#starred.menu-heading-status span.count').text(starredcountnew);
+
+
     });
 
     //event when unstaring item
@@ -333,6 +339,11 @@ $(document).ready(function () {
         $(this).removeClass("star");
         $(this).addClass("unstar");
 
+	//decrease star count in menu
+        var starredcount = $('div.nav-main div#starred.menu-heading-status span.count').text();
+        var starredcountnew = parseFloat(starredcount)-1;
+        $('div.nav-main div#starred.menu-heading-status span.count').text(starredcountnew);
+
     });
 
 
@@ -359,6 +370,8 @@ function myHandler(e) {
         pool.push(id);
 
         //mark item as read with json call
+	//TODO: Return after marking as read the menu and sub-menu, last hours indicators for updating menu
+	//TODO: This requires more advanced scripting. Return array with counts marked as read per category and feed
         $.ajax({
             type: "POST",
             url: "json.php",
@@ -372,5 +385,15 @@ function myHandler(e) {
             success: function (data) {},
             failure: function (errMsg) {}
         });
+
+	//decrease and increase unread and read amount in menu
+	var unreadcount = $('div.nav-main div#unread.menu-heading-status span.count').text();
+        var unreadcountnew = unreadcount -1;
+	$('div.nav-main div#unread.menu-heading-status span.count').text(unreadcountnew);
+
+        var readcount = $('div.nav-main div#read.menu-heading-status span.count').text();
+	var readcountnew = parseFloat(readcount)+1;
+        $('div.nav-main div#read.menu-heading-status span.count').text(readcountnew);
+
     };
 }

@@ -10,9 +10,7 @@ html {
 /* ARTICLES OVERVIEW SCREEN */
 
 section {
-  float: right;
-  width: 71%;
-  margin-right: 25px;
+  float: left;
   margin-top: 40px;
 }
 
@@ -108,7 +106,7 @@ a.brand {
 /* FEEDBAR */
 
 div.organize button.btn.btn-small.btn-primary {
-  margin-left: 8px;
+  margin-left: 8px ! important;
 }
 
 div.menu-heading-status.status-clicked, div.menu-heading-status.status-clicked:hover {
@@ -120,17 +118,14 @@ div#last-hour.menu-heading-status {
 }
 
 div.organize {
-  padding-left: 25px;
   margin-bottom: 15px;
 }
 
 div.nav-main {
   height: auto;
   display: table;
-  width:90%;
   margin-top: 3px;
   background: #f5f5f5;
-  margin-left: 25px;
   border: 1px solid #e3e3e3;
   -webkit-border-radius: 4px;
   -moz-border-radius: 4px;
@@ -248,16 +243,11 @@ span.count-sub {
 }
 
 feedbar {
-  background: #FFF;
   overflow-y: hidden;
-  float:left;
-  width: 26%;
   padding-top: 90px;
-  height: 100%;
-  position: fixed;
   overflow: auto;
-  font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
-  color: rgba( 0, 0, 0, 0.5 );
+  position: fixed;
+  width: 23.076923076923077%;
 }
 
 div.mCSB_container {

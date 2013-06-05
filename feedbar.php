@@ -45,13 +45,14 @@ function header_section($input, $name) {
 
 	$title = substr($row['category'], 0, 16);
 
-	echo "<div class=\"menu-heading\" id='$title'>";
+	$csstitle = str_replace(" ", "-", $title);
+	echo "<div class=\"menu-heading\" id='$csstitle'>";
           echo "<div class=\"pointer-category\"></div>";
 	  echo "<div class=\"title\">$title</div>";
 	  echo "<div class=\"count\">";
-          echo "<span class=\"count\">$row[count_all]</span>";
+          echo "<span class=\"count all\">$row[count_all]</span>";
 	  echo "<span class=\"count\"> / </span>";
-          echo "<span class=\"count\">$row[count_unread]</span>";
+          echo "<span class=\"count unread\">$row[count_unread]</span>";
 	  echo "</div>";
 	echo "</div>";
 
@@ -67,7 +68,8 @@ function header_section($input, $name) {
 			$row[3] = "0";
 		}
 
-		echo "<div class=\"menu-sub-item\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span><span class=\"count-sub\">$row[3]</span></div>";
+		$csssubtitle = str_replace(" ", "-", $row[0]);
+		echo "<div class=\"menu-sub-item\" id=\"$csssubtitle\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span><span class=\"count-sub\">$row[3]</span></div>";
 
 	}
 

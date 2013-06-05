@@ -54,9 +54,9 @@ include 'config.php';
 include 'functions.php';
 
 //retrieve post values
-$new_feed_name = $_POST["new_feed_name"];
-$new_feed_category = $_POST["new_feed_category"];
-$new_feed_id = $_POST["new_feed_id"];
+if(isset($_POST['new_feed_name'])){ $new_feed_name = $_POST['new_feed_name']; } else { $new_feed_name = NULL; }
+if(isset($_POST['new_feed_category'])){ $new_feed_category = $_POST['new_feed_category']; } else { $new_feed_category = NULL; }
+if(isset($_POST['new_feed_id'])){ $new_feed_id = $_POST['new_feed_id']; } else { $new_feed_id = NULL; }
 
 if (!empty($new_feed_name) || !empty($new_feed_category)) {
 
