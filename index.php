@@ -25,8 +25,6 @@
   <div class="row-fluid">
     <div class="span3">
       <feedbar>
-<i class="icon-align-left"></i>
-
         <?php include 'feedbar.php'; ?>
       </feedbar>
     </div>

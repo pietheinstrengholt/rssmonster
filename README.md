@@ -20,7 +20,7 @@ INSTALLATION
 2. Create a database, use the database.sql script
 3. Configure the config.php by using the correct mysql database settings
 4. Manual add feeds or import OPML
-5. Point to http://yourselfossurl.com/update.php
+5. Point to http://yourphppaperurl/update.php
 
 CREDITS
 -------
