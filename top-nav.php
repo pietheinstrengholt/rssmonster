@@ -17,7 +17,7 @@ include 'functions.php';
       </a>
 
       <!-- Be sure to leave the brand out there if you want it shown -->
-      <a class="brand" href="#">Home</a>
+      <a class="brand" href="<?php echo "$url/index.php"; ?>">Home</a>
 
       <!-- Everything you want hidden at 940px or less, place within here -->
       <div class="nav-collapse collapse">
