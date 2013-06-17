@@ -57,7 +57,7 @@ div.block {
 div.article hr {
   margin-top: 3px;
   margin-left: 5px;
-  width: 640px;
+  width: 98%;
 }
 
 div.feedname {
@@ -154,11 +154,6 @@ div.menu-heading:hover, div.menu-sub-item:hover, div.menu-heading-status:hover {
   background-color: rgba( 0,0,0,0.04 );
 }
 
-div.menu-heading {
-  //margin-top: 3px;
-}
-
-
 div.menu-sub {
   margin-top: 5px;
   margin-bottom: 3px;
@@ -168,55 +163,27 @@ div.sub-item {
  margin-left: 7px;
 }
 
-div.pointer-category, div.pointer-unread, div.pointer-read, div.pointer-starred, div.pointer-last-24-hours, div.pointer-last-hour {
+div.pointer, div.pointer-category {
   height: 24px;
   width: 20px;
   float: left;
   cursor:pointer;
 }
 
-div.pointer-category {
-  background-image:url(../images/fd/selector-right-arrow.png);
-  background-repeat:no-repeat;
-  background-position: -6px -2px;
-  background-size: 26px 26px;
+div.pointer i.icon-search, div.pointer i.icon-pencil, div.pointer i.icon-star-empty, div.pointer i.icon-tint, div.pointer i.icon-leaf {
+  margin-left: 1px;
+  margin-top: 3px;
 }
 
-div.pointer-read {
-  background-image:url(../images/fd/read.png);
-  background-repeat:no-repeat;
-  background-position: 0px 2px;
-  background-size: 20px 20px;
+div.pointer-category i.icon-chevron-right {
+  margin-left: 1px;
+  margin-top: 2px;
 }
 
-div.pointer-unread {
-  background-image:url(../images/fd/unread.png);
-  background-repeat:no-repeat;
-  background-position: 0px 2px;
-  background-size: 20px 20px;
+div.pointer-category i.icon-chevron-down {
+  margin-left: 3px;
+  margin-top: 2px;
 }
-
-div.pointer-starred {
-  background-image:url(../images/fd/starred.png);
-  background-repeat:no-repeat;
-  background-position: 0px 2px;
-  background-size: 20px 20px;
-}
-
-div.pointer-last-24-hours {
-  background-image:url(../images/fd/last-24-hours.png);
-  background-repeat:no-repeat;
-  background-position: 0px 2px;
-  background-size: 20px 20px;
-}
-
-div.pointer-last-hour {
-  background-image:url(../images/fd/last-hour.png);
-  background-repeat:no-repeat;
-  background-position: 0px 2px;
-  background-size: 20px 20px;
-}
-
 
 div.title {
   width: 130px;

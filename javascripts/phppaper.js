@@ -153,13 +153,13 @@ $(document).ready(function () {
             $(this).removeClass("clicked");
             $(this).css("background-color", "");
             $(this).css("color", "");
-            $(this).find('div.pointer-category').css("background-image", 'url("images/fd/selector-right-arrow.png")');
+	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-right');
         } else {
             $(this).addClass("clicked");
             //$(this).css( "background-color", "rgba( 0,0,0,0.04 )" );
             $(this).css("background-color", "#0088cc");
             $(this).css("color", "#ffffff");
-            $(this).find('div.pointer-category').css("background-image", 'url("images/fd/selector-down-arrow.png")');
+	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-down');
         }
     });
 

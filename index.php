@@ -23,7 +23,7 @@
       <?php include 'top-nav.php'; ?>
 <div class="container-fluid">
   <div class="row-fluid">
-    <div class="span3">
+    <div class="span3 hidden-tablet hidden-phone">
       <feedbar>
         <?php include 'feedbar.php'; ?>
       </feedbar>

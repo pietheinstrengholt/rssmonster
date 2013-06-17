@@ -20,10 +20,23 @@ foreach ($status as $row) {
 
         $cssid = str_replace(" ", "-", $row['name']);  
 	echo "<div class=\"menu-heading-status\" id='$cssid'>";
-          echo "<div class=\"pointer-$cssid\"></div>";
-	  echo "<div class=\"title\">$row[name]</div>";
-	  echo "<div class=\"count\">";
-          echo "<span class=\"count\">$row[count]</span>";
+	  echo "<div class=\"pointer\">";
+	  if ($cssid == 'unread') {
+	    echo "<i class=\"icon-search\"></i>";
+	  } elseif ($cssid == 'read') {
+            echo "<i class=\"icon-pencil\"></i>";
+	  } elseif ($cssid == 'starred') {
+            echo "<i class=\"icon-star-empty\"></i>";
+          } elseif ($cssid == 'last-24-hours') {
+            echo "<i class=\"icon-tint\"></i>";
+          } elseif ($cssid == 'last-hour') {
+            echo "<i class=\"icon-leaf\"></i>";
+	  }
+
+	  echo "</div>";
+	    echo "<div class=\"title\">$row[name]</div>";
+	    echo "<div class=\"count\">";
+            echo "<span class=\"count\">$row[count]</span>";
 	  echo "</div>";
 	echo "</div>";
 
@@ -47,8 +60,7 @@ function header_section($input, $name) {
 
 	$csstitle = str_replace(" ", "-", $title);
 	echo "<div class=\"menu-heading\" id='$csstitle'>";
-          echo "<div class=\"pointer-category\"></div>";
-	  //echo "<i class=\"icon-chevron-right\"></i>";	  
+	  echo "<div class=\"pointer-category\"><i class=\"icon-chevron-right\"></i></div>";
 	  echo "<div class=\"title\">$title</div>";
 	  echo "<div class=\"count\">";
           echo "<span class=\"count all\">$row[count_all]</span>";
