@@ -7,8 +7,20 @@ include 'functions.php';
 
 <div class="navbar navbar-fixed-top navbar-inverse">
   <div class="navbar-inner">
+   <div class="container">
 
-    <?php echo "<a class=\"brand\" href=\"$url/index.php\">Home</a>"; ?>
+      <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
+      <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </a>
+
+      <!-- Be sure to leave the brand out there if you want it shown -->
+      <a class="brand" href="#">Home</a>
+
+      <!-- Everything you want hidden at 940px or less, place within here -->
+      <div class="nav-collapse collapse">
 
     <ul class="nav">
       <li><a id="import-opml" href="#">Import OPML</a></li>
@@ -33,5 +45,9 @@ include 'functions.php';
       <li><a class="update" href="#">Update feeds</a></li>
     </ul>
 
+    </div>
+
+   </div>
   </div>
 </div>
+
