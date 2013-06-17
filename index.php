@@ -16,6 +16,7 @@
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/bootstrap.css">
     <link rel="stylesheet" href="stylesheets/bootstrap-responsive.css">
+    <script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
   </head>
 
   <body>
