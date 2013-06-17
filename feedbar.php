@@ -7,6 +7,7 @@ echo "<div class=\"organize\">";
 echo "<button class='btn btn-small btn-warning' type='button'>Mark all as read</button>";
 echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
 echo "</div>";
+//echo "<i class=\"icon-search\"></i>";
 
 echo "<div class=\"nav-main\">";
 
@@ -20,7 +21,6 @@ foreach ($status as $row) {
         $cssid = str_replace(" ", "-", $row['name']);  
 	echo "<div class=\"menu-heading-status\" id='$cssid'>";
           echo "<div class=\"pointer-$cssid\"></div>";
-	  //echo "<i class=\"icon-search\"></i>";
 	  echo "<div class=\"title\">$row[name]</div>";
 	  echo "<div class=\"count\">";
           echo "<span class=\"count\">$row[count]</span>";
@@ -48,6 +48,7 @@ function header_section($input, $name) {
 	$csstitle = str_replace(" ", "-", $title);
 	echo "<div class=\"menu-heading\" id='$csstitle'>";
           echo "<div class=\"pointer-category\"></div>";
+	  //echo "<i class=\"icon-chevron-right\"></i>";	  
 	  echo "<div class=\"title\">$title</div>";
 	  echo "<div class=\"count\">";
           echo "<span class=\"count all\">$row[count_all]</span>";
@@ -56,9 +57,7 @@ function header_section($input, $name) {
 	  echo "</div>";
 	echo "</div>";
 
-	//$result = mysql_query("SELECT name, id, favicon FROM feeds WHERE category = '$row['category']'");
         $result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category = '$row[category]') a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
-
 
 	echo "<div class=\"menu-sub\" id='$title'>";
 
