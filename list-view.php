@@ -6,8 +6,8 @@ include 'functions.php';
 
 //input
 if(isset($_GET["feed"])){ $input_feed = htmlspecialchars($_GET["feed"]); } else { $input_feed = NULL; }
-if(isset($_GET["feed"])){ $input_category = htmlspecialchars($_GET["category"]); } else { $input_category = NULL; }
-if(isset($_GET["feed"])){ $status = htmlspecialchars($_GET["status"]); } else { $status = NULL; }
+if(isset($_GET["category"])){ $input_category = htmlspecialchars($_GET["category"]); } else { $input_category = NULL; }
+if(isset($_GET["status"])){ $status = htmlspecialchars($_GET["status"]); } else { $status = NULL; }
 if(isset($_GET["article_id"])){ $status = htmlspecialchars($_GET["article_id"]); } else { $article_id = NULL; }
 
 $offset = 0;
