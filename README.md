@@ -45,7 +45,7 @@ TODO
 * Desktop mode: mark as read, unread
 * Desktop mode: dynamic changing count
 * Desktop mode: move js from list-view to phppaper.js
-* Desktop mode: use bootstrap icons and use classes for image-star properties
+* Desktop mode: use classes for image-star properties
 * Desktop mode: drag and dropstyle manage feeds section
 * Desktop mode: sort asc and desc from menu
 * Desktop mode: opml-handler, download icons. Functionality is currently disabled for performance reasons

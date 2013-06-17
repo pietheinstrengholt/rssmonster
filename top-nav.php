@@ -7,7 +7,7 @@ include 'functions.php';
 
 <div class="navbar navbar-fixed-top navbar-inverse">
   <div class="navbar-inner">
-   <div class="container">
+   <div class="container-fluid">
 
       <!-- .btn-navbar is used as the toggle for collapsed navbar content -->
       <a class="btn btn-navbar" data-toggle="collapse" data-target=".nav-collapse">

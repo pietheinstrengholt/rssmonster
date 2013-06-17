@@ -2,7 +2,6 @@
 <html>
   <head>
     <meta charset="utf-8">
-    <meta http-equiv="X-UA-Compatible" content="chrome=1"
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>phppaper by Piethein Strengholt</title>
     <script src="javascripts/jquery-1.9.1.min.js"></script>

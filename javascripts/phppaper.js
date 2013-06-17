@@ -10,8 +10,8 @@ $(document).ready(function () {
     });
 
     //loadscrollPagination function to load items when scrolling. Remember to use: $(window).off("scroll");
-
     function loadscrollPagination(category, feed, status) {
+	//use small amount of timeout
         setTimeout(function () {
 
             $('#content').scrollPagination({
@@ -45,30 +45,30 @@ $(document).ready(function () {
 
     if (typeof hashvalue === "undefined") {
         console.log("hashvalue is undefined");
-        //hashvalue = "";
+        hashvalue = "";
+    }
+
+    if (typeof hashtype === "undefined") {
+        console.log("hashvalue is undefined");
+        hashtype = "";
     }
 
     console.log(hashtype);
     console.log(hashvalue);
 
-    //set cookie for view, if not set
-    if ($.cookie('view') == 'undefined') {
-        console.log("cookie undefined, set cookie");
-        $.cookie('view', 'detailed', {
-            expires: 14
-        });
-    } else {
-        console.log("cookie found with current view type: " + $.cookie('view'));
-    }
+    //set cookie for view by default detailed
+    //if ($.cookie('view') == 'undefined') {
+        //$.cookie('view', 'detailed', {
+            //expires: 14
+        //});
+    //}
 
-    //get viewtype from cookie
+    //get viewtype from cookie, if empty viewtype is undefined
     var viewtype = $.cookie('view');
-    console.log("current view type = " + viewtype);
+    //console.log("current view type = " + viewtype);
 
-    //load list view is cookie is set to list view
+    //load list view if cookie is set to list view or list view is clicked
     if (viewtype == 'list') {
-
-        //TODO: scrollpagination is still active when switching to list view
         console.log("first load, load view list items for: " + request);
         $('section').load(viewtype + '-view.php?' + request);
     } else {
@@ -113,7 +113,7 @@ $(document).ready(function () {
 
     });
 
-    //Categorie function on feedbar: Drop down menu sub-menu items when categorie is clicked
+    //Category function on feedbar: Drop down menu sub-menu items when categorie is clicked
     jQuery("div.menu-sub").hide();
     jQuery("div.menu-heading").click(function () {
 
@@ -135,6 +135,7 @@ $(document).ready(function () {
             $('section #content').remove();
             $('section').append('<div id="content"></div>');
             $(window).off("scroll");
+	    console.log(encoded_category);
             loadscrollPagination(encoded_category, '');
 
         } else {
@@ -156,13 +157,11 @@ $(document).ready(function () {
 	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-right');
         } else {
             $(this).addClass("clicked");
-            //$(this).css( "background-color", "rgba( 0,0,0,0.04 )" );
             $(this).css("background-color", "#0088cc");
             $(this).css("color", "#ffffff");
 	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-down');
         }
     });
-
 
     //Functionality when sub menu item from categories is clicked
     jQuery("div.menu-sub-item").click(function () {

@@ -14,7 +14,8 @@
             delay: 500, // When you scroll down the posts will load after a delayed amount of time.
             scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
             category: '',
-            feed: ''
+            feed: '',
+	    status: ''
         }
 
         // Extend the options so they work with the plugin
