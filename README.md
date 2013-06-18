@@ -51,4 +51,3 @@ TODO
 * Desktop mode: opml-handler, download icons. Functionality is currently disabled for performance reasons
 * Desktop mode: first welcome screen to add opml or feed
 * Desktop mode: retrieve rss feed from url, instead of adding direct link to rss
-* Desktop mode: correctly resize, add nav-collapse.collapse

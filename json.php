@@ -13,11 +13,6 @@ $error = array('response'=>"Incorrect JSON message");
 header('Content-Type: application/json');
 $arr = json_decode(file_get_contents('php://input'), true);
 
-//time
-$today = date('Y-m-d H:i:s', time());
-$yesterday = date('Y-m-d H:i:s', strtotime(' -1 day'));
-$lasthour = date('Y-m-d H:i:s', strtotime(' -1 hour'));
-
 //if json argument isn't given exit
 if ($arr['jsonrpc'] != "2.0") { 
   echo json_encode($error);
@@ -93,9 +88,9 @@ if(isset($arr['request'])){
 		if ($status == 'starred') {
 		  $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.star_ind = '1' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
 		} else if (urldecode($status) == 'last 24 hours') {
-		  $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND publish_date between '$yesterday' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+		  $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND publish_date between (NOW() - INTERVAL 1 DAY) AND NOW() ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
 		} else if (urldecode($status) == 'last hour') {
-		  $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND  publish_date between '$lasthour' and '$today' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
+		  $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = 'unread' AND publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW() ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
 		} else {
 		  $sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' ORDER BY publish_date DESC LIMIT $arr[offset], $arr[postnumbers]");
 		}
@@ -186,9 +181,9 @@ if(isset($arr['overview'])){
 						union
 						select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') b
 				union
-				select name, count from (select 'last 24 hours' as name, count(*) as count from articles where status = 'unread' and publish_date between '$yesterday' and '$today') c
+				select name, count from (select 'last 24 hours' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 DAY) AND NOW()) c
 						union
-						select name, count from (select 'last hour' as name, count(*) as count from articles where status = 'unread' and publish_date between '$lasthour' and '$today') d
+						select name, count from (select 'last hour' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW()) d
 				");
 	  while($r[]=mysql_fetch_array($sql));
 	  echo json_encode($r);

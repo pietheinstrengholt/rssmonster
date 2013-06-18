@@ -256,7 +256,6 @@ $(document).ready(function () {
         var starredcountnew = parseFloat(starredcount)+1;
         $('div.nav-main div#starred.menu-heading-status span.count').text(starredcountnew);
 
-
     });
 
     //event when unstaring item
@@ -290,7 +289,6 @@ $(document).ready(function () {
         $('div.nav-main div#starred.menu-heading-status span.count').text(starredcountnew);
 
     });
-
 
 });
 

@@ -39,6 +39,33 @@ $matches = implode(',', $stack);
 <script type="text/javascript">
 
 jQuery(document).ready(function () {
+
+    var matches = "<?php echo $matches; ?>";
+
+    $("span#mark-these-read").click(function () {
+        $.ajax({
+            type: "POST",
+            url: "json.php",
+            data: JSON.stringify({
+                "jsonrpc": "2.0",
+                "update": "mark-as-read",
+                "value": matches
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            async: false,
+            success: function (json) {
+                result = json;
+                //scroll to top before refresh
+                document.body.scrollTop = document.documentElement.scrollTop = 0;
+                //refresh page to load new articles
+                location.reload();
+            },
+            failure: function (errMsg) {}
+        });
+
+    });
+
     jQuery(".news-content").hide();
     //toggle the componenet with class msg_body
     jQuery(".heading").click(function () {
@@ -92,41 +119,6 @@ jQuery(document).ready(function () {
 
         //scroll item to top of page when clicking
         //$(window).scrollTop($(this).position().top)
-
-    });
-});
-
-jQuery(document).ready(function () {
-    jQuery("span#mark-these-read").click(function () {
-        $.ajax({
-            type: "POST",
-            url: "json.php",
-            data: JSON.stringify({
-                "jsonrpc": "2.0",
-                "update": "mark-as-read",
-                "value": "<?php echo $matches; ?>"
-            }),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            async: false,
-            success: function (json) {
-                result = json;
-                //scroll to top before refresh
-                document.body.scrollTop = document.documentElement.scrollTop = 0;
-                //refresh page to load new articles
-                location.reload();
-            },
-            failure: function (errMsg) {}
-        });
-
-    });
-});
-
-jQuery(document).ready(function () {
-    jQuery("div#header-refresh.r-button").click(function () {
-
-        //refresh page to load new articles
-        location.reload();
 
     });
 });

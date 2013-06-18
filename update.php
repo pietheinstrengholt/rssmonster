@@ -94,14 +94,7 @@ while ($row = mysql_fetch_array($sql)) {
  <th><?php
         if (strtotime($date) > strtotime($comparedate)) {
             echo "new article";
-            mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . 
-mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date')") or die(mysql_error());
-            
-            
-            //                        mysql_query("INSERT INTO feeds (last_update) VALUES(CURRENT_TIMESTAMP)")
-            //                        or die(mysql_error());
-            
-            
+            mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date')") or die(mysql_error());
         } else {
             echo "existing";
         }
