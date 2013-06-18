@@ -9,8 +9,20 @@ $(document).ready(function () {
         'overflow-y': 'hidden'
     });
 
-    //loadscrollPagination function to load items when scrolling. Remember to use: $(window).off("scroll");
-    function loadscrollPagination(category, feed, status) {
+    //loadlistview function
+    function loadlistview(input) {
+	$(window).off("scroll");
+    }
+
+    //loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
+    function loaddetailedview(category, feed, status) {
+
+	//remove content and offload scroll
+        $('section').empty();
+        $('section #content').remove();
+        $('section').append('<div id="content"></div>');
+        $(window).off("scroll");
+
 	//use small amount of timeout
         setTimeout(function () {
 
@@ -75,10 +87,7 @@ $(document).ready(function () {
         console.log("first load, load detailed list items for: " + request);
         var encoded = encodeURIComponent(request);
         viewtype = "detailed";
-        $('section #content').remove();
-        $('section').append('<div id="content"></div>');
-        $(window).off("scroll");
-        loadscrollPagination('', '');
+        loaddetailedview('', '');
     }
 
     //remember windows location hash (obsolete)
@@ -100,11 +109,7 @@ $(document).ready(function () {
 	$(this).addClass("status-clicked");
 
 	if (viewtype == 'detailed') {
-
-            $('section #content').remove();
-            $('section').append('<div id="content"></div>');
-            $(window).off("scroll");
-            loadscrollPagination('', '', encoded_status);
+            loaddetailedview('', '', encoded_status);
 
         } else {
             $(window).off("scroll");
@@ -131,13 +136,7 @@ $(document).ready(function () {
         var encoded_category = encodeURIComponent(category);
 
         if (viewtype == 'detailed') {
-
-            $('section #content').remove();
-            $('section').append('<div id="content"></div>');
-            $(window).off("scroll");
-	    console.log(encoded_category);
-            loadscrollPagination(encoded_category, '');
-
+            loaddetailedview(encoded_category, '');
         } else {
             $(window).off("scroll");
             $('section').load('list-view.php?category=' + encoded_category);
@@ -182,12 +181,7 @@ $(document).ready(function () {
         $(this).css("background-color", "#dceaf4");
 
         if (viewtype == 'detailed') {
-
-            $('section #content').remove();
-            $('section').append('<div id="content"></div>');
-            $(window).off("scroll");
-            loadscrollPagination('', encoded_feed);
-
+            loaddetailedview('', encoded_feed);
         } else {
             $(window).off("scroll");
             $('section').load('list-view.php?feed=' + encoded_feed);
@@ -259,24 +253,16 @@ $(document).ready(function () {
         $.cookie('view', 'detailed', { expires: 14 });
         viewtype = "detailed";
 
-        //remove existing content and add empty again
-        $('section').empty();
-        $('section #content').remove();
-        $('section').append('<div id="content"></div>');
-
-        //disable existing scroll and load loadscrollPagination
-        $(window).off("scroll");
-
         console.log("switched to detailed view with hashtype: " + hashtype + " and hashvalue: " + hashvalue);
 
         if (hashtype == 'category') {
-            loadscrollPagination(hashvalue, '');
+            loaddetailedview(hashvalue, '');
         } else if (hashtype == 'feed') {
-            loadscrollPagination('', hashvalue);
+            loaddetailedview('', hashvalue);
         } else if (hashtype == 'status') {
-            loadscrollPagination('', '', hashvalue);
+            loaddetailedview('', '', hashvalue);
         } else if (typeof hashvalue === "undefined") {
-            loadscrollPagination('', '');
+            loaddetailedview('', '');
         }
     });
 
