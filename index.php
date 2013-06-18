@@ -1,5 +1,5 @@
 <!doctype html>
-<html>
+<html lang="en">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -14,11 +14,34 @@
     <script src="javascripts/bootstrap.min.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/bootstrap.css">
-    <link rel="stylesheet" href="stylesheets/bootstrap-responsive.css">
     <script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+
+    <style type="text/css">
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+
+      @media (max-width: 980px) {
+	padding-top: 0px;
+        /* Enable use of floated navbar text */
+        .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+    </style>
+
+   <link rel="stylesheet" href="stylesheets/bootstrap-responsive.css">
+
   </head>
 
   <body>
+
       <?php include 'top-nav.php'; ?>
 <div class="container-fluid">
   <div class="row-fluid">
@@ -32,6 +55,7 @@
     </div>
   </div>
 </div>
+
   </body>
 
 </html>

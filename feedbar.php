@@ -7,7 +7,6 @@ echo "<div class=\"organize\">";
 echo "<button class='btn btn-small btn-warning' type='button'>Mark all as read</button>";
 echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
 echo "</div>";
-//echo "<i class=\"icon-search\"></i>";
 
 echo "<div class=\"nav-main\">";
 
