@@ -1,12 +1,4 @@
 <html>
-<head>
- <title>Update page</title>
- <link rel="stylesheet" href="stylesheets/bootstrap.css">
- <link rel="stylesheet" href="stylesheets/styles.css">
- <script src="javascripts/jquery-1.9.1.min.js"></script>
-</head>
-
-<br><br>
 
 <?php
 
@@ -41,27 +33,24 @@ $sql   = mysql_query($query);
 
 while ($row = mysql_fetch_array($sql)) {
     
-    $feed      = $row['url'];
+    $feed_url  = $row['url'];
     $feed_id   = $row['id'];
     $feed_name = $row['name'];
     
-    //echo $feed;
-    
-    $feed = new SimplePie($feed);
+    //init feed simplepie
+    $feed = new SimplePie();
+    $feed->set_feed_url($feed_url);    
     $feed->init();
     $feed->handle_content_type();
     
     $lastdate    = mysql_query("SELECT publish_date from articles WHERE feed_id = '$feed_id;' ORDER BY publish_date desc LIMIT 1");
     $comparedate = mysql_result($lastdate, 0);
     
-    //echo "<br><br>";
-    
 ?>
 
 <?php
     
-    mysql_query("UPDATE feeds set last_update = CURRENT_TIMESTAMP where id = '$feed_id'") or die(mysql_error());
-    
+    mysql_query("UPDATE feeds set last_update = CURRENT_TIMESTAMP where id = '$feed_id'") or die(mysql_error());  
     
     //default to 1900 if no results exist
     if (empty($comparedate)) {
