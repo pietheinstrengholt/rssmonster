@@ -19,8 +19,9 @@ INSTALLATION
 1. Upload all files and unpack
 2. Create a database, use the database.sql script
 3. Configure the config.php by using the correct mysql database settings
-4. Manual add feeds or import OPML
-5. Point to http://yourphppaperurl/update.php
+4. Create a ./cache directory, make it writable (chmod 777)
+5. Manual add feeds or import OPML
+6. Point to http://yourphppaperurl/update.php
 
 CREDITS
 -------
@@ -38,12 +39,12 @@ The following scripts are used within phppaper
 TODO
 ----
 
-* Desktop: finish design, cleanup json, functions in phppaper.js, dynamic count by using mark as read bullseye function, enabling responsive features bootstrap
+* Desktop: finish design, functions in phppaper.js, dynamic count by using mark as read bullseye function
 * General: Complete JSON events: add feeds, update event
 * General: Clean up by creating more functions or using a proper framework
 * Android redirect to mobile, make it possible to return to desktop/normale view
 * Desktop mode: mark as read, unread
-* Desktop mode: dynamic changing count
+* Desktop mode: dynamic changing count within categories and feeds menu sections
 * Desktop mode: move js from list-view to phppaper.js
 * Desktop mode: use classes for image-star properties
 * Desktop mode: drag and dropstyle manage feeds section
