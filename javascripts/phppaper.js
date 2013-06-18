@@ -16,9 +16,7 @@ $(document).ready(function () {
         console.log(view + " value: " + value);
 
 	//set location path
-        window.location.hash = '#' + type + '=' + value;
-        hashtype = type;
-        hashvalue = value;
+	window.location.hash = '#' + type + '=' + value;
 
         //set cookie view to view parameter
 	$.cookie('view', view, { expires: 14 });
@@ -102,17 +100,21 @@ $(document).ready(function () {
 
     //Functionality from menu when Articles section is clicked
     jQuery("div.menu-heading-status").click(function () {
-	var viewtype = $.cookie('view');
-        var status = $(this).find("div.title").text();
-        var encoded_status = encodeURIComponent(status);
 
+	//remove and add clicked status to class
 	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 	$(this).addClass("status-clicked");
+
+	//load content
+        var viewtype = $.cookie('view');
+        var status = $(this).find("div.title").text();
+        var encoded_status = encodeURIComponent(status);
 	loadview(viewtype, 'status', encoded_status);
 
     });
 
     //Category function on feedbar: Drop down menu sub-menu items when a category is clicked
+    //hide sub menu by default
     jQuery("div.menu-sub").hide();
     jQuery("div.menu-heading").click(function () {
 
@@ -124,13 +126,10 @@ $(document).ready(function () {
 	//remove any active clicked classes from status overview
 	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 
-	var viewtype = $.cookie('view');
-        var category = $(this).find("div.title").text();
-        var encoded_category = encodeURIComponent(category);
-	loadview(viewtype, 'category', encoded_category);
-
+	//open submenu
         jQuery(this).next("div.menu-sub").slideToggle(200);
 
+	//change styling and arrow
         if ($(this).hasClass("clicked")) {
             $(this).removeClass("clicked");
             $(this).css("background-color", "");
@@ -142,6 +141,13 @@ $(document).ready(function () {
             $(this).css("color", "#ffffff");
 	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-down');
         }
+
+	//load content
+        var viewtype = $.cookie('view');
+        var category = $(this).find("div.title").text();
+        var encoded_category = encodeURIComponent(category);
+        loadview(viewtype, 'category', encoded_category);
+
     });
 
     //Functionality when sub menu item from categories is clicked
@@ -150,24 +156,25 @@ $(document).ready(function () {
         //remove any active clicked classes from status overview
         $('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 
-	var viewtype = $.cookie('view');
-        var feed = $(this).find("span.title").text();
-        var encoded_feed = encodeURIComponent(feed);
-
         //only one menu-sub-item can be active
         $("div.feedbar").find("div.menu-sub-item").css('background-color', '');
         $(this).css("background-color", "#dceaf4");
+
+	//load content
+        var viewtype = $.cookie('view');
+        var feed = $(this).find("span.title").text();
+        var encoded_feed = encodeURIComponent(feed);
 	loadview(viewtype, 'feed', encoded_feed);
 
     });
 
-    //List view button
+    //List view button from topnav menu
     jQuery("a#list-view").click(function () {
         console.log("switched to list view");
         loadview('list', hashtype, hashvalue);
     });
 
-    //Detailed view button
+    //Detailed view button from topnav menu
     jQuery("a#detailed-view").click(function () {
         console.log("switched to detailed view");
         loadview('detailed', hashtype, hashvalue);
