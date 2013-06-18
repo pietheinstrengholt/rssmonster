@@ -9,13 +9,46 @@ $(document).ready(function () {
         'overflow-y': 'hidden'
     });
 
+    function loadview(view, type, value) {
+
+	//debug
+        console.log(view + " type: " + type);
+        console.log(view + " value: " + value);
+
+	//set location path
+        window.location.hash = '#' + type + '=' + value;
+        hashtype = type;
+        hashvalue = value;
+
+        //set cookie view to view parameter
+	$.cookie('view', view, { expires: 14 });
+	var viewtype = $.cookie('view');
+
+        if (view == 'list') {
+           loadlistview(type, value);
+        } else if (view == 'detailed') {
+           loaddetailedview(type, value);
+        } else {
+           loaddetailedview(type, value);
+	}
+
+
+    }
+
     //loadlistview function
-    function loadlistview(input) {
+    function loadlistview(type, value) {
+
 	$(window).off("scroll");
+	$('section').load('list-view.php?' + type + '=' + value);
     }
 
     //loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
-    function loaddetailedview(category, feed, status) {
+    function loaddetailedview(type, value) {
+
+	//set category, feed and status variables
+	if (type == 'category') { var category = value; }
+        if (type == 'feed') { var feed = value; }
+        if (type == 'status') { var status = value; }
 
 	//remove content and offload scroll
         $('section').empty();
@@ -39,7 +72,7 @@ $(document).ready(function () {
         }, 100);
     }
 
-    //get hashtag value from url
+    //on a first load get hashtag value from url
     var request = window.location.hash;
     request = request.slice(1);
     console.log("hashtag value from url:" + request);
@@ -56,69 +89,30 @@ $(document).ready(function () {
     hashvalue = getSecondPart(request);
 
     if (typeof hashvalue === "undefined") {
-        console.log("hashvalue is undefined");
-        hashvalue = "";
-    }
-
-    if (typeof hashtype === "undefined") {
-        console.log("hashvalue is undefined");
-        hashtype = "";
-    }
-
-    console.log(hashtype);
-    console.log(hashvalue);
-
-    //set cookie for view by default detailed
-    //if ($.cookie('view') == 'undefined') {
-        //$.cookie('view', 'detailed', {
-            //expires: 14
-        //});
-    //}
-
-    //get viewtype from cookie, if empty viewtype is undefined
-    var viewtype = $.cookie('view');
-    //console.log("current view type = " + viewtype);
-
-    //load list view if cookie is set to list view or list view is clicked
-    if (viewtype == 'list') {
-        console.log("first load, load view list items for: " + request);
-        $('section').load(viewtype + '-view.php?' + request);
-    } else {
-        console.log("first load, load detailed list items for: " + request);
-        var encoded = encodeURIComponent(request);
-        viewtype = "detailed";
-        loaddetailedview('', '');
-    }
-
-    //remember windows location hash (obsolete)
-    $('div.main a').each(function () {
-        this.href = this.href + window.location.hash;
-    });
-
-    //Status function on feed
-    jQuery("div.menu-heading-status").click(function () {
-        var status = $(this).find("div.title").text();
-        console.log("Clicked on status: " + status);
-        var encoded_status = encodeURIComponent(status);
-        window.location.hash = '#status=' + encoded_status;
-
+        console.log("windows location hash is not set, retrieve unread items");
         hashtype = "status";
-        hashvalue = encoded_status;
+	hashvalue = "unread";
+    }
+
+    //get viewtype from cookie
+    var viewtype = $.cookie('view');
+
+    //load content
+    loadview(viewtype, hashtype, hashvalue);
+
+    //Functionality from menu when Articles section is clicked
+    jQuery("div.menu-heading-status").click(function () {
+	var viewtype = $.cookie('view');
+        var status = $(this).find("div.title").text();
+        var encoded_status = encodeURIComponent(status);
 
 	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 	$(this).addClass("status-clicked");
-
-	if (viewtype == 'detailed') {
-            loaddetailedview('', '', encoded_status);
-
-        } else {
-            $(window).off("scroll");
-            $('section').load('list-view.php?status=' + encoded_status);
-        }
+	loadview(viewtype, 'status', encoded_status);
 
     });
 
-    //Category function on feedbar: Drop down menu sub-menu items when categorie is clicked
+    //Category function on feedbar: Drop down menu sub-menu items when a category is clicked
     jQuery("div.menu-sub").hide();
     jQuery("div.menu-heading").click(function () {
 
@@ -130,22 +124,10 @@ $(document).ready(function () {
 	//remove any active clicked classes from status overview
 	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 
+	var viewtype = $.cookie('view');
         var category = $(this).find("div.title").text();
-        console.log("Clicked on category: " + category);
-        console.log("viewtype = " + viewtype);
         var encoded_category = encodeURIComponent(category);
-
-        if (viewtype == 'detailed') {
-            loaddetailedview(encoded_category, '');
-        } else {
-            $(window).off("scroll");
-            $('section').load('list-view.php?category=' + encoded_category);
-        }
-
-        window.location.hash = '#category=' + encoded_category;
-
-        hashtype = "category";
-        hashvalue = encoded_category;
+	loadview(viewtype, 'category', encoded_category);
 
         jQuery(this).next("div.menu-sub").slideToggle(200);
 
@@ -168,29 +150,32 @@ $(document).ready(function () {
         //remove any active clicked classes from status overview
         $('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 
+	var viewtype = $.cookie('view');
         var feed = $(this).find("span.title").text();
-        console.log("Clicked on feed: " + feed);
         var encoded_feed = encodeURIComponent(feed);
-        window.location.hash = '#feed=' + encoded_feed;
-
-        hashtype = "feed";
-        hashvalue = encoded_feed;
 
         //only one menu-sub-item can be active
         $("div.feedbar").find("div.menu-sub-item").css('background-color', '');
         $(this).css("background-color", "#dceaf4");
+	loadview(viewtype, 'feed', encoded_feed);
 
-        if (viewtype == 'detailed') {
-            loaddetailedview('', encoded_feed);
-        } else {
-            $(window).off("scroll");
-            $('section').load('list-view.php?feed=' + encoded_feed);
-        }
+    });
 
+    //List view button
+    jQuery("a#list-view").click(function () {
+        console.log("switched to list view");
+        loadview('list', hashtype, hashvalue);
+    });
+
+    //Detailed view button
+    jQuery("a#detailed-view").click(function () {
+        console.log("switched to detailed view");
+        loadview('detailed', hashtype, hashvalue);
     });
 
     //Load opml import screen in section
     jQuery("a#import-opml").click(function () {
+	$(window).off("scroll");
         $('section').load('opml.php');
     });
 
@@ -232,38 +217,6 @@ $(document).ready(function () {
             },
             failure: function (errMsg) {}
         });
-    });
-
-    //List view button
-    jQuery("a#list-view").click(function () {
-        console.log("switched to list view");
-        $.cookie('view', 'list', { expires: 14 });
-        viewtype = "list";
-
-        $(window).off("scroll");
-        $('section').load('list-view.php?' + hashtype + "=" + hashvalue);
-
-    });
-
-    //Detailed view button
-    jQuery("a#detailed-view").click(function () {
-
-        //set cookie and variable to detailed view
-        console.log("switched to detailed view");
-        $.cookie('view', 'detailed', { expires: 14 });
-        viewtype = "detailed";
-
-        console.log("switched to detailed view with hashtype: " + hashtype + " and hashvalue: " + hashvalue);
-
-        if (hashtype == 'category') {
-            loaddetailedview(hashvalue, '');
-        } else if (hashtype == 'feed') {
-            loaddetailedview('', hashvalue);
-        } else if (hashtype == 'status') {
-            loaddetailedview('', '', hashvalue);
-        } else if (typeof hashvalue === "undefined") {
-            loaddetailedview('', '');
-        }
     });
 
     //event when marking item as starred
