@@ -134,6 +134,10 @@ if (!empty($array) && $array != "no-results") {
 
 echo "<div id=layer1>";
 
+//echo "<pre>";
+//print_r($array);
+//echo "</pre>";
+
   foreach ($array as $row) {
 
     if (!empty($row)) {
@@ -154,6 +158,7 @@ echo "<div id=layer1>";
 		
 		echo "<span class='subject'>$subject</span>";
                 echo "<span class='feedname'> - $row[feed_name]</span>";
+		//echo "<span class='publish_date'> - $row[publish_date]</span>"; 
 		echo "</div>";
 
 		echo "<div class='heading-bottom'>";

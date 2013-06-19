@@ -19,13 +19,6 @@ include 'functions.php';
       <!-- Be sure to leave the brand out there if you want it shown -->
       <a class="brand" href="<?php echo "$url/index.php"; ?>">Home</a>
 
-      <!-- Everything you want hidden at 940px or less, place within here -->
-      <div class="nav-collapse collapse">
-
-    <ul class="nav">
-      <li><a id="import-opml" href="#">Import OPML</a></li>
-    </ul>
-
     <ul class="nav">
       <li class="dropdown">
          <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Views<b class="caret"></b></a>
@@ -34,6 +27,14 @@ include 'functions.php';
             <li class="list-view" role="presentation"><a id="list-view" role="menuitem" tabindex="-1" href="#">List view</a></li>
          </ul>
       </li>
+    </ul>
+
+
+      <!-- Everything you want hidden at 940px or less, place within here -->
+      <div class="nav-collapse collapse">
+
+    <ul class="nav">
+      <li><a id="import-opml" href="#">Import OPML</a></li>
     </ul>
 
     <form class="navbar-form pull-left" method="post" action="addfeedhandler.php">

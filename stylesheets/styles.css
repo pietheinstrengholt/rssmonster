@@ -303,7 +303,7 @@ div.newsitem img.item-star {
 }
 
 div#layer1 {
-  margin-top: 30px;
+  //margin-top: 30px;
 }
 
 div#layer1 .heading {
@@ -338,13 +338,3 @@ div#layer1 .subject {
   font-weight:bold;
 }
 
-/* UPDATE SCREEN */
-
-div.update-content {
-  margin-top: 50px;
-}
-
-table#update {
-  //width: 80%;
-  margin-left: 7%;
-}

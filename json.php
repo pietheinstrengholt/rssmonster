@@ -162,11 +162,11 @@ if(isset($arr['overview'])){
 		sum(count_all) as count_all FROM 
 		 (SELECT feed_id, count(*) as count_all FROM articles 
 		  GROUP BY feed_id) t1
-		LEFT JOIN (SELECT id, IFNULL(category,'Overig') as category FROM feeds) t2 
+		LEFT JOIN (SELECT id, IFNULL(category,'Uncategorized') as category FROM feeds) t2 
 		ON t1.feed_id = t2.id
 		GROUP BY category) a
 		LEFT JOIN
-		(SELECT IFNULL(category,'Overig') as category, sum(count_unread) as count_unread FROM 
+		(SELECT IFNULL(category,'Uncategorized') as category, sum(count_unread) as count_unread FROM 
 		 (SELECT feed_id, count(*) as count_unread FROM articles WHERE status = 'unread'
 		  GROUP BY feed_id) t1
 		LEFT JOIN (SELECT id, category FROM feeds) t2 

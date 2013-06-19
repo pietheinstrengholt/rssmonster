@@ -15,7 +15,7 @@ mysql_query("DELETE FROM articles WHERE id NOT IN (select * from (SELECT id FROM
 mysql_query("DELETE FROM `articles` WHERE feed_id not in (select distinct id from feeds)");
 
 //update last 25 feeds
-$query = "select * from feeds order by last_update limit 0, 15";
+$query = "select * from feeds order by last_update limit 0, 50";
 $sql   = mysql_query($query);
 
 ?>
