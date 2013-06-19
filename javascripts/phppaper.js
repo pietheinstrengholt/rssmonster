@@ -192,7 +192,6 @@ $(document).ready(function () {
 	console.log("update.php called");
 	$(window).off("scroll");
 	$('section').empty();
-	$('section').append('<div class="update-content"></div><div class="loading-bar progress progress-striped active" id="loading-bar"><div class="bar" style="width: 50%;"></div></div>');
         $('section').load('update.php');
     });
 

@@ -45,6 +45,18 @@ while ($row = mysql_fetch_array($sql)) {
     
     $lastdate    = mysql_query("SELECT publish_date from articles WHERE feed_id = '$feed_id;' ORDER BY publish_date desc LIMIT 1");
     $comparedate = mysql_result($lastdate, 0);
+
+    if (empty($comparedate)) { 
+
+?>
+<div class="alert">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Warning! </strong>No previous results found for feed: <?php echo $feed_name; ?>. Feed might be never processed or is invalid.
+</div>
+
+<?php
+
+}
     
 ?>
 
@@ -56,7 +68,25 @@ while ($row = mysql_fetch_array($sql)) {
     if (empty($comparedate)) {
         $comparedate = "1900-01-01 00:00:00";
     }
-    
+
+    $itemQty = $feed->get_item_quantity();
+
+    if ($itemQty === 0) { 
+
+
+?>
+<div class="alert alert-error">
+  <button type="button" class="close" data-dismiss="alert">&times;</button>
+  <strong>Error! </strong>Unable to process feed: <?php echo $feed_name; ?>. Server might be down or url has changed.
+</div>
+
+<?php
+
+
+}
+
+    else {
+
     foreach ($feed->get_items() as $item) {
         
         $url     = $item->get_permalink();
@@ -94,6 +124,8 @@ while ($row = mysql_fetch_array($sql)) {
 <?php
         
     }
+}
+
 }
 
 echo "</table>";
