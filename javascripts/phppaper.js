@@ -193,6 +193,7 @@ $(document).ready(function () {
 	$(window).off("scroll");
 	$('section').empty();
         $('section').load('update.php');
+	//$('section').append('<div class="progress progress-striped active"><div class="bar" style="width: 40%;"></div></div>');
     });
 
     //Load organize feeds section

@@ -47,7 +47,11 @@ if (!empty($array) && $array != "no-results") {
 		}
 
                 echo "<h3 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$row[subject]</a></h3>";
-                echo "<div class='feedname'>$row[feed_name] | $row[publish_date]</div>";
+		if (!empty($row[author])) {
+                	echo "<div class='feedname'>$row[feed_name] by $row[author] | $row[publish_date]</div>";
+		} else {
+                        echo "<div class='feedname'>$row[feed_name] | $row[publish_date]</div>";
+		}
                 echo "<hr>";
                 echo "<div class='page-content'>$row[content]</div>";
                 echo "</div>";

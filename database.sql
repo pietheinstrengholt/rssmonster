@@ -1,5 +1,3 @@
-
-
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
@@ -30,6 +28,7 @@ CREATE TABLE IF NOT EXISTS `articles` (
   `content` text,
   `insert_date` datetime DEFAULT NULL,
   `publish_date` datetime DEFAULT NULL,
+  `author` varchar(200) DEFAULT NULL,
   PRIMARY KEY (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=4447 ;
 

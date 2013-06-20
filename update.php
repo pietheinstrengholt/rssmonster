@@ -94,6 +94,13 @@ while ($row = mysql_fetch_array($sql)) {
         $content = $item->get_description();
         //$content = mysql_real_escape_string($content);
         $date    = $item->get_date('Y-m-j H:i:s');
+
+	if ($author = $feed->get_author())
+	{
+	   $author = $author->get_name();
+	} else {
+	   $author = "";
+	}
         
 ?>
 
@@ -113,7 +120,7 @@ while ($row = mysql_fetch_array($sql)) {
  <th><?php
         if (strtotime($date) > strtotime($comparedate)) {
             echo "new article";
-            mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date')") or die(mysql_error());
+            mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
         } else {
             echo "existing";
         }

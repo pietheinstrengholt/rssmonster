@@ -155,8 +155,12 @@ echo "<div id=layer1>";
 		
 		$subject = strip_tags($row['subject']);
                 $subject = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $subject);
-		
-		echo "<span class='subject'>$subject</span>";
+
+		if (!empty($row['author'])) {		
+			echo "<span class='subject'>$subject by $row[author]</span>";
+		} else {
+                        echo "<span class='subject'>$subject</span>";
+		}
                 echo "<span class='feedname'> - $row[feed_name]</span>";
 		//echo "<span class='publish_date'> - $row[publish_date]</span>"; 
 		echo "</div>";
