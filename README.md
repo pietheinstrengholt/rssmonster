@@ -44,7 +44,7 @@ TODO
 * General: Clean up by creating more functions or using a proper framework
 * Android redirect to mobile, make it possible to return to desktop/normale view
 * Desktop mode: mark as read, unread
-* Desktop mode: dynamic changing count within categories and feeds menu sections
+* Desktop mode: add search function
 * Desktop mode: move js from list-view to phppaper.js
 * Desktop mode: use classes for image-star properties
 * Desktop mode: drag and dropstyle manage feeds section

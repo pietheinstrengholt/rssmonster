@@ -127,16 +127,21 @@ $(document).ready(function () {
 	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
 
 	//open submenu
-        jQuery(this).next("div.menu-sub").slideToggle(200);
+        $(this).next("div.menu-sub").slideToggle(200);
+
+	//remove and add active classes, needed for decreasing dynamic count
+	$('div.feedbar').find('.active-main').removeClass("active-main");
+	$('div.feedbar').find('.active-sub').removeClass("active-sub");
+	$(this).addClass("active-main");
 
 	//change styling and arrow
-        if ($(this).hasClass("clicked")) {
-            $(this).removeClass("clicked");
+        if ($(this).hasClass("category-clicked")) {
+            $(this).removeClass("category-clicked");
             $(this).css("background-color", "");
             $(this).css("color", "");
 	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-right');
         } else {
-            $(this).addClass("clicked");
+            $(this).addClass("category-clicked");
             $(this).css("background-color", "#0088cc");
             $(this).css("color", "#ffffff");
 	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-down');
@@ -155,6 +160,10 @@ $(document).ready(function () {
 
         //remove any active clicked classes from status overview
         $('div.nav-main').find('.status-clicked').removeClass("status-clicked");
+
+	//remove and add active classes, needed for decreasing dynamic count
+        $('div.feedbar').find('.active-sub').removeClass("active-sub");
+        $(this).addClass("active-sub");
 
         //only one menu-sub-item can be active
         $("div.feedbar").find("div.menu-sub-item").css('background-color', '');
@@ -329,14 +338,38 @@ function myHandler(e) {
             failure: function (errMsg) {}
         });
 
-	//decrease and increase unread and read amount in menu
-	var unreadcount = $('div.nav-main div#unread.menu-heading-status span.count').text();
-        var unreadcountnew = unreadcount -1;
-	$('div.nav-main div#unread.menu-heading-status span.count').text(unreadcountnew);
+	//decrease and increase unread and read amount in menu, only when read is not active
+        if(!$('div#read.menu-heading-status.status-clicked').length > 0) {
+		var unreadcount = $('div.nav-main div#unread.menu-heading-status span.count').text();
+        	var unreadcountnew = unreadcount -1;
+		$('div.nav-main div#unread.menu-heading-status span.count').text(unreadcountnew);
 
-        var readcount = $('div.nav-main div#read.menu-heading-status span.count').text();
-	var readcountnew = parseFloat(readcount)+1;
-        $('div.nav-main div#read.menu-heading-status span.count').text(readcountnew);
+	        var readcount = $('div.nav-main div#read.menu-heading-status span.count').text();
+		var readcountnew = parseFloat(readcount)+1;
+	        $('div.nav-main div#read.menu-heading-status span.count').text(readcountnew);
+	}
+
+	//decrease main and submenu items
+	var readcountsub = $('div.feedbar').find('.active-sub span.count-sub').text();
+	var readcountsubnew = readcountsub -1;
+	$('div.feedbar .active-sub span.count-sub').text(readcountsubnew);
+
+	var readcountmain = $('div.feedbar').find('.active-main span.count.unread').text();
+	var readcountmainnew = readcountmain -1;
+	$('div.feedbar .active-main span.count.unread').text(readcountmainnew);
+
+	if($('div#last-24-hours.menu-heading-status.status-clicked').length > 0) {
+		var readcount24hours = $('div#last-24-hours.menu-heading-status.status-clicked').find('span.count').text();
+		var readcount24hoursnew = readcount24hours -1;
+		$('div#last-24-hours.menu-heading-status.status-clicked span.count').text(readcount24hoursnew);
+	}
+
+        if($('div#last-hour.menu-heading-status.status-clicked').length > 0) {
+                var readcountlasthour = $('div#last-hour.menu-heading-status.status-clicked').find('span.count').text();
+                var readcountlasthournew = readcountlasthour -1;
+                $('div#last-hour.menu-heading-status.status-clicked span.count').text(readcountlasthournew);
+        }
+
 
     };
 }
