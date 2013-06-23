@@ -5,8 +5,9 @@
 
     $.fn.scrollPagination = function (options) {
 
-        console.log("fn.scrollPagination initialized");
+        //console.log("fn.scrollPagination initialized");
 
+	//default settings
         var settings = {
             nop: 10, // The number of posts per scroll to be loaded
             offset: 0, // Initial offset, begins at 0 in this case
@@ -51,11 +52,12 @@
                     feed_name: $settings.feed,
                     category_name: $settings.category,
 		    status: $settings.status,
+		    sort: $settings.sort,
 
                 }, function (data) {
 
                     //log message
-                    console.log('fetching data for offset:' + offset);
+                    //console.log('fetching data for offset:' + offset);
 
                     // Change loading bar content (it may have been altered)
                     $this.find('.loading-bar').html($initmessage);

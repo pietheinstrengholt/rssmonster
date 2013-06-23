@@ -9,39 +9,78 @@ $(document).ready(function () {
         'overflow-y': 'hidden'
     });
 
-    function loadview(view, type, value) {
+    //sort stored in cookie
+    if (($.cookie('sort') == undefined)) {
+	$.cookie('sort', 'desc', { expires: 14 });
+    }
 
-	//debug
-        console.log(view + " type: " + type);
-        console.log(view + " value: " + value);
+    //sort stored in cookie
+    if (($.cookie('view') == undefined)) {
+        $.cookie('view', 'detailed', { expires: 14 });
+    }
+
+    //on a first load get hashtag value from url
+    var request = window.location.hash;
+    request = request.slice(1);
+    function getFirstPart(str) { return str.split('=')[0]; }
+    function getSecondPart(str) { return str.split('=')[1]; }
+
+    if (request.length == 0) {
+	if (($.cookie('type') == undefined) && ($.cookie('value') == undefined)) {
+	   $.cookie('type', 'status', { expires: 14 });
+           $.cookie('value', 'unread', { expires: 14 });
+	}
+    } else {
+	console.log("request.length is niet 0");
+    	$.cookie('type', getFirstPart(request));
+    	$.cookie('value', getSecondPart(request));
+    }
+
+    //TODO: change feedbar and submenu bar is type and value are set
+
+    var sort = $.cookie('sort');
+    var view = $.cookie('view');
+    var type = $.cookie('type');
+    var value = $.cookie('value');
+
+    //load content
+    loadview($.cookie('view'), $.cookie('type'), $.cookie('value'), $.cookie('sort'));
+
+    function loadview(view, type, value, sort) {
+
+	var sort = $.cookie('sort');
+    	var view = $.cookie('view');
+	var type = $.cookie('type');
+	var value = $.cookie('value');
+
+	console.log(type + "=" + value + "(" + sort + " & " + view + ")");
 
 	//set location path
-	window.location.hash = '#' + type + '=' + value;
+	//TODO: fix when switching to detailed or sort, remains empty now
+	window.location.hash = "#" + type + "=" + value;
 
         //set cookie view to view parameter
 	$.cookie('view', view, { expires: 14 });
-	var viewtype = $.cookie('view');
+	var view = $.cookie('view');
 
         if (view == 'list') {
-           loadlistview(type, value);
+           loadlistview(type, value, sort);
         } else if (view == 'detailed') {
-           loaddetailedview(type, value);
+           loaddetailedview(type, value, sort);
         } else {
-           loaddetailedview(type, value);
+           loaddetailedview(type, value, sort);
 	}
-
-
     }
 
     //loadlistview function
-    function loadlistview(type, value) {
-
+    function loadlistview(type, value, sort) {
 	$(window).off("scroll");
-	$('section').load('list-view.php?' + type + '=' + value);
+        $('section').empty();
+	$('section').load('list-view.php?' + type + '=' + value + '&sort=' + sort);
     }
 
     //loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
-    function loaddetailedview(type, value) {
+    function loaddetailedview(type, value, sort) {
 
 	//set category, feed and status variables
 	if (type == 'category') { var category = value; }
@@ -65,38 +104,11 @@ $(document).ready(function () {
                 scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
                 category: category, // Catch category from menu
                 feed: feed, // Catch feedname from menu
-                status: status // Catch status from menu
+                status: status, // Catch status from menu
+		sort: sort // Catch sort
             });
         }, 100);
     }
-
-    //on a first load get hashtag value from url
-    var request = window.location.hash;
-    request = request.slice(1);
-    console.log("hashtag value from url:" + request);
-
-    function getFirstPart(str) {
-        return str.split('=')[0];
-    }
-
-    function getSecondPart(str) {
-        return str.split('=')[1];
-    }
-
-    hashtype = getFirstPart(request);
-    hashvalue = getSecondPart(request);
-
-    if (typeof hashvalue === "undefined") {
-        console.log("windows location hash is not set, retrieve unread items");
-        hashtype = "status";
-	hashvalue = "unread";
-    }
-
-    //get viewtype from cookie
-    var viewtype = $.cookie('view');
-
-    //load content
-    loadview(viewtype, hashtype, hashvalue);
 
     //Functionality from menu when Articles section is clicked
     jQuery("div.menu-heading-status").click(function () {
@@ -106,10 +118,12 @@ $(document).ready(function () {
 	$(this).addClass("status-clicked");
 
 	//load content
-        var viewtype = $.cookie('view');
+        var view = $.cookie('view');
         var status = $(this).find("div.title").text();
         var encoded_status = encodeURIComponent(status);
-	loadview(viewtype, 'status', encoded_status);
+	$.cookie('type', 'status');
+	$.cookie('value', encoded_status);
+	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
 
     });
 
@@ -148,10 +162,12 @@ $(document).ready(function () {
         }
 
 	//load content
-        var viewtype = $.cookie('view');
+        var view = $.cookie('view');
         var category = $(this).find("div.title").text();
         var encoded_category = encodeURIComponent(category);
-        loadview(viewtype, 'category', encoded_category);
+	$.cookie('type', 'category');
+        $.cookie('value', encoded_category);
+        loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
 
     });
 
@@ -170,23 +186,36 @@ $(document).ready(function () {
         $(this).css("background-color", "#dceaf4");
 
 	//load content
-        var viewtype = $.cookie('view');
+        var view = $.cookie('view');
         var feed = $(this).find("span.title").text();
         var encoded_feed = encodeURIComponent(feed);
-	loadview(viewtype, 'feed', encoded_feed);
-
+        $.cookie('type', 'feed');
+        $.cookie('value', encoded_feed);
+        loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
     });
 
     //List view button from topnav menu
     jQuery("a#list-view").click(function () {
-        console.log("switched to list view");
-        loadview('list', hashtype, hashvalue);
+        $.cookie('view', 'list', { expires: 14 });
+	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
     });
 
     //Detailed view button from topnav menu
     jQuery("a#detailed-view").click(function () {
-        console.log("switched to detailed view");
-        loadview('detailed', hashtype, hashvalue);
+	$.cookie('view', 'detailed', { expires: 14 });
+	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+    });
+
+    //Sort button from topnav menu
+    jQuery("a#sort-asc").click(function () {
+	$.cookie('sort', 'asc', { expires: 14 });
+	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+    });
+
+    //Sort button from topnav menu
+    jQuery("a#sort-desc").click(function () {
+        $.cookie('sort', 'desc', { expires: 14 });
+	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
     });
 
     //Load opml import screen in section

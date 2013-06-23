@@ -29,6 +29,15 @@ include 'functions.php';
       </li>
     </ul>
 
+    <ul class="nav">
+      <li class="dropdown">
+         <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Sort<b class="caret"></b></a>
+         <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+            <li class="sort-asc" role="presentation"><a id="sort-asc" role="menuitem" tabindex="-1" href="#">Oldest first</a></li>
+            <li class="sort-desc" role="presentation"><a id="sort-desc" role="menuitem" tabindex="-1" href="#">Latest first</a></li>
+         </ul>
+      </li>
+    </ul>
 
       <!-- Everything you want hidden at 940px or less, place within here -->
       <div class="nav-collapse collapse">

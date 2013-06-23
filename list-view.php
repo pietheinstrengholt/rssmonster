@@ -8,14 +8,15 @@ include 'functions.php';
 if(isset($_GET["feed"])){ $input_feed = htmlspecialchars($_GET["feed"]); } else { $input_feed = NULL; }
 if(isset($_GET["category"])){ $input_category = htmlspecialchars($_GET["category"]); } else { $input_category = NULL; }
 if(isset($_GET["status"])){ $status = htmlspecialchars($_GET["status"]); } else { $status = NULL; }
-if(isset($_GET["article_id"])){ $status = htmlspecialchars($_GET["article_id"]); } else { $article_id = NULL; }
+if(isset($_GET["article_id"])){ $article_id = htmlspecialchars($_GET["article_id"]); } else { $article_id = NULL; }
+if(isset($_GET["sort"])){ $sort = htmlspecialchars($_GET["sort"]); } else { $sort = NULL; }
 
 $offset = 0;
 //number of items to load from db
 $number = 25;
 
 //retrieve content
-$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $offset . '", "input_category": "' . $input_category . '", "postnumbers": "' .$number . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '", "status": "' . $status . '"}');
+$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $offset . '", "input_category": "' . $input_category . '", "postnumbers": "' .$number . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '", "status": "' . $status . '", "sort": "' . $sort . '"}');
 
 //create new array for id of loaded articles
 $stack = array();

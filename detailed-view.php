@@ -9,6 +9,7 @@ if(isset($_POST['feed_name'])){ $input_feed = htmlspecialchars($_POST['feed_name
 if(isset($_POST['category_name'])){ $input_category = htmlspecialchars($_POST['category_name']); }
 if(isset($_POST['article_id'])){ $article_id = htmlspecialchars($_POST['article_id']); } else { $article_id = NULL; }
 if(isset($_POST['status'])){ $status = htmlspecialchars($_POST['status']); } else { $status = NULL; }
+if(isset($_POST['sort'])){ $sort = htmlspecialchars($_POST['sort']); } else { $sort = NULL; }
 
 //urldecode post input
 $input_feed = urldecode($input_feed);
@@ -19,7 +20,7 @@ $offset = is_numeric($_POST['offset']) ? $_POST['offset'] : die();
 $postnumbers = is_numeric($_POST['number']) ? $_POST['number'] : die();
 
 //retrieve content
-$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' .$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '", "status": "' . $status . '"}');
+$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' .$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '", "status": "' . $status . '", "sort": "' . $sort . '"}');
 
 //only get article once
 if (!empty($article_id) && $offset != "0") { die(); }
