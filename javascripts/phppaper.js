@@ -31,7 +31,6 @@ $(document).ready(function () {
            $.cookie('value', 'unread', { expires: 14 });
 	}
     } else {
-	console.log("request.length is niet 0");
     	$.cookie('type', getFirstPart(request));
     	$.cookie('value', getSecondPart(request));
     }

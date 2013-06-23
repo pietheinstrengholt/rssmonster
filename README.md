@@ -39,7 +39,6 @@ The following scripts are used within phppaper
 TODO
 ----
 
-* Desktop: finish design, functions in phppaper.js, dynamic count by using mark as read bullseye function
 * General: Complete JSON events: add feeds, update event
 * General: Clean up by creating more functions or using a proper framework
 * Android redirect to mobile, make it possible to return to desktop/normale view
@@ -48,7 +47,6 @@ TODO
 * Desktop mode: move js from list-view to phppaper.js
 * Desktop mode: use classes for image-star properties
 * Desktop mode: drag and dropstyle manage feeds section
-* Desktop mode: sort asc and desc from menu
 * Desktop mode: opml-handler, download icons. Functionality is currently disabled for performance reasons
 * Desktop mode: first welcome screen to add opml or feed
 * Desktop mode: retrieve rss feed from url, instead of adding direct link to rss
