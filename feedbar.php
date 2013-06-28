@@ -79,7 +79,14 @@ function header_section($input, $name) {
 		}
 
 		$csssubtitle = str_replace(" ", "-", $row[0]);
-		echo "<div class=\"menu-sub-item\" id=\"$csssubtitle\"><span class=\"favicon\"><img class=\"favicon\" src=\"$row[2]\"></img></span><span class=\"title\">$row[0]</span><span class=\"count-sub\">$row[3]</span></div>";
+
+		if (empty($row[2])) {
+			$faviconurl = "img/rss-default.gif";
+		} else {
+			$faviconurl = $row[2];
+		}
+
+		echo "<div class=\"menu-sub-item\" id=\"$csssubtitle\"><span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span><span class=\"title\">$row[0]</span><span class=\"count-sub\">$row[3]</span></div>";
 
 	}
 
