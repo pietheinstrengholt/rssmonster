@@ -10,7 +10,7 @@ html {
 /* ARTICLES OVERVIEW SCREEN */
 
 section {
-  float: left;
+//  float: left;
 }
 
 div.blockcontainer {
@@ -105,6 +105,10 @@ div.container {
 
 /* FEEDBAR */
 
+div.organize {
+  min-width: 230px;
+}
+
 div.organize button.btn.btn-small.btn-primary {
   margin-left: 8px ! important;
 }
@@ -133,6 +137,7 @@ div.nav-main {
   -webkit-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
   -moz-box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
   box-shadow: inset 0 1px 1px rgba(0, 0, 0, 0.05);
+  min-width: 225px;
 }
 
 span.count {
@@ -212,8 +217,9 @@ span.count-sub {
 feedbar {
   overflow-y: hidden;
   overflow: auto;
-  position: fixed;
-  width: 23.076923076923077%;
+  //position: fixed;
+  //width: 23.076923076923077%;
+  width: inherit;
 }
 
 div.mCSB_container {
