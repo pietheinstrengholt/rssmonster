@@ -53,11 +53,13 @@ if ($_FILES["file"]["error"] > 0) {
             } else { 
               echo "ADDED: $title $data[url] <br>"; 
 
-	      //get favoicon for each rss feed
-	      //$feed = new SimplePie($data[url]);
-	      //$feed->init();
-              //$feed->handle_content_type();
-	      //$favicon = $feed->get_favicon();
+	    //get favoicon for each rss feed
+	    if(isset($_POST['formWheelchair']) && $_POST['favoicon'] == 'Yes') {
+	      $feed = new SimplePie($data[url]);
+	      $feed->init();
+              $feed->handle_content_type();
+	      $favicon = $feed->get_favicon();
+	    }
 
               $sql = "INSERT INTO feeds (name, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($data[url])."','".mysql_real_escape_string($favicon)."')";
               mysql_query($sql);
