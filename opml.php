@@ -15,7 +15,8 @@ include 'functions.php';
 
 <result>
 <div class="opml-form">
-Use the browse button below to upload your OPML XML file.<br>Coming from Google Reader? Use Google Reader export to get your Google Reader subscriptions into a .xml 
+Use the browse button below to upload your OPML XML file.<br><small>Coming from Google Reader? Use Google Reader export to get your Google Reader subscriptions into a 
+.xml</small>
 file.<br><br>
 
 <form action="opmlhandler.php" method="post" enctype="multipart/form-data">

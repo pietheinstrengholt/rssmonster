@@ -274,7 +274,8 @@ input.btn.button-submit {
 /* OPML FORM */
 
 div.opml-form {
-  padding: 60px;
+  padding: 20px;
+  border: 1px solid black;
 }
 
 div.opml-form form input {
