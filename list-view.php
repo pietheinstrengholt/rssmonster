@@ -67,16 +67,36 @@ jQuery(document).ready(function () {
 
     });
 
-    jQuery(".news-content").hide();
-    //toggle the componenet with class msg_body
-    jQuery(".heading").click(function () {
-        $(this).find(".header-content").hide();
-        jQuery(this).next(".news-content").slideToggle(50);
+    //hide all news-content items by default
+    $(".news-content").hide();
+    $("span.subjecturl").hide();
+
+    //jQuery(".heading").click(function () {
+    $("section").on("click", ".heading", function (event) {
+
+	//change active newsitem to unactive newsitem and add read class
+	$("div#layer1").find(".active-newsitem").find(".header-content").show();
+	$("div#layer1").find(".active-newsitem").find(".news-content").hide();
+	$("div#layer1").find(".active-newsitem").find("span.subject").show();
+	$("div#layer1").find(".active-newsitem").find("span.subjecturl").hide();
+	$("div#layer1").find(".active-newsitem").addClass("read-newsitem");
+	$("div#layer1").find(".active-newsitem").removeClass("active-newsitem");
+
         var id = $(this).attr('id');
         console.log('clicked on id:' + id);
-        $(this).addClass("clicked");
 
-        //mark item as read and retrieve external url
+	//hide header content and show news content
+        $(this).find(".header-content").hide();
+	$(this).find("span.subject").hide();
+	$(this).find("span.subjecturl").show();
+        $(this).next(".news-content").slideToggle(50);
+
+	//remove any active-newsitem classes and add active-newsitem class
+	$("div#layer1").find(".active-newsitem").removeClass("active-newsitem");
+	$("div#layer1").find('div#' + id + '.newsitem').addClass("active-newsitem");
+	$("div#layer1").find(".active-newsitem").removeClass("read-newsitem");
+ 
+       //mark item as read and retrieve external url
         $.ajax({
             type: "POST",
             url: "json.php",
@@ -93,34 +113,6 @@ jQuery(document).ready(function () {
             },
             failure: function (errMsg) {}
         });
-        console.log("reponse: " + result);
-        //TODO: avoid toggle or toggle back when clicking on another item like google reader
-        $(this).find("span.subject").css("color", "#24b");
-        var quotelink = "<a href=" + result + " target=\"_blank\"></a>";
-
-        //avoid adding many links
-        if (!$(this).find("span.subject").hasClass("added-link")) {
-            $(this).find("span.subject").addClass("added-link");
-            $(this).find("span.subject").wrap(quotelink);
-        }
-
-        //undo classes so we know if a item is collapsed or not
-        if ($(this).hasClass("collapsed")) {
-            $(this).addClass("uncollapsed");
-            $(this).removeClass("collapsed")
-            $(this).find(".header-content").show();
-            //TODO: remove hyperlink
-            //$(this).find("div.heading-top a").remove();
-        } else {
-            if ($(this).hasClass("uncollapsed")) {
-                $(this).removeClass("uncollapsed")
-            }
-            $(this).addClass("collapsed");
-        }
-
-        //scroll item to top of page when clicking
-        //$(window).scrollTop($(this).position().top)
-
     });
 });
 
@@ -134,10 +126,6 @@ jQuery(document).ready(function () {
 if (!empty($array) && $array != "no-results") {
 
 echo "<div id=layer1>";
-
-//echo "<pre>";
-//print_r($array);
-//echo "</pre>";
 
   foreach ($array as $row) {
 
@@ -153,17 +141,20 @@ echo "<div id=layer1>";
 
                 echo "<div class='heading' id=$row[id]>";
 		echo "<div class='heading-top'>";
-		
+
+		$feedurl = $row['url'];		
 		$subject = strip_tags($row['subject']);
                 $subject = preg_replace('/\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|$!:,.;]*[A-Z0-9+&@#\/%=~_|$]/i', '', $subject);
 
 		if (!empty($row['author'])) {		
 			echo "<span class='subject'>$subject by $row[author]</span>";
+			echo "<a href=\"$feedurl\"><span class='subjecturl'>$subject by $row[author]</span></a>";
 		} else {
                         echo "<span class='subject'>$subject</span>";
+			echo "<a href=\"$feedurl\"><span class='subjecturl'>$subject</span></a>";
 		}
                 echo "<span class='feedname'> - $row[feed_name]</span>";
-		//echo "<span class='publish_date'> - $row[publish_date]</span>"; 
+		echo "<span class='publish_date'> // $row[publish_date]</span>"; 
 		echo "</div>";
 
 		echo "<div class='heading-bottom'>";

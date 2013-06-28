@@ -11,11 +11,6 @@ html {
 
 section {
   float: left;
-  //margin-top: 40px;
-}
-
-div#content {
-  //margin-top: 30px;
 }
 
 div.blockcontainer {
@@ -216,7 +211,6 @@ span.count-sub {
 
 feedbar {
   overflow-y: hidden;
-  //padding-top: 90px;
   overflow: auto;
   position: fixed;
   width: 23.076923076923077%;
@@ -233,7 +227,6 @@ div.feed-overview {
   border: 1px solid #ddd;
   width: 100%;
   margin-bottom: 10px;
-  //height: 40px;
 }
 
 div.feed-manage {
@@ -293,6 +286,19 @@ span#mark-these-read {
 
 div.newsitem {
   display: table;
+  width: 100%;
+}
+
+div.newsitem.active-newsitem {
+  background-color: #ebeff9;
+}
+
+div.newsitem.read-newsitem {
+  background-color: #f5f5f5;
+}
+
+div.newsitem {
+  margin-bottom: 2px;
 }
 
 div.newsitem img.item-star {
@@ -302,20 +308,12 @@ div.newsitem img.item-star {
   cursor: pointer;
 }
 
-div#layer1 {
-  //margin-top: 30px;
-}
-
 div#layer1 .heading {
   margin: 1px;
   padding: 9px 10px 0px 0px;
   cursor: pointer;
   position: relative;
   margin-left: 33px;
-}
-
-div#layer1 .heading.collapsed, div#layer1 .heading.uncollapsed {
-  min-height: 37px;
 }
 
 div#layer1 .heading-bottom {
@@ -334,7 +332,10 @@ div#layer1 p {
   padding: 5px 0; 
 }
 
-div#layer1 .subject {
+div#layer1 .subject, div#layer1 .subjecturl {
   font-weight:bold;
 }
 
+div#layer1 .subjecturl {
+  color: #24b;
+}
