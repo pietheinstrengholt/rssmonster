@@ -14,7 +14,7 @@ mysql_query("DELETE FROM articles WHERE id NOT IN (select * from (SELECT id FROM
 //delete articles with no ref to feed_id
 mysql_query("DELETE FROM `articles` WHERE feed_id not in (select distinct id from feeds)");
 
-//update last 25 feeds
+//update 25 feeds at a time
 $query = "select * from feeds order by last_update limit 0, 50";
 $sql   = mysql_query($query);
 
@@ -118,9 +118,23 @@ while ($row = mysql_fetch_array($sql)) {
         echo $date;
 ?></th>
  <th><?php
+
+	//publish date is later then compare date which assumes article is new		
         if (strtotime($date) > strtotime($comparedate)) {
-            echo "new article";
-            mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
+
+	    //check if article name does not already exist in db
+	    $result = mysql_query("SELECT COUNT(*) FROM articles WHERE subject = '" . mysql_real_escape_string($subject) . "' AND feed_id = '$feed_id'"); 
+	    if ($result) {
+		$count = mysql_result($result, 0);
+		if ($count > 0) { 
+			echo "duplicate in db"; 
+		} else {
+			echo "new article";
+			mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
+		}
+	    }
+
+            //mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
         } else {
             echo "existing";
         }
