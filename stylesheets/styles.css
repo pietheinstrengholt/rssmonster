@@ -24,6 +24,11 @@ div#block {
   margin-top: 20px;
 }
 
+div#block.active {
+  //background-color: #ebeff9;
+  border: 1px solid blue;
+}
+
 div.block {
   border: 1px solid #ddd;
   box-shadow: 0 0 4px #e3e5eb;
@@ -217,7 +222,7 @@ span.count-sub {
 feedbar {
   overflow-y: hidden;
   overflow: auto;
-  //position: fixed;
+  position: fixed;
   //width: 23.076923076923077%;
   width: inherit;
 }
