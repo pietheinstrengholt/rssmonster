@@ -39,12 +39,13 @@ The following scripts are used within phppaper
 TODO
 ----
 
-* General: Complete JSON events: add feeds, update event
-* General: Clean up by creating more functions or using a proper framework
-* Android redirect to mobile, make it possible to return to desktop/normale view
-* Desktop mode: mark as read, unread
-* Desktop mode: add search function
-* Desktop mode: move js from list-view to phppaper.js
-* Desktop mode: use classes for image-star properties
-* Desktop mode: drag and dropstyle manage feeds section
-* Desktop mode: first welcome screen to add opml or feed
+* Complete JSON events: add feeds, update event, mark as unread
+* Clean up by creating more functions or using a proper framework
+* Mark as read, unread buttons
+* Add search function
+* Move js from list-view to one central place (phppaper.js)
+* Use css classes for image-star properties
+* Implement drag and dropstyle to manage feeds
+* First welcome screen to add opml or feeds
+* Mark as read per category or per feed
+* List view: continue loading 25 next read items
