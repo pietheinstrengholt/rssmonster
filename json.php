@@ -142,16 +142,28 @@ if(isset($arr['update'])){
 	if ($arr['update'] == "mark-as-read" && $arr[status] != 'starred' && $arr[status] != 'read') {
 	  if (!empty($arr[value])) {
 		$sql = "UPDATE articles set status = 'read' WHERE id in ($arr[value])";
+	  //mark a feed as read
 	  } elseif (!empty($arr[input_feed]) && empty($arr[input_category])) {
 		$sql = "UPDATE articles set status = 'read' WHERE feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]')";
+	  //mark a category as read
 	  } elseif (!empty($arr[input_category]) && empty($arr[input_feed])) {
 		$sql = "UPDATE articles set status = 'read' WHERE feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]')";
+	  //set all items to read
 	  } elseif ($arr[status] == 'unread' || empty($arr[status])) {
 		$sql = "UPDATE articles set status = 'read'";
 	  }
 	  $result = mysql_query($sql);
 	  echo json_encode("done");
 	}
+
+	//update unread status for article
+        if ($arr['update'] == "mark-as-unread" && $arr[status] != 'starred' && $arr[status] != 'read') {
+          if (!empty($arr[value])) {
+                $sql = "UPDATE articles set status = 'unread' WHERE id in ($arr[value])";
+          }
+          $result = mysql_query($sql);
+          echo json_encode("done");
+        }
 }
 
 //provide overview with feeds, e.g. names, categories, count unreaded number of articles
