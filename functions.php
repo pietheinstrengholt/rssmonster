@@ -1,7 +1,16 @@
 <?php
 
-// url variables
+if(!mysql_query("DESCRIBE `feeds`")) {
+    echo "Error: database table feeds doesnt exist<b>";
+    exit;
+}
 
+if(!mysql_query("DESCRIBE `articles`")) {
+    echo "Error: database table articles doesnt exist";
+    exit;
+}
+
+// url variables
 $url = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']);
 $url = preg_replace('/\s+/', '', $url);
 $jsonurl = $url . "/json.php";
