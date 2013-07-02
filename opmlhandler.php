@@ -54,7 +54,7 @@ if ($_FILES["file"]["error"] > 0) {
               echo "ADDED: $title $data[url] <br>"; 
 
 	    //get favoicon for each rss feed
-	    if(isset($_POST['formWheelchair']) && $_POST['favoicon'] == 'Yes') {
+	    if($_POST['favoicon'] == 'Yes') {
 	      $feed = new SimplePie($data[url]);
 	      $feed->init();
               $feed->handle_content_type();
