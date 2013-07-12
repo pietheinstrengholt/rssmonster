@@ -18,6 +18,9 @@ mysql_query("DELETE FROM `articles` WHERE feed_id not in (select distinct id fro
 $query = "select * from feeds order by last_update limit 0, 50";
 $sql   = mysql_query($query);
 
+//previous week
+$previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
+
 ?>
 
 <table id="update" class="table table-bordered table-condensed">
@@ -49,10 +52,10 @@ while ($row = mysql_fetch_array($sql)) {
     if (empty($comparedate)) { 
 
 ?>
-<div class="alert">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <strong>Warning! </strong>No previous results found for feed: <?php echo $feed_name; ?>. Feed might be never processed or is invalid.
-</div>
+<!-- <div class="alert"> -->
+<!--  <button type="button" class="close" data-dismiss="alert">&times;</button> -->
+<!--  <strong>Warning! </strong>No previous results found for feed: <?php echo $feed_name; ?>. Feed might be never processed or is invalid. -->
+<!--</div> -->
 
 <?php
 
@@ -127,16 +130,18 @@ while ($row = mysql_fetch_array($sql)) {
 	    if ($result) {
 		$count = mysql_result($result, 0);
 		if ($count > 0) { 
-			echo "duplicate in db"; 
+			echo "Skipping - Avoid duplicate subjectname in db"; 
+		} elseif (strtotime($date) < strtotime($previousweek)) {
+			echo "Article more than one week old"; 
 		} else {
-			echo "new article";
+			echo "Found new article";
 			mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
 		}
 	    }
 
             //mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
         } else {
-            echo "existing";
+            echo "No new feeds since last update";
         }
 ?>
  </th>
