@@ -148,10 +148,10 @@ echo "<div id=layer1>";
 
 		if (!empty($row['author'])) {		
 			echo "<span class='subject'>$subject by $row[author]</span>";
-			echo "<a href=\"$feedurl\"><span class='subjecturl'>$subject by $row[author]</span></a>";
+			echo "<a href=\"$feedurl\" target=\"_blank\"><span class='subjecturl'>$subject by $row[author]</span></a>";
 		} else {
                         echo "<span class='subject'>$subject</span>";
-			echo "<a href=\"$feedurl\"><span class='subjecturl'>$subject</span></a>";
+			echo "<a href=\"$feedurl\" target=\"_blank\"><span class='subjecturl'>$subject</span></a>";
 		}
                 echo "<span class='feedname'> - $row[feed_name]</span>";
 		echo "<span class='publish_date'> // $row[publish_date]</span>"; 
@@ -201,7 +201,7 @@ if (!empty($array) && $array != "no-results") {
 </div>
 
 <div class="mark-as-read">
-<span id="mark-these-read" class="">Mark these items as read</span>
+ <span id="mark-these-read" class="">Mark these items as read</span>
 </div>
 
 <?php
