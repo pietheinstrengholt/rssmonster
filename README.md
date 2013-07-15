@@ -35,6 +35,14 @@ The following scripts are used within phppaper
 * Twitter bootstrap: http://twitter.github.io/bootstrap/
 * jQuery Cookie: https://github.com/carhartl/jquery-cookie
 
+Reeder (iOS) integration supprt (via Fever API)
+----
+
+Reeder (iOS) support has been added recently. To use Reeder add an Account with Fever (feedafever.com). Point to the following url:
+
+http://yourphppaperurl/fever-api.php
+
+Any username and password will work at this moment.
 
 TODO
 ----
