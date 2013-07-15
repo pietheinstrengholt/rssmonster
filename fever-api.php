@@ -111,7 +111,36 @@ if (isset($_GET['unread_item_ids'])) {
 //when argument is items, return 50 articles at a time
 if (isset($_GET['items'])) {
 
-	if (is_numeric($_REQUEST["since_id"])) {
+	if (isset($_GET['with_ids'])) {
+
+	   $ids = $_REQUEST["with_ids"];
+
+           $items = array();
+
+           $sql = mysql_query("SELECT * FROM articles WHERE ID IN ($ids) ORDER BY ID") or trigger_error(mysql_error(), E_USER_WARNING);
+
+           while($row = mysql_fetch_array($sql)) {
+
+               if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
+
+               array_push($items, array(
+                   "id" => $row['id'],
+                   "feed_id" => $row['feed_id'],
+                   "title" => $row['subject'],
+                   "author" => $row['author'],
+                   "html" => $row['content'],
+                   "url" => $row['url'],
+                   "is_saved" => $row['star_ind'],
+                   "is_read" => $isread,
+                   "created_on_time" => strtotime($row['publish_date'])
+                ));
+           }
+
+           $response_arr["items"] = $items;
+
+           $arr = array_merge($arr, $response_arr);
+
+	} elseif (is_numeric($_REQUEST["since_id"])) {
 
 	   $since_id = $_REQUEST["since_id"];
 
