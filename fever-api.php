@@ -210,19 +210,6 @@ if (isset($_GET['links'])) {
 
         $links = array();
 
-     /*   array_push($links, array(
-           "id"  => "1",
-           "feed_id" => "1",
-           "item_id" => "1",
-           "temperature" => "1",
-           "is_item" => "1",
-           "is_local" => "1",
-           "is_saved" => "1",
-           "title" => "Test article",
-           "url" => "http://testurl/dfdf.html",
-           "item_ids" => "1"
-        )); */
-
         $response_arr["links"] = $links;
 
         $arr = array_merge($arr, $response_arr);
