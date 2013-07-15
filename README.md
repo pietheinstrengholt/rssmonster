@@ -44,12 +44,16 @@ http://yourphppaperurl/fever-api.php
 
 Any username and password will work at this moment.
 
+<a href="http://www.phppaper.com">
+  <img src="http://www.phppaper.com/wp-content/uploads/feverapi.png" width="300px">
+</a>
+
+
 TODO
 ----
 
 * FIX last hour
 * FIX manage feeds section
-
 * Complete JSON events: add feeds, update event, mark as unread
 * Clean up by creating more functions or using a proper framework
 * Mark as read, unread buttons
