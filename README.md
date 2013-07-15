@@ -45,7 +45,7 @@ http://yourphppaperurl/fever-api.php
 Any username and password will work at this moment.
 
 <a href="http://www.phppaper.com">
-  <img src="http://www.phppaper.com/wp-content/uploads/feverapi.png" width="300px">
+  <img src="http://www.phppaper.com/wp-content/uploads/fever.png" width="300px">
 </a>
 
 
