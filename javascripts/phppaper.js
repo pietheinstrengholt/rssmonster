@@ -264,6 +264,12 @@ $(document).ready(function () {
     });
 
     //event when marking item as starred
+    $("section").on("click", "div#block", function (event) {
+	$("section").find("div#block.active").removeClass("active");
+	$(this).addClass("active");
+    });
+
+    //event when marking item as starred
     $("body").on("click", "img.item-star.unstar", function (event) {
         var id = $(this).attr('id');
         console.log('starred item: ' + $(this).attr('id'));

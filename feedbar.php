@@ -68,7 +68,7 @@ function header_section($input, $name) {
 	  echo "</div>";
 	echo "</div>";
 
-        $result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category = '$row[category]') a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
+        $result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category IN (SELECT DISTINCT id FROM category WHERE name = '$row[category]')) a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
 
 	echo "<div class=\"menu-sub\" id='$title'>";
 

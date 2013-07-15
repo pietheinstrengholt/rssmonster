@@ -34,7 +34,8 @@ if(isset($arr['update'])){
 	  else if (empty($arr[new_feed_name]) && empty($arr[new_feed_category])) {
 		exit;
 	  } 
-	  else { 
+	  else {
+		//TODO: new_feed_category needs to be converted to an ID instead of a name
 		$sql = "UPDATE feeds set name='$arr[new_feed_name]',category='$arr[new_feed_category]' WHERE id = $arr[value]";
 		$result = mysql_query($sql);
 		echo json_encode("done");
@@ -52,7 +53,7 @@ if(isset($arr['request'])){
 
 	//get overview with all feeds, sorted by name
 	if ($arr['request'] == "get-feeds") {
-	  $sql=mysql_query("SELECT * from feeds order by name");
+	  $sql=mysql_query("SELECT a.name, a.id, a.url, b.name as category FROM feeds a LEFT JOIN category b ON a.category = b.id ORDER BY a.name");
 	  while($r[]=mysql_fetch_array($sql));
 	  echo json_encode($r);
 	}
@@ -177,22 +178,27 @@ if(isset($arr['overview'])){
 	  while($r[]=mysql_fetch_array($sql));
 	  echo json_encode($r); 
 	} elseif ($arr['overview'] == "category-detailed") {
-	  $sql=mysql_query("SELECT a.category, IFNULL(count_all,0) as count_all, IFNULL(count_unread,0) as count_unread FROM (SELECT category, 
-		sum(count_all) as count_all FROM 
-		 (SELECT feed_id, count(*) as count_all FROM articles 
-		  GROUP BY feed_id) t1
-		LEFT JOIN (SELECT id, IFNULL(category,'Uncategorized') as category FROM feeds) t2 
-		ON t1.feed_id = t2.id
-		GROUP BY category) a
-		LEFT JOIN
-		(SELECT IFNULL(category,'Uncategorized') as category, sum(count_unread) as count_unread FROM 
-		 (SELECT feed_id, count(*) as count_unread FROM articles WHERE status = 'unread'
-		  GROUP BY feed_id) t1
-		LEFT JOIN (SELECT id, category FROM feeds) t2 
-		ON t1.feed_id = t2.id
-		GROUP BY category) b
-		ON a.category = b.category
-		ORDER BY a.category");
+	  $sql=mysql_query("SELECT t1.name as category, IFNULL(count_all,0) as count_all, IFNULL(count_unread,0) as count_unread FROM
+
+  (SELECT count(*) as count_all, c.name FROM `articles` a
+  LEFT JOIN feeds b
+  on a.feed_id = b.id
+  LEFT JOIN category c
+  on b.category = c.id
+  GROUP BY category) t1
+
+LEFT JOIN
+
+  (SELECT count(*) as count_unread, c.name FROM `articles` a
+  LEFT JOIN feeds b
+  on a.feed_id = b.id
+  LEFT JOIN category c
+  on b.category = c.id
+  WHERE a.status = 'unread'
+  GROUP BY category) t2
+
+ON t1.name = t2.name
+ORDER BY t1.name");
 	  while($r[]=mysql_fetch_array($sql));
 	  echo json_encode($r);
 	} elseif ($arr['overview'] == "status") {
