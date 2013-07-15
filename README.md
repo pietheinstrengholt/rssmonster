@@ -39,6 +39,9 @@ The following scripts are used within phppaper
 TODO
 ----
 
+* FIX last hour
+* FIX manage feeds section
+
 * Complete JSON events: add feeds, update event, mark as unread
 * Clean up by creating more functions or using a proper framework
 * Mark as read, unread buttons
@@ -47,5 +50,5 @@ TODO
 * Use css classes for image-star properties
 * Implement drag and dropstyle to manage feeds
 * First welcome screen to add opml or feeds
-* Mark as read per category or per feed
+* Mark as read per category or per feed (Fever API)
 * List view: continue loading 25 next read items
