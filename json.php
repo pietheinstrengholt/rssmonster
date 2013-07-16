@@ -35,10 +35,32 @@ if(isset($arr['update'])){
 		exit;
 	  } 
 	  else {
-		//TODO: new_feed_category needs to be converted to an ID instead of a name
-		$sql = "UPDATE feeds set name='$arr[new_feed_name]',category='$arr[new_feed_category]' WHERE id = $arr[value]";
-		$result = mysql_query($sql);
-		echo json_encode("done");
+		//TODO: cleanup below
+
+		//check if category already exists in category table
+		$new = $arr[new_feed_category];
+		$query = "SELECT id FROM category WHERE name = '$new'";
+		$count = mysql_query($query);
+		$numResults = mysql_num_rows($count);
+
+		//category already exists in db, use id from query
+		if ($numResults > 0) {
+		   $row = mysql_fetch_row($count);
+		   $newcategory = $row[0];
+		   $sql = "UPDATE feeds set name='$arr[new_feed_name]',category='$newcategory' WHERE id = $arr[value]";
+		   $result = mysql_query($sql);
+		   echo json_encode("done");
+		//category does not exist
+		} else {
+		   //insert new category in category table
+		   $sql = "INSERT INTO category (`id`, `name`) VALUES (NULL, '$new')";
+		   $result = mysql_query($sql);
+		   //return id
+		   $newcategory = mysql_insert_id();
+		   $sql = "UPDATE feeds set name='$arr[new_feed_name]',category='$newcategory' WHERE id = $arr[value]";
+		   $result = mysql_query($sql);
+		   echo json_encode("done");
+		}
 	  }
 	}
 }
