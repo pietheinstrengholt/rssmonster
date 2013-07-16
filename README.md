@@ -53,7 +53,6 @@ TODO
 ----
 
 * FIX last hour
-* FIX manage feeds section
 * Complete JSON events: add feeds, update event, mark as unread
 * Clean up by creating more functions or using a proper framework
 * Mark as read, unread buttons
