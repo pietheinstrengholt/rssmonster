@@ -5,7 +5,7 @@ include 'config.php';
 include 'functions.php';
 
 //dump post data
-//file_put_contents('/tmp/fever-api-debug.txt', var_export($_POST, true), FILE_APPEND | LOCK_EX);
+file_put_contents('/tmp/fever-api-debug.txt', var_export($_POST, true), FILE_APPEND | LOCK_EX);
 
 //static for now
 $email  = 'you@yourdomain.com';
@@ -295,14 +295,12 @@ if (isset($_POST['mark'])) {
     if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
 
     if ($_REQUEST["as"] == "read") {
-        mysql_query("UPDATE articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < $time");
+        mysql_query("UPDATE articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "saved") {
-        mysql_query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < $time");
+        mysql_query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "unsaved") {
-        mysql_query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < $time");
+        mysql_query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < '$time'");
     }
-
-    //TODO: add before=? statement
 
   }
 
@@ -325,8 +323,6 @@ if (isset($_POST['mark'])) {
 
   //this is "all" to fever
   if ($_REQUEST["mark"] == "group" && $_REQUEST["id"] == "0") {
-
-    $id = $_REQUEST["id"];
 
     if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
 
