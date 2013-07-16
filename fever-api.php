@@ -4,6 +4,9 @@
 include 'config.php';
 include 'functions.php';
 
+//dump post data
+//file_put_contents('/tmp/fever-api-debug.txt', var_export($_POST, true), FILE_APPEND | LOCK_EX);
+
 //static for now
 $email  = 'you@yourdomain.com';
 $pass   = 'password';
@@ -267,6 +270,7 @@ if (isset($_GET['favicons'])) {
 
 print json_encode($arr);
 
+//mark items, groups or feed as read, saved or unsaved
 if (isset($_POST['mark'])) {
 
   if ($_REQUEST["mark"] == "item") {
@@ -283,35 +287,59 @@ if (isset($_POST['mark'])) {
 
   }
 
+  //feeds
   if ($_REQUEST["mark"] == "feed") {
 
     $id = $_REQUEST["id"];
 
+    if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
+
     if ($_REQUEST["as"] == "read") {
-        mysql_query("UPDATE articles SET status = 'read' WHERE feed_id = '$id'");
+        mysql_query("UPDATE articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < $time");
     } elseif ($_REQUEST["as"] == "saved") {
-        mysql_query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id'");
+        mysql_query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < $time");
     } elseif ($_REQUEST["as"] == "unsaved") {
-        mysql_query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id'");
+        mysql_query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < $time");
     }
 
     //TODO: add before=? statement
 
   }
 
-  if ($_REQUEST["mark"] == "group") {
+  //a group should be specified with an id not equal to zero
+  if ($_REQUEST["mark"] == "group" && $_REQUEST["id"] != "0") {
 
     $id = $_REQUEST["id"];
 
+    if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
+
     if ($_REQUEST["as"] == "read") {
-        mysql_query("UPDATE `articles` SET status = 'read' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id')");
+        mysql_query("UPDATE `articles` SET status = 'read' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "saved") {
-        mysql_query("UPDATE `articles` SET star_ind = '1' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id')");
+        mysql_query("UPDATE `articles` SET star_ind = '1' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "unsaved") {
-        mysql_query("UPDATE `articles` SET star_ind = '0' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id')");
+        mysql_query("UPDATE `articles` SET star_ind = '0' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
     }
 
   }
+
+  //this is "all" to fever
+  if ($_REQUEST["mark"] == "group" && $_REQUEST["id"] == "0") {
+
+    $id = $_REQUEST["id"];
+
+    if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
+
+    if ($_REQUEST["as"] == "read") {
+        mysql_query("UPDATE `articles` SET status = 'read' WHERE insert_date < '$time'");
+    } elseif ($_REQUEST["as"] == "saved") {
+        mysql_query("UPDATE `articles` SET star_ind = '1' WHERE insert_date < '$time'");
+    } elseif ($_REQUEST["as"] == "unsaved") {
+        mysql_query("UPDATE `articles` SET star_ind = '0' WHERE insert_date < '$time'");
+    }
+
+  }
+
 
 }
 
