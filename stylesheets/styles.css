@@ -351,3 +351,9 @@ div#layer1 .subject, div#layer1 .subjecturl {
 div#layer1 .subjecturl {
   color: #24b;
 }
+
+div#info-bar.info-bar {
+  text-align: center;
+  font-weight: bold;
+  margin-top: 10px;
+}

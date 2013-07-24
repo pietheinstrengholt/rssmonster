@@ -46,9 +46,9 @@ include 'functions.php';
       <li><a id="import-opml" href="#">Import OPML</a></li>
     </ul>
 
-    <form class="navbar-form pull-left" method="post" action="addfeedhandler.php">
-      <input type="text" value="Add feed or url" name="feedname" class="span2">
-      <button type="submit" class="btn">Submit</button>
+    <form class="navbar-form pull-left" method="post" placeholder="submitfeed">
+      <input type="text" placeholder="Add feed or url" name="feedname" class="feed-query">
+      <button type="button" id="submitfeed" class="btn">Submit</button>
     </form>
 
     <ul class="nav">

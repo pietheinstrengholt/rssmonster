@@ -69,6 +69,42 @@ if(isset($arr['update'])){
 //get article status, read or unread
 if(isset($arr['request'])){
 
+	if ($arr['request'] == "get-article-list") {
+
+		$unread_item_ids = array();
+
+		if ($arr['status'] == "starred") {
+		        $sql = mysql_query("SELECT DISTINCT id FROM articles WHERE star_ind = '1' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+                } elseif ($arr['status'] == "read") {
+			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE status = 'read' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+		//by category
+		} elseif (!empty($arr['category']) && empty($arr['feed'])) {
+			$category = urldecode($arr[category]);
+			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE feed_id IN (SELECT DISTINCT id FROM feeds where category IN (SELECT id FROM `category` WHERE name = '$category')) AND status = 'unread' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+		//by feed
+                } elseif (!empty($arr['feed']) && empty($arr['category'])) {
+			$feed = urldecode($arr[feed]);
+			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE feed_id IN (SELECT DISTINCT id FROM feeds where name = '$feed') AND status = 'unread' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+		} elseif (urldecode($arr['status']) == 'last 24 hours') {
+			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE status = 'unread' AND publish_date between (NOW() - INTERVAL 1 DAY) AND NOW() ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+		} elseif (urldecode($arr['status']) == 'last hour') {
+			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE status = 'unread' AND publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW() ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+		} else {
+			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE status = 'unread' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
+		}
+
+		while($row = mysql_fetch_array($sql)) {
+	   	  if (!empty($row)) {
+		      array_push($unread_item_ids, $row['id']);
+		  }
+		}
+
+		$unread_item_ids = array_chunk($unread_item_ids, 10);
+
+		echo json_encode($unread_item_ids);
+	}
+
+
 	if ($arr['request'] == "debug") { 
 	  echo json_encode($debug);
 	}
@@ -103,13 +139,12 @@ if(isset($arr['request'])){
 		$status = $arr['status'];
 	  }
 
-	  //article id is filled in
+	  //article id are filled in
 	  if (!empty($arr['article_id'])) {
-		$sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind, author FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.id = '$arr[article_id]'");
+		$sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind, author FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.id IN ($arr[article_id]) ORDER BY publish_date $sort");
 	  //per feed
 	  } elseif (!empty($arr['input_feed']) && empty($arr['input_category'])) {
-		$sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind, author FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE status = '$status' AND feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]') ORDER BY 
-publish_date $sort LIMIT $arr[offset], $arr[postnumbers]");
+		$sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind, author FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE status = '$status' AND feed_id = (SELECT id FROM `feeds` WHERE name = '$arr[input_feed]') ORDER BY publish_date $sort LIMIT $arr[offset], $arr[postnumbers]");
 	  //per category
 	  } elseif (!empty($arr['input_category']) && empty($arr['input_feed'])) {
 		$sql=mysql_query("SELECT t1.id, status, t1.url, subject, content, publish_date, name as feed_name, category, star_ind, author FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE t1.status = '$status' AND feed_id in (SELECT id FROM `feeds` WHERE category = '$arr[input_category]') ORDER BY publish_date $sort LIMIT $arr[offset], $arr[postnumbers]");
@@ -140,8 +175,24 @@ publish_date $sort LIMIT $arr[offset], $arr[postnumbers]");
 //update read status and return url as success value
 if(isset($arr['update'])){
 
+	//todo: return category, feedname
+        if ($arr['update'] == "item-as-read") {
+          //$response = mysql_query("SELECT t1.status, t2.name as feed, t3.name as category FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id LEFT JOIN category t3 ON t2.category = t3.id WHERE t1.id = '$arr[value]'");
+	  $response = mysql_query("SELECT t1.status, t2.name as feed, t3.name as category,
+		CASE
+		WHEN t1.publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW() THEN \"last-hour\"
+		WHEN t1.publish_date between (NOW() - INTERVAL 1 DAY) AND NOW() THEN \"last-24-hours\"
+		WHEN t1.publish_date between (NOW() - INTERVAL 1 WEEK) AND NOW() THEN \"last-week\"
+		ELSE \"other\"
+		END as publish_date
+		FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id LEFT JOIN category t3 ON t2.category = t3.id WHERE t1.id = '$arr[value]'");
+          while($r[]=mysql_fetch_array($response));
+          echo json_encode($r);
+	  mysql_query("UPDATE articles set status = 'read' WHERE id IN ($arr[value])");
+        }
+
 	if ($arr['update'] == "read-status") {
-	  $sql = "UPDATE articles set status = 'read' WHERE id = $arr[value]";
+	  $sql = "UPDATE articles set status = 'read' WHERE id IN ($arr[value])";
 	  $result = mysql_query($sql);
 	  $response = "SELECT url FROM articles WHERE id = $arr[value]";
 	  $r = mysql_query($response);
@@ -224,14 +275,15 @@ ORDER BY t1.name");
 	  while($r[]=mysql_fetch_array($sql));
 	  echo json_encode($r);
 	} elseif ($arr['overview'] == "status") {
-	  $sql=mysql_query("select name, count from (select status as name, count(*) as count from articles GROUP BY status ORDER BY status DESC) a
-						union
-						select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') b
+	  $sql=mysql_query("select name, count from (SELECT  'unread' AS name, COUNT( * ) AS count FROM articles a WHERE STATUS =  'unread') a
 				union
-				select name, count from (select 'last 24 hours' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 DAY) AND NOW()) c
-						union
-						select name, count from (select 'last hour' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW()) d
-				");
+				SELECT  'read' AS name, COUNT( * ) AS count FROM articles b WHERE STATUS =  'read'
+				union
+				select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') c
+				union
+				select name, count from (select 'last 24 hours' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 DAY) AND NOW()) d
+				union
+				select name, count from (select 'last hour' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW()) e");
 	  while($r[]=mysql_fetch_array($sql));
 	  echo json_encode($r);
 	}

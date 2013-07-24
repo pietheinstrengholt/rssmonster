@@ -4,36 +4,13 @@
 include 'config.php';
 include 'functions.php';
 
-//retrieve feed or category information from infinite.js
-if(isset($_POST['feed_name'])){ $input_feed = htmlspecialchars($_POST['feed_name']); }
-if(isset($_POST['category_name'])){ $input_category = htmlspecialchars($_POST['category_name']); }
-if(isset($_POST['article_id'])){ $article_id = htmlspecialchars($_POST['article_id']); } else { $article_id = NULL; }
-if(isset($_POST['status'])){ $status = htmlspecialchars($_POST['status']); } else { $status = NULL; }
 if(isset($_POST['sort'])){ $sort = htmlspecialchars($_POST['sort']); } else { $sort = NULL; }
+if(isset($_POST['articlelist'])){ $articlelist = htmlspecialchars($_POST['articlelist']); } else { $articlelist = NULL; }
 
-//urldecode post input
-$input_feed = urldecode($input_feed);
-$input_category = urldecode($input_category);
+$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "sort": "' . $_POST['sort'] . '", "article_id": "' . $_POST['articlelist'] . '"}');
 
-//receive numbers of posts to load from infinite.js
-$offset = is_numeric($_POST['offset']) ? $_POST['offset'] : die();
-$postnumbers = is_numeric($_POST['number']) ? $_POST['number'] : die();
-
-//retrieve content
-$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "offset": "' . $_POST['offset'] . '", "input_category": "' . $input_category . '", "postnumbers": "' .$_POST['number'] . '", "input_feed": "' . $input_feed . '", "article_id": "' . $article_id . '", "status": "' . $status . '", "sort": "' . $sort . '"}');
-
-//only get article once
-if (!empty($article_id) && $offset != "0") { die(); }
-
-//if no results are returned mark items as read
-if ($array == "no-results" ) {
-  $array = get_json('{"jsonrpc": "2.0", "update": "mark-as-read", "input_feed": "' . $input_feed . '", "input_category": "' . $input_category . '", "status": "' . $status . '"}');
-  die();
-}
-
-//load content
 if (!empty($array) && $array != "no-results") {
-  foreach ($array as $row) {
+   foreach ($array as $row) {
 
     echo "<div id=block class=$offset>";
 

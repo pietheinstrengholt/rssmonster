@@ -8,10 +8,11 @@
     <script src="javascripts/jquery.color.js"></script>
     <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
     <script src="javascripts/jquery.cookie.js"></script>
-    <script src="javascripts/jquery.bullseye-1.0-min.js"></script>
     <script src="javascripts/infinite.js"></script>
     <script src="javascripts/phppaper.js"></script>
     <script src="javascripts/bootstrap.min.js"></script>
+    <script src="javascripts/waypoints.js"></script>
+    <script src="javascripts/waypoints-infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/bootstrap.css">
     <script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>

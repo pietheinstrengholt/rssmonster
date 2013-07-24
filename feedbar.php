@@ -56,8 +56,11 @@ function header_section($input, $name) {
       if (!empty($row)) {
 
 	$title = substr($row['category'], 0, 16);
+        $csstitle = preg_replace("/[^A-Za-z0-9 ]/", '', $title);
+	//$csstitle = str_replace(" ", "-", $csstitle);
+	//$csstitle = preg_replace("/\s+/g", '', $csstitle);
+	$csstitle = preg_replace('/\s+/', '',$csstitle);
 
-	$csstitle = str_replace(" ", "-", $title);
 	echo "<div class=\"menu-heading\" id='$csstitle'>";
 	  echo "<div class=\"pointer-category\"><i class=\"icon-chevron-right\"></i></div>";
 	  echo "<div class=\"title\">$title</div>";
@@ -78,7 +81,10 @@ function header_section($input, $name) {
 			$row[3] = "0";
 		}
 
-		$csssubtitle = str_replace(" ", "-", $row[0]);
+		$csssubtitle = preg_replace("/[^A-Za-z0-9 ]/", '', $row[0]);
+		//$csssubtitle = str_replace(" ", "-", $csssubtitle);
+		//$csssubtitle = preg_replace("/\s+/g", '', $csssubtitle);
+		$csssubtitle = preg_replace('/\s+/', '',$csssubtitle);
 
 		if (empty($row[2])) {
 			$faviconurl = "img/rss-default.gif";

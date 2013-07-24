@@ -47,6 +47,9 @@ $(document).ready(function () {
 
     function loadview(view, type, value, sort) {
 
+	//destroy waypoint functions, avoid many items being called, see infinite.js
+	$('div#block h3').waypoint('destroy');
+
 	var sort = $.cookie('sort');
     	var view = $.cookie('view');
 	var type = $.cookie('type');
@@ -96,15 +99,15 @@ $(document).ready(function () {
         setTimeout(function () {
 
             $('#content').scrollPagination({
-                nop: 10, // The number of posts per scroll to be loaded
+                nop: 1, // The number of posts per scroll to be loaded
                 offset: 0, // Initial offset, begins at 0 in this case
                 error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
-                delay: 500, // When you scroll down the posts will load after a delayed amount of time.
+                delay: 100, // When you scroll down the posts will load after a delayed amount of time.
                 scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
                 category: category, // Catch category from menu
                 feed: feed, // Catch feedname from menu
                 status: status, // Catch status from menu
-		sort: sort // Catch sort
+                sort: sort // Catch sort
             });
         }, 100);
     }
@@ -333,77 +336,13 @@ $(document).ready(function () {
 
     });
 
+    //submit add new feed button
+    jQuery("button#submitfeed.btn").click(function () {
+        console.log("search clicked");
+        var inputfeed = $('input.feed-query').val();
+	console.log(inputfeed);
+        var encoded = encodeURIComponent(inputfeed);
+        $('section').load('addfeedhandler.php?feedname='+encoded);
+    });
+
 });
-
-
-//infinite.js script is used to call the myHandler function
-
-//create pool for article id's, this to avoid that an article is marked as read twice or more
-var pool = new Array();
-
-//create event handler
-
-function myHandler(e) {
-    var id = $(this).attr('id');
-
-    //the article id is not in the array
-    if (jQuery.inArray(id, pool) == -1) {
-
-        //debug message to console
-        console.log($(this).attr('id') + ': ' + e.type);
-
-        //push article id to array
-        pool.push(id);
-
-        //mark item as read with json call
-	//TODO: Return after marking as read the menu and sub-menu, last hours indicators for updating menu
-	//TODO: This requires more advanced scripting. Return array with counts marked as read per category and feed
-        $.ajax({
-            type: "POST",
-            url: "json.php",
-            data: JSON.stringify({
-                "jsonrpc": "2.0",
-                "update": "read-status",
-                "value": id
-            }),
-            contentType: "application/json; charset=utf-8",
-            dataType: "json",
-            success: function (data) {},
-            failure: function (errMsg) {}
-        });
-
-	//decrease and increase unread and read amount in menu, only when read is not active
-        if(!$('div#read.menu-heading-status.status-clicked').length > 0) {
-		var unreadcount = $('div.nav-main div#unread.menu-heading-status span.count').text();
-        	var unreadcountnew = unreadcount -1;
-		$('div.nav-main div#unread.menu-heading-status span.count').text(unreadcountnew);
-
-	        var readcount = $('div.nav-main div#read.menu-heading-status span.count').text();
-		var readcountnew = parseFloat(readcount)+1;
-	        $('div.nav-main div#read.menu-heading-status span.count').text(readcountnew);
-	}
-
-	//decrease main and submenu items
-	var readcountsub = $('div.feedbar').find('.active-sub span.count-sub').text();
-	var readcountsubnew = readcountsub -1;
-	$('div.feedbar .active-sub span.count-sub').text(readcountsubnew);
-
-	var readcountmain = $('div.feedbar').find('.active-main span.count.unread').text();
-	var readcountmainnew = readcountmain -1;
-	$('div.feedbar .active-main span.count.unread').text(readcountmainnew);
-
-	if($('div#last-24-hours.menu-heading-status.status-clicked').length > 0) {
-		var readcount24hours = $('div#last-24-hours.menu-heading-status.status-clicked').find('span.count').text();
-		var readcount24hoursnew = readcount24hours -1;
-		$('div#last-24-hours.menu-heading-status.status-clicked span.count').text(readcount24hoursnew);
-	}
-
-        if($('div#last-hour.menu-heading-status.status-clicked').length > 0) {
-                var readcountlasthour = $('div#last-hour.menu-heading-status.status-clicked').find('span.count').text();
-                var readcountlasthournew = readcountlasthour -1;
-                $('div#last-hour.menu-heading-status.status-clicked span.count').text(readcountlasthournew);
-        }
-
-
-    };
-}

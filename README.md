@@ -52,7 +52,6 @@ Any username and password will work at this moment.
 TODO
 ----
 
-* FIX last hour
 * Complete JSON events: add feeds, update event, mark as unread
 * Clean up by creating more functions or using a proper framework
 * Mark as read, unread buttons
@@ -61,5 +60,6 @@ TODO
 * Use css classes for image-star properties
 * Implement drag and dropstyle to manage feeds
 * First welcome screen to add opml or feeds
-* Mark as read per category or per feed (Fever API)
-* List view: continue loading 25 next read items
+* Fix List view: continue loading 25 next read items
+* Merge list and detailed view, only one backend
+* Lazy load images for detailed view
