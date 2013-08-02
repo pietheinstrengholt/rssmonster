@@ -134,8 +134,16 @@ while ($row = mysql_fetch_array($sql)) {
 		} elseif (strtotime($date) < strtotime($previousweek)) {
 			echo "Article more than one week old"; 
 		} else {
-			echo "Found new article";
-			mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
+			$resulturl = mysql_query("SELECT COUNT(*) FROM articles WHERE url = '" . $url . "' AND feed_id = '$feed_id'");
+			if ($resulturl) {
+				$counturl = mysql_result($resulturl, 0);
+			 	if ($counturl > 0) {
+                        		echo "Skipping - Avoid duplicate url in db";
+                		} else {
+					echo "Found new article";
+					mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
+				}
+			}
 		}
 	    }
 

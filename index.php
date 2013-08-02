@@ -8,13 +8,13 @@
     <script src="javascripts/jquery.color.js"></script>
     <script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
     <script src="javascripts/jquery.cookie.js"></script>
-    <script src="javascripts/infinite.js"></script>
     <script src="javascripts/phppaper.js"></script>
     <script src="javascripts/bootstrap.min.js"></script>
     <script src="javascripts/waypoints.js"></script>
     <script src="javascripts/waypoints-infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/bootstrap.css">
+	<link rel="stylesheet" href="stylesheets/bootstrap-glyphicons.css">
     <script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 
     <style type="text/css">
@@ -37,26 +37,21 @@
       }
     </style>
 
-   <link rel="stylesheet" href="stylesheets/bootstrap-responsive.css">
-
   </head>
 
   <body>
+	<?php include 'top-nav.php'; ?>
 
-      <?php include 'top-nav.php'; ?>
-
-<div class="container-fluid">
-  <div class="row-fluid">
-    <div class="span3 hidden-tablet hidden-phone">
-      <feedbar>
-        <?php include 'feedbar.php'; ?>
-      </feedbar>
-    </div>
-    <div class="span9">
-      <section></section>
-    </div>
-  </div>
-</div>
+	<div class="row">
+	  <div class="col-lg-3">
+		  <feedbar>
+			<?php include 'feedbar.php'; ?>
+		  </feedbar>
+	  </div>
+	  <div class="col-lg-9">
+		  <section></section>
+	  </div>
+	</div>
 
   </body>
 

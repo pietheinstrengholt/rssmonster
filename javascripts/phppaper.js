@@ -1,101 +1,83 @@
+//sort stored in cookie
+if (($.cookie('sort') == undefined)) {
+    $.cookie('sort', 'desc', { expires: 14 });
+}
+
+//function to remove all spaces and non alphanumeric characters
+function onlyalphanumeric(input) {
+  var nospaces = input.replace(/\s+/g, '');
+  var onlyalpha = nospaces.replace(/\W/g, '');
+  return onlyalpha;
+}
+
+//sort stored in cookie
+if (($.cookie('view') == undefined)) {
+    $.cookie('view', 'detailed', { expires: 14 });
+}
+
+function setview(input) {
+   var view = input;
+   $.cookie('view', view, { expires: 14 });
+   
+   if (view == "detailed") {
+        $(".page-content").show();
+        $(".less-content").hide();
+   } else {
+        $(".page-content").hide();
+        $(".less-content").show();
+   }
+}
+
+function removefeedbaroverflow() {
+	$('feedbar').css({
+        'overflow-y': 'hidden'
+    });
+}
+
+//set variables immediately
+var sort = $.cookie('sort');
+var view = $.cookie('view');
+var type = $.cookie('type');
+var value = $.cookie('value');
+
 //TODO: read window.location.hash and if set reload section with post parameters
 $(document).ready(function () {
 
     //dropdown toggle
     $('.dropdown-toggle').dropdown();
 
-    //remove scrollbar
-    $('feedbar').css({
-        'overflow-y': 'hidden'
-    });
+    //remove scrollbar overflow
+    removefeedbaroverflow();
 
-    //sort stored in cookie
-    if (($.cookie('sort') == undefined)) {
-	$.cookie('sort', 'desc', { expires: 14 });
-    }
-
-    //sort stored in cookie
-    if (($.cookie('view') == undefined)) {
-        $.cookie('view', 'detailed', { expires: 14 });
-    }
-
-    //on a first load get hashtag value from url
-    var request = window.location.hash;
-    request = request.slice(1);
-    function getFirstPart(str) { return str.split('=')[0]; }
-    function getSecondPart(str) { return str.split('=')[1]; }
-
-    if (request.length == 0) {
+    //if (request.length == 0) {
 	if (($.cookie('type') == undefined) && ($.cookie('value') == undefined)) {
-	   $.cookie('type', 'status', { expires: 14 });
-           $.cookie('value', 'unread', { expires: 14 });
+		$.cookie('type', 'status', { expires: 14 });
+		$.cookie('value', 'unread', { expires: 14 });
 	}
-    } else {
-    	$.cookie('type', getFirstPart(request));
-    	$.cookie('value', getSecondPart(request));
-    }
 
-    //TODO: change feedbar and submenu bar is type and value are set
-
-    var sort = $.cookie('sort');
-    var view = $.cookie('view');
-    var type = $.cookie('type');
-    var value = $.cookie('value');
-
-    //load content
-    loadview($.cookie('view'), $.cookie('type'), $.cookie('value'), $.cookie('sort'));
-
-    function loadview(view, type, value, sort) {
-
-	//destroy waypoint functions, avoid many items being called, see infinite.js
-	$('div#block h3').waypoint('destroy');
-
-	var sort = $.cookie('sort');
-    	var view = $.cookie('view');
-	var type = $.cookie('type');
-	var value = $.cookie('value');
-
-	console.log(type + "=" + value + "(" + sort + " & " + view + ")");
-
-	//set location path
-	//TODO: fix when switching to detailed or sort, remains empty now
-	window.location.hash = "#" + type + "=" + value;
-
-        //set cookie view to view parameter
-	$.cookie('view', view, { expires: 14 });
-	var view = $.cookie('view');
-
-        if (view == 'list') {
-           loadlistview(type, value, sort);
-        } else if (view == 'detailed') {
-           loaddetailedview(type, value, sort);
-        } else {
-           loaddetailedview(type, value, sort);
-	}
-    }
-
-    //loadlistview function
-    function loadlistview(type, value, sort) {
-	$(window).off("scroll");
-        $('section').empty();
-	$('section').load('list-view.php?' + type + '=' + value + '&sort=' + sort);
-    }
+	loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
 
     //loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
-    function loaddetailedview(type, value, sort) {
+    function loadcontent(type, value, sort, view) {
 
-	//set category, feed and status variables
-	if (type == 'category') { var category = value; }
-        if (type == 'feed') { var feed = value; }
-        if (type == 'status') { var status = value; }
-
-	//remove content and offload scroll
-        $('section').empty();
-        $('section #content').remove();
-        $('section').append('<div id="content"></div>');
-        $(window).off("scroll");
-
-	//use small amount of timeout
+		//empty poolid array
+		poolid = [];
+		
+		//destroy waypoint functions, avoid many items being called, see infinite.js
+		$('div#block h4').waypoint('destroy');
+	
+		//set category, feed and status variables
+		if (type == 'category') { var category = value; }
+		if (type == 'feed') { var feed = value; }
+		if (type == 'status') { var status = value; }
+		
+		//remove content and offload scroll
+		$('section').empty();
+		$('section #content').remove();
+		$('section').append('<div id="content"></div>');
+		$(window).off("scroll");
+	
+		//use small amount of timeout when calling scrollPagination
         setTimeout(function () {
 
             $('#content').scrollPagination({
@@ -113,138 +95,128 @@ $(document).ready(function () {
     }
 
     //Functionality from menu when Articles section is clicked
-    jQuery("div.menu-heading-status").click(function () {
+    $("ul#status a.list-group-item").click(function () {
 
-	//remove and add clicked status to class
-	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
-	$(this).addClass("status-clicked");
+		//remove and add clicked status to class
+		$('ul#status').find('.active').removeClass("active");
+		$('ul#category').find('.active').removeClass("active");
+		$("div.menu-sub").hide();
+		$(this).addClass("active");
 
-	//load content
-        var view = $.cookie('view');
-        var status = $(this).find("div.title").text();
-        var encoded_status = encodeURIComponent(status);
-	$.cookie('type', 'status');
-	$.cookie('value', encoded_status);
-	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
-
+		//load content
+		var view = $.cookie('view');
+		var status = $(this).find('span#title-name').text();
+		var encoded_status = encodeURIComponent(status);
+		$.cookie('type', 'status');
+		$.cookie('value', encoded_status);
+		loadcontent('status', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		
     });
 
     //Category function on feedbar: Drop down menu sub-menu items when a category is clicked
     //hide sub menu by default
-    jQuery("div.menu-sub").hide();
-    jQuery("div.menu-heading").click(function () {
+    $("div.menu-sub").hide();
+    $("ul#category a.list-group-item.main").click(function () {
 
-	//avoid scrollbar
-        $('feedbar').css({
-            'overflow-y': 'hidden'
-        });
+		//avoid scrollbar
+		removefeedbaroverflow();
 
-	//remove any active clicked classes from status overview
-	$('div.nav-main').find('.status-clicked').removeClass("status-clicked");
+		//remove any active clicked classes from status overview
+		$('ul#status').find('.active').removeClass("active");
+		$('ul#category').find('.active').removeClass("active");
+		$(this).addClass("active");
+		
+		//open submenu
+		$(this).next("div.menu-sub").slideToggle(200);
 
-	//open submenu
-        $(this).next("div.menu-sub").slideToggle(200);
+		//remove and add active classes, needed for decreasing dynamic count
+		$('div.feedbar').find('.active-sub').removeClass("active");
 
-	//remove and add active classes, needed for decreasing dynamic count
-	$('div.feedbar').find('.active-main').removeClass("active-main");
-	$('div.feedbar').find('.active-sub').removeClass("active-sub");
-	$(this).addClass("active-main");
-
-	//change styling and arrow
-        if ($(this).hasClass("category-clicked")) {
-            $(this).removeClass("category-clicked");
-            $(this).css("background-color", "");
-            $(this).css("color", "");
-	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-right');
+		//change styling and arrow
+        if ($(this).hasClass("collapsed")) {
+            $(this).removeClass("collapsed");
+			$(this).find('span.glyphicon.glyphicon-chevron-down').attr('class', 'glyphicon glyphicon-chevron-right');
         } else {
-            $(this).addClass("category-clicked");
-            $(this).css("background-color", "#0088cc");
-            $(this).css("color", "#ffffff");
-	    $(this).find('div.pointer-category i').attr('class', 'icon-chevron-down');
+            $(this).addClass("collapsed");
+			$(this).find('span.glyphicon.glyphicon-chevron-right').attr('class', 'glyphicon glyphicon-chevron-down');
         }
 
-	//load content
+		//load content
         var view = $.cookie('view');
-        var category = $(this).find("div.title").text();
+        var category = $(this).find('span#title-name').text();
         var encoded_category = encodeURIComponent(category);
-	$.cookie('type', 'category');
+		$.cookie('type', 'category');
         $.cookie('value', encoded_category);
-        loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+		loadcontent('category', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
 
     });
 
     //Functionality when sub menu item from categories is clicked
-    jQuery("div.menu-sub-item").click(function () {
+    $("ul#category a.list-group-item.sub").click(function () {
 
         //remove any active clicked classes from status overview
-        $('div.nav-main').find('.status-clicked').removeClass("status-clicked");
+        $('ul#category').find('.active').removeClass("active");
+        $(this).addClass("active");
 
-	//remove and add active classes, needed for decreasing dynamic count
-        $('div.feedbar').find('.active-sub').removeClass("active-sub");
-        $(this).addClass("active-sub");
-
-        //only one menu-sub-item can be active
-        $("div.feedbar").find("div.menu-sub-item").css('background-color', '');
-        $(this).css("background-color", "#dceaf4");
-
-	//load content
+		//load content
         var view = $.cookie('view');
-        var feed = $(this).find("span.title").text();
+        var feed = $(this).find('span.title').text();
         var encoded_feed = encodeURIComponent(feed);
         $.cookie('type', 'feed');
         $.cookie('value', encoded_feed);
-        loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+		loadcontent('feed', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
     });
 
+    //IDEA: to add class properties detailed and list to elements and style so on
+
     //List view button from topnav menu
-    jQuery("a#list-view").click(function () {
-        $.cookie('view', 'list', { expires: 14 });
-	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+    $("a#list-view").click(function () {
+		//TODO: if already list, don't fire setview again!
+		setview("list");
     });
 
     //Detailed view button from topnav menu
-    jQuery("a#detailed-view").click(function () {
-	$.cookie('view', 'detailed', { expires: 14 });
-	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+    $("a#detailed-view").click(function () {
+		setview("detailed");
     });
 
     //Sort button from topnav menu
-    jQuery("a#sort-asc").click(function () {
-	$.cookie('sort', 'asc', { expires: 14 });
-	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+    $("a#sort-asc").click(function () {
+		$.cookie('sort', 'asc', { expires: 14 });
+		loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
     });
 
     //Sort button from topnav menu
-    jQuery("a#sort-desc").click(function () {
+    $("a#sort-desc").click(function () {
         $.cookie('sort', 'desc', { expires: 14 });
-	loadview($.cookie('view'), $.cookie('type'), $.cookie('value'));
+		loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
     });
 
     //Load opml import screen in section
-    jQuery("a#import-opml").click(function () {
-	$(window).off("scroll");
+    $("a#import-opml").click(function () {
+		$(window).off("scroll");
         $('section').load('opml.php');
     });
 
     //Load opml import screen in section
-    jQuery("a.update").click(function () {
-	//show progress bar while loading
-	console.log("update.php called");
-	$(window).off("scroll");
-	$('section').empty();
-        $('section').load('update.php');
-	//$('section').append('<div class="progress progress-striped active"><div class="bar" style="width: 40%;"></div></div>');
+    $("a.update").click(function () {
+		//show progress bar while loading
+		console.log("update feeds initialized");
+		$(window).off("scroll");
+		$('section').empty();
+		$('section').load('update.php');
+		//$('section').append('<div class="progress progress-striped active"><div class="bar" style="width: 40%;"></div></div>');
     });
 
     //Load organize feeds section
-    jQuery("div.organize button.btn.btn-small.btn-primary").click(function () {
-	$(window).off("scroll");
-        $('section').load('manage-feeds.php');
-    });
+    $("div.organize button.btn.btn-small.btn-primary").click(function () {
+		$(window).off("scroll");
+		$('section').load('manage-feeds.php');
+	});
 
     //Load organize feeds section
-    jQuery("div.organize button.btn.btn-small.btn-warning").click(function () {
-	console.log("mark-as-read button clicked");
+    $("div.organize button.btn.btn-small.btn-warning").click(function () {
+		console.log("mark-as-read button clicked");
         $.ajax({
             type: "POST",
             url: "json.php",
@@ -268,8 +240,8 @@ $(document).ready(function () {
 
     //event when marking item as starred
     $("section").on("click", "div#block", function (event) {
-	$("section").find("div#block.active").removeClass("active");
-	$(this).addClass("active");
+		$("section").find("div#block.active").removeClass("active");
+		$(this).addClass("active");
     });
 
     //event when marking item as starred
@@ -297,10 +269,10 @@ $(document).ready(function () {
         $(this).removeClass("unstar");
         $(this).addClass("star");
 
-	//increase count in menu
-        var starredcount = $('div.nav-main div#starred.menu-heading-status span.count').text();
+		//increase count in menu
+        var starredcount = $('ul#status a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)+1;
-        $('div.nav-main div#starred.menu-heading-status span.count').text(starredcountnew);
+        $('ul#status a#starred.list-group-item span.badge').text(starredcountnew);
 
     });
 
@@ -329,10 +301,10 @@ $(document).ready(function () {
         $(this).removeClass("star");
         $(this).addClass("unstar");
 
-	//decrease star count in menu
-        var starredcount = $('div.nav-main div#starred.menu-heading-status span.count').text();
+		//decrease star count in menu
+        var starredcount = $('ul#status a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)-1;
-        $('div.nav-main div#starred.menu-heading-status span.count').text(starredcountnew);
+        $('ul#status a#starred.list-group-item span.badge').text(starredcountnew);
 
     });
 
@@ -340,9 +312,268 @@ $(document).ready(function () {
     jQuery("button#submitfeed.btn").click(function () {
         console.log("search clicked");
         var inputfeed = $('input.feed-query').val();
-	console.log(inputfeed);
+		console.log(inputfeed);
         var encoded = encodeURIComponent(inputfeed);
         $('section').load('addfeedhandler.php?feedname='+encoded);
     });
 
 });
+
+//pool for mark as read
+var poolid = new Array();
+
+//function to mark items as read
+function FnReadPool(input) {
+   if (jQuery.inArray(input, poolid) == -1) {
+
+     setTimeout(function() {
+        console.log("viewport:" + input);
+     }, 600);
+
+     $.ajax({
+            type: "POST",
+            url: "json.php",
+            data: JSON.stringify({
+                "jsonrpc": "2.0",
+                "update": "item-as-read",
+                "value": input
+            }),
+            contentType: "application/json; charset=utf-8",
+            dataType: "json",
+            success: function (data) {
+
+                //capture feed and status, filter out non alphanumeric and white spaces
+                var feed = onlyalphanumeric(data[0]['feed']);
+                var category = onlyalphanumeric(data[0]['category']);
+
+                //only in case when status is unread
+                if (data[0]['status'] == "unread") {
+
+                        //decrease uread count
+                        var unreadcount = $('ul#status a#unread.list-group-item span.badge').text();
+                        var unreadcountnew = unreadcount -1;
+                        $('ul#status a#unread.list-group-item span.badge').text(unreadcountnew);
+
+                        //increase read count
+                        var readcount = $('ul#status a#read.list-group-item span.badge').text();
+                        var readcountnew = parseFloat(readcount)+1;
+                        $('ul#status a#read.list-group-item span.badge').text(readcountnew);
+
+                        //decrease count for main menu items
+                        var readcountmain = $('ul#category').find('a#' + category).find('span.countunread').text();
+                        var readcountmainnew = readcountmain -1;
+                        $('ul#category').find('a#' + category).find('span.countunread').text(readcountmainnew);
+
+                        //decrease count for sub menu items
+                        var readcountsub = $('ul#category').find('a#' + feed).find('span.badge').text();
+                        var readcountsubnew = readcountsub -1;
+                        $('ul#category').find('a#' + feed).find('span.badge').text(readcountsubnew);
+
+                        //decrease count for last 24 hours
+                        if (data[0]['publish_date'] == "last-24-hours") {
+                                var tfcount = $('ul#status a#last-24-hours.list-group-item span.badge').text();
+                                var tfcountnew = tfcount -1;
+                                $('ul#status a#last-24-hours.list-group-item span.badge').text(tfcountnew);
+                        }
+
+                        //decrease count for last 24 hours and last hour
+                        if (data[0]['publish_date'] == "last-hour") {
+                                var lastcount = $('ul#status a#last-hour.list-group-item span.badge').text();
+                                var lastcountnew = lastcount -1;
+                                $('ul#status a#last-hour.list-group-item span.badge').text(lastcountnew);
+
+                                var tfcount = $('ul#status a#last-24-hours.list-group-item span.badge').text();
+                                var tfcountnew = tfcount -1;
+                                $('ul#status a#last-24-hours.list-group-item span.badge').text(tfcountnew);
+                        }
+
+                }
+
+            },
+            failure: function (errMsg) {}
+     });
+
+     //push the id from the article to the pool, so it will never be marked as read twice
+     poolid.push(input);
+   }
+}
+
+//source reference: http://www.inserthtml.com/2013/01/scroll-pagination/
+//function for detailed scrolling and gathering data
+(function ($) {
+
+    $.fn.scrollPagination = function (options) {
+
+        //default settings
+        var settings = {
+            nop: 1, // The number of posts per scroll to be loaded
+            offset: 0, // Initial offset, begins at 0 in this case
+            error: 'No More Posts!', // When the user reaches the end this is the message that is
+            delay: 100, // When you scroll down the posts will load after a delayed amount of time.
+            scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
+            category: '',
+            feed: '',
+            status: '',
+            sort: '',
+        }
+
+		//set result
+		var result = [];
+		
+        // Extend the options so they work with the plugin
+        if (options) {
+            $.extend(settings, options);
+        }
+
+        // For each so that we keep chainability.
+        return this.each(function () {
+		
+            // Some variables
+            $this = $(this);
+            $settings = settings;
+            var offset = $settings.offset;
+            var busy = false; // Checks if the scroll action is happening so we don't run it multiple times
+
+            // Custom messages based on settings
+            if ($settings.scroll == true) $initmessage = 'Scroll for more or click here';
+            else $initmessage = 'Click for more';
+
+            // Append custom messages and extra UI
+            $this.append('<div class="content"></div><div class="info-bar" id="info-bar"><div style="width: 50%;"></div></div>');
+			
+            $.ajax({
+               type: "POST",
+               url: "json.php",
+               data: JSON.stringify({
+                   "jsonrpc": "2.0",
+                   "request": "get-article-list",
+                   "status": $settings.status,
+                   "sort": $settings.sort,
+                   "feed": $settings.feed,
+                   "category": $settings.category
+               }),
+               contentType: "application/json; charset=utf-8",
+               dataType: "json",
+               async: false,
+               success: function (json) {
+						result = json;
+               },
+               failure: function (errMsg) {
+			   }
+            });
+
+            function getData(input) {
+
+                // Post data to detailed-view.php
+                $.post('backend.php', {
+                    sort: $settings.sort,
+                    articlelist: input,
+                }, function (data) {
+
+                    // Change loading bar content (it may have been altered)
+                    $this.find('.info-bar').html($initmessage);
+
+                    // If there is no data returned, there are no more posts to be shown. Show message
+                    if (data == "") {
+                        $this.find('.info-bar').html($settings.error);
+                    } else {
+
+                        // If data is returned, append the data to the content div
+                        $this.find('.content').append(data);
+
+                        //add waypoint function to h3 header, look at FnReadPool
+                        $('div#block h4').waypoint(function() {
+                          var id = $(this).attr('id');
+                          FnReadPool(id);
+                        }, { offset: 10, triggerOnce: true });
+
+						//console.log("reset view within scrollPagination:" + view)
+						setview(view);
+
+                        // Offset increases
+                        offset = offset + $settings.nop;
+
+                        // No longer busy!
+                        busy = false;
+                    }
+
+                });
+
+            }
+
+            // On fist load
+            if (result[0] === undefined ) {
+                console.log("No posts found on first load");
+                $this.find('.info-bar').html('No posts available, all marked as read');
+            } else {
+                console.log("get data on load: " + result[0].join(","));
+                getData(result[0].join(",")); // Run function initially
+            }
+
+            // If scrolling is enabled
+            if ($settings.scroll == true) {
+                // .. and the user is scrolling
+
+                //using on and off to avoid loading multiple instances
+                $(window).on('scroll', function () {
+
+                    // Check the user is at the bottom of the element
+                    var scrollheight = $(window).scrollTop() + $(window).height();
+
+                    if (scrollheight > $this.height() && !busy) {
+
+                        console.log('maximum scrollheight reached, reloading getData');
+
+                        // Now we are working, so busy is true
+                        busy = true;
+
+                        // Tell the user we're loading posts
+                        $this.find('.info-bar').html('Loading Posts');
+
+                        // Run the function to fetch the data inside a delay
+                        // This is useful if you have content in a footer you
+                        // want the user to see.
+                        setTimeout(function () {
+
+                            //mark remaining items as read
+                            if( result[offset] === undefined ) {
+                                console.log("pool with id's is empty, mark last items in batch as read: " + result[offset-1].join(","));
+
+                                for (var i = 0; i < result[offset-1].length; i++) {
+                                  FnReadPool(result[offset-1][i]);
+                                }
+
+                                $this.find('.info-bar').html('No more posts available');
+
+                            } else {
+                                console.log("get data for batch:" + offset + " items: " + result[offset].join(","));
+                                getData(result[offset].join(","));
+                            }
+
+                        }, $settings.delay);
+                    }
+                });
+
+            }
+
+            // When a few items are loaded scrolling is not possible. Mark as read then by clicking on the info-bar
+            $this.find('.info-bar').click(function () {
+               if (busy == false) {
+                   busy = true;
+                   console.log("only a few items loaded - mark as read: " + result[0].join(","));
+
+                   //mark items as read
+                   for (var i = 0; i < result[0].length; i++) {
+                       FnReadPool(result[0][i]);
+                   }
+
+                   $this.find('.info-bar').html('Marked all items as read');
+
+               }
+
+            });
+
+        });
+    }
+
+})(jQuery);

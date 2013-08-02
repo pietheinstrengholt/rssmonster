@@ -56,10 +56,7 @@ TODO
 * Clean up by creating more functions or using a proper framework
 * Mark as read, unread buttons
 * Add search function
-* Move js from list-view to one central place (phppaper.js)
 * Use css classes for image-star properties
 * Implement drag and dropstyle to manage feeds
 * First welcome screen to add opml or feeds
-* Fix List view: continue loading 25 next read items
-* Merge list and detailed view, only one backend
 * Lazy load images for detailed view

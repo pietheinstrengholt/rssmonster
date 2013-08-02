@@ -170,6 +170,9 @@ function FnReadPool(input) {
 			  FnReadPool(id);
 			}, { offset: 10, triggerOnce: true });
 
+			//todo: detailed and list view
+			$(".less-content").hide();
+
                         // Offset increases
                         offset = offset + $settings.nop;
 
@@ -221,25 +224,8 @@ function FnReadPool(input) {
 				console.log("pool with id's is empty, mark last items in batch as read: " + result[offset-1].join(","));
 
 				for (var i = 0; i < result[offset-1].length; i++) {
-				  //console.log(result[offset-1][i]);
 				  FnReadPool(result[offset-1][i]);
 				}
-
-
-				//todo: use FnReadPool for every item in comma seperated list
-			        //$.ajax({
-			        //    type: "POST",
-			        //    url: "json.php",
-			        //    data: JSON.stringify({
-			        //        "jsonrpc": "2.0",
-			        //        "update": "item-as-read",
-			        //        "value": result[offset-1].join(",")
-			        //    }),
-			        //    contentType: "application/json; charset=utf-8",
-			        //    dataType: "json",
-			        //    success: function (data) {},
-			        //    failure: function (errMsg) {}
-				//});
 
 				$this.find('.info-bar').html('No more posts available');
 
@@ -265,25 +251,8 @@ function FnReadPool(input) {
                        FnReadPool(result[0][i]);
                    }
 
-
-                   //todo: use FnReadPool for every item in comma seperated list
-                   //$.ajax({
-                   //    type: "POST",
-                   //    url: "json.php",
-                   //    data: JSON.stringify({
-                   //        "jsonrpc": "2.0",
-                   //        "update": "item-as-read",
-                   //        "value": result[0].join(",")
-                   //    }),
-                   //    contentType: "application/json; charset=utf-8",
-                   //    dataType: "json",
-                   //    success: function (data) {},
-                   //    failure: function (errMsg) {}
-                   //});
-
 		   $this.find('.info-bar').html('Marked all items as read');
 
-                   //getData();
                }
 	    
             });
@@ -292,3 +261,4 @@ function FnReadPool(input) {
     }
 
 })(jQuery);
+

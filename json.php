@@ -73,17 +73,19 @@ if(isset($arr['request'])){
 
 		$unread_item_ids = array();
 
-		if ($arr['status'] == "starred") {
+		if(isset($arr['status'])){ $status = htmlspecialchars($arr['status']); } else { $status = NULL; }
+		
+		if ($status == "starred") {
 		        $sql = mysql_query("SELECT DISTINCT id FROM articles WHERE star_ind = '1' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
-                } elseif ($arr['status'] == "read") {
+		} elseif ($status == "read") {
 			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE status = 'read' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
 		//by category
 		} elseif (!empty($arr['category']) && empty($arr['feed'])) {
-			$category = urldecode($arr[category]);
+			$category = urldecode($arr['category']);
 			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE feed_id IN (SELECT DISTINCT id FROM feeds where category IN (SELECT id FROM `category` WHERE name = '$category')) AND status = 'unread' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
 		//by feed
-                } elseif (!empty($arr['feed']) && empty($arr['category'])) {
-			$feed = urldecode($arr[feed]);
+		} elseif (!empty($arr['feed']) && empty($arr['category'])) {
+			$feed = urldecode($arr['feed']);
 			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE feed_id IN (SELECT DISTINCT id FROM feeds where name = '$feed') AND status = 'unread' ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);
 		} elseif (urldecode($arr['status']) == 'last 24 hours') {
 			$sql = mysql_query("SELECT DISTINCT id FROM articles WHERE status = 'unread' AND publish_date between (NOW() - INTERVAL 1 DAY) AND NOW() ORDER BY publish_date $sort") or trigger_error(mysql_error(), E_USER_WARNING);

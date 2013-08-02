@@ -8,102 +8,98 @@ echo "<button class='btn btn-small btn-warning' type='button'>Mark all as read</
 echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
 echo "</div>";
 
-echo "<div class=\"nav-main\">";
-
 // Get overview of Article status
-echo "<li class=\"nav-header\">Articles</li>";
 $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
+echo "<div class=\"panel\">";
+echo "<div class=\"panel-heading\">Status menu items</div>";
+echo "<ul class=\"list-group list-group-flush\" id=\"status\" style=\"margin-top: -16px;\">";
 
 foreach ($status as $row) {
-      if (!empty($row)) {
-
-        $cssid = str_replace(" ", "-", $row['name']);  
-	echo "<div class=\"menu-heading-status\" id='$cssid'>";
-	  echo "<div class=\"pointer\">";
-	  if ($cssid == 'unread') {
-	    echo "<i class=\"icon-search\"></i>";
-	  } elseif ($cssid == 'read') {
-            echo "<i class=\"icon-pencil\"></i>";
-	  } elseif ($cssid == 'starred') {
-            echo "<i class=\"icon-star-empty\"></i>";
-          } elseif ($cssid == 'last-24-hours') {
-            echo "<i class=\"icon-tint\"></i>";
-          } elseif ($cssid == 'last-hour') {
-            echo "<i class=\"icon-leaf\"></i>";
-	  }
-
-	  echo "</div>";
-	    echo "<div class=\"title\">$row[name]</div>";
-	    echo "<div class=\"count\">";
-            echo "<span class=\"count\">$row[count]</span>";
-	  echo "</div>";
-	echo "</div>";
-
-      }
-    }
-
+	if (!empty($row)) {
+		$cssid = str_replace(" ", "-", $row['name']);
+		echo "<a href=\"#\" id=\"$cssid\" class=\"list-group-item\">";
+		echo "<span class=\"badge\">$row[count]</span>";	
+		
+		if ($cssid == 'unread') {
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-search\"></span><span id=\"title-name\">$row[name]</span></span>";
+		} elseif ($cssid == 'read') {
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-pencil\"></span><span id=\"title-name\">$row[name]</span></span>";
+		} elseif ($cssid == 'starred') {
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-star\"></span><span id=\"title-name\">$row[name]</span></span>";
+		} elseif ($cssid == 'last-24-hours') {
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-tint\"></span><span id=\"title-name\">$row[name]</span></span>";
+		} elseif ($cssid == 'last-hour') {
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-leaf\"></span><span id=\"title-name\">$row[name]</span></span>";
+		}
+		
+		echo "</a>";
+	}
+}
+echo "</ul>";
+echo "</div>";
 
 // Get overview of all categories
-echo "<li class=\"nav-header\">Categories</li>";
+echo "<div class=\"panel\">";
+echo "<div class=\"panel-heading\">Categories items</div>";
+echo "<ul class=\"list-group list-group-flush\" id=\"category\" style=\"margin-top: -16px;\">";
 
 function header_section($input, $name) {
-  if (!empty($input)) {
+	if (!empty($input)) {
   
-    $displayname = ucfirst($name);
-    echo "<div class='feedbar'>";
+		$displayname = ucfirst($name);
 
-    foreach ($input as $row) {
-      if (!empty($row)) {
+		foreach ($input as $row) {
+			if (!empty($row)) {
 
-	$title = substr($row['category'], 0, 16);
-        $csstitle = preg_replace("/[^A-Za-z0-9 ]/", '', $title);
-	//$csstitle = str_replace(" ", "-", $csstitle);
-	//$csstitle = preg_replace("/\s+/g", '', $csstitle);
-	$csstitle = preg_replace('/\s+/', '',$csstitle);
+				$title = substr($row['category'], 0, 16);
+				$csstitle = preg_replace("/[^A-Za-z0-9 ]/", '', $title);
+				$csstitle = preg_replace('/\s+/', '',$csstitle);
 
-	echo "<div class=\"menu-heading\" id='$csstitle'>";
-	  echo "<div class=\"pointer-category\"><i class=\"icon-chevron-right\"></i></div>";
-	  echo "<div class=\"title\">$title</div>";
-	  echo "<div class=\"count\">";
-          echo "<span class=\"count all\">$row[count_all]</span>";
-	  echo "<span class=\"count\"> / </span>";
-          echo "<span class=\"count unread\">$row[count_unread]</span>";
-	  echo "</div>";
-	echo "</div>";
+				echo "<a href=\"#\" id=\"$csstitle\" class=\"list-group-item main\">";
+				echo "<span class=\"badge\">";
+				
+				echo "<span class=\"countunread\">$row[count_unread]</span>";
+				echo "<span class=\"countdivider\"> / </span>";
+				echo "<span class=\"countall\">$row[count_all]</span>";
+				
+				echo "</span>";				
+				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-chevron-right\"></span><span id=\"title-name\">$title</span></span>";
+				echo "</a>";
 
-        $result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category IN (SELECT DISTINCT id FROM category WHERE name = '$row[category]')) a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
+				$result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category IN (SELECT DISTINCT id FROM category WHERE name = '$row[category]')) a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
 
-	echo "<div class=\"menu-sub\" id='$title'>";
+				echo "<div class=\"menu-sub\" id='$title'>";
 
-	while ($row = mysql_fetch_array($result, MYSQL_NUM)) {
+				while ($row = mysql_fetch_array($result, MYSQL_NUM)) {
 
-		if (empty($row[3])) {
-			$row[3] = "0";
+					if (empty($row[3])) {
+						$row[3] = "0";
+					}
+
+					$csssubtitle = preg_replace("/[^A-Za-z0-9 ]/", '', $row[0]);
+					$csssubtitle = preg_replace('/\s+/', '',$csssubtitle);
+
+					if (empty($row[2])) {
+						$faviconurl = "img/rss-default.gif";
+					} else {
+						$faviconurl = $row[2];
+					}
+					
+					echo "<a href=\"#\" id=\"$csssubtitle\" class=\"list-group-item sub\">";
+					echo "<span class=\"badge\">$row[3]</span>";
+					echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";
+					echo "<span class=\"title\">$row[0]</span>";
+					echo "</a>";
+
+				}
+
+				mysql_free_result($result);
+
+				echo "</div>";
+
+			}
 		}
-
-		$csssubtitle = preg_replace("/[^A-Za-z0-9 ]/", '', $row[0]);
-		//$csssubtitle = str_replace(" ", "-", $csssubtitle);
-		//$csssubtitle = preg_replace("/\s+/g", '', $csssubtitle);
-		$csssubtitle = preg_replace('/\s+/', '',$csssubtitle);
-
-		if (empty($row[2])) {
-			$faviconurl = "img/rss-default.gif";
-		} else {
-			$faviconurl = $row[2];
-		}
-
-		echo "<div class=\"menu-sub-item\" id=\"$csssubtitle\"><span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span><span class=\"title\">$row[0]</span><span class=\"count-sub\">$row[3]</span></div>";
-
 	}
-
-	mysql_free_result($result);
-
-        echo "</div>";
-
-      }
-    }
-    echo "</div>";
-  }
 }
 
 // Get overview of all categories and call function to feed feedbar
