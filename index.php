@@ -2,7 +2,7 @@
 <html lang="en">
   <head>
     <meta charset="utf-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>phppaper by Piethein Strengholt</title>
     <script src="javascripts/jquery-1.9.1.min.js"></script>
     <script src="javascripts/jquery.color.js"></script>
@@ -18,6 +18,11 @@
     <script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 
     <style type="text/css">
+      html,body
+      {
+        overflow-x: hidden; 
+      }
+
       body {
         padding-top: 60px;
         padding-bottom: 40px;
@@ -43,12 +48,12 @@
 	<?php include 'top-nav.php'; ?>
 
 	<div class="row">
-	  <div class="col-lg-3">
+	  <div class="hidden-md hidden-sm col-lg-3">
 		  <feedbar>
 			<?php include 'feedbar.php'; ?>
 		  </feedbar>
 	  </div>
-	  <div class="col-lg-9">
+	  <div class="col-12 col-sm-12 col-lg-9">
 		  <section></section>
 	  </div>
 	</div>
