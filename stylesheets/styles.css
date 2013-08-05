@@ -17,6 +17,15 @@ section {
   margin-right: 1%;
 }
 
+section.detailed .less-content {
+  display:none;
+}
+
+section.list .page-content {
+  display:none;
+}
+
+
 div.blockcontainer {
   margin-left: 20px;
   margin-right: 20px;
@@ -86,6 +95,22 @@ div.article-block hr {
 
 section h1 {
   margin-left: 9px;
+}
+
+div.item-star.star, div.item-star.unstar {
+  height: 24px;
+  background-repeat: no-repeat;
+  float: left;
+  width: 21px;
+  margin-top: -5px;
+}
+
+div.item-star.unstar {
+  background-image: url('../images/star_unselected.png');
+}
+
+div.item-star.star {
+  background-image: url('../images/star_selected.png');
 }
 
 .article img.item-star {

@@ -30,7 +30,7 @@ The following scripts are used within phppaper
 
 * SimplePie: http://simplepie.org/
 * jQuery: http://jquery.com/
-* jQuery Bullseye: http://static.pixeltango.com/jQuery/Bullseye/
+* jQuery Waypoint: https://github.com/imakewebthings/jquery-waypoints/
 * Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
 * Twitter bootstrap: http://twitter.github.io/bootstrap/
 * jQuery Cookie: https://github.com/carhartl/jquery-cookie
@@ -56,7 +56,6 @@ TODO
 * Clean up by creating more functions or using a proper framework
 * Mark as read, unread buttons
 * Add search function
-* Use css classes for image-star properties
 * Implement drag and dropstyle to manage feeds
 * First welcome screen to add opml or feeds
 * Lazy load images for detailed view

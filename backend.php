@@ -19,9 +19,9 @@ if (!empty($array) && $array != "no-results") {
 			echo "<div class='article' id=$row[id]>";
 
 			if ($row['star_ind'] == '1') {
-				echo "<img class='item-star star' id=$row[id] src='images/star_selected.png'>";
+				echo "<div class='item-star star' id=$row[id]></div>";
 			} else {
-				echo "<img class='item-star unstar' id=$row[id] src='images/star_unselected.png'>";
+				echo "<div class='item-star unstar' id=$row[id]></div>";
 			}
 
 			echo "<h4 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$row[subject]</a></h4>";

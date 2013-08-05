@@ -10,22 +10,22 @@ function onlyalphanumeric(input) {
   return onlyalpha;
 }
 
-//sort stored in cookie
-if (($.cookie('view') == undefined)) {
-    $.cookie('view', 'detailed', { expires: 14 });
-}
+//set view type on load
+$(document).ready(function () {
+   if (($.cookie('view') == undefined)) {
+       setview("detailed");
+   } else {
+       setview($.cookie('view'));
+   }
+});
 
+//view type function
 function setview(input) {
    var view = input;
+   console.log(view);
    $.cookie('view', view, { expires: 14 });
-   
-   if (view == "detailed") {
-        $(".page-content").show();
-        $(".less-content").hide();
-   } else {
-        $(".page-content").hide();
-        $(".less-content").show();
-   }
+   $("section").removeClass();
+   $("section").addClass(view);
 }
 
 function removefeedbaroverflow() {
@@ -171,7 +171,6 @@ $(document).ready(function () {
 
     //List view button from topnav menu
     $("a#list-view").click(function () {
-		//TODO: if already list, don't fire setview again!
 		setview("list");
     });
 
@@ -245,7 +244,7 @@ $(document).ready(function () {
     });
 
     //event when marking item as starred
-    $("body").on("click", "img.item-star.unstar", function (event) {
+    $("body").on("click", "div.item-star.unstar", function (event) {
         var id = $(this).attr('id');
         console.log('starred item: ' + $(this).attr('id'));
         $.ajax({
@@ -265,7 +264,6 @@ $(document).ready(function () {
             failure: function (errMsg) {}
         });
 
-        $(this).attr('src', 'images/star_selected.png');
         $(this).removeClass("unstar");
         $(this).addClass("star");
 
@@ -277,7 +275,7 @@ $(document).ready(function () {
     });
 
     //event when unstaring item
-    $("body").on("click", "img.item-star.star", function (event) {
+    $("body").on("click", "div.item-star.star", function (event) {
         var id = $(this).attr('id');
         console.log('unstarred item: ' + $(this).attr('id'));
         $.ajax({
@@ -297,7 +295,6 @@ $(document).ready(function () {
             failure: function (errMsg) {}
         });
 
-        $(this).attr('src', 'images/star_unselected.png');
         $(this).removeClass("star");
         $(this).addClass("unstar");
 
@@ -456,7 +453,7 @@ function FnReadPool(input) {
                dataType: "json",
                async: false,
                success: function (json) {
-						result = json;
+			result = json;
                },
                failure: function (errMsg) {
 			   }
@@ -487,8 +484,8 @@ function FnReadPool(input) {
                           FnReadPool(id);
                         }, { offset: 10, triggerOnce: true });
 
-						//console.log("reset view within scrollPagination:" + view)
-						setview(view);
+			//console.log("reset view within scrollPagination:" + view)
+			//setview(view);
 
                         // Offset increases
                         offset = offset + $settings.nop;
