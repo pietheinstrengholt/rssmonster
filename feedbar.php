@@ -10,11 +10,13 @@ echo "</div>";
 
 // Get overview of Article status
 $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
+
 echo "<div class=\"panel\">";
 echo "<div class=\"panel-heading\">Status menu items</div>";
 echo "<ul class=\"list-group list-group-flush\" id=\"status\" style=\"margin-top: -16px;\">";
 
 foreach ($status as $row) {
+
 	if (!empty($row)) {
 		$cssid = str_replace(" ", "-", $row['name']);
 		echo "<a href=\"#\" id=\"$cssid\" class=\"list-group-item\">";
@@ -44,6 +46,9 @@ echo "<div class=\"panel-heading\">Categories items</div>";
 echo "<ul class=\"list-group list-group-flush\" id=\"category\" style=\"margin-top: -16px;\">";
 
 function header_section($input, $name) {
+
+	global $conn;
+
 	if (!empty($input)) {
   
 		$displayname = ucfirst($name);
@@ -66,11 +71,9 @@ function header_section($input, $name) {
 				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-chevron-right\"></span><span id=\"title-name\">$title</span></span>";
 				echo "</a>";
 
-				$result = mysql_query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category IN (SELECT DISTINCT id FROM category WHERE name = '$row[category]')) a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id");
-
 				echo "<div class=\"menu-sub\" id='$title'>";
 
-				while ($row = mysql_fetch_array($result, MYSQL_NUM)) {
+				foreach($conn->query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category IN (SELECT DISTINCT id FROM category WHERE name = '$row[category]')) a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id") as $row) {
 
 					if (empty($row[3])) {
 						$row[3] = "0";
@@ -92,8 +95,6 @@ function header_section($input, $name) {
 					echo "</a>";
 
 				}
-
-				mysql_free_result($result);
 
 				echo "</div>";
 

@@ -1,11 +1,11 @@
 <?php
 
-if(!mysql_query("DESCRIBE `feeds`")) {
+if(!$conn->query("DESCRIBE `feeds`")) {
     echo "Error: database table feeds doesnt exist<b>";
     exit;
 }
 
-if(!mysql_query("DESCRIBE `articles`")) {
+if(!$conn->query("DESCRIBE `articles`")) {
     echo "Error: database table articles doesnt exist";
     exit;
 }
@@ -14,20 +14,17 @@ if(!mysql_query("DESCRIBE `articles`")) {
 $url = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']);
 $url = preg_replace('/\s+/', '', $url);
 $jsonurl = $url . "/json.php";
-$mobile = $url . "/mobile.php";
 
 if (!function_exists('get_json')) {
 function get_json($input)
 	{
 
 	// url variables
-
 	$url = 'http://' . $_SERVER['HTTP_HOST'] . dirname($_SERVER['PHP_SELF']);
 	$url = preg_replace('/\s+/', '', $url);
 	$jsonurl = $url . "/json.php";
 
 	// init json rpc
-
 	$ch = curl_init();
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
 	curl_setopt($ch, CURLOPT_POST, 1);
@@ -37,22 +34,16 @@ function get_json($input)
 	}
 }
 
-if (!function_exists('in_multiarray')) {
-function in_multiarray($elem, $array)
-	{
-	$top = sizeof($array) - 1;
-	$bottom = 0;
-	while ($bottom <= $top)
-		{
-		if ($array[$bottom] == $elem) return true;
-		  else
-		if (is_array($array[$bottom]))
-		if (in_multiarray($elem, ($array[$bottom]))) return true;
-		$bottom++;
-		}
+if (!function_exists('in_array_r')) {
+function in_array_r($needle, $haystack, $strict = false) {
+    foreach ($haystack as $item) {
+        if (($strict ? $item === $needle : $item == $needle) || (is_array($item) && in_array_r($needle, $item, $strict))) {
+            return true;
+        }
+    }
 
-	return false;
-	}
+    return false;
+}
 }
 
 ?>

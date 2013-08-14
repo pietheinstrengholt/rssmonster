@@ -21,7 +21,9 @@ file.<br><br>
 
 <form action="opmlhandler.php" method="post" enctype="multipart/form-data">
 
-<input type="file" name="file" id="file"><br>
+<!-- <input type="file" name="file" id="file"><br> -->
+<input class="btn btn-default" type="file" name="file" id="file"><br>
+
 <br>
 
 Parsing all URLs for favoicons will cost performance. Please select the checkbox below to download favoicons for all URLs<br><br>

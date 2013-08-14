@@ -4,7 +4,7 @@
 </head>
 
 <br><br>
-<?php 
+<?php
 
 include 'config.php';
 include 'functions.php';
@@ -30,6 +30,8 @@ if ($_FILES["file"]["error"] > 0) {
     function addSubscription($xml, $tags)
     {
 
+	global $conn;
+
         // OPML Required attributes: text,xmlUrl,type
         // Optional attributes: title, htmlUrl, language, title, version
         
@@ -43,29 +45,37 @@ if ($_FILES["file"]["error"] > 0) {
             
             // RSS URL
             $data['url'] = (string) $xml['xmlUrl'];
-            //echo "url: $data[url]<br>";
-            
-            $sql=mysql_query("SELECT DISTINCT name FROM feeds ORDER BY name");
-            while($r[]=mysql_fetch_array($sql));
 
-            if (in_multiarray($title, $r)) {
-              echo "SKIPPED: $title <br>";
-            } else { 
-              echo "ADDED: $title $data[url] <br>"; 
+            $sql=$conn->query("SELECT DISTINCT name FROM feeds ORDER BY name");
+            $r=$sql->fetchAll();
 
-	    //get favoicon for each rss feed
-	    if($_POST['favoicon'] == 'Yes') {
-	      $feed = new SimplePie($data[url]);
-	      $feed->init();
-              $feed->handle_content_type();
-	      $favicon = $feed->get_favicon();
-	    }
+	    $result = $conn->query("SELECT count(*) as count FROM feeds WHERE name = '".mysql_real_escape_string($title)."'");
+            $fetchcount  = $result->fetch();
+            $count = $fetchcount['count'];
 
-              $sql = "INSERT INTO feeds (name, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($data[url])."','".mysql_real_escape_string($favicon)."')";
-              mysql_query($sql);
-            }
-        }
-    }
+	    if ($count > 0) { 
+		echo "SKIPPED: $title<br>"; 
+	    } else {
+                echo "ADDED: $title $data[url] <br>";
+
+                          //get favoicon for each rss feed
+			  if(isset($_POST['favoicon'])){ $getfavoicon = htmlspecialchars($_POST['favoicon']); } else { $getfavoicon = NULL; $favicon = NULL; }
+                          if($getfavoicon == 'Yes') {
+                            $feed = new SimplePie($data[url]);
+                            $feed->init();
+                            $feed->handle_content_type();
+                            $favicon = $feed->get_favicon();
+                          }
+
+                          $sql = "INSERT INTO feeds (name, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($data['url'])."','".mysql_real_escape_string($favicon)."')";
+                          $sql=$conn->query($sql);
+
+
+
+	    		}
+
+		} 
+    } 
     
     function processGroup($xml, $tags = Array())
     {
@@ -93,7 +103,7 @@ if ($_FILES["file"]["error"] > 0) {
             else {
                 
                 $ret = processGroup($outline, $tags);
-                $errors = array_merge($errors, $ret);
+                //$errors = array_merge($errors, $ret);
             }
             
         }
@@ -105,4 +115,3 @@ if ($_FILES["file"]["error"] > 0) {
 }
 
 ?> 
-

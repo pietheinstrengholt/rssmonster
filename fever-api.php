@@ -27,9 +27,9 @@ if (isset($_GET['groups'])) {
 
 	$groups = array();
 
-	$sql = mysql_query("SELECT id, name FROM category") or trigger_error(mysql_error(), E_USER_WARNING);
+	$sql = "SELECT id, name FROM category";
 
-	while($row = mysql_fetch_array($sql)) {
+	foreach($conn->query($sql) as $row) {
 		array_push($groups, array(
 			"id" => $row['id'],
            		"title" => $row['name']
@@ -47,9 +47,9 @@ if (isset($_GET['feeds'])) {
 
 	$feeds = array();
 
-        $sql = mysql_query("SELECT * FROM feeds") or trigger_error(mysql_error(), E_USER_WARNING);
+        $sql = "SELECT * FROM feeds";
 
-        while($row = mysql_fetch_array($sql)) {
+        foreach($conn->query($sql) as $row) {
                 array_push($feeds, array(
 	           "id"  => $row['id'],
         	   "favicon_id" => $row['id'],
@@ -73,9 +73,9 @@ if (isset($_GET['groups']) || isset($_GET['feeds'])) {
 
         $feeds_groups = array();
 
-        $sql = mysql_query("SELECT a.id as feedid, b.id as groupid FROM feeds a LEFT JOIN category b on a.category = b.id") or trigger_error(mysql_error(), E_USER_WARNING);
+        $sql = "SELECT a.id as feedid, b.id as groupid FROM feeds a LEFT JOIN category b on a.category = b.id";
 
-        while($row = mysql_fetch_array($sql)) {
+        foreach($conn->query($sql) as $row) {
                 array_push($feeds_groups, array(
            		"group_id" => $row['groupid'],
           		"feed_ids" => $row['feedid']
@@ -94,9 +94,9 @@ if (isset($_GET['unread_item_ids'])) {
 
 	$unread_item_ids = array();
 
-        $sql = mysql_query("SELECT * FROM articles WHERE status = 'unread' ORDER BY ID") or trigger_error(mysql_error(), E_USER_WARNING);
+        $sql = "SELECT * FROM articles WHERE status = 'unread' ORDER BY ID";
 
-	while($row = mysql_fetch_array($sql)) {
+	foreach($conn->query($sql) as $row) {
    	  if (!empty($row)) {
 	      array_push($unread_item_ids, $row['id']);
 	  }
@@ -121,9 +121,9 @@ if (isset($_GET['items'])) {
 
            $items = array();
 
-           $sql = mysql_query("SELECT * FROM articles WHERE ID IN ($ids) ORDER BY ID") or trigger_error(mysql_error(), E_USER_WARNING);
+           $sql = "SELECT * FROM articles WHERE ID IN ($ids) ORDER BY ID";
 
-           while($row = mysql_fetch_array($sql)) {
+           foreach($conn->query($sql) as $row) {
 
                if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
@@ -151,9 +151,9 @@ if (isset($_GET['items'])) {
 
 	   $items = array();
 
-	   $sql = mysql_query("SELECT * FROM articles WHERE ID > '$since_id' ORDER BY ID LIMIT 0,50") or trigger_error(mysql_error(), E_USER_WARNING);
+	   $sql = "SELECT * FROM articles WHERE ID > '$since_id' ORDER BY ID LIMIT 0,50";
 
-	   while($row = mysql_fetch_array($sql)) {
+	   foreach($conn->query($sql) as $row) {
 
 	       if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
@@ -181,9 +181,9 @@ if (isset($_GET['items'])) {
 
            $items = array();
 
-           $sql = mysql_query("SELECT * FROM articles WHERE ID < '$max_id' ORDER BY ID LIMIT 0,50") or trigger_error(mysql_error(), E_USER_WARNING);
+           $sql = "SELECT * FROM articles WHERE ID < '$max_id' ORDER BY ID LIMIT 0,50";
 
-           while($row = mysql_fetch_array($sql)) {
+           foreach($conn->query($sql) as $row) {
 
                if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
@@ -207,11 +207,11 @@ if (isset($_GET['items'])) {
 	//if no argument is given provide total_items and up to 50 items
 	} else {
 
-        $sql = mysql_query("SELECT count(*) as count FROM articles") or trigger_error(mysql_error(), E_USER_WARNING);
+        $sql = "SELECT count(*) as count FROM articles";
 
-	$total_items = array();
+		$total_items = array();
 
-        while($row = mysql_fetch_array($sql)) {
+        foreach($conn->query($sql) as $row) {
                 array_push($total_items, array(
            		"total_items" => $row['count']
                 ));
@@ -219,11 +219,11 @@ if (isset($_GET['items'])) {
 
         $arr = array_merge($arr, $total_items);
 
-	$items = array();
+		$items = array();
 
-           $sql = mysql_query("SELECT * FROM articles ORDER BY ID LIMIT 0,50") or trigger_error(mysql_error(), E_USER_WARNING);
+           $sql = "SELECT * FROM articles ORDER BY ID LIMIT 0,50";
 
-           while($row = mysql_fetch_array($sql)) {
+           foreach($conn->query($sql) as $row) {
 
 	       if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
@@ -254,9 +254,9 @@ if (isset($_GET['saved_item_ids'])) {
 
         $saved_item_ids = array();
 
-        $sql = mysql_query("SELECT * FROM articles WHERE status = 'read' ORDER BY ID") or trigger_error(mysql_error(), E_USER_WARNING);
+        $sql = "SELECT * FROM articles WHERE status = 'read' ORDER BY ID";
 
-        while($row = mysql_fetch_array($sql)) {
+        foreach($conn->query($sql) as $row) {
           if (!empty($row)) {
               array_push($saved_item_ids, $row['id']);
           }
@@ -287,9 +287,9 @@ if (isset($_GET['favicons'])) {
 
         $favicons = array();
 
-        $sql = mysql_query("SELECT id, favicon FROM feeds") or trigger_error(mysql_error(), E_USER_WARNING);
+        $sql = "SELECT id, favicon FROM feeds";
 
-        while($row = mysql_fetch_array($sql)) {
+        foreach($conn->query($sql) as $row) {
                 array_push($favicons, array(
                         "id" => $row['id'],
                         "title" => $row['favicon']
@@ -312,11 +312,11 @@ if (isset($_POST['mark'])) {
     $id = $_REQUEST["id"];
 
     if ($_REQUEST["as"] == "read") {
-	mysql_query("UPDATE articles SET status = 'read' WHERE id = '$id'");
+		$conn->query("UPDATE articles SET status = 'read' WHERE id = '$id'");
     } elseif ($_REQUEST["as"] == "saved") {
-	mysql_query("UPDATE articles SET star_ind = '1' WHERE id = '$id'");
+		$conn->query("UPDATE articles SET star_ind = '1' WHERE id = '$id'");
     } elseif ($_REQUEST["as"] == "unsaved") {
-	mysql_query("UPDATE articles SET star_ind = '0' WHERE id = '$id'");
+		$conn->query("UPDATE articles SET star_ind = '0' WHERE id = '$id'");
     }
 
   }
@@ -329,11 +329,11 @@ if (isset($_POST['mark'])) {
     if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
 
     if ($_REQUEST["as"] == "read") {
-        mysql_query("UPDATE articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < '$time'");
+        $conn->query("UPDATE articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "saved") {
-        mysql_query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < '$time'");
+        $conn->query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "unsaved") {
-        mysql_query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < '$time'");
+        $conn->query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < '$time'");
     }
 
   }
@@ -346,11 +346,11 @@ if (isset($_POST['mark'])) {
     if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
 
     if ($_REQUEST["as"] == "read") {
-        mysql_query("UPDATE `articles` SET status = 'read' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
+        $conn->query("UPDATE `articles` SET status = 'read' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "saved") {
-        mysql_query("UPDATE `articles` SET star_ind = '1' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
+        $conn->query("UPDATE `articles` SET star_ind = '1' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "unsaved") {
-        mysql_query("UPDATE `articles` SET star_ind = '0' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
+        $conn->query("UPDATE `articles` SET star_ind = '0' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
     }
 
   }
@@ -361,11 +361,11 @@ if (isset($_POST['mark'])) {
     if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
 
     if ($_REQUEST["as"] == "read") {
-        mysql_query("UPDATE `articles` SET status = 'read' WHERE insert_date < '$time'");
+        $conn->query("UPDATE `articles` SET status = 'read' WHERE insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "saved") {
-        mysql_query("UPDATE `articles` SET star_ind = '1' WHERE insert_date < '$time'");
+        $conn->query("UPDATE `articles` SET star_ind = '1' WHERE insert_date < '$time'");
     } elseif ($_REQUEST["as"] == "unsaved") {
-        mysql_query("UPDATE `articles` SET star_ind = '0' WHERE insert_date < '$time'");
+        $conn->query("UPDATE `articles` SET star_ind = '0' WHERE insert_date < '$time'");
     }
 
   }

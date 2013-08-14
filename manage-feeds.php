@@ -82,7 +82,7 @@ foreach ($results as $row) {
 
     echo "<p class='heading'>";
 
-    echo $feed_name;
+    echo "<b>" . $feed_name . "</b>";
     echo " - ";
     echo $feed;
 
@@ -91,15 +91,24 @@ foreach ($results as $row) {
     ?>
 
     <div class='content'>
-    <form method="post" action="manage-feeds.php">
+    <form method="post" action="manage-feeds.php" role="form">
 
-    <div class='form-name'>Display name: <input type="text" name="new_feed_name" value="<?php echo $feed_name; ?>"></div>
-    <div class='form-category'>Category name: <input type="text" name="new_feed_category" value="<?php echo $feed_category; ?>"></div>
+<fieldset>
+
+<div class="form-group">
+    <div class='form-name'><label for="new_feed_name">Display Name:</label><input type="text" class="form-control input-sm" name="new_feed_name" value="<?php echo $feed_name; ?>"></div>
+</div>
+
+<div class="form-group">
+    <div class='form-category'><label for="new_feed_category">Category:</label><input type="text" class="form-control input-sm" name="new_feed_category" value="<?php echo $feed_category; ?>"></div>
+</div>
 
     <input type="hidden" name="new_feed_id" value="<?php echo $feed_id; ?>">
-    <input type="submit" value="submit" name="submit" class="btn button-submit">
+    <input type="submit" value="submit" name="submit" class="btn btn-default button-submit">
 
-    <input type="submit" value="delete" name="delete" class="btn button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
+    <input type="submit" value="delete" name="delete" class="btn btn-default button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
+
+</fieldset>
 
     </form>
     </div>

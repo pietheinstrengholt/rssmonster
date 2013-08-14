@@ -48,7 +48,7 @@
 	<?php include 'top-nav.php'; ?>
 
 	<div class="row">
-	  <div class="hidden-md hidden-sm col-lg-3">
+	  <div class="visible-lg col-lg-3">
 		  <feedbar>
 			<?php include 'feedbar.php'; ?>
 		  </feedbar>

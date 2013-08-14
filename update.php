@@ -9,14 +9,13 @@ include 'config.php';
 include 'functions.php';
 
 //limit to 2500 read articles history
-mysql_query("DELETE FROM articles WHERE id NOT IN (select * from (SELECT id FROM `articles` WHERE star_ind <>  '1' AND STATUS =  'read' ORDER BY insert_date desc LIMIT 0 , 2500) a UNION select * from (SELECT id FROM `articles`  WHERE star_ind =  '1') b UNION select * from (SELECT id FROM  `articles` WHERE status =  'unread') c)");
+$conn->query("DELETE FROM articles WHERE id NOT IN (select * from (SELECT id FROM `articles` WHERE star_ind <>  '1' AND STATUS =  'read' ORDER BY insert_date desc LIMIT 0 , 2500) a UNION select * from (SELECT id FROM `articles`  WHERE star_ind =  '1') b UNION select * from (SELECT id FROM  `articles` WHERE status =  'unread') c)");
 
 //delete articles with no ref to feed_id
-mysql_query("DELETE FROM `articles` WHERE feed_id not in (select distinct id from feeds)");
+$conn->query("DELETE FROM `articles` WHERE feed_id not in (select distinct id from feeds)");
 
 //update 25 feeds at a time
-$query = "select * from feeds order by last_update limit 0, 50";
-$sql   = mysql_query($query);
+$sql = "select * from feeds order by last_update limit 0, 50";
 
 //previous week
 $previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
@@ -34,7 +33,7 @@ $previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
 
 <?php
 
-while ($row = mysql_fetch_array($sql)) {
+foreach($conn->query($sql) as $row) {
     
     $feed_url  = $row['url'];
     $feed_id   = $row['id'];
@@ -42,13 +41,15 @@ while ($row = mysql_fetch_array($sql)) {
     
     //init feed simplepie
     $feed = new SimplePie();
-    $feed->set_feed_url($feed_url);    
+    $feed->set_feed_url($feed_url);
+    $feed->set_cache_location('/volume1/web/phppaper-dev/cache');
     $feed->init();
     $feed->handle_content_type();
     
-    $lastdate    = mysql_query("SELECT publish_date from articles WHERE feed_id = '$feed_id;' ORDER BY publish_date desc LIMIT 1");
-    $comparedate = mysql_result($lastdate, 0);
-
+    $lastdate    = $conn->query("SELECT publish_date from articles WHERE feed_id = '$feed_id;' ORDER BY publish_date desc LIMIT 1");
+    $fetch  = $lastdate->fetch();
+    $comparedate = $fetch['publish_date'];
+	
     if (empty($comparedate)) { 
 
 ?>
@@ -65,7 +66,7 @@ while ($row = mysql_fetch_array($sql)) {
 
 <?php
     
-    mysql_query("UPDATE feeds set last_update = CURRENT_TIMESTAMP where id = '$feed_id'") or die(mysql_error());  
+    $conn->query("UPDATE feeds set last_update = CURRENT_TIMESTAMP where id = '$feed_id'");  
     
     //default to 1900 if no results exist
     if (empty($comparedate)) {
@@ -95,7 +96,6 @@ while ($row = mysql_fetch_array($sql)) {
         $url     = $item->get_permalink();
         $subject = $item->get_title();
         $content = $item->get_description();
-        //$content = mysql_real_escape_string($content);
         $date    = $item->get_date('Y-m-j H:i:s');
 
 	if ($author = $feed->get_author())
@@ -126,28 +126,31 @@ while ($row = mysql_fetch_array($sql)) {
         if (strtotime($date) > strtotime($comparedate)) {
 
 	    //check if article name does not already exist in db
-	    $result = mysql_query("SELECT COUNT(*) FROM articles WHERE subject = '" . mysql_real_escape_string($subject) . "' AND feed_id = '$feed_id'"); 
+	    $result = $conn->query("SELECT COUNT(*) as count FROM articles WHERE subject = '" . mysql_real_escape_string($subject) . "' AND feed_id = '$feed_id'"); 
 	    if ($result) {
-		$count = mysql_result($result, 0);
+		//$count = mysql_result($result, 0);
+		$fetchcount  = $result->fetch();
+		$count = $fetchcount['count'];
 		if ($count > 0) { 
 			echo "Skipping - Avoid duplicate subjectname in db"; 
 		} elseif (strtotime($date) < strtotime($previousweek)) {
 			echo "Article more than one week old"; 
 		} else {
-			$resulturl = mysql_query("SELECT COUNT(*) FROM articles WHERE url = '" . $url . "' AND feed_id = '$feed_id'");
+			$resulturl = $conn->query("SELECT COUNT(*) as count FROM articles WHERE url = '" . $url . "' AND feed_id = '$feed_id'");
 			if ($resulturl) {
-				$counturl = mysql_result($resulturl, 0);
+				//$counturl = mysql_result($resulturl, 0);
+				$fetchcounturl  = $resulturl->fetch();
+				$counturl = $fetchcounturl['count'];
 			 	if ($counturl > 0) {
                         		echo "Skipping - Avoid duplicate url in db";
                 		} else {
 					echo "Found new article";
-					mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
+					$conn->query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
 				}
 			}
 		}
 	    }
 
-            //mysql_query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
         } else {
             echo "No new feeds since last update";
         }

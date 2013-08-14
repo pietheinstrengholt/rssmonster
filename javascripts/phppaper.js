@@ -22,7 +22,6 @@ $(document).ready(function () {
 //view type function
 function setview(input) {
    var view = input;
-   console.log(view);
    $.cookie('view', view, { expires: 14 });
    $("section").removeClass();
    $("section").addClass(view);
@@ -167,8 +166,6 @@ $(document).ready(function () {
 		loadcontent('feed', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
     });
 
-    //IDEA: to add class properties detailed and list to elements and style so on
-
     //List view button from topnav menu
     $("a#list-view").click(function () {
 		setview("list");
@@ -177,6 +174,11 @@ $(document).ready(function () {
     //Detailed view button from topnav menu
     $("a#detailed-view").click(function () {
 		setview("detailed");
+    });
+
+    //Detailed view button from topnav menu
+    $("a#minimal-view").click(function () {
+                setview("minimal");
     });
 
     //Sort button from topnav menu
@@ -237,14 +239,19 @@ $(document).ready(function () {
         });
     });
 
-    //event when marking item as starred
+    //todo: show read and unread bottons
     $("section").on("click", "div#block", function (event) {
 		$("section").find("div#block.active").removeClass("active");
 		$(this).addClass("active");
+		$(this).find('div.options').show();
+		$(this).find(".page-content").show();
+		$(this).find(".less-content").hide()
     });
 
     //event when marking item as starred
     $("body").on("click", "div.item-star.unstar", function (event) {
+        $(this).removeClass("unstar");
+        $(this).addClass("star");
         var id = $(this).attr('id');
         console.log('starred item: ' + $(this).attr('id'));
         $.ajax({
@@ -264,10 +271,7 @@ $(document).ready(function () {
             failure: function (errMsg) {}
         });
 
-        $(this).removeClass("unstar");
-        $(this).addClass("star");
-
-		//increase count in menu
+	//increase count in menu
         var starredcount = $('ul#status a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)+1;
         $('ul#status a#starred.list-group-item span.badge').text(starredcountnew);
@@ -276,6 +280,8 @@ $(document).ready(function () {
 
     //event when unstaring item
     $("body").on("click", "div.item-star.star", function (event) {
+        $(this).removeClass("star");
+        $(this).addClass("unstar");
         var id = $(this).attr('id');
         console.log('unstarred item: ' + $(this).attr('id'));
         $.ajax({
@@ -295,10 +301,7 @@ $(document).ready(function () {
             failure: function (errMsg) {}
         });
 
-        $(this).removeClass("star");
-        $(this).addClass("unstar");
-
-		//decrease star count in menu
+	//decrease star count in menu
         var starredcount = $('ul#status a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)-1;
         $('ul#status a#starred.list-group-item span.badge').text(starredcountnew);
@@ -308,8 +311,8 @@ $(document).ready(function () {
     //submit add new feed button
     jQuery("button#submitfeed.btn").click(function () {
         console.log("search clicked");
-        var inputfeed = $('input.feed-query').val();
-		console.log(inputfeed);
+        var inputfeed = $('input#feedname.form-control').val();
+	console.log(inputfeed);
         var encoded = encodeURIComponent(inputfeed);
         $('section').load('addfeedhandler.php?feedname='+encoded);
     });
@@ -461,7 +464,7 @@ function FnReadPool(input) {
 
             function getData(input) {
 
-                // Post data to detailed-view.php
+                // Post data to backend.php
                 $.post('backend.php', {
                     sort: $settings.sort,
                     articlelist: input,

@@ -19,6 +19,7 @@ include 'functions.php';
          <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
             <li class="detailed-view" role="presentation"><a id="detailed-view" role="menuitem" tabindex="-1" href="#">Detailed view</a></li>
             <li class="list-view" role="presentation"><a id="list-view" role="menuitem" tabindex="-1" href="#">List view</a></li>
+            <li class="minimal-view" role="presentation"><a id="minimal-view" role="menuitem" tabindex="-1" href="#">Minimal view</a></li>
          </ul>
       </li>
     </ul>
@@ -38,7 +39,7 @@ include 'functions.php';
     </ul>
 
     <form class="navbar-form pull-left" method="post" placeholder="submitfeed">
-      <input type="text" placeholder="Add feed or url" style="width: 200px;" name="feedname" class="form-control">
+      <input type="text" placeholder="Add feed or url" style="width: 200px;" id="feedname" name="feedname" class="form-control">
       <button type="button" id="submitfeed" class="btn btn-default">Submit</button>
     </form>
 
