@@ -94,11 +94,11 @@ $(document).ready(function () {
     }
 
     //Functionality from menu when Articles section is clicked
-    $("ul#status a.list-group-item").click(function () {
+    $("div#status.panel a.list-group-item").click(function () {
 
 		//remove and add clicked status to class
-		$('ul#status').find('.active').removeClass("active");
-		$('ul#category').find('.active').removeClass("active");
+		$('div#status.panel').find('.active').removeClass("active");
+		$('div#categories.panel').find('.active').removeClass("active");
 		$("div.menu-sub").hide();
 		$(this).addClass("active");
 
@@ -115,14 +115,14 @@ $(document).ready(function () {
     //Category function on feedbar: Drop down menu sub-menu items when a category is clicked
     //hide sub menu by default
     $("div.menu-sub").hide();
-    $("ul#category a.list-group-item.main").click(function () {
+    $("div#categories.panel a.list-group-item.main").click(function () {
 
 		//avoid scrollbar
 		removefeedbaroverflow();
 
 		//remove any active clicked classes from status overview
-		$('ul#status').find('.active').removeClass("active");
-		$('ul#category').find('.active').removeClass("active");
+		$('div#categories.panel').find('.active').removeClass("active");
+		$('div#status.panel').find('.active').removeClass("active");
 		$(this).addClass("active");
 		
 		//open submenu
@@ -151,10 +151,10 @@ $(document).ready(function () {
     });
 
     //Functionality when sub menu item from categories is clicked
-    $("ul#category a.list-group-item.sub").click(function () {
+    $("div#categories.panel a.list-group-item.sub").click(function () {
 
         //remove any active clicked classes from status overview
-        $('ul#category').find('.active').removeClass("active");
+        $('div#categories.panel').find('.active').removeClass("active");
         $(this).addClass("active");
 
 		//load content
@@ -178,7 +178,7 @@ $(document).ready(function () {
 
     //Detailed view button from topnav menu
     $("a#minimal-view").click(function () {
-                setview("minimal");
+		setview("minimal");
     });
 
     //Sort button from topnav menu
@@ -206,7 +206,6 @@ $(document).ready(function () {
 		$(window).off("scroll");
 		$('section').empty();
 		$('section').load('update.php');
-		//$('section').append('<div class="progress progress-striped active"><div class="bar" style="width: 40%;"></div></div>');
     });
 
     //Load organize feeds section
@@ -322,7 +321,7 @@ $(document).ready(function () {
 //pool for mark as read
 var poolid = new Array();
 
-//function to mark items as read
+//function to mark items as read and to avoid items are set to read more then once
 function FnReadPool(input) {
    if (jQuery.inArray(input, poolid) == -1) {
 
@@ -398,7 +397,7 @@ function FnReadPool(input) {
    }
 }
 
-//source reference: http://www.inserthtml.com/2013/01/scroll-pagination/
+//reference: http://www.inserthtml.com/2013/01/scroll-pagination/
 //function for detailed scrolling and gathering data
 (function ($) {
 
@@ -483,12 +482,11 @@ function FnReadPool(input) {
 
                         //add waypoint function to h3 header, look at FnReadPool
                         $('div#block h4').waypoint(function() {
-                          var id = $(this).attr('id');
-                          FnReadPool(id);
-                        }, { offset: 10, triggerOnce: true });
-
-			//console.log("reset view within scrollPagination:" + view)
-			//setview(view);
+							var id = $(this).attr('id');
+							FnReadPool(id);
+                        }, { 
+							offset: 10, triggerOnce: true 
+						});
 
                         // Offset increases
                         offset = offset + $settings.nop;
@@ -501,6 +499,31 @@ function FnReadPool(input) {
 
             }
 
+		function processpool() {
+
+			// Run the function to fetch the data inside a delay
+			// This is useful if you have content in a footer you
+			// want the user to see.
+			setTimeout(function () {
+
+			//mark remaining items as read
+			if( result[offset] === undefined ) {
+				console.log("pool with id's is empty, mark last items in batch as read: " + result[offset-1].join(","));
+
+				for (var i = 0; i < result[offset-1].length; i++) {
+					FnReadPool(result[offset-1][i]);
+				}
+
+					$this.find('.info-bar').html('No more posts available');
+
+				} else {
+					console.log("get data for batch:" + offset + " items: " + result[offset].join(","));
+					getData(result[offset].join(","));
+				}
+			}, $settings.delay);
+		}
+		
+			
             // On fist load
             if (result[0] === undefined ) {
                 console.log("No posts found on first load");
@@ -530,50 +553,24 @@ function FnReadPool(input) {
                         // Tell the user we're loading posts
                         $this.find('.info-bar').html('Loading Posts');
 
-                        // Run the function to fetch the data inside a delay
-                        // This is useful if you have content in a footer you
-                        // want the user to see.
-                        setTimeout(function () {
-
-                            //mark remaining items as read
-                            if( result[offset] === undefined ) {
-                                console.log("pool with id's is empty, mark last items in batch as read: " + result[offset-1].join(","));
-
-                                for (var i = 0; i < result[offset-1].length; i++) {
-                                  FnReadPool(result[offset-1][i]);
-                                }
-
-                                $this.find('.info-bar').html('No more posts available');
-
-                            } else {
-                                console.log("get data for batch:" + offset + " items: " + result[offset].join(","));
-                                getData(result[offset].join(","));
-                            }
-
-                        }, $settings.delay);
+						// Process the article pool
+						processpool();
+						
                     }
                 });
-
             }
 
-            // When a few items are loaded scrolling is not possible. Mark as read then by clicking on the info-bar
+            // When only a few items are loaded or minimal view is selected scrolling might not possible.
             $this.find('.info-bar').click(function () {
-               if (busy == false) {
-                   busy = true;
-                   console.log("only a few items loaded - mark as read: " + result[0].join(","));
+				if (busy == false) {
+					busy = true;
+					
+					// Process the article pool
+					processpool();
+				   
+				}
 
-                   //mark items as read
-                   for (var i = 0; i < result[0].length; i++) {
-                       FnReadPool(result[0][i]);
-                   }
-
-                   $this.find('.info-bar').html('Marked all items as read');
-
-               }
-
-            });
-
-        });
-    }
-
+			});
+		});
+	}
 })(jQuery);

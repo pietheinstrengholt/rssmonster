@@ -11,10 +11,6 @@ if(isset($_POST['articlelist'])){ $articlelist = htmlspecialchars($_POST['articl
 
 $array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "sort": "' . $_POST['sort'] . '", "article_id": "' . $_POST['articlelist'] . '"}');
 
-//echo "<pre>";
-//print_r($array);
-//echo "</pre>";
-
 if (!empty($array) && $array != "no-results") {
     foreach ($array as $row) {
 
@@ -30,13 +26,32 @@ if (!empty($array) && $array != "no-results") {
 				echo "<div class='item-star unstar' id=$row[id]></div>";
 			}
 
-			echo "<h4 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$row[subject]</a></h4>";
+			$subject = $row['subject'];
+
+			echo "<h4 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$subject</a></h4>";
 			
 			if (!empty($row['author'])) {
-				echo "<div class='feedname'>$row[feed_name] by $row[author] | $row[publish_date]</div>";
+				$feedtitle = $row['feed_name'] . "by " . $row['author'];
 			} else {
-				echo "<div class='feedname'>$row[feed_name] | $row[publish_date]</div>";
+				$feedtitle = $row['feed_name'];
 			}
+			
+			echo "<div class='feedname'>$feedtitle | $row[publish_date]</div>";
+
+			
+			echo "<div class='minimal' id=$row[id]>";
+			echo "<span class=\"feedname\">$row[feed_name] - </span>";
+			echo "<span class=\"heading\"><a href=\"$row[url]\" target=\"_blank\">$subject</a></span>";		
+			
+			$datetime1 = date_create('now');
+			$datetime2 = date_create($row['publish_date']);
+			$interval = date_diff($datetime1, $datetime2);
+			
+			$difference =  format_interval($interval);
+			
+			echo "<span class=\"publishdate\">$difference</span>";
+			
+			echo "</div>";
 
 			echo "<hr>";
 			//show complete content block
@@ -51,17 +66,16 @@ if (!empty($array) && $array != "no-results") {
 			
 			echo "</div>";
 
-                        echo "<div class='options'>";
+			echo "<div class='options'>";
 			echo "<div class=\"mark-item-read\" id=$row[id]>";
-			echo "<span class=\"glyphicon glyphicon-check\"></span>";
+			echo "<span class=\"glyphicon glyphicon-ok readbar\"></span>";
 			echo "Mark as read";
 			echo "</div>";
-                        echo "<div class=\"mark-item-unread\" id=$row[id]>";
-                        echo "<span class=\"glyphicon glyphicon-lock\"></span>";
-                        echo "Mark as unread";
-                        echo "</div>";
-                        echo "</div>";
-
+			echo "<div class=\"mark-item-unread\" id=$row[id]>";
+			echo "<span class=\"glyphicon glyphicon-remove-sign readbar\"></span>";
+			echo "Mark as unread";
+			echo "</div>";
+			echo "</div>";
 
 		}
 	echo "</div>";

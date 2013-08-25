@@ -11,9 +11,8 @@ echo "</div>";
 // Get overview of Article status
 $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 
-echo "<div class=\"panel\">";
-echo "<div class=\"panel-heading\">Status menu items</div>";
-echo "<ul class=\"list-group list-group-flush\" id=\"status\" style=\"margin-top: -16px;\">";
+echo "<div class=\"panel\" id=\"status\">";
+echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
 
 foreach ($status as $row) {
 
@@ -37,13 +36,13 @@ foreach ($status as $row) {
 		echo "</a>";
 	}
 }
-echo "</ul>";
+
 echo "</div>";
 
 // Get overview of all categories
-echo "<div class=\"panel\">";
-echo "<div class=\"panel-heading\">Categories items</div>";
-echo "<ul class=\"list-group list-group-flush\" id=\"category\" style=\"margin-top: -16px;\">";
+echo "<div class=\"panel\" id=\"categories\">";
+
+echo "<a href=\"#\" class=\"list-group-item\"><b>Categories items</b></a>";
 
 function header_section($input, $name) {
 

@@ -1,4 +1,4 @@
-
+SET NAMES utf8;
 SET SQL_MODE="NO_AUTO_VALUE_ON_ZERO";
 SET time_zone = "+00:00";
 
@@ -45,7 +45,8 @@ CREATE TABLE IF NOT EXISTS `category` (
 -- Table data for table `category`
 --
 
-INSERT INTO `category` (`id`, `name`) VALUES (1, 'Uncategorized');
+INSERT INTO `category` (`id`, `name`) 
+VALUES (1, 'Uncategorized');
 
 -- --------------------------------------------------------
 

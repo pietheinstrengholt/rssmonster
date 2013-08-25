@@ -11,7 +11,7 @@ include 'functions.php';
     <!-- Be sure to leave the brand out there if you want it shown -->
     <a class="navbar-brand" href="<?php echo "$url/index.php"; ?>">Home</a>
 
-    <div class="nav-collapse collapse navbar-responsive-collapse">
+    <div class="collapse navbar-collapse navbar-ex1-collapse">
 
     <ul class="nav navbar-nav">
       <li class="dropdown">

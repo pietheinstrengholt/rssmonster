@@ -7,6 +7,10 @@ html {
   overflow-y: scroll;
 }
 
+body {
+  line-height: 1.25em ! important;
+}
+
 /* ARTICLES OVERVIEW SCREEN */
 
 section {
@@ -14,21 +18,48 @@ section {
   margin-right: 1%;
 }
 
-section.detailed .less-content {
+section.detailed .less-content, section.detailed div.minimal {
   display:none;
 }
 
-section.list .page-content {
+section.list .page-content, section.list div.minimal {
   display:none;
 }
 
-section.minimal .less-content, section.minimal .page-content, section.minimal div.content div.article hr {
+section.minimal .less-content, section.minimal .page-content, section.minimal div.content div.article hr, section.minimal h4.heading, section.minimal div.feedname  {
   display:none;
 }
 
 section.minimal div.content div.feedname {
-  margin-bottom: 4px;
+  margin-bottom: 18px;
   font-size: 13px ! important;
+}
+
+section.minimal div#block {
+  border: none;
+  box-shadow: none;
+  margin-top: 15px ! important;
+}
+
+section.minimal span.heading a {
+  color: #777;
+}
+
+section.minimal span.publishdate {
+  color: #777;
+  float: right;
+}
+
+section.minimal div.info-bar {
+  margin-top: 15px ! important;
+}
+
+section.minimal div.page-content {
+  margin-top: 10px;
+}
+
+section.minimal div.article {
+  padding-bottom: 8px;
 }
 
 div#block {
@@ -39,6 +70,10 @@ div#block {
 
 div#block.active {
   background-color: #FCFCFC;
+}
+
+span.readbar {
+  margin-right: 5px;
 }
 
 .article {
