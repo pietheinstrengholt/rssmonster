@@ -271,9 +271,9 @@ $(document).ready(function () {
         });
 
 	//increase count in menu
-        var starredcount = $('ul#status a#starred.list-group-item span.badge').text();
+        var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)+1;
-        $('ul#status a#starred.list-group-item span.badge').text(starredcountnew);
+        $('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
 
     });
 
@@ -301,9 +301,9 @@ $(document).ready(function () {
         });
 
 	//decrease star count in menu
-        var starredcount = $('ul#status a#starred.list-group-item span.badge').text();
+        var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)-1;
-        $('ul#status a#starred.list-group-item span.badge').text(starredcountnew);
+        $('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
 
     });
 
@@ -349,41 +349,41 @@ function FnReadPool(input) {
                 if (data[0]['status'] == "unread") {
 
                         //decrease uread count
-                        var unreadcount = $('ul#status a#unread.list-group-item span.badge').text();
+                        var unreadcount = $('div#status.panel a#unread.list-group-item span.badge').text();
                         var unreadcountnew = unreadcount -1;
-                        $('ul#status a#unread.list-group-item span.badge').text(unreadcountnew);
+                        $('div#status.panel a#unread.list-group-item span.badge').text(unreadcountnew);
 
                         //increase read count
-                        var readcount = $('ul#status a#read.list-group-item span.badge').text();
+                        var readcount = $('div#status.panel a#read.list-group-item span.badge').text();
                         var readcountnew = parseFloat(readcount)+1;
-                        $('ul#status a#read.list-group-item span.badge').text(readcountnew);
+                        $('div#status.panel a#read.list-group-item span.badge').text(readcountnew);
 
                         //decrease count for main menu items
-                        var readcountmain = $('ul#category').find('a#' + category).find('span.countunread').text();
+                        var readcountmain = $('div#categories.panel').find('a#' + category).find('span.countunread').text();
                         var readcountmainnew = readcountmain -1;
-                        $('ul#category').find('a#' + category).find('span.countunread').text(readcountmainnew);
+                        $('div#categories.panel').find('a#' + category).find('span.countunread').text(readcountmainnew);
 
                         //decrease count for sub menu items
-                        var readcountsub = $('ul#category').find('a#' + feed).find('span.badge').text();
+                        var readcountsub = $('div#categories.panel').find('a#' + feed).find('span.badge').text();
                         var readcountsubnew = readcountsub -1;
-                        $('ul#category').find('a#' + feed).find('span.badge').text(readcountsubnew);
+                        $('div#categories.panel').find('a#' + feed).find('span.badge').text(readcountsubnew);
 
                         //decrease count for last 24 hours
                         if (data[0]['publish_date'] == "last-24-hours") {
-                                var tfcount = $('ul#status a#last-24-hours.list-group-item span.badge').text();
+                                var tfcount = $('div#status.panel a#last-24-hours.list-group-item span.badge').text();
                                 var tfcountnew = tfcount -1;
-                                $('ul#status a#last-24-hours.list-group-item span.badge').text(tfcountnew);
+                                $('div#status.panel a#last-24-hours.list-group-item span.badge').text(tfcountnew);
                         }
 
                         //decrease count for last 24 hours and last hour
                         if (data[0]['publish_date'] == "last-hour") {
-                                var lastcount = $('ul#status a#last-hour.list-group-item span.badge').text();
+                                var lastcount = $('div#status.panel a#last-hour.list-group-item span.badge').text();
                                 var lastcountnew = lastcount -1;
-                                $('ul#status a#last-hour.list-group-item span.badge').text(lastcountnew);
+                                $('div#status.panel a#last-hour.list-group-item span.badge').text(lastcountnew);
 
-                                var tfcount = $('ul#status a#last-24-hours.list-group-item span.badge').text();
+                                var tfcount = $('div#status.panel a#last-24-hours.list-group-item span.badge').text();
                                 var tfcountnew = tfcount -1;
-                                $('ul#status a#last-24-hours.list-group-item span.badge').text(tfcountnew);
+                                $('div#status.panel a#last-24-hours.list-group-item span.badge').text(tfcountnew);
                         }
 
                 }

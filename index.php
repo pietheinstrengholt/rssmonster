@@ -14,6 +14,7 @@
     <script src="javascripts/waypoints-infinite.js"></script>
     <link rel="stylesheet" href="stylesheets/styles.css">
     <link rel="stylesheet" href="stylesheets/bootstrap.css">
+    <link rel="stylesheet" href="stylesheets/bootstrap-theme.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap-glyphicons.css">
     <script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 
