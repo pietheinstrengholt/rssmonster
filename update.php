@@ -126,43 +126,39 @@ foreach($conn->query($sql) as $row) {
         if (strtotime($date) > strtotime($comparedate)) {
 
 	    //check if article name does not already exist in db
-            //$subject = $conn->quote($subject);
-
 	    $sth = $conn->prepare("SELECT COUNT(*) as count FROM articles WHERE subject = :subject AND feed_id = '$feed_id'");
-	    $sth->bindParam(':subject', $subject);
-	    $result = $sth->execute();
-	    echo "<pre>";
-	    print_r($result);
-	    echo "</pre>";
-	    if ($result) {
-		//$count = mysql_result($result, 0);
+	    $sth->bindParam(':subject', $subject, PDO::PARAM_STR);
+	    $sth->execute();
+	    $result = $sth->fetch();
+	    $result = $result['count'];
+	    $sth->closeCursor();
 		$count  = $result;
-		//$count = $fetchcount['count'];
+		echo "test";
 		if ($count > 0) { 
 			echo "Skipping - Avoid duplicate subjectname in db"; 
 		} elseif (strtotime($date) < strtotime($previousweek)) {
 			echo "Article more than one week old"; 
 		} else {
-			$resulturl = $conn->query("SELECT COUNT(*) as count FROM articles WHERE url = '" . $url . "' AND feed_id = '$feed_id'");
+			echo "test";
+			$sth = $conn->query("SELECT COUNT(*) as count FROM articles WHERE url = :url AND feed_id = :feed_id");
+		        $sth->bindParam(':url', $url, PDO::PARAM_STR);
+                        $sth->bindParam(':feed_id', $feed_id, PDO::PARAM_STR);
+			$sth->execute();
+			$resulturl = $sth->fetch();
+			$sth->closeCursor();
 			if ($resulturl) {
-				//$counturl = mysql_result($resulturl, 0);
-				$fetchcounturl  = $resulturl->fetch();
+				$fetchcounturl  = $resulturl;
 				$counturl = $fetchcounturl['count'];
 			 	if ($counturl > 0) {
                         		echo "Skipping - Avoid duplicate url in db";
                 		} else {
 					echo "Found new article";
-					global $conn;
-					//$subject = $conn->quote($subject);
-					//$content = $conn->quote($content);
-					
-					$conn->prepare("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', ':subject', ':content', CURRENT_TIMESTAMP, '$date', '$author')");
-					$conn->bindParam(':subject', $subject);
-					$conn->bindParam(':content', $content);
-					$conn->execute();
+					$sth = $conn->prepare("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', :subject, :content, CURRENT_TIMESTAMP, '$date', '$author')");
+					$sth->bindParam(':subject', $subject, PDO::PARAM_STR);
+					$sth->bindParam(':content', $content, PDO::PARAM_STR);
+					$sth->execute();
 				}
 			}
-		}
 	    }
 
         } else {
