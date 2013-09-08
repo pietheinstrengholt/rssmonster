@@ -24,15 +24,17 @@ $jsonurl = $url . "/json.php";
  *
  * @return string Formatted interval string.
  */
-function format_interval(DateInterval $interval) {
-    $result = "";
-    if ($interval->y) { $result .= $interval->format("%y years "); }
-    if ($interval->m) { $result .= $interval->format("%m months "); }
-    if ($interval->d) { $result .= $interval->format("%d days "); }
-    if ($interval->h) { $result .= $interval->format("%h hours "); }
-    if ($interval->i) { $result .= $interval->format("%i minutes "); }
+if (!function_exists('format_interval')) {
+    function format_interval(DateInterval $interval) {
+        $result = "";
+        if ($interval->y) { $result .= $interval->format("%y years "); }
+        if ($interval->m) { $result .= $interval->format("%m months "); }
+        if ($interval->d) { $result .= $interval->format("%d days "); }
+        if ($interval->h) { $result .= $interval->format("%h hours "); }
+        if ($interval->i) { $result .= $interval->format("%i minutes "); }
 
-    return $result;
+        return $result;
+    }
 }
 
 if (!function_exists('get_json')) {

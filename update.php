@@ -42,7 +42,7 @@ foreach($conn->query($sql) as $row) {
     //init feed simplepie
     $feed = new SimplePie();
     $feed->set_feed_url($feed_url);
-    $feed->set_cache_location('/volume1/web/phppaper-dev/cache');
+    $feed->set_cache_location('./cache');
     $feed->init();
     $feed->handle_content_type();
     
@@ -145,7 +145,7 @@ foreach($conn->query($sql) as $row) {
                         		echo "Skipping - Avoid duplicate url in db";
                 		} else {
 					echo "Found new article";
-					$conn->query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')") or die(mysql_error());
+					$conn->query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')"));
 				}
 			}
 		}
