@@ -126,11 +126,18 @@ foreach($conn->query($sql) as $row) {
         if (strtotime($date) > strtotime($comparedate)) {
 
 	    //check if article name does not already exist in db
-	    $result = $conn->query("SELECT COUNT(*) as count FROM articles WHERE subject = '" . mysql_real_escape_string($subject) . "' AND feed_id = '$feed_id'"); 
+            //$subject = $conn->quote($subject);
+
+	    $sth = $conn->prepare("SELECT COUNT(*) as count FROM articles WHERE subject = :subject AND feed_id = '$feed_id'");
+	    $sth->bindParam(':subject', $subject);
+	    $result = $sth->execute();
+	    echo "<pre>";
+	    print_r($result);
+	    echo "</pre>";
 	    if ($result) {
 		//$count = mysql_result($result, 0);
-		$fetchcount  = $result->fetch();
-		$count = $fetchcount['count'];
+		$count  = $result;
+		//$count = $fetchcount['count'];
 		if ($count > 0) { 
 			echo "Skipping - Avoid duplicate subjectname in db"; 
 		} elseif (strtotime($date) < strtotime($previousweek)) {
@@ -145,7 +152,14 @@ foreach($conn->query($sql) as $row) {
                         		echo "Skipping - Avoid duplicate url in db";
                 		} else {
 					echo "Found new article";
-					$conn->query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', '" . mysql_real_escape_string($subject) . "', '" . mysql_real_escape_string($content) . "', CURRENT_TIMESTAMP, '$date', '$author')"));
+					global $conn;
+					//$subject = $conn->quote($subject);
+					//$content = $conn->quote($content);
+					
+					$conn->prepare("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', ':subject', ':content', CURRENT_TIMESTAMP, '$date', '$author')");
+					$conn->bindParam(':subject', $subject);
+					$conn->bindParam(':content', $content);
+					$conn->execute();
 				}
 			}
 		}
