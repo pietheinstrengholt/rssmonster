@@ -79,7 +79,7 @@ foreach($conn->query($sql) as $row) {
 
 
 ?>
-<div class="alert alert-error">
+<div class="alert alert-danger">
   <button type="button" class="close" data-dismiss="alert">&times;</button>
   <strong>Error! </strong>Unable to process feed: <?php echo $feed_name; ?>. Server might be down or url has changed.
 </div>
@@ -133,13 +133,11 @@ foreach($conn->query($sql) as $row) {
 	    $result = $result['count'];
 	    $sth->closeCursor();
 		$count  = $result;
-		echo "test";
 		if ($count > 0) { 
 			echo "Skipping - Avoid duplicate subjectname in db"; 
 		} elseif (strtotime($date) < strtotime($previousweek)) {
 			echo "Article more than one week old"; 
 		} else {
-			echo "test";
 			$sth = $conn->query("SELECT COUNT(*) as count FROM articles WHERE url = :url AND feed_id = :feed_id");
 		        $sth->bindParam(':url', $url, PDO::PARAM_STR);
                         $sth->bindParam(':feed_id', $feed_id, PDO::PARAM_STR);
