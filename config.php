@@ -4,9 +4,9 @@
 
 // Connection's Parameters
 $db_host="localhost";
-$db_name="openreaderst";
+$db_name="phppaper";
 $username="admin";
-$password="apple200";
+$password="admin";
 
 //mysql_connect($db_host, $username, $password) or die(mysql_error());
 //mysql_select_db($db_name) or die(mysql_error());
