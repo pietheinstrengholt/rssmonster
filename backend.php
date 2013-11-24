@@ -31,7 +31,7 @@ if (!empty($array) && $array != "no-results") {
 			echo "<h4 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$subject</a></h4>";
 			
 			if (!empty($row['author'])) {
-				$feedtitle = $row['feed_name'] . "by " . $row['author'];
+				$feedtitle = $row['feed_name'] . " by " . $row['author'];
 			} else {
 				$feedtitle = $row['feed_name'];
 			}
@@ -40,8 +40,8 @@ if (!empty($array) && $array != "no-results") {
 
 			
 			echo "<div class='minimal' id=$row[id]>";
-			echo "<span class=\"feedname\">$row[feed_name] - </span>";
-			echo "<span class=\"heading\"><a href=\"$row[url]\" target=\"_blank\">$subject</a></span>";		
+			echo "<span class=\"feedname\">$row[feed_name]</span>";
+			echo "<span class=\"heading\"><a href=\"$row[url]\" target=\"_blank\"> - $subject</a></span>";		
 			
 			$datetime1 = date_create('now');
 			$datetime2 = date_create($row['publish_date']);

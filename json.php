@@ -190,14 +190,7 @@ if(isset($arr['update'])){
 	//todo: return category, feedname
         if ($arr['update'] == "item-as-read") {
           //$response = $conn->query("SELECT t1.status, t2.name as feed, t3.name as category FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id LEFT JOIN category t3 ON t2.category = t3.id WHERE t1.id = '$arr[value]'");
-	  $sql = $conn->query("SELECT t1.status, t2.name as feed, t3.name as category,
-		CASE
-		WHEN t1.publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW() THEN \"last-hour\"
-		WHEN t1.publish_date between (NOW() - INTERVAL 1 DAY) AND NOW() THEN \"last-24-hours\"
-		WHEN t1.publish_date between (NOW() - INTERVAL 1 WEEK) AND NOW() THEN \"last-week\"
-		ELSE \"other\"
-		END as publish_date
-		FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id LEFT JOIN category t3 ON t2.category = t3.id WHERE t1.id = '$arr[value]'");
+	  $sql = $conn->query("SELECT * FROM id_status WHERE id = '$arr[value]'");
           //while($r[]=mysql_fetch_array($response));
 	  $r=$sql->fetchAll();
           echo json_encode($r);
@@ -263,13 +256,6 @@ if(isset($arr['overview'])){
 	  //while($r[]=$sql->fetchAll());
 	  $r=$sql->fetchAll();
 	  echo json_encode($r);
-	} elseif ($arr['overview'] == "category") {
-	  $sql=$conn->query("SELECT category as name, count(*) as count FROM articles t1 LEFT JOIN feeds t2 ON t1.feed_id = t2.id WHERE category <> '' AND status = 'unread' GROUP BY category ORDER BY category");
-	  //while($r[]=mysql_fetch_array($sql));
-	  //while($r[]=$conn->fetchAll($sql));
-	  //while($r[]=$sql->fetchAll());
-	  $r=$sql->fetchAll();
-	  echo json_encode($r); 
 	} elseif ($arr['overview'] == "category-detailed") {
 	  $sql=$conn->query("SELECT t1.name as category, IFNULL(count_all,0) as count_all, IFNULL(count_unread,0) as count_unread FROM
 
@@ -298,15 +284,7 @@ ORDER BY t1.name");
 	  $r=$sql->fetchAll();
 	  echo json_encode($r);
 	} elseif ($arr['overview'] == "status") {
-	  $sql=$conn->query("select name, count from (SELECT  'unread' AS name, COUNT( * ) AS count FROM articles a WHERE STATUS =  'unread') a
-				union
-				SELECT  'read' AS name, COUNT( * ) AS count FROM articles b WHERE STATUS =  'read'
-				union
-				select name, count from (select 'starred' as name, count(*) as count from articles where star_ind = '1') c
-				union
-				select name, count from (select 'last 24 hours' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 DAY) AND NOW()) d
-				union
-				select name, count from (select 'last hour' as name, count(*) as count from articles where status = 'unread' and publish_date between (NOW() - INTERVAL 1 HOUR) AND NOW()) e");
+	  $sql=$conn->query("select * from overview_status");
 	  //while($r[]=mysql_fetch_array($sql));
 	  //while($r[]=$conn->fetchAll($sql));
 	  //while($r[]=$sql->fetchAll());
