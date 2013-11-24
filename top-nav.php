@@ -3,13 +3,16 @@
 include 'config.php';
 include 'functions.php';
 
+// Get overview of Article status
+$status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
+
 ?>
 
 <div class="navbar navbar-fixed-top navbar-inverse">
    <div class="container">
 
     <!-- Be sure to leave the brand out there if you want it shown -->
-    <a class="navbar-brand" href="<?php echo "$url/index.php"; ?>">Home</a>
+    <a class="navbar-brand" href="<?php echo "$url/index.php"; ?>"><span class="badge pull-right"><?php echo $status[0]['count']; ?></span>Home</a>
 
     <div class="collapse navbar-collapse navbar-ex1-collapse">
 

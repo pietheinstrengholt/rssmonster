@@ -279,3 +279,8 @@ div.opml-form {
 div.opml-form form input {
   font: 14px/1.5 Lato, "Helvetica Neue", Helvetica, Arial, sans-serif;
 }
+
+span.badge.pull-right {
+  margin-left: 3px;
+}
+
