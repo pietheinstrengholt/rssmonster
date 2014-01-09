@@ -161,6 +161,11 @@ div#info-bar {
   font-weight: bold;
 }
 
+div.page-content img {
+  max-width: 100%;
+  height: auto;
+}
+
 /* TOPNAV */
 
 a.brand {

@@ -11,11 +11,19 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 <div class="navbar navbar-fixed-top navbar-inverse">
    <div class="container">
 
-    <!-- Be sure to leave the brand out there if you want it shown -->
+   <!-- Brand and toggle get grouped for better mobile display -->
+   <div class="navbar-header">
+    <button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
+      <span class="sr-only">Toggle navigation</span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+      <span class="icon-bar"></span>
+    </button>
     <a class="navbar-brand" href="<?php echo "$url/index.php"; ?>"><span class="badge pull-right"><?php echo $status[0]['count']; ?></span>Home</a>
+   </div>
 
-    <div class="collapse navbar-collapse navbar-ex1-collapse">
-
+   <!-- Collect the nav links, forms, and other content for toggling -->
+   <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
     <ul class="nav navbar-nav">
       <li class="dropdown">
          <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Views<b class="caret"></b></a>
@@ -41,10 +49,12 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <li><a id="import-opml" href="#">Import OPML</a></li>
     </ul>
 
+    <ul class="nav navbar-nav">
     <form class="navbar-form pull-left" method="post" placeholder="submitfeed">
-      <input type="text" placeholder="Add feed or url" style="width: 200px;" id="feedname" name="feedname" class="form-control">
+      <input type="text" placeholder="Add feed or url" style="width: 120px;" id="feedname" name="feedname" class="form-control">
       <button type="button" id="submitfeed" class="btn btn-default">Submit</button>
     </form>
+    </ul>
 
     <ul class="nav navbar-nav">
       <li><a class="update" href="#">Update feeds</a></li>
@@ -54,4 +64,3 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 
    </div><!-- /.container -->
 </div><!-- /.navbar -->
-
