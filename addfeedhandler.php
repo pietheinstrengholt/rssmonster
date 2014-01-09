@@ -10,7 +10,6 @@ echo "Trying to add new feed: " . "<b>" . $feedname . "</b>";
 
 $feed = new SimplePie();
 $feed->set_feed_url($feedname);
-//$feed->set_cache_location('/var/www/vhosts/strengholt-online.nl/httpdocs/phppaper/cache');
 $feed->set_cache_location('./cache');
 $feed->init();
 $feed->handle_content_type();
