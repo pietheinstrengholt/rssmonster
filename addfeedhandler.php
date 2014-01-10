@@ -36,9 +36,6 @@ if (empty($title)) {
   //TODO: replace with json
   $sql=$conn->query("SELECT DISTINCT name FROM feeds ORDER BY name");
   $r=$sql->fetchAll();
-  echo "<pre>";
-  print_r($r);
-  echo "</pre>";
 
   if (in_array_r($title, $r)) {
     echo "<br><br>Error adding \"$title\", feedname already exists or rss is invalid!<br>";
