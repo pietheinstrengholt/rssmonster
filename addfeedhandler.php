@@ -36,13 +36,16 @@ if (empty($title)) {
   //TODO: replace with json
   $sql=$conn->query("SELECT DISTINCT name FROM feeds ORDER BY name");
   $r=$sql->fetchAll();
+  echo "<pre>";
+  print_r($r);
+  echo "</pre>";
 
   if (in_array_r($title, $r)) {
     echo "<br><br>Error adding \"$title\", feedname already exists or rss is invalid!<br>";
   } else { 
 
     //TODO: replace with json
-    $sql = "INSERT INTO feeds (name, name_desc, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($desc)."','".mysql_real_escape_string($feedurl)."','".mysql_real_escape_string($favicon)."')";
+    $sql = "INSERT INTO feeds (name, name_desc, url, favicon) VALUES ('".mysql_escape_mimic($title)."','".mysql_escape_mimic($desc)."','".mysql_escape_mimic($feedurl)."','".mysql_escape_mimic($favicon)."')";
     $conn->query($sql);
     echo "<br><br><br>Feedname \"$title\" added to list with rss feeds!<br>";
 
