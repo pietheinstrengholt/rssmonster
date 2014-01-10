@@ -11,10 +11,6 @@ echo "</div>";
 // Get overview of Article status
 $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 
-//echo "<pre>";
-//print_r($status);
-//echo "</pre>";
-
 echo "<div class=\"panel\" id=\"status\">";
 echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
 
