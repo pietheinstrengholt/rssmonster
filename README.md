@@ -1,5 +1,5 @@
 <a href="http://www.phppaper.com">
-  <img src="http://www.phppaper.com/wp-content/uploads/phppaper2.png" width="700px">
+  <img src="http://www.phppaper.com/wp-content/uploads/phppaper3.png" width="700px">
 </a>
 
 phppaper
