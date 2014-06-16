@@ -287,5 +287,10 @@ div.opml-form form input {
 
 span.badge.pull-right {
   margin-left: 3px;
+  margin-top: 1px;
 }
 
+a#starred.navbar-brand,a#unread.navbar-brand {
+  font-size: 15px; 
+  margin-left: 1px;
+}

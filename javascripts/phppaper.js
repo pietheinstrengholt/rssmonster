@@ -112,6 +112,17 @@ $(document).ready(function () {
 		
     });
 
+    //Functionality when clicking on top-nav menu items
+    $("a#starred.navbar-brand,a#unread.navbar-brand").click(function () {
+		var status = $(this).attr('id');
+		console.log(status);
+		var encoded_status = encodeURIComponent(status);
+		$.cookie('type', 'status');
+		$.cookie('value', encoded_status);
+		loadcontent('status', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+
+    });
+
     //Category function on feedbar: Drop down menu sub-menu items when a category is clicked
     //hide sub menu by default
     $("div.menu-sub").hide();
