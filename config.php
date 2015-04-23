@@ -2,9 +2,10 @@
 
 // Connection's Parameters
 $db_host="localhost";
-$db_name="openreader";
-$username="admin";
-$password="apple200";
+$db_name="phppaper";
+$username="username";
+$password="password";
+$db_path="/var/www/cache";
 
 $conn = new PDO('mysql:$db_host;$db_name;charset=utf8', $username, $password);
 $conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);

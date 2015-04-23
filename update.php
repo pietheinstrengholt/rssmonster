@@ -20,18 +20,14 @@ $sql = "select * from feeds order by last_update limit 0, 50";
 //previous week
 $previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
 
-?>
-
-<table id="update" class="table table-bordered table-condensed">
-<tr>
- <th>ID</th>
- <th>Feed_Name</th>
- <th>Last_date</th>
- <th>Publish_date</th>
- <th>Result</th>
-</tr>
-
-<?php
+echo "<table id=\"update\" class=\"table table-bordered table-condensed\">";
+echo "<tr>";
+echo "<th>ID</th>";
+echo "<th>Feed_Name</th>";
+echo "<th>Last_date</th>";
+echo "<th>Publish_date</th>";
+echo "<th>Result</th>";
+echo "</tr>";
 
 foreach($conn->query($sql) as $row) {
     
@@ -42,29 +38,13 @@ foreach($conn->query($sql) as $row) {
     //init feed simplepie
     $feed = new SimplePie();
     $feed->set_feed_url($feed_url);
-    $feed->set_cache_location('./cache');
+    $feed->set_cache_location($db_path);
     $feed->init();
     $feed->handle_content_type();
     
     $lastdate    = $conn->query("SELECT publish_date from articles WHERE feed_id = '$feed_id;' ORDER BY publish_date desc LIMIT 1");
     $fetch  = $lastdate->fetch();
     $comparedate = $fetch['publish_date'];
-	
-    if (empty($comparedate)) { 
-
-?>
-<!-- <div class="alert"> -->
-<!--  <button type="button" class="close" data-dismiss="alert">&times;</button> -->
-<!--  <strong>Warning! </strong>No previous results found for feed: <?php echo $feed_name; ?>. Feed might be never processed or is invalid. -->
-<!--</div> -->
-
-<?php
-
-}
-    
-?>
-
-<?php
     
     $conn->query("UPDATE feeds set last_update = CURRENT_TIMESTAMP where id = '$feed_id'");  
     
@@ -77,19 +57,12 @@ foreach($conn->query($sql) as $row) {
 
     if ($itemQty === 0) { 
 
+	echo "<div class=\"alert alert-danger\">";
+	echo "<button type=\"button\" class=\"close\" data-dismiss=\"alert\">&times;</button>";
+	echo "<strong>Error! </strong>Unable to process feed: " . $feed_name . " Server might be down or url has changed.";
+	echo "</div>";
 
-?>
-<div class="alert alert-danger">
-  <button type="button" class="close" data-dismiss="alert">&times;</button>
-  <strong>Error! </strong>Unable to process feed: <?php echo $feed_name; ?>. Server might be down or url has changed.
-</div>
-
-<?php
-
-
-}
-
-    else {
+    } else {
 
     foreach ($feed->get_items() as $item) {
         
@@ -104,69 +77,43 @@ foreach($conn->query($sql) as $row) {
 	} else {
 	   $author = "";
 	}
-        
-?>
 
-<tr>
- <th><?php
-        echo $feed_id;
-?></th>
- <th><?php
-        echo $feed_name;
-?></th>
- <th><?php
-        echo $comparedate;
-?></th>
- <th><?php
-        echo $date;
-?></th>
- <th><?php
+	echo "<tr><th>" . $feed_id . "</th><th>" . $feed_name . "</th><th>" . $comparedate . "</th><th>" . $date . "</th><th>";
 
 	//publish date is later then compare date which assumes article is new		
         if (strtotime($date) > strtotime($comparedate)) {
 
-	    //check if article name does not already exist in db
-	    $sth = $conn->prepare("SELECT COUNT(*) as count FROM articles WHERE subject = :subject AND feed_id = '$feed_id'");
-	    $sth->bindParam(':subject', $subject, PDO::PARAM_STR);
-	    $sth->execute();
-	    $result = $sth->fetch();
-	    $result = $result['count'];
-	    $sth->closeCursor();
-		$count  = $result;
-		if ($count > 0) { 
-			echo "Skipping - Avoid duplicate subjectname in db"; 
-		} elseif (strtotime($date) < strtotime($previousweek)) {
-			echo "Article more than one week old"; 
-		} else {
-			$sth = $conn->query("SELECT COUNT(*) as count FROM articles WHERE url = :url AND feed_id = :feed_id");
-		        $sth->bindParam(':url', $url, PDO::PARAM_STR);
-                        $sth->bindParam(':feed_id', $feed_id, PDO::PARAM_STR);
-			$sth->execute();
-			$resulturl = $sth->fetch();
-			$sth->closeCursor();
-			if ($resulturl) {
-				$fetchcounturl  = $resulturl;
-				$counturl = $fetchcounturl['count'];
-			 	if ($counturl > 0) {
-                        		echo "Skipping - Avoid duplicate url in db";
-                		} else {
-					echo "Found new article";
-					$sth = $conn->prepare("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', :subject, :content, CURRENT_TIMESTAMP, '$date', '$author')");
-					$sth->bindParam(':subject', $subject, PDO::PARAM_STR);
-					$sth->bindParam(':content', $content, PDO::PARAM_STR);
-					$sth->execute();
-				}
-			}
-	    }
+		$sth = $conn->query("SELECT COUNT(*) as count FROM articles WHERE url = :url AND feed_id = :feed_id");
+                $sth->bindParam(':url', $url, PDO::PARAM_STR);
+                $sth->bindParam(':feed_id', $feed_id, PDO::PARAM_STR);
+                $sth->execute();
+                $resulturl = $sth->fetch();
+                $sth->closeCursor();
+
+                $sth = $conn->query("SELECT COUNT(*) as count FROM articles WHERE subject = :subject AND feed_id = :feed_id");
+                $sth->bindParam(':subject', $subject, PDO::PARAM_STR);
+                $sth->bindParam(':feed_id', $feed_id, PDO::PARAM_STR);
+                $sth->execute();
+                $resultsubject = $sth->fetch();
+                $sth->closeCursor();
+
+		if (strtotime($date) < strtotime($previousweek)) {
+                        echo "Article more than one week old";
+                } elseif ($resulturl['count'] == 0 && $resultsubject['count'] == 0) {
+                        echo "Found new article";
+                        $sth = $conn->prepare("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', :subject, :content, CURRENT_TIMESTAMP, '$date', '$author')");
+                        $sth->bindParam(':subject', $subject, PDO::PARAM_STR);
+                        $sth->bindParam(':content', $content, PDO::PARAM_STR);
+                        $sth->execute();
+                } else {
+                        echo "Skipping - Avoid duplicate url in db";
+                }
 
         } else {
-            echo "No new feeds since last update";
+		echo "No new feeds since last update";
         }
-?>
- </th>
-</tr>
 
-<?php
+	echo "</th></tr>";
         
     }
 }
@@ -174,6 +121,15 @@ foreach($conn->query($sql) as $row) {
 }
 
 echo "</table>";
+
+$dupplicates = $conn->query("SELECT count(*) as count FROM (SELECT MAX(id) as id FROM articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A");
+
+$dupplicates  = $dupplicates->fetch();
+
+echo "Removed " . $dupplicates['count'] . " dupplicates";
+
+//cleanup dupplicates
+$conn->query("DELETE FROM articles WHERE id IN (SELECT * FROM (SELECT MAX(id) as id FROM articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A)");
 
 ?>
 
