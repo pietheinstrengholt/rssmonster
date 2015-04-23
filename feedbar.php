@@ -20,8 +20,8 @@ if (!empty($status)) {
 		if (!empty($row)) {
 			$cssid = str_replace(" ", "-", $row['name']);
 			echo "<a href=\"#\" id=\"$cssid\" class=\"list-group-item\">";
-			echo "<span class=\"badge\">$row[count]</span>";	
-			
+			echo "<span class=\"badge\">$row[count]</span>";
+
 			if ($cssid == 'unread') {
 				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-search\"></span><span id=\"title-name\">$row[name]</span></span>";
 			} elseif ($cssid == 'read') {
@@ -33,7 +33,7 @@ if (!empty($status)) {
 			} elseif ($cssid == 'last-hour') {
 				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-leaf\"></span><span id=\"title-name\">$row[name]</span></span>";
 			}
-			
+
 			echo "</a>";
 		}
 	}
@@ -51,7 +51,7 @@ function fn_header_section($input, $name) {
 	global $conn;
 
 	if (!empty($input)) {
-  
+
 		$displayname = ucfirst($name);
 
 		foreach ($input as $row) {
@@ -63,12 +63,12 @@ function fn_header_section($input, $name) {
 
 				echo "<a href=\"#\" id=\"$csstitle\" class=\"list-group-item main\">";
 				echo "<span class=\"badge\">";
-				
+
 				echo "<span class=\"countunread\">$row[count_unread]</span>";
 				echo "<span class=\"countdivider\"> / </span>";
 				echo "<span class=\"countall\">$row[count_all]</span>";
-				
-				echo "</span>";				
+
+				echo "</span>";
 				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-chevron-right\"></span><span id=\"title-name\">$title</span></span>";
 				echo "</a>";
 
@@ -88,7 +88,7 @@ function fn_header_section($input, $name) {
 					} else {
 						$faviconurl = $row[2];
 					}
-					
+
 					echo "<a href=\"#\" id=\"$csssubtitle\" class=\"list-group-item sub\">";
 					echo "<span class=\"badge\">$row[3]</span>";
 					echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";

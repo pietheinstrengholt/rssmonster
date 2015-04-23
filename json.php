@@ -14,7 +14,7 @@ header('Content-Type: application/json');
 $arr = json_decode(file_get_contents('php://input'), true);
 
 //if json argument isn't given exit
-if ($arr['jsonrpc'] != "2.0") { 
+if ($arr['jsonrpc'] != "2.0") {
   echo json_encode($error);
   //exit;
 }
@@ -30,10 +30,10 @@ if(isset($arr['update'])){
 	if ($arr['update'] == "feeds") {
 	  if (empty($arr[value])) {
 		exit;
-	  } 
+	  }
 	  else if (empty($arr[new_feed_name]) && empty($arr[new_feed_category])) {
 		exit;
-	  } 
+	  }
 	  else {
 		//TODO: cleanup below
 
@@ -76,7 +76,7 @@ if(isset($arr['request'])){
 		if(isset($arr['status'])){ $status = htmlspecialchars($arr['status']); } else { $status = NULL; }
 		if(isset($arr['category'])){ $category = htmlspecialchars($arr['category']); } else { $category = NULL; }
 		if(isset($arr['feed'])){ $feed = htmlspecialchars($arr['feed']); } else { $feed = NULL; }
-		
+
 		if ($status == "starred") {
 		        $sql = "SELECT DISTINCT id FROM articles WHERE star_ind = '1' ORDER BY publish_date $sort";
 		} elseif ($status == "read") {
@@ -111,7 +111,7 @@ if(isset($arr['request'])){
 	}
 
 
-	if ($arr['request'] == "debug") { 
+	if ($arr['request'] == "debug") {
 	  echo json_encode($debug);
 	}
 
@@ -139,7 +139,7 @@ if(isset($arr['request'])){
           $content = $fetchcount['content'];
           echo json_encode($content);
 	}
-	
+
 	//http POST http://192.168.0.111/phppaper/json.php jsonrpc="2.0" request="get-articles" offset="0" postnumbers="10" -b
 	//get article content and other information
 	if ($arr['request'] == "get-articles") {
@@ -180,7 +180,7 @@ if(isset($arr['request'])){
 	  } else {
 		echo json_encode($r);
 	  }
-	}	
+	}
 }
 
 //usage curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","update": "read-status", "value": "1"}' http://openreaderurl/json.php
@@ -278,16 +278,12 @@ LEFT JOIN
 
 ON t1.name = t2.name
 ORDER BY t1.name");
-	  //while($r[]=mysql_fetch_array($sql));
-	  //while($r[]=$conn->fetchAll($sql));
-	  //while($r[]=$sql->fetchAll());
+
 	  $r=$sql->fetchAll();
 	  echo json_encode($r);
 	} elseif ($arr['overview'] == "status") {
 	  $sql=$conn->query("select * from overview_status");
-	  //while($r[]=mysql_fetch_array($sql));
-	  //while($r[]=$conn->fetchAll($sql));
-	  //while($r[]=$sql->fetchAll());
+
 	  $r=$sql->fetchAll();
 	  echo json_encode($r);
 	}

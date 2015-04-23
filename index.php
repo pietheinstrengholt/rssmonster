@@ -20,7 +20,7 @@
     <style type="text/css">
       html,body
       {
-        overflow-x: hidden; 
+        overflow-x: hidden;
       }
 
       body {
@@ -32,9 +32,9 @@
       }
 
       @media (max-width: 980px) {
-	padding-top: 0px;
-        /* Enable use of floated navbar text */
-        .navbar-text.pull-right {
+         /* Enable use of floated navbar text */
+         padding-top: 0px;
+         .navbar-text.pull-right {
           float: none;
           padding-left: 5px;
           padding-right: 5px;
