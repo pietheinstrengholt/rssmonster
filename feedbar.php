@@ -74,27 +74,33 @@ function fn_header_section($input, $name) {
 
 				echo "<div class=\"menu-sub\" id='$title'>";
 
-				foreach($conn->query("SELECT name, id, favicon, count FROM (select * from feeds WHERE category IN (SELECT DISTINCT id FROM category WHERE name = '$row[category]')) a left join (SELECT count(*) as count, feed_id from articles WHERE status = 'unread' group by feed_id) b on a.id = b.feed_id") as $row) {
+				// Get count-per-category using json
+				$category = $row['category'];
+				$query = "{\"jsonrpc\": \"2.0\", \"request\": \"count-per-category\", \"value\": \"$category\"}";
+				$rows = get_json($query);
 
-					if (empty($row[3])) {
-						$row[3] = "0";
+				if (!empty($rows)) {
+					foreach($rows as $row) {
+
+						if (empty($row['count'])) {
+							$row['count'] = "0";
+						}
+
+						$csssubtitle = preg_replace("/[^A-Za-z0-9 ]/", '', $row['name']);
+						$csssubtitle = preg_replace('/\s+/', '',$csssubtitle);
+
+						if (empty($row['favicon'])) {
+							$faviconurl = "img/rss-default.gif";
+						} else {
+							$faviconurl = $row['favicon'];
+						}
+
+						echo "<a href=\"#\" id=\"$csssubtitle\" class=\"list-group-item sub\">";
+						echo "<span class=\"badge\">$row[count]</span>";
+						echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";
+						echo "<span class=\"title\">$row[name]</span>";
+						echo "</a>";
 					}
-
-					$csssubtitle = preg_replace("/[^A-Za-z0-9 ]/", '', $row[0]);
-					$csssubtitle = preg_replace('/\s+/', '',$csssubtitle);
-
-					if (empty($row[2])) {
-						$faviconurl = "img/rss-default.gif";
-					} else {
-						$faviconurl = $row[2];
-					}
-
-					echo "<a href=\"#\" id=\"$csssubtitle\" class=\"list-group-item sub\">";
-					echo "<span class=\"badge\">$row[3]</span>";
-					echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";
-					echo "<span class=\"title\">$row[0]</span>";
-					echo "</a>";
-
 				}
 
 				echo "</div>";

@@ -1,6 +1,7 @@
 <?php
 
 include 'config.php';
+include 'database.class.php';
 include 'functions.php';
 
 // Get overview of Article status

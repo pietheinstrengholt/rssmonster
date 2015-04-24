@@ -1,8 +1,8 @@
 API Public Beta
-Fever 1.14 introduces the new Fever API. This API is in public beta and currently supports basic syncing and consuming of content. A subsequent update will allow for 
+Fever 1.14 introduces the new Fever API. This API is in public beta and currently supports basic syncing and consuming of content. A subsequent update will allow for
 adding, editing and deleting feeds and groups. The API.s primary focus is maintaining a local cache of the data in a remote Fever installation.
 
-I am soliciting feedback from interested developers and as such the beta API may expand to reflect that feedback. The current API is incomplete but stable. Existing 
+I am soliciting feedback from interested developers and as such the beta API may expand to reflect that feedback. The current API is incomplete but stable. Existing
 features may be expanded on but will not be removed or modified. New features may be added.
 
 I.ve created a simple HTML widget that allows you to query the Fever API and view the response.
@@ -12,7 +12,7 @@ Authentication
 Without further ado, the Fever API endpoint URL looks like:
 
 http://yourdomain.com/fever/?api
-All requests must be authenticated with a POSTed api_key. The value of api_key should be the md5 checksum of the Fever accounts email address and password concatenated 
+All requests must be authenticated with a POSTed api_key. The value of api_key should be the md5 checksum of the Fever accounts email address and password concatenated
 with a colon. An example of a valid value for api_key using PHP.s native md5() function:
 
 $email  = 'you@yourdomain.com';
@@ -34,7 +34,7 @@ The response to each successfully authenticated request will have auth set to 1 
 last_refreshed_on_time contains the time of the most recently refreshed (not updated) feed (Unix timestamp/integer)
 Read
 
-When reading from the Fever API you add arguments to the query string of the API endpoint URL. If you attempt to POST these arguments (and their optional values) Fever 
+When reading from the Fever API you add arguments to the query string of the API endpoint URL. If you attempt to POST these arguments (and their optional values) Fever
 will not recognize the request.
 
 Groups
@@ -49,7 +49,7 @@ id (positive integer)
 title (utf-8 string)
 The feeds_group object is documented under .Feeds/Groups Relationships..
 
-The .Kindling. super group is not included in this response and is composed of all feeds with an is_spark equal to 0. The .Sparks. super group is not included in this 
+The .Kindling. super group is not included in this response and is composed of all feeds with an is_spark equal to 0. The .Sparks. super group is not included in this
 response and is composed of all feeds with an is_spark equal to 1.
 
 Feeds
@@ -69,8 +69,8 @@ is_spark (boolean integer)
 last_updated_on_time (Unix timestamp/integer)
 The feeds_group object is documented under .Feeds/Groups Relationships..
 
-The .All Items. super feed is not included in this response and is composed of all items from all feeds that belong to a given group. For the .Kindling. super group and 
-all user created groups the items should be limited to feeds with an is_spark equal to 0. For the .Sparks. super group the items should be limited to feeds with an 
+The .All Items. super feed is not included in this response and is composed of all items from all feeds that belong to a given group. For the .Kindling. super group and
+all user created groups the items should be limited to feeds with an is_spark equal to 0. For the .Sparks. super group the items should be limited to feeds with an
 is_spark equal to 1.
 
 Feeds/Groups Relationships
@@ -116,7 +116,7 @@ Most servers won.t have enough memory allocated to PHP to dump all items at once
 
 Use the since_id argument with the highest id of locally cached items to request 50 additional items. Repeat until the items array in the response is empty.
 
-Use the max_id argument with the lowest id of locally cached items (or 0 initially) to request 50 previous items. Repeat until the items array in the response is empty. 
+Use the max_id argument with the lowest id of locally cached items (or 0 initially) to request 50 previous items. Repeat until the items array in the response is empty.
 (added in API version 2)
 
 Use the with_ids argument with a comma-separated list of item ids to request (a maximum of 50) specific items. (added in API version 2)
@@ -138,14 +138,14 @@ is_saved (boolean integer) only use when is_item equals 1
 title (utf-8 string)
 url (utf-8 string)
 item_ids (string/comma-separated list of positive integers)
-When requesting hot links you can control the range and offset by specifying a length of days for each as well as a page to fetch additional hot links. A request with just 
+When requesting hot links you can control the range and offset by specifying a length of days for each as well as a page to fetch additional hot links. A request with just
 the links argument is equivalent to:
 
 http://yourdomain.com/fever/?api&links&offset=0&range=7&page=1
 Or the first page (page=1) of Hot links for the past week (range=7) starting now (offset=0).
 
 Link Caveats
-Fever calculates Hot link temperatures in real-time. The API assumes you have an up-to-date local cache of items, feeds and favicons with which to construct a meaningful 
+Fever calculates Hot link temperatures in real-time. The API assumes you have an up-to-date local cache of items, feeds and favicons with which to construct a meaningful
 Hot view. Because they are ephemeral Hot links should not be cached in the same relational manner as items, feeds, groups and favicons.
 
 Because Fever saves items and not individual links you can only "save" a Hot link when is_item equals 1.
@@ -165,12 +165,12 @@ A request with the saved_item_ids argument will return one additional member:
 saved_item_ids (string/comma-separated list of positive integers)
 One of these members will be returned as appropriate when marking an item as read, unread, saved, or unsaved and when marking a feed or group as read.
 
-Because groups and feeds will be limited in number compared to items, they should be synced by comparing an array of locally cached feed or group ids to an array of feed 
+Because groups and feeds will be limited in number compared to items, they should be synced by comparing an array of locally cached feed or group ids to an array of feed
 or group ids returned by their respective API request.
 
 Write
 
-The public beta of the API does not provide a way to add, edit or delete feeds or groups but you can mark items, feeds and groups as read and save or unsave items. You can 
+The public beta of the API does not provide a way to add, edit or delete feeds or groups but you can mark items, feeds and groups as read and save or unsave items. You can
 also unread recently read items. When writing to the Fever API you add arguments to the POST data you submit to the API endpoint URL.
 
 Adding unread_recently_read=1 to your POST data will mark recently read items as unread.

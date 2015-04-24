@@ -1,13 +1,11 @@
 <?php
 
-//include
+//includes
 include 'config.php';
 include 'functions.php';
 
 if(isset($_POST['sort'])){ $sort = htmlspecialchars($_POST['sort']); } else { $sort = NULL; }
 if(isset($_POST['articlelist'])){ $articlelist = htmlspecialchars($_POST['articlelist']); } else { $articlelist = NULL; }
-
-//echo $articlelist;
 
 $array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "sort": "' . $_POST['sort'] . '", "article_id": "' . $_POST['articlelist'] . '"}');
 
@@ -29,28 +27,28 @@ if (!empty($array) && $array != "no-results") {
 			$subject = $row['subject'];
 
 			echo "<h4 class='heading' id=$row[id]><a href=\"$row[url]\" target=\"_blank\">$subject</a></h4>";
-			
+
 			if (!empty($row['author'])) {
 				$feedtitle = $row['feed_name'] . " by " . $row['author'];
 			} else {
 				$feedtitle = $row['feed_name'];
 			}
-			
+
 			echo "<div class='feedname'>$feedtitle | $row[publish_date]</div>";
 
-			
+
 			echo "<div class='minimal' id=$row[id]>";
 			echo "<span class=\"feedname\">$row[feed_name]</span>";
-			echo "<span class=\"heading\"><a href=\"$row[url]\" target=\"_blank\"> - $subject</a></span>";		
-			
+			echo "<span class=\"heading\"><a href=\"$row[url]\" target=\"_blank\"> - $subject</a></span>";
+
 			$datetime1 = date_create('now');
 			$datetime2 = date_create($row['publish_date']);
 			$interval = date_diff($datetime1, $datetime2);
-			
+
 			$difference =  format_interval($interval);
-			
+
 			echo "<span class=\"publishdate\">$difference</span>";
-			
+
 			echo "</div>";
 
 			echo "<hr>";
@@ -63,7 +61,7 @@ if (!empty($array) && $array != "no-results") {
 			$lesscontent = substr($lesscontent, 0, 250);
 			echo $lesscontent;
 			echo "</div>";
-			
+
 			echo "</div>";
 
 			echo "<div class='options'>";

@@ -1,15 +1,19 @@
 <?php
 
-// Connection's Parameters
-$db_host="localhost";
-$db_name="phppaper";
-$username="username";
-$password="password";
+// Cache location for SimplePie
 $db_path="/var/www/cache";
 
-$conn = new PDO('mysql:$db_host;$db_name;charset=utf8', $username, $password);
-$conn->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-$conn->setAttribute(PDO::ATTR_EMULATE_PREPARES, false);
+// Report simple running errors
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
+// Connection's Parameters
+define("DB_HOST", "localhost");
+define("DB_USER", "username");
+define("DB_PASS", "password");
+define("DB_NAME", "database");
+
+// Enable transactional commits
+define("DB_TRANS", "1;");
 
 error_reporting(E_ALL);
 ini_set('display_errors', 'On');
