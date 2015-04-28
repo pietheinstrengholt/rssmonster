@@ -15,18 +15,18 @@ $database = new Database();
 
 //limit to 2500 read articles history
 $database->beginTransaction();
-$database->query("DELETE FROM articles WHERE id NOT IN (select * from (SELECT id FROM `articles` WHERE star_ind <>  '1' AND STATUS =  'read' ORDER BY insert_date desc LIMIT 0 , 2500) a UNION select * from (SELECT id FROM `articles`  WHERE star_ind =  '1') b UNION select * from (SELECT id FROM  `articles` WHERE status =  'unread') c)");
+$database->query("DELETE FROM t_articles WHERE id NOT IN (SELECT * FROM (SELECT id FROM `t_articles` WHERE star_ind <> '1' AND STATUS = 'read' ORDER BY insert_date DESC LIMIT 0 , 2500) a UNION SELECT * FROM (SELECT id FROM `t_articles` WHERE star_ind =  '1') b UNION SELECT * FROM (SELECT id FROM `t_articles` WHERE status = 'unread') c)");
 $database->execute();
 $database->endTransaction();
 
 //delete articles with no ref to feed_id
 $database->beginTransaction();
-$database->query("DELETE FROM `articles` WHERE feed_id not in (select distinct id from feeds)");
+$database->query("DELETE FROM `t_articles` WHERE feed_id NOT IN (SELECT DISTINCT id FROM t_feeds)");
 $database->execute();
 $database->endTransaction();
 
 //update 25 feeds at a time
-$database->query("SELECT * FROM feeds ORDER BY last_update LIMIT 0, 50");
+$database->query("SELECT * FROM t_feeds ORDER BY last_update LIMIT 0, 50");
 $rows = $database->resultset();
 
 if (!empty($rows)) {
@@ -47,7 +47,7 @@ if (!empty($rows)) {
 
 		$feed_url  = $row['url'];
 		$feed_id   = $row['id'];
-		$feed_name = $row['name'];
+		$feed_name = $row['feed_name'];
 
 		//init feed simplepie
 		$feed = new SimplePie();
@@ -56,13 +56,13 @@ if (!empty($rows)) {
 		$feed->init();
 		$feed->handle_content_type();
 
-		$database->query("SELECT publish_date from articles WHERE feed_id = '$feed_id;' ORDER BY publish_date desc LIMIT 1");
+		$database->query("SELECT publish_date FROM t_articles WHERE feed_id = '$feed_id;' ORDER BY publish_date DESC LIMIT 1");
 		$publish_date = $database->single();
 		$comparedate = $publish_date['publish_date'];
 
 		//update feed with last_update date
 		$database->beginTransaction();
-		$database->query("UPDATE feeds SET last_update = CURRENT_TIMESTAMP where id = '$feed_id'");
+		$database->query("UPDATE t_feeds SET last_update = CURRENT_TIMESTAMP WHERE id = '$feed_id'");
 		$database->execute();
 		$database->endTransaction();
 
@@ -100,12 +100,12 @@ if (!empty($rows)) {
 				//publish date is later then compare date which assumes article is new
 				if (strtotime($date) > strtotime($comparedate)) {
 
-					$database->query("SELECT COUNT(*) as count FROM articles WHERE url = :url AND feed_id = :feed_id");
+					$database->query("SELECT COUNT(*) AS count FROM t_articles WHERE url = :url AND feed_id = :feed_id");
 					$database->bind(':url', $url);
 					$database->bind(':feed_id', $feed_id);
 					$resulturl = $database->single();
 
-					$database->query("SELECT COUNT(*) as count FROM articles WHERE subject = :subject AND feed_id = :feed_id");
+					$database->query("SELECT COUNT(*) AS count FROM t_articles WHERE subject = :subject AND feed_id = :feed_id");
 					$database->bind(':subject', $subject);
 					$database->bind(':feed_id', $feed_id);
 					$resultsubject = $database->single();
@@ -115,7 +115,7 @@ if (!empty($rows)) {
 				} elseif ($resulturl['count'] == 0 && $resultsubject['count'] == 0) {
 					echo "Found new article";
 					$database->beginTransaction();
-					$database->query("INSERT INTO articles (feed_id, status, url, subject, content, insert_date, publish_date, author) VALUES('$feed_id', 'unread', '$url', :subject, :content, CURRENT_TIMESTAMP, '$date', '$author')");
+					$database->query("INSERT INTO t_articles (feed_id, status, url, subject, content, publish_date, author) VALUES ('$feed_id', 'unread', '$url', :subject, :content, '$date', '$author')");
 					$database->bind(':subject', $subject);
 					$database->bind(':content', $content);
 					$database->execute();
@@ -137,13 +137,13 @@ if (!empty($rows)) {
 }
 
 //show amount of duplicates found
-$database->query("SELECT count(*) as count FROM (SELECT MAX(id) as id FROM articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A");
+$database->query("SELECT count(*) AS count FROM (SELECT MAX(id) AS id FROM t_articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A");
 $duplicates = $database->single();
 echo "Removed " . $duplicates['count'] . " duplicates";
 
 //clean-up duplicates
 $database->beginTransaction();
-$database->query("DELETE FROM articles WHERE id IN (SELECT * FROM (SELECT MAX(id) as id FROM articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A)");
+$database->query("DELETE FROM t_articles WHERE id IN (SELECT * FROM (SELECT MAX(id) AS id FROM t_articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A)");
 $database->execute();
 $database->endTransaction();
 

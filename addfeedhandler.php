@@ -40,7 +40,7 @@ if (empty($title)) {
 } else {
 
 	//TODO: replace with json
-	$database->query("SELECT DISTINCT name FROM feeds ORDER BY name");
+	$database->query("SELECT DISTINCT feed_name FROM t_feeds ORDER BY feed_name");
 	$rows = $database->resultset();
 
 	if (in_array_r($title, $rows)) {
@@ -54,7 +54,7 @@ if (empty($title)) {
 		$favicon = mysql_escape_mimic($favicon);
 
 		$database->beginTransaction();
-		$database->query("INSERT INTO feeds (name, name_desc, url, favicon) VALUES (:title, :desc, :feedurl, :favicon)");
+		$database->query("INSERT INTO t_feeds (feed_name, feed_desc, url, favicon) VALUES (:title, :desc, :feedurl, :favicon)");
 		$database->bind(':title', $title);
 		$database->bind(':desc', $desc);
 		$database->bind(':feedurl', $feedurl);
