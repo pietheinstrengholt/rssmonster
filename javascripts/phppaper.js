@@ -359,7 +359,7 @@ function FnReadPool(input) {
                 //only in case when status is unread
                 if (data[0]['status'] == "unread") {
 
-                        //decrease uread count
+                        //decrease unread count
                         var unreadcount = $('div#status.panel a#unread.list-group-item span.badge').text();
                         var unreadcountnew = unreadcount -1;
                         $('div#status.panel a#unread.list-group-item span.badge').text(unreadcountnew);
@@ -397,7 +397,6 @@ function FnReadPool(input) {
                                 var tfcountnew = tfcount -1;
                                 $('div#status.panel a#last-24-hours.list-group-item span.badge').text(tfcountnew);
                         }
-
                 }
 
             },
@@ -431,12 +430,12 @@ function FnReadPool(input) {
 		//set result
 		var result = [];
 		
-        // Extend the options so they work with the plugin
+        // Extend the options so they work with the plug-in
         if (options) {
             $.extend(settings, options);
         }
 
-        // For each so that we keep chainability.
+        // For each so that we keep chain-ability.
         return this.each(function () {
 		
             // Some variables
@@ -467,7 +466,7 @@ function FnReadPool(input) {
                dataType: "json",
                async: false,
                success: function (json) {
-			result = json;
+					result = json;
                },
                failure: function (errMsg) {
 			   }
@@ -506,9 +505,7 @@ function FnReadPool(input) {
                         // No longer busy!
                         busy = false;
                     }
-
                 });
-
             }
 
 		function processpool() {

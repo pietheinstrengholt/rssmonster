@@ -15,7 +15,7 @@ $database = new Database();
 file_put_contents('/tmp/fever-api-debug.txt', var_export($_POST, true), FILE_APPEND | LOCK_EX);
 
 //static for now
-$email  = 'you@yourdomain.com';
+$email  = 'username';
 $pass   = 'password';
 $api_key = md5($email.':'.$pass);
 
@@ -34,14 +34,14 @@ if (isset($_GET['groups'])) {
 
 	$groups = array();
 
-	$database->query("SELECT id, name FROM category");
+	$database->query("SELECT id, category_name FROM t_categories");
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
 		foreach($rows as $row) {
 			array_push($groups, array(
 				"id" => $row['id'],
-					"title" => $row['name']
+					"title" => $row['category_name']
 				));
 		}
 	}
@@ -57,7 +57,7 @@ if (isset($_GET['feeds'])) {
 
 	$feeds = array();
 
-	$database->query("SELECT * FROM feeds");
+	$database->query("SELECT * FROM t_feeds");
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
@@ -65,7 +65,7 @@ if (isset($_GET['feeds'])) {
 			array_push($feeds, array(
 		   "id"  => $row['id'],
 		   "favicon_id" => $row['id'],
-		   "title" => $row['name'],
+		   "title" => $row['feed_name'],
 		   "url" => $row['url'],
 		   "site_url" => $row['url'],
 		   "is_spark" => "0",
@@ -85,7 +85,7 @@ if (isset($_GET['groups']) || isset($_GET['feeds'])) {
 
 	$feeds_groups = array();
 
-	$database->query("SELECT a.id as feedid, b.id as groupid FROM feeds a LEFT JOIN category b on a.category = b.id");
+	$database->query("SELECT a.id as feedid, b.id as groupid FROM t_feeds a LEFT JOIN t_categories b on a.category_id = b.id");
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
@@ -108,7 +108,7 @@ if (isset($_GET['unread_item_ids'])) {
 
 	$unread_item_ids = array();
 
-	$database->query("SELECT * FROM articles WHERE status = 'unread' ORDER BY ID");
+	$database->query("SELECT * FROM t_articles WHERE status = 'unread' ORDER BY ID");
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
@@ -136,7 +136,7 @@ if (isset($_GET['items'])) {
 
 		$items = array();
 
-		$database->query("SELECT * FROM articles WHERE ID IN ($ids) ORDER BY ID");
+		$database->query("SELECT * FROM t_articles WHERE ID IN ($ids) ORDER BY ID");
 		$rows = $database->resultset();
 
 		if (!empty($rows)) {
@@ -169,7 +169,7 @@ if (isset($_GET['items'])) {
 
 		$items = array();
 
-		$database->query("SELECT * FROM articles WHERE ID > '$since_id' ORDER BY ID LIMIT 0,50");
+		$database->query("SELECT * FROM t_articles WHERE ID > '$since_id' ORDER BY ID LIMIT 0,50");
 		$rows = $database->resultset();
 
 		if (!empty($rows)) {
@@ -202,7 +202,7 @@ if (isset($_GET['items'])) {
 
 		$items = array();
 
-		$database->query("SELECT * FROM articles WHERE ID < '$max_id' ORDER BY ID LIMIT 0,50");
+		$database->query("SELECT * FROM t_articles WHERE ID < '$max_id' ORDER BY ID LIMIT 0,50");
 		$rows = $database->resultset();
 
 		if (!empty($rows)) {
@@ -231,7 +231,7 @@ if (isset($_GET['items'])) {
 	//if no argument is given provide total_items and up to 50 items
 	} else {
 
-		$database->query("SELECT count(*) as count FROM articles");
+		$database->query("SELECT count(*) as count FROM t_articles");
 		$rows = $database->resultset();
 
 		if (!empty($rows)) {
@@ -248,7 +248,7 @@ if (isset($_GET['items'])) {
 
 			$items = array();
 
-			$database->query("SELECT * FROM articles ORDER BY ID LIMIT 0,50");
+			$database->query("SELECT * FROM t_articles ORDER BY ID LIMIT 0,50");
 			$rows = $database->resultset();
 
 			if (!empty($rows)) {
@@ -282,7 +282,7 @@ if (isset($_GET['saved_item_ids'])) {
 
 	$saved_item_ids = array();
 
-	$database->query("SELECT * FROM articles WHERE status = 'read' ORDER BY ID");
+	$database->query("SELECT * FROM t_articles WHERE status = 'read' ORDER BY ID");
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
@@ -316,7 +316,7 @@ if (isset($_GET['favicons'])) {
 
 	$favicons = array();
 
-	$database->query("SELECT id, favicon FROM feeds");
+	$database->query("SELECT id, favicon FROM t_feeds");
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
@@ -346,11 +346,11 @@ if (isset($_POST['mark'])) {
 		$database->beginTransaction();
 
 		if ($_REQUEST["as"] == "read") {
-			$database->query("UPDATE articles SET status = 'read' WHERE id = '$id'");
+			$database->query("UPDATE t_articles SET status = 'read' WHERE id = '$id'");
 		} elseif ($_REQUEST["as"] == "saved") {
-			$database->query("UPDATE articles SET star_ind = '1' WHERE id = '$id'");
+			$database->query("UPDATE t_articles SET star_ind = '1' WHERE id = '$id'");
 		} elseif ($_REQUEST["as"] == "unsaved") {
-			$database->query("UPDATE articles SET star_ind = '0' WHERE id = '$id'");
+			$database->query("UPDATE t_articles SET star_ind = '0' WHERE id = '$id'");
 		}
 
 		$database->execute();
@@ -366,11 +366,11 @@ if (isset($_POST['mark'])) {
 		$database->beginTransaction();
 
 		if ($_REQUEST["as"] == "read") {
-			$database->query("UPDATE articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < '$time'");
+			$database->query("UPDATE t_articles SET status = 'read' WHERE feed_id = '$id' AND insert_date < '$time'");
 		} elseif ($_REQUEST["as"] == "saved") {
-			$database->query("UPDATE articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < '$time'");
+			$database->query("UPDATE t_articles SET star_ind = '1' WHERE feed_id = '$id' AND insert_date < '$time'");
 		} elseif ($_REQUEST["as"] == "unsaved") {
-			$database->query("UPDATE articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < '$time'");
+			$database->query("UPDATE t_articles SET star_ind = '0' WHERE feed_id = '$id' AND insert_date < '$time'");
 		}
 
 		$database->execute();
@@ -386,11 +386,11 @@ if (isset($_POST['mark'])) {
 		$database->beginTransaction();
 
 		if ($_REQUEST["as"] == "read") {
-			$database->query("UPDATE `articles` SET status = 'read' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
+			$database->query("UPDATE `t_articles` SET status = 'read' WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id = '$id') AND insert_date < '$time'");
 		} elseif ($_REQUEST["as"] == "saved") {
-			$database->query("UPDATE `articles` SET star_ind = '1' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
+			$database->query("UPDATE `t_articles` SET star_ind = '1' WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id = '$id') AND insert_date < '$time'");
 		} elseif ($_REQUEST["as"] == "unsaved") {
-			$database->query("UPDATE `articles` SET star_ind = '0' WHERE feed_id IN (SELECT DISTINCT id FROM feeds WHERE category = '$id') AND insert_date < '$time'");
+			$database->query("UPDATE `t_articles` SET star_ind = '0' WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id = '$id') AND insert_date < '$time'");
 		}
 
 		$database->execute();
@@ -403,11 +403,11 @@ if (isset($_POST['mark'])) {
 		$database->beginTransaction();
 
 		if ($_REQUEST["as"] == "read") {
-			$database->query("UPDATE `articles` SET status = 'read' WHERE insert_date < '$time'");
+			$database->query("UPDATE `t_articles` SET status = 'read' WHERE insert_date < '$time'");
 		} elseif ($_REQUEST["as"] == "saved") {
-			$database->query("UPDATE `articles` SET star_ind = '1' WHERE insert_date < '$time'");
+			$database->query("UPDATE `t_articles` SET star_ind = '1' WHERE insert_date < '$time'");
 		} elseif ($_REQUEST["as"] == "unsaved") {
-			$database->query("UPDATE `articles` SET star_ind = '0' WHERE insert_date < '$time'");
+			$database->query("UPDATE `t_articles` SET star_ind = '0' WHERE insert_date < '$time'");
 		}
 
 		$database->execute();

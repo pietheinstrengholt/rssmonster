@@ -142,12 +142,6 @@ div.all-read {
   margin-top: 50px;
 }
 
-div.options {
-  display: none;
-  background-color: #ECF1EF;
-  height: 24px;
-}
-
 div.mark-item-read, div.mark-item-unread {
   float: left;
   margin-left: 10px;
