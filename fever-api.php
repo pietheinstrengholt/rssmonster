@@ -111,10 +111,10 @@ if (isset($_GET['unread_item_ids'])) {
 	$database->query("SELECT * FROM articles WHERE status = 'unread' ORDER BY ID");
 	$rows = $database->resultset();
 
-	foreach($rows as $row) {
-   	  if (!empty($row)) {
-	      array_push($unread_item_ids, $row['id']);
-	  }
+	if (!empty($rows)) {
+		foreach($rows as $row) {
+			array_push($unread_item_ids, $row['id']);
+		}
 	}
 
 	//string/comma-separated list of positive integers instead of array
@@ -139,21 +139,23 @@ if (isset($_GET['items'])) {
 		$database->query("SELECT * FROM articles WHERE ID IN ($ids) ORDER BY ID");
 		$rows = $database->resultset();
 
-		foreach($rows as $row) {
+		if (!empty($rows)) {
+			foreach($rows as $row) {
 
-			if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
+				if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
-			array_push($items, array(
-				"id" => $row['id'],
-				"feed_id" => $row['feed_id'],
-				"title" => $row['subject'],
-				"author" => $row['author'],
-				"html" => $row['content'],
-				"url" => $row['url'],
-				"is_saved" => $row['star_ind'],
-				"is_read" => $isread,
-				"created_on_time" => strtotime($row['publish_date'])
-			));
+				array_push($items, array(
+					"id" => $row['id'],
+					"feed_id" => $row['feed_id'],
+					"title" => $row['subject'],
+					"author" => $row['author'],
+					"html" => $row['content'],
+					"url" => $row['url'],
+					"is_saved" => $row['star_ind'],
+					"is_read" => $isread,
+					"created_on_time" => strtotime($row['publish_date'])
+				));
+			}
 		}
 
 		$response_arr["items"] = $items;
@@ -170,21 +172,23 @@ if (isset($_GET['items'])) {
 		$database->query("SELECT * FROM articles WHERE ID > '$since_id' ORDER BY ID LIMIT 0,50");
 		$rows = $database->resultset();
 
-		foreach($rows as $row) {
+		if (!empty($rows)) {
+			foreach($rows as $row) {
 
-			if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
+				if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
-			array_push($items, array(
-				"id" => $row['id'],
-				"feed_id" => $row['feed_id'],
-				"title" => $row['subject'],
-				"author" => $row['author'],
-				"html" => $row['content'],
-				"url" => $row['url'],
-				"is_saved" => $row['star_ind'],
-				"is_read" => $isread,
-				"created_on_time" => strtotime($row['publish_date'])
-			));
+				array_push($items, array(
+					"id" => $row['id'],
+					"feed_id" => $row['feed_id'],
+					"title" => $row['subject'],
+					"author" => $row['author'],
+					"html" => $row['content'],
+					"url" => $row['url'],
+					"is_saved" => $row['star_ind'],
+					"is_read" => $isread,
+					"created_on_time" => strtotime($row['publish_date'])
+				));
+			}
 		}
 
 		$response_arr["items"] = $items;
@@ -201,21 +205,23 @@ if (isset($_GET['items'])) {
 		$database->query("SELECT * FROM articles WHERE ID < '$max_id' ORDER BY ID LIMIT 0,50");
 		$rows = $database->resultset();
 
-		foreach($rows as $row) {
+		if (!empty($rows)) {
+			foreach($rows as $row) {
 
-			if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
+				if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
 
-			array_push($items, array(
-				"id" => $row['id'],
-				"feed_id" => $row['feed_id'],
-				"title" => $row['subject'],
-				"author" => $row['author'],
-				"html" => $row['content'],
-				"url" => $row['url'],
-				"is_saved" => $row['star_ind'],
-				"is_read" => $isread,
-				"created_on_time" => strtotime($row['publish_date'])
-			));
+				array_push($items, array(
+					"id" => $row['id'],
+					"feed_id" => $row['feed_id'],
+					"title" => $row['subject'],
+					"author" => $row['author'],
+					"html" => $row['content'],
+					"url" => $row['url'],
+					"is_saved" => $row['star_ind'],
+					"is_read" => $isread,
+					"created_on_time" => strtotime($row['publish_date'])
+				));
+			}
 		}
 
 		$response_arr["items"] = $items;
@@ -228,44 +234,47 @@ if (isset($_GET['items'])) {
 		$database->query("SELECT count(*) as count FROM articles");
 		$rows = $database->resultset();
 
-		$total_items = array();
+		if (!empty($rows)) {
+		
+			$total_items = array();
+		
+			foreach($rows as $row) {
+				array_push($total_items, array(
+					"total_items" => $row['count']
+				));
+			}
+			
+			$arr = array_merge($arr, $total_items);
 
-		foreach($rows as $row) {
-			array_push($total_items, array(
-				"total_items" => $row['count']
-			));
+			$items = array();
+
+			$database->query("SELECT * FROM articles ORDER BY ID LIMIT 0,50");
+			$rows = $database->resultset();
+
+			if (!empty($rows)) {
+				foreach($rows as $row) {
+
+					if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
+
+					array_push($items, array(
+						"id" => $row['id'],
+						"feed_id" => $row['feed_id'],
+						"title" => $row['subject'],
+						"author" => $row['author'],
+						"html" => $row['content'],
+						"url" => $row['url'],
+						"is_saved" => $row['star_ind'],
+						"is_read" => $isread,
+						"created_on_time" => strtotime($row['publish_date'])
+					));
+				}
+				
+				$response_arr["items"] = $items;
+
+				$arr = array_merge($arr, $response_arr);			
+			}
 		}
-
-		$arr = array_merge($arr, $total_items);
-
-		$items = array();
-
-		$database->query("SELECT * FROM articles ORDER BY ID LIMIT 0,50");
-		$rows = $database->resultset();
-
-		foreach($rows as $row) {
-
-			if ($row['status'] == "read") { $isread = '1'; } elseif ($row['status'] == "unread") { $isread = '0'; }
-
-			array_push($items, array(
-				"id" => $row['id'],
-				"feed_id" => $row['feed_id'],
-				"title" => $row['subject'],
-				"author" => $row['author'],
-				"html" => $row['content'],
-				"url" => $row['url'],
-				"is_saved" => $row['star_ind'],
-				"is_read" => $isread,
-				"created_on_time" => strtotime($row['publish_date'])
-			));
-		}
-
-		$response_arr["items"] = $items;
-
-		$arr = array_merge($arr, $response_arr);
-
 	}
-
 };
 
 //return string/comma-separated list with id's from read articles
@@ -310,17 +319,17 @@ if (isset($_GET['favicons'])) {
 	$database->query("SELECT id, favicon FROM feeds");
 	$rows = $database->resultset();
 
-	foreach($conn->query($sql) as $row) {
-		array_push($favicons, array(
-			"id" => $row['id'],
-			"title" => $row['favicon']
-		));
+	if (!empty($rows)) {
+		foreach($rows as $row) {
+			array_push($favicons, array(
+				"id" => $row['id'],
+				"title" => $row['favicon']
+			));
+		}
+		$response_arr["favicons"] = $favicons;
+
+		$arr = array_merge($arr, $response_arr);		
 	}
-
-	$response_arr["favicons"] = $favicons;
-
-	$arr = array_merge($arr, $response_arr);
-
 };
 
 print json_encode($arr);
@@ -386,7 +395,6 @@ if (isset($_POST['mark'])) {
 
 		$database->execute();
 		$database->endTransaction();
-
 	}
 
 	//this is "all" to fever
@@ -404,7 +412,6 @@ if (isset($_POST['mark'])) {
 
 		$database->execute();
 		$database->endTransaction();
-
 	}
 }
 
