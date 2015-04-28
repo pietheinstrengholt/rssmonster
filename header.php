@@ -14,6 +14,30 @@
 	<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
 	<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+	
+    <style type="text/css">
+      html,body
+      {
+        overflow-x: hidden;
+      }
+      body {
+        padding-top: 60px;
+        padding-bottom: 40px;
+      }
+      .sidebar-nav {
+        padding: 9px 0;
+      }
+      @media (max-width: 980px) {
+         /* Enable use of floated navbar text */
+         padding-top: 0px;
+         .navbar-text.pull-right {
+          float: none;
+          padding-left: 5px;
+          padding-right: 5px;
+        }
+      }
+    </style>	
+	
 </head>
   
 <?php

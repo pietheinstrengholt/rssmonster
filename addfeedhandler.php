@@ -48,7 +48,6 @@ if (empty($title)) {
 	} else {
 
 		//TODO: replace with json
-
 		$title = mysql_escape_mimic($title);
 		$desc = mysql_escape_mimic($desc);
 		$feedurl = mysql_escape_mimic($feedurl);

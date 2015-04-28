@@ -6,7 +6,6 @@ phppaper
 =======
 
 Copyright (c) 2013 Piethein Strengholt, piethein@strengholt-online.nl
-http://www.phppaper.com
 
 Phppaper is an easy to use and open source rss reader, created as an alternatieve for Google Reader.
 Phppaper features a lightweight fluid responsive design and in written in jquery, javascript and php.
