@@ -196,11 +196,10 @@ if(isset($arr['request'])){
 
 		$rows = $database->resultset();
 
-		$rows = array_filter($rows);
-
 		if (empty($rows)) {
 			echo json_encode("no-results");
 		} else {
+			$rows = array_filter($rows);
 			echo json_encode($rows);
 		}
 	}
