@@ -6,111 +6,119 @@
 <br><br>
 <?php
 
+/**
+ * opmlhandler.php
+ *
+ * The opmlhandler.php parses the XML OPML file
+ * and imports all the feeds into the database
+ *
+ */
+
 include 'config.php';
 include 'functions.php';
+include 'database.class.php';
 require_once('simplepie/autoloader.php');
 
 if ($_FILES["file"]["error"] > 0) {
-    echo "Error: " . $_FILES["file"]["error"] . "<br>";
+	echo "Error: " . $_FILES["file"]["error"] . "<br>";
 } else {
 
-    if (!array_key_exists('file', $_FILES)) {
-        throw new Exception("No file uploaded!");
-    }
+	//check if file is uploaded
+	if (!array_key_exists('file', $_FILES)) {
+		throw new Exception("No file uploaded!");
+	}
 
-    $opml = $_FILES['file'];
-    if (!$opml['type'] == 'text/xml') {
-        throw new Exception("Unsupported file type!: " . $opml['type']);
-    }
+	//check for xml
+	$opml = $_FILES['file'];
+	if (!$opml['type'] == 'text/xml') {
+		throw new Exception("Unsupported file type!: " . $opml['type']);
+	}
 
-    $subs = $opml['tmp_name'];
-    $subs = simplexml_load_file($opml['tmp_name']);
-    $subs = $subs->body;
+	$subs = $opml['tmp_name'];
+	$subs = simplexml_load_file($opml['tmp_name']);
+	$subs = $subs->body;
 
-    function addSubscription($xml, $tags)
-    {
+	function addSubscription($xml, $tags) {
 
-	global $conn;
+		// OPML Required attributes: text,xmlUrl,type
+		// Optional attributes: title, htmlUrl, language, title, version
+		if ($xml['type'] != 'rss' && $xml['type'] != 'atom') {
+			$title = (string) $xml['text'];
+			echo "RSS type not supported for: $title<br>";
+		} else {
 
-        // OPML Required attributes: text,xmlUrl,type
-        // Optional attributes: title, htmlUrl, language, title, version
+			// description
+			$title = (string) $xml['text'];
 
-        if ($xml['type'] != 'rss' && $xml['type'] != 'atom') {
-            $title = (string) $xml['text'];
-            echo "rss type not supported for: $title<br>";
-        } else {
+			// RSS URL
+			$data['url'] = (string) $xml['xmlUrl'];
 
-            // description
-            $title = (string) $xml['text'];
+			//check if feed_name already exists in database
+			$database->query("SELECT count(*) as count FROM t_feeds WHERE feed_name = :name");
+			$database->bind(':name', $title);
+			$row = $database->single();
+			$count = $row['count'];
 
-            // RSS URL
-            $data['url'] = (string) $xml['xmlUrl'];
+			if ($count > 0) {
+				echo "SKIPPED: $title<br>";
+			} else {
+				echo "ADDED: $title $data[url] <br>";
 
-            $sql=$conn->query("SELECT DISTINCT name FROM feeds ORDER BY name");
-            $r=$sql->fetchAll();
+				//Get favoicon for each rss feed
+				if(isset($_POST['favoicon'])) { 
+					$getfavoicon = htmlspecialchars($_POST['favoicon']); 
+				} else { 
+					$getfavoicon = NULL; 
+					$favicon = NULL; 
+				}
 
-	    $result = $conn->query("SELECT count(*) as count FROM feeds WHERE name = '".mysql_real_escape_string($title)."'");
-            $fetchcount  = $result->fetch();
-            $count = $fetchcount['count'];
-
-	    if ($count > 0) {
-		echo "SKIPPED: $title<br>";
-	    } else {
-                echo "ADDED: $title $data[url] <br>";
-
-                          //get favoicon for each rss feed
-			  if(isset($_POST['favoicon'])){ $getfavoicon = htmlspecialchars($_POST['favoicon']); } else { $getfavoicon = NULL; $favicon = NULL; }
-                          if($getfavoicon == 'Yes') {
-                            $feed = new SimplePie($data[url]);
-                            $feed->init();
-                            $feed->handle_content_type();
-                            $favicon = $feed->get_favicon();
-                          }
-
-                          $sql = "INSERT INTO feeds (name, url, favicon) VALUES ('".mysql_real_escape_string($title)."','".mysql_real_escape_string($data['url'])."','".mysql_real_escape_string($favicon)."')";
-                          $sql=$conn->query($sql);
-
-
-
-	    		}
-
+				//get favoicon
+				if($getfavoicon == 'Yes') {
+					$feed = new SimplePie($data[url]);
+					$feed->init();
+					$feed->handle_content_type();
+					$favicon = $feed->get_favicon();
+				}
+			  
+				$database->beginTransaction();
+				$database->query("INSERT INTO t_feeds (feed_name, url, favicon) VALUES (:feed_name, :url, :favicon)");
+				$database->bind(':feed_name', $title);
+				$database->bind(':url', $data['url']);
+				$database->bind(':favicon', $favicon);
+				$database->execute();
+				$database->endTransaction();
+			}
 		}
-    }
+	}
 
-    function processGroup($xml, $tags = Array())
-    {
-        $errors = Array();
+function processGroup($xml, $tags = Array()) {
+	$errors = Array();
 
-        // tags are the words of the outline parent
-        if ((string) $xml['title'] && $xml['title'] != '/') {
-            $tags[] = (string) $xml['title'];
-        }
+	// tags are the words of the outline parent
+	if ((string) $xml['title'] && $xml['title'] != '/') {
+		$tags[] = (string) $xml['title'];
+	}
 
-        foreach ($xml->outline as $outline) {
-            if ((string) $outline['type']) {
+	foreach ($xml->outline as $outline) {
+		if ((string) $outline['type']) {
+			$ret = addSubscription($outline, $tags);
+			if ($ret !== true) {
+				$errors[] = $ret;
+			}
+		}
 
-                $ret = addSubscription($outline, $tags);
-                if ($ret !== true) {
-                    $errors[] = $ret;
-                }
-            }
+		if ($outline['type'] == 'folder') {
+			//folder type, no functionality yet!
+			echo "Folder type:<br>";
+		} else {
+			$ret = processGroup($outline, $tags);
+			//$errors = array_merge($errors, $ret);
+		}
+	}
+}
 
-            if ($outline['type'] == 'folder') {
-                //folder type, no functionality yet!
-                echo "Folder type:<br>";
-            }
-
-            else {
-
-                $ret = processGroup($outline, $tags);
-                //$errors = array_merge($errors, $ret);
-            }
-
-        }
-    }
-
-    //process xml feed
-    processGroup($subs);
+//process xml feed
+processGroup($subs);
 
 }
 
