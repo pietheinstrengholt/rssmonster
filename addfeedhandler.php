@@ -27,44 +27,50 @@ $feed->set_cache_location('./cache');
 $feed->init();
 $feed->handle_content_type();
 
-$title = $feed->get_title();
-$desc = $feed->get_description();
-$feedurl = $feed->get_permalink();
-//$favicon = $feed->get_favicon();
-$favicon = NULL;
+//if error found, show error message and stop parsing
+if ($feed->error()) {
 
-echo "<p><br>" . $feedurl . "<br>" . $title . "<br>" . $desc . "<br></p>";
-
-if (empty($title)) {
-	echo "<br><br>Title is empty, rss feed might be invalid!<br>";
+	echo "<strong>Error! </strong>Unable to process feed: " . $feed_name . "<br>";		
+	echo $feed->error();
+	
 } else {
 
-	//TODO: replace with json
-	$database->query("SELECT DISTINCT feed_name FROM t_feeds ORDER BY feed_name");
+	$title = $feed->get_title();
+	$feed_desc = $feed->get_description();
+	$feedurl = $feed->get_permalink();
+	//favicon has been deprecated: $feed->get_favicon();
+	$favicon = NULL;
+
+	echo "<p><br>" . $feedurl . "<br>" . $title . "<br>" . $feed_desc . "<br></p>";
+
+	if (empty($title)) {
+		echo "<strong><br>Title is empty, rss feed seems to be invalid!</strong>";
+		exit();
+	}
+
+	//check if feed_name already exists in database
+	$database->query("SELECT feed_name FROM t_feeds WHERE feed_name = :feed_name OR url = :url");
+	$database->bind(':feed_name', $title);
+	$database->bind(':url', $feedname);
 	$rows = $database->resultset();
 
-	if (in_array_r($title, $rows)) {
-		echo "<br><br>Error adding \"$title\", feedname already exists or rss is invalid!<br>";
-	} else {
-
-		//TODO: replace with json
-		$title = mysql_escape_mimic($title);
-		$desc = mysql_escape_mimic($desc);
-		$feedurl = mysql_escape_mimic($feedurl);
-		$favicon = mysql_escape_mimic($favicon);
-
-		$database->beginTransaction();
-		$database->query("INSERT INTO t_feeds (feed_name, feed_desc, url, favicon) VALUES (:title, :desc, :feedurl, :favicon)");
-		$database->bind(':title', $title);
-		$database->bind(':desc', $desc);
-		$database->bind(':feedurl', $feedurl);
-		$database->bind(':favicon', $favicon);
-		$database->execute();
-		$database->endTransaction();
-
-		echo "<br><br><br>Feedname \"$title\" added to list with rss feeds!<br>";
-
+	if (!empty($rows)) {
+		echo "<strong><br>Error adding \"$title\", feed with same title or with same url already exists!</strong>";
+		exit();
 	}
+
+	//TODO: replace with json
+	$database->beginTransaction();
+	$database->query("INSERT INTO t_feeds (feed_name, feed_desc, url, favicon) VALUES (:title, :feed_desc, :url, :favicon)");
+	$database->bind(':title', $title);
+	$database->bind(':feed_desc', $feed_desc);
+	$database->bind(':url', $feedname);
+	$database->bind(':favicon', $favicon);
+	$database->execute();
+	$database->endTransaction();
+
+	echo "<<strong>><br><br>Feedname \"$title\" added to list with rss feeds!</strong>";
+
 }
 
 echo "</result>";

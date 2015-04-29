@@ -53,34 +53,41 @@ if (!empty($rows)) {
 		$feed = new SimplePie();
 		$feed->set_feed_url($feed_url);
 		$feed->set_cache_location($db_path);
+
+		//start simplepie
 		$feed->init();
 		$feed->handle_content_type();
-
-		$database->query("SELECT publish_date FROM t_articles WHERE feed_id = '$feed_id;' ORDER BY publish_date DESC LIMIT 1");
-		$publish_date = $database->single();
-		$comparedate = $publish_date['publish_date'];
-
-		//update feed with last_update date
-		$database->beginTransaction();
-		$database->query("UPDATE t_feeds SET last_update = CURRENT_TIMESTAMP WHERE id = '$feed_id'");
-		$database->execute();
-		$database->endTransaction();
-
-		//default to 1900 if no results exist
-		if (empty($comparedate)) {
-			$comparedate = "1900-01-01 00:00:00";
-		}
-
-		$itemQty = $feed->get_item_quantity();
-
-		if ($itemQty === 0) {
+		
+		//if error found, show error message and stop parsing
+		if ($feed->error()) {
 
 			echo "<div class=\"alert alert-danger\">";
 			echo "<button type=\"button\" class=\"close\" data-dismiss=\"alert\">&times;</button>";
-			echo "<strong>Error! </strong>Unable to process feed: " . $feed_name . " Server might be down or url has changed.";
+			echo "<strong>Error! </strong>Unable to process feed: " . $feed_name . "<br>";		
+			echo $feed->error();
 			echo "</div>";
-
+			
 		} else {
+
+			//select latest publish date from articles
+			$database->query("SELECT publish_date FROM t_articles WHERE feed_id = '$feed_id;' ORDER BY publish_date DESC LIMIT 1");
+			$publish_date = $database->single();
+			
+			//set comparedate if a result is returned
+			if (!empty($publish_date)) {
+				$comparedate = $publish_date['publish_date'];
+			}
+
+			//default to 1900 if no results exist
+			if (empty($comparedate)) {
+				$comparedate = "1900-01-01 00:00:00";
+			}
+		
+			//update feed's last_update date
+			$database->beginTransaction();
+			$database->query("UPDATE t_feeds SET last_update = CURRENT_TIMESTAMP WHERE id = '$feed_id'");
+			$database->execute();
+			$database->endTransaction();		
 
 			foreach ($feed->get_items() as $item) {
 
@@ -97,36 +104,36 @@ if (!empty($rows)) {
 
 				echo "<tr><th>" . $feed_id . "</th><th>" . $feed_name . "</th><th>" . $comparedate . "</th><th>" . $date . "</th><th>";
 
-				//publish date is later then compare date which assumes article is new
-				if (strtotime($date) > strtotime($comparedate)) {
+				$database->query("SELECT * FROM t_articles WHERE url = :url AND feed_id = :feed_id");
+				$database->bind(':url', $url);
+				$database->bind(':feed_id', $feed_id);
+				$resulturl = $database->single();
 
-					$database->query("SELECT COUNT(*) AS count FROM t_articles WHERE url = :url AND feed_id = :feed_id");
-					$database->bind(':url', $url);
-					$database->bind(':feed_id', $feed_id);
-					$resulturl = $database->single();
-
-					$database->query("SELECT COUNT(*) AS count FROM t_articles WHERE subject = :subject AND feed_id = :feed_id");
-					$database->bind(':subject', $subject);
-					$database->bind(':feed_id', $feed_id);
-					$resultsubject = $database->single();
-
-				if (strtotime($date) < strtotime($previousweek)) {
-					echo "Article more than one week old";
-				} elseif ($resulturl['count'] == 0 && $resultsubject['count'] == 0) {
-					echo "Found new article";
+				$database->query("SELECT * FROM t_articles WHERE subject = :subject AND feed_id = :feed_id");
+				$database->bind(':subject', $subject);
+				$database->bind(':feed_id', $feed_id);
+				$resultsubject = $database->single();
+				
+				//only add article if the publish date is newer than compare date, article is less than one week old and article subject or url is not present in database
+				if ((strtotime($date) > strtotime($comparedate)) && (!(strtotime($date) < strtotime($previousweek))) && empty($resulturl) && empty($resultsubject)) {
+					echo "New article found";
 					$database->beginTransaction();
 					$database->query("INSERT INTO t_articles (feed_id, status, url, subject, content, publish_date, author) VALUES ('$feed_id', 'unread', '$url', :subject, :content, '$date', '$author')");
 					$database->bind(':subject', $subject);
 					$database->bind(':content', $content);
 					$database->execute();
-					$database->endTransaction();
-				} else {
-					echo "Skipping - Avoid duplicate url in db";
+					$database->endTransaction();					
 				}
-
-				} else {
-					echo "No new feeds since last update";
+				
+				//debug message if article if more than one week old
+				if (strtotime($date) < strtotime($previousweek)) {
+					echo "Article more than one week old ";				
 				}
+				
+				//debug message if article is already present in database
+				if ((!empty($resulturl)) || (!empty($resultsubject))) {
+					echo "Article already present in database ";				
+				}				
 
 				echo "</th></tr>";
 
