@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * fever-api.php
+ *
+ * The fever-api.php implements the API from
+ * Fever, allowing apps such as Reeder to  
+ * communicate with this application. 
+ * More info: http://feedafever.com/api
+ *
+ */
+
 // Report simple running errors
 error_reporting(E_ERROR | E_WARNING | E_PARSE);
 

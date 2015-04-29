@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * json.php
+ *
+ * The json.php file is responsible reads
+ * information from the database and returns 
+ * information in JSON.
+ *
+ */
+
 //usage: curl -X POST -H 'Content-Type: application/json; charset=utf-8' -d '{"jsonrpc": "2.0","request": "debug"}' http://phppaperlocation/json.php
 //usage: http POST http://phppaperlocation/json.php jsonrpc="2.0" request="debug" -b
 

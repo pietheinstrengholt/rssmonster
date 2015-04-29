@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * opml.php
+ *
+ * The opml.php file is used to import
+ * opml export files. See opmlhandler.php for
+ * more information.
+ *
+ */
+
 include 'config.php';
 include 'functions.php';
 

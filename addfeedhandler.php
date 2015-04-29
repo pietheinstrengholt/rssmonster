@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * addfeedhandler.php
+ *
+ * The addfeedhandler.php file is responsible for
+ * adding new rss feeds to the database. 
+ * Feeds will be validated. Existing ones and
+ * incorrect ones will be skipped.
+ *
+ */
+
 echo "<result>";
 
 // Report simple running errors

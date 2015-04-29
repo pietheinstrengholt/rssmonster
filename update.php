@@ -1,5 +1,16 @@
 <?php
 
+/**
+ * update.php
+ *
+ * The update.php file is responsible for
+ * parsing rss feeds and injecting the results 
+ * in the database. If a article is more than
+ * one week old it will be skipped. Existing 
+ * articles are also skipped.
+ *
+ */
+
 // Report simple running errors
 error_reporting(E_ERROR | E_WARNING | E_PARSE);
 

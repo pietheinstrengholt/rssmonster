@@ -1,5 +1,13 @@
 <?php
 
+/**
+ * backend.php
+ *
+ * The backend.php is used to wrap the JSON
+ * data and wrap it between the HTML code
+ *
+ */
+
 //includes
 include 'config.php';
 include 'functions.php';
@@ -7,10 +15,10 @@ include 'functions.php';
 if(isset($_POST['sort'])){ $sort = htmlspecialchars($_POST['sort']); } else { $sort = NULL; }
 if(isset($_POST['articlelist'])){ $articlelist = htmlspecialchars($_POST['articlelist']); } else { $articlelist = NULL; }
 
-$array = get_json('{"jsonrpc": "2.0", "request": "get-articles", "sort": "' . $_POST['sort'] . '", "article_id": "' . $_POST['articlelist'] . '"}');
+$rows = get_json('{"jsonrpc": "2.0", "request": "get-articles", "sort": "' . $_POST['sort'] . '", "article_id": "' . $_POST['articlelist'] . '"}');
 
-if (!empty($array) && $array != "no-results") {
-    foreach ($array as $row) {
+if (!empty($rows) && $rows != "no-results") {
+    foreach ($rows as $row) {
 
 		echo "<div id=\"block\">";
 
@@ -51,8 +59,10 @@ if (!empty($array) && $array != "no-results") {
 				echo "</div>";
 
 				echo "<hr>";
+
 				//show complete content block
 				echo "<div class='page-content'>$row[content]</div>";
+
 				//show less content block with no urls and only up to 250 characters
 				echo "<div class='less-content'>";
 				$lesscontent = strip_tags($row['content']);
