@@ -95,18 +95,14 @@ if (!empty($rows)) {
 
 				echo "<tr><th>" . $feed_id . "</th><th>" . $feed_name . "</th><th>" . $date . "</th><th>";
 
-				$database->query("SELECT * FROM t_articles WHERE url = :url AND feed_id = :feed_id");
+				$database->query("SELECT * FROM t_articles WHERE (url = :url OR subject = :subject) AND feed_id = :feed_id");
 				$database->bind(':url', $url);
+				$database->bind(':subject', $subject);				
 				$database->bind(':feed_id', $feed_id);
-				$resulturls = $database->resultset();
-
-				$database->query("SELECT * FROM t_articles WHERE subject = :subject AND feed_id = :feed_id");
-				$database->bind(':subject', $subject);
-				$database->bind(':feed_id', $feed_id);
-				$resultsubjects = $database->resultset();
+				$results = $database->resultset();
 				
 				//debug message if article is already present in database
-				if ((!empty($resulturls)) || (!empty($resultsubjects))) {
+				if (!empty($results)) {
 					echo "Article already present in database";
 				//debug message if article is more than one week old					
 				} elseif (strtotime($date) < strtotime($previousweek)) {
