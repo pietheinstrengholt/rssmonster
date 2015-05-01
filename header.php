@@ -74,9 +74,9 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <span class="icon-bar"></span>
       <span class="icon-bar"></span>
     </button>
-    <a class="navbar-brand" id="home" href="<?php echo "$url/index.php"; ?>"><span class="badge pull-right"><?php echo $status[0]['count']; ?></span>Home</a>
-    <a class="navbar-brand" id="starred" href="#"><span class="badge pull-right"></span>Star</a>
-    <a class="navbar-brand" id="unread" href="#"><span class="badge pull-right"></span>Unread</a>
+    <a class="navbar-brand" id="home" href="<?php echo "$url/index.php"; ?>">Home</a>
+    <a class="navbar-brand" id="unread" href="#"><span class="badge pull-right"><?php echo $status[0]['count']; ?></span>Unread</a>
+	<a class="navbar-brand" id="starred" href="#"><span style="background-color:#f0ad4e;" class="badge pull-right"><?php echo $status[2]['count']; ?></span>Star</a>
    </div>
 
    <!-- Collect the nav links, forms, and other content for toggling -->

@@ -285,7 +285,7 @@ $(document).ready(function () {
         var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)+1;
         $('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
-
+		$('a#starred.navbar-brand span.badge.pull-right').text(starredcountnew);
     });
 
     //event when unstaring item
@@ -315,7 +315,7 @@ $(document).ready(function () {
         var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
         var starredcountnew = parseFloat(starredcount)-1;
         $('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
-
+		$('a#starred.navbar-brand span.badge.pull-right').text(starredcountnew);
     });
 
     //submit add new feed button
@@ -363,7 +363,7 @@ function FnReadPool(input) {
                         var unreadcount = $('div#status.panel a#unread.list-group-item span.badge').text();
                         var unreadcountnew = unreadcount -1;
                         $('div#status.panel a#unread.list-group-item span.badge').text(unreadcountnew);
-                        $('a#home.navbar-brand span.badge.pull-right').text(unreadcountnew);
+                        $('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
 
                         //increase read count
                         var readcount = $('div#status.panel a#read.list-group-item span.badge').text();
