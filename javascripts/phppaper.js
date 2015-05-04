@@ -175,19 +175,10 @@ $(document).ready(function () {
 		loadcontent('feed', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
 	});
 
-	//List view button from topnav menu
-	$("a#list-view").click(function () {
-		setview("list");
-	});
-
-	//Detailed view button from topnav menu
-	$("a#detailed-view").click(function () {
-		setview("detailed");
-	});
-
-	//Detailed view button from topnav menu
-	$("a#minimal-view").click(function () {
-		setview("minimal");
+	//Set viewtype (list, detailed or minimal) button from topnav menu
+	$("a.view-type").click(function () {
+		var viewtype = $(this).attr("id");
+		setview(viewtype);
 	});
 
 	//Sort button from topnav menu
@@ -251,18 +242,35 @@ $(document).ready(function () {
 		$(this).find(".less-content").hide()
 	});
 
-	//event when marking item as starred
-	$("body").on("click", "div.item-star.unstar", function (event) {
-		$(this).removeClass("unstar");
-		$(this).addClass("star");
+	//event when starring or un-staring item
+	$("body").on("click", "div.item-star", function (event) {
+		//get id
 		var id = $(this).attr('id');
-		console.log('starred item: ' + $(this).attr('id'));
+		//get current starred count
+		var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
+	
+		//remove classes, set new count and variables
+		if ($(this).hasClass("unstar")) {
+			$(this).removeClass("unstar");
+			$(this).addClass("star");
+			var starmark = "mark";
+			var starredcountnew = parseFloat(starredcount)+1;
+			console.log('starred item: ' + $(this).attr('id'));
+		} else {
+			$(this).removeClass("star");
+			$(this).addClass("unstar");
+			var starmark = "unmark";
+			var starredcountnew = parseFloat(starredcount)-1;
+			console.log('unstarred item: ' + $(this).attr('id'));		
+		}
+		
+		//send json request
 		$.ajax({
 			type: "POST",
 			url: "json.php",
 			data: JSON.stringify({
 				"jsonrpc": "2.0",
-				"update": "star-mark",
+				"update": "star-" + starmark,
 				"value": id
 			}),
 			contentType: "application/json; charset=utf-8",
@@ -274,39 +282,7 @@ $(document).ready(function () {
 			failure: function (errMsg) {}
 		});
 
-		//increase count in menu
-		var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
-		var starredcountnew = parseFloat(starredcount)+1;
-		$('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
-		$('a#starred.navbar-brand span.badge.pull-right').text(starredcountnew);
-	});
-
-	//event when unstaring item
-	$("body").on("click", "div.item-star.star", function (event) {
-		$(this).removeClass("star");
-		$(this).addClass("unstar");
-		var id = $(this).attr('id');
-		console.log('unstarred item: ' + $(this).attr('id'));
-		$.ajax({
-			type: "POST",
-			url: "json.php",
-			data: JSON.stringify({
-				"jsonrpc": "2.0",
-				"update": "star-unmark",
-				"value": id
-			}),
-			contentType: "application/json; charset=utf-8",
-			dataType: "json",
-			async: false,
-			success: function (json) {
-				result = json;
-			},
-			failure: function (errMsg) {}
-		});
-
-		//decrease star count in menu
-		var starredcount = $('div#status.panel a#starred.list-group-item span.badge').text();
-		var starredcountnew = parseFloat(starredcount)-1;
+		//change badges with new count
 		$('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
 		$('a#starred.navbar-brand span.badge.pull-right').text(starredcountnew);
 	});

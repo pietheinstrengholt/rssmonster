@@ -85,9 +85,9 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <li class="dropdown">
          <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Views<b class="caret"></b></a>
          <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-            <li class="detailed-view" role="presentation"><a id="detailed-view" role="menuitem" tabindex="-1" href="#">Detailed view</a></li>
-            <li class="list-view" role="presentation"><a id="list-view" role="menuitem" tabindex="-1" href="#">List view</a></li>
-            <li class="minimal-view" role="presentation"><a id="minimal-view" role="menuitem" tabindex="-1" href="#">Minimal view</a></li>
+            <li role="presentation"><a class="view-type" id="detailed" role="menuitem" tabindex="-1" href="#">Detailed view</a></li>
+            <li role="presentation"><a class="view-type" id="list" role="menuitem" tabindex="-1" href="#">List view</a></li>
+            <li role="presentation"><a class="view-type" id="minimal" role="menuitem" tabindex="-1" href="#">Minimal view</a></li>
          </ul>
       </li>
     </ul>
@@ -96,8 +96,8 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <li class="dropdown">
          <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Sort<b class="caret"></b></a>
          <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-            <li class="sort-asc" role="presentation"><a class="sort-order" id="asc" role="menuitem" tabindex="-1" href="#">Newest first</a></li>
-            <li class="sort-desc" role="presentation"><a class="sort-order" id="desc" role="menuitem" tabindex="-1" href="#">Oldest first</a></li>
+            <li role="presentation"><a class="sort-order" id="asc" role="menuitem" tabindex="-1" href="#">Newest first</a></li>
+            <li role="presentation"><a class="sort-order" id="desc" role="menuitem" tabindex="-1" href="#">Oldest first</a></li>
          </ul>
       </li>
     </ul>
