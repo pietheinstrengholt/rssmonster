@@ -66,8 +66,8 @@ $(document).ready(function () {
 	$('div#block h4').waypoint('destroy');
 
 	//set category, feed and status variables
-	if (type == 'category') { var category = value; }
-	if (type == 'feed') { var feed = value; }
+	if (type == 'category_id') { var category_id = value; }
+	if (type == 'feed_id') { var feed_id = value; }
 	if (type == 'status') { var status = value; }
 
 	//remove content and offload scroll
@@ -84,8 +84,8 @@ $(document).ready(function () {
 			error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
 			delay: 100, // When you scroll down the posts will load after a delayed amount of time.
 			scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
-			category: category, // Catch category from menu
-			feed: feed, // Catch feedname from menu
+			category_id: category_id, // Catch category from menu
+			feed_id: feed_id, // Catch feedname from menu
 			status: status, // Catch status from menu
 			sort: sort // Catch sort
 			});
@@ -151,11 +151,10 @@ $(document).ready(function () {
 
 		//load content
 		var view = $.cookie('view');
-		var category = $(this).find('span#title-name').text();
-		var encoded_category = encodeURIComponent(category);
-		$.cookie('type', 'category');
-		$.cookie('value', encoded_category);
-		loadcontent('category', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		var category_id = $(this).attr('id');
+		$.cookie('type', 'category_id');
+		$.cookie('value', category_id);
+		loadcontent('category_id', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
 
 	});
 
@@ -168,11 +167,10 @@ $(document).ready(function () {
 
 		//load content
 		var view = $.cookie('view');
-		var feed = $(this).find('span.title').text();
-		var encoded_feed = encodeURIComponent(feed);
-		$.cookie('type', 'feed');
-		$.cookie('value', encoded_feed);
-		loadcontent('feed', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		var feed_id = $(this).attr('id');
+		$.cookie('type', 'feed_id');
+		$.cookie('value', feed_id);
+		loadcontent('feed_id', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
 	});
 
 	//Set viewtype (list, detailed or minimal) button from topnav menu
@@ -313,8 +311,8 @@ function FnReadPool(input) {
 			success: function (data) {
 
 				//capture feed and status, filter out non alphanumeric and white spaces
-				var feed = onlyalphanumeric(data[0]['feed']);
-				var category = onlyalphanumeric(data[0]['category']);
+				var feed_id = onlyalphanumeric(data[0]['feed_id']);
+				var category_id = onlyalphanumeric(data[0]['category_id']);
 
 				//only in case when status is unread
 				if (data[0]['status'] == "unread") {
@@ -331,14 +329,14 @@ function FnReadPool(input) {
 					$('div#status.panel a#read.list-group-item span.badge').text(readcountnew);
 
 					//decrease count for main menu items
-					var readcountmain = $('div#categories.panel').find('a#' + category).find('span.countunread').text();
+					var readcountmain = $('div#categories.panel').find('a#' + category_id).find('span.countunread').text();
 					var readcountmainnew = readcountmain -1;
-					$('div#categories.panel').find('a#' + category).find('span.countunread').text(readcountmainnew);
+					$('div#categories.panel').find('a#' + category_id).find('span.countunread').text(readcountmainnew);
 
 					//decrease count for sub menu items
-					var readcountsub = $('div#categories.panel').find('a#' + feed).find('span.badge').text();
+					var readcountsub = $('div#categories.panel').find('a#' + feed_id).find('span.badge').text();
 					var readcountsubnew = readcountsub -1;
-					$('div#categories.panel').find('a#' + feed).find('span.badge').text(readcountsubnew);
+					$('div#categories.panel').find('a#' + feed_id).find('span.badge').text(readcountsubnew);
 
 					//decrease count for last 24 hours
 					if (data[0]['publish_date'] == "last-24-hours") {
@@ -380,8 +378,8 @@ function FnReadPool(input) {
 			error: 'No More Posts!', // When the user reaches the end this is the message that is
 			delay: 100, // When you scroll down the posts will load after a delayed amount of time.
 			scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
-			category: '',
-			feed: '',
+			category_id: '',
+			feed_id: '',
 			status: '',
 			sort: '',
 		}
@@ -418,8 +416,8 @@ function FnReadPool(input) {
 					"request": "get-article-list",
 					"status": $settings.status,
 					"sort": $settings.sort,
-					"feed": $settings.feed,
-					"category": $settings.category
+					"feed_id": $settings.feed_id,
+					"category_id": $settings.category_id
 				}),
 				contentType: "application/json; charset=utf-8",
 				dataType: "json",

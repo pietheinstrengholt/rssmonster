@@ -57,11 +57,10 @@ function fn_header_section($input, $name) {
 		foreach ($input as $row) {
 			if (!empty($row)) {
 
+				$category_id = $row['id'];
 				$title = substr($row['category_name'], 0, 16);
-				$csstitle = preg_replace("/[^A-Za-z0-9 ]/", '', $title);
-				$csstitle = preg_replace('/\s+/', '',$csstitle);
 
-				echo "<a href=\"#\" id=\"$csstitle\" class=\"list-group-item main\">";
+				echo "<a href=\"#\" id=\"$category_id\" class=\"list-group-item main\">";
 				echo "<span class=\"badge\">";
 
 				echo "<span class=\"countunread\">$row[count_unread]</span>";
@@ -72,7 +71,7 @@ function fn_header_section($input, $name) {
 				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-chevron-right\"></span><span id=\"title-name\">$title</span></span>";
 				echo "</a>";
 
-				echo "<div class=\"menu-sub\" id='$title'>";
+				echo "<div class=\"menu-sub\" id='$category_id'>";
 
 				// Get count-per-category using json
 				$category = $row['category_name'];
@@ -85,9 +84,8 @@ function fn_header_section($input, $name) {
 						if (empty($row['count'])) {
 							$row['count'] = "0";
 						}
-
-						$csssubtitle = preg_replace("/[^A-Za-z0-9 ]/", '', $row['feed_name']);
-						$csssubtitle = preg_replace('/\s+/', '',$csssubtitle);
+						
+						$feed_id = $row['id'];
 
 						if (empty($row['favicon'])) {
 							$faviconurl = "img/rss-default.gif";
@@ -95,7 +93,7 @@ function fn_header_section($input, $name) {
 							$faviconurl = $row['favicon'];
 						}
 
-						echo "<a href=\"#\" id=\"$csssubtitle\" class=\"list-group-item sub\">";
+						echo "<a href=\"#\" id=\"$feed_id\" class=\"list-group-item sub\">";
 						echo "<span class=\"badge\">$row[count]</span>";
 						echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";
 						echo "<span class=\"title\">$row[feed_name]</span>";

@@ -96,21 +96,19 @@ if(isset($arr['request'])){
 		$unread_item_ids = array();
 
 		if(isset($arr['status'])){ $status = htmlspecialchars($arr['status']); } else { $status = NULL; }
-		if(isset($arr['category'])){ $category = htmlspecialchars($arr['category']); } else { $category = NULL; }
-		if(isset($arr['feed'])){ $feed = htmlspecialchars($arr['feed']); } else { $feed = NULL; }
+		if(isset($arr['category_id'])){ $category_id = $arr['category_id']; } else { $category_id = NULL; }
+		if(isset($arr['feed_id'])){ $feed_id = $arr['feed_id']; } else { $feed_id = NULL; }
 
 		if ($status == "starred") {
 			$database->query("SELECT DISTINCT id FROM t_articles WHERE star_ind = '1' ORDER BY publish_date $sort");
 		} elseif ($status == "read") {
 			$database->query("SELECT DISTINCT id FROM t_articles WHERE status = 'read' ORDER BY publish_date $sort");
 		//by category
-		} elseif (!empty($category) && empty($feed)) {
-			$category = urldecode($category);
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id IN (SELECT id FROM `t_categories` WHERE category_name = '$category')) AND status = 'unread' ORDER BY publish_date $sort");
+		} elseif (!empty($category_id) && empty($feed_id)) {
+			$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id IN (SELECT id FROM t_categories WHERE id = $category_id)) AND status = 'unread' ORDER BY publish_date $sort");
 		//by feed
-		} elseif (!empty($feed) && empty($category)) {
-			$feed = urldecode($feed);
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE feed_name = '$feed') AND status = 'unread' ORDER BY publish_date $sort");
+		} elseif (!empty($feed_id) && empty($category_id)) {
+			$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE id = $feed_id) AND status = 'unread' ORDER BY publish_date $sort");
 		} elseif (urldecode($status) == 'last 24 hours') {
 			$database->query("SELECT DISTINCT id FROM t_articles WHERE status = 'unread' AND publish_date BETWEEN (NOW() - INTERVAL 1 DAY) AND NOW() ORDER BY publish_date $sort");
 		} elseif (urldecode($status) == 'last hour') {
@@ -164,7 +162,7 @@ if(isset($arr['request'])){
 	
 	//get count-per-category
 	if ($arr['request'] == "count-per-category") {
-		$database->query("SELECT feed_name, id, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE category_name = '$arr[value]')) a left join (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
+		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE category_name = '$arr[value]')) a left join (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
 		$rows = $database->resultset();
 		if (!empty($rows)) {
 			echo json_encode($rows);
@@ -301,26 +299,26 @@ if(isset($arr['overview'])){
 	} 
 	
 	if ($arr['overview'] == "category-detailed") {
-		$database->query("SELECT t1.category_name, IFNULL(count_all,0) AS count_all, IFNULL(count_unread,0) AS count_unread FROM
+		$database->query("SELECT t1.id, t1.category_name, IFNULL(count_all,0) AS count_all, IFNULL(count_unread,0) AS count_unread FROM
 
-		(SELECT count(*) as count_all, c.category_name FROM `t_articles` a
+		(SELECT count(*) as count_all, c.id, c.category_name FROM `t_articles` a
 		LEFT JOIN t_feeds b
 		on a.feed_id = b.id
 		LEFT JOIN t_categories c
 		on b.category_id = c.id
-		GROUP BY category_id) t1
+		GROUP BY category_id, category_name) t1
 
 		LEFT JOIN
 
-		(SELECT count(*) AS count_unread, c.category_name FROM `t_articles` a
+		(SELECT count(*) AS count_unread, c.id, c.category_name FROM `t_articles` a
 		LEFT JOIN t_feeds b
 		on a.feed_id = b.id
 		LEFT JOIN t_categories c
 		on b.category_id = c.id
 		WHERE a.status = 'unread'
-		GROUP BY category_id) t2
+		GROUP BY category_id, category_name) t2
 
-		ON t1.category_name = t2.category_name
+		ON t1.id = t2.id
 		ORDER BY t1.category_name");
 	} 
 	
