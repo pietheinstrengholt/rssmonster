@@ -191,14 +191,9 @@ $(document).ready(function () {
 	});
 
 	//Sort button from topnav menu
-	$("a#sort-asc").click(function () {
-		$.cookie('sort', 'asc', { expires: 14 });
-		loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
-	});
-
-	//Sort button from topnav menu
-	$("a#sort-desc").click(function () {
-		$.cookie('sort', 'desc', { expires: 14 });
+	$("a.sort-order").click(function () {
+		var sortorder = $(this).attr("id");
+		$.cookie('sort', sortorder, { expires: 14 });
 		loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
 	});
 
