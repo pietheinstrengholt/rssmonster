@@ -96,8 +96,8 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <li class="dropdown">
          <a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Sort<b class="caret"></b></a>
          <ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-            <li role="presentation"><a class="sort-order" id="asc" role="menuitem" tabindex="-1" href="#">Newest first</a></li>
-            <li role="presentation"><a class="sort-order" id="desc" role="menuitem" tabindex="-1" href="#">Oldest first</a></li>
+            <li role="presentation"><a class="sort-order" id="asc" role="menuitem" tabindex="-1" href="#">Oldest first</a></li>
+            <li role="presentation"><a class="sort-order" id="desc" role="menuitem" tabindex="-1" href="#">Newest first</a></li>
          </ul>
       </li>
     </ul>
