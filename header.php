@@ -106,12 +106,12 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <li><a id="import-opml" href="#">Import OPML</a></li>
     </ul>
 
-    <ul class="nav navbar-nav">
-    <form class="navbar-form pull-left" method="post" placeholder="submitfeed">
-      <input type="text" placeholder="Add feed or url" style="width: 120px;" id="feedname" name="feedname" class="form-control">
-      <button type="button" id="submitfeed" class="btn btn-default">Submit</button>
-    </form>
-    </ul>
+	<form action="addfeedhandler.php" method="post" class="navbar-form navbar-left" role="feedname">
+	  <div class="form-group">
+	   <input name="feedname" type="text" placeholder="Add feed or url"  style="width: 120px;" class="form-control">
+	  </div>
+	  <button id="submit" class="btn btn-default">Submit</button>
+	</form>	
 
     <ul class="nav navbar-nav">
       <li><a class="update" href="#">Update feeds</a></li>

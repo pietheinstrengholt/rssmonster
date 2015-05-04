@@ -20,12 +20,13 @@ require_once('simplepie/autoloader.php');
 include 'config.php';
 include 'database.class.php';
 include 'functions.php';
+include 'header.php';
 
 //initialize database
 $database = new Database();
 
-if (isset($_GET['feedname'])) {
-	$feedname = htmlspecialchars($_GET['feedname']);
+if (isset($_POST['feedname'])) {
+	$feedname = htmlspecialchars($_POST['feedname']);
 } else {
 	$feedname = NULL;
 }
@@ -40,7 +41,7 @@ $feed->handle_content_type();
 //if error found, show error message and stop parsing
 if ($feed->error()) {
 
-	echo "<strong>Error! </strong>Unable to process feed: " . $feed_name . "<br>";		
+	echo "<strong>Error! </strong>Unable to process feed: " . $feedname . "<br><br>";		
 	echo $feed->error();
 	
 } else {
