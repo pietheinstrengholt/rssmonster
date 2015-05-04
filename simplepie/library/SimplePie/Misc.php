@@ -33,7 +33,7 @@
  * POSSIBILITY OF SUCH DAMAGE.
  *
  * @package SimplePie
- * @version 1.3.1
+ * @version 1.4-dev
  * @copyright 2004-2012 Ryan Parman, Geoffrey Sneddon, Ryan McCue
  * @author Ryan Parman
  * @author Geoffrey Sneddon
@@ -124,7 +124,7 @@ class SimplePie_Misc
 						{
 							$attribs[$j][2] = $attribs[$j][1];
 						}
-						$return[$i]['attribs'][strtolower($attribs[$j][1])]['data'] = SimplePie_Misc::entities_decode(end($attribs[$j]), 'UTF-8');
+						$return[$i]['attribs'][strtolower($attribs[$j][1])]['data'] = SimplePie_Misc::entities_decode(end($attribs[$j]));
 					}
 				}
 			}
@@ -222,6 +222,23 @@ class SimplePie_Misc
 		{
 			return $url;
 		}
+	}
+
+	public static function array_merge_recursive($array1, $array2)
+	{
+		foreach ($array2 as $key => $value)
+		{
+			if (is_array($value))
+			{
+				$array1[$key] = SimplePie_Misc::array_merge_recursive($array1[$key], $value);
+			}
+			else
+			{
+				$array1[$key] = $value;
+			}            
+		}
+		
+		return $array1;
 	}
 
 	public static function parse_url($url)
