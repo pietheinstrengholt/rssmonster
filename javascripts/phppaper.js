@@ -3,13 +3,6 @@ if (($.cookie('sort') == undefined)) {
 	$.cookie('sort', 'desc', { expires: 14 });
 }
 
-//function to remove all spaces and non alphanumeric characters
-function onlyalphanumeric(input) {
-	var nospaces = input.replace(/\s+/g, '');
-	var onlyalpha = nospaces.replace(/\W/g, '');
-	return onlyalpha;
-}
-
 //set view type on load
 $(document).ready(function () {
 	if (($.cookie('view') == undefined)) {
@@ -311,8 +304,8 @@ function FnReadPool(input) {
 			success: function (data) {
 
 				//capture feed and status, filter out non alphanumeric and white spaces
-				var feed_id = onlyalphanumeric(data[0]['feed_id']);
-				var category_id = onlyalphanumeric(data[0]['category_id']);
+				var feed_id = data[0]['feed_id'];
+				var category_id = data[0]['category_id'];
 
 				//only in case when status is unread
 				if (data[0]['status'] == "unread") {
