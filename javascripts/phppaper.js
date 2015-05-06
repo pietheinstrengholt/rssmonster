@@ -1,86 +1,62 @@
-//sort stored in cookie
-if (($.cookie('sort') == undefined)) {
-	$.cookie('sort', 'desc', { expires: 14 });
-}
+//check if cookies are set
+if ($.cookie('type') == undefined) { $.cookie('type', 'status', { expires: 14 }); }
+if ($.cookie('value') == undefined) { $.cookie('value', 'unread', { expires: 14 }); }
+if ($.cookie('sort') == undefined) { $.cookie('sort', 'desc', { expires: 14 }); }
+if ($.cookie('view') == undefined) { $.cookie('view', 'detailed', { expires: 14 }); }
 
-//set view type on load
-$(document).ready(function () {
-	if (($.cookie('view') == undefined)) {
-		setview("detailed");
-	} else {
-		setview($.cookie('view'));
-	}
-});
-
-//view type function
-function setview(input) {
-	var view = input;
-	$.cookie('view', view, { expires: 14 });
-	$("section").removeClass();
-	$("section").addClass(view);
-}
-
-function removefeedbaroverflow() {
-	$('feedbar').css({
-		'overflow-y': 'hidden'
-	});
-}
-
-//set variables immediately
-var sort = $.cookie('sort');
-var view = $.cookie('view');
-var type = $.cookie('type');
-var value = $.cookie('value');
-
-//TODO: read window.location.hash and if set reload section with post parameters
+//run loadcontent function once page is ready
 $(document).ready(function () {
 
 	//dropdown toggle
 	$('.dropdown-toggle').dropdown();
 
-	//remove scrollbar overflow
-	removefeedbaroverflow();
-
-	//if (request.length == 0) {
-	if (($.cookie('type') == undefined) && ($.cookie('value') == undefined)) {
-		$.cookie('type', 'status', { expires: 14 });
-		$.cookie('value', 'unread', { expires: 14 });
-	}
-
-	loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+	loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'));
 
 	//loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
-	function loadcontent(type, value, sort, view) {
+	function loadcontent(load_type, load_value, load_sort, load_view) {
+	
+		//set new cookies
+		$.cookie('type', load_type, { expires: 14 });
+		$.cookie('value', load_value, { expires: 14 });
+		$.cookie('sort', load_sort, { expires: 14 });
+		$.cookie('view', load_view, { expires: 14 });
+		
+		//avoid overflow
+		$('feedbar').css({'overflow-y': 'hidden'});
+		
+		//set view type
+		$("section").removeClass();
+		$("section").addClass($.cookie('view'));
 
-	//empty poolid array
-	poolid = [];
+		//empty poolid array
+		poolid = [];
 
-	//destroy waypoint functions, avoid many items being called, see infinite.js
-	$('div#block h4').waypoint('destroy');
+		//destroy waypoint functions, avoid many items being called, see infinite.js
+		$('div#block h4').waypoint('destroy');
 
-	//set category, feed and status variables
-	if (type == 'category_id') { var category_id = value; }
-	if (type == 'feed_id') { var feed_id = value; }
-	if (type == 'status') { var status = value; }
+		//set category, feed and status variables
+		if (load_type == 'category_id') { var category_id = load_value; }
+		if (load_type == 'feed_id') { var feed_id = load_value; }
+		if (load_type == 'status') { var status = load_value; }
 
-	//remove content and offload scroll
-	$('section').empty();
-	$('section #content').remove();
-	$('section').append('<div id="content"></div>');
-	$(window).off("scroll");
+		//remove content and offload scroll
+		$('section').empty();
+		$('section #content').remove();
+		$('section').append('<div id="content"></div>');
+		$(window).off("scroll");
 
-	//use small amount of timeout when calling scrollPagination
-	setTimeout(function () {
-		$('#content').scrollPagination({
-			nop: 1, // The number of posts per scroll to be loaded
-			offset: 0, // Initial offset, begins at 0 in this case
-			error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
-			delay: 100, // When you scroll down the posts will load after a delayed amount of time.
-			scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
-			category_id: category_id, // Catch category from menu
-			feed_id: feed_id, // Catch feedname from menu
-			status: status, // Catch status from menu
-			sort: sort // Catch sort
+		//use small amount of timeout when calling scrollPagination
+		setTimeout(function () {
+			$('#content').scrollPagination({
+				nop: 1, // The number of posts per scroll to be loaded
+				offset: 0, // Initial offset, begins at 0 in this case
+				error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
+				delay: 100, // When you scroll down the posts will load after a delayed amount of time.
+				scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
+				category_id: category_id, // Catch category from menu
+				feed_id: feed_id, // Catch feedname from menu
+				status: status, // Catch status from menu
+				sort: load_sort // Catch sort
 			});
 		}, 100);
 	}
@@ -95,32 +71,23 @@ $(document).ready(function () {
 		$(this).addClass("active");
 
 		//load content
-		var view = $.cookie('view');
 		var status = $(this).find('span#title-name').text();
 		var encoded_status = encodeURIComponent(status);
-		$.cookie('type', 'status');
-		$.cookie('value', encoded_status);
-		loadcontent('status', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		loadcontent('status', encoded_status, $.cookie('sort'), $.cookie('view'))
 
 	});
 
 	//Functionality when clicking on top-nav menu items
 	$("a#starred.navbar-brand,a#unread.navbar-brand").click(function () {
 		var status = $(this).attr('id');
-		console.log(status);
 		var encoded_status = encodeURIComponent(status);
-		$.cookie('type', 'status');
-		$.cookie('value', encoded_status);
-		loadcontent('status', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		loadcontent('status', encoded_status, $.cookie('sort'), $.cookie('view'));
 	});
 
 	//Category function on feedbar: Drop down menu sub-menu items when a category is clicked
 	//hide sub menu by default
 	$("div.menu-sub").hide();
 	$("div#categories.panel a.list-group-item.main").click(function () {
-
-		//avoid scrollbar
-		removefeedbaroverflow();
 
 		//remove any active clicked classes from status overview
 		$('div#categories.panel').find('.active').removeClass("active");
@@ -143,11 +110,8 @@ $(document).ready(function () {
 		}
 
 		//load content
-		var view = $.cookie('view');
 		var category_id = $(this).attr('id');
-		$.cookie('type', 'category_id');
-		$.cookie('value', category_id);
-		loadcontent('category_id', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		loadcontent('category_id', category_id, $.cookie('sort'), $.cookie('view'))
 
 	});
 
@@ -159,24 +123,20 @@ $(document).ready(function () {
 		$(this).addClass("active");
 
 		//load content
-		var view = $.cookie('view');
 		var feed_id = $(this).attr('id');
-		$.cookie('type', 'feed_id');
-		$.cookie('value', feed_id);
-		loadcontent('feed_id', $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		loadcontent('feed_id', feed_id, $.cookie('sort'), $.cookie('view'))
 	});
 
 	//Set viewtype (list, detailed or minimal) button from topnav menu
 	$("a.view-type").click(function () {
-		var viewtype = $(this).attr("id");
-		setview(viewtype);
+		var new_load_view = $(this).attr("id");
+		loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), new_load_view)
 	});
 
 	//Sort button from topnav menu
 	$("a.sort-order").click(function () {
-		var sortorder = $(this).attr("id");
-		$.cookie('sort', sortorder, { expires: 14 });
-		loadcontent($.cookie('type'), $.cookie('value'), $.cookie('sort'), $.cookie('view'))
+		var new_load_sort = $(this).attr("id");
+		loadcontent($.cookie('type'), $.cookie('value'), new_load_sort, $.cookie('view'))
 	});
 
 	//Load opml import screen in section
@@ -224,7 +184,7 @@ $(document).ready(function () {
 		});
 	});
 
-	//todo: show read and unread bottons
+	//todo: show read and unread buttons
 	$("section").on("click", "div#block", function (event) {
 		$("section").find("div#block.active").removeClass("active");
 		$(this).addClass("active");
@@ -246,13 +206,11 @@ $(document).ready(function () {
 			$(this).addClass("star");
 			var starmark = "mark";
 			var starredcountnew = parseFloat(starredcount)+1;
-			console.log('starred item: ' + $(this).attr('id'));
 		} else {
 			$(this).removeClass("star");
 			$(this).addClass("unstar");
 			var starmark = "unmark";
-			var starredcountnew = parseFloat(starredcount)-1;
-			console.log('unstarred item: ' + $(this).attr('id'));		
+			var starredcountnew = parseFloat(starredcount)-1;	
 		}
 		
 		//send json request
@@ -280,10 +238,10 @@ $(document).ready(function () {
 
 });
 
-//pool for mark as read
+//Create pool array to remember which items are marked as read
 var poolid = new Array();
 
-//function to mark items as read and to avoid items are set to read more then once
+//Pool function to mark items as read and to avoid items are set to read more then once
 function FnReadPool(input) {
 	if (jQuery.inArray(input, poolid) == -1) {
 
