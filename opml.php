@@ -17,7 +17,7 @@ include 'functions.php';
 <html>
 <head>
  <link rel="stylesheet" href="stylesheets/styles.css">
- <script src="javascripts/jquery-1.9.1.min.js"></script>
+ <script src="javascripts/jquery-1.11.2.min.js"></script>
  <script src="javascripts/bootstrap.file-input.js"></script>
 </head>
 <body>
