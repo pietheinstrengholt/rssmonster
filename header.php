@@ -3,13 +3,11 @@
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 	<title>RSS Monster by Piethein Strengholt</title>
 	<script src="javascripts/jquery-1.11.2.min.js"></script>
-	<script src="javascripts/jquery.color.js"></script>
 	<script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
 	<script src="javascripts/jquery.cookie.js"></script>
 	<script src="javascripts/rssmonster.js"></script>
 	<script src="javascripts/bootstrap.min.js"></script>
 	<script src="javascripts/waypoints.js"></script>
-	<script src="javascripts/waypoints-infinite.js"></script>
 	<link rel="stylesheet" href="stylesheets/styles.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
@@ -36,7 +34,7 @@
 				padding-right: 5px;
 			}
 		}
-	</style>	
+	</style>
 	<link rel="apple-touch-icon" sizes="57x57" href="favicon/apple-icon-57x57.png">
 	<link rel="apple-touch-icon" sizes="60x60" href="favicon/apple-icon-60x60.png">
 	<link rel="apple-touch-icon" sizes="72x72" href="favicon/apple-icon-72x72.png">
