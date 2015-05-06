@@ -103,7 +103,7 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
     </ul>
 
     <ul class="nav navbar-nav">
-      <li><a id="import-opml" href="#">Import OPML</a></li>
+      <li><a id="import-opml" href="<?php echo "$url/opml.php"; ?>">Import OPML</a></li>
     </ul>
 
 	<form action="addfeedhandler.php" method="post" class="navbar-form navbar-left" role="feedname">

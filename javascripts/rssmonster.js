@@ -139,13 +139,7 @@ $(document).ready(function () {
 		loadcontent($.cookie('type'), $.cookie('value'), new_load_sort, $.cookie('view'))
 	});
 
-	//Load opml import screen in section
-	$("a#import-opml").click(function () {
-		$(window).off("scroll");
-		$('section').load('opml.php');
-	});
-
-	//Load opml import screen in section
+	//Show update screen in section
 	$("a.update").click(function () {
 		//show progress bar while loading
 		console.log("update feeds initialized");
