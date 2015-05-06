@@ -382,8 +382,8 @@ function FnReadPool(input) {
 
 			function getData(input) {
 
-				// Post data to backend.php
-				$.post('backend.php', {
+				// Post data to ajax.php
+				$.post('ajax.php', {
 					sort: $settings.sort,
 					articlelist: input,
 				}, function (data) {

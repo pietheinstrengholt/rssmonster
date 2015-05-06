@@ -1,9 +1,9 @@
 <?php
 
 /**
- * backend.php
+ * ajax.php
  *
- * The backend.php is used to wrap the JSON
+ * The ajax.php is used to wrap the JSON
  * data and wrap it between the HTML code
  *
  */

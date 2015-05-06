@@ -1,5 +1,14 @@
 <?php
 
+/**
+ * sidebar.php
+ *
+ * The sidebar.php file is used for navigation
+ * on the left side of the page. Only displayed on
+ * large screens, not on small devices.
+ *
+ */
+
 include 'config.php';
 include 'functions.php';
 
