@@ -1,7 +1,3 @@
-<a href="http://phppaper.strengholt-online.nl">
-  <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/phppaper3.png" width="700px">
-</a>
-
 RSS Monster
 =======
 
@@ -11,6 +7,10 @@ RSSMonster is an easy to use and open source rss reader, created as an alternati
 RSSMonster features a lightweight fluid responsive design and in written in jquery, javascript and php.
 It has adopted features such as opml import, marking as read when scrolling, manage feeds, json events, etc.
 RSSMonster is currently a work in progress and hosted on Github. Feel free to add any contributions or new features.
+
+<a href="http://phppaper.strengholt-online.nl">
+  <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/phppaper3.png" width="700px">
+</a>
 
 INSTALLATION
 ------------
