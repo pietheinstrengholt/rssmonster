@@ -4,8 +4,9 @@ RSS Monster
 Copyright (c) 2013 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use and open source rss reader, created as an alternatieve for Google Reader.
-RSSMonster features a lightweight fluid responsive design and in written in jquery, javascript and php.
-It has adopted features such as opml import, marking as read when scrolling, manage feeds, json events, etc.
+RSSMonster features a lightweight fluid responsive design. It is using the twitter boostrap framework and 
+is in written in jquery, javascript and PHP. It has adopted features such as opml import, marking as 
+read when scrolling, manage feeds, json events, etc.
 RSSMonster is currently a work in progress and hosted on Github. Feel free to add any contributions or new features.
 
 <a href="http://phppaper.strengholt-online.nl">
