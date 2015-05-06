@@ -13,9 +13,9 @@ include 'header.php';
 	<body>
 		<div class="row">
 			<div class="visible-lg col-lg-3">
-				<feedbar>
-					<?php include 'feedbar.php'; ?>
-				</feedbar>
+				<sidebar>
+					<?php include 'sidebar.php'; ?>
+				</sidebar>
 			</div>
 			<div class="col-12 col-sm-12 col-lg-9">
 				<section></section>

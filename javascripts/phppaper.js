@@ -22,7 +22,7 @@ $(document).ready(function () {
 		$.cookie('view', load_view, { expires: 14 });
 		
 		//avoid overflow
-		$('feedbar').css({'overflow-y': 'hidden'});
+		$('sidebar').css({'overflow-y': 'hidden'});
 		
 		//set view type
 		$("section").removeClass();
@@ -61,7 +61,7 @@ $(document).ready(function () {
 		}, 100);
 	}
 
-	//Functionality from menu when Articles section is clicked
+	//Functionality when clicking on sections in sidebar
 	$("div#status.panel a.list-group-item").click(function () {
 
 		//remove and add clicked status to class
@@ -77,14 +77,14 @@ $(document).ready(function () {
 
 	});
 
-	//Functionality when clicking on top-nav menu items
+	//Functionality when clicking on top-nav menu items in header page
 	$("a#starred.navbar-brand,a#unread.navbar-brand").click(function () {
 		var status = $(this).attr('id');
 		var encoded_status = encodeURIComponent(status);
 		loadcontent('status', encoded_status, $.cookie('sort'), $.cookie('view'));
 	});
 
-	//Category function on feedbar: Drop down menu sub-menu items when a category is clicked
+	//Category function on sidebar: Drop down menu sub-menu items when a category is clicked
 	//hide sub menu by default
 	$("div.menu-sub").hide();
 	$("div#categories.panel a.list-group-item.main").click(function () {
@@ -98,7 +98,7 @@ $(document).ready(function () {
 		$(this).next("div.menu-sub").slideToggle(200);
 
 		//remove and add active classes, needed for decreasing dynamic count
-		$('div.feedbar').find('.active-sub').removeClass("active");
+		$('div.sidebar').find('.active-sub').removeClass("active");
 
 		//change styling and arrow
 		if ($(this).hasClass("collapsed")) {

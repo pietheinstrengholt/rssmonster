@@ -170,9 +170,9 @@ div.container {
   width: 100% ! important;
 }
 
-/* FEEDBAR */
+/* SIDEBAR */
 
-feedbar {
+sidebar {
   overflow-y: hidden;
   overflow: auto;
   position: fixed;
@@ -188,7 +188,7 @@ feedbar {
   padding: 5px 15px ! important;
 }
 
-feedbar span.glyphicon {
+sidebar span.glyphicon {
   margin-right: 2px;
 }
 
