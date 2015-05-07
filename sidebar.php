@@ -13,17 +13,19 @@ include 'config.php';
 include 'functions.php';
 
 echo "<div class=\"organize\">";
-echo "<button class='btn btn-small btn-warning' type='button'>Mark all as read</button>";
+echo "<button class='btn btn-small btn-success' type='button'>Mark all as read</button>";
 echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
 echo "</div>";
 
 // Get overview of Article status
 $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
 
-echo "<div class=\"panel\" id=\"status\">";
-echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
-
+//show status menu (unread, read, starred, etc. items)
 if (!empty($status)) {
+
+	echo "<div class=\"panel\" id=\"status\">";
+	echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
+
 	foreach ($status as $row) {
 
 		if (!empty($row)) {
@@ -46,84 +48,73 @@ if (!empty($status)) {
 			echo "</a>";
 		}
 	}
+	
+	echo "</div>";
 }
 
-echo "</div>";
+// Get overview of all categories and call function to feed sidebar
+$categories = get_json('{"jsonrpc": "2.0", "overview": "category-detailed"}');
 
-// Get overview of all categories
-echo "<div class=\"panel\" id=\"categories\">";
+if (!empty($categories)) {
 
-echo "<a href=\"#\" class=\"list-group-item\"><b>Categories items</b></a>";
+	echo "<div class=\"panel\" id=\"categories\">";
+	echo "<a href=\"#\" class=\"list-group-item active\"><b>Categories items</b></a>";
 
-function fn_header_section($input, $name) {
+	foreach ($categories as $category) {
+		if (!empty($category)) {
 
-	global $conn;
+			$category_id = $category['id'];
 
-	if (!empty($input)) {
+			echo "<a href=\"#\" id=\"$category_id\" class=\"list-group-item main\">";
+			echo "<span class=\"badge\">";
 
-		$displayname = ucfirst($name);
+			echo "<span class=\"countunread\">$category[count_unread]</span>";
+			echo "<span class=\"countdivider\"> / </span>";
+			echo "<span class=\"countall\">$category[count_all]</span>";
 
-		foreach ($input as $row) {
-			if (!empty($row)) {
+			echo "</span>";
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-chevron-right\"></span><span id=\"title-name\">" . substr($category['category_name'], 0, 16) . "</span></span>";
+			echo "</a>";
 
-				$category_id = $row['id'];
-				$title = substr($row['category_name'], 0, 16);
+			// Get count-per-category using json
+			$query = "{\"jsonrpc\": \"2.0\", \"request\": \"count-per-category\", \"value\": \"$category_id\"}";
+			$feeds = get_json($query);
 
-				echo "<a href=\"#\" id=\"$category_id\" class=\"list-group-item main\">";
-				echo "<span class=\"badge\">";
-
-				echo "<span class=\"countunread\">$row[count_unread]</span>";
-				echo "<span class=\"countdivider\"> / </span>";
-				echo "<span class=\"countall\">$row[count_all]</span>";
-
-				echo "</span>";
-				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-chevron-right\"></span><span id=\"title-name\">$title</span></span>";
-				echo "</a>";
-
+			if (!empty($feeds)) {
+			
 				echo "<div class=\"menu-sub\" id='$category_id'>";
+			
+				foreach($feeds as $feed) {
 
-				// Get count-per-category using json
-				$category = $row['category_name'];
-				$query = "{\"jsonrpc\": \"2.0\", \"request\": \"count-per-category\", \"value\": \"$category\"}";
-				$rows = get_json($query);
-
-				if (!empty($rows)) {
-					foreach($rows as $row) {
-
-						if (empty($row['count'])) {
-							$row['count'] = "0";
-						}
-						
-						$feed_id = $row['id'];
-
-						if (empty($row['favicon'])) {
-							$faviconurl = "img/rss-default.gif";
-						} else {
-							$faviconurl = $row['favicon'];
-						}
-
-						echo "<a href=\"#\" id=\"$feed_id\" class=\"list-group-item sub\">";
-						echo "<span class=\"badge\">$row[count]</span>";
-						echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";
-						echo "<span class=\"title\">$row[feed_name]</span>";
-						echo "</a>";
+					if (empty($feed['count'])) {
+						$feed['count'] = "0";
 					}
+					
+					$feed_id = $feed['id'];
+
+					//set favicon url
+					if (empty($feed['favicon'])) {
+						$faviconurl = "img/rss-default.gif";
+					} else {
+						$faviconurl = $feed['favicon'];
+					}
+
+					//show feed details
+					echo "<a href=\"#\" id=\"$feed_id\" class=\"list-group-item sub\">";
+					echo "<span class=\"badge\">$feed[count]</span>";
+					echo "<span class=\"favicon\"><img class=\"favicon\" src=\"$faviconurl\"></img></span>";
+					echo "<span class=\"title\">$feed[feed_name]</span>";
+					echo "</a>";
 				}
-
+				
 				echo "</div>";
-
 			}
+
 		}
 	}
+
+	echo "</div>";
 }
 
-// Get overview of all categories and call function to feed feedbar
-$array = get_json('{"jsonrpc": "2.0", "overview": "category-detailed"}');
-
-if (!empty($array)) {
-	fn_header_section($array,'category');
-}
-
-echo "</div>";
 
 ?>

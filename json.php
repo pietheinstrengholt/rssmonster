@@ -58,10 +58,10 @@ if(isset($arr['update'])){
 
 			//category already exists in db, use id from query
 			if (!empty($row)) {
-				$newcategory = $row['id'];
+				$existingcategoryid = $row['id'];
 
 				$database->beginTransaction();
-				$database->query("UPDATE t_feeds set feed_name='$arr[new_feed_name]',category_id='$newcategory' WHERE id = $arr[value]");
+				$database->query("UPDATE t_feeds set feed_name='$arr[new_feed_name]',category_id='$existingcategoryid' WHERE id = $arr[value]");
 				$database->execute();
 				$database->endTransaction();
 				echo json_encode("done");
@@ -73,14 +73,13 @@ if(isset($arr['update'])){
 				$database->execute();
 				$database->endTransaction();
 
-				$newcategory = $database->lastInsertId();
+				$newcategoryid = $database->lastInsertId();
 
 				//change existing feeds to new category
 				$database->beginTransaction();
-				$database->query("UPDATE t_feeds SET feed_name='$arr[new_feed_name]',category_id='$newcategory' WHERE id = $arr[value]");
+				$database->query("UPDATE t_feeds SET feed_name='$arr[new_feed_name]',category_id='$newcategoryid' WHERE id = $arr[value]");
 				$database->execute();
-				$database->endTransaction();			
-
+				$database->endTransaction();
 				echo json_encode("done");
 			}
 		}
@@ -162,7 +161,7 @@ if(isset($arr['request'])){
 	
 	//get count-per-category
 	if ($arr['request'] == "count-per-category") {
-		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE category_name = '$arr[value]')) a left join (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
+		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$arr[value]')) a left join (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
 		$rows = $database->resultset();
 		if (!empty($rows)) {
 			echo json_encode($rows);

@@ -67,55 +67,52 @@ $results = get_json('{"jsonrpc": "2.0", "request": "get-feeds"}');
 
 foreach ($results as $row) {
 
-	if (!empty($row['id'])) {
+	if (!empty($row)) {
 
 		$feed          = $row['url'];
 		$feed_id       = $row['id'];
 		$feed_name     = $row['feed_name'];
 		$feed_category = $row['category_name'];
 
+		echo "<blockquote>";
 		echo "<div class='feed-overview $feed_id'>";
-
 		echo "<div class='feed-manage'>";
 
-		echo "<p class='heading'>";
-
-		echo "<b>" . $feed_name . "</b>";
-		echo " - ";
-		echo $feed;
-
-		echo "</p>";
+		echo "<h3 style=\"margin-left: 4px;\">" . $row['feed_name'] . "</h3>";
+		echo "<h4 style=\"margin-left: 4px;\">" . $row['url'] . "</h4>";
 
 		?>
 
 		<div class="content">
+
 		<form method="post" action="manage-feeds.php" role="form">
 
 		<fieldset>
 
 		<div class="form-group">
-		<div class="form-name"><label for="new_feed_name">Display Name:</label><input type="text" class="form-control input-sm" name="new_feed_name" value="<?php echo $feed_name; ?>"></div>
+		<div class="form-name"><label for="new_feed_name">Change display Name:</label><input type="text" class="form-control input-sm" name="new_feed_name" value="<?php echo $feed_name; ?>"></div>
 		</div>
 
 		<div class="form-group">
-		<div class='form-category'><label for="new_feed_category">Category:</label><input type="text" class="form-control input-sm" name="new_feed_category" value="<?php echo $feed_category; ?>"></div>
+		<div class='form-category'><label for="new_feed_category">Change category:</label><input type="text" class="form-control input-sm" name="new_feed_category" value="<?php echo $feed_category; ?>"></div>
 		</div>
 
 		<input type="hidden" name="new_feed_id" value="<?php echo $feed_id; ?>">
-		<input type="submit" value="submit" name="submit" class="btn btn-default button-submit">
+		<input type="submit" value="submit" name="submit" class="btn btn-primary button-submit">
 
-		<input type="submit" value="delete" name="delete" class="btn btn-default button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
+		<input type="submit" value="delete" name="delete" class="btn btn-danger button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
 
 		</fieldset>
 
 		</form>
+		
 		</div>
 
 		<?php
 
 		echo "</div>";
-
 		echo "</div>";
+		echo "</blockquote>";
 
 	}
 }
