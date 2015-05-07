@@ -45,15 +45,15 @@ if(!isset($arr['sort'])){
 //update feedname or feed category
 if(isset($arr['update'])){
 	if ($arr['update'] == "feeds") {
-		if (empty($arr[value])) {
+		if (empty($arr['feed_id'])) {
 			exit;
-		} else if (empty($arr[new_feed_name]) && empty($arr[new_feed_category])) {
+		} else if (empty($arr['feed_name']) && empty($arr['category_name'])) {
 			exit;
 		} else {
 
 			//check if category already exists in category table
-			$new = $arr[new_feed_category];
-			$database->query("SELECT id FROM t_categories WHERE category_name = '$new'");
+			$database->query("SELECT id FROM t_categories WHERE category_name=:category_name");
+			$database->bind(':category_name', $arr['category_name']);
 			$row = $database->single();
 
 			//category already exists in db, use id from query
@@ -61,7 +61,10 @@ if(isset($arr['update'])){
 				$existingcategoryid = $row['id'];
 
 				$database->beginTransaction();
-				$database->query("UPDATE t_feeds set feed_name='$arr[new_feed_name]',category_id='$existingcategoryid' WHERE id = $arr[value]");
+				$database->query("UPDATE t_feeds SET feed_name=:feed_name, category_id=:category_id WHERE id=:feed_id");
+				$database->bind(':feed_name', $arr['feed_name']);
+				$database->bind(':category_id', $row['id']);
+				$database->bind(':feed_id', $arr['feed_id']);
 				$database->execute();
 				$database->endTransaction();
 				echo json_encode("done");
@@ -69,19 +72,34 @@ if(isset($arr['update'])){
 			} else {
 				//insert new category
 				$database->beginTransaction();
-				$database->query("INSERT INTO t_categories (`id`, `feed_name`) VALUES (NULL, '$new')");
+				$database->query("INSERT INTO t_categories (category_name) VALUES (:category_name)");
+				$database->bind(':category_name', $arr['category_name']);
 				$database->execute();
 				$database->endTransaction();
-
-				$newcategoryid = $database->lastInsertId();
+				
+				//get lastInsertId from change request table
+				$database->query("SELECT id FROM t_categories ORDER BY id ASC");
+				$categories = $database->resultset();
+				$countcategories = count($categories)-1;
+				$newcategoryid = $categories[$countcategories]['id'];				
 
 				//change existing feeds to new category
 				$database->beginTransaction();
-				$database->query("UPDATE t_feeds SET feed_name='$arr[new_feed_name]',category_id='$newcategoryid' WHERE id = $arr[value]");
+				$database->query("UPDATE t_feeds SET feed_name=:feed_name, category_id=:category_id WHERE id=:feed_id");
+				$database->bind(':feed_name', $arr['feed_name']);
+				$database->bind(':category_id', $newcategoryid);
+				$database->bind(':feed_id', $arr['feed_id']);				
 				$database->execute();
 				$database->endTransaction();
 				echo json_encode("done");
 			}
+			
+			//delete unassigned categories
+			$database->beginTransaction();
+			$database->query("DELETE FROM t_categories WHERE id NOT IN (SELECT DISTINCT category_id FROM t_feeds)");			
+			$database->execute();
+			$database->endTransaction();			
+
 		}
 	}
 }

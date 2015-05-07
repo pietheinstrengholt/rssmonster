@@ -1,6 +1,33 @@
-<html>
-<head>
-<script src="javascripts/jquery-1.10.2.min.js"></script>
+<?php
+
+/**
+ * manage-feeds.php
+ *
+ * The manage-feeds.php file is used to add
+ * or remove feeds and to create new categories.
+ *
+ */
+
+// Report simple running errors
+error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
+include 'config.php';
+include 'database.class.php';
+include 'functions.php';
+include 'header.php';
+ 
+//retrieve post values
+if(isset($_POST)) {
+
+	if (!empty($_POST['feed_name']) || !empty($_POST['feed_id'])) {
+	
+		if(isset($_POST['feed_category'])){ $category_name = $_POST['feed_category']; } else { $category_name = "Uncategorized"; }
+	
+		$update = get_json('{"jsonrpc": "2.0", "update": "feeds", "feed_name": "' . $_POST['feed_name'] . '", "category_name": "' . $category_name . '", "feed_id": "' . $_POST['feed_id'] . '"}');
+	}
+}
+
+?>
 
 <script>
 function DeleteFunction(feed_name,feed_id) {
@@ -30,18 +57,6 @@ function DeleteFunction(feed_name,feed_id) {
 }
 </script>
 
-<script type="text/javascript">
-jQuery(document).ready(function() {
-	jQuery(".content").hide();
-	//toggle the componenet with class msg_body
-	jQuery(".heading").click(function()
-	{
-		jQuery(this).next(".content").slideToggle(500);
-	});
-});
-</script>
-
-
 </head>
 <body>
 
@@ -49,58 +64,42 @@ jQuery(document).ready(function() {
 
 <?php
 
-include 'config.php';
-include 'functions.php';
+//get list with feeds and categories
+$feeds = get_json('{"jsonrpc": "2.0", "request": "get-feeds"}');
 
-//retrieve post values
-if(isset($_POST['new_feed_name'])){ $new_feed_name = $_POST['new_feed_name']; } else { $new_feed_name = NULL; }
-if(isset($_POST['new_feed_category'])){ $new_feed_category = $_POST['new_feed_category']; } else { $new_feed_category = NULL; }
-if(isset($_POST['new_feed_id'])){ $new_feed_id = $_POST['new_feed_id']; } else { $new_feed_id = NULL; }
+if (!empty($feeds)) {
+	foreach ($feeds as $feed) {
 
-if (!empty($new_feed_name) || !empty($new_feed_category)) {
-	$update = get_json('{"jsonrpc": "2.0", "update": "feeds", "new_feed_name": "' . $new_feed_name . '", "new_feed_category": "' . $new_feed_category . '", "value": "' . $new_feed_id . '"}');
-	header("Location: $url");
-	exit;
-}
-
-$results = get_json('{"jsonrpc": "2.0", "request": "get-feeds"}');
-
-foreach ($results as $row) {
-
-	if (!empty($row)) {
-
-		$feed          = $row['url'];
-		$feed_id       = $row['id'];
-		$feed_name     = $row['feed_name'];
-		$feed_category = $row['category_name'];
+		//set feed_id variable
+		$feed_id = $feed['id'];
 
 		echo "<blockquote>";
 		echo "<div class='feed-overview $feed_id'>";
 		echo "<div class='feed-manage'>";
 
-		echo "<h3 style=\"margin-left: 4px;\">" . $row['feed_name'] . "</h3>";
-		echo "<h4 style=\"margin-left: 4px;\">" . $row['url'] . "</h4>";
+		echo "<h3 style=\"margin-left: 4px;\">" . $feed['feed_name'] . "</h3>";
+		echo "<h4 style=\"margin-left: 4px;\">" . $feed['url'] . "</h4>";
 
 		?>
 
-		<div class="content">
+		<div class="feed-information">
 
 		<form method="post" action="manage-feeds.php" role="form">
 
 		<fieldset>
 
 		<div class="form-group">
-		<div class="form-name"><label for="new_feed_name">Change display Name:</label><input type="text" class="form-control input-sm" name="new_feed_name" value="<?php echo $feed_name; ?>"></div>
+		<div class="form-name"><label for="feed_name">Change display Name:</label><input type="text" class="form-control input-sm" name="feed_name" value="<?php echo $feed['feed_name']; ?>"></div>
 		</div>
 
 		<div class="form-group">
-		<div class='form-category'><label for="new_feed_category">Change category:</label><input type="text" class="form-control input-sm" name="new_feed_category" value="<?php echo $feed_category; ?>"></div>
+		<div class='form-category'><label for="feed_category">Change category:</label><input type="text" class="form-control input-sm" name="feed_category" value="<?php echo $feed['category_name']; ?>"></div>
 		</div>
 
-		<input type="hidden" name="new_feed_id" value="<?php echo $feed_id; ?>">
+		<input type="hidden" name="feed_id" value="<?php echo $feed['id']; ?>">
 		<input type="submit" value="submit" name="submit" class="btn btn-primary button-submit">
 
-		<input type="submit" value="delete" name="delete" class="btn btn-danger button-delete" onclick="DeleteFunction('<?php echo $feed_name; ?>','<?php echo $feed_id; ?>')" >
+		<input type="submit" value="delete" name="delete" class="btn btn-danger button-delete" onclick="DeleteFunction('<?php echo $feed['feed_name']; ?>','<?php echo $feed['id']; ?>')" >
 
 		</fieldset>
 

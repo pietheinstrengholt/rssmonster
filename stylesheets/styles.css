@@ -196,7 +196,7 @@ div.organize {
   min-width: 230px;
 }
 
-div.organize button.btn.btn-small.btn-primary {
+a.organize-feeds {
   margin-left: 8px ! important;
 }
 

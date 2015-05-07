@@ -149,13 +149,7 @@ $(document).ready(function () {
 	});
 
 	//Load organize feeds section
-	$("div.organize button.btn.btn-small.btn-primary").click(function () {
-		$(window).off("scroll");
-		$('section').load('manage-feeds.php');
-	});
-
-	//Load organize feeds section
-	$("div.organize button.btn.btn-small.btn-warning").click(function () {
+	$("div.organize button.mark-all-as-read").click(function () {
 		console.log("mark-as-read button clicked");
 		$.ajax({
 			type: "POST",

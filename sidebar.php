@@ -13,8 +13,9 @@ include 'config.php';
 include 'functions.php';
 
 echo "<div class=\"organize\">";
-echo "<button class='btn btn-small btn-success' type='button'>Mark all as read</button>";
-echo "<button class='btn btn-small btn-primary' type='button'>Organize Feeds</button>";
+echo "<button class='btn btn-small btn-success mark-all-as-read' type='button'>Mark all as read</button>";
+//echo "<button class='btn btn-small btn-primary organize-feeds' type='button'>Organize Feeds</button>";
+echo "<a href=\"manage-feeds.php\" role=\"button\" class=\"btn btn-small btn-primary organize-feeds\">Organize Feeds</a>";
 echo "</div>";
 
 // Get overview of Article status
