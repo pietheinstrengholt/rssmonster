@@ -9,9 +9,7 @@ is in written in jquery, javascript and PHP. It has adopted features such as opm
 read when scrolling, manage feeds, json events, etc.
 RSSMonster is currently a work in progress and hosted on Github. Feel free to add any contributions or new features.
 
-<a href="http://phppaper.strengholt-online.nl">
-  <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/phppaper3.png" width="700px">
-</a>
+<img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster.png" width="700px">
 
 INSTALLATION
 ------------
