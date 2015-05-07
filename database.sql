@@ -14,13 +14,13 @@ CREATE TABLE IF NOT EXISTS `t_articles` (
   `url` varchar(400) CHARACTER SET utf8 DEFAULT NULL,
   `subject` varchar(400) CHARACTER SET utf8 DEFAULT NULL,
   `content` text CHARACTER SET utf8,
-  `insert_date` datetime DEFAULT NULL,
+  `insert_date` timestamp NULL DEFAULT CURRENT_TIMESTAMP,
   `publish_date` datetime DEFAULT NULL,
   `author` varchar(200) CHARACTER SET utf8 DEFAULT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_2` (`id`),
   KEY `id` (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=243602 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `t_categories` (
   `id` int(3) NOT NULL AUTO_INCREMENT,
@@ -28,7 +28,7 @@ CREATE TABLE IF NOT EXISTS `t_categories` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_2` (`id`),
   KEY `id` (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=79 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `t_feeds` (
   `id` mediumint(9) NOT NULL AUTO_INCREMENT,
@@ -42,7 +42,7 @@ CREATE TABLE IF NOT EXISTS `t_feeds` (
   PRIMARY KEY (`id`),
   UNIQUE KEY `id_2` (`id`),
   KEY `id` (`id`)
-) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=12572 ;
+) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
 CREATE TABLE IF NOT EXISTS `v_id_status` (
 `id` mediumint(9)
@@ -55,12 +55,11 @@ CREATE TABLE IF NOT EXISTS `v_id_status` (
 CREATE TABLE IF NOT EXISTS `v_overview_status` (
 `name` varchar(13)
 ,`count` bigint(21)
-);DROP TABLE IF EXISTS `v_id_status`;
+)
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`database`@`%` SQL SECURITY DEFINER VIEW `v_id_status` AS select `t1`.`id` AS `id`,`t1`.`status` AS `status`,`t2`.`feed_name` AS `feed`,`t3`.`category_name` AS `category`,(case when (`t1`.`publish_date` between (now() - interval 1 hour) and now()) then 'last-hour' when (`t1`.`publish_date` between (now() - interval 1 day) and now()) then 'last-24-hours' when (`t1`.`publish_date` between (now() - interval 1 week) and now()) then 'last-week' else 'other' end) AS `publish_date` from ((`t_articles` `t1` left join `t_feeds` `t2` on((`t1`.`feed_id` = `t2`.`id`))) left join `t_categories` `t3` on((`t2`.`category_id` = `t3`.`id`)));
-DROP TABLE IF EXISTS `v_overview_status`;
+CREATE ALGORITHM=UNDEFINED DEFINER=`rssmonster`@`%` SQL SECURITY DEFINER VIEW `v_id_status` AS select `t1`.`id` AS `id`,`t1`.`status` AS `status`,`t2`.`feed_name` AS `feed`,`t3`.`category_name` AS `category`,(case when (`t1`.`publish_date` between (now() - interval 1 hour) and now()) then 'last-hour' when (`t1`.`publish_date` between (now() - interval 1 day) and now()) then 'last-24-hours' when (`t1`.`publish_date` between (now() - interval 1 week) and now()) then 'last-week' else 'other' end) AS `publish_date` from ((`t_articles` `t1` left join `t_feeds` `t2` on((`t1`.`feed_id` = `t2`.`id`))) left join `t_categories` `t3` on((`t2`.`category_id` = `t3`.`id`)));
 
-CREATE ALGORITHM=UNDEFINED DEFINER=`database`@`%` SQL SECURITY DEFINER VIEW `v_overview_status` AS select 'unread' AS `name`,count(0) AS `count` from `t_articles` `a` where (`a`.`status` = 'unread') union select 'read' AS `name`,count(0) AS `count` from `t_articles` `b` where (`b`.`status` = 'read') union select 'starred' AS `name`,count(0) AS `count` from `t_articles` where (`t_articles`.`star_ind` = '1') union select 'last 24 hours' AS `name`,count(0) AS `count` from `t_articles` where ((`t_articles`.`status` = 'unread') and (`t_articles`.`publish_date` between (now() - interval 1 day) and now())) union select 'last hour' AS `name`,count(0) AS `count` from `t_articles` where ((`t_articles`.`status` = 'unread') and (`t_articles`.`publish_date` between (now() - interval 1 hour) and now()));
+CREATE ALGORITHM=UNDEFINED DEFINER=`rssmonster`@`%` SQL SECURITY DEFINER VIEW `v_overview_status` AS select 'unread' AS `name`,count(0) AS `count` from `t_articles` `a` where (`a`.`status` = 'unread') union select 'read' AS `name`,count(0) AS `count` from `t_articles` `b` where (`b`.`status` = 'read') union select 'starred' AS `name`,count(0) AS `count` from `t_articles` where (`t_articles`.`star_ind` = '1') union select 'last 24 hours' AS `name`,count(0) AS `count` from `t_articles` where ((`t_articles`.`status` = 'unread') and (`t_articles`.`publish_date` between (now() - interval 1 day) and now())) union select 'last hour' AS `name`,count(0) AS `count` from `t_articles` where ((`t_articles`.`status` = 'unread') and (`t_articles`.`publish_date` between (now() - interval 1 hour) and now()));
 
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
