@@ -28,8 +28,9 @@ $(document).ready(function () {
 		$("section").removeClass();
 		$("section").addClass($.cookie('view'));
 
-		//empty poolid array
+		//empty poolid and articleList array's
 		poolid = [];
+		articleList = [];
 
 		//destroy waypoint functions, avoid many items being called, see infinite.js
 		$('div#block h4').waypoint('destroy');
@@ -48,8 +49,8 @@ $(document).ready(function () {
 		//use small amount of timeout when calling scrollPagination
 		setTimeout(function () {
 			$('#content').scrollPagination({
-				nop: 1, // The number of posts per scroll to be loaded
-				offset: 0, // Initial offset, begins at 0 in this case
+				nop: 10, // The number of posts per scroll to be loaded
+				offset: 10, // Initial offset, begins at 0 in this case
 				error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
 				delay: 100, // When you scroll down the posts will load after a delayed amount of time.
 				scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
@@ -304,7 +305,7 @@ function FnReadPool(input) {
 	}
 }
 
-//reference: http://www.inserthtml.com/2013/01/scroll-pagination/
+//used code from: http://www.inserthtml.com/2013/01/scroll-pagination/
 //function for detailed scrolling and gathering data
 (function ($) {
 
@@ -312,9 +313,9 @@ function FnReadPool(input) {
 
 		//default settings
 		var settings = {
-			nop: 1, // The number of posts per scroll to be loaded
-			offset: 0, // Initial offset, begins at 0 in this case
-			error: 'No More Posts!', // When the user reaches the end this is the message that is
+			nop: 10, // The number of posts per scroll to be loaded
+			offset: 0, // Initial offset, begins at 10 in this case
+			error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
 			delay: 100, // When you scroll down the posts will load after a delayed amount of time.
 			scroll: true, // The main bit, if set to false posts will not load as the user scrolls.
 			category_id: '',
@@ -322,9 +323,6 @@ function FnReadPool(input) {
 			status: '',
 			sort: '',
 		}
-
-		//set result
-		var result = [];
 
 		// Extend the options so they work with the plug-in
 		if (options) {
@@ -347,6 +345,7 @@ function FnReadPool(input) {
 			// Append custom messages and extra UI
 			$this.append('<div class="content"></div><div class="info-bar" id="info-bar"><div style="width: 50%;"></div></div>');
 
+			// Use json.php to get a full list with article id's
 			$.ajax({
 				type: "POST",
 				url: "json.php",
@@ -362,15 +361,33 @@ function FnReadPool(input) {
 				dataType: "json",
 				async: false,
 				success: function (json) {
-					result = json;
+					articleList = json;
 				},
 				failure: function (errMsg) {
+					$("div#content").text("json.php failed to return content: " + errMsg)
 				}
 			});
+			
+			// Function for checking if a var is empty, null or undefined
+			function isEmpty(str) {
+				return (!str || 0 === str.length);
+			}
+			
+			// On fist load, check if articleList is empty
+			if (isEmpty(articleList)) {
+				$this.find('.info-bar').html('No posts available at first load.');
+			} else {
+				console.log("get data on load: " + articleList.slice(0,10).join(","));
+				getData(articleList.slice(0,10).join(",")); // Run function initially
+				var articleCount = articleList.filter(function(value) { return value !== undefined }).length;
+				console.log(articleCount);
+			}
 
 			function getData(input) {
+			
+				console.log("get data for next " + offset + " items: " + input);
 
-				// Post data to ajax.php
+				// Post data to ajax.php, to wrap articles in html and append to content class
 				$.post('ajax.php', {
 					sort: $settings.sort,
 					articlelist: input,
@@ -379,63 +396,36 @@ function FnReadPool(input) {
 					// Change loading bar content (it may have been altered)
 					$this.find('.info-bar').html($initmessage);
 
-					// If there is no data returned, there are no more posts to be shown. Show message
+					// If there is no data returned, there are no more posts to be shown. Show message and last mark items as read
 					if (data == "") {
 						$this.find('.info-bar').html($settings.error);
+						
+						// Capture previous nop and call FnReadPool function to mark remaining items as read
+						for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
+							FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
+						}						
+						
 					} else {
 
 						// If data is returned, append the data to the content div
 						$this.find('.content').append(data);
 
-						//add waypoint function to h3 header, look at FnReadPool
+						// Add waypoint function to h3 header, look at FnReadPool
 						$('div#block h4').waypoint(function() {
 							var id = $(this).attr('id');
 							FnReadPool(id);
 						}, {
+							// Triggered when the top of the h3 element hits 10px of top of the viewport
 							offset: 10, triggerOnce: true 
 						});
 
-						// Offset increases
+						// Increase offset
 						offset = offset + $settings.nop;
 
 						// No longer busy!
 						busy = false;
 					}
 				});
-			}
-
-			function processpool() {
-
-				// Run the function to fetch the data inside a delay
-				// This is useful if you have content in a footer you
-				// want the user to see.
-				setTimeout(function () {
-
-					//mark remaining items as read
-					if( result[offset] === undefined ) {
-						console.log("pool with id's is empty, mark last items in batch as read: " + result[offset-1].join(","));
-
-						for (var i = 0; i < result[offset-1].length; i++) {
-							FnReadPool(result[offset-1][i]);
-						}
-
-						$this.find('.info-bar').html('No more posts available');
-
-					} else {
-						console.log("get data for batch:" + offset + " items: " + result[offset].join(","));
-						getData(result[offset].join(","));
-					}
-				}, $settings.delay);
-			}
-
-
-			// On fist load
-			if (result[0] === undefined ) {
-				console.log("No posts found on first load");
-				$this.find('.info-bar').html('No posts available, all marked as read');
-			} else {
-				console.log("get data on load: " + result[0].join(","));
-				getData(result[0].join(",")); // Run function initially
 			}
 
 			// If scrolling is enabled
@@ -458,8 +448,12 @@ function FnReadPool(input) {
 						// Tell the user we're loading posts
 						$this.find('.info-bar').html('Loading Posts');
 
-						// Process the article pool
-						processpool();
+						// Run the function to fetch the data inside a delay
+						// This is useful if you have content in a footer you
+						// want the user to see.
+						setTimeout(function () {
+							getData(articleList.slice(offset-$settings.nop,offset).join(","));
+						}, $settings.delay);
 
 					}
 				});
@@ -470,8 +464,12 @@ function FnReadPool(input) {
 				if (busy == false) {
 					busy = true;
 
-					// Process the article pool
-					processpool();
+					// Run the function to fetch the data inside a delay
+					// This is useful if you have content in a footer you
+					// want the user to see.
+					setTimeout(function () {
+						getData(articleList.slice(offset-$settings.nop,offset).join(","));
+					}, $settings.delay);
 				}
 
 			});

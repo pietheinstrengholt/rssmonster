@@ -140,7 +140,6 @@ if(isset($arr['request'])){
 			foreach($rows as $row) {
 				array_push($unread_item_ids, $row['id']);
 			}
-			$unread_item_ids = array_chunk($unread_item_ids, 10);
 
 			echo json_encode($unread_item_ids);	
 		}
