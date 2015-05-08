@@ -63,7 +63,7 @@ if (!empty($rows)) {
 		//init feed simplepie
 		$feed = new SimplePie();
 		$feed->set_feed_url($feed_url);
-		$feed->set_cache_location($db_path);
+		$feed->set_cache_location(CACHE_DIR);
 
 		//start simplepie
 		$feed->init();

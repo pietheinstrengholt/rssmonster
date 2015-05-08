@@ -1,10 +1,10 @@
 <?php
 
-// Cache location for SimplePie
-$db_path="/var/www/cache";
-
 // Report simple running errors
 error_reporting(E_ERROR | E_WARNING | E_PARSE);
+
+// Cache location for SimplePie
+define("CACHE_DIR", "/var/www/cache");
 
 // Connection's Parameters
 define("DB_HOST", "localhost");

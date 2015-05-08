@@ -34,7 +34,7 @@ echo "Trying to add new feed: " . "<b>" . $feedname . "</b>";
 
 $feed = new SimplePie();
 $feed->set_feed_url($feedname);
-$feed->set_cache_location('./cache');
+$feed->set_cache_location(CACHE_DIR);
 $feed->init();
 $feed->handle_content_type();
 
