@@ -315,28 +315,15 @@ if(isset($arr['overview'])){
 	} 
 	
 	if ($arr['overview'] == "category-detailed") {
-		$database->query("SELECT t1.id, t1.category_name, IFNULL(count_all,0) AS count_all, IFNULL(count_unread,0) AS count_unread FROM
-
-		(SELECT count(*) as count_all, c.id, c.category_name FROM `t_articles` a
+		$database->query("SELECT c.id, c.category_name, COUNT(status) AS count_all, SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END) AS count_unread
+		FROM t_articles a
 		LEFT JOIN t_feeds b
-		on a.feed_id = b.id
+		ON a.feed_id = b.id
 		LEFT JOIN t_categories c
-		on b.category_id = c.id
-		GROUP BY category_id, category_name) t1
-
-		LEFT JOIN
-
-		(SELECT count(*) AS count_unread, c.id, c.category_name FROM `t_articles` a
-		LEFT JOIN t_feeds b
-		on a.feed_id = b.id
-		LEFT JOIN t_categories c
-		on b.category_id = c.id
-		WHERE a.status = 'unread'
-		GROUP BY category_id, category_name) t2
-
-		ON t1.id = t2.id
-		ORDER BY t1.category_name");
-	} 
+		ON b.category_id = c.id
+		GROUP BY category_id, category_name, status
+		ORDER BY category_name");
+	}
 	
 	if ($arr['overview'] == "status") {
 		$database->query("SELECT * FROM v_overview_status");
