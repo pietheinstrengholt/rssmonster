@@ -221,8 +221,10 @@ $(document).ready(function () {
 		});
 
 		//change badges with new count
-		$('div#status.panel a#starred.list-group-item span.badge').text(starredcountnew);
-		$('a#starred.navbar-brand span.badge.pull-right').text(starredcountnew);
+		$('span.starred.badge').each(function(index, obj) {
+		  $(this).text(starredcountnew);
+		});
+
 	});
 
 });

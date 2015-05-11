@@ -32,7 +32,7 @@ if (!empty($status)) {
 		if (!empty($row)) {
 			$cssid = str_replace(" ", "-", $row['name']);
 			echo "<a href=\"#\" id=\"$cssid\" class=\"list-group-item\">";
-			echo "<span class=\"badge\">$row[count]</span>";
+			echo "<span class=\"$cssid badge\">$row[count]</span>";
 
 			if ($cssid == 'unread') {
 				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-search\"></span><span id=\"title-name\">$row[name]</span></span>";
