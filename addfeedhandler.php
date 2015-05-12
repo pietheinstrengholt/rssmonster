@@ -30,6 +30,8 @@ if (isset($_POST['feedname'])) {
 } else {
 	$feedname = NULL;
 }
+
+echo "<div style=\"padding:20px;\">";
 echo "Trying to add new feed: " . "<b>" . $feedname . "</b>";
 
 $feed = new SimplePie();
@@ -52,10 +54,14 @@ if ($feed->error()) {
 	//favicon has been deprecated: $feed->get_favicon();
 	$favicon = NULL;
 
-	echo "<p><br>" . $feedurl . "<br>" . $title . "<br>" . $feed_desc . "<br></p>";
+	echo "<table style=\"width: 500px; margin-top:10px;\" class=\"table table-bordered\">";
+	echo "<tr><td>Feed url:</td><td>" . $feedurl . "</td></tr>";
+	echo "<tr><td>Feed title:</td><td>" . $title . "</td></tr>";
+	echo "<tr><td>Feed description:</td><td>" . $feed_desc . "</td></tr>";
+	echo "</table>";
 
 	if (empty($title)) {
-		echo "<strong><br>Title is empty, rss feed seems to be invalid!</strong>";
+		echo "<strong style=\"color:red;\"><br>Title is empty, rss feed seems to be invalid!</strong>";
 		exit();
 	}
 
@@ -66,7 +72,7 @@ if ($feed->error()) {
 	$rows = $database->resultset();
 
 	if (!empty($rows)) {
-		echo "<strong><br>Error adding \"$title\", feed with same title or with same url already exists!</strong>";
+		echo "<strong style=\"color:red;\"><br>Error adding \"$title\", feed with same title or with same url already exists!</strong>";
 		exit();
 	}
 
@@ -80,10 +86,11 @@ if ($feed->error()) {
 	$database->execute();
 	$database->endTransaction();
 
-	echo "<<strong>><br><br>Feedname \"$title\" added to list with rss feeds!</strong>";
+	echo "<strong><br><br>Feedname \"$title\" added to list with rss feeds!</strong>";
 
 }
 
+echo "</div>";
 echo "</result>";
 
 ?>

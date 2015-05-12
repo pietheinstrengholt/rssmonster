@@ -56,5 +56,5 @@ TODO
 * Mark as read, unread buttons
 * Add search function
 * Implement drag and dropstyle to manage feeds
-* First welcome screen to add opml or feeds
+* First welcome screen when database is empty
 * Lazy load images for detailed view

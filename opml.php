@@ -129,11 +129,6 @@ if(!empty($_POST)) {
 
 ?>
 
-<head>
- <link rel="stylesheet" href="stylesheets/styles.css">
- <script src="javascripts/bootstrap.file-input.js"></script>
-</head>
-
 <div class="opml-form">
 <legend>Import OPML file</legend>
 <p>Use the browse button below to upload your OPML XML file.</p>

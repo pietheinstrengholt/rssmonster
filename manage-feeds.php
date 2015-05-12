@@ -116,6 +116,10 @@ if (!empty($feeds)) {
 	}
 }
 
+if (empty($feeds)) {
+	echo "No feeds are found, please use the top menu to submit a new RSS feed.";
+}
+
 
 ?>
 

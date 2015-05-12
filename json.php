@@ -96,7 +96,7 @@ if(isset($arr['update'])){
 			
 			//delete unassigned categories
 			$database->beginTransaction();
-			$database->query("DELETE FROM t_categories WHERE id NOT IN (SELECT DISTINCT category_id FROM t_feeds)");			
+			$database->query("DELETE FROM t_categories WHERE id NOT IN (SELECT DISTINCT category_id FROM t_feeds) AND id <> 1");			
 			$database->execute();
 			$database->endTransaction();			
 
@@ -165,7 +165,7 @@ if(isset($arr['request'])){
 	
 	//get count-per-category
 	if ($arr['request'] == "count-per-category") {
-		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$arr[value]')) a INNER JOIN (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
+		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$arr[value]')) a LEFT JOIN (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
 		$rows = $database->resultset();
 		if (!empty($rows)) {
 			echo json_encode($rows);
@@ -290,7 +290,7 @@ if(isset($arr['overview'])){
 		FROM t_categories a
 		INNER JOIN t_feeds b
 		ON a.id = b.category_id
-		INNER JOIN t_articles c
+		LEFT JOIN t_articles c
 		ON b.id = c.feed_id 
 		GROUP BY category_id, category_name
 		ORDER BY category_name");
@@ -324,6 +324,8 @@ if(isset($arr['delete'])){
 			$database->beginTransaction();
 			$database->query("DELETE FROM t_feeds WHERE id = $arr[value]");
 			$database->execute();
+			$database->query("DELETE FROM t_articles WHERE feed_id = $arr[value]");
+			$database->execute();			
 			$database->endTransaction();	
 			echo json_encode("done");
 		}

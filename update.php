@@ -40,6 +40,10 @@ $database->endTransaction();
 $database->query("SELECT * FROM t_feeds ORDER BY last_update LIMIT 0, 50");
 $rows = $database->resultset();
 
+if (empty($rows)) {
+	echo "No feeds found in the database. Use the the top menu to add new RSS feeds!";
+}
+
 if (!empty($rows)) {
 
 	//set previous week
@@ -137,17 +141,20 @@ if (!empty($rows)) {
 		}
 	}
 	echo "</table>";
+	
+	//show amount of duplicates found
+	$database->query("SELECT count(*) AS count FROM (SELECT MAX(id) AS id FROM t_articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A");
+	$duplicates = $database->single();
+	echo "Removed " . $duplicates['count'] . " duplicates";
+
+	//clean-up duplicates
+	$database->beginTransaction();
+	$database->query("DELETE FROM t_articles WHERE id IN (SELECT * FROM (SELECT MAX(id) AS id FROM t_articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A)");
+	$database->execute();
+	$database->endTransaction();	
+	
 }
 
-//show amount of duplicates found
-$database->query("SELECT count(*) AS count FROM (SELECT MAX(id) AS id FROM t_articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A");
-$duplicates = $database->single();
-echo "Removed " . $duplicates['count'] . " duplicates";
 
-//clean-up duplicates
-$database->beginTransaction();
-$database->query("DELETE FROM t_articles WHERE id IN (SELECT * FROM (SELECT MAX(id) AS id FROM t_articles GROUP BY feed_id, url, subject HAVING COUNT(*) > 1 ORDER BY feed_id, url, subject) AS A)");
-$database->execute();
-$database->endTransaction();
 
 ?>

@@ -362,12 +362,14 @@ function FnReadPool(articleId) {
 			
 			// On fist load, check if articleList is empty
 			if (isEmpty(articleList)) {
+				//Show message and set busy to true, avoid clicking and loading nothing
 				$this.find('.info-bar').html('No posts available at first load.');
+				busy = true;
 			} else {
+				//Start loading first 10 articles
 				console.log("get data on load: " + articleList.slice(0,10).join(","));
 				getData(articleList.slice(0,10).join(",")); // Run function initially
 				var articleCount = articleList.filter(function(value) { return value !== undefined }).length;
-				console.log(articleCount);
 			}
 
 			function getData(input) {

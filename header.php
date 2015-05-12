@@ -8,6 +8,7 @@
 	<script src="javascripts/rssmonster.js"></script>
 	<script src="javascripts/bootstrap.min.js"></script>
 	<script src="javascripts/waypoints.js"></script>
+	<script src="javascripts/bootstrap.file-input.js"></script>
 	<link rel="stylesheet" href="stylesheets/styles.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">

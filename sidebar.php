@@ -14,7 +14,6 @@ include 'functions.php';
 
 echo "<div class=\"organize\">";
 echo "<button class='btn btn-small btn-success mark-all-as-read' type='button'>Mark all as read</button>";
-//echo "<button class='btn btn-small btn-primary organize-feeds' type='button'>Organize Feeds</button>";
 echo "<a href=\"manage-feeds.php\" role=\"button\" class=\"btn btn-small btn-primary organize-feeds\">Organize Feeds</a>";
 echo "</div>";
 
@@ -26,7 +25,6 @@ if (!empty($status)) {
 
 	echo "<div class=\"panel\" id=\"status\">";
 	echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
-
 
 	if (!empty($status)) {
 
@@ -117,6 +115,10 @@ if (!empty($categories)) {
 	}
 
 	echo "</div>";
+}
+
+if (empty($categories)) {
+	echo "<p style=\"margin-left:3px;\">No categories found, use the top menu to add new RSS feeds!<p>";
 }
 
 
