@@ -27,25 +27,27 @@ if (!empty($status)) {
 	echo "<div class=\"panel\" id=\"status\">";
 	echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
 
-	foreach ($status as $row) {
 
-		if (!empty($row)) {
-			$cssid = str_replace(" ", "-", $row['name']);
-			echo "<a href=\"#\" id=\"$cssid\" class=\"list-group-item\">";
-			echo "<span class=\"$cssid badge\">$row[count]</span>";
+	if (!empty($status)) {
 
-			if ($cssid == 'unread') {
-				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-search\"></span><span id=\"title-name\">$row[name]</span></span>";
-			} elseif ($cssid == 'read') {
-				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-pencil\"></span><span id=\"title-name\">$row[name]</span></span>";
-			} elseif ($cssid == 'starred') {
-				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-star\"></span><span id=\"title-name\">$row[name]</span></span>";
-			} elseif ($cssid == 'last-24-hours') {
-				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-tint\"></span><span id=\"title-name\">$row[name]</span></span>";
-			} elseif ($cssid == 'last-hour') {
-				echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-leaf\"></span><span id=\"title-name\">$row[name]</span></span>";
-			}
-
+		if (isset($status['unread'])) {
+			echo "<a href=\"#\" id=\"unread\" class=\"list-group-item\">";
+			echo "<span class=\"unread badge\">$status[unread]</span>";
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-search\"></span><span id=\"title-name\">unread</span></span>";
+			echo "</a>";
+		}
+		
+		if (isset($status['total'])) {
+			echo "<a href=\"#\" id=\"read\" class=\"list-group-item\">";
+			echo "<span class=\"read badge\">" . ($status['total'] - $status['unread']) .  "</span>";			
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-pencil\"></span><span id=\"title-name\">read</span></span>";
+			echo "</a>";
+		}
+		
+		if (isset($status['starred'])) {
+			echo "<a href=\"#\" id=\"starred\" class=\"list-group-item\">";
+			echo "<span class=\"starred badge\">$status[starred]</span>";			
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-star\"></span><span id=\"title-name\">starred</span></span>";
 			echo "</a>";
 		}
 	}

@@ -151,13 +151,13 @@ $(document).ready(function () {
 
 	//Load organize feeds section
 	$("div.organize button.mark-all-as-read").click(function () {
-		console.log("mark-as-read button clicked");
+		console.log("mark-all-as-read button clicked");
 		$.ajax({
 			type: "POST",
 			url: "json.php",
 			data: JSON.stringify({
 				"jsonrpc": "2.0",
-				"update": "mark-as-read"
+				"update": "mark-all-as-read"
 			}),
 			contentType: "application/json; charset=utf-8",
 			dataType: "json",
@@ -173,7 +173,7 @@ $(document).ready(function () {
 		});
 	});
 
-	//todo: show read and unread buttons
+	//TODO: show read and unread buttons
 	$("section").on("click", "div#block", function (event) {
 		$("section").find("div#block.active").removeClass("active");
 		$(this).addClass("active");
@@ -233,31 +233,33 @@ $(document).ready(function () {
 var poolid = new Array();
 
 //Pool function to mark items as read and to avoid items are set to read more then once
-function FnReadPool(input) {
-	if (jQuery.inArray(input, poolid) == -1) {
+function FnReadPool(articleId) {
+
+	//check if articleId is already in the Pool
+	if (jQuery.inArray(articleId, poolid) == -1) {
 
 		setTimeout(function() {
-			console.log("viewport:" + input);
-		}, 600);
+			console.log("viewport:" + articleId);
+		}, 300);
 
 		$.ajax({
 			type: "POST",
 			url: "json.php",
 			data: JSON.stringify({
 				"jsonrpc": "2.0",
-				"update": "item-as-read",
-				"value": input
+				"update": "mark-item-as-read",
+				"value": articleId
 			}),
 			contentType: "application/json; charset=utf-8",
 			dataType: "json",
 			success: function (data) {
 
-				//capture feed and status, filter out non alphanumeric and white spaces
-				var feed_id = data[0]['feed_id'];
-				var category_id = data[0]['category_id'];
+				//capture feed_id and category_id from returned data
+				var feed_id = data['feed_id'];
+				var category_id = data['category_id'];
 
-				//only in case when status is unread
-				if (data[0]['status'] == "unread") {
+				//update statistics only in case when the status is returned as unread
+				if (data['status'] == "unread") {
 
 					//decrease unread count
 					var unreadcount = $('div#status.panel a#unread.list-group-item span.badge').text();
@@ -280,30 +282,13 @@ function FnReadPool(input) {
 					var readcountsubnew = readcountsub -1;
 					$('div#categories.panel').find('a#' + feed_id).find('span.badge').text(readcountsubnew);
 
-					//decrease count for last 24 hours
-					if (data[0]['publish_date'] == "last-24-hours") {
-						var tfcount = $('div#status.panel a#last-24-hours.list-group-item span.badge').text();
-						var tfcountnew = tfcount -1;
-						$('div#status.panel a#last-24-hours.list-group-item span.badge').text(tfcountnew);
-					}
-
-					//decrease count for last 24 hours and last hour
-					if (data[0]['publish_date'] == "last-hour") {
-						var lastcount = $('div#status.panel a#last-hour.list-group-item span.badge').text();
-						var lastcountnew = lastcount -1;
-						$('div#status.panel a#last-hour.list-group-item span.badge').text(lastcountnew);
-
-						var tfcount = $('div#status.panel a#last-24-hours.list-group-item span.badge').text();
-						var tfcountnew = tfcount -1;
-						$('div#status.panel a#last-24-hours.list-group-item span.badge').text(tfcountnew);
-					}
 				}
 			},
 			failure: function (errMsg) {}
 		});
 
 		//push the id from the article to the pool, so it will never be marked as read twice
-		poolid.push(input);
+		poolid.push(articleId);
 	}
 }
 

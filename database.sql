@@ -44,23 +44,6 @@ CREATE TABLE IF NOT EXISTS `t_feeds` (
   KEY `id` (`id`)
 ) ENGINE=MyISAM  DEFAULT CHARSET=latin1 AUTO_INCREMENT=1 ;
 
-CREATE TABLE IF NOT EXISTS `v_id_status` (
-`id` mediumint(9)
-,`status` varchar(10)
-,`feed` varchar(200)
-,`category` varchar(600)
-,`publish_date` varchar(13)
-);
-
-CREATE TABLE IF NOT EXISTS `v_overview_status` (
-`name` varchar(13)
-,`count` bigint(21)
-)
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`rssmonster`@`%` SQL SECURITY DEFINER VIEW `v_id_status` AS select `t1`.`id` AS `id`,`t1`.`status` AS `status`,`t2`.`feed_name` AS `feed`,`t3`.`category_name` AS `category`,(case when (`t1`.`publish_date` between (now() - interval 1 hour) and now()) then 'last-hour' when (`t1`.`publish_date` between (now() - interval 1 day) and now()) then 'last-24-hours' when (`t1`.`publish_date` between (now() - interval 1 week) and now()) then 'last-week' else 'other' end) AS `publish_date` from ((`t_articles` `t1` left join `t_feeds` `t2` on((`t1`.`feed_id` = `t2`.`id`))) left join `t_categories` `t3` on((`t2`.`category_id` = `t3`.`id`)));
-
-CREATE ALGORITHM=UNDEFINED DEFINER=`rssmonster`@`%` SQL SECURITY DEFINER VIEW `v_overview_status` AS select 'unread' AS `name`,count(0) AS `count` from `t_articles` `a` where (`a`.`status` = 'unread') union select 'read' AS `name`,count(0) AS `count` from `t_articles` `b` where (`b`.`status` = 'read') union select 'starred' AS `name`,count(0) AS `count` from `t_articles` where (`t_articles`.`star_ind` = '1') union select 'last 24 hours' AS `name`,count(0) AS `count` from `t_articles` where ((`t_articles`.`status` = 'unread') and (`t_articles`.`publish_date` between (now() - interval 1 day) and now())) union select 'last hour' AS `name`,count(0) AS `count` from `t_articles` where ((`t_articles`.`status` = 'unread') and (`t_articles`.`publish_date` between (now() - interval 1 hour) and now()));
-
 /*!40101 SET CHARACTER_SET_CLIENT=@OLD_CHARACTER_SET_CLIENT */;
 /*!40101 SET CHARACTER_SET_RESULTS=@OLD_CHARACTER_SET_RESULTS */;
 /*!40101 SET COLLATION_CONNECTION=@OLD_COLLATION_CONNECTION */;

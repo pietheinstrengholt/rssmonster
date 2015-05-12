@@ -73,13 +73,13 @@ if (isset($_GET['feeds'])) {
 	if (!empty($rows)) {
 		foreach($rows as $row) {
 			array_push($feeds, array(
-		   "id"  => $row['id'],
-		   "favicon_id" => $row['id'],
-		   "title" => $row['feed_name'],
-		   "url" => $row['url'],
-		   "site_url" => $row['url'],
-		   "is_spark" => "0",
-		   "last_updated_on_time" => strtotime($row['last_update'])
+				"id"  => $row['id'],
+				"favicon_id" => $row['id'],
+				"title" => $row['feed_name'],
+				"url" => $row['url'],
+				"site_url" => $row['url'],
+				"is_spark" => "0",
+				"last_updated_on_time" => strtotime($row['last_update'])
 			));
 		}
 	}

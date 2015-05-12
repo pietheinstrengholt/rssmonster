@@ -15,7 +15,6 @@ define("DB_NAME", "database");
 // Enable transactional commits
 define("DB_TRANS", "1;");
 
-error_reporting(E_ALL);
 ini_set('display_errors', 'On');
 
 ?>
