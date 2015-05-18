@@ -31,7 +31,7 @@ if (!empty($status)) {
 		if (isset($status['unread'])) {
 			echo "<a href=\"#\" id=\"unread\" class=\"list-group-item\">";
 			echo "<span class=\"unread badge\">$status[unread]</span>";
-			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-search\"></span><span id=\"title-name\">unread</span></span>";
+			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-sunglasses\"></span><span id=\"title-name\">unread</span></span>";
 			echo "</a>";
 		}
 		

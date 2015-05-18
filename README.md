@@ -1,7 +1,7 @@
 RSS Monster
 =======
 
-Copyright (c) 2013 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2015 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use and open source rss reader, created as an alternatieve for Google Reader.
 RSSMonster features a lightweight fluid responsive design. It uses the twitter boostrap framework and 
@@ -43,9 +43,7 @@ http://yourRSSMonsterurl/fever-api.php
 
 Any username and password will work at this moment.
 
-<a href="http://phppaper.strengholt-online.nl">
-  <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/fever.png" width="300px">
-</a>
+<img src="http://phppaper.strengholt-online.nl/wp-content/uploads/fever.png" width="300px">
 
 
 TODO
