@@ -22,18 +22,6 @@ INSTALLATION
 5. Manual add feeds or import OPML
 6. Point to http://yourRSSMonsterurl/update.php
 
-CREDITS
--------
-
-The following scripts are used within RSSMonster
-
-* SimplePie: http://simplepie.org/
-* jQuery: http://jquery.com/
-* jQuery Waypoint: https://github.com/imakewebthings/jquery-waypoints/
-* Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
-* Twitter bootstrap: http://twitter.github.io/bootstrap/
-* jQuery Cookie: https://github.com/carhartl/jquery-cookie
-
 Reeder (iOS) integration supprt (via Fever API)
 ----
 
@@ -56,3 +44,15 @@ TODO
 * Implement drag and dropstyle to manage feeds
 * First welcome screen when database is empty
 * Lazy load images for detailed view
+
+CREDITS
+-------
+
+The following scripts are used within RSSMonster
+
+* SimplePie: http://simplepie.org/
+* jQuery: http://jquery.com/
+* jQuery Waypoint: https://github.com/imakewebthings/jquery-waypoints/
+* Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
+* Twitter bootstrap: http://twitter.github.io/bootstrap/
+* jQuery Cookie: https://github.com/carhartl/jquery-cookie
