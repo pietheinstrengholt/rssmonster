@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-<html manifest="cache.manifest">
 
 <?php
 
