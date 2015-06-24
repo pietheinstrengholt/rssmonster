@@ -131,11 +131,11 @@ div.item-star.star, div.item-star.unstar {
 }
 
 div.item-star.unstar {
-  background-image: url('../images/star_unselected.png');
+  background-image: url('../img/star_unselected.png');
 }
 
 div.item-star.star {
-  background-image: url('../images/star_selected.png');
+  background-image: url('../img/star_selected.png');
 }
 
 div.all-read {
@@ -157,6 +157,13 @@ div#info-bar {
 div.page-content img {
   max-width: 100%;
   height: auto;
+}
+
+div.options {
+
+	height:30px; 
+	display:none;
+	background-color:#999;
 }
 
 /* TOPNAV */
