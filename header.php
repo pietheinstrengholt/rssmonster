@@ -12,8 +12,6 @@
 	<link rel="stylesheet" href="stylesheets/styles.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
-	<meta name="apple-mobile-web-app-capable" content="yes"/>
-	<meta name="apple-mobile-web-app-status-bar-style" content="black">
 	<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 	
 	<style type="text/css">
