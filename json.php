@@ -161,10 +161,10 @@ if(isset($arr['request'])){
 			echo json_encode($rows);
 		}
 	}
-	
+
 	//get feeds information of category id
 	if ($arr['request'] == "feeds-per-category-id") {
-		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$arr[value]')) a LEFT JOIN (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
+		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$arr[value]')) a LEFT JOIN (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id ORDER BY feed_name");
 		$rows = $database->resultset();
 		if (!empty($rows)) {
 			echo json_encode($rows);
@@ -301,6 +301,45 @@ if(isset($arr['overview'])){
 		}
 		
 	}
+	
+	//detailed overview with all categories and feeds
+	if ($arr['overview'] == "category-feed-detailed") {
+
+		//create empty array
+		$detailed_overview = array();
+	
+		$database->query("SELECT a.id, category_name, COUNT(status) AS count_all, SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END) AS count_unread FROM t_categories a INNER JOIN t_feeds b ON a.id = b.category_id LEFT JOIN t_articles c ON b.id = c.feed_id GROUP BY category_name, category_id ORDER BY category_name");		
+		$categories = $database->resultset();
+		
+		if (!empty($categories)){
+			foreach($categories as $category) {
+				$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$category[id]')) a LEFT JOIN (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id ORDER BY feed_name");
+				$feeds = $database->resultset();
+				if (!empty($feeds)){
+
+					//only display category if feeds are found
+					$category_id = $category['id'];
+					$detailed_overview[$category_id]['id'] = $category['id'];
+					$detailed_overview[$category_id]['category_name'] = $category['category_name'];
+					$detailed_overview[$category_id]['count_all'] = $category['count_all'];
+					$detailed_overview[$category_id]['count_unread'] = $category['count_unread'];
+
+					foreach($feeds as $feed) {
+						$feed_id = $feed['id'];
+						$detailed_overview[$category_id]['feeds'][$feed_id]['id'] = $feed['id'];
+						$detailed_overview[$category_id]['feeds'][$feed_id]['feed_name'] = $feed['feed_name'];
+						$detailed_overview[$category_id]['feeds'][$feed_id]['favicon'] = $feed['favicon'];
+						$detailed_overview[$category_id]['feeds'][$feed_id]['count'] = $feed['count'];
+					}
+				}
+			}
+		}
+		
+		if (!empty($detailed_overview)){
+			echo json_encode($detailed_overview);	
+		}		
+		
+	}	
 	
 	//overview with count for total, unread and starred
 	if ($arr['overview'] == "status") {

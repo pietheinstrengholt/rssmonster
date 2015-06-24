@@ -360,7 +360,7 @@ function FnReadPool(articleId) {
 					ReadCount = json["total"] - json["unread"];
 					$('div#status.panel a#read.list-group-item span.badge').text(ReadCount);	
 				}
-			});			
+			});
 			
 			// Function for checking if a var is empty, null or undefined
 			function isEmpty(str) {
