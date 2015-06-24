@@ -1,7 +1,7 @@
 <head>
 	<meta charset="utf-8">
 	<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-	<title>RSS Monster by Piethein Strengholt</title>
+	<title>RSS Monster</title>
 	<script src="javascripts/jquery-1.11.2.min.js"></script>
 	<script src="javascripts/jquery.mCustomScrollbar.concat.min.js"></script>
 	<script src="javascripts/jquery.cookie.js"></script>
@@ -13,6 +13,7 @@
 	<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
 	<meta name="apple-mobile-web-app-capable" content="yes"/>
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
 	<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 	
 	<style type="text/css">
@@ -56,13 +57,6 @@
 	<meta name="theme-color" content="#ffffff">	
 </head>
   
-<?php
-
-// Get overview of Article status
-$status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
-
-?>  
-
 <div class="navbar navbar-fixed-top navbar-inverse">
    <div class="container">
 
@@ -75,8 +69,8 @@ $status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
       <span class="icon-bar"></span>
     </button>
     <a class="navbar-brand" id="home" href="<?php echo "$url/index.php"; ?>">Home</a>
-    <a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"><?php echo $status['unread']; ?></span>Unread</a>
-	<a class="navbar-brand" id="starred" href="#"><span style="background-color:#f0ad4e;" class="starred badge pull-right"><?php echo $status['starred']; ?></span>Star</a>
+    <a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"></span>Unread</a>
+	<a class="navbar-brand" id="starred" href="#"><span style="background-color:#f0ad4e;" class="starred badge pull-right"></span>Star</a>
    </div>
 
    <!-- Collect the nav links, forms, and other content for toggling -->

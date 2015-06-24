@@ -17,41 +17,26 @@ echo "<button class='btn btn-small btn-success mark-all-as-read' type='button'>M
 echo "<a href=\"manage-feeds.php\" role=\"button\" class=\"btn btn-small btn-primary organize-feeds\">Organize Feeds</a>";
 echo "</div>";
 
-// Get overview of Article status
-$status = get_json('{"jsonrpc": "2.0", "overview": "status"}');
+//Show status menu (unread, read, starred items). The count for each category added by the rssmonster javascript when loading article items
+echo "<div class=\"panel\" id=\"status\">";
+echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
 
-//show status menu (unread, read, starred, etc. items)
-if (!empty($status)) {
+echo "<a href=\"#\" id=\"unread\" class=\"list-group-item\">";
+echo "<span class=\"unread badge\"></span>";
+echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-sunglasses\"></span><span id=\"title-name\">unread</span></span>";
+echo "</a>";
 
-	echo "<div class=\"panel\" id=\"status\">";
-	echo "<a href=\"#\" class=\"list-group-item active\"><b>Status menu items</b></a>";
+echo "<a href=\"#\" id=\"read\" class=\"list-group-item\">";
+echo "<span class=\"read badge\"></span>";
+echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-pencil\"></span><span id=\"title-name\">read</span></span>";
+echo "</a>";
 
-	if (!empty($status)) {
+echo "<a href=\"#\" id=\"starred\" class=\"list-group-item\">";
+echo "<span class=\"starred badge\"></span>";
+echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-star\"></span><span id=\"title-name\">starred</span></span>";
+echo "</a>";
 
-		if (isset($status['unread'])) {
-			echo "<a href=\"#\" id=\"unread\" class=\"list-group-item\">";
-			echo "<span class=\"unread badge\">$status[unread]</span>";
-			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-sunglasses\"></span><span id=\"title-name\">unread</span></span>";
-			echo "</a>";
-		}
-		
-		if (isset($status['total'])) {
-			echo "<a href=\"#\" id=\"read\" class=\"list-group-item\">";
-			echo "<span class=\"read badge\">" . ($status['total'] - $status['unread']) .  "</span>";			
-			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-pencil\"></span><span id=\"title-name\">read</span></span>";
-			echo "</a>";
-		}
-		
-		if (isset($status['starred'])) {
-			echo "<a href=\"#\" id=\"starred\" class=\"list-group-item\">";
-			echo "<span class=\"starred badge\">$status[starred]</span>";			
-			echo "<span id=\"title-bar\"><span class=\"glyphicon glyphicon-star\"></span><span id=\"title-name\">starred</span></span>";
-			echo "</a>";
-		}
-	}
-	
-	echo "</div>";
-}
+echo "</div>";
 
 // Get overview of all categories and call function to feed sidebar
 $categories = get_json('{"jsonrpc": "2.0", "overview": "category-detailed"}');

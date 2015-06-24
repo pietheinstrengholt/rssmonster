@@ -110,45 +110,60 @@ if(isset($arr['request'])){
 
 	if ($arr['request'] == "get-article-list") {
 
-		$unread_item_ids = array();
+		//create empty array
+		$results = array();
 
-		if(isset($arr['status'])){ $status = htmlspecialchars($arr['status']); } else { $status = NULL; }
-		if(isset($arr['category_id'])){ $category_id = $arr['category_id']; } else { $category_id = NULL; }
-		if(isset($arr['feed_id'])){ $feed_id = $arr['feed_id']; } else { $feed_id = NULL; }
+		$database->query("SELECT COUNT(status) AS total, SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END) AS unread, SUM(CASE WHEN star_ind = '1' THEN 1 ELSE 0 END) AS starred FROM t_articles");
+		$row = $database->single();
+		
+		if (!empty($row)){
 
-		//get articleIds with unread status
-		if ($status == "unread") {
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE status = 'unread' ORDER BY publish_date $sort");
-		}
-		//get articleIds with starred status
-		if ($status == "starred") {
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE star_ind = '1' ORDER BY publish_date $sort");
-		} 
-		//get articleIds with read status
-		if ($status == "read") {
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE status = 'read' ORDER BY publish_date $sort");
-		}
-		//get articleIds for selected category
-		if (!empty($category_id) && empty($feed_id)) {
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id IN (SELECT id FROM t_categories WHERE id = $category_id)) AND status = 'unread' ORDER BY publish_date $sort");
+			//add status results (read, unread, star counts) to status
+			$results['status'] = $row;
+			
+			if(isset($arr['status'])){ $status = htmlspecialchars($arr['status']); } else { $status = "unread"; }
+			if(isset($arr['category_id'])){ $category_id = $arr['category_id']; } else { $category_id = NULL; }
+			if(isset($arr['feed_id'])){ $feed_id = $arr['feed_id']; } else { $feed_id = NULL; }
 
-		} 
-		//get articleIds for selected feed
-		if (!empty($feed_id) && empty($category_id)) {
-			$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE id = $feed_id) AND status = 'unread' ORDER BY publish_date $sort");
-		}
+			//get articleIds with unread status
+			if ($status == "unread") {
+				$database->query("SELECT DISTINCT id FROM t_articles WHERE status = 'unread' ORDER BY publish_date $sort");
+			}
+			//get articleIds with starred status
+			if ($status == "starred") {
+				$database->query("SELECT DISTINCT id FROM t_articles WHERE star_ind = '1' ORDER BY publish_date $sort");
+			} 
+			//get articleIds with read status
+			if ($status == "read") {
+				$database->query("SELECT DISTINCT id FROM t_articles WHERE status = 'read' ORDER BY publish_date $sort");
+			}
+			//get articleIds for selected category
+			if (!empty($category_id) && empty($feed_id)) {
+				$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE category_id IN (SELECT id FROM t_categories WHERE id = $category_id)) AND status = 'unread' ORDER BY publish_date $sort");
 
-		$rows = $database->resultset();
-
-		if (!empty($rows)) {
-			foreach($rows as $row) {
-				array_push($unread_item_ids, $row['id']);
+			} 
+			//get articleIds for selected feed
+			if (!empty($feed_id) && empty($category_id)) {
+				$database->query("SELECT DISTINCT id FROM t_articles WHERE feed_id IN (SELECT DISTINCT id FROM t_feeds WHERE id = $feed_id) AND status = 'unread' ORDER BY publish_date $sort");
 			}
 
-			echo json_encode($unread_item_ids);	
+			$rows = $database->resultset();
+
+			if (!empty($rows)) {
+
+				//create new array in results for article list
+				$results['article-list'] = array();
+
+				foreach($rows as $row) {
+					//add article id's to article-list array
+					array_push($results['article-list'], $row['id']);
+				}
+			}
+
+			echo json_encode($results);				
+
 		}
 	}
-
 
 	if ($arr['request'] == "debug") {
 		echo json_encode($debug);
@@ -299,18 +314,6 @@ if(isset($arr['overview'])){
 		
 		if (!empty($rows)){
 			echo json_encode($rows);	
-		}
-		
-	}
-	
-	//overview with count for total, unread and starred
-	if ($arr['overview'] == "status") {
-		$database->query("SELECT COUNT(status) AS total, SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END) AS unread, SUM(CASE WHEN star_ind = '1' THEN 1 ELSE 0 END) AS starred FROM t_articles");
-
-		$row = $database->single();
-		
-		if (!empty($row)){
-			echo json_encode($row);	
 		}
 		
 	}

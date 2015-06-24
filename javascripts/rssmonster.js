@@ -348,7 +348,7 @@ function FnReadPool(articleId) {
 				dataType: "json",
 				async: false,
 				success: function (json) {
-					articleList = json;
+					result = json;
 				},
 				failure: function (errMsg) {
 					$("div#content").text("json.php failed to return content: " + errMsg)
@@ -360,14 +360,30 @@ function FnReadPool(articleId) {
 				return (!str || 0 === str.length);
 			}
 			
+			articleList = result["article-list"];
+			
 			// On fist load, check if articleList is empty
 			if (isEmpty(articleList)) {
 				//Show message and set busy to true, avoid clicking and loading nothing
 				$this.find('.info-bar').html('No posts available at first load.');
 				busy = true;
 			} else {
+				/* In the background new items might be added, therefore the unread, 
+				read and star count is adjusted during the load of the articles */
+				
+				//set unread count in navbar and sidebar menu
+				$('div#status.panel a#unread.list-group-item span.badge').text(result["status"]["unread"]);
+				$('a#unread.navbar-brand span.badge.pull-right').text(result["status"]["unread"]);
+				
+				//set star count in navbar and sidebar menu
+				$('div#status.panel a#starred.list-group-item span.badge').text(result["status"]["starred"]);
+				$('a#starred.navbar-brand span.badge.pull-right').text(result["status"]["starred"]);
+				
+				//read count is total minus unread
+				ReadCount = result["status"]["total"] - result["status"]["unread"];
+				$('div#status.panel a#read.list-group-item span.badge').text(ReadCount);
+			
 				//Start loading first 10 articles
-				console.log("get data on load: " + articleList.slice(0,10).join(","));
 				getData(articleList.slice(0,10).join(",")); // Run function initially
 				var articleCount = articleList.filter(function(value) { return value !== undefined }).length;
 			}
