@@ -331,6 +331,40 @@ function FnReadPool(articleId) {
 
 			// Append custom messages and extra UI
 			$this.append('<div class="content"></div><div class="info-bar" id="info-bar"><div style="width: 50%;"></div></div>');
+			
+			// Use json.php to get a status overview for read, unread and star counts
+			$.ajax({
+				type: "POST",
+				url: "json.php",
+				data: JSON.stringify({
+					"jsonrpc": "2.0",
+					"overview": "status"
+				}),
+				contentType: "application/json; charset=utf-8",
+				dataType: "json",
+				async: false,
+				success: function (json) {
+					/* In the background new items might be added, therefore the unread, 
+					read and star count is adjusted during the load of the articles */
+					
+					//set unread count in navbar and sidebar menu
+					$('div#status.panel a#unread.list-group-item span.badge').text(json["unread"]);
+					$('a#unread.navbar-brand span.badge.pull-right').text(json["unread"]);
+					
+					//set star count in navbar and sidebar menu
+					$('div#status.panel a#starred.list-group-item span.badge').text(json["starred"]);
+					$('a#starred.navbar-brand span.badge.pull-right').text(json["starred"]);
+					
+					//read count is total minus unread
+					ReadCount = json["total"] - json["unread"];
+					$('div#status.panel a#read.list-group-item span.badge').text(ReadCount);	
+				}
+			});			
+			
+			// Function for checking if a var is empty, null or undefined
+			function isEmpty(str) {
+				return (!str || 0 === str.length);
+			}			
 
 			// Use json.php to get a full list with article id's
 			$.ajax({
@@ -348,41 +382,19 @@ function FnReadPool(articleId) {
 				dataType: "json",
 				async: false,
 				success: function (json) {
-					result = json;
+					articleList = json;
 				},
 				failure: function (errMsg) {
 					$("div#content").text("json.php failed to return content: " + errMsg)
 				}
 			});
 			
-			// Function for checking if a var is empty, null or undefined
-			function isEmpty(str) {
-				return (!str || 0 === str.length);
-			}
-			
-			articleList = result["article-list"];
-			
 			// On fist load, check if articleList is empty
 			if (isEmpty(articleList)) {
 				//Show message and set busy to true, avoid clicking and loading nothing
 				$this.find('.info-bar').html('No posts available at first load.');
 				busy = true;
-			} else {
-				/* In the background new items might be added, therefore the unread, 
-				read and star count is adjusted during the load of the articles */
-				
-				//set unread count in navbar and sidebar menu
-				$('div#status.panel a#unread.list-group-item span.badge').text(result["status"]["unread"]);
-				$('a#unread.navbar-brand span.badge.pull-right').text(result["status"]["unread"]);
-				
-				//set star count in navbar and sidebar menu
-				$('div#status.panel a#starred.list-group-item span.badge').text(result["status"]["starred"]);
-				$('a#starred.navbar-brand span.badge.pull-right').text(result["status"]["starred"]);
-				
-				//read count is total minus unread
-				ReadCount = result["status"]["total"] - result["status"]["unread"];
-				$('div#status.panel a#read.list-group-item span.badge').text(ReadCount);
-			
+			} else {			
 				//Start loading first 10 articles
 				getData(articleList.slice(0,10).join(",")); // Run function initially
 				var articleCount = articleList.filter(function(value) { return value !== undefined }).length;
