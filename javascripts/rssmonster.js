@@ -332,6 +332,9 @@ function FnReadPool(articleId) {
 			// Append custom messages and extra UI
 			$this.append('<div class="content"></div><div class="info-bar" id="info-bar"><div style="width: 50%;"></div></div>');
 			
+			/* In the background new items might be loaded, therefore the unread, 
+			read and star count is adjusted every time the article-list retrieved */			
+			
 			// Use json.php to get a status overview for read, unread and star counts
 			$.ajax({
 				type: "POST",
@@ -344,8 +347,6 @@ function FnReadPool(articleId) {
 				dataType: "json",
 				async: false,
 				success: function (json) {
-					/* In the background new items might be added, therefore the unread, 
-					read and star count is adjusted during the load of the articles */
 					
 					//set unread count in navbar and sidebar menu
 					$('div#status.panel a#unread.list-group-item span.badge').text(json["unread"]);

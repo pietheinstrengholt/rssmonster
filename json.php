@@ -162,8 +162,8 @@ if(isset($arr['request'])){
 		}
 	}
 	
-	//get count-per-category
-	if ($arr['request'] == "count-per-category") {
+	//get feeds information of category id
+	if ($arr['request'] == "feeds-per-category-id") {
 		$database->query("SELECT id, feed_name, favicon, count FROM (SELECT * FROM t_feeds WHERE category_id IN (SELECT DISTINCT id FROM t_categories WHERE id = '$arr[value]')) a LEFT JOIN (SELECT count(*) AS count, feed_id FROM t_articles WHERE status = 'unread' GROUP BY feed_id) b on a.id = b.feed_id");
 		$rows = $database->resultset();
 		if (!empty($rows)) {

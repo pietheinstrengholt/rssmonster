@@ -63,7 +63,7 @@ if (!empty($categories)) {
 			echo "</a>";
 
 			// Get count-per-category using json
-			$query = "{\"jsonrpc\": \"2.0\", \"request\": \"count-per-category\", \"value\": \"$category_id\"}";
+			$query = "{\"jsonrpc\": \"2.0\", \"request\": \"feeds-per-category-id\", \"value\": \"$category_id\"}";
 			$feeds = get_json($query);
 
 			if (!empty($feeds)) {
