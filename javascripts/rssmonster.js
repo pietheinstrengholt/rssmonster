@@ -436,70 +436,80 @@ function FnReadPool(articleId) {
 
 			function getData(input) {
 			
-				console.log("get data for next " + offset + " items: " + input);
+				//check if input is empty
+				if (isEmpty(input)) {
+					$('.info-bar').html($settings.error);
+					//capture previous nop and call FnReadPool function to mark remaining items in the pool as read
+					for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
+						FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
+					}
+				} else {
+			
+					//show retrieve data message
+					console.log("get data for next " + offset + " items: " + input);
 
-				//Post data to json.php, articles are wrapped in html and appended to content class
-				$.ajax({
-					type: "POST",
-					url: "json.php",
-					data: JSON.stringify({
-						"jsonrpc": "2.0",
-						"request": "get-articles",
-						"sort": $settings.sort,
-						"article_id": input
-					}),
-					contentType: "application/json; charset=utf-8",
-					dataType: "json",
-					async: true,
-					success: function (data) {
+					//Post data to json.php, articles are wrapped in html and appended to content class
+					$.ajax({
+						type: "POST",
+						url: "json.php",
+						data: JSON.stringify({
+							"jsonrpc": "2.0",
+							"request": "get-articles",
+							"sort": $settings.sort,
+							"article_id": input
+						}),
+						contentType: "application/json; charset=utf-8",
+						dataType: "json",
+						async: true,
+						success: function (data) {
 
-						// Change loading bar content (it may have been altered)
-						$this.find('.info-bar').html($initmessage);
+							// Change loading bar content (it may have been altered)
+							$this.find('.info-bar').html($initmessage);
 
-						// Add data to content
-						if (data) {
-						
-							// If data is returned, append the data to the content div
-							$.each(data, function(key, article) {
-								console.log(article);
-								
-								if (article["star_ind"] == '1') {
-									var starflag = "star";
-								} else {
-									var starflag = "unstar";								
-								}
-								
-								//TODO: add difference timeinterval, lesscontent (250 character block), author 
-								$this.find('.content').append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["publish_date"] + '</div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank"> - ' + article["subject"] + '</a></span><span class="publishdate">' + article["publish_date"] + '</span></div><hr><div class="page-content">' + article["content"] + '</div><div class="less-content">' + article["content"] + '</div></div></div>');
-							});
-
-							// Add waypoint function to h3 header, look at FnReadPool
-							$('div#block h4').waypoint(function() {
-								var id = $(this).attr('id');
-								FnReadPool(id);
-							}, {
-								// Triggered when the top of the h3 element hits 10px of top of the viewport
-								offset: 10, triggerOnce: true 
-							});
-
-							// Increase offset
-							offset = offset + $settings.nop;
-
-							// No longer busy!
-							busy = false;
-
-						// If there is no data returned, there are no more posts to be shown. Show message and last mark items as read
-						} else {
-
-							$this.find('.info-bar').html($settings.error);
+							// Add data to content
+							if (data) {
 							
-							// Capture previous nop and call FnReadPool function to mark remaining items as read
-							for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
-								FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
+								// If data is returned, append the data to the content div
+								$.each(data, function(key, article) {
+									
+									if (article["star_ind"] == '1') {
+										var starflag = "star";
+									} else {
+										var starflag = "unstar";								
+									}
+									
+									//TODO: add difference timeinterval, lesscontent (250 character block), author 
+									$this.find('.content').append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["publish_date"] + '</div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank"> - ' + article["subject"] + '</a></span><span class="publishdate">' + article["publish_date"] + '</span></div><hr><div class="page-content">' + article["content"] + '</div><div class="less-content">' + article["content"] + '</div></div></div>');
+								});
+
+								// Add waypoint function to h3 header, look at FnReadPool
+								$('div#block h4').waypoint(function() {
+									var id = $(this).attr('id');
+									FnReadPool(id);
+								}, {
+									// Triggered when the top of the h3 element hits 10px of top of the viewport
+									offset: 10, triggerOnce: true 
+								});
+
+								// Increase offset
+								offset = offset + $settings.nop;
+
+								// No longer busy!
+								busy = false;
+
+							// If there is no data returned, there are no more posts to be shown. Show message and last mark items as read
+							} else {
+
+								$this.find('.info-bar').html($settings.error);
+								
+								// Capture previous nop and call FnReadPool function to mark remaining items as read
+								for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
+									FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
+								}
 							}
-						}
-					},
-				});
+						},
+					});
+				}
 			}
 
 			// If scrolling is enabled
