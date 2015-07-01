@@ -88,7 +88,8 @@ $(document).ready(function () {
 	//Category function on sidebar: Drop down menu sub-menu items when a category is clicked
 	//hide sub menu by default
 	$("div.menu-sub").hide();
-	$("div#categories.panel a.list-group-item.main").click(function () {
+	//$("div#categories.panel a.list-group-item.main").click(function () {
+	$("sidebar").on("click", "div#categories.panel a.list-group-item.main", function (event) {
 
 		//remove any active clicked classes from status overview
 		$('div#categories.panel').find('.active').removeClass("active");
@@ -117,7 +118,7 @@ $(document).ready(function () {
 	});
 
 	//Functionality when sub menu item from categories is clicked
-	$("div#categories.panel a.list-group-item.sub").click(function () {
+	$("sidebar").on("click", "div#categories.panel a.list-group-item.sub", function (event) {
 
 		//remove any active clicked classes from status overview
 		$('div#categories.panel').find('.active').removeClass("active");
@@ -362,6 +363,60 @@ function FnReadPool(articleId) {
 				}
 			});
 			
+			//TODO: skip als status category of feed is
+			//var category_id = $settings.category_id;
+			console.log($settings.feed_id);
+			
+			//TODO: skip als status category of feed is
+			//var feed_id = $settings.feed_id;
+			console.log($settings.category_id);
+			
+			// Use json.php to get an overview of all items in sidebar
+			$.ajax({
+				type: "POST",
+				url: "json.php",
+				data: JSON.stringify({
+					"jsonrpc": "2.0",
+					"overview": "category-feed-detailed"
+				}),
+				contentType: "application/json; charset=utf-8",
+				dataType: "json",
+				async: true,
+				success: function (json) {
+					
+					//set unread count in navbar and sidebar menu
+					$('div#categories.panel').empty();
+					$('div#categories.panel').append('<a href="#" class="list-group-item active"><b>Categories items</b></a>');
+					$.each(json, function(key, category) {
+						$('div#categories.panel').append('<a href="#" id="' + key + '" class="list-group-item main"><span class="badge"><span class="countunread">' + category["count_unread"] + '</span><span class="countdivider"> / </span><span class="countall">' + category["count_all"] + '</span></span><span id="title-bar"><span class="glyphicon glyphicon-chevron-right"></span><span id="title-name">' + category["category_name"] + '</span></span></a>');
+						//check if feeds object is not empty
+						if (category["feeds"]) {
+							$('div#categories.panel').append('<div class="menu-sub" id="' + key + '"></div>');
+							$.each(category["feeds"], function(feedkey, feed) {
+								$('div#' + key + '.menu-sub').append('<a href="#" id="' + feedkey + '" class="list-group-item sub"><span class="badge">' + feed["count"] + '</span><span class="favicon"><img class="favicon" src="' + feed["favicon"] + '"></img></span><span class="title">' + feed["feed_name"] + '</span></a>');
+							});
+						}
+						//check if $settings.category_id is filled in 
+						if (key == $settings.category_id) {
+							//$('a#' + key + '.list-group-item.main').addClass("active");
+							$('a#' + key + '.list-group-item.main').addClass("collapsed");
+							$('a#' + key + '.list-group-item.main').find('span.glyphicon.glyphicon-chevron-right').attr('class', 'glyphicon glyphicon-chevron-down');
+						} else {
+							$('div#' + key + '.menu-sub').hide();
+						}
+					});
+					
+					//hide all sub menu items
+					//$("div.menu-sub").hide();
+
+				},
+				failure: function (errMsg) {
+					//set error message
+					$('div#categories.panel').empty();
+					$('div#categories.panel').append('<p style="margin-left:3px;">No categories found, use the top menu to add new RSS feeds!<p>');					
+				}
+			});
+			
 			// Function for checking if a var is empty, null or undefined
 			function isEmpty(str) {
 				return (!str || 0 === str.length);
@@ -395,7 +450,7 @@ function FnReadPool(articleId) {
 				//Show message and set busy to true, avoid clicking and loading nothing
 				$this.find('.info-bar').html('No posts available at first load.');
 				busy = true;
-			} else {			
+			} else {
 				//Start loading first 10 articles
 				getData(articleList.slice(0,10).join(",")); // Run function initially
 				var articleCount = articleList.filter(function(value) { return value !== undefined }).length;

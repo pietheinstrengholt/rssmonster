@@ -328,8 +328,16 @@ if(isset($arr['overview'])){
 						$feed_id = $feed['id'];
 						$detailed_overview[$category_id]['feeds'][$feed_id]['id'] = $feed['id'];
 						$detailed_overview[$category_id]['feeds'][$feed_id]['feed_name'] = $feed['feed_name'];
-						$detailed_overview[$category_id]['feeds'][$feed_id]['favicon'] = $feed['favicon'];
-						$detailed_overview[$category_id]['feeds'][$feed_id]['count'] = $feed['count'];
+						if (empty($feed['favicon'])) {
+							$detailed_overview[$category_id]['feeds'][$feed_id]['favicon'] = "img/rss-default.gif";;
+						} else {
+							$detailed_overview[$category_id]['feeds'][$feed_id]['favicon'] = $feed['favicon'];						
+						}
+						if (empty($feed['count'])) {
+							$detailed_overview[$category_id]['feeds'][$feed_id]['count'] = "0";	
+						} else {
+							$detailed_overview[$category_id]['feeds'][$feed_id]['count'] = $feed['count'];				
+						}
 					}
 				}
 			}
