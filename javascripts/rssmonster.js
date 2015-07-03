@@ -66,10 +66,10 @@ $(document).ready(function () {
 	$("div#status.panel a.list-group-item").click(function () {
 
 		//remove and add clicked status to class
-		$('div#status.panel').find('.active').removeClass("active");
-		$('div#categories.panel').find('.active').removeClass("active");
+		$('div#status.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
+		$('div#categories.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		$("div.menu-sub").hide();
-		$(this).addClass("active");
+		$(this).addClass("list-group-item-warning");
 
 		//load content
 		var status = $(this).find('span#title-name').text();
@@ -91,16 +91,16 @@ $(document).ready(function () {
 	//$("div#categories.panel a.list-group-item.main").click(function () {
 	$("sidebar").on("click", "div#categories.panel a.list-group-item.main", function (event) {
 
-		//remove any active clicked classes from status overview
-		$('div#categories.panel').find('.active').removeClass("active");
-		$('div#status.panel').find('.active').removeClass("active");
-		$(this).addClass("active");
+		//remove any selected clicked classes from status overview
+		$('div#categories.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
+		$('div#status.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
+		$(this).addClass("list-group-item-warning");
 
 		//open submenu
 		$(this).next("div.menu-sub").slideToggle(200);
 
-		//remove and add active classes, needed for decreasing dynamic count
-		$('div.sidebar').find('.active-sub').removeClass("active");
+		//remove and add selected classes, needed for decreasing dynamic count
+		$('div.sidebar').find('.selected-sub').removeClass("selected");
 
 		//change styling and arrow
 		if ($(this).hasClass("collapsed")) {
@@ -120,9 +120,9 @@ $(document).ready(function () {
 	//Functionality when sub menu item from categories is clicked
 	$("sidebar").on("click", "div#categories.panel a.list-group-item.sub", function (event) {
 
-		//remove any active clicked classes from status overview
-		$('div#categories.panel').find('.active').removeClass("active");
-		$(this).addClass("active");
+		//remove any list-group-item-warning clicked classes from status overview
+		$('div#categories.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
+		$(this).addClass("list-group-item-warning");
 
 		//load content
 		var feed_id = $(this).attr('id');
