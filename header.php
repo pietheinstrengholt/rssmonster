@@ -11,7 +11,6 @@
 	<script src="javascripts/bootstrap.file-input.js"></script>
 	<link rel="stylesheet" href="stylesheets/styles.css">
 	<link rel="stylesheet" href="stylesheets/bootstrap.min.css">
-	<link rel="stylesheet" href="stylesheets/bootstrap-theme.min.css">
 	<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 	
 	<style type="text/css">

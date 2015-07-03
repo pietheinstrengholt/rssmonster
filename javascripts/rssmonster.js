@@ -88,7 +88,6 @@ $(document).ready(function () {
 	//Category function on sidebar: Drop down menu sub-menu items when a category is clicked
 	//hide sub menu by default
 	$("div.menu-sub").hide();
-	//$("div#categories.panel a.list-group-item.main").click(function () {
 	$("sidebar").on("click", "div#categories.panel a.list-group-item.main", function (event) {
 
 		//remove any selected clicked classes from status overview
@@ -273,12 +272,12 @@ function FnReadPool(articleId) {
 					var readcountnew = parseFloat(readcount)+1;
 					$('div#status.panel a#read.list-group-item span.badge').text(readcountnew);
 
-					//decrease count for main menu items
+					//decrease count for category main menu items
 					var readcountmain = $('div#categories.panel').find('a#' + category_id).find('span.countunread').text();
 					var readcountmainnew = readcountmain -1;
 					$('div#categories.panel').find('a#' + category_id).find('span.countunread').text(readcountmainnew);
 
-					//decrease count for sub menu items
+					//decrease count for feed sub menu items
 					var readcountsub = $('div#categories.panel').find('a#' + feed_id).find('span.badge').text();
 					var readcountsubnew = readcountsub -1;
 					$('div#categories.panel').find('a#' + feed_id).find('span.badge').text(readcountsubnew);
@@ -362,6 +361,8 @@ function FnReadPool(articleId) {
 					$('div#status.panel a#read.list-group-item span.badge').text(ReadCount);	
 				}
 			});
+			
+			console.log($settings);
 
 			// Use json.php to get an overview of all items in sidebar
 			$.ajax({
