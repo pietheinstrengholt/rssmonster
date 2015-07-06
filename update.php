@@ -100,8 +100,8 @@ if (!empty($rows)) {
 				echo "<tr><th>" . $feed_id . "</th><th>" . $feed_name . "</th><th>" . $date . "</th><th>";
 
 				$database->query("SELECT * FROM t_articles WHERE (url = :url OR subject = :subject) AND feed_id = :feed_id");
-				$database->bind(':url', $url);
-				$database->bind(':subject', $subject);				
+				$database->bind(':url', trim($url));
+				$database->bind(':subject', trim($subject));				
 				$database->bind(':feed_id', $feed_id);
 				$results = $database->resultset();
 				
@@ -118,8 +118,8 @@ if (!empty($rows)) {
 					$database->query("INSERT INTO t_articles (feed_id, status, url, subject, content, publish_date, author) VALUES (:feed_id, :status, :url, :subject, :content, :date, :author)");
 					$database->bind(':feed_id', $feed_id);
 					$database->bind(':status', 'unread');
-					$database->bind(':url', $url);
-					$database->bind(':subject', $subject);
+					$database->bind(':url', trim($url));
+					$database->bind(':subject', trim($subject));
 					$database->bind(':content', $content);
 					$database->bind(':date', $date);
 					$database->bind(':author', $author);
@@ -154,7 +154,5 @@ if (!empty($rows)) {
 	$database->endTransaction();	
 	
 }
-
-
 
 ?>
