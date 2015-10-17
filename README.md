@@ -49,17 +49,19 @@ Any username and password will work at this moment.
 TODO
 ----
 
-* Use object for retrieving data, instead of cookie values
+* Speedup first load, compile sidebar from javascript
 * Fix laravel database scripts
-* Make categories sortable, save changes to database
-* Speed up database
+* Speed up database queries for categories and unread counts
 * When moving feeds between categories, change the count for the category
 * Restore Reeder support (via Fever API)
+* Add Feedbin Api support
+* Add composer requirements bootstrap, jquery, jquery-ui
 * Mark as read, unread buttons
 * Add search function
-* Implement drag and drop-style to manage feeds
 * First welcome screen when database is empty
 * Lazy load images for detailed view
+* Cleanup unused javascript files
+* Add spinner while loading
 
 CREDITS
 -------
@@ -72,4 +74,3 @@ The following scripts and plug-ins are used within RSSMonster
 * jQuery: http://jquery.com/
 * jQuery Waypoint: https://github.com/imakewebthings/jquery-waypoints/
 * Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
-* jQuery Cookie: https://github.com/carhartl/jquery-cookie
