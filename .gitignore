@@ -1,10 +1,5 @@
-javascripts/@eaDir
-images/@eaDir
-images/fd/@eaDir
-stylesheets/@eaDir
-simplepie/@eaDir
-images/fd/Thumbs.db
-images/Thumbs.db
-cache/
-debug.txt
-config.php
+/tests
+/vendor
+.env
+.DS_Store
+Thumbs.db

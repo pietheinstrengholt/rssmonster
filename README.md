@@ -4,23 +4,35 @@ RSS Monster
 Copyright (c) 2015 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use and open source rss reader, created as an alternatieve for Google Reader.
-RSSMonster features a lightweight fluid responsive design. It uses the twitter boostrap framework and 
-is in written in jQuery, JavaScript and PHP. Several features are implemented such as opml import, 
+RSSMonster features a lightweight fluid responsive design. It uses the twitter boostrap framework, laravel 
+lumen and is in written in jQuery, JavaScript and PHP. Several features are implemented such as 
 marking as read when scrolling, manage feeds, json events, etc.
 RSSMonster is currently a work in progress and is hosted on GitHub. 
 Feel free to add any contributions or new features.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster.png" width="700px">
 
+REQUIREMENTS
+------------
+
+* PHP >= 5.5.9
+* OpenSSL PHP Extension
+* Mbstring PHP Extension
+* Tokenizer PHP Extension
+* Composer
+* Git
+
 INSTALLATION
 ------------
 
-1. Upload all files and unpack
-2. Create a database, use the database.sql script
-3. Configure the config.php by using the correct mysql database settings
-4. Create a ./cache directory, make it writable (chmod 777)
-5. Manual add feeds or import OPML
-6. Point to http://yourRSSMonsterurl/update.php
+1. Install composer: curl -sS https://getcomposer.org/installer | php — –filename=composer
+2. Download lumen: composer global require "laravel/lumen-installer=~1.0"
+3. Clone the RSSMonster repository: git clone https://github.com/pietheinstrengholt/rssmonster.git
+4. Inside the rssmonster directory run: composer update
+2. Deploy the database, use the database.sql script
+3. Copy the .env.example to .env and configure with the correct database settings
+5. Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
+6. Add a cron job to pull articles: curl -s http://yourRSSMonsterurl/index.php/api/feed/updateall
 
 Reeder (iOS) integration supprt (via Fever API)
 ----
@@ -37,22 +49,27 @@ Any username and password will work at this moment.
 TODO
 ----
 
-* Complete JSON events: add feeds, update event, mark as unread
-* Clean up by creating more functions or using a proper framework
+* Use object for retrieving data, instead of cookie values
+* Fix laravel database scripts
+* Make categories sortable, save changes to database
+* Speed up database
+* When moving feeds between categories, change the count for the category
+* Restore Reeder support (via Fever API)
 * Mark as read, unread buttons
 * Add search function
-* Implement drag and dropstyle to manage feeds
+* Implement drag and drop-style to manage feeds
 * First welcome screen when database is empty
 * Lazy load images for detailed view
 
 CREDITS
 -------
 
-The following scripts are used within RSSMonster
+The following scripts and plug-ins are used within RSSMonster
 
+* Laravel Lumen https://github.com/laravel/lumen
+* Twitter bootstrap: https://twitter.github.io/bootstrap/
 * SimplePie: http://simplepie.org/
 * jQuery: http://jquery.com/
 * jQuery Waypoint: https://github.com/imakewebthings/jquery-waypoints/
 * Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
-* Twitter bootstrap: http://twitter.github.io/bootstrap/
 * jQuery Cookie: https://github.com/carhartl/jquery-cookie
