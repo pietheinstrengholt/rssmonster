@@ -82,8 +82,6 @@ $app->singleton(
 // $app->register(App\Providers\EventServiceProvider::class);
 $app->register(Illuminate\Html\HtmlServiceProvider::class);
 $app->register(ArandiLopez\Feed\Providers\LumenFeedServiceProvider::class);
-$app->register(Jenssegers\Agent\AgentServiceProvider::class);
-class_alias('Jenssegers\Agent\Facades\Agent', 'Agent');
 class_alias('Illuminate\Html\FormFacade', 'Form');
 class_alias('Illuminate\Html\HtmlFacade', 'Html');
 class_alias('Illuminate\Support\Facades\URL', 'URL');

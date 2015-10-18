@@ -6,9 +6,47 @@ mySelection.sort = "desc";
 mySelection.view = "detailed";
 mySelection.category_id = null;
 mySelection.feed_id = null;
+mySelection.loadcount = 0;
 
-//run loadcontent function only once page is fully loaded
+//Run loadcontent function only once page is fully loaded
 $(document).ready(function () {
+
+	//Use api to deploy the sidebar, the sidebar is only deployed once and will be updated when used.
+	$.ajax({
+		type: "GET",
+		url: "index.php/api/category/overview",
+		async: false,
+		success: function (json) {
+
+			//set unread count in navbar and sidebar menu
+			$('div.panel').empty();
+			$('div.panel').append('<ul id="all" class="connected"><li class="list-group-item main all" draggable="false"><span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span> All<span class="badge"></span></li></ul>');
+			$.each(json, function(key, category) {
+				$('div.panel').append('<ul id="' + category["id"] + '" class="connected main"><li id="' + category["id"] + '" class="list-group-item main" draggable="false"><span class="glyphicon glyphicon-folder-close" aria-hidden="true"></span> ' + category["name"] + '<span class="badge">' + category["unread_count"] + '</span></li><li class="list-group-item wrapper" draggable="false"></li>');
+				//check if feeds object is not empty
+				if (category["feeds"]) {
+					$.each(category["feeds"], function(feedkey, feed) {
+					
+						//check if favicon is null, else default with rss-default image
+						if (feed["favicon"] == null) {
+							favicon = "img/rss-default.png";
+						} else {
+							favicon = feed["favicon"];
+						}
+						
+					
+						$('div.panel ul#' + category["id"] + '.main').append('<li class="list-group-item item" draggable="true" id="' + feed["id"] + '"><img class="favicon" src="' + favicon + '" onError="this.onerror=null;this.src=\'img/rss-default.gif\'><span class="title">' + feed["feed_name"] + '</span><span class="badge">' + feed["unread_count"] + '</span></li>');
+					});
+				}
+			});
+		
+		},
+		failure: function (errMsg) {
+			//set error message, no categories and feeds retrieved
+			$('div#categories.panel').empty();
+			$('div#categories.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
+		}
+	});
 
 	//dropdown toggle
 	$('.dropdown-toggle').dropdown();
@@ -22,7 +60,10 @@ $(document).ready(function () {
 	//loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
 	function loadcontent() {
 	
-		console.log(JSON.stringify(mySelection));
+		//increase load count
+		mySelection.loadcount++;
+	
+		//console.log(JSON.stringify(mySelection));
 	
 		//highlight the button in the sidebar with corresponding status
 		$('div#buttons').find('button').removeClass("btn-primary").addClass("btn-default");
@@ -195,7 +236,6 @@ $(document).ready(function () {
 });
 
 //Function to make the main menu items sortable in the sidebar
-//TODO: add ajax event to submit new order to the database
 $(function() {
 	$('div.panel').sortable({
 		items: "> ul.main",
@@ -220,14 +260,11 @@ $(function() {
 					"order": orderArray
 				},
 				success: function (data) {
-					console.log("order updated");
+					//console.log("order updated");
 				},
 				failure: function (errMsg) {}
-			});
-
-			console.log(orderArray);			
-		}		
-		
+			});			
+		}
 	});
 });
 
@@ -248,7 +285,7 @@ $(function() {
 					"category_id": category_id
 				},
 				success: function (data) {
-					console.log("[" + category_id + "] received [" + ui.item.attr("id") + "] from [" + ui.sender.attr("id") + "]");
+					//console.log("[" + category_id + "] received [" + ui.item.attr("id") + "] from [" + ui.sender.attr("id") + "]");
 				},
 				failure: function (errMsg) {}
 			});
@@ -268,7 +305,7 @@ function FnReadPool(articleId) {
 	if (jQuery.inArray(articleId, poolid) == -1) {
 
 		setTimeout(function() {
-			console.log("viewport:" + articleId);
+			//console.log("viewport:" + articleId);
 		}, 300);
 
 		$.ajax({
@@ -357,12 +394,10 @@ function FnReadPool(articleId) {
 			/* In the background new items might be loaded, therefore the unread, 
 			read and star count is adjusted every time the article-list retrieved */			
 			
-			// Use json.php to get a status overview for read, unread and star counts
+			// Use api to get a status overview for read, unread and star counts
 			$.ajax({
 				type: "GET",
 				url: "index.php/api/article/overview",
-				contentType: "application/json; charset=utf-8",
-				dataType: "json",
 				async: true,
 				success: function (json) {
 					//set unread count in navbar and sidebar menu
@@ -378,38 +413,37 @@ function FnReadPool(articleId) {
 				}
 			});
 
-			// Use json.php to get an overview of all items in sidebar
-			$.ajax({
-				type: "GET",
-				url: "index.php/api/category",
-				contentType: "application/json; charset=utf-8",
-				dataType: "json",
-				async: true,
-				success: function (json) {
-				
-					//set count in sidebar menu for categories and feed items
-					$.each(json, function(key, category) {
-						$('div.panel li#' + key + '.list-group-item.main span.badge').text(category["count_unread"]);
-						if (category["feeds"]) {
-							$.each(category["feeds"], function(feedkey, feed) {
-								$('div.panel li#' + feedkey + '.list-group-item.item span.badge').text(feed["count"]);
-							});
-						}
-					});
-				},
-				failure: function (errMsg) {
-					//set error message, no categories and feeds retrieved
-					$('div#categories.panel').empty();
-					$('div#categories.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
-				}
-			});
+			//on the first initial load the sidebar is already deployed. Do not call the overview twice.
+			if (mySelection.loadcount > 1) {
 			
-			// Function for checking if a var is empty, null or undefined
-			function isEmpty(str) {
-				return (!str || 0 === str.length);
+				// Use api to get an overview of all items in sidebar
+				$.ajax({
+					type: "GET",
+					url: "index.php/api/category/overview",
+					contentType: "application/json; charset=utf-8",
+					dataType: "json",
+					async: true,
+					success: function (json) {
+					
+						//set count in sidebar menu for categories and feed items
+						$.each(json, function(key, category) {
+							$('div.panel li#' + category["id"] + '.list-group-item.main span.badge').text(category["unread_count"]);
+							if (category["feeds"]) {
+								$.each(category["feeds"], function(feedkey, feed) {
+									$('div.panel li#' + feed["id"] + '.list-group-item.item span.badge').text(feed["unread_count"]);
+								});
+							}
+						});
+					},
+					failure: function (errMsg) {
+						//set error message, no categories and feeds retrieved
+						$('div#categories.panel').empty();
+						$('div#categories.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
+					}
+				});
 			}
 
-			// Use json.php to get a full list with article id's, based on given arguments
+			// Use api to get a full list with article id's, based on given arguments
 			$.ajax({
 				type: "GET",
 				url: "index.php/api/article/listing",
@@ -427,6 +461,11 @@ function FnReadPool(articleId) {
 					$("div#content").text("json.php failed to return content: " + errMsg)
 				}
 			});
+
+			// Function for checking if a var is empty, null or undefined
+			function isEmpty(str) {
+				return (!str || 0 === str.length);
+			}
 			
 			// If articleList is empty, show no post available, else load first 10 items
 			if (isEmpty(articleList)) {
@@ -451,7 +490,7 @@ function FnReadPool(articleId) {
 					}
 				} else {
 			
-					//Post data to json.php, articles are wrapped in html and appended to content class
+					//Post data to api, articles are wrapped in html and appended to content class
 					$.ajax({
 						type: "GET",
 						url: "index.php/api/article/details",
@@ -523,7 +562,7 @@ function FnReadPool(articleId) {
 
 					if (scrollheight > $this.height() && !busy) {
 
-						console.log('maximum scrollheight reached, reloading getData');
+						//console.log('maximum scrollheight reached, reloading getData');
 
 						// Now we are working, so busy is true
 						busy = true;

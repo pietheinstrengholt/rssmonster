@@ -49,7 +49,6 @@ Any username and password will work at this moment.
 TODO
 ----
 
-* Speedup first load, compile sidebar from javascript
 * Fix laravel database scripts
 * Speed up database queries for categories and unread counts
 * When moving feeds between categories, change the count for the category

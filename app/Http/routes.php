@@ -11,11 +11,11 @@
 |
 */
 
-
 $app->get('/','IndexController@index');
 $app->get('/managefeeds','IndexController@managefeeds');
 
 $app->get('/api/category','CategoryController@index');
+$app->get('/api/category/overview','CategoryController@overview');
 $app->get('/api/category/{id}','CategoryController@getcategory');
 $app->post('/api/category','CategoryController@createcategory');
 $app->post('/api/category/updateorder','CategoryController@updateorder');
