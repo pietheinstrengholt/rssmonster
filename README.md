@@ -29,7 +29,7 @@ INSTALLATION
 2. Download lumen: composer global require "laravel/lumen-installer=~1.0"
 3. Clone the RSSMonster repository: git clone https://github.com/pietheinstrengholt/rssmonster.git
 4. Inside the rssmonster directory run: composer update
-2. Deploy the database, use the database.sql script
+2. Deploy the database, use the following command: php artisan migrate:refresh --seed
 3. Copy the .env.example to .env and configure with the correct database settings
 5. Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
 6. Add a cron job to pull articles: curl -s http://yourRSSMonsterurl/index.php/api/feed/updateall
@@ -49,7 +49,7 @@ Any username and password will work at this moment.
 TODO
 ----
 
-* Fix laravel database scripts
+* Speedup first load, compile sidebar from javascript
 * Speed up database queries for categories and unread counts
 * When moving feeds between categories, change the count for the category
 * Restore Reeder support (via Fever API)
