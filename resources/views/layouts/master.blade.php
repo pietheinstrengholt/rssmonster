@@ -3,9 +3,9 @@
 <head>
 	@section('head')
 	<title>
-		@section('title')
-		RSS Monster
-		@show
+	@section('title')
+	RSS Monster
+	@show
 	</title>
 
 	<!-- CSS are placed here -->
@@ -122,9 +122,8 @@
 	@section('footer_scripts')
 	<!-- Scripts are placed here -->
 	<script src="{{ URL::asset('js/jquery-1.11.3.min.js') }}"></script>
-	<script src="{{ URL::asset('js/jquery-ui.min.js') }}"></script>
+	<script src="{{ URL::asset('js/jquery-ui-1.11.4.custom.min.js') }}"></script>
 	<script src="{{ URL::asset('js/bootstrap.min.js') }}"></script>
-	<script src="{{ URL::asset('js/jquery.mCustomScrollbar.concat.min.js') }}"></script>
 	<script src="{{ URL::asset('js/rssmonster.js') }}"></script>
 	<script src="{{ URL::asset('js/waypoints.js') }}"></script>
 	<script src="{{ URL::asset('js/bootstrap.file-input.js') }}"></script>
