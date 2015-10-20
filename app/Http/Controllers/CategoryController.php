@@ -54,8 +54,14 @@ class CategoryController extends Controller{
 	}
 
 	public function deleteCategory($id){
-		$Category = Category::find($id);
-		$Category->delete();
+		$Feeds = Category::find($id)->feeds;
+		if (!empty($Feeds)) {
+			foreach($Feeds as $feed) {
+				DB::table('articles')->where('feed_id',$feed['id'])->delete();
+				DB::table('feeds')->where('id',$feed['id'])->delete();
+			}
+		}
+		Category::where('id',$id)->delete();
 		return response()->json('deleted');
 	}
 

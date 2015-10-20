@@ -29,10 +29,10 @@ INSTALLATION
 2. Download lumen: composer global require "laravel/lumen-installer=~1.0"
 3. Clone the RSSMonster repository: git clone https://github.com/pietheinstrengholt/rssmonster.git
 4. Inside the rssmonster directory run: composer update
-2. Deploy the database, use the following command: php artisan migrate:refresh --seed
-3. Copy the .env.example to .env and configure with the correct database settings
-5. Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
-6. Add a cron job to pull articles: curl -s http://yourRSSMonsterurl/index.php/api/feed/updateall
+5. Copy the .env.example to .env and configure with the correct database settings
+6. Deploy the database, use the following command: php artisan migrate:refresh --seed
+7. Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
+8. Add a cron job to pull articles: curl -s http://yourRSSMonsterurl/index.php/api/feed/updateall
 
 Reeder (iOS) integration supprt (via Fever API)
 ----
@@ -49,7 +49,6 @@ Any username and password will work at this moment.
 TODO
 ----
 
-* Add buttons to create new category, mark as read current selection, delete selection
 * Allow categories, feeds to be renamed
 * Speed up database queries for categories and unread counts
 * When moving feeds between categories, change the count for the category

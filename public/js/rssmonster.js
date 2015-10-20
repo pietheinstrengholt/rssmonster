@@ -22,7 +22,7 @@ $(document).ready(function () {
 			$('div.panel').empty();
 			$('div.panel').append('<ul id="all" class="connected"><li class="list-group-item main all" draggable="false"><span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span> All<span class="badge"></span></li></ul>');
 			$.each(json, function(key, category) {
-				$('div.panel').append('<ul id="' + category["id"] + '" class="connected main"><li id="' + category["id"] + '" class="list-group-item main" draggable="false"><span class="glyphicon glyphicon-folder-close" aria-hidden="true"></span> ' + category["name"] + '<span class="badge">' + category["unread_count"] + '</span></li><li class="list-group-item wrapper" draggable="false"></li>');
+				$('div.panel').append('<ul id="' + category["id"] + '" class="connected main"><li id="' + category["id"] + '" class="list-group-item main" draggable="false"><span class="glyphicon glyphicon-folder-close" aria-hidden="true"></span><span class="title">' + category["name"] + '</span><span class="badge">' + category["unread_count"] + '</span></li><li class="list-group-item wrapper" draggable="false"></li>');
 				//check if feeds object is not empty
 				if (category["feeds"]) {
 					$.each(category["feeds"], function(feedkey, feed) {
@@ -33,9 +33,8 @@ $(document).ready(function () {
 						} else {
 							favicon = feed["favicon"];
 						}
-						
-					
-						$('div.panel ul#' + category["id"] + '.main').append('<li class="list-group-item item" draggable="true" id="' + feed["id"] + '"><img class="favicon" src="' + favicon + '" onError="this.onerror=null;this.src=\'img/rss-default.gif\'><span class="title">' + feed["feed_name"] + '</span><span class="badge">' + feed["unread_count"] + '</span></li>');
+
+						$('div.panel ul#' + category["id"] + '.main').append('<li class="list-group-item item" draggable="true" id="' + feed["id"] + '"><img class="favicon" src="' + favicon + '" onError="this.onerror=null;this.src=\'img/rss-default.gif\'"></img><span class="title">' + feed["feed_name"] + '</span><span class="badge">' + feed["unread_count"] + '</span></li>');
 					});
 				}
 			});
@@ -62,13 +61,15 @@ $(document).ready(function () {
 	
 		//increase load count
 		mySelection.loadcount++;
-	
-		//console.log(JSON.stringify(mySelection));
+		
+		if (mySelection.loadcount == 1) {
+			$('ul#all li').addClass("collapsed");
+		}
 	
 		//highlight the button in the sidebar with corresponding status
-		$('div#buttons').find('button').removeClass("btn-primary").addClass("btn-default");
-		$("div#buttons button#" + mySelection["status"]).removeClass("btn-default");
-		$("div#buttons button#" + mySelection["status"]).addClass("btn-primary");		
+		$('div#buttons-top').find('button').removeClass("btn-primary").addClass("btn-default");
+		$("div#buttons-top button#" + mySelection["status"]).removeClass("btn-default");
+		$("div#buttons-top button#" + mySelection["status"]).addClass("btn-primary");		
 	
 		//set view type
 		$("section").removeClass();
@@ -127,6 +128,8 @@ $(document).ready(function () {
 			mySelection.category_id = null;	
 			mySelection.feed_id = null;			
 			$("ul#all li.main").addClass("collapsed");
+			//remove classes from any active sub items
+			$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		} else {
 			$('div.panel').find('li.list-group-item.main').removeClass("collapsed");
 			$(this).addClass("collapsed");
@@ -136,6 +139,8 @@ $(document).ready(function () {
 			$("ul#" + parentId + " li.list-group-item.main span.glyphicon").addClass("glyphicon-folder-open");			
 			mySelection.category_id = $(this).attr('id');
 			mySelection.feed_id = null;
+			//remove classes from any active sub items
+			$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		}
 		
 		loadcontent();
@@ -172,8 +177,19 @@ $(document).ready(function () {
 		$('section').load('index.php/api/feed/updateall');
 	});
 
-	//Functionality to mark all items as read (except star items)
-	$("div.organize button.mark-all-as-read").click(function () {
+	//Functionality to show modal pop-up, change modal text based on button property
+	$("button#mark-as-read").click(function () {
+		$('#modal').modal('show');
+		$('#modal div.modal-header h4.modal-title').text('Mark as read dialog');
+		$('#modal div.modal-content div.modal-body').empty();
+		$('#modal div.modal-content div.modal-body').append('<p></p>');		
+		$('#modal div.modal-content div.modal-body p').text('Are you sure you want to mark all articles as read?');
+		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Yes');
+		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-mark-as-read');
+	});
+	
+	//Functionality to mark all items as read (except star items), when clicked on modal button
+	$("#modal").on("click", "button#modal-mark-as-read", function(event){
 		$.ajax({
 			type: "POST",
 			url: "index.php/api/article/mark-all-as-read",
@@ -183,33 +199,125 @@ $(document).ready(function () {
 			async: false,
 			success: function (json) {
 				result = json;
+				$('#modal').modal('hide');
 				//scroll to top before refresh
 				document.body.scrollTop = document.documentElement.scrollTop = 0;
-				//refresh page to load new articles
+				//refresh the page
 				location.reload();
 			},
 			failure: function (errMsg) {}
 		});
+	});	
+	
+	//Functionality to show modal pop-up, change modal text based on button property
+	$("button#delete").click(function () {
+		
+		category_title = $("li.main.collapsed span.title").text();
+		feed_title = $("li.item.list-group-item-warning span.title").text();
+
+		if (mySelection.feed_id == null && !!mySelection.category_id) {
+			$('#modal').modal('show');
+			$('#modal div.modal-content div.modal-body').empty();
+			$('#modal div.modal-content div.modal-body').append('<p></p>');
+			$('#modal div.modal-content div.modal-body p').text('Are you sure you want to delete the following category "' + category_title + '"?');
+			$('#modal div.modal-header h4.modal-title').text('Delete current selected category');		
+		} else if (!!mySelection.feed_id && !!mySelection.category_id) {
+			$('#modal').modal('show');
+			$('#modal div.modal-content div.modal-body').empty();
+			$('#modal div.modal-content div.modal-body').append('<p></p>');
+			$('#modal div.modal-content div.modal-body p').text('Are you sure you want to delete the following feed "' + feed_title + '"?');
+			$('#modal div.modal-header h4.modal-title').text('Delete current selected feed');
+		}
+		
+		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Yes');
+		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-delete');		
+
+	});	
+	
+	//Functionality to mark all items as read (except star items), when clicked on modal button
+	$("#modal").on("click", "button#modal-delete", function(event){
+		if (mySelection.feed_id == null && !!mySelection.category_id) {
+			$.ajax({
+				type: "DELETE",
+				url: "index.php/api/category/" + mySelection.category_id,
+				async: false,
+				success: function (json) {
+					$('#modal').modal('hide');
+					//scroll to top before refresh
+					document.body.scrollTop = document.documentElement.scrollTop = 0;
+					//refresh the page
+					location.reload();
+				},
+				failure: function (errMsg) {}
+			});		
+		} else if (!!mySelection.feed_id && !!mySelection.category_id) {
+			$.ajax({
+				type: "DELETE",
+				url: "index.php/api/feed/" + mySelection.feed_id,
+				async: false,
+				success: function (json) {
+					$('#modal').modal('hide');
+					//scroll to top before refresh
+					document.body.scrollTop = document.documentElement.scrollTop = 0;
+					//refresh the page
+					location.reload();
+				},
+				failure: function (errMsg) {}
+			});			
+		}
 	});
+	
+	//Functionality to show modal pop-up, change modal text based on button property
+	$("button#new").click(function () {
+		$('#modal').modal('show');
+		$('#modal div.modal-header h4.modal-title').text('Add new category');
+		$('#modal div.modal-content div.modal-body').empty();
+		$('#modal div.modal-content div.modal-body').append('<div class="form-group"><label for="exampleInputEmail1">Enter new name</label><input type="category" class="form-control" id="category" placeholder="Category"></div>');
+		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Submit');
+		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'add-new-category');
+	});
+	
+	//Functionality to mark all items as read (except star items), when clicked on modal button
+	$("#modal").on("click", "button#add-new-category", function(event) {
+	
+		new_category_name = $("div.modal-body input#category").val();
+
+		
+		if (!(new_category_name == null || new_category_name=='')) {
+			$.ajax({
+				type: "POST",
+				url: "index.php/api/category",
+				data: {
+					"name": new_category_name
+				},
+				async: false,
+				success: function (json) {
+					$('#modal').modal('hide');
+					//scroll to top before refresh
+					document.body.scrollTop = document.documentElement.scrollTop = 0;
+					//refresh the page
+					location.reload();
+				},
+				failure: function (errMsg) {}
+			});	
+		}
+	});	
 
 	//event when starring or un-staring item
 	$("body").on("click", "div.item-star", function (event) {
-		//get id
+		
+		//get article id
 		var id = $(this).attr('id');
-		//get current star count
-		var starcount = $('div#status.panel a#star.list-group-item span.badge').text();
 	
 		//remove classes, set new count and variables
 		if ($(this).hasClass("unstar")) {
 			$(this).removeClass("unstar");
 			$(this).addClass("star");
 			var starmark = "mark";
-			var starcountnew = parseFloat(starcount)+1;
 		} else {
 			$(this).removeClass("star");
 			$(this).addClass("unstar");
 			var starmark = "unmark";
-			var starcountnew = parseFloat(starcount)-1;	
 		}
 		
 		//send json request
@@ -224,11 +332,6 @@ $(document).ready(function () {
 				result = json;
 			},
 			failure: function (errMsg) {}
-		});
-
-		//change badges with new count
-		$('span.star.badge').each(function(index, obj) {
-		  $(this).text(starcountnew);
 		});
 
 	});
@@ -437,8 +540,8 @@ function FnReadPool(articleId) {
 					},
 					failure: function (errMsg) {
 						//set error message, no categories and feeds retrieved
-						$('div#categories.panel').empty();
-						$('div#categories.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
+						$('div.panel').empty();
+						$('div.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
 					}
 				});
 			}

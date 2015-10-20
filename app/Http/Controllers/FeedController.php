@@ -15,7 +15,7 @@ class FeedController extends Controller{
 	protected $feedFactory;
 
 	public function index(){
-		$Feeds  = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id','feeds.category_id','feeds.feed_name','feeds.feed_desc','feeds.url','feeds.favicon','categories.name as category_name')->get();
+		$Feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id','feeds.category_id','feeds.feed_name','feeds.feed_desc','feeds.url','feeds.favicon','categories.name as category_name')->get();
 		return response()->json($Feeds);
 	}
 
@@ -39,7 +39,7 @@ class FeedController extends Controller{
 		//set previous week
 		$previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));	
 
-		$Feed  = Feed::find($id);
+		$Feed = Feed::find($id);
 		echo $Feed->url . "<br>";
 		$feedFactory = new FeedFactory(['cache.enabled' => false]);
 		$feeder = $feedFactory->make($Feed->url);
@@ -119,7 +119,7 @@ class FeedController extends Controller{
 	}	
 
 	public function getFeed($id){
-		$Feed  = Feed::find($id);
+		$Feed = Feed::find($id);
 		if (!empty($Feed)) {
 			$Feed['total_count'] = DB::table('articles')->where('feed_id', $id)->count();
 			$Feed['unread_count'] = DB::table('articles')->where('feed_id', $id)->where('articles.status', 'unread')->count();			
@@ -149,13 +149,14 @@ class FeedController extends Controller{
 	}
 
 	public function deleteFeed($id){
-		$Feed  = Feed::find($id);
-		$Feed->delete();
+		$Feed = Feed::find($id);
+		Article::where('feed_id',$id)->delete();
+		Feed::where('id',$id)->delete();
 		return response()->json('deleted');
 	}
 
 	public function updateFeed(Request $request,$id){
-		$Feed  = Feed::find($id);
+		$Feed = Feed::find($id);
 		$Feed->name = $request->input('name');
 		$Feed->save();
 		return response()->json($Feed);

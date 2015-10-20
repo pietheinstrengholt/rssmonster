@@ -179,9 +179,16 @@ div.container {
 
 /* SIDEBAR */
 
-div#buttons {
+div#buttons-top {
 	position: fixed ! important; 
 	top:70px; 
+	padding-right:0px; 
+	width: 15%;
+}
+
+div#buttons-bottom {
+	position: fixed ! important; 
+	bottom:20px; 
 	padding-right:0px; 
 	width: 15%;
 }
@@ -191,8 +198,9 @@ div.panel {
 	overflow-x: hidden;
 	position: fixed;
 	top: 110px;
-    bottom: 0;
+    bottom: 50px;
 	width: 15%;
+	background-color: #f9f9f9;
 }
 
 ::-webkit-scrollbar
@@ -247,6 +255,10 @@ li.item {
 	white-space: nowrap;
 }
 
+li.main span.title {
+	margin-left: 6px;
+}
+
 ul#all {
 	margin-bottom: -1px;
 }
@@ -256,7 +268,6 @@ li.item span.badge {
 }
 
 li.main {
-	/* background-color: #e6e6e6; */
 	border-top: 1px solid #ddd;
 }
 
