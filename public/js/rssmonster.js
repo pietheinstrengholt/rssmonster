@@ -105,7 +105,7 @@ $(document).ready(function () {
 	}
 
 	//Functionality when clicking on top-nav menu items or buttons in the sidebar
-	$("a#star.navbar-brand,a#unread.navbar-brand,div#buttons button#unread, div#buttons button#read, div#buttons button#star").click(function () {
+	$("a#star.navbar-brand,a#unread.navbar-brand,div#buttons-top button#unread, div#buttons-top button#read, div#buttons-top button#star").click(function () {
 		mySelection.status = encodeURIComponent($(this).attr('id'));
 		loadcontent();
 	});
