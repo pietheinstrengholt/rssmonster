@@ -12,11 +12,6 @@ body {
 
 /* ARTICLES OVERVIEW SCREEN */
 
-section {
-  margin-left: 1%;
-  margin-right: 1%;
-}
-
 section.detailed .less-content, section.detailed div.minimal {
   display:none;
 }
