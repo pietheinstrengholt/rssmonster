@@ -29,6 +29,7 @@ $app->get('/api/feed/{id}','FeedController@getfeed');
 $app->post('/api/feed','FeedController@createfeed');
 $app->post('/api/feed/newrssfeed','FeedController@newrssfeed');
 $app->post('/api/feed/changecategory','FeedController@changecategory');
+$app->post('/api/feed/changeall','FeedController@changeall');
 $app->put('/api/feed/{id}','FeedController@updatefeed');
 $app->delete('/api/feed/{id}','FeedController@deletefeed');
 

@@ -140,8 +140,23 @@ class FeedController extends Controller{
 		
 		//update feed with new category_id
 		Feed::where('id', $_POST['feed_id'])->update(['category_id' => $_POST['category_id']]);
-		
-	}	
+	}
+
+	public function changeall(){
+	
+		if (!empty($_POST['feeds'])) {
+			foreach ($_POST['feeds'] as $feed) {
+				if (isset($feed['delete'])) {
+					$Feed = Feed::find($feed['feed_id']);
+					Article::where('feed_id',$feed['feed_id'])->delete();
+					Feed::where('id',$feed['feed_id'])->delete();
+				} else {
+					Feed::where('id', $feed['feed_id'])->update(['feed_name' => $feed['feed_name']],['category_id' => $feed['category_id']]);
+				}
+			}
+			echo "done";
+		}
+	}
 
 	public function createFeed(Request $request){
 		$Feed = Feed::create($request->all());

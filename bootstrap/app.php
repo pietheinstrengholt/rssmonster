@@ -80,10 +80,10 @@ $app->singleton(
 
 // $app->register(App\Providers\AppServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
-$app->register(Illuminate\Html\HtmlServiceProvider::class);
-$app->register(ArandiLopez\Feed\Providers\LumenFeedServiceProvider::class);
-class_alias('Illuminate\Html\FormFacade', 'Form');
-class_alias('Illuminate\Html\HtmlFacade', 'Html');
+$app->register('Collective\Html\HtmlServiceProvider');
+$app->register('ArandiLopez\Feed\Providers\LumenFeedServiceProvider');
+class_alias('Collective\Html\FormFacade', 'Html');
+class_alias('Collective\Html\FormFacade', 'Form');
 class_alias('Illuminate\Support\Facades\URL', 'URL');
 
 /*

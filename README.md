@@ -46,21 +46,19 @@ Any username and password will work at this moment.
 <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/fever.png" width="300px">
 
 
-TODO
+WISHLIST
 ----
 
-* Allow categories, feeds to be renamed
-* Speed up database queries for categories and unread counts
 * When moving feeds between categories, change the count for the category
 * Restore Reeder support (via Fever API)
 * Add Feedbin Api support
 * Add composer requirements bootstrap, jquery, jquery-ui
 * Mark as read, unread buttons
 * Add search function
-* First welcome screen when database is empty
+* Welcome screen when database is empty
 * Lazy load images for detailed view
-* Cleanup unused javascript files
 * Add spinner while loading
+* Fix https://github.com/LaravelCollective/html/issues/41
 
 CREDITS
 -------

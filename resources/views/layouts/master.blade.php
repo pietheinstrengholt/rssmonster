@@ -99,10 +99,16 @@
 					<input name="url" type="text" placeholder="Add feed or url"  style="width: 120px;" class="form-control">
 				</div>
 				<button id="submit" class="btn btn-default">Submit</button>
-			</form>	
-
+			</form>
+			
 			<ul class="nav navbar-nav">
-				<li><a class="update" href="#">Update</a></li>
+				<li class="dropdown">
+				<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
+				<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+					<li role="presentation"><a class="update" href="#" role="menuitem" tabindex="-1" href="#">Update</a></li>
+					<li role="presentation"><a class="managefeeds" href="#" role="menuitem" tabindex="-1" href="#">Manage feeds</a></li>
+				</ul>
+				</li>
 			</ul>
 
 		</div><!-- /.nav-collapse -->

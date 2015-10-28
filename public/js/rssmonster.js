@@ -149,7 +149,6 @@ $(document).ready(function () {
 
 	//Functionality when sub menu item from categories are clicked
 	$("div.panel").on("click", "li.list-group-item.item", function (event) {
-
 		//remove any list-group-item-warning classes from status overview
 		$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		$(this).addClass("list-group-item-warning");
@@ -176,6 +175,13 @@ $(document).ready(function () {
 		$('section').empty();
 		$('section').load('index.php/api/feed/updateall');
 	});
+	
+	//Functionality to load manage feeds screen
+	$("a.managefeeds").click(function () {
+		$(window).off("scroll");
+		$('section').empty();
+		$('section').load('index.php/managefeeds');
+	});	
 
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("button#mark-as-read").click(function () {
@@ -335,6 +341,37 @@ $(document).ready(function () {
 		});
 
 	});
+	
+
+	$("body").on("click", "button#submit-feedchanges", function (event) {
+		
+		//restructure array form data
+		var values = {};
+		$.each($('form.form-inline').serializeArray(), function(i, field) {
+			values[field.name] = field.value;
+		});
+		
+		//send json request
+		$.ajax({
+			type: "POST",
+			url: "index.php/api/feed/changeall",
+			data: {
+				"feeds": values
+			},
+			async: false,
+			success: function (json) {
+				result = json;
+				console.log(result);
+				if (result = "done") {
+					location.reload();
+				}
+			},
+			failure: function (errMsg) {
+				console.log(errMsg);
+			}
+		});		
+		
+    });
 
 });
 
