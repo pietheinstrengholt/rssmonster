@@ -54,15 +54,18 @@ class CategoryController extends Controller{
 	}
 
 	public function deleteCategory($id){
-		$Feeds = Category::find($id)->feeds;
-		if (!empty($Feeds)) {
-			foreach($Feeds as $feed) {
-				DB::table('articles')->where('feed_id',$feed['id'])->delete();
-				DB::table('feeds')->where('id',$feed['id'])->delete();
+		//do not delete feed larger than 1 (uncategorized)
+		if ($id > 1) {
+			$Feeds = Category::find($id)->feeds;
+			if (!empty($Feeds)) {
+				foreach($Feeds as $feed) {
+					DB::table('articles')->where('feed_id',$feed['id'])->delete();
+					DB::table('feeds')->where('id',$feed['id'])->delete();
+				}
 			}
+			Category::where('id',$id)->delete();
+			return response()->json('deleted');
 		}
-		Category::where('id',$id)->delete();
-		return response()->json('deleted');
 	}
 
 	public function updateCategory(Request $request,$id){

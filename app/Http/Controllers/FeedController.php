@@ -107,7 +107,7 @@ class FeedController extends Controller{
 				echo "<br>Feed already exists!";
 			} else {
 				$feed = new Feed;
-				$feed->category_id = '1';			
+				$feed->category_id = '1';
 				$feed->feed_name = $simplePieInstance->get_title();
 				$feed->feed_desc = $simplePieInstance->get_description();
 				$feed->url = $simplePieInstance->get_permalink();
