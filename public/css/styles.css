@@ -99,6 +99,7 @@ div.feedname {
   padding-top: 5px;
   padding-left: 5px;
   font-weight: bold;
+  color: #696969;
 }
 
 div.page-content, div.less-content {
@@ -115,6 +116,10 @@ div.article-block hr {
   width: 180px;
 }
 
+div.article hr {
+  border-top: 1px solid #D3D3D3;
+}
+
 div.item-star.star, div.item-star.unstar {
   height: 29px;
   background-repeat: no-repeat;
@@ -124,6 +129,7 @@ div.item-star.star, div.item-star.unstar {
   background-position: 6px 4px;
   margin-left: -6px;
   cursor: pointer;
+  background-position: center top 5px;
 }
 
 div.item-star.unstar {
