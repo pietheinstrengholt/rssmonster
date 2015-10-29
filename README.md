@@ -50,15 +50,11 @@ WISHLIST
 ----
 
 * When moving feeds between categories, change the count for the category
-* Restore Reeder support (via Fever API)
-* Add Feedbin Api support
-* Add composer requirements bootstrap, jquery, jquery-ui
+* Restore Fever API or add Feedbin Api support
 * Mark as read, unread buttons
 * Add search function
 * Welcome screen when database is empty
 * Lazy load images for detailed view
-* Add spinner while loading
-* Fix https://github.com/LaravelCollective/html/issues/41
 
 CREDITS
 -------
