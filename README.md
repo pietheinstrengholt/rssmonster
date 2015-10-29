@@ -39,7 +39,7 @@ Reeder (iOS) integration supprt (via Fever API)
 
 Reeder (iOS) support has been added recently. To use Reeder add an Account with Fever (feedafever.com). Point to the following url:
 
-http://yourRSSMonsterurl/fever-api.php
+http://yourRSSMonsterurl/public/index.php/api/fever
 
 Any username and password will work at this moment.
 
@@ -49,8 +49,7 @@ Any username and password will work at this moment.
 WISHLIST
 ----
 
-* When moving feeds between categories, change the count for the category
-* Restore Fever API or add Feedbin Api support
+* Cosmetic: When moving feeds between categories, change the count for the category
 * Mark as read, unread buttons
 * Add search function
 * Welcome screen when database is empty

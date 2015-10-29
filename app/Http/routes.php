@@ -33,6 +33,9 @@ $app->post('/api/feed/changeall','FeedController@changeall');
 $app->put('/api/feed/{id}','FeedController@updatefeed');
 $app->delete('/api/feed/{id}','FeedController@deletefeed');
 
+$app->get('/api/fever','FeedController@fever');
+$app->post('/api/fever','FeedController@fever');
+
 $app->get('/api/article','ArticleController@index');
 $app->get('/api/article/overview','ArticleController@overview');
 $app->get('/api/article/listing','ArticleController@listing');

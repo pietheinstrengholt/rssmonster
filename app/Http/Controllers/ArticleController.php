@@ -10,12 +10,12 @@ use Illuminate\Http\Request;
 
 class ArticleController extends Controller{
 
-	public function index(){
+	public function index() {
 		$Articles  = Article::all();
 		return response()->json($Articles);
 	}
 	
-	public function listing(){
+	public function listing() {
 	
 		//check if status argument is set
 		if (!isset($_GET['status'])) {
@@ -42,13 +42,13 @@ class ArticleController extends Controller{
 		return response()->json($unread_item_ids);
 	}
 	
-	public function details(){
+	public function details() {
 		$articlelist = explode(',', $_GET['article_id']);
 		$Articles  = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', $articlelist)->orderBy('published', $_GET['sort'])->select('articles.id','articles.status','articles.url','articles.subject','articles.content','articles.published','articles.feed_id','feeds.feed_name')->get();
 		return response()->json($Articles);
 	}	
 
-	public function overview(){
+	public function overview() {
 		$Articles = array();
 		$Articles['total'] = Article::count();
 		$Articles['star'] = Article::where('status', 'star')->count();
@@ -57,17 +57,17 @@ class ArticleController extends Controller{
 		return response()->json($Articles);
 	}
 
-	public function getArticle($id){
+	public function getArticle($id) {
 		$Article = Article::find($id);
 		return response()->json($Article);
 	}
 
-	public function createArticle(Request $request){
+	public function createArticle(Request $request) {
 		$Article = Article::create($request->all());
 		return response()->json($Article);
 	}
 	
-	public function marktoread($id){
+	public function marktoread($id) {
 		$Article = Article::find($id);
 		if ($Article->status == "unread") {
 			Article::where('id', $id)->update(['status' => 'read']);
@@ -77,7 +77,7 @@ class ArticleController extends Controller{
 		}
 	}
 	
-	public function marktounread($id){
+	public function marktounread($id) {
 		$Article = Article::find($id);
 		if ($Article->status == "read") {
 			Article::where('id', $id)->update(['status' => 'unread']);
@@ -87,7 +87,7 @@ class ArticleController extends Controller{
 		}
 	}	
 	
-	public function markwithstar($id){
+	public function markwithstar($id) {
 		
 		if ($_POST['update'] == "mark") {
 			Article::where('id', $id)->update(['status' => 'star']);
@@ -101,20 +101,20 @@ class ArticleController extends Controller{
 		
 	}
 	
-	public function markallasread(){
+	public function markallasread() {
 		if ($_POST['update'] == "mark-all-as-read") {
 			Article::where('status', 'unread')->update(['status' => 'read']);
 			return response()->json('marked all as read');
 		}
 	}	
 
-	public function deleteArticle($id){
+	public function deleteArticle($id) {
 		$Article  = Article::find($id);
 		$Article->delete();
 		return response()->json('deleted');
 	}
 
-	public function updateArticle(Request $request,$id){
+	public function updateArticle(Request $request,$id) {
 		$Article  = Article::find($id);
 		$Article->name = $request->input('name');
 		$Article->save();

@@ -9,12 +9,12 @@ use Illuminate\Http\Request;
 
 class CategoryController extends Controller{
 
-	public function index(){
+	public function index() {
 		$Categories = Category::orderBy('category_order', 'asc')->get();
 		return response()->json($Categories);
 	}
 	
-	public function overview(){
+	public function overview() {
 		$newArray = array();
 		$Categories = Category::orderBy('category_order', 'asc')->get();
 		if (!empty($Categories)) {
@@ -32,7 +32,7 @@ class CategoryController extends Controller{
 		return response()->json($newArray);
 	}
 
-	public function getCategory($id){
+	public function getCategory($id) {
 		$Category = Category::find($id);
 		if (!empty($Category)) {
 			$Category['total_count'] = DB::table('feeds')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('feeds.category_id', $id)->count();
@@ -53,7 +53,7 @@ class CategoryController extends Controller{
 		return response()->json($Category);
 	}
 
-	public function deleteCategory($id){
+	public function deleteCategory($id) {
 		//do not delete feed larger than 1 (uncategorized)
 		if ($id > 1) {
 			$Feeds = Category::find($id)->feeds;
@@ -68,14 +68,14 @@ class CategoryController extends Controller{
 		}
 	}
 
-	public function updateCategory(Request $request,$id){
+	public function updateCategory(Request $request,$id) {
 		$Category = Category::find($id);
 		$Category->name = $request->input('name');
 		$Category->save();
 		return response()->json($Category);
 	}
 	
-	public function updateorder(){
+	public function updateorder() {
 		//check if url is set in POST argument, else exit
 		if (!isset($_POST['order'])) {
 			exit();
