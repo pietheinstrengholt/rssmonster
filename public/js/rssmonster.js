@@ -314,16 +314,21 @@ $(document).ready(function () {
 		
 		//get article id
 		var id = $(this).attr('id');
+		
+		//set starcount
+		var starredcount = $('div.navbar span.star.badge').text();
 	
 		//remove classes, set new count and variables
 		if ($(this).hasClass("unstar")) {
 			$(this).removeClass("unstar");
 			$(this).addClass("star");
 			var starmark = "mark";
+			var starredcountnew = parseFloat(starredcount)+1;
 		} else {
 			$(this).removeClass("star");
 			$(this).addClass("unstar");
 			var starmark = "unmark";
+			var starredcountnew = parseFloat(starredcount)-1;
 		}
 		
 		//send json request
@@ -335,7 +340,10 @@ $(document).ready(function () {
 			},
 			async: false,
 			success: function (json) {
-				result = json;
+				//change badges with new count
+				$('span.star.badge').each(function(index, obj) {
+				  $(this).text(starredcountnew);
+				});
 			},
 			failure: function (errMsg) {}
 		});
