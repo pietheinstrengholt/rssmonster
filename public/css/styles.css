@@ -123,6 +123,7 @@ div.item-star.star, div.item-star.unstar {
   margin-top: -10px;
   background-position: 6px 4px;
   margin-left: -6px;
+  cursor: pointer;
 }
 
 div.item-star.unstar {
