@@ -29,7 +29,6 @@ class FeedController extends Controller{
 			foreach ($Feeds as $Feed) {
 				//update feed, see update function
 				$this->update($Feed->id);
-				
 			}
 		}
 		
@@ -180,6 +179,8 @@ class FeedController extends Controller{
 	
 	//TODO: Re-use functions from other classes
 	public function fever() {
+	
+		/* Fever API needs strings for category_id and feed_id's */
 
 		//static for now
 		$email  = 'username';
@@ -203,7 +204,7 @@ class FeedController extends Controller{
 			if (!empty($Categories)) {
 				foreach($Categories as $Category) {
 					array_push($groups, array(
-						"id" => $Category->id,
+						"id" => (string)$Category->id,
 						"title" => $Category->name
 					));
 				}
@@ -218,8 +219,8 @@ class FeedController extends Controller{
 			if (!empty($Feeds)) {
 				foreach($Feeds as $Feed) {
 					array_push($feeds, array(
-						"id"  => $Feed->id,
-						"favicon_id" => $Feed->id,
+						"id"  => (string)$Feed->id,
+						"favicon_id" => (string)$Feed->id,
 						"title" => $Feed->feed_name,
 						"url" => $Feed->url,
 						"site_url" => $Feed->url,
@@ -238,14 +239,15 @@ class FeedController extends Controller{
 			if (!empty($Feeds)) {
 				foreach($Feeds as $Feed) {
 					array_push($feeds_groups, array(
-						"group_id" => $Feed->category_id,
-						"feed_ids" => $Feed->id
+						"group_id" => (string)$Feed->category_id,
+						"feed_ids" => (string)$Feed->id
 					));
 				}
 			}
 			$response_arr["feeds_groups"] = $feeds_groups;
 			$arr = array_merge($arr, $response_arr);
 		};
+		
 		//return list with all unread article id's
 		if (isset($_GET['unread_item_ids'])) {
 			$unread_item_ids = array();
@@ -260,8 +262,29 @@ class FeedController extends Controller{
 			$unreaditems = array("unread_item_ids" => $stack);
 			$arr = array_merge($arr, $unreaditems);
 		};
+
+		//return string/comma-separated list with id's from read and starred articles
+		if (isset($_GET['saved_item_ids'])) {
+			$saved_item_ids = array();
+			$Articles = Article::where('status', 'read')->orWhere('status', 'star')->orderBy('id', 'asc')->get();
+			if (!empty($Articles)) {
+				foreach($Articles as $Article) {
+					array_push($saved_item_ids, $Article->id);
+				}
+			}
+			//string/comma-separated list of positive integers instead of array
+			$stack = implode(',', $saved_item_ids);
+			$readitems = array("saved_item_ids" => $stack);
+			$arr = array_merge($arr, $readitems);
+		};
+		
 		//when argument is items, return 50 articles at a time
 		if (isset($_GET['items'])) {
+		
+			$total_items = array();
+			$total_items['total_items'] = Article::count();					
+			$arr = array_merge($arr, $total_items);		
+
 			//request specific items, a maximum of 50 specific items requested by comma-separated argument
 			if (isset($_GET['with_ids'])) {
 				//list with id's is comma-separated, so transform to array
@@ -275,18 +298,18 @@ class FeedController extends Controller{
 						$Article = Article::find($ArrayId);
 						
 						if ($Article->status == "read") { 
-							$isread = '1'; 
-							$isstar = '0'; } 
+							$isread = 1;
+							$isstar = 0; } 
 						elseif ($Article->status == "unread") { 
-							$isread = '0'; 
-							$isstar = '0'; } 
+							$isread = 0;
+							$isstar = 0; } 
 						elseif ($Article->status == "star") { 
-							$isread = '0'; 
-							$isstar = '1'; 
+							$isread = 1;
+							$isstar = 1;
 						}
 						array_push($items, array(
-							"id" => $Article->id,
-							"feed_id" => $Article->feed_id,
+							"id" => (string)$Article->id,
+							"feed_id" => (string)$Article->feed_id,
 							"title" => $Article->subject,
 							"author" => $Article->author,
 							"html" => $Article->content,
@@ -305,22 +328,22 @@ class FeedController extends Controller{
 			} elseif (isset($_REQUEST["since_id"])) {
 				$since_id = $_REQUEST["since_id"];
 				$items = array();
-				$Articles = Article::where('id', '>' , $since_id)->take(50)->get();
+				$Articles = Article::where('id', '>' , $since_id)->orderBy('id', 'asc')->take(50)->get();
 				if (!empty($Articles)) {
 					foreach($Articles as $Article) {
 						if ($Article->status == "read") { 
-							$isread = '1'; 
-							$isstar = '0'; } 
+							$isread = 1;
+							$isstar = 0; } 
 						elseif ($Article->status == "unread") { 
-							$isread = '0'; 
-							$isstar = '0'; } 
+							$isread = 0;
+							$isstar = 0; } 
 						elseif ($Article->status == "star") { 
-							$isread = '0'; 
-							$isstar = '1'; 
+							$isread = 1;
+							$isstar = 1;
 						}
 						array_push($items, array(
-							"id" => $Article->id,
-							"feed_id" => $Article->feed_id,
+							"id" => (string)$Article->id,
+							"feed_id" => (string)$Article->feed_id,
 							"title" => $Article->subject,
 							"author" => $Article->author,
 							"html" => $Article->content,
@@ -337,22 +360,22 @@ class FeedController extends Controller{
 			} elseif (isset($_REQUEST["max_id"])) {
 				$max_id = $_REQUEST["max_id"];
 				$items = array();
-				$Articles = Article::where('id', '<' , $max_id)->take(50)->get();
+				$Articles = Article::where('id', '<' , $max_id)->orderBy('id', 'asc')->take(50)->get();
 				if (!empty($Articles)) {
 					foreach($Articles as $Article) {
 						if ($Article->status == "read") { 
-							$isread = '1'; 
-							$isstar = '0'; } 
+							$isread = 1;
+							$isstar = 0; } 
 						elseif ($Article->status == "unread") { 
-							$isread = '0'; 
-							$isstar = '0'; } 
+							$isread = 0;
+							$isstar = 0; } 
 						elseif ($Article->status == "star") { 
-							$isread = '0'; 
-							$isstar = '1'; 
+							$isread = 1;
+							$isstar = 1;
 						}
 						array_push($items, array(
-							"id" => $Article->id,
-							"feed_id" => $Article->feed_id,
+							"id" => (string)$Article->id,
+							"feed_id" => (string)$Article->feed_id,
 							"title" => $Article->subject,
 							"author" => $Article->author,
 							"html" => $Article->content,
@@ -367,28 +390,25 @@ class FeedController extends Controller{
 				$arr = array_merge($arr, $response_arr);
 			//if no argument is given provide total_items and up to 50 items
 			} else {
-			
-				$total_items = array();
-				$total_items['total_items'] = Article::count();					
-				$arr = array_merge($arr, $total_items);
+
 				$items = array();
 				
-				$Articles = Article::take(50)->get();
+				$Articles = Article::take(50)->orderBy('id', 'asc')->get();
 				if (!empty($Articles)) {
 					foreach($Articles as $Article) {
 						if ($Article->status == "read") { 
-							$isread = '1'; 
-							$isstar = '0'; } 
+							$isread = 1;
+							$isstar = 0; } 
 						elseif ($Article->status == "unread") { 
-							$isread = '0'; 
-							$isstar = '0'; } 
+							$isread = 0;
+							$isstar = 0; } 
 						elseif ($Article->status == "star") { 
-							$isread = '0'; 
-							$isstar = '1'; 
+							$isread = 1;
+							$isstar = 1;
 						}
 						array_push($items, array(
-							"id" => $Article->id,
-							"feed_id" => $Article->feed_id,
+							"id" => (string)$Article->id,
+							"feed_id" => (string)$Article->feed_id,
 							"title" => $Article->subject,
 							"author" => $Article->author,
 							"html" => $Article->content,
@@ -405,25 +425,43 @@ class FeedController extends Controller{
 				
 			}
 		};
-		//return string/comma-separated list with id's from read articles
-		if (isset($_GET['saved_item_ids'])) {
-			$saved_item_ids = array();
-			$Articles = Article::where('status', 'read')->orderBy('id', 'asc')->get();
+
+		//when argument is links, return star items as hot links
+		if (isset($_GET['links'])) {
+			
+			$items = array();
+			
+			$Articles = Article::where('status', 'star')->orderBy('id', 'asc')->get();
 			if (!empty($Articles)) {
 				foreach($Articles as $Article) {
-					array_push($saved_item_ids, $Article->id);
+					array_push($items, array(
+						"id" => (string)$Article->id,
+						"feed_id" => (string)$Article->feed_id,
+						"item_id" => (string)$Article->id,
+						"temperature" => 1,
+						"is_item" => 1,
+						"is_local" => 1,
+						"is_saved" => 1,
+						"title" => $Article->subject,
+						"url" => $Article->url
+					));
 				}
+			}			
+			
+			//only return results when no page argument is given or when page argument is set to 1
+			if (isset($_REQUEST['page'])) {
+				//the range is provided by the page. Return entire range by the first page
+				if ($_REQUEST["page"] == "1") {
+					$response_arr["links"] = $items;
+					$arr = array_merge($arr, $response_arr);
+				}
+			} else {
+				$response_arr["links"] = $items;
+				$arr = array_merge($arr, $response_arr);
 			}
-			//string/comma-separated list of positive integers instead of array
-			$stack = implode(',', $saved_item_ids);
-			$readitems = array("saved_item_ids" => $stack);
-			$arr = array_merge($arr, $readitems);
+
 		};
-		if (isset($_GET['links'])) {
-			$links = array();
-			$response_arr["links"] = $links;
-			$arr = array_merge($arr, $response_arr);
-		};
+
 		//when argument is groups, retrieve list with categories and id's
 		if (isset($_GET['favicons'])) {
 			$favicons = array();
