@@ -8,7 +8,7 @@
 	@show
 	</title>
 
-	<!-- CSS are placed here -->
+	<!-- CSS -->
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
@@ -35,6 +35,8 @@
 			}
 		}
 	</style>
+	
+	<!-- Configuring Web Applications -->	
 	<link rel="apple-touch-icon" sizes="57x57" href="{{ URL::asset('img/favicon/apple-icon-57x57.png') }}">
 	<link rel="apple-touch-icon" sizes="60x60" href="{{ URL::asset('img/favicon/apple-icon-60x60.png') }}">
 	<link rel="apple-touch-icon" sizes="72x72" href="{{ URL::asset('img/favicon/apple-icon-72x72.png') }}">
@@ -126,13 +128,14 @@
 	</div>
 
 	@section('footer_scripts')
-	<!-- Scripts are placed here -->
+	<!-- External scripts are placed here -->
 	<script src="{{ URL::asset('js/jquery-1.11.3.min.js') }}"></script>
 	<script src="{{ URL::asset('js/jquery-ui-1.11.4.custom.min.js') }}"></script>
 	<script src="{{ URL::asset('js/bootstrap.min.js') }}"></script>
-	<script src="{{ URL::asset('js/rssmonster.js') }}"></script>
 	<script src="{{ URL::asset('js/waypoints.js') }}"></script>
-	<script src="{{ URL::asset('js/bootstrap.file-input.js') }}"></script>
+	<!-- App script is placed here -->	
+	<script src="{{ URL::asset('js/app.js') }}"></script>
+	<!-- Add Internet Explorer console log function -->
 	<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
 	@show
 
