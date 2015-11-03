@@ -243,15 +243,24 @@ class FeedController extends Controller{
 		//when argument is groups or feeds, also return feed id's linked to category id's
 		if (isset($_GET['groups']) || isset($_GET['feeds'])) {
 			$feeds_groups = array();
-			$Feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id','feeds.category_id')->get();
-			if (!empty($Feeds)) {
-				foreach($Feeds as $Feed) {
-					array_push($feeds_groups, array(
-						"group_id" => (string)$Feed->category_id,
-						"feed_ids" => (string)$Feed->id
-					));
+			
+			//The array is composed with a group_id and feed_ids containing a string/comma-separated list of positive integers
+			$Categories = Category::orderBy('category_order', 'asc')->get();
+			if (!empty($Categories)) {
+				foreach($Categories as $key => $Category) {
+					$feeds_groups[$key]["group_id"] = (int) $Category->id;
+					$Feeds = Category::find($Category->id)->feeds;
+					if (!empty($Feeds)) {
+					
+						$feed_ids = array();
+						foreach($Feeds as $Feed) {
+							array_push($feed_ids, $Feed->id);
+						}
+						$feeds_groups[$key]["feed_ids"] = implode(',', $feed_ids);
+					}
 				}
 			}
+			
 			$response_arr["feeds_groups"] = $feeds_groups;
 			$arr = array_merge($arr, $response_arr);
 		};
@@ -340,40 +349,11 @@ class FeedController extends Controller{
 			
 		};
 
-		//when argument is links, return star items as hot links
+		//when argument is links, don't return anything at this moment
 		if (isset($_GET['links'])) {
-			
-			$items = array();
-			
-			$Articles = Article::where('star_ind', '1')->orderBy('id', 'asc')->get();
-			if (!empty($Articles)) {
-				foreach($Articles as $Article) {
-					array_push($items, array(
-						"id" => (string)$Article->id,
-						"feed_id" => (string)$Article->feed_id,
-						"item_id" => (string)$Article->id,
-						"temperature" => 1,
-						"is_item" => 1,
-						"is_local" => 1,
-						"is_saved" => 1,
-						"title" => $Article->subject,
-						"url" => $Article->url
-					));
-				}
-			}			
-			
-			//only return results when no page argument is given or when page argument is set to 1
-			if (isset($_REQUEST['page'])) {
-				//the range is provided by the page. Return entire range by the first page
-				if ($_REQUEST["page"] == "1") {
-					$response_arr["links"] = $items;
-					$arr = array_merge($arr, $response_arr);
-				}
-			} else {
-				$response_arr["links"] = $items;
-				$arr = array_merge($arr, $response_arr);
-			}
-
+			$links = array();
+			$response_arr["links"] = $links;
+			$arr = array_merge($arr, $response_arr);
 		};
 
 		//when argument is groups, retrieve list with categories and id's
@@ -410,7 +390,15 @@ class FeedController extends Controller{
 
 		//mark items, groups or feed as read, saved or unsaved
 		if (isset($_POST['mark'])) {
-			if (isset($_POST['before'])) { $time = date("Y-m-d H:i:s",$_POST['before']); } else { $time = time(); }
+		
+			//set before argument
+			if (isset($_POST['before'])) { 
+				$time = date("Y-m-d H:i:s",$_POST['before']); 
+			} else { 
+				$time = time(); 
+			}
+			
+			//per item
 			if ($_REQUEST["mark"] == "item") {
 				$id = $_REQUEST["id"];
 				if ($_REQUEST["as"] == "read") {
@@ -421,7 +409,7 @@ class FeedController extends Controller{
 					Article::where('id', $id)->update(['status' => 'unread']);
 				}
 			}
-			//feeds
+			//per feed
 			if ($_REQUEST["mark"] == "feed") {
 				$id = $_REQUEST["id"];
 				if ($_REQUEST["as"] == "read") {
@@ -432,7 +420,8 @@ class FeedController extends Controller{
 					Article::where('feed_id', $id)->where('created_at', '<' , $time)->update(['status' => 'unread']);
 				}
 			}
-			//a group should be specified with an id not equal to zero
+			
+			//per group, a group should be specified with an id not equal to zero
 			if ($_REQUEST["mark"] == "group" && $_REQUEST["id"] != "0") {
 				
 				//get feeds based on category_id
@@ -451,6 +440,7 @@ class FeedController extends Controller{
 					}
 				}
 			}
+			
 			//this is "all" according fever
 			if ($_REQUEST["mark"] == "group" && $_REQUEST["id"] == "0") {
 				if ($_REQUEST["as"] == "read") {
