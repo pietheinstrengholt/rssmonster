@@ -33,6 +33,7 @@ class CreateTablesScript extends Migration
             $table->increments('id');
             $table->integer('feed_id')->unsigned();
             $table->string('status');
+            $table->integer('star_ind')->default(0);
             $table->string('url');
             $table->text('subject');
             $table->text('content');

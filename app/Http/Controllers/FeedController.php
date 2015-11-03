@@ -178,6 +178,14 @@ class FeedController extends Controller{
 	}
 	
 	//TODO: Re-use functions from other classes
+	
+	/**
+	*
+	* The fever-api implements the API from Fever, allowing apps such as Reeder to  
+	* communicate with this application. More info: http://feedafever.com/api
+	*
+	*/
+	
 	public function getFever() {
 	
 		/* Fever API needs strings for category_id and feed_id's */
@@ -232,7 +240,7 @@ class FeedController extends Controller{
 			$response_arr["feeds"] = $feeds;
 			$arr = array_merge($arr, $response_arr);
 		};
-		//when argument is groups or feeds, return feed id's linked to category id's
+		//when argument is groups or feeds, also return feed id's linked to category id's
 		if (isset($_GET['groups']) || isset($_GET['feeds'])) {
 			$feeds_groups = array();
 			$Feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id','feeds.category_id')->get();
@@ -266,7 +274,7 @@ class FeedController extends Controller{
 		//return string/comma-separated list with id's from read and starred articles
 		if (isset($_GET['saved_item_ids'])) {
 			$saved_item_ids = array();
-			$Articles = Article::where('status', 'read')->orWhere('status', 'star')->orderBy('id', 'asc')->get();
+			$Articles = Article::where('status', 'read')->orderBy('id', 'asc')->get();
 			if (!empty($Articles)) {
 				foreach($Articles as $Article) {
 					array_push($saved_item_ids, $Article->id);
@@ -283,156 +291,61 @@ class FeedController extends Controller{
 		
 			$total_items = array();
 			$total_items['total_items'] = Article::count();					
-			$arr = array_merge($arr, $total_items);		
+			$arr = array_merge($arr, $total_items);
+			
+			$items = array();
 
 			//request specific items, a maximum of 50 specific items requested by comma-separated argument
 			if (isset($_GET['with_ids'])) {
 				//list with id's is comma-separated, so transform to array
 				$ids = $_REQUEST["with_ids"];
 				$ArrayIds = explode(',', $ids);
-				
-				$items = array();
-
+				$Articles = array();
 				if (!empty($ArrayIds)) {
 					foreach($ArrayIds as $ArrayId) {
 						$Article = Article::find($ArrayId);
-						
-						if ($Article->status == "read") { 
-							$isread = 1;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "unread") { 
-							$isread = 0;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "star") { 
-							$isread = 1;
-							$isstar = 1;
-						}
-						array_push($items, array(
-							"id" => (string)$Article->id,
-							"feed_id" => (string)$Article->feed_id,
-							"title" => $Article->subject,
-							"author" => $Article->author,
-							"html" => $Article->content,
-							"url" => $Article->url,
-							"is_saved" => $isstar,
-							"is_read" => $isread,
-							"created_on_time" => strtotime($Article->published)
-						));
-						
+						array_push($Articles, $Article);
 					}
 				}
-
-				$response_arr["items"] = $items;
-				$arr = array_merge($arr, $response_arr);
 			//request 50 additional items using the highest id of locally cached items
 			} elseif (isset($_REQUEST["since_id"])) {
 				$since_id = $_REQUEST["since_id"];
-				$items = array();
 				$Articles = Article::where('id', '>' , $since_id)->orderBy('id', 'asc')->take(50)->get();
-				
-				if (!empty($Articles)) {
-					foreach($Articles as $Article) {
-						if ($Article->status == "read") { 
-							$isread = 1;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "unread") { 
-							$isread = 0;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "star") { 
-							$isread = 1;
-							$isstar = 1;
-						}
-						array_push($items, array(
-							"id" => (string)$Article->id,
-							"feed_id" => (string)$Article->feed_id,
-							"title" => $Article->subject,
-							"author" => $Article->author,
-							"html" => $Article->content,
-							"url" => $Article->url,
-							"is_saved" => $isstar,
-							"is_read" => $isread,
-							"created_on_time" => strtotime($Article->published)
-						));
-					}
-				}
-				$response_arr["items"] = $items;
-				$arr = array_merge($arr, $response_arr);
+
 			//request 50 previous items using the lowest id of locally cached items
 			} elseif (isset($_REQUEST["max_id"])) {
 				$max_id = $_REQUEST["max_id"];
-				$items = array();
 				$Articles = Article::where('id', '<' , $max_id)->orderBy('id', 'asc')->take(50)->get();
-				if (!empty($Articles)) {
-					foreach($Articles as $Article) {
-						if ($Article->status == "read") { 
-							$isread = 1;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "unread") { 
-							$isread = 0;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "star") { 
-							$isread = 1;
-							$isstar = 1;
-						}
-						array_push($items, array(
-							"id" => (string)$Article->id,
-							"feed_id" => (string)$Article->feed_id,
-							"title" => $Article->subject,
-							"author" => $Article->author,
-							"html" => $Article->content,
-							"url" => $Article->url,
-							"is_saved" => $isstar,
-							"is_read" => $isread,
-							"created_on_time" => strtotime($Article->published)
-						));
-					}
-				}
-				$response_arr["items"] = $items;
-				$arr = array_merge($arr, $response_arr);
 			//if no argument is given provide total_items and up to 50 items
 			} else {
-
-				$items = array();
-				
 				$Articles = Article::take(50)->orderBy('id', 'asc')->get();
-				if (!empty($Articles)) {
-					foreach($Articles as $Article) {
-						if ($Article->status == "read") { 
-							$isread = 1;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "unread") { 
-							$isread = 0;
-							$isstar = 0; 
-						} 
-						if ($Article->status == "star") { 
-							$isread = 1;
-							$isstar = 1;
-						}
-						array_push($items, array(
-							"id" => (string)$Article->id,
-							"feed_id" => (string)$Article->feed_id,
-							"title" => $Article->subject,
-							"author" => $Article->author,
-							"html" => $Article->content,
-							"url" => $Article->url,
-							"is_saved" => $isstar,
-							"is_read" => $isread,
-							"created_on_time" => strtotime($Article->published)
-						));
-					}
-				}
-				
-				$response_arr["items"] = $items;
-				$arr = array_merge($arr, $response_arr);
-				
 			}
+			
+			if (!empty($Articles)) {
+				foreach($Articles as $Article) {
+					if ($Article->status == "read") { 
+						$isread = 1; 
+					} 
+					if ($Article->status == "unread") { 
+						$isread = 0;
+					}
+					array_push($items, array(
+						"id" => (string)$Article->id,
+						"feed_id" => (string)$Article->feed_id,
+						"title" => $Article->subject,
+						"author" => $Article->author,
+						"html" => $Article->content,
+						"url" => $Article->url,
+						"is_saved" => $Article->star_ind,
+						"is_read" => $isread,
+						"created_on_time" => strtotime($Article->published)
+					));
+				}
+			}
+			
+			$response_arr["items"] = $items;
+			$arr = array_merge($arr, $response_arr);			
+			
 		};
 
 		//when argument is links, return star items as hot links
@@ -440,7 +353,7 @@ class FeedController extends Controller{
 			
 			$items = array();
 			
-			$Articles = Article::where('status', 'star')->orderBy('id', 'asc')->get();
+			$Articles = Article::where('star_ind', '1')->orderBy('id', 'asc')->get();
 			if (!empty($Articles)) {
 				foreach($Articles as $Article) {
 					array_push($items, array(
@@ -509,7 +422,7 @@ class FeedController extends Controller{
 				if ($_REQUEST["as"] == "read") {
 					Article::where('id', $id)->update(['status' => 'read']);
 				} elseif ($_REQUEST["as"] == "saved") {
-					Article::where('id', $id)->update(['status' => 'star']);
+					Article::where('id', $id)->update(['star_ind' => '1']);
 				} elseif ($_REQUEST["as"] == "unsaved") {
 					Article::where('id', $id)->update(['status' => 'unread']);
 				}
@@ -520,7 +433,7 @@ class FeedController extends Controller{
 				if ($_REQUEST["as"] == "read") {
 					Article::where('feed_id', $id)->where('created_at', '<' , $time)->update(['status' => 'read']);
 				} elseif ($_REQUEST["as"] == "saved") {
-					Article::where('feed_id', $id)->where('created_at', '<' , $time)->update(['status' => 'star']);
+					Article::where('feed_id', $id)->where('created_at', '<' , $time)->update(['star_ind' => '1']);
 				} elseif ($_REQUEST["as"] == "unsaved") {
 					Article::where('feed_id', $id)->where('created_at', '<' , $time)->update(['status' => 'unread']);
 				}
@@ -537,7 +450,7 @@ class FeedController extends Controller{
 						if ($_REQUEST["as"] == "read") {
 							Article::where('feed_id', $Feed->id)->where('created_at', '<' , $time)->update(['status' => 'read']);
 						} elseif ($_REQUEST["as"] == "saved") {
-							Article::where('feed_id', $Feed->id)->where('created_at', '<' , $time)->update(['status' => 'star']);
+							Article::where('feed_id', $Feed->id)->where('created_at', '<' , $time)->update(['star_ind' => '1']);
 						} elseif ($_REQUEST["as"] == "unsaved") {
 							Article::where('feed_id', $Feed->id)->where('created_at', '<' , $time)->update(['status' => 'unread']);
 						}
@@ -549,7 +462,7 @@ class FeedController extends Controller{
 				if ($_REQUEST["as"] == "read") {
 					Article::where('created_at', '<' , $time)->update(['status' => 'read']);
 				} elseif ($_REQUEST["as"] == "saved") {
-					Article::where('created_at', '<' , $time)->update(['status' => 'star']);
+					Article::where('created_at', '<' , $time)->update(['star_ind' => '1']);
 				} elseif ($_REQUEST["as"] == "unsaved") {
 					Article::where('created_at', '<' , $time)->update(['status' => 'unread']);
 				}

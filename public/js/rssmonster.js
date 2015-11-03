@@ -658,7 +658,7 @@ function FnReadPool(articleId) {
 								// If data is returned, append the data to the content div
 								$.each(data, function(key, article) {
 									
-									if (article["status"] == 'star') {
+									if (article["star_ind"] == '1') {
 										var starflag = "star";
 									} else {
 										var starflag = "unstar";								
