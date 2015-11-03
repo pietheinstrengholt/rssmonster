@@ -227,8 +227,8 @@ class FeedController extends Controller{
 			if (!empty($Feeds)) {
 				foreach($Feeds as $Feed) {
 					array_push($feeds, array(
-						"id"  => (string)$Feed->id,
-						"favicon_id" => (string)$Feed->id,
+						"id"  => (int) $Feed->id,
+						"favicon_id" => (int) $Feed->id,
 						"title" => $Feed->feed_name,
 						"url" => $Feed->url,
 						"site_url" => $Feed->url,
@@ -274,7 +274,7 @@ class FeedController extends Controller{
 		//return string/comma-separated list with id's from read and starred articles
 		if (isset($_GET['saved_item_ids'])) {
 			$saved_item_ids = array();
-			$Articles = Article::where('status', 'read')->orderBy('id', 'asc')->get();
+			$Articles = Article::where('star_ind', '1')->orderBy('id', 'asc')->get();
 			if (!empty($Articles)) {
 				foreach($Articles as $Article) {
 					array_push($saved_item_ids, $Article->id);
@@ -321,21 +321,15 @@ class FeedController extends Controller{
 			
 			if (!empty($Articles)) {
 				foreach($Articles as $Article) {
-					if ($Article->status == "read") { 
-						$isread = 1; 
-					} 
-					if ($Article->status == "unread") { 
-						$isread = 0;
-					}
 					array_push($items, array(
-						"id" => (string)$Article->id,
-						"feed_id" => (string)$Article->feed_id,
+						"id" => (int) $Article->id,
+						"feed_id" => (int) $Article->feed_id,
 						"title" => $Article->subject,
 						"author" => $Article->author,
 						"html" => $Article->content,
 						"url" => $Article->url,
-						"is_saved" => $Article->star_ind,
-						"is_read" => $isread,
+						"is_saved" => (int) $Article->star_ind,
+						"is_read" => $Article->status == 'read' ? 1 : 0,
 						"created_on_time" => strtotime($Article->published)
 					));
 				}
@@ -390,7 +384,7 @@ class FeedController extends Controller{
 				foreach($Feeds as $Feed) {
 				
 					if (empty($Feed->favicon)) {
-						//TODO: replace with Laravel URL functionality
+						//TODO: replace with Laravel's URL functionality
 						$faviconurl = (isset($_SERVER['HTTPS']) ? "https" : "http") . "://" . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 						$faviconurl = substr($faviconurl, 0, strpos($faviconurl, "index.php/api")) . "img/rss-default.png";
 					} else {
@@ -398,7 +392,7 @@ class FeedController extends Controller{
 					}
 				
 					array_push($favicons, array(
-						"id" => $Feed->id,
+						"id" => (int) $Feed->id,
 						"title" => $faviconurl
 					));
 				}

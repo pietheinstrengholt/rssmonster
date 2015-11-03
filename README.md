@@ -3,11 +3,10 @@ RSS Monster
 
 Copyright (c) 2015 Piethein Strengholt, piethein@strengholt-online.nl
 
-RSSMonster is an easy to use and open source rss reader, created as an alternative for Google Reader.
-RSSMonster features a lightweight fluid responsive design. It uses the twitter boostrap framework, laravel 
-lumen and is in written in jQuery, JavaScript and PHP. Several features are implemented such as 
-marking as read when scrolling, manage feeds, json events, etc.
-RSSMonster is currently a work in progress and is hosted on GitHub. 
+RSSMonster is an easy to use web-based RSS aggregator and reader compatible with the Fever API, created as an alternative for Google Reader.
+RSSMonster features a lightweight fluid responsive design. It is written in JavaScript and PHP and uses the Laravel 
+lumen and twitter boostrap framework. Several features are implemented such as 
+marking as read when scrolling, drag and drop style manage feeds, json events, etc.
 Feel free to add any contributions or new features.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster.png" width="700px">
@@ -37,12 +36,13 @@ INSTALLATION
 Reeder (iOS) integration supprt (via Fever API)
 ----
 
-Reeder (iOS) support has been added recently. To use Reeder add an Account with Fever (feedafever.com). Point to the following url:
+Reeder (iOS) support is added. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
 http://yourRSSMonsterurl/public/index.php/api/fever
 
-Any username and password will work at this moment.
-Change the redirect in the .htaccess inside the public folder. Change "/lumen/public/" to the location where RSSMonster have been deployed.
+Any username and password will work.
+You might need to change the redirect in the .htaccess inside the public folder. 
+Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/fever.png" width="300px">
 
