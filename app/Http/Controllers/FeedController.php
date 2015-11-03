@@ -178,7 +178,7 @@ class FeedController extends Controller{
 	}
 	
 	//TODO: Re-use functions from other classes
-	public function fever() {
+	public function getFever() {
 	
 		/* Fever API needs strings for category_id and feed_id's */
 
@@ -299,11 +299,13 @@ class FeedController extends Controller{
 						
 						if ($Article->status == "read") { 
 							$isread = 1;
-							$isstar = 0; } 
-						elseif ($Article->status == "unread") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "unread") { 
 							$isread = 0;
-							$isstar = 0; } 
-						elseif ($Article->status == "star") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "star") { 
 							$isread = 1;
 							$isstar = 1;
 						}
@@ -329,15 +331,18 @@ class FeedController extends Controller{
 				$since_id = $_REQUEST["since_id"];
 				$items = array();
 				$Articles = Article::where('id', '>' , $since_id)->orderBy('id', 'asc')->take(50)->get();
+				
 				if (!empty($Articles)) {
 					foreach($Articles as $Article) {
 						if ($Article->status == "read") { 
 							$isread = 1;
-							$isstar = 0; } 
-						elseif ($Article->status == "unread") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "unread") { 
 							$isread = 0;
-							$isstar = 0; } 
-						elseif ($Article->status == "star") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "star") { 
 							$isread = 1;
 							$isstar = 1;
 						}
@@ -365,11 +370,13 @@ class FeedController extends Controller{
 					foreach($Articles as $Article) {
 						if ($Article->status == "read") { 
 							$isread = 1;
-							$isstar = 0; } 
-						elseif ($Article->status == "unread") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "unread") { 
 							$isread = 0;
-							$isstar = 0; } 
-						elseif ($Article->status == "star") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "star") { 
 							$isread = 1;
 							$isstar = 1;
 						}
@@ -398,11 +405,13 @@ class FeedController extends Controller{
 					foreach($Articles as $Article) {
 						if ($Article->status == "read") { 
 							$isread = 1;
-							$isstar = 0; } 
-						elseif ($Article->status == "unread") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "unread") { 
 							$isread = 0;
-							$isstar = 0; } 
-						elseif ($Article->status == "star") { 
+							$isstar = 0; 
+						} 
+						if ($Article->status == "star") { 
 							$isread = 1;
 							$isstar = 1;
 						}
@@ -487,6 +496,10 @@ class FeedController extends Controller{
 			}
 		};
 		return response()->json($arr);
+	}
+	
+	//TODO: Re-use functions from other classes
+	public function postFever() {
 
 		//mark items, groups or feed as read, saved or unsaved
 		if (isset($_POST['mark'])) {
@@ -542,8 +555,6 @@ class FeedController extends Controller{
 				}
 			}
 		}
-	
-	
 	}	
 
 }
