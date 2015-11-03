@@ -282,8 +282,8 @@ class FeedController extends Controller{
 			}
 			//string/comma-separated list of positive integers instead of array
 			$stack = implode(',', $saved_item_ids);
-			$readitems = array("saved_item_ids" => $stack);
-			$arr = array_merge($arr, $readitems);
+			$saveditems = array("saved_item_ids" => $stack);
+			$arr = array_merge($arr, $saveditems);
 		};
 		
 		//when argument is items, return 50 articles at a time
@@ -292,14 +292,14 @@ class FeedController extends Controller{
 			$total_items = array();
 			$total_items['total_items'] = Article::count();					
 			$arr = array_merge($arr, $total_items);
-			
+
 			$items = array();
 
 			//request specific items, a maximum of 50 specific items requested by comma-separated argument
 			if (isset($_GET['with_ids'])) {
 				//list with id's is comma-separated, so transform to array
-				$ids = $_REQUEST["with_ids"];
-				$ArrayIds = explode(',', $ids);
+				$ArrayIds = explode(',', $_REQUEST["with_ids"]);
+				//create empty array to store Article results
 				$Articles = array();
 				if (!empty($ArrayIds)) {
 					foreach($ArrayIds as $ArrayId) {
@@ -309,13 +309,11 @@ class FeedController extends Controller{
 				}
 			//request 50 additional items using the highest id of locally cached items
 			} elseif (isset($_REQUEST["since_id"])) {
-				$since_id = $_REQUEST["since_id"];
-				$Articles = Article::where('id', '>' , $since_id)->orderBy('id', 'asc')->take(50)->get();
+				$Articles = Article::where('id', '>' , $_REQUEST["since_id"])->orderBy('id', 'asc')->take(50)->get();
 
 			//request 50 previous items using the lowest id of locally cached items
 			} elseif (isset($_REQUEST["max_id"])) {
-				$max_id = $_REQUEST["max_id"];
-				$Articles = Article::where('id', '<' , $max_id)->orderBy('id', 'asc')->take(50)->get();
+				$Articles = Article::where('id', '<' , $_REQUEST["max_id"])->orderBy('id', 'asc')->take(50)->get();
 			//if no argument is given provide total_items and up to 50 items
 			} else {
 				$Articles = Article::take(50)->orderBy('id', 'asc')->get();
@@ -408,6 +406,8 @@ class FeedController extends Controller{
 				$arr = array_merge($arr, $response_arr);		
 			}
 		};
+		
+		//return fever response
 		return response()->json($arr);
 	}
 	
