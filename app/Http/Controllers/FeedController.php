@@ -22,6 +22,9 @@ class FeedController extends Controller{
 
 	public function updateall() {
 
+		//first clean-up database, see cleanup function
+		$this->cleanup();
+
 		//get only 15 feeds at a time
 		$Feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
 
@@ -31,7 +34,6 @@ class FeedController extends Controller{
 				$this->update($Feed->id);
 			}
 		}
-		
 	}
 	
 	public function update($id) {
@@ -116,6 +118,41 @@ class FeedController extends Controller{
 				echo "<br>Feed added to the database!";
 			}
 		}
+	}
+	
+	public function cleanup() {
+	
+		//The starred items and latest 3000 items remain in the database	
+		$ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'asc')->select('id')->take(3000)->get();
+		$ArticlesStar = Article::where('star_ind', '1')->select('id')->get();
+		$ArticlesUnread = Article::where('status', 'unread')->select('id')->get();
+		
+		//create new empty array to store id's
+		$cleanup_item_ids = array();
+		
+		//store id's from ArticlesStar in cleanup_item_ids
+		if (!empty($ArticlesStar)) {
+			foreach($ArticlesStar as $Article) {
+				array_push($cleanup_item_ids, $Article->id);
+			}
+		}
+		
+		//store id's from ArticlesLatest in cleanup_item_ids
+		if (!empty($ArticlesLatest)) {
+			foreach($ArticlesLatest as $Article) {
+				array_push($cleanup_item_ids, $Article->id);
+			}
+		}
+		
+		//store id's from ArticlesUnread in cleanup_item_ids
+		if (!empty($ArticlesUnread)) {
+			foreach($ArticlesUnread as $Article) {
+				array_push($cleanup_item_ids, $Article->id);
+			}
+		}
+		
+		//delete items that are not in cleanup_item_ids array
+		DB::table('articles')->whereNotIn('id', $cleanup_item_ids)->delete();
 	}	
 
 	public function getFeed($id) {

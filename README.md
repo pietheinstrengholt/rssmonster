@@ -55,6 +55,7 @@ WISHLIST
 * Add search function
 * Welcome screen when database is empty
 * Lazy load images for detailed view
+* Configure inverse scrolling
 
 CREDITS
 -------

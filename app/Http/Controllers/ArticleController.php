@@ -128,13 +128,13 @@ class ArticleController extends Controller{
 	}	
 
 	public function deleteArticle($id) {
-		$Article  = Article::find($id);
+		$Article = Article::find($id);
 		$Article->delete();
 		return response()->json('deleted');
 	}
 
 	public function updateArticle(Request $request,$id) {
-		$Article  = Article::find($id);
+		$Article = Article::find($id);
 		$Article->name = $request->input('name');
 		$Article->save();
 		return response()->json($Article);
