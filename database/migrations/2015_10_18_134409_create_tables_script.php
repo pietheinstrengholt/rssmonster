@@ -14,11 +14,11 @@ class CreateTablesScript extends Migration
     {
         Schema::create('categories', function (Blueprint $table) {
             $table->increments('id');
-			$table->integer('category_order')->unsigned();
+            $table->integer('category_order')->unsigned();
             $table->text('name');
             $table->timestamps();
         });
-		
+
         Schema::create('feeds', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('category_id')->unsigned();
@@ -28,7 +28,7 @@ class CreateTablesScript extends Migration
             $table->string('favicon')->nullable();
             $table->timestamps();
         });
-		
+
         Schema::create('articles', function (Blueprint $table) {
             $table->increments('id');
             $table->integer('feed_id')->unsigned();
@@ -40,22 +40,22 @@ class CreateTablesScript extends Migration
             $table->timestamp('published');
             $table->timestamps();
         });
-		
-		// Insert first category
-		DB::table('categories')->insert(
-			array(
-				'name' => 'Uncategorised',
-				'category_order' => '1'
-			)
-		);
-		
-		Schema::table('feeds', function (Blueprint $table) {
-			$table->foreign('category_id')->references('id')->on('categories');
-		});
-		
-		Schema::table('articles', function (Blueprint $table) {
-			$table->foreign('feed_id')->references('id')->on('feeds');
-		});
+
+        // Insert first category
+        DB::table('categories')->insert(
+            [
+                'name' => 'Uncategorised',
+                'category_order' => '1',
+            ]
+        );
+
+        Schema::table('feeds', function (Blueprint $table) {
+            $table->foreign('category_id')->references('id')->on('categories');
+        });
+
+        Schema::table('articles', function (Blueprint $table) {
+            $table->foreign('feed_id')->references('id')->on('feeds');
+        });
     }
 
     /**
@@ -66,7 +66,7 @@ class CreateTablesScript extends Migration
     public function down()
     {
         Schema::drop('articles');
-		Schema::drop('feeds');
-		Schema::drop('categories');
+        Schema::drop('feeds');
+        Schema::drop('categories');
     }
 }
