@@ -9,7 +9,7 @@ lumen and twitter boostrap framework. Several features are implemented such as
 marking as read when scrolling, drag and drop style manage feeds, json events, etc.
 Feel free to add any contributions or new features.
 
-<img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster.png" width="700px">
+<img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster2.png" width="700px">
 
 REQUIREMENTS
 ------------
