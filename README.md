@@ -30,8 +30,8 @@ INSTALLATION
 4. Inside the RSSMonster directory run: `composer install`
 5. Copy the `.env.example` to `.env` and configure with the correct database settings
 6. Deploy the database, use the following command: `php artisan migrate:refresh --seed`
-7. Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
-8. Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/index.php/api/feed/updateall`
+7. Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
+8. Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
 
 Reeder (iOS) integration supprt (via Fever API)
 ----
