@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use DB;
 use App\Article;
 use Illuminate\Http\Request;
+use Symfony\Component\HttpFoundation\JsonResponse;
 
 class ArticleController extends Controller
 {
@@ -70,17 +71,17 @@ class ArticleController extends Controller
         }
     }
 
-    //return array with the count of each status
-
+    /**
+     * @return JsonResponse
+     */
     public function overview()
     {
-        $Articles = [];
-        $Articles['total'] = Article::count();
-        $Articles['star'] = Article::where('star_ind', '1')->count();
-        $Articles['read'] = Article::where('status', 'read')->count();
-        $Articles['unread'] = Article::where('status', 'unread')->count();
+        $total  = Article::count();
+        $star   = Article::where('star_ind', '1')->count();
+        $read   = Article::where('status', 'read')->count();
+        $unread = $total - $read;
 
-        return response()->json($Articles);
+        return new JsonResponse(compact('total', 'star', 'read', 'unread'));
     }
 
     public function getArticle($id)
