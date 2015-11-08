@@ -2,35 +2,40 @@
 
 @section('content')
 
+<!-- show sidebar and hide options -->
 <div class="row">
-  <div class="visble-lg col-lg-2">
-    <div id="buttons-top" class="btn-group btn-group-sm" role="group">
-      <button id="unread" style="width:33%" type="button" class="btn btn-default">
-        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Unread
-      </button>
-      <button id="star" style="width:34%" type="button" class="btn btn-default">
-        <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Star
-      </button>
-      <button id="read" style="width:33%" type="button" class="btn btn-default">
-        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Read
-      </button>
-    </div>
-    <div class="panel"></div>
-    <div id="buttons-bottom" class="btn-group btn-group-sm" role="group">
-      <button id="delete" style="width:33%" type="button" class="btn btn-default">
-        <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Delete
-      </button>
-      <button id="mark-as-read" style="width:34%" type="button" class="btn btn-default">
-        <span class="glyphicon glyphicon-star" aria-hidden="true"></span> All seen
-      </button>
-      <button id="new" style="width:33%" type="button" class="btn btn-default">
-        <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Add new
-      </button>
-    </div>
-  </div>
-  <div class="col-12 col-sm-12 col-lg-10">
-    <section></section>
-  </div>
+<div class="visible-lg col-lg-2">
+
+<!-- show unread, star and read buttons -->
+<div id="buttons-top" class="btn-group btn-group-sm" role="group">
+<button id="unread" style="width:33%;" type="button" class="btn btn-default">
+<span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Unread</button>
+<button id="star" style="width:34%;" type="button" class="btn btn-default">
+<span class="glyphicon glyphicon-star" aria-hidden="true"></span> Star</button>
+<button id="read" style="width:33%;" type="button" class="btn btn-default">
+<span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Read</button>
+</div>
+
+<!-- show empty panel, which will be deployed by the rssmonster.js -->
+<div class="panel"></div>
+
+<!-- show delete, mark as read and new buttons -->
+<div id="buttons-bottom" class="btn-group btn-group-sm" role="group">
+<button id="delete" style="width:33%;" type="button" class="btn btn-default">
+<span class="glyphicon glyphicon-trash" aria-hidden="true"></span> Delete</button>
+<button id="mark-as-read" style="width:34%;" type="button" class="btn btn-default">
+<span class="glyphicon glyphicon-ok-sign" aria-hidden="true"></span> All seen</button>
+<button id="new" style="width:33%;" type="button" class="btn btn-default">
+<span class="glyphicon glyphicon-pencil" aria-hidden="true"></span> Add new</button>
+</div>
+
+<!-- end of div row and hide options -->
+</div>
+<div class="col-12 col-sm-12 col-lg-10">
+
+<!-- show empty section, which will be deployed by the rssmonster.js -->
+<section></section>
+</div>
 </div>
 
 <!-- HTML NEEDED FOR THE IMPORTANT MESSAGE MODAL POPUP -->
