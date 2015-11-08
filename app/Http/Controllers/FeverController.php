@@ -237,6 +237,7 @@ class FeverController extends Controller
                     Article::where('id', $id)->update(['status' => 'unread']);
                 }
             }
+
             //per feed
             if ($_REQUEST['mark'] == 'feed') {
                 $id = $_REQUEST['id'];

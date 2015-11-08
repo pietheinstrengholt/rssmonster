@@ -74,13 +74,12 @@ class ArticleController extends Controller
 
     public function overview()
     {
-        $Articles = [];
-        $Articles['total'] = Article::count();
-        $Articles['star'] = Article::where('star_ind', '1')->count();
-        $Articles['read'] = Article::where('status', 'read')->count();
-        $Articles['unread'] = Article::where('status', 'unread')->count();
+		$total  = Article::count();
+		$star   = Article::where('star_ind', '1')->count();
+		$read   = Article::where('status', 'read')->count();
+		$unread = $total - $read;
 
-        return response()->json($Articles);
+        return response()->json(compact('total', 'star', 'read', 'unread'));
     }
 
     public function getArticle($id)
