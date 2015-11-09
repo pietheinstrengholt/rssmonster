@@ -55,7 +55,6 @@ class CategoryController extends Controller
     public function createCategory(Request $request)
     {
         $Category = Category::create($request->all());
-
         return response()->json($Category);
     }
 
