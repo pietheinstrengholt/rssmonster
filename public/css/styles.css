@@ -35,12 +35,24 @@ section.minimal div#block {
   margin-top: 15px ! important;
 }
 
+section.minimal span.feedname {
+  color: #555;
+}
+
 section.minimal span.heading a {
-  color: #777;
+  color: #222;
 }
 
 section.minimal span.publishdate {
-  color: #777;
+  color: #333;
+  float: right;
+}
+
+section.minimal span.content {
+  color: #333;
+}
+
+section.minimal div.item-star {
   float: right;
 }
 
@@ -52,18 +64,31 @@ section.minimal div.page-content {
   margin-top: 10px;
 }
 
-section.minimal div.article {
-  padding-bottom: 8px;
+section.minimal div.article hr {
+  display: none;
+}
+
+section.minimal span.heading, .minimal span.less-content {
+  display: block;
+}
+
+section.minimal span.datedifference {
+  float: right;
+  margin-right: 5px;
+}
+
+section.minimal span.less-content hr, .minimal span.less-content img {
+  display: none;
+}
+
+section.minimal span.less-content p {
+  white-space: nowrap;
 }
 
 div#block {
   border: 1px solid #ddd;
   box-shadow: 0 0 4px #e3e5eb;
   margin-bottom: 10px;
-}
-
-div#block.active {
-  background-color: #FCF8E3;
 }
 
 span.readbar {
@@ -162,11 +187,11 @@ div.page-content img {
 }
 
 div.options {
-
-	height:30px; 
-	display:none;
-	background-color:#999;
+  height:30px; 
+  display:none;
+  background-color:#999;
 }
+
 
 /* TOPNAV */
 

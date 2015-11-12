@@ -33,10 +33,10 @@ INSTALLATION
 7. Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
 8. Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
 
-Reeder (iOS) integration supprt (via Fever API)
+Reeder (iOS) integration support (via Fever API)
 ----
 
-Reeder (iOS) support is added. To use the Reeder API (http://feedafever.com/api), point to the following url:
+Reeder (iOS) support have been added. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
 http://yourRSSMonsterurl/public/index.php/api/fever
 
@@ -47,9 +47,10 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 <img src="http://phppaper.strengholt-online.nl/wp-content/uploads/fever.png" width="300px">
 
 
-WISHLIST
+WISHLIST / TODO
 ----
 
+* Fix: marking as read when switch to different view
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Mark as read, unread buttons
 * Add search function

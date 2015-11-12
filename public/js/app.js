@@ -1,4 +1,46 @@
 
+//function to strip html
+function strip(html)
+{
+   var tmp = document.createElement("DIV");
+   tmp.innerHTML = html;
+   return tmp.textContent || tmp.innerText || "";
+}
+
+//function to perform date comparison between current date and input date
+function get_time_diff(datetime) {
+	var datetime = typeof datetime !== 'undefined' ? datetime : "2014-01-01 01:02:03.123456";
+
+	var datetime = new Date( datetime ).getTime();
+	var now = new Date().getTime();
+
+	if (isNaN(datetime))
+	{
+		return "";
+	}
+
+	if (datetime < now) {
+		var milisec_diff = now - datetime;
+	} else {
+		var milisec_diff = datetime - now;
+	}
+
+	var days = Math.floor(milisec_diff / 1000 / 60 / (60 * 24));
+	var date_diff = new Date( milisec_diff );
+
+	//return days if not equals zero
+	if (days != 0) {
+		return days + "d";
+	}
+	//return hours if not equals zero
+	if (date_diff.getHours() != 0) {
+		return date_diff.getHours() + "h";
+	}
+	//if no days or hours are returned, return the remaining minutes
+	return date_diff.getMinutes() + "m";
+	
+}
+
 //create new object to store selection
 var mySelection = new Object();
 mySelection.status = "unread";
@@ -84,13 +126,13 @@ $(document).ready(function () {
 
 		//remove content and offload scroll
 		$('section').empty();
-		$('section #content').remove();
-		$('section').append('<div id="content"></div>');
+		$('section #main').remove();
+		$('section').append('<div id="main"></div>');
 		$(window).off("scroll");
 
 		//use small amount of timeout when calling scrollPagination
 		setTimeout(function () {
-			$('#content').scrollPagination({
+			$('#main').scrollPagination({
 				nop: 10, // The number of posts per scroll to be loaded
 				offset: 10, // Initial offset, begins at 0 in this case
 				error: 'No More Posts - All items marked as read!', // When the user reaches the end this is the message that is
@@ -158,19 +200,21 @@ $(document).ready(function () {
 
 	//Functionality to change the viewtype (list, detailed or minimal), clicked on top-nav menu
 	$("a.view-type").click(function () {
+		$('section').empty();
 		mySelection.view = $(this).attr("id");
 		loadcontent();
 	});
 
 	//Functionality to change the sort order, clicked on top-nav menu
 	$("a.sort-order").click(function () {
+		$('section').empty();
 		mySelection.sort = $(this).attr("id");
 		loadcontent();
 	});
 
 	//Functionality to update all feeds, fetch new articles from RSS feeds
 	$("a.update").click(function () {
-		//TODO: show progress bar while loading
+		//TODO: show a progress bar while loading
 		$(window).off("scroll");
 		$('section').empty();
 		$('section').load('index.php/api/feed/updateall');
@@ -350,7 +394,15 @@ $(document).ready(function () {
 
 	});
 	
-
+	//TODO: show read and unread buttons
+	$("section").on("click", "div#block", function (event) {
+		$("section").find("div#block.active").removeClass("active");
+		$(this).addClass("active");
+		$(this).find('div.options').show();
+		$(this).find(".page-content").show();
+		$(this).find(".less-content").hide()
+	});
+	
 	$("body").on("click", "button#submit-feedchanges", function (event) {
 		
 		//restructure array form data
@@ -473,11 +525,6 @@ function FnReadPool(articleId) {
 					var unreadcountnew = unreadcount -1;
 					$('div.panel ul#all span.badge').text(unreadcountnew);
 					$('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
-
-					//increase read count
-					//var readcount = $('div.panel a#read.list-group-item span.badge').text();
-					//var readcountnew = parseFloat(readcount)+1;
-					//$('div.panel a#read.list-group-item span.badge').text(readcountnew);
 					
 					//decrease count for main menu items
 					var readcountmain = $('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text();
@@ -537,7 +584,7 @@ function FnReadPool(articleId) {
 			else $initmessage = 'Click for more';
 
 			// Append custom messages and extra UI
-			$this.append('<div class="content"></div><div class="info-bar" id="info-bar"><div style="width: 50%;"></div></div>');
+			$this.append('<div id="info-bar"></div>');
 			
 			/* In the background new items might be loaded, therefore the unread, 
 			read and star count is adjusted every time the article-list retrieved */			
@@ -552,12 +599,8 @@ function FnReadPool(articleId) {
 					$('div.panel ul#all span.badge, a#unread.navbar-brand span.badge.pull-right').text(json["unread"]);
 					
 					//set star count in navbar and sidebar menu
-					//$('div#status.panel a#star.list-group-item span.badge').text(json["star"]);
 					$('a#star.navbar-brand span.badge.pull-right').text(json["star"]);
 					
-					//read count is total minus unread
-					//ReadCount = json["total"] - json["unread"];
-					//$('div#status.panel a#read.list-group-item span.badge').text(ReadCount);	
 				}
 			});
 
@@ -606,7 +649,7 @@ function FnReadPool(articleId) {
 					articleList = json;
 				},
 				failure: function (errMsg) {
-					$("div#content").text("json.php failed to return content: " + errMsg)
+					$("div#main").text("json.php failed to return content: " + errMsg)
 				}
 			});
 
@@ -618,7 +661,7 @@ function FnReadPool(articleId) {
 			// If articleList is empty, show no post available, else load first 10 items
 			if (isEmpty(articleList)) {
 				//Show message and set busy to true, avoid clicking and loading nothing
-				$this.find('.info-bar').html('No posts available at first load.');
+				$this.find('#info-bar').html('No posts available at first load.');
 				busy = true;
 			} else {
 				//Start loading first 10 articles by using the getData function
@@ -631,7 +674,7 @@ function FnReadPool(articleId) {
 			
 				//If input is empty, show no post available message and mark all items as read
 				if (isEmpty(input)) {
-					$('.info-bar').html($settings.error);
+					$('#info-bar').html($settings.error);
 					//capture previous nop and call FnReadPool function to mark remaining items in the pool as read
 					for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
 						FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
@@ -650,7 +693,7 @@ function FnReadPool(articleId) {
 						success: function (data) {
 
 							// Change loading bar content (it may have been altered)
-							$this.find('.info-bar').html($initmessage);
+							$this.find('#info-bar').html($initmessage);
 
 							// Add data to content
 							if (data) {
@@ -664,9 +707,14 @@ function FnReadPool(articleId) {
 										var starflag = "unstar";								
 									}
 									
-									//TODO: add difference timeinterval, lesscontent (250 character block), author 
-									$this.find('.content').append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank"> - ' + article["subject"] + '</a></span><span class="publishdate">' + article["publish_date"] + '</span></div><hr><div class="page-content">' + article["content"] + '</div><div class="less-content">' + article["content"] + '</div></div></div>');
+									// calculate difference timeinterval 
+									var dateDifference = get_time_diff(article['published']);
+									
+									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span><span class="less-content"><p>' + strip(article["content"]) + '</p></span></div><hr><div class="page-content">' + article["content"] + '</div><div class="less-content">' + article["content"] + '</div></div></div>');
 								});
+								
+								// Move the info bar at the end by appending it to the main div
+								$("div#main").append($("#info-bar"));
 
 								// Add waypoint function to h3 header, look at FnReadPool
 								$('div#block h4').waypoint(function() {
@@ -686,7 +734,7 @@ function FnReadPool(articleId) {
 							// If there is no data returned, there are no more posts to be shown. Show message and last mark items as read
 							} else {
 
-								$this.find('.info-bar').html($settings.error);
+								$this.find('#info-bar').html($settings.error);
 								
 								// Capture previous nop and call FnReadPool function to mark remaining items as read
 								for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
@@ -716,7 +764,7 @@ function FnReadPool(articleId) {
 						busy = true;
 
 						// Tell the user we're loading posts
-						$this.find('.info-bar').html('Loading Posts');
+						$this.find('#info-bar').html('Loading Posts');
 
 						// Run the function to fetch the data inside a delay
 						// This is useful if you have content in a footer you
@@ -730,7 +778,7 @@ function FnReadPool(articleId) {
 			}
 
 			// When only a few items are loaded or minimal view is selected scrolling might not possible, therefor the info has a click function to mark all items
-			$this.find('.info-bar').click(function () {
+			$this.find('#info-bar').click(function () {
 				if (busy == false) {
 					busy = true;
 

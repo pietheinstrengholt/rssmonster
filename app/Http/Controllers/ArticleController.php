@@ -64,7 +64,7 @@ class ArticleController extends Controller
     {
         if (! empty($_GET['article_id'])) {
             $articlelist = explode(',', $_GET['article_id']);
-            $Articles = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', $articlelist)->orderBy('published', $_GET['sort'])->select('articles.id', 'articles.status', 'articles.star_ind', 'articles.url', 'articles.subject', 'articles.content', 'articles.published', 'articles.feed_id', 'feeds.feed_name')->get();
+            $Articles = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', $articlelist)->orderBy('published', $_GET['sort'])->select('articles.id', 'articles.status', 'articles.star_ind', 'articles.url', 'articles.subject', 'articles.content', 'articles.published', 'articles.feed_id', 'feeds.feed_name', 'feeds.favicon')->get();
 
             return response()->json($Articles);
         }
