@@ -24,6 +24,10 @@ section.minimal .less-content, section.minimal .page-content, section.minimal di
   display:none;
 }
 
+section.minimal {
+  margin-top: -8px;
+}
+
 section.minimal div.content div.feedname {
   margin-bottom: 18px;
   font-size: 13px ! important;
@@ -41,6 +45,7 @@ section.minimal span.feedname {
 
 section.minimal span.heading a {
   color: #222;
+  font-weight: bold;
 }
 
 section.minimal span.publishdate {
@@ -61,7 +66,7 @@ section.minimal div.info-bar {
 }
 
 section.minimal div.page-content {
-  margin-top: 10px;
+  margin-top: 0px;
 }
 
 section.minimal div.article hr {
@@ -83,6 +88,8 @@ section.minimal span.less-content hr, .minimal span.less-content img {
 
 section.minimal span.less-content p {
   white-space: nowrap;
+  overflow: hidden;
+  width: 98%;
 }
 
 div#block {
@@ -129,7 +136,6 @@ div.feedname {
 
 div.page-content, div.less-content {
   margin-top: -15px;
-  padding-left: 5px;
   color: #333344;
   margin-bottom: 10px;
   margin-right: 20px;
