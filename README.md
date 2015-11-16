@@ -50,7 +50,7 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 WISHLIST / TODO
 ----
 
-* Fix: marking as read when switch to different view
+* Cosmetic: Replace stars with hearts
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Mark as read, unread buttons
 * Add search function

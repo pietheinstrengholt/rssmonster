@@ -1,7 +1,6 @@
 
 //function to strip html
-function strip(html)
-{
+function strip(html) {
    var tmp = document.createElement("DIV");
    tmp.innerHTML = html;
    return tmp.textContent || tmp.innerText || "";
@@ -104,6 +103,9 @@ $(document).ready(function () {
 		//increase load count
 		mySelection.loadcount++;
 		
+		//destroy waypoint functions, avoid many items being called, see infinite.js
+		$('div#block h4').waypoint('destroy');		
+		
 		if (mySelection.loadcount == 1) {
 			$('ul#all li').addClass("collapsed");
 		}
@@ -120,9 +122,6 @@ $(document).ready(function () {
 		//empty poolid and articleList array's
 		poolid = [];
 		articleList = [];
-
-		//destroy waypoint functions, avoid many items being called, see infinite.js
-		$('div#block h4').waypoint('destroy');
 
 		//remove content and offload scroll
 		$('section').empty();
@@ -200,14 +199,12 @@ $(document).ready(function () {
 
 	//Functionality to change the viewtype (list, detailed or minimal), clicked on top-nav menu
 	$("a.view-type").click(function () {
-		$('section').empty();
 		mySelection.view = $(this).attr("id");
 		loadcontent();
 	});
 
 	//Functionality to change the sort order, clicked on top-nav menu
 	$("a.sort-order").click(function () {
-		$('section').empty();
 		mySelection.sort = $(this).attr("id");
 		loadcontent();
 	});
@@ -710,6 +707,7 @@ function FnReadPool(articleId) {
 									// calculate difference timeinterval 
 									var dateDifference = get_time_diff(article['published']);
 									
+									// append content blocks for each article in the data to the main div
 									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span><span class="less-content"><p>' + strip(article["content"]) + '</p></span></div><hr><div class="page-content">' + article["content"] + '</div><div class="less-content">' + article["content"] + '</div></div></div>');
 								});
 								
