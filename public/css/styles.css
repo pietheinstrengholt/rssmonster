@@ -222,6 +222,10 @@ div.container {
   width: 100% ! important;
 }
 
+span.star.badge {
+  background-color: #d9534f;
+}
+
 /* SIDEBAR */
 
 div#buttons-top {

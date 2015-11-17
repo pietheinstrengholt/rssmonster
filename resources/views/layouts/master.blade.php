@@ -70,7 +70,7 @@
 			</button>
 			<a class="navbar-brand" id="home" href="{{ URL::asset('index.php') }}">Home</a>
 			<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"></span>Unread</a>
-			<a class="navbar-brand" id="star" href="#"><span style="background-color:#f0ad4e;" class="star badge pull-right"></span>Star</a>
+			<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right"></span>Saved</a>
 		</div>
 
 		<!-- Collect the nav links, forms, and other content for toggling -->

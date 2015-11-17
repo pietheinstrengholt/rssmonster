@@ -9,7 +9,7 @@
          <button id="unread" style="width:33%;" type="button" class="btn btn-default">
          <span class="glyphicon glyphicon-eye-open" aria-hidden="true"></span> Unread</button>
          <button id="star" style="width:34%;" type="button" class="btn btn-default">
-         <span class="glyphicon glyphicon-star" aria-hidden="true"></span> Star</button>
+         <span class="glyphicon glyphicon-heart" aria-hidden="true"></span> Saved</button>
          <button id="read" style="width:33%;" type="button" class="btn btn-default">
          <span class="glyphicon glyphicon-ok" aria-hidden="true"></span> Read</button>
       </div>
