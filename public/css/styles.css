@@ -20,7 +20,7 @@ section.list .page-content, section.list div.minimal {
   display:none;
 }
 
-section.minimal .less-content, section.minimal .page-content, section.minimal div.content div.article hr, section.minimal h4.heading, section.minimal div.feedname  {
+section.minimal .page-content, section.minimal div.content div.article hr, section.minimal h4.heading, section.minimal div.feedname  {
   display:none;
 }
 
@@ -135,7 +135,6 @@ div.feedname {
 }
 
 div.page-content, div.less-content {
-  margin-top: -15px;
   color: #333344;
   margin-bottom: 10px;
   margin-right: 20px;
@@ -151,6 +150,15 @@ div.article hr {
   border-top: 1px solid #D3D3D3;
 }
 
+section.list div#block.active {
+	background-color: #ffffe5;
+}
+
+section.detailed div.page-content, section.list div.page-content, section.list div.less-content {
+  margin-top: -10px;
+  margin-left: 5px;
+}
+
 div.item-star.star, div.item-star.unstar {
   height: 29px;
   background-repeat: no-repeat;
@@ -164,11 +172,15 @@ div.item-star.star, div.item-star.unstar {
 }
 
 div.item-star.unstar {
-  background-image: url('../img/star_unselected.png');
+  background-image: url('../img/heart_unselected.png');
+  background-size: 18px 18px;
+  background-position: 8px 10px;
 }
 
 div.item-star.star {
-  background-image: url('../img/star_selected.png');
+  background-image: url('../img/heart_selected.png');
+  background-size: 18px 18px;
+  background-position: 8px 10px;
 }
 
 div.all-read {

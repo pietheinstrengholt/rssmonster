@@ -393,7 +393,6 @@ $(document).ready(function () {
 	
 	//TODO: show read and unread buttons
 	$("section").on("click", "div#block", function (event) {
-		$("section").find("div#block.active").removeClass("active");
 		$(this).addClass("active");
 		$(this).find('div.options').show();
 		$(this).find(".page-content").show();
@@ -708,7 +707,7 @@ function FnReadPool(articleId) {
 									var dateDifference = get_time_diff(article['published']);
 									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span><span class="less-content"><p>' + strip(article["content"]) + '</p></span></div><hr><div class="page-content">' + article["content"] + '</div><div class="less-content">' + article["content"] + '</div></div></div>');
+									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div><hr></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="page-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + '</div></div></div>');
 								});
 								
 								// Move the info bar at the end by appending it to the main div

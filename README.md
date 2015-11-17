@@ -50,13 +50,13 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 WISHLIST / TODO
 ----
 
-* Cosmetic: Replace stars with hearts
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Mark as read, unread buttons
 * Add search function
 * Welcome screen when database is empty
 * Lazy load images for detailed view
 * Configure inverse scrolling
+* Double click on feed to change it's name
 
 CREDITS
 -------
