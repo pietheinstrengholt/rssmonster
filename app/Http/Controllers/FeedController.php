@@ -124,14 +124,14 @@ class FeedController extends Controller
 		$cleanup_item_ids = [];
 
 		//store id's from ArticlesStar in cleanup_item_ids
-		if (! empty($ArticlesStar)) {
+		if (!empty($ArticlesStar)) {
 			foreach ($ArticlesStar as $Article) {
 				array_push($cleanup_item_ids, $Article->id);
 			}
 		}
 
 		//store id's from ArticlesLatest in cleanup_item_ids
-		if (! empty($ArticlesLatest)) {
+		if (!empty($ArticlesLatest)) {
 			foreach ($ArticlesLatest as $Article) {
 				array_push($cleanup_item_ids, $Article->id);
 			}
@@ -151,7 +151,7 @@ class FeedController extends Controller
 	public function getFeed($id)
 	{
 		$Feed = Feed::find($id);
-		if (! empty($Feed)) {
+		if (!empty($Feed)) {
 			$Feed['total_count'] = DB::table('articles')->where('feed_id', $id)->count();
 			$Feed['unread_count'] = DB::table('articles')->where('feed_id', $id)->where('articles.status', 'unread')->count();
 			$Feed['articles'] = Feed::find($id)->articles;

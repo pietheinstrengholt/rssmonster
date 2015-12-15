@@ -6,6 +6,8 @@ function strip(html) {
    return tmp.textContent || tmp.innerText || "";
 }
 
+var url = $('meta[name="base_url"]').attr('content');
+
 //function to perform date comparison between current date and input date
 function get_time_diff(datetime) {
 	var datetime = typeof datetime !== 'undefined' ? datetime : "2014-01-01 01:02:03.123456";
@@ -55,7 +57,7 @@ $(document).ready(function () {
 	//Use api to deploy the sidebar, the sidebar is only deployed once and will be updated when used.
 	$.ajax({
 		type: "GET",
-		url: "index.php/api/category/overview",
+		url: url + "/api/category/overview",
 		async: false,
 		success: function (json) {
 
@@ -214,14 +216,14 @@ $(document).ready(function () {
 		//TODO: show a progress bar while loading
 		$(window).off("scroll");
 		$('section').empty();
-		$('section').load('index.php/api/feed/updateall');
+		$('section').load(url + '/api/feed/updateall');
 	});
 	
 	//Functionality to load manage feeds screen
 	$("a.managefeeds").click(function () {
 		$(window).off("scroll");
 		$('section').empty();
-		$('section').load('index.php/managefeeds');
+		$('section').load(url + '/managefeeds');
 	});	
 
 	//Functionality to show modal pop-up, change modal text based on button property
@@ -239,7 +241,7 @@ $(document).ready(function () {
 	$("#modal").on("click", "button#modal-mark-as-read", function(event){
 		$.ajax({
 			type: "POST",
-			url: "index.php/api/article/mark-all-as-read",
+			url: url + "/api/article/mark-all-as-read",
 			data: {
 				"update": "mark-all-as-read"
 			},
@@ -286,7 +288,7 @@ $(document).ready(function () {
 		if (mySelection.feed_id == null && !!mySelection.category_id) {
 			$.ajax({
 				type: "DELETE",
-				url: "index.php/api/category/" + mySelection.category_id,
+				url: url + "/api/category/" + mySelection.category_id,
 				async: false,
 				success: function (json) {
 					$('#modal').modal('hide');
@@ -300,7 +302,7 @@ $(document).ready(function () {
 		} else if (!!mySelection.feed_id && !!mySelection.category_id) {
 			$.ajax({
 				type: "DELETE",
-				url: "index.php/api/feed/" + mySelection.feed_id,
+				url: url + "/api/feed/" + mySelection.feed_id,
 				async: false,
 				success: function (json) {
 					$('#modal').modal('hide');
@@ -333,7 +335,7 @@ $(document).ready(function () {
 		if (!(new_category_name == null || new_category_name=='')) {
 			$.ajax({
 				type: "POST",
-				url: "index.php/api/category",
+				url: url + "/api/category",
 				data: {
 					"name": new_category_name
 				},
@@ -375,7 +377,7 @@ $(document).ready(function () {
 		//send json request
 		$.ajax({
 			type: "POST",
-			url: "index.php/api/article/mark-with-star/" + id,
+			url: url + "/api/article/mark-with-star/" + id,
 			data: {
 				"update": starmark
 			},
@@ -410,7 +412,7 @@ $(document).ready(function () {
 		//send json request
 		$.ajax({
 			type: "POST",
-			url: "index.php/api/feed/changeall",
+			url: url + "/api/feed/changeall",
 			data: {
 				"feeds": values
 			},
@@ -451,7 +453,7 @@ $(function() {
 			
 			$.ajax({
 				type: "POST",
-				url: "index.php/api/category/updateorder",
+				url: url + "/api/category/updateorder",
 				data: {
 					"order": orderArray
 				},
@@ -475,7 +477,7 @@ $(function() {
 			var category_id = this.id;
 			$.ajax({
 				type: "POST",
-				url: "index.php/api/feed/changecategory",
+				url: url + "/api/feed/changecategory",
 				data: {
 					"feed_id": ui.item.attr("id"),
 					"category_id": category_id
@@ -506,7 +508,7 @@ function FnReadPool(articleId) {
 
 		$.ajax({
 			type: "POST",
-			url: "index.php/api/article/mark-to-read/" + articleId,
+			url: url + "/api/article/mark-to-read/" + articleId,
 			success: function (data) {
 
 				//capture feed_id and category_id from returned data
@@ -588,7 +590,7 @@ function FnReadPool(articleId) {
 			// Use api to get a status overview for read, unread and star counts
 			$.ajax({
 				type: "GET",
-				url: "index.php/api/article/overview",
+				url: url + "/api/article/overview",
 				async: true,
 				success: function (json) {
 					//set unread count in navbar and sidebar menu
@@ -606,7 +608,7 @@ function FnReadPool(articleId) {
 				// Use api to get an overview of all items in sidebar
 				$.ajax({
 					type: "GET",
-					url: "index.php/api/category/overview",
+					url: url + "/api/category/overview",
 					contentType: "application/json; charset=utf-8",
 					dataType: "json",
 					async: true,
@@ -633,7 +635,7 @@ function FnReadPool(articleId) {
 			// Use api to get a full list with article id's, based on given arguments
 			$.ajax({
 				type: "GET",
-				url: "index.php/api/article/listing",
+				url: url + "/api/article/listing",
 				data: {
 					"status": $settings.status,
 					"feed_id": $settings.feed_id,
@@ -680,7 +682,7 @@ function FnReadPool(articleId) {
 					//Post data to api, articles are wrapped in html and appended to content class
 					$.ajax({
 						type: "GET",
-						url: "index.php/api/article/details",
+						url: url + "/api/article/details",
 						data: {
 							"sort": $settings.sort,
 							"article_id": input

@@ -197,6 +197,7 @@ class FeverController extends Controller
 							//TODO: replace with Laravel's URL functionality
 							$faviconurl = (isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 							$faviconurl = substr($faviconurl, 0, strpos($faviconurl, 'index.php/api')).'img/rss-default.png';
+							
 						} else {
 							$faviconurl = $Feed->favicon;
 						}
