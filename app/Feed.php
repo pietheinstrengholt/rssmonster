@@ -11,12 +11,12 @@ class Feed extends Model
 
     public function category()
     {
-		return $this->hasOne('App\Category', 'id', 'category_id');
+        return $this->belongsTo('App\Category');
     }
 
     public function articles()
     {
-		return $this->hasMany('App\Article', 'id', 'feed_id');
+        return $this->hasMany('App\Article');
     }
 }
 

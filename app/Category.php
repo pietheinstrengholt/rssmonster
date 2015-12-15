@@ -11,7 +11,7 @@ class Category extends Model
 
     public function feeds()
     {
-		return $this->hasMany('App\Feed', 'id', 'feed_id');
+        return $this->hasMany('App\Feed');
     }
 }
 ?>

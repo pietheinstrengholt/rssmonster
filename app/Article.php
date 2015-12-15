@@ -11,7 +11,7 @@ class Article extends Model
 
     public function feed()
     {
-		return $this->hasOne('App\Feed', 'id', 'feed_id');
+        return $this->belongsTo('App\Feed');
     }
 }
 
