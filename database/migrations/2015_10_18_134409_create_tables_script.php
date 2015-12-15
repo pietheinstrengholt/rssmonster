@@ -50,11 +50,11 @@ class CreateTablesScript extends Migration
         );
 
         Schema::table('feeds', function (Blueprint $table) {
-            $table->foreign('category_id')->references('id')->on('categories');
+            $table->foreign('category_id')->references('id')->on('categories')->onDelete('cascade');
         });
 
         Schema::table('articles', function (Blueprint $table) {
-            $table->foreign('feed_id')->references('id')->on('feeds');
+            $table->foreign('feed_id')->references('id')->on('feeds')->onDelete('cascade');
         });
     }
 
