@@ -13,212 +13,196 @@ class FeedController extends Controller
 {
     protected $feedFactory;
 
-    public function index()
-    {
-        $Feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id', 'feeds.category_id', 'feeds.feed_name', 'feeds.feed_desc', 'feeds.url', 'feeds.favicon', 'categories.name as category_name')->get();
+	public function index()
+	{
+		$Feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id', 'feeds.category_id', 'feeds.feed_name', 'feeds.feed_desc', 'feeds.url', 'feeds.favicon', 'categories.name as category_name')->get();
+		return response()->json($Feeds);
+	}
 
-        return response()->json($Feeds);
-    }
+	public function updateall()
+	{
+		//first clean-up database, see cleanup function
+		$this->cleanup();
 
-    public function updateall()
-    {
+		//get only 15 feeds at a time
+		$Feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
 
-        //first clean-up database, see cleanup function
-        $this->cleanup();
+		if (! empty($Feeds)) {
+			foreach ($Feeds as $Feed) {
+				//update feed, see update function
+				$this->update($Feed->id);
+			}
+		}
+	}
 
-        //get only 15 feeds at a time
-        $Feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
+	public function update($id)
+	{
+		//set previous week
+		$previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
 
-        if (! empty($Feeds)) {
-            foreach ($Feeds as $Feed) {
-                //update feed, see update function
-                $this->update($Feed->id);
-            }
-        }
-    }
+		$Feed = Feed::find($id);
+		echo $Feed->url.'<br>';
+		$feedFactory = new FeedFactory(['cache.enabled' => false]);
+		$feeder = $feedFactory->make($Feed->url);
+		$simplePieInstance = $feeder->getRawFeederObject();
 
-    public function update($id)
-    {
+		//only add articles and update feed when results are found
+		if (! empty($simplePieInstance)) {
+			foreach ($simplePieInstance->get_items() as $item) {
+			$matchThese = ['feed_id' => $Feed->id, 'url' => $item->get_permalink()];
 
-        //set previous week
-        $previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
+			$results = Article::where($matchThese)->count();
+			$date = $item->get_date('Y-m-j H:i:s');
 
-        $Feed = Feed::find($id);
-        echo $Feed->url.'<br>';
-        $feedFactory = new FeedFactory(['cache.enabled' => false]);
-        $feeder = $feedFactory->make($Feed->url);
-        $simplePieInstance = $feeder->getRawFeederObject();
+			if ($results == 0 && ! (strtotime($date) < strtotime($previousweek))) {
+				$article = new Article;
+				$article->feed_id = $Feed->id;
+				$article->status = 'unread';
+				$article->url = $item->get_permalink();
+				$article->subject = $item->get_title();
+				$article->content = $item->get_description();
+				$article->published = $item->get_date('Y-m-j H:i:s');
+				$article->save();
 
-        //only add articles and update feed when results are found
-        if (! empty($simplePieInstance)) {
-            foreach ($simplePieInstance->get_items() as $item) {
-                $matchThese = ['feed_id' => $Feed->id, 'url' => $item->get_permalink()];
+				echo '- '.$item->get_title().'<br>';
+			}
+		}
 
-                $results = Article::where($matchThese)->count();
-                $date = $item->get_date('Y-m-j H:i:s');
+		//update feed updated_at record
+		Feed::where('id', $Feed->id)->update(['updated_at' => date('Y-m-j H:i:s')]);
+		Feed::where('id', $Feed->id)->update(['feed_desc' => $simplePieInstance->get_description()]);
+		Feed::where('id', $Feed->id)->update(['favicon' => $simplePieInstance->get_image_url()]);
+		}
+	}
 
-                if ($results == 0 && ! (strtotime($date) < strtotime($previousweek))) {
-                    $article = new Article;
-                    $article->feed_id = $Feed->id;
-                    $article->status = 'unread';
-                    $article->url = $item->get_permalink();
-                    $article->subject = $item->get_title();
-                    $article->content = $item->get_description();
-                    $article->published = $item->get_date('Y-m-j H:i:s');
-                    $article->save();
+	public function newrssfeed(Request $request)
+	{
+		//check if url is set in POST argument, else exit
+		if ($request->has('url')) {
+			//check if url is valid
+			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
+				exit();
+			}
 
-                    echo '- '.$item->get_title().'<br>';
-                }
-            }
+			$feedFactory = new FeedFactory(['cache.enabled' => false]);
+			$feeder = $feedFactory->make($_POST['url']);
+			$simplePieInstance = $feeder->getRawFeederObject();
 
-            //update feed updated_at record
-            Feed::where('id', $Feed->id)->update(['updated_at' => date('Y-m-j H:i:s')]);
-            Feed::where('id', $Feed->id)->update(['feed_desc' => $simplePieInstance->get_description()]);
-            Feed::where('id', $Feed->id)->update(['favicon' => $simplePieInstance->get_image_url()]);
-        }
-    }
+			if (!empty($simplePieInstance)) {
+				echo $simplePieInstance->get_title().'<br>';
+				echo $simplePieInstance->get_description().'<br>';
+				echo $simplePieInstance->get_permalink().'<br>';
+				//favicon has been deprecated: $simplePieInstance->get_favicon();
 
-    public function newrssfeed()
-    {
+				$Result = Feed::where('url', $simplePieInstance->get_permalink())->first();
 
-        //check if url is set in POST argument, else exit
-        if (! isset($_POST['url'])) {
-            exit();
-        }
+				if (!empty($Result)) {
+					echo '<br>Feed already exists!';
+				} else {
+					$feed = new Feed;
+					$feed->category_id = '1';
+					$feed->feed_name = $simplePieInstance->get_title();
+					$feed->feed_desc = $simplePieInstance->get_description();
+					$feed->url = $simplePieInstance->get_permalink();
+					$feed->favicon = $simplePieInstance->get_image_url();
+					$feed->save();
+					echo '<br>Feed added to the database!';
+				}
+			}
+		}
+	}
 
-        //check if url is valid
-        if (filter_var($_POST['url'], FILTER_VALIDATE_URL) === false) {
-            exit();
-        }
+	public function cleanup()
+	{
 
-        $feedFactory = new FeedFactory(['cache.enabled' => false]);
-        $feeder = $feedFactory->make($_POST['url']);
-        $simplePieInstance = $feeder->getRawFeederObject();
+		//The starred items and latest 3000 items remain in the database
+		$ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'desc')->select('id')->take(3000)->get();
+		$ArticlesStar = Article::where('star_ind', '1')->select('id')->get();
+		$ArticlesUnread = Article::where('status', 'unread')->select('id')->get();
 
-        if (! empty($simplePieInstance)) {
-            echo $simplePieInstance->get_title().'<br>';
-            echo $simplePieInstance->get_description().'<br>';
-            echo $simplePieInstance->get_permalink().'<br>';
-            //favicon has been deprecated: $simplePieInstance->get_favicon();
+		//create new empty array to store id's
+		$cleanup_item_ids = [];
 
-            $Result = Feed::where('url', $simplePieInstance->get_permalink())->first();
+		//store id's from ArticlesStar in cleanup_item_ids
+		if (! empty($ArticlesStar)) {
+			foreach ($ArticlesStar as $Article) {
+				array_push($cleanup_item_ids, $Article->id);
+			}
+		}
 
-            if (! empty($Result)) {
-                echo '<br>Feed already exists!';
-            } else {
-                $feed = new Feed;
-                $feed->category_id = '1';
-                $feed->feed_name = $simplePieInstance->get_title();
-                $feed->feed_desc = $simplePieInstance->get_description();
-                $feed->url = $simplePieInstance->get_permalink();
-                $feed->favicon = $simplePieInstance->get_image_url();
-                $feed->save();
-                echo '<br>Feed added to the database!';
-            }
-        }
-    }
+		//store id's from ArticlesLatest in cleanup_item_ids
+		if (! empty($ArticlesLatest)) {
+			foreach ($ArticlesLatest as $Article) {
+				array_push($cleanup_item_ids, $Article->id);
+			}
+		}
 
-    public function cleanup()
-    {
+		//store id's from ArticlesUnread in cleanup_item_ids
+		if (! empty($ArticlesUnread)) {
+			foreach ($ArticlesUnread as $Article) {
+				array_push($cleanup_item_ids, $Article->id);
+			}
+		}
 
-        //The starred items and latest 3000 items remain in the database
-        $ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'desc')->select('id')->take(3000)->get();
-        $ArticlesStar = Article::where('star_ind', '1')->select('id')->get();
-        $ArticlesUnread = Article::where('status', 'unread')->select('id')->get();
+		//delete items that are not in cleanup_item_ids array
+		DB::table('articles')->whereNotIn('id', $cleanup_item_ids)->delete();
+	}
 
-        //create new empty array to store id's
-        $cleanup_item_ids = [];
+	public function getFeed($id)
+	{
+		$Feed = Feed::find($id);
+		if (! empty($Feed)) {
+			$Feed['total_count'] = DB::table('articles')->where('feed_id', $id)->count();
+			$Feed['unread_count'] = DB::table('articles')->where('feed_id', $id)->where('articles.status', 'unread')->count();
+			$Feed['articles'] = Feed::find($id)->articles;
+		}
 
-        //store id's from ArticlesStar in cleanup_item_ids
-        if (! empty($ArticlesStar)) {
-            foreach ($ArticlesStar as $Article) {
-                array_push($cleanup_item_ids, $Article->id);
-            }
-        }
+		return response()->json($Feed);
+	}
 
-        //store id's from ArticlesLatest in cleanup_item_ids
-        if (! empty($ArticlesLatest)) {
-            foreach ($ArticlesLatest as $Article) {
-                array_push($cleanup_item_ids, $Article->id);
-            }
-        }
+	public function changecategory(Request $request)
+	{
+		if ($request->has('feed_id') && $request->has('category_id')) {
+			//update feed with new category_id
+			Feed::where('id', $request->input('feed_id'))->update(['category_id' => $request->input('category_id')]);
+		}
+	}
 
-        //store id's from ArticlesUnread in cleanup_item_ids
-        if (! empty($ArticlesUnread)) {
-            foreach ($ArticlesUnread as $Article) {
-                array_push($cleanup_item_ids, $Article->id);
-            }
-        }
+	public function changeall(Request $request)
+	{
+		if ($request->has('feeds')) {
+			foreach ($request->input('feeds') as $feed) {
+				if (isset($feed['delete'])) {
+					$Feed = Feed::find($feed['feed_id']);
+					Article::where('feed_id', $feed['feed_id'])->delete();
+					Feed::where('id', $feed['feed_id'])->delete();
+				} else {
+					Feed::where('id', $feed['feed_id'])->update(['feed_name' => $feed['feed_name']], ['category_id' => $feed['category_id']]);
+				}
+			}
+			echo 'done';
+		}
+	}
 
-        //delete items that are not in cleanup_item_ids array
-        DB::table('articles')->whereNotIn('id', $cleanup_item_ids)->delete();
-    }
+	public function createFeed(Request $request)
+	{
+		$Feed = Feed::create($request->all());
+		return response()->json($Feed);
+	}
 
-    public function getFeed($id)
-    {
-        $Feed = Feed::find($id);
-        if (! empty($Feed)) {
-            $Feed['total_count'] = DB::table('articles')->where('feed_id', $id)->count();
-            $Feed['unread_count'] = DB::table('articles')->where('feed_id', $id)->where('articles.status', 'unread')->count();
-            $Feed['articles'] = Feed::find($id)->articles;
-        }
+	public function deleteFeed($id)
+	{
+		$Feed = Feed::find($id);
+		Article::where('feed_id', $id)->delete();
+		Feed::where('id', $id)->delete();
+		return response()->json('deleted');
+	}
 
-        return response()->json($Feed);
-    }
-
-    public function changecategory()
-    {
-        //check if url is set in POST argument, else exit
-        if (! isset($_POST['category_id'])) {
-            exit();
-        }
-
-        if (! isset($_POST['feed_id'])) {
-            exit();
-        }
-
-        //update feed with new category_id
-        Feed::where('id', $_POST['feed_id'])->update(['category_id' => $_POST['category_id']]);
-    }
-
-    public function changeall()
-    {
-        if (! empty($_POST['feeds'])) {
-            foreach ($_POST['feeds'] as $feed) {
-                if (isset($feed['delete'])) {
-                    $Feed = Feed::find($feed['feed_id']);
-                    Article::where('feed_id', $feed['feed_id'])->delete();
-                    Feed::where('id', $feed['feed_id'])->delete();
-                } else {
-                    Feed::where('id', $feed['feed_id'])->update(['feed_name' => $feed['feed_name']], ['category_id' => $feed['category_id']]);
-                }
-            }
-            echo 'done';
-        }
-    }
-
-    public function createFeed(Request $request)
-    {
-        $Feed = Feed::create($request->all());
-
-        return response()->json($Feed);
-    }
-
-    public function deleteFeed($id)
-    {
-        $Feed = Feed::find($id);
-        Article::where('feed_id', $id)->delete();
-        Feed::where('id', $id)->delete();
-
-        return response()->json('deleted');
-    }
-
-    public function updateFeed(Request $request, $id)
-    {
-        $Feed = Feed::find($id);
-        $Feed->name = $request->input('name');
-        $Feed->save();
-
-        return response()->json($Feed);
-    }
+	public function updateFeed($id)
+	{
+		$Feed = Feed::find($id);
+		$Feed->name = $request->input('name');
+		$Feed->save();
+		return response()->json($Feed);
+	}
 }

@@ -38,7 +38,7 @@ class FeverController extends Controller
 			$arr = array_merge($arr, $time);
 
 			//when argument is groups, retrieve list with categories and id's
-			if (isset($_GET['groups'])) {
+			if ($request->has('groups')) {
 				$groups = [];
 				$Categories = Category::orderBy('category_order', 'asc')->get();
 				if (! empty($Categories)) {
@@ -52,8 +52,9 @@ class FeverController extends Controller
 				$response_arr['groups'] = $groups;
 				$arr = array_merge($arr, $response_arr);
 			};
+			
 			//when argument is feeds, retrieve list with feeds and id's
-			if (isset($_GET['feeds'])) {
+			if ($request->has('feeds')) {
 				$feeds = [];
 				$Feeds = Feed::orderBy('feed_name', 'asc')->get();
 				if (! empty($Feeds)) {
@@ -72,8 +73,9 @@ class FeverController extends Controller
 				$response_arr['feeds'] = $feeds;
 				$arr = array_merge($arr, $response_arr);
 			};
+			
 			//when argument is groups or feeds, also return feed id's linked to category id's
-			if (isset($_GET['groups']) || isset($_GET['feeds'])) {
+			if ($request->has('groups') || $request->has('feeds')) {
 				$feeds_groups = [];
 
 				//The array is composed with a group_id and feed_ids containing a string/comma-separated list of positive integers
@@ -97,7 +99,7 @@ class FeverController extends Controller
 			};
 
 			//return list with all unread article id's
-			if (isset($_GET['unread_item_ids'])) {
+			if ($request->has('unread_item_ids')) {
 				$unread_item_ids = [];
 				$Articles = Article::where('status', 'unread')->orderBy('id', 'asc')->get();
 				if (! empty($Articles)) {
@@ -112,7 +114,7 @@ class FeverController extends Controller
 			};
 
 			//return string/comma-separated list with id's from read and starred articles
-			if (isset($_GET['saved_item_ids'])) {
+			if ($request->has('saved_item_ids')) {
 				$saved_item_ids = [];
 				$Articles = Article::where('star_ind', '1')->orderBy('id', 'asc')->get();
 				if (! empty($Articles)) {
@@ -127,7 +129,7 @@ class FeverController extends Controller
 			};
 
 			//when argument is items, return 50 articles at a time
-			if (isset($_GET['items'])) {
+			if ($request->has('items')) {
 				$total_items = [];
 				$total_items['total_items'] = Article::count();
 				$arr = array_merge($arr, $total_items);
@@ -135,9 +137,9 @@ class FeverController extends Controller
 				$items = [];
 
 				//request specific items, a maximum of 50 specific items requested by comma-separated argument
-				if (isset($_GET['with_ids'])) {
+				if ($request->has('with_ids')) {
 					//list with id's is comma-separated, so transform to array
-					$ArrayIds = explode(',', $_REQUEST['with_ids']);
+					$ArrayIds = explode(',', $request->input('with_ids'));
 					//create empty array to store Article results
 					$Articles = [];
 					if (! empty($ArrayIds)) {
@@ -147,12 +149,12 @@ class FeverController extends Controller
 						}
 					}
 				//request 50 additional items using the highest id of locally cached items
-				} elseif (isset($_REQUEST['since_id'])) {
-					$Articles = Article::where('id', '>', $_REQUEST['since_id'])->orderBy('id', 'asc')->take(50)->get();
+				} elseif ($request->has('since_id')) {
+					$Articles = Article::where('id', '>', $request->input('since_id'))->orderBy('id', 'asc')->take(50)->get();
 
 				//request 50 previous items using the lowest id of locally cached items
-				} elseif (isset($_REQUEST['max_id'])) {
-					$Articles = Article::where('id', '<', $_REQUEST['max_id'])->orderBy('id', 'asc')->take(50)->get();
+				} elseif ($request->has('max_id')) {
+					$Articles = Article::where('id', '<', $request->input('max_id'))->orderBy('id', 'asc')->take(50)->get();
 				//if no argument is given provide total_items and up to 50 items
 				} else {
 					$Articles = Article::take(50)->orderBy('id', 'asc')->get();
@@ -179,14 +181,14 @@ class FeverController extends Controller
 			};
 
 			//when argument is links, don't return anything at this moment
-			if (isset($_GET['links'])) {
+			if ($request->has('links')) {
 				$links = [];
 				$response_arr['links'] = $links;
 				$arr = array_merge($arr, $response_arr);
 			};
 
 			//when argument is groups, retrieve list with categories and id's
-			if (isset($_GET['favicons'])) {
+			if ($request->has('favicons')) {
 				$favicons = [];
 				$Feeds = Feed::orderBy('feed_name', 'asc')->get();
 				if (! empty($Feeds)) {
@@ -215,13 +217,12 @@ class FeverController extends Controller
     }
 
     //TODO: Re-use functions from other classes
-
     public function postFever(Request $request)
     {
 		if ($request->isMethod('post')) {
 
 			//set before argument
-			if (isset($_POST['before'])) {
+			if ($request->has('before')) {
 				$time = date('Y-m-d H:i:s', $_POST['before']);
 			} else {
 				$time = time();
