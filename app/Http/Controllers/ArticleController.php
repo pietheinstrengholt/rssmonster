@@ -110,7 +110,7 @@ class ArticleController extends Controller
 		}
 	}
 
-	public function markwithstar($id)
+	public function markwithstar(Request $request, $id)
 	{
 		if ($request->input('update') == 'mark') {
 			Article::where('id', $id)->update(['star_ind' => '1']);
@@ -123,7 +123,7 @@ class ArticleController extends Controller
 		}
 	}
 
-	public function markallasread()
+	public function markallasread(Request $request)
 	{
 		if ($request->input('update') == 'mark-all-as-read') {
 			Article::where('status', 'unread')->update(['status' => 'read']);
