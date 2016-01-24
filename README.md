@@ -44,7 +44,7 @@ Any username and password will work.
 You might need to change the redirect in the `.htaccess` inside the public folder.
 Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
-<img src="http://phppaper.strengholt-online.nl/wp-content/uploads/fever.png" width="300px">
+<img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
 
 
 WISHLIST / TODO
