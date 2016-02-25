@@ -13,7 +13,7 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="base_url" content="{{ URL::to('/') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
-	<link rel="stylesheet" href="{{ URL::asset('css/styles.css') }}">
+	<link rel="stylesheet" href="{{ URL::asset('css/app.css') }}">
 	
 	<!-- Configuring Web Applications -->	
 	<link rel="apple-touch-icon" sizes="57x57" href="{{ URL::asset('img/favicon/apple-icon-57x57.png') }}">
