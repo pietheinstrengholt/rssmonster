@@ -14,28 +14,6 @@
 	<meta name="base_url" content="{{ URL::to('/') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/styles.css') }}">
-	<style type="text/css">
-		html,body
-		{
-			overflow-x: hidden;
-		}
-		body {
-			padding-top: 60px;
-			padding-bottom: 40px;
-		}
-		.sidebar-nav {
-			padding: 9px 0;
-		}
-		@media (max-width: 980px) {
-			/* Enable use of floated navbar text */
-			padding-top: 0px;
-			.navbar-text.pull-right {
-				float: none;
-				padding-left: 5px;
-				padding-right: 5px;
-			}
-		}
-	</style>
 	
 	<!-- Configuring Web Applications -->	
 	<link rel="apple-touch-icon" sizes="57x57" href="{{ URL::asset('img/favicon/apple-icon-57x57.png') }}">
