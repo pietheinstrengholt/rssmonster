@@ -20,7 +20,7 @@ Feel free to add any contributions or new features.
 * [Composer](https://getcomposer.org/)
 
 #### How to get everything running
-* Clone this repository `git clone https://github.com/pietheinstrengholt/laravel.git .`
+* Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
 * Find the `.env.example` file in the root of the project, copy it and rename to `.env`
 * Edit `.env` and enter your mysql server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD)
 * Start a command prompt and browse to the folder to which you checked out
