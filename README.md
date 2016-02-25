@@ -27,6 +27,7 @@ Feel free to add any contributions or new features.
 * Run `composer install` this will install all dependencies and might take a while
 * Run `php artisan key:generate` this will generate your individual application key, so that passwords are safe
 * Run `php artisan migrate` this will add all needed database tables to your mysql database
+* Run `chmod -R 777 storage/`
 * Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
 * Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
 
