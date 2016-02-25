@@ -10,6 +10,7 @@ use App\Article;
 use App\Category;
 use App\Feed;
 use Illuminate\Http\Request;
+use Log;
 
 class FeverController extends Controller
 {
@@ -215,6 +216,7 @@ class FeverController extends Controller
 		}
     }
 
+	//TODO: sort out why Post is not working
     public function postFever(Request $request)
     {
 		if ($request->isMethod('post')) {
