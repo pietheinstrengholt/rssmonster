@@ -8,7 +8,7 @@ lumen and twitter boostrap framework. Several features are implemented such as
 marking as read when scrolling, drag and drop style manage feeds, json events, etc.
 Feel free to add any contributions or new features.
 
-<img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster2.png" width="700px">
+<img src="http://www.strengholt-online.nl/wp-content/uploads/2016/rssmonster3.jpg" width="810px">
 
 #### Prerequisites
 * PHP >= 5.5.9
@@ -44,7 +44,7 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
 
 
-#### WISHLIST / TODO
+#### Nice to add features
 
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Mark as read, unread buttons
@@ -54,7 +54,7 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 * Configure inverse scrolling
 * Double click on feed to change it's name
 
-#### CREDITS
+#### Credits
 
 The following scripts and plug-ins are used within RSSMonster
 
