@@ -16,7 +16,6 @@ class ArticleController extends Controller
 
 	public function listing(Request $request)
 	{
-
 		//check if status argument is set
 		if ($request->has('status')) {
 

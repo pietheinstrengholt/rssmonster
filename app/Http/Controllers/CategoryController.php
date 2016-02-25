@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use DB;
+use App\Article;
 use App\Category;
+use App\Feed;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller
@@ -18,12 +20,12 @@ class CategoryController extends Controller
 	{
 		$newArray = [];
 		$Categories = Category::orderBy('category_order', 'asc')->get();
-		if (! empty($Categories)) {
+		if (!empty($Categories)) {
 			foreach ($Categories as $key => $Category) {
 				$newArray[$key] = $Category;
 				$newArray[$key]['unread_count'] = $Category['unread_count'] = DB::table('feeds')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('feeds.category_id', $Category['id'])->where('articles.status', 'unread')->count();
 				$newArray[$key]['feeds'] = Category::find($Category['id'])->feeds;
-				if (! empty($newArray[$key]['feeds'])) {
+				if (!empty($newArray[$key]['feeds'])) {
 					foreach ($newArray[$key]['feeds'] as $feedkey => $feed) {
 						$newArray[$key]['feeds'][$feedkey]['unread_count'] = DB::table('articles')->where('feed_id', $feed['id'])->where('status', 'unread')->count();
 					}
@@ -62,10 +64,10 @@ class CategoryController extends Controller
 		//do not delete feed larger than 1 (uncategorized)
 		if ($id > 1) {
 			$Feeds = Category::find($id)->feeds;
-			if (! empty($Feeds)) {
+			if (!empty($Feeds)) {
 				foreach ($Feeds as $feed) {
-					DB::table('articles')->where('feed_id', $feed['id'])->delete();
-					DB::table('feeds')->where('id', $feed['id'])->delete();
+					Article::where('feed_id', $feed['id'])->delete();
+					Feed::where('id', $feed['id'])->delete();
 				}
 			}
 			Category::where('id', $id)->delete();

@@ -5,8 +5,7 @@ namespace App\Http\Controllers;
 use DB;
 use App\Article;
 use App\Feed;
-//use SimplePie to parse RSS feeds, see: https://github.com/arandilopez/laravel-feed-parser
-use ArandiLopez\Feed\Factories\FeedFactory;
+use ArandiLopez\Feed\Factories\FeedFactory; //use SimplePie to parse RSS feeds, see: https://github.com/arandilopez/laravel-feed-parser
 use Illuminate\Http\Request;
 
 class FeedController extends Controller
@@ -30,17 +29,16 @@ class FeedController extends Controller
 		if (! empty($Feeds)) {
 			foreach ($Feeds as $Feed) {
 				//update feed, see update function
-				$this->update($Feed->id);
+				$this->update($Feed);
 			}
 		}
 	}
 
-	public function update($id)
+	public function update(Feed $Feed)
 	{
 		//set previous week
 		$previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
 
-		$Feed = Feed::find($id);
 		echo $Feed->url.'<br>';
 		$feedFactory = new FeedFactory(['cache.enabled' => false]);
 		$feeder = $feedFactory->make($Feed->url);
@@ -49,29 +47,29 @@ class FeedController extends Controller
 		//only add articles and update feed when results are found
 		if (! empty($simplePieInstance)) {
 			foreach ($simplePieInstance->get_items() as $item) {
-			$matchThese = ['feed_id' => $Feed->id, 'url' => $item->get_permalink()];
+				//count the number of items that already exist in the database with the item url and feed_id
+				$results = Article::where(['feed_id' => $Feed->id, 'url' => $item->get_permalink()])->count();
+				$date = $item->get_date('Y-m-j H:i:s');
 
-			$results = Article::where($matchThese)->count();
-			$date = $item->get_date('Y-m-j H:i:s');
+				//add new article if no results are found and article date is no older than one week
+				if ($results == 0 && ! (strtotime($date) < strtotime($previousweek))) {
+					$article = new Article;
+					$article->feed_id = $Feed->id;
+					$article->status = 'unread';
+					$article->url = $item->get_permalink();
+					$article->subject = $item->get_title();
+					$article->content = $item->get_description();
+					$article->published = $item->get_date('Y-m-j H:i:s');
+					$article->save();
 
-			if ($results == 0 && ! (strtotime($date) < strtotime($previousweek))) {
-				$article = new Article;
-				$article->feed_id = $Feed->id;
-				$article->status = 'unread';
-				$article->url = $item->get_permalink();
-				$article->subject = $item->get_title();
-				$article->content = $item->get_description();
-				$article->published = $item->get_date('Y-m-j H:i:s');
-				$article->save();
-
-				echo '- '.$item->get_title().'<br>';
+					echo '- '.$item->get_title().'<br>';
+				}
 			}
-		}
 
-		//update feed updated_at record
-		Feed::where('id', $Feed->id)->update(['updated_at' => date('Y-m-j H:i:s')]);
-		Feed::where('id', $Feed->id)->update(['feed_desc' => $simplePieInstance->get_description()]);
-		Feed::where('id', $Feed->id)->update(['favicon' => $simplePieInstance->get_image_url()]);
+			//update feed updated_at record
+			Feed::where('id', $Feed->id)->update(['updated_at' => date('Y-m-j H:i:s')]);
+			Feed::where('id', $Feed->id)->update(['feed_desc' => $simplePieInstance->get_description()]);
+			Feed::where('id', $Feed->id)->update(['favicon' => $simplePieInstance->get_image_url()]);
 		}
 	}
 
@@ -79,6 +77,7 @@ class FeedController extends Controller
 	{
 		//check if url is set in POST argument, else exit
 		if ($request->has('url')) {
+
 			//check if url is valid
 			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
 				exit();
@@ -114,7 +113,6 @@ class FeedController extends Controller
 
 	public function cleanup()
 	{
-
 		//The starred items and latest 3000 items remain in the database
 		$ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'desc')->select('id')->take(3000)->get();
 		$ArticlesStar = Article::where('star_ind', '1')->select('id')->get();
@@ -138,22 +136,22 @@ class FeedController extends Controller
 		}
 
 		//store id's from ArticlesUnread in cleanup_item_ids
-		if (! empty($ArticlesUnread)) {
+		if (!empty($ArticlesUnread)) {
 			foreach ($ArticlesUnread as $Article) {
 				array_push($cleanup_item_ids, $Article->id);
 			}
 		}
 
 		//delete items that are not in cleanup_item_ids array
-		DB::table('articles')->whereNotIn('id', $cleanup_item_ids)->delete();
+		Article::whereNotIn('id', $cleanup_item_ids)->delete();
 	}
 
 	public function getFeed($id)
 	{
 		$Feed = Feed::find($id);
 		if (!empty($Feed)) {
-			$Feed['total_count'] = DB::table('articles')->where('feed_id', $id)->count();
-			$Feed['unread_count'] = DB::table('articles')->where('feed_id', $id)->where('articles.status', 'unread')->count();
+			$Feed['total_count'] = Article::where('feed_id', $id)->count();
+			$Feed['unread_count'] = Article::where('feed_id', $id)->where('status', 'unread')->count();
 			$Feed['articles'] = Feed::find($id)->articles;
 		}
 
@@ -180,7 +178,7 @@ class FeedController extends Controller
 					Feed::where('id', $feed['feed_id'])->update(['feed_name' => $feed['feed_name']], ['category_id' => $feed['category_id']]);
 				}
 			}
-			echo 'done';
+			return response()->json('done');
 		}
 	}
 
