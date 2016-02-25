@@ -1,5 +1,4 @@
-RSS Monster
-=======
+## RSS Monster
 
 Copyright (c) 2015 Piethein Strengholt, piethein@strengholt-online.nl
 
@@ -11,30 +10,27 @@ Feel free to add any contributions or new features.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2015/rssmonster2.png" width="700px">
 
-REQUIREMENTS
-------------
-
+#### Prerequisites
 * PHP >= 5.5.9
 * OpenSSL PHP Extension
 * Mbstring PHP Extension
 * Tokenizer PHP Extension
-* Composer
 * Git
+* A mysql installation (other databases will also work with a bit of configuration)
+* [Composer](https://getcomposer.org/)
 
-INSTALLATION
-------------
+#### How to get everything running
+* Clone this repository `git clone https://github.com/pietheinstrengholt/laravel.git .`
+* Find the `.env.example` file in the root of the project, copy it and rename to `.env`
+* Edit `.env` and enter your mysql server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD)
+* Start a command prompt and browse to the folder to which you checked out
+* Run `composer install` this will install all dependencies and might take a while
+* Run `php artisan key:generate` this will generate your individual application key, so that passwords are safe
+* Run `php artisan migrate` this will add all needed database tables to your mysql database
+* Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
+* Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
 
-1. Install composer: `curl -sS https://getcomposer.org/installer | php — –filename=composer`
-2. Download lumen: `composer global require "laravel/lumen-installer=~1.0"`
-3. Clone the RSSMonster repository: `git clone https://github.com/pietheinstrengholt/rssmonster.git`
-4. Inside the RSSMonster directory run: `composer install`
-5. Copy the `.env.example` to `.env` and configure with the correct database settings
-6. Deploy the database, use the following command: `php artisan migrate:refresh --seed`
-7. Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
-8. Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
-
-Reeder (iOS) integration support (via Fever API)
-----
+#### Reeder (iOS) integration support (via Fever API)
 
 Reeder (iOS) support have been added. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
@@ -47,8 +43,7 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
 
 
-WISHLIST / TODO
-----
+#### WISHLIST / TODO
 
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Mark as read, unread buttons
@@ -58,8 +53,7 @@ WISHLIST / TODO
 * Configure inverse scrolling
 * Double click on feed to change it's name
 
-CREDITS
--------
+#### CREDITS
 
 The following scripts and plug-ins are used within RSSMonster
 
