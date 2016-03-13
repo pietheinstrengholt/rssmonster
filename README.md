@@ -1,6 +1,6 @@
 ## RSS Monster
 
-Copyright (c) 2015 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2016 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator and reader compatible with the Fever API, created as an alternative for Google Reader.
 RSSMonster features a lightweight fluid responsive design. It is written in JavaScript and PHP and uses the Laravel
