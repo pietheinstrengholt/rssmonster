@@ -43,7 +43,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
 
-
 #### Nice to add features
 
 * Cosmetic: When moving feeds between categories, change the count for the category

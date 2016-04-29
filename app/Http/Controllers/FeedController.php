@@ -97,6 +97,8 @@ class FeedController extends Controller
 
 				if (!empty($Result)) {
 					echo '<br>Feed already exists!';
+				} elseif (empty($simplePieInstance->get_title())) {
+					echo '<br>Error: feed_name is empty!';
 				} else {
 					$feed = new Feed;
 					$feed->category_id = '1';
