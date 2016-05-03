@@ -45,7 +45,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* Show first image (image_url) in minimal less-content dialog
 * Change image heart (grey)
 * Cleanup JS
 * Cosmetic: When moving feeds between categories, change the count for the category

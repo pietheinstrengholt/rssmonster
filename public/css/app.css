@@ -896,3 +896,15 @@ a#star.navbar-brand,a#unread.navbar-brand {
     min-height: 100%;
 }
 
+.entry-image {
+    margin-top: 8px;
+    display: block;
+    border-radius: 3px;
+}
+
+.entry-image img {
+    border-radius: 3px;
+    display: block;
+    max-width: 100%;
+    height: auto;
+}

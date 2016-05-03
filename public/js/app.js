@@ -756,8 +756,13 @@ function FnReadPool(articleId) {
 									// calculate difference timeinterval 
 									var dateDifference = get_time_diff(article['published']);
 									
+									// set image_url variable if image_url is set
+									if (article["image_url"] !== null) {
+										var image_url = '<span class="entry-image is-loaded"><img src="' + article["image_url"] + '"></span>';
+									}
+									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + '</div></div></div>');
+									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + image_url + '</div></div></div>');
 									
 									setTimeout(function() {
 										
