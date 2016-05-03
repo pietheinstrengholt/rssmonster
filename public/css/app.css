@@ -648,7 +648,7 @@ view-button #read {
     color: #b4b6b8;
 }
 
-#add-new-category {
+a#add-new-category {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
     -ms-flex: 1;
@@ -728,6 +728,7 @@ view-button #read {
     margin: 0;
     border-bottom: 1px solid transparent;
     height: 41px;
+	border-color: #dcdee0;
 }
 
 .feeds-inner {
