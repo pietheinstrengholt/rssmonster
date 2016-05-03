@@ -23,18 +23,18 @@
 			
 		</div>
 		
-		<div class="feeds-toolbar" style="height: 52px; border-top: 1px solid transparent; border-color: #dcdee0; position: absolute; z-index: 2; bottom: 0; left: 0; right: 0; font-size: 10px; background-color: #eff1f3;">  
-			<table style="margin-top: 8px; width: 100%;" cellpadding="0">
+		<div class="feeds-toolbar" style="border-top: 1px solid transparent; border-color: #dcdee0; position: absolute; z-index: 2; bottom: 0; left: 0; right: 0; font-size: 10px; background-color: #eff1f3;">  
+			<table style="width: 100%;" cellpadding="0">
 				<tbody>
 				  <tr>
 					<td style="width: 33%; text-align: center; vertical-align: middle;">
-						Tag
+						<a id="delete" class="view-button" style="-webkit-box-flex: 1; -webkit-flex: 1; -ms-flex: 1; flex: 1; text-align: center; line-height: 41px; height: 100%; text-decoration: none; display: block; font-size: 10px; text-transform: uppercase; font-weight: bold; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; border-left: 1px solid transparent; border-color: #dcdee0; color: #b4b6b8;" title="Delete" data-behavior="view_unread change_view_mode" data-view-mode="view_unread" data-remote="true">Delete</a> 
 					</td>
 					<td style="width: 33%; text-align: center; vertical-align: middle;">
-						Mark Read
+						<a id="mark-as-read" class="view-button" style="-webkit-box-flex: 1; -webkit-flex: 1; -ms-flex: 1; flex: 1; text-align: center; line-height: 41px; height: 100%; text-decoration: none; display: block; font-size: 10px; text-transform: uppercase; font-weight: bold; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; border-left: 1px solid transparent; border-color: #dcdee0; color: #b4b6b8;" title="Mark all as read" data-behavior="view_starred change_view_mode" data-view-mode="view_starred" data-remote="true">Read all</a>
 					</td>
 					<td style="width: 33%; text-align: center; vertical-align: middle;">
-						Delete
+						<a id="add-new-category" class="view-button selected" style="-webkit-box-flex: 1; -webkit-flex: 1; -ms-flex: 1; flex: 1; text-align: center; line-height: 41px; height: 100%; text-decoration: none; display: block; font-size: 10px; text-transform: uppercase; font-weight: bold; -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none; border-left: 1px solid transparent; border-color: #dcdee0; color: #b4b6b8;" title="Add new" data-behavior="view_all change_view_mode" data-view-mode="view_all" data-remote="true">Add new</a>
 					</td>
 				  </tr>
 				</tbody>
@@ -62,5 +62,28 @@
 	
 	</div>
 </div>
+
+<!-- html for modal pop-up message -->
+<div id="modal" class="modal fade">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Modal title</h4>
+         </div>
+         <div class="modal-body">
+            <p></p>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
+            <button type="button" class="btn btn-primary">Submit</button>
+         </div>
+      </div>
+      <!-- /.modal-content -->
+   </div>
+   <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!-- end html modal pop-up message -->
 
 @stop

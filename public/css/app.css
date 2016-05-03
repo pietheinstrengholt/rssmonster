@@ -30,8 +30,7 @@ body, html {
     .container .column-right{display:block;}
 	div.mobile-top {display:none;}
 	div#section {top: 41px;}
-	div#main {margin-left: 5px;}
-	div#main {margin-left: 5px;}
+	div#main div.article {margin-left: 5px;}
 	div.full-content {display:none;}
 }
 
@@ -42,7 +41,7 @@ body, html {
 	.container .column-right{display:none;}
 	div.mobile-top {display:none;}
 	div#section {top: 41px;}
-	div#main {margin-left: 5px;}
+	div#main div.article {margin-left: 5px;}
 	div.full-content {display:none;}
 }
 
@@ -53,7 +52,7 @@ body, html {
 	.container .column-right{display:none;}
 	div.mobile-top {display:none;}
 	div#section {top: 41px;}
-	div#main {margin-left: 5px;}
+	div#main div.article {margin-left: 5px;}
 	div.full-content {display:none;}
 }
 
@@ -100,6 +99,11 @@ div.entry-inner div.feedname {
 div.entry-inner div.full-content {
 	font-size: 14px !important;
 	margin-top: 5px;
+}
+
+div.panel span.badge {
+    color: #7a7c7e;
+    background-color: transparent !important;
 }
 
 
