@@ -32,6 +32,7 @@ body, html {
 	div#section {top: 41px;}
 	div#main {margin-left: 5px;}
 	div#main {margin-left: 5px;}
+	div.full-content {display:none;}
 }
 
 /* Landscape tablets and medium desktops */
@@ -42,6 +43,7 @@ body, html {
 	div.mobile-top {display:none;}
 	div#section {top: 41px;}
 	div#main {margin-left: 5px;}
+	div.full-content {display:none;}
 }
 
 /* Portrait tablets and small desktops */
@@ -52,6 +54,7 @@ body, html {
 	div.mobile-top {display:none;}
 	div#section {top: 41px;}
 	div#main {margin-left: 5px;}
+	div.full-content {display:none;}
 }
 
 /* Landscape phones and portrait tablets */
@@ -61,6 +64,7 @@ body, html {
     .container .column-right{display:none;}
 	form.search-form-wrap {display:none;}
 	div#section {top: 50px;}
+	div.less-content {display:none;}
 }
 
 /* Portrait phones and smaller */
@@ -70,6 +74,11 @@ body, html {
     .container .column-right{display:none;}
 	form.search-form-wrap {display:none;}
 	div#section {top: 50px;}
+	div.less-content {display:none;}
+}
+
+div.minimal {
+	display:none;
 }
 
 
@@ -79,11 +88,11 @@ section.detailed .less-content, section.detailed div.minimal {
 	display:none;
 }
 
-section.list .page-content, section.list div.minimal {
+section.list .full-content, section.list div.minimal {
 	display:none;
 }
 
-section.minimal .page-content, section.minimal div.content div.article hr, section.minimal h4.heading, section.minimal div.feedname	{
+section.minimal .full-content, section.minimal div.content div.article hr, section.minimal h4.heading, section.minimal div.feedname	{
 	display:none;
 }
 
@@ -128,7 +137,7 @@ section.minimal div.info-bar {
 	margin-top: 15px ! important;
 }
 
-section.minimal div.page-content {
+section.minimal div.full-content {
 	margin-top: 0px;
 }
 
@@ -202,7 +211,7 @@ div.feedname {
 	color: #696969;
 }
 
-div.page-content, div.less-content {
+div.full-content, div.less-content {
 	color: #333344;
 	margin-bottom: 10px;
 	margin-right: 20px;
@@ -228,7 +237,7 @@ div#block.active {
 	background-color: #ffffe5;
 }
 
-section.detailed div.page-content, section.list div.page-content, section.list div.less-content {
+section.detailed div.full-content, section.list div.full-content, section.list div.less-content {
 	margin-top: 1px;
 	margin-left: 0px;
 }
@@ -273,7 +282,7 @@ div#info-bar {
 	font-weight: bold;
 }
 
-div.page-content img {
+div.full-content img {
 	max-width: 100%;
 	height: auto;
 }

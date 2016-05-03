@@ -53,7 +53,14 @@
 		</form>
 		<div id="section" style="position: absolute; bottom: 0; left: 0; right: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; -webkit-transition: -webkit-transform .2s ease; transition: -webkit-transform .2s ease; transition: transform .2s ease; transition: transform .2s ease, -webkit-transform .2s ease; background-color: #FFFFFF;"></div>
 	</div>
-	<div class="column-right" style="-webkit-box-flex: 1; -webkit-flex-grow: 1; -ms-flex-positive: 1; flex-grow: 1; height: 100%; position: relative;"></div>
+	<div class="column-right" style="-webkit-box-flex: 1; -webkit-flex-grow: 1; -ms-flex-positive: 1; flex-grow: 1; height: 100%; position: relative;">
+	
+	<div class="entry-toolbar" style="background-color: #FFFFFF; position: absolute; top: 0; left: 0; z-index: 3; width: 100%; height: 41px; border-bottom: 1px solid transparent; border-color: #dcdee0;"></div>
+	<div class="entry-content" style="background-color: #FFFFFF; display: block; position: absolute; height: auto; bottom: 0; top: 41px; left: 0; right: 0; margin: 0; overflow-y: auto; overflow-x: hidden; -webkit-transition: top .2s ease; transition: top .2s ease; -webkit-overflow-scrolling: touch; z-index: 2;">
+		<div class="entry-inner" style="padding: 40px 20px 40px 20px; margin: 0 auto; max-width: 660px; min-height: 100%;"></div>
+	</div>
+	
+	</div>
 </div>
 
 @stop

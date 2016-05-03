@@ -115,7 +115,7 @@ $(document).ready(function () {
 		//highlight the button in the sidebar with corresponding status
 		$('div#buttons-top').find('button').removeClass("btn-primary").addClass("btn-default");
 		$("div#buttons-top button#" + mySelection["status"]).removeClass("btn-default");
-		$("div#buttons-top button#" + mySelection["status"]).addClass("btn-primary");		
+		$("div#buttons-top button#" + mySelection["status"]).addClass("btn-primary");
 	
 		//set view type
 		$("div#section").removeClass();
@@ -393,14 +393,36 @@ $(document).ready(function () {
 
 	});
 	
-	//TODO: show read and unread buttons
+	//function when clicking on a article
 	$("div#section").on("click", "div#block", function (event) {
-		//active
+		
+		//first remove existing active labels from other elements
+		$("div#section").find('div#block.active').find(".full-content").hide();
+		$("div#section").find('div#block.active').find(".less-content").show();
 		$("div#section").find('div#block.active').removeClass("active");
+		
+		//add active class to selected block
+		//copy contents of the block to the right column
 		$(this).addClass("active");
+		
+		//get article id
+		var articleId = $(this).find('div.article').attr('id');
+		
+		$('div#' + articleId + '.article h4.heading a').css('color', '#333333');
+		$('div#' + articleId + '.article div.feedname').css('color', '#696969');
+		$('div#' + articleId + '.article div.full-content').css('color', '#333344');
+		$('div#' + articleId + '.article div.less-content').css('color', '#333344');
+		
+		$("div.column-right div.entry-inner").empty();
+		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
+		$(this).find(".full-content").clone().appendTo("div.column-right div.entry-inner");
+		$("div.column-right").find(".full-content").show();
+		
+		//TODO: implement option bar
 		$(this).find('div.options').show();
-		$(this).find(".page-content").show();
-		$(this).find(".less-content").hide()
+
+		//$(this).find(".full-content").show();
+		//$(this).find(".less-content").hide();
 	});
 	
 	$("body").on("click", "button#submit-feedchanges", function (event) {
@@ -535,8 +557,13 @@ function FnReadPool(articleId) {
 					var readcountsub = $('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text();
 					var readcountsubnew = readcountsub -1;
 					$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
-
 				}
+				
+				$('div#' + articleId + '.article h4.heading a').css('color', '#b4b6b8');
+				$('div#' + articleId + '.article div.feedname').css('color', '#b4b6b8');
+				$('div#' + articleId + '.article div.full-content').css('color', '#b4b6b8');
+				$('div#' + articleId + '.article div.less-content').css('color', '#b4b6b8');
+				
 			},
 			failure: function (errMsg) {}
 		});
@@ -711,7 +738,7 @@ function FnReadPool(articleId) {
 									var dateDifference = get_time_diff(article['published']);
 									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="page-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + '</div></div></div>');
+									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + '</div></div></div>');
 									
 									setTimeout(function() {
 										
