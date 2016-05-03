@@ -97,7 +97,7 @@ $(document).ready(function () {
 	$("li.list-group-item.item,li.list-group-item.wrapper").hide();
 	
 	//mark unread button as default selection on first load
-	$('div.view-toolbar a#unread').css('color', '#333333');
+	$('div.view-toolbar a#unread , div.mobile-top a#unread').css('color', '#333333');
 
 	//first load of content
 	loadcontent();
@@ -153,7 +153,7 @@ $(document).ready(function () {
 	//Functionality when clicking on top-nav menu items or buttons in the sidebar
 	$("a#star.navbar-brand,a#unread.navbar-brand,div.view-toolbar a#unread, div.view-toolbar a#read, div.view-toolbar a#star").click(function () {
 		//change the color of the three buttons to grey
-		$('div.view-toolbar a#unread, div.view-toolbar a#read, div.view-toolbar a#star').css('color', '#b4b6b8');
+		$('div.view-toolbar a#unread, div.view-toolbar a#read, div.view-toolbar a#star, div.mobile-top a#unread, div.mobile-top a#star').css('color', '#b4b6b8');
 		mySelection.status = encodeURIComponent($(this).attr('id'));
 		//change the color of the selected button to black
 		$(this).css('color', '#333333');
