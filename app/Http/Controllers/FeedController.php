@@ -54,12 +54,24 @@ class FeedController extends Controller
 				//add new article if no results are found and article date is no older than one week
 				if ($results == 0 && ! (strtotime($date) < strtotime($previousweek))) {
 					$article = new Article;
+					
+					//get article content
 					$article->feed_id = $Feed->id;
 					$article->status = 'unread';
 					$article->url = $item->get_permalink();
 					$article->subject = $item->get_title();
 					$article->content = $item->get_description();
 					$article->published = $item->get_date('Y-m-j H:i:s');
+					
+					//get URL of first image
+					//TODO: replace with SimplePie str_get_html function, see: http://stackoverflow.com/questions/9865130/getting-image-url-from-rss-feed-using-simplepie
+					$description =  $item->get_description();
+					preg_match('/<img.+src=[\'"](?P<src>.+?)[\'"].*>/i', $description, $image);
+					if (array_key_exists('src', $image)) {
+						$article->image_url = $image['src'];
+					}
+					
+					//save article content to database
 					$article->save();
 
 					echo '- '.$item->get_title().'<br>';

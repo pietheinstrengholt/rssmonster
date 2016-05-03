@@ -35,6 +35,7 @@ class CreateTablesScript extends Migration
             $table->string('status');
             $table->integer('star_ind')->default(0);
             $table->string('url');
+            $table->string('image_url');
             $table->text('subject');
             $table->text('content');
             $table->timestamp('published');
