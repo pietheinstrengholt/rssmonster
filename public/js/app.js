@@ -408,6 +408,13 @@ $(document).ready(function () {
 		//first remove existing active labels from other elements
 		$("div#section").find('div#block.active').find(".full-content").hide();
 		$("div#section").find('div#block.active').find(".less-content").show();
+
+		//change css to grey when article is read
+		$("div#section").find('div#block.active').find('.article h4.heading a').css('color', '#b4b6b8');
+		$("div#section").find('div#block.active').find('.article div.feedname').css('color', '#b4b6b8');
+		$("div#section").find('div#block.active').find( '.article div.full-content').css('color', '#b4b6b8');
+		$("div#section").find('div#block.active').find('.article div.less-content').css('color', '#b4b6b8');
+		$("div#section").find('div#block.active').find('.article').css('border-bottom', '1px solid #b4b6b8');
 		$("div#section").find('div#block.active').removeClass("active");
 		
 		//add active class to selected block
@@ -421,6 +428,7 @@ $(document).ready(function () {
 		$('div#' + articleId + '.article div.feedname').css('color', '#696969');
 		$('div#' + articleId + '.article div.full-content').css('color', '#333344');
 		$('div#' + articleId + '.article div.less-content').css('color', '#333344');
+		$('div#' + articleId + '.article').css('border-bottom', '1px solid #B4B7BD');
 		
 		$("div.column-right div.entry-inner").empty();
 		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
@@ -568,10 +576,12 @@ function FnReadPool(articleId) {
 					$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
 				}
 				
+				//change css to grey when article is read
 				$('div#' + articleId + '.article h4.heading a').css('color', '#b4b6b8');
 				$('div#' + articleId + '.article div.feedname').css('color', '#b4b6b8');
 				$('div#' + articleId + '.article div.full-content').css('color', '#b4b6b8');
 				$('div#' + articleId + '.article div.less-content').css('color', '#b4b6b8');
+				$('div#' + articleId + '.article').css('border-bottom', '1px solid #b4b6b8');
 				
 			},
 			failure: function (errMsg) {}
