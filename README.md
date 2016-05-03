@@ -45,7 +45,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* Distroy waypoint when marked as read
 * When Waypoint activated change text color to grey
 * Cleanup JS
 * Implement functionality to show detailed article on right when desktop

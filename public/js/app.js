@@ -105,8 +105,8 @@ $(document).ready(function () {
 		//increase load count
 		mySelection.loadcount++;
 		
-		//destroy waypoint functions, avoid many items being called, see infinite.js
-		//$('div#block h4').waypoint('destroy');		
+		//destroy all waypoint functions, avoid many items being called, see scrollPagination function below
+		Waypoint.destroyAll();
 		
 		if (mySelection.loadcount == 1) {
 			$('ul#all li').addClass("collapsed");
@@ -719,7 +719,10 @@ function FnReadPool(articleId) {
 										  element: document.getElementById(article["id"]),
 										  handler: function() {
 											console.log(this.element.id + ' hit');
+											//push the id of the element to the FnReadPool to mark it as read
 											FnReadPool(this.element.id);
+											//only trigger once
+											this.destroy();
 										  },
 										  context: document.getElementById('section')
 										})
@@ -730,15 +733,6 @@ function FnReadPool(articleId) {
 								
 								// Move the info bar at the end by appending it to the main div
 								$("div#main").append($("#info-bar"));
-
-								// Add waypoint function to h4 header, look at FnReadPool
-								/* $('div#block h4').waypoint(function() {
-									var id = $(this).attr('id');
-									FnReadPool(id);
-								}, {
-									// Triggered when the top of the h4 element hits 10px of top of the viewport
-									offset: 10, triggerOnce: true
-								}); */
 							
 
 								// Increase offset
@@ -765,21 +759,12 @@ function FnReadPool(articleId) {
 			// If scrolling is enabled
 			if ($settings.scroll == true) {
 				// .. and the user is scrolling
-				
-				//console.log("scrolltop = " + $('div.column-center').scrollTop());
-				//console.log("window height = " + $('div.column-center').height());
-				//console.log("$this height = " + $this.height());
 
 				//using on and off to avoid loading multiple instances
 				$('div#section').on('scroll', function () {
 
-					// Check the user is at the bottom of the element
-					//var scrollheight = $(window).scrollTop() + $(window).height();
-					
+					// Check the user is at the bottom of the element			
 					var scrollheight = $('div#section').scrollTop() + $('div#section').height() + 20;
-					
-					//console.log("scrollheight=" + scrollheight);
-					//console.log("$this.height()=" + $this.height());
 
 					if (scrollheight > $this.height() && !busy) {
 
