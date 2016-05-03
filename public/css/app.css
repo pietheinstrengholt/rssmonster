@@ -81,6 +81,27 @@ div.minimal {
 	display:none;
 }
 
+div.entry-inner div.item-star {
+	display:none;	
+}
+
+div.entry-inner div.item-star.unstar {
+	display:none;	
+}
+
+div.entry-inner h4.heading {
+	font-size: 28px !important;
+}
+
+div.entry-inner div.feedname {
+	font-size: 16px !important;
+}
+
+div.entry-inner div.full-content {
+	font-size: 14px !important;
+	margin-top: 5px;
+}
+
 
 /* ARTICLES OVERVIEW SCREEN */
 
