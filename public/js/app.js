@@ -106,7 +106,7 @@ $(document).ready(function () {
 		mySelection.loadcount++;
 		
 		//destroy waypoint functions, avoid many items being called, see infinite.js
-		$('div#block h4').waypoint('destroy');		
+		//$('div#block h4').waypoint('destroy');		
 		
 		if (mySelection.loadcount == 1) {
 			$('ul#all li').addClass("collapsed");
@@ -118,17 +118,17 @@ $(document).ready(function () {
 		$("div#buttons-top button#" + mySelection["status"]).addClass("btn-primary");		
 	
 		//set view type
-		$("section").removeClass();
-		$("section").addClass(mySelection["view"]);
+		$("div#section").removeClass();
+		$("div#section").addClass(mySelection["view"]);
 
 		//empty poolid and articleList array's
 		poolid = [];
 		articleList = [];
 
 		//remove content and offload scroll
-		$('section').empty();
-		$('section #main').remove();
-		$('section').append('<div id="main"></div>');
+		$('div#section').empty();
+		$('div#section #main').remove();
+		$('div#section').append('<div id="main"></div>');
 		$(window).off("scroll");
 
 		//use small amount of timeout when calling scrollPagination
@@ -148,7 +148,7 @@ $(document).ready(function () {
 	}
 
 	//Functionality when clicking on top-nav menu items or buttons in the sidebar
-	$("a#star.navbar-brand,a#unread.navbar-brand,div#buttons-top button#unread, div#buttons-top button#read, div#buttons-top button#star").click(function () {
+	$("a#star.navbar-brand,a#unread.navbar-brand,div.view-toolbar a#unread, div.view-toolbar a#read, div.view-toolbar a#star").click(function () {
 		mySelection.status = encodeURIComponent($(this).attr('id'));
 		loadcontent();
 	});
@@ -215,15 +215,15 @@ $(document).ready(function () {
 	$("a.update").click(function () {
 		//TODO: show a progress bar while loading
 		$(window).off("scroll");
-		$('section').empty();
-		$('section').load(url + '/api/feed/updateall');
+		$('div#section').empty();
+		$('div#section').load(url + '/api/feed/updateall');
 	});
 	
 	//Functionality to load manage feeds screen
 	$("a.managefeeds").click(function () {
 		$(window).off("scroll");
-		$('section').empty();
-		$('section').load(url + '/managefeeds');
+		$('div#section').empty();
+		$('div#section').load(url + '/managefeeds');
 	});	
 
 	//Functionality to show modal pop-up, change modal text based on button property
@@ -394,7 +394,9 @@ $(document).ready(function () {
 	});
 	
 	//TODO: show read and unread buttons
-	$("section").on("click", "div#block", function (event) {
+	$("div#section").on("click", "div#block", function (event) {
+		//active
+		$("div#section").find('div#block.active').removeClass("active");
 		$(this).addClass("active");
 		$(this).find('div.options').show();
 		$(this).find(".page-content").show();
@@ -503,7 +505,7 @@ function FnReadPool(articleId) {
 	if (jQuery.inArray(articleId, poolid) == -1) {
 
 		setTimeout(function() {
-			//console.log("viewport:" + articleId);
+			console.log("viewport:" + articleId);
 		}, 300);
 
 		$.ajax({
@@ -709,20 +711,35 @@ function FnReadPool(articleId) {
 									var dateDifference = get_time_diff(article['published']);
 									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div><hr></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="page-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + '</div></div></div>');
+									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="page-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + '</div></div></div>');
+									
+									setTimeout(function() {
+										
+										var waypoint = new Waypoint({
+										  element: document.getElementById(article["id"]),
+										  handler: function() {
+											console.log(this.element.id + ' hit');
+											FnReadPool(this.element.id);
+										  },
+										  context: document.getElementById('section')
+										})
+										
+										
+									}, 300);
 								});
 								
 								// Move the info bar at the end by appending it to the main div
 								$("div#main").append($("#info-bar"));
 
-								// Add waypoint function to h3 header, look at FnReadPool
-								$('div#block h4').waypoint(function() {
+								// Add waypoint function to h4 header, look at FnReadPool
+								/* $('div#block h4').waypoint(function() {
 									var id = $(this).attr('id');
 									FnReadPool(id);
 								}, {
-									// Triggered when the top of the h3 element hits 10px of top of the viewport
-									offset: 10, triggerOnce: true 
-								});
+									// Triggered when the top of the h4 element hits 10px of top of the viewport
+									offset: 10, triggerOnce: true
+								}); */
+							
 
 								// Increase offset
 								offset = offset + $settings.nop;
@@ -748,12 +765,21 @@ function FnReadPool(articleId) {
 			// If scrolling is enabled
 			if ($settings.scroll == true) {
 				// .. and the user is scrolling
+				
+				//console.log("scrolltop = " + $('div.column-center').scrollTop());
+				//console.log("window height = " + $('div.column-center').height());
+				//console.log("$this height = " + $this.height());
 
 				//using on and off to avoid loading multiple instances
-				$(window).on('scroll', function () {
+				$('div#section').on('scroll', function () {
 
 					// Check the user is at the bottom of the element
-					var scrollheight = $(window).scrollTop() + $(window).height();
+					//var scrollheight = $(window).scrollTop() + $(window).height();
+					
+					var scrollheight = $('div#section').scrollTop() + $('div#section').height() + 20;
+					
+					//console.log("scrollheight=" + scrollheight);
+					//console.log("$this.height()=" + $this.height());
 
 					if (scrollheight > $this.height() && !busy) {
 

@@ -1,17 +1,11 @@
 
 /* GENERAL */
 
-html {
-	overflow-y: -moz-scrollbars-vertical;
-	overflow-y: scroll;
-	overflow-x: hidden;
-}
-
-body {
-	padding-top: 60px;
-	padding-bottom: 40px;
-	line-height: 1.25em ! important;
-	overflow-x: hidden;
+body, html {
+    margin: 0;
+    padding: 0;
+    height: 100%;
+    width: 100%;
 }
 
 .sidebar-nav {
@@ -26,7 +20,51 @@ body {
 		 padding-left: 5px;
 		 padding-right: 5px;
 	}
-}	
+}
+
+
+/* Large desktops and laptops */
+@media (min-width: 1200px) {
+    .container .column-left{display:block;}
+    .container .column-center{display:block; width:25%;}
+    .container .column-right{display:block;}
+	div.mobile-top {display:none;}
+}
+
+/* Landscape tablets and medium desktops */
+@media (min-width: 992px) and (max-width: 1199px) {
+    .container .column-left{display:block;}
+    .container .column-center{display:block; width:100%;}
+	.container .column-right{display:none;}
+	div.mobile-top {display:none;}
+}
+
+/* Portrait tablets and small desktops */
+@media (min-width: 768px) and (max-width: 991px) {
+    .container .column-left{display:block;}
+    .container .column-center{display:block; width:100%;}
+	.container .column-right{display:none;}
+	div.mobile-top {display:none;}
+}
+
+/* Landscape phones and portrait tablets */
+@media (max-width: 767px) {
+    .container .column-left{display:none;}
+    .container .column-center{display:block; width:100%;}
+    .container .column-right{display:none;}
+	form.search-form-wrap {display:none;}
+	section {top: 50px !important;}
+}
+
+/* Portrait phones and smaller */
+@media (max-width: 480px) {
+    .container .column-left{display:none;}
+    .container .column-center{display:block; width:100%;}
+    .container .column-right{display:none;}
+	form.search-form-wrap {display:none;}
+	section {top: 50px !important;}
+}
+
 
 /* ARTICLES OVERVIEW SCREEN */
 
@@ -111,9 +149,8 @@ section.minimal span.less-content p {
 }
 
 div#block {
-	border: 1px solid #ddd;
-	box-shadow: 0 0 4px #e3e5eb;
-	margin-bottom: 10px;
+	margin-bottom: 0px;
+	padding-top: 5px;
 }
 
 span.readbar {
@@ -130,11 +167,17 @@ span.readbar {
 
 .article h4 {
 	cursor: pointer;
+	margin-top: 5px;
 }
 
 .article h4 a {
 	color: #333333;	
 	font-weight:600;
+}
+
+.article h5 a {
+	color: #333333;	
+	font-weight:400;
 }
 
 div.article hr {
@@ -146,8 +189,8 @@ div.article hr {
 div.feedname {
 	margin-top: -11px ! important;
 	font-size:11px;
-	padding-top: 5px;
-	padding-left: 5px;
+	padding-top: 4px;
+	padding-left: 0px;
 	font-weight: bold;
 	color: #696969;
 }
@@ -164,17 +207,23 @@ div.article-block hr {
 	width: 180px;
 }
 
+div.mobile-top {
+    height: 50px;
+    background-color: #222;
+    border-color: #080808;
+}
+
 div.article hr {
 	border-top: 1px solid #D3D3D3;
 }
 
-section.list div#block.active {
+div#block.active {
 	background-color: #ffffe5;
 }
 
 section.detailed div.page-content, section.list div.page-content, section.list div.less-content {
-	margin-top: -10px;
-	margin-left: 5px;
+	margin-top: 1px;
+	margin-left: 0px;
 }
 
 div.item-star.star, div.item-star.unstar {
@@ -260,16 +309,6 @@ div#buttons-bottom {
 	width: 15%;
 }
 
-div.panel {
-	overflow-y: auto;
-	overflow-x: hidden;
-	position: fixed;
-	top: 110px;
-	bottom: 50px;
-	width: 15%;
-	background-color: #f9f9f9;
-}
-
 ::-webkit-scrollbar
 {
 	width: 6px;	/* for vertical scrollbars */
@@ -288,6 +327,11 @@ div.panel {
 
 div.panel ul {
 	margin-bottom: 0px;
+}
+
+.panel {
+	border: 0px solid transparent;
+	margin-bottom: 0px ! important; 
 }
 
 ul.main, ul.connected {
@@ -359,7 +403,7 @@ ul li.wrapper {
 }
 
 li.main.collapsed {
-	background-color: #337ab7;
+	background-color: #3399FF;
 	color:white;
 }
 
@@ -436,3 +480,6 @@ a#star.navbar-brand,a#unread.navbar-brand {
 	font-size: 15px; 
 	margin-left: 1px;
 }
+
+
+

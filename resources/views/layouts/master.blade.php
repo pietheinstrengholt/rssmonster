@@ -36,87 +36,22 @@
 	@show
 </head>
 
-<div class="navbar navbar-fixed-top navbar-inverse">
-	<div class="container">
+<body>
 
-		<!-- Brand and toggle get grouped for better mobile display -->
-		<div class="navbar-header">
-			<button type="button" class="navbar-toggle" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1">
-			<span class="sr-only">Toggle navigation</span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			<span class="icon-bar"></span>
-			</button>
-			<a class="navbar-brand" id="home" href="{{ URL::asset('index.php') }}">Home</a>
-			<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"></span>Unread</a>
-			<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right"></span>Saved</a>
-		</div>
+<!-- Content -->
+@yield('content')
 
-		<!-- Collect the nav links, forms, and other content for toggling -->
-		<div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
-			<ul class="nav navbar-nav">
-				<li class="dropdown">
-				<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Views<b class="caret"></b></a>
-				<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-					<li role="presentation"><a class="view-type" id="detailed" role="menuitem" tabindex="-1" href="#">Detailed view</a></li>
-					<li role="presentation"><a class="view-type" id="list" role="menuitem" tabindex="-1" href="#">List view</a></li>
-					<li role="presentation"><a class="view-type" id="minimal" role="menuitem" tabindex="-1" href="#">Minimal view</a></li>
-				</ul>
-				</li>
-			</ul>
+@section('footer_scripts')
+<!-- External scripts are placed here -->
+<script src="{{ URL::asset('js/jquery-1.11.3.min.js') }}"></script>
+<script src="{{ URL::asset('js/jquery-ui-1.11.4.custom.min.js') }}"></script>
+<script src="{{ URL::asset('js/bootstrap.min.js') }}"></script>
+<script src="{{ URL::asset('js/jquery.waypoints.js') }}"></script>
+<!-- App script is placed here -->	
+<script src="{{ URL::asset('js/app.js') }}"></script>
+<!-- Add Internet Explorer console log function -->
+<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
+@show
 
-			<ul class="nav navbar-nav">
-				<li class="dropdown">
-				<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Sort<b class="caret"></b></a>
-				<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-					<li role="presentation"><a class="sort-order" id="asc" role="menuitem" tabindex="-1" href="#">Oldest first</a></li>
-					<li role="presentation"><a class="sort-order" id="desc" role="menuitem" tabindex="-1" href="#">Newest first</a></li>
-				</ul>
-				</li>
-			</ul>
-
-			<form action="index.php/api/feed/newrssfeed" method="post" class="navbar-form navbar-left" role="url">
-				<div class="form-group">
-					<input name="url" type="text" placeholder="Add feed or url"  style="width: 120px;" class="form-control">
-				</div>
-				<button id="submit" class="btn btn-default">Submit</button>
-			</form>
-			
-			<ul class="nav navbar-nav">
-				<li class="dropdown">
-				<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
-				<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-					<li role="presentation"><a class="update" href="#" role="menuitem" tabindex="-1" href="#">Update</a></li>
-					<li role="presentation"><a class="managefeeds" href="#" role="menuitem" tabindex="-1" href="#">Manage feeds</a></li>
-				</ul>
-				</li>
-			</ul>
-
-		</div><!-- /.nav-collapse -->
-
-	</div><!-- /.container -->
-	</div><!-- /.navbar -->
-
-	<body>
-	<!-- Container -->
-	<div class="container">
-
-	<!-- Content -->
-	@yield('content')
-
-	</div>
-
-	@section('footer_scripts')
-	<!-- External scripts are placed here -->
-	<script src="{{ URL::asset('js/jquery-1.11.3.min.js') }}"></script>
-	<script src="{{ URL::asset('js/jquery-ui-1.11.4.custom.min.js') }}"></script>
-	<script src="{{ URL::asset('js/bootstrap.min.js') }}"></script>
-	<script src="{{ URL::asset('js/waypoints.js') }}"></script>
-	<!-- App script is placed here -->	
-	<script src="{{ URL::asset('js/app.js') }}"></script>
-	<!-- Add Internet Explorer console log function -->
-	<script type="text/javascript"> if (!window.console) console = {log: function() {}}; </script>
-	@show
-
-    </body>
+</body>
 </html>

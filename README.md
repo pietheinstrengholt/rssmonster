@@ -43,15 +43,22 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
 
-#### Nice to add features
+#### Todo
 
+* Mobile nav 40px is incorrect, instead 50px
+* Distroy waypoint when marked as read
+* When Waypoint activated change text color to grey
+* Cleanup JS
+* Implement functionality to show detailed article on right when desktop
+* Implement functionality to show detailed article in item when clicked in mobile/tablet view
 * Cosmetic: When moving feeds between categories, change the count for the category
-* Mark as read, unread buttons
-* Add search function
+* Add Mark as read, unread buttons
+* Implement search function
 * Welcome screen when database is empty
-* Lazy load images for detailed view
-* Configure inverse scrolling
-* Double click on feed to change it's name
+* Restore adding new feeds
+* Cleanup CSS mess in index.blade
+* Add button to change change feed_name
+* Drag and drop on Tablet?
 
 #### Credits
 
