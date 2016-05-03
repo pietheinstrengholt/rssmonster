@@ -45,15 +45,12 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* When Waypoint activated change text color to grey
+* Change image heart (grey
 * Cleanup JS
-* Implement functionality to show detailed article on right when desktop
-* Implement functionality to show detailed article in item when clicked in mobile/tablet view
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Add Mark as read, unread buttons
 * Implement search function
 * Welcome screen when database is empty
-* Restore adding new feeds
 * Cleanup CSS mess in index.blade
 * Add button to change change feed_name
 * Drag and drop on Tablet?

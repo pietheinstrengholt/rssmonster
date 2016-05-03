@@ -80,6 +80,7 @@ class FeedController extends Controller
 
 			//check if url is valid
 			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
+				echo '<br>Error: Entered value is not a valid url!';
 				exit();
 			}
 

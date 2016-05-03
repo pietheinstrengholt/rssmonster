@@ -5,8 +5,8 @@
 	<div class="column-left" style="-webkit-box-flex: 0; -webkit-flex-grow: 0; -ms-flex-positive: 0; flex-grow: 0; border-right: 1px solid transparent; border-color: #dcdee0; width: 245px; background-color: #eff1f3; height:100%; position: relative;">
 		<div class="subscribe-toolbar" style="height: 41px; border-bottom: 1px solid transparent; border-color: #dcdee0; position: absolute; top: 0; left: 0; right: 0; overflow: hidden;">
 
-		<form class="search-form-wrap" style="position: absolute; left: 0; right: 0; top: 0; margin: 0; border-bottom: 1px solid transparent; height: 41px;" data-behavior="search_form" action="index.php/api/feed/newrssfeed" accept-charset="UTF-8" data-remote="true" method="post"><input name="utf8" type="hidden" value="✓">
-			<input type="search" name="query" style="color: #3399FF; height: 40px; width: 100%; max-width: 100%; margin: 0; padding: 4px 36px 3px 36px; font-size: 14px; background: url(https://dhy5vgj5baket.cloudfront.net/assets/favicon-search-light-ccdaa06e4a9effa94072d27ee7dc48b239aca8f60acf1abe08b87624db10ade1.svg) 14px 13px no-repeat; background-size: 14px 14px, 16px 16px; border-radius: 13px; border: none; line-height: 1; color: #212325;" id="query" placeholder="Subscribe" autocomplete="off"> 
+		<form class="search-form-wrap" style="position: absolute; left: 0; right: 0; top: 0; margin: 0; border-bottom: 1px solid transparent; height: 41px;" data-behavior="search_form" action="index.php/api/feed/newrssfeed" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
+			<input type="text" name="url" style="color: #3399FF; height: 40px; width: 100%; max-width: 100%; margin: 0; padding: 4px 36px 3px 36px; font-size: 14px; background: url(https://dhy5vgj5baket.cloudfront.net/assets/favicon-search-light-ccdaa06e4a9effa94072d27ee7dc48b239aca8f60acf1abe08b87624db10ade1.svg) 14px 13px no-repeat; background-size: 14px 14px, 16px 16px; border-radius: 13px; border: none; line-height: 1; color: #212325;" id="query" placeholder="Subscribe" autocomplete="off"> 
 		</form>
 			
         </div>
