@@ -45,7 +45,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* Change image heart (grey)
 * Cleanup JS
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Add Mark as read, unread buttons

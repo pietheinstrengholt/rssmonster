@@ -415,6 +415,7 @@ $(document).ready(function () {
 		$("div#section").find('div#block.active').find( '.article div.full-content').css('color', '#b4b6b8');
 		$("div#section").find('div#block.active').find('.article div.less-content').css('color', '#b4b6b8');
 		$("div#section").find('div#block.active').find('.article').css('border-bottom', '1px solid #b4b6b8');
+		$("div#section").find('div#block.active').find('.item-star').addClass("grey");
 		$("div#section").find('div#block.active').removeClass("active");
 		
 		//add active class to selected block
@@ -429,6 +430,7 @@ $(document).ready(function () {
 		$('div#' + articleId + '.article div.full-content').css('color', '#333344');
 		$('div#' + articleId + '.article div.less-content').css('color', '#333344');
 		$('div#' + articleId + '.article').css('border-bottom', '1px solid #B4B7BD');
+		$('div#' + articleId + '.article').find('.item-star').removeClass("grey");
 		
 		$("div.column-right div.entry-inner").empty();
 		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
@@ -582,6 +584,7 @@ function FnReadPool(articleId) {
 				$('div#' + articleId + '.article div.full-content').css('color', '#b4b6b8');
 				$('div#' + articleId + '.article div.less-content').css('color', '#b4b6b8');
 				$('div#' + articleId + '.article').css('border-bottom', '1px solid #b4b6b8');
+				$('div#' + articleId + '.article').find('.item-star').addClass("grey");
 				
 			},
 			failure: function (errMsg) {}

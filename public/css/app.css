@@ -291,6 +291,14 @@ div.item-star.star {
 	background-position: 8px 10px;
 }
 
+div.item-star.unstar.grey {
+	background-image: url('../img/heart_unselected_light.png') ! important;
+}
+
+div.item-star.star.grey {
+	background-image: url('../img/heart_selected_light.png') ! important;
+}
+
 div.all-read {
 	margin-top: 50px;
 }
