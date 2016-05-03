@@ -45,14 +45,13 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* Change image heart (grey
+* Change image heart (grey)
 * Cleanup JS
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Add Mark as read, unread buttons
 * Implement search function
 * Welcome screen when database is empty
 * Cleanup CSS mess in index.blade
-* Add button to change change feed_name
 * Drag and drop on Tablet?
 
 #### Credits
