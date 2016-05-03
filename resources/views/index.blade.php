@@ -51,7 +51,7 @@
 		<form class="search-form-wrap" style="position: absolute; left: 0; right: 0; top: 0; margin: 0; border-bottom: 1px solid transparent; border-color: #dcdee0; background-color: #FFFFFF; height: 41px;" data-behavior="search_form" action="/entries/search" accept-charset="UTF-8" data-remote="true" method="get"><input name="utf8" type="hidden" value="✓">
 			<input type="search" name="query" style="height: 41px; width: 100%; max-width: 100%; margin: 0; padding: 4px 36px 3px 36px; font-size: 14px; background: url(https://dhy5vgj5baket.cloudfront.net/assets/favicon-search-light-ccdaa06e4a9effa94072d27ee7dc48b239aca8f60acf1abe08b87624db10ade1.svg) 14px 13px no-repeat; background-size: 14px 14px, 16px 16px; border-radius: 13px; border: none; line-height: 1; color: #212325;" id="query" placeholder="Search" autocomplete="off"> 
 		</form>
-		<div id="section" style="position: absolute; top: 50px; bottom: 0; left: 0; right: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; -webkit-transition: -webkit-transform .2s ease; transition: -webkit-transform .2s ease; transition: transform .2s ease; transition: transform .2s ease, -webkit-transform .2s ease; background-color: #FFFFFF;"></div>
+		<div id="section" style="position: absolute; bottom: 0; left: 0; right: 0; overflow-y: auto; overflow-x: hidden; -webkit-overflow-scrolling: touch; -webkit-transition: -webkit-transform .2s ease; transition: -webkit-transform .2s ease; transition: transform .2s ease; transition: transform .2s ease, -webkit-transform .2s ease; background-color: #FFFFFF;"></div>
 	</div>
 	<div class="column-right" style="-webkit-box-flex: 1; -webkit-flex-grow: 1; -ms-flex-positive: 1; flex-grow: 1; height: 100%; position: relative;"></div>
 </div>

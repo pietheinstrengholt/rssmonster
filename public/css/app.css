@@ -29,6 +29,9 @@ body, html {
     .container .column-center{display:block; width:25%;}
     .container .column-right{display:block;}
 	div.mobile-top {display:none;}
+	div#section {top: 41px;}
+	div#main {margin-left: 5px;}
+	div#main {margin-left: 5px;}
 }
 
 /* Landscape tablets and medium desktops */
@@ -37,6 +40,8 @@ body, html {
     .container .column-center{display:block; width:100%;}
 	.container .column-right{display:none;}
 	div.mobile-top {display:none;}
+	div#section {top: 41px;}
+	div#main {margin-left: 5px;}
 }
 
 /* Portrait tablets and small desktops */
@@ -45,6 +50,8 @@ body, html {
     .container .column-center{display:block; width:100%;}
 	.container .column-right{display:none;}
 	div.mobile-top {display:none;}
+	div#section {top: 41px;}
+	div#main {margin-left: 5px;}
 }
 
 /* Landscape phones and portrait tablets */
@@ -53,7 +60,7 @@ body, html {
     .container .column-center{display:block; width:100%;}
     .container .column-right{display:none;}
 	form.search-form-wrap {display:none;}
-	section {top: 50px !important;}
+	div#section {top: 50px;}
 }
 
 /* Portrait phones and smaller */
@@ -62,7 +69,7 @@ body, html {
     .container .column-center{display:block; width:100%;}
     .container .column-right{display:none;}
 	form.search-form-wrap {display:none;}
-	section {top: 50px !important;}
+	div#section {top: 50px;}
 }
 
 

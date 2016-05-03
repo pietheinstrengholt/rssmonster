@@ -45,7 +45,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* Mobile nav 40px is incorrect, instead 50px
 * Distroy waypoint when marked as read
 * When Waypoint activated change text color to grey
 * Cleanup JS
