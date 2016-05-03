@@ -538,7 +538,7 @@ a#star.navbar-brand,a#unread.navbar-brand {
     color: #212325;
 }
 
-#unread {
+view-button #unread {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
     -ms-flex: 1;
@@ -560,7 +560,7 @@ a#star.navbar-brand,a#unread.navbar-brand {
     color: #b4b6b8;
 }
 
-#star {
+view-button #star {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
     -ms-flex: 1;
@@ -582,7 +582,7 @@ a#star.navbar-brand,a#unread.navbar-brand {
     color: #b4b6b8;
 }
 
-#read {
+view-button #read {
     -webkit-box-flex: 1;
     -webkit-flex: 1;
     -ms-flex: 1;
