@@ -137,6 +137,8 @@ $(document).ready(function () {
 		$('div.column-right a.entry-feed-title').text('');
 		$('div.column-right div.entry-inner').empty();
 		$('div.column-right span.favicon').empty();
+		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.visible').removeClass("visible").addClass("invisible");
+		$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').addClass("read").removeClass("unread");
 
 		//use small amount of timeout when calling scrollPagination
 		setTimeout(function () {
@@ -270,7 +272,6 @@ $(document).ready(function () {
 	
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("a#delete").click(function () {
-		
 		category_title = $("li.main.collapsed span.title").text();
 		feed_title = $("li.item.list-group-item-warning span.title").text();
 
@@ -290,8 +291,32 @@ $(document).ready(function () {
 		
 		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Yes');
 		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-delete');		
+	});
+	
+	//Functionality to show modal pop-up, change modal text based on button property
+	$("div.entry-button-wrap.circle").click(function () {
 
-	});	
+		//get article id
+		var articleId = $(this).attr('id');
+		var articleStatus =$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').attr("class");
+		
+		if (articleStatus == "circle read") {
+			processArticleId(articleId, 'unread');
+			$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').addClass("unread").removeClass("read");
+			
+			//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
+			setArticleWaypoint(articleId);
+		}
+		
+		if (articleStatus == "circle unread") {
+			processArticleId(articleId, 'read');
+			$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').addClass("read").removeClass("unread");
+			
+			//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
+			destroyArticleWaypoint(articleId);
+		}
+		
+	});
 	
 	//Functionality to mark all items as read (except star items), when clicked on modal button
 	$("#modal").on("click", "button#modal-delete", function(event){
@@ -426,9 +451,13 @@ $(document).ready(function () {
 		$('div.column-right a.entry-feed-title').text(feed_name);
 		$('div.column-right span.favicon').empty();
 		$(this).find("img.favicon").clone().appendTo("div.column-right span.favicon");
+
 		
 		//get article id
 		var articleId = $(this).find('div.article').attr('id');
+		
+		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.invisible').attr('id', articleId);
+		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.invisible').removeClass("invisible").addClass("visible");
 		
 		$("div.column-right div.entry-inner").empty();
 		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
@@ -548,50 +577,105 @@ function FnReadPool(articleId) {
 
 	//check if articleId is already in the Pool
 	if (jQuery.inArray(articleId, poolid) == -1) {
+		processArticleId(articleId, 'read');
+	}
+	
+	//push the id from the article to the pool, so it will never be marked as read twice
+	poolid.push(articleId);
+	
+}
 
-		$.ajax({
-			type: "POST",
-			url: url + "/api/article/mark-to-read/" + articleId,
-			success: function (data) {
+function processArticleId(articleId, newStatus) {
+	$.ajax({
+		type: "POST",
+		url: url + "/api/article/mark-to-" + newStatus + "/" + articleId,
+		success: function (data) {
 
-				//capture feed_id and category_id from returned data
-				var feed_id = data['feed_id'];
-				var category_id = data['category_id'];
+			//capture feed_id and category_id from returned data
+			var feed_id = data['feed_id'];
+			var category_id = data['category_id'];
 
-				//update statistics only in case when the status is returned as read
+			//update statistics only in case when the status is returned as read
+			if (data['status'] == "read") {
+
+				//decrease unread count
+				var unreadcount = $('a#unread.navbar-brand span.badge.pull-right').text();
+				var unreadcountnew = unreadcount -1;
+				$('div.panel ul#all span.badge').text(unreadcountnew);
+				$('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
+				
+				//decrease count for main menu items
+				var readcountmain = $('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text();
+				var readcountmainnew = readcountmain -1;
+				$('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text(readcountmainnew);
+
+				//decrease count for sub menu items
+				var readcountsub = $('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text();
+				var readcountsubnew = readcountsub -1;
+				$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
+			}
+			
+			//update statistics only in case when the status is returned as read
+			if (data['status'] == "unread") {
+
+				//decrease unread count
+				var unreadcount = $('a#unread.navbar-brand span.badge.pull-right').text();
+				var unreadcountnew = unreadcount +1;
+				$('div.panel ul#all span.badge').text(unreadcountnew);
+				$('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
+				
+				//decrease count for main menu items
+				var readcountmain = $('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text();
+				var readcountmainnew = readcountmain +1;
+				$('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text(readcountmainnew);
+
+				//decrease count for sub menu items
+				var readcountsub = $('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text();
+				var readcountsubnew = readcountsub +1;
+				$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
+			}
+			
+			//slightly delay marking the article as read
+			setTimeout(function() {
+				
 				if (data['status'] == "read") {
-
-					//decrease unread count
-					var unreadcount = $('a#unread.navbar-brand span.badge.pull-right').text();
-					var unreadcountnew = unreadcount -1;
-					$('div.panel ul#all span.badge').text(unreadcountnew);
-					$('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
-					
-					//decrease count for main menu items
-					var readcountmain = $('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text();
-					var readcountmainnew = readcountmain -1;
-					$('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text(readcountmainnew);
-
-					//decrease count for sub menu items
-					var readcountsub = $('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text();
-					var readcountsubnew = readcountsub -1;
-					$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
-				}
-				
-				//push the id from the article to the pool, so it will never be marked as read twice
-				poolid.push(articleId);
-				
-				//slightly delay marking the article as read
-				setTimeout(function() {
 					//change css to grey when article is read
 					$('div#' + articleId + '.article').parent().addClass("grey");
 					$('div#' + articleId + '.article').parent().removeClass("normal");
-				}, 300);
+				}
 				
-			},
-			failure: function (errMsg) {}
-		});
-	}
+				if (data['status'] == "unread") {
+					//change css to grey when article is read
+					$('div#' + articleId + '.article').parent().addClass("normal");
+					$('div#' + articleId + '.article').parent().removeClass("grey");
+				}
+				
+			}, 300);
+			
+		},
+		failure: function (errMsg) {}
+	});	
+}
+
+//function to set a waypoint on an article. The article will be marked as read when reaching the top of the page (section). This function is used when marking items as read manually or when scrolling
+function setArticleWaypoint(articleId) {
+	//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
+	var waypoint = new Waypoint({
+	  element: document.getElementById(articleId),
+	  handler: function(direction) {
+		//push the id of the element to the FnReadPool to mark it as read
+		FnReadPool(this.element.id);
+		//only trigger once
+		this.destroy();
+	  },
+	  context: document.getElementById('section'),
+	  offset: -10
+	})
+}
+
+//function to remove a waypoint from an article. This function is used when marking items as unread manually
+function destroyArticleWaypoint(articleId) {
+	$(articleId).waypoint('destroy');
 }
 
 //used code from: http://www.inserthtml.com/2013/01/scroll-pagination/
@@ -778,18 +862,8 @@ function FnReadPool(articleId) {
 									// append content blocks for each article in the data to the main div
 									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
 									
-									//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
-									var waypoint = new Waypoint({
-									  element: document.getElementById(article["id"]),
-									  handler: function(direction) {
-										//push the id of the element to the FnReadPool to mark it as read
-										FnReadPool(this.element.id);
-										//only trigger once
-										this.destroy();
-									  },
-									  context: document.getElementById('section'),
-									  offset: -10
-									})
+									//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
+									setArticleWaypoint(article["id"]);
 
 								});
 								

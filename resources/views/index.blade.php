@@ -63,14 +63,24 @@
 			</span>
 			<a class="entry-feed-title"></a>
 		</span>
-	
-		<div class="entry-button-wrap">
-			<div class="entry-button">
-				<div class="hamburger-menu-wrap" data-behavior="toggle_dropdown" title="Settings">
-					<div class="hamburger-menu"></div>
+		
+		<div class="entry-buttons">
+
+			<div class="entry-button-wrap">
+				<div class="entry-button">
+					<div class="hamburger-menu-wrap" data-behavior="toggle_dropdown" title="Settings">
+						<div class="hamburger-menu"></div>
+					</div>
 				</div>
 			</div>
-        </div>
+			
+			<div class="entry-button-wrap invisible circle">
+				<button class="entry-button button-toggle-read" title="Mark as read/unread">
+					  <span class="circle unread"></span>
+				</button>
+			</div>
+		</div>
+		
 	</div>
 	<div class="entry-content">
 		<div class="entry-inner"></div>

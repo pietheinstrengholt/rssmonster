@@ -912,3 +912,30 @@ div.column-right h4.heading a {
 div.column-right div.feed_name {
 	color: #696969;
 }
+
+.button-toggle-read .circle {
+    border: 2px solid transparent;
+    border-color: #b4b6b8;
+    height: 16px;
+    width: 16px;
+    border-radius: 16px;
+    position: absolute;
+    top: 12px;
+    left: 15px;
+}
+
+.button-toggle-read span.circle.unread {
+    background-color: #b4b6b8;
+}
+
+.entry-buttons {
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0px;
+    width: 270px;
+    height: 40px;
+    z-index: 1;
+    background-image: -webkit-linear-gradient(left, rgba(255,255,255,0) 0%, #fff 10%);
+    background-image: linear-gradient(to right, rgba(255,255,255,0) 0%, #fff 10%);
+}

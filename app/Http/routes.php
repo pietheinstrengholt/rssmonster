@@ -43,6 +43,7 @@ $app->get('/api/article/details', 'ArticleController@details');
 $app->get('/api/article/{id}', 'ArticleController@getarticle');
 $app->post('/api/article', 'ArticleController@createarticle');
 $app->post('/api/article/mark-to-read/{id}', 'ArticleController@marktoread');
+$app->post('/api/article/mark-to-unread/{id}', 'ArticleController@marktounread');
 $app->post('/api/article/mark-with-star/{id}', 'ArticleController@markwithstar');
 $app->post('/api/article/mark-all-as-read', 'ArticleController@markallasread');
 $app->put('/api/article/{id}', 'ArticleController@updatearticle');

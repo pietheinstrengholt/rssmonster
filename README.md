@@ -45,10 +45,8 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 #### Todo
 
-* Fill entry-toolbar on right-column with favicon, feedname, etc.
 * Cleanup JS, CSS
 * Cosmetic: When moving feeds between categories, change the count for the category
-* Add Mark as read, unread buttons when selecting article
 * Show a welcome screen when the database is empty
 * Drag and drop on Tablet?
 * Settings page
