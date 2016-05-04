@@ -2,7 +2,7 @@
 @section('content')
 
 <div class="container">
-	<div class="column-left">
+	<div class="column-left ui-resizable">
 		<div class="subscribe-toolbar">
 
 		<form class="search-form-wrap" data-behavior="search_form" action="index.php/api/feed/newrssfeed" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
@@ -43,7 +43,7 @@
 		
 	</div>
 
-	<div class="column-center">
+	<div class="column-center ui-resizable">
 		<div class="mobile-top">
 			<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"></span>Unread</a>
 			<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right">90</span>Saved</a>			
@@ -53,7 +53,7 @@
 		</div>
 		<div id="section"></div>
 	</div>
-	<div class="column-right">
+	<div class="column-right ui-resizable">
 	
 	<div class="entry-toolbar">
 	

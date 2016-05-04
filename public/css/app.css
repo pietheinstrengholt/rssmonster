@@ -406,7 +406,8 @@ div.panel ul {
 
 .panel {
 	border: 0px solid transparent;
-	margin-bottom: 0px ! important; 
+	margin-bottom: 0px ! important;
+	height: 100%;
 }
 
 ul.main, ul.connected {
@@ -415,6 +416,7 @@ ul.main, ul.connected {
 
 .list-group-item, .panel { 
 	background-color: transparent;
+	border: 0px transparent;
 }
 
 li.list-group-item.main.collapsed span.badge {
@@ -459,6 +461,10 @@ li.item span.badge {
 	margin-right: 1px;
 }
 
+li.item span.badge, li.main span.badge {
+	font-weight: 100;
+}
+
 span.favicon img.favicon {
   position: absolute;
 }
@@ -470,10 +476,6 @@ li.item span.badge {
 
 li.item span.title {
     margin-left: 20px;
-}
-
-li.main {
-	border-top: 1px solid #ddd;
 }
 
 ul li.wrapper:after {
