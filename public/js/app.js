@@ -46,7 +46,6 @@ function get_time_diff(datetime) {
 var mySelection = new Object();
 mySelection.status = "unread";
 mySelection.sort = "desc";
-mySelection.view = "detailed";
 mySelection.category_id = null;
 mySelection.feed_id = null;
 mySelection.loadcount = 0;
@@ -123,7 +122,6 @@ $(document).ready(function () {
 	
 		//set view type
 		$("div#section").removeClass();
-		$("div#section").addClass(mySelection["view"]);
 
 		//empty poolid and articleList array's
 		poolid = [];
@@ -134,6 +132,11 @@ $(document).ready(function () {
 		$('div#section #main').remove();
 		$('div#section').append('<div id="main"></div>');
 		$('div#section').off("scroll");
+		
+		//empty div.column-right content
+		$('div.column-right a.entry-feed-title').text('');
+		$('div.column-right div.entry-inner').empty();
+		$('div.column-right span.favicon').empty();		
 
 		//use small amount of timeout when calling scrollPagination
 		setTimeout(function () {
@@ -209,12 +212,6 @@ $(document).ready(function () {
 		$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		$(this).addClass("list-group-item-warning");
 		mySelection.feed_id = $(this).attr('id');
-		loadcontent();
-	});
-
-	//Functionality to change the viewtype (list, detailed or minimal), clicked on top-nav menu
-	$("a.view-type").click(function () {
-		mySelection.view = $(this).attr("id");
 		loadcontent();
 	});
 
@@ -423,6 +420,10 @@ $(document).ready(function () {
 		$(this).addClass("active");
 		$(this).addClass("normal");
 		$(this).removeClass("grey");
+		
+		var feed_name = $(this).find('span.feed_name').text();
+		$('div.column-right a.entry-feed-title').text(feed_name);
+		$(this).find("img.favicon").clone().appendTo("div.column-right span.favicon");
 		
 		//get article id
 		var articleId = $(this).find('div.article').attr('id');
@@ -765,8 +766,15 @@ function FnReadPool(articleId) {
 										image_url = '';
 									}
 									
+									//check if favicon is null, else default with rss-default image
+									if (article["favicon"] == null) {
+										favicon = "img/rss-default.png";
+									} else {
+										favicon = article["favicon"];
+									}
+									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
+									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
 									
 									//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
 									var waypoint = new Waypoint({
@@ -837,7 +845,7 @@ function FnReadPool(articleId) {
 				});
 			}
 
-			// When only a few items are loaded or minimal view is selected scrolling might not possible, therefor the info has a click function to mark all items
+			// When only a few items are loaded scrolling might not possible, therefor the info has a click function to mark all items
 			$this.find('#info-bar').click(function () {
 				if (busy == false) {
 					busy = true;

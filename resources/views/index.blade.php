@@ -55,7 +55,23 @@
 	</div>
 	<div class="column-right">
 	
-	<div class="entry-toolbar"></div>
+	<div class="entry-toolbar">
+	
+		<span class="site-info">
+			<span class="favicon-wrap">
+				<span class="favicon"></span>
+			</span>
+			<a class="entry-feed-title"></a>
+		</span>
+	
+		<div class="entry-button-wrap">
+			<div class="entry-button">
+				<div class="hamburger-menu-wrap" data-behavior="toggle_dropdown" title="Settings">
+					<div class="hamburger-menu"></div>
+				</div>
+			</div>
+        </div>
+	</div>
 	<div class="entry-content">
 		<div class="entry-inner"></div>
 	</div>

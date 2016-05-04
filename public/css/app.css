@@ -811,3 +811,96 @@ td a.view-button, div.feeds-inner .view-button {
     max-width: 100%;
     height: auto;
 }
+
+.entry-button-wrap {
+    float: right;
+}
+
+.entry-button {
+    display: block;
+    background-color: #ddd;
+    z-index: 2;
+    -webkit-appearance: none;
+    border: none;
+    background: none;
+    width: 44px;
+    height: 40px;
+    padding: 0;
+    position: relative;
+}
+
+.hamburger-menu-wrap {
+    position: absolute;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    top: 0;
+    right: 0;
+    height: 41px;
+    width: 41px;
+    cursor: pointer;
+}
+
+.hamburger-menu {
+    position: absolute;
+    cursor: pointer;
+    top: 13px;
+    right: 11px;
+    height: 15px;
+    width: 20px;
+    border-top: 3px solid rgba(0,0,0,0.3);
+    border-color: #b4b6b8;
+    z-index: 2;
+}
+
+.hamburger-menu:before {
+    height: 3px;
+    background-color: #b4b6b8;
+    content: "";
+    position: absolute;
+    left: 0;
+    bottom: 0;
+    display: block;
+    width: 100%;
+}
+
+.hamburger-menu:after {
+    height: 3px;
+    background-color: #b4b6b8;
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 3px;
+    display: block;
+    width: 100%;
+}
+
+.site-info {
+    position: absolute;
+    top: 10px;
+    left: 13px;
+    display: block;
+}
+
+.site-info .favicon-wrap {
+    top: 0;
+    left: 0;
+    box-shadow: none;
+    background-color: transparent;
+}
+
+.site-info .entry-feed-title {
+    position: absolute;
+    top: 2px;
+    left: 26px;
+    display: block;
+    font-size: 14px;
+    color: #212325;
+    text-decoration: none;
+    white-space: nowrap;
+}
+
+div.feedname span.favicon {
+	display: none;
+}
