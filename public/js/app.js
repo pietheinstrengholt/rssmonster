@@ -132,7 +132,7 @@ $(document).ready(function () {
 		$('div#section').empty();
 		$('div#section #main').remove();
 		$('div#section').append('<div id="main"></div>');
-		$(window).off("scroll");
+		$('div#section').off("scroll");
 
 		//use small amount of timeout when calling scrollPagination
 		setTimeout(function () {
@@ -221,14 +221,14 @@ $(document).ready(function () {
 	//Functionality to update all feeds, fetch new articles from RSS feeds
 	$("a.update").click(function () {
 		//TODO: show a progress bar while loading
-		$(window).off("scroll");
+		$('div#section').off("scroll");
 		$('div#section').empty();
 		$('div#section').load(url + '/api/feed/updateall');
 	});
 	
 	//Functionality to load manage feeds screen
 	$("a.managefeeds").click(function () {
-		$(window).off("scroll");
+		$('div#section').off("scroll");
 		$('div#section').empty();
 		$('div#section').load(url + '/managefeeds');
 	});	
@@ -267,8 +267,6 @@ $(document).ready(function () {
 	
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("a#delete").click(function () {
-		
-		console.log('delete is clicked');
 		
 		category_title = $("li.main.collapsed span.title").text();
 		feed_title = $("li.item.list-group-item-warning span.title").text();
@@ -462,7 +460,6 @@ $(document).ready(function () {
 			async: false,
 			success: function (json) {
 				result = json;
-				console.log(result);
 				if (result = "done") {
 					location.reload();
 				}
@@ -545,10 +542,6 @@ function FnReadPool(articleId) {
 	//check if articleId is already in the Pool
 	if (jQuery.inArray(articleId, poolid) == -1) {
 
-		setTimeout(function() {
-			console.log("viewport:" + articleId);
-		}, 300);
-
 		$.ajax({
 			type: "POST",
 			url: url + "/api/article/mark-to-read/" + articleId,
@@ -578,20 +571,23 @@ function FnReadPool(articleId) {
 					$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
 				}
 				
-				//change css to grey when article is read
-				$('div#' + articleId + '.article h4.heading a').css('color', '#b4b6b8');
-				$('div#' + articleId + '.article div.feedname').css('color', '#b4b6b8');
-				$('div#' + articleId + '.article div.full-content').css('color', '#b4b6b8');
-				$('div#' + articleId + '.article div.less-content').css('color', '#b4b6b8');
-				$('div#' + articleId + '.article').css('border-bottom', '1px solid #b4b6b8');
-				$('div#' + articleId + '.article').find('.item-star').addClass("grey");
+				//push the id from the article to the pool, so it will never be marked as read twice
+				poolid.push(articleId);
+				
+				//slightly delay marking the article as read
+				setTimeout(function() {
+					//change css to grey when article is read
+					$('div#' + articleId + '.article h4.heading a').css('color', '#b4b6b8');
+					$('div#' + articleId + '.article div.feedname').css('color', '#b4b6b8');
+					$('div#' + articleId + '.article div.full-content').css('color', '#b4b6b8');
+					$('div#' + articleId + '.article div.less-content').css('color', '#b4b6b8');
+					$('div#' + articleId + '.article').css('border-bottom', '1px solid #b4b6b8');
+					$('div#' + articleId + '.article').find('.item-star').addClass("grey");
+				}, 300);
 				
 			},
 			failure: function (errMsg) {}
 		});
-
-		//push the id from the article to the pool, so it will never be marked as read twice
-		poolid.push(articleId);
 	}
 }
 
@@ -726,6 +722,7 @@ function FnReadPool(articleId) {
 					$('#info-bar').html($settings.error);
 					//capture previous nop and call FnReadPool function to mark remaining items in the pool as read
 					for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
+						//add a slight delay when sending the remaining items to the readpool
 						FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
 					}
 				} else {
@@ -762,27 +759,26 @@ function FnReadPool(articleId) {
 									// set image_url variable if image_url is set
 									if (article["image_url"] !== null) {
 										var image_url = '<span class="entry-image is-loaded"><img src="' + article["image_url"] + '"></span>';
+									} else {
+										image_url = '';
 									}
 									
 									// append content blocks for each article in the data to the main div
 									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + image_url + '</div></div></div>');
 									
-									setTimeout(function() {
-										
-										var waypoint = new Waypoint({
-										  element: document.getElementById(article["id"]),
-										  handler: function() {
-											console.log(this.element.id + ' hit');
-											//push the id of the element to the FnReadPool to mark it as read
-											FnReadPool(this.element.id);
-											//only trigger once
-											this.destroy();
-										  },
-										  context: document.getElementById('section')
-										})
-										
-										
-									}, 300);
+									//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
+									var waypoint = new Waypoint({
+									  element: document.getElementById(article["id"]),
+									  handler: function(direction) {
+										//push the id of the element to the FnReadPool to mark it as read
+										FnReadPool(this.element.id);
+										//only trigger once
+										this.destroy();
+									  },
+									  context: document.getElementById('section'),
+									  offset: -10
+									})
+
 								});
 								
 								// Move the info bar at the end by appending it to the main div
@@ -821,8 +817,6 @@ function FnReadPool(articleId) {
 					var scrollheight = $('div#section').scrollTop() + $('div#section').height() + 20;
 
 					if (scrollheight > $this.height() && !busy) {
-
-						//console.log('maximum scrollheight reached, reloading getData');
 
 						// Now we are working, so busy is true
 						busy = true;
