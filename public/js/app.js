@@ -661,15 +661,17 @@ function processArticleId(articleId, newStatus) {
 function setArticleWaypoint(articleId) {
 	//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
 	var waypoint = new Waypoint({
-	  element: document.getElementById(articleId),
-	  handler: function(direction) {
-		//push the id of the element to the FnReadPool to mark it as read
-		FnReadPool(this.element.id);
-		//only trigger once
-		this.destroy();
-	  },
-	  context: document.getElementById('section'),
-	  offset: -10
+		element: document.getElementById(articleId),
+		handler: function(direction) {
+			//push the id of the element to the FnReadPool to mark it as read
+			FnReadPool(this.element.id);
+			//only trigger once
+			this.destroy();
+		},
+		context: document.getElementById('section'),
+		offset: function() {
+			return 0 - this.element.clientHeight
+		}
 	})
 }
 
