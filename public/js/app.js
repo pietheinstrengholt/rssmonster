@@ -413,28 +413,19 @@ $(document).ready(function () {
 		$("div#section").find('div#block.active').find(".full-content").hide();
 		$("div#section").find('div#block.active').find(".less-content").show();
 
-		//change css to grey when article is read
-		$("div#section").find('div#block.active').find('.article h4.heading a').css('color', '#b4b6b8');
-		$("div#section").find('div#block.active').find('.article div.feedname').css('color', '#b4b6b8');
-		$("div#section").find('div#block.active').find( '.article div.full-content').css('color', '#b4b6b8');
-		$("div#section").find('div#block.active').find('.article div.less-content').css('color', '#b4b6b8');
-		$("div#section").find('div#block.active').find('.article').css('border-bottom', '1px solid #b4b6b8');
-		$("div#section").find('div#block.active').find('.item-star').addClass("grey");
+		//change class back to grey like if article is read
+		$("div#section").find('div#block.active').removeClass("normal");
+		$("div#section").find('div#block.active').addClass("grey");
 		$("div#section").find('div#block.active').removeClass("active");
 		
 		//add active class to selected block
 		//copy contents of the block to the right column
 		$(this).addClass("active");
+		$(this).addClass("normal");
+		$(this).removeClass("grey");
 		
 		//get article id
 		var articleId = $(this).find('div.article').attr('id');
-		
-		$('div#' + articleId + '.article h4.heading a').css('color', '#333333');
-		$('div#' + articleId + '.article div.feedname').css('color', '#696969');
-		$('div#' + articleId + '.article div.full-content').css('color', '#333344');
-		$('div#' + articleId + '.article div.less-content').css('color', '#333344');
-		$('div#' + articleId + '.article').css('border-bottom', '1px solid #B4B7BD');
-		$('div#' + articleId + '.article').find('.item-star').removeClass("grey");
 		
 		$("div.column-right div.entry-inner").empty();
 		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
@@ -590,12 +581,8 @@ function FnReadPool(articleId) {
 				//slightly delay marking the article as read
 				setTimeout(function() {
 					//change css to grey when article is read
-					$('div#' + articleId + '.article h4.heading a').css('color', '#b4b6b8');
-					$('div#' + articleId + '.article div.feedname').css('color', '#b4b6b8');
-					$('div#' + articleId + '.article div.full-content').css('color', '#b4b6b8');
-					$('div#' + articleId + '.article div.less-content').css('color', '#b4b6b8');
-					$('div#' + articleId + '.article').css('border-bottom', '1px solid #b4b6b8');
-					$('div#' + articleId + '.article').find('.item-star').addClass("grey");
+					$('div#' + articleId + '.article').parent().addClass("grey");
+					$('div#' + articleId + '.article').parent().removeClass("normal");
 				}, 300);
 				
 			},
@@ -779,7 +766,7 @@ function FnReadPool(articleId) {
 									}
 									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]) + image_url + '</div></div></div>');
+									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname">' + article["feed_name"] + ' | ' + article["published"] + '</div></div><div class="minimal" id=' + article["id"] + '><span class="feedname">' + article["feed_name"] + '</span><span class="datedifference">' + dateDifference + '</span><span class="heading"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></span></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
 									
 									//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
 									var waypoint = new Waypoint({
