@@ -77,7 +77,7 @@ $(document).ready(function () {
 							favicon = feed["favicon"];
 						}
 
-						$('div.panel ul#' + category["id"] + '.main').append('<li class="list-group-item item" draggable="true" id="' + feed["id"] + '"><img class="favicon" src="' + favicon + '" onError="this.onerror=null;this.src=\'img/rss-default.gif\'"></img><span class="title">' + feed["feed_name"] + '</span><span class="badge">' + feed["unread_count"] + '</span></li>');
+						$('div.panel ul#' + category["id"] + '.main').append('<li class="list-group-item item" draggable="true" id="' + feed["id"] + '"><span class="favicon"><img class="favicon" src="' + favicon + '" onError="this.onerror=null;this.src=\'img/rss-default.gif\'"></img></span><span class="title">' + feed["feed_name"] + '</span><span class="badge">' + feed["unread_count"] + '</span></li>');
 					});
 				}
 			});

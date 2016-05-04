@@ -413,6 +413,14 @@ ul.main, ul.connected {
 	padding: 0px;
 }
 
+.list-group-item, .panel { 
+	background-color: transparent;
+}
+
+li.list-group-item.main.collapsed span.badge {
+	color: #FFF;
+}
+
 li.main, li.item	{
 	height: 30px;
 	padding: 5px;
@@ -432,8 +440,6 @@ ul.connected {
 }
 
 li.item {
-	background-color: #f9f9f9;
-	border-bottom: 1px solid #ddd;
 	margin-top: 1px;
 	border-top: 0px;
 	border-left: 0px;
@@ -453,6 +459,19 @@ li.item span.badge {
 	margin-right: 1px;
 }
 
+span.favicon img.favicon {
+  position: absolute;
+}
+
+li.item span.badge {
+    position: absolute;
+    right: 4px;
+}
+
+li.item span.title {
+    margin-left: 20px;
+}
+
 li.main {
 	border-top: 1px solid #ddd;
 }
@@ -468,6 +487,30 @@ ul li.wrapper:after {
 	top: 1px;
 	margin-top: -.5em;
 	z-index: 4;
+}
+
+span.favicon img.favicon {
+	position: absolute;
+	margin-top: 2px;
+}
+
+li.item span.badge {
+    position: absolute;
+    right: 4px;
+    top: 6px;
+}
+
+li.item span.title {
+    margin-left: 20px;
+}
+
+li.item span.title {
+    margin-left: 20px;
+    display: block;
+    padding-right: 25px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 ul li.wrapper {
@@ -486,10 +529,15 @@ li.list-group-item-warning {
 	background-color: #fcf8e3 !important;
 }
 
-img.favicon {
+li.list-group-item img.favicon {
 	margin-right: 5px;
-	width: 16px;
-	height: 16px;
+	width: 14px;
+	height: 14px;
+}
+
+div.column-right span.site-info img.favicon {
+	width: 18px;
+	height: 18px;	
 }
 
 /* FEED MANAGE SCREEN */
@@ -896,7 +944,7 @@ td a.view-button, div.feeds-inner .view-button {
 
 .site-info .entry-feed-title {
     position: absolute;
-    top: 2px;
+    top: 1px;
     left: 26px;
     display: block;
     font-size: 14px;
