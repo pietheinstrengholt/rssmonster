@@ -564,7 +564,7 @@ a#star.navbar-brand,a#unread.navbar-brand {
     margin: 0;
     padding: 4px 36px 3px 36px;
     font-size: 14px;
-    background: url(https://dhy5vgj5baket.cloudfront.net/assets/favicon-search-light-ccdaa06e4a9effa94072d27ee7dc48b239aca8f60acf1abe08b87624db10ade1.svg) 14px 13px no-repeat;
+    background: url(../img/search.svg) 14px 13px no-repeat;
     background-size: 14px 14px, 16px 16px;
     border-radius: 13px;
     border: none;
@@ -903,4 +903,12 @@ td a.view-button, div.feeds-inner .view-button {
 
 div.feedname span.favicon {
 	display: none;
+}
+
+div.column-right h4.heading a {
+	color: #333333;
+}
+
+div.column-right div.feed_name {
+	color: #696969;
 }
