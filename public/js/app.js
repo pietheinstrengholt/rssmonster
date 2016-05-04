@@ -136,7 +136,7 @@ $(document).ready(function () {
 		//empty div.column-right content
 		$('div.column-right a.entry-feed-title').text('');
 		$('div.column-right div.entry-inner').empty();
-		$('div.column-right span.favicon').empty();		
+		$('div.column-right span.favicon').empty();
 
 		//use small amount of timeout when calling scrollPagination
 		setTimeout(function () {
@@ -421,8 +421,10 @@ $(document).ready(function () {
 		$(this).addClass("normal");
 		$(this).removeClass("grey");
 		
+		//add feed details to top menu of the right column
 		var feed_name = $(this).find('span.feed_name').text();
 		$('div.column-right a.entry-feed-title').text(feed_name);
+		$('div.column-right span.favicon').empty();
 		$(this).find("img.favicon").clone().appendTo("div.column-right span.favicon");
 		
 		//get article id
