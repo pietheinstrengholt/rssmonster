@@ -669,9 +669,7 @@ function setArticleWaypoint(articleId) {
 			this.destroy();
 		},
 		context: document.getElementById('section'),
-		offset: function() {
-			return 0 - this.element.clientHeight
-		}
+		offset: -100
 	})
 }
 
