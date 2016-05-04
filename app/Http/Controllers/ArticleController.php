@@ -20,26 +20,31 @@ class ArticleController extends Controller
 		if ($request->has('status')) {
 
 			$unread_item_ids = [];
-
-			//get articles for status equals read and unread
-			if ($request->input('status') != 'star') {
-				if ($request->has('feed_id')) {
-					$Articles = Article::where('feed_id', $request->input('feed_id'))->where('status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('id')->get();
-				} elseif ($request->has('category_id')) {
-					$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('articles.id')->get();
-				} else {
-					$Articles = Article::where('status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('id')->get();
+			
+			//if search is set, first get these results
+			if (!empty($request->input('search'))) {
+				$Articles = Article::where('subject', 'like', '%' . $request->input('search') . '%')->orWhere('content', 'like', '%' . $request->input('search') . '%')->orderBy('published', $request->input('sort'))->select('id')->get();
+			} else {
+				//get articles for status equals read and unread
+				if ($request->input('status') != 'star') {
+					if ($request->has('feed_id')) {
+						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('id')->get();
+					} elseif ($request->has('category_id')) {
+						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('articles.id')->get();
+					} else {
+						$Articles = Article::where('status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('id')->get();
+					}
 				}
-			}
 
-			//get articles for status star, star_ind equals one
-			if ($request->input('status') == 'star') {
-				if ($request->has('feed_id')) {
-					$Articles = Article::where('feed_id', $request->input('feed_id'))->where('star_ind', '1')->orderBy('published', $request->input('sort'))->select('id')->get();
-				} else if ($request->has('category_id')) {
-					$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.star_ind', '1')->orderBy('published', $request->input('sort'))->select('articles.id')->get();
-				} else {
-					$Articles = Article::where('star_ind', '1')->orderBy('published', $request->input('sort'))->select('id')->get();
+				//get articles for status star, star_ind equals one
+				if ($request->input('status') == 'star') {
+					if ($request->has('feed_id')) {
+						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('star_ind', '1')->orderBy('published', $request->input('sort'))->select('id')->get();
+					} else if ($request->has('category_id')) {
+						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.star_ind', '1')->orderBy('published', $request->input('sort'))->select('articles.id')->get();
+					} else {
+						$Articles = Article::where('star_ind', '1')->orderBy('published', $request->input('sort'))->select('id')->get();
+					}
 				}
 			}
 

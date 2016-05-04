@@ -50,6 +50,7 @@ mySelection.view = "detailed";
 mySelection.category_id = null;
 mySelection.feed_id = null;
 mySelection.loadcount = 0;
+mySelection.search = null;
 
 //Run loadcontent function only once page is fully loaded
 $(document).ready(function () {
@@ -145,8 +146,13 @@ $(document).ready(function () {
 				category_id: mySelection["category_id"], // Catch category from menu
 				feed_id: mySelection["feed_id"], // Catch feedname from menu
 				status: mySelection["status"], // Catch status from menu
-				sort: mySelection["sort"] // Catch sort
+				sort: mySelection["sort"], // Catch sort
+				search: mySelection["search"], // Catch search value
 			});
+			
+			//set search value back to null after results have been retrieved
+			mySelection.search = null;
+			
 		}, 100);
 	}
 
@@ -467,9 +473,17 @@ $(document).ready(function () {
 			failure: function (errMsg) {
 				console.log(errMsg);
 			}
-		});		
-		
+		});
     });
+	
+	//search on content when enter button in top menu is pressed
+	$('input#search-field').keypress(function (e) {
+		if (e.which == 13) {
+			var searchquery = $('input#search-field').val();
+			mySelection.search = searchquery;
+			loadcontent();
+		}
+	});
 
 });
 
@@ -530,7 +544,6 @@ $(function() {
 
 		}
 	});
-	
 });
 
 //Create pool array to remember which items are marked as read
@@ -608,6 +621,7 @@ function FnReadPool(articleId) {
 			feed_id: '',
 			status: 'unread',
 			sort: '',
+			search: '',
 		}
 
 		// Extend the options so they work with the plug-in
@@ -687,7 +701,8 @@ function FnReadPool(articleId) {
 					"status": $settings.status,
 					"feed_id": $settings.feed_id,
 					"category_id": $settings.category_id,
-					"sort": $settings.sort
+					"sort": $settings.sort,
+					"search": $settings.search
 				},
 				async: false,
 				success: function (json) {

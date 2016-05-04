@@ -49,7 +49,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 * Cleanup JS
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Add Mark as read, unread buttons
-* Implement search function
 * Welcome screen when database is empty
 * Cleanup CSS, more efficient
 * Drag and drop on Tablet?

@@ -48,9 +48,9 @@
 			<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"></span>Unread</a>
 			<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right">90</span>Saved</a>			
 		</div>
-		<form class="search-form-wrap" data-behavior="search_form" action="/entries/search" accept-charset="UTF-8" data-remote="true" method="get"><input name="utf8" type="hidden" value="✓">
-			<input type="search" name="query" id="query" placeholder="Search" autocomplete="off"> 
-		</form>
+		<div class="search-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="get">
+			<input type="search" id="search-field" placeholder="Search" autocomplete="off"> 
+		</div>
 		<div id="section"></div>
 	</div>
 	<div class="column-right">

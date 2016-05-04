@@ -530,7 +530,7 @@ a#star.navbar-brand,a#unread.navbar-brand {
 	margin-left: 1px;
 }
 
-#query {
+#query, #search-field {
     color: #3399FF;
     height: 40px;
     width: 100%;
