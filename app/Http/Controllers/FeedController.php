@@ -129,7 +129,7 @@ class FeedController extends Controller
 	public function cleanup()
 	{
 		//The starred items and latest 3000 items remain in the database
-		$ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'desc')->select('id')->take(3000)->get();
+		$ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'desc')->select('id')->take(10000)->get();
 		$ArticlesStar = Article::where('star_ind', '1')->select('id')->get();
 		$ArticlesUnread = Article::where('status', 'unread')->select('id')->get();
 
