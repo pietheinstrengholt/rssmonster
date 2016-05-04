@@ -62,7 +62,7 @@ body, html {
     .container .column-center{display:block; width:100%;}
     .container .column-right{display:none;}
 	div.search-form-wrap {display:none;}
-	div#section {top: 50px;}
+	div#section {top: 41px;}
 	div.less-content {display:none;}
 }
 
@@ -72,7 +72,7 @@ body, html {
     .container .column-center{display:block; width:100%;}
     .container .column-right{display:none;}
 	div.search-form-wrap {display:none;}
-	div#section {top: 50px;}
+	div#section {top: 41px;}
 	div.less-content {display:none;}
 }
 
@@ -269,7 +269,7 @@ div.article-block hr {
 }
 
 div.mobile-top {
-    height: 50px;
+    height: 41px;
     background-color: #eff1f3;
     border-color: #dcdee0;
 }
@@ -554,6 +554,10 @@ span.badge.pull-right {
 a#star.navbar-brand,a#unread.navbar-brand {
 	font-size: 15px; 
 	margin-left: 1px;
+}
+
+.navbar-brand {
+	padding: 11px 15px ! important;
 }
 
 #query, #search-field {
