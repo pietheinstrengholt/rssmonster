@@ -436,9 +436,9 @@ $(document).ready(function () {
 		$("div#section").find('div#block.active').find(".less-content").show();
 
 		//change class back to grey like if article is read
-		$("div#section").find('div#block.active').removeClass("normal");
-		$("div#section").find('div#block.active').addClass("grey");
+		var InactivearticleId = $("div#section").find('div#block.active').find('div.article').attr('id');
 		$("div#section").find('div#block.active').removeClass("active");
+		processArticleId(InactivearticleId, 'read');
 		
 		//add active class to selected block
 		//copy contents of the block to the right column
@@ -452,7 +452,6 @@ $(document).ready(function () {
 		$('div.column-right span.favicon').empty();
 		$(this).find("img.favicon").clone().appendTo("div.column-right span.favicon");
 
-		
 		//get article id
 		var articleId = $(this).find('div.article').attr('id');
 		
@@ -466,9 +465,6 @@ $(document).ready(function () {
 		
 		//TODO: implement option bar
 		$(this).find('div.options').show();
-
-		//$(this).find(".full-content").show();
-		//$(this).find(".less-content").hide();
 	});
 	
 	$("body").on("click", "button#submit-feedchanges", function (event) {
@@ -650,7 +646,7 @@ function processArticleId(articleId, newStatus) {
 					$('div#' + articleId + '.article').parent().removeClass("grey");
 				}
 				
-			}, 300);
+			}, 600);
 			
 		},
 		failure: function (errMsg) {}
