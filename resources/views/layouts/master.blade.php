@@ -46,7 +46,8 @@
 <script src="{{ URL::asset('js/jquery-1.11.3.min.js') }}"></script>
 <script src="{{ URL::asset('js/jquery-ui-1.11.4.custom.min.js') }}"></script>
 <script src="{{ URL::asset('js/bootstrap.min.js') }}"></script>
-<script src="{{ URL::asset('js/jquery.waypoints.js') }}"></script>
+<script src="{{ URL::asset('js/jquery.waypoints.min.js') }}"></script>
+<script src="{{ URL::asset('js/inview.min.js') }}"></script>
 <!-- App script is placed here -->	
 <script src="{{ URL::asset('js/app.js') }}"></script>
 <!-- Add Internet Explorer console log function -->

@@ -431,6 +431,7 @@ $(document).ready(function () {
 	//function when clicking on a article
 	$("div#section").on("click", "div#block", function (event) {
 		
+		//TODO: work with classes instead, the full content is hidden now on the smartphone view as well
 		//first remove existing active labels from other elements
 		$("div#section").find('div#block.active').find(".full-content").hide();
 		$("div#section").find('div#block.active').find(".less-content").show();
@@ -655,18 +656,31 @@ function processArticleId(articleId, newStatus) {
 
 //function to set a waypoint on an article. The article will be marked as read when reaching the top of the page (section). This function is used when marking items as read manually or when scrolling
 function setArticleWaypoint(articleId) {
-	//set a waypoint on the article, when it reaches the top of the section send the id to the FnReadPool function in order to mark it as read
-	var waypoint = new Waypoint({
-		element: document.getElementById(articleId),
-		handler: function(direction) {
-			//push the id of the element to the FnReadPool to mark it as read
-			FnReadPool(this.element.id);
-			//only trigger once
-			this.destroy();
+	
+	//use inview Waypoin function for detecting and leaving the section space
+	var inview = new Waypoint.Inview({
+
+		element: $('div.article#' + articleId)[0],
+
+		enter: function(direction) {
+
+			if (direction == "down") {
+				//add class normal when article is entering the section space
+				$('div#' + articleId + '.article').parent().addClass("normal");
+				$('div#' + articleId + '.article').parent().removeClass("grey");				
+			}
+			
 		},
-		context: document.getElementById('section'),
-		offset: -100
-	})
+		exited: function(direction) {
+			if (direction == "down") {
+				//add class grey and push to the FnReadPool when article has fully left the section space
+				$('div#' + articleId + '.article').parent().removeClass("normal");
+				$('div#' + articleId + '.article').parent().addClass("grey");
+				FnReadPool(articleId);
+			}
+		},
+		context: document.getElementById('section')
+	});
 }
 
 //function to remove a waypoint from an article. This function is used when marking items as unread manually
@@ -856,11 +870,12 @@ function destroyArticleWaypoint(articleId) {
 									}
 									
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
+									$this.append('<div id="block" class="grey"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
 									
 									//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
-									setArticleWaypoint(article["id"]);
-
+									setTimeout(function () {
+										setArticleWaypoint(article["id"]);
+									}, 50);
 								});
 								
 								// Move the info bar at the end by appending it to the main div
