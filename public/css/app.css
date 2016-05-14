@@ -269,12 +269,6 @@ div.article-block hr {
 	width: 180px;
 }
 
-div.mobile-top {
-    height: 41px;
-    background-color: #eff1f3;
-    border-color: #dcdee0;
-}
-
 div.article hr {
 	border-top: 1px solid #D3D3D3;
 }
@@ -1014,9 +1008,12 @@ div.navbar.navbar-fixed-top.navbar-inverse {
 }
 
 #bs-example-navbar-collapse-1 {
-	width: 100%;
-	padding-top: 41px;
-	border-color: transparent;
+	width: 110%;
+    border-color: transparent;
+    position: fixed;
+    top: 42px;
+    background-color: #eff1f3;
+	margin-right: 0px;
 }
 
 form.navbar-form.navbar-left {

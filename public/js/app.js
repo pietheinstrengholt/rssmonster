@@ -496,15 +496,6 @@ $(document).ready(function () {
 		});
     });
 	
-	//search on content when enter button in top menu is pressed
-	$('input#search-field').keypress(function (e) {
-		if (e.which == 13) {
-			var searchquery = $('input#search-field').val();
-			mySelection.search = searchquery;
-			loadcontent();
-		}
-	});
-
 });
 
 //Function to make the main menu items sortable in the sidebar
@@ -674,8 +665,8 @@ function setArticleWaypoint(articleId) {
 		exited: function(direction) {
 			if (direction == "down") {
 				//add class grey and push to the FnReadPool when article has fully left the section space
-				$('div#' + articleId + '.article').parent().removeClass("normal");
-				$('div#' + articleId + '.article').parent().addClass("grey");
+				//$('div#' + articleId + '.article').parent().removeClass("normal");
+				//$('div#' + articleId + '.article').parent().addClass("grey");
 				FnReadPool(articleId);
 			}
 		},
