@@ -23,7 +23,7 @@
 			
 		</div>
 		
-		<div class="feeds-toolbar">  
+		<div class="feeds-toolbar">
 			<table cellpadding="0">
 				<tbody>
 				  <tr>
@@ -45,8 +45,44 @@
 
 	<div class="column-center ui-resizable">
 		<div class="mobile-top">
-			<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right"></span>Unread</a>
-			<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right">90</span>Saved</a>			
+			<div class="navbar navbar-fixed-top navbar-inverse">
+				<div class="container">
+
+					<!-- Brand and toggle get grouped for better mobile display -->
+					<div class="navbar-header">
+						<button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#bs-example-navbar-collapse-1" aria-expanded="false">
+						<span class="sr-only">Toggle navigation</span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						<span class="icon-bar"></span>
+						</button>
+						<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right">0</span>Unread</a>
+						<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right">109</span>Saved</a>
+					</div>
+
+					<!-- Collect the nav links, forms, and other content for toggling -->
+					<div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1" aria-expanded="false">
+						<form action="index.php/api/feed/newrssfeed" method="post" class="navbar-form navbar-left" role="url">
+							<div class="form-group" style="float: left;">
+								<input id="mobile-url" name="url" type="text" placeholder="Add feed or url" class="form-control">
+							</div>
+							<button id="mobile-submit" class="btn btn-default">Submit</button>
+						</form>
+						
+						<ul class="nav navbar-nav">
+							<li class="dropdown">
+							<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
+							<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
+								<li role="presentation"><a class="update" href="#" role="menuitem" tabindex="-1">Update</a></li>
+								<li role="presentation"><a class="managefeeds" href="#" role="menuitem" tabindex="-1">Manage feeds</a></li>
+							</ul>
+							</li>
+						</ul>
+
+					</div><!-- /.nav-collapse -->
+
+				</div><!-- /.container -->
+			</div>
 		</div>
 		<div class="search-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="get">
 			<input type="search" id="search-field" placeholder="Search" autocomplete="off"> 
