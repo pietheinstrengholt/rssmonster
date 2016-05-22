@@ -628,8 +628,8 @@ function processArticleId(articleId, newStatus) {
 				
 				if (data['status'] == "read") {
 					//change css to grey when article is read
-					$('div#' + articleId + '.article').parent().addClass("grey");
-					$('div#' + articleId + '.article').parent().removeClass("normal");
+					//$('div#' + articleId + '.article').parent().addClass("grey");
+					//$('div#' + articleId + '.article').parent().removeClass("normal");
 				}
 				
 				if (data['status'] == "unread") {
@@ -866,12 +866,11 @@ function destroyArticleWaypoint(articleId) {
 									//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
 									setTimeout(function () {
 										setArticleWaypoint(article["id"]);
-									}, 50);
+									}, 250);
 								});
 								
 								// Move the info bar at the end by appending it to the main div
 								$("div#main").append($("#info-bar"));
-							
 
 								// Increase offset
 								offset = offset + $settings.nop;
