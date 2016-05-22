@@ -46,13 +46,15 @@ class FeedController extends Controller
 
 		//only add articles and update feed when results are found
 		if (! empty($simplePieInstance)) {
+			
 			foreach ($simplePieInstance->get_items() as $item) {
 				//count the number of items that already exist in the database with the item url and feed_id
-				$results = Article::where(['feed_id' => $Feed->id, 'url' => $item->get_permalink()])->count();
+				$results_url = Article::where(['feed_id' => $Feed->id, 'url' => $item->get_permalink()])->count();
+				$results_title = Article::where(['feed_id' => $Feed->id, 'subject' => $item->get_title()])->count();
 				$date = $item->get_date('Y-m-j H:i:s');
 
 				//add new article if no results are found and article date is no older than one week
-				if ($results == 0 && ! (strtotime($date) < strtotime($previousweek))) {
+				if ($results_url == 0 && $results_title == 0 && ! (strtotime($date) < strtotime($previousweek))) {
 					$article = new Article;
 					
 					//get article content
