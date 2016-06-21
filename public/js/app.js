@@ -1,4 +1,3 @@
-
 //function to strip html
 function strip(html) {
    var tmp = document.createElement("DIV");

@@ -14,8 +14,8 @@
 	<meta name="base_url" content="{{ URL::to('/') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/app.css') }}">
-	
-	<!-- Configuring Web Applications -->	
+
+	<!-- Configuring Web Applications -->
 	<link rel="apple-touch-icon" sizes="57x57" href="{{ URL::asset('img/favicon/apple-icon-57x57.png') }}">
 	<link rel="apple-touch-icon" sizes="60x60" href="{{ URL::asset('img/favicon/apple-icon-60x60.png') }}">
 	<link rel="apple-touch-icon" sizes="72x72" href="{{ URL::asset('img/favicon/apple-icon-72x72.png') }}">
@@ -33,6 +33,7 @@
 	<meta name="msapplication-TileColor" content="#ffffff">
 	<meta name="msapplication-TileImage" content="{{ URL::asset('img/favicon/ms-icon-144x144.png') }}">
 	<meta name="theme-color" content="#ffffff">
+	<meta name="apple-mobile-web-app-capable" content="yes" />
 	@show
 </head>
 
