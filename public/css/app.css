@@ -1046,3 +1046,8 @@ ul.nav.navbar-nav li.dropdown a#drop1 {
 a#unread.navbar-brand, a#star.navbar-brand {
 	margin-top: 7px;
 }
+
+div.navbar-header {
+	margin-right:0px;
+	margin-left:0px;
+}
