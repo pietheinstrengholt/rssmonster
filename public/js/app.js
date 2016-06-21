@@ -452,7 +452,6 @@ $(document).ready(function () {
 	});
 	
 	$("body").on("click", "button#submit-feedchanges", function (event) {
-
 		//restructure array form data
 		var values = {};
 		$.each($('form.form-inline').serializeArray(), function(i, field) {
@@ -477,6 +476,15 @@ $(document).ready(function () {
 				console.log(errMsg);
 			}
 		});
+	});
+	
+	//search on content when enter button in top menu is pressed
+	$('input#search-field').keypress(function (e) {
+		if (e.which == 13) {
+			var searchquery = $('input#search-field').val();
+			mySelection.search = searchquery;
+			loadcontent();
+		}
 	});
 });
 
