@@ -29,7 +29,6 @@ body, html {
 	.container .column-center{display:block; width:25%;}
 	.container .column-right{display:block;}
 	div.mobile-top {display:none;}
-	div#section {top: 41px;}
 	div#main div.article {margin-left: 5px;}
 	div.full-content {display:none;}
 }
@@ -40,7 +39,6 @@ body, html {
 	.container .column-center{display:block; width:100%;}
 	.container .column-right{display:none;}
 	div.mobile-top {display:none;}
-	div#section {top: 41px;}
 	div#main div.article {margin-left: 5px;}
 	div.less-content {display:none;}
 }
@@ -51,7 +49,6 @@ body, html {
 	.container .column-center{display:block; width:100%;}
 	.container .column-right{display:none;}
 	div.mobile-top {display:none;}
-	div#section {top: 41px;}
 	div#main div.article {margin-left: 5px;}
 	div.less-content {display:none;}
 }
@@ -62,7 +59,6 @@ body, html {
 	.container .column-center{display:block; width:100%;}
 	.container .column-right{display:none;}
 	div.search-form-wrap {display:none;}
-	div#section {top: 50px;}
 	div.less-content {display:none;}
 	div.article {border: 1px solid #ecf0f1; margin: 3px; border-radius: 2px;}
 }
@@ -73,9 +69,12 @@ body, html {
 	.container .column-center{display:block; width:100%;}
 	.container .column-right{display:none;}
 	div.search-form-wrap {display:none;}
-	div#section {top: 50px;}
 	div.less-content {display:none;}
 	div.article {border: 1px solid #ecf0f1; margin: 3px; border-radius: 2px;}
+}
+
+div#section {
+	top: 41px;
 }
 
 div.minimal {
@@ -1019,4 +1018,31 @@ a#drop1 {
 
 .navbar-inverse .navbar-collapse, .navbar-inverse .navbar-form {
 	border-color: transparent;
+}
+
+button.navbar-toggle {
+	background-color: transparent ! important; 
+	border: 0px solid transparent;
+	margin-top: 4px;
+}
+
+ul.nav.navbar-nav li.dropdown.open a#drop1 {
+	background-color: transparent ! important; 
+}
+
+ul.nav.navbar-nav li.dropdown a#drop1 {
+	color: #9d9d9d ! important; 
+}
+
+.navbar-nav > li > a, .navbar-brand {
+	padding-top:4px !important; 
+	padding-bottom:0 !important;
+	height: 41px;
+}
+.navbar {
+	min-height:41px !important;
+}
+
+a#unread.navbar-brand, a#star.navbar-brand {
+	margin-top: 7px;
 }
