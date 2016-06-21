@@ -81,21 +81,21 @@ $(document).ready(function () {
 					});
 				}
 			});
-		
+
 		},
 		failure: function (errMsg) {
 			//set error message, no categories and feeds retrieved
 			$('div#categories.panel').empty();
-			$('div#categories.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
+			$('div#categories.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');
 		}
 	});
 
 	//dropdown toggle
 	$('.dropdown-toggle').dropdown();
-	
+
 	//hide wrapper and sub items on first load
 	$("li.list-group-item.item,li.list-group-item.wrapper").hide();
-	
+
 	//mark unread button as default selection on first load
 	$('div.view-toolbar a#unread , div.mobile-top a#unread').css('color', '#333333');
 
@@ -104,22 +104,22 @@ $(document).ready(function () {
 
 	//loaddetailedview function to load items when scrolling. Remember to use: $(window).off("scroll");
 	function loadcontent() {
-	
+
 		//increase load count
 		mySelection.loadcount++;
-		
+
 		//destroy all waypoint functions, avoid many items being called, see scrollPagination function below
 		Waypoint.destroyAll();
-		
+
 		if (mySelection.loadcount == 1) {
 			$('ul#all li').addClass("collapsed");
 		}
-	
+
 		//highlight the button in the sidebar with corresponding status
 		$('div#buttons-top').find('button').removeClass("btn-primary").addClass("btn-default");
 		$("div#buttons-top button#" + mySelection["status"]).removeClass("btn-default");
 		$("div#buttons-top button#" + mySelection["status"]).addClass("btn-primary");
-	
+
 		//set view type
 		$("div#section").removeClass();
 
@@ -132,7 +132,7 @@ $(document).ready(function () {
 		$('div#section #main').remove();
 		$('div#section').append('<div id="main"></div>');
 		$('div#section').off("scroll");
-		
+
 		//empty div.column-right content
 		$('div.column-right a.entry-feed-title').text('');
 		$('div.column-right div.entry-inner').empty();
@@ -154,10 +154,8 @@ $(document).ready(function () {
 				sort: mySelection["sort"], // Catch sort
 				search: mySelection["search"], // Catch search value
 			});
-			
 			//set search value back to null after results have been retrieved
 			mySelection.search = null;
-			
 		}, 100);
 	}
 
@@ -170,12 +168,10 @@ $(document).ready(function () {
 		$(this).css('color', '#333333');
 		loadcontent();
 	});
-	
 
 	//Functionality when clicking on main menu items in the sidebar
 	//Change the glyphicon (folder open or closed) and hide or show the sub menu items
 	$("div.panel").on("click", "li.list-group-item.main", function (event) {
-	
 		//get parentId
 		var parentId = $(this).parent().attr("id");
 
@@ -186,8 +182,8 @@ $(document).ready(function () {
 			$("ul#" + parentId + " li.list-group-item.wrapper").hide();
 			$("ul#" + parentId + " li.list-group-item.main span.glyphicon").removeClass("glyphicon-folder-open");
 			$("ul#" + parentId + " li.list-group-item.main span.glyphicon").addClass("glyphicon-folder-close");
-			mySelection.category_id = null;	
-			mySelection.feed_id = null;			
+			mySelection.category_id = null;
+			mySelection.feed_id = null;
 			$("ul#all li.main").addClass("collapsed");
 			//remove classes from any active sub items
 			$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
@@ -197,16 +193,14 @@ $(document).ready(function () {
 			$("ul#" + parentId + " li.list-group-item.item" ).show();
 			$("ul#" + parentId + " li.list-group-item.wrapper").show();
 			$("ul#" + parentId + " li.list-group-item.main span.glyphicon").removeClass("glyphicon-folder-close");
-			$("ul#" + parentId + " li.list-group-item.main span.glyphicon").addClass("glyphicon-folder-open");			
+			$("ul#" + parentId + " li.list-group-item.main span.glyphicon").addClass("glyphicon-folder-open");
 			mySelection.category_id = $(this).attr('id');
 			mySelection.feed_id = null;
 			//remove classes from any active sub items
 			$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		}
-		
 		loadcontent();
-
-	});	
+	});
 
 	//Functionality when sub menu item from categories are clicked
 	$("div.panel").on("click", "li.list-group-item.item", function (event) {
@@ -243,7 +237,7 @@ $(document).ready(function () {
 		$('#modal').modal('show');
 		$('#modal div.modal-header h4.modal-title').text('Mark as read dialog');
 		$('#modal div.modal-content div.modal-body').empty();
-		$('#modal div.modal-content div.modal-body').append('<p></p>');		
+		$('#modal div.modal-content div.modal-body').append('<p></p>');
 		$('#modal div.modal-content div.modal-body p').text('Are you sure you want to mark all articles as read?');
 		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Yes');
 		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-mark-as-read');
@@ -268,8 +262,8 @@ $(document).ready(function () {
 			},
 			failure: function (errMsg) {}
 		});
-	});	
-	
+	});
+
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("a#delete").click(function () {
 		category_title = $("li.main.collapsed span.title").text();
@@ -280,7 +274,7 @@ $(document).ready(function () {
 			$('#modal div.modal-content div.modal-body').empty();
 			$('#modal div.modal-content div.modal-body').append('<p></p>');
 			$('#modal div.modal-content div.modal-body p').text('Are you sure you want to delete the following category "' + category_title + '"?');
-			$('#modal div.modal-header h4.modal-title').text('Delete current selected category');		
+			$('#modal div.modal-header h4.modal-title').text('Delete current selected category');
 		} else if (!!mySelection.feed_id && !!mySelection.category_id) {
 			$('#modal').modal('show');
 			$('#modal div.modal-content div.modal-body').empty();
@@ -288,30 +282,30 @@ $(document).ready(function () {
 			$('#modal div.modal-content div.modal-body p').text('Are you sure you want to delete the following feed "' + feed_title + '"?');
 			$('#modal div.modal-header h4.modal-title').text('Delete current selected feed');
 		}
-		
+
 		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Yes');
-		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-delete');		
+		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-delete');
 	});
-	
+
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("div.entry-button-wrap.circle").click(function () {
 
 		//get article id
 		var articleId = $(this).attr('id');
 		var articleStatus =$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').attr("class");
-		
+
 		if (articleStatus == "circle read") {
 			processArticleId(articleId, 'unread');
 			$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').addClass("unread").removeClass("read");
-			
+
 			//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
 			setArticleWaypoint(articleId);
 		}
-		
+
 		if (articleStatus == "circle unread") {
 			processArticleId(articleId, 'read');
 			$('div.column-right div.entry-toolbar div.entry-buttons').find('span.circle').addClass("read").removeClass("unread");
-			
+
 			//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
 			destroyArticleWaypoint(articleId);
 		}
@@ -333,7 +327,7 @@ $(document).ready(function () {
 					location.reload();
 				},
 				failure: function (errMsg) {}
-			});		
+			});
 		} else if (!!mySelection.feed_id && !!mySelection.category_id) {
 			$.ajax({
 				type: "DELETE",
@@ -347,10 +341,10 @@ $(document).ready(function () {
 					location.reload();
 				},
 				failure: function (errMsg) {}
-			});			
+			});
 		}
 	});
-	
+
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("a#add-new-category").click(function () {
 		$('#modal').modal('show');
@@ -360,13 +354,12 @@ $(document).ready(function () {
 		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Submit');
 		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'add-new-category');
 	});
-	
+
 	//Functionality to mark all items as read (except star items), when clicked on modal button
 	$("#modal").on("click", "button#add-new-category", function(event) {
 	
 		new_category_name = $("div.modal-body input#category").val();
 
-		
 		if (!(new_category_name == null || new_category_name=='')) {
 			$.ajax({
 				type: "POST",
@@ -383,13 +376,12 @@ $(document).ready(function () {
 					location.reload();
 				},
 				failure: function (errMsg) {}
-			});	
+			});
 		}
-	});	
+	});
 
 	//event when starring or un-staring item
 	$("body").on("click", "div.item-star", function (event) {
-		
 		//get article id
 		var id = $(this).attr('id');
 		
@@ -420,33 +412,24 @@ $(document).ready(function () {
 			success: function (json) {
 				//change badges with new count
 				$('span.star.badge').each(function(index, obj) {
-				  $(this).text(starredcountnew);
+					$(this).text(starredcountnew);
 				});
 			},
 			failure: function (errMsg) {}
 		});
-
 	});
-	
+
 	//function when clicking on a article
 	$("div#section").on("click", "div#block", function (event) {
-		
-		//TODO: work with classes instead, the full content is hidden now on the smartphone view as well
-		//first remove existing active labels from other elements
-		$("div#section").find('div#block.active').find(".full-content").hide();
-		$("div#section").find('div#block.active').find(".less-content").show();
-
 		//change class back to grey like if article is read
-		var InactivearticleId = $("div#section").find('div#block.active').find('div.article').attr('id');
+		var InactivearticleId = $(this).find('div.article').attr('id');
 		$("div#section").find('div#block.active').removeClass("active");
 		processArticleId(InactivearticleId, 'read');
-		
+
 		//add active class to selected block
 		//copy contents of the block to the right column
 		$(this).addClass("active");
-		$(this).addClass("normal");
-		$(this).removeClass("grey");
-		
+
 		//add feed details to top menu of the right column
 		var feed_name = $(this).find('span.feed_name').text();
 		$('div.column-right a.entry-feed-title').text(feed_name);
@@ -455,10 +438,10 @@ $(document).ready(function () {
 
 		//get article id
 		var articleId = $(this).find('div.article').attr('id');
-		
+
 		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.invisible').attr('id', articleId);
 		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.invisible').removeClass("invisible").addClass("visible");
-		
+
 		$("div.column-right div.entry-inner").empty();
 		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
 		$(this).find(".full-content").clone().appendTo("div.column-right div.entry-inner");
@@ -469,13 +452,13 @@ $(document).ready(function () {
 	});
 	
 	$("body").on("click", "button#submit-feedchanges", function (event) {
-		
+
 		//restructure array form data
 		var values = {};
 		$.each($('form.form-inline').serializeArray(), function(i, field) {
 			values[field.name] = field.value;
 		});
-		
+
 		//send json request
 		$.ajax({
 			type: "POST",
@@ -494,8 +477,7 @@ $(document).ready(function () {
 				console.log(errMsg);
 			}
 		});
-    });
-	
+	});
 });
 
 //Function to make the main menu items sortable in the sidebar
@@ -504,7 +486,7 @@ $(function() {
 		items: "> ul.main",
 		containment: "parent" ,
 		axis: "y",
-		
+
 		stop: function(event, ui) {
 			//create new empty array to store new sortorder
 			var orderArray = new Array();
@@ -526,7 +508,7 @@ $(function() {
 					//console.log("order updated");
 				},
 				failure: function (errMsg) {}
-			});			
+			});
 		}
 	});
 });
@@ -562,15 +544,13 @@ var poolid = new Array();
 
 //Pool function to mark items as read and to avoid items are set to read more then once
 function FnReadPool(articleId) {
-
 	//check if articleId is already in the Pool
 	if (jQuery.inArray(articleId, poolid) == -1) {
 		processArticleId(articleId, 'read');
 	}
-	
+
 	//push the id from the article to the pool, so it will never be marked as read twice
 	poolid.push(articleId);
-	
 }
 
 function processArticleId(articleId, newStatus) {
@@ -602,7 +582,7 @@ function processArticleId(articleId, newStatus) {
 				var readcountsubnew = readcountsub -1;
 				$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
 			}
-			
+
 			//update statistics only in case when the status is returned as read
 			if (data['status'] == "unread") {
 
@@ -611,7 +591,7 @@ function processArticleId(articleId, newStatus) {
 				var unreadcountnew = unreadcount +1;
 				$('div.panel ul#all span.badge').text(unreadcountnew);
 				$('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
-				
+
 				//decrease count for main menu items
 				var readcountmain = $('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text();
 				var readcountmainnew = readcountmain +1;
@@ -622,27 +602,9 @@ function processArticleId(articleId, newStatus) {
 				var readcountsubnew = readcountsub +1;
 				$('div.panel').find('li#' + feed_id + '.list-group-item.item').find('span.badge').text(readcountsubnew);
 			}
-			
-			//slightly delay marking the article as read
-			setTimeout(function() {
-				
-				if (data['status'] == "read") {
-					//change css to grey when article is read
-					//$('div#' + articleId + '.article').parent().addClass("grey");
-					//$('div#' + articleId + '.article').parent().removeClass("normal");
-				}
-				
-				if (data['status'] == "unread") {
-					//change css to grey when article is read
-					$('div#' + articleId + '.article').parent().addClass("normal");
-					$('div#' + articleId + '.article').parent().removeClass("grey");
-				}
-				
-			}, 600);
-			
 		},
 		failure: function (errMsg) {}
-	});	
+	});
 }
 
 //function to set a waypoint on an article. The article will be marked as read when reaching the top of the page (section). This function is used when marking items as read manually or when scrolling
@@ -653,20 +615,9 @@ function setArticleWaypoint(articleId) {
 
 		element: $('div.article#' + articleId)[0],
 
-		enter: function(direction) {
-
-			if (direction == "down") {
-				//add class normal when article is entering the section space
-				$('div#' + articleId + '.article').parent().addClass("normal");
-				$('div#' + articleId + '.article').parent().removeClass("grey");				
-			}
-			
-		},
 		exited: function(direction) {
 			if (direction == "down") {
-				//add class grey and push to the FnReadPool when article has fully left the section space
-				//$('div#' + articleId + '.article').parent().removeClass("normal");
-				//$('div#' + articleId + '.article').parent().addClass("grey");
+				//Push to the FnReadPool when article has fully left the section space
 				FnReadPool(articleId);
 			}
 		},
@@ -719,10 +670,10 @@ function destroyArticleWaypoint(articleId) {
 
 			// Append custom messages and extra UI
 			$this.append('<div id="info-bar"></div>');
-			
+
 			/* In the background new items might be loaded, therefore the unread, 
-			read and star count is adjusted every time the article-list retrieved */			
-			
+			read and star count is adjusted every time the article-list retrieved */
+
 			// Use api to get a status overview for read, unread and star counts
 			$.ajax({
 				type: "GET",
@@ -731,10 +682,9 @@ function destroyArticleWaypoint(articleId) {
 				success: function (json) {
 					//set unread count in navbar and sidebar menu
 					$('div.panel ul#all span.badge, a#unread.navbar-brand span.badge.pull-right').text(json["unread"]);
-					
+
 					//set star count in navbar and sidebar menu
 					$('a#star.navbar-brand span.badge.pull-right').text(json["star"]);
-					
 				}
 			});
 
@@ -749,7 +699,6 @@ function destroyArticleWaypoint(articleId) {
 					dataType: "json",
 					async: true,
 					success: function (json) {
-					
 						//set count in sidebar menu for categories and feed items
 						$.each(json, function(key, category) {
 							$('div.panel li#' + category["id"] + '.list-group-item.main span.badge').text(category["unread_count"]);
@@ -792,7 +741,7 @@ function destroyArticleWaypoint(articleId) {
 			function isEmpty(str) {
 				return (!str || 0 === str.length);
 			}
-			
+
 			// If articleList is empty, show no post available, else load first 10 items
 			if (isEmpty(articleList)) {
 				//Show message and set busy to true, avoid clicking and loading nothing
@@ -806,7 +755,6 @@ function destroyArticleWaypoint(articleId) {
 
 			//getData function to retrieve article content
 			function getData(input) {
-			
 				//If input is empty, show no post available message and mark all items as read
 				if (isEmpty(input)) {
 					$('#info-bar').html($settings.error);
@@ -816,7 +764,6 @@ function destroyArticleWaypoint(articleId) {
 						FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
 					}
 				} else {
-			
 					//Post data to api, articles are wrapped in html and appended to content class
 					$.ajax({
 						type: "GET",
@@ -833,42 +780,40 @@ function destroyArticleWaypoint(articleId) {
 
 							// Add data to content
 							if (data) {
-							
 								// If data is returned, append the data to the content div
 								$.each(data, function(key, article) {
-									
 									if (article["star_ind"] == '1') {
 										var starflag = "star";
 									} else {
-										var starflag = "unstar";								
+										var starflag = "unstar";
 									}
-									
+
 									// calculate difference timeinterval 
 									var dateDifference = get_time_diff(article['published']);
-									
+
 									// set image_url variable if image_url is set
 									if (article["image_url"] !== null) {
 										var image_url = '<span class="entry-image is-loaded"><img src="' + article["image_url"] + '"></span>';
 									} else {
 										image_url = '';
 									}
-									
+
 									//check if favicon is null, else default with rss-default image
 									if (article["favicon"] == null) {
 										favicon = "img/rss-default.png";
 									} else {
 										favicon = article["favicon"];
 									}
-									
+
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block" class="grey"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
-									
+									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
+
 									//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
 									setTimeout(function () {
 										setArticleWaypoint(article["id"]);
 									}, 250);
 								});
-								
+
 								// Move the info bar at the end by appending it to the main div
 								$("div#main").append($("#info-bar"));
 
@@ -882,7 +827,7 @@ function destroyArticleWaypoint(articleId) {
 							} else {
 
 								$this.find('#info-bar').html($settings.error);
-								
+
 								// Capture previous nop and call FnReadPool function to mark remaining items as read
 								for (var i = 0; i < articleList.slice(offset-$settings.nop-$settings.nop,articleCount).length; i++) {
 									FnReadPool(articleList.slice(offset-$settings.nop-$settings.nop,articleCount)[i]);
@@ -900,7 +845,7 @@ function destroyArticleWaypoint(articleId) {
 				//using on and off to avoid loading multiple instances
 				$('div#section').on('scroll', function () {
 
-					// Check the user is at the bottom of the element			
+					// Check the user is at the bottom of the element
 					var scrollheight = $('div#section').scrollTop() + $('div#section').height() + 20;
 
 					if (scrollheight > $this.height() && !busy) {
