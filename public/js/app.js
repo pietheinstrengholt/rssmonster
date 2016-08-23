@@ -38,7 +38,7 @@ function get_time_diff(datetime) {
 	}
 	//if no days or hours are returned, return the remaining minutes
 	return date_diff.getMinutes() + "m";
-	
+
 }
 
 //create new object to store selection
@@ -68,7 +68,7 @@ $(document).ready(function () {
 				//check if feeds object is not empty
 				if (category["feeds"]) {
 					$.each(category["feeds"], function(feedkey, feed) {
-					
+
 						//check if favicon is null, else default with rss-default image
 						if (feed["favicon"] == null) {
 							favicon = "img/rss-default.png";
@@ -223,13 +223,13 @@ $(document).ready(function () {
 		$('div#section').empty();
 		$('div#section').load(url + '/api/feed/updateall');
 	});
-	
+
 	//Functionality to load manage feeds screen
 	$("a.managefeeds").click(function () {
 		$('div#section').off("scroll");
 		$('div#section').empty();
 		$('div#section').load(url + '/managefeeds');
-	});	
+	});
 
 	//Functionality to show modal pop-up, change modal text based on button property
 	$("a#mark-as-read").click(function () {
@@ -241,7 +241,7 @@ $(document).ready(function () {
 		$('#modal div.modal-content div.modal-footer button.btn-primary').text('Yes');
 		$('#modal div.modal-content div.modal-footer button.btn-primary').attr('id', 'modal-mark-as-read');
 	});
-	
+
 	//Functionality to mark all items as read (except star items), when clicked on modal button
 	$("#modal").on("click", "button#modal-mark-as-read", function(event){
 		$.ajax({
@@ -308,9 +308,9 @@ $(document).ready(function () {
 			//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
 			destroyArticleWaypoint(articleId);
 		}
-		
+
 	});
-	
+
 	//Functionality to mark all items as read (except star items), when clicked on modal button
 	$("#modal").on("click", "button#modal-delete", function(event){
 		if (mySelection.feed_id == null && !!mySelection.category_id) {
@@ -356,7 +356,7 @@ $(document).ready(function () {
 
 	//Functionality to mark all items as read (except star items), when clicked on modal button
 	$("#modal").on("click", "button#add-new-category", function(event) {
-	
+
 		new_category_name = $("div.modal-body input#category").val();
 
 		if (!(new_category_name == null || new_category_name=='')) {
@@ -383,10 +383,10 @@ $(document).ready(function () {
 	$("body").on("click", "div.item-star", function (event) {
 		//get article id
 		var id = $(this).attr('id');
-		
+
 		//set starcount
 		var starredcount = $('div.navbar span.star.badge').text();
-	
+
 		//remove classes, set new count and variables
 		if ($(this).hasClass("unstar")) {
 			$(this).removeClass("unstar");
@@ -399,7 +399,7 @@ $(document).ready(function () {
 			var starmark = "unmark";
 			var starredcountnew = parseFloat(starredcount)-1;
 		}
-		
+
 		//send json request
 		$.ajax({
 			type: "POST",
@@ -445,11 +445,11 @@ $(document).ready(function () {
 		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
 		$(this).find(".full-content").clone().appendTo("div.column-right div.entry-inner");
 		$("div.column-right").find(".full-content").show();
-		
+
 		//TODO: implement option bar
 		$(this).find('div.options').show();
 	});
-	
+
 	$("body").on("click", "button#submit-feedchanges", function (event) {
 		//restructure array form data
 		var values = {};
@@ -476,7 +476,7 @@ $(document).ready(function () {
 			}
 		});
 	});
-	
+
 	//search on content when enter button in top menu is pressed
 	$('input#search-field').keypress(function (e) {
 		if (e.which == 13) {
@@ -502,9 +502,9 @@ $(function() {
 				var category_id = $(el).attr("id");
 				sortorder = $(el).index();
 				orderArray[sortorder] = category_id;
-				
+
 			});
-			
+
 			$.ajax({
 				type: "POST",
 				url: url + "/api/category/updateorder",
@@ -578,7 +578,7 @@ function processArticleId(articleId, newStatus) {
 				var unreadcountnew = unreadcount -1;
 				$('div.panel ul#all span.badge').text(unreadcountnew);
 				$('a#unread.navbar-brand span.badge.pull-right').text(unreadcountnew);
-				
+
 				//decrease count for main menu items
 				var readcountmain = $('div.panel').find('li#' + category_id + '.list-group-item.main').find('span.badge').text();
 				var readcountmainnew = readcountmain -1;
@@ -616,7 +616,7 @@ function processArticleId(articleId, newStatus) {
 
 //function to set a waypoint on an article. The article will be marked as read when reaching the top of the page (section). This function is used when marking items as read manually or when scrolling
 function setArticleWaypoint(articleId) {
-	
+
 	//use inview Waypoin function for detecting and leaving the section space
 	var inview = new Waypoint.Inview({
 
@@ -678,7 +678,7 @@ function destroyArticleWaypoint(articleId) {
 			// Append custom messages and extra UI
 			$this.append('<div id="info-bar"></div>');
 
-			/* In the background new items might be loaded, therefore the unread, 
+			/* In the background new items might be loaded, therefore the unread,
 			read and star count is adjusted every time the article-list retrieved */
 
 			// Use api to get a status overview for read, unread and star counts
@@ -697,7 +697,7 @@ function destroyArticleWaypoint(articleId) {
 
 			//on the first initial load the sidebar is already deployed. Do not call the overview twice.
 			if (mySelection.loadcount > 1) {
-			
+
 				// Use api to get an overview of all items in sidebar
 				$.ajax({
 					type: "GET",
@@ -719,7 +719,7 @@ function destroyArticleWaypoint(articleId) {
 					failure: function (errMsg) {
 						//set error message, no categories and feeds retrieved
 						$('div.panel').empty();
-						$('div.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');					
+						$('div.panel').append('<p style="margin-left:3px;">No categories and feeds found, use the top menu to add new RSS feeds!<p>');
 					}
 				});
 			}
@@ -795,7 +795,7 @@ function destroyArticleWaypoint(articleId) {
 										var starflag = "unstar";
 									}
 
-									// calculate difference timeinterval 
+									// calculate difference timeinterval
 									var dateDifference = get_time_diff(article['published']);
 
 									// set image_url variable if image_url is set
