@@ -1,7 +1,7 @@
 <?php
 
 /**
- * The fever-api implements the API from Fever, allowing apps such as Reeder to  
+ * The fever-api implements the API from Fever, allowing apps such as Reeder to
  * communicate with this application. More info: http://feedafever.com/api.
  */
 namespace App\Http\Controllers;
@@ -50,7 +50,7 @@ class FeverController extends Controller
 				$response_arr['groups'] = $groups;
 				$arr = array_merge($arr, $response_arr);
 			};
-			
+
 			//when argument is feeds, retrieve list with feeds and id's
 			if (isset($_GET['feeds'])) {
 				$feeds = [];
@@ -71,7 +71,7 @@ class FeverController extends Controller
 				$response_arr['feeds'] = $feeds;
 				$arr = array_merge($arr, $response_arr);
 			};
-			
+
 			//when argument is groups or feeds, also return feed id's linked to category id's
 			if (isset($_GET['groups']) || isset($_GET['feeds'])) {
 				$feeds_groups = [];
@@ -115,7 +115,7 @@ class FeverController extends Controller
 			if (isset($_GET['saved_item_ids'])) {
 				$saved_item_ids = [];
 				$Articles = Article::where('star_ind', '1')->orderBy('id', 'asc')->get();
-				
+
 				if (!empty($Articles)) {
 					foreach ($Articles as $Article) {
 						array_push($saved_item_ids, $Article->id);
@@ -196,7 +196,7 @@ class FeverController extends Controller
 							//TODO: replace with Laravel's URL functionality
 							$faviconurl = (isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 							$faviconurl = substr($faviconurl, 0, strpos($faviconurl, 'index.php/api')).'img/rss-default.png';
-							
+
 						} else {
 							$faviconurl = $Feed->favicon;
 						}
@@ -245,10 +245,10 @@ class FeverController extends Controller
 			if ($request->input('mark') == 'feed') {
 				if ($request->input('as') == 'read') {
 					Article::where('feed_id', $request->input('id'))->where('created_at', '<', $time)->update(['status' => 'read']);
-				} 
+				}
 				if ($request->input('as') == 'saved') {
 					Article::where('feed_id', $request->input('id'))->where('created_at', '<', $time)->update(['star_ind' => '1']);
-				} 
+				}
 				if ($request->input('as') == 'unsaved') {
 					Article::where('feed_id', $request->input('id'))->where('created_at', '<', $time)->update(['status' => 'unread']);
 				}
@@ -264,10 +264,10 @@ class FeverController extends Controller
 					foreach ($Feeds as $Feed) {
 						if ($request->input('as') == 'read') {
 							Article::where('feed_id', $Feed->id)->where('created_at', '<', $time)->update(['status' => 'read']);
-						} 
+						}
 						if ($request->input('as') == 'saved') {
 							Article::where('feed_id', $Feed->id)->where('created_at', '<', $time)->update(['star_ind' => '1']);
-						} 
+						}
 						if ($request->input('as') == 'unsaved') {
 							Article::where('feed_id', $Feed->id)->where('created_at', '<', $time)->update(['status' => 'unread']);
 						}
@@ -279,10 +279,10 @@ class FeverController extends Controller
 			if ($request->input('mark') == 'group' && $request->input('id') == '0') {
 				if ($request->input('as') == 'read') {
 					Article::where('created_at', '<', $time)->update(['status' => 'read']);
-				} 
+				}
 				if ($request->input('as') == 'saved') {
 					Article::where('created_at', '<', $time)->update(['star_ind' => '1']);
-				} 
+				}
 				if ($request->input('as') == 'unsaved') {
 					Article::where('created_at', '<', $time)->update(['status' => 'unread']);
 				}

@@ -15,7 +15,7 @@ if (!empty($feeds) && !empty($categories)) {
 	echo "<form class=\"form-inline\">";
 	echo "<div style=\"margin-top: 10px; margin-left:10px;\" class=\"table-responsive\">";
 	echo "<table class=\"table table-hover table-bordered table-condensed\">";
-	
+
 	echo "<tr class=\"warning\">";
     echo "<th width=\"10%\">ID</th>";
 	echo "<th width=\"45%\">Feed name</th>";
@@ -30,17 +30,17 @@ if (!empty($feeds) && !empty($categories)) {
 		echo "<input name=\"[$feed_id][feed_id]\" type=\"hidden\" value=\"$feed_id\"  />";
 
 		echo "<tr>";
-		
+
 		echo "<td>";
 		echo "<span>" . $feed['id'] . "</span>";
-		echo "</td>";		
-		
+		echo "</td>";
+
 		echo "<td>";
 		echo "<div style=\"width:100%\" class=\"form-group\">";
 		echo "<input name=\"[$feed_id][feed_name]\" style=\"width:100%\" type=\"text\" class=\"form-control\" id=\"exampleInputName2\" value=\"$feed[feed_name]\" placeholder=\"$feed[feed_name]\">";
 		echo "</div>";
 		echo "</td>";
-		
+
 		echo "<td>";
 		echo "<div style=\"width:100%\" class=\"form-group\">";
 		echo "<select name=\"[$feed_id][category_id]\" style=\"width:100%\" class=\"form-control\">";
@@ -48,13 +48,13 @@ if (!empty($feeds) && !empty($categories)) {
 			if ($feed['category_id'] == $category['id']) {
 				echo "<option selected=\"selected\" value=\"$category[id]\">$category[name]</option>";
 			} else {
-				echo "<option value=\"$category[id]\">$category[name]</option>";			
+				echo "<option value=\"$category[id]\">$category[name]</option>";
 			}
 		}
 		echo "</select>";
 		echo "</div>";
 		echo "</td>";
-		
+
 		echo "<td>";
 		echo "<div class=\"checkbox\">";
 		echo "<label>";
@@ -62,19 +62,19 @@ if (!empty($feeds) && !empty($categories)) {
 		echo "</label>";
 		echo "</div>";
 		echo "</td>";
-		
+
 		echo "</tr>";
 
 	}
-	
+
 	echo "</table>";
 	echo "</div>";
 	echo "</form>";
-	
-	echo "<button class=\"btn btn-primary\" id=\"submit-feedchanges\" name=\"formSubmit\" value=\"Submit\" type=\"submit\">Submit</button>";
-	
 
-	
+	echo "<button class=\"btn btn-primary\" id=\"submit-feedchanges\" name=\"formSubmit\" value=\"Submit\" type=\"submit\">Submit</button>";
+
+
+
 }
 if (empty($feeds)) {
 	echo "No feeds are found, please use the top menu to submit a new RSS feed.";

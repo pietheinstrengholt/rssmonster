@@ -20,7 +20,7 @@ class ArticleController extends Controller
 		if ($request->has('status')) {
 
 			$unread_item_ids = [];
-			
+
 			//if search is set, first get these results
 			if (!empty($request->input('search'))) {
 				$Articles = Article::where('subject', 'like', '%' . $request->input('search') . '%')->orWhere('content', 'like', '%' . $request->input('search') . '%')->orderBy('published', $request->input('sort'))->select('id')->get();

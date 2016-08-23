@@ -82,11 +82,11 @@ div.minimal {
 }
 
 div.entry-inner div.item-star {
-	display:none;	
+	display:none;
 }
 
 div.entry-inner div.item-star.unstar {
-	display:none;	
+	display:none;
 }
 
 div.entry-inner h4.heading {
@@ -236,7 +236,7 @@ div#block.normal div.full-content, div#block.normal div.less-content {
 }
 
 .article h5 a {
-	color: #333333;	
+	color: #333333;
 	font-weight:400;
 }
 
@@ -325,7 +325,7 @@ div.full-content img {
 }
 
 div.options {
-	height:30px; 
+	height:30px;
 	display:none;
 	background-color:#999;
 }
@@ -349,16 +349,16 @@ span.star.badge {
 /* SIDEBAR */
 
 div#buttons-top {
-	position: fixed ! important; 
-	top:70px; 
-	padding-right:0px; 
+	position: fixed ! important;
+	top:70px;
+	padding-right:0px;
 	width: 15%;
 }
 
 div#buttons-bottom {
-	position: fixed ! important; 
-	bottom:20px; 
-	padding-right:0px; 
+	position: fixed ! important;
+	bottom:20px;
+	padding-right:0px;
 	width: 15%;
 }
 
@@ -392,7 +392,7 @@ ul.main, ul.connected {
 	padding: 0px;
 }
 
-.list-group-item, .panel { 
+.list-group-item, .panel {
 	background-color: transparent;
 	border: 0px transparent;
 }
@@ -408,7 +408,7 @@ li.main, li.item	{
 	border-top-left-radius: 0px !important;
 	border-top-right-radius: 0px !important;
 	border-bottom-left-radius: 0px !important;
-	border-bottom-right-radius: 0px !important;	
+	border-bottom-right-radius: 0px !important;
 }
 
 ul.connected {
@@ -517,7 +517,7 @@ li.list-group-item img.favicon {
 
 div.column-right span.site-info img.favicon {
 	width: 18px;
-	height: 18px;	
+	height: 18px;
 }
 
 /* FEED MANAGE SCREEN */
@@ -580,7 +580,7 @@ span.badge.pull-right {
 }
 
 a#star.navbar-brand,a#unread.navbar-brand {
-	font-size: 15px; 
+	font-size: 15px;
 	margin-left: 1px;
 }
 
@@ -1021,21 +1021,21 @@ a#drop1 {
 }
 
 button.navbar-toggle {
-	background-color: transparent ! important; 
+	background-color: transparent ! important;
 	border: 0px solid transparent;
 	margin-top: 4px;
 }
 
 ul.nav.navbar-nav li.dropdown.open a#drop1 {
-	background-color: transparent ! important; 
+	background-color: transparent ! important;
 }
 
 ul.nav.navbar-nav li.dropdown a#drop1 {
-	color: #9d9d9d ! important; 
+	color: #9d9d9d ! important;
 }
 
 .navbar-nav > li > a, .navbar-brand {
-	padding-top:4px !important; 
+	padding-top:4px !important;
 	padding-bottom:0 !important;
 	height: 41px;
 }

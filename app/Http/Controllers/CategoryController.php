@@ -91,7 +91,7 @@ class CategoryController extends Controller
 			foreach ($orderArray as $key => $value) {
 				//update category with new order
 				Category::where('id', $value)->update(['category_order' => $key]);
-			}  
+			}
 		}
 	}
 }

@@ -6,29 +6,29 @@
 		<div class="subscribe-toolbar">
 
 		<form class="search-form-wrap" data-behavior="search_form" action="index.php/api/feed/newrssfeed" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
-			<input type="text" name="url" id="query" placeholder="Subscribe" autocomplete="off"> 
+			<input type="text" name="url" id="query" placeholder="Subscribe" autocomplete="off">
 		</form>
-			
+
         </div>
-		
-		<div class="feeds-inner"> 
+
+		<div class="feeds-inner">
 			<div class="view-toolbar">
-				<a id="unread" class="view-button" title="View unread" data-behavior="view_unread change_view_mode" data-view-mode="view_unread" data-remote="true">Unread</a> 
+				<a id="unread" class="view-button" title="View unread" data-behavior="view_unread change_view_mode" data-view-mode="view_unread" data-remote="true">Unread</a>
 				<a id="star" class="view-button" title="View starred" data-behavior="view_starred change_view_mode" data-view-mode="view_starred" data-remote="true">Starred</a>
 				<a id="read" class="view-button selected" title="View all" data-behavior="view_all change_view_mode" data-view-mode="view_all" data-remote="true">Read</a>
 			</div>
 			<div class="feeds-droppable">
 				<div class="panel"></div>
 			</div>
-			
+
 		</div>
-		
+
 		<div class="feeds-toolbar">
 			<table cellpadding="0">
 				<tbody>
 				  <tr>
 					<td>
-						<a id="delete" class="view-button" title="Delete" data-behavior="view_unread change_view_mode" data-view-mode="view_unread" data-remote="true">Delete</a> 
+						<a id="delete" class="view-button" title="Delete" data-behavior="view_unread change_view_mode" data-view-mode="view_unread" data-remote="true">Delete</a>
 					</td>
 					<td>
 						<a id="mark-as-read" class="view-button" title="Mark all as read" data-behavior="view_starred change_view_mode" data-view-mode="view_starred" data-remote="true">Read all</a>
@@ -40,7 +40,7 @@
 				</tbody>
 			  </table>
 		</div>
-		
+
 	</div>
 
 	<div class="column-center ui-resizable">
@@ -68,7 +68,7 @@
 							</div>
 							<button id="mobile-submit" class="btn btn-default">Submit</button>
 						</form>
-						
+
 						<ul class="nav navbar-nav">
 							<li class="dropdown">
 							<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
@@ -85,21 +85,21 @@
 			</div>
 		</div>
 		<div class="search-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="get">
-			<input type="search" id="search-field" placeholder="Search" autocomplete="off"> 
+			<input type="search" id="search-field" placeholder="Search" autocomplete="off">
 		</div>
 		<div id="section"></div>
 	</div>
 	<div class="column-right ui-resizable">
-	
+
 	<div class="entry-toolbar">
-	
+
 		<span class="site-info">
 			<span class="favicon-wrap">
 				<span class="favicon"></span>
 			</span>
 			<a class="entry-feed-title"></a>
 		</span>
-		
+
 		<div class="entry-buttons">
 
 			<div class="entry-button-wrap">
@@ -109,19 +109,19 @@
 					</div>
 				</div>
 			</div>
-			
+
 			<div class="entry-button-wrap invisible circle">
 				<button class="entry-button button-toggle-read" title="Mark as read/unread">
 					  <span class="circle unread"></span>
 				</button>
 			</div>
 		</div>
-		
+
 	</div>
 	<div class="entry-content">
 		<div class="entry-inner"></div>
 	</div>
-	
+
 	</div>
 </div>
 

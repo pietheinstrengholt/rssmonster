@@ -46,7 +46,7 @@ class FeedController extends Controller
 
 		//only add articles and update feed when results are found
 		if (! empty($simplePieInstance)) {
-			
+
 			foreach ($simplePieInstance->get_items() as $item) {
 				//count the number of items that already exist in the database with the item url and feed_id
 				$results_url = Article::where(['feed_id' => $Feed->id, 'url' => $item->get_permalink()])->count();
@@ -56,7 +56,7 @@ class FeedController extends Controller
 				//add new article if no results are found and article date is no older than one week
 				if ($results_url == 0 && $results_title == 0 && ! (strtotime($date) < strtotime($previousweek))) {
 					$article = new Article;
-					
+
 					//get article content
 					$article->feed_id = $Feed->id;
 					$article->status = 'unread';
@@ -64,7 +64,7 @@ class FeedController extends Controller
 					$article->subject = $item->get_title();
 					$article->content = $item->get_description();
 					$article->published = $item->get_date('Y-m-j H:i:s');
-					
+
 					//get URL of first image
 					//TODO: replace with SimplePie str_get_html function, see: http://stackoverflow.com/questions/9865130/getting-image-url-from-rss-feed-using-simplepie
 					$description =  $item->get_description();
@@ -72,7 +72,7 @@ class FeedController extends Controller
 					if (array_key_exists('src', $image)) {
 						$article->image_url = $image['src'];
 					}
-					
+
 					//save article content to database
 					$article->save();
 
