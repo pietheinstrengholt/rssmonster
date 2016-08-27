@@ -42,6 +42,11 @@ class CreateTablesScript extends Migration
             $table->timestamps();
         });
 
+		Schema::create('settings', function (Blueprint $table) {
+			$table->string('config_key')->unique();
+			$table->string('config_value');
+		});
+
         // Insert first category
         DB::table('categories')->insert(
             [

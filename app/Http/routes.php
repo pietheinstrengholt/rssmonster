@@ -13,6 +13,9 @@
 
 $app->get('/', 'IndexController@index');
 $app->get('/managefeeds', 'IndexController@managefeeds');
+$app->get('/newfeed', 'IndexController@newfeed');
+$app->get('/settings', 'SettingController@index');
+$app->post('/settings', 'SettingController@store');
 
 $app->get('/api/category', 'CategoryController@index');
 $app->get('/api/category/overview', 'CategoryController@overview');
