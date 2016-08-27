@@ -217,18 +217,42 @@ $(document).ready(function () {
 	});
 
 	//Functionality to update all feeds, fetch new articles from RSS feeds
-	$("a.update").click(function () {
+	$("a#update-feeds").click(function () {
 		//TODO: show a progress bar while loading
+		$('#modal-settings').modal('hide');
 		$('div#section').off("scroll");
 		$('div#section').empty();
 		$('div#section').load(url + '/api/feed/updateall');
 	});
 
 	//Functionality to load manage feeds screen
-	$("a.managefeeds").click(function () {
+	$("a#addnew-feed").click(function () {
+		$('#modal-settings').modal('hide');
+		$('div#section').off("scroll");
+		$('div#section').empty();
+		$('div#section').load(url + '/newfeed');
+	});
+
+	//Functionality to load new feed screen
+	$("a#manage-feeds").click(function () {
+		$('#modal-settings').modal('hide');
 		$('div#section').off("scroll");
 		$('div#section').empty();
 		$('div#section').load(url + '/managefeeds');
+	});
+
+	//Functionality to load new feed screen
+	$("a#settings-page").click(function () {
+		$('#modal-settings').modal('hide');
+		$('div#section').off("scroll");
+		$('div#section').empty();
+		$('div#section').load(url + '/settings');
+	});
+
+	$("div.hamburger-menu,button.navbar-toggle").click(function () {
+		$('#modal-settings').modal('show');
+		$('#modal-settings div.modal-header h4.modal-title').text('Settings page');
+		//$('#modal-settings div.modal-content div.modal-body').empty();
 	});
 
 	//Functionality to show modal pop-up, change modal text based on button property
@@ -429,22 +453,12 @@ $(document).ready(function () {
 		//copy contents of the block to the right column
 		$(this).addClass("active");
 
-		//add feed details to top menu of the right column
-		var feed_name = $(this).find('span.feed_name').text();
-		$('div.column-right a.entry-feed-title').text(feed_name);
-		$('div.column-right span.favicon').empty();
-		$(this).find("img.favicon").clone().appendTo("div.column-right span.favicon");
-
 		//get article id
 		var articleId = $(this).find('div.article').attr('id');
 
+		//show unread button on top of column-right
 		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.invisible').attr('id', articleId);
 		$('div.column-right div.entry-toolbar div.entry-buttons').find('div.invisible').removeClass("invisible").addClass("visible");
-
-		$("div.column-right div.entry-inner").empty();
-		$(this).find("div.maximal").clone().appendTo("div.column-right div.entry-inner");
-		$(this).find(".full-content").clone().appendTo("div.column-right div.entry-inner");
-		$("div.column-right").find(".full-content").show();
 
 		//TODO: implement option bar
 		$(this).find('div.options').show();
@@ -813,7 +827,7 @@ function destroyArticleWaypoint(articleId) {
 									}
 
 									// append content blocks for each article in the data to the main div
-									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="full-content">' + article["content"] + '</div><div class="less-content">' + strip(article["content"]).split(/\s+/).slice(1,40).join(" ") + '...' + image_url + '</div></div></div>');
+									$this.append('<div id="block" class="normal"><div class="article" id="' + article["id"] + '"><div class="maximal" id=' + article["id"] + '><div class="item-star ' + starflag + '" id=' + article["id"] + '></div><h4 class="heading" id="' + article["id"] + '"><a href="' + article["url"] + '" target="_blank">' + article["subject"] + '</a></h4><div class="feedname"><span class="favicon"><img class="favicon" src="' + favicon + '"></span><span class="feed_name">' + article["feed_name"] + '</span><span class=break> | </span><span class=published_date>' + article["published"] + '</span></div></div><div class="article-content">' + article["content"] + '</div></div></div>');
 
 									//add waypoint, when article reaches top of the screen it fires an event to mark the article as read
 									setTimeout(function () {

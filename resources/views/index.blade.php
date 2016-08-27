@@ -5,7 +5,7 @@
 	<div class="column-left ui-resizable">
 		<div class="subscribe-toolbar">
 
-		<form class="search-form-wrap" data-behavior="search_form" action="index.php/api/feed/newrssfeed" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
+		<form class="new-form-wrap" data-behavior="search_form" action="index.php/api/feed/newrssfeed" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
 			<input type="text" name="url" id="query" placeholder="Subscribe" autocomplete="off">
 		</form>
 
@@ -43,7 +43,7 @@
 
 	</div>
 
-	<div class="column-center ui-resizable">
+	<div class="column-right ui-resizable">
 		<div class="mobile-top">
 			<div class="navbar navbar-fixed-top navbar-inverse">
 				<div class="container">
@@ -59,69 +59,33 @@
 						<a class="navbar-brand" id="unread" href="#"><span class="unread badge pull-right">0</span>Unread</a>
 						<a class="navbar-brand" id="star" href="#"><span class="star badge pull-right">109</span>Saved</a>
 					</div>
-
-					<!-- Collect the nav links, forms, and other content for toggling -->
-					<div class="navbar-collapse collapse" id="bs-example-navbar-collapse-1" aria-expanded="false">
-						<form action="index.php/api/feed/newrssfeed" method="post" class="navbar-form navbar-left" role="url">
-							<div class="form-group" style="float: left;">
-								<input id="mobile-url" name="url" type="text" placeholder="Add feed or url" class="form-control">
-							</div>
-							<button id="mobile-submit" class="btn btn-default">Submit</button>
-						</form>
-
-						<ul class="nav navbar-nav">
-							<li class="dropdown">
-							<a id="drop1" href="#" role="button" class="dropdown-toggle" data-toggle="dropdown">Options<b class="caret"></b></a>
-							<ul class="dropdown-menu" role="menu" aria-labelledby="drop1">
-								<li role="presentation"><a class="update" href="#" role="menuitem" tabindex="-1">Update</a></li>
-								<li role="presentation"><a class="managefeeds" href="#" role="menuitem" tabindex="-1">Manage feeds</a></li>
-							</ul>
-							</li>
-						</ul>
-
-					</div><!-- /.nav-collapse -->
-
 				</div><!-- /.container -->
 			</div>
 		</div>
 		<div class="search-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="get">
 			<input type="search" id="search-field" placeholder="Search" autocomplete="off">
 		</div>
-		<div id="section"></div>
-	</div>
-	<div class="column-right ui-resizable">
+		<div class="entry-toolbar">
 
-	<div class="entry-toolbar">
+			<div class="entry-buttons">
 
-		<span class="site-info">
-			<span class="favicon-wrap">
-				<span class="favicon"></span>
-			</span>
-			<a class="entry-feed-title"></a>
-		</span>
-
-		<div class="entry-buttons">
-
-			<div class="entry-button-wrap">
-				<div class="entry-button">
-					<div class="hamburger-menu-wrap" data-behavior="toggle_dropdown" title="Settings">
-						<div class="hamburger-menu"></div>
+				<div class="entry-button-wrap">
+					<div class="entry-button">
+						<div class="hamburger-menu-wrap" data-behavior="toggle_dropdown" title="Settings">
+							<div class="hamburger-menu"></div>
+						</div>
 					</div>
+				</div>
+
+				<div class="entry-button-wrap invisible circle">
+					<button class="entry-button button-toggle-read" title="Mark as read/unread">
+						  <span class="circle unread"></span>
+					</button>
 				</div>
 			</div>
 
-			<div class="entry-button-wrap invisible circle">
-				<button class="entry-button button-toggle-read" title="Mark as read/unread">
-					  <span class="circle unread"></span>
-				</button>
-			</div>
 		</div>
-
-	</div>
-	<div class="entry-content">
-		<div class="entry-inner"></div>
-	</div>
-
+		<div id="section"></div>
 	</div>
 </div>
 
@@ -139,6 +103,89 @@
          <div class="modal-footer">
             <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
             <button type="button" class="btn btn-primary">Submit</button>
+         </div>
+      </div>
+      <!-- /.modal-content -->
+   </div>
+   <!-- /.modal-dialog -->
+</div>
+<!-- /.modal -->
+<!-- end html modal pop-up message -->
+
+<!-- html for settings modal pop-up message -->
+<div id="modal-settings" class="modal fade">
+   <div class="modal-dialog">
+      <div class="modal-content">
+         <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+            <h4 class="modal-title">Modal title</h4>
+         </div>
+         <div class="modal-body">
+			<div id="page-content1" class="row-flex row-flex-wrap row row-eq-height">
+				<div class="col-md-3 col-sm-6 hero-feature">
+					<div class="well">
+						<div class="caption" style="padding:0px;">
+							<div class="clearfix"></div>
+							<div class="content-container">
+								<h3 class="center"><a href="#">Add new feed</a></h3>
+								<p class="center">Add a new feed or category.</p>
+								<p class="p-more-info">
+								<a id="addnew-feed" href="#" class="btn btn-warning">More info</a>
+								</p>
+								<div class="clearfix"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3 col-sm-6 hero-feature">
+					<div class="well">
+						<div class="caption" style="padding:0px;">
+						<div class="clearfix"></div>
+						<div class="content-container">
+							<h3 class="center"><a href="#">Manage feeds</a></h3>
+							<p class="center">Rename, remove feeds or change the category of a feed.</p>
+							<p class="p-more-info">
+							<a id="manage-feeds" href="#" class="btn btn-danger">More info</a>
+							</p>
+							<div class="clearfix"></div>
+						</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3 col-sm-6 hero-feature">
+					<div class="well">
+						<div class="caption" style="padding:0px;">
+							<div class="clearfix"></div>
+							<div class="content-container">
+								<h3 class="center"><a href="#">Update articles</a></h3>
+								<p class="center">Start processing the retrieval of new articles.</p>
+								<p class="p-more-info">
+								<a id="update-feeds" href="#" class="btn btn-primary">More info</a>
+								</p>
+								<div class="clearfix"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+				<div class="col-md-3 col-sm-6 hero-feature">
+					<div class="well">
+						<div class="caption" style="padding:0px;">
+							<div class="clearfix"></div>
+							<div class="content-container">
+								<h3 class="center"><a href="#">Settings page</a></h3>
+								<p class="center">Change the sort order of articles and other settings.</p>
+								<p class="p-more-info">
+								<a id="settings-page" href="#" class="btn btn-success">More info</a>
+								</p>
+								<div class="clearfix"></div>
+							</div>
+						</div>
+					</div>
+				</div>
+			</div>
+         </div>
+         <div class="modal-footer">
+            <button type="button" class="btn btn-default" data-dismiss="modal">Close</button>
          </div>
       </div>
       <!-- /.modal-content -->
