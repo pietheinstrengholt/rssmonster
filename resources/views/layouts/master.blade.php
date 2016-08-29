@@ -13,6 +13,7 @@
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<meta name="base_url" content="{{ URL::to('/') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
+	<link rel="stylesheet" href="{{ URL::asset('css/font-awesome.min.css') }}">
 	<link rel="stylesheet" href="{{ URL::asset('css/app.css') }}">
 
 	<!-- Configuring Web Applications -->

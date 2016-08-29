@@ -214,7 +214,17 @@ $(document).ready(function () {
 		$('#modal-settings').modal('hide');
 		$('div#section').off("scroll");
 		$('div#section').empty();
-		$('div#section').load(url + '/api/feed/updateall');
+      $('div#section').append('<div id="spinner" style="text-align: center; margin-top:100px;"><p>Loading all feeds... This might take a while..</p><i class="fa fa-spinner fa-spin" style="font-size:24px"></i><div>');
+
+      $.get(url + '/api/feed/updateall', function(result) {
+         $('div#section').append('<div id="result"></div>');
+         $('div#section div#result').html(result);
+         //remove spinner when the load is completed
+			$("#spinner").hide();
+         $('div#section div#result').css( { marginLeft : "20px", marginTop : "10px" } );
+      });
+
+
 	});
 
 	//Functionality to load manage feeds screen
