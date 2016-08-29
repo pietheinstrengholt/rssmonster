@@ -26,19 +26,20 @@ class SettingController extends Controller
 
 	public function store(Request $request)
 	{
-		//validate input form
-		$this->validate($request, [
-			'sort_order' => 'required',
-		]);
+      if ($request->isMethod('post')) {
+         if ($request->has('settings')) {
+         	//truncate table
+         	Setting::truncate();
 
-		//truncate table
-		Setting::truncate();
+            foreach ($request->input('settings') as $key => $value) {
+            	$setting = new Setting;
+            	$setting->config_key = $key;
+            	$setting->config_value = $value;
+            	$setting->save();
+            }
 
-		$setting = new Setting;
-		$setting->config_key = 'sort_order';
-		$setting->config_value = $request->input('sort_order');
-		$setting->save();
-
-		return Redirect::to('/');
+      		return response()->json("done");
+         }
+      }
 	}
 }

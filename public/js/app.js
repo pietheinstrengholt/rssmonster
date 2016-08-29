@@ -464,6 +464,36 @@ $(document).ready(function () {
 		$(this).find('div.options').show();
 	});
 
+   //submit new settings-page
+   $("body").on("click", "button#settings-submit", function (event) {
+		//restructure array form data
+		var values = {};
+		$.each($('form.form-inline').serializeArray(), function(i, field) {
+			values[field.name] = field.value;
+		});
+
+      //send json request
+		$.ajax({
+			type: "POST",
+			url: url + "/api/settings",
+			data: {
+				"settings": values
+			},
+			async: false,
+			success: function (json) {
+				result = json;
+				if (result = "done") {
+					location.reload();
+				}
+			},
+			failure: function (errMsg) {
+				console.log(errMsg);
+			}
+		});
+
+
+   });
+
 	$("body").on("click", "button#submit-feedchanges", function (event) {
 		//restructure array form data
 		var values = {};

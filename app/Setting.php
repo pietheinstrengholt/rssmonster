@@ -9,6 +9,7 @@ class Setting extends Model
 	protected $fillable = ['config_key','config_value'];
 	protected $guarded = [];
 	protected $table = 'settings';
+	public $timestamps = false;
 }
 
 ?>
