@@ -44,7 +44,6 @@ function get_time_diff(datetime) {
 //create new object to store selection
 var mySelection = new Object();
 mySelection.status = "unread";
-mySelection.sort = "desc";
 mySelection.category_id = null;
 mySelection.feed_id = null;
 mySelection.loadcount = 0;
@@ -150,7 +149,6 @@ $(document).ready(function () {
 				category_id: mySelection["category_id"], // Catch category from menu
 				feed_id: mySelection["feed_id"], // Catch feedname from menu
 				status: mySelection["status"], // Catch status from menu
-				sort: mySelection["sort"], // Catch sort
 				search: mySelection["search"], // Catch search value
 			});
 			//set search value back to null after results have been retrieved
@@ -207,12 +205,6 @@ $(document).ready(function () {
 		$('div.panel').find('.list-group-item-warning').removeClass("list-group-item-warning");
 		$(this).addClass("list-group-item-warning");
 		mySelection.feed_id = $(this).attr('id');
-		loadcontent();
-	});
-
-	//Functionality to change the sort order, clicked on top-nav menu
-	$("a.sort-order").click(function () {
-		mySelection.sort = $(this).attr("id");
 		loadcontent();
 	});
 
@@ -697,7 +689,6 @@ function destroyArticleWaypoint(articleId) {
 			category_id: '',
 			feed_id: '',
 			status: 'unread',
-			sort: '',
 			search: '',
 		}
 
@@ -776,7 +767,6 @@ function destroyArticleWaypoint(articleId) {
 					"status": $settings.status,
 					"feed_id": $settings.feed_id,
 					"category_id": $settings.category_id,
-					"sort": $settings.sort,
 					"search": $settings.search
 				},
 				async: false,
@@ -820,7 +810,6 @@ function destroyArticleWaypoint(articleId) {
 						type: "GET",
 						url: url + "/api/article/details",
 						data: {
-							"sort": $settings.sort,
 							"article_id": input
 						},
 						async: true,

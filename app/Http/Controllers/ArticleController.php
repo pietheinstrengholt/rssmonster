@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use DB;
 use App\Article;
 use Illuminate\Http\Request;
+use App\Helper;
 
 class ArticleController extends Controller
 {
@@ -23,27 +24,27 @@ class ArticleController extends Controller
 
 			//if search is set, first get these results
 			if (!empty($request->input('search'))) {
-				$Articles = Article::where('subject', 'like', '%' . $request->input('search') . '%')->orWhere('content', 'like', '%' . $request->input('search') . '%')->orderBy('published', $request->input('sort'))->select('id')->get();
+				$Articles = Article::where('subject', 'like', '%' . $request->input('search') . '%')->orWhere('content', 'like', '%' . $request->input('search') . '%')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
 			} else {
 				//get articles for status equals read and unread
 				if ($request->input('status') != 'star') {
 					if ($request->has('feed_id')) {
-						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('id')->get();
+						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('status', $request->input('status'))->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
 					} elseif ($request->has('category_id')) {
-						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('articles.id')->get();
+						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.status', $request->input('status'))->orderBy('published', Helper::setting('sort_order'))->select('articles.id')->get();
 					} else {
-						$Articles = Article::where('status', $request->input('status'))->orderBy('published', $request->input('sort'))->select('id')->get();
+						$Articles = Article::where('status', $request->input('status'))->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
 					}
 				}
 
 				//get articles for status star, star_ind equals one
 				if ($request->input('status') == 'star') {
 					if ($request->has('feed_id')) {
-						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('star_ind', '1')->orderBy('published', $request->input('sort'))->select('id')->get();
+						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('star_ind', '1')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
 					} else if ($request->has('category_id')) {
-						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.star_ind', '1')->orderBy('published', $request->input('sort'))->select('articles.id')->get();
+						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.star_ind', '1')->orderBy('published', Helper::setting('sort_order'))->select('articles.id')->get();
 					} else {
-						$Articles = Article::where('star_ind', '1')->orderBy('published', $request->input('sort'))->select('id')->get();
+						$Articles = Article::where('star_ind', '1')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
 					}
 				}
 			}
@@ -65,7 +66,7 @@ class ArticleController extends Controller
 	{
 		if ($request->has('article_id')) {
 			$articlelist = explode(',', $request->input('article_id'));
-			$Articles = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', $articlelist)->orderBy('published', $_GET['sort'])->select('articles.id', 'articles.status', 'articles.star_ind', 'articles.url', 'articles.image_url', 'articles.subject', 'articles.content', 'articles.published', 'articles.feed_id', 'feeds.feed_name', 'feeds.favicon')->get();
+			$Articles = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', $articlelist)->orderBy('published', Helper::setting('sort_order'))->select('articles.id', 'articles.status', 'articles.star_ind', 'articles.url', 'articles.image_url', 'articles.subject', 'articles.content', 'articles.published', 'articles.feed_id', 'feeds.feed_name', 'feeds.favicon')->get();
 			return response()->json($Articles);
 		}
 	}
