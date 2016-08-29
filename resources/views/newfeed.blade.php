@@ -2,5 +2,5 @@
 	<div class="form-group" style="float: left;">
 		<input id="mobile-url" name="url" type="text" placeholder="Add feed or url" class="form-control">
 	</div>
-	<button id="mobile-submit" class="btn btn-default">Submit</button>
+	<button style="margin-left:2px;" id="mobile-submit" class="btn btn-primary">Submit</button>
 </form>

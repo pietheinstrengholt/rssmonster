@@ -49,8 +49,6 @@ Change "/lumen/public/" to the location where RSSMonster has been deployed.
 * Cosmetic: When moving feeds between categories, change the count for the category
 * Show a welcome screen when the database is empty
 * Drag and drop on Tablet?
-* Settings page
-* Improve Smartphone usability by navigating to feed categories
 
 #### Credits
 

@@ -2,7 +2,7 @@
 <div style="margin-top: 10px; margin-left:10px; margin-right:10px;" class="table-responsive">
 <table class="table table-hover table-bordered table-condensed">
 
-<tr class="warning">
+<tr class="active">
 <th width="10%">ID</th>
 <th width="45%">Feed name</th>
 <th width="30%">Category</th>
@@ -50,4 +50,4 @@
 </table>
 </div>
 </form>
-<button class="btn btn-primary" id="submit-feedchanges" name="formSubmit" value="Submit" type="submit">Submit</button>
+<button style="margin-left:10px; margin-bottom:10px;" class="btn btn-primary" id="submit-feedchanges" name="formSubmit" value="Submit" type="submit">Submit</button>
