@@ -14,8 +14,8 @@ class FeedController extends Controller
 
 	public function index()
 	{
-		$Feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id', 'feeds.category_id', 'feeds.feed_name', 'feeds.feed_desc', 'feeds.url', 'feeds.favicon', 'categories.name as category_name')->get();
-		return response()->json($Feeds);
+		$feeds = DB::table('feeds')->join('categories', 'feeds.category_id', '=', 'categories.id')->orderBy('feed_name', 'asc')->select('feeds.id', 'feeds.category_id', 'feeds.feed_name', 'feeds.feed_desc', 'feeds.url', 'feeds.favicon', 'categories.name as category_name')->get();
+		return response()->json($feeds);
 	}
 
 	public function updateall()
@@ -24,12 +24,12 @@ class FeedController extends Controller
 		$this->cleanup();
 
 		//get only 15 feeds at a time
-		$Feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
+		$feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
 
-		if (! empty($Feeds)) {
-			foreach ($Feeds as $Feed) {
+		if (! empty($feeds)) {
+			foreach ($feeds as $feed) {
 				//update feed, see update function
-				$this->update($Feed);
+				$this->update($feed);
 			}
 		}
 	}
@@ -45,7 +45,7 @@ class FeedController extends Controller
 		$simplePieInstance = $feeder->getRawFeederObject();
 
 		//only add articles and update feed when results are found
-		if (! empty($simplePieInstance)) {
+		if (!empty($simplePieInstance)) {
 
 			foreach ($simplePieInstance->get_items() as $item) {
 				//count the number of items that already exist in the database with the item url and feed_id
@@ -99,7 +99,7 @@ class FeedController extends Controller
 			}
 
 			$feedFactory = new FeedFactory(['cache.enabled' => false]);
-			$feeder = $feedFactory->make($_POST['url']);
+			$feeder = $feedFactory->make($request->input('url'));
 			$simplePieInstance = $feeder->getRawFeederObject();
 
 			if (!empty($simplePieInstance)) {
@@ -180,6 +180,7 @@ class FeedController extends Controller
 		if ($request->has('feed_id') && $request->has('category_id')) {
 			//update feed with new category_id
 			Feed::where('id', $request->input('feed_id'))->update(['category_id' => $request->input('category_id')]);
+         return response()->json('done');
 		}
 	}
 
