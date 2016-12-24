@@ -189,20 +189,20 @@ class FeverController extends Controller
 			//when argument is groups, retrieve list with categories and id's
 			if (isset($_GET['favicons'])) {
 				$favicons = [];
-				$Feeds = Feed::orderBy('feed_name', 'asc')->get();
-				if (! empty($Feeds)) {
-					foreach ($Feeds as $Feed) {
-						if (empty($Feed->favicon)) {
+				$feeds = Feed::orderBy('feed_name', 'asc')->get();
+				if (! empty($feeds)) {
+					foreach ($feeds as $feed) {
+						if (empty($feed->favicon)) {
 							//TODO: replace with Laravel's URL functionality
 							$faviconurl = (isset($_SERVER['HTTPS']) ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].$_SERVER['REQUEST_URI'];
 							$faviconurl = substr($faviconurl, 0, strpos($faviconurl, 'index.php/api')).'img/rss-default.png';
 
 						} else {
-							$faviconurl = $Feed->favicon;
+							$faviconurl = $feed->favicon;
 						}
 
 						array_push($favicons, [
-							'id' => (int) $Feed->id,
+							'id' => (int) $feed->id,
 							'title' => $faviconurl,
 						]);
 					}

@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 class FeedController extends Controller
 {
-    protected $feedFactory;
+   protected $feedFactory;
 
 	public function index()
 	{
@@ -108,9 +108,9 @@ class FeedController extends Controller
 				echo $simplePieInstance->get_permalink().'<br>';
 				//favicon has been deprecated: $simplePieInstance->get_favicon();
 
-				$Result = Feed::where('url', $simplePieInstance->get_permalink())->first();
+				$result = Feed::where('url', $simplePieInstance->get_permalink())->first();
 
-				if (!empty($Result)) {
+				if (!empty($result)) {
 					echo '<br>Feed already exists!';
 				} elseif (empty($simplePieInstance->get_title())) {
 					echo '<br>Error: feed_name is empty!';
@@ -130,7 +130,7 @@ class FeedController extends Controller
 
 	public function cleanup()
 	{
-		//The starred items and latest 3000 items remain in the database
+		//The starred items, unread and latest 10000 items remain in the database
 		$ArticlesLatest = Article::where('status', 'read')->where('star_ind', '0')->orderBy('created_at', 'desc')->select('id')->take(10000)->get();
 		$ArticlesStar = Article::where('star_ind', '1')->select('id')->get();
 		$ArticlesUnread = Article::where('status', 'unread')->select('id')->get();
