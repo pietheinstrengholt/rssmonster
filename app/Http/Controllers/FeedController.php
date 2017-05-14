@@ -180,7 +180,7 @@ class FeedController extends Controller
 		if ($request->has('feed_id') && $request->has('category_id')) {
 			//update feed with new category_id
 			Feed::where('id', $request->input('feed_id'))->update(['category_id' => $request->input('category_id')]);
-         return response()->json('done');
+		 return response()->json('done');
 		}
 	}
 

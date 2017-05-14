@@ -7,8 +7,8 @@ use Illuminate\Http\Request;
 class SettingController extends Controller
 {
 
-    public function index()
-    {
+	public function index()
+	{
 		//rotate array in order to process it better
 		$config_array = array();
 
@@ -22,24 +22,24 @@ class SettingController extends Controller
 		}
 
   		return view('settings', compact('config_array'));
-    }
+	}
 
 	public function store(Request $request)
 	{
-      if ($request->isMethod('post')) {
-         if ($request->has('settings')) {
-         	//truncate table
-         	Setting::truncate();
+	  if ($request->isMethod('post')) {
+		 if ($request->has('settings')) {
+		 	//truncate table
+		 	Setting::truncate();
 
-            foreach ($request->input('settings') as $key => $value) {
-            	$setting = new Setting;
-            	$setting->config_key = $key;
-            	$setting->config_value = $value;
-            	$setting->save();
-            }
+			foreach ($request->input('settings') as $key => $value) {
+				$setting = new Setting;
+				$setting->config_key = $key;
+				$setting->config_value = $value;
+				$setting->save();
+			}
 
-      		return response()->json("done");
-         }
-      }
+	  		return response()->json("done");
+		 }
+	  }
 	}
 }

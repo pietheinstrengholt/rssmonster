@@ -14,8 +14,8 @@ use Log;
 
 class FeverController extends Controller
 {
-    public function getFever(Request $request)
-    {
+	public function getFever(Request $request)
+	{
 		if ($request->isMethod('get')) {
 
 			/* Fever API needs strings for category_id and feed_id's */
@@ -77,7 +77,7 @@ class FeverController extends Controller
 				$feeds_groups = [];
 
 				//The array is composed with a group_id and feed_ids containing a string/comma-separated list of positive integers
-            //TODO: use get attribute model for functionality below
+			//TODO: use get attribute model for functionality below
 				$Categories = Category::orderBy('category_order', 'asc')->get();
 				if (! empty($Categories)) {
 					foreach ($Categories as $key => $Category) {
@@ -98,7 +98,7 @@ class FeverController extends Controller
 			};
 
 			//return list with all unread article id's
-         //TODO: use get attribute model for functionality below
+		 //TODO: use get attribute model for functionality below
 			if (isset($_GET['unread_item_ids'])) {
 				$unread_item_ids = [];
 				$Articles = Article::where('status', 'unread')->orderBy('id', 'asc')->get();
@@ -216,11 +216,11 @@ class FeverController extends Controller
 			//return fever response
 			return response()->json($arr);
 		}
-    }
+	}
 
 	//TODO: sort out why Post is not working
-    public function postFever(Request $request)
-    {
+	public function postFever(Request $request)
+	{
 		if ($request->isMethod('post')) {
 
 			//set before argument
@@ -290,5 +290,5 @@ class FeverController extends Controller
 				}
 			}
 		}
-    }
+	}
 }
