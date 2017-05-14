@@ -18,7 +18,6 @@ class CategoryController extends Controller
 
 	public function overview()
 	{
-		$newArray = [];
 		$Categories = Category::with('feeds')->orderBy('category_order', 'asc')->get();
 		return response()->json($Categories);
 	}
