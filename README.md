@@ -8,7 +8,7 @@ lumen and twitter boostrap framework. Several features are implemented such as
 marking as read when scrolling, drag and drop style manage feeds, json events, etc.
 Feel free to add any contributions or new features.
 
-<img src="http://www.strengholt-online.nl/wp-content/uploads/2016/rssmonster7.jpg" width="810px">
+![Screenshot](public/img/screenshots/screenshot01.png)
 
 #### Prerequisites
 * PHP >= 5.5.9
