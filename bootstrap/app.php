@@ -2,7 +2,11 @@
 
 require_once __DIR__.'/../vendor/autoload.php';
 
-Dotenv::load(__DIR__.'/../');
+try {
+    (new Dotenv\Dotenv(__DIR__.'/../'))->load();
+} catch (Dotenv\Exception\InvalidPathException $e) {
+    //
+}
 
 /*
 |--------------------------------------------------------------------------
@@ -84,7 +88,7 @@ $app->register('Collective\Html\HtmlServiceProvider');
 $app->register('ArandiLopez\Feed\Providers\LumenFeedServiceProvider');
 class_alias('Collective\Html\FormFacade', 'Html');
 class_alias('Collective\Html\FormFacade', 'Form');
-class_alias('Illuminate\Support\Facades\URL', 'URL');
+//class_alias('Illuminate\Support\Facades\URL', 'URL');
 
 /*
 |--------------------------------------------------------------------------
