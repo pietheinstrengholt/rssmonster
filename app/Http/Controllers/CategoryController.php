@@ -19,37 +19,13 @@ class CategoryController extends Controller
 	public function overview()
 	{
 		$newArray = [];
-		$Categories = Category::orderBy('category_order', 'asc')->get();
-		if (!empty($Categories)) {
-			foreach ($Categories as $key => $Category) {
-				$newArray[$key] = $Category;
-				$newArray[$key]['unread_count'] = $Category['unread_count'] = DB::table('feeds')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('feeds.category_id', $Category['id'])->where('articles.status', 'unread')->count();
-				$newArray[$key]['feeds'] = Category::find($Category['id'])->feeds;
-				if (!empty($newArray[$key]['feeds'])) {
-					foreach ($newArray[$key]['feeds'] as $feedkey => $feed) {
-						$newArray[$key]['feeds'][$feedkey]['unread_count'] = DB::table('articles')->where('feed_id', $feed['id'])->where('status', 'unread')->count();
-					}
-				}
-			}
-		}
-
-		return response()->json($newArray);
+		$Categories = Category::with('feeds')->orderBy('category_order', 'asc')->get();
+		return response()->json($Categories);
 	}
 
 	public function getCategory($id)
 	{
-		$Category = Category::find($id);
-		if (!empty($Category)) {
-			$Category['total_count'] = DB::table('feeds')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('feeds.category_id', $id)->count();
-			$Category['unread_count'] = DB::table('feeds')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('feeds.category_id', $id)->where('articles.status', 'unread')->count();
-			$Category['feeds'] = Category::find($id)->feeds;
-			if (! empty($Category['feeds'])) {
-				foreach ($Category['feeds'] as $key => $feed) {
-					$Category['feeds'][$key]['unread_count'] = DB::table('articles')->where('feed_id', $feed['id'])->where('status', 'unread')->count();
-				}
-			}
-		}
-
+		$Category = Category::with('feeds')->find($id);
 		return response()->json($Category);
 	}
 
@@ -61,15 +37,8 @@ class CategoryController extends Controller
 
 	public function deleteCategory($id)
 	{
-		//do not delete feed larger than 1 (uncategorized)
-		if ($id > 1) {
-			$Feeds = Category::find($id)->feeds;
-			if (!empty($Feeds)) {
-				foreach ($Feeds as $feed) {
-					Article::where('feed_id', $feed['id'])->delete();
-					Feed::where('id', $feed['id'])->delete();
-				}
-			}
+		//do not delete feed if equal to 1 (Uncategorized)
+		if ($id <> 1) {
 			Category::where('id', $id)->delete();
 			return response()->json('deleted');
 		}
