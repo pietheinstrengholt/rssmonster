@@ -1,8 +1,8 @@
 //function to strip html
 function strip(html) {
-   var tmp = document.createElement("DIV");
-   tmp.innerHTML = html;
-   return tmp.textContent || tmp.innerText || "";
+	var tmp = document.createElement("DIV");
+	tmp.innerHTML = html;
+	return tmp.textContent || tmp.innerText || "";
 }
 
 var url = $('meta[name="base_url"]').attr('content');
@@ -214,15 +214,15 @@ $(document).ready(function () {
 		$('#modal-settings').modal('hide');
 		$('div#section').off("scroll");
 		$('div#section').empty();
-      $('div#section').append('<div id="spinner" style="text-align: center; margin-top:100px;"><p>Loading all feeds... This might take a while..</p><i class="fa fa-spinner fa-spin" style="font-size:24px"></i><div>');
+	  $('div#section').append('<div id="spinner" style="text-align: center; margin-top:100px;"><p>Loading all feeds... This might take a while..</p><i class="fa fa-spinner fa-spin" style="font-size:24px"></i><div>');
 
-      $.get(url + '/api/feed/updateall', function(result) {
-         $('div#section').append('<div id="result"></div>');
-         $('div#section div#result').html(result);
-         //remove spinner when the load is completed
+	  $.get(url + '/api/feed/updateall', function(result) {
+		 $('div#section').append('<div id="result"></div>');
+		 $('div#section div#result').html(result);
+		 //remove spinner when the load is completed
 			$("#spinner").hide();
-         $('div#section div#result').css( { marginLeft : "20px", marginTop : "10px" } );
-      });
+		 $('div#section div#result').css( { marginLeft : "20px", marginTop : "10px" } );
+	  });
 
 
 	});
@@ -466,15 +466,15 @@ $(document).ready(function () {
 		$(this).find('div.options').show();
 	});
 
-   //submit new settings-page
-   $("body").on("click", "button#settings-submit", function (event) {
+	//submit new settings-page
+	$("body").on("click", "button#settings-submit", function (event) {
 		//restructure array form data
 		var values = {};
 		$.each($('form.form-inline').serializeArray(), function(i, field) {
 			values[field.name] = field.value;
 		});
 
-      //send json request
+	  //send json request
 		$.ajax({
 			type: "POST",
 			url: url + "/api/settings",
@@ -494,7 +494,7 @@ $(document).ready(function () {
 		});
 
 
-   });
+	});
 
 	$("body").on("click", "button#submit-feedchanges", function (event) {
 		//restructure array form data
