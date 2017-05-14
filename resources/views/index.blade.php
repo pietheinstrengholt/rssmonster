@@ -127,10 +127,10 @@
 						<div class="caption" style="padding:0px;">
 							<div class="clearfix"></div>
 							<div class="content-container">
-								<h3 class="center"><a href="#">Add new feed</a></h3>
+								<h3 class="center">Add new feed</h3>
 								<p class="center">Add a new feed or category.</p>
 								<p class="p-more-info">
-								<a id="addnew-feed" href="#" class="btn btn-warning">More info</a>
+								<a id="addnew-feed" href="#" class="btn btn-warning">Click here</a>
 								</p>
 								<div class="clearfix"></div>
 							</div>
@@ -142,10 +142,10 @@
 						<div class="caption" style="padding:0px;">
 						<div class="clearfix"></div>
 						<div class="content-container">
-							<h3 class="center"><a href="#">Manage feeds</a></h3>
+							<h3 class="center">Manage feeds</h3>
 							<p class="center">Rename, remove feeds or change the category of a feed.</p>
 							<p class="p-more-info">
-							<a id="manage-feeds" href="#" class="btn btn-danger">More info</a>
+							<a id="manage-feeds" href="#" class="btn btn-danger">Click here</a>
 							</p>
 							<div class="clearfix"></div>
 						</div>
@@ -157,10 +157,10 @@
 						<div class="caption" style="padding:0px;">
 							<div class="clearfix"></div>
 							<div class="content-container">
-								<h3 class="center"><a href="#">Update articles</a></h3>
+								<h3 class="center">Update articles</h3>
 								<p class="center">Start processing the retrieval of new articles.</p>
 								<p class="p-more-info">
-								<a id="update-feeds" href="#" class="btn btn-primary">More info</a>
+								<a id="update-feeds" href="#" class="btn btn-primary">Click here</a>
 								</p>
 								<div class="clearfix"></div>
 							</div>
@@ -172,10 +172,10 @@
 						<div class="caption" style="padding:0px;">
 							<div class="clearfix"></div>
 							<div class="content-container">
-								<h3 class="center"><a href="#">Settings page</a></h3>
+								<h3 class="center">Settings page</h3>
 								<p class="center">Change the sort order of articles and other settings.</p>
 								<p class="p-more-info">
-								<a id="settings-page" href="#" class="btn btn-success">More info</a>
+								<a id="settings-page" href="#" class="btn btn-success">Click here</a>
 								</p>
 								<div class="clearfix"></div>
 							</div>
