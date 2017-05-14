@@ -60,15 +60,11 @@ $app->singleton(
 */
 
 // $app->middleware([
-//	 // Illuminate\Cookie\Middleware\EncryptCookies::class,
-//	 // Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
-//	 // Illuminate\Session\Middleware\StartSession::class,
-//	 // Illuminate\View\Middleware\ShareErrorsFromSession::class,
-//	 // Laravel\Lumen\Http\Middleware\VerifyCsrfToken::class,
+//    App\Http\Middleware\ExampleMiddleware::class
 // ]);
 
 // $app->routeMiddleware([
-
+//     'auth' => App\Http\Middleware\Authenticate::class,
 // ]);
 
 /*
@@ -84,11 +80,11 @@ $app->singleton(
 
 // $app->register(App\Providers\AppServiceProvider::class);
 // $app->register(App\Providers\EventServiceProvider::class);
+// class_alias('Illuminate\Support\Facades\URL', 'URL');
 $app->register('Collective\Html\HtmlServiceProvider');
 $app->register('ArandiLopez\Feed\Providers\LumenFeedServiceProvider');
 class_alias('Collective\Html\FormFacade', 'Html');
 class_alias('Collective\Html\FormFacade', 'Form');
-//class_alias('Illuminate\Support\Facades\URL', 'URL');
 
 /*
 |--------------------------------------------------------------------------
