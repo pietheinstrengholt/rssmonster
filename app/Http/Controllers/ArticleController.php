@@ -65,8 +65,7 @@ class ArticleController extends Controller
 	public function details(Request $request)
 	{
 		if ($request->has('article_id')) {
-			$articlelist = explode(',', $request->input('article_id'));
-			$Articles = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', $articlelist)->orderBy('published', Helper::setting('sort_order'))->select('articles.id', 'articles.status', 'articles.star_ind', 'articles.url', 'articles.image_url', 'articles.subject', 'articles.content', 'articles.published', 'articles.feed_id', 'feeds.feed_name', 'feeds.favicon')->get();
+			$Articles = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->whereIn('articles.id', explode(',', $request->input('article_id')))->orderBy('published', Helper::setting('sort_order'))->select('articles.id', 'articles.status', 'articles.star_ind', 'articles.url', 'articles.image_url', 'articles.subject', 'articles.content', 'articles.published', 'articles.feed_id', 'feeds.feed_name', 'feeds.favicon')->get();
 			return response()->json($Articles);
 		}
 	}
@@ -74,9 +73,9 @@ class ArticleController extends Controller
 	//return array with the count of each status
 	public function overview()
 	{
-		$total  = Article::count();
-		$star   = Article::where('star_ind', '1')->count();
-		$read   = Article::where('status', 'read')->count();
+		$total = Article::count();
+		$star = Article::where('star_ind', '1')->count();
+		$read = Article::where('status', 'read')->count();
 		$unread = $total - $read;
 		return response()->json(compact('total', 'star', 'read', 'unread'));
 	}
@@ -98,8 +97,6 @@ class ArticleController extends Controller
 		$Article = Article::find($id);
 		if ($Article->status == 'unread') {
 			Article::where('id', $id)->update(['status' => 'read']);
-			$Article = Article::find($id);
-			$Article->category_id = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->where('articles.id', $id)->max('feeds.category_id');
 			return response()->json($Article);
 		}
 	}
@@ -109,8 +106,6 @@ class ArticleController extends Controller
 		$Article = Article::find($id);
 		if ($Article->status == 'read') {
 			Article::where('id', $id)->update(['status' => 'unread']);
-			$Article = Article::find($id);
-			$Article->category_id = DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->where('articles.id', $id)->max('feeds.category_id');
 			return response()->json($Article);
 		}
 	}
