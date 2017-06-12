@@ -24,7 +24,7 @@ class ArticleController extends Controller
 
 			//if search is set, first get these results
 			if (!empty($request->input('search'))) {
-				$Articles = Article::where('subject', 'like', '%' . $request->input('search') . '%')->orWhere('content', 'like', '%' . $request->input('search') . '%')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
+				$Articles = Article::where('subject', 'like', '%'.$request->input('search').'%')->orWhere('content', 'like', '%'.$request->input('search').'%')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
 			} else {
 				//get articles for status equals read and unread
 				if ($request->input('status') != 'star') {
