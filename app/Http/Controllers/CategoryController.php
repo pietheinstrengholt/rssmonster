@@ -2,10 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use DB;
-use App\Article;
 use App\Category;
-use App\Feed;
 use Illuminate\Http\Request;
 
 class CategoryController extends Controller

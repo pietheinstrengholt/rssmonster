@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Feed extends Model
 {
-	protected $fillable = ['feed_name','feed_desc','url','favicon'];
+	protected $fillable = ['feed_name', 'feed_desc', 'url', 'favicon'];
 	protected $table = 'feeds';
 	protected $appends = array('unread_count', 'read_count', 'total_count');
 
@@ -22,12 +22,12 @@ class Feed extends Model
 
 	public function getUnreadCountAttribute()
 	{
-		return $this->articles->where('status','unread')->count();
+		return $this->articles->where('status', 'unread')->count();
 	}
 
 	public function getReadCountAttribute()
 	{
-		return $this->articles->where('status','read')->count();
+		return $this->articles->where('status', 'read')->count();
 	}
 
 	public function getTotalCountAttribute()

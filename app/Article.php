@@ -7,7 +7,7 @@ use DB;
 
 class Article extends Model
 {
-	protected $fillable = ['status','subject','url','image_url','content','published'];
+	protected $fillable = ['status', 'subject', 'url', 'image_url', 'content', 'published'];
 	protected $table = 'articles';
 	protected $appends = array('category_id');
 
