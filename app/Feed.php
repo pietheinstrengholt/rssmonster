@@ -22,17 +22,17 @@ class Feed extends Model
 
 	public function getUnreadCountAttribute()
 	{
-		return $this->articles->where('status', 'unread')->count();
+		return $this->withCount('articles')->where('status','unread');
 	}
 
 	public function getReadCountAttribute()
 	{
-		return $this->articles->where('status', 'read')->count();
+		return $this->withCount('articles')->where('status','read');
 	}
 
 	public function getTotalCountAttribute()
 	{
-		return $this->articles->count();
+		return $this->withCount('articles');
 	}
 }
 
