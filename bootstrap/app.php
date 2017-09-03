@@ -67,6 +67,10 @@ $app->singleton(
 //     'auth' => App\Http\Middleware\Authenticate::class,
 // ]);
 
+$app->middleware([
+	App\Http\Middleware\LumenCors::class
+]);
+
 /*
 |--------------------------------------------------------------------------
 | Register Service Providers
