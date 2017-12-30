@@ -2,3 +2,5 @@
 .env
 .DS_Store
 Thumbs.db
+node_modules
+public/js/main.js

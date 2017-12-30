@@ -26,6 +26,8 @@ Feel free to add any contributions or new features.
 * Start a command prompt and browse to the folder to which you checked out
 * Run `composer install` this will install all dependencies and might take a while
 * Run `php artisan key:generate` this will generate your individual application key, so that passwords are safe
+* Run `npm install` to install node dependencies, when using windows you might need to run `npm install --global --production windows-build-tools` first.
+* Run npm run production to compile all JS files
 * Run `php artisan migrate` this will add all needed database tables to your mysql database
 * Run `chmod -R 777 storage/`
 * Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
