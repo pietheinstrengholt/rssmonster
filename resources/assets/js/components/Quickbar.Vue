@@ -14,8 +14,8 @@ export default {
         data: 'data'
 	},
 	methods: {
-		loadType: function (type, event) {
-			this.$store.data.type = type;
+		loadType: function (status, event) {
+			this.$store.data.status = status;
 		}
 
 	}

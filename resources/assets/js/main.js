@@ -14,7 +14,7 @@ new Vue({
 	data: {
 		store: {
 			data: {
-				type: 'unread',
+				status: 'unread',
 				category: null,
 				feed: null
 			}

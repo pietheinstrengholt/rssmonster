@@ -21,7 +21,7 @@
 			</div>
 		</div>
 	</div>
-	<infinite-loading :on-infinite="onInfinite" ref="infiniteLoading">
+	<infinite-loading @infinite="onInfinite" ref="infiniteLoading">
 		<span slot="no-more">
 			No More Posts - All items marked as read!
 		</span>
@@ -166,10 +166,10 @@ export default {
     watch: {
 		'$store.data': {
 			handler: function(data) {
-				this.$http.get('http://localhost/rssmonster/public/api/article/listing?status=', {
+				this.$http.get('http://localhost/rssmonster/public/api/article/listing', {
 					params: {
 						//the following arguments are used
-						status: data.type,
+						status: data.status,
 						category_id: data.category,
 						feed_id: data.feed,
 					},
