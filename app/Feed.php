@@ -8,7 +8,7 @@ class Feed extends Model
 {
 	protected $fillable = ['feed_name', 'feed_desc', 'url', 'favicon'];
 	protected $table = 'feeds';
-	protected $appends = array('unread_count', 'read_count', 'total_count');
+	protected $appends = array('unread_count', 'read_count', 'total_count', 'star_count');
 
 	public function category()
 	{
@@ -22,17 +22,22 @@ class Feed extends Model
 
 	public function getUnreadCountAttribute()
 	{
-		return $this->articles->where('status', 'unread')->count();
+		return Article::where('feed_id', $this->attributes['id'])->where('status', 'unread')->count();
 	}
 
 	public function getReadCountAttribute()
 	{
-		return $this->articles->where('status', 'read')->count();
+		return Article::where('feed_id', $this->attributes['id'])->where('status', 'read')->count();
 	}
 
 	public function getTotalCountAttribute()
 	{
-		return $this->articles->count();
+		return Article::where('feed_id', $this->attributes['id'])->count();
+	}
+
+	public function getStarCountAttribute()
+	{
+		return Article::where('feed_id', $this->attributes['id'])->where('star_ind', 1)->count();
 	}
 }
 
