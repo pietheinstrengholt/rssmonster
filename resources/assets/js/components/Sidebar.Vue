@@ -154,7 +154,7 @@ export default {
 	},
 	methods: {
 		fetchCategories: function() {
-			this.$http.get('http://localhost/rssmonster/public/api/category')
+			this.$http.get('http://localhost/rssmonster/public/api/categories')
 			.then(response => {
 				return response.json();
 			})
@@ -177,7 +177,7 @@ export default {
 			for (let i = 0; i < this.categories.length; i++) {
 				orderList.push(this.categories[i]['id']);
 			}
-			this.$http.post('http://localhost/rssmonster/public/api/category/updateorder', {
+			this.$http.post('http://localhost/rssmonster/public/api/categories/updateorder', {
 					params: {
 						//this is the argument used
 						order: orderList,

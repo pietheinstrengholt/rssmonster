@@ -166,7 +166,7 @@ export default {
     watch: {
 		'$store.data': {
 			handler: function(data) {
-				this.$http.get('http://localhost/rssmonster/public/api/article/listing', {
+				this.$http.get('http://localhost/rssmonster/public/api/articles/listing', {
 					params: {
 						//the following arguments are used
 						status: data.status,
@@ -190,7 +190,7 @@ export default {
 		InfiniteLoading,
 	},
 	beforeCreate() {
-		this.$http.get('http://localhost/rssmonster/public/api/article/listing?status=unread')
+		this.$http.get('http://localhost/rssmonster/public/api/articles/listing?status=unread')
 			.then(response => {
 				return response.json();
 			})
@@ -227,7 +227,7 @@ export default {
 			if ((this.container.slice(this.distance, this.distance + 20)).length == 0) {
 				this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
 			} else {
-				this.$http.get('http://localhost/rssmonster/public/api/article/details', {
+				this.$http.get('http://localhost/rssmonster/public/api/articles/details', {
 					params: {
 						//this is the argument used
 						article_id: this.container.slice(this.distance, this.distance + 20).join(","),
@@ -273,7 +273,7 @@ export default {
 		},
 		markArticleRead(article) {
 			//make ajax request to change bookmark status
-			this.$http.post('http://localhost/rssmonster/public/api/article/mark-to-read/' + article).then(response => {
+			this.$http.post('http://localhost/rssmonster/public/api/articles/mark-to-read/' + article).then(response => {
 				// get article content
 				console.log(response.body);
 				//push id to the pool
@@ -292,7 +292,7 @@ export default {
 			}
 
 			//make ajax request to change bookmark status
-			this.$http.post('http://localhost/rssmonster/public/api/article/mark-with-star/' + article, {update: bookmarkChange}).then(response => {
+			this.$http.post('http://localhost/rssmonster/public/api/articles/mark-with-star/' + article, {update: bookmarkChange}).then(response => {
 				//get status & status text
 				console.log(response.status);
 				console.log(response.statusText);
