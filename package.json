@@ -25,6 +25,8 @@
     "babel-core": "^6.0.0",
     "babel-loader": "^6.0.0",
     "babel-preset-env": "^1.5.1",
+    "browser-sync": "^2.23.1",
+    "browser-sync-webpack-plugin": "^1.2.0",
     "browserify": "^11.2.0",
     "browserify-shim": "^3.8.10",
     "cross-env": "^3.2.4",
