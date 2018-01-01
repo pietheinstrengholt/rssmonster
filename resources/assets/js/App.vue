@@ -2,6 +2,7 @@
     <div id="app">
         <div class="row" style="margin-right:0px;">
             <div class="sidebar col-md-2" style="position:fixed">
+                <app-newfeed></app-newfeed>
                 <app-quickbar></app-quickbar>
                 <app-sidebar></app-sidebar>
             </div>
@@ -55,6 +56,14 @@
 	div.home div.quickbar {
         display:none;
     }
+
+    div.quickbar.view-toolbar {
+        margin-top: 40px;
+    }
+
+    div.drag {
+        margin-top: 81px;
+    }
 }
 </style>
 
@@ -62,11 +71,13 @@
     import Sidebar from './components/Sidebar.vue';
     import Home from './components/Home.vue';
     import Quickbar from './components/Quickbar.vue';
+    import Newfeed from './components/Newfeed.vue';
     export default {
         components: {
             appSidebar: Sidebar,
             appHome: Home,
-            appQuickbar: Quickbar
+            appQuickbar: Quickbar,
+            appNewfeed: Newfeed
         }
     }
 </script>

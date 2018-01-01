@@ -1,32 +1,32 @@
 <template>
-<div id="main">
-	<div v-bind:id="article.id" class="block" v-for="(article, key) in articles">
-		<div class="article">
-			<div class="maximal">
-				<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark"></div>
-				<h4 class="heading">
-					<a target="_blank" :href="article.url" v-text="article.subject"></a>
-				</h4>
-				<div class="feedname">
-					<span class="favicon">
-						<img class="favicon" :src="article.favicon">
-					</span>
-					<span class="feed_name" v-text="article.feed_name"></span>
-					<span class="break"> | </span>
-					<span class="published_date" v-text="article.published"></span>
+	<div id="main">
+		<div v-bind:id="article.id" class="block" v-for="(article, key) in articles">
+			<div class="article">
+				<div class="maximal">
+					<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark"></div>
+					<h4 class="heading">
+						<a target="_blank" :href="article.url" v-text="article.subject"></a>
+					</h4>
+					<div class="feedname">
+						<span class="favicon">
+							<img class="favicon" :src="article.favicon">
+						</span>
+						<span class="feed_name" v-text="article.feed_name"></span>
+						<span class="break"> | </span>
+						<span class="published_date" v-text="article.published"></span>
+					</div>
+				</div>
+
+				<div class="article-content" v-html="article.content">
 				</div>
 			</div>
-
-			<div class="article-content" v-html="article.content">
-			</div>
 		</div>
+		<infinite-loading @infinite="onInfinite" ref="infiniteLoading">
+			<span slot="no-more">
+				No More Posts - All items marked as read!
+			</span>
+		</infinite-loading>
 	</div>
-	<infinite-loading @infinite="onInfinite" ref="infiniteLoading">
-		<span slot="no-more">
-			No More Posts - All items marked as read!
-		</span>
-	</infinite-loading>
-</div>
 </template>
 
 <style>
