@@ -6,6 +6,12 @@
     </div>
 </template>
 
+<style>
+	div.quickbar a {
+		font-size: 12px;
+	}
+</style>
+
 <script>
 import draggable from 'vuedraggable';
 
@@ -17,7 +23,6 @@ export default {
 		loadType: function (status, event) {
 			this.$store.data.status = status;
 		}
-
 	}
 }
 </script>
