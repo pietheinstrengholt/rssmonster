@@ -94,7 +94,10 @@ class FeedController extends Controller
 
 			//check if url is valid
 			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
-				echo '<br>Error: Entered value is not a valid url!';
+				return response()->json([
+					'code' => '404',
+					'message' => 'Entered value is not a valid url',
+				], 404);
 				exit();
 			}
 
@@ -111,9 +114,15 @@ class FeedController extends Controller
 				$result = Feed::where('url', $simplePieInstance->get_permalink())->first();
 
 				if (!empty($result)) {
-					echo '<br>Feed already exists!';
+					return response()->json([
+						'code' => '404',
+						'message' => 'Feed already exists',
+					], 404);
 				} elseif (empty($simplePieInstance->get_title())) {
-					echo '<br>Error: feed_name is empty!';
+					return response()->json([
+						'code' => '404',
+						'message' => 'Feed name is empty',
+					], 404);
 				} else {
 					$feed = new Feed;
 					$feed->category_id = '1';
@@ -122,7 +131,7 @@ class FeedController extends Controller
 					$feed->url = $simplePieInstance->get_permalink();
 					$feed->favicon = $simplePieInstance->get_image_url();
 					$feed->save();
-					echo '<br>Feed added to the database!';
+					return response()->json($feed);
 				}
 			}
 		}
