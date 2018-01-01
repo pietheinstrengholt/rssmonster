@@ -12,8 +12,8 @@
 	<!-- CSS -->
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css">
-	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+	<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/4.0.0-beta.3/css/bootstrap.min.css" integrity="sha384-Zug+QiDoJOrZ5t4lssLdxGhVrurbmBWopoEl+M6BdEfwnCJZtKxi1KgxUyJq13dy" crossorigin="anonymous">
+	<script defer src="https://use.fontawesome.com/releases/v5.0.2/js/all.js"></script>
 
 	<!-- Configuring Web Applications -->
 	<link rel="apple-touch-icon" sizes="57x57" href="http://localhost/rssmonster/public/img/favicon/apple-icon-57x57.png">
@@ -36,16 +36,7 @@
 </head>
 
 <div id="app">
-	<div class="row" style="margin-right:0px;">
-		<div class="sidebar col-md-2" style="position:fixed">
-			<app-quickbar></app-quickbar>
-			<app-sidebar></app-sidebar>
-		</div>
-		<div class="home col-md-10 col-md-offset-2">
-			<app-quickbar></app-quickbar>
-			<app-home></app-home>
-		</div>
-	</div>
+
 </div>
 
 <!-- JavaScripts -->

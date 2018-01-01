@@ -1,12 +1,12 @@
 <template>
     <div id="app">
         <div class="row" style="margin-right:0px;">
-            <div class="sidebar col-md-2" style="position:fixed">
+            <div class="sidebar col-md-2 col-sm-0" style="position:fixed">
                 <app-newfeed></app-newfeed>
                 <app-quickbar></app-quickbar>
                 <app-sidebar></app-sidebar>
             </div>
-            <div class="home col-md-10 col-md-offset-2">
+            <div class="home col-md-10 offset-md-2 col-sm-12">
                 <app-quickbar></app-quickbar>
                 <app-home></app-home>
             </div>
@@ -16,7 +16,7 @@
 
 <style>
 /* Landscape phones and portrait tablets */
-@media (max-width: 988px) {
+@media (max-width: 766px) {
 	div.sidebar {
         display:none;
     }
@@ -52,7 +52,7 @@
 }
 
 /* Desktop */
-@media (min-width: 988px) {
+@media (min-width: 766px) {
 	div.home div.quickbar {
         display:none;
     }

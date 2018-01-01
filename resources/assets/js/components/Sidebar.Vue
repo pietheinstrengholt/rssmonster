@@ -3,7 +3,7 @@
 		<div class="drag">
 			<div class="sidebar-category-sub" v-on:click="loadAll()">
 				<span class="glyphicon">
-					<span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span>
+					<i class="fas fa-lightbulb" data-fa-transform="down-5"></i>
 				</span>
 				<span class="title">All</span>
 				<span class="badge-unread">
@@ -14,7 +14,7 @@
 				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
-							<span class="glyphicon glyphicon-unchecked" aria-hidden="true"></span>
+							<i class="fas fa-square" data-fa-transform="down-5"></i>
 						</span>
 						<span class="title">{{category.name}}</span>
 						<span class="badge-unread">
@@ -24,7 +24,7 @@
 					<div v-if="category.feeds" class="sidebar-category-feeds">
 						<div class="sidebar-category-feed" v-on:click="loadFeed(feed.id)" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
 							<span class="glyphicon">
-								<span class="glyphicon glyphicon-certificate" aria-hidden="true"></span>
+								<i class="far fa-square" data-fa-transform="down-5"></i>
 							</span>
 							<span class="title">{{feed.feed_name}}</span>
 							<span class="badge-unread">
