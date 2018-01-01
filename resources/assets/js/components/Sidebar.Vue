@@ -2,34 +2,34 @@
 	<div class="feeds-inner">
 		<div class="drag">
 			<div class="sidebar-category-sub" v-on:click="loadAll()">
-				<div class="glyphicon">
+				<span class="glyphicon">
 					<span class="glyphicon glyphicon-tree-deciduous" aria-hidden="true"></span>
-				</div>
-				<div class="title">All</div>
-				<div class="badge-unread">
+				</span>
+				<span class="title">All</span>
+				<span class="badge-unread">
 					<span class="badge">-</span>
-				</div>
+				</span>
 			</div>
 			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
 				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
-						<div class="glyphicon">
+						<span class="glyphicon">
 							<span class="glyphicon glyphicon-unchecked" aria-hidden="true"></span>
-						</div>
-						<div class="title">{{category.name}}</div>
-						<div class="badge-unread">
+						</span>
+						<span class="title">{{category.name}}</span>
+						<span class="badge-unread">
 							<span class="badge">{{category.unread_count}}</span>
-						</div>
+						</span>
 					</div>
 					<div v-if="category.feeds" class="sidebar-category-feeds">
 						<div class="sidebar-category-feed" v-on:click="loadFeed(feed.id)" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
-							<div class="glyphicon">
+							<span class="glyphicon">
 								<span class="glyphicon glyphicon-certificate" aria-hidden="true"></span>
-							</div>
-							<div class="title">{{feed.feed_name}}</div>
-							<div class="badge-unread">
+							</span>
+							<span class="title">{{feed.feed_name}}</span>
+							<span class="badge-unread">
 								<span class="badge">{{feed.unread_count}}</span>
-							</div>
+							</span>
 						</div>
 					</div>
 				</div>
@@ -116,21 +116,30 @@ sidebar-category-main {
 	width: 100%;
 }
 
-div.badge-unread {
-	float:right;
+div.sidebar-category-sub {
+	border-bottom: 1px solid #dbdbdb;
 }
 
-div.title {
-	text-overflow: ellipsis;
-	overflow:hidden;
-	white-space:nowrap;
-	display: inline-block;
-}
-
-div.glyphicon {
+span.glyphicon {
 	float:left;
 	margin-right:3px;
 }
+
+span.title {
+	text-overflow: ellipsis;
+	overflow:hidden;
+	white-space:nowrap;
+	display: block;
+	padding-right: 25px;
+}
+
+span.badge-unread {
+	float:right;
+	position: absolute;
+	right: 4px;
+	margin-top: -19px;
+}
+
 </style>
 
 <script>
