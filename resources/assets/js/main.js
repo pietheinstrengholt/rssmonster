@@ -25,5 +25,5 @@ new Vue({
 
 // Comment these three for local build.
 Vue.config.devtools = false;
-Vue.config.debug = false;
+Vue.config.debug = true;
 Vue.config.silent = true;
