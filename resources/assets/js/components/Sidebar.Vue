@@ -10,8 +10,8 @@
 					<span class="badge">-</span>
 				</div>
 			</div>
-			<draggable v-model="categories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
-				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in categories" :key="index">
+			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
+				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<div class="glyphicon">
 							<span class="glyphicon glyphicon-unchecked" aria-hidden="true"></span>
@@ -199,6 +199,23 @@ export default {
 			});
 			this.categoriesOrder = orderList;
 			return orderList;
+		},
+		composedCategories() {
+			var composedCategories = this.categories;
+			Object.keys(composedCategories).forEach(function (key) {
+				composedCategories[key]['unread_count'] = 0
+				composedCategories[key]['read_count'] = 0
+				composedCategories[key]['total_count'] = 0
+				composedCategories[key]['star_count'] = 0
+				var feeds = composedCategories[key]['feeds'];
+				Object.keys(feeds).forEach(function (key, id) {
+					composedCategories[key]['unread_count'] = composedCategories[key]['unread_count'] + feeds[id]['unread_count'];
+					composedCategories[key]['read_count'] = composedCategories[key]['read_count'] + feeds[id]['read_count'];
+					composedCategories[key]['total_count'] = composedCategories[key]['total_count'] + feeds[id]['total_count'];
+					composedCategories[key]['star_count'] = composedCategories[key]['star_count'] + feeds[id]['star_count'];
+				});
+			});
+			return composedCategories;
 		}
 	}
 }
