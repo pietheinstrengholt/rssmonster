@@ -11,6 +11,32 @@
                 <app-home></app-home>
             </div>
         </div>
+
+        <!-- Modal -->
+        <div v-if="showModal">
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showModal=false">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        ...
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="showModal=false">Close</button>
+                        <button type="button" class="btn btn-primary" @click="showModal=false">Save changes</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <button id="show-modal" @click="showModal = true">Show Modal</button>
+
     </div>
 </template>
 
@@ -65,6 +91,11 @@
         margin-top: 81px;
     }
 }
+
+#myModal.modal {
+    display: inline;
+    opacity: 1.0;
+}
 </style>
 
 <script>
@@ -78,6 +109,11 @@
             appHome: Home,
             appQuickbar: Quickbar,
             appNewfeed: Newfeed
+        },
+        data() {
+            return {
+                showModal: false
+            }
         }
     }
 </script>

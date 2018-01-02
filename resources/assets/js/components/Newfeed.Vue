@@ -1,7 +1,7 @@
 <template>
     <div class="subscribe-toolbar">
         <div id="newfeed">
-            <i class="fas fa-plus" data-fa-transform="down-12"></i>
+            <i @click="showModal = true" class="fas fa-plus" data-fa-transform="down-12"></i>
         </div>
         <form class="new-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
             <input type="text" name="url" class="query" placeholder="Search" autocomplete="off">

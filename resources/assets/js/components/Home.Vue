@@ -4,9 +4,9 @@
 			<div class="article">
 				<div class="maximal">
 					<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark"></div>
-					<h4 class="heading">
+					<h5 class="heading">
 						<a target="_blank" :href="article.url" v-text="article.subject"></a>
-					</h4>
+					</h5>
 					<div class="feedname">
 						<span class="favicon">
 							<img class="favicon" :src="article.favicon">
@@ -49,10 +49,6 @@ div.block .article {
 div.block .article h4 {
 	cursor: pointer;
 	margin-top: 5px;
-}
-
-div.block .article h4 a {
-	font-weight: 600;
 }
 
 div.block div.article-content {
