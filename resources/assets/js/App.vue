@@ -13,13 +13,13 @@
         </div>
 
         <!-- Modal -->
-        <div v-if="showModal">
+        <div v-if="$store.modal">
             <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="showModal=false">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="$store.modal=false">
                         <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -27,16 +27,13 @@
                         ...
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="showModal=false">Close</button>
-                        <button type="button" class="btn btn-primary" @click="showModal=false">Save changes</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="$store.modal=false">Close</button>
+                        <button type="button" class="btn btn-primary" @click="$store.modal=false">Save changes</button>
                     </div>
                     </div>
                 </div>
             </div>
         </div>
-
-        <button id="show-modal" @click="showModal = true">Show Modal</button>
-
     </div>
 </template>
 
@@ -110,10 +107,8 @@
             appQuickbar: Quickbar,
             appNewfeed: Newfeed
         },
-        data() {
-            return {
-                showModal: false
-            }
+        store: {
+            modal: 'modal'
         }
     }
 </script>

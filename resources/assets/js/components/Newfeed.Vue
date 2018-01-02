@@ -1,7 +1,9 @@
 <template>
     <div class="subscribe-toolbar">
         <div id="newfeed">
-            <i @click="showModal = true" class="fas fa-plus" data-fa-transform="down-12"></i>
+            <div id="show-modal" @click="$store.modal=true">
+                <i @click="$store.modal=true" class="fas fa-plus" data-fa-transform="down-12"></i>
+            </div>
         </div>
         <form class="new-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="post" role="url"><input name="utf8" type="hidden" value="✓">
             <input type="text" name="url" class="query" placeholder="Search" autocomplete="off">
@@ -47,4 +49,16 @@ form.new-form-wrap {
     color: #212325;
     background: url(http://localhost/rssmonster/public/img/search.svg) 8px 13px no-repeat;
 }
+
+div#show-modal {
+    height: 100%;
+}
 </style>
+
+<script>
+    export default {
+        store: {
+            modal: 'modal'
+        }
+    }
+</script>

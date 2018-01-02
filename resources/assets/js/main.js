@@ -17,7 +17,8 @@ new Vue({
 				status: 'unread',
 				category: null,
 				feed: null
-			}
+			},
+			modal: false
 		}
 	},
 	render: h => h(App)
