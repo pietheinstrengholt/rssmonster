@@ -10,3 +10,4 @@
 * Change count based on selection
 * Add refresh button
 * Fix sorting order
+* Refresh the list, when adding new feeds
