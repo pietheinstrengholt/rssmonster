@@ -9,3 +9,4 @@
 * Highlight selected Unread, Starred, Read button
 * Change count based on selection
 * Add refresh button
+* Fix sorting order

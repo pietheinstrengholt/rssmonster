@@ -18,17 +18,37 @@
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
                     <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLongTitle">Modal title</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="$store.modal=false">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Add new feed</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                         <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
                     <div class="modal-body">
-                        ...
+                        <input class="form-control form-control-lg" type="text" placeholder="Enter feed or website url..." v-model="url">
+                        <br>
+                        <button type="submit" class="btn btn-primary mb-2" @click="checkWebsite">Validate feed</button>
+                        <br>
+                        <span v-if="ajaxRequest">Please Wait ...</span>
+                        <br>
+                        <span class="error" v-if="error_msg">{{ error_msg }}</span>
+                        <div v-if="feed_id">
+                            <div class="form-group row">
+                                <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="inputPassword" v-model="feed_name" placeholder="Feed name">
+                                </div>
+                            </div>
+                            <div class="form-group row">
+                                <label for="inputFeedDescription" class="col-sm-3 col-form-label">Feed description</label>
+                                <div class="col-sm-9">
+                                    <input type="text" class="form-control" id="inputPassword" v-model="feed_desc" placeholder="Feed description">
+                                </div>
+                            </div>
+                        </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="$store.modal=false">Close</button>
-                        <button type="button" class="btn btn-primary" @click="$store.modal=false">Save changes</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Cancel</button>
+                        <button v-if="feed_id" type="button" class="btn btn-primary" @click="closeModal">Save changes</button>
                     </div>
                     </div>
                 </div>
@@ -93,6 +113,14 @@
     display: inline;
     opacity: 1.0;
 }
+
+div.modal-dialog {
+    max-width: 800px;
+}
+
+span.error {
+    color: red;
+}
 </style>
 
 <script>
@@ -109,6 +137,44 @@
         },
         store: {
             modal: 'modal'
+        },
+        data() {
+		    return {
+                debug: true,
+                domain: '',
+                ajaxRequest: false,
+                postResults: [],
+                feed_name: '',
+                feed_desc: '',
+                feed_id: '',
+                error_msg: ''
+            }
+        },
+        methods: {
+            checkWebsite: function() {
+                this.ajaxRequest = true;
+
+                this.$http.post('http://localhost/rssmonster/public/api/feeds/newrssfeed?url=' + this.url).then(response => {
+                    this.error_msg = '';
+                    this.feed_id = response.body.id;
+                    this.feed_name = response.body.feed_name;
+                    this.feed_desc = response.body.feed_desc;
+                }, function (data, status, request) {
+                    this.error_msg = data.body.message;
+                    this.feed_id = '';
+                    this.feed_name = '';
+                    this.feed_desc = '';
+                });
+
+                this.ajaxRequest = false;
+            },
+            closeModal: function() {
+                this.feed_id = '';
+                this.feed_name = '';
+                this.feed_desc = '';
+                this.error_msg = '';
+                this.$store.modal = false;
+            }
         }
     }
 </script>

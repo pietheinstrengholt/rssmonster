@@ -95,9 +95,9 @@ class FeedController extends Controller
 			//check if url is valid
 			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
 				return response()->json([
-					'code' => '404',
+					'code' => '403',
 					'message' => 'Entered value is not a valid url',
-				], 404);
+				], 403);
 				exit();
 			}
 
@@ -106,23 +106,19 @@ class FeedController extends Controller
 			$simplePieInstance = $feeder->getRawFeederObject();
 
 			if (!empty($simplePieInstance)) {
-				echo $simplePieInstance->get_title().'<br>';
-				echo $simplePieInstance->get_description().'<br>';
-				echo $simplePieInstance->get_permalink().'<br>';
-				//favicon has been deprecated: $simplePieInstance->get_favicon();
 
 				$result = Feed::where('url', $simplePieInstance->get_permalink())->first();
 
 				if (!empty($result)) {
 					return response()->json([
-						'code' => '404',
+						'code' => '403',
 						'message' => 'Feed already exists',
-					], 404);
+					], 403);
 				} elseif (empty($simplePieInstance->get_title())) {
 					return response()->json([
-						'code' => '404',
-						'message' => 'Feed name is empty',
-					], 404);
+						'code' => '403',
+						'message' => 'Feed name or returned url is empty',
+					], 403);
 				} else {
 					$feed = new Feed;
 					$feed->category_id = '1';

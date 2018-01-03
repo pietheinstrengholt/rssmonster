@@ -194,6 +194,7 @@ export default {
 				}).then(response => {
 					//get status & status text
 					console.log(response.status);
+					//TODO: change order list
 				}, response => {
 					console.log('oops something went wrong');
 				});
@@ -218,10 +219,12 @@ export default {
 				composedCategories[key]['star_count'] = 0
 				var feeds = composedCategories[key]['feeds'];
 				Object.keys(feeds).forEach(function (key, id) {
-					composedCategories[key]['unread_count'] = composedCategories[key]['unread_count'] + feeds[id]['unread_count'];
-					composedCategories[key]['read_count'] = composedCategories[key]['read_count'] + feeds[id]['read_count'];
-					composedCategories[key]['total_count'] = composedCategories[key]['total_count'] + feeds[id]['total_count'];
-					composedCategories[key]['star_count'] = composedCategories[key]['star_count'] + feeds[id]['star_count'];
+					if (!(composedCategories[key] === undefined || composedCategories[key] === null)) {
+						composedCategories[key]['unread_count'] = composedCategories[key]['unread_count'] + feeds[id]['unread_count'];
+						composedCategories[key]['read_count'] = composedCategories[key]['read_count'] + feeds[id]['read_count'];
+						composedCategories[key]['total_count'] = composedCategories[key]['total_count'] + feeds[id]['total_count'];
+						composedCategories[key]['star_count'] = composedCategories[key]['star_count'] + feeds[id]['star_count'];
+					}
 				});
 			});
 			return composedCategories;
