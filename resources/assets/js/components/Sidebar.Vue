@@ -159,7 +159,8 @@ export default {
 		}
 	},
 	store: {
-        data: 'data'
+		data: 'data',
+		refreshCategories: 'refreshCategories'
 	},
 	components: {
 		draggable
@@ -207,6 +208,14 @@ export default {
 		}
 
 	},
+	//watch the refreshCategories, when changing reload the categories
+    watch: {
+		'$store.refreshCategories': {
+			handler: function(val, oldVal) {
+				this.fetchCategories();
+        	}
+		}
+    },
 	computed: {
 		orderList() {
 			var orderList = new Array();

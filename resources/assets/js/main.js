@@ -21,7 +21,8 @@ new Vue({
 				feed: null,
 				search: null
 			},
-			modal: false
+			modal: false,
+			refreshCategories: 0
 		}
 	},
 	render: h => h(App)

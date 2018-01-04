@@ -136,7 +136,8 @@ span.error {
             appNewfeed: Newfeed
         },
         store: {
-            modal: 'modal'
+            modal: 'modal',
+            refreshCategories: 'refreshCategories'
         },
         data() {
 		    return {
@@ -178,20 +179,15 @@ span.error {
             saveFeed: function() {
 
                 this.$http.put('http://localhost/rssmonster/public/api/feeds/' + this.feed_id, {feed_name: 'feed_name', feed_desc: 'feed_desc'}).then(response => {
-
-                    // get status
-                    console.log(response.status);
-
-                    // get status text
-                   console.log(response.statusText);
-
-                    // get body data
-                    console.log(response.body);
-
+                    // success
                 }, response => {
                     // error callback
                 });
 
+                //send event to refresh the categories
+                this.$store.refreshCategories = this.$store.refreshCategories + 1;
+
+                //close modal
                 this.closeModal();
             }
         }
