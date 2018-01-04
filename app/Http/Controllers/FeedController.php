@@ -26,7 +26,7 @@ class FeedController extends Controller
 		//get only 15 feeds at a time
 		$feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
 
-		if (! empty($feeds)) {
+		if (!empty($feeds)) {
 			foreach ($feeds as $feed) {
 				//update feed, see update function
 				$this->update($feed);
@@ -54,7 +54,7 @@ class FeedController extends Controller
 				$date = $item->get_date('Y-m-j H:i:s');
 
 				//add new article if no results are found and article date is no older than one week
-				if ($results_url == 0 && $results_title == 0 && ! (strtotime($date) < strtotime($previousweek))) {
+				if ($results_url == 0 && $results_title == 0 && !(strtotime($date) < strtotime($previousweek))) {
 					$article = new Article;
 
 					//get article content
@@ -67,7 +67,7 @@ class FeedController extends Controller
 
 					//get URL of first image
 					//TODO: replace with SimplePie str_get_html function, see: http://stackoverflow.com/questions/9865130/getting-image-url-from-rss-feed-using-simplepie
-					$description =  $item->get_description();
+					$description = $item->get_description();
 					preg_match('/<img.+src=[\'"](?P<src>.+?)[\'"].*>/i', $description, $image);
 					if (array_key_exists('src', $image)) {
 						$article->image_url = $image['src'];

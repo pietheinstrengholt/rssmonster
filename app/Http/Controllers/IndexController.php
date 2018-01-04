@@ -15,7 +15,7 @@ class IndexController extends Controller
 	{
 		$categories = Category::orderBy('name', 'asc')->get();
 		$feeds = Feed::orderBy('feed_name', 'asc')->get();
-		return view('managefeeds', compact('categories','feeds'));
+		return view('managefeeds', compact('categories', 'feeds'));
 	}
 
 	public function newfeed()

@@ -15,7 +15,7 @@ class SettingController extends Controller
   		$settings = Setting::orderBy('config_key', 'asc')->get();
 
 		if (!empty($settings)) {
-			foreach($settings as $setting) {
+			foreach ($settings as $setting) {
 				$config_key = $setting['config_key'];
 				$config_array[$config_key] = $setting['config_value'];
 			}

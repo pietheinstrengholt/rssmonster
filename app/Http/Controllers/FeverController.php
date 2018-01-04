@@ -38,7 +38,7 @@ class FeverController extends Controller
 			if ($request->exists('groups')) {
 				$groups = [];
 				$Categories = Category::orderBy('category_order', 'asc')->get();
-				if (! empty($Categories)) {
+				if (!empty($Categories)) {
 					foreach ($Categories as $Category) {
 						array_push($groups, [
 							'id' => (string) $Category->id,
@@ -54,7 +54,7 @@ class FeverController extends Controller
 			if ($request->exists('feeds')) {
 				$feeds = [];
 				$Feeds = Feed::orderBy('feed_name', 'asc')->get();
-				if (! empty($Feeds)) {
+				if (!empty($Feeds)) {
 					foreach ($Feeds as $Feed) {
 						array_push($feeds, [
 							'id'  => (int) $Feed->id,
@@ -78,11 +78,11 @@ class FeverController extends Controller
 				//The array is composed with a group_id and feed_ids containing a string/comma-separated list of positive integers
 				//TODO: use get attribute model for functionality below
 				$Categories = Category::orderBy('category_order', 'asc')->get();
-				if (! empty($Categories)) {
+				if (!empty($Categories)) {
 					foreach ($Categories as $key => $Category) {
 						$feeds_groups[$key]['group_id'] = (int) $Category->id;
 						$Feeds = Category::find($Category->id)->feeds;
-						if (! empty($Feeds)) {
+						if (!empty($Feeds)) {
 							$feed_ids = [];
 							foreach ($Feeds as $Feed) {
 								array_push($feed_ids, $Feed->id);
@@ -101,7 +101,7 @@ class FeverController extends Controller
 			if ($request->exists('unread_item_ids')) {
 				$unread_item_ids = [];
 				$Articles = Article::where('status', 'unread')->orderBy('id', 'asc')->get();
-				if (! empty($Articles)) {
+				if (!empty($Articles)) {
 					foreach ($Articles as $Article) {
 						array_push($unread_item_ids, $Article->id);
 					}
@@ -142,7 +142,7 @@ class FeverController extends Controller
 					$ArrayIds = explode(',', $request->input('with_ids'));
 					//create empty array to store Article results
 					$Articles = [];
-					if (! empty($ArrayIds)) {
+					if (!empty($ArrayIds)) {
 						foreach ($ArrayIds as $ArrayId) {
 							$Article = Article::find($ArrayId);
 							array_push($Articles, $Article);
@@ -191,7 +191,7 @@ class FeverController extends Controller
 			if ($request->exists('favicons')) {
 				$favicons = [];
 				$feeds = Feed::orderBy('feed_name', 'asc')->get();
-				if (! empty($feeds)) {
+				if (!empty($feeds)) {
 					foreach ($feeds as $feed) {
 						if (empty($feed->favicon)) {
 							//TODO: replace with Laravel's URL functionality
@@ -261,7 +261,7 @@ class FeverController extends Controller
 				//get feeds based on category_id
 				$Feeds = Category::find($request->input('id'))->feeds;
 
-				if (! empty($Feeds)) {
+				if (!empty($Feeds)) {
 					foreach ($Feeds as $Feed) {
 						if ($request->input('as') == 'read') {
 							Article::where('feed_id', $Feed->id)->where('created_at', '<', $time)->update(['status' => 'read']);
