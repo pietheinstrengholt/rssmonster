@@ -7,7 +7,9 @@
 				</span>
 				<span class="title">All</span>
 				<span class="badge-unread">
-					<span class="badge">-</span>
+					<span v-if="$store.data.status === 'unread'" class="badge">{{ composedSum['unread_count'] }}</span>
+					<span v-if="$store.data.status === 'read'" class="badge">{{ composedSum['read_count'] }}</span>
+					<span v-if="$store.data.status === 'star'" class="badge">{{ composedSum['star_count'] }}</span>
 				</span>
 			</div>
 			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
@@ -232,6 +234,26 @@ export default {
 				});
 			});
 			return composedCategories;
+		},
+		composedSum() {
+			var composedCategories = this.categories;
+			var composedSum = [];
+			Object.keys(this.categories).forEach(function (key) {
+				composedSum['unread_count'] = 0
+				composedSum['read_count'] = 0
+				composedSum['total_count'] = 0
+				composedSum['star_count'] = 0
+				var feeds = composedCategories[key]['feeds'];
+				Object.keys(feeds).forEach(function (key, id) {
+					if (!(composedCategories[key] === undefined || composedCategories[key] === null)) {
+						composedSum['unread_count'] = composedSum['unread_count'] + feeds[id]['unread_count'];
+						composedSum['read_count'] = composedSum['read_count'] + feeds[id]['read_count'];
+						composedSum['total_count'] = composedSum['total_count'] + feeds[id]['total_count'];
+						composedSum['star_count'] = composedSum['star_count'] + feeds[id]['star_count'];
+					}
+				});
+			});
+			return composedSum;
 		}
 	}
 }
