@@ -6,7 +6,7 @@
             </div>
         </div>
         <form class="new-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="post" role="url">
-            <input @keyup="emitGlobalSearchEvent()" v-model="search" type="text" class="query" placeholder="Search" autocomplete="off">
+            <input @keyup="emitSearchEvent()" v-model="search" type="text" class="query" placeholder="Search" autocomplete="off">
         </form>
     </div>
 </template>
@@ -56,17 +56,22 @@ div#show-modal {
 </style>
 
 <script>
-    // Import the EventBus we just created.
-    import { EventBus } from './../event-bus.js';
-
     export default {
-        store: {
-            modal: 'modal'
-        },
-        methods: {
-            emitGlobalSearchEvent() {
-                EventBus.$emit('i-got-searched', this.search);
+        data() {
+            return {
+                search: null
             }
-        }
+	    },
+        store: {
+            modal: 'modal',
+            data: 'data'
+        },
+	    methods: {
+            emitSearchEvent: function (search, event) {
+                if (!(this.search === undefined || this.search === null)) {
+                    this.$store.data.search = this.search;
+                }
+            }
+	    }
     }
 </script>

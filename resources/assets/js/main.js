@@ -18,7 +18,8 @@ new Vue({
 			data: {
 				status: 'unread',
 				category: null,
-				feed: null
+				feed: null,
+				search: null
 			},
 			modal: false
 		}

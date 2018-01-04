@@ -144,15 +144,6 @@ div.block span.favicon img.favicon {
 import InfiniteLoading from 'vue-infinite-loading';
 require('waypoints/lib/noframework.waypoints.js');
 
-import { EventBus } from './../event-bus.js';
-
-// Listen for the i-got-clicked event and its payload.
-EventBus.$on('i-got-searched', search => {
-	if (!(search === undefined || search === null)) {
-		console.log(`Oh, that's nice. It's gotten a search: ${search}! :)`)
-	}
-});
-
 export default {
 	data() {
 		return {
@@ -161,8 +152,7 @@ export default {
 			articles: [],
 			container: [],
 			pool: [],
-			waypointPool: [],
-			search: ''
+			waypointPool: []
 		}
 	},
 	store: {
@@ -178,6 +168,7 @@ export default {
 						status: data.status,
 						category_id: data.category,
 						feed_id: data.feed,
+						search: data.search
 					},
 					}).then(response => {
 						return response.json();
