@@ -178,7 +178,7 @@ span.error {
             },
             saveFeed: function() {
 
-                this.$http.put('http://localhost/rssmonster/public/api/feeds/' + this.feed_id, {feed_name: 'feed_name', feed_desc: 'feed_desc'}).then(response => {
+                this.$http.put('http://localhost/rssmonster/public/api/feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc}).then(response => {
                     // success
                 }, response => {
                     // error callback
