@@ -156,7 +156,8 @@ export default {
 		}
 	},
 	store: {
-        data: 'data'
+		data: 'data',
+		categories: 'categories'
 	},
 	//watch the data store, when changing reload the article details
     watch: {
@@ -238,10 +239,13 @@ export default {
 						setTimeout(() => {
 							for (var key in this.articles) {
 								var article = this.articles[key];
-								//make sure only one waypoint per article is set, check the waypointPool for this
-								if (!this.waypointPool.includes(article.id)) {
-									this.waypointCreate(article.id);
-									this.waypointPool.push(article.id);
+								//only add triggers if the status is unread
+								if (article.status == "unread") {
+									//make sure only one waypoint per article is set, check the waypointPool for this
+									if (!this.waypointPool.includes(article.id)) {
+										this.waypointCreate(article.id);
+										this.waypointPool.push(article.id);
+									}
 								}
 							}
 						}, 50);
@@ -269,12 +273,27 @@ export default {
 			});
 		},
 		markArticleRead(article) {
-			//make ajax request to change bookmark status
+			//make ajax request to change read status
 			this.$http.post('http://localhost/rssmonster/public/api/articles/mark-to-read/' + article).then(response => {
-				// get article content
-				console.log(response.body);
 				//push id to the pool
 				this.pool.push(article.id);
+
+				// get article content
+				console.log(response.body);
+				for (var i = 0, len = this.$store.categories.length; i < len; i++) {
+					if (!(this.$store.categories[i] === undefined || this.$store.categories[i] === null)) {
+						if (response.body.category_id == this.$store.categories[i]['id']) {
+							if (this.$store.categories[i]['feeds'] != undefined) {
+								for (var f = 0, len = this.$store.categories[i]['feeds'].length; f < len; f++) {
+									if (response.body.feed_id == this.$store.categories[i]['feeds'][f]['id']) {
+										this.$store.categories[i]['feeds'][f]['read_count'] = this.$store.categories[i]['feeds'][f]['read_count'] + 1
+										this.$store.categories[i]['feeds'][f]['unread_count'] = this.$store.categories[i]['feeds'][f]['unread_count'] - 1
+									}
+								}
+							}
+						}
+					}
+				}
 			}, response => {
 				console.log('oops something went wrong');
 			});

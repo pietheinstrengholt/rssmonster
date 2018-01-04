@@ -22,7 +22,8 @@ new Vue({
 				search: null
 			},
 			modal: false,
-			refreshCategories: 0
+			refreshCategories: 0,
+			categories: []
 		}
 	},
 	render: h => h(App)

@@ -154,13 +154,13 @@ import draggable from 'vuedraggable';
 export default {
 	data() {
 		return {
-			categories: [],
 			categoriesOrder: []
 		}
 	},
 	store: {
 		data: 'data',
-		refreshCategories: 'refreshCategories'
+		refreshCategories: 'refreshCategories',
+		categories: 'categories'
 	},
 	components: {
 		draggable
@@ -175,7 +175,7 @@ export default {
 				return response.json();
 			})
 			.then(data => {
-				this.categories = data;
+				this.$store.categories = data;
 			});
 		},
 		loadAll: function () {
@@ -190,8 +190,8 @@ export default {
 		},
 		updateSortOrder(e) {
 			var orderList = new Array();
-			for (let i = 0; i < this.categories.length; i++) {
-				orderList.push(this.categories[i]['id']);
+			for (let i = 0; i < this.$store.categories.length; i++) {
+				orderList.push(this.$store.categories[i]['id']);
 			}
 			this.$http.post('http://localhost/rssmonster/public/api/categories/updateorder', {
 					params: {
@@ -219,14 +219,14 @@ export default {
 	computed: {
 		orderList() {
 			var orderList = new Array();
-			this.categories.forEach(function(category) {
+			this.$store.categories.forEach(function(category) {
 				orderList.push(category.id);
 			});
 			this.categoriesOrder = orderList;
 			return orderList;
 		},
 		composedCategories() {
-			var composedCategories = this.categories;
+			var composedCategories = this.$store.categories;
 			Object.keys(composedCategories).forEach(function (key) {
 				composedCategories[key]['unread_count'] = 0
 				composedCategories[key]['read_count'] = 0
@@ -245,13 +245,13 @@ export default {
 			return composedCategories;
 		},
 		composedSum() {
-			var composedCategories = this.categories;
+			var composedCategories = this.$store.categories;
 			var composedSum = [];
 			composedSum['unread_count'] = 0
 			composedSum['read_count'] = 0
 			composedSum['total_count'] = 0
 			composedSum['star_count'] = 0
-			Object.keys(this.categories).forEach(function (key) {
+			Object.keys(this.$store.categories).forEach(function (key) {
 				var feeds = composedCategories[key]['feeds'];
 				Object.keys(feeds).forEach(function (key, id) {
 					if (!(composedCategories[key] === undefined || composedCategories[key] === null)) {
