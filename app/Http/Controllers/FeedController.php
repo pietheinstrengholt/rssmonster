@@ -219,7 +219,7 @@ class FeedController extends Controller
 		return response()->json('deleted');
 	}
 
-	public function updateFeed($id)
+	public function updateFeed($id, Request $request)
 	{
 		$feed = Feed::find($id);
 		$feed->feed_name = $request->input('feed_name');
