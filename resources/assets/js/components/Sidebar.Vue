@@ -18,7 +18,9 @@
 						</span>
 						<span class="title">{{category.name}}</span>
 						<span class="badge-unread">
-							<span class="badge">{{category.unread_count}}</span>
+							<span v-if="$store.data.status === 'unread'" class="badge">{{category.unread_count}}</span>
+							<span v-if="$store.data.status === 'read'" class="badge">{{category.read_count}}</span>
+							<span v-if="$store.data.status === 'star'" class="badge">{{category.star_count}}</span>
 						</span>
 					</div>
 					<div v-if="category.feeds" class="sidebar-category-feeds">
@@ -28,7 +30,9 @@
 							</span>
 							<span class="title">{{feed.feed_name}}</span>
 							<span class="badge-unread">
-								<span class="badge">{{feed.unread_count}}</span>
+								<span v-if="$store.data.status === 'unread'" class="badge">{{feed.unread_count}}</span>
+								<span v-if="$store.data.status === 'read'" class="badge">{{feed.read_count}}</span>
+								<span v-if="$store.data.status === 'star'" class="badge">{{feed.star_count}}</span>
 							</span>
 						</div>
 					</div>
