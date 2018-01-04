@@ -207,13 +207,13 @@ class FeedController extends Controller
 
 	public function createFeed(Request $request)
 	{
-		$Feed = Feed::create($request->all());
-		return response()->json($Feed);
+		$feed = Feed::create($request->all());
+		return response()->json($feed);
 	}
 
 	public function deleteFeed($id)
 	{
-		$Feed = Feed::find($id);
+		$feed = Feed::find($id);
 		Article::where('feed_id', $id)->delete();
 		Feed::where('id', $id)->delete();
 		return response()->json('deleted');
@@ -221,9 +221,10 @@ class FeedController extends Controller
 
 	public function updateFeed($id)
 	{
-		$Feed = Feed::find($id);
-		$Feed->name = $request->input('name');
-		$Feed->save();
-		return response()->json($Feed);
+		$feed = Feed::find($id);
+		$feed->feed_name = $request->input('feed_name');
+		$feed->feed_desc = $request->input('feed_desc');
+		$feed->save();
+		return response()->json($feed);
 	}
 }

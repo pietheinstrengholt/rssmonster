@@ -48,7 +48,7 @@
                     </div>
                     <div class="modal-footer">
                         <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Cancel</button>
-                        <button v-if="feed_id" type="button" class="btn btn-primary" @click="closeModal">Save changes</button>
+                        <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
                     </div>
                     </div>
                 </div>
@@ -174,6 +174,25 @@ span.error {
                 this.feed_desc = '';
                 this.error_msg = '';
                 this.$store.modal = false;
+            },
+            saveFeed: function() {
+
+                this.$http.put('http://localhost/rssmonster/public/api/feeds/' + this.feed_id, {feed_name: 'feed_name', feed_desc: 'feed_desc'}).then(response => {
+
+                    // get status
+                    console.log(response.status);
+
+                    // get status text
+                   console.log(response.statusText);
+
+                    // get body data
+                    console.log(response.body);
+
+                }, response => {
+                    // error callback
+                });
+
+                this.closeModal();
             }
         }
     }
