@@ -36,6 +36,7 @@ div.block {
 }
 
 div.block .article {
+	padding-top: 4px;
 	padding-left: 5px;
 	padding-right: 5px;
 	border-color: #B4B7BD;
@@ -79,7 +80,7 @@ div.block div.article hr {
 }
 
 div.block div.feedname {
-	margin-top: -11px ! important;
+	margin-top: -8px ! important;
 	font-size: 12px;
 	padding-top: 4px;
 	padding-left: 0px;
@@ -112,12 +113,10 @@ div.block div.bookmarked {
 	float: left;
 	width: 32px;
 	margin-top: -10px;
-	background-position: 6px 4px;
 	margin-left: -6px;
 	cursor: pointer;
-	background-position: center top 5px;
 	background-size: 18px 18px;
-	background-position: 8px 10px;
+	background-position: 8px 12px;
 }
 
 div.block div.bookmark {
@@ -137,6 +136,7 @@ div.block span.favicon img.favicon {
 	margin-right: 5px;
 	height: 18px;
 	width: 18px;
+	margin-top: -1px;
 }
 </style>
 

@@ -3,9 +3,11 @@
 		<div class="drag">
 			<div class="sidebar-category-sub" v-on:click="loadAll()">
 				<span class="glyphicon">
-					<i class="fas fa-lightbulb" data-fa-transform="down-5"></i>
+					<i class="fas fa-circle" data-fa-transform="down-5"></i>
 				</span>
-				<span class="title">All</span>
+				<span v-if="$store.data.status === 'unread'" class="title">Unread</span>
+				<span v-if="$store.data.status === 'read'" class="title">Read</span>
+				<span v-if="$store.data.status === 'star'" class="title">Star</span>
 				<span class="badge-unread">
 					<span v-if="$store.data.status === 'unread'" class="badge">{{ composedSum['unread_count'] }}</span>
 					<span v-if="$store.data.status === 'read'" class="badge">{{ composedSum['read_count'] }}</span>
@@ -16,7 +18,7 @@
 				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
-							<i class="fas fa-square" data-fa-transform="down-5"></i>
+							<i class="fas fa-folder" data-fa-transform="down-5"></i>
 						</span>
 						<span class="title">{{category.name}}</span>
 						<span class="badge-unread">
