@@ -233,12 +233,12 @@ export default {
 				composedCategories[key]['total_count'] = 0
 				composedCategories[key]['star_count'] = 0
 				var feeds = composedCategories[key]['feeds'];
-				Object.keys(feeds).forEach(function (key, id) {
+				Object.keys(feeds).forEach(function (feed) {
 					if (!(composedCategories[key] === undefined || composedCategories[key] === null)) {
-						composedCategories[key]['unread_count'] = composedCategories[key]['unread_count'] + feeds[id]['unread_count'];
-						composedCategories[key]['read_count'] = composedCategories[key]['read_count'] + feeds[id]['read_count'];
-						composedCategories[key]['total_count'] = composedCategories[key]['total_count'] + feeds[id]['total_count'];
-						composedCategories[key]['star_count'] = composedCategories[key]['star_count'] + feeds[id]['star_count'];
+						composedCategories[key]['unread_count'] = composedCategories[key]['unread_count'] + feeds[feed]['unread_count'];
+						composedCategories[key]['read_count'] = composedCategories[key]['read_count'] + feeds[feed]['read_count'];
+						composedCategories[key]['total_count'] = composedCategories[key]['total_count'] + feeds[feed]['total_count'];
+						composedCategories[key]['star_count'] = composedCategories[key]['star_count'] + feeds[feed]['star_count'];
 					}
 				});
 			});
@@ -253,12 +253,12 @@ export default {
 			composedSum['star_count'] = 0
 			Object.keys(this.$store.categories).forEach(function (key) {
 				var feeds = composedCategories[key]['feeds'];
-				Object.keys(feeds).forEach(function (key, id) {
+				Object.keys(feeds).forEach(function (feed) {
 					if (!(composedCategories[key] === undefined || composedCategories[key] === null)) {
-						composedSum['unread_count'] = composedSum['unread_count'] + feeds[id]['unread_count'];
-						composedSum['read_count'] = composedSum['read_count'] + feeds[id]['read_count'];
-						composedSum['total_count'] = composedSum['total_count'] + feeds[id]['total_count'];
-						composedSum['star_count'] = composedSum['star_count'] + feeds[id]['star_count'];
+						composedSum['unread_count'] = composedSum['unread_count'] + feeds[feed]['unread_count'];
+						composedSum['read_count'] = composedSum['read_count'] + feeds[feed]['read_count'];
+						composedSum['total_count'] = composedSum['total_count'] + feeds[feed]['total_count'];
+						composedSum['star_count'] = composedSum['star_count'] + feeds[feed]['star_count'];
 					}
 				});
 			});
