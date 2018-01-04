@@ -9,7 +9,7 @@
 					</h5>
 					<div class="feedname">
 						<span class="favicon">
-							<img class="favicon" :src="article.favicon">
+							<img class="favicon" :src="article.favicon" onerror="this.parentNode.removeChild(this);">
 						</span>
 						<span class="feed_name" v-text="article.feed_name"></span>
 						<span class="break"> | </span>
