@@ -238,11 +238,11 @@ export default {
 		composedSum() {
 			var composedCategories = this.categories;
 			var composedSum = [];
+			composedSum['unread_count'] = 0
+			composedSum['read_count'] = 0
+			composedSum['total_count'] = 0
+			composedSum['star_count'] = 0
 			Object.keys(this.categories).forEach(function (key) {
-				composedSum['unread_count'] = 0
-				composedSum['read_count'] = 0
-				composedSum['total_count'] = 0
-				composedSum['star_count'] = 0
 				var feeds = composedCategories[key]['feeds'];
 				Object.keys(feeds).forEach(function (key, id) {
 					if (!(composedCategories[key] === undefined || composedCategories[key] === null)) {
