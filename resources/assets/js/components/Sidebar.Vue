@@ -75,9 +75,12 @@
 	-moz-user-select: none;
 	-ms-user-select: none;
 	user-select: none;
+	color: #b4b6b8;
+}
+
+a#star.view-button, a#read.view-button {
 	border-left: 1px solid transparent;
 	border-color: #dcdee0;
-	color: #b4b6b8;
 }
 
 .feeds-droppable {

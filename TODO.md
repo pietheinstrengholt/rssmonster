@@ -9,3 +9,4 @@
 * Highlight selected Unread, Starred, Read button
 * Add refresh button
 * Fix sorting order
+* Color or highlight selected options (type, category, feed)
