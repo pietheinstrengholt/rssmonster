@@ -37,6 +37,18 @@
 </template>
 
 <style>
+
+/* Landscape phones and portrait tablets */
+@media (max-width: 766px) {
+	div.subscribe-toolbar {
+		display: none;
+	}
+
+	div#articles {
+		padding-top: 0px !important;
+	}
+}
+
 div.block {
 	margin-bottom: 0px;
 	padding-top: 5px;

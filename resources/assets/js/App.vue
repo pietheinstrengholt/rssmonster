@@ -94,6 +94,10 @@
     div#main {
         padding-top: 42px;
     }
+
+    div.quickbar {
+        position: fixed;
+    }
 }
 
 /* Desktop */
