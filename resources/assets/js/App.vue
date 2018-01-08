@@ -1,12 +1,11 @@
 <template>
     <div id="app">
         <div class="row" style="margin-right:0px;">
-            <div class="sidebar col-md-2 col-sm-0" style="position:fixed">
-                <app-newfeed></app-newfeed>
+            <div class="sidebar col-md-3 col-sm-0" style="position:fixed">
                 <app-quickbar></app-quickbar>
                 <app-sidebar></app-sidebar>
             </div>
-            <div class="home col-md-10 offset-md-2 col-sm-12">
+            <div class="home col-md-9 offset-md-3 col-sm-12">
                 <app-quickbar></app-quickbar>
                 <app-home></app-home>
             </div>
@@ -63,11 +62,13 @@
 	div.sidebar {
         display:none;
     }
+
 	div.article {
         display: inline-block;
         position: relative;
         border-bottom: 0px solid #FFF !important;
     }
+
     div.article:after {
         position: absolute;
         content: '';
@@ -76,7 +77,8 @@
         transform: translateX(-50%);
         left: 50%;
     }
-    div.col-md-10 {
+    
+    div.col-md-9 {
         padding-right: 0px;
     }
 
@@ -100,12 +102,17 @@
         display:none;
     }
 
-    div.quickbar.view-toolbar {
-        margin-top: 40px;
+    div.quickbar {
+        display:none;
     }
 
     div.drag {
         margin-top: 81px;
+    }
+
+    div.sidebar {
+        height: 100%;
+        background-color: #4E57A3;
     }
 }
 
@@ -121,19 +128,18 @@ div.modal-dialog {
 span.error {
     color: red;
 }
+
 </style>
 
 <script>
     import Sidebar from './components/Sidebar.vue';
     import Home from './components/Home.vue';
     import Quickbar from './components/Quickbar.vue';
-    import Newfeed from './components/Newfeed.vue';
     export default {
         components: {
             appSidebar: Sidebar,
             appHome: Home,
-            appQuickbar: Quickbar,
-            appNewfeed: Newfeed
+            appQuickbar: Quickbar
         },
         store: {
             modal: 'modal',

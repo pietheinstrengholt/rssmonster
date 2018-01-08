@@ -1,31 +1,38 @@
 <template>
 	<div id="main">
-		<div v-bind:id="article.id" class="block" v-for="(article, key) in articles">
-			<div class="article">
-				<div class="maximal">
-					<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark"></div>
-					<h5 class="heading">
-						<a target="_blank" :href="article.url" v-text="article.subject"></a>
-					</h5>
-					<div class="feedname">
-						<span class="favicon">
-							<img class="favicon" :src="article.favicon" onerror="this.parentNode.removeChild(this);">
-						</span>
-						<span class="feed_name" v-text="article.feed_name"></span>
-						<span class="break"> | </span>
-						<span class="published_date" v-text="article.published"></span>
+		<div class="subscribe-toolbar">
+			<form class="new-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="post" role="url">
+				<input @keyup="emitSearchEvent()" v-model="search" type="text" class="query" placeholder="Search" autocomplete="off">
+			</form>
+		</div>
+		<div id="articles">
+			<div v-bind:id="article.id" class="block" v-for="(article, key) in articles">
+				<div class="article">
+					<div class="maximal">
+						<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark"></div>
+						<h5 class="heading">
+							<a target="_blank" :href="article.url" v-text="article.subject"></a>
+						</h5>
+						<div class="feedname">
+							<span class="favicon">
+								<img class="favicon" :src="article.favicon" onerror="this.parentNode.removeChild(this);">
+							</span>
+							<span class="feed_name" v-text="article.feed_name"></span>
+							<span class="break"> | </span>
+							<span class="published_date" v-text="article.published"></span>
+						</div>
+					</div>
+
+					<div class="article-content" v-html="article.content">
 					</div>
 				</div>
-
-				<div class="article-content" v-html="article.content">
-				</div>
 			</div>
+			<infinite-loading @infinite="onInfinite" ref="infiniteLoading">
+				<span slot="no-more">
+					No More Posts - All items marked as read!
+				</span>
+			</infinite-loading>
 		</div>
-		<infinite-loading @infinite="onInfinite" ref="infiniteLoading">
-			<span slot="no-more">
-				No More Posts - All items marked as read!
-			</span>
-		</infinite-loading>
 	</div>
 </template>
 
@@ -138,6 +145,55 @@ div.block span.favicon img.favicon {
 	width: 18px;
 	margin-top: -1px;
 }
+
+div.subscribe-toolbar {
+	height: 40px;
+	border-bottom: 1px solid transparent;
+	border-color: #dcdee0;
+	position: absolute;
+	width: 100%;
+	overflow: hidden;
+    background-color: #eff1f3;
+	position: fixed;
+	margin-left: -18px;
+}
+
+div#newfeed {
+    height: 100%;
+    width: 20%;
+    float: left;
+    text-align: center;
+    border-right: 1px solid black;
+    border-color: #dcdee0;
+}
+
+form.new-form-wrap {
+    width: 80%;
+    float: left;
+}
+
+.query {
+    width: 100%;
+    color: #3399FF;
+    height: 39px;
+    margin: 0;
+    padding: 4px 0px 3px 28px;
+    font-size: 14px;
+    background-color: #eff1f3;
+    border: none;
+    line-height: 1;
+    color: #212325;
+    background: url(http://localhost/rssmonster/public/img/search.svg) 8px 13px no-repeat;
+}
+
+div#show-modal {
+    height: 100%;
+}
+
+div#articles {
+	padding-top: 40px;
+}
+
 </style>
 
 <script>
@@ -152,7 +208,8 @@ export default {
 			articles: [],
 			container: [],
 			pool: [],
-			waypointPool: []
+			waypointPool: [],
+			search: null
 		}
 	},
 	store: {
@@ -315,6 +372,11 @@ export default {
 			}, response => {
 				console.log('oops something went wrong');
 			});
+		},
+		emitSearchEvent: function (search, event) {
+			if (!(this.search === undefined || this.search === null)) {
+				this.$store.data.search = this.search;
+			}
 		}
 	}
 }

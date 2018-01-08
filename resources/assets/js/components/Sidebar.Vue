@@ -1,24 +1,47 @@
 <template>
 	<div class="feeds-inner">
 		<div class="drag">
-			<div class="sidebar-category-sub" v-on:click="loadAll()">
+			<div>
+				<div @click="$store.modal=true" id="addnewfeed"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
+			</div>
+			<div>
+				<p class="title">Current selection</p>
+			</div>
+			<div v-on:click="loadType('unread')" class="sidebar-category-top">
 				<span class="glyphicon">
-					<i class="fas fa-circle" data-fa-transform="down-5"></i>
+					<i class="far fa-circle" data-fa-transform="down-5 shrink-2"></i>
 				</span>
-				<span v-if="$store.data.status === 'unread'" class="title">Unread</span>
-				<span v-if="$store.data.status === 'read'" class="title">Read</span>
-				<span v-if="$store.data.status === 'star'" class="title">Star</span>
+				<span class="title">Unread</span>
 				<span class="badge-unread">
-					<span v-if="$store.data.status === 'unread'" class="badge">{{ composedSum['unread_count'] }}</span>
-					<span v-if="$store.data.status === 'read'" class="badge">{{ composedSum['read_count'] }}</span>
-					<span v-if="$store.data.status === 'star'" class="badge">{{ composedSum['star_count'] }}</span>
+					<span class="badge">{{ composedSum['unread_count'] }}</span>
 				</span>
+			</div>
+			<div v-on:click="loadType('read')" class="sidebar-category-top">
+				<span class="glyphicon">
+					<i class="far fa-circle" data-fa-transform="down-5 shrink-2"></i>
+				</span>
+				<span class="title">Read</span>
+				<span class="badge-unread">
+					<span class="badge">{{ composedSum['read_count'] }}</span>
+				</span>
+			</div>
+			<div v-on:click="loadType('star')" class="sidebar-category-top">
+				<span class="glyphicon">
+					<i class="far fa-circle" data-fa-transform="down-5 shrink-2"></i>
+				</span>
+				<span class="title">Star</span>
+				<span class="badge-unread">
+					<span class="badge">{{ composedSum['star_count'] }}</span>
+				</span>
+			</div>
+			<div>
+				<p class="title">Categories</p>
 			</div>
 			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
 				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
-							<i class="fas fa-folder" data-fa-transform="down-5"></i>
+							<i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
 						</span>
 						<span class="title">{{category.name}}</span>
 						<span class="badge-unread">
@@ -31,7 +54,7 @@
 						<div v-if="$store.data.category === category.id" class="sidebar-category-feeds">
 							<div class="sidebar-category-feed" v-on:click="loadFeed(feed.id)" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
 								<span class="glyphicon">
-									<i class="far fa-square" data-fa-transform="down-5"></i>
+									<i class="far fa-square" data-fa-transform="down-5 shrink-2"></i>
 								</span>
 								<span class="title">{{feed.feed_name}}</span>
 								<span class="badge-unread">
@@ -106,7 +129,6 @@ a#star.view-button, a#read.view-button {
 .drag {
 	background-color: #eff1f3;
 	margin-top:41px;
-	position: absolute;
 	width:100%;
 }
 
@@ -114,23 +136,18 @@ a#star.view-button, a#read.view-button {
 	min-height: 20px;
 }
 
-div.sidebar-category-sub, div.sidebar-category-feed {
-	padding: 4px;
+div.sidebar-category-sub, div.sidebar-category-feed, div.sidebar-category-top {
+	padding: 4px 4px 4px 12px;
 }
 
 span.badge {
 	float: right;
-	color: #7a7c7e;
-	font-weight: 100;
+	color: #fff;
 	background-color: transparent !important;
 }
 
 sidebar-category-main {
 	width: 100%;
-}
-
-div.sidebar-category-sub {
-	border-bottom: 1px solid #dbdbdb;
 }
 
 span.glyphicon {
@@ -149,8 +166,39 @@ span.title {
 span.badge-unread {
 	float:right;
 	position: absolute;
-	right: 4px;
+	right: 28px;
 	margin-top: -19px;
+}
+
+div.drag {
+	background-color: #4E57A3;
+    color: #fff;
+}
+
+div.sidebar-category-top, div.sidebar-category-main {
+    background-color: #464F9E;
+    margin-left: 12px;
+    margin-right: 12px;
+	margin-top: 4px;
+	border-radius: 4px;
+}
+
+p.title {
+    color: #AEB1D4;
+    margin-left: 14px;
+    margin-top: 10px;
+    margin-bottom: 5px;
+}
+
+div#addnewfeed {
+    background-color: 18B3FF;
+    margin-right: 40px;
+    margin-left: 40px;
+    padding: 6px;
+    color: #fff;
+	border-radius: 4px;
+	text-indent: 20px;
+	margin-bottom: 20px;
 }
 
 </style>
@@ -185,9 +233,8 @@ export default {
 				this.$store.categories = data;
 			});
 		},
-		loadAll: function () {
-			this.$store.data.category = null;
-			this.$store.data.feed = null;
+		loadType: function (status, event) {
+			this.$store.data.status = status;
 		},
 		loadCategory: function (category, event) {
 			this.$store.data.category = category;
