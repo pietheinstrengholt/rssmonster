@@ -91,7 +91,7 @@
 <style>
 .view-toolbar {
 	width: 100%;
-	background-color: #eff1f3;
+	background-color: #4E57A3;;
 	display: -webkit-box;
 	display: -webkit-flex;
 	display: -ms-flexbox;
@@ -100,6 +100,7 @@
 	border-bottom: 1px solid transparent;
 	border-color: #dcdee0;
 	position: absolute;
+	color: #fff;
 }
 
 .view-button {
@@ -122,7 +123,18 @@
 	color: #b4b6b8;
 }
 
-a#star.view-button, a#read.view-button {
+a#rssmonster.view-button {
+	background: url(http://localhost/rssmonster/public/img/monster.svg) 10px 10px no-repeat;
+	background-size: 20px 20px;
+    max-width: 30px;
+    min-width: 30px;
+}
+
+a#rssmonster.view-button {
+	text-align: left;
+}
+
+a#unread.view-button, a#star.view-button, a#read.view-button {
 	border-left: 1px solid transparent;
 	border-color: #dcdee0;
 }
