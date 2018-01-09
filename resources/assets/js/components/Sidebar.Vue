@@ -38,6 +38,20 @@
 				</span>
 			</div>
 			<div>
+				<p class="title">All</p>
+			</div>
+			<div v-on:click="loadAll()" v-bind:class="{ 'selected':  $store.data.category === null }" id="all" class="sidebar-category-top">
+				<span class="glyphicon">
+					<i class="fas fa-certificate" data-fa-transform="down-5 shrink-2"></i>
+				</span>
+				<span class="title">Load all categories</span>
+				<span class="badge-unread">
+					<span v-if="$store.data.status === 'unread'" class="badge">{{ composedSum['unread_count'] }}</span>
+					<span v-if="$store.data.status === 'read'" class="badge">{{ composedSum['read_count'] }}</span>
+					<span v-if="$store.data.status === 'star'" class="badge">{{ composedSum['star_count'] }}</span>
+				</span>
+			</div>
+			<div>
 				<p class="title">Categories</p>
 			</div>
 			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
@@ -175,6 +189,7 @@ span.badge-unread {
 div.drag {
 	background-color: #4E57A3;
     color: #fff;
+	margin-top: 10px;
 }
 
 div.sidebar-category-top, div.sidebar-category-main {
@@ -264,6 +279,10 @@ export default {
 		},
 		loadFeed: function (feed, event) {
 			this.$store.data.feed = feed;
+		},
+		loadAll: function (event) {
+			this.$store.data.category = null;
+			this.$store.data.feed = null;
 		},
 		updateSortOrder(e) {
 			console.log('oldIndex=' + e.oldIndex);
