@@ -57,6 +57,7 @@ class CategoryController extends Controller
 				//update category with new order
 				Category::where('id', $value)->update(['category_order' => $key]);
 			}
+			return response()->json($orderArray);
 		}
 	}
 }
