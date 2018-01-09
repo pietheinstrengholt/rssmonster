@@ -120,6 +120,10 @@
     }
 }
 
+body {
+    background-color: #F9F9F9;
+}
+
 #myModal.modal {
     display: inline;
     opacity: 1.0;

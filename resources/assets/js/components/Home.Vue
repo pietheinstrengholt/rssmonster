@@ -58,12 +58,12 @@ div.block .article {
 	padding-top: 4px;
 	padding-left: 5px;
 	padding-right: 5px;
-	border-color: #B4B7BD;
+	border-color: #E0E0E0;
 	border-width: 1px;
 }
 
 div.block .article {
-	border-bottom: 1px solid #B4B7BD;
+	border-bottom: 1px solid #E0E0E0;
 }
 
 div.block .article h4 {
