@@ -1,5 +1,8 @@
 <template>
 	<div class="feeds-inner">
+		<div id="monster">
+			<p>RSSMonster</p>
+		</div>
 		<div class="drag">
 			<div>
 				<div @click="$store.modal=true" id="addnewfeed"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
@@ -128,7 +131,6 @@ a#star.view-button, a#read.view-button {
 
 .drag {
 	background-color: #eff1f3;
-	margin-top:41px;
 	width:100%;
 }
 
@@ -207,6 +209,18 @@ div#addnewfeed {
 	border-radius: 4px;
 	text-indent: 20px;
 	margin-bottom: 20px;
+}
+
+div#monster {
+	background: url(http://localhost/rssmonster/public/img/monster.svg) 30px 30px no-repeat;
+	background-size: 50px 50px;
+	height: 100px;
+}
+
+div#monster p {
+	padding: 40px 0px 0px 90px;
+    color: #fff;
+    font-size: 20px;
 }
 
 </style>

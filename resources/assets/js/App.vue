@@ -110,10 +110,6 @@
         display:none;
     }
 
-    div.drag {
-        margin-top: 81px;
-    }
-
     div.sidebar {
         height: 100%;
         background-color: #4E57A3;

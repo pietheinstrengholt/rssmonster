@@ -1,6 +1,12 @@
 <template>
 	<div id="main">
 		<div class="subscribe-toolbar">
+			<div class="status-toolbar">
+				<p>{{ this.$store.data.status | capitalize }}</p>
+			</div>
+			<div class="status-toolbar">
+				<p>Status</p>
+			</div>
 			<form class="new-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="post" role="url">
 				<input @keyup="emitSearchEvent()" v-model="search" type="text" class="query" placeholder="Search" autocomplete="off">
 			</form>
@@ -206,6 +212,19 @@ div#articles {
 	padding-top: 40px;
 }
 
+div.status-toolbar {
+	float: left;
+    border-right: 1px solid #E0E0E0;
+    margin-left: 10px;
+}
+
+div.status-toolbar p {
+	padding: 4px;
+    font-size: 14px;
+    margin-right: 12px;
+    margin-top: 5px;
+}
+
 </style>
 
 <script>
@@ -390,6 +409,13 @@ export default {
 				this.$store.data.search = this.search;
 			}
 		}
+	},
+	filters: {
+		capitalize: function (value) {
+			if (!value) return ''
+			value = value.toString()
+			return value.charAt(0).toUpperCase() + value.slice(1)
 	}
+}
 }
 </script>
