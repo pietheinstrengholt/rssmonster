@@ -7,16 +7,16 @@
 			<div>
 				<p class="title">Current selection</p>
 			</div>
-			<div v-on:click="loadType('unread')" class="sidebar-category-top">
+			<div v-on:click="loadType('unread')" v-bind:class="{ 'selected':  $store.data.status === 'unread' }" id="unread" class="sidebar-category-top">
 				<span class="glyphicon">
-					<i class="far fa-circle" data-fa-transform="down-5 shrink-2"></i>
+					<i class="fas fa-circle" data-fa-transform="down-5 shrink-2"></i>
 				</span>
 				<span class="title">Unread</span>
 				<span class="badge-unread">
 					<span class="badge">{{ composedSum['unread_count'] }}</span>
 				</span>
 			</div>
-			<div v-on:click="loadType('read')" class="sidebar-category-top">
+			<div v-on:click="loadType('read')" v-bind:class="{ 'selected':  $store.data.status === 'read' }" id="read" class="sidebar-category-top">
 				<span class="glyphicon">
 					<i class="far fa-circle" data-fa-transform="down-5 shrink-2"></i>
 				</span>
@@ -25,9 +25,9 @@
 					<span class="badge">{{ composedSum['read_count'] }}</span>
 				</span>
 			</div>
-			<div v-on:click="loadType('star')" class="sidebar-category-top">
+			<div v-on:click="loadType('star')" v-bind:class="{ 'selected':  $store.data.status === 'star' }" id="star" class="sidebar-category-top">
 				<span class="glyphicon">
-					<i class="far fa-circle" data-fa-transform="down-5 shrink-2"></i>
+					<i class="far fa-heart" data-fa-transform="down-5 shrink-2"></i>
 				</span>
 				<span class="title">Star</span>
 				<span class="badge-unread">
@@ -38,7 +38,7 @@
 				<p class="title">Categories</p>
 			</div>
 			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
-				<div class="sidebar-category-main" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
+				<div class="sidebar-category-main" v-bind:class="{ 'selected':  ($store.data.category === category.id) && ($store.data.feed === null) }" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
 							<i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
@@ -52,7 +52,7 @@
 					</div>
 					<div v-if="category.feeds">
 						<div v-if="$store.data.category === category.id" class="sidebar-category-feeds">
-							<div class="sidebar-category-feed" v-on:click="loadFeed(feed.id)" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
+							<div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed.id)" v-bind:class="{ 'selected': $store.data.feed === feed.id }" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
 								<span class="glyphicon">
 									<i class="far fa-square" data-fa-transform="down-5 shrink-2"></i>
 								</span>
@@ -183,6 +183,14 @@ div.sidebar-category-top, div.sidebar-category-main {
 	border-radius: 4px;
 }
 
+div.sidebar-category-feed {
+	background-color: #464F9E !important;
+}
+
+div.sidebar-category-top.selected, div.sidebar-category-main.selected, div.sidebar-category-feed.selected {
+	background-color: #3B3D5F !important;
+}
+
 p.title {
     color: #AEB1D4;
     margin-left: 14px;
@@ -191,7 +199,7 @@ p.title {
 }
 
 div#addnewfeed {
-    background-color: 18B3FF;
+    background-color: #18B3FF;
     margin-right: 40px;
     margin-left: 40px;
     padding: 6px;
@@ -238,11 +246,14 @@ export default {
 		},
 		loadCategory: function (category, event) {
 			this.$store.data.category = category;
+			this.$store.data.feed = null;
 		},
 		loadFeed: function (feed, event) {
 			this.$store.data.feed = feed;
 		},
 		updateSortOrder(e) {
+			console.log('oldIndex=' + e.oldIndex);
+			console.log('newIndex=' + e.newIndex);
 			var orderList = new Array();
 			for (let i = 0; i < this.$store.categories.length; i++) {
 				orderList.push(this.$store.categories[i]['id']);
@@ -254,7 +265,7 @@ export default {
 					},
 				}).then(response => {
 					//get status & status text
-					console.log(response.status);
+					console.log(response.body);
 					//TODO: change order list
 				}, response => {
 					console.log('oops something went wrong');
