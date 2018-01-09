@@ -130,8 +130,10 @@ a#rssmonster.view-button {
     min-width: 30px;
 }
 
-a#rssmonster.view-button {
+a#title.view-button {
 	text-align: left;
+    margin-left: 10px;
+	max-width: 90px;
 }
 
 a#unread.view-button, a#star.view-button, a#read.view-button {
