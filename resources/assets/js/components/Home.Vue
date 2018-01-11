@@ -5,9 +5,9 @@
 				<p>{{ this.$store.data.status | capitalize }}</p>
 			</div>
 			<div v-if='showStatusMenu' class="dropdownmenu">
-				<div class="item" href="#" @click="statusClicked('read')"><p>Action</p></div>
-				<div class="item" href="#" @click="statusClicked('unread')"><p>Another action</p></div>
-				<div class="item" href="#" @click="statusClicked('star')"><p>Something else here</p></div>
+				<div class="item" href="#" @click="statusClicked('read')"><p>Unread</p></div>
+				<div class="item" href="#" @click="statusClicked('unread')"><p>Read</p></div>
+				<div class="item" href="#" @click="statusClicked('star')"><p>Star</p></div>
 			</div>
 			<div class="status-toolbar">
 				<p>Status</p>
@@ -241,10 +241,17 @@ div.dropdownmenu {
 
 div.dropdownmenu div.item {
     border-bottom: 1px solid #E0E0E0;
+    border-right: 1px solid #E0E0E0;
+    border-left: 1px solid #E0E0E0;
+	padding:4px;
 }
 
 div.dropdownmenu div.item p {
 	margin-left: 10px;
+	margin-right: 10px;
+	margin-bottom: 0px;
+	font-weight: 400;
+    font-size: 14px;
 }
 
 </style>
