@@ -232,7 +232,7 @@ p.title {
 div#addnewfeed {
     background-color: #18B3FF;
     margin-right: 40px;
-    margin-left: 40px;
+    margin-left: 12px;
     padding: 6px;
     color: #fff;
 	border-radius: 4px;

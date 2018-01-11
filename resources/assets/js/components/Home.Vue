@@ -1,8 +1,13 @@
 <template>
 	<div id="main">
 		<div class="subscribe-toolbar">
-			<div class="status-toolbar">
+			<div class="status-toolbar" @click="toggleShowStatus">
 				<p>{{ this.$store.data.status | capitalize }}</p>
+			</div>
+			<div v-if='showStatusMenu' class="dropdownmenu">
+				<div class="item" href="#" @click="statusClicked('read')"><p>Action</p></div>
+				<div class="item" href="#" @click="statusClicked('unread')"><p>Another action</p></div>
+				<div class="item" href="#" @click="statusClicked('star')"><p>Something else here</p></div>
 			</div>
 			<div class="status-toolbar">
 				<p>Status</p>
@@ -228,6 +233,20 @@ div.status-toolbar p {
     margin-top: 5px;
 }
 
+div.dropdownmenu {
+	position: fixed;
+    margin-top: 40px;
+    background-color: #eff1f3;
+}
+
+div.dropdownmenu div.item {
+    border-bottom: 1px solid #E0E0E0;
+}
+
+div.dropdownmenu div.item p {
+	margin-left: 10px;
+}
+
 </style>
 
 <script>
@@ -243,7 +262,8 @@ export default {
 			container: [],
 			pool: [],
 			waypointPool: [],
-			search: null
+			search: null,
+			showStatusMenu: false,
 		}
 	},
 	store: {
@@ -411,6 +431,12 @@ export default {
 			if (!(this.search === undefined || this.search === null)) {
 				this.$store.data.search = this.search;
 			}
+		},
+		toggleShowStatus: function() {
+			this.showStatusMenu = !this.showStatusMenu;
+		},
+		statusClicked: function(status) {
+			this.toggleShowStatus();
 		}
 	},
 	filters: {
