@@ -29,7 +29,10 @@
 						</div>
 					</div>
 
-					<div class="article-content" v-html="article.content">
+					<div v-if="$store.data.filter === 'full'" class="article-content" v-html="article.content">
+					</div>
+					<div v-if="$store.data.filter === 'minimal'" class="article-content">
+						<p>{{ article.content | stripHTML }}</p>
 					</div>
 				</div>
 			</div>
@@ -415,7 +418,10 @@ export default {
 			if (!value) return ''
 			value = value.toString()
 			return value.charAt(0).toUpperCase() + value.slice(1)
+		},
+		stripHTML: function (value) {
+			return value.replace(/<(?:.|\n)*?>/gm, '');
+		}
 	}
-}
 }
 </script>
