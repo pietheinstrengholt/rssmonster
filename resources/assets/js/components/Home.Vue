@@ -137,7 +137,7 @@ div.block div.bookmarked {
 	background-repeat: no-repeat;
 	float: left;
 	width: 32px;
-	margin-top: -10px;
+	margin-top: -8px;
 	margin-left: -6px;
 	cursor: pointer;
 	background-size: 18px 18px;
