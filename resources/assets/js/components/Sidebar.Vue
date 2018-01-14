@@ -5,7 +5,10 @@
 		</div>
 		<div class="drag">
 			<div>
-				<div @click="$store.modal=true" id="addnewfeed"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
+				<div @click="refreshFeeds()" class="option" id="refresh"><i id="newfeedicon" class="fas fa-sync-alt" data-fa-transform="left-4"></i>Refresh feeds<i v-if='refreshing' class="fas fa-spinner fa-spin" data-fa-transform="right-4"></i></div>
+			</div>
+			<div>
+				<div @click="$store.modal=true" class="option" id="addnew"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
 			</div>
 			<div>
 				<p class="title">Current selection</p>
@@ -230,9 +233,7 @@ p.title {
     margin-bottom: 5px;
 }
 
-div#addnewfeed {
-    background-color: #18B3FF;
-    margin-right: 40px;
+div.option {
     margin-left: 12px;
     padding: 6px;
     color: #fff;
@@ -240,6 +241,16 @@ div#addnewfeed {
 	text-indent: 20px;
 	margin-bottom: 20px;
 	cursor: pointer;
+}
+
+div#refresh.option {
+	background-color: #ff6518;
+	margin-right: 70px;
+}
+
+div#addnew.option {
+    background-color: #18B3FF;
+	margin-right: 60px;
 }
 
 div#monster {
@@ -262,7 +273,8 @@ import draggable from 'vuedraggable';
 export default {
 	data() {
 		return {
-			categoriesOrder: []
+			categoriesOrder: [],
+			refreshing: false
 		}
 	},
 	store: {
@@ -299,6 +311,21 @@ export default {
 		loadAll: function (event) {
 			this.$store.data.category = null;
 			this.$store.data.feed = null;
+		},
+		toggleRefreshStatus: function() {
+			this.refreshing = !this.refreshing;
+		},
+		refreshFeeds: function (event) {
+			this.$http.get('http://localhost/rssmonster/public/api/feeds/updateall', {
+				}).then(response => {
+					//get status & status text
+					console.log(response.body.count);
+					this.toggleRefreshStatus();
+					//TODO: change order list
+				}, response => {
+					console.log('oops something went wrong');
+				});
+			this.toggleRefreshStatus();
 		},
 		updateSortOrder(e) {
 			console.log('oldIndex=' + e.oldIndex);
