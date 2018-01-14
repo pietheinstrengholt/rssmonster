@@ -212,6 +212,7 @@ div.sidebar-category-top, div.sidebar-category-main {
     margin-right: 12px;
 	margin-top: 4px;
 	border-radius: 4px;
+	cursor: pointer;
 }
 
 div.sidebar-category-feed {
@@ -238,6 +239,7 @@ div#addnewfeed {
 	border-radius: 4px;
 	text-indent: 20px;
 	margin-bottom: 20px;
+	cursor: pointer;
 }
 
 div#monster {

@@ -11,6 +11,7 @@
 <style>
 	div.quickbar a {
 		font-size: 12px;
+		cursor: pointer;
 	}
 </style>
 
