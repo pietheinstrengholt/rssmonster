@@ -9,8 +9,12 @@
 				<div class="item" href="#" @click="statusClicked('read')"><p>Read</p></div>
 				<div class="item" href="#" @click="statusClicked('star')"><p>Star</p></div>
 			</div>
-			<div class="status-toolbar">
-				<p>Status</p>
+			<div class="status-toolbar" @click="toggleShowFilter">
+				<p>{{ this.$store.data.filter | capitalize }}</p>
+			</div>
+			<div v-if='showFilterMenu' class="dropdownmenu">
+				<div class="item" href="#" @click="filterClicked('full')"><p>Full</p></div>
+				<div class="item" href="#" @click="filterClicked('minimal')"><p>Minimal</p></div>
 			</div>
 			<form class="new-form-wrap" data-behavior="search_form" accept-charset="UTF-8" data-remote="true" method="post" role="url">
 				<input @keyup="emitSearchEvent()" v-model="search" type="text" class="query" placeholder="Search" autocomplete="off">
@@ -274,6 +278,7 @@ export default {
 			waypointPool: [],
 			search: null,
 			showStatusMenu: false,
+			showFilterMenu: false,
 		}
 	},
 	store: {
@@ -445,9 +450,16 @@ export default {
 		toggleShowStatus: function() {
 			this.showStatusMenu = !this.showStatusMenu;
 		},
+		toggleShowFilter: function() {
+			this.showFilterMenu = !this.showFilterMenu;
+		},
 		statusClicked: function(status) {
 			this.$store.data.status = status;
 			this.toggleShowStatus();
+		},
+		filterClicked: function(filter) {
+			this.$store.data.filter = filter;
+			this.toggleShowFilter();
 		}
 	},
 	filters: {
