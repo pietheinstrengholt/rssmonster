@@ -13,3 +13,5 @@
 * Fix hard-coded URLs
 * Add change to unread option for an article and remove waypoint
 * Remove warning message from inf scrolling
+* Remove spinner when complete
+* Show dropdown with categories when adding new feed
