@@ -2,17 +2,17 @@
 	<div id="main">
 		<div class="subscribe-toolbar">
 			<div class="status-toolbar" @click="toggleShowStatus">
-				<p>{{ this.$store.data.status | capitalize }}</p>
+				<p id="status">{{ this.$store.data.status | capitalize }}</p>
 			</div>
-			<div v-if='showStatusMenu' class="dropdownmenu">
+			<div v-if='showStatusMenu' class="dropdownmenu" id="status">
 				<div class="item" href="#" @click="statusClicked('unread')"><p>Unread</p></div>
 				<div class="item" href="#" @click="statusClicked('read')"><p>Read</p></div>
 				<div class="item" href="#" @click="statusClicked('star')"><p>Star</p></div>
 			</div>
 			<div class="status-toolbar" @click="toggleShowFilter">
-				<p>{{ this.$store.data.filter | capitalize }}</p>
+				<p id="filter">{{ this.$store.data.filter | capitalize }}</p>
 			</div>
-			<div v-if='showFilterMenu' class="dropdownmenu">
+			<div v-if='showFilterMenu' class="dropdownmenu" id="filter">
 				<div class="item" href="#" @click="filterClicked('full')"><p>Full</p></div>
 				<div class="item" href="#" @click="filterClicked('minimal')"><p>Minimal</p></div>
 			</div>
@@ -228,6 +228,7 @@ div.status-toolbar {
 	float: left;
     border-right: 1px solid #E0E0E0;
     margin-left: 10px;
+	text-align: center;
 	cursor: pointer;
 }
 
@@ -243,6 +244,8 @@ div.dropdownmenu {
     margin-top: 40px;
     background-color: #eff1f3;
 	cursor: pointer;
+	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+    min-width: 100px;
 }
 
 div.dropdownmenu div.item {
@@ -259,6 +262,18 @@ div.dropdownmenu div.item p {
 	margin-bottom: 0px;
 	font-weight: 400;
     font-size: 14px;
+}
+
+div.status-toolbar p#status {
+	width:50px;
+}
+
+div.status-toolbar p#filter {
+	width:50px;
+}
+
+div#filter.dropdownmenu {
+	margin-left: 72px;
 }
 
 </style>
