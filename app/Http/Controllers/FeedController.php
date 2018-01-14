@@ -26,12 +26,20 @@ class FeedController extends Controller
 		//get only 15 feeds at a time
 		$feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
 
+		$count = 0;
+
 		if (!empty($feeds)) {
 			foreach ($feeds as $feed) {
 				//update feed, see update function
-				$this->update($feed);
+				$count = $count + $this->update($feed);
 			}
 		}
+
+		return response()->json([
+			'code' => '200',
+			'count' => $count,
+			'message' => $count . ' new messages have been added to the database',
+		], 200);
 	}
 
 	public function update(Feed $Feed)
@@ -39,10 +47,13 @@ class FeedController extends Controller
 		//set previous week
 		$previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
 
-		echo $Feed->url.'<br>';
+		//set cache enables
 		$feedFactory = new FeedFactory(['cache.enabled' => false]);
 		$feeder = $feedFactory->make($Feed->url);
 		$simplePieInstance = $feeder->getRawFeederObject();
+
+		//set starting count to 0
+		$count = 0;
 
 		//only add articles and update feed when results are found
 		if (!empty($simplePieInstance)) {
@@ -76,7 +87,8 @@ class FeedController extends Controller
 					//save article content to database
 					$article->save();
 
-					echo '- '.$item->get_title().'<br>';
+					//increase count
+					$count++;
 				}
 			}
 
@@ -85,6 +97,8 @@ class FeedController extends Controller
 			Feed::where('id', $Feed->id)->update(['feed_desc' => $simplePieInstance->get_description()]);
 			Feed::where('id', $Feed->id)->update(['favicon' => $simplePieInstance->get_image_url()]);
 		}
+
+		return $count;
 	}
 
 	public function newrssfeed(Request $request)
