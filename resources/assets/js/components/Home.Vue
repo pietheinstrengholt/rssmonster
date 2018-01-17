@@ -304,7 +304,7 @@ export default {
     watch: {
 		'$store.data': {
 			handler: function(data) {
-				this.$http.get('http://localhost/rssmonster/public/api/articles/listing', {
+				this.$http.get('articles/listing', {
 					params: {
 						//the following arguments are used
 						status: data.status,
@@ -329,7 +329,7 @@ export default {
 		InfiniteLoading,
 	},
 	beforeCreate() {
-		this.$http.get('http://localhost/rssmonster/public/api/articles/listing?status=unread')
+		this.$http.get('articles/listing?status=unread')
 			.then(response => {
 				return response.json();
 			})
@@ -366,7 +366,7 @@ export default {
 			if ((this.container.slice(this.distance, this.distance + 20)).length == 0) {
 				this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
 			} else {
-				this.$http.get('http://localhost/rssmonster/public/api/articles/details', {
+				this.$http.get('articles/details', {
 					params: {
 						//this is the argument used
 						article_id: this.container.slice(this.distance, this.distance + 20).join(","),
@@ -415,7 +415,7 @@ export default {
 		},
 		markArticleRead(article) {
 			//make ajax request to change read status
-			this.$http.post('http://localhost/rssmonster/public/api/articles/mark-to-read/' + article).then(response => {
+			this.$http.post('articles/mark-to-read/' + article).then(response => {
 				//push id to the pool
 				this.pool.push(article.id);
 
@@ -449,7 +449,7 @@ export default {
 			}
 
 			//make ajax request to change bookmark status
-			this.$http.post('http://localhost/rssmonster/public/api/articles/mark-with-star/' + article, {update: bookmarkChange}).then(response => {
+			this.$http.post('articles/mark-with-star/' + article, {update: bookmarkChange}).then(response => {
 				//get status & status text
 				console.log(response.status);
 				console.log(response.statusText);

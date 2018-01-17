@@ -165,7 +165,7 @@ span.error {
             checkWebsite: function() {
                 this.ajaxRequest = true;
 
-                this.$http.post('http://localhost/rssmonster/public/api/feeds/newrssfeed?url=' + this.url).then(response => {
+                this.$http.post('feeds/newrssfeed?url=' + this.url).then(response => {
                     this.error_msg = '';
                     this.feed_id = response.body.id;
                     this.feed_name = response.body.feed_name;
@@ -188,7 +188,7 @@ span.error {
             },
             saveFeed: function() {
 
-                this.$http.put('http://localhost/rssmonster/public/api/feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc}).then(response => {
+                this.$http.put('feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc}).then(response => {
                     // success
                 }, response => {
                     // error callback

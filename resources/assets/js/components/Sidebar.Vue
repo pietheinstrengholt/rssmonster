@@ -290,7 +290,7 @@ export default {
 	},
 	methods: {
 		fetchCategories: function() {
-			this.$http.get('http://localhost/rssmonster/public/api/categories')
+			this.$http.get('categories')
 			.then(response => {
 				return response.json();
 			})
@@ -316,7 +316,7 @@ export default {
 			this.refreshing = !this.refreshing;
 		},
 		refreshFeeds: function (event) {
-			this.$http.get('http://localhost/rssmonster/public/api/feeds/updateall', {
+			this.$http.get('feeds/updateall', {
 				}).then(response => {
 					//get status & status text
 					console.log(response.body.count);
@@ -334,7 +334,7 @@ export default {
 			for (let i = 0; i < this.$store.categories.length; i++) {
 				orderList.push(this.$store.categories[i]['id']);
 			}
-			this.$http.post('http://localhost/rssmonster/public/api/categories/updateorder', {
+			this.$http.post('categories/updateorder', {
 					params: {
 						//this is the argument used
 						order: orderList,
