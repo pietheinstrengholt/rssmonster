@@ -101,6 +101,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal for rename category -->
+        <div v-if="$store.modal.renamecategory">
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Rename category</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeRenameCategoryModal">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category_name">
+                        <br>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeRenameCategoryModal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -208,7 +232,8 @@ span.error {
                 feed_name: '',
                 feed_desc: '',
                 feed_id: '',
-                error_msg: ''
+                error_msg: '',
+                category_name: null
             }
         },
         methods: {
@@ -245,7 +270,7 @@ span.error {
                         this.$store.refreshCategories++;
                         this.$store.modal.newcategory = false;
                     }, response => {
-                        // error callback
+                        this.$store.modal.newcategory = false;
                     });
                 }
             },
@@ -260,11 +285,24 @@ span.error {
                     this.$store.refreshCategories++;
                     this.$store.modal.deletecategory = false;
                 }, response => {
-                    // error callback
+                    this.$store.modal.deletecategory = false;
                 });
             },
             closeDeleteCategoryModal: function() {
                 this.$store.modal.deletecategory = false;
+            },
+            renameCategory: function() {
+                //rename category
+                this.$http.put('categories/' + this.$store.data.category.id, {name: this.category_name}).then(response => {
+                    console.log(response.status);
+                    this.$store.refreshCategories++;
+                    this.$store.modal.renamecategory = false;
+                }, response => {
+                    this.$store.modal.renamecategory = false;
+                });
+            },
+            closeRenameCategoryModal: function() {
+                this.$store.modal.renamecategory = false;
             },
             saveFeed: function() {
 
@@ -279,6 +317,15 @@ span.error {
 
                 //close modal
                 this.closeNewFeedModal();
+            }
+        },
+        //watch the store.data.category, update the category_name, needed for model input dialog
+        watch: {
+            '$store.data': {
+                handler: function(data) {
+                    this.category_name = data.category.name;
+                },
+                deep: true
             }
         }
     }

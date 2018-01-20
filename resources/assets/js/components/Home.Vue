@@ -312,7 +312,7 @@ export default {
 					params: {
 						//the following arguments are used
 						status: data.status,
-						category_id: data.category,
+						category_id: data.category.id,
 						feed_id: data.feed,
 						search: data.search
 					},
