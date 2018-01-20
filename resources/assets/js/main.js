@@ -23,7 +23,12 @@ new Vue({
 				search: null,
 				refresh: 0
 			},
-			modal: false,
+			modal: {
+				newfeed: false,
+				newcategory: false,
+				renamecategory: false,
+				deletecategory: false	
+			},
 			refreshCategories: 0,
 			categories: []
 		}

@@ -11,14 +11,14 @@
             </div>
         </div>
 
-        <!-- Modal -->
-        <div v-if="$store.modal">
+        <!-- Modal for new feed -->
+        <div v-if="$store.modal.newfeed">
             <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
                 <div class="modal-dialog modal-dialog-centered" role="document">
                     <div class="modal-content">
                     <div class="modal-header">
                         <h5 class="modal-title" id="exampleModalLongTitle">Add new feed</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeNewFeedModal">
                         <span aria-hidden="true">&times;</span>
                         </button>
                     </div>
@@ -46,8 +46,32 @@
                         </div>
                     </div>
                     <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Cancel</button>
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeNewFeedModal">Cancel</button>
                         <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Modal for new category -->
+        <div v-if="$store.modal.newcategory">
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Add new category</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeNewCategoryModal">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category">
+                        <br>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeNewCategoryModal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
                     </div>
                     </div>
                 </div>
@@ -180,26 +204,40 @@ span.error {
 
                 this.ajaxRequest = false;
             },
-            closeModal: function() {
+            closeNewFeedModal: function() {
                 this.feed_id = '';
                 this.feed_name = '';
                 this.feed_desc = '';
                 this.error_msg = '';
-                this.$store.modal = false;
+                this.$store.modal.newfeed = false;
+            },
+            saveCategory: function() {
+                console.log(this.category);
+                this.$http.post('categories', {name: this.category}).then(response => {
+                    console.log(response.status);
+                    //send event to refresh the categories
+                    this.$store.refreshCategories++;
+                    this.$store.modal.newcategory = false;
+                }, response => {
+                    // error callback
+                });
+            },
+            closeNewCategoryModal: function() {
+                this.$store.modal.newcategory = false;
             },
             saveFeed: function() {
 
                 this.$http.put('feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc}).then(response => {
-                    // success
+                    console.log(response.status);
                 }, response => {
                     // error callback
                 });
 
                 //send event to refresh the categories
-                this.$store.refreshCategories = this.$store.refreshCategories + 1;
+                this.$store.refreshCategories++;
 
                 //close modal
-                this.closeModal();
+                this.closeNewFeedModal();
             }
         }
     }

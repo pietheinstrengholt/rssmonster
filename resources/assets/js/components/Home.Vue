@@ -249,6 +249,7 @@ div.dropdownmenu {
 	cursor: pointer;
 	box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
     min-width: 100px;
+	color: #111;
 }
 
 div.dropdownmenu div.item {
@@ -422,8 +423,7 @@ export default {
 				//push id to the pool
 				this.pool.push(article.id);
 
-				// get article content
-				console.log(response.body);
+				//increase the read and unread count based on the body message returned
 				for (var i = 0, len = this.$store.categories.length; i < len; i++) {
 					if (!(this.$store.categories[i] === undefined || this.$store.categories[i] === null)) {
 						if (response.body.category_id == this.$store.categories[i]['id']) {
