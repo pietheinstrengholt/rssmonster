@@ -50,14 +50,13 @@ class CategoryController extends Controller
 
 	public function updateorder(Request $request)
 	{
-		//check if url is set in POST argument, else exit
 		if ($request->has('order')) {
 			$orderArray = $request->input('order');
 			foreach ($orderArray as $key => $value) {
 				//update category with new order
 				Category::where('id', $value)->update(['category_order' => $key]);
 			}
-			return response()->json($orderArray);
 		}
+		return response()->json($request->input('order'));
 	}
 }

@@ -333,24 +333,19 @@ export default {
 				});
 		},
 		updateSortOrder(e) {
-			console.log('oldIndex=' + e.oldIndex);
-			console.log('newIndex=' + e.newIndex);
 			var orderList = new Array();
 			for (let i = 0; i < this.$store.categories.length; i++) {
 				orderList.push(this.$store.categories[i]['id']);
 			}
-			this.$http.post('categories/updateorder', {
-					params: {
-						//this is the argument used
-						order: orderList,
-					},
-				}).then(response => {
-					//get status & status text
-					console.log(response.body);
-					//TODO: change order list
-				}, response => {
-					console.log('oops something went wrong');
-				});
+			console.log(orderList);
+
+			//make ajax request to change categories order
+			this.$http.post('categories/updateorder', {order: orderList}).then(response => {
+				//get status & status text
+				console.log(response.status);
+			}, response => {
+				console.log('oops something went wrong');
+			});
 		}
 
 	},
