@@ -77,6 +77,30 @@
                 </div>
             </div>
         </div>
+
+        <!-- Modal for delete category -->
+        <div v-if="$store.modal.deletecategory">
+            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+                <div class="modal-dialog modal-dialog-centered" role="document">
+                    <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="exampleModalLongTitle">Delete category</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeDeleteCategoryModal">
+                        <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <p>Are you sure to delete this category?</p>
+                        <br>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeDeleteCategoryModal">Cancel</button>
+                        <button type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
+                    </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -171,6 +195,7 @@ span.error {
             appQuickbar: Quickbar
         },
         store: {
+            data: 'data',
             modal: 'modal',
             refreshCategories: 'refreshCategories'
         },
@@ -212,18 +237,34 @@ span.error {
                 this.$store.modal.newfeed = false;
             },
             saveCategory: function() {
-                console.log(this.category);
-                this.$http.post('categories', {name: this.category}).then(response => {
+                //save category when category name is set
+                if (this.category) {
+                    this.$http.post('categories', {name: this.category}).then(response => {
+                        console.log(response.status);
+                        //send event to refresh the categories
+                        this.$store.refreshCategories++;
+                        this.$store.modal.newcategory = false;
+                    }, response => {
+                        // error callback
+                    });
+                }
+            },
+            closeNewCategoryModal: function() {
+                this.$store.modal.newcategory = false;
+            },
+            deleteCategory: function() {
+                //delete category
+                this.$http.delete('categories/' + this.$store.data.category).then(response => {
                     console.log(response.status);
                     //send event to refresh the categories
                     this.$store.refreshCategories++;
-                    this.$store.modal.newcategory = false;
+                    this.$store.modal.deletecategory = false;
                 }, response => {
                     // error callback
                 });
             },
-            closeNewCategoryModal: function() {
-                this.$store.modal.newcategory = false;
+            closeDeleteCategoryModal: function() {
+                this.$store.modal.deletecategory = false;
             },
             saveFeed: function() {
 
