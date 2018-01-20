@@ -30,7 +30,7 @@
 						</h5>
 						<div class="feedname">
 							<span class="favicon">
-								<img class="favicon" :src="article.favicon" onerror="this.parentNode.removeChild(this);">
+								<img class="favicon" :src="article.favicon" onerror="this.onerror=null;this.parentNode.removeChild(this);">
 							</span>
 							<span class="feed_name" v-text="article.feed_name"></span>
 							<span class="break"> | </span>
@@ -484,7 +484,11 @@ export default {
 			return value.charAt(0).toUpperCase() + value.slice(1)
 		},
 		stripHTML: function (value) {
-			return value.replace(/<(?:.|\n)*?>/gm, '');
+			//strip out all HTML
+			var str1 = value.replace(/<(?:.|\n)*?>/gm, '');
+			//take first 100 words
+			var str2 = str1.replace(/(([^\s]+\s\s*){100})(.*)/,"$1…");
+			return str2;
 		}
 	}
 }
