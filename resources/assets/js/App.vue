@@ -113,6 +113,7 @@
     div.sidebar {
         height: 100%;
         background-color: #4E57A3;
+        overflow-y: auto;
     }
 }
 
