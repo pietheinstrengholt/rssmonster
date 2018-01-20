@@ -5,7 +5,7 @@
 		</div>
 		<div class="drag">
 			<div>
-				<div @click="refreshFeeds()" class="option" id="refresh"><i id="newfeedicon" class="fas fa-sync-alt" data-fa-transform="left-4"></i>Refresh feeds<i v-if='refreshing' class="fas fa-spinner fa-spin" data-fa-transform="right-4"></i></div>
+				<div @click="refreshFeeds()" class="option" id="refresh"><i id="newfeedicon" class="fas fa-sync-alt" data-fa-transform="left-4"></i>Refresh feeds<span v-show="refreshing"><i class="fas fa-spinner fa-spin" data-fa-transform="right-4"></i></span></div>
 			</div>
 			<div>
 				<div @click="$store.modal=true" class="option" id="addnew"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
@@ -312,20 +312,23 @@ export default {
 			this.$store.data.category = null;
 			this.$store.data.feed = null;
 		},
-		toggleRefreshStatus: function() {
-			this.refreshing = !this.refreshing;
-		},
 		refreshFeeds: function (event) {
+			//show spinner
+			this.refreshing = true;
 			this.$http.get('feeds/updateall', {
 				}).then(response => {
-					//get status & status text
-					console.log(response.body.count);
-					this.toggleRefreshStatus();
-					//TODO: change order list
+					//check if there is at least one article renewed
+					if (response.body.count === parseInt(response.body.count, 10)) {
+						//increase refresh which triggers watcher to refresh the Home
+						this.$store.data.refresh++;
+						//remove spinner
+						this.refreshing = false;
+					}
 				}, response => {
+					//remove spinner
+					this.refreshing = false;
 					console.log('oops something went wrong');
 				});
-			this.toggleRefreshStatus();
 		},
 		updateSortOrder(e) {
 			console.log('oldIndex=' + e.oldIndex);

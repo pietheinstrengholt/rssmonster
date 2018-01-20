@@ -20,7 +20,8 @@ new Vue({
 				status: 'unread',
 				category: null,
 				feed: null,
-				search: null
+				search: null,
+				refresh: 0
 			},
 			modal: false,
 			refreshCategories: 0,
