@@ -43,6 +43,15 @@
                                     <input type="text" class="form-control" id="inputPassword" v-model="feed_desc" placeholder="Feed description">
                                 </div>
                             </div>
+
+                            <div class="form-group row">
+                                <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
+                                <div class="col-sm-9">
+                                    <select class="form-control" id="category" v-model="category">
+                                        <option v-for="category in this.$store.categories" :value="category.id">{{ category.name }}</option>
+                                    </select>
+                                </div>
+                            </div>
                         </div>
                     </div>
                     <div class="modal-footer">
@@ -305,8 +314,7 @@ span.error {
                 this.$store.modal.renamecategory = false;
             },
             saveFeed: function() {
-
-                this.$http.put('feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc}).then(response => {
+                this.$http.put('feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc, category_id: this.category}).then(response => {
                     console.log(response.status);
                 }, response => {
                     // error callback

@@ -238,6 +238,9 @@ class FeedController extends Controller
 		$feed = Feed::find($id);
 		$feed->feed_name = $request->input('feed_name');
 		$feed->feed_desc = $request->input('feed_desc');
+		if ($request->has('category_id')) {
+			$feed->category_id = $request->input('category_id');
+		}
 		$feed->save();
 		return response()->json($feed);
 	}
