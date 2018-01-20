@@ -57,8 +57,8 @@
 			<div>
 				<p class="title">Categories</p>
 			</div>
-			<draggable v-model="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
-				<div class="sidebar-category-main" v-bind:class="{ 'selected':  ($store.data.category === category.id) && ($store.data.feed === null) }" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
+			<draggable :list="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
+				<div class="sidebar-category-main" v-bind:class="{ 'selected': ($store.data.category === category.id) && ($store.data.feed === null) }" v-on:click="loadCategory(category.id)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
 							<i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
@@ -246,11 +246,13 @@ div.option {
 div#refresh.option {
 	background-color: #ff6518;
 	margin-right: 70px;
+	min-width: 165px;
 }
 
 div#addnew.option {
     background-color: #18B3FF;
 	margin-right: 60px;
+	min-width: 170px;
 }
 
 div#monster {
