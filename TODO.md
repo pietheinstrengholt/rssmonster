@@ -6,12 +6,10 @@
 * Fix initial load problem
 * Cleanup CSS, move to CSS files instead of in VUE
 * Compile JS, CSS, Cached versions
-* Add refresh button to reload page with latest feeds
-* Allow chaning the sorting order
+* Allow changing the sorting order
 * Add dropdown to apply text/html article filtering
 * Polling pattern to show that new articles have been loaded on the background
 * Fix hard-coded URLs
 * Add change to unread option for an article and remove waypoint
 * Remove warning message from inf scrolling
-* Remove spinner when complete
 * Show dropdown with categories when adding new feed
