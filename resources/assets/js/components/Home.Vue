@@ -24,7 +24,8 @@
 			<div v-bind:id="article.id" class="block" v-for="(article, key) in articles">
 				<div class="article">
 					<div class="maximal">
-						<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark"></div>
+						<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark">
+						</div>
 						<h5 class="heading">
 							<a target="_blank" :href="article.url" v-text="article.subject"></a>
 						</h5>
@@ -154,6 +155,7 @@ div.block div.bookmarked {
 	cursor: pointer;
 	background-size: 18px 18px;
 	background-position: 8px 12px;
+	color:#111;
 }
 
 div.block div.bookmark {
@@ -230,6 +232,7 @@ div.status-toolbar {
     margin-left: 10px;
 	text-align: center;
 	cursor: pointer;
+	color: #111;
 }
 
 div.status-toolbar p {
