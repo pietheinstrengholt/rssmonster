@@ -1,17 +1,15 @@
 ## RSS Monster
 
-Copyright (c) 2016 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2017 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator and reader compatible with the Fever API, created as an alternative for Google Reader.
-RSSMonster features a lightweight fluid responsive design. It is written in JavaScript and PHP and uses the Laravel
-lumen and twitter boostrap framework. Several features are implemented such as
-marking as read when scrolling, drag and drop style manage feeds, json events, etc.
+RSSMonster features a lightweight fluid responsive design. It is written in JavaScript (VueJS), PHP (Laravel Lumen) and uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc.
 Feel free to add any contributions or new features.
 
 ![Screenshot](public/img/screenshots/screenshot01.png)
 
 #### Prerequisites
-* PHP >= 5.5.9
+* PHP >= 7.0
 * OpenSSL PHP Extension
 * Mbstring PHP Extension
 * Tokenizer PHP Extension
@@ -27,11 +25,13 @@ Feel free to add any contributions or new features.
 * Run `composer install` this will install all dependencies and might take a while
 * Run `php artisan key:generate` this will generate your individual application key, so that passwords are safe
 * Run `npm install` to install node dependencies, when using windows you might need to run `npm install --global --production windows-build-tools` first.
-* Run npm run production to compile all JS files
+* Run `npm run production` to compile all JS files
 * Run `php artisan migrate` this will add all needed database tables to your mysql database
 * Run `chmod -R 777 storage/`
 * Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
 * Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
+
+If you would like to run RSSMonster in development mode I recommand to run `npm run watch`
 
 #### Reeder (iOS) integration support (via Fever API)
 
@@ -44,13 +44,6 @@ You might need to change the redirect in the `.htaccess` inside the public folde
 Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
-
-#### Todo
-
-* Cleanup JS, CSS
-* Cosmetic: When moving feeds between categories, change the count for the category
-* Show a welcome screen when the database is empty
-* Drag and drop on Tablet?
 
 #### Credits
 
