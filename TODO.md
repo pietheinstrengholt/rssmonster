@@ -12,3 +12,8 @@
 * Remove warning message from inf scrolling
 * Show dropdown with categories when adding new feed
 * Option to remove feeds
+* Fix modal transition
+* Add functionality to rename, move, delete feeds
+* Seperate Model Vue file
+* Single modelClose function with v-if
+* Feed as a object instead of feed_id
