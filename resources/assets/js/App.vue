@@ -327,11 +327,12 @@ span.error {
                 this.closeNewFeedModal();
             }
         },
-        //watch the store.data.category, update the category_name, needed for model input dialog
+        //watch the store.data.category, update the category name, needed for model input dialog
         watch: {
             '$store.data': {
                 handler: function(data) {
                     if (data.category) {
+                        //lookup category name based on the category_id received
                         var item = this.$store.categories.filter(function(a){ return a.id == data.category })[0];
                         this.category_name = item.name;
                     }
