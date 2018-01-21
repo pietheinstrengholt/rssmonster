@@ -135,7 +135,7 @@
 }
 
 a#rssmonster.view-button {
-	background: url(http://localhost/rssmonster/public/images/monster.svg) 10px 10px no-repeat;
+	background: url(./../../images/monster.svg) 10px 10px no-repeat;
 	background-size: 20px 20px;
     max-width: 30px;
     min-width: 30px;
@@ -264,7 +264,7 @@ div#addnew.option {
 }
 
 div#monster {
-	background: url(http://localhost/rssmonster/public/images/monster.svg) 30px 30px no-repeat;
+	background: url(./../../images/monster.svg) 30px 30px no-repeat;
 	background-size: 50px 50px;
 	height: 100px;
 }

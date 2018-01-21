@@ -15,4 +15,7 @@ mix.js('resources/assets/js/main.js', 'public/js');
 
 mix.copy('resources/assets/images/', 'public/images/', false); // Don't flatten!
 
+//mix.setResourceRoot('../');
+mix.setResourceRoot('/rssmonster/public/');
+
 mix.browserSync();
