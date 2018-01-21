@@ -159,11 +159,11 @@ div.block div.bookmarked {
 }
 
 div.block div.bookmark {
-	background-image: url('http://localhost/rssmonster/public/img/heart_unselected.png');
+	background-image: url('http://localhost/rssmonster/public/images/heart_unselected.png');
 }
 
 div.block div.bookmarked {
-	background-image: url('http://localhost/rssmonster/public/img/heart_selected.png');
+	background-image: url('http://localhost/rssmonster/public/images/heart_selected.png');
 }
 
 div.block div.article-content img {
@@ -215,7 +215,7 @@ form.new-form-wrap {
     border: none;
     line-height: 1;
     color: #212325;
-    background: url(http://localhost/rssmonster/public/img/search.svg) 8px 13px no-repeat;
+    background: url(http://localhost/rssmonster/public/images/search.svg) 8px 13px no-repeat;
 }
 
 div#show-modal {
