@@ -58,7 +58,7 @@
 				<p class="title">Categories</p>
 			</div>
 			<draggable :list="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
-				<div class="sidebar-category-main" v-bind:class="{ 'selected': ($store.data.category === category) && ($store.data.feed === null) }" v-on:click="loadCategory(category)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
+				<div class="sidebar-category-main" v-bind:class="{ 'selected': ($store.data.category === category.id) && ($store.data.feed === null) }" v-on:click="loadCategory(category)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
 							<i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
@@ -71,8 +71,8 @@
 						</span>
 					</div>
 					<div v-if="category.feeds">
-						<div v-if="$store.data.category === category" class="sidebar-category-feeds">
-							<div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed.id)" v-bind:class="{ 'selected': $store.data.feed === feed.id }" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
+						<div v-if="$store.data.category === category.id" class="sidebar-category-feeds">
+							<div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.feed === feed.id }" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
 								<span class="glyphicon">
 									<i class="far fa-square" data-fa-transform="down-5 shrink-2"></i>
 								</span>
@@ -290,6 +290,7 @@ div#monster p {
 
 div.category-options {
 	margin-top: 10px;
+	margin-bottom: 20px;
 	height: 40px;
 }
 
@@ -357,11 +358,11 @@ export default {
 			this.$store.data.status = status;
 		},
 		loadCategory: function (category, event) {
-			this.$store.data.category = category;
+			this.$store.data.category = category.id;
 			this.$store.data.feed = null;
 		},
 		loadFeed: function (feed, event) {
-			this.$store.data.feed = feed;
+			this.$store.data.feed = feed.id;
 		},
 		loadAll: function (event) {
 			this.$store.data.category = null;

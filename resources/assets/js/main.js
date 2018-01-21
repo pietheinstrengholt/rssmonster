@@ -18,7 +18,7 @@ new Vue({
 			data: {
 				filter: 'full',
 				status: 'unread',
-				category: [],
+				category: null,
 				feed: null,
 				search: null,
 				refresh: 0

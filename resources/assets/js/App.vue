@@ -332,7 +332,8 @@ span.error {
             '$store.data': {
                 handler: function(data) {
                     if (data.category) {
-                        this.category_name = data.category.name;
+                        //TODO: lookup name
+                        this.category_name = data.category.id;
                     }
                 },
                 deep: true
