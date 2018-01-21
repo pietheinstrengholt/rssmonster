@@ -58,7 +58,7 @@
 				<p class="title">Categories</p>
 			</div>
 			<draggable :list="composedCategories" class="dragArea" :options="{group:{ name:'category', pull:'clone', put:false}}" @end="updateSortOrder">
-				<div class="sidebar-category-main" v-bind:class="{ 'selected': ($store.data.category.id === category.id) && ($store.data.feed === null) }" v-on:click="loadCategory(category)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
+				<div class="sidebar-category-main" v-bind:class="{ 'selected': ($store.data.category === category) && ($store.data.feed === null) }" v-on:click="loadCategory(category)" v-bind:id="category.id" v-for="(category, index) in composedCategories" :key="index">
 					<div class="sidebar-category-sub">
 						<span class="glyphicon">
 							<i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
@@ -71,7 +71,7 @@
 						</span>
 					</div>
 					<div v-if="category.feeds">
-						<div v-if="$store.data.category.id === category.id" class="sidebar-category-feeds">
+						<div v-if="$store.data.category === category" class="sidebar-category-feeds">
 							<div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed.id)" v-bind:class="{ 'selected': $store.data.feed === feed.id }" v-bind:id="feed.id" v-for="(feed, index) in category.feeds" :key="index">
 								<span class="glyphicon">
 									<i class="far fa-square" data-fa-transform="down-5 shrink-2"></i>
@@ -92,8 +92,8 @@
 			</div>
 			<div class="category-options">
 				<div @click="$store.modal.newcategory=true" id="add" class="category-button"><div><i class="fas fa-plus" data-fa-transform="down-8 grow-6"></i></div><div class="text">Add new</div></div>
-				<div v-if="$store.data.category.id != null" @click="$store.modal.deletecategory=true" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
-				<div v-if="$store.data.category.id != null" @click="$store.modal.renamecategory=true" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
+				<div v-if="$store.data.category != null" @click="$store.modal.deletecategory=true" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
+				<div v-if="$store.data.category != null" @click="$store.modal.renamecategory=true" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
 			</div>
 		</div>
 	</div>

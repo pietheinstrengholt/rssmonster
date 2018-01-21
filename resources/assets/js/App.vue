@@ -331,7 +331,9 @@ span.error {
         watch: {
             '$store.data': {
                 handler: function(data) {
-                    this.category_name = data.category.name;
+                    if (data.category) {
+                        this.category_name = data.category.name;
+                    }
                 },
                 deep: true
             }
