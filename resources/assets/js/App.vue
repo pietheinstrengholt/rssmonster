@@ -13,54 +13,58 @@
 
         <!-- Modal for new feed -->
         <div v-if="$store.modal.newfeed">
-            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLongTitle">Add new feed</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeNewFeedModal">
-                        <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <input class="form-control form-control-lg" type="text" placeholder="Enter feed or website url..." v-model="url">
-                        <br>
-                        <button type="submit" class="btn btn-primary mb-2" @click="checkWebsite">Validate feed</button>
-                        <br>
-                        <span v-if="ajaxRequest">Please Wait ...</span>
-                        <br>
-                        <span class="error" v-if="error_msg">{{ error_msg }}</span>
-                        <div v-if="feed_id">
-                            <div class="form-group row">
-                                <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
-                                <div class="col-sm-9">
-                                    <input type="text" class="form-control" id="inputPassword" v-model="feed_name" placeholder="Feed name">
-                                </div>
+            <transition name="modal">
+                <div class="modal-mask">
+                <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+                    <div class="modal-dialog modal-dialog-centered modal-wrapper" role="document">
+                        <div class="modal-content modal-container">
+                            <div class="modal-header">
+                                <h5 class="modal-title" id="exampleModalLongTitle">Add new feed</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeNewFeedModal">
+                                <span aria-hidden="true">&times;</span>
+                                </button>
                             </div>
-                            <div class="form-group row">
-                                <label for="inputFeedDescription" class="col-sm-3 col-form-label">Feed description</label>
-                                <div class="col-sm-9">
-                                    <input type="text" class="form-control" id="inputPassword" v-model="feed_desc" placeholder="Feed description">
-                                </div>
-                            </div>
+                            <div class="modal-body">
+                                <input class="form-control form-control-lg" type="text" placeholder="Enter feed or website url..." v-model="url">
+                                <br>
+                                <button type="submit" class="btn btn-primary mb-2" @click="checkWebsite">Validate feed</button>
+                                <br>
+                                <span v-if="ajaxRequest">Please Wait ...</span>
+                                <br>
+                                <span class="error" v-if="error_msg">{{ error_msg }}</span>
+                                <div v-if="feed_id">
+                                    <div class="form-group row">
+                                        <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
+                                        <div class="col-sm-9">
+                                            <input type="text" class="form-control" id="inputPassword" v-model="feed_name" placeholder="Feed name">
+                                        </div>
+                                    </div>
+                                    <div class="form-group row">
+                                        <label for="inputFeedDescription" class="col-sm-3 col-form-label">Feed description</label>
+                                        <div class="col-sm-9">
+                                            <input type="text" class="form-control" id="inputPassword" v-model="feed_desc" placeholder="Feed description">
+                                        </div>
+                                    </div>
 
-                            <div class="form-group row">
-                                <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
-                                <div class="col-sm-9">
-                                    <select class="form-control" id="category" v-model="category">
-                                        <option v-for="category in this.$store.categories" :value="category.id">{{ category.name }}</option>
-                                    </select>
+                                    <div class="form-group row">
+                                        <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
+                                        <div class="col-sm-9">
+                                            <select class="form-control" id="category" v-model="category">
+                                                <option v-for="category in this.$store.categories" :value="category.id">{{ category.name }}</option>
+                                            </select>
+                                        </div>
+                                    </div>
                                 </div>
+                            </div>
+                            <div class="modal-footer">
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeNewFeedModal">Cancel</button>
+                                <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
                             </div>
                         </div>
                     </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeNewFeedModal">Cancel</button>
-                        <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
-                    </div>
-                    </div>
                 </div>
-            </div>
+                </div>
+            </transition>
         </div>
 
         <!-- Modal for new category -->
@@ -209,6 +213,43 @@ body {
 
 div.modal-dialog {
     max-width: 800px;
+}
+
+.modal-mask {
+    position: fixed;
+    z-index: 9998;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, .5);
+    display: table;
+    transition: opacity .3s ease;
+}
+
+.modal-container {
+    margin: 0px auto;
+    padding: 20px 30px;
+    background-color: #fff;
+    border-radius: 2px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
+    transition: all .3s ease;
+    font-family: Helvetica, Arial, sans-serif;
+    color: #111;
+}
+
+.modal-enter {
+    opacity: 0;
+}
+
+.modal-leave-active {
+    opacity: 0;
+}
+
+.modal-enter .modal-container,
+.modal-leave-active .modal-container {
+    -webkit-transform: scale(1.1);
+    transform: scale(1.1);
 }
 
 span.error {
