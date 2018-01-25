@@ -252,6 +252,10 @@ div.modal-dialog {
     transform: scale(1.1);
 }
 
+button.close span {
+    color: #111;
+}
+
 span.error {
     color: red;
 }
