@@ -11,5 +11,4 @@
 * Fix hard-coded URLs
 * Add change to unread option for an article and remove waypoint
 * Remove warning message from inf scrolling
-* Fix modal transition
 * Fix option selected
