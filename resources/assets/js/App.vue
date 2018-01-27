@@ -84,8 +84,26 @@
                             </div>
 
                             <div class="modal-body" v-if="$store.modal==='renamefeed'">
-                                <input class="form-control form-control-lg" type="text" placeholder="Enter new feed name.." v-model="feed_name">
-                                <br>
+                                <div class="form-group row">
+                                    <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="feed_name" v-model="feed_name" placeholder="Feed name">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="inputFeedDescription" class="col-sm-3 col-form-label">Feed description</label>
+                                    <div class="col-sm-9">
+                                        <input type="text" class="form-control" id="feed_desc" v-model="feed_desc" placeholder="Feed description">
+                                    </div>
+                                </div>
+                                <div class="form-group row">
+                                    <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
+                                    <div class="col-sm-9">
+                                        <select class="form-control" id="category" v-model="category">
+                                            <option v-for="category in this.$store.categories" :value="category.id" :selected="category.id == $store.data.category ? 'selected' : ''">{{ category.name }}</option>
+                                        </select>
+                                    </div>
+                                </div>
                             </div>
 
                             <div class="modal-footer">
@@ -327,7 +345,7 @@ span.error {
             },
             renameFeed: function() {
                 //rename category
-                this.$http.put('feeds/' + this.$store.data.feed, {name: this.feed_name}).then(response => {
+                this.$http.put('feeds/' + this.$store.data.feed, {name: this.feed_name, feed_desc: this.feed_desc, category_id: this.category}).then(response => {
                     console.log(response.status);
                     this.$store.refreshCategories++;
                     this.closeModal();
@@ -348,13 +366,11 @@ span.error {
                 //close modal
                 this.closeModal();
             },
-            lookupFeedName: function(feed_id) {
+            lookupFeedById: function(feed_id) {
                 for (var x=0; x<this.$store.categories.length; x++) {
-                    console.log(this.$store.categories[x]);
                     for (var i=0; i<this.$store.categories[x].feeds.length; i++) {
-                        console.log(this.$store.categories[x].feeds[i]);
                         if (this.$store.categories[x].feeds[i].id === feed_id) {
-                            return this.$store.categories[x].feeds[i].feed_name;
+                            return this.$store.categories[x].feeds[i];
                         }
                     }
                 }
@@ -371,7 +387,9 @@ span.error {
                     }
                     //lookup feed name based on the feed_id
                     if (data.feed) {
-                        this.feed_name = this.lookupFeedName(data.feed);
+                        var feed = this.lookupFeedById(data.feed)
+                        this.feed_name = feed.feed_name;
+                        this.feed_desc = feed.feed_desc;
                     }
                 },
                 deep: true
