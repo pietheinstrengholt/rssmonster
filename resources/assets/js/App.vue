@@ -55,13 +55,12 @@
                                         <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                                         <div class="col-sm-9">
                                             <select class="form-control" id="category" v-model="category">
-                                                <option v-for="category in this.$store.categories" :value="category.id">{{ category.name }}</option>
+                                                <option v-for="category in this.$store.categories" :value="category.id" v-bind:selected="category.id === 1">{{ category.name }}</option>
                                             </select>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-
 
                             <div class="modal-body" v-if="$store.modal==='newcategory'">
                                 <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category">
@@ -100,7 +99,7 @@
                                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                                     <div class="col-sm-9">
                                         <select class="form-control" id="category" v-model="category">
-                                            <option v-for="category in this.$store.categories" :value="category.id" :selected="category.id == $store.data.category ? 'selected' : ''">{{ category.name }}</option>
+                                            <option v-for="category in this.$store.categories" :value="category.id" v-bind:selected="$store.data.category = category.id ? 'selected' : ''">{{ category.name }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -217,7 +216,6 @@ div.modal-dialog {
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
     transition: all .3s ease;
-    font-family: Helvetica, Arial, sans-serif;
     color: #111;
 }
 
