@@ -199,7 +199,7 @@ class FeedController extends Controller
 		if ($request->has('feed_id') && $request->has('category_id')) {
 			//update feed with new category_id
 			Feed::where('id', $request->input('feed_id'))->update(['category_id' => $request->input('category_id')]);
-		 return response()->json('done');
+			return response()->json('done');
 		}
 	}
 
@@ -221,8 +221,10 @@ class FeedController extends Controller
 
 	public function createFeed(Request $request)
 	{
-		$feed = Feed::create($request->all());
-		return response()->json($feed);
+		if ($request->has('feed_name') && $request->has('category_id')) {
+			$feed = Feed::create($request->all());
+			return response()->json($feed);
+		}
 	}
 
 	public function deleteFeed($id)
@@ -236,12 +238,14 @@ class FeedController extends Controller
 	public function updateFeed($id, Request $request)
 	{
 		$feed = Feed::find($id);
-		$feed->feed_name = $request->input('feed_name');
-		$feed->feed_desc = $request->input('feed_desc');
-		if ($request->has('category_id')) {
-			$feed->category_id = $request->input('category_id');
+		if ($request->has('feed_name') && $request->has('category_id')) {
+			$feed->feed_name = $request->input('feed_name');
+			$feed->feed_desc = $request->input('feed_desc');
+			if ($request->has('category_id')) {
+				$feed->category_id = $request->input('category_id');
+			}
+			$feed->save();
 		}
-		$feed->save();
 		return response()->json($feed);
 	}
 }
