@@ -23,6 +23,8 @@
                                 <h5 class="modal-title" v-if="$store.modal==='newcategory'">Add new category</h5>
                                 <h5 class="modal-title" v-if="$store.modal==='deletecategory'">Delete category</h5>
                                 <h5 class="modal-title" v-if="$store.modal==='renamecategory'">Rename category</h5>
+                                <h5 class="modal-title" v-if="$store.modal==='deletefeed'">Delete feed</h5>
+                                <h5 class="modal-title" v-if="$store.modal==='renamefeed'">Rename feed</h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                                 <span aria-hidden="true">&times;</span>
                                 </button>
@@ -66,7 +68,7 @@
                                 <br>
                             </div>
 
-                            <div class="modal-body" v-if="$store.modal==='deletcategory'">
+                            <div class="modal-body" v-if="$store.modal==='deletecategory'">
                                 <p>Are you sure to delete this category?</p>
                                 <br>
                             </div>
@@ -76,11 +78,23 @@
                                 <br>
                             </div>
 
+                            <div class="modal-body" v-if="$store.modal==='deletefeed'">
+                                <p>Are you sure to delete this feed?</p>
+                                <br>
+                            </div>
+
+                            <div class="modal-body" v-if="$store.modal==='renamefeed'">
+                                <input class="form-control form-control-lg" type="text" placeholder="Enter new feed name.." v-model="feed_name">
+                                <br>
+                            </div>
+
                             <div class="modal-footer">
                                 <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
                                 <button v-if="$store.modal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
                                 <button v-if="$store.modal==='deletecategory'" type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
                                 <button v-if="$store.modal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
+                                <button v-if="$store.modal==='deletefeed'" type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>
+                                <button v-if="$store.modal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Rename feed</button>
                                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Cancel</button>
                             </div>
                         </div>
@@ -292,7 +306,28 @@ span.error {
             },
             renameCategory: function() {
                 //rename category
-                this.$http.put('categories/' + this.$store.data.category.id, {name: this.category_name}).then(response => {
+                this.$http.put('categories/' + this.$store.data.category, {name: this.category_name}).then(response => {
+                    console.log(response.status);
+                    this.$store.refreshCategories++;
+                    this.closeModal();
+                }, response => {
+                    this.closeModal();
+                });
+            },
+            deleteFeed: function() {
+                //delete category
+                this.$http.delete('feeds/' + this.$store.data.feed).then(response => {
+                    console.log(response.status);
+                    //send event to refresh the categories
+                    this.$store.refreshCategories++;
+                    this.closeModal();
+                }, response => {
+                    this.closeModal();
+                });
+            },
+            renameFeed: function() {
+                //rename category
+                this.$http.put('feeds/' + this.$store.data.feed, {name: this.feed_name}).then(response => {
                     console.log(response.status);
                     this.$store.refreshCategories++;
                     this.closeModal();
@@ -312,16 +347,31 @@ span.error {
 
                 //close modal
                 this.closeModal();
+            },
+            lookupFeedName: function(feed_id) {
+                for (var x=0; x<this.$store.categories.length; x++) {
+                    console.log(this.$store.categories[x]);
+                    for (var i=0; i<this.$store.categories[x].feeds.length; i++) {
+                        console.log(this.$store.categories[x].feeds[i]);
+                        if (this.$store.categories[x].feeds[i].id === feed_id) {
+                            return this.$store.categories[x].feeds[i].feed_name;
+                        }
+                    }
+                }
             }
         },
         //watch the store.data.category, update the category name, needed for model input dialog
         watch: {
             '$store.data': {
                 handler: function(data) {
+                    //lookup category name based on the category_id received
                     if (data.category) {
-                        //lookup category name based on the category_id received
                         var item = this.$store.categories.filter(function(a){ return a.id == data.category })[0];
                         this.category_name = item.name;
+                    }
+                    //lookup feed name based on the feed_id
+                    if (data.feed) {
+                        this.feed_name = this.lookupFeedName(data.feed);
                     }
                 },
                 deep: true

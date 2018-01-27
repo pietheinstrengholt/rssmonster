@@ -92,8 +92,10 @@
 			</div>
 			<div class="category-options">
 				<div @click="$store.modal='newcategory'" id="add" class="category-button"><div><i class="fas fa-plus" data-fa-transform="down-8 grow-6"></i></div><div class="text">Add new</div></div>
-				<div v-if="$store.data.category != null" @click="$store.modal='deletecategory'" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
-				<div v-if="$store.data.category != null" @click="$store.modal='renamecategory'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
+				<div v-if="($store.data.category != null) && ($store.data.feed == null)" @click="$store.modal='deletecategory'" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
+				<div v-if="($store.data.category != null) && ($store.data.feed == null)" @click="$store.modal='renamecategory'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
+				<div v-if="($store.data.category != null) && ($store.data.feed != null)" @click="$store.modal='deletefeed'" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
+				<div v-if="($store.data.category != null) && ($store.data.feed != null)" @click="$store.modal='renamefeed'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
 			</div>
 		</div>
 	</div>
