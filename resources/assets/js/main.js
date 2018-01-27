@@ -23,12 +23,7 @@ new Vue({
 				search: null,
 				refresh: 0
 			},
-			modal: {
-				newfeed: false,
-				newcategory: false,
-				renamecategory: false,
-				deletecategory: false	
-			},
+			modal: false,
 			refreshCategories: 0,
 			categories: []
 		}
@@ -37,6 +32,6 @@ new Vue({
 });
 
 // Comment these three for local build.
-Vue.config.devtools = false;
+Vue.config.devtools = true;
 Vue.config.debug = true;
 Vue.config.silent = true;

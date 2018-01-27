@@ -12,19 +12,22 @@
         </div>
 
         <!-- Modal for new feed -->
-        <div v-if="$store.modal.newfeed">
+        <div v-if="$store.modal">
             <transition name="modal">
                 <div class="modal-mask">
                 <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
                     <div class="modal-dialog modal-dialog-centered modal-wrapper" role="document">
                         <div class="modal-content modal-container">
                             <div class="modal-header">
-                                <h5 class="modal-title" id="exampleModalLongTitle">Add new feed</h5>
-                                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeNewFeedModal">
+                                <h5 class="modal-title" v-if="$store.modal==='newfeed'">Add new feed</h5>
+                                <h5 class="modal-title" v-if="$store.modal==='newcategory'">Add new category</h5>
+                                <h5 class="modal-title" v-if="$store.modal==='deletecategory'">Delete category</h5>
+                                <h5 class="modal-title" v-if="$store.modal==='renamecategory'">Rename category</h5>
+                                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                                 <span aria-hidden="true">&times;</span>
                                 </button>
                             </div>
-                            <div class="modal-body">
+                            <div class="modal-body" v-if="$store.modal==='newfeed'">
                                 <input class="form-control form-control-lg" type="text" placeholder="Enter feed or website url..." v-model="url">
                                 <br>
                                 <button type="submit" class="btn btn-primary mb-2" @click="checkWebsite">Validate feed</button>
@@ -56,87 +59,35 @@
                                     </div>
                                 </div>
                             </div>
+
+
+                            <div class="modal-body" v-if="$store.modal==='newcategory'">
+                                <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category">
+                                <br>
+                            </div>
+
+                            <div class="modal-body" v-if="$store.modal==='deletcategory'">
+                                <p>Are you sure to delete this category?</p>
+                                <br>
+                            </div>
+
+                            <div class="modal-body" v-if="$store.modal==='renamecategory'">
+                                <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category_name">
+                                <br>
+                            </div>
+
                             <div class="modal-footer">
-                                <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeNewFeedModal">Cancel</button>
                                 <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
+                                <button v-if="$store.modal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
+                                <button v-if="$store.modal==='deletecategory'" type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
+                                <button v-if="$store.modal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
+                                <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Cancel</button>
                             </div>
                         </div>
                     </div>
                 </div>
                 </div>
             </transition>
-        </div>
-
-        <!-- Modal for new category -->
-        <div v-if="$store.modal.newcategory">
-            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLongTitle">Add new category</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeNewCategoryModal">
-                        <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category">
-                        <br>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeNewCategoryModal">Cancel</button>
-                        <button type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal for delete category -->
-        <div v-if="$store.modal.deletecategory">
-            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLongTitle">Delete category</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeDeleteCategoryModal">
-                        <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <p>Are you sure to delete this category?</p>
-                        <br>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeDeleteCategoryModal">Cancel</button>
-                        <button type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
-                    </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Modal for rename category -->
-        <div v-if="$store.modal.renamecategory">
-            <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
-                <div class="modal-dialog modal-dialog-centered" role="document">
-                    <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title" id="exampleModalLongTitle">Rename category</h5>
-                        <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeRenameCategoryModal">
-                        <span aria-hidden="true">&times;</span>
-                        </button>
-                    </div>
-                    <div class="modal-body">
-                        <input class="form-control form-control-lg" type="text" placeholder="Enter new category name.." v-model="category_name">
-                        <br>
-                    </div>
-                    <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeRenameCategoryModal">Cancel</button>
-                        <button type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
-                    </div>
-                    </div>
-                </div>
-            </div>
         </div>
     </div>
 </template>
@@ -308,12 +259,12 @@ span.error {
 
                 this.ajaxRequest = false;
             },
-            closeNewFeedModal: function() {
+            closeModal: function() {
                 this.feed_id = '';
                 this.feed_name = '';
                 this.feed_desc = '';
                 this.error_msg = '';
-                this.$store.modal.newfeed = false;
+                this.$store.modal = false;
             },
             saveCategory: function() {
                 //save category when category name is set
@@ -322,14 +273,11 @@ span.error {
                         console.log(response.status);
                         //send event to refresh the categories
                         this.$store.refreshCategories++;
-                        this.$store.modal.newcategory = false;
+                        this.closeModal();
                     }, response => {
-                        this.$store.modal.newcategory = false;
+                        this.closeModal();
                     });
                 }
-            },
-            closeNewCategoryModal: function() {
-                this.$store.modal.newcategory = false;
             },
             deleteCategory: function() {
                 //delete category
@@ -337,26 +285,20 @@ span.error {
                     console.log(response.status);
                     //send event to refresh the categories
                     this.$store.refreshCategories++;
-                    this.$store.modal.deletecategory = false;
+                    this.closeModal();
                 }, response => {
-                    this.$store.modal.deletecategory = false;
+                    this.closeModal();
                 });
-            },
-            closeDeleteCategoryModal: function() {
-                this.$store.modal.deletecategory = false;
             },
             renameCategory: function() {
                 //rename category
                 this.$http.put('categories/' + this.$store.data.category.id, {name: this.category_name}).then(response => {
                     console.log(response.status);
                     this.$store.refreshCategories++;
-                    this.$store.modal.renamecategory = false;
+                    this.closeModal();
                 }, response => {
-                    this.$store.modal.renamecategory = false;
+                    this.closeModal();
                 });
-            },
-            closeRenameCategoryModal: function() {
-                this.$store.modal.renamecategory = false;
             },
             saveFeed: function() {
                 this.$http.put('feeds/' + this.feed_id, {feed_name: this.feed_name, feed_desc: this.feed_desc, category_id: this.category}).then(response => {
@@ -369,7 +311,7 @@ span.error {
                 this.$store.refreshCategories++;
 
                 //close modal
-                this.closeNewFeedModal();
+                this.closeModal();
             }
         },
         //watch the store.data.category, update the category name, needed for model input dialog

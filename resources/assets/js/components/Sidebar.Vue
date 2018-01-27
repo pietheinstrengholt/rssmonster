@@ -8,7 +8,7 @@
 				<div @click="refreshFeeds()" class="option" id="refresh"><i id="newfeedicon" class="fas fa-sync-alt" data-fa-transform="left-4"></i>Refresh feeds<span v-show="refreshing"><i class="fas fa-spinner fa-spin" data-fa-transform="right-4"></i></span></div>
 			</div>
 			<div>
-				<div @click="$store.modal.newfeed=true" class="option" id="addnew"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
+				<div @click="$store.modal='newfeed'" class="option" id="addnew"><i id="newfeedicon" class="fas fa-pencil-alt" data-fa-transform="left-4"></i>Add new feed</div>
 			</div>
 			<div>
 				<p class="title">Current selection</p>
@@ -91,9 +91,9 @@
 				<p class="title">Options</p>
 			</div>
 			<div class="category-options">
-				<div @click="$store.modal.newcategory=true" id="add" class="category-button"><div><i class="fas fa-plus" data-fa-transform="down-8 grow-6"></i></div><div class="text">Add new</div></div>
-				<div v-if="$store.data.category != null" @click="$store.modal.deletecategory=true" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
-				<div v-if="$store.data.category != null" @click="$store.modal.renamecategory=true" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
+				<div @click="$store.modal='newcategory'" id="add" class="category-button"><div><i class="fas fa-plus" data-fa-transform="down-8 grow-6"></i></div><div class="text">Add new</div></div>
+				<div v-if="$store.data.category != null" @click="$store.modal='deletecategory'" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
+				<div v-if="$store.data.category != null" @click="$store.modal='renamecategory'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
 			</div>
 		</div>
 	</div>
