@@ -309,18 +309,11 @@ export default {
 		'$store.data': {
 			handler: function(data) {
 
-				//TODO: cleanup check below
-				if (data.category) {
-					var category_id = data.category.id;
-				} else {
-					var category_id = null;
-				}
-
 				this.$http.get('articles/listing', {
 					params: {
 						//the following arguments are used
 						status: data.status,
-						category_id: category_id,
+						category_id: data.category,
 						feed_id: data.feed,
 						search: data.search
 					},
