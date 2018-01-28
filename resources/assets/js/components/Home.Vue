@@ -47,7 +47,7 @@
 				</div>
 			</div>
 			<infinite-loading @infinite="onInfinite" ref="infiniteLoading">
-				<span slot="no-more">
+				<span slot="no-more" v-on:click="flushPool()">
 					No More Posts - All items marked as read!
 				</span>
 			</infinite-loading>
