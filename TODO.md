@@ -1,7 +1,6 @@
 # TODO
 
 * Collapse sidebar
-* Fix favicon
 * Fix initial load problem
 * Cleanup CSS, move to CSS files instead of in VUE
 * Compile JS, CSS, Cached versions
