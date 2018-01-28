@@ -10,3 +10,4 @@
 * Add change to unread option for an article and remove waypoint
 * Remove warning message from inf scrolling
 * Fix option selected for dropdown for category
+* Fix read only getting the first 10 items
