@@ -55,7 +55,7 @@
                                         <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                                         <div class="col-sm-9">
                                             <select class="form-control" id="category" v-model="category">
-                                                <option v-for="category in this.$store.categories" :value="category.id" v-bind:selected="category.id === 1">{{ category.name }}</option>
+                                                <option v-for="category in this.$store.categories" :value="category.id" :selected="category.id == 1">{{ category.name }}</option>
                                             </select>
                                         </div>
                                     </div>
@@ -99,7 +99,7 @@
                                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                                     <div class="col-sm-9">
                                         <select class="form-control" id="category" v-model="category">
-                                            <option v-for="category in this.$store.categories" :value="category.id" v-bind:selected="$store.data.category = category.id ? 'selected' : ''">{{ category.name }}</option>
+                                            <option v-for="category in this.$store.categories" :value="category.id" :selected="category.id == $store.data.category">{{ category.name }}</option>
                                         </select>
                                     </div>
                                 </div>
@@ -109,9 +109,9 @@
                                 <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
                                 <button v-if="$store.modal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
                                 <button v-if="$store.modal==='deletecategory'" type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
-                                <button v-if="$store.modal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
+                                <button v-if="$store.modal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Update category</button>
                                 <button v-if="$store.modal==='deletefeed'" type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>
-                                <button v-if="$store.modal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Rename feed</button>
+                                <button v-if="$store.modal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Update feed</button>
                                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Cancel</button>
                             </div>
                         </div>
