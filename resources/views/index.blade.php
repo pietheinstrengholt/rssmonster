@@ -10,7 +10,7 @@
 	</style>
 
 	<!-- Meta base url, needed for javascript location -->
-	<meta name="base_url" content="{{ URL::to('/') }}">
+	<meta name="base_url" content="{{ URL::to('/') }}" v-model="baseUrl">
 
 	<!-- CSS -->
 	<meta name="viewport" content="width=device-width, initial-scale=1.0">

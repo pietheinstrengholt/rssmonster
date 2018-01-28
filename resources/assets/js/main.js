@@ -26,7 +26,11 @@ new Vue({
 			modal: false,
 			refreshCategories: 0,
 			categories: []
-		}
+		},
+		baseUrl : null
+	},
+	created() {
+		console.log(this.baseUrl);
 	},
 	render: h => h(App)
 });
