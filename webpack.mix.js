@@ -18,4 +18,8 @@ mix.copy('resources/assets/images/', 'public/images/', false); // Don't flatten!
 //mix.setResourceRoot('../');
 mix.setResourceRoot('/rssmonster/public/');
 
-mix.browserSync();
+mix.browserSync({
+    notify: true,
+    open: true,
+    port: 8080
+});
