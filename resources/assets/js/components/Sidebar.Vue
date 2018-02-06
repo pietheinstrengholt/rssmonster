@@ -410,6 +410,9 @@ export default {
 			handler: function(val, oldVal) {
 				this.fetchCategories();
         	}
+		},
+		composedSum: function(val) {
+			this.$store.composedSum = val;
 		}
     },
 	computed: {

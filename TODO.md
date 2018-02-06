@@ -8,3 +8,4 @@
 * Add change to unread option for an article and remove waypoint
 * Remove warning message from inf scrolling
 * Fix option selected for dropdown for category
+* Increase star total count when starring/unstarring item

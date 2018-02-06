@@ -27,7 +27,8 @@ new Vue({
 			},
 			modal: false,
 			refreshCategories: 0,
-			categories: []
+			categories: [],
+			composedSum: []
 		},
 		baseUrl : null
 	},
