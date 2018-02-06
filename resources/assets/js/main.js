@@ -5,7 +5,9 @@ import App from './App.vue';
 //add vueresourrce in order to make API calls
 Vue.use(VueResource);
 
-Vue.http.options.root = 'http://localhost/rssmonster/public/index.php/api/';
+import config from './config.js';
+
+Vue.http.options.root = config.API_URL_ROOT;
 
 //central state with stash
 import VueStash from 'vue-stash';
