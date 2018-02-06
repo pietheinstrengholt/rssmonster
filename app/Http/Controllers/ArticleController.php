@@ -28,9 +28,9 @@ class ArticleController extends Controller
 			} else {
 				//get articles for status equals read and unread
 				if ($request->input('status') != 'star') {
-					if ($request->has('feed_id')) {
+					if ($request->filled('feed_id')) {
 						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('status', $request->input('status'))->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
-					} elseif ($request->has('category_id')) {
+					} elseif ($request->filled('category_id')) {
 						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.status', $request->input('status'))->orderBy('published', Helper::setting('sort_order'))->select('articles.id')->get();
 					} else {
 						$Articles = Article::where('status', $request->input('status'))->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
@@ -39,9 +39,9 @@ class ArticleController extends Controller
 
 				//get articles for status star, star_ind equals one
 				if ($request->input('status') == 'star') {
-					if ($request->has('feed_id')) {
+					if ($request->filled('feed_id')) {
 						$Articles = Article::where('feed_id', $request->input('feed_id'))->where('star_ind', '1')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();
-					} else if ($request->has('category_id')) {
+					} else if ($request->filled('category_id')) {
 						$Articles = DB::table('categories')->join('feeds', 'categories.id', '=', 'feeds.category_id')->join('articles', 'feeds.id', '=', 'articles.feed_id')->where('categories.id', $request->input('category_id'))->where('articles.star_ind', '1')->orderBy('published', Helper::setting('sort_order'))->select('articles.id')->get();
 					} else {
 						$Articles = Article::where('star_ind', '1')->orderBy('published', Helper::setting('sort_order'))->select('id')->get();

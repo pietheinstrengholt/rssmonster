@@ -26,12 +26,20 @@ class FeedController extends Controller
 		//get only 15 feeds at a time
 		$feeds = Feed::orderBy('updated_at', 'asc')->take(15)->get();
 
+		$count = 0;
+
 		if (!empty($feeds)) {
 			foreach ($feeds as $feed) {
 				//update feed, see update function
-				$this->update($feed);
+				$count = $count + $this->update($feed);
 			}
 		}
+
+		return response()->json([
+			'code' => '200',
+			'count' => $count,
+			'message' => $count . ' new messages have been added to the database',
+		], 200);
 	}
 
 	public function update(Feed $Feed)
@@ -39,10 +47,13 @@ class FeedController extends Controller
 		//set previous week
 		$previousweek = date('Y-m-j H:i:s', strtotime('-7 days'));
 
-		echo $Feed->url.'<br>';
+		//set cache enables
 		$feedFactory = new FeedFactory(['cache.enabled' => false]);
 		$feeder = $feedFactory->make($Feed->url);
 		$simplePieInstance = $feeder->getRawFeederObject();
+
+		//set starting count to 0
+		$count = 0;
 
 		//only add articles and update feed when results are found
 		if (!empty($simplePieInstance)) {
@@ -76,7 +87,8 @@ class FeedController extends Controller
 					//save article content to database
 					$article->save();
 
-					echo '- '.$item->get_title().'<br>';
+					//increase count
+					$count++;
 				}
 			}
 
@@ -85,6 +97,8 @@ class FeedController extends Controller
 			Feed::where('id', $Feed->id)->update(['feed_desc' => $simplePieInstance->get_description()]);
 			Feed::where('id', $Feed->id)->update(['favicon' => $simplePieInstance->get_image_url()]);
 		}
+
+		return $count;
 	}
 
 	public function newrssfeed(Request $request)
@@ -92,28 +106,41 @@ class FeedController extends Controller
 		//check if url is set in POST argument, else exit
 		if ($request->has('url')) {
 
+			//set variable url
+			$url = $request->input('url');
+
+			//add http:// prefix to URL when missing
+			if (strpos($url,'http://') === false){
+				$url = 'http://'.$url;
+			}
+
 			//check if url is valid
-			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
-				echo '<br>Error: Entered value is not a valid url!';
+			if (filter_var($url, FILTER_VALIDATE_URL) === false) {
+				return response()->json([
+					'code' => '403',
+					'message' => 'Entered value is not a valid url',
+				], 403);
 				exit();
 			}
 
 			$feedFactory = new FeedFactory(['cache.enabled' => false]);
-			$feeder = $feedFactory->make($request->input('url'));
+			$feeder = $feedFactory->make($url);
 			$simplePieInstance = $feeder->getRawFeederObject();
 
 			if (!empty($simplePieInstance)) {
-				echo $simplePieInstance->get_title().'<br>';
-				echo $simplePieInstance->get_description().'<br>';
-				echo $simplePieInstance->get_permalink().'<br>';
-				//favicon has been deprecated: $simplePieInstance->get_favicon();
 
 				$result = Feed::where('url', $simplePieInstance->get_permalink())->first();
 
 				if (!empty($result)) {
-					echo '<br>Feed already exists!';
+					return response()->json([
+						'code' => '403',
+						'message' => 'Feed already exists',
+					], 403);
 				} elseif (empty($simplePieInstance->get_title())) {
-					echo '<br>Error: feed_name is empty!';
+					return response()->json([
+						'code' => '403',
+						'message' => 'Feed name or returned url is empty',
+					], 403);
 				} else {
 					$feed = new Feed;
 					$feed->category_id = '1';
@@ -122,7 +149,7 @@ class FeedController extends Controller
 					$feed->url = $simplePieInstance->get_permalink();
 					$feed->favicon = $simplePieInstance->get_image_url();
 					$feed->save();
-					echo '<br>Feed added to the database!';
+					return response()->json($feed);
 				}
 			}
 		}
@@ -180,7 +207,7 @@ class FeedController extends Controller
 		if ($request->has('feed_id') && $request->has('category_id')) {
 			//update feed with new category_id
 			Feed::where('id', $request->input('feed_id'))->update(['category_id' => $request->input('category_id')]);
-		 return response()->json('done');
+			return response()->json('done');
 		}
 	}
 
@@ -202,23 +229,31 @@ class FeedController extends Controller
 
 	public function createFeed(Request $request)
 	{
-		$Feed = Feed::create($request->all());
-		return response()->json($Feed);
+		if ($request->has('feed_name') && $request->has('category_id')) {
+			$feed = Feed::create($request->all());
+			return response()->json($feed);
+		}
 	}
 
 	public function deleteFeed($id)
 	{
-		$Feed = Feed::find($id);
+		$feed = Feed::find($id);
 		Article::where('feed_id', $id)->delete();
 		Feed::where('id', $id)->delete();
 		return response()->json('deleted');
 	}
 
-	public function updateFeed($id)
+	public function updateFeed($id, Request $request)
 	{
-		$Feed = Feed::find($id);
-		$Feed->name = $request->input('name');
-		$Feed->save();
-		return response()->json($Feed);
+		$feed = Feed::find($id);
+		if ($request->has('feed_name') && $request->has('category_id')) {
+			$feed->feed_name = $request->input('feed_name');
+			$feed->feed_desc = $request->input('feed_desc');
+			if ($request->has('category_id')) {
+				$feed->category_id = $request->input('category_id');
+			}
+			$feed->save();
+		}
+		return response()->json($feed);
 	}
 }
