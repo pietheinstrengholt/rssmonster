@@ -342,6 +342,9 @@ export default {
 	},
 	created() {
 		this.$store.data.status = 'unread'; 
+
+		//scroll to top before refresh
+		document.body.scrollTop = document.documentElement.scrollTop = 0;
 	},
 	methods: {
 		onInfinite() {

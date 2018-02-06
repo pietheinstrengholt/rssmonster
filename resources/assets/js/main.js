@@ -31,9 +31,6 @@ new Vue({
 		},
 		baseUrl : null
 	},
-	created() {
-		console.log(this.baseUrl);
-	},
 	render: h => h(App)
 });
 
