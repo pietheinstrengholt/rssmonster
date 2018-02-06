@@ -106,8 +106,16 @@ class FeedController extends Controller
 		//check if url is set in POST argument, else exit
 		if ($request->has('url')) {
 
+			//set variable url
+			$url = $request->input('url');
+
+			//add http:// prefix to URL when missing
+			if (strpos($url,'http://') === false){
+				$url = 'http://'.$url;
+			}
+
 			//check if url is valid
-			if (filter_var($request->input('url'), FILTER_VALIDATE_URL) === false) {
+			if (filter_var($url, FILTER_VALIDATE_URL) === false) {
 				return response()->json([
 					'code' => '403',
 					'message' => 'Entered value is not a valid url',
@@ -116,7 +124,7 @@ class FeedController extends Controller
 			}
 
 			$feedFactory = new FeedFactory(['cache.enabled' => false]);
-			$feeder = $feedFactory->make($request->input('url'));
+			$feeder = $feedFactory->make($url);
 			$simplePieInstance = $feeder->getRawFeederObject();
 
 			if (!empty($simplePieInstance)) {
