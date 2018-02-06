@@ -48,7 +48,10 @@
 			</div>
 			<infinite-loading loadbutton="always" @infinite="onInfinite" ref="infiniteLoading">
 				<span slot="no-more" v-on:click="flushPool()">
-					No More Posts - All items marked as read!
+					No more posts for this selection - Click here to mark all remaining items as read!
+				</span>
+				<span slot="no-results">
+					No posts have been found!
 				</span>
 			</infinite-loading>
 		</div>
@@ -338,13 +341,7 @@ export default {
 		InfiniteLoading,
 	},
 	created() {
-		this.$http.get('articles/listing?status=unread')
-			.then(response => {
-				return response.json();
-			})
-			.then(data => {
-				this.container = data;
-			});
+		this.$store.data.status = 'unread'; 
 	},
 	methods: {
 		onInfinite() {
@@ -384,7 +381,7 @@ export default {
 					if (res.data.length) {
 						this.distance = this.distance + res.data.length;
 						this.articles = this.articles.concat(res.data);
-						this.$refs.infiniteLoading.$emit('$InfiniteLoading:loaded');
+						this.$refs.infiniteLoading.$emit('$InfiniteLoading:reset');
 						//add waypoint to every article
 						setTimeout(() => {
 							for (var key in this.articles) {
