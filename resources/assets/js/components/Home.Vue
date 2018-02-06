@@ -224,6 +224,10 @@ div#show-modal {
 
 div#articles {
 	padding-top: 40px;
+    overflow-x: hidden;
+    overflow-y: hidden;
+    right: 0;
+    left: 0;
 }
 
 div.status-toolbar {
@@ -333,7 +337,7 @@ export default {
 	components: {
 		InfiniteLoading,
 	},
-	beforeCreate() {
+	created() {
 		this.$http.get('articles/listing?status=unread')
 			.then(response => {
 				return response.json();
