@@ -73,7 +73,7 @@
 
 div.block {
 	margin-bottom: 0px;
-	padding-top: 5px;
+	padding-top: 2px;
 }
 
 div.block .article {
@@ -88,17 +88,8 @@ div.block .article {
 	border-bottom: 1px solid #E0E0E0;
 }
 
-div.block .article h4 {
-	cursor: pointer;
-	margin-top: 5px;
-}
-
 div.block div.article-content {
 	margin-bottom: 10px;
-}
-
-div.block .article h4 a {
-	color: #333333;
 }
 
 div.block div.feedname {
@@ -107,11 +98,13 @@ div.block div.feedname {
 
 div.block div.article-content {
 	color: #333344;
+	font-size: 14px;
 }
 
 div.block .article h5 a {
 	color: #333333;
 	font-weight: 400;
+	font-size: 19px;
 }
 
 div.block div.article hr {

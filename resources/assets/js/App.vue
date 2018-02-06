@@ -159,7 +159,7 @@
     }
 
     div#main {
-        padding-top: 42px;
+        padding-top: 38px;
     }
 
     div.quickbar {
