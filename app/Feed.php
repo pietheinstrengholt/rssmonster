@@ -40,5 +40,3 @@ class Feed extends Model
 		return Article::where('feed_id', $this->attributes['id'])->where('star_ind', 1)->count();
 	}
 }
-
-?>

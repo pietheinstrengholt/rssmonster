@@ -15,5 +15,3 @@ class Category extends Model
 		return $this->hasMany('App\Feed')->orderBy('feed_name');
 	}
 }
-
-?>
