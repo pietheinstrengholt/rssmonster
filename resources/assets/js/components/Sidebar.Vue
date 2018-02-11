@@ -301,21 +301,21 @@ div.category-button {
 	height: 44px;
     color: #fff;
     border-radius: 4px;
-    width: 60px;
+    width: 50px;
     float: left;
 	text-align: center;
 }
 
 div.category-button#add {
-	background-color: #52D287
+	background-color: #41D3BD
 }
 
 div.category-button#delete {
-	background-color: #FF8886
+	background-color: #EF6F6C
 }
 
 div.category-button#rename {
-	background-color: #F9D570
+	background-color: #6BAA75
 }
 
 div.category-button div.text {
