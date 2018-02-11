@@ -103,7 +103,7 @@ div.block div.article-content {
 
 div.block .article h5 a {
 	color: #333333;
-	font-weight: 400;
+	font-weight: 600;
 	font-size: 19px;
 }
 
