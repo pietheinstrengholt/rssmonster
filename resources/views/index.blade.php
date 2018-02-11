@@ -16,7 +16,7 @@
 	<meta name="base_url" content="{{ URL::to('/') }}" v-model="baseUrl">
 
 	<!-- CSS -->
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<meta name="viewport" content="width=device-width, initial-scale=1">
 	<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
 	<script defer src="{{ URL::asset('js/fontawesome-5.0.4.js') }}"></script>
@@ -39,6 +39,9 @@
 	<meta name="msapplication-TileColor" content="#ffffff">
 	<meta name="msapplication-TileImage" content="images/favicon/ms-icon-144x144.png">
 	<meta name="theme-color" content="#ffffff">
+	<meta name="apple-mobile-web-app-capable" content="yes">
+	<meta name="apple-mobile-web-app-status-bar-style" content="black">
+	<meta name="apple-mobile-web-app-title" content="RSSMonster">
 </head>
 
 <div id="app">
