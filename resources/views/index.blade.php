@@ -31,14 +31,14 @@
 	<link rel="apple-touch-icon" sizes="144x144" href="{{ URL::asset('images/favicon/apple-icon-144x144.png') }}">
 	<link rel="apple-touch-icon" sizes="152x152" href="{{ URL::asset('images/favicon/apple-icon-152x152.png') }}">
 	<link rel="apple-touch-icon" sizes="180x180" href="{{ URL::asset('images/favicon/apple-icon-180x180.png') }}">
-	<link rel="icon" type="image/png" sizes="192x192"	href="{{ URL::asset('images/favicon/android-icon-192x192.png') }}">
+	<link rel="icon" type="image/png" sizes="192x192"  href="{{ URL::asset('images/favicon/android-icon-192x192.png') }}">
 	<link rel="icon" type="image/png" sizes="32x32" href="{{ URL::asset('images/favicon/favicon-32x32.png') }}">
 	<link rel="icon" type="image/png" sizes="96x96" href="{{ URL::asset('images/favicon/favicon-96x96.png') }}">
 	<link rel="icon" type="image/png" sizes="16x16" href="{{ URL::asset('images/favicon/favicon-16x16.png') }}">
+	<link rel="manifest" href="{{ URL::asset('images/favicon/manifest.json') }}">
 	<meta name="msapplication-TileColor" content="#ffffff">
-	<meta name="msapplication-TileImage" content="{{ URL::asset('images/favicon/ms-icon-144x144.png') }}">
+	<meta name="msapplication-TileImage" content="images/favicon/ms-icon-144x144.png">
 	<meta name="theme-color" content="#ffffff">
-	<meta name="apple-mobile-web-app-capable" content="yes" />
 </head>
 
 <div id="app">
