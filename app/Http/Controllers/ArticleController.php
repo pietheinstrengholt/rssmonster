@@ -112,15 +112,18 @@ class ArticleController extends Controller
 
 	public function markwithstar(Request $request, $id)
 	{
+		$Article = Article::find($id);
+
 		if ($request->input('update') == 'mark') {
-			Article::where('id', $id)->update(['star_ind' => '1']);
-			return response()->json('set to star');
+			$Article->star_ind = '1';
 		}
 
 		if ($request->input('update') == 'unmark') {
-			Article::where('id', $id)->update(['star_ind' => '0']);
-			return response()->json('set to read');
+			$Article->star_ind = '0';
 		}
+
+		$Article->save();
+		return response()->json($Article);
 	}
 
 	public function markallasread(Request $request)
