@@ -21,5 +21,3 @@ class Article extends Model
 		return DB::table('articles')->join('feeds', 'articles.feed_id', '=', 'feeds.id')->where('articles.id', $this->id)->max('feeds.category_id');
 	}
 }
-
-?>

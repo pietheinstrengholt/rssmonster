@@ -85,11 +85,10 @@ div.block .article {
 }
 
 div.block .article {
-	border-bottom: 1px solid #E0E0E0;
-}
-
-div.block div.article-content {
-	margin-bottom: 10px;
+	border: 1px solid #ecf0f1;
+    margin: 3px;
+    border-radius: 2px;
+	background-color: #fbfbfb;
 }
 
 div.block div.feedname {
@@ -99,18 +98,15 @@ div.block div.feedname {
 div.block div.article-content {
 	color: #333344;
 	font-size: 14px;
+	margin-bottom: 5px;
+	margin-top: 1px;
+	margin-left: 0px;
 }
 
 div.block .article h5 a {
 	color: #333333;
-	font-weight: 400;
+	font-weight: 600;
 	font-size: 19px;
-}
-
-div.block div.article hr {
-	margin-top: 3px;
-	margin-left: 5px;
-	width: 98%;
 }
 
 div.block div.feedname {
@@ -121,23 +117,8 @@ div.block div.feedname {
 	font-weight: bold;
 }
 
-div.block div.article-block hr {
-	margin-top: 3px;
-	margin-left: 5px;
-	width: 180px;
-}
-
-div.block div.article hr {
-	border-top: 1px solid #D3D3D3;
-}
-
 div.block .active {
 	background-color: #ffffe5;
-}
-
-div.block div.article-content {
-	margin-top: 1px;
-	margin-left: 0px;
 }
 
 div.block div.bookmark,
@@ -454,9 +435,32 @@ export default {
 				//get status & status text
 				console.log(response.status);
 				console.log(response.statusText);
+				//change the star count of the feed
+				this.changeStarCount(response.body);
 			}, response => {
 				console.log('oops something went wrong');
 			});
+		},
+		changeStarCount(body) {
+			//increase the star count based on the body message returned
+			for (var i = 0, len = this.$store.categories.length; i < len; i++) {
+				if (!(this.$store.categories[i] === undefined || this.$store.categories[i] === null)) {
+					if (body.category_id == this.$store.categories[i]['id']) {
+						if (this.$store.categories[i]['feeds'] != undefined) {
+							for (var f = 0, len = this.$store.categories[i]['feeds'].length; f < len; f++) {
+								if (body.feed_id == this.$store.categories[i]['feeds'][f]['id']) {
+									if (body.star_ind == "0") {
+										this.$store.categories[i]['feeds'][f]['star_count'] = this.$store.categories[i]['feeds'][f]['star_count'] - 1;
+									}
+									if (body.star_ind == "1") {
+										this.$store.categories[i]['feeds'][f]['star_count'] = this.$store.categories[i]['feeds'][f]['star_count'] + 1;
+									}
+								}
+							}
+						}
+					}
+				}
+			}
 		},
 		emitSearchEvent: function (search, event) {
 			if (!(this.search === undefined || this.search === null)) {

@@ -133,16 +133,6 @@
 	div.article {
         display: inline-block;
         position: relative;
-        border-bottom: 0px solid #FFF !important;
-    }
-
-    div.article:after {
-        position: absolute;
-        content: '';
-        border-bottom: 1px solid #a0a3a8;
-        width: 90%;
-        transform: translateX(-50%);
-        left: 50%;
     }
     
     div.col-md-9 {
@@ -181,6 +171,11 @@
         height: 100%;
         background-color: #4E57A3;
         overflow-y: auto;
+    }
+
+    div#articles {
+        margin-left: -10px;
+        margin-right: -8px;
     }
 }
 
