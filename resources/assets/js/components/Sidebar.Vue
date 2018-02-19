@@ -248,21 +248,27 @@ div.option {
     padding: 6px;
     color: #fff;
 	border-radius: 4px;
-	text-indent: 20px;
+	text-indent: 10px;
 	margin-bottom: 20px;
 	cursor: pointer;
+}
+
+div#refresh, div#addnew {
+	white-space: nowrap;
+    text-overflow: ellipsis;
+    overflow: hidden;
 }
 
 div#refresh.option {
 	background-color: #ff6518;
 	margin-right: 70px;
-	min-width: 165px;
+	min-width: 150px;
 }
 
 div#addnew.option {
     background-color: #18B3FF;
 	margin-right: 60px;
-	min-width: 170px;
+	min-width: 150px;
 }
 
 div#monster {
