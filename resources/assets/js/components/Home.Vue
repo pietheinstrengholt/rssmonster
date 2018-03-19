@@ -44,11 +44,11 @@
 				</div>
 			</div>
 			<infinite-loading loadbutton="always" @infinite="onInfinite" ref="infiniteLoading">
-				<span slot="no-more" v-on:click="flushPool()">
-					No more posts for this selection - Click here to mark all remaining items as read!
+				<span slot="no-more">
+					<p v-on:click="flushPool()">No more posts for this selection - Click here to mark all remaining items as read!</p>
 				</span>
 				<span slot="no-results">
-					No posts have been found!
+					<p v-on:click="flushPool()">No posts have been found!</p>
 				</span>
 			</infinite-loading>
 		</div>
