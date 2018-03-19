@@ -273,13 +273,13 @@ div#addnew.option {
 }
 
 div#monster {
-	background: url(./../../images/monster.svg) 30px 30px no-repeat;
-	background-size: 50px 50px;
+	background: url(./../../images/monster.svg) 14px 30px no-repeat;
+	background-size: 30px 30px;
 	height: 100px;
 }
 
 div#monster p {
-	padding: 40px 0px 0px 90px;
+	padding: 30px 0px 0px 50px;
     color: #fff;
     font-size: 20px;
 }
