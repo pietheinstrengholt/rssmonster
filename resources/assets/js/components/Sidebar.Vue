@@ -91,11 +91,11 @@
 				<p class="title">Options</p>
 			</div>
 			<div class="category-options">
-				<div @click="$store.modal='newcategory'" id="add" class="category-button"><div><i class="fas fa-plus" data-fa-transform="down-8 grow-6"></i></div><div class="text">Add new</div></div>
+				<div @click="$store.modal='newcategory'" id="add" class="category-button"><div><i class="fas fa-plus" data-fa-transform="down-8 grow-6"></i></div><div class="text">Add</div></div>
 				<div v-if="($store.data.category != null) && ($store.data.feed == null)" @click="$store.modal='deletecategory'" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
-				<div v-if="($store.data.category != null) && ($store.data.feed == null)" @click="$store.modal='renamecategory'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
+				<div v-if="($store.data.category != null) && ($store.data.feed == null)" @click="$store.modal='renamecategory'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Name</div></div>
 				<div v-if="($store.data.category != null) && ($store.data.feed != null)" @click="$store.modal='deletefeed'" id="delete" class="category-button"><div><i class="fas fa-trash-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Delete</div></div>
-				<div v-if="($store.data.category != null) && ($store.data.feed != null)" @click="$store.modal='renamefeed'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Rename</div></div>
+				<div v-if="($store.data.category != null) && ($store.data.feed != null)" @click="$store.modal='renamefeed'" id="rename" class="category-button"><div><i class="fas fa-pencil-alt" data-fa-transform="down-8 grow-6"></i></div><div class="text">Name</div></div>
 			</div>
 		</div>
 	</div>
@@ -104,7 +104,7 @@
 <style>
 .view-toolbar {
 	width: 100%;
-	background-color: #3B3D5F;
+	background-color: #31344B;
 	display: -webkit-box;
 	display: -webkit-flex;
 	display: -ms-flexbox;
@@ -215,13 +215,13 @@ span.badge-unread {
 }
 
 div.drag {
-	background-color: #4E57A3;
+	background-color: transparent;
     color: #fff;
 	margin-top: 10px;
 }
 
 div.sidebar-category-top, div.sidebar-category-main {
-    background-color: #464F9E;
+    background-color: #696A7B;
     margin-left: 12px;
     margin-right: 12px;
 	margin-top: 4px;
@@ -230,11 +230,11 @@ div.sidebar-category-top, div.sidebar-category-main {
 }
 
 div.sidebar-category-feed {
-	background-color: #464F9E !important;
+	background-color: #696A7B !important;
 }
 
 div.sidebar-category-top.selected, div.sidebar-category-main.selected, div.sidebar-category-feed.selected {
-	background-color: #3B3D5F !important;
+	background-color: #464F9E !important;
 }
 
 p.title {
@@ -261,13 +261,13 @@ div#refresh, div#addnew {
 }
 
 div#refresh.option {
-	background-color: #ff6518;
+	background-color: #6F79D3;
 	margin-right: 70px;
 	min-width: 155px;
 }
 
 div#addnew.option {
-    background-color: #18B3FF;
+    background-color: #51556A;
 	margin-right: 60px;
 	min-width: 155px;
 }
@@ -301,6 +301,7 @@ div.category-options {
 	margin-top: 10px;
 	margin-bottom: 20px;
 	height: 40px;
+	width: 105%;
 }
 
 div.category-button {
@@ -308,21 +309,21 @@ div.category-button {
 	height: 44px;
     color: #fff;
     border-radius: 4px;
-    width: 50px;
+    width: 42px;
     float: left;
 	text-align: center;
 }
 
 div.category-button#add {
-	background-color: #41D3BD
+	background-color: #6F79D3;
 }
 
 div.category-button#delete {
-	background-color: #EF6F6C
+	background-color: #6F79D3;
 }
 
 div.category-button#rename {
-	background-color: #6BAA75
+	background-color: #6F79D3;
 }
 
 div.category-button div.text {

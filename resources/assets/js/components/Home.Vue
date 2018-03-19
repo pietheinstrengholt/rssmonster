@@ -93,7 +93,7 @@ div.block .article {
 }
 
 div.block div.article-content {
-	color: #333344;
+	color: #51556A;
 	font-size: 14px;
 	margin-bottom: 5px;
 	margin-top: 1px;
@@ -101,7 +101,7 @@ div.block div.article-content {
 }
 
 div.block .article h5 a {
-	color: #333333;
+	color: #51556A;
 	font-weight: 600;
 	font-size: 19px;
 }
@@ -113,7 +113,7 @@ div.block div.feedname {
 	padding-left: 0px;
 	font-weight: bold;
 	margin-bottom: 2px;
-	color: #696969;
+	color: #51556A;
 }
 
 div.block .active {

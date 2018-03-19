@@ -169,7 +169,7 @@
 
     div.sidebar {
         height: 100%;
-        background-color: #4E57A3;
+        background-color: #31344B;
         overflow-y: auto;
     }
 
