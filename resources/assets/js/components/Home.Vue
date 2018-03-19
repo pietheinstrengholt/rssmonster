@@ -30,9 +30,6 @@
 							<a target="_blank" :href="article.url" v-text="article.subject"></a>
 						</h5>
 						<div class="feedname">
-							<span class="favicon">
-								<img class="favicon" :src="article.favicon" onerror="this.onerror=null;this.parentNode.removeChild(this);">
-							</span>
 							<span class="feed_name" v-text="article.feed_name"></span>
 							<span class="break"> | </span>
 							<span class="published_date" v-text="article.published"></span>
@@ -69,11 +66,19 @@
 	div#articles {
 		padding-top: 0px !important;
 	}
+
+	div.block {
+		margin-bottom: 0px;
+		padding-top: 2px;
+	}
 }
 
-div.block {
-	margin-bottom: 0px;
-	padding-top: 2px;
+/* Landscape phones and portrait tablets */
+@media (min-width: 767px) {
+	div.block {
+		margin-bottom: 0px;
+		padding-top: 6px;
+	}
 }
 
 div.block .article {
@@ -82,17 +87,9 @@ div.block .article {
 	padding-right: 5px;
 	border-color: #E0E0E0;
 	border-width: 1px;
-}
-
-div.block .article {
 	border: 1px solid #ecf0f1;
-    margin: 3px;
     border-radius: 2px;
 	background-color: #fbfbfb;
-}
-
-div.block div.feedname {
-	color: #696969;
 }
 
 div.block div.article-content {
@@ -112,9 +109,11 @@ div.block .article h5 a {
 div.block div.feedname {
 	margin-top: -8px ! important;
 	font-size: 12px;
-	padding-top: 4px;
+	padding-top: 1px;
 	padding-left: 0px;
 	font-weight: bold;
+	margin-bottom: 2px;
+	color: #696969;
 }
 
 div.block .active {
@@ -261,6 +260,14 @@ div#filter.dropdownmenu {
 	margin-left: 72px;
 }
 
+div.article {
+	max-width: 100% !important;
+}
+
+div.block div.article-content img {
+    max-width: 100%;
+    height: auto;
+}
 </style>
 
 <script>

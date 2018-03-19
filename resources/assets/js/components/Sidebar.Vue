@@ -104,7 +104,7 @@
 <style>
 .view-toolbar {
 	width: 100%;
-	background-color: #4E57A3;;
+	background-color: #3B3D5F;
 	display: -webkit-box;
 	display: -webkit-flex;
 	display: -ms-flexbox;
@@ -152,6 +152,7 @@ a#title.view-button {
 a#unread.view-button, a#star.view-button, a#read.view-button {
 	border-left: 1px solid transparent;
 	border-color: #dcdee0;
+	cursor:pointer;
 }
 
 .feeds-droppable {
@@ -262,13 +263,13 @@ div#refresh, div#addnew {
 div#refresh.option {
 	background-color: #ff6518;
 	margin-right: 70px;
-	min-width: 150px;
+	min-width: 155px;
 }
 
 div#addnew.option {
     background-color: #18B3FF;
 	margin-right: 60px;
-	min-width: 150px;
+	min-width: 155px;
 }
 
 div#monster {
