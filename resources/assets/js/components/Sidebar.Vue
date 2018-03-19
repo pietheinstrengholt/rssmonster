@@ -353,6 +353,14 @@ export default {
 	created: function () {
 		this.fetchCategories();
 	},
+	mounted: function () {
+		//when the unread count is zero start polling new articles
+		setInterval(function () {
+			if (this.$store.composedSum.unread_count == 0) {
+				this.refreshFeeds();	
+			}
+		}.bind(this), 30000); 
+	},
 	methods: {
 		fetchCategories: function() {
 			this.$http.get('categories')
