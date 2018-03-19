@@ -25,6 +25,7 @@
                                 <h5 class="modal-title" v-if="$store.modal==='renamecategory'">Rename category</h5>
                                 <h5 class="modal-title" v-if="$store.modal==='deletefeed'">Delete feed</h5>
                                 <h5 class="modal-title" v-if="$store.modal==='renamefeed'">Rename feed</h5>
+                                <h5 class="modal-title" v-if="$store.modal==='showcategories'">Categories</h5>
                                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                                 <span aria-hidden="true">&times;</span>
                                 </button>
@@ -103,6 +104,15 @@
                                         </select>
                                     </div>
                                 </div>
+                            </div>
+
+                            <div class="modal-body" v-if="$store.modal==='showcategories'">
+                                <p>Select which category you want to display</p>
+                                    <ul>
+                                        <li v-on:click="$store.data.category = null">Show all categories</li>
+                                        <li v-on:click="$store.data.category = category.id" v-for="category in $store.categories">{{ category.name }}</li>
+                                    </ul>
+                                <br>
                             </div>
 
                             <div class="modal-footer">
