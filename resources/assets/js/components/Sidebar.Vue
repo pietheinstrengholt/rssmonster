@@ -298,7 +298,6 @@ div#monster p {
 }
 
 div.category-options {
-	margin-top: 10px;
 	margin-bottom: 20px;
 	height: 40px;
 	width: 105%;
