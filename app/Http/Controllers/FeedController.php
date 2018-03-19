@@ -62,10 +62,11 @@ class FeedController extends Controller
 				//count the number of items that already exist in the database with the item url and feed_id
 				$results_url = Article::where(['feed_id' => $Feed->id, 'url' => $item->get_permalink()])->count();
 				$results_title = Article::where(['feed_id' => $Feed->id, 'subject' => $item->get_title()])->count();
+				$results_content = Article::where(['feed_id' => $Feed->id, 'content' => $item->get_description()])->count();
 				$date = $item->get_date('Y-m-j H:i:s');
 
 				//add new article if no results are found and article date is no older than one week
-				if ($results_url == 0 && $results_title == 0 && !(strtotime($date) < strtotime($previousweek))) {
+				if ($results_url == 0 && $results_title == 0 && $results_content == 0 && !(strtotime($date) < strtotime($previousweek))) {
 					$article = new Article;
 
 					//get article content
