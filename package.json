@@ -34,7 +34,7 @@
     "file-loader": "^0.9.0",
     "laravel-mix": "^1.0",
     "vue-loader": "^12.1.0",
-    "vue-template-compiler": "^2.3.3"
+    "vue-template-compiler": "^2.5.16"
   },
   "browser": {
     "waypoints": "./node_modules/waypoints/lib/noframework.waypoints.js"
