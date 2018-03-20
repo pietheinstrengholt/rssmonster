@@ -6,7 +6,7 @@ RSSMonster is an easy to use web-based RSS aggregator and reader compatible with
 RSSMonster features a lightweight fluid responsive design. It is written in JavaScript (VueJS), PHP (Laravel Lumen) and uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc.
 Feel free to add any contributions or new features.
 
-![Screenshot](public/img/screenshots/screenshot01.png)
+![Screenshot](assets/images/screenshots/screenshot01.png)
 
 #### Prerequisites
 * PHP >= 7.0
