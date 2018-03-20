@@ -25,6 +25,7 @@ Feel free to add any contributions or new features.
 * Run `composer install` this will install all dependencies and might take a while
 * Run `php artisan key:generate` this will generate your individual application key, so that passwords are safe
 * Run `npm install` to install node dependencies, when using windows you might need to run `npm install --global --production windows-build-tools` first.
+* Update the `resources/assets/js/config.js` and set the right path
 * Run `npm run production` to compile all JS files
 * Run `php artisan migrate` this will add all needed database tables to your mysql database
 * Run `chmod -R 777 storage/`
@@ -52,7 +53,6 @@ The following scripts and plug-ins are used within RSSMonster
 * Laravel Lumen https://github.com/laravel/lumen
 * Twitter bootstrap: https://twitter.github.io/bootstrap/
 * SimplePie: http://simplepie.org/
-* jQuery: http://jquery.com/
-* jQuery Waypoint: https://github.com/imakewebthings/jquery-waypoints/
-* Infinite scrolling: http://www.inserthtml.com/2013/01/scroll-pagination/
-* Feedbin: https://github.com/feedbin
+* VueJS: https://vuejs.org/
+* Vue infinite scrolling: https://github.com/PeachScript/vue-infinite-loading
+* Waypoints: https://github.com/imakewebthings/waypoints
