@@ -301,7 +301,6 @@ export default {
     watch: {
 		'$store.data': {
 			handler: function(data) {
-
 				this.$http.get('articles/listing', {
 					params: {
 						//the following arguments are used
@@ -328,9 +327,6 @@ export default {
 	},
 	created() {
 		this.$store.data.status = 'unread'; 
-
-		//scroll to top before refresh
-		document.body.scrollTop = document.documentElement.scrollTop = 0;
 	},
 	methods: {
 		onInfinite() {

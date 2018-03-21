@@ -21,6 +21,11 @@
 	<link rel="stylesheet" href="{{ URL::asset('css/bootstrap.min.css') }}">
 	<script defer src="{{ URL::asset('js/fontawesome-5.0.4.js') }}"></script>
 
+	<!-- Scroll back to the top on refresh -->
+	<script>
+    	window.onbeforeunload = function() {window.scrollTo(0,0);}
+	</script>
+
 	<!-- Configuring Web Applications -->
 	<link rel="apple-touch-icon" sizes="57x57" href="{{ URL::asset('images/favicon/apple-icon-57x57.png') }}">
 	<link rel="apple-touch-icon" sizes="60x60" href="{{ URL::asset('images/favicon/apple-icon-60x60.png') }}">
