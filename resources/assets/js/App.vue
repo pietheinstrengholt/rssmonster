@@ -396,6 +396,11 @@ span.error {
                     }
                 },
                 deep: true
+            },
+            '$store.data.category': {
+                handler: function(data) {
+                    this.closeModal();
+                }
             }
         }
     }
