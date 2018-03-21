@@ -94,6 +94,7 @@ div.block .article {
 	border: 1px solid #ecf0f1;
     border-radius: 2px;
 	background-color: #fbfbfb;
+	width: 100%;
 }
 
 div.block div.article-content {
