@@ -356,6 +356,7 @@ export default {
 			//check the container size
 			if ((this.container.slice(this.distance, this.distance + 20)).length == 0) {
 				this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
+				this.flushPool();
 			} else {
 				this.$http.get('articles/details', {
 					params: {
