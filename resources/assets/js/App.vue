@@ -99,8 +99,8 @@
                                 <div class="form-group row">
                                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                                     <div class="col-sm-9">
-                                        <select class="form-control" id="category" v-model="category">
-                                            <option v-for="category in this.$store.categories" :value="category.id" :selected="category.id == $store.data.category">{{ category.name }}</option>
+                                        <select class="form-control" id="category" v-model="$store.data.category">
+                                            <option v-for="category in this.$store.categories" :value="category.id">{{ category.name }}</option>
                                         </select>
                                     </div>
                                 </div>
