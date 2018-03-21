@@ -113,6 +113,10 @@
                                         <li v-on:click="$store.data.category = category.id" v-for="category in $store.categories">{{ category.name }}</li>
                                     </ul>
                                 <br>
+                                <p>Select how the articles should be displayed</p>
+                                	<div class="item" href="#" @click="$store.data.filter = 'full'"><p>Full content</p></div>
+				                    <div class="item" href="#" @click="$store.data.filter = 'minimal'"><p>Minimal content</p></div>
+                                </p>
                             </div>
 
                             <div class="modal-footer">
@@ -398,6 +402,11 @@ span.error {
                 deep: true
             },
             '$store.data.category': {
+                handler: function(data) {
+                    this.closeModal();
+                }
+            },
+            '$store.data.filter': {
                 handler: function(data) {
                     this.closeModal();
                 }
