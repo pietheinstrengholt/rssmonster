@@ -498,9 +498,9 @@ export default {
 		},
 		stripHTML: function (value) {
 			//strip out all HTML
-			var str1 = value.replace(/<(?:.|\n)*?>/gm, '');
+			var str1 = value.replace(/<(.|\n)*?>/g, '');
 			//take first 100 words
-			var str2 = str1.replace(/(([^\s]+\s\s*){100})(.*)/,"$1…");
+			var str2 = str1.split(/\s+/).slice(0,100).join(" ");
 			return str2;
 		}
 	}
