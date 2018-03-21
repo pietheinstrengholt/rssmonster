@@ -418,8 +418,10 @@ export default {
 							if (this.$store.categories[i]['feeds'] != undefined) {
 								for (var f = 0, len = this.$store.categories[i]['feeds'].length; f < len; f++) {
 									if (response.body.feed_id == this.$store.categories[i]['feeds'][f]['id']) {
-										this.$store.categories[i]['feeds'][f]['read_count'] = this.$store.categories[i]['feeds'][f]['read_count'] + 1
-										this.$store.categories[i]['feeds'][f]['unread_count'] = this.$store.categories[i]['feeds'][f]['unread_count'] - 1
+										if (this.$store.categories[i]['feeds'][f]['unread_count'] != 0) {
+											this.$store.categories[i]['feeds'][f]['read_count'] = this.$store.categories[i]['feeds'][f]['read_count'] + 1
+											this.$store.categories[i]['feeds'][f]['unread_count'] = this.$store.categories[i]['feeds'][f]['unread_count'] - 1
+										}
 									}
 								}
 							}
