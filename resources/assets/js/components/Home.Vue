@@ -71,6 +71,10 @@
 		margin-bottom: 0px;
 		padding-top: 2px;
 	}
+
+	div#articles {
+		background-color: #DDD;
+	}
 }
 
 /* Landscape phones and portrait tablets */
