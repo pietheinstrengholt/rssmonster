@@ -106,11 +106,21 @@
                                 </div>
                             </div>
 
-                            <div class="modal-body" v-if="$store.modal==='showcategories'">
+                            <div class="modal-body" id="mobile" v-if="$store.modal==='showcategories'">
                                 <p>Select which category you want to display</p>
-                                    <ul>
-                                        <li v-on:click="$store.data.category = null">Show all categories</li>
-                                        <li v-on:click="$store.data.category = category.id" v-for="category in $store.categories">{{ category.name }}</li>
+                                    <ul class="categories">
+                                        <li class="category" v-on:click="$store.data.category = null">
+                                            <span class="glyphicon">
+                                                <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
+                                            </span>  
+                                            <span>Show all categories</span>
+                                        </li>
+                                        <li class="category" v-on:click="$store.data.category = category.id" v-for="category in $store.categories">
+                                            <span class="glyphicon">
+                                                <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
+                                            </span>
+                                            <span>{{ category.name }}</span>
+                                        </li>
                                     </ul>
                                 <br>
                                 <p>Select how the articles should be displayed</p>
@@ -169,6 +179,12 @@
     div.quickbar {
         position: fixed;
     }
+
+    div#myModal {
+        padding-top: 100px;
+        margin-left: 5px;
+        margin-right: 5px;
+    }
 }
 
 /* Desktop */
@@ -195,6 +211,20 @@
 
 body {
     background-color: #F9F9F9;
+}
+
+div#mobile.modal-body ul.categories {
+    list-style-type: none;
+    text-indent: 4px;
+    padding-left: 0px;
+}
+
+div#mobile.modal-body li.category {
+    background-color: #464F9E;
+    border-radius: 4px;
+    color: #FFF;
+    padding: 2px;
+    margin-bottom: 4px;
 }
 
 #myModal.modal {
@@ -406,7 +436,17 @@ span.error {
                     this.closeModal();
                 }
             },
+            '$store.data.feed': {
+                handler: function(data) {
+                    this.closeModal();
+                }
+            },
             '$store.data.filter': {
+                handler: function(data) {
+                    this.closeModal();
+                }
+            },
+            '$store.data.status': {
                 handler: function(data) {
                     this.closeModal();
                 }
