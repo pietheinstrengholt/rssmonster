@@ -124,8 +124,12 @@
                                     </ul>
                                 <br>
                                 <p>Select how the articles should be displayed</p>
-                                	<div class="item" href="#" @click="$store.data.filter = 'full'"><p>Full content</p></div>
-				                    <div class="item" href="#" @click="$store.data.filter = 'minimal'"><p>Minimal content</p></div>
+                                    <button @click="$store.data.filter = 'full'" type="button" class="btn btn-primary">Full content</button>
+                                    <button @click="$store.data.filter = 'minimal'" type="button" class="btn btn-primary">Minimal content</button>
+                                </p>
+
+                                <p>Click the button below to add a new feed</p>
+                                    <button @click="$store.modal = 'newfeed'" type="button" class="btn btn-success">Add new feed</button>
                                 </p>
                             </div>
 
@@ -181,7 +185,7 @@
     }
 
     div#myModal {
-        padding-top: 100px;
+        padding-top: 170px;
         margin-left: 5px;
         margin-right: 5px;
     }
