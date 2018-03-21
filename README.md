@@ -3,8 +3,7 @@
 Copyright (c) 2017 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator and reader compatible with the Fever API, created as an alternative for Google Reader.
-RSSMonster features a lightweight fluid responsive design. It is written in JavaScript (VueJS), PHP (Laravel Lumen) and uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc.
-Feel free to add any contributions or new features.
+RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in PHP (Laravel Lumen). It also uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc. Feel free to add any contributions or new features.
 
 ![Screenshot](resources/assets/images/screenshots/screenshot01.png)
 
@@ -29,8 +28,9 @@ Feel free to add any contributions or new features.
 * Run `npm run production` to compile all JS files
 * Run `php artisan migrate` this will add all needed database tables to your mysql database
 * Run `chmod -R 777 storage/`
-* Navigate to http://yourRSSMonsterurl/public/index.php and add feeds by using the top menu
-* Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/public/index.php/api/feed/updateall`
+The path may vary based on your configuration.
+* Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
+* Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/api/feed/updateall`
 
 If you would like to run RSSMonster in development mode I recommand to run `npm run watch`
 
@@ -38,7 +38,7 @@ If you would like to run RSSMonster in development mode I recommand to run `npm 
 
 Reeder (iOS) support have been added. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
-http://yourRSSMonsterurl/public/index.php/api/fever
+http://yourRSSMonsterurl/api/fever
 
 Any username and password will work.
 You might need to change the redirect in the `.htaccess` inside the public folder.
