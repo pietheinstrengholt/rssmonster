@@ -247,7 +247,7 @@ class FeedController extends Controller
 	public function updateFeed($id, Request $request)
 	{
 		$feed = Feed::find($id);
-		if ($request->has('feed_name') && $request->has('category_id')) {
+		if ($request->has('feed_name')) {
 			$feed->feed_name = $request->input('feed_name');
 			$feed->feed_desc = $request->input('feed_desc');
 			if ($request->has('category_id')) {

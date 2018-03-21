@@ -348,7 +348,7 @@ span.error {
             },
             renameFeed: function() {
                 //rename category
-                this.$http.put('feeds/' + this.$store.data.feed, {name: this.feed_name, feed_desc: this.feed_desc, category_id: this.category}).then(response => {
+                this.$http.put('feeds/' + this.$store.data.feed, {feed_name: this.feed_name, feed_desc: this.feed_desc, category_id: this.category}).then(response => {
                     console.log(response.status);
                     this.$store.refreshCategories++;
                     this.closeModal();
