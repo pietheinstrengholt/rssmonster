@@ -108,31 +108,26 @@
 
                             <div class="modal-body" id="mobile" v-if="$store.modal==='showcategories'">
                                 <p>Select which category you want to display</p>
-                                    <ul class="categories">
-                                        <li class="category" v-on:click="$store.data.category = null">
-                                            <span class="glyphicon">
-                                                <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
-                                            </span>  
-                                            <span>Show all categories</span>
-                                        </li>
-                                        <li class="category" v-on:click="$store.data.category = category.id" v-for="category in $store.categories">
-                                            <span class="glyphicon">
-                                                <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
-                                            </span>
-                                            <span>{{ category.name }}</span>
-                                        </li>
-                                    </ul>
-                                <br>
+                                <ul class="categories">
+                                    <li class="category" v-on:click="$store.data.category = null">
+                                        <span class="glyphicon">
+                                            <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
+                                        </span>  
+                                        <span>Show all categories</span>
+                                    </li>
+                                    <li class="category" v-on:click="$store.data.category = category.id" v-for="category in $store.categories">
+                                        <span class="glyphicon">
+                                            <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
+                                        </span>
+                                        <span>{{ category.name }}</span>
+                                    </li>
+                                </ul>
                                 <p>Select how the articles should be displayed</p>
-                                    <button @click="$store.data.filter = 'full'" type="button" class="btn btn-primary">Full content</button>
-                                    <button @click="$store.data.filter = 'minimal'" type="button" class="btn btn-primary">Minimal content</button>
-                                </p>
+                                <button @click="$store.data.filter = 'full'" type="button" class="btn btn-primary">Full content</button>
+                                <button @click="$store.data.filter = 'minimal'" type="button" class="btn btn-primary">Minimal content</button>
 
                                 <p>Click the button below to add a new feed</p>
-                                    <button @click="$store.modal = 'newfeed'" type="button" class="btn btn-success">Add new feed</button>
-                                </p>
-                            </div>
-
+                                <button @click="$store.modal = 'newfeed'" type="button" class="btn btn-success">Add new feed</button>                            </div>
                             <div class="modal-footer">
                                 <button v-if="feed_id" type="button" class="btn btn-primary" @click="saveFeed">Save changes</button>
                                 <button v-if="$store.modal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
@@ -189,6 +184,14 @@
         margin-left: 5px;
         margin-right: 5px;
     }
+
+    div.modal-dialog.modal-dialog-centered {
+        margin-top: 50px;
+    }
+
+    div.modal-body p {
+        margin-bottom: 3px;
+    }
 }
 
 /* Desktop */
@@ -227,8 +230,8 @@ div#mobile.modal-body li.category {
     background-color: #464F9E;
     border-radius: 4px;
     color: #FFF;
-    padding: 2px;
-    margin-bottom: 4px;
+    padding: 0px;
+    margin-bottom: 2px;
 }
 
 #myModal.modal {
