@@ -180,13 +180,7 @@
     }
 
     div#myModal {
-        padding-top: 170px;
-        margin-left: 5px;
-        margin-right: 5px;
-    }
-
-    div.modal-dialog.modal-dialog-centered {
-        margin-top: 50px;
+        padding-top: 200px;
     }
 
     div.modal-body p {
@@ -213,6 +207,10 @@
     div#articles {
         margin-left: -10px;
         margin-right: -8px;
+    }
+
+    .modal-container {
+        padding: 20px 30px;
     }
 }
 
@@ -257,7 +255,6 @@ div.modal-dialog {
 
 .modal-container {
     margin: 0px auto;
-    padding: 20px 30px;
     background-color: #fff;
     border-radius: 2px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, .33);
