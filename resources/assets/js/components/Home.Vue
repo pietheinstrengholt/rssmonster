@@ -317,6 +317,7 @@ export default {
 						//reset the pool, attach data to container and get first set of article details
 						this.resetPool();
 						this.container = data;
+						//TODO: avoid getting initialized while onInfinite mounting process is running
 						this.getArticleDetails();
 					});
 			},
@@ -327,7 +328,7 @@ export default {
 		InfiniteLoading,
 	},
 	created() {
-		this.$store.data.status = 'unread'; 
+		this.$store.data.status = 'unread';
 	},
 	methods: {
 		onInfinite() {
@@ -351,6 +352,7 @@ export default {
 			this.container = [];
 			this.distance = 0;
 		},
+		//TODO: figure out why the hell this is called two times
 		getArticleDetails() {
 			setTimeout(() => {
 				//check if the container size is empty and the application has been initialized
