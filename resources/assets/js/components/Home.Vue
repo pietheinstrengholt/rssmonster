@@ -291,6 +291,7 @@ export default {
 			search: null,
 			showStatusMenu: false,
 			showFilterMenu: false,
+			isinitialized: 0
 		}
 	},
 	store: {
@@ -330,10 +331,7 @@ export default {
 	},
 	methods: {
 		onInfinite() {
-			setTimeout(() => {
-				//call getArticleDetails
-				this.getArticleDetails();
-			}, 200);
+			this.getArticleDetails();
 		},
 		flushPool() {
 			//check if the container is present
@@ -348,47 +346,53 @@ export default {
 		},
 		resetPool() {
 			//reset the articles, container and distance
+			this.isinitialized == 0;
 			this.articles = [];
 			this.container = [];
 			this.distance = 0;
 		},
 		getArticleDetails() {
-			//check the container size
-			if ((this.container.slice(this.distance, this.distance + 20)).length == 0) {
-				this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
-				this.flushPool();
-			} else {
-				this.$http.get('articles/details', {
-					params: {
-						//this is the argument used
-						article_id: this.container.slice(this.distance, this.distance + 20).join(","),
-					},
-				}).then((res) => {
-					if (res.data.length) {
-						this.distance = this.distance + res.data.length;
-						this.articles = this.articles.concat(res.data);
-						this.$refs.infiniteLoading.$emit('$InfiniteLoading:reset');
-						//add waypoint to every article
-						setTimeout(() => {
-							for (var key in this.articles) {
-								var article = this.articles[key];
-								//only add triggers if the status is unread
-								if (article.status == "unread") {
-									//make sure only one waypoint per article is set, check the waypointPool for this
-									if (!this.waypointPool.includes(article.id)) {
-										this.waypointCreate(article.id);
-										this.waypointPool.push(article.id);
+			setTimeout(() => {
+				//check if the container size is empty and the application has been initialized
+				if ((this.container.slice(this.distance, this.distance + 20)).length == 0 && this.isinitialized == 1) {
+					this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
+					this.flushPool();
+				} else {
+					//set the the application to initialized
+					this.isinitialized == 1;
+					//get all the articles by using the api
+					this.$http.get('articles/details', {
+						params: {
+							//this is the argument used
+							article_id: this.container.slice(this.distance, this.distance + 20).join(","),
+						},
+					}).then((res) => {
+						if (res.data.length) {
+							this.distance = this.distance + res.data.length;
+							this.articles = this.articles.concat(res.data);
+							this.$refs.infiniteLoading.$emit('$InfiniteLoading:reset');
+							//add waypoint to every article
+							setTimeout(() => {
+								for (var key in this.articles) {
+									var article = this.articles[key];
+									//only add triggers if the status is unread
+									if (article.status == "unread") {
+										//make sure only one waypoint per article is set, check the waypointPool for this
+										if (!this.waypointPool.includes(article.id)) {
+											this.waypointCreate(article.id);
+											this.waypointPool.push(article.id);
+										}
 									}
 								}
-							}
-						}, 50);
-					} else {
-						//show complete message and flush remaining items in queue by marking them all as read
-						this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
-						this.flushPool();
-					}
-				});
-			}
+							}, 50);
+						} else {
+							//show complete message and flush remaining items in queue by marking them all as read
+							this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
+							this.flushPool();
+						}
+					});
+				}
+			}, 200);
 		},
 		waypointCreate(article) {
 			var waypoint = new Waypoint({
