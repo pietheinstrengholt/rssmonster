@@ -291,7 +291,7 @@ export default {
 			search: null,
 			showStatusMenu: false,
 			showFilterMenu: false,
-			isinitialized: 0
+			isInitialized: 0
 		}
 	},
 	store: {
@@ -346,7 +346,7 @@ export default {
 		},
 		resetPool() {
 			//reset the articles, container and distance
-			this.isinitialized == 0;
+			this.isInitialized == 0;
 			this.articles = [];
 			this.container = [];
 			this.distance = 0;
@@ -354,12 +354,12 @@ export default {
 		getArticleDetails() {
 			setTimeout(() => {
 				//check if the container size is empty and the application has been initialized
-				if ((this.container.slice(this.distance, this.distance + 20)).length == 0 && this.isinitialized == 1) {
+				if ((this.container.slice(this.distance, this.distance + 20)).length == 0 && this.isInitialized == 1) {
 					this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
 					this.flushPool();
 				} else {
 					//set the the application to initialized
-					this.isinitialized == 1;
+					this.isInitialized == 1;
 					//get all the articles by using the api
 					this.$http.get('articles/details', {
 						params: {
