@@ -52,6 +52,14 @@ class FeedController extends Controller
 		$feeder = $feedFactory->make($Feed->url);
 		$simplePieInstance = $feeder->getRawFeederObject();
 
+		//disable ssl verification
+		$simplePieInstance->set_curl_options(
+			array(
+				CURLOPT_SSL_VERIFYHOST => false,
+				CURLOPT_SSL_VERIFYPEER => false
+			)
+		);
+
 		//set starting count to 0
 		$count = 0;
 
