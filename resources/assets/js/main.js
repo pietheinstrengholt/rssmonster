@@ -19,7 +19,7 @@ new Vue({
 		store: {
 			data: {
 				filter: 'full',
-				status: null,
+				status: 'unread',
 				category: null,
 				feed: null,
 				search: null,
