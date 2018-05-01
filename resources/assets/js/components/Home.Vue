@@ -43,7 +43,7 @@
 					</div>
 				</div>
 			</div>
-			<infinite-loading loadbutton="always" @infinite="onInfinite" ref="infiniteLoading">
+			<infinite-loading ref="infiniteLoading" @infinite="infiniteHandler">
 				<span slot="no-more">
 					<p v-on:click="flushPool()">No more posts for this selection - Click here to mark all remaining items as read!</p>
 				</span>
@@ -273,6 +273,11 @@ div.block div.article-content img {
     max-width: 100%;
     height: auto;
 }
+
+div.infinite-loading-container {
+    display: block;
+	min-height: 50px;
+}
 </style>
 
 <script>
@@ -291,7 +296,6 @@ export default {
 			search: null,
 			showStatusMenu: false,
 			showFilterMenu: false,
-			isInitialized: 0
 		}
 	},
 	store: {
@@ -317,8 +321,9 @@ export default {
 						//reset the pool, attach data to container and get first set of article details
 						this.resetPool();
 						this.container = data;
-						//TODO: avoid getting initialized while onInfinite mounting process is running
-						this.getArticleDetails();
+						//reset onInfinite using the new container data
+						console.log('reset infiniteHandler');
+						this.$refs.infiniteLoading.stateChanger.reset();
 					});
 			},
 			deep: true
@@ -328,11 +333,63 @@ export default {
 		InfiniteLoading,
 	},
 	created() {
-		this.$store.data.status = 'unread';
+		//get all the unread articles on initial load
+		this.$http.get('articles/listing', {
+			params: {
+				status: 'unread'
+			},
+			}).then(response => {
+				return response.json();
+			})
+			.then(data => {
+				this.container = data;
+			});
 	},
 	methods: {
-		onInfinite() {
-			this.getArticleDetails();
+		infiniteHandler($state) {
+			console.log('initialize infiniteHandler');
+			//only fetch article details if the container is filled with items
+			if (this.container.length > 0) {
+				//get all the articles by using the api
+				this.$http.get('articles/details', {
+					params: {
+						//this is the argument used
+						article_id: this.container.slice(this.distance, this.distance + 20).join(","),
+					},
+				}).then((res) => {
+					if (res.data.length) {
+						this.distance = this.distance + res.data.length;
+						this.articles = this.articles.concat(res.data);
+						//set state to loaded
+						$state.loaded();
+						//add waypoint to every article
+						setTimeout(() => {
+							for (var key in this.articles) {
+								var article = this.articles[key];
+								//only add triggers if the status is unread
+								if (article.status == "unread") {
+									//make sure only one waypoint per article is set, check the waypointPool for this
+									if (!this.waypointPool.includes(article.id)) {
+										this.waypointCreate(article.id);
+										this.waypointPool.push(article.id);
+									}
+								}
+							}
+						}, 50);
+						//if the returned set has a length of less than 10 set the state to complete
+						if (res.data.length < 10) {
+							$state.complete();
+						}
+					//if no articles are returned, flush remaining items in queue and mark all as read
+					} else {
+						$state.complete();
+						this.flushPool();
+					}
+				});
+			//set state to complete if container is empty
+			} else {
+				$state.complete();
+			}
 		},
 		flushPool() {
 			//check if the container is present
@@ -347,54 +404,9 @@ export default {
 		},
 		resetPool() {
 			//reset the articles, container and distance
-			this.isInitialized == 0;
 			this.articles = [];
 			this.container = [];
 			this.distance = 0;
-		},
-		//TODO: figure out why the hell this is called two times
-		getArticleDetails() {
-			setTimeout(() => {
-				//check if the container size is empty and the application has been initialized
-				if ((this.container.slice(this.distance, this.distance + 20)).length == 0 && this.isInitialized == 1) {
-					this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
-					this.flushPool();
-				} else {
-					//set the the application to initialized
-					this.isInitialized == 1;
-					//get all the articles by using the api
-					this.$http.get('articles/details', {
-						params: {
-							//this is the argument used
-							article_id: this.container.slice(this.distance, this.distance + 20).join(","),
-						},
-					}).then((res) => {
-						if (res.data.length) {
-							this.distance = this.distance + res.data.length;
-							this.articles = this.articles.concat(res.data);
-							this.$refs.infiniteLoading.$emit('$InfiniteLoading:reset');
-							//add waypoint to every article
-							setTimeout(() => {
-								for (var key in this.articles) {
-									var article = this.articles[key];
-									//only add triggers if the status is unread
-									if (article.status == "unread") {
-										//make sure only one waypoint per article is set, check the waypointPool for this
-										if (!this.waypointPool.includes(article.id)) {
-											this.waypointCreate(article.id);
-											this.waypointPool.push(article.id);
-										}
-									}
-								}
-							}, 50);
-						} else {
-							//show complete message and flush remaining items in queue by marking them all as read
-							this.$refs.infiniteLoading.$emit('$InfiniteLoading:complete');
-							this.flushPool();
-						}
-					});
-				}
-			}, 200);
 		},
 		waypointCreate(article) {
 			var waypoint = new Waypoint({
