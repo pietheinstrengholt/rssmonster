@@ -288,6 +288,7 @@ export default {
 	data() {
 		return {
 			distance: 0,
+			fetchCount: 20,
 			isActive: false,
 			articles: [],
 			container: [],
@@ -347,49 +348,52 @@ export default {
 	},
 	methods: {
 		infiniteHandler($state) {
-			console.log('initialize infiniteHandler');
-			//only fetch article details if the container is filled with items
-			if (this.container.length > 0) {
-				//get all the articles by using the api
-				this.$http.get('articles/details', {
-					params: {
-						//this is the argument used
-						article_id: this.container.slice(this.distance, this.distance + 20).join(","),
-					},
-				}).then((res) => {
-					if (res.data.length) {
-						this.distance = this.distance + res.data.length;
-						this.articles = this.articles.concat(res.data);
-						//set state to loaded
-						$state.loaded();
-						//add waypoint to every article
-						setTimeout(() => {
-							for (var key in this.articles) {
-								var article = this.articles[key];
-								//only add triggers if the status is unread
-								if (article.status == "unread") {
-									//make sure only one waypoint per article is set, check the waypointPool for this
-									if (!this.waypointPool.includes(article.id)) {
-										this.waypointCreate(article.id);
-										this.waypointPool.push(article.id);
+			setTimeout(() => {
+				console.log('initialize infiniteHandler');
+				//only fetch article details if the container is filled with items
+				if (this.container.length > 0) {
+					//get all the articles by using the api
+					this.$http.get('articles/details', {
+						params: {
+							//this is the argument used
+							article_id: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
+						},
+					}).then((res) => {
+						if (res.data.length) {
+							this.distance = this.distance + res.data.length;
+							this.articles = this.articles.concat(res.data);
+							//set state to loaded
+							$state.loaded();
+							//add waypoint to every article
+							setTimeout(() => {
+								for (var key in this.articles) {
+									var article = this.articles[key];
+									//only add triggers if the status is unread
+									if (article.status == "unread") {
+										//make sure only one waypoint per article is set, check the waypointPool for this
+										if (!this.waypointPool.includes(article.id)) {
+											this.waypointCreate(article.id);
+											this.waypointPool.push(article.id);
+										}
 									}
 								}
+							}, 50);
+							//if the returned set has a length of less than fetchCount set the state to complete
+							if (res.data.length < this.fetchCount) {
+								$state.complete();
 							}
-						}, 50);
-						//if the returned set has a length of less than 10 set the state to complete
-						if (res.data.length < 10) {
+						//if no articles are returned, flush remaining items in queue and mark all as read
+						} else {
 							$state.complete();
+							this.flushPool();
 						}
-					//if no articles are returned, flush remaining items in queue and mark all as read
-					} else {
-						$state.complete();
-						this.flushPool();
-					}
-				});
-			//set state to complete if container is empty
-			} else {
-				$state.complete();
-			}
+					});
+				//set state to complete if container is empty
+				} else {
+					$state.complete();
+					this.flushPool();
+				}
+			}, 250);
 		},
 		flushPool() {
 			//check if the container is present
