@@ -55,8 +55,8 @@ class FeedController extends Controller
 		//disable ssl verification
 		$simplePieInstance->set_curl_options(
 			array(
-				CURLOPT_SSL_VERIFYHOST => false,
-				CURLOPT_SSL_VERIFYPEER => false
+				'CURLOPT_SSL_VERIFYHOST' => false,
+				'CURLOPT_SSL_VERIFYPEER' => false
 			)
 		);
 
