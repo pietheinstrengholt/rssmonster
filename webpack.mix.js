@@ -24,3 +24,29 @@ mix.browserSync({
     port: 8080,
     proxy: 'localhost:80'
 });
+
+let SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
+
+mix.webpackConfig({
+    plugins: [
+        new SWPrecacheWebpackPlugin({
+            cacheId: 'pwa',
+            filename: 'js/service-worker.js',
+            staticFileGlobs: ['public/**/*.{css,eot,svg,ttf,woff,woff2,js,html}'],
+            minify: true,
+            stripPrefix: 'public/',
+            handleFetch: true,
+            dynamicUrlToDependencies: {
+                '/': ['resources/views/index.blade.php']
+            },
+            staticFileGlobsIgnorePatterns: [/\.map$/, /mix-manifest\.json$/, /manifest\.json$/, /service-worker\.js$/],
+            runtimeCaching: [
+                {
+                    urlPattern: /^https:\/\/fonts\.googleapis\.com\//,
+                    handler: 'cacheFirst'
+                }
+            ],
+            //importScripts: ['./js/push_message.js']
+        })
+    ]
+});

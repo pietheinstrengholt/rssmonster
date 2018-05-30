@@ -22,8 +22,22 @@
 	<script defer src="{{ URL::asset('js/fontawesome-5.0.4.js') }}"></script>
 
 	<!-- Scroll back to the top on refresh -->
-	<script>
+	<script type="text/javascript">
     	window.onbeforeunload = function() {window.scrollTo(0,0);}
+	</script>
+
+	<script type="text/javascript">
+	if ('serviceWorker' in navigator && 'PushManager' in window) {
+		window.addEventListener('load', function() {
+			navigator.serviceWorker.register("{{ URL::asset('js/service-worker.js') }}").then(function(registration) {
+				// Registration was successful
+				console.log('ServiceWorker registration successful with scope: ', registration.scope);
+			}, function(err) {
+				// registration failed :(
+				console.log('ServiceWorker registration failed: ', err);
+			});
+		});
+	}
 	</script>
 
 	<!-- Configuring Web Applications -->
