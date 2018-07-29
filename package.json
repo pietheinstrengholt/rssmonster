@@ -16,7 +16,7 @@
   "dependencies": {
     "vue": "^2.5.16",
     "vue-infinite-loading": "^2.3.1",
-    "vue-resource": "^1.5.0",
+    "vue-resource": "^1.5.1",
     "vue-stash": "^2.0.1-beta",
     "vuedraggable": "^2.16.0",
     "waypoints": "^4.0.1"
@@ -26,7 +26,7 @@
     "babel-loader": "^6.0.0",
     "babel-plugin-transform-object-rest-spread": "^6.26.0",
     "babel-preset-env": "^1.7.0",
-    "browser-sync": "^2.24.4",
+    "browser-sync": "^2.24.6",
     "browser-sync-webpack-plugin": "^1.2.0",
     "browserify": "^11.2.0",
     "browserify-shim": "^3.8.10",
