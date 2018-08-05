@@ -15,8 +15,8 @@ mix.js('resources/assets/js/main.js', 'public/js');
 
 mix.copy('resources/assets/images/', 'public/images/', false); // Don't flatten!
 
-//mix.setResourceRoot('../');
-mix.setResourceRoot('/rssmonster/public/');
+mix.setResourceRoot('../');
+//mix.setResourceRoot('/rssmonster/public/');
 
 mix.browserSync({
     notify: true,
@@ -28,6 +28,12 @@ mix.browserSync({
 let SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 
 mix.webpackConfig({
+    resolve: {
+        alias: {
+            "@components" : path.resolve(__dirname, 'resources/assets/js/components'),
+            "@root" : path.resolve(__dirname, 'resources/assets/js')
+        }
+    },
     plugins: [
         new SWPrecacheWebpackPlugin({
             cacheId: 'pwa',

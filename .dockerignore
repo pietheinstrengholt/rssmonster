@@ -1,0 +1,13 @@
+node_modules
+.git
+.gitignore
+storage
+vendor
+.env
+.DS_Store
+Thumbs.db
+public/js/main.js
+public/images
+public/fonts
+resources/assets/js/config.js
+public/js/service-worker.js

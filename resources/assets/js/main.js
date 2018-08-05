@@ -1,11 +1,11 @@
 import Vue from 'vue';
 import VueResource from 'vue-resource';
-import App from './App.vue';
+import App from '@root/App.vue';
 
 //add vueresourrce in order to make API calls
 Vue.use(VueResource);
 
-import config from './config.js';
+import config from '@root/config.js';
 
 Vue.http.options.root = config.API_URL_ROOT;
 
