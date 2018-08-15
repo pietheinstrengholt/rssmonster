@@ -35,7 +35,6 @@ The path may vary based on your configuration.
 If you would like to run RSSMonster in development mode I recommand to run `npm run watch`
 
 #### Reeder (iOS) integration support (via Fever API)
-
 Reeder (iOS) support have been added. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
 http://yourRSSMonsterurl/api/fever
@@ -45,6 +44,16 @@ You might need to change the redirect in the `.htaccess` inside the public folde
 Change "/lumen/public/" to the location where RSSMonster has been deployed.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
+
+
+#### Troubleshooting
+If you come across a failure message like this one...
+
+```
+These dependencies were not found:
+* /Users/you/Sites/folder/resources/assets/js/app.js
+```
+...then you're likely using npm 5.2 (npm -v). This version introduced a bug that caused installation errors for Mix. See for more info: https://github.com/JeffreyWay/laravel-mix/blob/master/docs/troubleshooting.md
 
 #### Credits
 

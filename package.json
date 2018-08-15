@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "vue": "^2.5.16",
-    "vue-infinite-loading": "^2.3.1",
+    "vue-infinite-loading": "^2.3.2",
     "vue-resource": "^1.5.1",
     "vue-stash": "^2.0.1-beta",
     "vuedraggable": "^2.16.0",
@@ -33,7 +33,7 @@
     "cross-env": "^3.2.4",
     "css-loader": "^0.25.0",
     "file-loader": "^0.9.0",
-    "laravel-mix": "^1.0",
+    "laravel-mix": "^1.7.2",
     "sw-precache-webpack-plugin": "^0.11.5",
     "vue-loader": "^12.1.0",
     "vue-template-compiler": "^2.5.16"
