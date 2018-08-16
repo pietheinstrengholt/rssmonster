@@ -30,9 +30,10 @@ services:
     volumes:
       - dbdata:/var/lib/mysql
     environment:
-      - "MYSQL_ROOT_PASSWORD=secret"
       - "MYSQL_DATABASE=homestead"
-      - "MYSQL_USERNAME=homestead"
+      - "MYSQL_USER=homestead"
+      - "MYSQL_PASSWORD=secret"
+      - "MYSQL_ROOT_PASSWORD=secret"
     ports:
         - "33061:3306"
 

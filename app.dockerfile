@@ -19,4 +19,3 @@ RUN composer install -d /var/www/ --no-interaction --optimize-autoloader
 RUN npm i -g npm@5.1.0
 RUN npm install --save-dev
 RUN npm run production
-EXPOSE 80

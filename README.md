@@ -34,6 +34,12 @@ The path may vary based on your configuration.
 
 If you would like to run RSSMonster in development mode I recommand to run `npm run watch`
 
+#### Docker
+* Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
+* Enter the project dir and type: `docker-compose build`
+* Start all the images: `docker-compose up`
+* Navigate to: `http://localhost:8080/`
+
 #### Reeder (iOS) integration support (via Fever API)
 Reeder (iOS) support have been added. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
