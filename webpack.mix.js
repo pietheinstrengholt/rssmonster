@@ -1,7 +1,7 @@
 let mix = require('laravel-mix');
 
 // https://vue-loader.vuejs.org/migrating.html#migrating-from-v14
-const VueLoaderPlugin = require('vue-loader/lib/plugin');
+//const VueLoaderPlugin = require('vue-loader/lib/plugin');
 
 /*
  |--------------------------------------------------------------------------
@@ -40,7 +40,7 @@ mix.webpackConfig({
         extensions: ['*', '.js', '.vue', '.json']
     },
     plugins: [
-        new VueLoaderPlugin(),
+        //new VueLoaderPlugin(),
         new SWPrecacheWebpackPlugin({
             cacheId: 'pwa',
             filename: 'js/service-worker.js',
