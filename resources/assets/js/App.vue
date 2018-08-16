@@ -287,9 +287,9 @@ span.error {
 </style>
 
 <script>
-    import Sidebar from '@components/Sidebar.vue';
-    import Home from '@components/Home.vue';
-    import Quickbar from '@components/Quickbar.vue';
+    import Sidebar from '@components/Sidebar.Vue';
+    import Home from '@components/Home.Vue';
+    import Quickbar from '@components/Quickbar.Vue';
     export default {
         components: {
             appSidebar: Sidebar,

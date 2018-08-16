@@ -1,5 +1,8 @@
 let mix = require('laravel-mix');
 
+// https://vue-loader.vuejs.org/migrating.html#migrating-from-v14
+const VueLoaderPlugin = require('vue-loader/lib/plugin');
+
 /*
  |--------------------------------------------------------------------------
  | Mix Asset Management
@@ -30,11 +33,14 @@ let SWPrecacheWebpackPlugin = require('sw-precache-webpack-plugin');
 mix.webpackConfig({
     resolve: {
         alias: {
+            "vue$" : 'vue/dist/vue.esm.js',
             "@components" : path.resolve(__dirname, 'resources/assets/js/components'),
             "@root" : path.resolve(__dirname, 'resources/assets/js')
-        }
+        },
+        extensions: ['*', '.js', '.vue', '.json']
     },
     plugins: [
+        new VueLoaderPlugin(),
         new SWPrecacheWebpackPlugin({
             cacheId: 'pwa',
             filename: 'js/service-worker.js',
