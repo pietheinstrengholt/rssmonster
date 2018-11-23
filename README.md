@@ -36,8 +36,12 @@ If you would like to run RSSMonster in development mode I recommand to run `npm 
 
 #### Docker
 * Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
+* Enter the project dir and type: `docker run --rm -v $(pwd):/app prooph/composer:7.2 install`
 * Enter the project dir and type: `docker-compose build`
 * Start all the images: `docker-compose up`
+* Copy the environment configuration file: `cp .env.example .env`
+* Start all the images: `docker-compose exec app php artisan key:generate`
+* Start all the images: `docker-compose exec app php artisan optimize`
 * Navigate to: `http://localhost:8080/`
 
 #### Reeder (iOS) integration support (via Fever API)
@@ -47,7 +51,7 @@ http://yourRSSMonsterurl/api/fever
 
 Any username and password will work.
 You might need to change the redirect in the `.htaccess` inside the public folder.
-Change "/lumen/public/" to the location where RSSMonster has been deployed.
+Change "/rssmonster/public/" to the location where RSSMonster has been deployed.
 
 <img src="http://www.strengholt-online.nl/wp-content/uploads/2016/fever.png" width="300px">
 
