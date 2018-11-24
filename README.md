@@ -22,7 +22,6 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 * Edit `.env` and enter your mysql server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD)
 * Start a command prompt and browse to the folder to which you checked out
 * Run `composer install` this will install all dependencies and might take a while
-* Run `php artisan key:generate` this will generate your individual application key, so that passwords are safe
 * Run `npm install` to install node dependencies, when using windows you might need to run `npm install --global --production windows-build-tools` first.
 * Update the `resources/assets/js/config.js` and set the right path
 * Run `npm run production` to compile all JS files
@@ -36,12 +35,12 @@ If you would like to run RSSMonster in development mode I recommand to run `npm 
 
 #### Docker
 * Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
-* Enter the project dir and type: `docker run --rm -v $(pwd):/app prooph/composer:7.2 install`
-* Enter the project dir and type: `docker-compose build`
-* Start all the images: `docker-compose up`
+* Build and start all the images: `docker-compose up --build`
 * Copy the environment configuration file: `cp .env.example .env`
-* Start all the images: `docker-compose exec app php artisan key:generate`
-* Start all the images: `docker-compose exec app php artisan optimize`
+* Install all composer dependencies: `docker-compose exec app composer update`
+* Deploy the database: `docker-compose exec app php artisan migrate`
+* Install all node dependencies: `docker-compose exec app npm install`
+* Compile the JS files: `docker-compose exec app npm run production`
 * Navigate to: `http://localhost:8080/`
 
 #### Reeder (iOS) integration support (via Fever API)

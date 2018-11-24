@@ -15,6 +15,6 @@ RUN php -r "unlink('composer-setup.php');"
 
 ADD . /var/www/
 WORKDIR /var/www/
-RUN composer install -d /var/www/ --no-interaction --optimize-autoloader
-RUN npm install --save-dev
-RUN npm run production
+#RUN composer install -d /var/www/ --no-interaction --optimize-autoloader
+#RUN npm install --save-dev
+#RUN npm run production

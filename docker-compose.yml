@@ -3,6 +3,7 @@ services:
 
   # The Application
   app:
+    container_name: app
     build:
       context: ./
       dockerfile: app.dockerfile
@@ -15,6 +16,7 @@ services:
 
   # The Web Server
   web:
+    container_name: web
     build:
       context: ./
       dockerfile: web.dockerfile
@@ -26,6 +28,7 @@ services:
 
   # The Database
   database:
+    container_name: database
     image: mysql:5.6
     volumes:
       - dbdata:/var/lib/mysql
