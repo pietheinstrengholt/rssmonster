@@ -32,7 +32,7 @@ The path may vary based on your configuration.
 * Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/api/feed/updateall`
 
 #### Development
-If you would like to run RSSMonster in development mode I recommand to run `npm run watch` and change the `mix.setResourceRoot('/');` location
+If you would like to run RSSMonster in development mode I recommand to run `npm run watch`. The `mix.setResourceRoot('/');` location in the `webpack.mix.js` file has to set properly, as well the `API_URL_ROOT` in the `resources/assets/config.js`.
 
 #### Docker
 * Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
