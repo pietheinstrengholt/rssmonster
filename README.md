@@ -31,7 +31,8 @@ The path may vary based on your configuration.
 * Navigate to http://yourRSSMonsterurl/index.php and add feeds by using the top menu
 * Add a cron job to pull articles: `curl -s http://yourRSSMonsterurl/api/feed/updateall`
 
-If you would like to run RSSMonster in development mode I recommand to run `npm run watch`
+#### Development
+If you would like to run RSSMonster in development mode I recommand to run `npm run watch` and change the `mix.setResourceRoot('/');` location
 
 #### Docker
 * Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
