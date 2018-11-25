@@ -26,6 +26,7 @@
 					<div class="maximal">
 						<div v-bind:class="{'bookmarked': article.star_ind == 1}" v-on:click="bookmark(article.id, $event)" @click="$event.target.classList.toggle('bookmarked')" class="bookmark">
 						</div>
+						<span v-if='article.hotness_count' class="badge badge-pill badge-danger">{{ article.hotness_count }}</span>
 						<h5 class="heading">
 							<a target="_blank" :href="article.url" v-text="article.subject"></a>
 						</h5>
@@ -145,6 +146,10 @@ div.block div.bookmark {
 
 div.block div.bookmarked {
 	background-image: url('./../../images/heart_selected.png');
+}
+
+span.badge.badge-danger {
+	float: right;
 }
 
 div.block div.article-content img {

@@ -49,9 +49,9 @@
 				</span>
 				<span class="title">Load all categories</span>
 				<span class="badge-unread">
-					<span v-if="$store.data.status === 'unread'" class="badge">{{ composedSum['unread_count'] }}</span>
-					<span v-if="$store.data.status === 'read'" class="badge">{{ composedSum['read_count'] }}</span>
-					<span v-if="$store.data.status === 'star'" class="badge">{{ composedSum['star_count'] }}</span>
+					<span v-if="$store.data.status === 'unread'" class="badge white">{{ composedSum['unread_count'] }}</span>
+					<span v-if="$store.data.status === 'read'" class="badge white">{{ composedSum['read_count'] }}</span>
+					<span v-if="$store.data.status === 'star'" class="badge white">{{ composedSum['star_count'] }}</span>
 				</span>
 			</div>
 			<div>
@@ -65,9 +65,9 @@
 						</span>
 						<span class="title">{{category.name}}</span>
 						<span class="badge-unread">
-							<span v-if="$store.data.status === 'unread'" class="badge">{{category.unread_count}}</span>
-							<span v-if="$store.data.status === 'read'" class="badge">{{category.read_count}}</span>
-							<span v-if="$store.data.status === 'star'" class="badge">{{category.star_count}}</span>
+							<span v-if="$store.data.status === 'unread'" class="badge white">{{category.unread_count}}</span>
+							<span v-if="$store.data.status === 'read'" class="badge white">{{category.read_count}}</span>
+							<span v-if="$store.data.status === 'star'" class="badge white">{{category.star_count}}</span>
 						</span>
 					</div>
 					<div v-if="category.feeds">
@@ -78,9 +78,9 @@
 								</span>
 								<span class="title">{{feed.feed_name}}</span>
 								<span class="badge-unread">
-									<span v-if="$store.data.status === 'unread'" class="badge">{{feed.unread_count}}</span>
-									<span v-if="$store.data.status === 'read'" class="badge">{{feed.read_count}}</span>
-									<span v-if="$store.data.status === 'star'" class="badge">{{feed.star_count}}</span>
+									<span v-if="$store.data.status === 'unread'" class="badge white">{{feed.unread_count}}</span>
+									<span v-if="$store.data.status === 'read'" class="badge white">{{feed.read_count}}</span>
+									<span v-if="$store.data.status === 'star'" class="badge white">{{feed.star_count}}</span>
 								</span>
 							</div>
 						</div>
@@ -184,7 +184,7 @@ div.sidebar-category-sub, div.sidebar-category-feed, div.sidebar-category-top {
 	padding: 4px 4px 4px 12px;
 }
 
-span.badge {
+span.badge.white {
 	float: right;
 	color: #fff;
 	background-color: transparent !important;
