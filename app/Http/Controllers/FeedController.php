@@ -96,6 +96,20 @@ class FeedController extends Controller
 					//save article content to database
 					$article->save();
 
+					//save all urls in hotlink table
+					preg_match_all('#\bhttps?://[^,\s()<>]+(?:\([\w\d]+\)|([^,[:punct:]\s]|/))#', $article->content, $hotlinks);
+
+					//insert all urls found to the database
+					foreach ($hotlinks[0] as $hotlink) {
+						DB::table('hotlinks')->insert(
+							[
+								'feed_id' => $Feed->id,
+								'hotlink' => trim($hotlink),
+								'created_at' => $article->published
+							]
+						);
+					}
+
 					//increase count
 					$count++;
 				}
