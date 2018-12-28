@@ -27,9 +27,10 @@ If you would like to run RSSMonster in development mode I recommend to run:
 - Inside the server folder: `npm run start`.
 
 ### Production
-If you would like to run RSSMonster in development mode I recommend to run:
-- Inside the client folder: `npm run build`.
-- Move the `dist` folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
+If you would like to run RSSMonster in production mode I recommend to run:
+- Update the `API_URL_ROOT` inside the file `client/src/config.js`. Most likely you want to remove port 3000 and point to the url where the backend will be running.
+- Inside the client folder build all the static files with: `npm run build`.
+- Move the `dist` output folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
 - Inside the server folder: `npm run start`.
 
 #### Credits
