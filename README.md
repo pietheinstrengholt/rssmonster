@@ -5,7 +5,7 @@ Copyright (c) 2018 Piethein Strengholt, piethein@strengholt-online.nl
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
 RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc. Feel free to add any contributions or new features.
 
-![Screenshot](client/src/resources/assets/images/screenshots/screenshot01.png)
+![Screenshot](client/src/assets/images/screenshots/screenshot01.png)
 
 #### Prerequisites
 * NodeJS 10.x
