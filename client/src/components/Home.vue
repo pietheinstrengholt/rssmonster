@@ -398,7 +398,7 @@ export default {
       });
   },
   methods: {
-    handleScroll: function(event) {
+    handleScroll: function() {
       let bottomOfWindow =
         document.documentElement.scrollTop + window.innerHeight ===
         document.documentElement.offsetHeight;
