@@ -10,8 +10,12 @@ exports.getArticles = async (req, res, next) => {
     //set default values before querying all items
     const categoryId = req.query.categoryId || '%';
     const feedId = req.query.feedId || '%';
-    const search = '%' + req.query.search + '%' || '%';
+    let search = req.query.search || '%';
     const status = req.query.status || 'unread';
+
+    if (search !== '%') {
+      search = '%' + search + '%';
+    }
 
     //populate an array with all the feed ids based on the categoryId
     if (categoryId == '%') {
