@@ -375,6 +375,12 @@ export default {
   components: {
     InfiniteLoading
   },
+  created: function() {
+    window.addEventListener("scroll", this.handleScroll);
+  },
+  destroyed: function() {
+    window.removeEventListener("scroll", this.handleScroll);
+  },
   beforeCreate() {
     //get all the unread articles on initial load
     this.$http
@@ -392,6 +398,15 @@ export default {
       });
   },
   methods: {
+    handleScroll: function(event) {
+      let bottomOfWindow =
+        document.documentElement.scrollTop + window.innerHeight ===
+        document.documentElement.offsetHeight;
+
+      if (bottomOfWindow) {
+        this.flushPool();
+      }
+    },
     infiniteHandler($state) {
       //only fetch article details if the container is filled with items
       if (this.container.length > 0) {
@@ -472,40 +487,42 @@ export default {
       });
     },
     markArticleRead(article) {
-      //make ajax request to change read status
-      this.$http.post("manager/marktoread/" + article).then(
-        response => {
-          //push id to the pool
-          this.pool.push(article);
+      if ((this.$store.data.status === "unread")) {
+        //make ajax request to change read status
+        this.$http.post("manager/marktoread/" + article).then(
+          response => {
+            //push id to the pool
+            this.pool.push(article);
 
-          //decrease the unread count
-          var categoryIndex = this.$store.categories.findIndex(
-            category => category.id === response.body.feed.categoryId
-          );
-          this.$store.categories[categoryIndex].unreadCount =
-            this.$store.categories[categoryIndex].unreadCount - 1;
-          this.$store.categories[categoryIndex].readCount =
-            this.$store.categories[categoryIndex].readCount + 1;
-          var feedIndex = this.$store.categories[categoryIndex].feeds.findIndex(
-            feed => feed.id === response.body.feedId
-          );
-          this.$store.categories[categoryIndex].feeds[feedIndex].unreadCount =
-            this.$store.categories[categoryIndex].feeds[feedIndex].unreadCount -
-            1;
-          this.$store.categories[categoryIndex].feeds[feedIndex].readCount =
-            this.$store.categories[categoryIndex].feeds[feedIndex].readCount +
-            1;
+            //decrease the unread count
+            var categoryIndex = this.$store.categories.findIndex(
+              category => category.id === response.body.feed.categoryId
+            );
+            this.$store.categories[categoryIndex].unreadCount =
+              this.$store.categories[categoryIndex].unreadCount - 1;
+            this.$store.categories[categoryIndex].readCount =
+              this.$store.categories[categoryIndex].readCount + 1;
+            var feedIndex = this.$store.categories[
+              categoryIndex
+            ].feeds.findIndex(feed => feed.id === response.body.feedId);
+            this.$store.categories[categoryIndex].feeds[feedIndex].unreadCount =
+              this.$store.categories[categoryIndex].feeds[feedIndex]
+                .unreadCount - 1;
+            this.$store.categories[categoryIndex].feeds[feedIndex].readCount =
+              this.$store.categories[categoryIndex].feeds[feedIndex].readCount +
+              1;
 
-          //also increase total count
-          this.$store.readCount = this.$store.readCount + 1;
-          this.$store.unreadCount = this.$store.unreadCount - 1;
-        },
-        response => {
-          /* eslint-disable no-console */
-          console.log("oops something went wrong", response);
-          /* eslint-enable no-console */
-        }
-      );
+            //also increase total count
+            this.$store.readCount = this.$store.readCount + 1;
+            this.$store.unreadCount = this.$store.unreadCount - 1;
+          },
+          response => {
+            /* eslint-disable no-console */
+            console.log("oops something went wrong", response);
+            /* eslint-enable no-console */
+          }
+        );
+      }
     },
     bookmark(article, event) {
       //determine if classname already contains bookmarked, if so, the change is unmark
