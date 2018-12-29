@@ -487,7 +487,7 @@ export default {
       });
     },
     markArticleRead(article) {
-      if ((this.$store.data.status === "unread")) {
+      if (this.$store.data.status === "unread") {
         //make ajax request to change read status
         this.$http.post("manager/marktoread/" + article).then(
           response => {

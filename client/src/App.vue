@@ -422,8 +422,10 @@ export default {
   },
   created: function() {
     document.title = "RSSMonster";
-    document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
-    document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
+    document.head.querySelector("meta[name=viewport]").content =
+      "width=device-width, initial-scale=1";
+    document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content =
+      "IE=edge";
   },
   data() {
     return {
