@@ -9,6 +9,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
+    "moment": "^2.23.0",
     "vue": "^2.5.17",
     "vue-awesome": "^3.2.0",
     "vue-infinite-loading": "^2.4.3",

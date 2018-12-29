@@ -64,7 +64,7 @@
             <div class="feedname">
               <span class="feed_name" v-text="article.feed.feed_name"></span>
               <span class="break">|</span>
-              <span class="published_date" v-text="article.published"></span>
+              <span class="published_date">{{ article.published | formatDate }}</span>
             </div>
           </div>
 
@@ -159,6 +159,11 @@ div.block div.feedname {
 
 div.block .active {
   background-color: #ffffe5;
+}
+
+span.break {
+  margin-left: 2px;
+  margin-right: 2px;
 }
 
 div.block div.bookmark,
@@ -323,6 +328,8 @@ div.infinite-loading-container {
 <script>
 import InfiniteLoading from "vue-infinite-loading";
 require("waypoints/lib/noframework.waypoints.js");
+
+import moment from 'moment';
 
 export default {
   data() {
@@ -619,6 +626,11 @@ export default {
         .slice(0, 100)
         .join(" ");
       return str2;
+    },
+    formatDate: function(value) {
+      if (value) {
+        return moment(String(value)).format('MM/DD/YYYY hh:mm');
+      }
     }
   }
 };
