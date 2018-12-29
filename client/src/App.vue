@@ -198,12 +198,12 @@
                   <button
                     @click="$store.data.filter = 'full'"
                     type="button"
-                    class="btn btn-primary"
+                    class="btn btn-primary content"
                   >Full content</button>
                   <button
                     @click="$store.data.filter = 'minimal'"
                     type="button"
-                    class="btn btn-primary"
+                    class="btn btn-primary content"
                   >Minimal content</button>
 
                   <p>Click the button below to add a new feed</p>
@@ -398,6 +398,10 @@ div.modal-dialog {
 
 button.close span {
   color: #111;
+}
+
+button.btn.btn-primary.content {
+  margin-right: 7px;
 }
 
 span.error {

@@ -49,3 +49,4 @@ The following scripts and plug-ins are used within RSSMonster
 - Change dist location when building VueJS to ../../server
 - Restore Fever API
 - Add Docker support
+- Implement settings
