@@ -1,27 +1,47 @@
-version: '2'
+version: '2.3'
 services:
 
   app:
     depends_on:
-      - database
+      mysql:
+        condition: service_healthy
     build:
       context: ./
       dockerfile: app.dockerfile
     image: rssmonster/app
     ports:
       - 3000:3000
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_USERNAME: rssmonster
+      DB_PASSWORD: password
+      DB_DATABASE: rssmonster
+      DB_HOSTNAME: localhost
     working_dir: /usr/local/rssmonster/server
     env_file:
       - ./server/.env
+    links:
+      - mysql:mysql
 
-  database:
-    image: mysql:5.6
+  mysql:
+    container_name: mysqldb
+    image: mysql:5.7
     command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_RANDOM_ROOT_PASSWORD: "yes"
       MYSQL_DATABASE: "rssmonster"
       MYSQL_USER: "rssmonster"
       MYSQL_PASSWORD: "password"
+    ports:
+      - "3307:3306"
+    volumes:
+      - /var/lib/mysql
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
+      timeout: 5s
+      retries: 10
 
 volumes:
   dbdata:

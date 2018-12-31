@@ -1,11 +1,11 @@
-require('dotenv').load();
+require('dotenv').config();
 
 module.exports = {
   development: {
-    username: 'database_dev',
-    password: 'database_dev',
-    database: 'database_dev',
-    host: '127.0.0.1',
+    username: process.env.DB_USERNAME || 'rssmonster',
+    password: process.env.DB_PASSWORD || 'password',
+    database: process.env.DB_DATABASE || 'rssmonster',
+    host: process.env.DB_HOSTNAME || 'localhost',
     dialect: 'mysql'
   },
   test: {

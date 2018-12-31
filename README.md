@@ -33,6 +33,10 @@ If you would like to run RSSMonster in production mode I recommend to run:
 - Move the `dist` output folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
 - Inside the server folder: `npm run start`.
 
+### Docker
+- Run the following command to build all the images: `docker-compose build`
+- Run the following command to start the containers: `docker-compose up`
+
 #### Credits
 The following scripts and plug-ins are used within RSSMonster
 
@@ -48,5 +52,7 @@ The following scripts and plug-ins are used within RSSMonster
 - Rename feed_name, feed_desc, etc.
 - Change dist location when building VueJS to ../../server
 - Restore Fever API
-- Add Docker support
 - Implement settings
+- Fix UTF8
+- Fix renaming feeds
+- Fix docker database connection error

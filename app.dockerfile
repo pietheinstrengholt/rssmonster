@@ -10,5 +10,6 @@ WORKDIR /usr/local/rssmonster/server
 RUN mv ../client/dist ./
 RUN npm install
 
+COPY ./server/.env.example /usr/local/rssmonster/server/.env
 EXPOSE 3000/tcp
 CMD npm run start

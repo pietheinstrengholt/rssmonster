@@ -134,11 +134,11 @@
                     <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                     <div class="col-sm-9">
                       <input
-                        type="text"
                         class="form-control"
+                        type="text"
                         id="feed_name"
-                        v-model="feed_name"
                         placeholder="Feed name"
+                        v-model="feed_name"
                       >
                     </div>
                   </div>
@@ -149,11 +149,11 @@
                     >Feed description</label>
                     <div class="col-sm-9">
                       <input
-                        type="text"
                         class="form-control"
+                        type="text"
                         id="feed_desc"
-                        v-model="feed_desc"
                         placeholder="Feed description"
+                        v-model="feed_desc"
                       >
                     </div>
                   </div>
@@ -593,6 +593,7 @@ export default {
         for (var i = 0; i < this.$store.categories[x].feeds.length; i++) {
           if (this.$store.categories[x].feeds[i].id === feedId) {
             return this.$store.categories[x].feeds[i];
+            console.log(this.$store.categories[x].feeds[i]);
           }
         }
       }
@@ -611,9 +612,11 @@ export default {
         }
         //lookup feed name based on the feedId
         if (data.feed) {
+          console.log(data.feed);
           var feed = this.lookupFeedById(data.feed);
           this.feed_name = feed.feed_name;
           this.feed_desc = feed.feed_desc;
+          console.log(this.feed_name);
         }
       },
       deep: true
