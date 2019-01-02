@@ -19,6 +19,7 @@ const feedRoutes = require("./routes/feed");
 const articleRoutes = require("./routes/article");
 const crawlRoutes = require("./routes/crawl");
 const managerRoutes = require("./routes/manager");
+const feverRoutes = require("./routes/fever");
 
 //controller
 const errorController = require("./controllers/error");
@@ -46,6 +47,7 @@ app.use("/api/feeds", feedRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/crawl", crawlRoutes);
 app.use("/api/manager", managerRoutes);
+app.use("/api/fever", feverRoutes);
 app.use(errorController.get404);
 
 //define relationships
