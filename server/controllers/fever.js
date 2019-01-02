@@ -195,6 +195,14 @@ exports.getFever = async (req, res, next) => {
 
 exports.postFever = async (req, res, next) => {
   try {
+
+    //set before argument
+    if (req.query.before) {
+      var timestamp = Date.now();
+    } else {
+      var timestamp = Date.parse(req.query.before);
+    }
+
     //update per article item
     if (req.query.mark === "item" && req.query.id) {
       if (req.query.as === "read") {
@@ -226,14 +234,17 @@ exports.postFever = async (req, res, next) => {
       }
     }
 
-    //update per article item
+    //update per feed
     if (req.query.mark === "feed" && req.query.id) {
       if (req.query.as === "read") {
         Article.update({
           status: 'read'
         }, {
           where: {
-            feedId: req.query.id
+            feedId: req.query.id,
+            published: {
+              [Op.gte]: timestamp
+            }
           }
         });
       }
@@ -242,7 +253,10 @@ exports.postFever = async (req, res, next) => {
           star_ind: 1
         }, {
           where: {
-            feedId: req.query.id
+            feedId: req.query.id,
+            published: {
+              [Op.gte]: timestamp
+            }
           }
         });
       }
@@ -251,7 +265,10 @@ exports.postFever = async (req, res, next) => {
           status: 'unread'
         }, {
           where: {
-            feedId: req.query.id
+            feedId: req.query.id,
+            published: {
+              [Op.gte]: timestamp
+            }
           }
         });
       }
@@ -278,7 +295,10 @@ exports.postFever = async (req, res, next) => {
           status: 'read'
         }, {
           where: {
-            feedId: feedIds
+            feedId: feedIds,
+            published: {
+              [Op.gte]: timestamp
+            }
           }
         });
       }
@@ -287,7 +307,10 @@ exports.postFever = async (req, res, next) => {
           star_ind: 1
         }, {
           where: {
-            feedId: feedIds
+            feedId: feedIds,
+            published: {
+              [Op.gte]: timestamp
+            }
           }
         });
       }
@@ -296,7 +319,10 @@ exports.postFever = async (req, res, next) => {
           status: 'unread'
         }, {
           where: {
-            feedId: feedIds
+            feedId: feedIds,
+            published: {
+              [Op.gte]: timestamp
+            }
           }
         });
       }
@@ -309,16 +335,34 @@ exports.postFever = async (req, res, next) => {
       if (req.query.as === "read") {
         Article.update({
           status: 'read'
+        }, {
+          where: {
+            published: {
+              [Op.gte]: timestamp
+            }
+          }
         });
       }
       if (req.query.as === "saved") {
         Article.update({
           star_ind: 1
+        }, {
+          where: {
+            published: {
+              [Op.gte]: timestamp
+            }
+          }
         });
       }
       if (req.query.as === "unsaved") {
         Article.update({
           status: 'unread'
+        }, {
+          where: {
+            published: {
+              [Op.gte]: timestamp
+            }
+          }
         });
       }
 
