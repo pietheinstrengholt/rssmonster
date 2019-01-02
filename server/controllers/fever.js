@@ -187,16 +187,149 @@ exports.getFever = async (req, res, next) => {
     res.status(200).json(arr);
 
   } catch (err) {
+    //return server if something goes wrong
     console.log(err);
+    return res.status(500).json(err);
   }
 };
 
 exports.postFever = async (req, res, next) => {
   try {
-    //return all itemIds
-    res.status(200).json('result');
+    //update per article item
+    if (req.query.mark === "item" && req.query.id) {
+      if (req.query.as === "read") {
+        Article.update({
+          status: 'read'
+        }, {
+          where: {
+            id: req.query.id
+          }
+        });
+      }
+      if (req.query.as === "saved") {
+        Article.update({
+          star_ind: 1
+        }, {
+          where: {
+            id: req.query.id
+          }
+        });
+      }
+      if (req.query.as === "unsaved") {
+        Article.update({
+          status: 'unread'
+        }, {
+          where: {
+            id: req.query.id
+          }
+        });
+      }
+    }
+
+    //update per article item
+    if (req.query.mark === "feed" && req.query.id) {
+      if (req.query.as === "read") {
+        Article.update({
+          status: 'read'
+        }, {
+          where: {
+            feedId: req.query.id
+          }
+        });
+      }
+      if (req.query.as === "saved") {
+        Article.update({
+          star_ind: 1
+        }, {
+          where: {
+            feedId: req.query.id
+          }
+        });
+      }
+      if (req.query.as === "unsaved") {
+        Article.update({
+          status: 'unread'
+        }, {
+          where: {
+            feedId: req.query.id
+          }
+        });
+      }
+    }
+
+    //per group, a group should be specified with an id not equal to zero
+    if (req.query.mark === "group" && req.query.id !== 0) {
+
+      //get all feed ids
+      feeds = await Feed.findAll({
+        attributes: ["id"]
+      });
+
+      //build array based on previous results and push all ids to the array
+      feedIds = [];
+      if (feeds.length > 0) {
+        feeds.forEach(feed => {
+          feedIds.push(feed.id);
+        });
+      }
+
+      if (req.query.as === "read") {
+        Article.update({
+          status: 'read'
+        }, {
+          where: {
+            feedId: feedIds
+          }
+        });
+      }
+      if (req.query.as === "saved") {
+        Article.update({
+          star_ind: 1
+        }, {
+          where: {
+            feedId: feedIds
+          }
+        });
+      }
+      if (req.query.as === "unsaved") {
+        Article.update({
+          status: 'unread'
+        }, {
+          where: {
+            feedId: feedIds
+          }
+        });
+      }
+
+    }
+
+    //this is "all" according fever
+    if (req.query.mark === "group" && req.query.id === 0) {
+
+      if (req.query.as === "read") {
+        Article.update({
+          status: 'read'
+        });
+      }
+      if (req.query.as === "saved") {
+        Article.update({
+          star_ind: 1
+        });
+      }
+      if (req.query.as === "unsaved") {
+        Article.update({
+          status: 'unread'
+        });
+      }
+
+    }
+
+    //return 200 code
+    res.status(200).json('OK');
 
   } catch (err) {
+    //return server if something goes wrong
     console.log(err);
+    return res.status(500).json(err);
   }
 };
