@@ -17,7 +17,7 @@ services:
       DB_USERNAME: rssmonster
       DB_PASSWORD: password
       DB_DATABASE: rssmonster
-      DB_HOSTNAME: localhost
+      DB_HOSTNAME: mysql
     working_dir: /usr/local/rssmonster/server
     env_file:
       - ./server/.env
