@@ -17,6 +17,7 @@ exports.getCategories = (req, res, next) => {
     })
     .catch(err => {
       console.log(err);
+      return res.status(500).json(err);
     });
 };
 
@@ -50,7 +51,10 @@ exports.addCategory = (req, res, next) => {
       console.log(result);
       return res.status(200).json(result);
     })
-    .catch(err => console.log(err));
+    .catch(err => {
+      console.log(err);
+      return res.status(500).json(err);
+    });
 };
 
 exports.updateCategory = (req, res, next) => {

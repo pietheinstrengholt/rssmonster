@@ -13,6 +13,7 @@ exports.getFeeds = (req, res, next) => {
     })
     .catch(err => {
       console.log(err);
+      return res.status(500).json(err);
     });
 };
 
@@ -27,6 +28,7 @@ exports.getFeed = (req, res, next) => {
     })
     .catch(err => {
       console.log(err);
+      return res.status(500).json(err);
     });
 };
 
@@ -132,7 +134,10 @@ exports.addFeed = (req, res, next) => {
             .then(result => {
               return res.status(200).json(result);
             })
-            .catch(err => console.log(err));
+            .catch(err => {
+              console.log(err);
+              return res.status(500).json(err);
+            });
         } else {
           return res.status(402).json({
             msg: 'Feed already exists.'
