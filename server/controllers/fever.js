@@ -436,7 +436,10 @@ exports.postFever = async (req, res, next) => {
     }
 
     //return 200 code
-    res.status(200).json('OK');
+    res.status(200).json({
+        api_version: "3",
+        auth: 1
+    });
 
   } catch (err) {
     //return server if something goes wrong
