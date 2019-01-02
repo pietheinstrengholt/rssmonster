@@ -44,7 +44,7 @@ http://yourRSSMonsterurl/api/fever
 
 Any username and password will work.
 
-![Screenshot Fever](client/src/assets/screenshots/fever.png | width=300)
+![Screenshot Fever](client/src/assets/screenshots/fever.png)
 
 #### Credits
 The following scripts and plug-ins are used within RSSMonster
