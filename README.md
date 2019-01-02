@@ -62,4 +62,3 @@ The following scripts and plug-ins are used within RSSMonster
 - Change dist location when building VueJS to ../../server
 - Implement settings
 - Fix UTF8
-- Fix renaming feeds

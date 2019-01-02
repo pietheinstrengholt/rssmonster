@@ -53,15 +53,14 @@
                   <span v-if="ajaxRequest">Please Wait ...</span>
                   <br>
                   <span class="error" v-if="error_msg">{{ error_msg }}</span>
-                  <div v-if="feedId">
+                  <div v-if="feed.id">
                     <div class="form-group row">
                       <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                       <div class="col-sm-9">
                         <input
                           type="text"
                           class="form-control"
-                          id="inputPassword"
-                          v-model="feed_name"
+                          v-model="feed.feed_name"
                           placeholder="Feed name"
                         >
                       </div>
@@ -75,8 +74,7 @@
                         <input
                           type="text"
                           class="form-control"
-                          id="inputPassword"
-                          v-model="feed_desc"
+                          v-model="feed.feed_desc"
                           placeholder="Feed description"
                         >
                       </div>
@@ -104,7 +102,7 @@
                     class="form-control form-control-lg"
                     type="text"
                     placeholder="Enter new category name.."
-                    v-model="category"
+                    v-model="category.name"
                   >
                   <br>
                 </div>
@@ -119,7 +117,7 @@
                     class="form-control form-control-lg"
                     type="text"
                     placeholder="Enter new category name.."
-                    v-model="category_name"
+                    v-model="category.name"
                   >
                   <br>
                 </div>
@@ -138,7 +136,7 @@
                         type="text"
                         id="feed_name"
                         placeholder="Feed name"
-                        v-model="feed_name"
+                        v-model="feed.feed_name"
                       >
                     </div>
                   </div>
@@ -153,7 +151,7 @@
                         type="text"
                         id="feed_desc"
                         placeholder="Feed description"
-                        v-model="feed_desc"
+                        v-model="feed.feed_desc"
                       >
                     </div>
                   </div>
@@ -437,11 +435,9 @@ export default {
       domain: "",
       ajaxRequest: false,
       postResults: [],
-      feed_name: "",
-      feed_desc: "",
-      feedId: "",
       error_msg: "",
-      category_name: null
+      category: {},
+      feed: {}
     };
   },
   methods: {
@@ -450,25 +446,20 @@ export default {
 
       this.$http.post("feeds", { url: this.url }).then(
         response => {
+          /* eslint-disable no-console */
+          console.log(response.status);
+          /* eslint-enable no-console */
           this.error_msg = "";
-          this.feedId = response.body.id;
-          this.feed_name = response.body.feed_name;
-          this.feed_desc = response.body.feed_desc;
+          this.feed = {};
         },
         response => {
           this.error_msg = response.body.message;
-          this.feedId = "";
-          this.feed_name = "";
-          this.feed_desc = "";
         }
       );
 
       this.ajaxRequest = false;
     },
     closeModal: function() {
-      this.feedId = "";
-      this.feed_name = "";
-      this.feed_desc = "";
       this.error_msg = "";
       this.$store.modal = false;
     },
@@ -510,7 +501,7 @@ export default {
       //rename category
       this.$http
         .put("categories/" + this.$store.data.category, {
-          name: this.category_name
+          name: this.category.name
         })
         .then(
           () => {
@@ -545,9 +536,9 @@ export default {
       //rename category
       this.$http
         .put("feeds/" + this.$store.data.feed, {
-          feed_name: this.feed_name,
-          feed_desc: this.feed_desc,
-          categoryId: this.category
+          feed_name: this.feed.feed_name,
+          feed_desc: this.feed.feed_desc,
+          categoryId: this.category.id
         })
         .then(
           () => {
@@ -564,10 +555,10 @@ export default {
     },
     saveFeed: function() {
       this.$http
-        .put("feeds/" + this.feedId, {
-          feed_name: this.feed_name,
-          feed_desc: this.feed_desc,
-          categoryId: this.category
+        .put("feeds/" + this.feed.id, {
+          feed_name: this.feed.feed_name,
+          feed_desc: this.feed.feed_desc,
+          categoryId: this.category.id
         })
         .then(
           response => {
@@ -593,7 +584,6 @@ export default {
         for (var i = 0; i < this.$store.categories[x].feeds.length; i++) {
           if (this.$store.categories[x].feeds[i].id === feedId) {
             return this.$store.categories[x].feeds[i];
-            console.log(this.$store.categories[x].feeds[i]);
           }
         }
       }
@@ -603,20 +593,20 @@ export default {
   watch: {
     "$store.data": {
       handler: function(data) {
+
+        //set the feed to empty when the store changes
+        this.feed = {};
+
         //lookup category name based on the categoryId received
         if (data.category) {
-          var item = this.$store.categories.filter(function(a) {
+          var category = this.$store.categories.filter(function(a) {
             return a.id == data.category;
           })[0];
-          this.category_name = item.name;
+          this.category = category;
         }
         //lookup feed name based on the feedId
         if (data.feed) {
-          console.log(data.feed);
-          var feed = this.lookupFeedById(data.feed);
-          this.feed_name = feed.feed_name;
-          this.feed_desc = feed.feed_desc;
-          console.log(this.feed_name);
+          this.feed = this.lookupFeedById(data.feed);
         }
       },
       deep: true
@@ -624,6 +614,7 @@ export default {
     "$store.data.category": {
       handler: function() {
         this.closeModal();
+        this.feed = {};
       }
     },
     "$store.data.feed": {
