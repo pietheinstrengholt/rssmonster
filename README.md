@@ -3,7 +3,7 @@
 Copyright (c) 2018 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
-RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc. Feel free to add any contributions or new features.
+RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc. RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
@@ -37,6 +37,15 @@ If you would like to run RSSMonster in production mode I recommend to run:
 - Run the following command to build all the images: `docker-compose build`
 - Run the following command to start the containers: `docker-compose up`
 
+### Reeder (iOS) integration support (via Fever API)
+RSSMonster is compatible with the Fever API. Apps like Reeder (iOS) will support this. To use the Reeder API (http://feedafever.com/api), point to the following url:
+
+http://yourRSSMonsterurl/api/fever
+
+Any username and password will work.
+
+![Screenshot](client/src/assets/screenshots/fever.png  | width=300)
+
 #### Credits
 The following scripts and plug-ins are used within RSSMonster
 
@@ -48,11 +57,9 @@ The following scripts and plug-ins are used within RSSMonster
 * Waypoints: https://github.com/imakewebthings/waypoints
 
 #### TODO
-- Remove dupplicate code from Sidebar
+- Remove dupplicate code from Sidebar in VueJS component
 - Rename feed_name, feed_desc, etc.
 - Change dist location when building VueJS to ../../server
-- Restore Fever API
 - Implement settings
 - Fix UTF8
 - Fix renaming feeds
-- Fix docker database connection error
