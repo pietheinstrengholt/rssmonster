@@ -27,7 +27,7 @@ exports.getFever = async (req, res, next) => {
     //merge arrays
     arr = Object.assign(arr, time);
 
-    //when argument is groups, retrieve list with categories and id's
+    //when argument is groups, retrieve list with categories names and id's
     if ("groups" in req.query) {
       var groups = [];
       const categories = await Category.findAll({
@@ -43,7 +43,70 @@ exports.getFever = async (req, res, next) => {
         });
       }
       //append groups to arr
-      arr['feeds_groups'] = groups;
+      arr['groups'] = groups;
+    }
+
+    //when argument is groups, retrieve list with categories names and id's
+    if ("feeds" in req.query) {
+      var feeds = [];
+      const results = await Feed.findAll({
+        order: ['feed_name']
+      })
+      if (results) {
+        results.forEach(feed => {
+          feedObject = {
+            id: String(feed.id),
+            favicon: '<img src="data:' + feed.favicon + '">',
+            title: feed.feed_name,
+            url: feed.url,
+            site_url: feed.url,
+            is_spark: 0,
+            last_updated_on_time: Math.floor(feed.updatedAt / 1000)
+          }
+          feeds.push(feedObject);
+        });
+      }
+      //append groups to arr
+      arr['feed'] = feeds;
+    }
+
+    if ("groups" in req.query || "feeds" in req.query) {
+      //create empty feeds_groups array
+      var feeds_groups = [];
+
+      //get all categories including feeds
+      categories = await Category.findAll({
+        include: [{
+          model: Feed,
+          required: true
+        }],
+        order: ['category_order', 'name']
+      })
+
+      //if categories is defined
+      if (categories) {
+        categories.forEach(function (category, i) {
+
+          //create empty feedIds array
+          var feedIds = [];
+
+          //push all feed ids to the array
+          category.feeds.forEach(function (feed, i) {
+            feedIds.push(feed.id);
+          });
+
+          //create a feedgroup object holding the category id and feeds (comma seperated)
+          feedGroupObject = {
+            group_id: category.id,
+            feed_ids: feedIds.join(", ")
+          }
+
+          //push the object to the feeds_groups array
+          feeds_groups.push(feedGroupObject);
+        });
+      }
+      //append groups to arr
+      arr['feeds_groups'] = feeds_groups;
     }
 
     //return list with all unread article id's
@@ -204,7 +267,7 @@ exports.postFever = async (req, res, next) => {
       var timestamp = Date.now();
     } else {
       //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
-      var timestamp = Date.parse(req.query.before*1000);
+      var timestamp = Date.parse(req.query.before * 1000);
     }
 
     //update per article item
