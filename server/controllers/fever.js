@@ -5,6 +5,9 @@ const Category = require("../models/category");
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
+//use Fever API
+//specs: https://feedafever.com/api
+
 exports.getFever = async (req, res, next) => {
   try {
     //always return status 1: password and username correct
@@ -174,7 +177,7 @@ exports.getFever = async (req, res, next) => {
         feeds.forEach(feed => {
           feedObject = {
             id: String(feed.id),
-            favicon: feed.favicon
+            favicon: '<img src="data:' + feed.favicon + '">'
           };
           favicons.push(feedObject);
         });
@@ -196,11 +199,12 @@ exports.getFever = async (req, res, next) => {
 exports.postFever = async (req, res, next) => {
   try {
 
-    //set before argument
+    //set before argument, which needs to be a JavaScript Data Object for Sequelize
     if (req.query.before) {
       var timestamp = Date.now();
     } else {
-      var timestamp = Date.parse(req.query.before);
+      //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
+      var timestamp = Date.parse(req.query.before*1000);
     }
 
     //update per article item
@@ -243,7 +247,7 @@ exports.postFever = async (req, res, next) => {
           where: {
             feedId: req.query.id,
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -255,7 +259,7 @@ exports.postFever = async (req, res, next) => {
           where: {
             feedId: req.query.id,
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -267,7 +271,7 @@ exports.postFever = async (req, res, next) => {
           where: {
             feedId: req.query.id,
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -297,7 +301,7 @@ exports.postFever = async (req, res, next) => {
           where: {
             feedId: feedIds,
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -309,7 +313,7 @@ exports.postFever = async (req, res, next) => {
           where: {
             feedId: feedIds,
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -321,7 +325,7 @@ exports.postFever = async (req, res, next) => {
           where: {
             feedId: feedIds,
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -338,7 +342,7 @@ exports.postFever = async (req, res, next) => {
         }, {
           where: {
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -349,7 +353,7 @@ exports.postFever = async (req, res, next) => {
         }, {
           where: {
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
@@ -360,7 +364,7 @@ exports.postFever = async (req, res, next) => {
         }, {
           where: {
             published: {
-              [Op.gte]: timestamp
+              [Op.lte]: timestamp
             }
           }
         });
