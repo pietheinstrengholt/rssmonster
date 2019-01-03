@@ -27,6 +27,35 @@ exports.getFever = async (req, res, next) => {
     //merge arrays
     arr = Object.assign(arr, time);
 
+    //return 200 with arr
+    res.status(200).json(arr);
+
+  } catch (err) {
+    //return server if something goes wrong
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+exports.postFever = async (req, res, next) => {
+  try {
+    //always return status 1: password and username correct
+    const status = 1;
+
+    //latest api version is 3
+    var arr = {
+      api_version: "3",
+      auth: status
+    }
+
+    //last refreshed is current system time
+    var time = {
+      last_refreshed_on_time: Math.floor((new Date()).getTime() / 1000)
+    };
+
+    //merge arrays
+    arr = Object.assign(arr, time);
+
     //when argument is groups, retrieve list with categories names and id's
     if ("groups" in req.query) {
       var groups = [];
@@ -249,19 +278,6 @@ exports.getFever = async (req, res, next) => {
       arr['favicons'] = favicons;
     }
 
-    //return 200 with arr
-    res.status(200).json(arr);
-
-  } catch (err) {
-    //return server if something goes wrong
-    console.log(err);
-    return res.status(500).json(err);
-  }
-};
-
-exports.postFever = async (req, res, next) => {
-  try {
-
     //set before argument, which needs to be a JavaScript Data Object for Sequelize
     if (req.query.before) {
       var timestamp = Date.now();
@@ -435,12 +451,8 @@ exports.postFever = async (req, res, next) => {
 
     }
 
-    //return 200 code
-    res.status(200).json({
-        api_version: "3",
-        auth: 1
-    });
-
+    //return 200 with arr
+    res.status(200).json(arr);
   } catch (err) {
     //return server if something goes wrong
     console.log(err);
