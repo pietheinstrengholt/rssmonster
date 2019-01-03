@@ -466,7 +466,7 @@ export default {
     saveCategory: function() {
       //save category when category name is set
       if (this.category) {
-        this.$http.post("categories", { name: this.category }).then(
+        this.$http.post("categories", { name: this.category.name }).then(
           () => {
             //send event to refresh the categories
             this.$store.refreshCategories++;
