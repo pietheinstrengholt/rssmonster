@@ -84,6 +84,7 @@ exports.deleteFeed = (req, res, next) => {
 exports.addFeed = (req, res, next) => {
   //capture body url
   const url = req.body.url;
+  const categoryId = req.body.categoryId;
 
   try {
 
@@ -114,7 +115,7 @@ exports.addFeed = (req, res, next) => {
       });
     });
 
-    feedparser.on("readable", function () {
+    feedparser.on("readable", function (req) {
       //get the metadata
       var meta = this.meta;
 
@@ -125,7 +126,7 @@ exports.addFeed = (req, res, next) => {
       }).then(feed => {
         if (!feed) {
           Feed.create({
-              categoryId: 1,
+              categoryId: categoryId,
               feed_name: meta.title,
               feed_desc: meta.description,
               url: meta.xmlurl,

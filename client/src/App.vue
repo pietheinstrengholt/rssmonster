@@ -44,6 +44,19 @@
                     v-model="url"
                   >
                   <br>
+                  <div class="form-group row">
+                    <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
+                    <div class="col-sm-9">
+                      <select class="form-control" id="category" v-model="$store.data.category">
+                        <option
+                          v-for="category in this.$store.categories"
+                          :value="category.id"
+                          :key="category.id"
+                          v-bind:id="category.id"
+                        >{{ category.name }}</option>
+                      </select>
+                    </div>
+                  </div>
                   <button
                     type="submit"
                     class="btn btn-primary mb-2"
@@ -443,19 +456,22 @@ export default {
   methods: {
     checkWebsite: function() {
       this.ajaxRequest = true;
+      console.log(this.category.id);
 
-      this.$http.post("feeds", { url: this.url }).then(
-        response => {
-          /* eslint-disable no-console */
-          console.log(response.status);
-          /* eslint-enable no-console */
-          this.error_msg = "";
-          this.feed = {};
-        },
-        response => {
-          this.error_msg = response.body.message;
-        }
-      );
+      this.$http
+        .post("feeds", { url: this.url, categoryId: this.category.id })
+        .then(
+          response => {
+            /* eslint-disable no-console */
+            console.log(response.status);
+            /* eslint-enable no-console */
+            this.error_msg = "";
+            this.feed = response.body;
+          },
+          response => {
+            this.error_msg = response.body.message;
+          }
+        );
 
       this.ajaxRequest = false;
     },
@@ -593,7 +609,6 @@ export default {
   watch: {
     "$store.data": {
       handler: function(data) {
-
         //set the feed to empty when the store changes
         this.feed = {};
 
@@ -613,6 +628,7 @@ export default {
     },
     "$store.data.category": {
       handler: function() {
+        //TODO: fix closing the modal when adding new feed and changing the category
         this.closeModal();
         this.feed = {};
       }
