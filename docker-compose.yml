@@ -3,8 +3,7 @@ services:
 
   app:
     depends_on:
-      mysql:
-        condition: service_healthy
+      - mysql
     build:
       context: ./
       dockerfile: app.dockerfile
@@ -38,10 +37,6 @@ services:
     volumes:
       - /var/lib/mysql
     restart: unless-stopped
-    healthcheck:
-      test: ["CMD", "mysqladmin" ,"ping", "-h", "localhost"]
-      timeout: 5s
-      retries: 10
 
 volumes:
   dbdata:
