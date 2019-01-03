@@ -184,6 +184,7 @@ exports.getOverview = async (req, res, next) => {
         });
     } catch (err) {
         console.log(err);
+        return res.status(500).json(err);
     }
 };
 
@@ -218,6 +219,7 @@ exports.articleDetails = async (req, res, next) => {
         }
     } catch (err) {
         console.log(err);
+        return res.status(500).json(err);
     }
 };
 
@@ -244,6 +246,7 @@ exports.articleMarkToRead = async (req, res, next) => {
         }
     } catch (err) {
         console.log(err);
+        return res.status(500).json(err);
     }
 };
 
@@ -270,6 +273,7 @@ exports.articleMarkToUnread = async (req, res, next) => {
         }
     } catch (err) {
         console.log(err);
+        return res.status(500).json(err);
     }
 };
 
@@ -316,6 +320,7 @@ exports.articleMarkWithStar = async (req, res, next) => {
         }
     } catch (err) {
         console.log(err);
+        return res.status(500).json(err);
     }
 };
 
@@ -366,6 +371,7 @@ exports.categoryUpdateOrder = async (req, res, next) => {
         res.status(200).json('order updated');
     } catch (err) {
         console.log(err);
+        return res.status(500).json(err);
     }
 };
 
