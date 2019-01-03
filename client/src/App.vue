@@ -36,26 +36,33 @@
                     <span aria-hidden="true">&times;</span>
                   </button>
                 </div>
+
                 <div class="modal-body" v-if="$store.modal==='newfeed'">
-                  <input
-                    class="form-control form-control-lg"
-                    type="text"
-                    placeholder="Enter feed or website url..."
-                    v-model="url"
-                  >
-                  <br>
-                  <div class="form-group row">
-                    <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
-                    <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="$store.data.category">
-                        <option
-                          v-for="category in this.$store.categories"
-                          :value="category.id"
-                          :key="category.id"
-                          v-bind:id="category.id"
-                        >{{ category.name }}</option>
-                      </select>
+                  <div v-if="this.$store.categories.length > 0">
+                    <input
+                      class="form-control form-control-lg"
+                      type="text"
+                      placeholder="Enter feed or website url..."
+                      v-model="url"
+                    >
+                    <br>
+                    <div class="form-group row">
+                      <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
+                      <div class="col-sm-9">
+                        <select class="form-control" id="category" v-model="$store.data.category">
+                          <option
+                            v-for="category in this.$store.categories"
+                            :value="category.id"
+                            :key="category.id"
+                            v-bind:id="category.id"
+                          >{{ category.name }}</option>
+                        </select>
+                      </div>
                     </div>
+                  </div>
+                  <div v-else>
+                    <p>No categories exist at this moment.</p>
+                    <p>First create a new category before adding a new feed.</p>
                   </div>
                   <button
                     type="submit"
@@ -90,21 +97,6 @@
                           v-model="feed.feed_desc"
                           placeholder="Feed description"
                         >
-                      </div>
-                    </div>
-
-                    <div class="form-group row">
-                      <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
-                      <div class="col-sm-9">
-                        <select class="form-control" id="category" v-model="category">
-                          <option
-                            v-for="category in this.$store.categories"
-                            :value="category.id"
-                            :selected="category.id == 1"
-                            :key="category.id"
-                            v-bind:id="category.id"
-                          >{{ category.name }}</option>
-                        </select>
                       </div>
                     </div>
                   </div>
@@ -153,32 +145,34 @@
                       >
                     </div>
                   </div>
-                  <div class="form-group row">
-                    <label
-                      for="inputFeedDescription"
-                      class="col-sm-3 col-form-label"
-                    >Feed description</label>
-                    <div class="col-sm-9">
-                      <input
-                        class="form-control"
-                        type="text"
-                        id="feed_desc"
-                        placeholder="Feed description"
-                        v-model="feed.feed_desc"
-                      >
+                  <div v-if="this.$store.categories.length > 0">
+                    <div class="form-group row">
+                      <label
+                        for="inputFeedDescription"
+                        class="col-sm-3 col-form-label"
+                      >Feed description</label>
+                      <div class="col-sm-9">
+                        <input
+                          class="form-control"
+                          type="text"
+                          id="feed_desc"
+                          placeholder="Feed description"
+                          v-model="feed.feed_desc"
+                        >
+                      </div>
                     </div>
-                  </div>
-                  <div class="form-group row">
-                    <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
-                    <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="$store.data.category">
-                        <option
-                          v-for="category in this.$store.categories"
-                          :value="category.id"
-                          :key="category.id"
-                          v-bind:id="category.id"
-                        >{{ category.name }}</option>
-                      </select>
+                    <div class="form-group row">
+                      <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
+                      <div class="col-sm-9">
+                        <select class="form-control" id="category" v-model="$store.data.category">
+                          <option
+                            v-for="category in this.$store.categories"
+                            :value="category.id"
+                            :key="category.id"
+                            v-bind:id="category.id"
+                          >{{ category.name }}</option>
+                        </select>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -226,7 +220,7 @@
                 </div>
                 <div class="modal-footer">
                   <button
-                    v-if="feedId"
+                    v-if="feed.id"
                     type="button"
                     class="btn btn-primary"
                     @click="saveFeed"
@@ -456,7 +450,6 @@ export default {
   methods: {
     checkWebsite: function() {
       this.ajaxRequest = true;
-      console.log(this.category.id);
 
       this.$http
         .post("feeds", { url: this.url, categoryId: this.category.id })
@@ -629,7 +622,7 @@ export default {
     "$store.data.category": {
       handler: function() {
         //TODO: fix closing the modal when adding new feed and changing the category
-        this.closeModal();
+        //this.closeModal();
         this.feed = {};
       }
     },
