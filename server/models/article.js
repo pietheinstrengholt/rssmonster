@@ -16,7 +16,7 @@ const Article = sequelize.define(
     // It is possible to create foreign keys:
     feedId: {
       type: Sequelize.INTEGER,
-
+      allowNull: false,
       references: {
         // This is a reference to another model
         model: Feed,
