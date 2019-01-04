@@ -24,9 +24,8 @@ import Icon from 'vue-awesome/components/Icon';
 // globally (in your main .js file)
 Vue.component('v-icon', Icon)
 
-import config from './config.js';
-
-Vue.http.options.root = config.API_URL_ROOT;
+//get app hostname location from the .env
+Vue.http.options.root = process.env.VUE_APP_HOSTNAME;
 
 //central state with stash
 import VueStash from 'vue-stash';

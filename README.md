@@ -15,8 +15,9 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 ### How to get everything installed
 * Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
 * Run `npm install` in both the `client` and `server` folder
-* Find the `.env.example` file in the root of the `server` folder, copy and rename to `.env`
-* Edit `.env` and enter your Mysql or Database server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD)
+* Find the `.env.example` file in the root of both the `client` and `server` folder. Copy and rename the files to `.env`
+* Edit `.env` inside the `server` folder and enter your Mysql or Database server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD).
+* Edit `.env` inside the `client` folder. Change the VUE_APP_HOSTNAME so it points to the back-end.
 * Run `node_modules/.bin/sequelize init` this will add all needed database tables to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder.
 * Run `node_modules/.bin/sequelize db:seed:all` to seed the database.
 * Run `chmod -R 777 storage/`
@@ -28,7 +29,7 @@ If you would like to run RSSMonster in development mode I recommend to run:
 
 ### Production
 If you would like to run RSSMonster in production mode I recommend to run:
-- Update the `API_URL_ROOT` inside the file `client/src/config.js`. Most likely you want to remove port 3000 and point to the url where the backend will be running.
+- Update the `VUE_APP_HOSTNAME` inside the file `client/.env`. Most likely you want to remove port 3000 and point to the url where the backend will be running.
 - Inside the client folder build all the static files with: `npm run build`.
 - Move the `dist` output folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
 - Inside the server folder: `npm run start`.
