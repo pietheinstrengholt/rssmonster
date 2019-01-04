@@ -527,12 +527,9 @@ export default {
       this.refreshing = true;
       this.$http.get("crawl", {}).then(
         response => {
-          //check if there is at least one article renewed
           if (response.body) {
-            //increase refresh which triggers watcher to refresh the Home
-            this.$store.data.refresh++;
-            //remove spinner
-            this.refreshing = false;
+            //refresh after one second
+            setTimeout(this.refresh, 1000);
           }
         },
         response => {
@@ -543,6 +540,12 @@ export default {
           /* eslint-enable no-console */
         }
       );
+    },
+    refresh() {
+      //increase refresh which triggers watcher to refresh the Home
+      this.$store.data.refresh++;
+      //remove spinner
+      this.refreshing = false;
     },
     updateSortOrder() {
       var orderList = new Array();
