@@ -329,17 +329,21 @@ div.infinite-loading-container {
 import InfiniteLoading from "vue-infinite-loading";
 require("waypoints/lib/noframework.waypoints.js");
 
-import moment from 'moment';
+import moment from "moment";
 
 export default {
   data() {
     return {
       distance: 0,
+      //amount of article leaded at once
       fetchCount: 20,
       isActive: false,
       articles: [],
+      //container contains a list with all article ids
       container: [],
+      //is used to keep track of which articles are already flagged as read
       pool: [],
+      //is used to keep track of which articles are already set with the waypoint method
       waypointPool: [],
       search: null,
       showStatusMenu: false,
@@ -498,30 +502,34 @@ export default {
         //make ajax request to change read status
         this.$http.post("manager/marktoread/" + article).then(
           response => {
-            //push id to the pool
-            this.pool.push(article);
+            if (!this.pool.includes(article)) {
+              //push id to the pool
+              this.pool.push(article);
 
-            //decrease the unread count
-            var categoryIndex = this.$store.categories.findIndex(
-              category => category.id === response.body.feed.categoryId
-            );
-            this.$store.categories[categoryIndex].unreadCount =
-              this.$store.categories[categoryIndex].unreadCount - 1;
-            this.$store.categories[categoryIndex].readCount =
-              this.$store.categories[categoryIndex].readCount + 1;
-            var feedIndex = this.$store.categories[
-              categoryIndex
-            ].feeds.findIndex(feed => feed.id === response.body.feedId);
-            this.$store.categories[categoryIndex].feeds[feedIndex].unreadCount =
-              this.$store.categories[categoryIndex].feeds[feedIndex]
-                .unreadCount - 1;
-            this.$store.categories[categoryIndex].feeds[feedIndex].readCount =
-              this.$store.categories[categoryIndex].feeds[feedIndex].readCount +
-              1;
+              //decrease the unread count
+              var categoryIndex = this.$store.categories.findIndex(
+                category => category.id === response.body.feed.categoryId
+              );
+              this.$store.categories[categoryIndex].unreadCount =
+                this.$store.categories[categoryIndex].unreadCount - 1;
+              this.$store.categories[categoryIndex].readCount =
+                this.$store.categories[categoryIndex].readCount + 1;
+              var feedIndex = this.$store.categories[
+                categoryIndex
+              ].feeds.findIndex(feed => feed.id === response.body.feedId);
+              this.$store.categories[categoryIndex].feeds[
+                feedIndex
+              ].unreadCount =
+                this.$store.categories[categoryIndex].feeds[feedIndex]
+                  .unreadCount - 1;
+              this.$store.categories[categoryIndex].feeds[feedIndex].readCount =
+                this.$store.categories[categoryIndex].feeds[feedIndex]
+                  .readCount + 1;
 
-            //also increase total count
-            this.$store.readCount = this.$store.readCount + 1;
-            this.$store.unreadCount = this.$store.unreadCount - 1;
+              //also increase total count
+              this.$store.readCount = this.$store.readCount + 1;
+              this.$store.unreadCount = this.$store.unreadCount - 1;
+            }
           },
           response => {
             /* eslint-disable no-console */
@@ -629,7 +637,7 @@ export default {
     },
     formatDate: function(value) {
       if (value) {
-        return moment(String(value)).format('MM/DD/YYYY hh:mm');
+        return moment(String(value)).format("MM/DD/YYYY hh:mm");
       }
     }
   }
