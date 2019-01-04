@@ -220,7 +220,7 @@
                 </div>
                 <div class="modal-footer">
                   <button
-                    v-if="feed.id"
+                    v-if="feed.id && $store.modal==='newfeed'"
                     type="button"
                     class="btn btn-primary"
                     @click="saveFeed"
