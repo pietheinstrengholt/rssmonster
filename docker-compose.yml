@@ -1,13 +1,31 @@
 version: '2.3'
 services:
 
-  app:
+  client:
+    depends_on:
+      - server
+    build:
+      context: ./
+      dockerfile: client.dockerfile
+    image: rssmonster/client
+    ports:
+      - 8080:8080
+    environment:
+      NODE_ENV: development
+      PORT: 8080
+    working_dir: /app
+    volumes:
+      - ./client:/app
+    links:
+      - server:server
+
+  server:
     depends_on:
       - mysql
     build:
       context: ./
-      dockerfile: app.dockerfile
-    image: rssmonster/app
+      dockerfile: server.dockerfile
+    image: rssmonster/server
     ports:
       - 3000:3000
     environment:
@@ -17,7 +35,9 @@ services:
       DB_PASSWORD: password
       DB_DATABASE: rssmonster
       DB_HOSTNAME: mysql
-    working_dir: /usr/local/rssmonster/server
+    working_dir: /app
+    volumes:
+      - ./server:/app
     env_file:
       - ./server/.env
     links:
