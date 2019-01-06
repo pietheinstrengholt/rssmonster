@@ -159,7 +159,7 @@
         <p class="title">Options</p>
       </div>
       <div class="category-options">
-        <div @click="$store.modal='newcategory'" id="add" class="category-button">
+        <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
             <v-icon name="plus"/>
             <div class="text">Add</div>
@@ -167,7 +167,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed == null)"
-          @click="$store.modal='deletecategory'"
+          @click="emitClickEvent('modal','deletecategory')"
           id="delete"
           class="category-button"
         >
@@ -178,7 +178,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed == null)"
-          @click="$store.modal='renamecategory'"
+          @click="emitClickEvent('modal','renamecategory')"
           id="rename"
           class="category-button"
         >
@@ -189,7 +189,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed != null)"
-          @click="$store.modal='deletefeed'"
+          @click="emitClickEvent('modal','deletefeed')"
           id="delete"
           class="category-button"
         >
@@ -200,7 +200,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed != null)"
-          @click="$store.modal='renamefeed'"
+          @click="emitClickEvent('modal','renamefeed')"
           id="rename"
           class="category-button"
         >
@@ -492,6 +492,9 @@ export default {
       });
   },
   methods: {
+    emitClickEvent(eventType, value) {
+      this.$emit(eventType, value);
+    },
     fetchCategories: function() {
       //get an overview with the count for all feeds
       this.$http
@@ -505,7 +508,7 @@ export default {
           this.$store.readCount = data.readCount;
           this.$store.starCount = data.starCount;
           //update the categories in the store
-          this.$store.categories = data.categories;
+          //this.$store.categories = data.categories;
         });
     },
     loadType: function(status) {
@@ -573,6 +576,7 @@ export default {
   watch: {
     "$store.refreshCategories": {
       handler: function() {
+        console.log('refresh!');
         this.fetchCategories();
       }
     },
