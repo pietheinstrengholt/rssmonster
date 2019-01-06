@@ -331,7 +331,8 @@ export default {
     };
   },
   store: {
-    data: "data"
+    data: "data",
+    categories: "categories"
   },
   methods: {
     checkWebsite: function() {
@@ -413,7 +414,8 @@ export default {
       this.$http.delete("categories/" + this.category.id).then(
         () => {
           //send event to refresh the categories
-          this.$store.refreshCategories++;
+          //this.$store.refreshCategories++;
+          this.$store.categories = this.arrayRemove(this.$store.categories, this.category);
           this.closeModal();
         },
         response => {
@@ -424,6 +426,11 @@ export default {
         }
       );
     },
+    arrayRemove(arr, value) {
+      return arr.filter(function(ele) {
+        return ele != value;
+      });
+    },
     renameCategory: function() {
       //rename category
       this.$http
@@ -432,7 +439,7 @@ export default {
         })
         .then(
           () => {
-            this.$store.refreshCategories++;
+            //this.$store.refreshCategories++;
             this.closeModal();
           },
           response => {
