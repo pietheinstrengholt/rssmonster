@@ -467,16 +467,17 @@ export default {
       );
     },
     renameFeed: function() {
-      //rename category
+      //rename feed
+      console.log(this.feed.feed_name);
       this.$http
-        .put("feeds/" + this.$store.data.feed, {
+        .put("feeds/" + this.feed.id, {
           feed_name: this.feed.feed_name,
           feed_desc: this.feed.feed_desc,
           categoryId: this.category.id
         })
         .then(
-          () => {
-            this.$store.refreshCategories++;
+          (result) => {
+            //this.$store.refreshCategories++;
             this.closeModal();
           },
           response => {
