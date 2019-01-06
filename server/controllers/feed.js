@@ -3,85 +3,85 @@ var request = require("request"); // for fetching the feed
 
 const Feed = require("../models/feed");
 
-exports.getFeeds = (req, res, next) => {
-  Feed.findAll()
-    .then(feeds => {
-      console.log(feeds);
-      res.status(200).json({
-        feeds: feeds
-      });
-    })
-    .catch(err => {
-      console.log(err);
-      return res.status(500).json(err);
+exports.getFeeds = async (req, res, next) => {
+  try {
+    const feeds = await Feed.findAll();
+    return res.status(200).json({
+      feeds: feeds
     });
+  } catch (err) {
+    //return server if something goes wrong
+    console.log(err);
+    return res.status(500).json(err);
+  }
 };
 
-exports.getFeed = (req, res, next) => {
+exports.getFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
-  Feed.findByPk(feedId)
-    .then(feed => {
-      console.log(feed);
-      res.status(200).json({
-        feed: feed
-      });
-    })
-    .catch(err => {
-      console.log(err);
-      return res.status(500).json(err);
+  try {
+    const feed = await Feed.findByPk(feedId);
+    return res.status(200).json({
+      feed: feed
     });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
 };
 
-exports.updateFeed = (req, res, next) => {
+exports.updateFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
   const feed_name = req.body.feed_name;
   const feed_desc = req.body.feed_desc;
   const categoryId = req.body.categoryId;
   const url = req.body.url;
   const favicon = req.body.favicon;
-  Feed.findByPk(feedId)
-    .then(feed => {
-      if (!feed) {
-        return res.status(404).json({
-          message: "Feed not found"
-        });
-      }
-      return feed
+  try {
+    const feed = await Feed.findByPk(feedId);
+    if (!feed) {
+      return res.status(404).json({
+        message: "Feed not found"
+      });
+    }
+    if (feed) {
+      feed
         .update({
           feed_name: req.body.feed_name,
           feed_desc: req.body.feed_desc,
           categoryId: req.body.categoryId,
           url: req.body.url,
           favicon: req.body.favicon
-        })
-        .then(() => res.status(200).json(feed))
-        .catch(error => res.status(400).json(error));
-    })
-    .catch(error => res.status(400).json(error));
-};
-
-exports.deleteFeed = (req, res, next) => {
-  const feedId = req.params.feedId;
-  Feed.findByPk(feedId)
-    .then(feed => {
-      if (!feed) {
-        return res.status(400).json({
-          message: "Feed not found"
         });
-      }
-      return feed
-        .destroy()
-        .then(() =>
-          res.status(204).json({
-            message: "Deleted successfully"
-          })
-        )
-        .catch(error => res.status(400).json(error));
-    })
-    .catch(error => res.status(400).json(error));
+      return res.status(200).json(feed);
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
 };
 
-exports.addFeed = (req, res, next) => {
+exports.deleteFeed = async (req, res, next) => {
+  const feedId = req.params.feedId;
+  try {
+    feed = await Feed.findByPk(feedId);
+    if (!feed) {
+      return res.status(400).json({
+        message: "Feed not found"
+      });
+    }
+    if (feed) {
+      feed.destroy();
+      return res.status(204).json({
+        message: "Deleted successfully"
+      });
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+exports.addFeed = async (req, res, next) => {
   //capture body url
   const url = req.body.url;
   const categoryId = req.body.categoryId;
