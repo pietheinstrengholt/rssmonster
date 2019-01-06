@@ -89,7 +89,7 @@ exports.deleteCategory = async (req, res, next) => {
       });
     } else {
       category.destroy();
-      return es.status(204).json({
+      return res.status(204).json({
         message: "Deleted successfully."
       });
     }
