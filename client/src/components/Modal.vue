@@ -323,12 +323,22 @@ div.modal-dialog {
 
 <script>
 export default {
-  props: ["modal", "feed", "category"],
+  props: ["modal", "inputCategory", "inputFeed"],
   data() {
     return {
       ajaxRequest: false,
-      error_msg: ""
+      error_msg: "",
+      category: {},
+      feed: {}
     };
+  },
+  watch: {
+    inputCategory() {
+      this.category = JSON.parse(JSON.stringify(this.inputCategory));
+    },
+    inputFeed() {
+      this.feed = JSON.parse(JSON.stringify(this.inputFeed));
+    }
   },
   store: {
     data: "data",
@@ -394,11 +404,10 @@ export default {
       if (this.category) {
         this.$http.post("categories", { name: this.category.name }).then(
           result => {
-            //send event to refresh the categories
-            //this.$store.refreshCategories++;
-            this.closeModal();
-            //push category to categories in store
+            //push the new category to categories in store
             this.$store.categories.push(result.data);
+            //close the modal
+            this.closeModal();
           },
           response => {
             /* eslint-disable no-console */
@@ -413,9 +422,12 @@ export default {
       //delete category
       this.$http.delete("categories/" + this.category.id).then(
         () => {
-          //send event to refresh the categories
-          //this.$store.refreshCategories++;
-          this.$store.categories = this.arrayRemove(this.$store.categories, this.category);
+          //remove the category from the store
+          this.$store.categories = this.arrayRemove(
+            this.$store.categories,
+            this.inputCategory
+          );
+          //close the modal
           this.closeModal();
         },
         response => {
@@ -427,6 +439,7 @@ export default {
       );
     },
     arrayRemove(arr, value) {
+      //filter function to remove item from an array
       return arr.filter(function(ele) {
         return ele != value;
       });
@@ -438,8 +451,14 @@ export default {
           name: this.category.name
         })
         .then(
-          () => {
-            //this.$store.refreshCategories++;
+          result => {
+            //find the index of the category
+            var index = this.$store.categories.indexOf(this.inputCategory);
+
+            //update the store with the returned name of the category
+            this.$store.categories[index].name = result.data.name;
+
+            //close the modal
             this.closeModal();
           },
           response => {
@@ -452,10 +471,22 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      this.$http.delete("feeds/" + this.$store.data.feed).then(
-        () => {
-          //send event to refresh the categories
-          this.$store.refreshCategories++;
+      console.log(this.feed.id);
+      this.$http.delete("feeds/" + this.feed.id).then(
+        (result) => {
+          console.log(result);
+          //find the index of both the category and feed
+          var indexCategory = this.$store.categories.indexOf(
+            this.inputCategory
+          );
+
+          //remove the category from the store
+          this.$store.categories[indexCategory].feeds = this.arrayRemove(
+            this.$store.categories[indexCategory].feeds,
+            this.inputFeed
+          );
+
+          //close the modal
           this.closeModal();
         },
         response => {
@@ -468,7 +499,6 @@ export default {
     },
     renameFeed: function() {
       //rename feed
-      console.log(this.feed.feed_name);
       this.$http
         .put("feeds/" + this.feed.id, {
           feed_name: this.feed.feed_name,
@@ -476,8 +506,24 @@ export default {
           categoryId: this.category.id
         })
         .then(
-          (result) => {
-            //this.$store.refreshCategories++;
+          result => {
+            //find the index of both the category and feed
+            var indexCategory = this.$store.categories.indexOf(
+              this.inputCategory
+            );
+            var indexFeed = this.$store.categories[indexCategory].feeds.indexOf(
+              this.inputFeed
+            );
+
+            //update the feed in the store with the results from the api
+            this.$store.categories[indexCategory].feeds[indexFeed].feed_name =
+              result.data.feed_name;
+            this.$store.categories[indexCategory].feeds[indexFeed].feed_desc =
+              result.data.feed_desc;
+            this.$store.categories[indexCategory].feeds[indexFeed].categoryId =
+              result.data.categoryId;
+
+            //close the modal
             this.closeModal();
           },
           response => {

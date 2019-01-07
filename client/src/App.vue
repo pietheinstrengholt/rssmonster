@@ -11,7 +11,7 @@
       </div>
     </div>
     <!-- Modal -->
-    <app-modal @modal="modalClick" :modal="modal" :feed="feed" :category="category"></app-modal>
+    <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
   </div>
 </template>
 
