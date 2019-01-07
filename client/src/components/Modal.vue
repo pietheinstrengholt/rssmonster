@@ -333,6 +333,8 @@ export default {
       feed: {}
     };
   },
+  //watchers are used to avoid two way binding.
+  //we working on a copy and only update the store once we know for sure the api has returned a 200 status.
   watch: {
     inputCategory() {
       this.category = JSON.parse(JSON.stringify(this.inputCategory));
@@ -347,6 +349,7 @@ export default {
   },
   methods: {
     checkWebsite: function() {
+      //set ajaxRequest to true so the please wait shows up the screen
       this.ajaxRequest = true;
 
       this.$http
@@ -382,6 +385,7 @@ export default {
       this.ajaxRequest = false;
     },
     closeModal: function() {
+      //set error_msg and url back to normal
       this.error_msg = "";
       this.url = "";
       this.emitClickEvent("modal", null);

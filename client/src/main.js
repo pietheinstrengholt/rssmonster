@@ -43,8 +43,6 @@ new Vue({
 				search: null,
 				refresh: 0
 			},
-			modal: false,
-			refreshCategories: 0,
 			categories: [],
 			unreadCount: 0,
 			readCount: 0,

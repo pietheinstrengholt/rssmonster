@@ -474,23 +474,6 @@ export default {
   components: {
     draggable
   },
-  beforeCreate() {
-    //get an overview with the count for all feeds
-    this.$http
-      .get("manager/overview")
-      .then(response => {
-        return response.json();
-      })
-      .then(data => {
-        //update the store counts
-        this.$store.unreadCount = data.unreadCount;
-        this.$store.readCount = data.readCount;
-        this.$store.starCount = data.starCount;
-
-        //update the categories in the store
-        this.$store.categories = data.categories;
-      });
-  },
   methods: {
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);

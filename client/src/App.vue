@@ -117,7 +117,25 @@ export default {
   store: {
     data: "data"
   },
+  beforeCreate() {
+    //get an overview with the count for all feeds
+    this.$http
+      .get("manager/overview")
+      .then(response => {
+        return response.json();
+      })
+      .then(data => {
+        //update the store counts
+        this.$store.unreadCount = data.unreadCount;
+        this.$store.readCount = data.readCount;
+        this.$store.starCount = data.starCount;
+
+        //update the categories in the store
+        this.$store.categories = data.categories;
+      });
+  },
   created: function() {
+    //add metadata properties to document
     document.title = "RSSMonster";
     document.head.querySelector("meta[name=viewport]").content =
       "width=device-width, initial-scale=1";
@@ -149,11 +167,11 @@ export default {
       }
     }
   },
-  //watch the store.data.category, update the category name, needed for model input dialog
+  //watch the store.data, set local data (category, feed) based on current selection
   watch: {
     "$store.data": {
       handler: function(data) {
-        //set the feed to empty when the store changes
+        //set the feed to empty when the store changes, e.g. change can be that only a category is selected
         this.feed = {};
 
         //lookup category name based on the categoryId received
