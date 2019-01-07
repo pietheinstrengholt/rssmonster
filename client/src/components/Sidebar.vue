@@ -469,7 +469,6 @@ export default {
   },
   store: {
     data: "data",
-    refreshCategories: "refreshCategories",
     categories: "categories"
   },
   components: {
@@ -487,6 +486,7 @@ export default {
         this.$store.unreadCount = data.unreadCount;
         this.$store.readCount = data.readCount;
         this.$store.starCount = data.starCount;
+
         //update the categories in the store
         this.$store.categories = data.categories;
       });
@@ -494,22 +494,6 @@ export default {
   methods: {
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
-    },
-    fetchCategories: function() {
-      //get an overview with the count for all feeds
-      this.$http
-        .get("manager/overview")
-        .then(response => {
-          return response.json();
-        })
-        .then(data => {
-          //update the store counts
-          this.$store.unreadCount = data.unreadCount;
-          this.$store.readCount = data.readCount;
-          this.$store.starCount = data.starCount;
-          //update the categories in the store
-          //this.$store.categories = data.categories;
-        });
     },
     loadType: function(status) {
       this.$store.data.status = status;
@@ -574,12 +558,6 @@ export default {
   },
   //watch the refreshCategories, when changing, reload the categories
   watch: {
-    "$store.refreshCategories": {
-      handler: function() {
-        console.log('refresh!');
-        this.fetchCategories();
-      }
-    },
     composedSum: function(val) {
       this.$store.composedSum = val;
     }

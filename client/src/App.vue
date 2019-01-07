@@ -115,12 +115,7 @@ export default {
     appModal: Modal
   },
   store: {
-    data: "data",
-    //modal: "modal",
-    refreshCategories: "refreshCategories"
-  },
-  props: {
-    //modal: 'test'
+    data: "data"
   },
   created: function() {
     document.title = "RSSMonster";
@@ -131,11 +126,6 @@ export default {
   },
   data() {
     return {
-      debug: true,
-      domain: "",
-      ajaxRequest: false,
-      postResults: [],
-      error_msg: "",
       category: {},
       feed: {},
       modal: null
@@ -144,11 +134,10 @@ export default {
   methods: {
     closeModal: function() {
       this.error_msg = "";
-      this.$store.modal = false;
+      this.modal = false;
     },
     modalClick: function(value) {
       this.modal = value;
-      //console.log(this.modal);
     },
     lookupFeedById: function(feedId) {
       for (var x = 0; x < this.$store.categories.length; x++) {
@@ -183,8 +172,6 @@ export default {
     },
     "$store.data.category": {
       handler: function() {
-        //TODO: fix closing the modal when adding new feed and changing the category
-        //this.closeModal();
         this.feed = {};
       }
     },

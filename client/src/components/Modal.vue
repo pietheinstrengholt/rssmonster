@@ -328,6 +328,7 @@ export default {
     return {
       ajaxRequest: false,
       error_msg: "",
+      url: null,
       category: {},
       feed: {}
     };
@@ -351,26 +352,38 @@ export default {
       this.$http
         .post("feeds", { url: this.url, categoryId: this.category.id })
         .then(
-          response => {
+          result => {
             /* eslint-disable no-console */
-            console.log(response.status);
+            console.log(result.status);
             /* eslint-enable no-console */
             this.error_msg = "";
-            this.feed = response.body;
+            this.feed = result.body;
+
+            //add missing count properties, since these are populated dynamically
+            this.feed.unreadCount = 0;
+            this.feed.readCount = 0;
+            this.feed.starCount = 0;
+
+            //find the index of the category
+            var index = this.$store.categories.indexOf(this.inputCategory);
+            //push the new feed to the store
+            this.$store.categories[index].feeds.push(this.feed);
           },
           response => {
             this.error_msg = response.body.error_msg;
           }
         )
         .catch(err => {
+          /* eslint-disable no-console */
           console.log(err);
+          /* eslint-enable no-console */
         });
 
       this.ajaxRequest = false;
     },
     closeModal: function() {
       this.error_msg = "";
-      //this.$store.modal = false;
+      this.url = "";
       this.emitClickEvent("modal", null);
     },
     emitClickEvent(eventType, value) {
@@ -384,9 +397,9 @@ export default {
           categoryId: this.category.id
         })
         .then(
-          response => {
+          result => {
             /* eslint-disable no-console */
-            console.log(response.status);
+            console.log(result.status);
             /* eslint-enable no-console */
           },
           response => {
@@ -407,8 +420,17 @@ export default {
       if (this.category) {
         this.$http.post("categories", { name: this.category.name }).then(
           result => {
+            //create new local category in data object
+            this.category = result.body;
+
+            //add missing count properties, since these are populated dynamically
+            this.category.unreadCount = 0;
+            this.category.readCount = 0;
+            this.category.starCount = 0;
+
             //push the new category to categories in store
             this.$store.categories.push(result.data);
+
             //close the modal
             this.closeModal();
           },
@@ -474,10 +496,8 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      console.log(this.feed.id);
       this.$http.delete("feeds/" + this.feed.id).then(
-        result => {
-          console.log(result);
+        () => {
           //find the index of both the category and feed
           var indexCategory = this.$store.categories.indexOf(
             this.inputCategory
