@@ -2,6 +2,7 @@ var FeedParser = require("feedparser");
 var request = require("request"); // for fetching the feed
 
 const Feed = require("../models/feed");
+const Article = require("../models/article");
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -70,6 +71,13 @@ exports.deleteFeed = async (req, res, next) => {
       });
     }
     if (feed) {
+      //delete all articles
+      Article.destroy({
+        where: {
+          feedId: feed.id
+        }
+      });
+      //delete feed
       feed.destroy();
       return res.status(204).json({
         message: "Deleted successfully"
