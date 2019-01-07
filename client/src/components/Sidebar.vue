@@ -15,7 +15,7 @@
         </div>
       </div>
       <div>
-        <div @click="$store.modal='newfeed'" class="option" id="addnew">
+        <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
           <span class="glyphicon">
             <v-icon name="plus"/>
           </span>Add new feed
@@ -159,7 +159,7 @@
         <p class="title">Options</p>
       </div>
       <div class="category-options">
-        <div @click="$store.modal='newcategory'" id="add" class="category-button">
+        <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
             <v-icon name="plus"/>
             <div class="text">Add</div>
@@ -167,7 +167,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed == null)"
-          @click="$store.modal='deletecategory'"
+          @click="emitClickEvent('modal','deletecategory')"
           id="delete"
           class="category-button"
         >
@@ -178,7 +178,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed == null)"
-          @click="$store.modal='renamecategory'"
+          @click="emitClickEvent('modal','renamecategory')"
           id="rename"
           class="category-button"
         >
@@ -189,7 +189,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed != null)"
-          @click="$store.modal='deletefeed'"
+          @click="emitClickEvent('modal','deletefeed')"
           id="delete"
           class="category-button"
         >
@@ -200,7 +200,7 @@
         </div>
         <div
           v-if="($store.data.category != null) && ($store.data.feed != null)"
-          @click="$store.modal='renamefeed'"
+          @click="emitClickEvent('modal','renamefeed')"
           id="rename"
           class="category-button"
         >
@@ -469,7 +469,6 @@ export default {
   },
   store: {
     data: "data",
-    refreshCategories: "refreshCategories",
     categories: "categories"
   },
   components: {
@@ -487,26 +486,14 @@ export default {
         this.$store.unreadCount = data.unreadCount;
         this.$store.readCount = data.readCount;
         this.$store.starCount = data.starCount;
+
         //update the categories in the store
         this.$store.categories = data.categories;
       });
   },
   methods: {
-    fetchCategories: function() {
-      //get an overview with the count for all feeds
-      this.$http
-        .get("manager/overview")
-        .then(response => {
-          return response.json();
-        })
-        .then(data => {
-          //update the store counts
-          this.$store.unreadCount = data.unreadCount;
-          this.$store.readCount = data.readCount;
-          this.$store.starCount = data.starCount;
-          //update the categories in the store
-          this.$store.categories = data.categories;
-        });
+    emitClickEvent(eventType, value) {
+      this.$emit(eventType, value);
     },
     loadType: function(status) {
       this.$store.data.status = status;
@@ -571,11 +558,6 @@ export default {
   },
   //watch the refreshCategories, when changing, reload the categories
   watch: {
-    "$store.refreshCategories": {
-      handler: function() {
-        this.fetchCategories();
-      }
-    },
     composedSum: function(val) {
       this.$store.composedSum = val;
     }

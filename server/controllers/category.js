@@ -88,6 +88,13 @@ exports.deleteCategory = async (req, res, next) => {
         message: "Category not found."
       });
     } else {
+      //delete all feeds
+      Feed.destroy({
+        where: {
+          categoryId: category.id
+        }
+      });
+      //delete category
       category.destroy();
       return res.status(204).json({
         message: "Deleted successfully."
