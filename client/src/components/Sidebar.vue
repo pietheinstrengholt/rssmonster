@@ -15,7 +15,7 @@
         </div>
       </div>
       <div>
-        <div @click="$store.modal='newfeed'" class="option" id="addnew">
+        <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
           <span class="glyphicon">
             <v-icon name="plus"/>
           </span>Add new feed
