@@ -103,7 +103,7 @@ exports.addFeed = async (req, res, next) => {
     //validate if the url is responding, if not return an error
     req.on("error", function (error) {
       return res.status(400).json({
-        error: error
+        error_msg: error
       });
     });
 
@@ -149,7 +149,7 @@ exports.addFeed = async (req, res, next) => {
             });
         } else {
           return res.status(402).json({
-            msg: 'Feed already exists.'
+            error_msg: 'Feed already exists.'
           });
         }
       });
@@ -157,7 +157,7 @@ exports.addFeed = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     return res.status(500).json({
-      error: 'internal processing error!'
+      error_msg: '' + err
     });
   }
 };

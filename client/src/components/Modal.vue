@@ -359,9 +359,12 @@ export default {
             this.feed = response.body;
           },
           response => {
-            this.error_msg = response.body.message;
+            this.error_msg = response.body.error_msg;
           }
-        );
+        )
+        .catch(err => {
+          console.log(err);
+        });
 
       this.ajaxRequest = false;
     },
@@ -473,7 +476,7 @@ export default {
       //delete category
       console.log(this.feed.id);
       this.$http.delete("feeds/" + this.feed.id).then(
-        (result) => {
+        result => {
           console.log(result);
           //find the index of both the category and feed
           var indexCategory = this.$store.categories.indexOf(
