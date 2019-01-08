@@ -6,6 +6,7 @@ const Article = require("../models/article");
 
 var FeedParser = require("feedparser");
 var request = require("request"); // for fetching the feed
+var zlib = require('zlib');
 
 exports.crawl = async (req, res, next) => {
   try {
