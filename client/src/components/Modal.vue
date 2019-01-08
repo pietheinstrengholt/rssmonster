@@ -36,7 +36,7 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="store.data.category">
+                      <select class="form-control" id="category" v-model="store.currentSelection.category">
                         <option
                           v-for="category in this.store.categories"
                           :value="category.id"
@@ -151,7 +151,7 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="store.data.category">
+                      <select class="form-control" id="category" v-model="store.currentSelection.category">
                         <option
                           v-for="category in this.store.categories"
                           :value="category.id"
@@ -167,7 +167,7 @@
               <div class="modal-body" id="mobile" v-if="modal==='showcategories'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
-                  <li class="category" v-on:click="store.data.category = null">
+                  <li class="category" v-on:click="store.currentSelection.category = null">
                     <span class="glyphicon">
                       <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
                     </span>
@@ -175,7 +175,7 @@
                   </li>
                   <li
                     class="category"
-                    v-on:click="store.data.category = category.id"
+                    v-on:click="store.currentSelection.category = category.id"
                     v-for="category in store.categories"
                     :key="category.id"
                     v-bind:id="category.id"
@@ -188,12 +188,12 @@
                 </ul>
                 <p>Select how the articles should be displayed</p>
                 <button
-                  @click="store.data.filter = 'full'"
+                  @click="store.filter = 'full'"
                   type="button"
                   class="btn btn-primary content"
                 >Full content</button>
                 <button
-                  @click="store.data.filter = 'minimal'"
+                  @click="store.filter = 'minimal'"
                   type="button"
                   class="btn btn-primary content"
                 >Minimal content</button>
@@ -475,7 +475,7 @@ export default {
     renameCategory: function() {
       //rename category
       this.$http
-        .put("categories/" + this.store.data.category, {
+        .put("categories/" + this.store.currentSelection.category, {
           name: this.category.name
         })
         .then(

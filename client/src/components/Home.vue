@@ -2,7 +2,7 @@
   <div id="main">
     <div class="subscribe-toolbar">
       <div class="status-toolbar" @click="toggleShowStatus">
-        <p id="status">{{ this.store.data.status | capitalize }}</p>
+        <p id="status">{{ this.store.currentSelection.status | capitalize }}</p>
       </div>
       <div v-if="showStatusMenu" class="dropdownmenu" id="status">
         <div class="item" href="#" @click="statusClicked('unread')">
@@ -16,7 +16,7 @@
         </div>
       </div>
       <div class="status-toolbar" @click="toggleShowFilter">
-        <p id="filter">{{ this.store.data.filter | capitalize }}</p>
+        <p id="filter">{{ this.store.filter | capitalize }}</p>
       </div>
       <div v-if="showFilterMenu" class="dropdownmenu" id="filter">
         <div class="item" href="#" @click="filterClicked('full')">
@@ -69,11 +69,11 @@
           </div>
 
           <div
-            v-if="store.data.filter === 'full'"
+            v-if="store.filter === 'full'"
             class="article-content"
             v-html="article.content"
           ></div>
-          <div v-if="store.data.filter === 'minimal'" class="article-content">
+          <div v-if="store.filter === 'minimal'" class="article-content">
             <p>{{ article.content | stripHTML }}</p>
           </div>
         </div>
@@ -354,7 +354,7 @@ export default {
   },
   //watch the data store, when changing reload the article details
   watch: {
-    "store.data": {
+    "store.currentSelection": {
       handler: function(data) {
         this.$http
           .get("articles", {
@@ -495,7 +495,7 @@ export default {
       });
     },
     markArticleRead(article) {
-      if (this.store.data.status === "unread") {
+      if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
         this.$http.post("manager/marktoread/" + article).then(
           response => {
@@ -598,7 +598,7 @@ export default {
     },
     emitSearchEvent: function() {
       if (!(this.search === undefined || this.search === null)) {
-        this.store.data.search = this.search;
+        this.store.currentSelection.search = this.search;
       }
     },
     toggleShowStatus: function() {
@@ -608,11 +608,11 @@ export default {
       this.showFilterMenu = !this.showFilterMenu;
     },
     statusClicked: function(status) {
-      this.store.data.status = status;
+      this.store.currentSelection.status = status;
       this.toggleShowStatus();
     },
     filterClicked: function(filter) {
-      this.store.data.filter = filter;
+      this.store.filter = filter;
       this.toggleShowFilter();
     }
   },

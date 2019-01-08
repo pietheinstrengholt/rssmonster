@@ -167,9 +167,9 @@ export default {
       }
     }
   },
-  //watch the store.data, set local data (category, feed) based on current selection
+  //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
-    "store.data": {
+    "store.currentSelection": {
       handler: function(data) {
         //set the feed to empty when the store changes, e.g. change can be that only a category is selected
         this.feed = {};
@@ -188,22 +188,22 @@ export default {
       },
       deep: true
     },
-    "store.data.category": {
+    "store.currentSelection.category": {
       handler: function() {
         this.feed = {};
       }
     },
-    "store.data.feed": {
+    "store.currentSelection.feed": {
       handler: function() {
         this.closeModal();
       }
     },
-    "store.data.filter": {
+    "store.currentSelection.filter": {
       handler: function() {
         this.closeModal();
       }
     },
-    "store.data.status": {
+    "store.currentSelection.status": {
       handler: function() {
         this.closeModal();
       }

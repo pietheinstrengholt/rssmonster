@@ -1,12 +1,11 @@
 export default {
-    data: {
-        filter: 'full',
+    currentSelection: {
         status: 'unread',
         category: null,
         feed: null,
-        search: null,
-        refresh: 0
+        search: null
     },
+    filter: 'full',
     categories: [],
     unreadCount: 0,
     readCount: 0,

@@ -10,7 +10,7 @@
     ></a>
     <a
       v-on:click="loadType('unread')"
-      v-bind:class="{ 'selected':  store.data.status === 'unread' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
       id="unread"
       class="view-button"
       title="View unread"
@@ -23,7 +23,7 @@
     </a>
     <a
       v-on:click="loadType('read')"
-      v-bind:class="{ 'selected':  store.data.status === 'read' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
       id="read"
       class="view-button selected"
       title="View read"
@@ -36,7 +36,7 @@
     </a>
     <a
       v-on:click="loadType('star')"
-      v-bind:class="{ 'selected':  store.data.status === 'star' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
       id="star"
       class="view-button"
       title="View starred"
@@ -68,7 +68,7 @@ export default {
   },
   methods: {
     loadType: function(status) {
-      this.store.data.status = status;
+      this.store.currentSelection.status = status;
     }
   }
 };
