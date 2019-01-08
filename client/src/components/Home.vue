@@ -412,7 +412,8 @@ export default {
         document.documentElement.offsetHeight;
 
       if (bottomOfWindow) {
-        this.flushPool();
+        //TODO: fix only marking the articles on the screen or loaded and reaching the end of the queue
+        //this.flushPool();
       }
     },
     infiniteHandler($state) {
