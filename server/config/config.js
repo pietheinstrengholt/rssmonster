@@ -6,7 +6,9 @@ module.exports = {
     password: process.env.DB_PASSWORD || 'password',
     database: process.env.DB_DATABASE || 'rssmonster',
     host: process.env.DB_HOSTNAME || 'localhost',
-    dialect: 'mysql'
+    dialect: 'mysql',
+    charset: "utf8mb4",
+    collate: "utf8mb4_general_ci"
   },
   test: {
     username: 'database_test',
@@ -20,6 +22,8 @@ module.exports = {
     password: process.env.DB_PASSWORD,
     database: process.env.DB_DATABASE,
     host: process.env.DB_HOSTNAME,
-    dialect: 'mysql'
+    dialect: 'mysql',
+    charset: "utf8mb4",
+    collate: "utf8mb4_general_ci"
   }
 };

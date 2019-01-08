@@ -9,8 +9,6 @@ const config = require(path.join(__dirname + "/../config/config.js"))[env];
 if (config.use_env_variable) {
   var sequelize = new Sequelize(process.env[config.use_env_variable], config, {
     define: {
-      charset: "utf8",
-      collate: "utf8_general_ci",
       timestamps: true
     },
     logging: false
@@ -23,8 +21,6 @@ if (config.use_env_variable) {
     config,
     {
       define: {
-        charset: "utf8",
-        collate: "utf8_general_ci",
         timestamps: true
       },
       logging: false
