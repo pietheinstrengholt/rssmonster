@@ -33,23 +33,6 @@ Vue.use(VueStash);
 
 new Vue({
 	el: '#app',
-	data: {
-		store: {
-			data: {
-				filter: 'full',
-				status: 'unread',
-				category: null,
-				feed: null,
-				search: null,
-				refresh: 0
-			},
-			categories: [],
-			unreadCount: 0,
-			readCount: 0,
-			starCount: 0
-		},
-		baseUrl: null
-	},
 	render: h => h(App)
 });
 

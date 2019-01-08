@@ -25,7 +25,7 @@
               </div>
 
               <div class="modal-body" v-if="modal==='newfeed'">
-                <div v-if="this.$store.categories.length > 0">
+                <div v-if="this.store.categories.length > 0">
                   <input
                     class="form-control form-control-lg"
                     type="text"
@@ -36,9 +36,9 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="$store.data.category">
+                      <select class="form-control" id="category" v-model="store.data.category">
                         <option
-                          v-for="category in this.$store.categories"
+                          v-for="category in this.store.categories"
                           :value="category.id"
                           :key="category.id"
                           v-bind:id="category.id"
@@ -132,7 +132,7 @@
                     >
                   </div>
                 </div>
-                <div v-if="this.$store.categories.length > 0">
+                <div v-if="this.store.categories.length > 0">
                   <div class="form-group row">
                     <label
                       for="inputFeedDescription"
@@ -151,9 +151,9 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="$store.data.category">
+                      <select class="form-control" id="category" v-model="store.data.category">
                         <option
-                          v-for="category in this.$store.categories"
+                          v-for="category in this.store.categories"
                           :value="category.id"
                           :key="category.id"
                           v-bind:id="category.id"
@@ -167,7 +167,7 @@
               <div class="modal-body" id="mobile" v-if="modal==='showcategories'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
-                  <li class="category" v-on:click="$store.data.category = null">
+                  <li class="category" v-on:click="store.data.category = null">
                     <span class="glyphicon">
                       <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
                     </span>
@@ -175,8 +175,8 @@
                   </li>
                   <li
                     class="category"
-                    v-on:click="$store.data.category = category.id"
-                    v-for="category in $store.categories"
+                    v-on:click="store.data.category = category.id"
+                    v-for="category in store.categories"
                     :key="category.id"
                     v-bind:id="category.id"
                   >
@@ -188,12 +188,12 @@
                 </ul>
                 <p>Select how the articles should be displayed</p>
                 <button
-                  @click="$store.data.filter = 'full'"
+                  @click="store.data.filter = 'full'"
                   type="button"
                   class="btn btn-primary content"
                 >Full content</button>
                 <button
-                  @click="$store.data.filter = 'minimal'"
+                  @click="store.data.filter = 'minimal'"
                   type="button"
                   class="btn btn-primary content"
                 >Minimal content</button>
@@ -322,10 +322,13 @@ div.modal-dialog {
 </style>
 
 <script>
+import store from '../store';
+
 export default {
   props: ["modal", "inputCategory", "inputFeed"],
   data() {
     return {
+      store: store,
       ajaxRequest: false,
       error_msg: "",
       url: null,
@@ -342,10 +345,6 @@ export default {
     inputFeed() {
       this.feed = JSON.parse(JSON.stringify(this.inputFeed));
     }
-  },
-  store: {
-    data: "data",
-    categories: "categories"
   },
   methods: {
     checkWebsite: function() {
@@ -368,9 +367,9 @@ export default {
             this.feed.starCount = 0;
 
             //find the index of the category
-            var index = this.$store.categories.indexOf(this.inputCategory);
+            var index = this.store.categories.indexOf(this.inputCategory);
             //push the new feed to the store
-            this.$store.categories[index].feeds.push(this.feed);
+            this.store.categories[index].feeds.push(this.feed);
           },
           response => {
             this.error_msg = response.body.error_msg;
@@ -414,7 +413,7 @@ export default {
         );
 
       //send event to refresh the categories
-      this.$store.refreshCategories++;
+      this.store.refreshCategories++;
 
       //close modal
       this.closeModal();
@@ -433,7 +432,7 @@ export default {
             this.category.starCount = 0;
 
             //push the new category to categories in store
-            this.$store.categories.push(result.data);
+            this.store.categories.push(result.data);
 
             //close the modal
             this.closeModal();
@@ -452,8 +451,8 @@ export default {
       this.$http.delete("categories/" + this.category.id).then(
         () => {
           //remove the category from the store
-          this.$store.categories = this.arrayRemove(
-            this.$store.categories,
+          this.store.categories = this.arrayRemove(
+            this.store.categories,
             this.inputCategory
           );
           //close the modal
@@ -476,16 +475,16 @@ export default {
     renameCategory: function() {
       //rename category
       this.$http
-        .put("categories/" + this.$store.data.category, {
+        .put("categories/" + this.store.data.category, {
           name: this.category.name
         })
         .then(
           result => {
             //find the index of the category
-            var index = this.$store.categories.indexOf(this.inputCategory);
+            var index = this.store.categories.indexOf(this.inputCategory);
 
             //update the store with the returned name of the category
-            this.$store.categories[index].name = result.data.name;
+            this.store.categories[index].name = result.data.name;
 
             //close the modal
             this.closeModal();
@@ -503,13 +502,13 @@ export default {
       this.$http.delete("feeds/" + this.feed.id).then(
         () => {
           //find the index of both the category and feed
-          var indexCategory = this.$store.categories.indexOf(
+          var indexCategory = this.store.categories.indexOf(
             this.inputCategory
           );
 
           //remove the category from the store
-          this.$store.categories[indexCategory].feeds = this.arrayRemove(
-            this.$store.categories[indexCategory].feeds,
+          this.store.categories[indexCategory].feeds = this.arrayRemove(
+            this.store.categories[indexCategory].feeds,
             this.inputFeed
           );
 
@@ -535,19 +534,19 @@ export default {
         .then(
           result => {
             //find the index of both the category and feed
-            var indexCategory = this.$store.categories.indexOf(
+            var indexCategory = this.store.categories.indexOf(
               this.inputCategory
             );
-            var indexFeed = this.$store.categories[indexCategory].feeds.indexOf(
+            var indexFeed = this.store.categories[indexCategory].feeds.indexOf(
               this.inputFeed
             );
 
             //update the feed in the store with the results from the api
-            this.$store.categories[indexCategory].feeds[indexFeed].feed_name =
+            this.store.categories[indexCategory].feeds[indexFeed].feed_name =
               result.data.feed_name;
-            this.$store.categories[indexCategory].feeds[indexFeed].feed_desc =
+            this.store.categories[indexCategory].feeds[indexFeed].feed_desc =
               result.data.feed_desc;
-            this.$store.categories[indexCategory].feeds[indexFeed].categoryId =
+            this.store.categories[indexCategory].feeds[indexFeed].categoryId =
               result.data.categoryId;
 
             //close the modal
