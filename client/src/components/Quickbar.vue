@@ -1,7 +1,7 @@
 <template>
   <div class="quickbar view-toolbar">
     <a
-      @click="$store.modal='showcategories'"
+      @click="store.modal='showcategories'"
       id="rssmonster"
       class="view-button"
       data-behavior="view_unread change_view_mode"
@@ -10,7 +10,7 @@
     ></a>
     <a
       v-on:click="loadType('unread')"
-      v-bind:class="{ 'selected':  $store.data.status === 'unread' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
       id="unread"
       class="view-button"
       title="View unread"
@@ -19,11 +19,11 @@
       data-remote="true"
     >
       <i class="fas fa-circle" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Unread {{ this.$store.unreadCount }}
+      Unread {{ this.store.unreadCount }}
     </a>
     <a
       v-on:click="loadType('read')"
-      v-bind:class="{ 'selected':  $store.data.status === 'read' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
       id="read"
       class="view-button selected"
       title="View read"
@@ -32,11 +32,11 @@
       data-remote="true"
     >
       <i class="far fa-circle" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Read {{ this.$store.readCount }}
+      Read {{ this.store.readCount }}
     </a>
     <a
       v-on:click="loadType('star')"
-      v-bind:class="{ 'selected':  $store.data.status === 'star' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
       id="star"
       class="view-button"
       title="View starred"
@@ -45,7 +45,7 @@
       data-remote="true"
     >
       <i class="far fa-heart" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Star {{ this.$store.starCount }}
+      Star {{ this.store.starCount }}
     </a>
   </div>
 </template>
@@ -58,13 +58,17 @@ div.quickbar a {
 </style>
 
 <script>
+import store from '../store';
+
 export default {
-  store: {
-    data: "data"
+  data() {
+    return {
+      store: store
+    };
   },
   methods: {
     loadType: function(status) {
-      this.$store.data.status = status;
+      this.store.currentSelection.status = status;
     }
   }
 };

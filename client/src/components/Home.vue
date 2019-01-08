@@ -2,7 +2,7 @@
   <div id="main">
     <div class="subscribe-toolbar">
       <div class="status-toolbar" @click="toggleShowStatus">
-        <p id="status">{{ this.$store.data.status | capitalize }}</p>
+        <p id="status">{{ this.store.currentSelection.status | capitalize }}</p>
       </div>
       <div v-if="showStatusMenu" class="dropdownmenu" id="status">
         <div class="item" href="#" @click="statusClicked('unread')">
@@ -16,7 +16,7 @@
         </div>
       </div>
       <div class="status-toolbar" @click="toggleShowFilter">
-        <p id="filter">{{ this.$store.data.filter | capitalize }}</p>
+        <p id="filter">{{ this.store.filter | capitalize }}</p>
       </div>
       <div v-if="showFilterMenu" class="dropdownmenu" id="filter">
         <div class="item" href="#" @click="filterClicked('full')">
@@ -69,11 +69,11 @@
           </div>
 
           <div
-            v-if="$store.data.filter === 'full'"
+            v-if="store.filter === 'full'"
             class="article-content"
             v-html="article.content"
           ></div>
-          <div v-if="$store.data.filter === 'minimal'" class="article-content">
+          <div v-if="store.filter === 'minimal'" class="article-content">
             <p>{{ article.content | stripHTML }}</p>
           </div>
         </div>
@@ -326,14 +326,15 @@ div.infinite-loading-container {
 </style>
 
 <script>
-import InfiniteLoading from "vue-infinite-loading";
 require("waypoints/lib/noframework.waypoints.js");
-
+import InfiniteLoading from "vue-infinite-loading";
 import moment from "moment";
+import store from '../store';
 
 export default {
   data() {
     return {
+      store: store,
       distance: 0,
       //amount of article leaded at once
       fetchCount: 20,
@@ -351,13 +352,9 @@ export default {
       firstLoad: false
     };
   },
-  store: {
-    data: "data",
-    categories: "categories"
-  },
   //watch the data store, when changing reload the article details
   watch: {
-    "$store.data": {
+    "store.currentSelection": {
       handler: function(data) {
         this.$http
           .get("articles", {
@@ -498,7 +495,7 @@ export default {
       });
     },
     markArticleRead(article) {
-      if (this.$store.data.status === "unread") {
+      if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
         this.$http.post("manager/marktoread/" + article).then(
           response => {
@@ -507,28 +504,28 @@ export default {
               this.pool.push(article);
 
               //decrease the unread count
-              var categoryIndex = this.$store.categories.findIndex(
+              var categoryIndex = this.store.categories.findIndex(
                 category => category.id === response.body.feed.categoryId
               );
-              this.$store.categories[categoryIndex].unreadCount =
-                this.$store.categories[categoryIndex].unreadCount - 1;
-              this.$store.categories[categoryIndex].readCount =
-                this.$store.categories[categoryIndex].readCount + 1;
-              var feedIndex = this.$store.categories[
+              this.store.categories[categoryIndex].unreadCount =
+                this.store.categories[categoryIndex].unreadCount - 1;
+              this.store.categories[categoryIndex].readCount =
+                this.store.categories[categoryIndex].readCount + 1;
+              var feedIndex = this.store.categories[
                 categoryIndex
               ].feeds.findIndex(feed => feed.id === response.body.feedId);
-              this.$store.categories[categoryIndex].feeds[
+              this.store.categories[categoryIndex].feeds[
                 feedIndex
               ].unreadCount =
-                this.$store.categories[categoryIndex].feeds[feedIndex]
+                this.store.categories[categoryIndex].feeds[feedIndex]
                   .unreadCount - 1;
-              this.$store.categories[categoryIndex].feeds[feedIndex].readCount =
-                this.$store.categories[categoryIndex].feeds[feedIndex]
+              this.store.categories[categoryIndex].feeds[feedIndex].readCount =
+                this.store.categories[categoryIndex].feeds[feedIndex]
                   .readCount + 1;
 
               //also increase total count
-              this.$store.readCount = this.$store.readCount + 1;
-              this.$store.unreadCount = this.$store.unreadCount - 1;
+              this.store.readCount = this.store.readCount + 1;
+              this.store.unreadCount = this.store.unreadCount - 1;
             }
           },
           response => {
@@ -548,20 +545,20 @@ export default {
           .then(
             response => {
               //decrease the star count
-              var categoryIndex = this.$store.categories.findIndex(
+              var categoryIndex = this.store.categories.findIndex(
                 category => category.id === response.body.feed.categoryId
               );
-              this.$store.categories[categoryIndex].starCount =
-                this.$store.categories[categoryIndex].starCount - 1;
-              var feedIndex = this.$store.categories[
+              this.store.categories[categoryIndex].starCount =
+                this.store.categories[categoryIndex].starCount - 1;
+              var feedIndex = this.store.categories[
                 categoryIndex
               ].feeds.findIndex(feed => feed.id === response.body.feedId);
-              this.$store.categories[categoryIndex].feeds[feedIndex].starCount =
-                this.$store.categories[categoryIndex].feeds[feedIndex]
+              this.store.categories[categoryIndex].feeds[feedIndex].starCount =
+                this.store.categories[categoryIndex].feeds[feedIndex]
                   .starCount - 1;
 
               //also increase total count
-              this.$store.starCount = this.$store.starCount - 1;
+              this.store.starCount = this.store.starCount - 1;
             },
             response => {
               /* eslint-disable no-console */
@@ -576,20 +573,20 @@ export default {
           .then(
             response => {
               //increase the star count
-              var categoryIndex = this.$store.categories.findIndex(
+              var categoryIndex = this.store.categories.findIndex(
                 category => category.id === response.body.feed.categoryId
               );
-              this.$store.categories[categoryIndex].starCount =
-                this.$store.categories[categoryIndex].starCount + 1;
-              var feedIndex = this.$store.categories[
+              this.store.categories[categoryIndex].starCount =
+                this.store.categories[categoryIndex].starCount + 1;
+              var feedIndex = this.store.categories[
                 categoryIndex
               ].feeds.findIndex(feed => feed.id === response.body.feedId);
-              this.$store.categories[categoryIndex].feeds[feedIndex].starCount =
-                this.$store.categories[categoryIndex].feeds[feedIndex]
+              this.store.categories[categoryIndex].feeds[feedIndex].starCount =
+                this.store.categories[categoryIndex].feeds[feedIndex]
                   .starCount + 1;
 
               //also increase total count
-              this.$store.starCount = this.$store.starCount + 1;
+              this.store.starCount = this.store.starCount + 1;
             },
             response => {
               /* eslint-disable no-console */
@@ -601,7 +598,7 @@ export default {
     },
     emitSearchEvent: function() {
       if (!(this.search === undefined || this.search === null)) {
-        this.$store.data.search = this.search;
+        this.store.currentSelection.search = this.search;
       }
     },
     toggleShowStatus: function() {
@@ -611,11 +608,11 @@ export default {
       this.showFilterMenu = !this.showFilterMenu;
     },
     statusClicked: function(status) {
-      this.$store.data.status = status;
+      this.store.currentSelection.status = status;
       this.toggleShowStatus();
     },
     filterClicked: function(filter) {
-      this.$store.data.filter = filter;
+      this.store.filter = filter;
       this.toggleShowFilter();
     }
   },

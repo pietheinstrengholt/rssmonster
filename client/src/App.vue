@@ -103,6 +103,8 @@ span.error {
 </style>
 
 <script>
+import store from './store';
+
 import Sidebar from "./components/Sidebar.vue";
 import Home from "./components/Home.vue";
 import Quickbar from "./components/Quickbar.vue";
@@ -114,9 +116,6 @@ export default {
     appQuickbar: Quickbar,
     appModal: Modal
   },
-  store: {
-    data: "data"
-  },
   beforeCreate() {
     //get an overview with the count for all feeds
     this.$http
@@ -126,12 +125,12 @@ export default {
       })
       .then(data => {
         //update the store counts
-        this.$store.unreadCount = data.unreadCount;
-        this.$store.readCount = data.readCount;
-        this.$store.starCount = data.starCount;
+        this.store.unreadCount = data.unreadCount;
+        this.store.readCount = data.readCount;
+        this.store.starCount = data.starCount;
 
         //update the categories in the store
-        this.$store.categories = data.categories;
+        this.store.categories = data.categories;
       });
   },
   created: function() {
@@ -146,7 +145,8 @@ export default {
     return {
       category: {},
       feed: {},
-      modal: null
+      modal: null,
+      store: store
     };
   },
   methods: {
@@ -158,25 +158,25 @@ export default {
       this.modal = value;
     },
     lookupFeedById: function(feedId) {
-      for (var x = 0; x < this.$store.categories.length; x++) {
-        for (var i = 0; i < this.$store.categories[x].feeds.length; i++) {
-          if (this.$store.categories[x].feeds[i].id === feedId) {
-            return this.$store.categories[x].feeds[i];
+      for (var x = 0; x < this.store.categories.length; x++) {
+        for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
+          if (this.store.categories[x].feeds[i].id === feedId) {
+            return this.store.categories[x].feeds[i];
           }
         }
       }
     }
   },
-  //watch the store.data, set local data (category, feed) based on current selection
+  //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
-    "$store.data": {
+    "store.currentSelection": {
       handler: function(data) {
         //set the feed to empty when the store changes, e.g. change can be that only a category is selected
         this.feed = {};
 
         //lookup category name based on the categoryId received
         if (data.category) {
-          var category = this.$store.categories.filter(function(a) {
+          var category = this.store.categories.filter(function(a) {
             return a.id == data.category;
           })[0];
           this.category = category;
@@ -188,22 +188,22 @@ export default {
       },
       deep: true
     },
-    "$store.data.category": {
+    "store.currentSelection.category": {
       handler: function() {
         this.feed = {};
       }
     },
-    "$store.data.feed": {
+    "store.currentSelection.feed": {
       handler: function() {
         this.closeModal();
       }
     },
-    "$store.data.filter": {
+    "store.currentSelection.filter": {
       handler: function() {
         this.closeModal();
       }
     },
-    "$store.data.status": {
+    "store.currentSelection.status": {
       handler: function() {
         this.closeModal();
       }
