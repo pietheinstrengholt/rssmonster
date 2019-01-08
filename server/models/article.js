@@ -40,7 +40,7 @@ const Article = sequelize.define(
       type: Sequelize.TEXT,
       allowNull: false
     },
-    content: Sequelize.TEXT,
+    content: Sequelize.TEXT('medium'),
     published: Sequelize.DATE
   },
   {
