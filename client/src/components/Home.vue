@@ -68,11 +68,7 @@
             </div>
           </div>
 
-          <div
-            v-if="store.filter === 'full'"
-            class="article-content"
-            v-html="article.content"
-          ></div>
+          <div v-if="store.filter === 'full'" class="article-content" v-html="article.content"></div>
           <div v-if="store.filter === 'minimal'" class="article-content">
             <p>{{ article.content | stripHTML }}</p>
           </div>
@@ -329,7 +325,7 @@ div.infinite-loading-container {
 require("waypoints/lib/noframework.waypoints.js");
 import InfiniteLoading from "vue-infinite-loading";
 import moment from "moment";
-import store from '../store';
+import store from "../store";
 
 export default {
   data() {
@@ -351,6 +347,11 @@ export default {
       showFilterMenu: false,
       firstLoad: false
     };
+  },
+  computed: {
+    remainingItems: function() {
+      return this.container.length - this.pool.length;
+    }
   },
   //watch the data store, when changing reload the article details
   watch: {
@@ -412,8 +413,10 @@ export default {
         document.documentElement.offsetHeight;
 
       if (bottomOfWindow) {
-        //TODO: fix only marking the articles on the screen or loaded and reaching the end of the queue
-        //this.flushPool();
+        //when reaching the bottom of the page and less than 10 articles are in the queue, mark everything as read
+        if (this.remainingItems < 10) {
+          this.flushPool();
+        }
       }
     },
     infiniteHandler($state) {
