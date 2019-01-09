@@ -7,14 +7,14 @@ const Article = require("../models/article");
 var FeedParser = require("feedparser");
 var request = require("request"); // for fetching the feed
 var zlib = require('zlib');
-var Iconv  = require('iconv').Iconv;
+var Iconv = require('iconv').Iconv;
 
 exports.crawl = async (req, res, next) => {
   try {
     const feeds = await Feed.findAll();
 
     if (feeds.length > 0) {
-      feeds.forEach(function(feed) {
+      feeds.forEach(function (feed) {
         fetch(feed);
         next();
       });
@@ -28,7 +28,10 @@ exports.crawl = async (req, res, next) => {
 
 function fetch(feed) {
   // Define our streams
-  var req = request(feed.url, { timeout: 10000, pool: false });
+  var req = request(feed.url, {
+    timeout: 10000,
+    pool: false
+  });
   req.setMaxListeners(50);
   // Some feeds do not respond without user-agent and accept headers.
   req.setHeader(
@@ -40,8 +43,10 @@ function fetch(feed) {
   var feedparser = new FeedParser();
 
   // Define our handlers
-  req.on("error", done);
-  req.on("response", function(res) {
+  req.on("error", (done) => feed.update({
+    errorCount: Sequelize.literal('errorCount + 1')
+  }));
+  req.on("response", function (res) {
     if (res.statusCode != 200)
       return this.emit("error", new Error("Bad status code"));
     var encoding = res.headers["content-encoding"] || "identity",
@@ -51,8 +56,10 @@ function fetch(feed) {
     res.pipe(feedparser);
   });
 
-  feedparser.on("error", done);
-  feedparser.on("readable", function() {
+  feedparser.on("error", (done) => feed.update({
+    errorCount: Sequelize.literal('errorCount + 1')
+  }));
+  feedparser.on("readable", function () {
     var post;
     while ((post = this.read())) {
       //process article
@@ -68,8 +75,8 @@ function done(err) {
 }
 
 function getParams(str) {
-  var params = str.split(";").reduce(function(params, param) {
-    var parts = param.split("=").map(function(part) {
+  var params = str.split(";").reduce(function (params, param) {
+    var parts = param.split("=").map(function (part) {
       return part.trim();
     });
     if (parts.length === 2) {
@@ -112,8 +119,7 @@ async function processArticle(feed, post) {
   try {
     const article = await Article.findOne({
       where: {
-        [Op.or]: [
-          {
+        [Op.or]: [{
             url: post.link
           },
           {

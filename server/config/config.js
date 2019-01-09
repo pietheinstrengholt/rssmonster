@@ -8,7 +8,8 @@ module.exports = {
     host: process.env.DB_HOSTNAME || 'localhost',
     dialect: 'mysql',
     charset: "utf8mb4",
-    collate: "utf8mb4_general_ci"
+    collate: "utf8mb4_general_ci",
+    //logging: false
   },
   test: {
     username: 'database_test',
@@ -24,6 +25,7 @@ module.exports = {
     host: process.env.DB_HOSTNAME,
     dialect: 'mysql',
     charset: "utf8mb4",
-    collate: "utf8mb4_general_ci"
+    collate: "utf8mb4_general_ci",
+    logging: false
   }
 };

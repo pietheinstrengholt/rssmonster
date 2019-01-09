@@ -36,7 +36,11 @@ const Feed = sequelize.define(
       type: Sequelize.STRING,
       unique: true
     },
-    favicon: Sequelize.STRING
+    favicon: Sequelize.STRING,
+    errorCount: {
+      type: Sequelize.INTEGER,
+      defaultValue: 0
+    }
   },
   {
     charset: "utf8",
