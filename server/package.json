@@ -20,6 +20,7 @@
     "express": "^4.16.3",
     "express-handlebars": "^3.0.0",
     "feedparser": "^2.2.9",
+    "iconv": "^2.3.2",
     "mysql2": "^1.6.1",
     "pug": "^2.0.3",
     "request": "^2.88.0",

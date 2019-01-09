@@ -7,6 +7,7 @@ const Article = require("../models/article");
 var FeedParser = require("feedparser");
 var request = require("request"); // for fetching the feed
 var zlib = require('zlib');
+var Iconv  = require('iconv').Iconv;
 
 exports.crawl = async (req, res, next) => {
   try {
@@ -46,8 +47,7 @@ function fetch(feed) {
     var encoding = res.headers["content-encoding"] || "identity",
       charset = getParams(res.headers["content-type"] || "").charset;
     res = maybeDecompress(res, encoding);
-    //TODO: fix icon below
-    //res = maybeTranslate(res, charset);
+    res = maybeTranslate(res, charset);
     res.pipe(feedparser);
   });
 
