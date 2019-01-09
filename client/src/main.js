@@ -27,10 +27,6 @@ Vue.component('v-icon', Icon)
 //get app hostname location from the .env
 Vue.http.options.root = process.env.VUE_APP_HOSTNAME;
 
-//central state with stash
-import VueStash from 'vue-stash';
-Vue.use(VueStash);
-
 new Vue({
 	el: '#app',
 	render: h => h(App)
