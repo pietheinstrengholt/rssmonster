@@ -1,0 +1,11 @@
+---
+sudo: required
+dist: xenial
+
+script:
+    - cp client/.env{.example,}
+    - cp server/.env{.example,}
+    - docker-compose up --build
+
+after_script:
+    - docker-compose down
