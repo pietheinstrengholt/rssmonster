@@ -10,22 +10,21 @@ const Op = Sequelize.Op;
 
 exports.getFever = async (req, res, next) => {
   try {
-    //always return status 1: password and username correct
-    const status = 1;
+    var arr = responseBase();
 
-    //latest api version is 3
-    var arr = {
-      api_version: "3",
-      auth: status
-    }
+    //return 200 with arr
+    res.status(200).json(arr);
 
-    //last refreshed is current system time
-    var time = {
-      last_refreshed_on_time: Math.floor((new Date()).getTime() / 1000)
-    };
+  } catch (err) {
+    //return server if something goes wrong
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
 
-    //merge arrays
-    arr = Object.assign(arr, time);
+exports.postFever = async (req, res, next) => {
+  try {
+    var arr = responseBase();
 
     //when argument is groups, retrieve list with categories names and id's
     if ("groups" in req.query) {
@@ -36,7 +35,7 @@ exports.getFever = async (req, res, next) => {
       if (categories) {
         categories.forEach(category => {
           categoryObject = {
-            id: String(category.id),
+            id: category.id,
             title: category.name
           }
           groups.push(categoryObject);
@@ -67,7 +66,7 @@ exports.getFever = async (req, res, next) => {
         });
       }
       //append groups to arr
-      arr['feed'] = feeds;
+      arr['feeds'] = feeds;
     }
 
     if ("groups" in req.query || "feeds" in req.query) {
@@ -127,7 +126,7 @@ exports.getFever = async (req, res, next) => {
         });
       }
       //string/comma-separated list of positive integers instead of array
-      arr['unread_item_ids'] = unread_item_ids.join(", ");
+      arr['unread_item_ids'] = unread_item_ids.join(",");
     }
 
     //return string/comma-separated list with id's from read and starred articles
@@ -148,7 +147,7 @@ exports.getFever = async (req, res, next) => {
         });
       }
       //string/comma-separated list of positive integers instead of array
-      arr['saved_item_ids'] = unread_item_ids.join(", ");
+      arr['saved_item_ids'] = unread_item_ids.join(",");
     }
 
     //return string/comma-separated list with id's from read and starred articles
@@ -204,7 +203,7 @@ exports.getFever = async (req, res, next) => {
 
       await articles.forEach(function (article) {
         articleObject = {
-          id: String(article.id),
+          id: article.id,
           feed_id: parseInt(article.feedId),
           title: article.subject,
           author: '',
@@ -249,201 +248,90 @@ exports.getFever = async (req, res, next) => {
       arr['favicons'] = favicons;
     }
 
-    //return 200 with arr
-    res.status(200).json(arr);
-
-  } catch (err) {
-    //return server if something goes wrong
-    console.log(err);
-    return res.status(500).json(err);
-  }
-};
-
-exports.postFever = async (req, res, next) => {
-  try {
-
     //set before argument, which needs to be a JavaScript Data Object for Sequelize
-    if (req.query.before) {
+    if (req.body.before) {
       var timestamp = Date.now();
     } else {
       //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
-      var timestamp = Date.parse(req.query.before * 1000);
+      var timestamp = Date.parse(req.body.before * 1000);
     }
 
     //update per article item
-    if (req.query.mark === "item" && req.query.id) {
-      if (req.query.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            id: req.query.id
-          }
-        });
-      }
-      if (req.query.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            id: req.query.id
-          }
-        });
-      }
-      if (req.query.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            id: req.query.id
-          }
-        });
-      }
+    if (req.body.mark === "item" && req.body.id) {
+      const update = genUpdate(req.body.as);
+      Article.update(update, {
+        where: {
+          id: req.body.id
+        }
+      });
     }
 
     //update per feed
-    if (req.query.mark === "feed" && req.query.id) {
-      if (req.query.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            feedId: req.query.id,
-            published: {
-              [Op.lte]: timestamp
-            }
+    if (req.body.mark === "feed" && req.body.id) {
+      const update = genUpdate(req.body.as);
+      Article.update(update, {
+        where: {
+          feedId: req.body.id,
+          published: {
+            [Op.lte]: timestamp
           }
-        });
-      }
-      if (req.query.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            feedId: req.query.id,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.query.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            feedId: req.query.id,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
+        }
+      });
     }
 
     //per group, a group should be specified with an id not equal to zero
-    if (req.query.mark === "group" && req.query.id !== 0) {
+    if (req.body.mark === "group" && req.body.id !== undefined) {
+      const update = genUpdate(req.body.as);
 
-      //get all feed ids
-      feeds = await Feed.findAll({
-        attributes: ["id"]
-      });
+      var where = {
+        published: {
+          [Op.lte]: timestamp
+        }
+      };
 
-      //build array based on previous results and push all ids to the array
-      feedIds = [];
-      if (feeds.length > 0) {
-        feeds.forEach(feed => {
-          feedIds.push(feed.id);
-        });
+      // id === '0' means all
+      if (req.body.id !== '0') {
+       where['feedId'] = Number(req.body.id);
       }
 
-      if (req.query.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            feedId: feedIds,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.query.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            feedId: feedIds,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.query.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            feedId: feedIds,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-
+      Article.update(update, {where: where});
     }
 
-    //this is "all" according fever
-    if (req.query.mark === "group" && req.query.id === 0) {
-
-      if (req.query.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.query.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.query.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-
-    }
-
-    //return 200 code
-    res.status(200).json({
-        api_version: "3",
-        auth: 1
-    });
-
+    //return 200 with arr
+    res.status(200).json(arr);
   } catch (err) {
     //return server if something goes wrong
     console.log(err);
     return res.status(500).json(err);
   }
 };
+
+function responseBase() {
+  //always return status 1: password and username correct
+  const status = 1;
+
+  //latest api version is 3
+  const api_version = 3;
+
+  return {
+    api_version: 3,
+    auth: status,
+    last_refreshed_on_time: String(Math.floor((new Date()).getTime() / 1000))
+  };
+}
+
+function genUpdate(req_body_as) {
+  switch (req_body_as) {
+    case "read":
+      return {status: 'read'};
+
+    case "unread":
+      return {status: 'unread'};
+
+    case "saved":
+      return {star_ind: 1};
+
+    case "unsaved":
+      return {star_ind: 0};
+  }
+}
