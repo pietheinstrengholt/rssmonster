@@ -3,9 +3,11 @@ sudo: required
 dist: xenial
 
 script:
-    - cp client/.env{.example,}
-    - cp server/.env{.example,}
-    - docker-compose up --build
+    - echo 'VUE_APP_HOSTNAME=http://server:3000/api' > client/.env
+    - docker-compose build
+    - docker-compose up -d
+    - docker exec $(docker container ls -f name=client -q) npm audit
+    - docker exec $(docker container ls -f name=server -q) npm audit
 
 after_script:
     - docker-compose down
