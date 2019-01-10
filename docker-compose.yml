@@ -15,7 +15,9 @@ services:
       PORT: 8080
     working_dir: /app
     volumes:
-      - ./client:/app
+      - ./client/.env:/app/.env
+      - ./client/public:/app/public
+      - ./client/src:/app/src
     links:
       - server:server
 
@@ -37,9 +39,14 @@ services:
       DB_HOSTNAME: mysql
     working_dir: /app
     volumes:
-      - ./server:/app
-    env_file:
-      - ./server/.env
+      - ./server/app.js:/app/app.js
+      - ./server/controllers:/app/controllers
+      - ./server/controllers:/app/controllers
+      - ./server/config:/app/config
+      - ./server/models:/app/models
+      - ./server/util:/app/util
+      - ./server/routes:/app/routes
+      - ./server/seeders:/app/seeders
     links:
       - mysql:mysql
 
