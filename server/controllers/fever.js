@@ -249,176 +249,52 @@ exports.postFever = async (req, res, next) => {
     }
 
     //set before argument, which needs to be a JavaScript Data Object for Sequelize
-    if (req.query.before) {
+    if (req.body.before) {
       var timestamp = Date.now();
     } else {
       //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
-      var timestamp = Date.parse(req.query.before * 1000);
+      var timestamp = Date.parse(req.body.before * 1000);
     }
 
     //update per article item
     if (req.body.mark === "item" && req.body.id) {
-      if (req.body.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            id: req.body.id
-          }
-        });
-      }
-      if (req.body.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            id: req.body.id
-          }
-        });
-      }
-      if (req.body.as === "unsaved") {
-        Article.update({
-          star_ind: 0
-        }, {
-          where: {
-            id: req.body.id
-          }
-        });
-      }
+      const update = genUpdate(req.body.as);
+      Article.update(update, {
+        where: {
+          id: req.body.id
+        }
+      });
     }
 
     //update per feed
-    if (req.body.mark === "feed" && req.query.id) {
-      if (req.body.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            feedId: req.body.id,
-            published: {
-              [Op.lte]: timestamp
-            }
+    if (req.body.mark === "feed" && req.body.id) {
+      const update = genUpdate(req.body.as);
+      Article.update(update, {
+        where: {
+          feedId: req.body.id,
+          published: {
+            [Op.lte]: timestamp
           }
-        });
-      }
-      if (req.body.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            feedId: req.body.id,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.body.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            feedId: req.body.id,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
+        }
+      });
     }
 
     //per group, a group should be specified with an id not equal to zero
-    if (req.body.mark === "group" && req.query.id !== 0) {
+    if (req.body.mark === "group" && req.body.id !== undefined) {
+      const update = genUpdate(req.body.as);
 
-      //get all feed ids
-      feeds = await Feed.findAll({
-        attributes: ["id"]
-      });
+      var where = {
+        published: {
+          [Op.lte]: timestamp
+        }
+      };
 
-      //build array based on previous results and push all ids to the array
-      feedIds = [];
-      if (feeds.length > 0) {
-        feeds.forEach(feed => {
-          feedIds.push(feed.id);
-        });
+      // id === '0' means all
+      if (req.body.id !== '0') {
+       where['feedId'] = Number(req.body.id);
       }
 
-      if (req.body.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            feedId: feedIds,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.body.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            feedId: feedIds,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.body.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            feedId: feedIds,
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-
-    }
-
-    //this is "all" according fever
-    if (req.body.mark === "group" && req.query.id === 0) {
-
-      if (req.body.as === "read") {
-        Article.update({
-          status: 'read'
-        }, {
-          where: {
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.body.as === "saved") {
-        Article.update({
-          star_ind: 1
-        }, {
-          where: {
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-      if (req.body.as === "unsaved") {
-        Article.update({
-          status: 'unread'
-        }, {
-          where: {
-            published: {
-              [Op.lte]: timestamp
-            }
-          }
-        });
-      }
-
+      Article.update(update, {where: where});
     }
 
     //return 200 with arr
@@ -442,4 +318,20 @@ function responseBase() {
     auth: status,
     last_refreshed_on_time: String(Math.floor((new Date()).getTime() / 1000))
   };
+}
+
+function genUpdate(req_body_as) {
+  switch (req_body_as) {
+    case "read":
+      return {status: 'read'};
+
+    case "unread":
+      return {status: 'unread'};
+
+    case "saved":
+      return {star_ind: 1};
+
+    case "unsaved":
+      return {star_ind: 0};
+  }
 }
