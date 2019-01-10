@@ -4,8 +4,7 @@ WORKDIR /app
 COPY ./client/package.json ./client/package-lock.json ./
 RUN npm install
 
-ADD ./client /app
-COPY ./client/.env.example ./.env
+ADD ./client /app/
 
 EXPOSE 8080/tcp
 CMD npm run serve
