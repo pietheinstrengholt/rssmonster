@@ -10,22 +10,7 @@ const Op = Sequelize.Op;
 
 exports.getFever = async (req, res, next) => {
   try {
-    //always return status 1: password and username correct
-    const status = 1;
-
-    //latest api version is 3
-    var arr = {
-      api_version: "3",
-      auth: status
-    }
-
-    //last refreshed is current system time
-    var time = {
-      last_refreshed_on_time: Math.floor((new Date()).getTime() / 1000)
-    };
-
-    //merge arrays
-    arr = Object.assign(arr, time);
+    var arr = responseBase();
 
     //return 200 with arr
     res.status(200).json(arr);
@@ -39,22 +24,7 @@ exports.getFever = async (req, res, next) => {
 
 exports.postFever = async (req, res, next) => {
   try {
-    //always return status 1: password and username correct
-    const status = 1;
-
-    //latest api version is 3
-    var arr = {
-      api_version: "3",
-      auth: status
-    }
-
-    //last refreshed is current system time
-    var time = {
-      last_refreshed_on_time: Math.floor((new Date()).getTime() / 1000)
-    };
-
-    //merge arrays
-    arr = Object.assign(arr, time);
+    var arr = responseBase();
 
     //when argument is groups, retrieve list with categories names and id's
     if ("groups" in req.query) {
@@ -65,7 +35,7 @@ exports.postFever = async (req, res, next) => {
       if (categories) {
         categories.forEach(category => {
           categoryObject = {
-            id: String(category.id),
+            id: category.id,
             title: category.name
           }
           groups.push(categoryObject);
@@ -96,7 +66,7 @@ exports.postFever = async (req, res, next) => {
         });
       }
       //append groups to arr
-      arr['feed'] = feeds;
+      arr['feeds'] = feeds;
     }
 
     if ("groups" in req.query || "feeds" in req.query) {
@@ -156,7 +126,7 @@ exports.postFever = async (req, res, next) => {
         });
       }
       //string/comma-separated list of positive integers instead of array
-      arr['unread_item_ids'] = unread_item_ids.join(", ");
+      arr['unread_item_ids'] = unread_item_ids.join(",");
     }
 
     //return string/comma-separated list with id's from read and starred articles
@@ -177,7 +147,7 @@ exports.postFever = async (req, res, next) => {
         });
       }
       //string/comma-separated list of positive integers instead of array
-      arr['saved_item_ids'] = unread_item_ids.join(", ");
+      arr['saved_item_ids'] = unread_item_ids.join(",");
     }
 
     //return string/comma-separated list with id's from read and starred articles
@@ -233,7 +203,7 @@ exports.postFever = async (req, res, next) => {
 
       await articles.forEach(function (article) {
         articleObject = {
-          id: String(article.id),
+          id: article.id,
           feed_id: parseInt(article.feedId),
           title: article.subject,
           author: '',
@@ -459,3 +429,17 @@ exports.postFever = async (req, res, next) => {
     return res.status(500).json(err);
   }
 };
+
+function responseBase() {
+  //always return status 1: password and username correct
+  const status = 1;
+
+  //latest api version is 3
+  const api_version = 3;
+
+  return {
+    api_version: 3,
+    auth: status,
+    last_refreshed_on_time: String(Math.floor((new Date()).getTime() / 1000))
+  };
+}
