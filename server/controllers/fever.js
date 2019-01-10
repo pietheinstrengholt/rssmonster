@@ -257,68 +257,68 @@ exports.postFever = async (req, res, next) => {
     }
 
     //update per article item
-    if (req.query.mark === "item" && req.query.id) {
-      if (req.query.as === "read") {
+    if (req.body.mark === "item" && req.body.id) {
+      if (req.body.as === "read") {
         Article.update({
           status: 'read'
         }, {
           where: {
-            id: req.query.id
+            id: req.body.id
           }
         });
       }
-      if (req.query.as === "saved") {
+      if (req.body.as === "saved") {
         Article.update({
           star_ind: 1
         }, {
           where: {
-            id: req.query.id
+            id: req.body.id
           }
         });
       }
-      if (req.query.as === "unsaved") {
+      if (req.body.as === "unsaved") {
         Article.update({
-          status: 'unread'
+          star_ind: 0
         }, {
           where: {
-            id: req.query.id
+            id: req.body.id
           }
         });
       }
     }
 
     //update per feed
-    if (req.query.mark === "feed" && req.query.id) {
-      if (req.query.as === "read") {
+    if (req.body.mark === "feed" && req.query.id) {
+      if (req.body.as === "read") {
         Article.update({
           status: 'read'
         }, {
           where: {
-            feedId: req.query.id,
+            feedId: req.body.id,
             published: {
               [Op.lte]: timestamp
             }
           }
         });
       }
-      if (req.query.as === "saved") {
+      if (req.body.as === "saved") {
         Article.update({
           star_ind: 1
         }, {
           where: {
-            feedId: req.query.id,
+            feedId: req.body.id,
             published: {
               [Op.lte]: timestamp
             }
           }
         });
       }
-      if (req.query.as === "unsaved") {
+      if (req.body.as === "unsaved") {
         Article.update({
           status: 'unread'
         }, {
           where: {
-            feedId: req.query.id,
+            feedId: req.body.id,
             published: {
               [Op.lte]: timestamp
             }
@@ -328,7 +328,7 @@ exports.postFever = async (req, res, next) => {
     }
 
     //per group, a group should be specified with an id not equal to zero
-    if (req.query.mark === "group" && req.query.id !== 0) {
+    if (req.body.mark === "group" && req.query.id !== 0) {
 
       //get all feed ids
       feeds = await Feed.findAll({
@@ -343,7 +343,7 @@ exports.postFever = async (req, res, next) => {
         });
       }
 
-      if (req.query.as === "read") {
+      if (req.body.as === "read") {
         Article.update({
           status: 'read'
         }, {
@@ -355,7 +355,7 @@ exports.postFever = async (req, res, next) => {
           }
         });
       }
-      if (req.query.as === "saved") {
+      if (req.body.as === "saved") {
         Article.update({
           star_ind: 1
         }, {
@@ -367,7 +367,7 @@ exports.postFever = async (req, res, next) => {
           }
         });
       }
-      if (req.query.as === "unsaved") {
+      if (req.body.as === "unsaved") {
         Article.update({
           status: 'unread'
         }, {
@@ -383,9 +383,9 @@ exports.postFever = async (req, res, next) => {
     }
 
     //this is "all" according fever
-    if (req.query.mark === "group" && req.query.id === 0) {
+    if (req.body.mark === "group" && req.query.id === 0) {
 
-      if (req.query.as === "read") {
+      if (req.body.as === "read") {
         Article.update({
           status: 'read'
         }, {
@@ -396,7 +396,7 @@ exports.postFever = async (req, res, next) => {
           }
         });
       }
-      if (req.query.as === "saved") {
+      if (req.body.as === "saved") {
         Article.update({
           star_ind: 1
         }, {
@@ -407,7 +407,7 @@ exports.postFever = async (req, res, next) => {
           }
         });
       }
-      if (req.query.as === "unsaved") {
+      if (req.body.as === "unsaved") {
         Article.update({
           status: 'unread'
         }, {
