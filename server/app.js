@@ -1,9 +1,7 @@
-//import path
-const path = require("path");
-
-//import express and body-parser
-const express = require("express");
 const bodyParser = require("body-parser");
+const express = require("express");
+const path = require("path");
+const morgan = require('morgan')
 
 //import sequelize
 const sequelize = require("./util/database");
@@ -25,6 +23,8 @@ const feverRoutes = require("./routes/fever");
 const errorController = require("./controllers/error");
 
 const app = express();
+
+app.use(morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-time ms)'));
 
 //serve the content straight from the distribution folder (output after npm run build)
 app.use(express.static("dist"));
