@@ -4,6 +4,7 @@ var request = require("request"); // for fetching the feed
 const Feed = require("../models/feed");
 const Article = require("../models/article");
 const cheerio = require("cheerio");
+const fetch = require("node-fetch");
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -112,6 +113,23 @@ exports.addFeed = async (req, res, next) => {
     var req = request(url);
     var feedparser = new FeedParser();
 
+    try {
+      const response = await fetch(url);
+      const body = await response.text();
+      if (body) {
+        const $ = cheerio.load(body);
+        if ($("head").find('link[type="application/rss+xml"]').length == 1) {
+          autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
+            "href"
+          );
+          console.log(autoDiscoverUrl);
+        }
+      }
+      //console.log(body);
+    } catch (error) {
+      console.log(error);
+    }
+
     //validate if the url is responding, if not return an error
     req.on("error", function(error) {
       return res.status(400).json({
@@ -123,17 +141,21 @@ exports.addFeed = async (req, res, next) => {
       var stream = this; // `this` is `req`, which is a stream
 
       var body = "";
-      var autoDiscoverUrl = '';
+      var autoDiscoverUrl = "";
       console.log(autoDiscoverUrl);
       res.on("data", function(chunk) {
         body += chunk;
       });
       res.on("end", function() {
         const $ = cheerio.load(body);
-        console.log('length: ' + $('head').find('link[type="application/rss+xml"]').length)
-        autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr("href");
+        console.log(
+          "length: " + $("head").find('link[type="application/rss+xml"]').length
+        );
+        autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
+          "href"
+        );
         console.log(autoDiscoverUrl);
-        if ($('head').find('link[type="application/rss+xml"]').length == 1) {
+        if ($("head").find('link[type="application/rss+xml"]').length == 1) {
           //autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr("href");
           url = autoDiscoverUrl;
           console.log(autoDiscoverUrl);
@@ -151,8 +173,10 @@ exports.addFeed = async (req, res, next) => {
           });
         }
       });
-      console.log('show value after trying to get auto discover: ' + autoDiscoverUrl);
-      if (autoDiscoverUrl == '') {
+      console.log(
+        "show value after trying to get auto discover: " + autoDiscoverUrl
+      );
+      if (autoDiscoverUrl == "") {
         console.log("stream the original url");
         stream.pipe(feedparser);
       }

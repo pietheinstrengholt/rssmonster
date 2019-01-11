@@ -24,6 +24,7 @@
     "iconv": "^2.3.2",
     "morgan": "^1.9.1",
     "mysql2": "^1.6.1",
+    "node-fetch": "^2.3.0",
     "pug": "^2.0.3",
     "request": "^2.88.0",
     "sequelize": "^5.0.0-beta.11",
