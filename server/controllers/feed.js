@@ -103,11 +103,8 @@ exports.addFeed = async (req, res, next) => {
         autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
           "href"
         );
+        url = autoDiscoverUrl;
       }
-    }
-    //validate if an autodiscovery url has been found on the page
-    if (autoDiscoverUrl) {
-      url = autoDiscoverUrl;
     }
 
     //parse feed
@@ -132,10 +129,12 @@ exports.addFeed = async (req, res, next) => {
               })
               .catch(err => {
                 console.log(err);
-                return res.status(500).json(err);
+                return res.status(500).json({
+                  error_msg: "" + err
+                });
               });
           } else {
-            return res.status(402).json({
+            return res.status(500).json({
               error_msg: "Feed already exists."
             });
           }
@@ -143,7 +142,9 @@ exports.addFeed = async (req, res, next) => {
       })
       .catch(err => {
         console.log(err);
-        return res.status(500).json(err);
+        return res.status(500).json({
+          error_msg: "" + err
+        });
       });
   } catch (err) {
     return res.status(500).json({
