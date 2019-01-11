@@ -1,10 +1,9 @@
-var FeedParser = require("feedparser");
-var request = require("request"); // for fetching the feed
-
 const Feed = require("../models/feed");
 const Article = require("../models/article");
+
 const cheerio = require("cheerio");
 const fetch = require("node-fetch");
+const feedparser = require("feedparser-promised");
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -90,138 +89,63 @@ exports.deleteFeed = async (req, res, next) => {
   }
 };
 
-function doRequest(url) {
-  return new Promise(function(resolve, reject) {
-    request(url, function(error, res, body) {
-      if (!error && res.statusCode == 200) {
-        resolve(body);
-      } else {
-        reject(error);
-      }
-    });
-  });
-}
-
 exports.addFeed = async (req, res, next) => {
   //capture body url
   var url = req.body.url;
-  console.log(url);
   const categoryId = req.body.categoryId;
 
   try {
-    //set variables
-    var req = request(url);
-    var feedparser = new FeedParser();
-
-    try {
-      const response = await fetch(url);
-      const body = await response.text();
-      if (body) {
-        const $ = cheerio.load(body);
-        if ($("head").find('link[type="application/rss+xml"]').length == 1) {
-          autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
-            "href"
-          );
-          console.log(autoDiscoverUrl);
-        }
-      }
-      //console.log(body);
-    } catch (error) {
-      console.log(error);
-    }
-
-    //validate if the url is responding, if not return an error
-    req.on("error", function(error) {
-      return res.status(400).json({
-        error_msg: error
-      });
-    });
-
-    req.on("response", function(res) {
-      var stream = this; // `this` is `req`, which is a stream
-
-      var body = "";
-      var autoDiscoverUrl = "";
-      console.log(autoDiscoverUrl);
-      res.on("data", function(chunk) {
-        body += chunk;
-      });
-      res.on("end", function() {
-        const $ = cheerio.load(body);
-        console.log(
-          "length: " + $("head").find('link[type="application/rss+xml"]').length
-        );
+    const response = await fetch(url);
+    const body = await response.text();
+    if (body) {
+      const $ = cheerio.load(body);
+      if ($("head").find('link[type="application/rss+xml"]').length == 1) {
         autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
           "href"
         );
-        console.log(autoDiscoverUrl);
-        if ($("head").find('link[type="application/rss+xml"]').length == 1) {
-          //autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr("href");
-          url = autoDiscoverUrl;
-          console.log(autoDiscoverUrl);
-          var discoverRequest = request(autoDiscoverUrl);
-
-          discoverRequest.on("response", function(res) {
-            var discoverStream = this; // `this` is `req`, which is a stream
-
-            if (res.statusCode !== 200) {
-              this.emit("error", new Error("Bad status code"));
-            } else {
-              console.log("stream the auto discover url");
-              discoverStream.pipe(feedparser);
-            }
-          });
-        }
-      });
-      console.log(
-        "show value after trying to get auto discover: " + autoDiscoverUrl
-      );
-      if (autoDiscoverUrl == "") {
-        console.log("stream the original url");
-        stream.pipe(feedparser);
       }
-    });
+    }
+    //validate if an autodiscovery url has been found on the page
+    if (autoDiscoverUrl) {
+      url = autoDiscoverUrl;
+    }
 
-    feedparser.on("error", function(error) {
-      return res.status(404).json({
-        error: error
-      });
-    });
-
-    feedparser.on("readable", function(req) {
-      //get the metadata
-      var meta = this.meta;
-      console.log(meta);
-
-      Feed.findOne({
-        where: {
-          url: meta.xmlurl
-        }
-      }).then(feed => {
-        if (!feed) {
-          Feed.create({
-            categoryId: categoryId,
-            feed_name: meta.title,
-            feed_desc: meta.description,
-            url: meta.xmlurl,
-            favicon: meta.image.url
-          })
-            .then(result => {
-              return res.status(200).json(result);
+    //parse feed
+    feedparser
+      .parse(url)
+      .then(result => {
+        Feed.findOne({
+          where: {
+            url: url
+          }
+        }).then(feed => {
+          if (!feed) {
+            Feed.create({
+              categoryId: categoryId,
+              feed_name: result[0].meta.title,
+              feed_desc: result[0].meta.description,
+              url: url,
+              favicon: result[0].meta.image.url
             })
-            .catch(err => {
-              console.log(err);
-              return res.status(500).json(err);
+              .then(result => {
+                return res.status(200).json(result);
+              })
+              .catch(err => {
+                console.log(err);
+                return res.status(500).json(err);
+              });
+          } else {
+            return res.status(402).json({
+              error_msg: "Feed already exists."
             });
-        } else {
-          return res.status(402).json({
-            error_msg: "Feed already exists."
-          });
-        }
+          }
+        });
+      })
+      .catch(err => {
+        console.log(err);
+        return res.status(500).json(err);
       });
-    });
   } catch (err) {
-    console.log(err);
     return res.status(500).json({
       error_msg: "" + err
     });
