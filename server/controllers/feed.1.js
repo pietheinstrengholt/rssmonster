@@ -3,7 +3,7 @@ var request = require("request"); // for fetching the feed
 
 const Feed = require("../models/feed");
 const Article = require("../models/article");
-const cheerio = require("cheerio");
+const cheerio = require('cheerio');
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -46,13 +46,14 @@ exports.updateFeed = async (req, res, next) => {
       });
     }
     if (feed) {
-      feed.update({
-        feed_name: req.body.feed_name,
-        feed_desc: req.body.feed_desc,
-        categoryId: req.body.categoryId,
-        url: req.body.url,
-        favicon: req.body.favicon
-      });
+      feed
+        .update({
+          feed_name: req.body.feed_name,
+          feed_desc: req.body.feed_desc,
+          categoryId: req.body.categoryId,
+          url: req.body.url,
+          favicon: req.body.favicon
+        });
       return res.status(200).json(feed);
     }
   } catch (err) {
@@ -90,8 +91,8 @@ exports.deleteFeed = async (req, res, next) => {
 };
 
 function doRequest(url) {
-  return new Promise(function(resolve, reject) {
-    request(url, function(error, res, body) {
+  return new Promise(function (resolve, reject) {
+    request(url, function (error, res, body) {
       if (!error && res.statusCode == 200) {
         resolve(body);
       } else {
@@ -103,71 +104,76 @@ function doRequest(url) {
 
 exports.addFeed = async (req, res, next) => {
   //capture body url
-  var url = req.body.url;
-  console.log(url);
+  const url = req.body.url;
+
+  let result1 = await doRequest(url);
+
+  const $ = cheerio.load(result1);
+  var RssFeed = $('head link[type="application/rss+xml"]').attr("href");
+  console.log(RssFeed);
+
+  //console.log(result1);
+
   const categoryId = req.body.categoryId;
 
   try {
+
     //set variables
     var req = request(url);
     var feedparser = new FeedParser();
+    var validateOrig = true;
 
     //validate if the url is responding, if not return an error
-    req.on("error", function(error) {
+    req.on("error", function (error) {
       return res.status(400).json({
         error_msg: error
       });
     });
 
-    req.on("response", function(res) {
+    req.on("response", function (res) {
       var stream = this; // `this` is `req`, which is a stream
 
-      var body = "";
-      var autoDiscoverUrl = '';
-      console.log(autoDiscoverUrl);
-      res.on("data", function(chunk) {
+      var body = '';
+      res.on('data', function(chunk) {
         body += chunk;
       });
-      res.on("end", function() {
+      res.on('end', function() {
         const $ = cheerio.load(body);
-        console.log('length: ' + $('head').find('link[type="application/rss+xml"]').length)
-        autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr("href");
-        console.log(autoDiscoverUrl);
-        if ($('head').find('link[type="application/rss+xml"]').length == 1) {
-          //autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr("href");
-          url = autoDiscoverUrl;
-          console.log(autoDiscoverUrl);
-          var discoverRequest = request(autoDiscoverUrl);
-
-          discoverRequest.on("response", function(res) {
-            var discoverStream = this; // `this` is `req`, which is a stream
-
-            if (res.statusCode !== 200) {
-              this.emit("error", new Error("Bad status code"));
-            } else {
-              console.log("stream the auto discover url");
-              discoverStream.pipe(feedparser);
-            }
-          });
+        var RssFeed = $('head link[type="application/rss+xml"]').attr("href");
+        console.log(RssFeed);
+        if (RssFeed) {
+          var req2 = request(RssFeed);
         }
+
+        req2.on("response", function (res) {
+          var stream = this; // `this` is `req`, which is a stream
+    
+          if (res.statusCode !== 200) {
+            this.emit("error", new Error("Bad status code"));
+          } else {
+            stream.pipe(feedparser);
+            validateOrig = false;
+          }
+        });
+
       });
-      console.log('show value after trying to get auto discover: ' + autoDiscoverUrl);
-      if (autoDiscoverUrl == '') {
-        console.log("stream the original url");
+
+      if (res.statusCode !== 200 && validateOrig == true) {
+        this.emit("error", new Error("Bad status code"));
+      } else {
         stream.pipe(feedparser);
       }
     });
 
-    feedparser.on("error", function(error) {
+    feedparser.on("error", function (error) {
       return res.status(404).json({
         error: error
       });
     });
 
-    feedparser.on("readable", function(req) {
+    feedparser.on("readable", function (req) {
       //get the metadata
       var meta = this.meta;
-      console.log(meta);
 
       Feed.findOne({
         where: {
@@ -176,12 +182,12 @@ exports.addFeed = async (req, res, next) => {
       }).then(feed => {
         if (!feed) {
           Feed.create({
-            categoryId: categoryId,
-            feed_name: meta.title,
-            feed_desc: meta.description,
-            url: meta.xmlurl,
-            favicon: meta.image.url
-          })
+              categoryId: categoryId,
+              feed_name: meta.title,
+              feed_desc: meta.description,
+              url: meta.xmlurl,
+              favicon: meta.image.url
+            })
             .then(result => {
               return res.status(200).json(result);
             })
@@ -191,7 +197,7 @@ exports.addFeed = async (req, res, next) => {
             });
         } else {
           return res.status(402).json({
-            error_msg: "Feed already exists."
+            error_msg: 'Feed already exists.'
           });
         }
       });
@@ -199,7 +205,7 @@ exports.addFeed = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     return res.status(500).json({
-      error_msg: "" + err
+      error_msg: '' + err
     });
   }
 };
