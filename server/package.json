@@ -3,6 +3,10 @@
   "version": "1.0.0",
   "description": "RSS Monster server side",
   "author": "Piethein Strengholt",
+  "repository": {
+        "type" : "git",
+        "url" : "https://github.com/pietheinstrengholt/rssmonster"
+  },
   "main": "app.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
