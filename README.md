@@ -63,7 +63,6 @@ The following scripts and plug-ins are used within RSSMonster
 * Waypoints: https://github.com/imakewebthings/waypoints
 
 #### TODO
-- Rename feed_name, feed_desc, etc.
+- Rename feed_name, feed_desc, etc. to feedName, feedDesc, etc.
 - Change dist location when building VueJS to ../../server
-- Implement settings
-- Fix UTF8
+- Implement settings (default category on initial load, ASC or DESC sort, etc.)
