@@ -5,6 +5,6 @@ const crawlController = require('../controllers/crawl');
 const router = express.Router();
 
 // GET /api/crawl
-router.get('/', crawlController.crawl);
+router.get('/', crawlController.getCrawl);
 
 module.exports = router;

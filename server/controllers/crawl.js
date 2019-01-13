@@ -7,7 +7,7 @@ const Article = require("../models/article");
 const feedparser = require("feedparser-promised");
 const autodiscover = require("../util/autodiscover");
 
-exports.crawl = async (req, res, next) => {
+exports.getCrawl = async (req, res, next) => {
   try {
     const feeds = await Feed.findAll();
 
