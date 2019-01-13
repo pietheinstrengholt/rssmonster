@@ -1,9 +1,8 @@
 const Feed = require("../models/feed");
 const Article = require("../models/article");
 
-const cheerio = require("cheerio");
-const fetch = require("node-fetch");
 const feedparser = require("feedparser-promised");
+const autodiscover = require("../util/autodiscover");
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -90,22 +89,10 @@ exports.deleteFeed = async (req, res, next) => {
 };
 
 exports.addFeed = async (req, res, next) => {
-  //capture body url
-  var url = req.body.url;
-  const categoryId = req.body.categoryId;
-
   try {
-    const response = await fetch(url);
-    const body = await response.text();
-    if (body) {
-      const $ = cheerio.load(body);
-      if ($("head").find('link[type="application/rss+xml"]').length == 1) {
-        autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
-          "href"
-        );
-        url = autoDiscoverUrl;
-      }
-    }
+    //capture body url and autodiscover the rss feed
+    const url = await autodiscover.discover(req.body.url);
+    const categoryId = req.body.categoryId;
 
     //parse feed
     feedparser

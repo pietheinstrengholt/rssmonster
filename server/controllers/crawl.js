@@ -5,6 +5,7 @@ const Feed = require("../models/feed");
 const Article = require("../models/article");
 
 const feedparser = require("feedparser-promised");
+const autodiscover = require("../util/autodiscover");
 
 exports.crawl = async (req, res, next) => {
   try {
@@ -23,8 +24,9 @@ exports.crawl = async (req, res, next) => {
 };
 
 async function fetch(feed) {
+  const url = await autodiscover.discover(feed.url);
   feedparser
-    .parse(feed.url)
+    .parse(url)
     .then(items => items.forEach(item => processArticle(feed, item)))
     .catch(console.error);
 }
