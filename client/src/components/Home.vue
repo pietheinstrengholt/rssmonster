@@ -62,7 +62,9 @@
               <a target="_blank" :href="article.url" v-text="article.subject"></a>
             </h5>
             <div class="feedname">
-              <span class="feed_name" v-text="article.feed.feed_name"></span>
+              <span class="feed_name">
+                <a target="_blank" :href="article.feed.url" v-text="article.feed.feed_name"></a>
+              </span>
               <span class="break">|</span>
               <span class="published_date">{{ article.published | formatDate }}</span>
             </div>
@@ -191,6 +193,10 @@ span.badge.badge-danger {
 div.block div.article-content img {
   max-width: 100%;
   height: auto;
+}
+
+span.feed_name a {
+  color: #51556a;
 }
 
 div.block span.favicon img.favicon {
