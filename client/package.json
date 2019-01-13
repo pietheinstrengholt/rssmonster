@@ -2,6 +2,10 @@
   "name": "rssmonster-client",
   "version": "1.0.0",
   "author": "Piethein Strengholt",
+  "repository": {
+        "type" : "git",
+        "url" : "https://github.com/pietheinstrengholt/rssmonster"
+  },
   "private": true,
   "scripts": {
     "serve": "vue-cli-service serve",
