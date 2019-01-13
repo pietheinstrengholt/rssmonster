@@ -67,7 +67,7 @@
                       <input
                         type="text"
                         class="form-control"
-                        v-model="feed.feed_name"
+                        v-model="feed.feedName"
                         placeholder="Feed name"
                       >
                     </div>
@@ -81,7 +81,7 @@
                       <input
                         type="text"
                         class="form-control"
-                        v-model="feed.feed_desc"
+                        v-model="feed.feedDesc"
                         placeholder="Feed description"
                       >
                     </div>
@@ -128,7 +128,7 @@
                       type="text"
                       id="feed_name"
                       placeholder="Feed name"
-                      v-model="feed.feed_name"
+                      v-model="feed.feedName"
                     >
                   </div>
                 </div>
@@ -144,7 +144,7 @@
                         type="text"
                         id="feed_desc"
                         placeholder="Feed description"
-                        v-model="feed.feed_desc"
+                        v-model="feed.feedDesc"
                       >
                     </div>
                   </div>
@@ -395,8 +395,8 @@ export default {
     saveFeed: function() {
       this.$http
         .put("feeds/" + this.feed.id, {
-          feed_name: this.feed.feed_name,
-          feed_desc: this.feed.feed_desc,
+          feedName: this.feed.feedName,
+          feedDesc: this.feed.feedDesc,
           categoryId: this.category.id
         })
         .then(
@@ -527,8 +527,8 @@ export default {
       //rename feed
       this.$http
         .put("feeds/" + this.feed.id, {
-          feed_name: this.feed.feed_name,
-          feed_desc: this.feed.feed_desc,
+          feedName: this.feed.feedName,
+          feedDesc: this.feed.feedDesc,
           categoryId: this.category.id
         })
         .then(
@@ -542,10 +542,10 @@ export default {
             );
 
             //update the feed in the store with the results from the api
-            this.store.categories[indexCategory].feeds[indexFeed].feed_name =
-              result.data.feed_name;
-            this.store.categories[indexCategory].feeds[indexFeed].feed_desc =
-              result.data.feed_desc;
+            this.store.categories[indexCategory].feeds[indexFeed].feedName =
+              result.data.feedName;
+            this.store.categories[indexCategory].feeds[indexFeed].feedDesc =
+              result.data.feedDesc;
             this.store.categories[indexCategory].feeds[indexFeed].categoryId =
               result.data.categoryId;
 

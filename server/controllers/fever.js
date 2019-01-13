@@ -30,7 +30,7 @@ exports.postFever = async (req, res, next) => {
     if ("groups" in req.query) {
       var groups = [];
       const categories = await Category.findAll({
-        order: ['category_order', 'name']
+        order: ['categoryOrder', 'name']
       })
       if (categories) {
         categories.forEach(category => {
@@ -49,14 +49,14 @@ exports.postFever = async (req, res, next) => {
     if ("feeds" in req.query) {
       var feeds = [];
       const results = await Feed.findAll({
-        order: ['feed_name']
+        order: ['feedName']
       })
       if (results) {
         results.forEach(feed => {
           feedObject = {
             id: String(feed.id),
             favicon: '<img src="data:' + feed.favicon + '">',
-            title: feed.feed_name,
+            title: feed.feedName,
             url: feed.rssUrl,
             site_url: feed.url,
             is_spark: 0,
@@ -79,7 +79,7 @@ exports.postFever = async (req, res, next) => {
           model: Feed,
           required: true
         }],
-        order: ['category_order', 'name']
+        order: ['categoryOrder', 'name']
       })
 
       //if categories is defined
@@ -135,7 +135,7 @@ exports.postFever = async (req, res, next) => {
       const articles = await Article.findAll({
         attributes: ["id"],
         where: {
-          star_ind: 1
+          starInd: 1
         },
         order: [
           ['id', 'ASC']
@@ -209,7 +209,7 @@ exports.postFever = async (req, res, next) => {
           author: '',
           html: article.content,
           url: article.url,
-          is_saved: parseInt(article.star_ind),
+          is_saved: parseInt(article.starInd),
           is_read: (article.status === 'read' ? 1 : 0),
           created_on_time: Math.floor(article.published / 1000)
         };
@@ -232,7 +232,7 @@ exports.postFever = async (req, res, next) => {
       var favicons = [];
       const feeds = await Feed.findAll({
         order: [
-          ['feed_name', 'ASC']
+          ['feedName', 'ASC']
         ]
       });
       if (feeds) {
@@ -329,9 +329,9 @@ function genUpdate(req_body_as) {
       return {status: 'unread'};
 
     case "saved":
-      return {star_ind: 1};
+      return {starInd: 1};
 
     case "unsaved":
-      return {star_ind: 0};
+      return {starInd: 0};
   }
 }

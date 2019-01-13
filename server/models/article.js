@@ -30,12 +30,12 @@ const Article = sequelize.define(
       allowNull: false,
       defaultValue: "unread"
     },
-    star_ind: Sequelize.INTEGER,
+    starInd: Sequelize.INTEGER,
     url: {
       type: Sequelize.STRING,
       allowNull: false
     },
-    image_url: Sequelize.STRING,
+    imageUrl: Sequelize.STRING,
     subject: {
       type: Sequelize.TEXT,
       allowNull: false

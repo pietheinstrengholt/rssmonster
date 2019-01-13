@@ -9,7 +9,7 @@ exports.getOverview = async (req, res, next) => {
   try {
     const starCount = await Article.count({
       where: {
-        star_ind: 1
+        starInd: 1
       }
     });
     const unreadCount = await Article.count({
@@ -31,7 +31,7 @@ exports.getOverview = async (req, res, next) => {
           required: false
         }
       ],
-      order: ["category_order", "name"]
+      order: ["categoryOrder", "name"]
     });
 
     const unreadCountGrouped = await Feed.findAll({
@@ -78,7 +78,7 @@ exports.getOverview = async (req, res, next) => {
           model: Article,
           attributes: [],
           where: {
-            star_ind: 1
+            starInd: 1
           }
         }
       ],
@@ -333,7 +333,7 @@ exports.articleMarkWithStar = async (req, res, next) => {
       if (update === "mark") {
         article
           .update({
-            star_ind: 1
+            starInd: 1
           })
           .then(() => res.status(200).json(article))
           .catch(error => res.status(400).json(error));
@@ -342,7 +342,7 @@ exports.articleMarkWithStar = async (req, res, next) => {
       if (update !== "mark") {
         article
           .update({
-            star_ind: 0
+            starInd: 0
           })
           .then(() => res.status(200).json(article))
           .catch(error => res.status(400).json(error));
@@ -390,7 +390,7 @@ exports.categoryUpdateOrder = async (req, res, next) => {
       order.forEach(item => {
         Category.update(
           {
-            category_order: count
+            categoryOrder: count
           },
           {
             where: {

@@ -135,7 +135,7 @@
                 <span class="glyphicon">
                   <v-icon name="circle"/>
                 </span>
-                <span class="title">{{feed.feed_name}}</span>
+                <span class="title">{{feed.feedName}}</span>
                 <span class="badge-unread">
                   <span
                     v-if="store.currentSelection.status === 'unread'"

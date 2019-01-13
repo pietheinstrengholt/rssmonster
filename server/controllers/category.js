@@ -10,7 +10,7 @@ exports.getCategories = async (req, res, next) => {
           required: true
         }
       ],
-      order: ["category_order", "name"]
+      order: ["categoryOrder", "name"]
     });
     return res.status(200).json({
       categories: categories
@@ -44,10 +44,10 @@ exports.getCategory = async (req, res, next) => {
 exports.addCategory = async (req, res, next) => {
   try {
     const name = req.body.name;
-    const category_order = req.body.category_order;
+    const categoryOrder = req.body.categoryOrder;
     const category = await Category.create({
       name: name,
-      category_order: category_order
+      categoryOrder: categoryOrder
     });
     return res.status(200).json(category);
   } catch (err) {
@@ -60,7 +60,7 @@ exports.updateCategory = async (req, res, next) => {
   try {
     const categoryId = req.params.categoryId;
     const name = req.body.name;
-    const category_order = req.body.category_order;
+    const categoryOrder = req.body.categoryOrder;
     category = await Category.findByPk(categoryId);
     if (!category) {
       return res.status(404).json({
@@ -69,7 +69,7 @@ exports.updateCategory = async (req, res, next) => {
     } else {
       category.update({
         name: req.body.name,
-        category_order: req.body.category_order
+        categoryOrder: req.body.categoryOrder
       });
       return res.status(200).json(category);
     }

@@ -32,8 +32,8 @@ exports.getFeed = async (req, res, next) => {
 
 exports.updateFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
-  const feed_name = req.body.feed_name;
-  const feed_desc = req.body.feed_desc;
+  const feedName = req.body.feedName;
+  const feedDesc = req.body.feedDesc;
   const categoryId = req.body.categoryId;
   const url = req.body.url;
   const rssUrl = req.body.rssUrl;
@@ -47,8 +47,8 @@ exports.updateFeed = async (req, res, next) => {
     }
     if (feed) {
       feed.update({
-        feed_name: req.body.feed_name,
-        feed_desc: req.body.feed_desc,
+        feedName: req.body.feedName,
+        feedDesc: req.body.feedDesc,
         categoryId: req.body.categoryId,
         url: req.body.url,
         rssUrl: req.body.rssUrl,
@@ -106,11 +106,10 @@ exports.addFeed = async (req, res, next) => {
           }
         }).then(feed => {
           if (!feed) {
-            console.log(result[0].meta);
             Feed.create({
               categoryId: categoryId,
-              feed_name: result[0].meta.title,
-              feed_desc: result[0].meta.description,
+              feedName: result[0].meta.title,
+              feedDesc: result[0].meta.description,
               url: result[0].meta.link,
               rssUrl: url,
               favicon: result[0].meta.image.url

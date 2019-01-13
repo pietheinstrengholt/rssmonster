@@ -49,7 +49,7 @@
         <div class="article">
           <div class="maximal">
             <div
-              v-bind:class="{'bookmarked': article.star_ind == 1}"
+              v-bind:class="{'bookmarked': article.starInd == 1}"
               v-on:click="bookmark(article.id, $event)"
               @click="$event.target.classList.toggle('bookmarked')"
               class="bookmark"
@@ -63,7 +63,7 @@
             </h5>
             <div class="feedname">
               <span class="feed_name">
-                <a target="_blank" :href="article.feed.url" v-text="article.feed.feed_name"></a>
+                <a target="_blank" :href="article.feed.url" v-text="article.feed.feedName"></a>
               </span>
               <span class="break">|</span>
               <span class="published_date">{{ article.published | formatDate }}</span>

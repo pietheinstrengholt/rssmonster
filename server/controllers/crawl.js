@@ -59,7 +59,7 @@ async function processArticle(feed, post) {
       Article.create({
         feedId: feed.id,
         status: "unread",
-        star_ind: 0,
+        starInd: 0,
         url: post.link,
         image_url: "",
         subject: post.title,
