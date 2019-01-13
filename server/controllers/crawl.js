@@ -9,14 +9,13 @@ var request = require("request"); // for fetching the feed
 var zlib = require('zlib');
 var Iconv = require('iconv').Iconv;
 
-exports.crawl = async (req, res, next) => {
+exports.getCrawl = async (req, res, next) => {
   try {
     const feeds = await Feed.findAll();
 
     if (feeds.length > 0) {
       feeds.forEach(function (feed) {
         fetch(feed);
-        next();
       });
     }
     return res.status(200).json("Crawling background process started.");
