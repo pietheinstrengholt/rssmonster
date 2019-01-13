@@ -13,7 +13,6 @@ exports.crawl = async (req, res, next) => {
     if (feeds.length > 0) {
       feeds.forEach(function(feed) {
         fetch(feed);
-        next();
       });
     }
     return res.status(200).json("Crawling background process started.");
@@ -27,7 +26,7 @@ async function fetch(feed) {
   feedparser
     .parse(feed.url)
     .then(items => items.forEach(item => processArticle(feed, item)))
-    .catch(console.log(err));
+    .catch(console.error);
 }
 
 async function processArticle(feed, post) {
