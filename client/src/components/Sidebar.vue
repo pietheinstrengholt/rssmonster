@@ -386,13 +386,13 @@ div#addnew {
 div#refresh.option {
   background-color: #6f79d3;
   margin-right: 70px;
-  min-width: 155px;
+  min-width: 165px;
 }
 
 div#addnew.option {
   background-color: #51556a;
   margin-right: 60px;
-  min-width: 155px;
+  min-width: 165px;
 }
 
 div#monster {
