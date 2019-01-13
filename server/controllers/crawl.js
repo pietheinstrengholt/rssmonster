@@ -13,7 +13,10 @@ exports.getCrawl = async (req, res, next) => {
 
     if (feeds.length > 0) {
       feeds.forEach(function(feed) {
-        fetch(feed);
+        //do not crawl feeds with an error count which is too high
+        if (feed.errorCount < 10) {
+          fetch(feed);
+        }
       });
     }
     return res.status(200).json("Crawling background process started.");
@@ -33,6 +36,7 @@ async function fetch(feed) {
 
 async function processArticle(feed, post) {
   try {
+    //try to find an article with the same content, post title or url in the database
     const article = await Article.findOne({
       where: {
         [Op.or]: [
@@ -49,6 +53,7 @@ async function processArticle(feed, post) {
       }
     });
 
+    //skip if an article with the same content is found
     if (!article) {
       //add article
       Article.create({
