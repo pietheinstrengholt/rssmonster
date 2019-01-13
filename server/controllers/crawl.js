@@ -27,7 +27,7 @@ exports.getCrawl = async (req, res, next) => {
 };
 
 async function fetch(feed) {
-  const url = await autodiscover.discover(feed.url);
+  const url = await autodiscover.discover(feed.rssUrl);
   feedparser
     .parse(url)
     .then(items => items.forEach(item => processArticle(feed, item)))

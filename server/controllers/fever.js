@@ -57,7 +57,7 @@ exports.postFever = async (req, res, next) => {
             id: String(feed.id),
             favicon: '<img src="data:' + feed.favicon + '">',
             title: feed.feed_name,
-            url: feed.url,
+            url: feed.rssUrl,
             site_url: feed.url,
             is_spark: 0,
             last_updated_on_time: Math.floor(feed.updatedAt / 1000)

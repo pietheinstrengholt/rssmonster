@@ -36,6 +36,7 @@ exports.updateFeed = async (req, res, next) => {
   const feed_desc = req.body.feed_desc;
   const categoryId = req.body.categoryId;
   const url = req.body.url;
+  const rssUrl = req.body.rssUrl;
   const favicon = req.body.favicon;
   try {
     const feed = await Feed.findByPk(feedId);
@@ -50,6 +51,7 @@ exports.updateFeed = async (req, res, next) => {
         feed_desc: req.body.feed_desc,
         categoryId: req.body.categoryId,
         url: req.body.url,
+        rssUrl: req.body.rssUrl,
         favicon: req.body.favicon
       });
       return res.status(200).json(feed);
@@ -104,11 +106,13 @@ exports.addFeed = async (req, res, next) => {
           }
         }).then(feed => {
           if (!feed) {
+            console.log(result[0].meta);
             Feed.create({
               categoryId: categoryId,
               feed_name: result[0].meta.title,
               feed_desc: result[0].meta.description,
-              url: url,
+              url: result[0].meta.link,
+              rssUrl: url,
               favicon: result[0].meta.image.url
             })
               .then(result => {

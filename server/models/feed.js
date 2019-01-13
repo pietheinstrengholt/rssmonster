@@ -33,6 +33,9 @@ const Feed = sequelize.define(
     },
     feed_desc: Sequelize.TEXT,
     url: {
+      type: Sequelize.STRING
+    },
+    rssUrl: {
       type: Sequelize.STRING,
       unique: true
     },
