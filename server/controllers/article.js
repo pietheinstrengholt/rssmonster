@@ -64,7 +64,7 @@ exports.getArticles = async (req, res, next) => {
       });
     }
 
-    //if star is set, then use the star_ind field to query against
+    //if star is set, then use the starInd field to query against
     if (status == "star") {
       articles = await Article.findAll({
         attributes: ["id"],
@@ -77,7 +77,7 @@ exports.getArticles = async (req, res, next) => {
           content: {
             [Op.like]: search
           },
-          star_ind: 1
+          starInd: 1
         }
       });
     }

@@ -135,7 +135,7 @@
                 <span class="glyphicon">
                   <v-icon name="circle"/>
                 </span>
-                <span class="title">{{feed.feed_name}}</span>
+                <span class="title">{{feed.feedName}}</span>
                 <span class="badge-unread">
                   <span
                     v-if="store.currentSelection.status === 'unread'"
@@ -386,13 +386,13 @@ div#addnew {
 div#refresh.option {
   background-color: #6f79d3;
   margin-right: 70px;
-  min-width: 155px;
+  min-width: 165px;
 }
 
 div#addnew.option {
   background-color: #51556a;
   margin-right: 60px;
-  min-width: 155px;
+  min-width: 165px;
 }
 
 div#monster {

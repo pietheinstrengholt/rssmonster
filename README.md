@@ -2,6 +2,8 @@
 
 [![Build Status](https://travis-ci.org/pietheinstrengholt/rssmonster.svg?branch=master)](https://travis-ci.org/pietheinstrengholt/rssmonster/)
 
+[![License](https://img.shields.io/github/license/pietheinstrengholt/rssmonster.svg)](https://www.github.com/pietheinstrengholt/rssmonster/)
+
 Copyright (c) 2019 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
@@ -61,7 +63,5 @@ The following scripts and plug-ins are used within RSSMonster
 * Waypoints: https://github.com/imakewebthings/waypoints
 
 #### TODO
-- Rename feed_name, feed_desc, etc.
 - Change dist location when building VueJS to ../../server
-- Implement settings
-- Fix UTF8
+- Implement settings (default category on initial load, ASC or DESC sort, etc.)

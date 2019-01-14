@@ -15,7 +15,7 @@ const Category = sequelize.define(
       type: Sequelize.STRING,
       allowNull: false
     },
-    category_order: {
+    categoryOrder: {
       type: Sequelize.INTEGER,
       defaultValue: 0
     }

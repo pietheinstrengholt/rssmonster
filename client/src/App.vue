@@ -156,6 +156,9 @@ export default {
     },
     modalClick: function(value) {
       this.modal = value;
+      if (value == "newfeed") {
+        this.feed = {};
+      }
     },
     lookupFeedById: function(feedId) {
       for (var x = 0; x < this.store.categories.length; x++) {

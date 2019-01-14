@@ -1,8 +1,8 @@
-var FeedParser = require("feedparser");
-var request = require("request"); // for fetching the feed
-
 const Feed = require("../models/feed");
 const Article = require("../models/article");
+
+const feedparser = require("feedparser-promised");
+const autodiscover = require("../util/autodiscover");
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -32,10 +32,11 @@ exports.getFeed = async (req, res, next) => {
 
 exports.updateFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
-  const feed_name = req.body.feed_name;
-  const feed_desc = req.body.feed_desc;
+  const feedName = req.body.feedName;
+  const feedDesc = req.body.feedDesc;
   const categoryId = req.body.categoryId;
   const url = req.body.url;
+  const rssUrl = req.body.rssUrl;
   const favicon = req.body.favicon;
   try {
     const feed = await Feed.findByPk(feedId);
@@ -45,14 +46,14 @@ exports.updateFeed = async (req, res, next) => {
       });
     }
     if (feed) {
-      feed
-        .update({
-          feed_name: req.body.feed_name,
-          feed_desc: req.body.feed_desc,
-          categoryId: req.body.categoryId,
-          url: req.body.url,
-          favicon: req.body.favicon
-        });
+      feed.update({
+        feedName: req.body.feedName,
+        feedDesc: req.body.feedDesc,
+        categoryId: req.body.categoryId,
+        url: req.body.url,
+        rssUrl: req.body.rssUrl,
+        favicon: req.body.favicon
+      });
       return res.status(200).json(feed);
     }
   } catch (err) {
@@ -90,74 +91,54 @@ exports.deleteFeed = async (req, res, next) => {
 };
 
 exports.addFeed = async (req, res, next) => {
-  //capture body url
-  const url = req.body.url;
-  const categoryId = req.body.categoryId;
-
   try {
+    //capture body url and autodiscover the rss feed
+    const url = await autodiscover.discover(req.body.url);
+    const categoryId = req.body.categoryId;
 
-    //set variables
-    var req = request(url);
-    var feedparser = new FeedParser();
-
-    //validate if the url is responding, if not return an error
-    req.on("error", function (error) {
-      return res.status(400).json({
-        error_msg: error
-      });
-    });
-
-    req.on("response", function (res) {
-      var stream = this; // `this` is `req`, which is a stream
-
-      if (res.statusCode !== 200) {
-        this.emit("error", new Error("Bad status code"));
-      } else {
-        stream.pipe(feedparser);
-      }
-    });
-
-    feedparser.on("error", function (error) {
-      return res.status(404).json({
-        error: error
-      });
-    });
-
-    feedparser.on("readable", function (req) {
-      //get the metadata
-      var meta = this.meta;
-
-      Feed.findOne({
-        where: {
-          url: meta.xmlurl
-        }
-      }).then(feed => {
-        if (!feed) {
-          Feed.create({
+    //parse feed
+    feedparser
+      .parse(url)
+      .then(result => {
+        Feed.findOne({
+          where: {
+            url: url
+          }
+        }).then(feed => {
+          if (!feed) {
+            Feed.create({
               categoryId: categoryId,
-              feed_name: meta.title,
-              feed_desc: meta.description,
-              url: meta.xmlurl,
-              favicon: meta.image.url
+              feedName: result[0].meta.title,
+              feedDesc: result[0].meta.description,
+              url: result[0].meta.link,
+              rssUrl: url,
+              favicon: result[0].meta.image.url
             })
-            .then(result => {
-              return res.status(200).json(result);
-            })
-            .catch(err => {
-              console.log(err);
-              return res.status(500).json(err);
+              .then(result => {
+                return res.status(200).json(result);
+              })
+              .catch(err => {
+                console.log(err);
+                return res.status(500).json({
+                  error_msg: "" + err
+                });
+              });
+          } else {
+            return res.status(500).json({
+              error_msg: "Feed already exists."
             });
-        } else {
-          return res.status(402).json({
-            error_msg: 'Feed already exists.'
-          });
-        }
+          }
+        });
+      })
+      .catch(err => {
+        console.log(err);
+        return res.status(500).json({
+          error_msg: "" + err
+        });
       });
-    });
   } catch (err) {
-    console.log(err);
     return res.status(500).json({
-      error_msg: '' + err
+      error_msg: "" + err
     });
   }
 };

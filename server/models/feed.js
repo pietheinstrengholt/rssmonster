@@ -27,12 +27,15 @@ const Feed = sequelize.define(
         key: "id"
       }
     },
-    feed_name: {
+    feedName: {
       type: Sequelize.STRING,
       allowNull: false
     },
-    feed_desc: Sequelize.TEXT,
+    feedDesc: Sequelize.TEXT,
     url: {
+      type: Sequelize.STRING
+    },
+    rssUrl: {
       type: Sequelize.STRING,
       unique: true
     },
