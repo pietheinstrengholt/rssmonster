@@ -4,7 +4,11 @@ const Op = Sequelize.Op;
 const Feed = require("../models/feed");
 const Article = require("../models/article");
 
-const feedparser = require("feedparser-promised");
+var FeedParser = require("feedparser");
+var request = require("request"); // for fetching the feed
+var zlib = require("zlib");
+var Iconv = require("iconv").Iconv;
+
 const autodiscover = require("../util/autodiscover");
 
 exports.getCrawl = async (req, res, next) => {
@@ -13,10 +17,7 @@ exports.getCrawl = async (req, res, next) => {
 
     if (feeds.length > 0) {
       feeds.forEach(function(feed) {
-        //do not crawl feeds with an error count which is too high
-        if (feed.errorCount < 10) {
-          fetch(feed);
-        }
+        fetch(feed);
       });
     }
     return res.status(200).json("Crawling background process started.");
@@ -27,16 +28,111 @@ exports.getCrawl = async (req, res, next) => {
 };
 
 async function fetch(feed) {
-  const url = await autodiscover.discover(feed.rssUrl);
-  feedparser
-    .parse(url)
-    .then(items => items.forEach(item => processArticle(feed, item)))
-    .catch(console.error);
+  try {
+    // Define our streams
+    const url = await autodiscover.discover(feed.rssUrl);
+    var req = request(url, {
+      timeout: 10000,
+      pool: false
+    });
+    req.setMaxListeners(50);
+    // Some feeds do not respond without user-agent and accept headers.
+    req.setHeader(
+      "user-agent",
+      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36"
+    );
+    req.setHeader("accept", "text/html,application/xhtml+xml");
+
+    var feedparser = new FeedParser();
+
+    // Define our handlers
+    req.on("error", done =>
+      feed.update({
+        errorCount: Sequelize.literal("errorCount + 1")
+      })
+    );
+
+    req.on("response", function(res) {
+      if (res.statusCode != 200)
+        return this.emit("error", new Error("Bad status code"));
+      var encoding = res.headers["content-encoding"] || "identity",
+        charset = getParams(res.headers["content-type"] || "").charset;
+      res = maybeDecompress(res, encoding);
+      res = maybeTranslate(res, charset);
+      res.pipe(feedparser);
+    });
+
+    feedparser.on("error", done =>
+      feed.update({
+        errorCount: Sequelize.literal("errorCount + 1")
+      })
+    );
+    feedparser.on("readable", function() {
+      var post;
+      while ((post = this.read())) {
+        //process article
+        processArticle(feed, post);
+      }
+      //set errorCount back to 0
+      feed.update({
+        errorCount: 0
+      });
+    });
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+}
+
+function done(err) {
+  if (err) {
+    console.log(err, err.stack);
+  }
+}
+
+function getParams(str) {
+  var params = str.split(";").reduce(function(params, param) {
+    var parts = param.split("=").map(function(part) {
+      return part.trim();
+    });
+    if (parts.length === 2) {
+      params[parts[0]] = parts[1];
+    }
+    return params;
+  }, {});
+  return params;
+}
+
+function maybeDecompress(res, encoding) {
+  var decompress;
+  if (encoding.match(/\bdeflate\b/)) {
+    decompress = zlib.createInflate();
+  } else if (encoding.match(/\bgzip\b/)) {
+    decompress = zlib.createGunzip();
+  }
+  return decompress ? res.pipe(decompress) : res;
+}
+
+function maybeTranslate(res, charset) {
+  var iconv;
+  // Use iconv if its not utf8 already.
+  if (!iconv && charset && !/utf-*8/i.test(charset)) {
+    try {
+      iconv = new Iconv(charset, "utf-8");
+      console.log("Converting from charset %s to utf-8", charset);
+      iconv.on("error", done);
+      // If we're using iconv, stream will be the output of iconv
+      // otherwise it will remain the output of request
+      res = res.pipe(iconv);
+    } catch (err) {
+      res.emit("error", err);
+    }
+  }
+  return res;
 }
 
 async function processArticle(feed, post) {
   try {
-    //try to find an article with the same content, post title or url in the database
     const article = await Article.findOne({
       where: {
         [Op.or]: [
@@ -53,13 +149,12 @@ async function processArticle(feed, post) {
       }
     });
 
-    //skip if an article with the same content is found
     if (!article) {
       //add article
       Article.create({
         feedId: feed.id,
         status: "unread",
-        starInd: 0,
+        star_ind: 0,
         url: post.link,
         image_url: "",
         subject: post.title,
