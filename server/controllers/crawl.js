@@ -6,6 +6,7 @@ const Article = require("../models/article");
 
 const feedparser = require("feedparser-promised");
 const autodiscover = require("../util/autodiscover");
+const parsefeed = require("../util/parsefeed");
 
 exports.getCrawl = async (req, res, next) => {
   try {
@@ -15,24 +16,17 @@ exports.getCrawl = async (req, res, next) => {
       feeds.forEach(function(feed) {
         //do not crawl feeds with an error count which is too high
         if (feed.errorCount < 10) {
-          fetch(feed);
+          console.log(feed.rssUrl);
+          parsefeed.fetch(feed);
         }
       });
     }
-    return res.status(200).json("Crawling background process started.");
+    //return res.status(200).json("Crawling background process started.");
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);
   }
 };
-
-async function fetch(feed) {
-  const url = await autodiscover.discover(feed.rssUrl);
-  feedparser
-    .parse(url)
-    .then(items => items.forEach(item => processArticle(feed, item)))
-    .catch(console.error);
-}
 
 async function processArticle(feed, post) {
   try {

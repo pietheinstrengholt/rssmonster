@@ -24,12 +24,16 @@
     "ejs": "^2.6.1",
     "express": "^4.16.3",
     "express-handlebars": "^3.0.0",
+    "feedparser": "^2.2.9",
     "feedparser-promised": "^2.0.0",
+    "iconv": "^2.3.2",
     "morgan": "^1.9.1",
     "mysql2": "^1.6.1",
     "node-fetch": "^2.3.0",
     "pug": "^2.0.3",
+    "request": "^2.88.0",
     "sequelize": "^5.0.0-beta.11",
-    "sequelize-cli": "^5.4.0"
+    "sequelize-cli": "^5.4.0",
+    "zlib": "^1.0.5"
   }
 }
