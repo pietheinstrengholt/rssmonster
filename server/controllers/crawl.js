@@ -73,6 +73,10 @@ async function fetch(feed) {
         //process article
         processArticle(feed, post);
       }
+      //set errorCount back to 0
+      feed.update({
+        errorCount: 0
+      });
     });
   } catch (err) {
     console.log(err);
