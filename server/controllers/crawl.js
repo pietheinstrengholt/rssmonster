@@ -29,7 +29,7 @@ exports.getCrawl = async (req, res, next) => {
 
 async function fetch(feed) {
   // Define our streams
-  const url = await autodiscover.discover(feed.url);
+  const url = await autodiscover.discover(feed.rssUrl);
   var req = request(url, {
     timeout: 10000,
     pool: false
