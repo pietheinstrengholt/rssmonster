@@ -36,7 +36,11 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="store.currentSelection.category">
+                      <select
+                        class="form-control"
+                        id="category"
+                        v-model="store.currentSelection.category"
+                      >
                         <option
                           v-for="category in this.store.categories"
                           :value="category.id"
@@ -60,7 +64,7 @@
                 <span v-if="ajaxRequest">Please Wait ...</span>
                 <br>
                 <span class="error" v-if="error_msg">{{ error_msg }}</span>
-                <div v-if="feed.id">
+                <div v-if="feed.feedName">
                   <div class="form-group row">
                     <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                     <div class="col-sm-9">
@@ -151,7 +155,11 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="store.currentSelection.category">
+                      <select
+                        class="form-control"
+                        id="category"
+                        v-model="store.currentSelection.category"
+                      >
                         <option
                           v-for="category in this.store.categories"
                           :value="category.id"
@@ -207,10 +215,10 @@
               </div>
               <div class="modal-footer">
                 <button
-                  v-if="feed.id && modal==='newfeed'"
+                  v-if="feed.feedName && modal==='newfeed'"
                   type="button"
                   class="btn btn-primary"
-                  @click="saveFeed"
+                  @click="newFeed"
                 >Save changes</button>
                 <button
                   v-if="modal==='newcategory'"
@@ -322,7 +330,7 @@ div.modal-dialog {
 </style>
 
 <script>
-import store from '../store';
+import store from "../store";
 
 export default {
   props: ["modal", "inputCategory", "inputFeed"],
@@ -352,7 +360,7 @@ export default {
       this.ajaxRequest = true;
 
       this.$http
-        .post("feeds", { url: this.url, categoryId: this.category.id })
+        .post("feeds", { url: this.url })
         .then(
           result => {
             /* eslint-disable no-console */
@@ -360,16 +368,6 @@ export default {
             /* eslint-enable no-console */
             this.error_msg = "";
             this.feed = result.body;
-
-            //add missing count properties, since these are populated dynamically
-            this.feed.unreadCount = 0;
-            this.feed.readCount = 0;
-            this.feed.starCount = 0;
-
-            //find the index of the category
-            var index = this.store.categories.indexOf(this.inputCategory);
-            //push the new feed to the store
-            this.store.categories[index].feeds.push(this.feed);
           },
           response => {
             this.error_msg = response.body.error_msg;
@@ -391,6 +389,48 @@ export default {
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
+    },
+    newFeed: function() {
+      this.$http
+        .post("feeds", {
+          categoryId: this.category.id,
+          feedName: this.feed.feedName,
+          feedDesc: this.feed.feedDesc,
+          url: this.feed.url,
+          rssUrl: this.feed.rssUrl
+        })
+        .then(
+          result => {
+            /* eslint-disable no-console */
+            console.log(result.status);
+            /* eslint-enable no-console */
+
+            //overwrite results with results from the database
+            this.feed = result.body;
+
+            //add missing count properties, since these are populated dynamically on an initial load
+            this.feed.unreadCount = 0;
+            this.feed.readCount = 0;
+            this.feed.starCount = 0;
+
+            //find the index of the category
+            var index = this.store.categories.indexOf(this.inputCategory);
+
+            //push the new feed to the store
+            this.store.categories[index].feeds.push(this.feed);
+          },
+          response => {
+            /* eslint-disable no-console */
+            console.log("oops something went wrong", response);
+            /* eslint-enable no-console */
+          }
+        );
+
+      //send event to refresh the categories
+      this.store.refreshCategories++;
+
+      //close modal
+      this.closeModal();
     },
     saveFeed: function() {
       this.$http
@@ -502,9 +542,7 @@ export default {
       this.$http.delete("feeds/" + this.feed.id).then(
         () => {
           //find the index of both the category and feed
-          var indexCategory = this.store.categories.indexOf(
-            this.inputCategory
-          );
+          var indexCategory = this.store.categories.indexOf(this.inputCategory);
 
           //remove the category from the store
           this.store.categories[indexCategory].feeds = this.arrayRemove(

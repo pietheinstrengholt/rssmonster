@@ -159,6 +159,9 @@ export default {
       if (value == "newfeed") {
         this.feed = {};
       }
+      if (value == "newcategory") {
+        this.category = {};
+      }
     },
     lookupFeedById: function(feedId) {
       for (var x = 0; x < this.store.categories.length; x++) {

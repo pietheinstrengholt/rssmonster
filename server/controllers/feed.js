@@ -63,6 +63,28 @@ exports.updateFeed = async (req, res, next) => {
   }
 };
 
+exports.newFeed = async (req, res, next) => {
+  const feedName = req.body.feedName;
+  const feedDesc = req.body.feedDesc;
+  const categoryId = req.body.categoryId;
+  const url = req.body.url;
+  const rssUrl = req.body.rssUrl;
+  const favicon = req.body.favicon;
+  try {
+    const feed = await Feed.create({
+      categoryId: categoryId,
+      feedName: feedName,
+      feedDesc: feedDesc,
+      url: url,
+      rssUrl: rssUrl
+    });
+    return res.status(200).json(feed);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
 exports.deleteFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
   try {
@@ -91,25 +113,25 @@ exports.deleteFeed = async (req, res, next) => {
   }
 };
 
-exports.addFeed = async (req, res, next) => {
+exports.validateFeed = async (req, res, next) => {
   //resolve url
+  const origUrl = req.body.url;
   const url = await autodiscover.discover(req.body.url);
   const categoryId = req.body.categoryId;
 
   try {
-
     //set variables
     var req = request(url);
     var feedparser = new FeedParser();
 
     //validate if the url is responding, if not return an error
-    req.on("error", function (error) {
+    req.on("error", function(error) {
       return res.status(400).json({
         error_msg: error
       });
     });
 
-    req.on("response", function (res) {
+    req.on("response", function(res) {
       var stream = this; // `this` is `req`, which is a stream
 
       if (res.statusCode !== 200) {
@@ -119,13 +141,13 @@ exports.addFeed = async (req, res, next) => {
       }
     });
 
-    feedparser.on("error", function (error) {
+    feedparser.on("error", function(error) {
       return res.status(404).json({
         error: error
       });
     });
 
-    feedparser.on("readable", function (req) {
+    feedparser.on("readable", function(req) {
       //get the metadata
       var meta = this.meta;
 
@@ -135,23 +157,17 @@ exports.addFeed = async (req, res, next) => {
         }
       }).then(feed => {
         if (!feed) {
-          Feed.create({
-              categoryId: categoryId,
-              feed_name: meta.title,
-              feed_desc: meta.description,
-              url: meta.xmlurl,
-              favicon: meta.image.url
-            })
-            .then(result => {
-              return res.status(200).json(result);
-            })
-            .catch(err => {
-              console.log(err);
-              return res.status(500).json(err);
-            });
+          return res.status(200).json({
+            categoryId: categoryId,
+            feedName: meta.title,
+            feedDesc: meta.description,
+            url: origUrl,
+            rssUrl: meta.xmlurl,
+            favicon: meta.image.url
+          });
         } else {
           return res.status(402).json({
-            error_msg: 'Feed already exists.'
+            error_msg: "Feed already exists."
           });
         }
       });
@@ -159,7 +175,7 @@ exports.addFeed = async (req, res, next) => {
   } catch (err) {
     console.log(err);
     return res.status(500).json({
-      error_msg: '' + err
+      error_msg: "" + err
     });
   }
 };
