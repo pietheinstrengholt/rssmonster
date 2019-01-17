@@ -360,7 +360,7 @@ export default {
       this.ajaxRequest = true;
 
       this.$http
-        .post("feeds", { url: this.url })
+        .post("feeds/validate", { url: this.url })
         .then(
           result => {
             /* eslint-disable no-console */

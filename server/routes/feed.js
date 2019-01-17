@@ -9,7 +9,7 @@ router.get('/', feedController.getFeeds);
 router.get('/:feedId', feedController.getFeed);
 router.put('/:feedId', feedController.updateFeed);
 router.delete('/:feedId', feedController.deleteFeed);
-router.post('/', feedController.validateFeed);
+router.post('/validate', feedController.validateFeed);
 router.post('/', feedController.newFeed);
 
 module.exports = router;
