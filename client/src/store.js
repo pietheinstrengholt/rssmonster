@@ -3,7 +3,8 @@ export default {
         status: 'unread',
         category: null,
         feed: null,
-        search: null
+        search: null,
+        sort: 'DESC'
     },
     filter: 'full',
     categories: [],

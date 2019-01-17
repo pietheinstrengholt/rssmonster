@@ -12,6 +12,7 @@ exports.getArticles = async (req, res, next) => {
     const feedId = req.query.feedId || '%';
     let search = req.query.search || '%';
     const status = req.query.status || 'unread';
+    const sort = req.query.sort || 'DESC';
 
     if (search !== '%') {
       search = '%' + search + '%';
@@ -50,7 +51,7 @@ exports.getArticles = async (req, res, next) => {
     if (status != "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [ ['updatedAt', 'DESC'] ],
+        order: [ ['updatedAt', sort] ],
         where: {
           status: status,
           feedId: feedIds,

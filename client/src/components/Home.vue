@@ -26,6 +26,18 @@
           <p>Minimal</p>
         </div>
       </div>
+       <div class="status-toolbar" @click="toggleShowSort">
+        <p id="filter" v-if="this.store.currentSelection.sort == 'DESC'">Newest</p>
+        <p id="filter" v-if="this.store.currentSelection.sort == 'ASC'">Oldest</p>
+      </div>
+      <div v-if="showSortMenu" class="dropdownmenu" id="sort">
+        <div class="item" href="#" @click="sortClicked('ASC')">
+          <p>Oldest</p>
+        </div>
+        <div class="item" href="#" @click="sortClicked('DESC')">
+          <p>Newest</p>
+        </div>
+      </div>     
       <form
         class="new-form-wrap"
         data-behavior="search_form"
@@ -312,6 +324,10 @@ div#filter.dropdownmenu {
   margin-left: 72px;
 }
 
+div#sort.dropdownmenu {
+  margin-left: 145px;
+}
+
 div.article {
   max-width: 100% !important;
 }
@@ -351,6 +367,7 @@ export default {
       search: null,
       showStatusMenu: false,
       showFilterMenu: false,
+      showSortMenu: false,
       firstLoad: false
     };
   },
@@ -370,7 +387,8 @@ export default {
               status: data.status,
               categoryId: data.category,
               feedId: data.feed,
-              search: data.search
+              search: data.search,
+              sort: data.sort
             }
           })
           .then(response => {
@@ -398,6 +416,7 @@ export default {
   },
   beforeCreate() {
     //get all the unread articles on initial load
+    //TODO: remove arguments here and retrieve last selection from the database
     this.$http
       .get("articles", {
         params: {
@@ -617,6 +636,9 @@ export default {
     toggleShowFilter: function() {
       this.showFilterMenu = !this.showFilterMenu;
     },
+    toggleShowSort: function() {
+      this.showSortMenu = !this.showSortMenu;
+    },
     statusClicked: function(status) {
       this.store.currentSelection.status = status;
       this.toggleShowStatus();
@@ -624,6 +646,10 @@ export default {
     filterClicked: function(filter) {
       this.store.filter = filter;
       this.toggleShowFilter();
+    },
+    sortClicked: function(sort) {
+      this.store.currentSelection.sort = sort;
+      this.toggleShowSort();
     }
   },
   filters: {
