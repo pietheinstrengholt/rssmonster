@@ -184,7 +184,7 @@
         >
           <div>
             <v-icon name="pen"/>
-            <div class="text">Name</div>
+            <div class="text">Edit</div>
           </div>
         </div>
         <div
@@ -206,7 +206,7 @@
         >
           <div>
             <v-icon name="pen"/>
-            <div class="text">Name</div>
+            <div class="text">Edit</div>
           </div>
         </div>
       </div>
