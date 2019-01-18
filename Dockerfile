@@ -16,5 +16,5 @@ RUN npm run build
 RUN mv ./dist ../server
 
 WORKDIR /app/server
-EXPOSE 3000/tcp
+EXPOSE 3000
 CMD npm run start
