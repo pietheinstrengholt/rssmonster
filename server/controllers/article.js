@@ -10,13 +10,15 @@ exports.getArticles = async (req, res, next) => {
   try {
 
     const sortSetting = await Setting.findOne({ where: {key_name: 'sort'}, attributes: ['key_value']});
-    console.log(sortSetting.key_value);
+    const feedIdSetting = await Setting.findOne({ where: {key_name: 'feedId'}, attributes: ['key_value']});
+    const categoryIdSetting = await Setting.findOne({ where: {key_name: 'categoryId'}, attributes: ['key_value']});
+    const statusSetting = await Setting.findOne({ where: {key_name: 'status'}, attributes: ['key_value']});
 
     //set default values before querying all items
-    const categoryId = req.query.categoryId || "%";
-    const feedId = req.query.feedId || "%";
+    const categoryId = req.query.categoryId || categoryIdSetting.key_value;
+    const feedId = req.query.feedId || feedIdSetting.key_value;
     let search = req.query.search || "%";
-    const status = req.query.status || "unread";
+    const status = req.query.status || statusSetting.key_value;
     const sort = req.query.sort || sortSetting.key_value;
 
     if (search !== "%") {
