@@ -10,6 +10,7 @@ const sequelize = require("./util/database");
 const Category = require("./models/category");
 const Feed = require("./models/feed");
 const Article = require("./models/article");
+const Setting = require("./models/setting");
 
 //routes
 const categoryRoutes = require("./routes/category");
