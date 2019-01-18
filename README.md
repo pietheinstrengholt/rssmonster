@@ -23,7 +23,6 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 * Edit `.env` inside the `client` folder. Change the VUE_APP_HOSTNAME so it points to the back-end.
 * Run `node_modules/.bin/sequelize init` this will add all needed database tables to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder.
 * Run `node_modules/.bin/sequelize db:seed:all` to seed the database.
-* Run `chmod -R 777 storage/`
 
 ### Development
 If you would like to run RSSMonster in development mode I recommend to run:
