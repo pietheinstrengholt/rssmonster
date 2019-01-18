@@ -41,6 +41,13 @@ If you would like to run RSSMonster in production mode I recommend to run:
 - Run the following command to start the containers: `docker-compose up`
 - The client will be running on port 8080 and communication with the backend takes place via 3000. Make sure these ports aren't being used. The mysql database is accessible via port 3307.
 
+### AWS Beanstalk
+- Setup your AWS Security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html
+- Download and install the Beanstalk CLI: https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3.html
+- Run the following command: `eb init`
+- Select your region and use the aws-access-id & aws-secret-key from step 1.
+- Provision a new environment: `eb create rssmonster-app --envvars "NODE_ENV=production" --database --database.engine mysql --database.username rssmonster --database.password "fvX2Ht8jXxXEYlZ6"`
+
 ### Reeder (iOS) integration support (via Fever API)
 RSSMonster is compatible with the Fever API. Apps like Reeder (iOS) will support this. To use the Reeder API (http://feedafever.com/api), point to the following url:
 
