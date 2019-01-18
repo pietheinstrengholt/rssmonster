@@ -360,7 +360,7 @@ export default {
       this.ajaxRequest = true;
 
       this.$http
-        .post("feeds/validate", { url: this.url })
+        .post("api/feeds/validate", { url: this.url })
         .then(
           result => {
             /* eslint-disable no-console */
@@ -392,7 +392,7 @@ export default {
     },
     newFeed: function() {
       this.$http
-        .post("feeds", {
+        .post("api/feeds", {
           categoryId: this.category.id,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
@@ -434,7 +434,7 @@ export default {
     },
     saveFeed: function() {
       this.$http
-        .put("feeds/" + this.feed.id, {
+        .put("api/feeds/" + this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
           categoryId: this.category.id
@@ -461,7 +461,7 @@ export default {
     saveCategory: function() {
       //save category when category name is set
       if (this.category) {
-        this.$http.post("categories", { name: this.category.name }).then(
+        this.$http.post("api/categories", { name: this.category.name }).then(
           result => {
             //create new local category in data object
             this.category = result.body;
@@ -488,7 +488,7 @@ export default {
     },
     deleteCategory: function() {
       //delete category
-      this.$http.delete("categories/" + this.category.id).then(
+      this.$http.delete("api/categories/" + this.category.id).then(
         () => {
           //remove the category from the store
           this.store.categories = this.arrayRemove(
@@ -515,7 +515,7 @@ export default {
     renameCategory: function() {
       //rename category
       this.$http
-        .put("categories/" + this.store.currentSelection.category, {
+        .put("api/categories/" + this.store.currentSelection.category, {
           name: this.category.name
         })
         .then(
@@ -539,7 +539,7 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      this.$http.delete("feeds/" + this.feed.id).then(
+      this.$http.delete("api/feeds/" + this.feed.id).then(
         () => {
           //find the index of both the category and feed
           var indexCategory = this.store.categories.indexOf(this.inputCategory);
@@ -564,7 +564,7 @@ export default {
     renameFeed: function() {
       //rename feed
       this.$http
-        .put("feeds/" + this.feed.id, {
+        .put("api/feeds/" + this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
           categoryId: this.category.id

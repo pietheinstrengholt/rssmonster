@@ -119,7 +119,7 @@ export default {
   beforeCreate() {
     //get an overview with the count for all feeds
     this.$http
-      .get("manager/overview")
+      .get("api/manager/overview")
       .then(response => {
         return response.json();
       })

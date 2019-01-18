@@ -381,7 +381,7 @@ export default {
     "store.currentSelection": {
       handler: function(data) {
         this.$http
-          .get("articles", {
+          .get("api/articles", {
             params: {
               //the following arguments are used
               status: data.status,
@@ -418,7 +418,7 @@ export default {
     //get all the unread articles on initial load
     //TODO: remove arguments here and retrieve last selection from the database
     this.$http
-      .get("articles", {
+      .get("api/articles", {
         params: {
           status: "unread"
         }
@@ -449,7 +449,7 @@ export default {
       if (this.container.length > 0) {
         //get all the articles by using the api
         this.$http
-          .post("manager/details", {
+          .post("api/manager/details", {
             articleIds: this.container
               .slice(this.distance, this.distance + this.fetchCount)
               .join(",")
@@ -526,7 +526,7 @@ export default {
     markArticleRead(article) {
       if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
-        this.$http.post("manager/marktoread/" + article).then(
+        this.$http.post("api/manager/marktoread/" + article).then(
           response => {
             if (!this.pool.includes(article)) {
               //push id to the pool
@@ -570,7 +570,7 @@ export default {
       if (event.currentTarget.className.indexOf("bookmarked") >= 0) {
         //make ajax request to change bookmark status
         this.$http
-          .post("manager/markwithstar/" + article, { update: "unmark" })
+          .post("api/manager/markwithstar/" + article, { update: "unmark" })
           .then(
             response => {
               //decrease the star count
@@ -598,7 +598,7 @@ export default {
       } else {
         //make ajax request to change bookmark status
         this.$http
-          .post("manager/markwithstar/" + article, { update: "mark" })
+          .post("api/manager/markwithstar/" + article, { update: "mark" })
           .then(
             response => {
               //increase the star count

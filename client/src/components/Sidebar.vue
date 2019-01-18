@@ -493,7 +493,7 @@ export default {
     refreshFeeds: function() {
       //show spinner
       this.refreshing = true;
-      this.$http.get("crawl", {}).then(
+      this.$http.get("api/crawl", {}).then(
         response => {
           if (response.body) {
             //refresh after one second
@@ -520,7 +520,7 @@ export default {
       }
 
       //make ajax request to change categories order
-      this.$http.post("manager/updateorder", { order: orderList }).then(
+      this.$http.post("api/manager/updateorder", { order: orderList }).then(
         response => {
           //get status & status text
           /* eslint-disable no-console */

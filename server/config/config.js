@@ -19,10 +19,10 @@ module.exports = {
     dialect: 'mysql'
   },
   production: {
-    username: process.env.DB_USERNAME,
-    password: process.env.DB_PASSWORD,
-    database: process.env.DB_DATABASE,
-    host: process.env.DB_HOSTNAME,
+    username: process.env.DB_USERNAME || process.env.RDS_USERNAME,
+    password: process.env.DB_PASSWORD || process.env.RDS_PASSWORD,
+    database: process.env.DB_DATABASE || process.env.RDS_DB_NAME,
+    host: process.env.DB_HOSTNAME || process.env.RDS_HOSTNAME,
     dialect: 'mysql',
     charset: "utf8mb4",
     collate: "utf8mb4_general_ci",
