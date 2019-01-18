@@ -1,5 +1,6 @@
 const Article = require("../models/article");
 const Feed = require("../models/feed");
+const Setting = require("../models/setting");
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -7,19 +8,23 @@ const Op = Sequelize.Op;
 //the getArticles function returns an array with all the article ids
 exports.getArticles = async (req, res, next) => {
   try {
-    //set default values before querying all items
-    const categoryId = req.query.categoryId || '%';
-    const feedId = req.query.feedId || '%';
-    let search = req.query.search || '%';
-    const status = req.query.status || 'unread';
-    const sort = req.query.sort || 'DESC';
 
-    if (search !== '%') {
-      search = '%' + search + '%';
+    const sortSetting = await Setting.findOne({ where: {key_name: 'sort'}, attributes: ['key_value']});
+    console.log(sortSetting.key_value);
+
+    //set default values before querying all items
+    const categoryId = req.query.categoryId || "%";
+    const feedId = req.query.feedId || "%";
+    let search = req.query.search || "%";
+    const status = req.query.status || "unread";
+    const sort = req.query.sort || sortSetting.key_value;
+
+    if (search !== "%") {
+      search = "%" + search + "%";
     }
 
     //populate an array with all the feed ids based on the categoryId
-    if (categoryId == '%') {
+    if (categoryId == "%") {
       feeds = await Feed.findAll({
         attributes: ["id"]
       });
@@ -35,7 +40,7 @@ exports.getArticles = async (req, res, next) => {
     }
 
     //if the feedId is set, set it equal to all feedIds
-    if (feedId != '%') {
+    if (feedId != "%") {
       feedIds = feedId;
     } else {
       //build array based on previous results and push all ids to the array
@@ -51,7 +56,7 @@ exports.getArticles = async (req, res, next) => {
     if (status != "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [ ['updatedAt', sort] ],
+        order: [["updatedAt", sort]],
         where: {
           status: status,
           feedId: feedIds,
@@ -69,7 +74,7 @@ exports.getArticles = async (req, res, next) => {
     if (status == "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [ ['updatedAt', 'DESC'] ],
+        order: [["updatedAt", "DESC"]],
         where: {
           feedId: feedIds,
           subject: {
@@ -94,6 +99,28 @@ exports.getArticles = async (req, res, next) => {
     //return all itemIds
     res.status(200).json(itemIds);
 
+    await Setting.destroy({ where: {} });
+
+    await Setting.create({
+      key_name: "sort",
+      key_value: sort
+    });
+
+    await Setting.create({
+      key_name: "status",
+      key_value: status
+    });
+
+    await Setting.create({
+      key_name: "categoryId",
+      key_value: categoryId
+    });
+
+    await Setting.create({
+      key_name: "feedId",
+      key_value: feedId
+    });
+
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);
@@ -104,11 +131,13 @@ exports.getArticles = async (req, res, next) => {
 exports.getArticle = (req, res, next) => {
   const articleId = req.params.articleId;
   Article.findByPk(articleId, {
-      include: [{
+    include: [
+      {
         model: Feed,
         required: true
-      }]
-    })
+      }
+    ]
+  })
     .then(article => {
       console.log(article);
       res.status(200).json({
