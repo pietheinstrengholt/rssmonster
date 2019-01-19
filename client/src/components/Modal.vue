@@ -56,6 +56,7 @@
                   <p>First create a new category before adding a new feed.</p>
                 </div>
                 <button
+                  v-if="this.store.categories.length > 0"
                   type="submit"
                   class="btn btn-primary mb-2"
                   @click="checkWebsite"
