@@ -16,7 +16,7 @@ exports.getCrawl = async (req, res, next) => {
     const feeds = await Feed.findAll();
 
     if (feeds.length > 0) {
-      feeds.forEach(function(feed) {
+      feeds.forEach(function (feed) {
         fetch(feed);
       });
     }
@@ -52,7 +52,7 @@ async function fetch(feed) {
       })
     );
 
-    req.on("response", function(res) {
+    req.on("response", function (res) {
       if (res.statusCode != 200)
         return this.emit("error", new Error("Bad status code"));
       var encoding = res.headers["content-encoding"] || "identity",
@@ -67,7 +67,7 @@ async function fetch(feed) {
         errorCount: Sequelize.literal("errorCount + 1")
       })
     );
-    feedparser.on("readable", function() {
+    feedparser.on("readable", function () {
       var post;
       while ((post = this.read())) {
         //process article
@@ -91,8 +91,8 @@ function done(err) {
 }
 
 function getParams(str) {
-  var params = str.split(";").reduce(function(params, param) {
-    var parts = param.split("=").map(function(part) {
+  var params = str.split(";").reduce(function (params, param) {
+    var parts = param.split("=").map(function (part) {
       return part.trim();
     });
     if (parts.length === 2) {
@@ -135,8 +135,7 @@ async function processArticle(feed, post) {
   try {
     const article = await Article.findOne({
       where: {
-        [Op.or]: [
-          {
+        [Op.or]: [{
             url: post.link
           },
           {

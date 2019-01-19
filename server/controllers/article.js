@@ -51,7 +51,9 @@ exports.getArticles = async (req, res, next) => {
     if (status != "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [ ['updatedAt', sort] ],
+        order: [
+          ['updatedAt', sort]
+        ],
         where: {
           status: status,
           feedId: feedIds,
@@ -69,7 +71,9 @@ exports.getArticles = async (req, res, next) => {
     if (status == "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [ ['updatedAt', 'DESC'] ],
+        order: [
+          ['updatedAt', 'DESC']
+        ],
         where: {
           feedId: feedIds,
           subject: {

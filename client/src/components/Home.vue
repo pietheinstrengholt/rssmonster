@@ -26,7 +26,7 @@
           <p>Minimal</p>
         </div>
       </div>
-       <div class="status-toolbar" @click="toggleShowSort">
+      <div class="status-toolbar" @click="toggleShowSort">
         <p id="filter" v-if="this.store.currentSelection.sort == 'DESC'">Newest</p>
         <p id="filter" v-if="this.store.currentSelection.sort == 'ASC'">Oldest</p>
       </div>
@@ -37,7 +37,7 @@
         <div class="item" href="#" @click="sortClicked('DESC')">
           <p>Newest</p>
         </div>
-      </div>     
+      </div>
       <form
         class="new-form-wrap"
         data-behavior="search_form"

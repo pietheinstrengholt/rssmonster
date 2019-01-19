@@ -25,25 +25,21 @@ exports.getOverview = async (req, res, next) => {
     const totalCount = (await readCount) + unreadCount;
 
     const categories = await Category.findAll({
-      include: [
-        {
-          model: Feed,
-          required: false
-        }
-      ],
+      include: [{
+        model: Feed,
+        required: false
+      }],
       order: ["categoryOrder", "name"]
     });
 
     const unreadCountGrouped = await Feed.findAll({
-      include: [
-        {
-          model: Article,
-          attributes: [],
-          where: {
-            status: "unread"
-          }
+      include: [{
+        model: Article,
+        attributes: [],
+        where: {
+          status: "unread"
         }
-      ],
+      }],
       attributes: [
         "categoryId",
         ["id", "feedId"],
@@ -54,15 +50,13 @@ exports.getOverview = async (req, res, next) => {
     });
 
     const readCountGrouped = await Feed.findAll({
-      include: [
-        {
-          model: Article,
-          attributes: [],
-          where: {
-            status: "read"
-          }
+      include: [{
+        model: Article,
+        attributes: [],
+        where: {
+          status: "read"
         }
-      ],
+      }],
       attributes: [
         "categoryId",
         ["id", "feedId"],
@@ -73,15 +67,13 @@ exports.getOverview = async (req, res, next) => {
     });
 
     const starCountGrouped = await Feed.findAll({
-      include: [
-        {
-          model: Article,
-          attributes: [],
-          where: {
-            starInd: 1
-          }
+      include: [{
+        model: Article,
+        attributes: [],
+        where: {
+          starInd: 1
         }
-      ],
+      }],
       attributes: [
         "categoryId",
         ["id", "feedId"],
@@ -92,7 +84,9 @@ exports.getOverview = async (req, res, next) => {
     });
 
     const toPlain = response => {
-      const flattenDataValues = ({ dataValues }) => {
+      const flattenDataValues = ({
+        dataValues
+      }) => {
         const flattenedObject = {};
         Object.keys(dataValues).forEach(key => {
           const dataValue = dataValues[key];
@@ -115,9 +109,9 @@ exports.getOverview = async (req, res, next) => {
         });
         return flattenedObject;
       };
-      return Array.isArray(response)
-        ? response.map(flattenDataValues)
-        : flattenDataValues(response);
+      return Array.isArray(response) ?
+        response.map(flattenDataValues) :
+        flattenDataValues(response);
     };
 
     //Sequelize raw: true or plain: true results into errors, so we will use the custom toPlain function here
@@ -224,12 +218,10 @@ exports.articleDetails = async (req, res, next) => {
     var articlesArray = articleIds.split(",");
 
     const articles = await Article.findAll({
-      include: [
-        {
-          model: Feed,
-          required: true
-        }
-      ],
+      include: [{
+        model: Feed,
+        required: true
+      }],
       where: {
         id: articlesArray
       }
@@ -252,12 +244,10 @@ exports.articleMarkToRead = async (req, res, next) => {
   try {
     const articleId = req.params.articleId;
     const article = await Article.findByPk(articleId, {
-      include: [
-        {
-          model: Feed,
-          required: true
-        }
-      ]
+      include: [{
+        model: Feed,
+        required: true
+      }]
     });
     if (!article) {
       return res.status(404).json({
@@ -281,12 +271,10 @@ exports.articleMarkToUnread = async (req, res, next) => {
   try {
     const articleId = req.params.articleId;
     const article = await Article.findByPk(articleId, {
-      include: [
-        {
-          model: Feed,
-          required: true
-        }
-      ]
+      include: [{
+        model: Feed,
+        required: true
+      }]
     });
     if (!article) {
       return res.status(404).json({
@@ -311,12 +299,10 @@ exports.articleMarkWithStar = async (req, res, next) => {
     const articleId = req.params.articleId;
     const update = req.body.update;
     const article = await Article.findByPk(articleId, {
-      include: [
-        {
-          model: Feed,
-          required: true
-        }
-      ]
+      include: [{
+        model: Feed,
+        required: true
+      }]
     });
 
     if (update === undefined) {
@@ -356,16 +342,13 @@ exports.articleMarkWithStar = async (req, res, next) => {
 
 exports.articleMarkAllAsRead = async (req, res, next) => {
   try {
-    await Article.update(
-      {
-        status: "read"
-      },
-      {
-        where: {
-          status: "unread"
-        }
+    await Article.update({
+      status: "read"
+    }, {
+      where: {
+        status: "unread"
       }
-    );
+    });
 
     res.status(200).json("marked all as read");
   } catch (err) {
@@ -388,16 +371,13 @@ exports.categoryUpdateOrder = async (req, res, next) => {
       //start counting
       count = 0;
       order.forEach(item => {
-        Category.update(
-          {
-            categoryOrder: count
-          },
-          {
-            where: {
-              id: item
-            }
+        Category.update({
+          categoryOrder: count
+        }, {
+          where: {
+            id: item
           }
-        );
+        });
         //increase count
         count++;
       });

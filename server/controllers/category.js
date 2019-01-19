@@ -4,12 +4,10 @@ const Feed = require("../models/feed");
 exports.getCategories = async (req, res, next) => {
   try {
     const categories = await Category.findAll({
-      include: [
-        {
-          model: Feed,
-          required: true
-        }
-      ],
+      include: [{
+        model: Feed,
+        required: true
+      }],
       order: ["categoryOrder", "name"]
     });
     return res.status(200).json({
@@ -25,12 +23,10 @@ exports.getCategory = async (req, res, next) => {
   try {
     const categoryId = req.params.categoryId;
     const category = await Category.findByPk(categoryId, {
-      include: [
-        {
-          model: Feed,
-          required: true
-        }
-      ]
+      include: [{
+        model: Feed,
+        required: true
+      }]
     });
     return res.status(200).json({
       category: category

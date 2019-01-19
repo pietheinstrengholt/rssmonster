@@ -80,7 +80,10 @@
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
-          <span v-if="store.currentSelection.status === 'unread'" class="badge white">{{ unreadCount }}</span>
+          <span
+            v-if="store.currentSelection.status === 'unread'"
+            class="badge white"
+          >{{ unreadCount }}</span>
           <span v-if="store.currentSelection.status === 'read'" class="badge white">{{ readCount }}</span>
           <span v-if="store.currentSelection.status === 'star'" class="badge white">{{ starCount }}</span>
         </span>
@@ -123,7 +126,10 @@
             </span>
           </div>
           <div v-if="category.feeds">
-            <div v-if="store.currentSelection.category === category.id" class="sidebar-category-feeds">
+            <div
+              v-if="store.currentSelection.category === category.id"
+              class="sidebar-category-feeds"
+            >
               <div
                 class="sidebar-category-feed"
                 v-on:click.stop="loadFeed(feed)"
@@ -456,7 +462,7 @@ div.category-button div.text {
 
 <script>
 import draggable from "vuedraggable";
-import store from '../store';
+import store from "../store";
 
 export default {
   data() {

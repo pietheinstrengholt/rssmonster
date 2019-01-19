@@ -291,10 +291,12 @@ exports.postFever = async (req, res, next) => {
 
       // id === '0' means all
       if (req.body.id !== '0') {
-       where['feedId'] = Number(req.body.id);
+        where['feedId'] = Number(req.body.id);
       }
 
-      Article.update(update, {where: where});
+      Article.update(update, {
+        where: where
+      });
     }
 
     //return 200 with arr
@@ -323,15 +325,23 @@ function responseBase() {
 function genUpdate(req_body_as) {
   switch (req_body_as) {
     case "read":
-      return {status: 'read'};
+      return {
+        status: 'read'
+      };
 
     case "unread":
-      return {status: 'unread'};
+      return {
+        status: 'unread'
+      };
 
     case "saved":
-      return {starInd: 1};
+      return {
+        starInd: 1
+      };
 
     case "unsaved":
-      return {starInd: 0};
+      return {
+        starInd: 0
+      };
   }
 }

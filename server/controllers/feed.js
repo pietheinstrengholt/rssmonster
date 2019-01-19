@@ -125,13 +125,13 @@ exports.validateFeed = async (req, res, next) => {
     var feedparser = new FeedParser();
 
     //validate if the url is responding, if not return an error
-    req.on("error", function(error) {
+    req.on("error", function (error) {
       return res.status(400).json({
         error_msg: error
       });
     });
 
-    req.on("response", function(res) {
+    req.on("response", function (res) {
       var stream = this; // `this` is `req`, which is a stream
 
       if (res.statusCode !== 200) {
@@ -141,13 +141,13 @@ exports.validateFeed = async (req, res, next) => {
       }
     });
 
-    feedparser.on("error", function(error) {
+    feedparser.on("error", function (error) {
       return res.status(404).json({
         error: error
       });
     });
 
-    feedparser.on("readable", function(req) {
+    feedparser.on("readable", function (req) {
       //get the metadata
       var meta = this.meta;
 
