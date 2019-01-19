@@ -1,7 +1,7 @@
 <template>
   <div class="quickbar view-toolbar">
     <a
-      @click="store.modal='showcategories'"
+      @click="emitClickEvent('modal','showcategories')"
       id="rssmonster"
       class="view-button"
       data-behavior="view_unread change_view_mode"
@@ -69,6 +69,9 @@ export default {
   methods: {
     loadType: function(status) {
       this.store.currentSelection.status = status;
+    },
+    emitClickEvent(eventType, value) {
+      this.$emit(eventType, value);
     }
   }
 };

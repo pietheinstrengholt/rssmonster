@@ -6,7 +6,7 @@
         <app-sidebar @modal="modalClick"></app-sidebar>
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
-        <app-quickbar></app-quickbar>
+        <app-quickbar @modal="modalClick"></app-quickbar>
         <app-home></app-home>
       </div>
     </div>
