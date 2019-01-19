@@ -8,7 +8,5 @@
       {
         "ContainerPort": "3000"
       }
-    ],
-    "Entrypoint": "/app/server/node_modules/.bin/sequelize",
-    "Command": "db:migrate"
+    ]
 }
