@@ -1,7 +1,7 @@
 <template>
   <div class="quickbar view-toolbar">
     <a
-      @click="emitClickEvent('modal','showcategories')"
+      @click="emitClickEvent('modal','mobile')"
       id="rssmonster"
       class="view-button"
       data-behavior="view_unread change_view_mode"

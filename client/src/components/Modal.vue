@@ -12,7 +12,7 @@
                 <h5 class="modal-title" v-if="modal==='renamecategory'">Rename category</h5>
                 <h5 class="modal-title" v-if="modal==='deletefeed'">Delete feed</h5>
                 <h5 class="modal-title" v-if="modal==='renamefeed'">Rename feed</h5>
-                <h5 class="modal-title" v-if="modal==='showcategories'">Categories</h5>
+                <h5 class="modal-title" v-if="modal==='mobile'">Categories</h5>
                 <button
                   type="button"
                   class="close"
@@ -173,7 +173,7 @@
                 </div>
               </div>
 
-              <div class="modal-body" id="mobile" v-if="modal==='showcategories'">
+              <div class="modal-body" id="mobile" v-if="modal==='mobile'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
                   <li class="category" v-on:click="store.currentSelection.category = null">
