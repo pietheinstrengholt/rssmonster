@@ -21,8 +21,7 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 * Find the `.env.example` file in the root of both the `client` and `server` folder. Copy and rename the files to `.env`
 * Edit `.env` inside the `server` folder and enter your Mysql or Database server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD).
 * Edit `.env` inside the `client` folder. Change the VUE_APP_HOSTNAME so it points to the back-end.
-* Run `node_modules/.bin/sequelize init` this will add all needed database tables to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder.
-* Run `node_modules/.bin/sequelize db:seed:all` to seed the database.
+* Run `./node_modules/.bin/sequelize db:migrate && ./node_modules/.bin/sequelize db:seed:all` this will add all needed database tables and content to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder to create the schema structure.
 
 ### Development
 If you would like to run RSSMonster in development mode I recommend to run:
@@ -36,10 +35,14 @@ If you would like to run RSSMonster in production mode I recommend to run:
 - Move the `dist` output folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
 - Inside the server folder: `npm run start`.
 
-### Docker
+### Docker for development
 - Run the following command to build all the images: `docker-compose build`
 - Run the following command to start the containers: `docker-compose up`
 - The client will be running on port 8080 and communication with the backend takes place via 3000. Make sure these ports aren't being used. The mysql database is accessible via port 3307.
+
+### Docker for production
+The production version has the server and client combined into a single container. The VueJS is also compiled into an optimized version. To build this single image, run the following command: `docker build .`
+Lastly you need to run the docker container. You need to provide the correct environment variables for the database server to connect to. Here's is an example: `docker run -d -t -i -e NODE_ENV=production -e DB_HOSTNAME=localhost -e DB_DATABASE=rssmonster -e DB_USERNAME=rssmonser -e DB_PASSWORD=password -p 3000:3000`
 
 ### AWS Beanstalk
 - Setup your AWS Security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html
