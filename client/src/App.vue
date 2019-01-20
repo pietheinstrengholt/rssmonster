@@ -6,7 +6,8 @@
         <app-sidebar @modal="modalClick"></app-sidebar>
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
-        <app-quickbar @modal="modalClick"></app-quickbar>
+        <app-quickbar @mobile="mobileClick"></app-quickbar>
+        <app-mobile :mobile="mobile" @mobile="mobileClick" ></app-mobile>
         <app-home></app-home>
       </div>
     </div>
@@ -109,12 +110,14 @@ import Sidebar from "./components/Sidebar.vue";
 import Home from "./components/Home.vue";
 import Quickbar from "./components/Quickbar.vue";
 import Modal from "./components/Modal.vue";
+import Mobile from "./components/Mobile.vue";
 export default {
   components: {
     appSidebar: Sidebar,
     appHome: Home,
     appQuickbar: Quickbar,
-    appModal: Modal
+    appModal: Modal,
+    appMobile: Mobile
   },
   beforeCreate() {
     //get an overview with the count for all feeds
@@ -146,6 +149,7 @@ export default {
       category: {},
       feed: {},
       modal: null,
+      mobile: null,
       store: store
     };
   },
@@ -162,6 +166,9 @@ export default {
       if (value == "newcategory") {
         this.category = {};
       }
+    },
+    mobileClick: function(value) {
+      this.mobile = value;
     },
     lookupFeedById: function(feedId) {
       for (var x = 0; x < this.store.categories.length; x++) {
