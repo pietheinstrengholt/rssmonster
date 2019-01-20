@@ -340,6 +340,7 @@ div.block div.article-content img {
 div.infinite-loading-container {
   display: block;
   min-height: 50px;
+  padding-top: 20px;
 }
 </style>
 
