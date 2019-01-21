@@ -50,6 +50,8 @@ Lastly you need to run the docker container. You need to provide the correct env
 - Run the following command: `eb init`
 - Select your region and use the aws-access-id & aws-secret-key from step 1.
 - Provision a new environment: `eb create rssmonster-app --envvars "NODE_ENV=production" --database --database.engine mysql --database.username rssmonster --database.password "fvX2Ht8jXxXEYlZ6"`
+- SSH into the new environment: `eb ssh rssmonster-app`
+- Migrate the database content: `/app/server/node_modules/.bin/sequelize db:migrate && /app/server/node_modules/.bin/sequelize db:seed:all`
 
 ### Reeder (iOS) integration support (via Fever API)
 RSSMonster is compatible with the Fever API. Apps like Reeder (iOS) will support this. To use the Reeder API (http://feedafever.com/api), point to the following url:
