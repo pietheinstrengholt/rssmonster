@@ -22,7 +22,7 @@
         </div>
       </div>
       <div>
-        <p class="title">Current selection</p>
+        <p class="title">All feeds</p>
       </div>
       <div
         v-on:click="loadType('unread')"
