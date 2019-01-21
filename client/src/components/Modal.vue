@@ -328,6 +328,15 @@ div.modal-dialog {
   -webkit-transform: scale(1.1);
   transform: scale(1.1);
 }
+
+#newfeed {
+  height: 100%;
+  width: 20%;
+  float: left;
+  text-align: center;
+  border-right: 1px solid black;
+  border-color: #dcdee0;
+}
 </style>
 
 <script>

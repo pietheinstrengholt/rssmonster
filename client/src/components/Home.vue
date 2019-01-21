@@ -1,61 +1,5 @@
 <template>
   <div id="main">
-    <div class="subscribe-toolbar">
-      <div class="status-toolbar" @click="toggleShowStatus">
-        <p id="status">{{ this.store.currentSelection.status | capitalize }}</p>
-      </div>
-      <div v-if="showStatusMenu" class="dropdownmenu" id="status">
-        <div class="item" href="#" @click="statusClicked('unread')">
-          <p>Unread</p>
-        </div>
-        <div class="item" href="#" @click="statusClicked('read')">
-          <p>Read</p>
-        </div>
-        <div class="item" href="#" @click="statusClicked('star')">
-          <p>Star</p>
-        </div>
-      </div>
-      <div class="status-toolbar" @click="toggleShowFilter">
-        <p id="filter">{{ this.store.filter | capitalize }}</p>
-      </div>
-      <div v-if="showFilterMenu" class="dropdownmenu" id="filter">
-        <div class="item" href="#" @click="filterClicked('full')">
-          <p>Full</p>
-        </div>
-        <div class="item" href="#" @click="filterClicked('minimal')">
-          <p>Minimal</p>
-        </div>
-      </div>
-      <div class="status-toolbar" @click="toggleShowSort">
-        <p id="filter" v-if="this.store.currentSelection.sort == 'DESC'">Newest</p>
-        <p id="filter" v-if="this.store.currentSelection.sort == 'ASC'">Oldest</p>
-      </div>
-      <div v-if="showSortMenu" class="dropdownmenu" id="sort">
-        <div class="item" href="#" @click="sortClicked('ASC')">
-          <p>Oldest</p>
-        </div>
-        <div class="item" href="#" @click="sortClicked('DESC')">
-          <p>Newest</p>
-        </div>
-      </div>
-      <form
-        class="new-form-wrap"
-        data-behavior="search_form"
-        accept-charset="UTF-8"
-        data-remote="true"
-        method="post"
-        role="url"
-      >
-        <input
-          @keyup="emitSearchEvent()"
-          v-model="search"
-          type="text"
-          class="query"
-          placeholder="Search"
-          autocomplete="off"
-        >
-      </form>
-    </div>
     <div id="articles">
       <div :key="article.id" v-bind:id="article.id" class="block" v-for="article in articles">
         <div class="article">
@@ -105,10 +49,6 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div.subscribe-toolbar {
-    display: none;
-  }
-
   div#articles {
     padding-top: 0px !important;
   }
@@ -129,6 +69,10 @@
     margin-bottom: 0px;
     padding-top: 6px;
   }
+}
+
+div.main {
+  margin-top: 50px;
 }
 
 div.block .article {
@@ -218,114 +162,12 @@ div.block span.favicon img.favicon {
   margin-top: -1px;
 }
 
-div.subscribe-toolbar {
-  height: 40px;
-  border-bottom: 1px solid transparent;
-  border-color: #dcdee0;
-  position: absolute;
-  width: 100%;
-  overflow: hidden;
-  background-color: #eff1f3;
-  position: fixed;
-  margin-left: -18px;
-}
-
-div#newfeed {
-  height: 100%;
-  width: 20%;
-  float: left;
-  text-align: center;
-  border-right: 1px solid black;
-  border-color: #dcdee0;
-}
-
-form.new-form-wrap {
-  width: 80%;
-  float: left;
-}
-
-.query {
-  width: 100%;
-  color: #3399ff;
-  height: 39px;
-  margin: 0;
-  padding: 4px 0px 3px 28px;
-  font-size: 14px;
-  background-color: #eff1f3;
-  border: none;
-  line-height: 1;
-  color: #212325;
-  background: url(../assets/search.svg) 8px 13px no-repeat;
-}
-
-div#show-modal {
-  height: 100%;
-}
-
 div#articles {
   padding-top: 40px;
   overflow-x: hidden;
   overflow-y: hidden;
   right: 0;
   left: 0;
-}
-
-div.status-toolbar {
-  float: left;
-  border-right: 1px solid #e0e0e0;
-  margin-left: 10px;
-  text-align: center;
-  cursor: pointer;
-  color: #111;
-}
-
-div.status-toolbar p {
-  padding: 4px;
-  font-size: 14px;
-  margin-right: 12px;
-  margin-top: 5px;
-}
-
-div.dropdownmenu {
-  position: fixed;
-  margin-top: 40px;
-  background-color: #eff1f3;
-  cursor: pointer;
-  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
-  min-width: 100px;
-  color: #111;
-}
-
-div.dropdownmenu div.item {
-  border-bottom: 1px solid #e0e0e0;
-  border-right: 1px solid #e0e0e0;
-  border-left: 1px solid #e0e0e0;
-  padding: 4px;
-  cursor: pointer;
-}
-
-div.dropdownmenu div.item p {
-  margin-left: 10px;
-  margin-right: 10px;
-  margin-bottom: 0px;
-  font-weight: 400;
-  font-size: 14px;
-}
-
-div.status-toolbar p#status {
-  width: 50px;
-}
-
-div.status-toolbar p#filter {
-  width: 50px;
-}
-
-div#filter.dropdownmenu {
-  margin-left: 72px;
-}
-
-div#sort.dropdownmenu {
-  margin-left: 145px;
 }
 
 div.article {
@@ -351,6 +193,9 @@ import moment from "moment";
 import store from "../store";
 
 export default {
+  components: {
+    InfiniteLoading
+  },
   data() {
     return {
       store: store,
@@ -365,10 +210,6 @@ export default {
       pool: [],
       //is used to keep track of which articles are already set with the waypoint method
       waypointPool: [],
-      search: null,
-      showStatusMenu: false,
-      showFilterMenu: false,
-      showSortMenu: false,
       firstLoad: false
     };
   },
@@ -405,9 +246,6 @@ export default {
       },
       deep: true
     }
-  },
-  components: {
-    InfiniteLoading
   },
   created: function() {
     window.addEventListener("scroll", this.handleScroll);
@@ -625,32 +463,6 @@ export default {
             }
           );
       }
-    },
-    emitSearchEvent: function() {
-      if (!(this.search === undefined || this.search === null)) {
-        this.store.currentSelection.search = this.search;
-      }
-    },
-    toggleShowStatus: function() {
-      this.showStatusMenu = !this.showStatusMenu;
-    },
-    toggleShowFilter: function() {
-      this.showFilterMenu = !this.showFilterMenu;
-    },
-    toggleShowSort: function() {
-      this.showSortMenu = !this.showSortMenu;
-    },
-    statusClicked: function(status) {
-      this.store.currentSelection.status = status;
-      this.toggleShowStatus();
-    },
-    filterClicked: function(filter) {
-      this.store.filter = filter;
-      this.toggleShowFilter();
-    },
-    sortClicked: function(sort) {
-      this.store.currentSelection.sort = sort;
-      this.toggleShowSort();
     }
   },
   filters: {

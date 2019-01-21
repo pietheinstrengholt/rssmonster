@@ -2,17 +2,17 @@
   <div id="app">
     <div class="row" style="margin-right:0px;">
       <div class="sidebar col-md-3 col-sm-0" style="position:fixed">
-        <app-quickbar></app-quickbar>
         <app-sidebar @modal="modalClick"></app-sidebar>
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
         <app-quickbar @mobile="mobileClick"></app-quickbar>
-        <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick"></app-mobile>
+        <app-toolbar></app-toolbar>
         <app-home></app-home>
       </div>
     </div>
     <!-- Modal -->
     <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
+    <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick"></app-mobile>
   </div>
 </template>
 
@@ -30,15 +30,6 @@
 
   div.col-md-9 {
     padding-right: 0px;
-  }
-
-  div.main {
-    margin-top: 50px;
-  }
-
-  .view-toolbar {
-    position: fixed;
-    z-index: 9999;
   }
 
   div#main {
@@ -108,6 +99,7 @@ import store from './store';
 
 import Sidebar from "./components/Sidebar.vue";
 import Home from "./components/Home.vue";
+import Toolbar from "./components/Toolbar.vue";
 import Quickbar from "./components/Quickbar.vue";
 import Modal from "./components/Modal.vue";
 import Mobile from "./components/Mobile.vue";
@@ -115,6 +107,7 @@ export default {
   components: {
     appSidebar: Sidebar,
     appHome: Home,
+    appToolbar: Toolbar,
     appQuickbar: Quickbar,
     appModal: Modal,
     appMobile: Mobile
