@@ -23,17 +23,8 @@
     display: none;
   }
 
-  div.article {
-    display: inline-block;
-    position: relative;
-  }
-
   div.col-md-9 {
     padding-right: 0px;
-  }
-
-  div#main {
-    padding-top: 38px;
   }
 
   div.quickbar {
@@ -55,11 +46,6 @@
     height: 100%;
     background-color: #31344b;
     overflow-y: auto;
-  }
-
-  div#articles {
-    margin-left: -10px;
-    margin-right: -8px;
   }
 }
 

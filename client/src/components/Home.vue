@@ -49,8 +49,13 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
+  div#main {
+    padding-top: 38px;
+  }
+
   div#articles {
     padding-top: 0px !important;
+    background-color: #ddd;
   }
 
   div.block {
@@ -58,8 +63,9 @@
     padding-top: 2px;
   }
 
-  div#articles {
-    background-color: #ddd;
+  div.article {
+    display: inline-block;
+    position: relative;
   }
 }
 
@@ -68,6 +74,10 @@
   div.block {
     margin-bottom: 0px;
     padding-top: 6px;
+  }
+  div#articles {
+    margin-left: -10px;
+    margin-right: -8px;
   }
 }
 

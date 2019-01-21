@@ -2,7 +2,7 @@
   <div id="mobile-container" v-if="mobile" class="overlay">
     <h5 class="mobile-title">Options</h5>
     <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
-      <span aria-hidden="true">&times;</span>
+      <span class="close" aria-hidden="true">&times;</span>
     </button>
 
     <div class="overlay-content" id="mobile">
@@ -46,6 +46,12 @@
 </template>
 
 <style>
+@media screen and (max-height: 450px) {
+  .overlay a {
+    font-size: 20px;
+  }
+}
+
 .overlay {
   height: 100%;
   width: 100%;
@@ -59,7 +65,8 @@
 
 .mobile-title {
   padding: 10px;
-  background-color: #DEF2F1;
+  background-color: #31344B;
+  color: #FFF;
 }
 
 .overlay-content {
@@ -77,15 +84,33 @@
   right: 20px;
 }
 
+span.close {
+  color: #FFF !important;
+  opacity: none !important;
+}
+
+.overlay-content ul.categories {
+  list-style-type: none;
+  text-indent: 4px;
+  padding-left: 0px;
+  width: 95%;
+}
+
+.overlay-content li.category {
+  background-color: #464f9e;
+  border-radius: 4px;
+  color: #fff;
+  padding: 0px;
+  margin-bottom: 6px;
+}
+
+button.close span {
+  color: #111;
+}
+
 p.content-header {
     margin-top: 10px;
     margin-bottom: 0;
-}
-
-@media screen and (max-height: 450px) {
-  .overlay a {
-    font-size: 20px;
-  }
 }
 </style>
 
