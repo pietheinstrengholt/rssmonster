@@ -7,7 +7,7 @@
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
         <app-quickbar @mobile="mobileClick"></app-quickbar>
-        <app-mobile :mobile="mobile" @mobile="mobileClick" ></app-mobile>
+        <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick"></app-mobile>
         <app-home></app-home>
       </div>
     </div>

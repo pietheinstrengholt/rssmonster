@@ -270,7 +270,7 @@
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
   div#myModal {
-    padding-top: 200px;
+    padding-top: 100px;
   }
 
   div.modal-body p {
