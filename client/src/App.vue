@@ -6,7 +6,7 @@
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
         <app-quickbar @mobile="mobileClick"></app-quickbar>
-        <app-toolbar></app-toolbar>
+        <app-toolbar class="toolbar"></app-toolbar>
         <app-home></app-home>
       </div>
     </div>
@@ -19,7 +19,7 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div.sidebar {
+  .sidebar, .toolbar {
     display: none;
   }
 

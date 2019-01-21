@@ -79,7 +79,7 @@ export default {
 <style>
 .view-toolbar {
   width: 100%;
-  background-color: #17252A;
+  background-color: #31344b;
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
