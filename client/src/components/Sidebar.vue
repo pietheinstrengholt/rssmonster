@@ -221,80 +221,10 @@
 </template>
 
 <style>
-.view-toolbar {
-  width: 100%;
-  background-color: #31344b;
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display: flex;
-  height: 41px;
-  border-bottom: 1px solid transparent;
-  border-color: #dcdee0;
-  position: absolute;
+div.drag {
+  background-color: transparent;
   color: #fff;
-}
-
-.view-button {
-  -webkit-box-flex: 1;
-  -webkit-flex: 1;
-  -ms-flex: 1;
-  flex: 1;
-  text-align: center;
-  line-height: 41px;
-  height: 100%;
-  text-decoration: none;
-  display: block;
-  font-size: 10px;
-  text-transform: uppercase;
-  font-weight: bold;
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  -ms-user-select: none;
-  user-select: none;
-  color: #b4b6b8;
-}
-
-a#rssmonster.view-button {
-  background: url(../assets/monster.svg) 10px 10px no-repeat;
-  background-size: 20px 20px;
-  max-width: 40px;
-  min-width: 40px;
-}
-
-a#title.view-button {
-  text-align: left;
-  margin-left: 10px;
-  max-width: 90px;
-}
-
-a#unread.view-button,
-a#star.view-button,
-a#read.view-button {
-  border-left: 1px solid transparent;
-  border-color: #dcdee0;
-  cursor: pointer;
-}
-
-.feeds-droppable {
-  background-color: #eff1f3;
-  position: absolute;
-  top: 41px;
-  bottom: 0;
-  left: 0;
-  right: 0;
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
-}
-
-.normal {
-  background-color: grey;
-}
-
-.drag {
-  background-color: #eff1f3;
-  width: 100%;
+  margin-top: 10px;
 }
 
 .dragArea {
@@ -337,12 +267,6 @@ span.badge-unread {
   position: absolute;
   right: 28px;
   margin-top: -23px;
-}
-
-div.drag {
-  background-color: transparent;
-  color: #fff;
-  margin-top: 10px;
 }
 
 div.sidebar-category-top,

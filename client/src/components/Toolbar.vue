@@ -58,7 +58,7 @@
 </template>
 
 <style>
-div.toolbar {
+.toolbar {
   height: 40px;
   border-bottom: 1px solid transparent;
   border-color: #dcdee0;
