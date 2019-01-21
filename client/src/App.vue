@@ -1,7 +1,7 @@
 <template>
   <div id="app">
-    <div class="row" style="margin-right:0px;">
-      <div class="sidebar col-md-3 col-sm-0" style="position:fixed">
+    <div class="row">
+      <div class="sidebar col-md-3 col-sm-0">
         <app-sidebar @modal="modalClick"></app-sidebar>
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
@@ -12,6 +12,7 @@
     </div>
     <!-- Modal -->
     <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
+    <!-- Mobile Pop-up -->
     <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick"></app-mobile>
   </div>
 </template>
@@ -19,7 +20,7 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  .sidebar, .toolbar {
+  div.sidebar, div.toolbar {
     display: none;
   }
 
@@ -34,10 +35,6 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  div.home div.quickbar {
-    display: none;
-  }
-
   div.quickbar {
     display: none;
   }
@@ -49,34 +46,16 @@
   }
 }
 
+div.row {
+  margin-right:0px;
+}
+
+div.sidebar {
+  position:fixed;
+}
+
 body {
   background-color: #f9f9f9;
-}
-
-div#mobile.modal-body ul.categories {
-  list-style-type: none;
-  text-indent: 4px;
-  padding-left: 0px;
-}
-
-div#mobile.modal-body li.category {
-  background-color: #464f9e;
-  border-radius: 4px;
-  color: #fff;
-  padding: 0px;
-  margin-bottom: 2px;
-}
-
-button.close span {
-  color: #111;
-}
-
-button.btn.btn-primary.content {
-  margin-right: 7px;
-}
-
-span.error {
-  color: red;
 }
 </style>
 

@@ -337,6 +337,14 @@ div.modal-dialog {
   border-right: 1px solid black;
   border-color: #dcdee0;
 }
+
+span.error {
+  color: red;
+}
+
+button.btn.btn-primary.content {
+  margin-right: 7px;
+}
 </style>
 
 <script>
