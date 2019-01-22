@@ -20,7 +20,8 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div.sidebar, div.toolbar {
+  div.sidebar,
+  div.toolbar {
     display: none;
   }
 
@@ -30,6 +31,7 @@
 
   div.quickbar {
     position: fixed;
+    z-index: 9999;
   }
 }
 
@@ -47,11 +49,11 @@
 }
 
 div.row {
-  margin-right:0px;
+  margin-right: 0px;
 }
 
 div.sidebar {
-  position:fixed;
+  position: fixed;
 }
 
 body {
@@ -60,7 +62,7 @@ body {
 </style>
 
 <script>
-import store from './store';
+import store from "./store";
 
 import Sidebar from "./components/Sidebar.vue";
 import Home from "./components/Home.vue";
