@@ -10,7 +10,9 @@ Vue.use(VueResource);
 
 // only import the icons you use to reduce bundle size
 import 'vue-awesome/icons/circle';
+import 'vue-awesome/icons/dot-circle';
 import 'vue-awesome/icons/folder';
+import 'vue-awesome/icons/rss-square';
 import 'vue-awesome/icons/plus';
 import 'vue-awesome/icons/trash';
 import 'vue-awesome/icons/pen';

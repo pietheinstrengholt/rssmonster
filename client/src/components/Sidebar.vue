@@ -31,7 +31,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon name="circle" scale="0.8"/>
+          <v-icon name="dot-circle" scale="0.8"/>
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
@@ -61,7 +61,7 @@
         <span class="glyphicon">
           <v-icon name="heart" scale="0.8"/>
         </span>
-        <span class="title">Star</span>
+        <span class="title">Favorites</span>
         <span class="badge-unread">
           <span class="badge">{{ this.store.starCount }}</span>
         </span>
@@ -139,7 +139,7 @@
                 :key="index"
               >
                 <span class="glyphicon">
-                  <v-icon v-if="!feed.favicon" name="circle"/>
+                  <v-icon v-if="!feed.favicon" name="rss-square"/>
                   <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                 </span>
                 <span class="title">{{feed.feedName}}</span>
