@@ -139,7 +139,8 @@
                 :key="index"
               >
                 <span class="glyphicon">
-                  <v-icon name="circle"/>
+                  <v-icon v-if="!feed.favicon" name="circle"/>
+                  <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                 </span>
                 <span class="title">{{feed.feedName}}</span>
                 <span class="badge-unread">
