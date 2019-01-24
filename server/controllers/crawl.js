@@ -13,30 +13,12 @@ exports.getCrawl = async (req, res, next) => {
 
     if (feeds.length > 0) {
       feeds.forEach(async function (feed) {
-        fetch(feed);
+        const url = await autodiscover.discover(feed.rssUrl);
+        const feeditem = await parseFeed.process(url);
+        console.log(feeditem);
       });
     }
-    //return res.status(200).json("Crawling background process started.");
   } catch (err) {
     console.log(err);
-    //return res.status(500).json(err);
   }
 };
-
-async function fetch(feed) {
-  try {
-    const url = await autodiscover.discover(feed.rssUrl);
-    const feeditem = await parseFeed.process(url);
-    if (feeditem) {
-      console.log("feed geprocessed");
-      feed.update({
-        errorCount: 0
-      });
-    }
-  } catch(err) {
-    feed.update({
-      errorCount: Sequelize.literal("errorCount + 1")
-    });
-    //console.log(err);
-  }
-}
