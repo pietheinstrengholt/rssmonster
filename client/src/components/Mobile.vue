@@ -6,7 +6,7 @@
     </button>
 
     <div class="overlay-content" id="mobile">
-      <p>Select which category you want to display</p>
+      <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
         <li class="category" v-on:click="store.currentSelection.category = null">
           <span class="glyphicon">
@@ -41,6 +41,7 @@
 
       <p class="content-header">Click the button below to add a new feed</p>
       <button @click="showNewFeed()" type="button" class="btn btn-success">Add new feed</button>
+      <br><br>
     </div>
   </div>
 </template>
@@ -110,7 +111,7 @@ button.close span {
 
 p.content-header {
     margin-top: 10px;
-    margin-bottom: 0;
+    margin-bottom: 3px;
 }
 </style>
 
