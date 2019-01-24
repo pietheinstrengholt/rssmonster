@@ -133,7 +133,7 @@
               <div
                 class="sidebar-category-feed"
                 v-on:click.stop="loadFeed(feed)"
-                v-bind:class="{ 'selected': store.currentSelection.feed === feed.id }"
+                v-bind:class="{ 'selected': store.currentSelection.feed === feed.id, 'error': feed.errorCount > 10 }"
                 v-bind:id="feed.id"
                 v-for="(feed, index) in category.feeds"
                 :key="index"
@@ -382,6 +382,11 @@ div.category-button#rename {
 div.category-button div.text {
   font-size: 12px;
   margin-top: 3px;
+}
+
+.sidebar-category-feed.error,
+.sidebar-category-feed.selected.error {
+  background-color: #bf7c74 !important;
 }
 </style>
 
