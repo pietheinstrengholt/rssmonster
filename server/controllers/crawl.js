@@ -16,7 +16,7 @@ exports.getCrawl = async (req, res, next) => {
     const feeds = await Feed.findAll();
 
     if (feeds.length > 0) {
-      feeds.forEach(function (feed) {
+      feeds.forEach(function(feed) {
         fetch(feed);
       });
     }
@@ -28,23 +28,23 @@ exports.getCrawl = async (req, res, next) => {
 };
 
 async function fetch(feed) {
+  // Define our streams
+  const url = await autodiscover.discover(feed.rssUrl);
+  var req = request(url, {
+    timeout: 10000,
+    pool: false
+  });
+  req.setMaxListeners(50);
+  // Some feeds do not respond without user-agent and accept headers.
+  req.setHeader(
+    "user-agent",
+    "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36"
+  );
+  req.setHeader("accept", "text/html,application/xhtml+xml");
+
+  var feedparser = new FeedParser();
+
   try {
-    // Define our streams
-    const url = await autodiscover.discover(feed.rssUrl);
-    var req = request(url, {
-      timeout: 10000,
-      pool: false
-    });
-    req.setMaxListeners(50);
-    // Some feeds do not respond without user-agent and accept headers.
-    req.setHeader(
-      "user-agent",
-      "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36"
-    );
-    req.setHeader("accept", "text/html,application/xhtml+xml");
-
-    var feedparser = new FeedParser();
-
     // Define our handlers
     req.on("error", done =>
       feed.update({
@@ -52,14 +52,16 @@ async function fetch(feed) {
       })
     );
 
-    req.on("response", function (res) {
-      if (res.statusCode != 200)
+    req.on("response", function(res) {
+      if (res.statusCode != 200) {
         return this.emit("error", new Error("Bad status code"));
-      var encoding = res.headers["content-encoding"] || "identity",
-        charset = getParams(res.headers["content-type"] || "").charset;
-      res = maybeDecompress(res, encoding);
-      res = maybeTranslate(res, charset);
-      res.pipe(feedparser);
+      } else {
+        var encoding = res.headers["content-encoding"] || "identity",
+          charset = getParams(res.headers["content-type"] || "").charset;
+        res = maybeDecompress(res, encoding);
+        res = maybeTranslate(res, charset);
+        res.pipe(feedparser);
+      }
     });
 
     feedparser.on("error", done =>
@@ -67,7 +69,7 @@ async function fetch(feed) {
         errorCount: Sequelize.literal("errorCount + 1")
       })
     );
-    feedparser.on("readable", function () {
+    feedparser.on("readable", function() {
       var post;
       while ((post = this.read())) {
         //process article
@@ -91,8 +93,8 @@ function done(err) {
 }
 
 function getParams(str) {
-  var params = str.split(";").reduce(function (params, param) {
-    var parts = param.split("=").map(function (part) {
+  var params = str.split(";").reduce(function(params, param) {
+    var parts = param.split("=").map(function(part) {
       return part.trim();
     });
     if (parts.length === 2) {
@@ -135,7 +137,8 @@ async function processArticle(feed, post) {
   try {
     const article = await Article.findOne({
       where: {
-        [Op.or]: [{
+        [Op.or]: [
+          {
             url: post.link
           },
           {
