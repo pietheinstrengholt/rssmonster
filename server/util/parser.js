@@ -1,9 +1,6 @@
 const FeedParser = require("feedparser");
 const got = require("got");
 const he = require("he");
-var zlib = require("zlib");
-var Iconv = require("iconv").Iconv;
-var request = require("request"); // for fetching the feed
 
 exports.process = async function(feedUrl) {
   const stream = await ReadFeed(feedUrl)
