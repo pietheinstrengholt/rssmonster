@@ -6,7 +6,6 @@ const Article = require("../models/article");
 
 const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
-const faviconoclast = require("faviconoclast");
 
 exports.getCrawl = async (req, res, next) => {
   try {
@@ -27,19 +26,17 @@ exports.getCrawl = async (req, res, next) => {
 async function fetch(feed) {
   try {
     const url = await autodiscover.discover(feed.rssUrl);
-
-    faviconUrl = await new Promise((resolve, reject) => {
-      faviconoclast(feed.rssUrl, (err, iconUrl) => {
-        if (err) {
-          reject(err)
-        }
-        resolve(iconUrl)
-      })
-    });
-
     const feeditem = await parseFeed.process(url);
-    console.log(feeditem);
+    if (feeditem) {
+      console.log("feed geprocessed");
+      feed.update({
+        errorCount: 0
+      });
+    }
   } catch(err) {
-    console.log(err);
+    feed.update({
+      errorCount: Sequelize.literal("errorCount + 1")
+    });
+    //console.log(err);
   }
 }
