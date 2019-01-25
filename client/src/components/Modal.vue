@@ -137,6 +137,18 @@
                     >
                   </div>
                 </div>
+                <div class="form-group row" v-if="feed.errorCount > 10">
+                  <label for="inputFeedUrl" class="col-sm-3 col-form-label">Feed url</label>
+                  <div class="col-sm-9">
+                    <input
+                      class="form-control red"
+                      type="text"
+                      id="rssUrl"
+                      placeholder="Feed RSS Url"
+                      v-model="feed.rssUrl"
+                    >
+                  </div>
+                </div>
                 <div v-if="this.store.categories.length > 0">
                   <div class="form-group row">
                     <label
@@ -338,7 +350,7 @@ div.modal-dialog {
   border-color: #dcdee0;
 }
 
-span.error {
+span.error, .form-control.red {
   color: red;
 }
 
@@ -453,9 +465,12 @@ export default {
     saveFeed: function() {
       this.$http
         .put("api/feeds/" + this.feed.id, {
+          categoryId: this.category.id,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
-          categoryId: this.category.id
+          rssUrl: this.feed.rssUrl,
+          url: this.feed.url,
+          favicon: this.feed.favicon
         })
         .then(
           result => {

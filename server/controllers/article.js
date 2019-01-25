@@ -52,7 +52,7 @@ exports.getArticles = async (req, res, next) => {
       articles = await Article.findAll({
         attributes: ["id"],
         order: [
-          ['updatedAt', sort]
+          ['published', sort]
         ],
         where: {
           status: status,
@@ -72,7 +72,7 @@ exports.getArticles = async (req, res, next) => {
       articles = await Article.findAll({
         attributes: ["id"],
         order: [
-          ['updatedAt', 'DESC']
+          ['published', sort]
         ],
         where: {
           feedId: feedIds,

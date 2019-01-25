@@ -1,9 +1,8 @@
 const Feed = require("../models/feed");
 const Article = require("../models/article");
 
-const FeedParser = require("feedparser");
-const request = require("request"); // for fetching the feed
 const autodiscover = require("../util/autodiscover");
+const parseFeed = require("../util/parser");
 
 exports.getFeeds = async (req, res, next) => {
   try {
@@ -120,50 +119,24 @@ exports.validateFeed = async (req, res, next) => {
   const categoryId = req.body.categoryId;
 
   try {
-    //set variables
-    var req = request(url);
-    var feedparser = new FeedParser();
 
-    //validate if the url is responding, if not return an error
-    req.on("error", function (error) {
-      return res.status(400).json({
-        error_msg: error
-      });
-    });
+    const feeditem = await parseFeed.process(url);
+    if (feeditem) {
 
-    req.on("response", function (res) {
-      var stream = this; // `this` is `req`, which is a stream
-
-      if (res.statusCode !== 200) {
-        this.emit("error", new Error("Bad status code"));
-      } else {
-        stream.pipe(feedparser);
-      }
-    });
-
-    feedparser.on("error", function (error) {
-      return res.status(404).json({
-        error: error
-      });
-    });
-
-    feedparser.on("readable", function (req) {
-      //get the metadata
-      var meta = this.meta;
-
+      //add feed
       Feed.findOne({
         where: {
-          url: meta.xmlurl
+          url: feeditem.meta.xmlurl
         }
       }).then(feed => {
         if (!feed) {
           return res.status(200).json({
             categoryId: categoryId,
-            feedName: meta.title,
-            feedDesc: meta.description,
-            url: origUrl,
-            rssUrl: meta.xmlurl,
-            favicon: meta.image.url
+            feedName: feeditem.meta.title,
+            feedDesc: feeditem.meta.description,
+            url: req.body.url,
+            rssUrl: feeditem.meta.xmlurl,
+            favicon: feeditem.meta.favicon
           });
         } else {
           return res.status(402).json({
@@ -171,7 +144,12 @@ exports.validateFeed = async (req, res, next) => {
           });
         }
       });
-    });
+
+    } else {
+      return res.status(500).json({
+        error_msg: "Feed has no meta attributes"
+      });
+    }
   } catch (err) {
     console.log(err);
     return res.status(500).json({

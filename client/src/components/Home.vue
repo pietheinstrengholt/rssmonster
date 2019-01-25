@@ -200,6 +200,7 @@ div.infinite-loading-container {
 require("waypoints/lib/noframework.waypoints.js");
 import InfiniteLoading from "vue-infinite-loading";
 import moment from "moment";
+
 import store from "../store";
 
 export default {
@@ -493,7 +494,7 @@ export default {
     },
     formatDate: function(value) {
       if (value) {
-        return moment(String(value)).format("MM/DD/YYYY hh:mm");
+        return moment(String(value)).fromNow();
       }
     }
   }
