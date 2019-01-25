@@ -119,7 +119,6 @@ exports.validateFeed = async (req, res, next) => {
   //resolve url
   const origUrl = req.body.url;
   const url = await autodiscover.discover(req.body.url);
-  console.log(url);
   const categoryId = req.body.categoryId;
 
   try {
