@@ -35,6 +35,7 @@ exports.getCrawl = async (req, res, next) => {
         }
       });
     }
+    return res.status(200).json("Crawling started.");
   } catch (err) {
     console.log(err);
   }
