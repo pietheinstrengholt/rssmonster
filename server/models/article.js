@@ -41,6 +41,7 @@ const Article = sequelize.define(
       allowNull: false
     },
     content: Sequelize.TEXT('medium'),
+    language: Sequelize.TEXT('tiny'),
     published: Sequelize.DATE
   },
   {

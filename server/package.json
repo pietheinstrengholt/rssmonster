@@ -25,6 +25,7 @@
     "express": "^4.16.3",
     "express-handlebars": "^3.0.0",
     "feedparser": "^2.2.9",
+    "franc": "^4.0.0",
     "got": "^9.6.0",
     "he": "^1.2.0",
     "morgan": "^1.9.1",

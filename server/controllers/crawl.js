@@ -6,6 +6,7 @@ const Article = require("../models/article");
 
 const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
+const language = require("../util/language");
 
 exports.getCrawl = async (req, res, next) => {
   try {
@@ -58,6 +59,7 @@ async function processArticle(feed, post) {
     });
 
     if (!article) {
+      
       //add article
       Article.create({
         feedId: feed.id,
@@ -67,6 +69,7 @@ async function processArticle(feed, post) {
         image_url: "",
         subject: post.title,
         content: post.description,
+        language: language.get(post.description),
         //contentSnippet: item.contentSnippet,
         //author: item.author,
         published: post.pubdate
