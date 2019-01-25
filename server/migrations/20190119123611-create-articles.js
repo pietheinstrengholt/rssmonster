@@ -37,7 +37,11 @@ module.exports = {
       },
       content: Sequelize.TEXT('medium'),
       language: Sequelize.TEXT('tiny'),
-      published: Sequelize.DATE,
+      published: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
+      },
       createdAt: {
         type: Sequelize.DATE
       },

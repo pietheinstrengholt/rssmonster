@@ -40,9 +40,13 @@ const Article = sequelize.define(
       type: Sequelize.TEXT,
       allowNull: false
     },
-    content: Sequelize.TEXT('medium'),
-    language: Sequelize.TEXT('tiny'),
-    published: Sequelize.DATE
+    content: Sequelize.TEXT("medium"),
+    language: Sequelize.TEXT("tiny"),
+    published: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW
+    }
   },
   {
     charset: "utf8",
