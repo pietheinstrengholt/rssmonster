@@ -43,9 +43,9 @@ const Article = sequelize.define(
     content: Sequelize.TEXT("medium"),
     language: Sequelize.TEXT("tiny"),
     published: {
-      type: DataTypes.DATE,
+      type: Sequelize.DATE,
       allowNull: false,
-      defaultValue: DataTypes.NOW
+      defaultValue: Sequelize.NOW
     }
   },
   {
