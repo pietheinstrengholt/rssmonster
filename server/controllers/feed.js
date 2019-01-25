@@ -1,10 +1,7 @@
 const Feed = require("../models/feed");
 const Article = require("../models/article");
 
-const FeedParser = require("feedparser");
-const request = require("request"); // for fetching the feed
 const autodiscover = require("../util/autodiscover");
-const faviconoclast = require("faviconoclast");
 const parseFeed = require("../util/parser");
 
 exports.getFeeds = async (req, res, next) => {
@@ -126,15 +123,6 @@ exports.validateFeed = async (req, res, next) => {
     const feeditem = await parseFeed.process(url);
     if (feeditem) {
 
-      faviconUrl = await new Promise((resolve, reject) => {
-        faviconoclast(req.body.url, (err, iconUrl) => {
-          if (err) {
-            reject(err)
-          }
-          resolve(iconUrl)
-        })
-      });
-
       //add feed
       Feed.findOne({
         where: {
@@ -148,7 +136,7 @@ exports.validateFeed = async (req, res, next) => {
             feedDesc: feeditem.meta.description,
             url: req.body.url,
             rssUrl: feeditem.meta.xmlurl,
-            favicon: faviconUrl
+            favicon: feeditem.meta.favicon
           });
         } else {
           return res.status(402).json({

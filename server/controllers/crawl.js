@@ -14,7 +14,7 @@ exports.getCrawl = async (req, res, next) => {
     if (feeds.length > 0) {
       feeds.forEach(async function (feed) {
         //discover rssUrl
-        const url = await autodiscover.discover(feed.rssUrl);
+        const url = await autodiscover.discover(feed.url);
         const feeditem = await parseFeed.process(url);
         if (feeditem) {
           //process all feed posts
