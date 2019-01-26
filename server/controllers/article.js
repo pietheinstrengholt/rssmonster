@@ -1,5 +1,7 @@
 const Article = require("../models/article");
 const Feed = require("../models/feed");
+const Setting = require("../models/setting");
+var pluck = require('arr-pluck');
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -7,12 +9,43 @@ const Op = Sequelize.Op;
 //the getArticles function returns an array with all the article ids
 exports.getArticles = async (req, res, next) => {
   try {
+    //retrieve settings
+    const sortSetting = await Setting.findOne({ where: {key_name: 'sort'}, attributes: ['key_value'], raw: true});
+    const feedIdSetting = await Setting.findOne({ where: {key_name: 'feedId'}, attributes: ['key_value'], raw: true});
+    const categoryIdSetting = await Setting.findOne({ where: {key_name: 'categoryId'}, attributes: ['key_value'], raw: true});
+    const statusSetting = await Setting.findOne({ where: {key_name: 'status'}, attributes: ['key_value'], raw: true});
+
+    var categoryId = '%';
+    var feedId = '%';
+    var status = 'unread';
+    var sort = 'DESC';
+
+    if (req.query.sort) {
+      categoryId = req.query.categoryId;
+    } else if (categoryIdSetting) {
+      categoryId = categoryIdSetting.key_value;
+    }
+
+    if (req.query.feedId) {
+      feedId = req.query.feedId;
+    } else if (feedIdSetting) {
+      feedId = feedIdSetting.key_value;
+    }
+
+    if (req.query.sort) {
+      status = req.query.status;
+    } else if (statusSetting) {
+      status = statusSetting.key_value;
+    }
+
+    if (req.query.sort) {
+      sort = req.query.sort;
+    } else if (sortSetting) {
+      sort = sortSetting.key_value;
+    }
+
     //set default values before querying all items
-    const categoryId = req.query.categoryId || '%';
-    const feedId = req.query.feedId || '%';
     let search = req.query.search || '%';
-    const status = req.query.status || 'unread';
-    const sort = req.query.sort || 'DESC';
 
     if (search !== '%') {
       search = '%' + search + '%';
@@ -97,6 +130,30 @@ exports.getArticles = async (req, res, next) => {
 
     //return all itemIds
     res.status(200).json(itemIds);
+
+    //destroy settings
+    await Setting.destroy({ where: {} });
+
+    //update all settings
+    await Setting.create({
+      key_name: "sort",
+      key_value: sort
+    });
+
+    await Setting.create({
+      key_name: "status",
+      key_value: status
+    });
+
+    await Setting.create({
+      key_name: "categoryId",
+      key_value: categoryId
+    });
+
+    await Setting.create({
+      key_name: "feedId",
+      key_value: feedId
+    });
 
   } catch (err) {
     console.log(err);
