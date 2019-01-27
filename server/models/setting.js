@@ -5,16 +5,35 @@ const sequelize = require("../util/database");
 const Setting = sequelize.define(
   "settings",
   {
-    key_name: {
+    id: {
+      type: Sequelize.INTEGER,
+      autoIncrement: true,
+      allowNull: false,
+      primaryKey: true
+    },
+    categoryId: {
       type: Sequelize.STRING,
       autoIncrement: false,
       allowNull: false,
-      primaryKey: true,
-      unique: true
+      defaultValue: "%"
     },
-    key_value: {
+    feedId: {
       type: Sequelize.STRING,
-      allowNull: false
+      autoIncrement: false,
+      allowNull: false,
+      defaultValue: "%"
+    },
+    status: {
+      type: Sequelize.STRING,
+      autoIncrement: false,
+      allowNull: false,
+      defaultValue: "unread"
+    },
+    sort: {
+      type: Sequelize.STRING,
+      autoIncrement: false,
+      allowNull: false,
+      defaultValue: "DESC"
     }
   },
   {

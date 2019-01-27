@@ -1,8 +1,8 @@
 export default {
     currentSelection: {
         status: 'unread',
-        categoryId: null,
-        feedId: null,
+        categoryId: '%',
+        feedId: '%',
         search: null,
         sort: 'DESC'
     },

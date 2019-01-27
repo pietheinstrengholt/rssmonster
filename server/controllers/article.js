@@ -8,47 +8,11 @@ const Op = Sequelize.Op;
 //the getArticles function returns an array with all the article ids
 exports.getArticles = async (req, res, next) => {
   try {
-    //set default values
-    var categoryId = "%";
-    var feedId = "%";
-    var status = "unread";
-    var sort = "DESC";
-
-    //retrieve previous used settings from the database if firstLoad is true
-    if (req.query.firstLoad) {
-      const sortSetting = await Setting.findOne({
-        where: { key_name: "sort" },
-        attributes: ["key_value"],
-        raw: true
-      });
-      const feedIdSetting = await Setting.findOne({
-        where: { key_name: "feedId" },
-        attributes: ["key_value"],
-        raw: true
-      });
-      const categoryIdSetting = await Setting.findOne({
-        where: { key_name: "categoryId" },
-        attributes: ["key_value"],
-        raw: true
-      });
-      const statusSetting = await Setting.findOne({
-        where: { key_name: "status" },
-        attributes: ["key_value"],
-        raw: true
-      });
-
-      //use database values, if available
-      if (categoryIdSetting) categoryId = categoryIdSetting.key_value;
-      if (feedIdSetting) feedId = feedIdSetting.key_value;
-      if (statusSetting) status = statusSetting.key_value;
-      if (sortSetting) sort = sortSetting.key_value;
-    }
-
     //use query parameters instead if provided
-    if (req.query.categoryId) categoryId = req.query.categoryId;
-    if (req.query.feedId) feedId = req.query.feedId;
-    if (req.query.status) status = req.query.status;
-    if (req.query.sort) sort = req.query.sort;
+    var categoryId = (req.query.categoryId ? req.query.categoryId : "%");
+    var feedId = (req.query.feedId ? req.query.feedId : "%");
+    var status = (req.query.status ? req.query.status : "unread");
+    var sort = (req.query.sort ? req.query.sort : "DESC");
 
     //set default values before querying all items
     let search = req.query.search || "%";
@@ -134,7 +98,8 @@ exports.getArticles = async (req, res, next) => {
           categoryId: categoryId, 
           feedId: feedId, 
           sort: sort, 
-          status: status 
+          status: status,
+          search: search
         }
       ],
       itemIds: itemIds
@@ -145,23 +110,10 @@ exports.getArticles = async (req, res, next) => {
 
     //update all settings
     await Setting.create({
-      key_name: "sort",
-      key_value: sort
-    });
-
-    await Setting.create({
-      key_name: "status",
-      key_value: status
-    });
-
-    await Setting.create({
-      key_name: "categoryId",
-      key_value: categoryId
-    });
-
-    await Setting.create({
-      key_name: "feedId",
-      key_value: feedId
+      categoryId: categoryId,
+      feedId: feedId,
+      status: status,
+      sort: sort
     });
   } catch (err) {
     console.log(err);

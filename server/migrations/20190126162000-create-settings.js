@@ -1,30 +1,53 @@
-'use strict';
+"use strict";
 module.exports = {
   up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('settings', {
-      key_name: {
-        type: Sequelize.STRING,
-        autoIncrement: false,
-        allowNull: false,
-        primaryKey: true,
-        unique: true
+    return queryInterface.createTable(
+      "settings",
+      {
+        id: {
+          type: Sequelize.INTEGER,
+          autoIncrement: true,
+          allowNull: false,
+          primaryKey: true
+        },
+        categoryId: {
+          type: Sequelize.STRING,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: "%"
+        },
+        feedId: {
+          type: Sequelize.STRING,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: "%"
+        },
+        status: {
+          type: Sequelize.STRING,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: "unread"
+        },
+        sort: {
+          type: Sequelize.STRING,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: "DESC"
+        },
+        createdAt: {
+          type: Sequelize.DATE
+        },
+        updatedAt: {
+          type: Sequelize.DATE
+        }
       },
-      key_value: {
-        type: Sequelize.STRING,
-        allowNull: false
-      },
-      createdAt: {
-        type: Sequelize.DATE
-      },
-      updatedAt: {
-        type: Sequelize.DATE
+      {
+        charset: "utf8",
+        collate: "utf8_unicode_ci"
       }
-    }, {
-      charset: "utf8",
-      collate: "utf8_unicode_ci"
-    });
+    );
   },
   down: (queryInterface, Sequelize) => {
-    return queryInterface.dropTable('articles');
+    return queryInterface.dropTable("articles");
   }
 };

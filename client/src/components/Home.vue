@@ -238,8 +238,8 @@ export default {
             params: {
               //the following arguments are used
               status: data.status,
-              categoryId: data.category,
-              feedId: data.feed,
+              categoryId: data.categoryId,
+              feedId: data.feedId,
               search: data.search,
               sort: data.sort
             }
@@ -265,20 +265,14 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
-    //get articles using initial load with either previous query or default settings
+    //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
     this.$http
-      .get("api/articles", {
-        params: {
-          firstLoad: true
-        }
-      })
+      .get("api/setting")
       .then(response => {
         return response.json();
       })
       .then(data => {
-        this.container = data.itemIds;
-        console.log(data.query);
-        //TODO: update this.store.currentSelection without triggering watch
+        this.store.currentSelection = data
         this.firstLoad = true;
       });
   },
