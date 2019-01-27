@@ -8,6 +8,8 @@ const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
 const language = require("../util/language");
 
+var striptags = require('striptags');
+
 exports.getCrawl = async (req, res, next) => {
   try {
     const feeds = await Feed.findAll();
@@ -69,7 +71,7 @@ async function processArticle(feed, post) {
         url: post.link,
         image_url: "",
         subject: post.title,
-        content: post.description,
+        content: striptags(post.description, ['a','img','strong']),
         language: language.get(post.description),
         //contentSnippet: item.contentSnippet,
         //author: item.author,
