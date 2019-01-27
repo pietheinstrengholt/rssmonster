@@ -1,7 +1,6 @@
 const Article = require("../models/article");
 const Feed = require("../models/feed");
 const Setting = require("../models/setting");
-var pluck = require('arr-pluck');
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -9,50 +8,54 @@ const Op = Sequelize.Op;
 //the getArticles function returns an array with all the article ids
 exports.getArticles = async (req, res, next) => {
   try {
-    //retrieve settings
-    const sortSetting = await Setting.findOne({ where: {key_name: 'sort'}, attributes: ['key_value'], raw: true});
-    const feedIdSetting = await Setting.findOne({ where: {key_name: 'feedId'}, attributes: ['key_value'], raw: true});
-    const categoryIdSetting = await Setting.findOne({ where: {key_name: 'categoryId'}, attributes: ['key_value'], raw: true});
-    const statusSetting = await Setting.findOne({ where: {key_name: 'status'}, attributes: ['key_value'], raw: true});
+    //set default values
+    var categoryId = "%";
+    var feedId = "%";
+    var status = "unread";
+    var sort = "DESC";
 
-    var categoryId = '%';
-    var feedId = '%';
-    var status = 'unread';
-    var sort = 'DESC';
+    //retrieve previous used settings from the database if firstLoad is true
+    if (req.query.firstLoad) {
+      const sortSetting = await Setting.findOne({
+        where: { key_name: "sort" },
+        attributes: ["key_value"],
+        raw: true
+      });
+      const feedIdSetting = await Setting.findOne({
+        where: { key_name: "feedId" },
+        attributes: ["key_value"],
+        raw: true
+      });
+      const categoryIdSetting = await Setting.findOne({
+        where: { key_name: "categoryId" },
+        attributes: ["key_value"],
+        raw: true
+      });
+      const statusSetting = await Setting.findOne({
+        where: { key_name: "status" },
+        attributes: ["key_value"],
+        raw: true
+      });
 
-    if (req.query.sort) {
-      categoryId = req.query.categoryId;
-    } else if (categoryIdSetting) {
-      categoryId = categoryIdSetting.key_value;
+      //use database values, if available
+      if (categoryIdSetting) categoryId = categoryIdSetting.key_value;
+      if (feedIdSetting) feedId = feedIdSetting.key_value;
+      if (statusSetting) status = statusSetting.key_value;
+      if (sortSetting) sort = sortSetting.key_value;
     }
 
-    if (req.query.feedId) {
-      feedId = req.query.feedId;
-    } else if (feedIdSetting) {
-      feedId = feedIdSetting.key_value;
-    }
-
-    if (req.query.sort) {
-      status = req.query.status;
-    } else if (statusSetting) {
-      status = statusSetting.key_value;
-    }
-
-    if (req.query.sort) {
-      sort = req.query.sort;
-    } else if (sortSetting) {
-      sort = sortSetting.key_value;
-    }
+    //use query parameters instead if provided
+    if (req.query.categoryId) categoryId = req.query.categoryId;
+    if (req.query.feedId) feedId = req.query.feedId;
+    if (req.query.status) status = req.query.status;
+    if (req.query.sort) sort = req.query.sort;
 
     //set default values before querying all items
-    let search = req.query.search || '%';
-
-    if (search !== '%') {
-      search = '%' + search + '%';
-    }
+    let search = req.query.search || "%";
+    if (search !== "%") search = "%" + search + "%";
 
     //populate an array with all the feed ids based on the categoryId
-    if (categoryId == '%') {
+    if (categoryId == "%") {
       feeds = await Feed.findAll({
         attributes: ["id"]
       });
@@ -68,7 +71,7 @@ exports.getArticles = async (req, res, next) => {
     }
 
     //if the feedId is set, set it equal to all feedIds
-    if (feedId != '%') {
+    if (feedId != "%") {
       feedIds = feedId;
     } else {
       //build array based on previous results and push all ids to the array
@@ -84,9 +87,7 @@ exports.getArticles = async (req, res, next) => {
     if (status != "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [
-          ['published', sort]
-        ],
+        order: [["published", sort]],
         where: {
           status: status,
           feedId: feedIds,
@@ -104,9 +105,7 @@ exports.getArticles = async (req, res, next) => {
     if (status == "star") {
       articles = await Article.findAll({
         attributes: ["id"],
-        order: [
-          ['published', sort]
-        ],
+        order: [["published", sort]],
         where: {
           feedId: feedIds,
           subject: {
@@ -128,8 +127,18 @@ exports.getArticles = async (req, res, next) => {
       });
     }
 
-    //return all itemIds
-    res.status(200).json(itemIds);
+    //return all query params and itemIds
+    res.status(200).json({
+      query: [
+        { 
+          categoryId: categoryId, 
+          feedId: feedId, 
+          sort: sort, 
+          status: status 
+        }
+      ],
+      itemIds: itemIds
+    });
 
     //destroy settings
     await Setting.destroy({ where: {} });
@@ -154,7 +163,6 @@ exports.getArticles = async (req, res, next) => {
       key_name: "feedId",
       key_value: feedId
     });
-
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);
@@ -165,11 +173,13 @@ exports.getArticles = async (req, res, next) => {
 exports.getArticle = (req, res, next) => {
   const articleId = req.params.articleId;
   Article.findByPk(articleId, {
-      include: [{
+    include: [
+      {
         model: Feed,
         required: true
-      }]
-    })
+      }
+    ]
+  })
     .then(article => {
       console.log(article);
       res.status(200).json({

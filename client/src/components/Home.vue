@@ -250,7 +250,7 @@ export default {
           .then(data => {
             //reset the pool, attach data to container and get first set of article details
             this.resetPool();
-            this.container = data;
+            this.container = data.itemIds;
             //reset onInfinite using the new container data
             this.$refs.infiniteLoading.stateChanger.reset();
           });
@@ -265,19 +265,20 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
-    //get all the unread articles on initial load
-    //TODO: remove arguments here and retrieve last selection from the database
+    //get articles using initial load with either previous query or default settings
     this.$http
       .get("api/articles", {
         params: {
-          status: "unread"
+          firstLoad: true
         }
       })
       .then(response => {
         return response.json();
       })
       .then(data => {
-        this.container = data;
+        this.container = data.itemIds;
+        console.log(data.query);
+        //TODO: update this.store.currentSelection without triggering watch
         this.firstLoad = true;
       });
   },
