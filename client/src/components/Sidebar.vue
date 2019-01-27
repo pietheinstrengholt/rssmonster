@@ -417,14 +417,14 @@ export default {
     },
     loadCategory: function(category) {
       this.store.currentSelection.categoryId = category.id;
-      this.store.currentSelection.feedId = null;
+      this.store.currentSelection.feedId = '%';
     },
     loadFeed: function(feed) {
       this.store.currentSelection.feedId = feed.id;
     },
     loadAll: function() {
-      this.store.currentSelection.categoryId = null;
-      this.store.currentSelection.feedId = null;
+      this.store.currentSelection.categoryId = '%';
+      this.store.currentSelection.feedId = '%';
     },
     refreshFeeds: function() {
       //show spinner

@@ -8,7 +8,7 @@
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
-        <li class="category" v-on:click="store.currentSelection.categoryId = null">
+        <li class="category" v-on:click="store.currentSelection.categoryId = '%'">
           <span class="glyphicon">
             <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
           </span>
