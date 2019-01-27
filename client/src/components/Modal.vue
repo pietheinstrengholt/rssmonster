@@ -39,7 +39,7 @@
                       <select
                         class="form-control"
                         id="category"
-                        v-model="store.currentSelection.category"
+                        v-model="store.currentSelection.categoryId"
                       >
                         <option
                           v-for="category in this.store.categories"
@@ -171,7 +171,7 @@
                       <select
                         class="form-control"
                         id="category"
-                        v-model="store.currentSelection.category"
+                        v-model="store.currentSelection.categoryId"
                       >
                         <option
                           v-for="category in this.store.categories"
@@ -188,7 +188,7 @@
               <div class="modal-body" id="mobile" v-if="modal==='mobile'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
-                  <li class="category" v-on:click="store.currentSelection.category = null">
+                  <li class="category" v-on:click="store.currentSelection.categoryId = null">
                     <span class="glyphicon">
                       <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
                     </span>
@@ -196,7 +196,7 @@
                   </li>
                   <li
                     class="category"
-                    v-on:click="store.currentSelection.category = category.id"
+                    v-on:click="store.currentSelection.categoryId = category.id"
                     v-for="category in store.categories"
                     :key="category.id"
                     v-bind:id="category.id"
@@ -548,7 +548,7 @@ export default {
     renameCategory: function() {
       //rename category
       this.$http
-        .put("api/categories/" + this.store.currentSelection.category, {
+        .put("api/categories/" + this.store.currentSelection.categoryId, {
           name: this.category.name
         })
         .then(

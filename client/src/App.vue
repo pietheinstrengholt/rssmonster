@@ -161,12 +161,12 @@ export default {
       },
       deep: true
     },
-    "store.currentSelection.category": {
+    "store.currentSelection.categoryId": {
       handler: function() {
         this.feed = {};
       }
     },
-    "store.currentSelection.feed": {
+    "store.currentSelection.feedId": {
       handler: function() {
         this.closeModal();
       }

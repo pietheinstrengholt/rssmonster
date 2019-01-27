@@ -71,7 +71,7 @@
       </div>
       <div
         v-on:click="loadAll()"
-        v-bind:class="{ 'selected':  store.currentSelection.category === null }"
+        v-bind:class="{ 'selected':  store.currentSelection.categoryId === null }"
         id="all"
         class="sidebar-category-top"
       >
@@ -99,7 +99,7 @@
       >
         <div
           class="sidebar-category-main"
-          v-bind:class="{ 'selected': (store.currentSelection.category === category.id) && (store.currentSelection.feed === null) }"
+          v-bind:class="{ 'selected': (store.currentSelection.categoryId === category.id) && (store.currentSelection.feedId === null) }"
           v-on:click="loadCategory(category)"
           v-bind:id="category.id"
           v-for="(category, index) in this.store.categories"
@@ -127,13 +127,13 @@
           </div>
           <div v-if="category.feeds">
             <div
-              v-if="store.currentSelection.category === category.id"
+              v-if="store.currentSelection.categoryId === category.id"
               class="sidebar-category-feeds"
             >
               <div
                 class="sidebar-category-feed"
                 v-on:click.stop="loadFeed(feed)"
-                v-bind:class="{ 'selected': store.currentSelection.feed === feed.id, 'error': feed.errorCount > 10 }"
+                v-bind:class="{ 'selected': store.currentSelection.feedId === feed.id, 'error': feed.errorCount > 10 }"
                 v-bind:id="feed.id"
                 v-for="(feed, index) in category.feeds"
                 :key="index"
@@ -173,7 +173,7 @@
           </div>
         </div>
         <div
-          v-if="(store.currentSelection.category != null) && (store.currentSelection.feed == null)"
+          v-if="(store.currentSelection.categoryId != null) && (store.currentSelection.feedId == null)"
           @click="emitClickEvent('modal','deletecategory')"
           id="delete"
           class="category-button"
@@ -184,7 +184,7 @@
           </div>
         </div>
         <div
-          v-if="(store.currentSelection.category != null) && (store.currentSelection.feed == null)"
+          v-if="(store.currentSelection.categoryId != null) && (store.currentSelection.feedId == null)"
           @click="emitClickEvent('modal','renamecategory')"
           id="rename"
           class="category-button"
@@ -195,7 +195,7 @@
           </div>
         </div>
         <div
-          v-if="(store.currentSelection.category != null) && (store.currentSelection.feed != null)"
+          v-if="(store.currentSelection.categoryId != null) && (store.currentSelection.feedId != null)"
           @click="emitClickEvent('modal','deletefeed')"
           id="delete"
           class="category-button"
@@ -206,7 +206,7 @@
           </div>
         </div>
         <div
-          v-if="(store.currentSelection.category != null) && (store.currentSelection.feed != null)"
+          v-if="(store.currentSelection.categoryId != null) && (store.currentSelection.feedId != null)"
           @click="emitClickEvent('modal','renamefeed')"
           id="rename"
           class="category-button"
@@ -416,15 +416,15 @@ export default {
       this.store.currentSelection.status = status;
     },
     loadCategory: function(category) {
-      this.store.currentSelection.category = category.id;
-      this.store.currentSelection.feed = null;
+      this.store.currentSelection.categoryId = category.id;
+      this.store.currentSelection.feedId = null;
     },
     loadFeed: function(feed) {
-      this.store.currentSelection.feed = feed.id;
+      this.store.currentSelection.feedId = feed.id;
     },
     loadAll: function() {
-      this.store.currentSelection.category = null;
-      this.store.currentSelection.feed = null;
+      this.store.currentSelection.categoryId = null;
+      this.store.currentSelection.feedId = null;
     },
     refreshFeeds: function() {
       //show spinner
