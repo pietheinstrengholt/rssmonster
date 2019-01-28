@@ -148,15 +148,15 @@ export default {
         this.feed = {};
 
         //lookup category name based on the categoryId received
-        if (data.category) {
+        if (data.categoryId) {
           var category = this.store.categories.filter(function(a) {
-            return a.id == data.category;
+            return a.id == data.categoryId;
           })[0];
           this.category = category;
         }
         //lookup feed name based on the feedId
-        if (data.feed) {
-          this.feed = this.lookupFeedById(data.feed);
+        if (data.feedId) {
+          this.feed = this.lookupFeedById(data.feedId);
         }
       },
       deep: true
