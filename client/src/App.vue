@@ -79,6 +79,15 @@ export default {
     appModal: Modal,
     appMobile: Mobile
   },
+  data() {
+    return {
+      category: {},
+      feed: {},
+      modal: null,
+      mobile: null,
+      store: store
+    };
+  },
   beforeCreate() {
     //get an overview with the count for all feeds
     this.$http
@@ -94,6 +103,9 @@ export default {
 
         //update the categories in the store
         this.store.categories = data.categories;
+
+        //update local category and feed based on current selection
+        this.updateSelection(this.store.currentSelection);
       });
   },
   created: function() {
@@ -103,15 +115,6 @@ export default {
       "width=device-width, initial-scale=1";
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content =
       "IE=edge";
-  },
-  data() {
-    return {
-      category: {},
-      feed: {},
-      modal: null,
-      mobile: null,
-      store: store
-    };
   },
   methods: {
     closeModal: function() {
@@ -138,12 +141,10 @@ export default {
           }
         }
       }
-    }
-  },
-  //watch the store.currentSelection, set local data (category, feed) based on current selection
-  watch: {
-    "store.currentSelection": {
-      handler: function(data) {
+    },
+    updateSelection: function(data) {
+      //only update the local values of some categories exist
+      if (this.store.categories.length) {
         //set the feed to empty when the store changes, e.g. change can be that only a category is selected
         this.feed = {};
 
@@ -158,6 +159,14 @@ export default {
         if (data.feedId) {
           this.feed = this.lookupFeedById(data.feedId);
         }
+      }
+    }
+  },
+  //watch the store.currentSelection, set local data (category, feed) based on current selection
+  watch: {
+    "store.currentSelection": {
+      handler: function(data) {
+        this.updateSelection(data);
       },
       deep: true
     },
