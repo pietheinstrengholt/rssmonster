@@ -208,6 +208,7 @@ exports.getOverview = async (req, res, next) => {
 exports.articleDetails = async (req, res, next) => {
   try {
     const articleIds = req.body.articleIds;
+    const sort = req.body.sort;
 
     if (articleIds === undefined) {
       return res.status(404).json({
@@ -222,6 +223,9 @@ exports.articleDetails = async (req, res, next) => {
         model: Feed,
         required: true
       }],
+      order: [
+        ["published", sort]
+      ],
       where: {
         id: articlesArray
       }

@@ -272,7 +272,7 @@ export default {
         return response.json();
       })
       .then(data => {
-        this.store.currentSelection = data
+        this.store.currentSelection = data;
         this.firstLoad = true;
       });
   },
@@ -297,7 +297,8 @@ export default {
           .post("api/manager/details", {
             articleIds: this.container
               .slice(this.distance, this.distance + this.fetchCount)
-              .join(",")
+              .join(","),
+            sort: this.store.currentSelection.sort
           })
           .then(res => {
             if (res.data.length) {
