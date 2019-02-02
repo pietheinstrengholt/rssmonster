@@ -36,6 +36,7 @@ module.exports = {
         allowNull: false
       },
       content: Sequelize.TEXT('medium'),
+      contentStripped: Sequelize.TEXT('medium'),
       language: Sequelize.TEXT('tiny'),
       published: {
         type: Sequelize.DATE,
