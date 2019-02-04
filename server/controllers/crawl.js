@@ -18,18 +18,21 @@ exports.getCrawl = async (req, res, next) => {
       feeds.forEach(async function (feed) {
         //discover rssUrl
         const url = await autodiscover.discover(feed.url);
-        const feeditem = await parseFeed.process(url);
-        if (feeditem) {
-          //process all feed posts
-          feeditem.posts.forEach(function(post) {
-            processArticle(feed, post);
-          });
+        try {
+          const feeditem = await parseFeed.process(url);
+          if (feeditem) {
+            //process all feed posts
+            feeditem.posts.forEach(function (post) {
+              processArticle(feed, post);
+            });
 
-          //reset the feed count
-          feed.update({
-            errorCount: 0
-          });
-        } else {
+            //reset the feed count
+            feed.update({
+              errorCount: 0
+            });
+          }
+        } catch (err) {
+          console.log(err.stack.split("\n", 1).join(""));
           //update the errorCount
           feed.update({
             errorCount: Sequelize.literal("errorCount + 1")
@@ -47,8 +50,7 @@ async function processArticle(feed, post) {
   try {
     const article = await Article.findOne({
       where: {
-        [Op.or]: [
-          {
+        [Op.or]: [{
             url: post.link
           },
           {
@@ -62,7 +64,7 @@ async function processArticle(feed, post) {
     });
 
     if (!article) {
-      
+
       //add article
       Article.create({
         feedId: feed.id,
@@ -72,7 +74,7 @@ async function processArticle(feed, post) {
         image_url: "",
         subject: post.title,
         content: post.description,
-        contentStripped: striptags(post.description, ['a','img','strong']),
+        contentStripped: striptags(post.description, ['a', 'img', 'strong']),
         language: language.get(post.description),
         //contentSnippet: item.contentSnippet,
         //author: item.author,

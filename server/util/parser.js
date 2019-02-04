@@ -10,8 +10,12 @@ exports.process = async function(feedUrl) {
 }
 
 async function ReadFeed (url) {
-  const response = await got.stream(url, { retries: 0 })
-  return response
+  try {
+    const response = await got.stream(url, { retries: 0 })
+    return response
+  } catch(err) {
+    console.log(err);
+  }
 }
 
 async function ReadFeedStream (stream, feedUrl) {
