@@ -11,10 +11,17 @@ async function getUrl(url) {
     });
     const body = await response.text();
 
+    //TODO: fix situation where autoDiscoverUrl is not a valid url, but a directory
     if (body) {
       const $ = cheerio.load(body);
       if ($("head").find('link[type="application/rss+xml"]').length > 0) {
         autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
+          "href"
+        );
+        url = autoDiscoverUrl;
+      }
+      if ($("head").find('link[type="application/atom+xml"]').length > 0) {
+        autoDiscoverUrl = $('head link[type="application/atom+xml"]').attr(
           "href"
         );
         url = autoDiscoverUrl;
@@ -26,7 +33,7 @@ async function getUrl(url) {
   }
 }
 
-exports.discover = async function(url) {
+exports.discover = async function (url) {
   try {
     const autodiscover = await getUrl(url);
     return autodiscover;
