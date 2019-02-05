@@ -13,7 +13,7 @@ async function getUrl(url) {
 
     if (body) {
       const $ = cheerio.load(body);
-      if ($("head").find('link[type="application/rss+xml"]').length == 1) {
+      if ($("head").find('link[type="application/rss+xml"]').length > 0) {
         autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
           "href"
         );
