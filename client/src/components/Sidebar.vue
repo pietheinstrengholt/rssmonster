@@ -4,7 +4,6 @@
       <p>RSSMonster</p>
     </div>
     <div class="drag">
-
       <div @click="markAll()" class="option" id="mark-all-as-read">
         <span class="glyphicon">
           <v-icon name="check-square"/>
@@ -319,7 +318,8 @@ div#mark-all-as-read {
   overflow: hidden;
 }
 
-div#refresh.option, div#mark-all-as-read {
+div#refresh.option,
+div#mark-all-as-read {
   margin-right: 70px;
   min-width: 165px;
 }
@@ -443,7 +443,9 @@ export default {
         response => {
           if (response.body) {
             //refresh after one second
-            //reload page
+            setTimeout(function() {
+              location.reload();
+            }, 1000);
           }
         },
         response => {
