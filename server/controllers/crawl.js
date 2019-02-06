@@ -8,21 +8,21 @@ const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
 const language = require("../util/language");
 
-var striptags = require('striptags');
+var striptags = require("striptags");
 
 exports.getCrawl = async (req, res, next) => {
   try {
     const feeds = await Feed.findAll();
 
     if (feeds.length > 0) {
-      feeds.forEach(async function (feed) {
+      feeds.forEach(async function(feed) {
         //discover rssUrl
         const url = await autodiscover.discover(feed.url);
         try {
           const feeditem = await parseFeed.process(url);
           if (feeditem) {
             //process all feed posts
-            feeditem.posts.forEach(function (post) {
+            feeditem.posts.forEach(function(post) {
               processArticle(feed, post);
             });
 
@@ -36,7 +36,7 @@ exports.getCrawl = async (req, res, next) => {
           //update the errorCount
           feed.update({
             errorCount: Sequelize.literal("errorCount + 1")
-          })
+          });
         }
       });
     }
@@ -50,7 +50,8 @@ async function processArticle(feed, post) {
   try {
     const article = await Article.findOne({
       where: {
-        [Op.or]: [{
+        [Op.or]: [
+          {
             url: post.link
           },
           {
@@ -64,7 +65,6 @@ async function processArticle(feed, post) {
     });
 
     if (!article) {
-
       //add article
       Article.create({
         feedId: feed.id,
@@ -74,7 +74,7 @@ async function processArticle(feed, post) {
         image_url: "",
         subject: post.title,
         content: post.description,
-        contentStripped: striptags(post.description, ['a', 'img', 'strong']),
+        contentStripped: striptags(post.description, ["a", "img", "strong"]),
         language: language.get(post.description),
         //contentSnippet: item.contentSnippet,
         //author: item.author,
