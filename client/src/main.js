@@ -2,8 +2,8 @@ import Vue from 'vue';
 import VueResource from 'vue-resource';
 import App from './App.vue';
 
-//import css
-import './assets/css/bootstrap.min.css';
+//import bootstrap css
+import(/* webpackChunkName: "bootstrap" */ './assets/css/bootstrap.min.css');
 
 //add vueresourrce in order to make API calls
 Vue.use(VueResource);

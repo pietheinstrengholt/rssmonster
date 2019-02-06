@@ -64,12 +64,12 @@ body {
 <script>
 import store from "./store";
 
-import Sidebar from "./components/Sidebar.vue";
 import Home from "./components/Home.vue";
-import Toolbar from "./components/Toolbar.vue";
-import Quickbar from "./components/Quickbar.vue";
-import Modal from "./components/Modal.vue";
-import Mobile from "./components/Mobile.vue";
+const Sidebar = () => import(/* webpackChunkName: "sidebar" */ './components/Sidebar.vue');
+const Toolbar = () => import(/* webpackChunkName: "toolbar" */ './components/Toolbar.vue');
+const Quickbar = () => import(/* webpackChunkName: "quickbar" */ './components/Quickbar.vue');
+const Modal = () => import(/* webpackChunkName: "modal" */ './components/Modal.vue');
+const Mobile = () => import(/* webpackChunkName: "mobile" */ './components/Mobile.vue');
 export default {
   components: {
     appSidebar: Sidebar,
