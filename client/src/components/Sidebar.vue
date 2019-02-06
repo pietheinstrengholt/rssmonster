@@ -439,7 +439,6 @@ export default {
       this.store.currentSelection.feedId = "%";
     },
     markAll: function() {
-      console.log('mark all as read');
       this.$http.post("api/articles", {}).then(
         response => {
           if (response.body) {
