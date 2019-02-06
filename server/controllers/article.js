@@ -9,10 +9,10 @@ const Op = Sequelize.Op;
 exports.getArticles = async (req, res, next) => {
   try {
     //use query parameters instead if provided
-    var categoryId = (req.query.categoryId ? req.query.categoryId : "%");
-    var feedId = (req.query.feedId ? req.query.feedId : "%");
-    var status = (req.query.status ? req.query.status : "unread");
-    var sort = (req.query.sort ? req.query.sort : "DESC");
+    var categoryId = req.query.categoryId ? req.query.categoryId : "%";
+    var feedId = req.query.feedId ? req.query.feedId : "%";
+    var status = req.query.status ? req.query.status : "unread";
+    var sort = req.query.sort ? req.query.sort : "DESC";
 
     //set default values before querying all items
     let search = req.query.search || "%";
@@ -94,10 +94,10 @@ exports.getArticles = async (req, res, next) => {
     //return all query params and itemIds
     res.status(200).json({
       query: [
-        { 
-          categoryId: categoryId, 
-          feedId: feedId, 
-          sort: sort, 
+        {
+          categoryId: categoryId,
+          feedId: feedId,
+          sort: sort,
           status: status,
           search: search
         }
@@ -142,4 +142,23 @@ exports.getArticle = (req, res, next) => {
       console.log(err);
       return res.status(500).json(err);
     });
+};
+
+//the postArticles function marks all articles as read
+exports.postArticles = (req, res, next) => {
+  try {
+    Article.update(
+      {
+        status: "read"
+      },
+      {
+        where: { status: "unread" }
+      }
+    );
+
+    res.status(200).json("all articles marked as read");
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
 };

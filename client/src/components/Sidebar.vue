@@ -4,23 +4,28 @@
       <p>RSSMonster</p>
     </div>
     <div class="drag">
-      <div>
-        <div @click="refreshFeeds()" class="option" id="refresh">
-          <span class="glyphicon">
-            <v-icon name="sync"/>
-          </span>Refresh feeds
-          <span v-show="refreshing">
-            <v-icon name="spinner" pulse/>
-          </span>
-        </div>
+
+      <div @click="markAll()" class="option" id="mark-all-as-read">
+        <span class="glyphicon">
+          <v-icon name="check-square"/>
+        </span>Mark all read
       </div>
-      <div>
-        <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
-          <span class="glyphicon">
-            <v-icon name="plus"/>
-          </span>Add new feed
-        </div>
+
+      <div @click="refreshFeeds()" class="option" id="refresh">
+        <span class="glyphicon">
+          <v-icon name="sync"/>
+        </span>Refresh feeds
+        <span v-show="refreshing">
+          <v-icon name="spinner" pulse/>
+        </span>
       </div>
+
+      <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
+        <span class="glyphicon">
+          <v-icon name="plus"/>
+        </span>Add new feed
+      </div>
+
       <div>
         <p class="title">All feeds</p>
       </div>
@@ -225,7 +230,6 @@
 div.drag {
   background-color: transparent;
   color: #fff;
-  margin-top: 10px;
 }
 
 .dragArea {
@@ -308,16 +312,24 @@ div.option {
 }
 
 div#refresh,
-div#addnew {
+div#addnew,
+div#mark-all-as-read {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
 }
 
-div#refresh.option {
-  background-color: #6f79d3;
+div#refresh.option, div#mark-all-as-read {
   margin-right: 70px;
   min-width: 165px;
+}
+
+div#refresh.option {
+  background-color: #6f79d3;
+}
+
+div#mark-all-as-read {
+  background-color: #464f9e;
 }
 
 div#addnew.option {
@@ -329,7 +341,7 @@ div#addnew.option {
 div#monster {
   background: url(../assets/monster.svg) 14px 30px no-repeat;
   background-size: 30px 30px;
-  height: 100px;
+  height: 90px;
 }
 
 div#monster p {
@@ -417,14 +429,30 @@ export default {
     },
     loadCategory: function(category) {
       this.store.currentSelection.categoryId = category.id;
-      this.store.currentSelection.feedId = '%';
+      this.store.currentSelection.feedId = "%";
     },
     loadFeed: function(feed) {
       this.store.currentSelection.feedId = feed.id;
     },
     loadAll: function() {
-      this.store.currentSelection.categoryId = '%';
-      this.store.currentSelection.feedId = '%';
+      this.store.currentSelection.categoryId = "%";
+      this.store.currentSelection.feedId = "%";
+    },
+    markAll: function() {
+      console.log('mark all as read');
+      this.$http.post("api/articles", {}).then(
+        response => {
+          if (response.body) {
+            //refresh after one second
+            //reload page
+          }
+        },
+        response => {
+          /* eslint-disable no-console */
+          console.log("oops something went wrong", response);
+          /* eslint-enable no-console */
+        }
+      );
     },
     refreshFeeds: function() {
       //show spinner

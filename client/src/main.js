@@ -20,6 +20,7 @@ import 'vue-awesome/icons/sync';
 import 'vue-awesome/icons/spinner';
 import 'vue-awesome/icons/heart';
 import 'vue-awesome/icons/star';
+import 'vue-awesome/icons/check-square';
 
 import Icon from 'vue-awesome/components/Icon';
 
