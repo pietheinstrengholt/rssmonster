@@ -27,10 +27,10 @@ module.exports = {
       },
       starInd: Sequelize.INTEGER,
       url: {
-        type: Sequelize.STRING,
+        type: Sequelize.STRING(1024),
         allowNull: false
       },
-      imageUrl: Sequelize.STRING,
+      imageUrl: Sequelize.STRING(1024),
       subject: {
         type: Sequelize.TEXT,
         allowNull: false
