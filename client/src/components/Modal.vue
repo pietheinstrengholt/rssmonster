@@ -168,13 +168,10 @@
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select
-                        class="form-control"
-                        id="category"
-                        v-model="store.currentSelection.categoryId"
-                      >
+                      <select class="form-control" id="category" v-model="selectedCategory">
                         <option
-                          v-for="category in this.store.categories"
+                          v-for="category in this.categories"
+                          :selected="selectedCategory == feed.categoryId"
                           :value="category.id"
                           :key="category.id"
                           v-bind:id="category.id"
@@ -350,7 +347,8 @@ div.modal-dialog {
   border-color: #dcdee0;
 }
 
-span.error, .form-control.red {
+span.error,
+.form-control.red {
   color: red;
 }
 
@@ -371,13 +369,31 @@ export default {
       error_msg: "",
       url: null,
       category: {},
-      feed: {}
+      categories: {},
+      feed: {},
+      selectedCategory: null
     };
   },
+  created: function() {
+    //get initial starting values (copied data)
+    this.categories = JSON.parse(JSON.stringify(this.store.categories));
+    this.selectedCategory = this.store.currentSelection.categoryId;
+  },
   //watchers are used to avoid two way binding.
-  //we working on a copy and only update the store once we know for sure the api has returned a 200 status.
+  //a copy of the data used and only the central store is updated, once we know for sure the api has returned a 200 status.
   watch: {
     inputCategory() {
+      if (this.inputCategory) {
+        this.category = JSON.parse(JSON.stringify(this.inputCategory));
+        this.selectedCategory = this.category.id;
+      }
+    },
+    "store.categories": {
+      handler: function(data) {
+        this.categories = data;
+      }
+    },
+    inputCategories() {
       if (this.inputCategory) {
         this.category = JSON.parse(JSON.stringify(this.inputCategory));
       }
@@ -604,7 +620,7 @@ export default {
         .put("api/feeds/" + this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
-          categoryId: this.category.id
+          categoryId: this.selectedCategory
         })
         .then(
           result => {
