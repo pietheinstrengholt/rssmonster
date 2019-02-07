@@ -597,7 +597,7 @@ export default {
           //find the index of both the category and feed
           var indexCategory = this.store.categories.indexOf(this.inputCategory);
 
-          //remove the category from the store
+          //remove the feed from the store
           this.store.categories[indexCategory].feeds = this.arrayRemove(
             this.store.categories[indexCategory].feeds,
             this.inputFeed
@@ -637,8 +637,35 @@ export default {
               result.data.feedName;
             this.store.categories[indexCategory].feeds[indexFeed].feedDesc =
               result.data.feedDesc;
-            this.store.categories[indexCategory].feeds[indexFeed].categoryId =
-              result.data.categoryId;
+
+            //if the categoryId, this means the feed has been moved
+            if (
+              this.store.categories[indexCategory].feeds[indexFeed]
+                .categoryId !== result.data.categoryId
+            ) {
+              //update the categoryId to the new categoryId
+              this.store.categories[indexCategory].feeds[indexFeed].categoryId =
+                result.data.categoryId;
+
+              //lookup the new categoryIndex
+              var indexCategoryNew = this.store.categories.findIndex(
+                category => category.id === result.data.categoryId
+              );
+
+              //dupplicate the feed into the new category
+              this.store.categories[indexCategoryNew].feeds.push(
+                this.store.categories[indexCategory].feeds[indexFeed]
+              );
+
+              //remove the feed from the store from the old category
+              this.store.categories[indexCategory].feeds = this.arrayRemove(
+                this.store.categories[indexCategory].feeds,
+                this.inputFeed
+              );
+
+              //change current selection
+              this.store.currentSelection.categoryId = indexCategoryNew;
+            }
 
             //close the modal
             this.closeModal();
