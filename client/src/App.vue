@@ -45,6 +45,7 @@
     height: 100%;
     background-color: #31344b;
     overflow-y: auto;
+    overflow-x: hidden;
   }
 }
 
