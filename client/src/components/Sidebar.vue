@@ -137,7 +137,7 @@
               <div
                 class="sidebar-category-feed"
                 v-on:click.stop="loadFeed(feed)"
-                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10 }"
+                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (category.feeds.length-1) }"
                 v-bind:id="feed.id"
                 v-for="(feed, index) in category.feeds"
                 :key="index"
@@ -322,6 +322,10 @@ div#refresh.option,
 div#mark-all-as-read {
   margin-right: 70px;
   min-width: 165px;
+}
+
+.sidebar-category-feed.last {
+  border-radius: 0px 0px 4px 4px;
 }
 
 div#refresh.option {
