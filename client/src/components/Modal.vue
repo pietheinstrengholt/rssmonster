@@ -658,6 +658,16 @@ export default {
                 this.store.categories[indexCategory].feeds[indexFeed]
               );
 
+              //decrease the counts for the old category
+              this.store.categories[indexCategory].unreadCount = this.store.categories[indexCategory].unreadCount - this.inputFeed.unreadCount;
+              this.store.categories[indexCategory].readCount = this.store.categories[indexCategory].readCount - this.inputFeed.readCount;
+              this.store.categories[indexCategory].starCount = this.store.categories[indexCategory].starCount - this.inputFeed.starCount; 
+
+              //increase the counts for the new category
+              this.store.categories[indexCategoryNew].unreadCount = this.store.categories[indexCategoryNew].unreadCount + this.inputFeed.unreadCount;
+              this.store.categories[indexCategoryNew].readCount = this.store.categories[indexCategoryNew].readCount + this.inputFeed.readCount;
+              this.store.categories[indexCategoryNew].starCount = this.store.categories[indexCategoryNew].starCount + this.inputFeed.starCount; 
+
               //remove the feed from the store from the old category
               this.store.categories[indexCategory].feeds = this.arrayRemove(
                 this.store.categories[indexCategory].feeds,
@@ -666,6 +676,7 @@ export default {
 
               //change current selection
               this.store.currentSelection.categoryId = indexCategoryNew;
+              this.store.currentSelection.feedId = this.inputFeed.id;
             }
 
             //close the modal
