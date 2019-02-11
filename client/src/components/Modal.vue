@@ -523,6 +523,7 @@ export default {
             this.category.unreadCount = 0;
             this.category.readCount = 0;
             this.category.starCount = 0;
+            this.category.feeds = [];
 
             //push the new category to categories in store
             this.store.categories.push(result.data);
