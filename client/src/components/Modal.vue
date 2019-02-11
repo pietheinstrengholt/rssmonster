@@ -393,11 +393,6 @@ export default {
         this.categories = data;
       }
     },
-    inputCategories() {
-      if (this.inputCategory) {
-        this.category = JSON.parse(JSON.stringify(this.inputCategory));
-      }
-    },
     inputFeed() {
       if (this.inputFeed) {
         this.feed = JSON.parse(JSON.stringify(this.inputFeed));

@@ -66,11 +66,16 @@ body {
 import store from "./store";
 
 import Home from "./components/Home.vue";
-const Sidebar = () => import(/* webpackChunkName: "sidebar" */ './components/Sidebar.vue');
-const Toolbar = () => import(/* webpackChunkName: "toolbar" */ './components/Toolbar.vue');
-const Quickbar = () => import(/* webpackChunkName: "quickbar" */ './components/Quickbar.vue');
-const Modal = () => import(/* webpackChunkName: "modal" */ './components/Modal.vue');
-const Mobile = () => import(/* webpackChunkName: "mobile" */ './components/Mobile.vue');
+const Sidebar = () =>
+  import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue");
+const Toolbar = () =>
+  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue");
+const Quickbar = () =>
+  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue");
+const Modal = () =>
+  import(/* webpackChunkName: "modal" */ "./components/Modal.vue");
+const Mobile = () =>
+  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue");
 export default {
   components: {
     appSidebar: Sidebar,
@@ -130,6 +135,16 @@ export default {
       if (value == "newcategory") {
         this.category = {};
       }
+      if (value == "renamefeed") {
+        this.feed = this.lookupFeedById(
+          parseInt(this.store.currentSelection.feedId)
+        );
+      }
+      if (value == "renamecategory") {
+        this.category = this.lookupCategoryById(
+          parseInt(this.store.currentSelection.categoryId)
+        );
+      }
     },
     mobileClick: function(value) {
       this.mobile = value;
@@ -140,6 +155,13 @@ export default {
           if (this.store.categories[x].feeds[i].id === feedId) {
             return this.store.categories[x].feeds[i];
           }
+        }
+      }
+    },
+    lookupCategoryById: function(categoryId) {
+      for (var x = 0; x < this.store.categories.length; x++) {
+        if (this.store.categories[x].id === categoryId) {
+          return this.store.categories[x];
         }
       }
     },
