@@ -105,6 +105,10 @@ div.block div.article-content {
   margin-left: 0px;
 }
 
+div.article-content img {
+  float: none !important;
+}
+
 div.block .article h5 a {
   color: #51556a;
   font-weight: 600;
