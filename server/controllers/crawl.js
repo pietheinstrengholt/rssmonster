@@ -7,6 +7,7 @@ const Article = require("../models/article");
 const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
 const language = require("../util/language");
+const cheerio = require("cheerio");
 
 var striptags = require("striptags");
 
@@ -65,6 +66,11 @@ async function processArticle(feed, post) {
     });
 
     if (!article) {
+
+      //remove any script tags
+      const $ = cheerio.load(post.description);
+      $('script').remove();
+
       //add article
       Article.create({
         feedId: feed.id,
@@ -72,10 +78,10 @@ async function processArticle(feed, post) {
         star_ind: 0,
         url: post.link,
         image_url: "",
-        subject: post.title,
-        content: post.description,
-        contentStripped: striptags(post.description, ["a", "img", "strong"]),
-        language: language.get(post.description),
+        subject: post.title || 'No title',
+        content: $.html(),
+        contentStripped: striptags($.html(), ["a", "img", "strong"]),
+        language: language.get($.html()),
         //contentSnippet: item.contentSnippet,
         //author: item.author,
         published: post.pubdate
