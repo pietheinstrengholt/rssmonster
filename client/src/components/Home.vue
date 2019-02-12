@@ -105,8 +105,13 @@ div.block div.article-content {
   margin-left: 0px;
 }
 
-div.article-content img {
+div.article-content img, div.article-content div {
   float: none !important;
+}
+
+div.article-content iframe {
+    width: 100% !important;
+    height: auto !important;
 }
 
 div.block .article h5 a {
