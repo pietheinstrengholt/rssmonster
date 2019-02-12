@@ -382,15 +382,15 @@ export default {
   //watchers are used to avoid two way binding.
   //a copy of the data used and only the central store is updated, once we know for sure the api has returned a 200 status.
   watch: {
+    "store.categories": {
+      handler: function(data) {
+        this.categories = data;
+      }
+    },
     inputCategory() {
       if (this.inputCategory) {
         this.category = JSON.parse(JSON.stringify(this.inputCategory));
         this.selectedCategory = this.category.id;
-      }
-    },
-    "store.categories": {
-      handler: function(data) {
-        this.categories = data;
       }
     },
     inputFeed() {
