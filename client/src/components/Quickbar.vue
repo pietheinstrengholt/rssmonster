@@ -10,7 +10,7 @@
     ></a>
     <a
       v-on:click="loadType('unread')"
-      v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status == 'unread' }"
       id="unread"
       class="view-button"
       title="View unread"
@@ -23,9 +23,9 @@
     </a>
     <a
       v-on:click="loadType('read')"
-      v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status == 'read' }"
       id="read"
-      class="view-button selected"
+      class="view-button"
       title="View read"
       data-behavior="view_all change_view_mode"
       data-view-mode="view_all"
@@ -36,7 +36,7 @@
     </a>
     <a
       v-on:click="loadType('star')"
-      v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
+      v-bind:class="{ 'selected':  store.currentSelection.status == 'star' }"
       id="star"
       class="view-button"
       title="View starred"
@@ -130,5 +130,9 @@ a#read.view-button {
   border-left: 1px solid transparent;
   border-color: #dcdee0;
   cursor: pointer;
+}
+
+.view-button.selected {
+  color: #18bc9c !important;
 }
 </style>
