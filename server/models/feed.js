@@ -43,6 +43,11 @@ const Feed = sequelize.define(
     errorCount: {
       type: Sequelize.INTEGER,
       defaultValue: 0
+    },
+    active: {
+      type: Sequelize.BOOLEAN, 
+      allowNull: false, 
+      defaultValue: true 
     }
   },
   {

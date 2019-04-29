@@ -13,7 +13,11 @@ var striptags = require("striptags");
 
 exports.getCrawl = async (req, res, next) => {
   try {
-    const feeds = await Feed.findAll();
+    const feeds = await Feed.findAll({
+      where: {
+        active: true
+      }
+    });
 
     if (feeds.length > 0) {
       feeds.forEach(async function(feed) {

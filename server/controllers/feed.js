@@ -38,6 +38,7 @@ exports.updateFeed = async (req, res, next) => {
   const url = req.body.url;
   const rssUrl = req.body.rssUrl;
   const favicon = req.body.favicon;
+  const active = req.body.active;
   try {
     const feed = await Feed.findByPk(feedId);
     if (!feed) {
@@ -52,7 +53,8 @@ exports.updateFeed = async (req, res, next) => {
         categoryId: req.body.categoryId,
         url: req.body.url,
         rssUrl: req.body.rssUrl,
-        favicon: req.body.favicon
+        favicon: req.body.favicon,
+        active: req.body.active
       });
       return res.status(200).json(feed);
     }
@@ -69,13 +71,16 @@ exports.newFeed = async (req, res, next) => {
   const url = req.body.url;
   const rssUrl = req.body.rssUrl;
   const favicon = req.body.favicon;
+  const active = req.body.active;
   try {
     const feed = await Feed.create({
       categoryId: categoryId,
       feedName: feedName,
       feedDesc: feedDesc,
       url: url,
-      rssUrl: rssUrl
+      rssUrl: rssUrl,
+      favicon: favicon,
+      active: active
     });
     return res.status(200).json(feed);
   } catch (err) {
