@@ -14,21 +14,21 @@
   },
   "dependencies": {
     "moment": "^2.24.0",
-    "vue": "^2.6.2",
-    "vue-awesome": "^3.3.1",
-    "vue-infinite-loading": "^2.4.3",
+    "vue": "^2.6.10",
+    "vue-awesome": "^3.5.4",
+    "vue-infinite-loading": "^2.4.4",
     "vue-resource": "^1.5.1",
-    "vuedraggable": "^2.17.0",
+    "vuedraggable": "^2.21.0",
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.4.0",
-    "@vue/cli-plugin-eslint": "^3.4.0",
-    "@vue/cli-service": "^3.4.0",
+    "@vue/cli-plugin-babel": "^3.8.0",
+    "@vue/cli-plugin-eslint": "^3.8.0",
+    "@vue/cli-service": "^3.8.0",
     "babel-eslint": "^10.0.1",
-    "eslint": "^5.13.0",
-    "eslint-plugin-vue": "^5.1.0",
-    "vue-template-compiler": "^2.6.2"
+    "eslint": "^5.16.0",
+    "eslint-plugin-vue": "^5.2.2",
+    "vue-template-compiler": "^2.6.10"
   },
   "eslintConfig": {
     "root": true,
