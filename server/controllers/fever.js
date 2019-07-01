@@ -309,15 +309,15 @@ exports.postFever = async (req, res, next) => {
 };
 
 function responseBase() {
-  //always return status 1: password and username correct
-  const status = 1;
+  //always return auth 1: password and username correct
+  const auth = 1;
 
   //latest api version is 3
   const api_version = 3;
 
   return {
-    api_version: 3,
-    auth: status,
+    api_version,
+    auth,
     last_refreshed_on_time: String(Math.floor((new Date()).getTime() / 1000))
   };
 }
