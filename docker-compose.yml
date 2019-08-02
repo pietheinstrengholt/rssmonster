@@ -41,7 +41,6 @@ services:
     volumes:
       - ./server/app.js:/app/app.js
       - ./server/controllers:/app/controllers
-      - ./server/controllers:/app/controllers
       - ./server/config:/app/config
       - ./server/models:/app/models
       - ./server/util:/app/util
