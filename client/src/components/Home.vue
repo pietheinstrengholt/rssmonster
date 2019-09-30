@@ -154,11 +154,11 @@ div.block div.bookmarked {
 }
 
 div.block div.bookmark {
-  background-image: url("../assets/heart_unselected.png");
+  background-image: url("../assets/heart_black.png");
 }
 
 div.block div.bookmarked {
-  background-image: url("../assets/heart_selected.png");
+  background-image: url("../assets/heart_red.png");
 }
 
 span.badge.badge-danger {
@@ -203,6 +203,53 @@ div.infinite-loading-container {
   min-height: 50px;
   padding-top: 20px;
 }
+
+@media (prefers-color-scheme: dark) {
+  html, body, .home, #main, d#articles, div.block, div.block .article, .article-content, h5.heading, div.block div.feedname, div.infinite-loading-container {
+    color: #fff;
+    background: #000;
+    border-color: #000;
+  }
+
+  a, div.block .article h5 a {
+    color: #fff;
+    border-bottom: 1px solid #fff;
+  }
+
+  div.block div.article-content, span.feed_name a {
+    color: #fff;
+  }
+
+  div.block div.bookmark {
+    background-image: url("../assets/heart_grey.png");
+  }
+
+  div.block div.bookmarked {
+    background-image: url("../assets/heart_red.png");
+  }
+
+  footer p {
+    color: #aaa;
+  }
+
+  header h1,
+  header h2 {
+    color: #fff;
+  }
+
+  header h1 a {
+    color: #fff;
+  }
+
+  nav ul li {
+    background: #000;
+  }
+
+  .divider {
+    border-bottom: 1px solid #ddd;
+  }
+}
+
 </style>
 
 <script>

@@ -135,4 +135,14 @@ a#read.view-button {
 .view-button.selected {
   color: #18bc9c !important;
 }
+
+@media (prefers-color-scheme: dark) {
+  .view-toolbar,
+  .view-button {
+    color: #fff;
+    background: #000;
+    border-color: #000;
+    border-bottom: 1px solid #fff;
+  }
+}
 </style>

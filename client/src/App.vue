@@ -60,6 +60,12 @@ div.sidebar {
 body {
   background-color: #f9f9f9;
 }
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #000;
+  }
+}
 </style>
 
 <script>

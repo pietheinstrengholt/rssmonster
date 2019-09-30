@@ -143,6 +143,25 @@
 #sort.dropdownmenu {
   margin-left: 145px;
 }
+
+@media (prefers-color-scheme: dark) {
+  .toolbar,
+  .status-toolbar,
+  .dropdownmenu .item {
+    color: #fff;
+    background: #000;
+    border-color: #000;
+    border-bottom: 1px solid #fff;
+  }
+
+  .dropdownmenu .item {
+    border-bottom: 1px solid #fff;
+    border-right: 1px solid #fff;
+    border-left: 1px solid #fff;
+  }
+
+}
+
 </style>
 
 
