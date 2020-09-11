@@ -30,7 +30,7 @@
     "he": "^1.2.0",
     "morgan": "^1.9.1",
     "mysql2": "^1.7.0",
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "pug": "^2.0.4",
     "sequelize": "^5.19.1",
     "sequelize-cli": "^5.5.1",
