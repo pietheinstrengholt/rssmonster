@@ -3,7 +3,7 @@
 [![Build Status](https://travis-ci.org/pietheinstrengholt/rssmonster.svg?branch=master)](https://travis-ci.org/pietheinstrengholt/rssmonster/)
 [![License](https://img.shields.io/github/license/pietheinstrengholt/rssmonster.svg)](https://www.github.com/pietheinstrengholt/rssmonster/)
 
-Copyright (c) 2019 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2021 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
 RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc. RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
