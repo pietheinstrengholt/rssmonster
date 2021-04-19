@@ -145,7 +145,7 @@ div.block div.bookmarked {
   background-repeat: no-repeat;
   float: left;
   width: 32px;
-  margin-top: -8px;
+  margin-top: -10px;
   margin-left: -6px;
   cursor: pointer;
   background-size: 18px 18px;
@@ -209,6 +209,11 @@ div.infinite-loading-container {
     color: #fff;
     background: #000;
     border-color: #000;
+    border-bottom-color: #fff;
+  }
+
+  div#app {
+    background-color: #000;
   }
 
   a, div.block .article h5 a {
