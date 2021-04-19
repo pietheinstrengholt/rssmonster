@@ -14,7 +14,6 @@
   },
   "dependencies": {
     "moment": "^2.29.1",
-    "pug": "^3.0.2",
     "vue": "^2.6.12",
     "vue-awesome": "^3.5.4",
     "vue-infinite-loading": "^2.4.5",

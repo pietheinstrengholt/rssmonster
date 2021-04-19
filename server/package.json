@@ -31,7 +31,7 @@
     "morgan": "^1.10.0",
     "mysql2": "^1.7.0",
     "node-fetch": "^2.6.1",
-    "pug": "^2.0.4",
+    "pug": "^3.0.2",
     "sequelize": "^5.22.4",
     "sequelize-cli": "^5.5.1",
     "striptags": "^3.1.1"
