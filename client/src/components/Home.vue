@@ -216,6 +216,10 @@ div.infinite-loading-container {
     background-color: #000;
   }
 
+  div.sidebar {
+    background-color: #13141c;
+  }
+
   a, div.block .article h5 a {
     color: #fff;
     border-bottom: 1px solid #fff;
