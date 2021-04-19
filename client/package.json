@@ -13,22 +13,22 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "moment": "^2.24.0",
-    "vue": "^2.6.10",
+    "moment": "^2.29.1",
+    "vue": "^2.6.12",
     "vue-awesome": "^3.5.4",
-    "vue-infinite-loading": "^2.4.4",
-    "vue-resource": "^1.5.1",
-    "vuedraggable": "^2.23.1",
+    "vue-infinite-loading": "^2.4.5",
+    "vue-resource": "^1.5.2",
+    "vuedraggable": "^2.24.3",
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^3.11.0",
-    "@vue/cli-plugin-eslint": "^3.11.0",
-    "@vue/cli-service": "^3.11.0",
-    "babel-eslint": "^10.0.3",
+    "@vue/cli-plugin-babel": "^3.12.1",
+    "@vue/cli-plugin-eslint": "^3.12.1",
+    "@vue/cli-service": "^3.12.1",
+    "babel-eslint": "^10.1.0",
     "eslint": "^5.16.0",
     "eslint-plugin-vue": "^5.2.3",
-    "vue-template-compiler": "^2.6.10"
+    "vue-template-compiler": "^2.6.12"
   },
   "eslintConfig": {
     "root": true,

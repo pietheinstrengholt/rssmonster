@@ -15,24 +15,24 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^1.19.3"
+    "nodemon": "^1.19.4"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
-    "cheerio": "^1.0.0-rc.3",
+    "cheerio": "^1.0.0-rc.6",
     "dotenv": "^6.2.0",
-    "ejs": "^2.7.1",
+    "ejs": "^2.7.4",
     "express": "^4.17.1",
     "express-handlebars": "^3.1.0",
-    "feedparser": "^2.2.9",
-    "franc-min": "^4.1.0",
+    "feedparser": "^2.2.10",
+    "franc-min": "^4.1.1",
     "got": "^9.6.0",
     "he": "^1.2.0",
-    "morgan": "^1.9.1",
+    "morgan": "^1.10.0",
     "mysql2": "^1.7.0",
     "node-fetch": "^2.6.1",
     "pug": "^2.0.4",
-    "sequelize": "^5.19.1",
+    "sequelize": "^5.22.4",
     "sequelize-cli": "^5.5.1",
     "striptags": "^3.1.1"
   }
