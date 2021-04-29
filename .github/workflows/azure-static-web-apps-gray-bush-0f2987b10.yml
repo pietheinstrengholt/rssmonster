@@ -32,7 +32,7 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
         env: # Add environment variables here
-          VUE_APP_HOSTNAME: "http://rssmonster.azurewebsites.net/"
+          VUE_APP_HOSTNAME: "https://rssmonster.azurewebsites.net/"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
