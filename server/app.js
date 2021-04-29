@@ -3,6 +3,9 @@ const express = require("express");
 const path = require("path");
 const morgan = require('morgan')
 
+//set port
+const port = process.env.PORT || 3000
+
 //import sequelize
 const sequelize = require("./util/database");
 
@@ -71,4 +74,6 @@ sequelize
     console.log(err);
   });
 
-app.listen(3000);
+  app.listen(port, () => {
+    console.log(`Server has started on port ${port}!`);
+  });
