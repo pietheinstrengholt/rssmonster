@@ -4,6 +4,7 @@ dist/
 .env
 .DS_Store
 src/.DS_Store
+.deployment
 
 # Log files
 npm-debug.log*
