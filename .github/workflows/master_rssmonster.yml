@@ -21,11 +21,12 @@ jobs:
       with:
         node-version: '14.x'
 
-    - name: npm install, build, and test
+    - name: npm install, and test
       run: |
         npm install
-        npm run build --if-present
-        npm run test --if-present
+        npm start & npx wait-on http://localhost:3000
+      env:
+        CI: true
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v2
