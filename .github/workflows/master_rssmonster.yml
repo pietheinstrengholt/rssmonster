@@ -21,10 +21,10 @@ jobs:
       with:
         node-version: '14.x'
 
-    - name: npm install, and test
+    - name: npm install, build, and test
       run: |
         npm install
-        npm start & npx wait-on http://localhost:3000
+        npm run build --if-present
       env:
         CI: true
 
