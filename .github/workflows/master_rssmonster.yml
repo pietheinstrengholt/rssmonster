@@ -31,7 +31,6 @@ jobs:
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v2
-      working-directory: server
       with:
         name: node-app
         path: server/
