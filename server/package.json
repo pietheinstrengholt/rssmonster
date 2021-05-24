@@ -15,7 +15,8 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^1.19.4"
+    "nodemon": "^1.19.4",
+    "trim": "^1.0.1"
   },
   "dependencies": {
     "body-parser": "^1.19.0",
@@ -25,7 +26,7 @@
     "express": "^4.17.1",
     "express-handlebars": "^3.1.0",
     "feedparser": "^2.2.10",
-    "franc-min": "^4.1.1",
+    "franc-min": "^5.0.0",
     "got": "^9.6.0",
     "he": "^1.2.0",
     "morgan": "^1.10.0",
@@ -35,5 +36,8 @@
     "sequelize": "^5.22.4",
     "sequelize-cli": "^5.5.1",
     "striptags": "^3.1.1"
+  },
+  "optionalDependencies": {
+    "fsevents": "^2.3.2"
   }
 }
