@@ -1,11 +1,9 @@
 ## RSSMonster
-
-[![Build Status](https://travis-ci.org/pietheinstrengholt/rssmonster.svg?branch=master)](https://travis-ci.org/pietheinstrengholt/rssmonster/)
-[![License](https://img.shields.io/github/license/pietheinstrengholt/rssmonster.svg)](https://www.github.com/pietheinstrengholt/rssmonster/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Azure Static Web Apps CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-client.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-client.yml)
 [![Azure Web App CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml)
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
-
+[![Build Status](https://travis-ci.org/pietheinstrengholt/rssmonster.svg?branch=master)](https://travis-ci.org/pietheinstrengholt/rssmonster/)
 
 Copyright (c) 2021 Piethein Strengholt, piethein@strengholt-online.nl
 
