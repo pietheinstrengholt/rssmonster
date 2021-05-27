@@ -2,8 +2,8 @@
 
 [![Build Status](https://travis-ci.org/pietheinstrengholt/rssmonster.svg?branch=master)](https://travis-ci.org/pietheinstrengholt/rssmonster/)
 [![License](https://img.shields.io/github/license/pietheinstrengholt/rssmonster.svg)](https://www.github.com/pietheinstrengholt/rssmonster/)
-[![Azure Static Web Apps CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-black-wave-013d66203.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-black-wave-013d66203.yml)
-[![Azure Web App CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/master_rssmonster.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/master_rssmonster.yml)
+[![Azure Static Web Apps CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-client.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-client.yml)
+[![Azure Web App CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml)
 
 
 Copyright (c) 2021 Piethein Strengholt, piethein@strengholt-online.nl
