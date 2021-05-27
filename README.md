@@ -11,7 +11,7 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
 ### Prerequisites
-* NodeJS 10.x
+* NodeJS 10.x or higher
 * Git
 * A Mysql installation (other databases will also work with a bit of configuration)
 
