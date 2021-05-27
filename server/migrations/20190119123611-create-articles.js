@@ -27,10 +27,10 @@ module.exports = {
       },
       starInd: Sequelize.INTEGER,
       url: {
-        type: Sequelize.STRING(8192),
+        type: Sequelize.TEXT('medium'),
         allowNull: false
       },
-      imageUrl: Sequelize.STRING(8192),
+      imageUrl: Sequelize.TEXT('medium'),
       subject: {
         type: Sequelize.TEXT,
         allowNull: false
@@ -50,8 +50,8 @@ module.exports = {
         type: Sequelize.DATE
       }
     }, {
-      charset: "utf8",
-      collate: "utf8_unicode_ci"
+      charset: "utf8mb4",
+      collate: "utf8mb4_unicode_ci"
     });
   },
   down: (queryInterface, Sequelize) => {
