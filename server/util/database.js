@@ -1,4 +1,4 @@
-require("dotenv").load();
+require("dotenv").config();
 
 const Sequelize = require("sequelize");
 const fs = require("fs");
