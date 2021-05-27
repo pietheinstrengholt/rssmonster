@@ -361,7 +361,7 @@ button.btn.btn-primary.content {
 import store from "../store";
 
 export default {
-  props: ["modal", "inputCategory", "inputFeed"],
+  props: ["inputCategory", "inputFeed"],
   data() {
     return {
       store: store,
