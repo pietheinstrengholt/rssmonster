@@ -74,7 +74,3 @@ The following scripts and plug-ins are used within RSSMonster
 * VueJS: https://vuejs.org/
 * Vue infinite scrolling: https://github.com/PeachScript/vue-infinite-loading
 * Waypoints: https://github.com/imakewebthings/waypoints
-
-#### TODO
-- Change dist location when building VueJS to ../../server
-- Implement settings (default category on initial load, ASC or DESC sort, etc.)
