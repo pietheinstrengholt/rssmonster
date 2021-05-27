@@ -14,12 +14,18 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout
+      uses: actions/checkout@v2
 
     - name: Set up Node.js version
       uses: actions/setup-node@v1
       with:
         node-version: '14.x'
+
+    - name: Initialize CodeQL
+      uses: github/codeql-action/init@v1
+      with:
+        languages: javascript
 
     - name: npm install, build, and test
       run: |
@@ -28,6 +34,9 @@ jobs:
       working-directory: server
       env:
         CI: true
+
+    - name: Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v1
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v2
