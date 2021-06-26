@@ -97,7 +97,8 @@ async function processArticle(feed, post) {
           language: language.get($.html()),
           //contentSnippet: item.contentSnippet,
           //author: item.author,
-          published: post.pubdate
+          //default post.pubdate with new Date when empty
+          published: post.pubdate || new Date()
         });
       }
     }
