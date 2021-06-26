@@ -77,29 +77,33 @@ async function processArticle(feed, post) {
 
     if (!article) {
 
-      //remove any script tags
-      const $ = cheerio.load(String(post.description));
+      try {
+        //remove any script tags
+        const $ = cheerio.load(post.description);
 
-      //dismiss undefined errors
-      if (typeof $ !== 'undefined') {
-        $('script').remove();
+        //dismiss undefined errors
+        if (typeof $ !== 'undefined') {
+          $('script').remove();
 
-        //add article
-        Article.create({
-          feedId: feed.id,
-          status: "unread",
-          star_ind: 0,
-          url: post.link,
-          image_url: "",
-          subject: post.title || 'No title',
-          content: $.html(),
-          contentStripped: striptags($.html(), ["a", "img", "strong"]),
-          language: language.get($.html()),
-          //contentSnippet: item.contentSnippet,
-          //author: item.author,
-          //default post.pubdate with new Date when empty
-          published: post.pubdate || new Date()
-        });
+          //add article
+          Article.create({
+            feedId: feed.id,
+            status: "unread",
+            star_ind: 0,
+            url: post.link,
+            image_url: "",
+            subject: post.title || 'No title',
+            content: $.html(),
+            contentStripped: striptags($.html(), ["a", "img", "strong"]),
+            language: language.get($.html()),
+            //contentSnippet: item.contentSnippet,
+            //author: item.author,
+            //default post.pubdate with new Date when empty
+            published: post.pubdate || new Date()
+          });
+        }
+      } catch (error) {
+        console.log(error) // handle error
       }
     }
   } catch (err) {
