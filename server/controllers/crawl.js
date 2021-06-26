@@ -23,28 +23,33 @@ exports.getCrawl = async (req, res, next) => {
       feeds.forEach(async function(feed) {
         //discover rssUrl
         const url = await autodiscover.discover(feed.url);
-        try {
-          const feeditem = await parseFeed.process(url);
-          if (feeditem) {
-            //process all feed posts
-            feeditem.posts.forEach(function(post) {
-              processArticle(feed, post);
-            });
 
-            //reset the feed count
+        //do not process undefined URLs
+        if(typeof url !== "undefined") {
+          try {
+            const feeditem = await parseFeed.process(url);
+            if (feeditem) {
+              //process all feed posts
+              feeditem.posts.forEach(function(post) {
+                processArticle(feed, post);
+              });
+  
+              //reset the feed count
+              feed.update({
+                errorCount: 0
+              });
+            }
+          } catch (err) {
+            console.log(err.stack.split("\n", 1).join(""));
+            //update the errorCount
             feed.update({
-              errorCount: 0
+              errorCount: Sequelize.literal("errorCount + 1")
             });
           }
-        } catch (err) {
-          console.log(err.stack.split("\n", 1).join(""));
-          //update the errorCount
-          feed.update({
-            errorCount: Sequelize.literal("errorCount + 1")
-          });
         }
       });
     }
+
     return res.status(200).json("Crawling started.");
   } catch (err) {
     console.log(err);
