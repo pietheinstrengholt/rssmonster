@@ -26,6 +26,7 @@
     "express": "^4.17.1",
     "express-handlebars": "^5.3.2",
     "feedparser": "^2.2.10",
+    "forever": "^4.0.1",
     "franc-min": "^5.0.0",
     "got": "^11.8.2",
     "he": "^1.2.0",
@@ -35,7 +36,7 @@
     "pug": "^3.0.2",
     "sequelize": "^6.6.2",
     "sequelize-cli": "^6.2.0",
-    "striptags": "^3.1.1"
+    "striptags": "^3.2.0"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.2"
