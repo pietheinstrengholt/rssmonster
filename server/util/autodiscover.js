@@ -72,50 +72,57 @@ async function getUrl(url) {
         Accept: "text/html,application/xhtml+xml"
       }
     });
-    //set body text, needed for cheerio for trying to retrieve rss link
-    const body = await response.text();
-    //return response url, in case the url has been changed
-    const responseUrl = response.url;
 
-    //validate body
-    if (body) {
-      //load body into cheerio
-      const $ = cheerio.load(body);
+    if (response.ok) {
 
-      //validate if application/rss+xml attribute is present in header
-      if ($("head").find('link[type="application/rss+xml"]').length > 0) {
-        autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
-          "href"
-        );
+      //set body text, needed for cheerio for trying to retrieve rss link
+      const body = await response.text();
+      //return response url, in case the url has been changed
+      const responseUrl = response.url;
 
-        //validate if the url is valid
-        if (isURL(autoDiscoverUrl)) {
-          url = autoDiscoverUrl;
-        } else {
-          //find overlap and create new url
-          var overlap = findOverlap(responseUrl, autoDiscoverUrl);
-          url = responseUrl.replace(overlap, "") + autoDiscoverUrl;
+      //validate body
+      if (body) {
+        //load body into cheerio
+        const $ = cheerio.load(body);
+
+        //validate if application/rss+xml attribute is present in header
+        if ($("head").find('link[type="application/rss+xml"]').length > 0) {
+          autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
+            "href"
+          );
+
+          //validate if the url is valid
+          if (isURL(autoDiscoverUrl)) {
+            url = autoDiscoverUrl;
+          } else {
+            //find overlap and create new url
+            var overlap = findOverlap(responseUrl, autoDiscoverUrl);
+            url = responseUrl.replace(overlap, "") + autoDiscoverUrl;
+          }
+        }
+
+        //validate if application/atom+xml attribute is present in header
+        if ($("head").find('link[type="application/atom+xml"]').length > 0) {
+          autoDiscoverUrl = $('head link[type="application/atom+xml"]').attr(
+            "href"
+          );
+
+          //validate if the url is valid
+          if (isURL(autoDiscoverUrl)) {
+            url = autoDiscoverUrl;
+          } else {
+            //find overlap and create new url
+            var overlap = findOverlap(responseUrl, autoDiscoverUrl);
+            url = responseUrl.replace(overlap, "") + autoDiscoverUrl;
+          }
         }
       }
-
-      //validate if application/atom+xml attribute is present in header
-      if ($("head").find('link[type="application/atom+xml"]').length > 0) {
-        autoDiscoverUrl = $('head link[type="application/atom+xml"]').attr(
-          "href"
-        );
-
-        //validate if the url is valid
-        if (isURL(autoDiscoverUrl)) {
-          url = autoDiscoverUrl;
-        } else {
-          //find overlap and create new url
-          var overlap = findOverlap(responseUrl, autoDiscoverUrl);
-          url = responseUrl.replace(overlap, "") + autoDiscoverUrl;
-        }
-      }
+      //return final result set
+      return url;
+    } else {
+      console.log(url);
+      console.log(`HTTP Error Response: ${response.status} ${response.statusText}`);
     }
-    //return final result set
-    return url;
   } catch (err) {
     console.log(err);
   }
