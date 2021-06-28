@@ -1,5 +1,8 @@
 const cheerio = require("cheerio");
 const fetch = require("node-fetch");
+//import http and https, needed for setting the agents for node-fetch
+const http = require('http');
+const https = require('https');
 
 function extractHostname(url) {
   var hostname;
@@ -64,14 +67,32 @@ function isURL(str) {
 
 async function getUrl(url) {
   try {
-    //fetch url by using proper user agent
-    const response = await fetch(url, {
+
+    //set httpAgents
+    const httpAgent = new http.Agent({
+      keepAlive: true
+    });
+    const httpsAgent = new https.Agent({
+      keepAlive: true
+    });
+
+    const options = {
+      agent: function(_parsedURL) {
+        if (_parsedURL.protocol == 'http:') {
+          return httpAgent;
+        } else {
+          return httpsAgent;
+        }
+      },
       headers: {
         "User-Agent":
           "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36",
         Accept: "text/html,application/xhtml+xml"
       }
-    });
+    };
+
+    //fetch url by using proper user agent
+    const response = await fetch(url, options);
 
     if (response.ok) {
 
