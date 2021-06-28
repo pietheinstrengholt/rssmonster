@@ -23,7 +23,13 @@ if (config.use_env_variable) {
       define: {
         timestamps: true
       },
-      logging: false
+      logging: false,
+      pool: {
+        max: 20,
+        min: 0,
+        acquire: 60000,
+        idle: 10000
+      }
     }
   );
 }
