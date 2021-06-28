@@ -83,7 +83,8 @@ async function getUrl(url) {
       //validate body
       if (body) {
         //load body into cheerio
-        const $ = cheerio.load(body);
+        //dismiss "cheerio.load() expects a string" by converting to string
+        const $ = cheerio.load(String(body));
 
         //validate if application/rss+xml attribute is present in header
         if ($("head").find('link[type="application/rss+xml"]').length > 0) {
@@ -120,8 +121,7 @@ async function getUrl(url) {
       //return final result set
       return url;
     } else {
-      console.log(url);
-      console.log(`HTTP Error Response: ${response.status} ${response.statusText}`);
+      console.log("HTTP Error Response: " + response.status + " (" + response.statusText + ") - " + url);
     }
   } catch (err) {
     console.log(err);

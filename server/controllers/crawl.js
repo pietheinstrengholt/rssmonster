@@ -40,7 +40,7 @@ exports.getCrawl = async (req, res, next) => {
               });
             }
           } catch (err) {
-            console.log(err.stack.split("\n", 1).join(""));
+            console.log(err.stack.split("\n", 1).join("") + " - " + feed.url);
             //update the errorCount
             feed.update({
               errorCount: Sequelize.literal("errorCount + 1")
@@ -79,7 +79,8 @@ async function processArticle(feed, post) {
 
       try {
         //remove any script tags
-        const $ = cheerio.load(post.description);
+        //dismiss "cheerio.load() expects a string" by converting to string
+        const $ = cheerio.load(String(post.description));
 
         //dismiss undefined errors
         if (typeof $ !== 'undefined') {
