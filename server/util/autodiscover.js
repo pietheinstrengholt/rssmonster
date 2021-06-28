@@ -148,7 +148,15 @@ async function getUrl(url) {
       console.log("HTTP Error Response: " + response.status + " (" + response.statusText + ") - " + url);
     }
   } catch (err) {
-    console.log("getUrl Error: " + err + " - " + url);
+    if (err.name === 'FetchError') {
+			console.log("FetchError: " + err.message + " - " + url);
+		}
+    if (err.name === 'AbortError') {
+			console.log("AbortError: " + err.message + " - " + url);
+		}
+    if (err.name === 'RequestError') {
+			console.log("RequestError: " + err.message + " - " + url);
+		}
   }
 }
 

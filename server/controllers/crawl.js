@@ -11,7 +11,14 @@ const cheerio = require("cheerio");
 
 var striptags = require("striptags");
 
-exports.getCrawl = async (req, res, next) => {
+//put the try/catch block into a higher function and then put the async/await functions of that function
+const catchAsync = fn => {
+  return (req, res, next) => {
+    fn(req, res, next).catch(next);
+  };
+};
+
+exports.getCrawl = catchAsync(async (req, res, next) => {
   try {
     const feeds = await Feed.findAll({
       where: {
@@ -52,9 +59,9 @@ exports.getCrawl = async (req, res, next) => {
 
     return res.status(200).json("Crawling started.");
   } catch (err) {
-    console.log(err);
+    return next(err);
   }
-};
+});
 
 async function processArticle(feed, post) {
   try {
@@ -75,35 +82,30 @@ async function processArticle(feed, post) {
     });
 
     if (!article) {
+      //remove any script tags
+      //dismiss "cheerio.load() expects a string" by converting to string
+      const $ = cheerio.load(String(post.description));
 
-      try {
-        //remove any script tags
-        //dismiss "cheerio.load() expects a string" by converting to string
-        const $ = cheerio.load(String(post.description));
+      //dismiss undefined errors
+      if (typeof $ !== 'undefined') {
+        $('script').remove();
 
-        //dismiss undefined errors
-        if (typeof $ !== 'undefined') {
-          $('script').remove();
-
-          //add article
-          Article.create({
-            feedId: feed.id,
-            status: "unread",
-            star_ind: 0,
-            url: post.link,
-            image_url: "",
-            subject: post.title || 'No title',
-            content: $.html(),
-            contentStripped: striptags($.html(), ["a", "img", "strong"]),
-            language: language.get($.html()),
-            //contentSnippet: item.contentSnippet,
-            //author: item.author,
-            //default post.pubdate with new Date when empty
-            published: post.pubdate || new Date()
-          });
-        }
-      } catch (error) {
-        console.log(error) // handle error
+        //add article
+        Article.create({
+          feedId: feed.id,
+          status: "unread",
+          star_ind: 0,
+          url: post.link,
+          image_url: "",
+          subject: post.title || 'No title',
+          content: $.html(),
+          contentStripped: striptags($.html(), ["a", "img", "strong"]),
+          language: language.get($.html()),
+          //contentSnippet: item.contentSnippet,
+          //author: item.author,
+          //default post.pubdate with new Date when empty
+          published: post.pubdate || new Date()
+        });
       }
     }
   } catch (err) {

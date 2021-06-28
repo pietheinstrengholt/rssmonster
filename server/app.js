@@ -74,6 +74,6 @@ sequelize
     console.log(err);
   });
 
-  app.listen(port, () => {
-    console.log(`Server has started on port ${port}!`);
-  });
+app.listen(port, () => {
+  console.log(`Server has started on port ${port}!`);
+});
