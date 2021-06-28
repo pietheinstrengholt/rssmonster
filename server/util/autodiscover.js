@@ -124,7 +124,7 @@ async function getUrl(url) {
       console.log("HTTP Error Response: " + response.status + " (" + response.statusText + ") - " + url);
     }
   } catch (err) {
-    console.log(err);
+    console.log("getUrl Error: " + err + " - " + url);
   }
 }
 
