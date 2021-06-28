@@ -3,6 +3,8 @@ const fetch = require("node-fetch");
 //import http and https, needed for setting the agents for node-fetch
 const http = require('http');
 const https = require('https');
+http.globalAgent.maxSockets = 1000000;
+https.globalAgent.maxSockets = 1000000;
 
 function extractHostname(url) {
   var hostname;
@@ -130,6 +132,7 @@ async function getUrl(url) {
           );
 
           //validate if the url is valid
+          //sometimes the RSS url in the header points to a new or different URL than the processed URL itself
           if (isURL(autoDiscoverUrl)) {
             url = autoDiscoverUrl;
           } else {
