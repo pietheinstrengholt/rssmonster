@@ -5,7 +5,7 @@ import App from './App.vue';
 //import bootstrap css
 import './assets/css/bootstrap.min.css';
 
-//add vueresourrce in order to make API calls
+//add VueResource in order to make API calls
 Vue.use(VueResource);
 
 // only import the icons you use to reduce bundle size
@@ -30,12 +30,15 @@ Vue.component('v-icon', Icon)
 //get app hostname location from the .env
 Vue.http.options.root = process.env.VUE_APP_HOSTNAME;
 
+//init VueJS
 new Vue({
 	el: '#app',
 	render: h => h(App)
 });
 
-// Comment these three for local build.
-Vue.config.devtools = true;
-Vue.config.debug = true;
-Vue.config.silent = true;
+//enable development environment when NODE_ENV is set to development
+if (process.env.NODE_ENV == 'development') {
+	Vue.config.devtools = true;
+	Vue.config.debug = true;
+	Vue.config.silent = true;
+}

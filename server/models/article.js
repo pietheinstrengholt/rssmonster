@@ -30,7 +30,10 @@ const Article = sequelize.define(
       allowNull: false,
       defaultValue: "unread"
     },
-    starInd: Sequelize.INTEGER,
+    starInd: {
+      type: Sequelize.INTEGER,
+      defaultValue: 0
+    },
     url: {
       type: Sequelize.STRING(1024),
       allowNull: false

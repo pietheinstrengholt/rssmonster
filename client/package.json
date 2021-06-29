@@ -4,7 +4,7 @@
   "private": true,
   "author": "Piethein Strengholt",
   "scripts": {
-    "serve": "vue-cli-service serve --watch",
+    "serve": "vue-cli-service serve --host localhost",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint"
   },

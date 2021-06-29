@@ -53,6 +53,11 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
               errorCount: Sequelize.literal("errorCount + 1")
             });
           }
+        } else {
+          //update the errorCount
+          feed.update({
+            errorCount: Sequelize.literal("errorCount + 1")
+          });
         }
       });
     }

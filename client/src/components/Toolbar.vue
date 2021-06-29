@@ -67,7 +67,7 @@
   overflow: hidden;
   background-color: #eff1f3;
   position: fixed;
-  margin-left: -18px;
+  margin-left: -15px;
 }
 
 .search-wrap {

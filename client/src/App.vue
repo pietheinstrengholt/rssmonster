@@ -95,7 +95,7 @@ export default {
     return {
       category: {},
       feed: {},
-      modal: null,
+      modal: false,
       mobile: null,
       store: store
     };
@@ -131,10 +131,10 @@ export default {
   methods: {
     closeModal: function() {
       this.error_msg = "";
-      this.modal = false;
+      this.store.showModal = false;
     },
     modalClick: function(value) {
-      this.modal = value;
+      this.store.showModal = value;
       if (value == "newfeed") {
         this.feed = {};
       }

@@ -1,18 +1,18 @@
 <template>
-  <div v-if="modal">
+  <div v-if="this.store.showModal">
     <transition name="modal">
       <div class="modal-mask">
         <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
           <div class="modal-dialog modal-dialog-centered modal-wrapper" role="document">
             <div class="modal-content modal-container">
               <div class="modal-header">
-                <h5 class="modal-title" v-if="modal==='newfeed'">Add new feed</h5>
-                <h5 class="modal-title" v-if="modal==='newcategory'">Add new category</h5>
-                <h5 class="modal-title" v-if="modal==='deletecategory'">Delete category</h5>
-                <h5 class="modal-title" v-if="modal==='renamecategory'">Rename category</h5>
-                <h5 class="modal-title" v-if="modal==='deletefeed'">Delete feed</h5>
-                <h5 class="modal-title" v-if="modal==='renamefeed'">Rename feed</h5>
-                <h5 class="modal-title" v-if="modal==='mobile'">Categories</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='newfeed'">Add new feed</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='newcategory'">Add new category</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='deletecategory'">Delete category</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='renamecategory'">Rename category</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='deletefeed'">Delete feed</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='renamefeed'">Rename feed</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='mobile'">Categories</h5>
                 <button
                   type="button"
                   class="close"
@@ -24,7 +24,7 @@
                 </button>
               </div>
 
-              <div class="modal-body" v-if="modal==='newfeed'">
+              <div class="modal-body" v-if="this.store.showModal==='newfeed'">
                 <div v-if="this.store.categories.length > 0">
                   <input
                     class="form-control form-control-lg"
@@ -94,7 +94,7 @@
                 </div>
               </div>
 
-              <div class="modal-body" v-if="modal==='newcategory'">
+              <div class="modal-body" v-if="this.store.showModal==='newcategory'">
                 <input
                   class="form-control form-control-lg"
                   type="text"
@@ -104,12 +104,12 @@
                 <br>
               </div>
 
-              <div class="modal-body" v-if="modal==='deletecategory'">
+              <div class="modal-body" v-if="this.store.showModal==='deletecategory'">
                 <p>Are you sure to delete this category?</p>
                 <br>
               </div>
 
-              <div class="modal-body" v-if="modal==='renamecategory'">
+              <div class="modal-body" v-if="this.store.showModal==='renamecategory'">
                 <input
                   class="form-control form-control-lg"
                   type="text"
@@ -119,12 +119,12 @@
                 <br>
               </div>
 
-              <div class="modal-body" v-if="modal==='deletefeed'">
+              <div class="modal-body" v-if="this.store.showModal==='deletefeed'">
                 <p>Are you sure to delete this feed?</p>
                 <br>
               </div>
 
-              <div class="modal-body" v-if="modal==='renamefeed'">
+              <div class="modal-body" v-if="this.store.showModal==='renamefeed'">
                 <div class="form-group row">
                   <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                   <div class="col-sm-9">
@@ -182,7 +182,7 @@
                 </div>
               </div>
 
-              <div class="modal-body" id="mobile" v-if="modal==='mobile'">
+              <div class="modal-body" id="mobile" v-if="this.store.showModal==='mobile'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
                   <li class="category" v-on:click="store.currentSelection.categoryId = null">
@@ -218,44 +218,44 @@
 
                 <p>Click the button below to add a new feed</p>
                 <button
-                  @click="modal = 'newfeed'"
+                  @click="this.store.showModal = 'newfeed'"
                   type="button"
                   class="btn btn-success"
                 >Add new feed</button>
               </div>
               <div class="modal-footer">
                 <button
-                  v-if="feed.feedName && modal==='newfeed'"
+                  v-if="feed.feedName && this.store.showModal==='newfeed'"
                   type="button"
                   class="btn btn-primary"
                   @click="newFeed"
                 >Save changes</button>
                 <button
-                  v-if="modal==='newcategory'"
+                  v-if="this.store.showModal==='newcategory'"
                   type="button"
                   class="btn btn-primary"
                   @click="saveCategory"
                 >Add new category</button>
                 <button
-                  v-if="modal==='deletecategory'"
+                  v-if="this.store.showModal==='deletecategory'"
                   type="button"
                   class="btn btn-primary"
                   @click="deleteCategory"
                 >Delete category</button>
                 <button
-                  v-if="modal==='renamecategory'"
+                  v-if="this.store.showModal==='renamecategory'"
                   type="button"
                   class="btn btn-primary"
                   @click="renameCategory"
                 >Update category</button>
                 <button
-                  v-if="modal==='deletefeed'"
+                  v-if="this.store.showModal==='deletefeed'"
                   type="button"
                   class="btn btn-primary"
                   @click="deleteFeed"
                 >Delete feed</button>
                 <button
-                  v-if="modal==='renamefeed'"
+                  v-if="this.store.showModal==='renamefeed'"
                   type="button"
                   class="btn btn-primary"
                   @click="renameFeed"
@@ -378,6 +378,12 @@ export default {
     //get initial starting values (copied data)
     this.categories = JSON.parse(JSON.stringify(this.store.categories));
     this.selectedCategory = this.store.currentSelection.categoryId;
+    //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
+    for (var x = 0; x < this.store.categories.length; x++) {
+      if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
+        this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
+      }
+    }
   },
   //watchers are used to avoid two way binding.
   //a copy of the data used and only the central store is updated, once we know for sure the api has returned a 200 status.

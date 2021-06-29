@@ -98,7 +98,7 @@
       <draggable
         :list="this.store.categories"
         class="dragArea"
-        :options="{group:{ name:'category', pull:'clone', put:false}}"
+        v-bind="{group:{ name:'category', pull:'clone', put:false}}"
         @end="updateSortOrder"
       >
         <div
@@ -255,7 +255,6 @@ sidebar-category-main {
 span.glyphicon {
   float: left;
   margin-right: 5px;
-  margin-top: -2px;
 }
 
 span.title {

@@ -10,5 +10,6 @@ export default {
     categories: [],
     unreadCount: 0,
     readCount: 0,
-    starCount: 0
+    starCount: 0,
+    showModal: false
 }
