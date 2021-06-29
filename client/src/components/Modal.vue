@@ -379,9 +379,11 @@ export default {
     this.categories = JSON.parse(JSON.stringify(this.store.categories));
     this.selectedCategory = this.store.currentSelection.categoryId;
     //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
-    for (var x = 0; x < this.store.categories.length; x++) {
-      if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
-        this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
+    if (this.store.currentSelection.categoryId) {
+      for (var x = 0; x < this.store.categories.length; x++) {
+        if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
+          this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
+        }
       }
     }
   },

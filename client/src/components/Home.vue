@@ -2,14 +2,8 @@
   <div id="main">
     <div id="articles">
       <div :key="article.id" v-bind:id="article.id" class="block" v-for="article in articles">
-        <div class="article">
+        <div class="article" v-bind:class="{'starred': article.starInd == 1}" v-on:click="bookmark(article.id, $event)" @click="fn($event.currentTarget.classList.toggle('starred'));">
           <div class="maximal">
-            <div
-              v-bind:class="{'bookmarked': article.starInd == 1}"
-              v-on:click="bookmark(article.id, $event)"
-              @click="$event.target.classList.toggle('bookmarked')"
-              class="bookmark"
-            ></div>
             <span
               v-if="article.hotness_count"
               class="badge badge-pill badge-danger"
@@ -18,14 +12,13 @@
               <a target="_blank" :href="article.url" v-text="article.subject"></a>
             </h5>
             <div class="feedname">
+              <span class="published_date">{{ article.published | formatDate }}</span>
+              <span class="break">by</span>
               <span class="feed_name">
                 <a target="_blank" :href="article.feed.url" v-text="article.feed.feedName"></a>
               </span>
-              <span class="break">|</span>
-              <span class="published_date">{{ article.published | formatDate }}</span>
             </div>
           </div>
-
           <div v-if="store.filter === 'full'" class="article-content" v-html="article.content"></div>
           <div v-if="store.filter === 'minimal'" class="article-content">
             <p>{{ article.content | stripHTML }}</p>
@@ -85,6 +78,19 @@ div.main {
   margin-top: 50px;
 }
 
+div.block .article.starred {
+  background-color: #fffafa;
+  border-color: #ffc7c7;
+}
+
+div.block .article.starred .heading {
+  padding-left: 20px;
+  background-image: url("../assets/heart_red.png");
+  background-repeat: no-repeat;
+  background-size: 16px 16px;
+  background-position: left 0px top 5px;
+}
+
 div.block .article {
   padding-top: 4px;
   padding-left: 5px;
@@ -98,7 +104,7 @@ div.block .article {
 }
 
 div.block div.article-content {
-  color: #51556a;
+  color: #1b1f23;
   font-size: 14px;
   margin-bottom: 5px;
   margin-top: 1px;
@@ -130,35 +136,12 @@ div.block div.feedname {
   color: #51556a;
 }
 
-div.block .active {
+div.block.active {
   background-color: #ffffe5;
 }
-
 span.break {
   margin-left: 2px;
   margin-right: 2px;
-}
-
-div.block div.bookmark,
-div.block div.bookmarked {
-  height: 29px;
-  background-repeat: no-repeat;
-  float: left;
-  width: 32px;
-  margin-top: -10px;
-  margin-left: -6px;
-  cursor: pointer;
-  background-size: 18px 18px;
-  background-position: 8px 12px;
-  color: #111;
-}
-
-div.block div.bookmark {
-  background-image: url("../assets/heart_black.png");
-}
-
-div.block div.bookmarked {
-  background-image: url("../assets/heart_red.png");
 }
 
 span.badge.badge-danger {
@@ -555,7 +538,11 @@ export default {
     },
     formatDate: function(value) {
       if (value) {
-        return moment(String(value)).fromNow();
+        //use fromNow function to calculate time from article published
+        value = moment(String(value)).fromNow();
+        //uppercase first character of sentence
+        value = value.charAt(0).toUpperCase() + value.slice(1);
+        return value;
       }
     }
   }
