@@ -93,7 +93,7 @@ div.block .article {
   border-width: 1px;
   border: 1px solid #ecf0f1;
   border-radius: 2px;
-  background-color: #fbfbfb;
+  background-color: #FBFBFB;
   width: 100%;
 }
 
