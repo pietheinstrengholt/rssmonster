@@ -16,10 +16,10 @@
             </div>
           </div>
           <div v-if="store.filter === 'full'" class="article-content">
-            <div class="article-body" v-if="article.content !== null" v-html="article.content"></div>
+            <div class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'" v-html="article.content"></div>
           </div>
           <div v-if="store.filter === 'minimal'" class="article-content">
-            <p class="article-body" v-if="article.content !== null">{{ article.content | stripHTML }}</p>
+            <p class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'">{{ article.content | stripHTML }}</p>
           </div>
         </div>
       </div>
