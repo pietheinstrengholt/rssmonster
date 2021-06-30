@@ -99,12 +99,10 @@
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
-          <span
-            v-if="store.currentSelection.status === 'unread'"
-            class="badge white"
-          >{{ unreadCount }}</span>
+          <span v-if="store.currentSelection.status === 'unread'" class="badge white">{{ unreadCount }}</span>
           <span v-if="store.currentSelection.status === 'read'" class="badge white">{{ readCount }}</span>
           <span v-if="store.currentSelection.status === 'star'" class="badge white">{{ starCount }}</span>
+          <span v-if="store.currentSelection.status === 'hot'" class="badge white">{{ hotCount }}</span>
         </span>
       </div>
       <div>
@@ -142,6 +140,10 @@
                 v-if="store.currentSelection.status === 'star'"
                 class="badge white"
               >{{ category.starCount }}</span>
+              <span
+                v-if="store.currentSelection.status === 'hot'"
+                class="badge white"
+              >{{ category.hotCount }}</span>
             </span>
           </div>
           <div v-if="category.feeds">
