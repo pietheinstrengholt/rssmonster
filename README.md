@@ -3,19 +3,18 @@
 [![Azure Static Web Apps CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-client.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-static-web-apps-client.yml)
 [![Azure Web App CI/CD](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml)
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
-[![Build Status](https://travis-ci.org/pietheinstrengholt/rssmonster.svg?branch=master)](https://travis-ci.org/pietheinstrengholt/rssmonster/)
 
 Copyright (c) 2021 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
-RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Boostrap framework. Several features are implemented such as marking as read when scrolling, drag and drop style manage feeds, json events, etc. RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
+RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Bootstrap framework. Several features are implemented such as marking as read when scrolling, hotlinks, drag and drop style for managing your feeds, dark theme, and more! RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
 ### Prerequisites
 * NodeJS 10.x or higher
 * Git
-* A Mysql installation (other databases will also work with a bit of configuration)
+* A Mysql installation (other databases will as well with some configuration)
 
 ### How to get everything installed
 * Clone this repository `git clone https://github.com/pietheinstrengholt/rssmonster.git .`
