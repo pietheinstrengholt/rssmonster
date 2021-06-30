@@ -9,6 +9,7 @@ const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
 const language = require("../util/language");
 const cheerio = require("cheerio");
+const htmlparser2 = require('htmlparser2');
 
 var striptags = require("striptags");
 
@@ -21,9 +22,13 @@ const catchAsync = fn => {
 
 exports.getCrawl = catchAsync(async (req, res, next) => {
   try {
+    //only get feeds with an errorCount lower than 25
     const feeds = await Feed.findAll({
       where: {
-        active: true
+        active: true,
+        errorCount: {
+          [Op.lt]: 25
+        }
       }
     });
 
@@ -101,7 +106,10 @@ async function processArticle(feed, post) {
     if (!article) {
       //remove any script tags
       //dismiss "cheerio.load() expects a string" by converting to string
-      const $ = cheerio.load(String(post.description));
+
+      //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
+      const dom = htmlparser2.parseDocument(post.description);
+      const $ = cheerio.load(dom, { _useHtmlParser2: true });
 
       //dismiss undefined errors
       if (typeof $ !== 'undefined') {
