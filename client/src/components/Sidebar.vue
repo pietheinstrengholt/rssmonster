@@ -43,20 +43,6 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('read')"
-        v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
-        id="read"
-        class="sidebar-category-top"
-      >
-        <span class="glyphicon">
-          <v-icon name="circle" scale="0.8"/>
-        </span>
-        <span class="title">Read</span>
-        <span class="badge-unread">
-          <span class="badge">{{ this.store.readCount }}</span>
-        </span>
-      </div>
-      <div
         v-on:click="loadType('star')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
         id="star"
@@ -70,6 +56,35 @@
           <span class="badge">{{ this.store.starCount }}</span>
         </span>
       </div>
+      <div
+        v-on:click="loadType('hot')"
+        v-bind:class="{ 'selected':  store.currentSelection.status === 'hot' }"
+        id="hot"
+        class="sidebar-category-top"
+      >
+        <span class="glyphicon">
+          <v-icon name="fire" scale="0.8"/>
+        </span>
+        <span class="title">Hot</span>
+        <span class="badge-unread">
+          <span class="badge">{{ this.store.hotCount }}</span>
+        </span>
+      </div>
+      <div
+        v-on:click="loadType('read')"
+        v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
+        id="read"
+        class="sidebar-category-top"
+      >
+        <span class="glyphicon">
+          <v-icon name="circle" scale="0.8"/>
+        </span>
+        <span class="title">Read</span>
+        <span class="badge-unread">
+          <span class="badge">{{ this.store.readCount }}</span>
+        </span>
+      </div>
+
       <div>
         <p class="title">All</p>
       </div>
@@ -160,6 +175,10 @@
                     v-if="store.currentSelection.status === 'star'"
                     class="badge white"
                   >{{ feed.starCount }}</span>
+                  <span
+                    v-if="store.currentSelection.status === 'hot'"
+                    class="badge white"
+                  >{{ feed.hotCount }}</span>
                 </span>
               </div>
             </div>
@@ -417,7 +436,8 @@ export default {
       refreshing: false,
       unreadCount: 0,
       readCount: 0,
-      starCount: 0
+      starCount: 0,
+      hotCount: 0
     };
   },
   components: {

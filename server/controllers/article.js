@@ -83,6 +83,26 @@ exports.getArticles = async (req, res, next) => {
       });
     }
 
+    //if star is set, then use the starInd field to query against
+    if (status == "hot") {
+      articles = await Article.findAll({
+        attributes: ["id"],
+        order: [["published", sort]],
+        where: {
+          feedId: feedIds,
+          subject: {
+            [Op.like]: search
+          },
+          content: {
+            [Op.like]: search
+          },
+          hotlinks: {
+            [Op.gt]: 0
+          }
+        }
+      });
+    }
+
     //push all ids to the array
     itemIds = [];
     if (articles.length > 0) {

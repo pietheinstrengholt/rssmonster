@@ -27,8 +27,8 @@
       id="read"
       class="view-button"
       title="View read"
-      data-behavior="view_all change_view_mode"
-      data-view-mode="view_all"
+      data-behavior="view_read change_view_mode"
+      data-view-mode="view_read"
       data-remote="true"
     >
       <i class="far fa-circle" data-fa-transform="down-0 shrink-0 left-5"></i>
@@ -46,6 +46,19 @@
     >
       <i class="far fa-heart" data-fa-transform="down-0 shrink-0 left-5"></i>
       Star {{ this.store.starCount }}
+    </a>
+    <a
+      v-on:click="loadType('hot')"
+      v-bind:class="{ 'selected':  store.currentSelection.status == 'hot' }"
+      id="hot"
+      class="view-button"
+      title="View hot"
+      data-behavior="view_hot change_view_mode"
+      data-view-mode="view_hot"
+      data-remote="true"
+    >
+      <i class="far fa-heart" data-fa-transform="down-0 shrink-0 left-5"></i>
+      Hot {{ this.store.hotCount }}
     </a>
   </div>
 </template>
@@ -126,7 +139,8 @@ a#title.view-button {
 
 a#unread.view-button,
 a#star.view-button,
-a#read.view-button {
+a#read.view-button,
+a#hot.view-button {
   border-left: 1px solid transparent;
   border-color: #dcdee0;
   cursor: pointer;

@@ -34,6 +34,10 @@ const Article = sequelize.define(
       type: Sequelize.INTEGER,
       defaultValue: 0
     },
+    hotlinks: {
+      type: Sequelize.INTEGER,
+      defaultValue: 0
+    },
     url: {
       type: Sequelize.STRING(1024),
       allowNull: false

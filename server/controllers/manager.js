@@ -22,6 +22,13 @@ exports.getOverview = async (req, res, next) => {
         status: "read"
       }
     });
+    const hotCount = await Article.count({
+      where: {
+        hotlinks: {
+          [Op.gt]: 0
+        }
+      }
+    });
     const totalCount = (await readCount) + unreadCount;
 
     const categories = await Category.findAll({
@@ -83,6 +90,25 @@ exports.getOverview = async (req, res, next) => {
       group: ["categoryId", "id"]
     });
 
+    const hotCountGrouped = await Feed.findAll({
+      include: [{
+        model: Article,
+        attributes: [],
+        where: {
+          hotlinks: {
+            [Op.gt]: 0
+          }
+        }
+      }],
+      attributes: [
+        "categoryId",
+        ["id", "feedId"],
+        [Sequelize.fn("COUNT", "article.id"), "count"]
+      ],
+      order: ["id"],
+      group: ["categoryId", "id"]
+    });
+
     const toPlain = response => {
       const flattenDataValues = ({
         dataValues
@@ -120,17 +146,20 @@ exports.getOverview = async (req, res, next) => {
     readArray = await toPlain(readCountGrouped);
     unreadArray = await toPlain(unreadCountGrouped);
     starArray = await toPlain(starCountGrouped);
+    hotArray = await toPlain(hotCountGrouped);
 
     //give each category and feed in the categoriesArray a readCount, unreadCount and starCount
     await categoriesArray.forEach(category => {
       category["readCount"] = 0;
       category["unreadCount"] = 0;
       category["starCount"] = 0;
+      category["hotCount"] = 0;
       if (category["feeds"]) {
         category["feeds"].forEach(feed => {
           feed["readCount"] = 0;
           feed["unreadCount"] = 0;
           feed["starCount"] = 0;
+          feed["hotCount"] = 0;
         });
       }
     });
@@ -192,11 +221,31 @@ exports.getOverview = async (req, res, next) => {
       }
     });
 
+    //repeat for the hot
+    await hotArray.forEach(item => {
+      var categoryIndex = categoriesArray.findIndex(
+        category => category.id === item.categoryId
+      );
+
+      categoriesArray[categoryIndex]["hotCount"] =
+        categoriesArray[categoryIndex]["hotCount"] + item["count"];
+
+      if (categoriesArray[categoryIndex]["feeds"]) {
+        var feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
+          feed => feed.id === item.feedId
+        );
+        categoriesArray[categoryIndex]["feeds"][feedIndex]["hotCount"] =
+          item["count"];
+      }
+    });
+
+
     return res.status(200).json({
       total: totalCount,
       readCount: readCount,
       unreadCount: unreadCount,
       starCount: starCount,
+      hotCount: hotCount,
       categories: categoriesArray
     });
   } catch (err) {

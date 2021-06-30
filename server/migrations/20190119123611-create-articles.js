@@ -26,6 +26,11 @@ module.exports = {
         defaultValue: "unread"
       },
       starInd: Sequelize.INTEGER,
+      hotlinks: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       url: {
         type: Sequelize.TEXT('medium'),
         allowNull: false

@@ -112,6 +112,7 @@ export default {
         this.store.unreadCount = data.unreadCount;
         this.store.readCount = data.readCount;
         this.store.starCount = data.starCount;
+        this.store.hotCount = data.hotCount;
 
         //update the categories in the store
         this.store.categories = data.categories;
