@@ -107,6 +107,8 @@ async function processArticle(feed, post) {
       if (typeof $ !== 'undefined') {
         $('script').remove();
 
+        //execute hotlink feature by collecting all the links in each RSS post
+        //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
         $('a').each(function() {
           //find domain name for each link
           domain = (new URL(post.link));
@@ -122,7 +124,7 @@ async function processArticle(feed, post) {
           }
         });
 
-        //count the number of links. The more frequently a link occurs, the more "hot" it is. 
+        //get all the links. The more frequently a link occurs, the more "hot" it is. 
         const hotlinks = await Hotlink.findAll({
           where: {
             url: post.link
