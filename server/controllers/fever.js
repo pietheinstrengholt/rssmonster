@@ -223,8 +223,46 @@ exports.postFever = async (req, res, next) => {
 
     //when argument is links, don't return anything at this moment
     if ("links" in req.query) {
-      //return empty array for this moment
-      arr['links'] = [];
+      
+      //select all items with hot links
+      articles = await Article.findAll({
+        where: {
+          id: {
+            [Op.gt]: req.query.since_id
+          },
+          hotlinks: {
+            [Op.gt]: 0
+          }
+        }
+      });
+
+      var item_ids = [];
+
+      if (articles) {
+        articles.forEach(article => {
+          item_ids.push(article.id);
+        });
+      }
+
+      await articles.forEach(function (article) {
+        articleObject = {
+          id: article.id,
+          feed_id: parseInt(article.feedId),
+          item_id: parseInt(article.feedId),
+          temperature: 99 + article.hotlinks,
+          is_item: 1,
+          is_local: 1,
+          is_saved: parseInt(article.starInd),
+          title: article.subject,
+          url: article.url,
+          //string/comma-separated list of positive integers of all hot links
+          item_ids: item_ids.join(",")
+        };
+        items.push(articleObject);
+      });
+
+      //add links to arr
+      arr['links'] = items;
     }
 
     //favicons
