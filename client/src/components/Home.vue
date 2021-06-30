@@ -471,7 +471,7 @@ export default {
     },
     bookmark(article, event) {
       //determine if classname already contains bookmarked, if so, the change is unmark
-      if (event.currentTarget.className.indexOf("bookmarked") >= 0) {
+      if (event.currentTarget.className.indexOf("starred") >= 0) {
         //make ajax request to change bookmark status
         this.$http
           .post("api/manager/markwithstar/" + article, { update: "unmark" })
