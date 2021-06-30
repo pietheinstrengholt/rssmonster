@@ -78,7 +78,7 @@ div.main {
 
 div.block .article.hot {
   background-color: #fffff4;
-  border-color: #fdfd96;
+  border-color: #ffc7c7;
 }
 
 div.block .article.hot .heading, div.block .article.starred .heading {
