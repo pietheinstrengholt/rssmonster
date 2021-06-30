@@ -15,9 +15,11 @@
               </span>
             </div>
           </div>
-          <div v-if="store.filter === 'full'" class="article-content" v-html="article.content"></div>
+          <div v-if="store.filter === 'full'" class="article-content">
+            <div class="article-body" v-if="article.content !== null" v-html="article.content"></div>
+          </div>
           <div v-if="store.filter === 'minimal'" class="article-content">
-            <p>{{ article.content | stripHTML }}</p>
+            <p class="article-body" v-if="article.content !== null">{{ article.content | stripHTML }}</p>
           </div>
         </div>
       </div>
