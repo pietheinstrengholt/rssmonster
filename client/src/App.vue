@@ -47,6 +47,12 @@
     overflow-y: auto;
     overflow-x: hidden;
   }
+
+  @media (prefers-color-scheme: dark) {
+    div.sidebar {
+      background-color: #2c2c2c;
+    }
+  }
 }
 
 div.row {
@@ -63,7 +69,23 @@ body {
 
 @media (prefers-color-scheme: dark) {
   body {
-    background-color: #000;
+    background-color: #121212;
+  }
+
+  div.home {
+    background: black;
+  }
+
+  img {
+    filter: brightness(.8) contrast(1.2);
+  }
+
+  body svg.icon path {
+    fill: #efefef;
+  }
+
+  a:visited, a:active, a:link {
+    color: #18bc9c;
   }
 }
 </style>

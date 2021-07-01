@@ -149,7 +149,7 @@
   .status-toolbar,
   .dropdownmenu .item {
     color: #fff;
-    background: #000;
+    background: #3a3a3a;
     border-color: #000;
     border-bottom: 1px solid #fff;
   }

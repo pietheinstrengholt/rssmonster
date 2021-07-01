@@ -347,14 +347,47 @@ div.modal-dialog {
   border-color: #dcdee0;
 }
 
-span.error,
-.form-control.red {
+span.error, .form-control.red {
   color: red;
 }
 
 button.btn.btn-primary.content {
   margin-right: 7px;
 }
+
+@media (prefers-color-scheme: dark) {
+  .modal-container {
+    background-color: #323232;
+    color: white;
+  }
+
+  .modal-body input, .modal-body input:focus {
+    background-color: #191919 !important;
+    color: white !important;
+  }
+
+  ::placeholder {
+    color: #717171 !important;
+  }
+
+  input, input:placeholder, input:focus{
+    color: white;
+  }
+
+  .btn-secondary {
+    background-color: #464646 !important;
+  }
+
+  select {
+    background-color: #191919 !important;
+    color: white !important;
+  }
+
+  span.error, .form-control.red {
+    color: #ffb1b1;
+  }
+}
+
 </style>
 
 <script>

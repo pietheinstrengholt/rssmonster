@@ -120,6 +120,24 @@ p.content-header {
     background-color: #18bc9c;
 }
 
+@media (prefers-color-scheme: dark) {
+  .overlay {
+    background-color: #121212;
+  }
+
+  p.content-header {
+    color: white;
+  }
+
+  .overlay-content li.category {
+      background-color: #323232;
+  }
+
+  .overlay-content li.category.selected {
+      background-color: #606060;
+  }
+}
+
 </style>
 
 <script>

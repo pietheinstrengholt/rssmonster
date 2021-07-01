@@ -348,7 +348,7 @@ div#mark-all-as-read {
   border-radius: 0px 0px 4px 4px;
 }
 
-div#refresh.option {
+div#refresh.option, div#addnew.option, div#addnew.option {
   background-color: #6f79d3;
 }
 
@@ -357,7 +357,6 @@ div#mark-all-as-read {
 }
 
 div#addnew.option {
-  background-color: #51556a;
   margin-right: 60px;
   min-width: 165px;
 }
@@ -403,16 +402,22 @@ div.category-button {
   text-align: center;
 }
 
-div.category-button#add {
+div.category-button#add, div.category-button#delete, div.category-button#rename {
   background-color: #6f79d3;
 }
 
-div.category-button#delete {
-  background-color: #6f79d3;
-}
+@media (prefers-color-scheme: dark) {
+  div.category-button#add, div.category-button#delete, div.category-button#rename {
+    background-color: #464646;
+  }
 
-div.category-button#rename {
-  background-color: #6f79d3;
+  div#refresh.option, div#addnew.option, div#addnew.option {
+    background-color: #535353;
+  }
+
+  div#mark-all-as-read {
+    background-color: #606060;
+  }
 }
 
 div.category-button div.text {

@@ -76,16 +76,16 @@ div.main {
   margin-top: 50px;
 }
 
-div.block .article.hot {
-  background-color: #fffff4;
-  border-color: #ffc7c7;
-}
-
 div.block .article.hot .heading, div.block .article.starred .heading {
   padding-left: 20px;
   background-repeat: no-repeat;
   background-size: 16px 16px;
   background-position: left 0px top 5px;
+}
+
+div.block .article.hot {
+  background-color: #fffff4;
+  border-color: #ffc7c7;
 }
 
 div.block .article.hot .heading {
@@ -200,8 +200,8 @@ div.infinite-loading-container {
 @media (prefers-color-scheme: dark) {
   html, body, .home, #main, d#articles, div.block, div.block .article, .article-content, h5.heading, div.block div.feedname, div.infinite-loading-container {
     color: #fff;
-    background: #000;
-    border-color: #000;
+    background: #121212;
+    border-color: #121212;
     border-bottom-color: #fff;
   }
 
@@ -210,12 +210,11 @@ div.infinite-loading-container {
   }
 
   div.sidebar {
-    background-color: #13141c;
+    background-color: #121212;
   }
 
   a, div.block .article h5 a {
     color: #fff;
-    border-bottom: 1px solid #fff;
   }
 
   div.block div.article-content, span.feed_name a {
@@ -234,13 +233,36 @@ div.infinite-loading-container {
     color: #aaa;
   }
 
-  header h1,
-  header h2 {
+  div.block {
+    border-bottom-color: #121212;
+    background: black;
+  }
+
+  div.article h1.heading, div.article h2.heading {
     color: #fff;
   }
 
-  header h1 a {
+  div.article h1.heading a {
     color: #fff;
+  }
+
+  h5.heading a {
+    text-decoration: none !important;
+    border-bottom: none !important;
+  }
+
+  div.article {
+    border-bottom-color: black !important;
+  }
+
+  div.block .article.hot {
+    background-color: #121212;
+    border-color: #121212;
+  }
+
+  div.block .article.starred {
+    background-color: #121212;
+    border-color: #121212;
   }
 
   nav ul li {
@@ -249,6 +271,9 @@ div.infinite-loading-container {
 
   .divider {
     border-bottom: 1px solid #ddd;
+  }
+  a:visited, a:active, a:link {
+    color: #18bc9c;
   }
 }
 
