@@ -9,7 +9,8 @@
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
-        <li class="category" v-on:click="store.currentSelection.categoryId = '%'; store.currentSelection.feedId = '%';" v-bind:class="{'selected': store.currentSelection.categoryId = '%'}">
+        <li class="category" v-on:click="store.currentSelection.categoryId = '%'; store.currentSelection.feedId = '%';"
+        v-bind:class="{'selected': store.currentSelection.categoryId == '%'}">
           <span class="glyphicon">
             <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
           </span>
@@ -18,7 +19,7 @@
         <li
           class="category"
           v-on:click="store.currentSelection.categoryId = category.id; store.currentSelection.feedId = '%';"
-          v-bind:class="{'selected': store.currentSelection.categoryId == category.id}"
+          v-bind:class="{'selected': store.currentSelection.categoryId === category.id}"
           v-for="category in store.categories"
           :key="category.id"
           v-bind:id="category.id"
