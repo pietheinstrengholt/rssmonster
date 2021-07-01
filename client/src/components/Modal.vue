@@ -416,6 +416,13 @@ export default {
       for (var x = 0; x < this.store.categories.length; x++) {
         if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
           this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
+          //and also try to find the feed
+          for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
+            if (this.store.categories[x].feeds[i].id === this.store.currentSelection.feedId) {
+              this.feed = JSON.parse(JSON.stringify( this.store.categories[x].feeds[i]));
+            }
+          }
+
         }
       }
     }
