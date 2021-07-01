@@ -22,6 +22,7 @@ import 'vue-awesome/icons/heart';
 import 'vue-awesome/icons/star';
 import 'vue-awesome/icons/check-square';
 import 'vue-awesome/icons/fire';
+import 'vue-awesome/icons/times';
 
 import Icon from 'vue-awesome/components/Icon';
 

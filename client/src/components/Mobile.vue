@@ -1,14 +1,15 @@
 <template>
   <div id="mobile-container" v-if="mobile" class="overlay">
     <h5 class="mobile-title">Options</h5>
-    <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
-      <span class="close" aria-hidden="true">&times;</span>
-    </button>
-
+    <div class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
+      <span class="glyphicon">
+        <v-icon name="times" scale="1.2"/>
+      </span>
+    </div>
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
-        <li class="category" v-on:click="store.currentSelection.categoryId = '%'; store.currentSelection.feedId = '%';">
+        <li class="category" v-on:click="store.currentSelection.categoryId = '%'; store.currentSelection.feedId = '%';" v-bind:class="{'selected': store.currentSelection.categoryId = '%'}">
           <span class="glyphicon">
             <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
           </span>
@@ -17,6 +18,7 @@
         <li
           class="category"
           v-on:click="store.currentSelection.categoryId = category.id; store.currentSelection.feedId = '%';"
+          v-bind:class="{'selected': store.currentSelection.categoryId == category.id}"
           v-for="category in store.categories"
           :key="category.id"
           v-bind:id="category.id"
@@ -40,7 +42,7 @@
       >Minimal content</button>
 
       <p class="content-header">Click the button below to add a new feed</p>
-      <button @click="showNewFeed()" type="button" class="btn btn-success">Add new feed</button>
+      <button @click="showNewFeed()" type="button" class="btn btn-primary">Add new feed</button>
       <br><br>
     </div>
   </div>
@@ -81,7 +83,7 @@
 
 .close {
   position: fixed;
-  top: 10px;
+  top: 12px;
   right: 20px;
 }
 
@@ -105,14 +107,19 @@ span.close {
   margin-bottom: 6px;
 }
 
-button.close span {
-  color: #111;
+div.close span {
+  color: white;
 }
 
 p.content-header {
     margin-top: 10px;
     margin-bottom: 3px;
 }
+
+.overlay-content li.category.selected {
+    background-color: #18bc9c;
+}
+
 </style>
 
 <script>
