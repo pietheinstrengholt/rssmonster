@@ -272,6 +272,7 @@ div.infinite-loading-container {
   .divider {
     border-bottom: 1px solid #ddd;
   }
+
   a:visited, a:active, a:link {
     color: #18bc9c;
   }
@@ -361,9 +362,8 @@ export default {
   },
   methods: {
     handleScroll: function() {
-      let bottomOfWindow =
-        document.documentElement.scrollTop + window.innerHeight ===
-        document.documentElement.offsetHeight;
+      //ceil document.documentElement.scrollTop, because images can have not nicely rounded heights
+      let bottomOfWindow = Math.ceil(document.documentElement.scrollTop) + window.innerHeight === document.documentElement.offsetHeight;
 
       if (bottomOfWindow) {
         //when reaching the bottom of the page and less than 10 articles are in the queue, mark everything as read
