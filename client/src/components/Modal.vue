@@ -594,6 +594,9 @@ export default {
           );
           //close the modal
           this.closeModal();
+          //set the selection back to all
+          this.store.currentSelection.categoryId = "%";
+          this.store.currentSelection.feedId = "%";
         },
         response => {
           /* eslint-disable no-console */
@@ -646,6 +649,9 @@ export default {
             this.store.categories[indexCategory].feeds,
             this.inputFeed
           );
+
+          //set the feed selection back to all
+          this.store.currentSelection.feedId = "%";
 
           //close the modal
           this.closeModal();
