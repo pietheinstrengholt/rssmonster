@@ -42,6 +42,7 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
           try {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {
+
               //process all feed posts
               feeditem.posts.forEach(function(post) {
                 processArticle(feed, post);
@@ -139,18 +140,33 @@ async function processArticle(feed, post) {
           }
         });
 
+        //parse media RSS feeds: https://www.rssboard.org/media-rss
+        if (post['media:group']) {
+          postLink = post['media:group']['media:content']['@']['url'];
+          postTitle = post['media:group']['media:title']['#'];
+          postContent = post['media:group']['media:description']['#'];
+          postContentStripped = striptags(post['media:group']['media:description']['#']);
+          postLanguage = language.get(post['media:group']['media:description']['#']);
+        } else {
+          postLink = post.link;
+          postTitle = post.title;
+          postContent = $.html();
+          postContentStripped = striptags($.html(), ["a", "img", "strong"]);
+          postLanguage = language.get($.html());
+        }
+
         //add article
         Article.create({
           feedId: feed.id,
           status: "unread",
           star_ind: 0,
           hotlinks: hotlinks.length,
-          url: post.link,
+          url: postLink,
           image_url: "",
-          subject: post.title || 'No title',
-          content: $.html(),
-          contentStripped: striptags($.html(), ["a", "img", "strong"]),
-          language: language.get($.html()),
+          subject: postTitle || 'No title',
+          content: postContent,
+          contentStripped: postContentStripped,
+          language: postLanguage,
           //contentSnippet: item.contentSnippet,
           //author: item.author,
           //default post.pubdate with new Date when empty
