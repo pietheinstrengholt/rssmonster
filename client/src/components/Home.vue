@@ -209,6 +209,10 @@ div.infinite-loading-container {
     background-color: #000;
   }
 
+  div#articles {
+    background-color: #121212;
+  }
+
   div.sidebar {
     background-color: #121212;
   }
