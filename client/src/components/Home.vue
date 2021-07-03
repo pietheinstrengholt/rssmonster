@@ -499,67 +499,70 @@ export default {
       }
     },
     bookmark(article, event) {
-      //determine if classname already contains bookmarked, if so, the change is unmark
-      if (event.currentTarget.className.indexOf("starred") >= 0) {
-        //make ajax request to change bookmark status
-        this.$http
-          .post("api/manager/markwithstar/" + article, { update: "unmark" })
-          .then(
-            response => {
-              //decrease the star count
-              var categoryIndex = this.store.categories.findIndex(
-                category => category.id === response.body.feed.categoryId
-              );
-              this.store.categories[categoryIndex].starCount =
-                this.store.categories[categoryIndex].starCount - 1;
-              var feedIndex = this.store.categories[
-                categoryIndex
-              ].feeds.findIndex(feed => feed.id === response.body.feedId);
-              this.store.categories[categoryIndex].feeds[feedIndex].starCount =
-                this.store.categories[categoryIndex].feeds[feedIndex]
-                  .starCount - 1;
+      //do not bookmark when clicking on hyperlinks
+      if (event.srcElement.nodeName != "A") {
 
-              //also increase total count
-              this.store.starCount = this.store.starCount - 1;
-            },
-            response => {
-              /* eslint-disable no-console */
-              console.log("oops something went wrong", response);
-              /* eslint-enable no-console */
-            }
-          );
-      } else {
-        //make ajax request to change bookmark status
-        this.$http
-          .post("api/manager/markwithstar/" + article, { update: "mark" })
-          .then(
-            response => {
-              //increase the star count
-              var categoryIndex = this.store.categories.findIndex(
-                category => category.id === response.body.feed.categoryId
-              );
-              this.store.categories[categoryIndex].starCount =
-                this.store.categories[categoryIndex].starCount + 1;
-              var feedIndex = this.store.categories[
-                categoryIndex
-              ].feeds.findIndex(feed => feed.id === response.body.feedId);
-              this.store.categories[categoryIndex].feeds[feedIndex].starCount =
-                this.store.categories[categoryIndex].feeds[feedIndex]
-                  .starCount + 1;
+        //determine if classname already contains bookmarked, if so, the change is unmark
+        if (event.currentTarget.className.indexOf("starred") >= 0) {
+          //make ajax request to change bookmark status
+          this.$http
+            .post("api/manager/markwithstar/" + article, { update: "unmark" })
+            .then(
+              response => {
+                //decrease the star count
+                var categoryIndex = this.store.categories.findIndex(
+                  category => category.id === response.body.feed.categoryId
+                );
+                this.store.categories[categoryIndex].starCount =
+                  this.store.categories[categoryIndex].starCount - 1;
+                var feedIndex = this.store.categories[
+                  categoryIndex
+                ].feeds.findIndex(feed => feed.id === response.body.feedId);
+                this.store.categories[categoryIndex].feeds[feedIndex].starCount =
+                  this.store.categories[categoryIndex].feeds[feedIndex]
+                    .starCount - 1;
 
-              //also increase total count
-              this.store.starCount = this.store.starCount + 1;
-            },
-            response => {
-              /* eslint-disable no-console */
-              console.log("oops something went wrong", response);
-              /* eslint-enable no-console */
-            }
-          );
+                //also increase total count
+                this.store.starCount = this.store.starCount - 1;
+              },
+              response => {
+                /* eslint-disable no-console */
+                console.log("oops something went wrong", response);
+                /* eslint-enable no-console */
+              }
+            );
+        } else {
+          //make ajax request to change bookmark status
+          this.$http
+            .post("api/manager/markwithstar/" + article, { update: "mark" })
+            .then(
+              response => {
+                //increase the star count
+                var categoryIndex = this.store.categories.findIndex(
+                  category => category.id === response.body.feed.categoryId
+                );
+                this.store.categories[categoryIndex].starCount =
+                  this.store.categories[categoryIndex].starCount + 1;
+                var feedIndex = this.store.categories[
+                  categoryIndex
+                ].feeds.findIndex(feed => feed.id === response.body.feedId);
+                this.store.categories[categoryIndex].feeds[feedIndex].starCount =
+                  this.store.categories[categoryIndex].feeds[feedIndex]
+                    .starCount + 1;
+
+                //also increase total count
+                this.store.starCount = this.store.starCount + 1;
+              },
+              response => {
+                /* eslint-disable no-console */
+                console.log("oops something went wrong", response);
+                /* eslint-enable no-console */
+              }
+            );
+        }
+        //toggle div element class
+        event.currentTarget.classList.toggle('starred');
       }
-      //toggle class
-      event.currentTarget.classList.toggle('starred');
-
     }
   },
   filters: {
