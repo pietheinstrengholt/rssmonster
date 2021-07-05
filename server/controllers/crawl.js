@@ -29,7 +29,8 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
         errorCount: {
           [Op.lt]: 25
         }
-      }
+      },
+      order: ["updatedAt"]
     });
 
     if (feeds.length > 0) {
@@ -50,20 +51,23 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
   
               //reset the feed count
               feed.update({
-                errorCount: 0
+                errorCount: 0,
+                updatedAt: new Date()
               });
             }
           } catch (err) {
             console.log(err.stack.split("\n", 1).join("") + " - " + feed.url);
             //update the errorCount
             feed.update({
-              errorCount: Sequelize.literal("errorCount + 1")
+              errorCount: Sequelize.literal("errorCount + 1"),
+              updatedAt: new Date()
             });
           }
         } else {
           //update the errorCount
           feed.update({
-            errorCount: Sequelize.literal("errorCount + 1")
+            errorCount: Sequelize.literal("errorCount + 1"),
+            updatedAt: new Date()
           });
         }
       });
