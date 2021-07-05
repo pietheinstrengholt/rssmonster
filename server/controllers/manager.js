@@ -110,32 +110,6 @@ exports.getOverview = async (req, res, next) => {
       group: ["categoryId", "id"]
     });
 
-    //use nested include to get only the feeds with hot articles
-    /* 
-    const hotCountGrouped = await Feed.findAll({
-      include: [{
-        model: Article,
-        attributes: [],
-        include: [{
-          model: Hotlink,
-          where: {
-            url: {
-              [Op.not]: null
-            }
-          },
-          required: true
-        }]
-      }
-    ],
-      attributes: [
-        "categoryId",
-        ["id", "feedId"],
-        [Sequelize.fn("COUNT", "article.id"), "count"]
-      ],
-      order: ["id"],
-      group: ["categoryId", "id", "hotlinks"]
-    }); */
-
     const toPlain = response => {
       const flattenDataValues = ({
         dataValues
@@ -247,25 +221,6 @@ exports.getOverview = async (req, res, next) => {
           item["count"];
       }
     });
-
-    //repeat for the hot
-    /*
-    await hotArray.forEach(item => {
-      var categoryIndex = categoriesArray.findIndex(
-        category => category.id === item.categoryId
-      );
-
-      categoriesArray[categoryIndex]["hotCount"] =
-        categoriesArray[categoryIndex]["hotCount"] + item["count"];
-
-      if (categoriesArray[categoryIndex]["feeds"]) {
-        var feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
-          feed => feed.id === item.feedId
-        );
-        categoriesArray[categoryIndex]["feeds"][feedIndex]["hotCount"] =
-          item["count"];
-      }
-    }); */
 
     return res.status(200).json({
       total: totalCount,

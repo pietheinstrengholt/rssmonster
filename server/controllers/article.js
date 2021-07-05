@@ -84,7 +84,7 @@ exports.getArticles = async (req, res, next) => {
       });
     }
 
-    //if hot is set, then use an inner join and no seperate query
+    //if hot is set, then use an inner join and no seperate query, and no feedId arguments
     if (status == "hot") {
       articles = await Article.findAll({
         attributes: ["id"],
@@ -100,7 +100,6 @@ exports.getArticles = async (req, res, next) => {
           }],
         order: [["published", sort]],
         where: {
-          feedId: feedIds,
           subject: {
             [Op.like]: search
           },

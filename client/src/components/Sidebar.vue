@@ -106,12 +106,13 @@
         </span>
       </div>
       <div>
-        <p class="title">Categories</p>
+        <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <draggable
+      <draggable 
         :list="this.store.categories"
         class="dragArea"
         v-bind="{group:{ name:'category', pull:'clone', put:false}}"
+        v-if="store.currentSelection.status != 'hot'"
         @end="updateSortOrder"
       >
         <div
@@ -140,10 +141,6 @@
                 v-if="store.currentSelection.status === 'star'"
                 class="badge white"
               >{{ category.starCount }}</span>
-              <span
-                v-if="store.currentSelection.status === 'hot'"
-                class="badge white"
-              >{{ category.hotCount }}</span>
             </span>
           </div>
           <div v-if="category.feeds">
@@ -177,10 +174,6 @@
                     v-if="store.currentSelection.status === 'star'"
                     class="badge white"
                   >{{ feed.starCount }}</span>
-                  <span
-                    v-if="store.currentSelection.status === 'hot'"
-                    class="badge white"
-                  >{{ feed.hotCount }}</span>
                 </span>
               </div>
             </div>
