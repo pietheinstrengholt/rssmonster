@@ -106,6 +106,9 @@ exports.getArticles = async (req, res, next) => {
           },
           content: {
             [Op.like]: search
+          },
+          createdAt: {
+            [Op.gte] : (new Date() -  14 * 24 * 60 * 60 * 1000)
           }
         }
       });
