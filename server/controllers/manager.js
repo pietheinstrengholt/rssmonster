@@ -26,6 +26,7 @@ exports.getOverview = async (req, res, next) => {
       }
     });
 
+    //only fetch articles from the last two weeks
     const hotArticles = await Article.findAll({
       attributes: ["id"],
       include: [
@@ -38,7 +39,12 @@ exports.getOverview = async (req, res, next) => {
           },
           required: true
         }
-      ]
+      ],
+      where: {
+        createdAt: {
+          [Op.gte] : (new Date() -  14 * 24 * 60 * 60 * 1000)
+        }
+      }
     });
 
     hotCount = hotArticles.length;
