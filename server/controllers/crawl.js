@@ -126,9 +126,12 @@ async function processArticle(feed, post) {
           //fetch all urls referenced to other websites. Insert these into the hotlinks table
           if ($(this).attr('href')) {
             if (!$(this).attr('href').includes(domain)) {
-              Hotlink.create({
-                url: $(this).attr('href')
-              });
+              //only add http and https urls to database
+              if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
+                Hotlink.create({
+                  url: $(this).attr('href')
+                });
+              }
             }
           }
         });
