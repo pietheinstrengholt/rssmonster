@@ -1,6 +1,7 @@
 const Article = require("../models/article");
 const Category = require("../models/category");
 const Feed = require("../models/feed");
+const Hotlink = require("../models/hotlink");
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -23,12 +24,18 @@ exports.getOverview = async (req, res, next) => {
       }
     });
     const hotCount = await Article.count({
-      where: {
-        hotlinks: {
-          [Op.gt]: 0
-        }
-      }
+    include: [
+      {
+        model: Hotlink,
+        where: {
+          url: {
+            [Op.not]: null
+          }
+        },
+        required: true
+      }]
     });
+
     const totalCount = (await readCount) + unreadCount;
 
     const categories = await Category.findAll({
@@ -90,24 +97,31 @@ exports.getOverview = async (req, res, next) => {
       group: ["categoryId", "id"]
     });
 
+    //use nested include to get only the feeds with hot articles
+    /* 
     const hotCountGrouped = await Feed.findAll({
       include: [{
         model: Article,
         attributes: [],
-        where: {
-          hotlinks: {
-            [Op.gt]: 0
-          }
-        }
-      }],
+        include: [{
+          model: Hotlink,
+          where: {
+            url: {
+              [Op.not]: null
+            }
+          },
+          required: true
+        }]
+      }
+    ],
       attributes: [
         "categoryId",
         ["id", "feedId"],
         [Sequelize.fn("COUNT", "article.id"), "count"]
       ],
       order: ["id"],
-      group: ["categoryId", "id"]
-    });
+      group: ["categoryId", "id", "hotlinks"]
+    }); */
 
     const toPlain = response => {
       const flattenDataValues = ({
@@ -146,7 +160,7 @@ exports.getOverview = async (req, res, next) => {
     readArray = await toPlain(readCountGrouped);
     unreadArray = await toPlain(unreadCountGrouped);
     starArray = await toPlain(starCountGrouped);
-    hotArray = await toPlain(hotCountGrouped);
+    //hotArray = await toPlain(hotCountGrouped);
 
     //give each category and feed in the categoriesArray a readCount, unreadCount and starCount
     await categoriesArray.forEach(category => {
@@ -222,6 +236,7 @@ exports.getOverview = async (req, res, next) => {
     });
 
     //repeat for the hot
+    /*
     await hotArray.forEach(item => {
       var categoryIndex = categoriesArray.findIndex(
         category => category.id === item.categoryId
@@ -237,8 +252,7 @@ exports.getOverview = async (req, res, next) => {
         categoriesArray[categoryIndex]["feeds"][feedIndex]["hotCount"] =
           item["count"];
       }
-    });
-
+    }); */
 
     return res.status(200).json({
       total: totalCount,
@@ -268,10 +282,22 @@ exports.articleDetails = async (req, res, next) => {
     var articlesArray = articleIds.split(",");
 
     const articles = await Article.findAll({
-      include: [{
-        model: Feed,
-        required: true
-      }],
+      include: [
+        {
+          model: Feed,
+          required: true
+        },
+        {
+          model: Hotlink,
+          separate : true,
+          where: {
+            url: {
+              [Op.not]: null
+            }
+          },
+          attributes: ['url'],
+          required: false
+        }],
       order: [
         ["published", sort]
       ],

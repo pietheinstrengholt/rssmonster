@@ -229,11 +229,18 @@ exports.postFever = async (req, res, next) => {
         where: {
           id: {
             [Op.gt]: req.query.since_id
-          },
-          hotlinks: {
-            [Op.gt]: 0
           }
-        }
+        },
+        include: [
+          {
+            model: Hotlink,
+            where: {
+              url: {
+                [Op.not]: null
+              }
+            },
+            required: true
+          }]
       });
 
       var item_ids = [];
@@ -249,7 +256,8 @@ exports.postFever = async (req, res, next) => {
           id: article.id,
           feed_id: parseInt(article.feedId),
           item_id: parseInt(article.feedId),
-          temperature: 99 + article.hotlinks,
+          //calculate dynamically the hotness
+          temperature: 99 + article.hotlinks.length,
           is_item: 1,
           is_local: 1,
           is_saved: parseInt(article.starInd),

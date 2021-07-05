@@ -3,6 +3,7 @@ const Sequelize = require("sequelize");
 const sequelize = require("../util/database");
 
 const Feed = require("./feed");
+const Hotlink = require("./hotlink");
 
 const Article = sequelize.define(
   "articles",
@@ -34,10 +35,6 @@ const Article = sequelize.define(
       type: Sequelize.INTEGER,
       defaultValue: 0
     },
-    hotlinks: {
-      type: Sequelize.INTEGER,
-      defaultValue: 0
-    },
     url: {
       type: Sequelize.STRING(1024),
       allowNull: false
@@ -61,5 +58,17 @@ const Article = sequelize.define(
     collate: "utf8_unicode_ci"
   }
 );
+
+//add hotlink associations
+Article.hasMany(Hotlink, {
+  sourceKey: 'url',
+  foreignKey: 'url'
+});
+
+Hotlink.belongsTo(Article, {
+  foreignKey: 'url', 
+  targetKey: 'url', 
+  constraints: false
+});
 
 module.exports = Article;

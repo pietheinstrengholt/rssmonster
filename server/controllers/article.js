@@ -1,6 +1,7 @@
 const Article = require("../models/article");
 const Feed = require("../models/feed");
 const Setting = require("../models/setting");
+const Hotlink = require("../models/hotlink");
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -83,10 +84,20 @@ exports.getArticles = async (req, res, next) => {
       });
     }
 
-    //if star is set, then use the starInd field to query against
+    //if hot is set, then use an inner join and no seperate query
     if (status == "hot") {
       articles = await Article.findAll({
         attributes: ["id"],
+        include: [
+          {
+            model: Hotlink,
+            where: {
+              url: {
+                [Op.not]: null
+              }
+            },
+            required: true
+          }],
         order: [["published", sort]],
         where: {
           feedId: feedIds,
@@ -95,9 +106,6 @@ exports.getArticles = async (req, res, next) => {
           },
           content: {
             [Op.like]: search
-          },
-          hotlinks: {
-            [Op.gt]: 0
           }
         }
       });

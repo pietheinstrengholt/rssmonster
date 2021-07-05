@@ -2,7 +2,7 @@
   <div id="main">
     <div id="articles">
       <div :key="article.id" v-bind:id="article.id" class="block" v-for="article in articles">
-        <div class="article" v-bind:class="{'starred': article.starInd == 1, 'hot': article.hotlinks }" v-on:click="bookmark(article.id, $event)">
+        <div class="article" v-bind:class="{'starred': article.starInd == 1, 'hot': article.hotlinks.length }" v-on:click="bookmark(article.id, $event)">
           <div class="maximal">
             <h5 class="heading">
               <a target="_blank" :href="article.url" v-text="article.subject"></a>
