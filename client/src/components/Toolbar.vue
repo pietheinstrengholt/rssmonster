@@ -13,6 +13,9 @@
       <div class="item" href="#" @click="statusClicked('star')">
         <p>Star</p>
       </div>
+      <div class="item" href="#" @click="statusClicked('hot')">
+        <p>Hot</p>
+      </div>
     </div>
     <div class="status-toolbar" @click="toggleShowFilter">
       <p id="filter">{{ this.store.filter | capitalize }}</p>
