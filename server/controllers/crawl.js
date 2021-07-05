@@ -136,13 +136,6 @@ async function processArticle(feed, post) {
           }
         });
 
-        //get all the links. The more frequently a link occurs, the more "hot" it is. 
-        const hotlinks = await Hotlink.findAll({
-          where: {
-            url: post.link
-          }
-        });
-
         //parse media RSS feeds: https://www.rssboard.org/media-rss
         if (post['media:group']) {
           postLink = post['media:group']['media:content']['@']['url'];
@@ -163,7 +156,6 @@ async function processArticle(feed, post) {
           feedId: feed.id,
           status: "unread",
           star_ind: 0,
-          hotlinks: hotlinks.length,
           url: postLink,
           image_url: "",
           subject: postTitle || 'No title',
