@@ -13,28 +13,35 @@ exports.getOverview = async (req, res, next) => {
         starInd: 1
       }
     });
+
     const unreadCount = await Article.count({
       where: {
         status: "unread"
       }
     });
+
     const readCount = await Article.count({
       where: {
         status: "read"
       }
     });
-    const hotCount = await Article.count({
-    include: [
-      {
-        model: Hotlink,
-        where: {
-          url: {
-            [Op.not]: null
-          }
-        },
-        required: true
-      }]
+
+    const hotArticles = await Article.findAll({
+      attributes: ["id"],
+      include: [
+        {
+          model: Hotlink,
+          where: {
+            url: {
+              [Op.not]: null
+            }
+          },
+          required: true
+        }
+      ]
     });
+
+    hotCount = hotArticles.length;
 
     const totalCount = (await readCount) + unreadCount;
 
