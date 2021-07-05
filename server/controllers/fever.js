@@ -223,12 +223,27 @@ exports.postFever = async (req, res, next) => {
 
     //when argument is links, don't return anything at this moment
     if ("links" in req.query) {
+
+      //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
+      const allHotlinks = await Hotlink.findAll({
+        attributes: ["url"],
+        raw : true
+      });
+
+      //next we push all ids to an array
+      hotLinksArray = [];
+      if (allHotlinks.length > 0) {
+        allHotlinks.forEach(hotlink => {
+          hotLinksArray.push(hotlink.url);
+        });
+      }
       
       //select all items with hot links
       articles = await Article.findAll({
         where: {
           id: {
-            [Op.gt]: req.query.since_id
+            [Op.gt]: req.query.since_id,
+            url: hotLinksArray
           }
         },
         include: [
