@@ -86,18 +86,24 @@ exports.getArticles = async (req, res, next) => {
 
     //if hot is set, then use an inner join and no seperate query, and no feedId arguments
     if (status == "hot") {
+
+      //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
+      const allHotlinks = await Hotlink.findAll({
+        attributes: ["url"],
+        raw : true
+      });
+
+      //next we push all ids to an array
+      hotLinksArray = [];
+      if (allHotlinks.length > 0) {
+        allHotlinks.forEach(hotlink => {
+          hotLinksArray.push(hotlink.url);
+        });
+      }
+
+      //finally we count using the array with ids
       articles = await Article.findAll({
         attributes: ["id"],
-        include: [
-          {
-            model: Hotlink,
-            where: {
-              url: {
-                [Op.not]: null
-              }
-            },
-            required: true
-          }],
         order: [["published", sort]],
         where: {
           subject: {
@@ -106,9 +112,7 @@ exports.getArticles = async (req, res, next) => {
           content: {
             [Op.like]: search
           },
-          createdAt: {
-            [Op.gte] : (new Date() -  14 * 24 * 60 * 60 * 1000)
-          }
+          url: hotLinksArray
         }
       });
     }

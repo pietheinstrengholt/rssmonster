@@ -26,28 +26,26 @@ exports.getOverview = async (req, res, next) => {
       }
     });
 
-    //only fetch articles from the last two weeks
-    const hotArticles = await Article.findAll({
-      attributes: ["id"],
-      include: [
-        {
-          model: Hotlink,
-          where: {
-            url: {
-              [Op.not]: null
-            }
-          },
-          required: true
-        }
-      ],
-      where: {
-        createdAt: {
-          [Op.gte] : (new Date() -  14 * 24 * 60 * 60 * 1000)
-        }
-      }
+    //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
+    const allHotlinks = await Hotlink.findAll({
+      attributes: ["url"],
+      raw : true
     });
 
-    hotCount = hotArticles.length;
+    //next we push all ids to an array
+    hotLinksArray = [];
+    if (allHotlinks.length > 0) {
+      allHotlinks.forEach(hotlink => {
+        hotLinksArray.push(hotlink.url);
+      });
+    }
+
+    //finally we count using the array with ids
+    const hotCount = await Article.count({
+      where: {
+        url: hotLinksArray
+      }
+    });
 
     const totalCount = (await readCount) + unreadCount;
 
