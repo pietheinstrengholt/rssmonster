@@ -5,6 +5,7 @@ var DataTypes = require("sequelize/lib/data-types");
 const sequelize = require("../util/database");
 
 const Category = require("./category");
+const Article = require("./article");
 
 const Feed = sequelize.define(
   "feeds",
@@ -55,5 +56,8 @@ const Feed = sequelize.define(
     collate: "utf8_unicode_ci"
   }
 );
+
+//add associations
+Feed.hasMany(Article);
 
 module.exports = Feed;
