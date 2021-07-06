@@ -97,7 +97,9 @@ exports.getArticles = async (req, res, next) => {
       hotLinksArray = [];
       if (allHotlinks.length > 0) {
         allHotlinks.forEach(hotlink => {
-          hotLinksArray.push(hotlink.url);
+          if (!hotLinksArray.includes(hotlink)) {
+            hotLinksArray.push(hotlink.url);
+          }
         });
       }
 
