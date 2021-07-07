@@ -34,7 +34,7 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
         }
       },
       order: [
-        ['updatedAt', 'ASC']
+        ['updatedAt', 'DESC']
       ],
       limit: feedCount
     });
