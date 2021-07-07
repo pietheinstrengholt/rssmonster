@@ -73,6 +73,10 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
             errorCount: Sequelize.literal("errorCount + 1")
           });
         }
+
+      //touch updatedAt
+      feed.changed('updatedAt', true);
+
       });
     }
 
@@ -84,9 +88,6 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
         }
       }
     });
-
-    //touch updatedAt
-    feed.changed('updatedAt', true);
 
     return res.status(200).json("Crawling started.");
   } catch (err) {
