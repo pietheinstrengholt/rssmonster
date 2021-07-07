@@ -14,7 +14,7 @@ const htmlparser2 = require('htmlparser2');
 var striptags = require("striptags");
 
 //set the maximum number of feeds to be processed at once
-const feedCount = process.env.MAX_FEEDCOUNT || 10
+const feedCount = process.env.MAX_FEEDCOUNT || 100
 
 //put the try/catch block into a higher function and then put the async/await functions of that function
 const catchAsync = fn => {
