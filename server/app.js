@@ -47,7 +47,7 @@ app.use((req, res, next) => {
   next();
 });
 
-//serve out the api's
+//serve out the APIs
 app.use("/api/categories", categoryRoutes);
 app.use("/api/feeds", feedRoutes);
 app.use("/api/articles", articleRoutes);

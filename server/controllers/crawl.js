@@ -13,6 +13,9 @@ const htmlparser2 = require('htmlparser2');
 
 var striptags = require("striptags");
 
+//set the maximum number of feeds to be processed at once
+const feedCount = process.env.MAX_FEEDCOUNT || 10
+
 //put the try/catch block into a higher function and then put the async/await functions of that function
 const catchAsync = fn => {
   return (req, res, next) => {
@@ -30,7 +33,10 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
           [Op.lt]: 25
         }
       },
-      order: ["updatedAt"]
+      order: [
+        ['updatedAt', 'ASC']
+      ],
+      limit: feedCount
     });
 
     if (feeds.length > 0) {
@@ -51,23 +57,20 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
   
               //reset the feed count
               feed.update({
-                errorCount: 0,
-                updatedAt: new Date()
+                errorCount: 0
               });
             }
           } catch (err) {
             console.log(err.stack.split("\n", 1).join("") + " - " + feed.url);
             //update the errorCount
             feed.update({
-              errorCount: Sequelize.literal("errorCount + 1"),
-              updatedAt: new Date()
+              errorCount: Sequelize.literal("errorCount + 1")
             });
           }
         } else {
           //update the errorCount
           feed.update({
-            errorCount: Sequelize.literal("errorCount + 1"),
-            updatedAt: new Date()
+            errorCount: Sequelize.literal("errorCount + 1")
           });
         }
       });
@@ -81,6 +84,9 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
         }
       }
     });
+
+    //touch updatedAt
+    feed.changed('updatedAt', true);
 
     return res.status(200).json("Crawling started.");
   } catch (err) {
