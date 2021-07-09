@@ -63,13 +63,6 @@
   </div>
 </template>
 
-<style>
-div.quickbar a {
-  font-size: 12px;
-  cursor: pointer;
-}
-</style>
-
 <script>
 import store from "../store";
 
@@ -90,6 +83,11 @@ export default {
 };
 </script>
 <style>
+div.quickbar a {
+  font-size: 12px;
+  cursor: pointer;
+}
+
 .view-toolbar {
   width: 100%;
   background-color: #31344B;

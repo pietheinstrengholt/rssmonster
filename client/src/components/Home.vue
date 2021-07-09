@@ -203,6 +203,7 @@ div.infinite-loading-container {
     background: #121212;
     border-color: #121212;
     border-bottom-color: #fff;
+    background-color: #121212;
   }
 
   div#app {
