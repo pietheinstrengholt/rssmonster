@@ -670,7 +670,8 @@ export default {
         .put("api/feeds/" + this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
-          categoryId: this.selectedCategory
+          categoryId: this.selectedCategory,
+          rssUrl: this.feed.rssUrl
         })
         .then(
           result => {

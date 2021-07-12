@@ -54,7 +54,8 @@ exports.updateFeed = async (req, res, next) => {
         url: req.body.url,
         rssUrl: req.body.rssUrl,
         favicon: req.body.favicon,
-        active: req.body.active
+        active: req.body.active,
+        errorCount: 0
       });
       return res.status(200).json(feed);
     }
