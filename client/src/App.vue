@@ -68,7 +68,7 @@ body {
 }
 
 @media (prefers-color-scheme: dark) {
-  body {
+  html, body {
     background-color: #121212;
   }
 
