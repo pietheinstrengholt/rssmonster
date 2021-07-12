@@ -152,9 +152,17 @@ a#hot.view-button {
   .view-toolbar,
   .view-button {
     color: #fff;
-    background: #000;
+    background: #3a3a3a;
     border-color: #000;
+  }
+
+  a#rssmonster.view-button,
+  a#unread.view-button,
+  a#star.view-button,
+  a#read.view-button,
+  a#hot.view-button {
     border-bottom: 1px solid #fff;
   }
+
 }
 </style>
