@@ -50,8 +50,6 @@ async function init() {
       cache.set(hotlink.url);
     });
   }
-
-  console.log(cache.getStats());
 }
 
 module.exports = { get, set, all, init }

@@ -15,7 +15,7 @@ const cache = require('../util/cache');
 var striptags = require("striptags");
 
 //set the maximum number of feeds to be processed at once
-const feedCount = process.env.MAX_FEEDCOUNT || 100
+const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10
 
 //put the try/catch block into a higher function and then put the async/await functions of that function
 const catchAsync = fn => {
@@ -35,13 +35,14 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
         }
       },
       order: [
-        ['updatedAt', 'DESC']
+        ['updatedAt', 'ASC']
       ],
       limit: feedCount
     });
 
     if (feeds.length > 0) {
       feeds.forEach(async function(feed) {
+
         //discover rssUrl
         const url = await autodiscover.discover(feed.url);
 
@@ -77,6 +78,10 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
 
         //touch updatedAt
         feed.changed('updatedAt', true);
+        feed.update({
+          updatedAt: new Date()
+        });
+
       });
     }
 
