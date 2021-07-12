@@ -21,7 +21,7 @@
 
       <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
         <span class="glyphicon">
-          <v-icon name="plus"/>
+          <v-icon name="plus-square"/>
         </span>Add new feed
       </div>
 
@@ -180,13 +180,10 @@
           </div>
         </div>
       </draggable>
-      <div>
-        <p class="title">Options</p>
-      </div>
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <v-icon name="plus"/>
+            <v-icon name="plus-square"/>
             <div class="text">Add</div>
           </div>
         </div>
@@ -197,7 +194,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="trash"/>
+            <v-icon name="trash-alt"/>
             <div class="text">Delete</div>
           </div>
         </div>
@@ -208,7 +205,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="pen"/>
+            <v-icon name="edit"/>
             <div class="text">Edit</div>
           </div>
         </div>
@@ -219,7 +216,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="trash"/>
+            <v-icon name="trash-alt"/>
             <div class="text">Delete</div>
           </div>
         </div>
@@ -230,7 +227,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="pen"/>
+            <v-icon name="edit"/>
             <div class="text">Edit</div>
           </div>
         </div>
@@ -255,11 +252,15 @@ div.sidebar-category-top {
   padding: 4px 4px 4px 12px;
 }
 
+div#refresh.option, div#addnew.option, div#addnew.option {
+  background-color: #6f79d3;
+}
+
 span.badge.white {
   float: right;
   color: #fff;
   background-color: transparent !important;
-  margin-top: 3px;
+  margin-top: 2px;
 }
 
 sidebar-category-main {
@@ -283,7 +284,7 @@ span.badge-unread {
   float: right;
   position: absolute;
   right: 28px;
-  margin-top: -23px;
+  margin-top: -25px;
 }
 
 div.sidebar-category-top,
@@ -341,10 +342,6 @@ div#mark-all-as-read {
   border-radius: 0px 0px 4px 4px;
 }
 
-div#refresh.option, div#addnew.option, div#addnew.option {
-  background-color: #6f79d3;
-}
-
 div#mark-all-as-read {
   background-color: #464f9e;
 }
@@ -380,23 +377,20 @@ div#monster p {
 }
 
 div.category-options {
+  margin-top: 10px;
   margin-bottom: 20px;
   height: 40px;
   width: 105%;
 }
 
 div.category-button {
-  margin-left: 12px;
+  margin-left: 8%;
   height: 44px;
   color: #fff;
   border-radius: 4px;
   width: 42px;
   float: left;
   text-align: center;
-}
-
-div.category-button#add, div.category-button#delete, div.category-button#rename {
-  background-color: #6f79d3;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -414,7 +408,7 @@ div.category-button#add, div.category-button#delete, div.category-button#rename 
 }
 
 div.category-button div.text {
-  font-size: 12px;
+  font-size: 13px;
   margin-top: 3px;
 }
 
