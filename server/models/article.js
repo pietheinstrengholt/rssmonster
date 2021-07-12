@@ -3,7 +3,8 @@ const Sequelize = require("sequelize");
 const sequelize = require("../util/database");
 
 const Feed = require("./feed");
-const Hotlink = require("./hotlink");
+
+const cache = require('../util/cache');
 
 const Article = sequelize.define(
   "articles",
@@ -39,6 +40,12 @@ const Article = sequelize.define(
       type: Sequelize.STRING(1024),
       allowNull: false
     },
+    hotlinks: {
+      type: Sequelize.VIRTUAL,
+      get() {
+        return cache.get(this.url);
+      }
+    },
     imageUrl: Sequelize.STRING(1024),
     subject: {
       type: Sequelize.TEXT,
@@ -58,17 +65,5 @@ const Article = sequelize.define(
     collate: "utf8_unicode_ci"
   }
 );
-
-//add hotlink associations
-Article.hasMany(Hotlink, {
-  sourceKey: 'url',
-  foreignKey: 'url'
-});
-
-Hotlink.belongsTo(Article, {
-  foreignKey: 'url', 
-  targetKey: 'url', 
-  constraints: false
-});
 
 module.exports = Article;

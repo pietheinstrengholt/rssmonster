@@ -3,13 +3,14 @@ const Op = Sequelize.Op;
 
 const Feed = require("../models/feed");
 const Article = require("../models/article");
-const Hotlink = require("../models/hotlink");
 
 const autodiscover = require("../util/autodiscover");
 const parseFeed = require("../util/parser");
 const language = require("../util/language");
 const cheerio = require("cheerio");
 const htmlparser2 = require('htmlparser2');
+
+const cache = require('../util/cache');
 
 var striptags = require("striptags");
 
@@ -74,20 +75,10 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
           });
         }
 
-      //touch updatedAt
-      feed.changed('updatedAt', true);
-
+        //touch updatedAt
+        feed.changed('updatedAt', true);
       });
     }
-
-    //destroy records older than two weeks
-    Hotlink.destroy({
-      where: {
-        createdAt: {
-          [Op.lte] : (new Date() -  14 * 24 * 60 * 60 * 1000)
-        }
-      }
-    });
 
     return res.status(200).json("Crawling started.");
   } catch (err) {
@@ -139,9 +130,8 @@ async function processArticle(feed, post) {
             if (!$(this).attr('href').includes(domain)) {
               //only add http and https urls to database
               if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
-                Hotlink.create({
-                  url: $(this).attr('href')
-                });
+                //update cache
+                cache.set($(this).attr('href'));
               }
             }
           }

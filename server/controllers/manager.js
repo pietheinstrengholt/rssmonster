@@ -1,7 +1,8 @@
 const Article = require("../models/article");
 const Category = require("../models/category");
 const Feed = require("../models/feed");
-const Hotlink = require("../models/hotlink");
+
+const cache = require('../util/cache');
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -26,26 +27,10 @@ exports.getOverview = async (req, res, next) => {
       }
     });
 
-    //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
-    const allHotlinks = await Hotlink.findAll({
-      attributes: ["url"],
-      raw : true
-    });
-
-    //next we push all ids to an array
-    hotLinksArray = [];
-    if (allHotlinks.length > 0) {
-      allHotlinks.forEach(hotlink => {
-        if (!hotLinksArray.includes(hotlink)) {
-          hotLinksArray.push(hotlink.url);
-        }
-      });
-    }
-
     //finally we count using the array with ids
     const hotCount = await Article.count({
       where: {
-        url: hotLinksArray
+        url: cache.all()
       }
     });
 
@@ -165,7 +150,7 @@ exports.getOverview = async (req, res, next) => {
       }
     });
 
-    //the readArry holds the read count for every categoryId and feedId. For the categoryId we need to sum, for the feedId we can just overwrite.
+    //the readArray holds the read count for every categoryId and feedId. For the categoryId we need to sum, for the feedId we can just overwrite.
     await readArray.forEach(item => {
       //find the index by comparing the categoryId from every element in the readArray, against the category.id in the categoriesArray
       var categoryIndex = categoriesArray.findIndex(
@@ -254,11 +239,6 @@ exports.articleDetails = async (req, res, next) => {
         {
           model: Feed,
           required: true
-        },
-        {
-          model: Hotlink,
-          attributes: ['url'],
-          required: false
         }],
       order: [
         ["published", sort]

@@ -1,7 +1,8 @@
 const Article = require("../models/article");
 const Feed = require("../models/feed");
 const Setting = require("../models/setting");
-const Hotlink = require("../models/hotlink");
+
+const cache = require('../util/cache');
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -84,24 +85,8 @@ exports.getArticles = async (req, res, next) => {
       });
     }
 
-    //if hot is set, then use an inner join and no seperate query, and no feedId arguments
+    //if hot is set, then use an inner join and no separate query, and no feedId arguments
     if (status == "hot") {
-
-      //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
-      const allHotlinks = await Hotlink.findAll({
-        attributes: ["url"],
-        raw : true
-      });
-
-      //next we push all ids to an array
-      hotLinksArray = [];
-      if (allHotlinks.length > 0) {
-        allHotlinks.forEach(hotlink => {
-          if (!hotLinksArray.includes(hotlink)) {
-            hotLinksArray.push(hotlink.url);
-          }
-        });
-      }
 
       //finally we count using the array with ids
       articles = await Article.findAll({
@@ -114,7 +99,7 @@ exports.getArticles = async (req, res, next) => {
           content: {
             [Op.like]: search
           },
-          url: hotLinksArray
+          url: cache.all()
         }
       });
     }

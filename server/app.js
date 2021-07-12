@@ -27,6 +27,9 @@ const feverRoutes = require("./routes/fever");
 //controller
 const errorController = require("./controllers/error");
 
+//init cache
+const cache = require("./util/cache");
+
 const app = express();
 
 app.use(morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-time ms)'));
@@ -85,3 +88,11 @@ process.on('uncaughtException', err => {
       console.error('UncaughtException:', err.message)
   }
 });
+
+//initialize cache for hotlinks
+cache.init();
+
+//update cache every five minutes
+setInterval(function() {
+  cache.init();
+}, 300 * 1000);

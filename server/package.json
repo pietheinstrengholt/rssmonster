@@ -16,7 +16,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^2.0.7",
+    "nodemon": "^2.0.12",
     "trim": "^1.0.1"
   },
   "dependencies": {
@@ -34,9 +34,10 @@
     "htmlparser2": "^6.1.0",
     "morgan": "^1.10.0",
     "mysql2": "^2.2.5",
+    "node-cache": "^5.1.2",
     "node-fetch": "^2.6.1",
     "pug": "^3.0.2",
-    "sequelize": "^6.6.4",
+    "sequelize": "^6.6.5",
     "sequelize-cli": "^6.2.0",
     "striptags": "^3.2.0"
   },

@@ -1,6 +1,7 @@
 const Article = require("../models/article");
 const Feed = require("../models/feed");
 const Category = require("../models/category");
+const cache = require('../util/cache');
 
 const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
@@ -223,32 +224,17 @@ exports.postFever = async (req, res, next) => {
 
     //when argument is links, don't return anything at this moment
     if ("links" in req.query) {
-
-      //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
-      const allHotlinks = await Hotlink.findAll({
-        attributes: ["url"],
-        raw : true
-      });
-
-      //next we push all ids to an array
-      hotLinksArray = [];
-      if (allHotlinks.length > 0) {
-        allHotlinks.forEach(hotlink => {
-          hotLinksArray.push(hotlink.url);
-        });
-      }
       
       //select all items with hot links
       articles = await Article.findAll({
         where: {
           id: {
             [Op.gt]: req.query.since_id,
-            url: hotLinksArray
+            url: cache.all()
           }
         },
         include: [
           {
-            model: Hotlink,
             where: {
               url: {
                 [Op.not]: null
@@ -272,7 +258,7 @@ exports.postFever = async (req, res, next) => {
           feed_id: parseInt(article.feedId),
           item_id: parseInt(article.feedId),
           //calculate dynamically the hotness
-          temperature: 99 + article.hotlinks.length,
+          temperature: 99 + article.hotlinks,
           is_item: 1,
           is_local: 1,
           is_saved: parseInt(article.starInd),
