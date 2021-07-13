@@ -218,11 +218,7 @@ div.infinite-loading-container {
     background-color: #121212;
   }
 
-  a, div.block .article h5 a {
-    color: #fff;
-  }
-
-  div.block div.article-content, span.feed_name a {
+  a, div.block .article h5 a, div.block div.article-content, span.feed_name a {
     color: #fff;
   }
 
@@ -470,25 +466,22 @@ export default {
               var categoryIndex = this.store.categories.findIndex(
                 category => category.id === response.body.feed.categoryId
               );
-              this.store.categories[categoryIndex].unreadCount =
-                this.store.categories[categoryIndex].unreadCount - 1;
-              this.store.categories[categoryIndex].readCount =
-                this.store.categories[categoryIndex].readCount + 1;
-              var feedIndex = this.store.categories[
-                categoryIndex
-              ].feeds.findIndex(feed => feed.id === response.body.feedId);
-              this.store.categories[categoryIndex].feeds[
-                feedIndex
-              ].unreadCount =
-                this.store.categories[categoryIndex].feeds[feedIndex]
-                  .unreadCount - 1;
-              this.store.categories[categoryIndex].feeds[feedIndex].readCount =
-                this.store.categories[categoryIndex].feeds[feedIndex]
-                  .readCount + 1;
-
+              //avoid having any negative numbers
+              if (this.store.categories[categoryIndex].unreadCount != 0) {
+                this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
+                this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
+              }
+              var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+              //avoid having any negative numbers
+              if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount != 0) {
+                this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
+                this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
+              }
               //also increase total count
-              this.store.readCount = this.store.readCount + 1;
-              this.store.unreadCount = this.store.unreadCount - 1;
+              if (this.store.unreadCount != 0) {
+                this.store.readCount = this.store.readCount + 1;
+                this.store.unreadCount = this.store.unreadCount - 1;
+              }
             }
           },
           response => {
@@ -514,14 +507,9 @@ export default {
                 var categoryIndex = this.store.categories.findIndex(
                   category => category.id === response.body.feed.categoryId
                 );
-                this.store.categories[categoryIndex].starCount =
-                  this.store.categories[categoryIndex].starCount - 1;
-                var feedIndex = this.store.categories[
-                  categoryIndex
-                ].feeds.findIndex(feed => feed.id === response.body.feedId);
-                this.store.categories[categoryIndex].feeds[feedIndex].starCount =
-                  this.store.categories[categoryIndex].feeds[feedIndex]
-                    .starCount - 1;
+                this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount - 1;
+                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+                this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount - 1;
 
                 //also increase total count
                 this.store.starCount = this.store.starCount - 1;
@@ -542,14 +530,9 @@ export default {
                 var categoryIndex = this.store.categories.findIndex(
                   category => category.id === response.body.feed.categoryId
                 );
-                this.store.categories[categoryIndex].starCount =
-                  this.store.categories[categoryIndex].starCount + 1;
-                var feedIndex = this.store.categories[
-                  categoryIndex
-                ].feeds.findIndex(feed => feed.id === response.body.feedId);
-                this.store.categories[categoryIndex].feeds[feedIndex].starCount =
-                  this.store.categories[categoryIndex].feeds[feedIndex]
-                    .starCount + 1;
+                this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount + 1;
+                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+                this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount + 1;
 
                 //also increase total count
                 this.store.starCount = this.store.starCount + 1;

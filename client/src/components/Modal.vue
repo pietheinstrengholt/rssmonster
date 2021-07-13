@@ -324,11 +324,7 @@ div.modal-dialog {
   color: #111;
 }
 
-.modal-enter {
-  opacity: 0;
-}
-
-.modal-leave-active {
+.modal-enter, .modal-leave-active {
   opacity: 0;
 }
 

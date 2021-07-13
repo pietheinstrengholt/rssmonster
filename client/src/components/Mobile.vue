@@ -113,12 +113,12 @@ div.close span {
 }
 
 p.content-header {
-    margin-top: 10px;
-    margin-bottom: 3px;
+  margin-top: 10px;
+  margin-bottom: 3px;
 }
 
 .overlay-content li.category.selected {
-    background-color: #18bc9c;
+  background-color: #18bc9c;
 }
 
 @media (prefers-color-scheme: dark) {

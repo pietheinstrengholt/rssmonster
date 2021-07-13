@@ -162,11 +162,9 @@
     border-right: 1px solid #fff;
     border-left: 1px solid #fff;
   }
-
 }
 
 </style>
-
 
 <script>
 import store from "../store";
