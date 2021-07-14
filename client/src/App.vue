@@ -63,12 +63,12 @@ div.sidebar {
   position: fixed;
 }
 
-body {
+html, #app {
   background-color: #f9f9f9;
 }
 
 @media (prefers-color-scheme: dark) {
-  html, body {
+  html, #app {
     background-color: #121212;
   }
 
@@ -144,6 +144,10 @@ export default {
       });
   },
   created: function() {
+    //default body background color to black for dark mode. This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      document.body.style.background="#000000";
+    }
     //add metadata properties to document
     document.title = "RSSMonster";
     document.head.querySelector("meta[name=viewport]").content =

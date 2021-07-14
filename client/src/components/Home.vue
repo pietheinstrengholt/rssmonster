@@ -198,7 +198,7 @@ div.infinite-loading-container {
 }
 
 @media (prefers-color-scheme: dark) {
-  html, body, .home, #main, d#articles, div.block, div.block .article, .article-content, h5.heading, div.block div.feedname, div.infinite-loading-container {
+  #main, #articles, div.block, div.block .article, .article-content, h5.heading, div.block div.feedname, div.infinite-loading-container {
     color: #fff;
     background: #121212;
     border-color: #121212;
