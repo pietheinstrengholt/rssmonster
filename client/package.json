@@ -9,7 +9,7 @@
     "lint": "vue-cli-service lint"
   },
   "dependencies": {
-    "core-js": "^3.15.1",
+    "core-js": "^3.15.2",
     "moment": "^2.29.1",
     "vue": "^2.6.14",
     "vue-awesome": "^4.3.1",
@@ -24,9 +24,9 @@
     "@vue/cli-service": "^4.5.13",
     "babel-eslint": "^10.1.0",
     "browserslist": ">=4.16.6",
-    "dns-packet": ">=5.2.4",
-    "eslint": "^7.29.0",
-    "eslint-plugin-vue": "^7.12.1",
+    "dns-packet": ">=5.3.0",
+    "eslint": "^7.31.0",
+    "eslint-plugin-vue": "^7.14.0",
     "vue-template-compiler": "^2.6.14"
   },
   "eslintConfig": {
