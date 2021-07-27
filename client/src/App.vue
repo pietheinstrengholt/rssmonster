@@ -245,6 +245,14 @@ export default {
       handler: function() {
         this.closeModal();
       }
+    },
+    "store.unreadCount": {
+      handler: function(count) {
+        //set PWA badge count
+        if ('serviceWorker' in navigator) {
+          navigator.setAppBadge(count);
+        }
+      }
     }
   }
 };
