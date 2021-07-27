@@ -6,11 +6,13 @@
   "scripts": {
     "serve": "vue-cli-service serve --host localhost",
     "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint"
+    "lint": "vue-cli-service lint",
+    "serve-secure": "vue-cli-service serve --https"
   },
   "dependencies": {
     "core-js": "^3.15.2",
     "moment": "^2.29.1",
+    "register-service-worker": "^1.7.1",
     "vue": "^2.6.14",
     "vue-awesome": "^4.3.1",
     "vue-infinite-loading": "^2.4.5",
@@ -21,6 +23,7 @@
   "devDependencies": {
     "@vue/cli-plugin-babel": "^4.5.13",
     "@vue/cli-plugin-eslint": "^4.5.13",
+    "@vue/cli-plugin-pwa": "^4.5.13",
     "@vue/cli-service": "^4.5.13",
     "babel-eslint": "^10.1.0",
     "browserslist": ">=4.16.6",

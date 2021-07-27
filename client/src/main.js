@@ -26,6 +26,9 @@ import 'vue-awesome/icons/times';
 
 import Icon from 'vue-awesome/components/Icon';
 
+//progressive web app
+import './registerServiceWorker'
+
 // globally (in your main .js file)
 Vue.component('v-icon', Icon)
 
