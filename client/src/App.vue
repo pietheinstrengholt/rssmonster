@@ -7,6 +7,7 @@
       <div class="home col-md-9 offset-md-3 col-sm-12">
         <app-quickbar @mobile="mobileClick"></app-quickbar>
         <app-toolbar class="toolbar"></app-toolbar>
+          <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
         <app-home></app-home>
       </div>
     </div>
@@ -63,6 +64,11 @@ div.sidebar {
   position: fixed;
 }
 
+p.offline {
+  margin-top: 50px;
+  text-align: center;
+}
+
 html, #app {
   background-color: #f9f9f9;
 }
@@ -93,17 +99,16 @@ html, #app {
 <script>
 import store from "./store";
 
+//import idb-keyval
+import { get, set } from 'idb-keyval';
+
 import Home from "./components/Home.vue";
-const Sidebar = () =>
-  import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue");
-const Toolbar = () =>
-  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue");
-const Quickbar = () =>
-  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue");
-const Modal = () =>
-  import(/* webpackChunkName: "modal" */ "./components/Modal.vue");
-const Mobile = () =>
-  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue");
+const Sidebar = () => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue");
+const Toolbar = () => import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue");
+const Quickbar = () => import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue");
+const Modal = () => import(/* webpackChunkName: "modal" */ "./components/Modal.vue");
+const Mobile = () => import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue");
+
 export default {
   components: {
     appSidebar: Sidebar,
@@ -119,41 +124,54 @@ export default {
       feed: {},
       modal: false,
       mobile: null,
-      store: store
+      store: store,
+      notificationStatus: null,
+      offlineStatus: false
     };
   },
-  beforeCreate() {
-    //get an overview with the count for all feeds
-    this.$http
-      .get("api/manager/overview")
-      .then(response => {
-        return response.json();
-      })
-      .then(data => {
-        //update the store counts
-        this.store.unreadCount = data.unreadCount;
-        this.store.readCount = data.readCount;
-        this.store.starCount = data.starCount;
-        this.store.hotCount = data.hotCount;
-
-        //update the categories in the store
-        this.store.categories = data.categories;
-
-        //update local category and feed based on current selection
-        this.updateSelection(this.store.currentSelection);
-      });
-  },
   created: function() {
+    //fetch all category and feed information for an complete overview including total read and unread counts
+    this.getOverview(true);
+
+    //Trigger PWA notification support
+    if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
+
+      get('notificationStatus').then((val) => {
+        if (val === undefined) {
+          //notificationStatus isn't set, thus ask for permissions to install WPA
+          Notification.requestPermission(result => {
+            if (result !== 'granted') {
+              set('notificationStatus', false);
+              this.notificationStatus = false;
+            } else {
+              set('notificationStatus', true);
+              this.notificationStatus = true;
+            }
+          })
+        } else {
+          //update local data
+          this.notificationStatus = val;
+        }
+      });
+
+      //save reference to 'this', while it's still this!
+      var self = this;
+
+      //background update overview every fifteen minutes
+      setInterval(function() {
+        self.getOverview(false);
+      }, 900 * 1000);
+
+    }
+
     //default body background color to black for dark mode. This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       document.body.style.background="#000000";
     }
     //add metadata properties to document
     document.title = "RSSMonster";
-    document.head.querySelector("meta[name=viewport]").content =
-      "width=device-width, initial-scale=1";
-    document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content =
-      "IE=edge";
+    document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
+    document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
   methods: {
     closeModal: function() {
@@ -215,6 +233,57 @@ export default {
         if (data.feedId) {
           this.feed = this.lookupFeedById(data.feedId);
         }
+      }
+    },
+    getOverview: function(initial) {
+      //get an overview with the count for all feeds
+      this.$http
+        .get("api/manager/overview")
+        .then(response => {
+          return response.json();
+        })
+        .then(data => {
+          //set offlineStatus to false
+          this.offlineStatus = false;
+
+          //update the store counts
+          var previousUnreadCount = this.store.unreadCount;
+          this.store.unreadCount = data.unreadCount;
+          this.store.readCount = data.readCount;
+          this.store.starCount = data.starCount;
+          this.store.hotCount = data.hotCount;
+
+          //set PWA badge using unread count
+          if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
+            navigator.setAppBadge(data.unreadCount);
+          }
+
+          //update the categories in the store
+          this.store.categories = data.categories;
+
+          //update local category and feed based on current selection
+          if (initial === true) {
+            this.updateSelection(this.store.currentSelection);  
+          } else {
+            //only show notifcation when new messages have arrived (previousUnreadCount is larger than current unreadCount)
+            if (previousUnreadCount < data.unreadCount) {
+              this.showNotification(data.unreadCount - previousUnreadCount);
+            }
+          }
+        })
+        .catch(error => {
+          console.error("There was an error!", error);
+          this.offlineStatus = true;
+        });
+    },
+    showNotification(input) {
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.ready // returns a Promise, the active SW registration
+          .then(swreg => swreg.showNotification('New articles', {
+            body: input + ' new articles arrived',
+            icon: '/img/icons/android-icon-192x192.png',
+            vibrate: [300, 200, 300]
+        }))
       }
     }
   },
