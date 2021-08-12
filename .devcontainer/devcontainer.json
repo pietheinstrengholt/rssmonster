@@ -1,0 +1,6 @@
+{
+    "name": "RSSMonster",
+    "dockerComposeFile": "docker-compose.yml",
+    "appPort": 3000,
+    "terminal.integrated.shell.linux": "/bin/bash"
+}
