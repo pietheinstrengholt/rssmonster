@@ -1,0 +1,57 @@
+version: '3'
+
+services:
+  app:
+    build: 
+      context: .
+      dockerfile: server.dockerfile
+      args:
+        # [Choice] Node.js version: 14, 12, 10
+        VARIANT: 14
+        # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
+        USER_UID: 1000
+        USER_GID: 1000
+
+    volumes:
+      - ..:/workspace:cached
+      
+    # Overrides default command so things don't shut down after the process ends.
+    command: sleep infinity
+
+    # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
+    network_mode: service:db
+
+    environment:
+      NODE_ENV: development
+      PORT: 3000
+      DB_USERNAME: rssmonster
+      DB_PASSWORD: password
+      DB_DATABASE: rssmonster
+      DB_HOSTNAME: localhost
+
+    # Uncomment the next line to use a non-root user for all processes.
+    # user: node
+
+    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+  db:
+    container_name: db
+    image: mysql:latest
+    restart: always
+    volumes:
+      - mysql-data:/var/lib/mysql
+    command: --default-authentication-plugin=mysql_native_password
+    environment:
+      MYSQL_RANDOM_ROOT_PASSWORD: "yes"
+      MYSQL_DATABASE: "rssmonster"
+      MYSQL_USER: "rssmonster"
+      MYSQL_PASSWORD: "password"
+    expose:
+      - 3306
+
+    # Add "forwardPorts": ["3306"] to **devcontainer.json** to forward MySQL locally.
+    # (Adding the "ports" property to this file will not forward from a Codespace.)
+
+volumes:
+  mysql-data:
