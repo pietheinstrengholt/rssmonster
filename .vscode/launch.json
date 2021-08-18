@@ -10,7 +10,7 @@
             "name": "Launch Server",
             "program": "${workspaceFolder}/server/app.js",
             "cwd": "${workspaceFolder}/server",
-            "preLaunchTask": "npm: install - server"
+            "preLaunchTask": "Build"
         }
     ]
 }
