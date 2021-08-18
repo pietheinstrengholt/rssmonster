@@ -26,10 +26,10 @@ module.exports = {
       },
       feedDesc: Sequelize.TEXT,
       url: {
-        type: Sequelize.TEXT('medium')
+        type: Sequelize.STRING
       },
       rssUrl: {
-        type: Sequelize.TEXT('medium'),
+        type: Sequelize.STRING,
         unique: true
       },
       favicon: Sequelize.STRING,
