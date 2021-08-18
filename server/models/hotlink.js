@@ -8,7 +8,7 @@ const Hotlink = sequelize.define(
   "hotlinks",
   {
     url: {
-      type: Sequelize.STRING(1024),
+      type: Sequelize.STRING,
       allowNull: false,
       references: {
         // This is a reference to another model
@@ -27,6 +27,6 @@ const Hotlink = sequelize.define(
 );
 
 //sequelize assumes a primary key
-Hotlink.removeAttribute('id');
+//Hotlink.removeAttribute('id');
 
 module.exports = Hotlink;
