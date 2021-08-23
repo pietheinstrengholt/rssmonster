@@ -73,6 +73,7 @@ services:
       MYSQL_DATABASE: "rssmonster"
       MYSQL_USER: "rssmonster"
       MYSQL_PASSWORD: "password"
+      MYSQL_ROOT_HOST: '%'
     ports:
       - 3306:3306
     # Add "forwardPorts": ["3306"] to **devcontainer.json** to forward MySQL locally.
