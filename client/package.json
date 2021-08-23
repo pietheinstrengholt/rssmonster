@@ -4,7 +4,7 @@
   "private": true,
   "author": "Piethein Strengholt",
   "scripts": {
-    "serve": "vue-cli-service serve --host localhost",
+    "serve": "vue-cli-service serve --host localhost --port 8080",
     "build": "vue-cli-service build",
     "lint": "vue-cli-service lint",
     "serve-secure": "vue-cli-service serve --https"

@@ -57,8 +57,6 @@ services:
     environment:
       NODE_ENV: development
       VUE_APP_HOSTNAME: http://app:3000/
-    ports:
-      - 8080:8080
 
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
     # (Adding the "ports" property to this file will not forward from a Codespace.)
@@ -79,8 +77,6 @@ services:
       - 3306:3306
     # Add "forwardPorts": ["3306"] to **devcontainer.json** to forward MySQL locally.
     # (Adding the "ports" property to this file will not forward from a Codespace.)
-
-
 
 #volumes:
   #mysql-data:
