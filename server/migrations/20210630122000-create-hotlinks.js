@@ -4,12 +4,6 @@ module.exports = {
     return queryInterface.createTable(
       "hotlinks",
       {
-        id: {
-          type: Sequelize.INTEGER,
-          autoIncrement: true,
-          allowNull: false,
-          primaryKey: true
-        },
         url: {
           type: Sequelize.TEXT('medium'),
           allowNull: false

@@ -1,8 +1,9 @@
 // Update the VARIANT arg in docker-compose.yml to pick a Node.js version: 10, 12, 14 
 {
-	"name": "Node.js & PostgreSQL (Community)",
+	"name": "RSSMonster",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
+	"runServices": ["app", "client", "db"],
 	"workspaceFolder": "/workspace",
 
 	// Set *default* container specific settings.json values on container create.
@@ -22,11 +23,12 @@
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"dbaeumer.vscode-eslint",
-		"mtxr.sqltools"
+		"mtxr.sqltools",
+		"mtxr.sqltools-driver-mysql"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
-	"forwardPorts": [3000, 3306],
+	"forwardPorts": [3000, 3306, "3001:8080"],
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "yarn install",

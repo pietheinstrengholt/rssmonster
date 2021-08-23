@@ -27,6 +27,6 @@ const Hotlink = sequelize.define(
 );
 
 //sequelize assumes a primary key
-//Hotlink.removeAttribute('id');
+Hotlink.removeAttribute('id');
 
 module.exports = Hotlink;

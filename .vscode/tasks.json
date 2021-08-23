@@ -4,12 +4,34 @@
     "version": "2.0.0",
     "tasks": [
       {
-        "label": "Install dependencies",
+        "label": "Install server dependencies",
         "type": "shell",
         "command": "npm install",
         "options": {
             "cwd": "${workspaceFolder}/server"
           }
+      },
+      {
+        "label": "Install client dependencies",
+        "type": "shell",
+        "command": "npm install",
+        "options": {
+            "cwd": "${workspaceFolder}/client"
+          }
+      },
+      {
+        "label": "Serve client",
+        "type": "shell",
+        "command": "npm run serve",
+        "group": {
+          "kind": "test",
+          "isDefault": true
+        },
+        "options": {
+          "cwd": "${workspaceFolder}/client"
+        },
+        "dependsOn": ["Install client dependencies"],
+        "isBackground": true
       },
       {
         "label": "Deploy database",
@@ -18,11 +40,15 @@
         "options": {
             "cwd": "${workspaceFolder}/server"
         },
-        "dependsOn": ["Install dependencies"]
+        "dependsOn": ["Install server dependencies"]
       },
       {
-        "label": "Build",
+        "label": "Build server",
         "dependsOn": ["Deploy database"]
+      },
+      {
+        "label": "Build client",
+        "dependsOn": ["Serve client"]
       }
     ]
   }

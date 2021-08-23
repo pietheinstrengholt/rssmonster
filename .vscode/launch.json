@@ -10,7 +10,15 @@
             "name": "Launch Server",
             "program": "${workspaceFolder}/server/app.js",
             "cwd": "${workspaceFolder}/server",
-            "preLaunchTask": "Build"
+            "preLaunchTask": "Build server"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "Launch Client",
+            "program": "${workspaceFolder}/client/app.js",
+            "cwd": "${workspaceFolder}/client",
+            "preLaunchTask": "Build client"
         }
     ]
 }
