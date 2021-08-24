@@ -121,6 +121,10 @@ div.block div.article-content {
   margin-left: 0px;
 }
 
+div.block div.article-body iframe {
+  display: none;
+}
+
 div.article-content img, div.article-content div {
   float: none !important;
 }
