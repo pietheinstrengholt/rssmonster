@@ -24,8 +24,7 @@ jobs:
         uses: github/codeql-action/init@v1
         with:
           languages: javascript
-        paths-ignore:
-          - client/dist
+          config-file: ./.github/codeql-config.yml
 
       - name: Build And Deploy
         id: builddeploy
