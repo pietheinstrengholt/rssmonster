@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Azure Web App CI/CD
+name: Azure Web App
 
 on:
   push:
@@ -14,18 +14,12 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
+    - uses: actions/checkout@v2
 
     - name: Set up Node.js version
       uses: actions/setup-node@v1
       with:
         node-version: '14.x'
-
-    - name: Initialize CodeQL
-      uses: github/codeql-action/init@v1
-      with:
-        languages: javascript
 
     - name: npm install, build, and test
       run: |
@@ -34,9 +28,6 @@ jobs:
       working-directory: server
       env:
         CI: true
-
-    - name: Perform CodeQL Analysis
-      uses: github/codeql-action/analyze@v1
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v2
@@ -61,7 +52,7 @@ jobs:
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
       with:
-        app-name: 'rssmonster'
+        app-name: 'rssmonster-server'
         slot-name: 'production'
-        publish-profile: ${{ secrets.AzureAppService_PublishProfile_9370ac6d7f6d41168e7f96f34b110ac1 }}
+        publish-profile: ${{ secrets.AzureAppService_PublishProfile_2dd7d8e7c60b483f86aabb734cd49aa0 }}
         package: .
