@@ -164,9 +164,15 @@ export default {
 
     }
 
-    //default body background color to black for dark mode. This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
+    //default body background color to black for dark mode.
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+      //This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
       document.body.style.background="#000000";
+      document.head.querySelector("meta[name=theme-color]").content = "#3a3a3a";
+    }
+    //default body background color to black for light mode.
+    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
+      document.head.querySelector("meta[name=theme-color]").content = "#31344b";
     }
     //add metadata properties to document
     document.title = "RSSMonster";
