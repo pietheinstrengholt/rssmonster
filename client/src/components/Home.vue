@@ -310,7 +310,9 @@ export default {
       pool: [],
       //is used to keep track of which articles are already set with the waypoint method
       waypointPool: [],
-      firstLoad: false
+      firstLoad: false,
+      prevScroll: 0,
+      prevDirection: "down"
     };
   },
   computed: {
@@ -367,6 +369,37 @@ export default {
   },
   methods: {
     handleScroll: function() {
+
+      //get mobileToolbar element
+      var mobileToolbar = document.getElementById('mobile-toolbar');
+
+      //get the curScroll and set default direction
+      var curScroll = Math.ceil(window.scrollY) || Math.ceil(document.documentElement.scrollTop);
+      var direction = "down";
+
+      //compare the curScroll with the prevScroll and update direction
+      if (curScroll > this.prevScroll) { 
+        direction = "down";
+      } else if (curScroll < this.prevScroll) {
+        direction = "up";
+      }
+
+      //start hiding the top toolbar when scrolling down and distance is more than 200px
+      if (direction === "down" && curScroll > 200) { 
+        mobileToolbar.classList.add('hide');
+      }
+
+      //dectect change of scroll direction, show back menu when scrolling up
+      if (direction !== this.prevDirection) {
+        if (direction === "up") {
+          mobileToolbar.classList.remove('hide');
+        }
+      }
+
+      //overwrite the prevScroll and prevDirection after doing the comparison
+      this.prevScroll = curScroll;
+      this.prevDirection = direction;
+
       //ceil document.documentElement.scrollTop, because images can have not nicely rounded heights
       let bottomOfWindow = Math.ceil(document.documentElement.scrollTop) + window.innerHeight === document.documentElement.offsetHeight;
 

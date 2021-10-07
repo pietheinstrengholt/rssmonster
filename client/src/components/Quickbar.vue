@@ -1,5 +1,5 @@
 <template>
-  <div class="quickbar view-toolbar">
+  <div class="quickbar view-toolbar" id="mobile-toolbar">
     <a
       @click="emitClickEvent('mobile','mobile')"
       id="rssmonster"
@@ -100,6 +100,15 @@ div.quickbar a {
   border-color: #dcdee0;
   position: absolute;
   color: #fff;
+  visibility: visible;
+  opacity: 1;
+  transition: visibility 0s linear 0s, opacity 150ms;
+}
+
+.view-toolbar.hide {
+  visibility: hidden;
+  opacity: 0;
+  transition: visibility 0s linear 150ms, opacity 150ms;
 }
 
 .view-button {
