@@ -10,8 +10,8 @@
     "serve-secure": "vue-cli-service serve --https"
   },
   "dependencies": {
-    "core-js": "^3.17.2",
-    "idb-keyval": "^6.0.1",
+    "core-js": "^3.19.1",
+    "idb-keyval": "^6.0.3",
     "moment": "^2.29.1",
     "register-service-worker": "^1.7.2",
     "vue": "^2.6.14",
@@ -22,13 +22,13 @@
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^4.5.13",
-    "@vue/cli-plugin-eslint": "^4.5.13",
-    "@vue/cli-plugin-pwa": "^4.5.13",
-    "@vue/cli-service": "^4.5.13",
+    "@vue/cli-plugin-babel": "^4.5.15",
+    "@vue/cli-plugin-eslint": "^4.5.15",
+    "@vue/cli-plugin-pwa": "^4.5.15",
+    "@vue/cli-service": "^4.5.15",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^7.17.0",
+    "eslint-plugin-vue": "^7.20.0",
     "vue-template-compiler": "^2.6.14"
   },
   "eslintConfig": {
