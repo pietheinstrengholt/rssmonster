@@ -32,13 +32,6 @@ exports.getFeed = async (req, res, next) => {
 
 exports.updateFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
-  const feedName = req.body.feedName;
-  const feedDesc = req.body.feedDesc;
-  const categoryId = req.body.categoryId;
-  const url = req.body.url;
-  const rssUrl = req.body.rssUrl;
-  const favicon = req.body.favicon;
-  const active = req.body.active;
   try {
     const feed = await Feed.findByPk(feedId);
     if (!feed) {
@@ -66,22 +59,15 @@ exports.updateFeed = async (req, res, next) => {
 };
 
 exports.newFeed = async (req, res, next) => {
-  const feedName = req.body.feedName;
-  const feedDesc = req.body.feedDesc;
-  const categoryId = req.body.categoryId;
-  const url = req.body.url;
-  const rssUrl = req.body.rssUrl;
-  const favicon = req.body.favicon;
-  const active = req.body.active;
   try {
     const feed = await Feed.create({
-      categoryId: categoryId,
-      feedName: feedName,
-      feedDesc: feedDesc,
-      url: url,
-      rssUrl: rssUrl,
-      favicon: favicon,
-      active: active
+      categoryId: req.body.categoryId,
+      feedName: req.body.feedName,
+      feedDesc: req.body.feedDesc,
+      url: req.body.url,
+      rssUrl: req.body.rssUrl,
+      favicon: req.body.favicon,
+      active: req.body.active
     });
     return res.status(200).json(feed);
   } catch (err) {
@@ -93,7 +79,7 @@ exports.newFeed = async (req, res, next) => {
 exports.deleteFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
   try {
-    feed = await Feed.findByPk(feedId);
+    var feed = await Feed.findByPk(feedId);
     if (!feed) {
       return res.status(400).json({
         message: "Feed not found"
@@ -120,7 +106,6 @@ exports.deleteFeed = async (req, res, next) => {
 
 exports.validateFeed = async (req, res, next) => {
   //resolve url
-  const origUrl = req.body.url;
   const url = await autodiscover.discover(req.body.url);
   const categoryId = req.body.categoryId;
 

@@ -5,7 +5,6 @@ const Feed = require("../models/feed");
 const cache = require('../util/cache');
 
 const Sequelize = require("sequelize");
-const Op = Sequelize.Op;
 
 exports.getOverview = async (req, res, next) => {
   try {

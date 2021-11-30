@@ -51,7 +51,7 @@ exports.postFever = async (req, res, next) => {
       var feeds = [];
       const results = await Feed.findAll({
         order: ['feedName']
-      })
+      });
       if (results) {
         results.forEach(feed => {
           var feedObject = {
@@ -81,7 +81,7 @@ exports.postFever = async (req, res, next) => {
           required: true
         }],
         order: ['categoryOrder', 'name']
-      })
+      });
 
       //if categories is defined
       if (categories) {

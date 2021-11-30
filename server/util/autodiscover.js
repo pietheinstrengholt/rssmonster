@@ -147,7 +147,6 @@ async function getUrl(url) {
       return url;
     }
   } catch (err) {
-    console.log(url);
     console.log(err.message);
   }
 }

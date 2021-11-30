@@ -22,11 +22,11 @@ exports.getArticles = async (req, res, next) => {
 
     //populate an array with all the feed ids based on the categoryId
     if (categoryId == "%") {
-      feeds = await Feed.findAll({
+      var feeds = await Feed.findAll({
         attributes: ["id"]
       });
     } else {
-      feeds = await Feed.findAll({
+      var feeds = await Feed.findAll({
         attributes: ["id"],
         where: {
           categoryId: {
@@ -38,7 +38,7 @@ exports.getArticles = async (req, res, next) => {
 
     //if the feedId is set, set it equal to all feedIds
     if (feedId != "%") {
-      feedIds = feedId;
+      var feedIds = feedId;
     } else {
       //build array based on previous results and push all ids to the array
       feedIds = [];
@@ -51,7 +51,7 @@ exports.getArticles = async (req, res, next) => {
 
     //if star isn't set, then use the status field to query against
     if (status != "star") {
-      articles = await Article.findAll({
+      var articles = await Article.findAll({
         attributes: ["id"],
         order: [["published", sort]],
         where: {
@@ -69,7 +69,7 @@ exports.getArticles = async (req, res, next) => {
 
     //if star is set, then use the starInd field to query against
     if (status == "star") {
-      articles = await Article.findAll({
+      var articles = await Article.findAll({
         attributes: ["id"],
         order: [["published", sort]],
         where: {
@@ -89,7 +89,7 @@ exports.getArticles = async (req, res, next) => {
     if (status == "hot") {
 
       //finally we count using the array with ids
-      articles = await Article.findAll({
+      var articles = await Article.findAll({
         attributes: ["id"],
         order: [["published", sort]],
         where: {
@@ -105,7 +105,7 @@ exports.getArticles = async (req, res, next) => {
     }
 
     //push all ids to the array
-    itemIds = [];
+    var itemIds = [];
     if (articles.length > 0) {
       articles.forEach(article => {
         itemIds.push(article.id);
