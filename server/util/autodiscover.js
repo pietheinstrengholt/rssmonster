@@ -25,7 +25,7 @@ function extractHostname(url) {
 }
 
 // To address those who want the "root domain," use this function:
-function extractRootDomain(url) {
+/* function extractRootDomain(url) {
   var domain = extractHostname(url),
     splitArr = domain.split("."),
     arrLen = splitArr.length;
@@ -41,7 +41,7 @@ function extractRootDomain(url) {
     }
   }
   return domain;
-}
+} */
 
 //function to return overlap
 function findOverlap(a, b) {
@@ -59,7 +59,7 @@ function findOverlap(a, b) {
 
 //function to validate if url is valid
 function isURL(str) {
-  var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#!:.?+=&%!\-\/]))?/;
+  var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#:.?+=&%!\-\/]))?/;
   if (!regex.test(str)) {
     return false;
   } else {

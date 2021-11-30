@@ -15,7 +15,7 @@ const cache = require('../util/cache');
 var striptags = require("striptags");
 
 //set the maximum number of feeds to be processed at once
-const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10
+const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
 
 //put the try/catch block into a higher function and then put the async/await functions of that function
 const catchAsync = fn => {

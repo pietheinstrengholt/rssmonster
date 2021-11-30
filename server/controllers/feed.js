@@ -84,8 +84,7 @@ exports.deleteFeed = async (req, res, next) => {
       return res.status(400).json({
         message: "Feed not found"
       });
-    }
-    if (feed) {
+    } else {
       //delete all articles
       Article.destroy({
         where: {

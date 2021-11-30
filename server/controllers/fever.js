@@ -32,7 +32,7 @@ exports.postFever = async (req, res, next) => {
       var groups = [];
       const categories = await Category.findAll({
         order: ['categoryOrder', 'name']
-      })
+      });
       if (categories) {
         categories.forEach(category => {
           var categoryObject = {

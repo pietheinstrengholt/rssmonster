@@ -61,7 +61,7 @@ app.use(errorController.get404);
 //define relationships
 Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
 Category.hasMany(Feed);
-Article.belongsTo(Feed), { constraints: true, onDelete: 'CASCADE'};
+Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE'});
 Feed.hasMany(Article);
 
 sequelize
