@@ -35,7 +35,7 @@ exports.postFever = async (req, res, next) => {
       })
       if (categories) {
         categories.forEach(category => {
-          categoryObject = {
+          var categoryObject = {
             id: category.id,
             title: category.name
           }
@@ -54,7 +54,7 @@ exports.postFever = async (req, res, next) => {
       })
       if (results) {
         results.forEach(feed => {
-          feedObject = {
+          var feedObject = {
             id: String(feed.id),
             favicon: '<img src="data:' + feed.favicon + '">',
             title: feed.feedName,
@@ -75,7 +75,7 @@ exports.postFever = async (req, res, next) => {
       var feeds_groups = [];
 
       //get all categories including feeds
-      categories = await Category.findAll({
+      var categories = await Category.findAll({
         include: [{
           model: Feed,
           required: true
@@ -96,7 +96,7 @@ exports.postFever = async (req, res, next) => {
           });
 
           //create a feedgroup object holding the category id and feeds (comma seperated)
-          feedGroupObject = {
+          var feedGroupObject = {
             group_id: category.id,
             feed_ids: feedIds.join(", ")
           }
@@ -165,7 +165,7 @@ exports.postFever = async (req, res, next) => {
         //list with id's is comma-separated, so transform to array
         var arrayIds = req.query.with_ids.split(',');
 
-        articles = await Article.findAll({
+        var articles = await Article.findAll({
           where: {
             id: arrayIds
           }
@@ -173,7 +173,7 @@ exports.postFever = async (req, res, next) => {
         //request 50 additional items using the highest id of locally cached items
       } else if (req.query.since_id) {
 
-        articles = await Article.findAll({
+        var articles = await Article.findAll({
           where: {
             id: {
               [Op.gt]: req.query.since_id
@@ -184,7 +184,7 @@ exports.postFever = async (req, res, next) => {
         //request 50 previous items using the lowest id of locally cached items
       } else if (req.query.max_id) {
 
-        articles = await Article.findAll({
+        var articles = await Article.findAll({
           where: {
             id: {
               [Op.lt]: req.query.max_id
@@ -194,7 +194,7 @@ exports.postFever = async (req, res, next) => {
         });
         //if no argument is given provide total_items and up to 50 items
       } else {
-        articles = await Article.findAll({
+        var articles = await Article.findAll({
           order: [
             ['id', 'ASC']
           ],
@@ -203,7 +203,7 @@ exports.postFever = async (req, res, next) => {
       }
 
       await articles.forEach(function (article) {
-        articleObject = {
+        var articleObject = {
           id: article.id,
           feed_id: parseInt(article.feedId),
           title: article.subject,
@@ -226,7 +226,7 @@ exports.postFever = async (req, res, next) => {
     if ("links" in req.query) {
       
       //select all items with hot links
-      articles = await Article.findAll({
+      var articles = await Article.findAll({
         where: {
           id: {
             [Op.gt]: req.query.since_id,
@@ -253,7 +253,7 @@ exports.postFever = async (req, res, next) => {
       }
 
       await articles.forEach(function (article) {
-        articleObject = {
+        var articleObject = {
           id: article.id,
           feed_id: parseInt(article.feedId),
           item_id: parseInt(article.feedId),
@@ -284,7 +284,7 @@ exports.postFever = async (req, res, next) => {
       });
       if (feeds) {
         feeds.forEach(feed => {
-          feedObject = {
+          var feedObject = {
             id: String(feed.id),
             favicon: '<img src="data:' + feed.favicon + '">'
           };

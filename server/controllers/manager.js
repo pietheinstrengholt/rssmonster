@@ -128,10 +128,10 @@ exports.getOverview = async (req, res, next) => {
 
     //Sequelize raw: true or plain: true results into errors, so we will use the custom toPlain function here
     //we need to manipulate the results, so it is required to transform these into plain Array's
-    categoriesArray = await toPlain(categories);
-    readArray = await toPlain(readCountGrouped);
-    unreadArray = await toPlain(unreadCountGrouped);
-    starArray = await toPlain(starCountGrouped);
+    var categoriesArray = await toPlain(categories);
+    var readArray = await toPlain(readCountGrouped);
+    var unreadArray = await toPlain(unreadCountGrouped);
+    var starArray = await toPlain(starCountGrouped);
     //hotArray = await toPlain(hotCountGrouped);
 
     //give each category and feed in the categoriesArray a readCount, unreadCount and starCount

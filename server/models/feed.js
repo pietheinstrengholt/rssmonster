@@ -1,7 +1,5 @@
 const Sequelize = require("sequelize");
 
-var DataTypes = require("sequelize/lib/data-types");
-
 const sequelize = require("../util/database");
 
 const Category = require("./category");

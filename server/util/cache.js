@@ -39,7 +39,7 @@ async function init() {
   });
 
   //selecting all hotlinks is a performance challenge, so therefore we first collect all hotlinks
-  hotlinks = await Hotlink.findAll({
+  var hotlinks = await Hotlink.findAll({
     attributes: ["url"],
     raw : true
   });

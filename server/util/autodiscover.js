@@ -112,7 +112,7 @@ async function getUrl(url) {
 
         //validate if application/rss+xml attribute is present in header
         if ($("head").find('link[type="application/rss+xml"]').length > 0) {
-          autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
+          var autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
             "href"
           );
 
@@ -145,19 +145,10 @@ async function getUrl(url) {
       }
       //return final result set
       return url;
-    } else {
-      console.log("HTTP Error Response: " + response.status + " (" + response.statusText + ") - " + url);
     }
   } catch (err) {
-    if (err.name === 'FetchError') {
-			console.log("FetchError: " + err.message + " - " + url);
-		}
-    if (err.name === 'AbortError') {
-			console.log("AbortError: " + err.message + " - " + url);
-		}
-    if (err.name === 'RequestError') {
-			console.log("RequestError: " + err.message + " - " + url);
-		}
+    console.log(url);
+    console.log(err.message);
   }
 }
 

@@ -127,7 +127,7 @@ async function processArticle(feed, post) {
         //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
         $('a').each(function() {
           //find domain name for each link
-          domain = (new URL(post.link));
+          var domain = (new URL(post.link));
           domain = domain.hostname;
 
           //fetch all urls referenced to other websites. Insert these into the hotlinks table
@@ -144,17 +144,17 @@ async function processArticle(feed, post) {
 
         //parse media RSS feeds: https://www.rssboard.org/media-rss
         if (post['media:group']) {
-          postLink = post['media:group']['media:content']['@']['url'];
-          postTitle = post['media:group']['media:title']['#'];
-          postContent = post['media:group']['media:description']['#'];
-          postContentStripped = striptags(post['media:group']['media:description']['#']);
-          postLanguage = language.get(post['media:group']['media:description']['#']);
+          var postLink = post['media:group']['media:content']['@']['url'];
+          var postTitle = post['media:group']['media:title']['#'];
+          var postContent = post['media:group']['media:description']['#'];
+          var postContentStripped = striptags(post['media:group']['media:description']['#']);
+          var postLanguage = language.get(post['media:group']['media:description']['#']);
         } else {
-          postLink = post.link;
-          postTitle = post.title;
-          postContent = $.html();
-          postContentStripped = striptags($.html(), ["a", "img", "strong"]);
-          postLanguage = language.get($.html());
+          var postLink = post.link;
+          var postTitle = post.title;
+          var postContent = $.html();
+          var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
+          var postLanguage = language.get($.html());
         }
 
         //add article

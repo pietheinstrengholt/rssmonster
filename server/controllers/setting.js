@@ -1,7 +1,5 @@
 const Setting = require("../models/setting");
 
-const Sequelize = require("sequelize");
-
 //the getArticles function returns an array with all the article ids
 exports.getSettings = async (req, res, next) => {
   try {
