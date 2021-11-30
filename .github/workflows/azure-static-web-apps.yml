@@ -23,6 +23,7 @@ jobs:
         uses: github/codeql-action/init@v1
         with:
           languages: javascript
+          config-file: ./.github/codeql/codeql-config.yml
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
