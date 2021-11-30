@@ -6,7 +6,7 @@ const https = require('https');
 http.globalAgent.maxSockets = 1000000;
 https.globalAgent.maxSockets = 1000000;
 
-function extractHostname(url) {
+/* function extractHostname(url) {
   var hostname;
   //find & remove protocol (http, ftp, etc.) and get hostname
 
@@ -22,7 +22,7 @@ function extractHostname(url) {
   hostname = hostname.split("?")[0];
 
   return hostname;
-}
+} */
 
 // To address those who want the "root domain," use this function:
 /* function extractRootDomain(url) {
@@ -95,7 +95,9 @@ async function getUrl(url) {
     };
 
     //fetch url by using proper user agent
-    const response = await fetch(url, options);
+    if (isURL(url)) {
+      const response = await fetch(url, options);
+    }
 
     if (response.ok) {
 
