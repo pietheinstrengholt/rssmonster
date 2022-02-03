@@ -270,6 +270,7 @@ sidebar-category-main {
 span.glyphicon {
   float: left;
   margin-right: 5px;
+  min-width: 13px;
 }
 
 span.title {
