@@ -32,7 +32,7 @@
     "mysql2": "^2.3.3",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.9",
-    "sequelize": "^6.28.1",
+    "sequelize": "^6.29.0",
     "sequelize-cli": "^6.6.0",
     "striptags": "^3.2.0"
   },
