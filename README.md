@@ -4,7 +4,7 @@
 [![Azure Web App](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml)
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
 
-Copyright (c) 2021 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2023 Piethein Strengholt, piethein@strengholt-online.nl
 
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
 RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Bootstrap framework. Several features are implemented such as progressive web app support, marking as read when scrolling, hotlinks, drag and drop style for managing your feeds, dark mode, and more! RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
@@ -12,7 +12,7 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
 ### Prerequisites
-* NodeJS 14.x or higher
+* NodeJS 16.x or higher
 * Git
 * A Mysql installation (other databases will as well with some configuration)
 

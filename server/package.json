@@ -12,11 +12,11 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "nodemon app.js",
     "start-server": "node app.js",
-    "debug": "nodemon -L --inspect app.js"
+    "debug": "nodemon -L --watch app.js"
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^2.0.20"
+    "nodemon": "^2.0.21"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
@@ -32,7 +32,7 @@
     "mysql2": "^2.3.3",
     "node-cache": "^5.1.2",
     "node-fetch": "^2.6.9",
-    "sequelize": "^6.28.1",
+    "sequelize": "^6.29.3",
     "sequelize-cli": "^6.6.0",
     "striptags": "^3.2.0"
   },

@@ -28,7 +28,8 @@ const Category = sequelize.define(
   }
 );
 
-//add feed associations
+//add associations
 Category.hasMany(Feed);
+Feed.belongsTo(Category);
 
 module.exports = Category;

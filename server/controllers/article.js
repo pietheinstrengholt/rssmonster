@@ -154,7 +154,6 @@ exports.getArticle = (req, res, next) => {
     ]
   })
     .then(article => {
-      console.log(article);
       res.status(200).json({
         article: article
       });
