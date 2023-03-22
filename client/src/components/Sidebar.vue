@@ -6,22 +6,22 @@
     <div class="drag">
       <div @click="markAll()" class="option" id="mark-all-as-read">
         <span class="glyphicon">
-          <v-icon name="check-square"/>
+          <v-icon fill="white" name="check-square"/>
         </span>Mark all read
       </div>
 
       <div @click="refreshFeeds()" class="option" id="refresh">
         <span class="glyphicon">
-          <v-icon name="sync"/>
+          <v-icon fill="white" name="sync"/>
         </span>Refresh feeds
         <span v-show="refreshing">
-          <v-icon name="spinner" pulse/>
+          <v-icon fill="white" name="spinner" pulse/>
         </span>
       </div>
 
       <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
         <span class="glyphicon">
-          <v-icon name="plus-square"/>
+          <v-icon fill="white" name="plus-square"/>
         </span>Add new feed
       </div>
 
@@ -35,7 +35,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon name="dot-circle" scale="0.8"/>
+          <v-icon fill="white" name="dot-circle" scale="0.8"/>
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
@@ -49,7 +49,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon name="heart" scale="0.8"/>
+          <v-icon fill="white" name="heart" scale="0.8"/>
         </span>
         <span class="title">Favorites</span>
         <span class="badge-unread">
@@ -63,7 +63,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon name="fire" scale="0.8"/>
+          <v-icon fill="white" name="fire" scale="0.8"/>
         </span>
         <span class="title">Hot</span>
         <span class="badge-unread">
@@ -77,7 +77,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon name="circle" scale="0.8"/>
+          <v-icon fill="white" name="circle" scale="0.8"/>
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
@@ -95,7 +95,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon name="star" scale="0.8"/>
+          <v-icon fill="white" name="star" scale="0.8"/>
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
@@ -125,7 +125,7 @@
         >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
-              <v-icon name="folder" scale="0.8"/>
+              <v-icon fill="white" name="folder" scale="0.8"/>
             </span>
             <span class="title">{{category.name}}</span>
             <span class="badge-unread">
@@ -157,7 +157,7 @@
                 :key="index"
               >
                 <span class="glyphicon">
-                  <v-icon v-if="!feed.favicon" name="rss-square"/>
+                  <v-icon fill="white" v-if="!feed.favicon" name="rss-square"/>
                   <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                 </span>
                 <span class="title">{{feed.feedName}}</span>
@@ -183,7 +183,7 @@
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <v-icon name="plus-square"/>
+            <v-icon fill="white" name="plus-square"/>
             <div class="text">Add</div>
           </div>
         </div>
@@ -194,7 +194,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="trash-alt"/>
+            <v-icon fill="white" name="trash-alt"/>
             <div class="text">Delete</div>
           </div>
         </div>
@@ -205,7 +205,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="edit"/>
+            <v-icon fill="white" name="edit"/>
             <div class="text">Edit</div>
           </div>
         </div>
@@ -216,7 +216,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="trash-alt"/>
+            <v-icon fill="white" name="trash-alt"/>
             <div class="text">Delete</div>
           </div>
         </div>
@@ -227,7 +227,7 @@
           class="category-button"
         >
           <div>
-            <v-icon name="edit"/>
+            <v-icon fill="white" name="edit"/>
             <div class="text">Edit</div>
           </div>
         </div>
