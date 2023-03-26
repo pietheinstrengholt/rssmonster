@@ -10,26 +10,24 @@
     "serve-secure": "vue-cli-service serve --https"
   },
   "dependencies": {
+    "@vue/cli-service": "^5.0.8",
+    "@vue/compat": "^3.1.0",
     "core-js": "^3.29.1",
     "idb-keyval": "^6.2.0",
     "moment": "^2.29.4",
     "register-service-worker": "^1.7.2",
-    "vue": "^2.7.14",
-    "vue-awesome": "^4.5.0",
-    "vue-infinite-loading": "^2.4.5",
+    "vue": "^3.1.0",
+    "vue-awesome": "github:JakeAtTurner/vue-awesome#vue3.0-build",
+    "vue-infinite-loading": "github:nvitius/vue-infinite-loading#next",
     "vue-resource": "^1.5.3",
     "vuedraggable": "^2.24.3",
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^5.0.8",
-    "@vue/cli-plugin-eslint": "^5.0.8",
-    "@vue/cli-plugin-pwa": "^5.0.8",
-    "@vue/cli-service": "^5.0.8",
+    "@vue/compiler-sfc": "^3.1.0",
     "babel-eslint": "^10.1.0",
     "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^7.20.0",
-    "vue-template-compiler": "^2.7.14"
+    "eslint-plugin-vue": "^7.20.0"
   },
   "eslintConfig": {
     "root": true,
