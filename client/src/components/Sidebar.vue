@@ -29,8 +29,8 @@
         <p class="title">All feeds</p>
       </div>
       <div
-        v-on:click="loadType('unread')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
+        v-on:click="loadType('unread')"
         id="unread"
         class="sidebar-category-top"
       >
@@ -43,8 +43,8 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('star')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
+        v-on:click="loadType('star')"
         id="star"
         class="sidebar-category-top"
       >
@@ -57,8 +57,8 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('hot')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'hot' }"
+        v-on:click="loadType('hot')"
         id="hot"
         class="sidebar-category-top"
       >
@@ -71,8 +71,8 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('read')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
+        v-on:click="loadType('read')"
         id="read"
         class="sidebar-category-top"
       >
@@ -89,8 +89,8 @@
         <p class="title">All</p>
       </div>
       <div
-        v-on:click="loadAll()"
         v-bind:class="{ 'selected': store.currentSelection.categoryId === '%' }"
+        v-on:click="loadAll()"
         id="all"
         class="sidebar-category-top"
       >
@@ -108,18 +108,18 @@
       <div>
         <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <draggable 
+      <draggable
+        v-bind="{group:{ name:'category', pull:'clone', put:false}}"
         :list="this.store.categories"
         class="dragArea"
-        v-bind="{group:{ name:'category', pull:'clone', put:false}}"
         v-if="store.currentSelection.status != 'hot'"
         @end="updateSortOrder"
       >
         <div
-          class="sidebar-category-main"
           v-bind:class="{ 'selected': (store.currentSelection.categoryId == category.id) && (store.currentSelection.feedId === '%') }"
-          v-on:click="loadCategory(category)"
           v-bind:id="category.id"
+          class="sidebar-category-main"
+          v-on:click="loadCategory(category)"
           v-for="(category, index) in this.store.categories"
           :key="index"
         >
@@ -149,10 +149,10 @@
               class="sidebar-category-feeds"
             >
               <div
+                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (category.feeds.length-1) }"
+                v-bind:id="feed.id"  
                 class="sidebar-category-feed"
                 v-on:click.stop="loadFeed(feed)"
-                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (category.feeds.length-1) }"
-                v-bind:id="feed.id"
                 v-for="(feed, index) in category.feeds"
                 :key="index"
               >
