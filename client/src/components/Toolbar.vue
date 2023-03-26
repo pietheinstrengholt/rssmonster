@@ -215,8 +215,8 @@ export default {
   },
   computed:{
     capitalize() {
-      return (v)=> {
-        return v.charAt(0).toUpperCase() + v.slice(1);
+      return (value)=> {
+        return value.charAt(0).toUpperCase() + value.slice(1);
       }
     }
   }

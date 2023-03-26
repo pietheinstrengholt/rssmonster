@@ -19,7 +19,7 @@
             <div class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'" v-html="article.content"></div>
           </div>
           <div v-if="store.filter === 'minimal'" class="article-content">
-            <p class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'">{{ article.content | stripHTML }}</p>
+            <p class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'">{{ stripHTML(article.content) }}</p>
           </div>
         </div>
       </div>
@@ -329,6 +329,18 @@ export default {
           return value;
         }
       }
+    },
+    stripHTML: function(){
+      return (value)=> {
+        //strip out all HTML
+        var str1 = value.replace(/<(.|\n)*?>/g, "");
+        //take first 100 words
+        var str2 = str1
+          .split(/\s+/)
+          .slice(0, 100)
+          .join(" ");
+        return str2;
+      }
     }
   },
   //watch the data store, when changing reload the article details
@@ -595,23 +607,6 @@ export default {
         //toggle div element class
         event.currentTarget.classList.toggle('starred');
       }
-    }
-  },
-  filters: {
-    capitalize: function(value) {
-      if (!value) return "";
-      value = value.toString();
-      return value.charAt(0).toUpperCase() + value.slice(1);
-    },
-    stripHTML: function(value) {
-      //strip out all HTML
-      var str1 = value.replace(/<(.|\n)*?>/g, "");
-      //take first 100 words
-      var str2 = str1
-        .split(/\s+/)
-        .slice(0, 100)
-        .join(" ");
-      return str2;
     }
   }
 };
