@@ -412,7 +412,7 @@ export default {
         mobileToolbar.classList.add('hide');
       }
 
-      //dectect change of scroll direction, show back menu when scrolling up
+      //detect change of scroll direction, show back menu when scrolling up
       if (direction !== this.prevDirection) {
         if (direction === "up") {
           mobileToolbar.classList.remove('hide');
