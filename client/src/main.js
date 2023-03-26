@@ -1,4 +1,4 @@
-import Vue from 'vue';
+import Vue, { createApp } from 'vue'
 import VueResource from 'vue-resource';
 import App from './App.vue';
 
@@ -36,10 +36,7 @@ Vue.component('v-icon', Icon)
 Vue.http.options.root = process.env.VUE_APP_HOSTNAME;
 
 //init VueJS
-new Vue({
-	el: '#app',
-	render: h => h(App)
-});
+createApp(App).mount('#app')
 
 //enable development environment when NODE_ENV is set to development
 if (process.env.NODE_ENV == 'development') {
