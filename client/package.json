@@ -20,7 +20,7 @@
     "vue-awesome": "github:JakeAtTurner/vue-awesome#vue3.0-build",
     "vue-infinite-loading": "github:nvitius/vue-infinite-loading#next",
     "vue-resource": "^1.5.3",
-    "vuedraggable": "^2.24.3",
+    "vuedraggable": "^4.1.0",
     "waypoints": "^4.0.1"
   },
   "devDependencies": {

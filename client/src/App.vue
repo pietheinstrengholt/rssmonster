@@ -106,11 +106,11 @@ import Home from "./components/Home.vue";
 
 //import components
 import { defineAsyncComponent } from 'vue'
-const Sidebar = defineAsyncComponent(() => import("./components/Sidebar.vue"));
-const Toolbar = defineAsyncComponent(() =>  import("./components/Toolbar.vue"));
-const Quickbar = defineAsyncComponent(() =>  import("./components/Quickbar.vue"));
-const Modal = defineAsyncComponent(() =>  import("./components/Modal.vue"));
-const Mobile = defineAsyncComponent(() =>  import("./components/Mobile.vue"));
+const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue"));
+const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue"));
+const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
+const Modal = defineAsyncComponent(() =>  import(/* webpackChunkName: "modal" */ "./components/Modal.vue"));
+const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
 
 export default {
   components: {
@@ -307,7 +307,8 @@ export default {
     "store.currentSelection.categoryId": {
       handler: function() {
         this.feed = {};
-      }
+      },
+      deep: true
     },
     "store.currentSelection.feedId": {
       handler: function() {
