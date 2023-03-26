@@ -8,7 +8,7 @@
               <a target="_blank" :href="article.url" v-text="article.subject"></a>
             </h5>
             <div class="feedname">
-              <span class="published_date">{{ article.published | formatDate }}</span>
+              <span class="published_date">{{ formatDate(article.published) }}</span>
               <span class="break">by</span>
               <span class="feed_name">
                 <a target="_blank" :href="article.feed.url" v-text="article.feed.feedName"></a>
@@ -318,6 +318,17 @@ export default {
   computed: {
     remainingItems: function() {
       return this.container.length - this.pool.length;
+    },
+    formatDate: function(){
+      return (value)=> {
+        if (value) {
+          //use fromNow function to calculate time from article published
+          value = moment(String(value)).fromNow();
+          //uppercase first character of sentence
+          value = value.charAt(0).toUpperCase() + value.slice(1);
+          return value;
+        }
+      }
     }
   },
   //watch the data store, when changing reload the article details
@@ -601,15 +612,6 @@ export default {
         .slice(0, 100)
         .join(" ");
       return str2;
-    },
-    formatDate: function(value) {
-      if (value) {
-        //use fromNow function to calculate time from article published
-        value = moment(String(value)).fromNow();
-        //uppercase first character of sentence
-        value = value.charAt(0).toUpperCase() + value.slice(1);
-        return value;
-      }
     }
   }
 };
