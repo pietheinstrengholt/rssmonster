@@ -103,11 +103,14 @@ import store from "./store";
 import { get, set } from 'idb-keyval';
 
 import Home from "./components/Home.vue";
-const Sidebar = () => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue");
-const Toolbar = () => import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue");
-const Quickbar = () => import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue");
-const Modal = () => import(/* webpackChunkName: "modal" */ "./components/Modal.vue");
-const Mobile = () => import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue");
+
+//import components
+import { defineAsyncComponent } from 'vue'
+const Sidebar = defineAsyncComponent(() => import("./components/Sidebar.vue"));
+const Toolbar = defineAsyncComponent(() =>  import("./components/Toolbar.vue"));
+const Quickbar = defineAsyncComponent(() =>  import("./components/Quickbar.vue"));
+const Modal = defineAsyncComponent(() =>  import("./components/Modal.vue"));
+const Mobile = defineAsyncComponent(() =>  import("./components/Mobile.vue"));
 
 export default {
   components: {
