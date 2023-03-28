@@ -289,6 +289,7 @@ div.infinite-loading-container {
 require("waypoints/lib/noframework.waypoints.js");
 import InfiniteLoading from "vue-infinite-loading";
 import moment from "moment";
+import axios from 'axios';
 
 import store from "../store";
 
@@ -347,8 +348,8 @@ export default {
   watch: {
     "store.currentSelection": {
       handler: function(data) {
-        this.$http
-          .get("api/articles", {
+        axios
+          .get("http://localhost:3000/api/articles", {
             params: {
               //the following arguments are used
               status: data.status,
@@ -359,12 +360,12 @@ export default {
             }
           })
           .then(response => {
-            return response.json();
+            return response;
           })
-          .then(data => {
+          .then(response => {
             //reset the pool, attach data to container and get first set of article details
             this.resetPool();
-            this.container = data.itemIds;
+            this.container = response.data.itemIds;
             //reset onInfinite using the new container data
             this.$refs.infiniteLoading.stateChanger.reset();
           });
@@ -380,13 +381,13 @@ export default {
   },
   beforeCreate() {
     //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-    this.$http
-      .get("api/setting")
+    axios
+      .get("http://localhost:3000/api/setting")
       .then(response => {
-        return response.json();
+        return response;
       })
-      .then(data => {
-        this.store.currentSelection = data;
+      .then(response => {
+        this.store.currentSelection = response.data;
         this.firstLoad = true;
       });
   },
@@ -437,17 +438,17 @@ export default {
       //only fetch article details if the container is filled with items
       if (this.container.length > 0) {
         //get all the articles by using the api
-        this.$http
-          .post("api/manager/details", {
+        axios
+          .post("http://localhost:3000/api/manager/details", {
             articleIds: this.container
               .slice(this.distance, this.distance + this.fetchCount)
               .join(","),
             sort: this.store.currentSelection.sort
           })
-          .then(res => {
-            if (res.data.length) {
-              this.distance = this.distance + res.data.length;
-              this.articles = this.articles.concat(res.data);
+          .then(response => {
+            if (response.data.length) {
+              this.distance = this.distance + response.data.length;
+              this.articles = this.articles.concat(response.data);
               //set state to loaded
               $state.loaded();
               //add waypoint to every article
@@ -465,7 +466,7 @@ export default {
                 }
               }, 50);
               //if the returned set has a length of less than fetchCount set the state to complete
-              if (res.data.length < this.fetchCount) {
+              if (response.data.length < this.fetchCount) {
                 $state.complete();
               }
               //if no articles are returned, flush remaining items in queue and mark all as read
@@ -516,7 +517,7 @@ export default {
     markArticleRead(article) {
       if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
-        this.$http.post("api/manager/marktoread/" + article).then(
+        axios.post("http://localhost:3000/api/manager/marktoread/" + article).then(
           response => {
             if (!this.pool.includes(article)) {
               //push id to the pool
@@ -524,14 +525,14 @@ export default {
 
               //decrease the unread count
               var categoryIndex = this.store.categories.findIndex(
-                category => category.id === response.body.feed.categoryId
+                category => category.id === response.data.feed.categoryId
               );
               //avoid having any negative numbers
               if (this.store.categories[categoryIndex].unreadCount != 0) {
                 this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
                 this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
               }
-              var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+              var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
               //avoid having any negative numbers
               if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount != 0) {
                 this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
@@ -559,16 +560,16 @@ export default {
         //determine if classname already contains bookmarked, if so, the change is unmark
         if (event.currentTarget.className.indexOf("starred") >= 0) {
           //make ajax request to change bookmark status
-          this.$http
-            .post("api/manager/markwithstar/" + article, { update: "unmark" })
+          axios
+            .post("http://localhost:3000/api/manager/markwithstar/" + article, { update: "unmark" })
             .then(
               response => {
                 //decrease the star count
                 var categoryIndex = this.store.categories.findIndex(
-                  category => category.id === response.body.feed.categoryId
+                  category => category.id === response.data.feed.categoryId
                 );
                 this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount - 1;
-                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
                 this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount - 1;
 
                 //also increase total count
@@ -582,8 +583,8 @@ export default {
             );
         } else {
           //make ajax request to change bookmark status
-          this.$http
-            .post("api/manager/markwithstar/" + article, { update: "mark" })
+          axios
+            .post("http://localhost:3000/api/manager/markwithstar/" + article, { update: "mark" })
             .then(
               response => {
                 //increase the star count

@@ -98,6 +98,7 @@ html, #app {
 
 <script>
 import store from "./store";
+import axios from 'axios';
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
@@ -246,37 +247,38 @@ export default {
     },
     getOverview: function(initial) {
       //get an overview with the count for all feeds
-      this.$http
-        .get("api/manager/overview")
+      axios
+        .get("http://localhost:3000/api/manager/overview")
         .then(response => {
-          return response.json();
+          return response;
         })
-        .then(data => {
+        .then(response => {
+
           //set offlineStatus to false
           this.offlineStatus = false;
 
           //update the store counts
           var previousUnreadCount = this.store.unreadCount;
-          this.store.unreadCount = data.unreadCount;
-          this.store.readCount = data.readCount;
-          this.store.starCount = data.starCount;
-          this.store.hotCount = data.hotCount;
+          this.store.unreadCount = response.data.unreadCount;
+          this.store.readCount = response.data.readCount;
+          this.store.starCount = response.data.starCount;
+          this.store.hotCount = response.data.hotCount;
 
           //set PWA badge using unread count
           if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
-            navigator.setAppBadge(data.unreadCount);
+            navigator.setAppBadge(response.data.unreadCount);
           }
 
           //update the categories in the store
-          this.store.categories = data.categories;
+          this.store.categories = response.data.categories;
 
           //update local category and feed based on current selection
           if (initial === true) {
             this.updateSelection(this.store.currentSelection);  
           } else {
-            //only show notifcation when new messages have arrived (previousUnreadCount is larger than current unreadCount)
-            if (previousUnreadCount < data.unreadCount) {
-              this.showNotification(data.unreadCount - previousUnreadCount);
+            //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
+            if (previousUnreadCount < response.data.unreadCount) {
+              this.showNotification(response.data.unreadCount - previousUnreadCount);
             }
           }
         })

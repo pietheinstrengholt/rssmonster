@@ -422,6 +422,7 @@ div.category-button div.text {
 <script>
 import draggable from "vuedraggable";
 import store from "../store";
+import axios from 'axios';
 
 export default {
   data() {
@@ -457,9 +458,9 @@ export default {
       this.store.currentSelection.feedId = "%";
     },
     markAll: function() {
-      this.$http.post("api/articles", {}).then(
+      axios.post("http://localhost:3000/api/articles", {}).then(
         response => {
-          if (response.body) {
+          if (response.data) {
             //refresh after one second
             setTimeout(function() {
               location.reload();
@@ -476,9 +477,9 @@ export default {
     refreshFeeds: function() {
       //show spinner
       this.refreshing = true;
-      this.$http.get("api/crawl", {}).then(
+      axios.get("http://localhost:3000/api/crawl", {}).then(
         response => {
-          if (response.body) {
+          if (response.data) {
             //refresh after one second
             setTimeout(this.refresh, 1000);
           }
@@ -503,7 +504,7 @@ export default {
       }
 
       //make ajax request to change categories order
-      this.$http.post("api/manager/updateorder", { order: orderList }).then(
+      axios.post("http://localhost:3000/api/manager/updateorder", { order: orderList }).then(
         response => {
           //get status & status text
           /* eslint-disable no-console */
