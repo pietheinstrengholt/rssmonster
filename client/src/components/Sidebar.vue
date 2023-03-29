@@ -6,22 +6,22 @@
     <div class="drag">
       <div @click="markAll()" class="option" id="mark-all-as-read">
         <span class="glyphicon">
-          <v-icon fill="white" name="check-square"/>
+          <b-icon-heart-fill />
         </span>Mark all read
       </div>
 
       <div @click="refreshFeeds()" class="option" id="refresh">
         <span class="glyphicon">
-          <v-icon fill="white" name="sync"/>
+          <b-icon-heart-fill />
         </span>Refresh feeds
         <span v-show="refreshing">
-          <v-icon fill="white" name="spinner" pulse/>
+          <b-icon-heart-fill />
         </span>
       </div>
 
       <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
         <span class="glyphicon">
-          <v-icon fill="white" name="plus-square"/>
+          <b-icon-heart-fill />
         </span>Add new feed
       </div>
 
@@ -35,7 +35,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="dot-circle" scale="0.8"/>
+          <b-icon-heart-fill />
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
@@ -49,7 +49,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="heart" scale="0.8"/>
+          <b-icon-heart-fill />
         </span>
         <span class="title">Favorites</span>
         <span class="badge-unread">
@@ -63,7 +63,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="fire" scale="0.8"/>
+          <b-icon-fire />
         </span>
         <span class="title">Hot</span>
         <span class="badge-unread">
@@ -77,7 +77,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="circle" scale="0.8"/>
+          <bi-check-circle-fill />
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
@@ -95,7 +95,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="star" scale="0.8"/>
+          <bi-star-fill />
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
@@ -108,7 +108,7 @@
       <div>
         <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <draggable
+      <!-- >draggable
         v-bind="{group:{ name:'category', pull:'clone', put:false}}"
         :list="this.store.categories"
         class="dragArea"
@@ -125,7 +125,7 @@
         >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
-              <v-icon fill="white" name="folder" scale="0.8"/>
+              <b-icon-heart-fill />
             </span>
             <span class="title">{{category.name}}</span>
             <span class="badge-unread">
@@ -157,7 +157,7 @@
                 :key="index"
               >
                 <span class="glyphicon">
-                  <v-icon fill="white" v-if="!feed.favicon" name="rss-square"/>
+                  <b-icon-heart-fill />
                   <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                 </span>
                 <span class="title">{{feed.feedName}}</span>
@@ -179,11 +179,11 @@
             </div>
           </div>
         </div>
-      </draggable>
+      </draggable> -->
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <v-icon fill="white" name="plus-square"/>
+            <b-icon-heart-fill />
             <div class="text">Add</div>
           </div>
         </div>
@@ -194,7 +194,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="trash-alt"/>
+            <b-icon-heart-fill />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -205,7 +205,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="edit"/>
+            <b-icon-heart-fill />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -216,7 +216,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="trash-alt"/>
+            <b-icon-heart-fill />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -227,7 +227,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="edit"/>
+            <b-icon-heart-fill />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -424,6 +424,9 @@ import draggable from "vuedraggable";
 import store from "../store";
 import axios from 'axios';
 
+// Importing all icons
+import { BIconHeartFill, BIconFire, BIconCheckCircleFill, BIconStarFill } from 'bootstrap-icons-vue';
+
 export default {
   data() {
     return {
@@ -437,7 +440,11 @@ export default {
     };
   },
   components: {
-    draggable
+    draggable,
+    BIconHeartFill,
+    BIconCheckCircleFill,
+    BIconFire,
+    BIconStarFill
   },
   methods: {
     emitClickEvent(eventType, value) {
