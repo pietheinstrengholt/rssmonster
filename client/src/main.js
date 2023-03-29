@@ -37,7 +37,13 @@ import './registerServiceWorker'
 //Vue.http.options.root = process.env.VUE_APP_HOSTNAME;
 
 //init VueJS
-createApp(App).mount('#app')
+// create an instance using the function
+const app = createApp(App)
+
+app.use(Icon)
+
+// no dollar sign
+app.mount('#app')
 
 //enable development environment when NODE_ENV is set to development
 /* if (process.env.NODE_ENV == 'development') {
