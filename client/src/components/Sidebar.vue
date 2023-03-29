@@ -77,7 +77,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <bi-check-circle-fill />
+          <b-icon-check-circle-fill />
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
@@ -95,7 +95,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <bi-star-fill />
+          <b-icon-star-fill />
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">

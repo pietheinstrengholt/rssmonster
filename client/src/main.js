@@ -13,6 +13,11 @@ import './registerServiceWorker'
 // create an instance using the function
 const app = createApp(App)
 
+// treat all tags starting with 'b-icon-' as custom elements
+app.config.compilerOptions.isCustomElement = (tag) => {
+	return tag.startsWith('bi-')
+}
+
 // no dollar sign
 app.mount('#app')
 

@@ -18,11 +18,12 @@ module.exports = {
         return {
           ...options,
           compilerOptions: {
+            whitespace: 'b-icon', //https://stackoverflow.com/questions/66561885/how-to-set-vue-template-compiler-options-and-where
             compatConfig: {
             MODE: 2
           }
         }
       }
     })
-  },
+  }
 };
