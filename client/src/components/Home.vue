@@ -499,20 +499,23 @@ export default {
       this.distance = 0;
     },
     waypointCreate(article) {
-      // eslint-disable-next-line
-      const waypoint = new Waypoint({
-        element: document.getElementById(article),
-        offset: -150,
-        //use the ES2015 arrow syntax to avoid error Cannot read property 'post' of undefined
-        handler: direction => {
-          if (direction == "down") {
-            //make ajax request to change bookmark status
-            this.markArticleRead(article);
-            //destroy after the article has been marked as read
-            waypoint.destroy();
+      //add additional check to fix error: https://stackoverflow.com/questions/40252534/waypoints-no-element-option-passed-to-waypoint-constructor
+      if (document.getElementById(article)) {
+        // eslint-disable-next-line
+        const waypoint = new Waypoint({
+          element: document.getElementById(article),
+          offset: -150,
+          //use the ES2015 arrow syntax to avoid error Cannot read property 'post' of undefined
+          handler: direction => {
+            if (direction == "down") {
+              //make ajax request to change bookmark status
+              this.markArticleRead(article);
+              //destroy after the article has been marked as read
+              waypoint.destroy();
+            }
           }
-        }
-      });
+        });
+      }
     },
     markArticleRead(article) {
       if (this.store.currentSelection.status === "unread") {
