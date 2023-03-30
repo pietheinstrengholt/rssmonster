@@ -15,7 +15,7 @@ const app = createApp(App)
 
 // treat all tags starting with 'b-icon-' as custom elements
 app.config.compilerOptions.isCustomElement = (tag) => {
-	return tag.startsWith('bi-')
+	return tag.startsWith('b-icon')
 }
 
 // no dollar sign
