@@ -286,7 +286,7 @@ div.infinite-loading-container {
 </style>
 
 <script>
-require("waypoints/lib/noframework.waypoints.js");
+import "waypoints/lib/noframework.waypoints.js";
 import InfiniteLoading from "vue-infinite-loading";
 import moment from "moment";
 import axios from 'axios';

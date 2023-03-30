@@ -6,22 +6,22 @@
     <div class="drag">
       <div @click="markAll()" class="option" id="mark-all-as-read">
         <span class="glyphicon">
-          <b-icon-heart-fill />
+          <BootstrapIcon icon="check-square-fill" variant="light" />
         </span>Mark all read
       </div>
 
       <div @click="refreshFeeds()" class="option" id="refresh">
         <span class="glyphicon">
-          <b-icon-heart-fill />
+          <BootstrapIcon icon="arrow-clockwise" variant="light" />
         </span>Refresh feeds
         <span v-show="refreshing">
-          <b-icon-heart-fill />
+          <BootstrapIcon icon="circle-fill" variant="light" />
         </span>
       </div>
 
       <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
         <span class="glyphicon">
-          <b-icon-heart-fill />
+          <BootstrapIcon icon="plus-square-fill" variant="light" />
         </span>Add new feed
       </div>
 
@@ -35,7 +35,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <b-icon-heart-fill />
+          <BootstrapIcon icon="heart-fill" variant="light" />
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
@@ -49,7 +49,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <b-icon-heart-fill />
+          <BootstrapIcon icon="record-circle-fill" variant="light" />
         </span>
         <span class="title">Favorites</span>
         <span class="badge-unread">
@@ -63,7 +63,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <b-icon-fire />
+          <BootstrapIcon icon="fire" variant="light" />
         </span>
         <span class="title">Hot</span>
         <span class="badge-unread">
@@ -77,7 +77,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <b-icon-check-circle-fill />
+          <BootstrapIcon icon="circle-fill" variant="light" />
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
@@ -95,7 +95,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <b-icon-star-fill />
+          <BootstrapIcon icon="star-fill" variant="light" />
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
@@ -125,7 +125,6 @@
         >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
-              <b-icon-heart-fill />
             </span>
             <span class="title">{{category.name}}</span>
             <span class="badge-unread">
@@ -183,7 +182,7 @@
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <b-icon-heart-fill />
+            <!-- <b-icon-heart-fill /> -->
             <div class="text">Add</div>
           </div>
         </div>
@@ -194,7 +193,7 @@
           class="category-button"
         >
           <div>
-            <b-icon-heart-fill />
+            <!-- <b-icon-heart-fill /> -->
             <div class="text">Delete</div>
           </div>
         </div>
@@ -205,7 +204,7 @@
           class="category-button"
         >
           <div>
-            <b-icon-heart-fill />
+            <!-- <b-icon-heart-fill /> -->
             <div class="text">Edit</div>
           </div>
         </div>
@@ -216,7 +215,7 @@
           class="category-button"
         >
           <div>
-            <b-icon-heart-fill />
+            <!-- <b-icon-heart-fill /> -->
             <div class="text">Delete</div>
           </div>
         </div>
@@ -227,7 +226,7 @@
           class="category-button"
         >
           <div>
-            <b-icon-heart-fill />
+            <!-- <b-icon-heart-fill /> -->
             <div class="text">Edit</div>
           </div>
         </div>
@@ -424,9 +423,6 @@ import draggable from "vuedraggable";
 import store from "../store";
 import axios from 'axios';
 
-// Importing all icons
-import { BIconHeartFill, BIconFire, BIconCheckCircleFill, BIconStarFill } from 'bootstrap-icons-vue';
-
 export default {
   data() {
     return {
@@ -440,11 +436,7 @@ export default {
     };
   },
   components: {
-    draggable,
-    BIconHeartFill,
-    BIconCheckCircleFill,
-    BIconFire,
-    BIconStarFill
+    draggable
   },
   methods: {
     emitClickEvent(eventType, value) {

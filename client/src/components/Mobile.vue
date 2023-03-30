@@ -3,7 +3,7 @@
     <h5 class="mobile-title">Options</h5>
     <div class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
       <span class="glyphicon">
-        <b-icon-heart-fill />
+        <BootstrapIcon icon="x-square-fill" variant="light" />
       </span>
     </div>
     <div class="overlay-content" id="mobile">
@@ -144,18 +144,12 @@ p.content-header {
 <script>
 import store from "../store";
 
-// Importing all icons
-import { BIconXCircleFill } from 'bootstrap-icons-vue';
-
 export default {
   props: ["mobile"],
   data() {
     return {
       store: store
     };
-  },
-  components: {
-    BIconXCircleFill
   },
   methods: {
     closeModal: function() {

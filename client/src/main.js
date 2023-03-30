@@ -7,16 +7,21 @@ import './assets/css/bootstrap.min.css';
 //progressive web app
 import './registerServiceWorker'
 
+import BootstrapIcon from '@dvuckovic/vue3-bootstrap-icons';
+
 //get app hostname location from the .env
 //Vue.http.options.root = process.env.VUE_APP_HOSTNAME;
 
 // create an instance using the function
 const app = createApp(App)
 
+// Global component registration.
+app.component('BootstrapIcon', BootstrapIcon);
+
 // treat all tags starting with 'b-icon-' as custom elements
-app.config.compilerOptions.isCustomElement = (tag) => {
-	return tag.startsWith('b-icon')
-}
+//app.config.compilerOptions.isCustomElement = (tag) => {
+//	return tag.startsWith('b-icon')
+//}
 
 // no dollar sign
 app.mount('#app')
