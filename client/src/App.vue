@@ -315,17 +315,20 @@ export default {
     "store.currentSelection.feedId": {
       handler: function() {
         this.closeModal();
-      }
+      },
+      deep: true
     },
     "store.currentSelection.filter": {
       handler: function() {
         this.closeModal();
-      }
+      },
+      deep: true
     },
     "store.currentSelection.status": {
       handler: function() {
         this.closeModal();
-      }
+      },
+      deep: true
     },
     "store.unreadCount": {
       handler: function(count) {
@@ -333,7 +336,8 @@ export default {
         if ('serviceWorker' in navigator) {
           navigator.setAppBadge(count);
         }
-      }
+      },
+      deep: true
     }
   }
 };

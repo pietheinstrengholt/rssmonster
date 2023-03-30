@@ -430,7 +430,8 @@ export default {
     "store.categories": {
       handler: function(data) {
         this.categories = data;
-      }
+      },
+      deep: true
     },
     inputCategory() {
       if (this.inputCategory) {

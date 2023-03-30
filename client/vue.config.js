@@ -1,4 +1,5 @@
 module.exports = {
+  runtimeCompiler: true, //debug, for production set to false
   pwa: {
     themeColor: "#000000",
     msTileColor: "#000000",
@@ -18,7 +19,7 @@ module.exports = {
         return {
           ...options,
           compilerOptions: {
-            whitespace: 'b-icon', //https://stackoverflow.com/questions/66561885/how-to-set-vue-template-compiler-options-and-where
+            isCustomElement: tag => tag.startsWith('b-icon'), //https://stackoverflow.com/questions/66561885/how-to-set-vue-template-compiler-options-and-where
             compatConfig: {
             MODE: 2
           }
