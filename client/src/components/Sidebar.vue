@@ -457,7 +457,7 @@ export default {
       this.store.currentSelection.feedId = "%";
     },
     markAll: function() {
-      axios.post("http://localhost:3000/api/articles", {}).then(
+      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {}).then(
         response => {
           if (response.data) {
             //refresh after one second
@@ -476,7 +476,7 @@ export default {
     refreshFeeds: function() {
       //show spinner
       this.refreshing = true;
-      axios.get("http://localhost:3000/api/crawl", {}).then(
+      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/crawl", {}).then(
         response => {
           if (response.data) {
             //refresh after one second
@@ -503,7 +503,7 @@ export default {
       }
 
       //make ajax request to change categories order
-      axios.post("http://localhost:3000/api/manager/updateorder", { order: orderList }).then(
+      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/updateorder", { order: orderList }).then(
         response => {
           //get status & status text
           /* eslint-disable no-console */

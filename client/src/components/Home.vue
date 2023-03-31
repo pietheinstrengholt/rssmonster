@@ -349,7 +349,7 @@ export default {
     "store.currentSelection": {
       handler: function(data) {
         axios
-          .get("http://localhost:3000/api/articles", {
+          .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
             params: {
               //the following arguments are used
               status: data.status,
@@ -382,7 +382,7 @@ export default {
   beforeCreate() {
     //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
     axios
-      .get("http://localhost:3000/api/setting")
+      .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting")
       .then(response => {
         return response;
       })
@@ -439,7 +439,7 @@ export default {
       if (this.container.length > 0) {
         //get all the articles by using the api
         axios
-          .post("http://localhost:3000/api/manager/details", {
+          .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
             articleIds: this.container
               .slice(this.distance, this.distance + this.fetchCount)
               .join(","),
@@ -520,7 +520,7 @@ export default {
     markArticleRead(article) {
       if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
-        axios.post("http://localhost:3000/api/manager/marktoread/" + article).then(
+        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + article).then(
           response => {
             if (!this.pool.includes(article)) {
               //push id to the pool
@@ -564,7 +564,7 @@ export default {
         if (event.currentTarget.className.indexOf("starred") >= 0) {
           //make ajax request to change bookmark status
           axios
-            .post("http://localhost:3000/api/manager/markwithstar/" + article, { update: "unmark" })
+            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "unmark" })
             .then(
               response => {
                 //decrease the star count
@@ -587,7 +587,7 @@ export default {
         } else {
           //make ajax request to change bookmark status
           axios
-            .post("http://localhost:3000/api/manager/markwithstar/" + article, { update: "mark" })
+            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "mark" })
             .then(
               response => {
                 //increase the star count

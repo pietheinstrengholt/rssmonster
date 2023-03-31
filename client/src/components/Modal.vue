@@ -525,7 +525,7 @@ export default {
     },
     saveFeed: function() {
       axios
-        .put("http://localhost:3000/api/feeds/" + this.feed.id, {
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id, {
           categoryId: this.category.id,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
@@ -555,7 +555,7 @@ export default {
     saveCategory: function() {
       //save category when category name is set
       if (this.category) {
-        axios.post("http://localhost:3000/api/categories", { name: this.category.name }).then(
+        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories", { name: this.category.name }).then(
           result => {
             //create new local category in data object
             this.category = result.body;
@@ -583,7 +583,7 @@ export default {
     },
     deleteCategory: function() {
       //delete category
-      axios.delete("http://localhost:3000/api/categories/" + this.category.id).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.category.id).then(
         () => {
           //remove the category from the store
           this.store.categories = this.arrayRemove(
@@ -613,7 +613,7 @@ export default {
     renameCategory: function() {
       //rename category
       axios
-        .put("http://localhost:3000/api/categories/" + this.store.currentSelection.categoryId, {
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.store.currentSelection.categoryId, {
           name: this.category.name
         })
         .then(
@@ -637,7 +637,7 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      axios.delete("http://localhost:3000/api/feeds/" + this.feed.id).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id).then(
         () => {
           //find the index of both the category and feed
           var indexCategory = this.store.categories.indexOf(this.inputCategory);
@@ -665,7 +665,7 @@ export default {
     renameFeed: function() {
       //rename feed
       axios
-        .put("http://localhost:3000/api/feeds/" + this.feed.id, {
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
           categoryId: this.selectedCategory,

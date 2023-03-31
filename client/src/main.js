@@ -18,16 +18,11 @@ const app = createApp(App)
 // Global component registration.
 app.component('BootstrapIcon', BootstrapIcon);
 
-// treat all tags starting with 'b-icon-' as custom elements
-//app.config.compilerOptions.isCustomElement = (tag) => {
-//	return tag.startsWith('b-icon')
-//}
-
 // no dollar sign
 app.mount('#app')
 
 //enable development environment when NODE_ENV is set to development
-/* if (process.env.NODE_ENV == 'development') {
+/* if (import.meta.env.VITE_NODE_ENV == 'development') {
 	Vue.config.devtools = true;
 	Vue.config.debug = true;
 	Vue.config.silent = true;
