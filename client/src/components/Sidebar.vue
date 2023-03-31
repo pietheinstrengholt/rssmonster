@@ -108,55 +108,51 @@
       <div>
         <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <!-- >draggable
-        v-bind="{group:{ name:'category', pull:'clone', put:false}}"
-        :list="this.store.categories"
-        class="dragArea"
-        v-if="store.currentSelection.status != 'hot'"
-        @end="updateSortOrder"
-      >
-        <div
-          v-bind:class="{ 'selected': (store.currentSelection.categoryId == category.id) && (store.currentSelection.feedId === '%') }"
-          v-bind:id="category.id"
+
+      <draggable v-model="this.store.categories" item-key="id">
+        <template #item="{element}">
+          <div
+          v-bind:class="{ 'selected': (store.currentSelection.categoryId == element.id) && (store.currentSelection.feedId === '%') }"
+          v-bind:id="element.id"
           class="sidebar-category-main"
           v-on:click="loadCategory(category)"
-          v-for="(category, index) in this.store.categories"
-          :key="index"
-        >
+          v-for="(element, index) in this.store.categories" :key="index"
+          >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
             </span>
-            <span class="title">{{category.name}}</span>
+            <span class="title">{{element.name}}</span>
             <span class="badge-unread">
               <span
                 v-if="store.currentSelection.status === 'unread'"
                 class="badge white"
-              >{{ category.unreadCount }}</span>
+              >{{ element.unreadCount }}</span>
               <span
                 v-if="store.currentSelection.status === 'read'"
                 class="badge white"
-              >{{ category.readCount }}</span>
+              >{{ element.readCount }}</span>
               <span
                 v-if="store.currentSelection.status === 'star'"
                 class="badge white"
-              >{{ category.starCount }}</span>
+              >{{ element.starCount }}</span>
             </span>
           </div>
-          <div v-if="category.feeds">
+          <div v-if="element.feeds">
+            <div>{{ element.feeds }}</div>
             <div
-              v-if="store.currentSelection.categoryId == category.id"
+              v-if="store.currentSelection.categoryId == element.id"
               class="sidebar-category-feeds"
             >
               <div
-                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (category.feeds.length-1) }"
+                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }"
                 v-bind:id="feed.id"  
                 class="sidebar-category-feed"
                 v-on:click.stop="loadFeed(feed)"
-                v-for="(feed, index) in category.feeds"
+                v-for="(feed, index) in element.feeds"
                 :key="index"
               >
                 <span class="glyphicon">
-                  <b-icon-heart-fill />
+                  <BootstrapIcon icon="heart-fill" variant="light" />
                   <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                 </span>
                 <span class="title">{{feed.feedName}}</span>
@@ -178,11 +174,13 @@
             </div>
           </div>
         </div>
-      </draggable> -->
+        </template>
+      </draggable>
+
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <!-- <b-icon-heart-fill /> -->
+            <BootstrapIcon icon="heart-fill" variant="light" />
             <div class="text">Add</div>
           </div>
         </div>
@@ -193,7 +191,7 @@
           class="category-button"
         >
           <div>
-            <!-- <b-icon-heart-fill /> -->
+            <BootstrapIcon icon="heart-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -204,7 +202,7 @@
           class="category-button"
         >
           <div>
-            <!-- <b-icon-heart-fill /> -->
+            <BootstrapIcon icon="heart-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -215,7 +213,7 @@
           class="category-button"
         >
           <div>
-            <!-- <b-icon-heart-fill /> -->
+            <BootstrapIcon icon="heart-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -226,7 +224,7 @@
           class="category-button"
         >
           <div>
-            <!-- <b-icon-heart-fill /> -->
+            <BootstrapIcon icon="heart-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
