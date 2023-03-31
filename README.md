@@ -27,7 +27,7 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 
 ### Development
 If you would like to run RSSMonster in development mode I recommend to run:
-- Inside the client folder: `npm run serve`.
+- Inside the client folder: `npm run dev`.
 - Inside the server folder: `npm run debug`.
 
 ### Production
