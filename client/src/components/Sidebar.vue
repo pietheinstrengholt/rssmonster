@@ -108,7 +108,7 @@
       <div>
         <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <draggable v-model="this.store.categories" item-key="id">
+      <draggable v-model="this.store.categories" item-key="id" @end="updateSortOrder">
         <template #item="{element}">
           <div
           v-bind:class="{ 'selected': (store.currentSelection.categoryId == element.id) && (store.currentSelection.feedId === '%') }"
@@ -197,7 +197,7 @@
           class="category-button"
         >
           <div>
-            <BootstrapIcon icon="heart-fill" variant="light" />
+            <BootstrapIcon icon="trash3-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -208,7 +208,7 @@
           class="category-button"
         >
           <div>
-            <BootstrapIcon icon="heart-fill" variant="light" />
+            <BootstrapIcon icon="pencil-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
