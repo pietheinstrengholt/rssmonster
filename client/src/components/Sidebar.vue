@@ -108,15 +108,13 @@
       <div>
         <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-
       <draggable v-model="this.store.categories" item-key="id">
         <template #item="{element}">
           <div
           v-bind:class="{ 'selected': (store.currentSelection.categoryId == element.id) && (store.currentSelection.feedId === '%') }"
           v-bind:id="element.id"
           class="sidebar-category-main"
-          v-on:click="loadCategory(category)"
-          v-for="(element, index) in this.store.categories" :key="index"
+          v-on:click="loadCategory(element)"
           >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
@@ -124,39 +122,23 @@
             <span class="title">{{element.name}}</span>
             <span class="badge-unread">
               <span
-                v-if="store.currentSelection.status === 'unread'"
-                class="badge white"
-              >{{ element.unreadCount }}</span>
+                v-if="store.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
               <span
-                v-if="store.currentSelection.status === 'read'"
-                class="badge white"
-              >{{ element.readCount }}</span>
+                v-if="store.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
               <span
-                v-if="store.currentSelection.status === 'star'"
-                class="badge white"
-              >{{ element.starCount }}</span>
+                v-if="store.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
             </span>
           </div>
           <div v-if="element.feeds">
-            <div>{{ element.feeds }}</div>
-            <div
-              v-if="store.currentSelection.categoryId == element.id"
-              class="sidebar-category-feeds"
-            >
-              <div
-                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }"
-                v-bind:id="feed.id"  
-                class="sidebar-category-feed"
-                v-on:click.stop="loadFeed(feed)"
-                v-for="(feed, index) in element.feeds"
-                :key="index"
-              >
-                <span class="glyphicon">
-                  <BootstrapIcon icon="heart-fill" variant="light" />
-                  <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
-                </span>
-                <span class="title">{{feed.feedName}}</span>
-                <span class="badge-unread">
+            <div v-if="store.currentSelection.categoryId == element.id" class="sidebar-category-feeds">
+              <div v-for="(feed, index) in element.feeds">
+                <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
+                  <span class="glyphicon">
+                    <BootstrapIcon icon="star-fill" variant="light" />
+                    <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
+                  </span>
+                  <span class="title">{{feed.feedName}}</span>
+                  <span class="badge-unread">
                   <span
                     v-if="store.currentSelection.status === 'unread'"
                     class="badge white"
@@ -169,7 +151,8 @@
                     v-if="store.currentSelection.status === 'star'"
                     class="badge white"
                   >{{ feed.starCount }}</span>
-                </span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
