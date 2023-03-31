@@ -12,7 +12,7 @@
 
       <div @click="refreshFeeds()" class="option" id="refresh">
         <span class="glyphicon">
-          <BootstrapIcon icon="arrow-clockwise" variant="light" />
+          <BootstrapIcon icon="arrow-down-square-fill" variant="light" />
         </span>Refresh feeds
         <span v-show="refreshing">
           <BootstrapIcon icon="circle-fill" variant="light" />
@@ -118,6 +118,7 @@
           >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
+              <BootstrapIcon icon="folder-fill" variant="light" />
             </span>
             <span class="title">{{element.name}}</span>
             <span class="badge-unread">
@@ -131,10 +132,10 @@
           </div>
           <div v-if="element.feeds">
             <div v-if="store.currentSelection.categoryId == element.id" class="sidebar-category-feeds">
-              <div v-for="(feed, index) in element.feeds">
+              <div v-for="(feed, index) in element.feeds" v-bind:key="index">
                 <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
                   <span class="glyphicon">
-                    <BootstrapIcon icon="star-fill" variant="light" />
+                    <BootstrapIcon icon="rss-fill" variant="light" />
                     <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                   </span>
                   <span class="title">{{feed.feedName}}</span>
@@ -163,7 +164,7 @@
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <BootstrapIcon icon="heart-fill" variant="light" />
+            <BootstrapIcon icon="plus-square-fill" variant="light" />
             <div class="text">Add</div>
           </div>
         </div>
@@ -174,7 +175,7 @@
           class="category-button"
         >
           <div>
-            <BootstrapIcon icon="heart-fill" variant="light" />
+            <BootstrapIcon icon="trash3-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -185,7 +186,7 @@
           class="category-button"
         >
           <div>
-            <BootstrapIcon icon="heart-fill" variant="light" />
+            <BootstrapIcon icon="pencil-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
