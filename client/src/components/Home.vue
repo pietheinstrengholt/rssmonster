@@ -592,10 +592,10 @@ export default {
               response => {
                 //increase the star count
                 var categoryIndex = this.store.categories.findIndex(
-                  category => category.id === response.body.feed.categoryId
+                  category => category.id === response.data.feed.categoryId
                 );
                 this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount + 1;
-                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
                 this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount + 1;
 
                 //also increase total count

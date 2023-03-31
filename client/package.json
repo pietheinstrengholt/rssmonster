@@ -22,7 +22,8 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^4.1.0",
     "@vue/compiler-sfc": "^3.1.0",
-    "vite": "^4.2.1"
+    "vite": "^4.2.1",
+    "vite-plugin-pwa": "^0.14.7"
   },
   "eslintConfig": {
     "root": true,
