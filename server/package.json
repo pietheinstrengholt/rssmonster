@@ -1,6 +1,7 @@
 {
   "name": "rssmonster-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "RSS Monster server side",
   "author": "Piethein Strengholt",
   "repository": {

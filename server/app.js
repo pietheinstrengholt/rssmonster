@@ -1,32 +1,32 @@
-const bodyParser = require("body-parser");
-const express = require("express");
-const morgan = require('morgan');
+import express from 'express';
+import morgan from 'morgan';
+import bodyParser from 'body-parser';
 
 //set port
 const port = process.env.PORT || 3000;
 
 //import sequelize
-const sequelize = require("./util/database");
+import sequelize from './util/database.js';
 
 //include models in order to define associations
-const Category = require("./models/category");
-const Feed = require("./models/feed");
-const Article = require("./models/article");
+import Category from './models/category.js';
+import Feed from './models/feed.js';
+import Article from './models/article.js';
 
 //routes
-const categoryRoutes = require("./routes/category");
-const feedRoutes = require("./routes/feed");
-const articleRoutes = require("./routes/article");
-const crawlRoutes = require("./routes/crawl");
-const managerRoutes = require("./routes/manager");
-const settingRoutes = require("./routes/setting");
-const feverRoutes = require("./routes/fever");
+//const categoryRoutes = require("./routes/category");
+//const feedRoutes = require("./routes/feed");
+import articleRoutes from "./routes/article.js";
+//const crawlRoutes = require("./routes/crawl");
+//const managerRoutes = require("./routes/manager");
+//const settingRoutes = require("./routes/setting");
+//const feverRoutes = require("./routes/fever");
 
 //controller
-const errorController = require("./controllers/error");
+//const errorController = require("./controllers/error");
 
 //init cache
-const cache = require("./util/cache");
+//const cache = require("./util/cache");
 
 const app = express();
 
@@ -49,20 +49,20 @@ app.use((req, res, next) => {
 });
 
 //serve out the APIs
-app.use("/api/categories", categoryRoutes);
-app.use("/api/feeds", feedRoutes);
-app.use("/api/articles", articleRoutes);
-app.use("/api/crawl", crawlRoutes);
-app.use("/api/manager", managerRoutes);
-app.use("/api/setting", settingRoutes);
-app.use("/api/fever", feverRoutes);
-app.use(errorController.get404);
+//app.use("/api/categories", categoryRoutes);
+//app.use("/api/feeds", feedRoutes);
+//app.use("/api/articles", articleRoutes);
+//app.use("/api/crawl", crawlRoutes);
+//app.use("/api/manager", managerRoutes);
+//app.use("/api/setting", settingRoutes);
+//app.use("/api/fever", feverRoutes);
+//app.use(errorController.get404);
 
 //define relationships
-Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
-Category.hasMany(Feed);
+//Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
+//Category.hasMany(Feed);
 Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE'});
-Feed.hasMany(Article);
+//Feed.hasMany(Article);
 
 sequelize
   .sync({
@@ -88,9 +88,9 @@ process.on('uncaughtException', err => {
 });
 
 //initialize cache for hotlinks
-cache.init();
+//cache.init();
 
 //update cache every five minutes
-setInterval(function() {
-  cache.init();
-}, 300 * 1000);
+//setInterval(function() {
+//  cache.init();
+//}, 300 * 1000);

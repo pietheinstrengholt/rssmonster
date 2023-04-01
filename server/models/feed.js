@@ -1,10 +1,8 @@
-const Sequelize = require("sequelize");
+import Sequelize from 'sequelize';
+import { sequelize } from '../util/database.js';
+import { Article } from './article.js';
 
-const sequelize = require("../util/database");
-
-const Article = require("./article");
-
-const Feed = sequelize.define(
+export const Feed = sequelize.define(
   "feeds",
   {
     id: {
@@ -46,4 +44,4 @@ const Feed = sequelize.define(
 Feed.hasMany(Article);
 Article.belongsTo(Feed);
 
-module.exports = Feed;
+export default Feed;

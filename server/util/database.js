@@ -1,36 +1,18 @@
-require("dotenv").config();
+import dotenv from 'dotenv'
+dotenv.config()
+import { Sequelize } from "sequelize"
+//import config from '../config/config.js';
 
-const Sequelize = require("sequelize");
-const path = require("path");
-const env = process.env.NODE_ENV || "development";
-const config = require(path.join(__dirname + "/../config/config.js"))[env];
+export const sequelize = new Sequelize(
+  process.env.DB_USERNAME,
+  process.env.DB_PASSWORD,
+  process.env.DB_DATABASE,
+  {
+    host: process.env.DB_HOSTNAME,
+    dialect: 'mysql',
+    charset: "utf8mb4",
+    collate: "utf8mb4_unicode_ci"
+  }
+);
 
-if (config.use_env_variable) {
-  var sequelize = new Sequelize(process.env[config.use_env_variable], config, {
-    define: {
-      timestamps: true
-    },
-    logging: false
-  });
-} else {
-  var sequelize = new Sequelize(
-    config.database,
-    config.username,
-    config.password,
-    {
-      ...config,
-      define: {
-        timestamps: true
-      },
-      logging: false,
-      pool: {
-        max: 20,
-        min: 0,
-        acquire: 60000,
-        idle: 10000
-      }
-    }
-  );
-}
-
-module.exports = sequelize;
+export default sequelize;

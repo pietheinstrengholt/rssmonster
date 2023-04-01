@@ -1,7 +1,7 @@
-const Sequelize = require("sequelize");
-const sequelize = require("../util/database");
+import Sequelize from 'sequelize';
+import { sequelize } from '../util/database.js';
 
-const Setting = sequelize.define(
+export const Setting = sequelize.define(
   "settings",
   {
     id: {
@@ -41,4 +41,4 @@ const Setting = sequelize.define(
   }
 );
 
-module.exports = Setting;
+export default Setting;
