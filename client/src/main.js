@@ -2,7 +2,7 @@ import {createApp, h} from 'vue'
 import App from './App.vue';
 
 //import bootstrap css
-import './assets/css/bootstrap.min.css';
+import './assets/css/bootstrap.css';
 
 //progressive web app
 import './registerServiceWorker'
