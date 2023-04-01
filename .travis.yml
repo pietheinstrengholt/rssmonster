@@ -4,7 +4,7 @@ dist: xenial
 
 script:
     - set -e
-    - echo 'VUE_APP_HOSTNAME=http://server:3000/api' > client/.env
+    - echo 'VITE_VUE_APP_HOSTNAME=http://server:3000/api' > client/.env
     - docker-compose build
     - docker-compose up -d
     - set +e
