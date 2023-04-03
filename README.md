@@ -21,7 +21,7 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 * Run `npm install` in both the `client` and `server` folder
 * Find the `.env.example` file in the root of both the `client` and `server` folder. Copy and rename the files to `.env`
 * Edit `.env` inside the `server` folder and enter your Mysql or Database server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD).
-* Edit `.env` inside the `client` folder. Change the VITE_APP_HOSTNAME so it points to the back-end.
+* Edit `.env` inside the `client` folder. Change the VITE_APP_HOSTNAME, so it points to the back-end.
 * Run `./node_modules/.bin/sequelize db:migrate && ./node_modules/.bin/sequelize db:seed:all` in side the `server` folder. this will add all needed database tables and content to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder to create the schema structure.
 * Optional: Add a cronjob to crawl http://localhost/api/crawl every 5 minutes.
 
