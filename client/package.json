@@ -8,6 +8,9 @@
     "build": "vite build",
     "preview": "vite preview --port 8080"
   },
+  "engines": {
+    "node": ">=14.0.0"
+  },
   "dependencies": {
     "@dvuckovic/vue3-bootstrap-icons": "^1.0.6",
     "axios": "^1.3.4",
