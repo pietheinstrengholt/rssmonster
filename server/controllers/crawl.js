@@ -6,7 +6,7 @@ import autodiscover from "../util/autodiscover.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
 import cheerio from "cheerio";
-import htmlparser2 from 'htmlparser2';
+import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
 
@@ -22,7 +22,7 @@ const catchAsync = fn => {
   };
 };
 
-const getCrawl = async (req, res, next) => {
+const getCrawl = catchAsync(async (req, res, next) => {
   try {
     //only get feeds with an errorCount lower than 25
     const feeds = await Feed.findAll({
@@ -87,7 +87,7 @@ const getCrawl = async (req, res, next) => {
   } catch (err) {
     return next(err);
   }
-};
+});
 
 const processArticle = async (feed, post) => {
   try {
