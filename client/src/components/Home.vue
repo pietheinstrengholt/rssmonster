@@ -24,14 +24,14 @@
         </div>
       </div>
       <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
-        <span slot="no-more">
+        <template v-slot:no-more>
           <p
             v-on:click="flushPool()"
           >No more posts for this selection - Click here to mark all remaining items as read!</p>
-        </span>
-        <span slot="no-results">
+        </template>
+        <template v-slot:no-results>
           <p v-on:click="flushPool()">No posts have been found!</p>
-        </span>
+        </template>
       </infinite-loading>
     </div>
   </div>
