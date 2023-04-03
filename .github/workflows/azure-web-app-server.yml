@@ -24,7 +24,7 @@ jobs:
       with:
         node-version: 16
 
-    - name: npm install, build, and test
+    - name: Install packages and build
       run: |
         npm install
         npm run build --if-present
