@@ -9,4 +9,5 @@ paths:
     
 paths-ignore:
   - client/dist
+  - client/dev-dist
 
