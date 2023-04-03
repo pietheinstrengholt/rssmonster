@@ -377,7 +377,7 @@ export const articleMarkAllAsRead = async (req, res, next) => {
 };
 
 export const categoryUpdateOrder = async (req, res, next) => {
-  //categories are received in the prefered order
+  //categories are received in the preferred order
   const order = req.body.order;
 
   if (order === undefined) {
@@ -389,7 +389,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
   try {
     if (order.length > 0) {
       //start counting
-      count = 0;
+      var count = 0;
       order.forEach(item => {
         Category.update({
           categoryOrder: count
@@ -411,7 +411,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
 };
 
 export const feedChangeCategory = async (req, res, next) => {
-  //categories are received in the prefered order
+  //categories are received in the preferred order
   const feedId = req.body.feedId;
   const categoryId = req.body.categoryId;
 
