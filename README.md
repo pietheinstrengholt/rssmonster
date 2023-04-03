@@ -21,7 +21,7 @@ RSSMonster features a lightweight fluid responsive design. The font-end has been
 * Run `npm install` in both the `client` and `server` folder
 * Find the `.env.example` file in the root of both the `client` and `server` folder. Copy and rename the files to `.env`
 * Edit `.env` inside the `server` folder and enter your Mysql or Database server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD).
-* Edit `.env` inside the `client` folder. Change the VUE_APP_HOSTNAME so it points to the back-end.
+* Edit `.env` inside the `client` folder. Change the VITE_APP_HOSTNAME so it points to the back-end.
 * Run `./node_modules/.bin/sequelize db:migrate && ./node_modules/.bin/sequelize db:seed:all` in side the `server` folder. this will add all needed database tables and content to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder to create the schema structure.
 * Optional: Add a cronjob to crawl http://localhost/api/crawl every 5 minutes.
 
@@ -32,7 +32,8 @@ If you would like to run RSSMonster in development mode I recommend to run:
 
 ### Production
 If you would like to run RSSMonster in production mode I recommend to run:
-- Update the `VUE_APP_HOSTNAME` inside the file `client/.env`. Most likely you want to remove port 3000 and point to the url where the backend will be running.
+- Update the `VITE_APP_HOSTNAME` and `VITE_NODE_ENV` inside the file `client/.env`. Most likely you want to remove port 3000 and point to the url where the backend will be running. For production, make sure you set the `VITE_NODE_ENV` to `production`.
+- Update the `NODE_ENV` inside the file `server/.env`. For production, make sure you set the `VITE_NODE_ENV` to `production`.
 - Inside the client folder build all the static files with: `npm run build`.
 - Move the `dist` output folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
 - Inside the server folder: `npm run start`.
