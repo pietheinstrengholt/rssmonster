@@ -1,4 +1,4 @@
-import franc from "franc-min";
+import { franc } from 'franc-min';
 
 export const get = (text) => {
   if (text) {
