@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v2
+    - uses: actions/checkout@v3
 
     - name: Set up Node.js version
-      uses: actions/setup-node@v1
+    - uses: actions/setup-node@v3
       with:
         node-version: 16
 
@@ -30,7 +30,7 @@ jobs:
         CI: true
 
     - name: Upload artifact for deployment job
-      uses: actions/upload-artifact@v2
+      uses: actions/upload-artifact@v3
       with:
         name: node-app
         path: server/
@@ -44,13 +44,13 @@ jobs:
 
     steps:
     - name: Download artifact from build job
-      uses: actions/download-artifact@v2
+      uses: actions/download-artifact@v3
       with:
         name: node-app
 
     - name: 'Deploy to Azure Web App'
       id: deploy-to-webapp
-      uses: azure/webapps-deploy@v2
+      uses: azure/webapps-deploy@v3
       with:
         app-name: 'rssmonster-server'
         slot-name: 'production'
