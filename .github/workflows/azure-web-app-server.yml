@@ -17,10 +17,10 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - uses: actions/checkout@v3
+    - uses: actions/checkout@v2
 
     - name: Set up Node.js version
-      uses: actions/setup-node@v3
+      uses: actions/setup-node@v1
       with:
         node-version: 16
 
@@ -33,7 +33,7 @@ jobs:
         CI: true
 
     - name: Upload artifact for deployment job
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v2
       with:
         name: node-app
         path: server/
@@ -47,7 +47,7 @@ jobs:
 
     steps:
     - name: Download artifact from build job
-      uses: actions/download-artifact@v3
+      uses: actions/download-artifact@v2
       with:
         name: node-app
 
