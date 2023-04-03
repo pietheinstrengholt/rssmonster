@@ -1,11 +1,9 @@
-const express = require('express');
-
-const feverController = require('../controllers/fever');
-
-const router = express.Router();
+import express from 'express';
+import feverController from '../controllers/fever.js';
+export const feverRoutes = express.Router();
 
 // GET /api/fever
-router.get('/', feverController.getFever);
-router.post('/', feverController.postFever);
+feverRoutes.get('/', feverController.getFever);
+feverRoutes.post('/', feverController.postFever);
 
-module.exports = router;
+export default feverRoutes;

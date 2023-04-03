@@ -1,9 +1,7 @@
-'use strict';
+import sequelize from "../util/database.js";
 
-const sequelize = require("../util/database");
-
-module.exports = {
-  up: (queryInterface, Sequelize) => {
+export default {
+  up: async (queryInterface, Sequelize) => {
     return queryInterface.bulkInsert('feeds', [{
       categoryId: 1,
       feedName: 'reddit.com',

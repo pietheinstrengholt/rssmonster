@@ -14,19 +14,19 @@ import Feed from './models/feed.js';
 import Article from './models/article.js';
 
 //routes
-//const categoryRoutes = require("./routes/category");
-//const feedRoutes = require("./routes/feed");
+import categoryRoutes from "./routes/category.js";
+import feedRoutes from "./routes/feed.js";
 import articleRoutes from "./routes/article.js";
-//const crawlRoutes = require("./routes/crawl");
-//const managerRoutes = require("./routes/manager");
-//const settingRoutes = require("./routes/setting");
-//const feverRoutes = require("./routes/fever");
+import crawlRoutes from "./routes/crawl.js";
+import managerRoutes from "./routes/manager.js";
+import settingRoutes from "./routes/setting.js";
+import feverRoutes from "./routes/fever.js";
 
 //controller
-//const errorController = require("./controllers/error");
+import errorController from "./controllers/error.js";
 
 //init cache
-//const cache = require("./util/cache");
+import cache from "./util/cache.js";
 
 const app = express();
 
@@ -49,20 +49,20 @@ app.use((req, res, next) => {
 });
 
 //serve out the APIs
-//app.use("/api/categories", categoryRoutes);
-//app.use("/api/feeds", feedRoutes);
-//app.use("/api/articles", articleRoutes);
-//app.use("/api/crawl", crawlRoutes);
-//app.use("/api/manager", managerRoutes);
-//app.use("/api/setting", settingRoutes);
-//app.use("/api/fever", feverRoutes);
-//app.use(errorController.get404);
+app.use("/api/categories", categoryRoutes);
+app.use("/api/feeds", feedRoutes);
+app.use("/api/articles", articleRoutes);
+app.use("/api/crawl", crawlRoutes);
+app.use("/api/manager", managerRoutes);
+app.use("/api/setting", settingRoutes);
+app.use("/api/fever", feverRoutes);
+app.use(errorController.get404);
 
 //define relationships
-//Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
-//Category.hasMany(Feed);
+Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
+Category.hasMany(Feed);
 Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE'});
-//Feed.hasMany(Article);
+Feed.hasMany(Article);
 
 sequelize
   .sync({
@@ -88,9 +88,9 @@ process.on('uncaughtException', err => {
 });
 
 //initialize cache for hotlinks
-//cache.init();
+cache.init();
 
 //update cache every five minutes
-//setInterval(function() {
-//  cache.init();
-//}, 300 * 1000);
+setInterval(function() {
+  cache.init();
+}, 300 * 1000);

@@ -1,7 +1,7 @@
-const Category = require("../models/category");
-const Feed = require("../models/feed");
+import Category from "../models/category.js";
+import Feed from "../models/feed.js";
 
-exports.getCategories = async (req, res, next) => {
+const getCategories = async (req, res, next) => {
   try {
     const categories = await Category.findAll({
       include: [{
@@ -19,7 +19,7 @@ exports.getCategories = async (req, res, next) => {
   }
 };
 
-exports.getCategory = async (req, res, next) => {
+const getCategory = async (req, res, next) => {
   try {
     const categoryId = req.params.categoryId;
     const category = await Category.findByPk(categoryId, {
@@ -37,7 +37,7 @@ exports.getCategory = async (req, res, next) => {
   }
 };
 
-exports.addCategory = async (req, res, next) => {
+const addCategory = async (req, res, next) => {
   try {
     const name = req.body.name;
     const categoryOrder = req.body.categoryOrder;
@@ -52,7 +52,7 @@ exports.addCategory = async (req, res, next) => {
   }
 };
 
-exports.updateCategory = async (req, res, next) => {
+const updateCategory = async (req, res, next) => {
   try {
     const categoryId = req.params.categoryId;
     var category = await Category.findByPk(categoryId);
@@ -73,7 +73,7 @@ exports.updateCategory = async (req, res, next) => {
   }
 };
 
-exports.deleteCategory = async (req, res, next) => {
+const deleteCategory = async (req, res, next) => {
   try {
     const categoryId = req.params.categoryId;
     var category = await Category.findByPk(categoryId);
@@ -99,3 +99,11 @@ exports.deleteCategory = async (req, res, next) => {
     return res.status(500).json(err);
   }
 };
+
+export default {
+  getCategories,
+  getCategory,
+  addCategory,
+  updateCategory,
+  deleteCategory
+}

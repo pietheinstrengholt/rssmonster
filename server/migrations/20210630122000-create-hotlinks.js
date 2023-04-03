@@ -1,6 +1,5 @@
-"use strict";
-module.exports = {
-  up: (queryInterface, Sequelize) => {
+export default {
+  up: async (queryInterface, Sequelize) => {
     return queryInterface.createTable(
       "hotlinks",
       {

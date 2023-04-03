@@ -1,10 +1,8 @@
-const express = require('express');
-
-const crawlController = require('../controllers/crawl');
-
-const router = express.Router();
+import express from 'express';
+import crawlController from '../controllers/crawl.js';
+export const crawlRoutes = express.Router();
 
 // GET /api/crawl
-router.get('/', crawlController.getCrawl);
+crawlRoutes.get('/', crawlController.getCrawl);
 
-module.exports = router;
+export default crawlRoutes;

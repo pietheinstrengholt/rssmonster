@@ -1,7 +1,7 @@
 import dotenv from 'dotenv'
-dotenv.config()
 import { Sequelize } from "sequelize"
-//import config from '../config/config.js';
+
+dotenv.config()
 
 export const sequelize = new Sequelize(
   process.env.DB_USERNAME,
@@ -11,7 +11,8 @@ export const sequelize = new Sequelize(
     host: process.env.DB_HOSTNAME,
     dialect: 'mysql',
     charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
+    collate: "utf8mb4_unicode_ci",
+    logging: false
   }
 );
 

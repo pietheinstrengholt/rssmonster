@@ -1,8 +1,8 @@
-const FeedParser = require("feedparser");
-const got = require("got");
-const he = require("he");
+import FeedParser from "feedparser";
+import got from "got";
+import he from "he";
 
-exports.process = async function(feedUrl) {
+export const process = async (feedUrl) => {
   const stream = await ReadFeed(feedUrl)
   const posts = await ReadFeedStream(stream, feedUrl)
   const response = await ParseFeedPost(posts)
@@ -57,4 +57,8 @@ function ParseFeedPost (feed) {
     return item
   })
   return feed
+}
+
+export default {
+  process
 }

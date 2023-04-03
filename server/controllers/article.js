@@ -7,7 +7,7 @@ import Sequelize from 'sequelize';
 const Op = Sequelize.Op;
 
 //the getArticles function returns an array with all the article ids
-export const getArticles = async (req, res, next) => {
+const getArticles = async (req, res, next) => {
   try {
     //use query parameters instead if provided
     var categoryId = req.query.categoryId ? req.query.categoryId : "%";
@@ -142,7 +142,7 @@ export const getArticles = async (req, res, next) => {
 };
 
 //the getArticle function returns the article details based on the articleId (array) argument
-export const getArticle = (req, res, next) => {
+const getArticle = (req, res, next) => {
   const articleId = req.params.articleId;
   Article.findByPk(articleId, {
     include: [
@@ -164,7 +164,7 @@ export const getArticle = (req, res, next) => {
 };
 
 //the postArticles function marks all articles as read
-export const postArticles = (req, res, next) => {
+const postArticles = (req, res, next) => {
   try {
     Article.update(
       {

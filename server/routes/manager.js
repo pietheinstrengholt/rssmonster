@@ -1,17 +1,15 @@
-const express = require('express');
-
-const managerController = require('../controllers/manager');
-
-const router = express.Router();
+import express from 'express';
+import managerController from '../controllers/manager.js';
+export const managerRoutes = express.Router();
 
 // GET /api/manager/overview
-router.get('/overview', managerController.getOverview);
-router.post('/marktoread/:articleId', managerController.articleMarkToRead);
-router.post('/marktounread/:articleId', managerController.articleMarkToUnread);
-router.post('/markwithstar/:articleId', managerController.articleMarkWithStar);
-router.post('/details', managerController.articleDetails);
-router.post('/markallasread', managerController.articleMarkAllAsRead);
-router.post('/updateorder', managerController.categoryUpdateOrder);
-router.post('/changecategory', managerController.feedChangeCategory);
+managerRoutes.get('/overview', managerController.getOverview);
+managerRoutes.post('/marktoread/:articleId', managerController.articleMarkToRead);
+managerRoutes.post('/marktounread/:articleId', managerController.articleMarkToUnread);
+managerRoutes.post('/markwithstar/:articleId', managerController.articleMarkWithStar);
+managerRoutes.post('/details', managerController.articleDetails);
+managerRoutes.post('/markallasread', managerController.articleMarkAllAsRead);
+managerRoutes.post('/updateorder', managerController.categoryUpdateOrder);
+managerRoutes.post('/changecategory', managerController.feedChangeCategory);
 
-module.exports = router;
+export default managerRoutes;

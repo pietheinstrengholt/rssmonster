@@ -51,4 +51,9 @@ export const init = async () => {
   }
 }
 
-export default cache;
+export default {
+  set,
+  get,
+  all,
+  init
+}
