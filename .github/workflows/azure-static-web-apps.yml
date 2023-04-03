@@ -42,6 +42,7 @@ jobs:
           ###### End of Repository/Build Configurations ######
         env: # Add environment variables here
           VITE_VUE_APP_HOSTNAME: "https://rssmonster-server.azurewebsites.net"
+          VITE_NODE_ENV: production
           SKIP_DEPLOY_ON_MISSING_SECRETS: true
 
       - name: Perform CodeQL Analysis
