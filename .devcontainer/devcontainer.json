@@ -21,7 +21,7 @@
 	},
 
 	"remoteEnv": {
-		"VUE_APP_HOSTNAME": "http://localhost:3000"
+		"VITE_APP_HOSTNAME": "http://localhost:3000"
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
