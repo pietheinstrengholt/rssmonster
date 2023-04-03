@@ -11,7 +11,7 @@ export const process = async (feedUrl) => {
 
 async function ReadFeed (url) {
   try {
-    const response = await got.stream(url, { retries: 0 })
+    const response = await got.stream(url)
     return response
   } catch(err) {
     console.log(err);
