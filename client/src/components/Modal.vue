@@ -458,7 +458,7 @@ export default {
             console.log(result.status);
             /* eslint-enable no-console */
             this.error_msg = "";
-            this.feed = result.body;
+            this.feed = result.data;
           },
           response => {
             this.error_msg = response.data.error_msg;
@@ -497,7 +497,7 @@ export default {
             /* eslint-enable no-console */
 
             //overwrite results with results from the database
-            this.feed = result.body;
+            this.feed = result.data;
 
             //add missing count properties, since these are populated dynamically on an initial load
             this.feed.unreadCount = 0;
@@ -558,7 +558,7 @@ export default {
         axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories", { name: this.category.name }).then(
           result => {
             //create new local category in data object
-            this.category = result.body;
+            this.category = result.data;
 
             //add missing count properties, since these are populated dynamically
             this.category.unreadCount = 0;
