@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'server/**'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
