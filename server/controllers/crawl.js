@@ -94,7 +94,7 @@ const getCrawl = catchAsync(async (req, res, next) => {
 const processArticle = async (feed, post) => {
 
   //don't process empty post URLs
-  if (empty(post.link)) {
+  if (post.link) {
     try {
       //try to find any existing article with the same link and post title
       const article = await Article.findOne({
