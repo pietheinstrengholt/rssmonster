@@ -11,7 +11,12 @@ export const sequelize = new Sequelize(
     dialect: 'mysql',
     charset: "utf8mb4",
     collate: "utf8mb4_unicode_ci",
-    logging: process.env.NODE_ENV === 'production' ? false : console.log
+    logging: process.env.NODE_ENV === 'production' ? false : console.log,
+    pool: {
+      max: 15,
+      min: 0,
+      idle: 10000
+    }
   }
 );
 
