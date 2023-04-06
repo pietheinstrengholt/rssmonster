@@ -28,7 +28,7 @@ jobs:
         CI: true
 
     - name: Zip artifact for deployment
-      run: zip -r release.zip ./server/*
+      run: cd server && zip -r ../release.zip .
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
