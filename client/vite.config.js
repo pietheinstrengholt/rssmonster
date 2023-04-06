@@ -11,6 +11,11 @@ export default defineConfig({
                 enabled: true
             },
             registerType: 'autoUpdate',
+            injectRegister: 'auto',
+            workbox: {
+              globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
+              cleanupOutdatedCaches: false
+            },
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {
               name: 'RSSMonster',
