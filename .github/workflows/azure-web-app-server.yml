@@ -1,7 +1,7 @@
 # Docs for the Azure Web Apps Deploy action: https://github.com/Azure/webapps-deploy
 # More GitHub Actions for Azure: https://github.com/Azure/actions
 
-name: Azure Web App 
+name: Azure Web App
 
 on:
   push:
@@ -26,7 +26,7 @@ jobs:
       env:
         CI: true
 
-      - name: Zip all files for upload between jobs
+    - name: Zip all files for upload between jobs
         # IMPORTANT: .next is a hidden folder and will NOT be included in the zip unless we specify it
         run: zip release.zip ./* -r
 
