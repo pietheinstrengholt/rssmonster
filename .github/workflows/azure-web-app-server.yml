@@ -27,11 +27,15 @@ jobs:
       env:
         CI: true
 
+      - name: Zip all files for upload between jobs
+        # IMPORTANT: .next is a hidden folder and will NOT be included in the zip unless we specify it
+        run: zip release.zip ./* -r
+
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
       with:
         name: node-app
-        path: server/
+        path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -53,4 +57,7 @@ jobs:
         app-name: 'rssmonster-server'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_2dd7d8e7c60b483f86aabb734cd49aa0 }}
-        package: .
+        package: release.zip
+
+    - name: Delete zip file
+      run: rm release.zip
