@@ -49,6 +49,9 @@ jobs:
       with:
         name: node-app
 
+    - name: unzip artifact for deployment
+      run: unzip release.zip
+
     - name: 'Deploy to Azure Web App'
       id: deploy-to-webapp
       uses: azure/webapps-deploy@v2
@@ -56,4 +59,4 @@ jobs:
         app-name: 'rssmonster-server'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_2dd7d8e7c60b483f86aabb734cd49aa0 }}
-        package: release.zip
+        package: .
