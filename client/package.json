@@ -9,7 +9,7 @@
     "preview": "vite preview --port 8080"
   },
   "engines": {
-    "node": "14.x"
+    "node": "16.x"
   },
   "dependencies": {
     "@dvuckovic/vue3-bootstrap-icons": "^1.0.6",
