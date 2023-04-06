@@ -1,10 +1,14 @@
-var franc = require("franc-min");
+import { franc } from 'franc-min';
 
-exports.get = function(text) {
+export const get = (text) => {
   if (text) {
     //remove html
-    cleanText = text.replace(/<\/?[^>]+(>|$)/g, "");
+    var cleanText = text.replace(/<\/?[^>]+(>|$)/g, "");
     //return language
-    return franc(text);
+    return franc(cleanText);
   }
 };
+
+export default {
+  get
+}

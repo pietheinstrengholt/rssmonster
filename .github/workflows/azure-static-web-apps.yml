@@ -41,8 +41,9 @@ jobs:
           output_location: "dist" # Built app content directory - optional
           ###### End of Repository/Build Configurations ######
         env: # Add environment variables here
+          VITE_VUE_APP_HOSTNAME: "https://rssmonster-server.azurewebsites.net"
+          VITE_NODE_ENV: production
           SKIP_DEPLOY_ON_MISSING_SECRETS: true
-          VUE_APP_HOSTNAME: "https://rssmonster-server.azurewebsites.net"
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
 

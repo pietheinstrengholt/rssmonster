@@ -1,18 +1,16 @@
-const Sequelize = require("sequelize");
+import Sequelize from 'sequelize';
+import Feed from "../models/feed.js";
+import Article from "../models/article.js";
+
+import autodiscover from "../util/autodiscover.js";
+import parseFeed from "../util/parser.js";
+import language from "../util/language.js";
+import cheerio from "cheerio";
+import * as htmlparser2 from "htmlparser2";
+import cache from '../util/cache.js';
+import striptags from "striptags";
+
 const Op = Sequelize.Op;
-
-const Feed = require("../models/feed");
-const Article = require("../models/article");
-
-const autodiscover = require("../util/autodiscover");
-const parseFeed = require("../util/parser");
-const language = require("../util/language");
-const cheerio = require("cheerio");
-const htmlparser2 = require('htmlparser2');
-
-const cache = require('../util/cache');
-
-var striptags = require("striptags");
 
 //set the maximum number of feeds to be processed at once
 const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
@@ -24,7 +22,7 @@ const catchAsync = fn => {
   };
 };
 
-exports.getCrawl = catchAsync(async (req, res, next) => {
+const getCrawl = catchAsync(async (req, res, next) => {
   try {
     //only get feeds with an errorCount lower than 25
     const feeds = await Feed.findAll({
@@ -91,7 +89,7 @@ exports.getCrawl = catchAsync(async (req, res, next) => {
   }
 });
 
-async function processArticle(feed, post) {
+const processArticle = async (feed, post) => {
   try {
     //try to find any existing article with the same link and post title
     const article = await Article.findOne({
@@ -178,4 +176,9 @@ async function processArticle(feed, post) {
   } catch (err) {
     console.log(err);
   }
+};
+
+export default {
+  getCrawl,
+  processArticle
 }

@@ -1,6 +1,7 @@
 {
   "name": "rssmonster-server",
   "version": "1.0.0",
+  "type": "module",
   "description": "RSS Monster server side",
   "author": "Piethein Strengholt",
   "repository": {
@@ -16,23 +17,23 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^2.0.21"
+    "nodemon": "^2.0.22"
   },
   "dependencies": {
     "body-parser": "^1.20.2",
     "cheerio": "^1.0.0-rc.12",
-    "dotenv": "^10.0.0",
+    "dotenv": "^16.0.3",
     "express": "^4.18.2",
     "feedparser": "^2.2.10",
-    "franc-min": "^5.0.0",
-    "got": "^11.8.6",
+    "franc-min": "^6.1.0",
+    "got": "^12.6.0",
     "he": "^1.2.0",
-    "htmlparser2": "^6.1.0",
+    "htmlparser2": "^8.0.2",
     "morgan": "^1.10.0",
-    "mysql2": "^2.3.3",
+    "mysql2": "^3.2.0",
     "node-cache": "^5.1.2",
-    "node-fetch": "^2.6.9",
-    "sequelize": "^6.29.3",
+    "node-fetch": "^3.3.1",
+    "sequelize": "^6.30.0",
     "sequelize-cli": "^6.6.0",
     "striptags": "^3.2.0"
   },

@@ -1,8 +1,7 @@
-const Sequelize = require("sequelize");
+import Sequelize from 'sequelize';
+import { sequelize } from '../util/database.js';
 
-const sequelize = require("../util/database");
-
-const Hotlink = sequelize.define(
+export const Hotlink = sequelize.define(
   "hotlinks",
   {
     url: {
@@ -20,4 +19,4 @@ const Hotlink = sequelize.define(
 //sequelize assumes a primary key
 Hotlink.removeAttribute('id');
 
-module.exports = Hotlink;
+export default Hotlink;

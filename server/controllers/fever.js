@@ -1,15 +1,15 @@
-const Article = require("../models/article");
-const Feed = require("../models/feed");
-const Category = require("../models/category");
-const cache = require('../util/cache');
+import Article from "../models/article.js";
+import Feed from "../models/feed.js";
+import Category from "../models/category.js";
+import cache from '../util/cache.js';
 
-const Sequelize = require("sequelize");
+import Sequelize from "sequelize";
 const Op = Sequelize.Op;
 
 //use Fever API
 //specs: https://feedafever.com/api
 
-exports.getFever = async (req, res, next) => {
+export const getFever = async (req, res, next) => {
   try {
     var arr = responseBase();
 
@@ -23,7 +23,7 @@ exports.getFever = async (req, res, next) => {
   }
 };
 
-exports.postFever = async (req, res, next) => {
+export const postFever = async (req, res, next) => {
   try {
     var arr = responseBase();
 
@@ -391,4 +391,9 @@ function genUpdate(req_body_as) {
         starInd: 0
       };
   }
+}
+
+export default {
+  getFever,
+  postFever
 }

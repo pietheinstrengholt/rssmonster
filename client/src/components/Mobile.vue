@@ -3,7 +3,7 @@
     <h5 class="mobile-title">Options</h5>
     <div class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
       <span class="glyphicon">
-        <v-icon fill="white" name="times" scale="1.2"/>
+        <BootstrapIcon icon="x-square-fill" variant="light" />
       </span>
     </div>
     <div class="overlay-content" id="mobile">

@@ -1,10 +1,8 @@
-const Sequelize = require("sequelize");
+import Sequelize from 'sequelize';
+import { sequelize } from '../util/database.js';
+import cache from '../util/cache.js';
 
-const sequelize = require("../util/database");
-
-const cache = require('../util/cache');
-
-const Article = sequelize.define(
+export const Article = sequelize.define(
   "articles",
   {
     id: {
@@ -52,4 +50,4 @@ const Article = sequelize.define(
   }
 );
 
-module.exports = Article;
+export default Article;

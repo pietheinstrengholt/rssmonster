@@ -1,14 +1,13 @@
-const Article = require("../models/article");
-const Feed = require("../models/feed");
-const Setting = require("../models/setting");
+import Article from "../models/article.js";
+import Feed from "../models/feed.js";
+import Setting from "../models/setting.js";
+import cache from "../util/cache.js";
+import Sequelize from 'sequelize';
 
-const cache = require('../util/cache');
-
-const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
 //the getArticles function returns an array with all the article ids
-exports.getArticles = async (req, res, next) => {
+const getArticles = async (req, res, next) => {
   try {
     //use query parameters instead if provided
     var categoryId = req.query.categoryId ? req.query.categoryId : "%";
@@ -143,7 +142,7 @@ exports.getArticles = async (req, res, next) => {
 };
 
 //the getArticle function returns the article details based on the articleId (array) argument
-exports.getArticle = (req, res, next) => {
+const getArticle = (req, res, next) => {
   const articleId = req.params.articleId;
   Article.findByPk(articleId, {
     include: [
@@ -165,7 +164,7 @@ exports.getArticle = (req, res, next) => {
 };
 
 //the postArticles function marks all articles as read
-exports.postArticles = (req, res, next) => {
+const postArticles = (req, res, next) => {
   try {
     Article.update(
       {
@@ -182,3 +181,9 @@ exports.postArticles = (req, res, next) => {
     return res.status(500).json(err);
   }
 };
+
+export default {
+  getArticles,
+  getArticle,
+  postArticles
+}

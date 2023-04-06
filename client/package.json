@@ -4,51 +4,29 @@
   "private": true,
   "author": "Piethein Strengholt",
   "scripts": {
-    "serve": "vue-cli-service serve --host localhost --port 8080",
-    "build": "vue-cli-service build",
-    "lint": "vue-cli-service lint",
-    "serve-secure": "vue-cli-service serve --https"
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview --port 8080"
+  },
+  "engines": {
+    "node": "14.x"
   },
   "dependencies": {
-    "core-js": "^3.29.1",
+    "@dvuckovic/vue3-bootstrap-icons": "^1.0.6",
+    "axios": "^1.3.4",
     "idb-keyval": "^6.2.0",
     "moment": "^2.29.4",
     "register-service-worker": "^1.7.2",
-    "vue": "^2.7.14",
-    "vue-awesome": "^4.5.0",
-    "vue-infinite-loading": "^2.4.5",
-    "vue-resource": "^1.5.3",
-    "vuedraggable": "^2.24.3",
+    "vue": "^3.2.47",
+    "vue-infinite-loading": "github:nvitius/vue-infinite-loading#next",
+    "vuedraggable": "^4.1.0",
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vue/cli-plugin-babel": "^5.0.8",
-    "@vue/cli-plugin-eslint": "^5.0.8",
-    "@vue/cli-plugin-pwa": "^5.0.8",
-    "@vue/cli-service": "^5.0.8",
-    "babel-eslint": "^10.1.0",
-    "eslint": "^7.32.0",
-    "eslint-plugin-vue": "^7.20.0",
-    "vue-template-compiler": "^2.7.14"
-  },
-  "eslintConfig": {
-    "root": true,
-    "env": {
-      "node": true
-    },
-    "extends": [
-      "plugin:vue/essential",
-      "eslint:recommended"
-    ],
-    "rules": {},
-    "parserOptions": {
-      "parser": "babel-eslint"
-    }
-  },
-  "postcss": {
-    "plugins": {
-      "autoprefixer": {}
-    }
+    "@vitejs/plugin-vue": "^4.1.0",
+    "@vue/compiler-sfc": "^3.2.47",
+    "vite": "^4.2.1",
+    "vite-plugin-pwa": "^0.14.7"
   },
   "browserslist": [
     "> 1%",

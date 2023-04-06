@@ -98,16 +98,20 @@ html, #app {
 
 <script>
 import store from "./store";
+import axios from 'axios';
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
 import Home from "./components/Home.vue";
-const Sidebar = () => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue");
-const Toolbar = () => import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue");
-const Quickbar = () => import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue");
-const Modal = () => import(/* webpackChunkName: "modal" */ "./components/Modal.vue");
-const Mobile = () => import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue");
+
+//import components
+import { defineAsyncComponent } from 'vue'
+const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue"));
+const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue"));
+const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
+const Modal = defineAsyncComponent(() =>  import(/* webpackChunkName: "modal" */ "./components/Modal.vue"));
+const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
 
 export default {
   components: {
@@ -243,37 +247,38 @@ export default {
     },
     getOverview: function(initial) {
       //get an overview with the count for all feeds
-      this.$http
-        .get("api/manager/overview")
+      axios
+        .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview")
         .then(response => {
-          return response.json();
+          return response;
         })
-        .then(data => {
+        .then(response => {
+
           //set offlineStatus to false
           this.offlineStatus = false;
 
           //update the store counts
           var previousUnreadCount = this.store.unreadCount;
-          this.store.unreadCount = data.unreadCount;
-          this.store.readCount = data.readCount;
-          this.store.starCount = data.starCount;
-          this.store.hotCount = data.hotCount;
+          this.store.unreadCount = response.data.unreadCount;
+          this.store.readCount = response.data.readCount;
+          this.store.starCount = response.data.starCount;
+          this.store.hotCount = response.data.hotCount;
 
           //set PWA badge using unread count
           if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
-            navigator.setAppBadge(data.unreadCount);
+            navigator.setAppBadge(response.data.unreadCount);
           }
 
           //update the categories in the store
-          this.store.categories = data.categories;
+          this.store.categories = response.data.categories;
 
           //update local category and feed based on current selection
           if (initial === true) {
             this.updateSelection(this.store.currentSelection);  
           } else {
-            //only show notifcation when new messages have arrived (previousUnreadCount is larger than current unreadCount)
-            if (previousUnreadCount < data.unreadCount) {
-              this.showNotification(data.unreadCount - previousUnreadCount);
+            //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
+            if (previousUnreadCount < response.data.unreadCount) {
+              this.showNotification(response.data.unreadCount - previousUnreadCount);
             }
           }
         })
@@ -304,22 +309,26 @@ export default {
     "store.currentSelection.categoryId": {
       handler: function() {
         this.feed = {};
-      }
+      },
+      deep: true
     },
     "store.currentSelection.feedId": {
       handler: function() {
         this.closeModal();
-      }
+      },
+      deep: true
     },
     "store.currentSelection.filter": {
       handler: function() {
         this.closeModal();
-      }
+      },
+      deep: true
     },
     "store.currentSelection.status": {
       handler: function() {
         this.closeModal();
-      }
+      },
+      deep: true
     },
     "store.unreadCount": {
       handler: function(count) {
@@ -327,7 +336,8 @@ export default {
         if ('serviceWorker' in navigator) {
           navigator.setAppBadge(count);
         }
-      }
+      },
+      deep: true
     }
   }
 };

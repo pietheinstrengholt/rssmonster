@@ -1,10 +1,10 @@
-const Feed = require("../models/feed");
-const Article = require("../models/article");
+import Feed from "../models/feed.js";
+import Article from "../models/article.js";
 
-const autodiscover = require("../util/autodiscover");
-const parseFeed = require("../util/parser");
+import autodiscover from "../util/autodiscover.js";
+import parseFeed from "../util/parser.js";
 
-exports.getFeeds = async (req, res, next) => {
+const getFeeds = async (req, res, next) => {
   try {
     const feeds = await Feed.findAll();
     return res.status(200).json({
@@ -17,7 +17,7 @@ exports.getFeeds = async (req, res, next) => {
   }
 };
 
-exports.getFeed = async (req, res, next) => {
+const getFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
   try {
     const feed = await Feed.findByPk(feedId);
@@ -30,7 +30,7 @@ exports.getFeed = async (req, res, next) => {
   }
 };
 
-exports.updateFeed = async (req, res, next) => {
+const updateFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
   try {
     const feed = await Feed.findByPk(feedId);
@@ -58,7 +58,7 @@ exports.updateFeed = async (req, res, next) => {
   }
 };
 
-exports.newFeed = async (req, res, next) => {
+const newFeed = async (req, res, next) => {
   try {
     const feed = await Feed.create({
       categoryId: req.body.categoryId,
@@ -76,7 +76,7 @@ exports.newFeed = async (req, res, next) => {
   }
 };
 
-exports.deleteFeed = async (req, res, next) => {
+const deleteFeed = async (req, res, next) => {
   const feedId = req.params.feedId;
   try {
     var feed = await Feed.findByPk(feedId);
@@ -103,7 +103,7 @@ exports.deleteFeed = async (req, res, next) => {
   }
 };
 
-exports.validateFeed = async (req, res, next) => {
+const validateFeed = async (req, res, next) => {
   //resolve url
   const url = await autodiscover.discover(req.body.url);
   const categoryId = req.body.categoryId;
@@ -147,3 +147,12 @@ exports.validateFeed = async (req, res, next) => {
     });
   }
 };
+
+export default {
+  getFeeds,
+  getFeed,
+  updateFeed,
+  newFeed,
+  deleteFeed,
+  validateFeed
+}

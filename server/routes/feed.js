@@ -1,15 +1,13 @@
-const express = require('express');
-
-const feedController = require('../controllers/feed');
-
-const router = express.Router();
+import express from 'express';
+import feedController from '../controllers/feed.js';
+export const feedRoutes = express.Router();
 
 // GET /api/feeds
-router.get('/', feedController.getFeeds);
-router.get('/:feedId', feedController.getFeed);
-router.put('/:feedId', feedController.updateFeed);
-router.delete('/:feedId', feedController.deleteFeed);
-router.post('/validate', feedController.validateFeed);
-router.post('/', feedController.newFeed);
+feedRoutes.get('/', feedController.getFeeds);
+feedRoutes.get('/:feedId', feedController.getFeed);
+feedRoutes.put('/:feedId', feedController.updateFeed);
+feedRoutes.delete('/:feedId', feedController.deleteFeed);
+feedRoutes.post('/validate', feedController.validateFeed);
+feedRoutes.post('/', feedController.newFeed);
 
-module.exports = router;
+export default feedRoutes;

@@ -1,50 +1,14 @@
-const cheerio = require("cheerio");
-const fetch = require("node-fetch");
+import cheerio from "cheerio";
+import fetch from "node-fetch";
 //import http and https, needed for setting the agents for node-fetch
-const http = require('http');
-const https = require('https');
+import http from 'http';
+import https from 'https';
+
 http.globalAgent.maxSockets = 1000000;
 https.globalAgent.maxSockets = 1000000;
 
-/* function extractHostname(url) {
-  var hostname;
-  //find & remove protocol (http, ftp, etc.) and get hostname
-
-  if (url.indexOf("//") > -1) {
-    hostname = url.split("/")[2];
-  } else {
-    hostname = url.split("/")[0];
-  }
-
-  //find & remove port number
-  hostname = hostname.split(":")[0];
-  //find & remove "?"
-  hostname = hostname.split("?")[0];
-
-  return hostname;
-} */
-
-// To address those who want the "root domain," use this function:
-/* function extractRootDomain(url) {
-  var domain = extractHostname(url),
-    splitArr = domain.split("."),
-    arrLen = splitArr.length;
-
-  //extracting the root domain here
-  //if there is a subdomain
-  if (arrLen > 2) {
-    domain = splitArr[arrLen - 2] + "." + splitArr[arrLen - 1];
-    //check to see if it's using a Country Code Top Level Domain (ccTLD) (i.e. ".me.uk")
-    if (splitArr[arrLen - 2].length == 2 && splitArr[arrLen - 1].length == 2) {
-      //this is using a ccTLD
-      domain = splitArr[arrLen - 3] + "." + domain;
-    }
-  }
-  return domain;
-} */
-
 //function to return overlap
-function findOverlap(a, b) {
+export const findOverlap = (a, b) => {
   if (b.length === 0) {
     return "";
   }
@@ -58,7 +22,7 @@ function findOverlap(a, b) {
 }
 
 //function to validate if url is valid
-function isURL(str) {
+export const isURL = (str) => {
   var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#:.?+=&%!\-\/]))?/;
   if (!regex.test(str)) {
     return false;
@@ -67,7 +31,7 @@ function isURL(str) {
   }
 }
 
-async function getUrl(url) {
+export const getUrl = async (url) => {
   try {
 
     //set httpAgents
@@ -151,7 +115,7 @@ async function getUrl(url) {
   }
 }
 
-exports.discover = async function(url) {
+export const discover = async (url) => {
   try {
     const autodiscover = await getUrl(url);
     return autodiscover;
@@ -159,3 +123,10 @@ exports.discover = async function(url) {
     console.log(err);
   }
 };
+
+export default {
+  findOverlap,
+  isURL,
+  getUrl,
+  discover
+}

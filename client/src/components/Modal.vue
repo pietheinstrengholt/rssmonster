@@ -388,6 +388,7 @@ button.btn.btn-primary.content {
 
 <script>
 import store from "../store";
+import axios from 'axios';
 
 export default {
   props: ["inputCategory", "inputFeed"],
@@ -429,7 +430,8 @@ export default {
     "store.categories": {
       handler: function(data) {
         this.categories = data;
-      }
+      },
+      deep: true
     },
     inputCategory() {
       if (this.inputCategory) {
@@ -448,18 +450,18 @@ export default {
       //set ajaxRequest to true so the please wait shows up the screen
       this.ajaxRequest = true;
 
-      this.$http
-        .post("api/feeds/validate", { url: this.url })
+      axios
+        .post("http://localhost:3000/api/feeds/validate", { url: this.url })
         .then(
           result => {
             /* eslint-disable no-console */
             console.log(result.status);
             /* eslint-enable no-console */
             this.error_msg = "";
-            this.feed = result.body;
+            this.feed = result.data;
           },
           response => {
-            this.error_msg = response.body.error_msg;
+            this.error_msg = response.data.error_msg;
           }
         )
         .catch(err => {
@@ -480,8 +482,8 @@ export default {
       this.$emit(eventType, value);
     },
     newFeed: function() {
-      this.$http
-        .post("api/feeds", {
+      axios
+        .post("http://localhost:3000/api/feeds", {
           categoryId: this.category.id,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
@@ -495,7 +497,7 @@ export default {
             /* eslint-enable no-console */
 
             //overwrite results with results from the database
-            this.feed = result.body;
+            this.feed = result.data;
 
             //add missing count properties, since these are populated dynamically on an initial load
             this.feed.unreadCount = 0;
@@ -522,8 +524,8 @@ export default {
       this.closeModal();
     },
     saveFeed: function() {
-      this.$http
-        .put("api/feeds/" + this.feed.id, {
+      axios
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id, {
           categoryId: this.category.id,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
@@ -553,10 +555,10 @@ export default {
     saveCategory: function() {
       //save category when category name is set
       if (this.category) {
-        this.$http.post("api/categories", { name: this.category.name }).then(
+        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories", { name: this.category.name }).then(
           result => {
             //create new local category in data object
-            this.category = result.body;
+            this.category = result.data;
 
             //add missing count properties, since these are populated dynamically
             this.category.unreadCount = 0;
@@ -581,7 +583,7 @@ export default {
     },
     deleteCategory: function() {
       //delete category
-      this.$http.delete("api/categories/" + this.category.id).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.category.id).then(
         () => {
           //remove the category from the store
           this.store.categories = this.arrayRemove(
@@ -610,8 +612,8 @@ export default {
     },
     renameCategory: function() {
       //rename category
-      this.$http
-        .put("api/categories/" + this.store.currentSelection.categoryId, {
+      axios
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.store.currentSelection.categoryId, {
           name: this.category.name
         })
         .then(
@@ -635,7 +637,7 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      this.$http.delete("api/feeds/" + this.feed.id).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id).then(
         () => {
           //find the index of both the category and feed
           var indexCategory = this.store.categories.indexOf(this.inputCategory);
@@ -662,8 +664,8 @@ export default {
     },
     renameFeed: function() {
       //rename feed
-      this.$http
-        .put("api/feeds/" + this.feed.id, {
+      axios
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
           categoryId: this.selectedCategory,

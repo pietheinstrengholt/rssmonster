@@ -3,6 +3,7 @@ node_modules
 /dist
 .deployment
 /src/local.settings.json
+/dev-dist
 
 # local env files
 .env

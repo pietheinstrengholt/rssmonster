@@ -1,14 +1,13 @@
-const Hotlink = require("../models/hotlink");
+import Hotlink from '../models/hotlink.js';
+import NodeCache from 'node-cache';
+import Sequelize from 'sequelize';
 
-const NodeCache = require('node-cache');
-
-const Sequelize = require("sequelize");
 const Op = Sequelize.Op;
 
 // stdTTL: time to live in seconds for every generated cache element.
 const cache = new NodeCache({ stdTTL: 14 * 24 * 60 * 60 })
 
-function set(url) {
+export const set = (url) => {
   //set cache
   cache.set(url)
 
@@ -18,17 +17,17 @@ function set(url) {
   });
 }
 
-function get(url) {
+export const get = (url) => {
   //returns boolean indicating if the key is cached
   return cache.has(url)
 }
 
-function all() {
+export const all = () => {
   //returns an array of all existing keys
   return cache.keys()
 }
 
-async function init() {
+export const init = async () => {
   //destroy records older than two weeks
   Hotlink.destroy({
     where: {
@@ -52,4 +51,9 @@ async function init() {
   }
 }
 
-module.exports = { get, set, all, init }
+export default {
+  set,
+  get,
+  all,
+  init
+}

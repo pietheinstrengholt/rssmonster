@@ -6,22 +6,22 @@
     <div class="drag">
       <div @click="markAll()" class="option" id="mark-all-as-read">
         <span class="glyphicon">
-          <v-icon fill="white" name="check-square"/>
+          <BootstrapIcon icon="check-square-fill" variant="light" />
         </span>Mark all read
       </div>
 
       <div @click="refreshFeeds()" class="option" id="refresh">
         <span class="glyphicon">
-          <v-icon fill="white" name="sync"/>
+          <BootstrapIcon icon="arrow-down-square-fill" variant="light" />
         </span>Refresh feeds
         <span v-show="refreshing">
-          <v-icon fill="white" name="spinner" pulse/>
+          <BootstrapIcon icon="circle-fill" variant="light" />
         </span>
       </div>
 
       <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
         <span class="glyphicon">
-          <v-icon fill="white" name="plus-square"/>
+          <BootstrapIcon icon="plus-square-fill" variant="light" />
         </span>Add new feed
       </div>
 
@@ -29,13 +29,13 @@
         <p class="title">All feeds</p>
       </div>
       <div
-        v-on:click="loadType('unread')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
+        v-on:click="loadType('unread')"
         id="unread"
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="dot-circle" scale="0.8"/>
+          <BootstrapIcon icon="heart-fill" variant="light" />
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
@@ -43,13 +43,13 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('star')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
+        v-on:click="loadType('star')"
         id="star"
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="heart" scale="0.8"/>
+          <BootstrapIcon icon="record-circle-fill" variant="light" />
         </span>
         <span class="title">Favorites</span>
         <span class="badge-unread">
@@ -57,13 +57,13 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('hot')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'hot' }"
+        v-on:click="loadType('hot')"
         id="hot"
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="fire" scale="0.8"/>
+          <BootstrapIcon icon="fire" variant="light" />
         </span>
         <span class="title">Hot</span>
         <span class="badge-unread">
@@ -71,13 +71,13 @@
         </span>
       </div>
       <div
-        v-on:click="loadType('read')"
         v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
+        v-on:click="loadType('read')"
         id="read"
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="circle" scale="0.8"/>
+          <BootstrapIcon icon="circle-fill" variant="light" />
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
@@ -89,13 +89,13 @@
         <p class="title">All</p>
       </div>
       <div
-        v-on:click="loadAll()"
         v-bind:class="{ 'selected': store.currentSelection.categoryId === '%' }"
+        v-on:click="loadAll()"
         id="all"
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <v-icon fill="white" name="star" scale="0.8"/>
+          <BootstrapIcon icon="star-fill" variant="light" />
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
@@ -108,60 +108,38 @@
       <div>
         <p v-if="store.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <draggable 
-        :list="this.store.categories"
-        class="dragArea"
-        v-bind="{group:{ name:'category', pull:'clone', put:false}}"
-        v-if="store.currentSelection.status != 'hot'"
-        @end="updateSortOrder"
-      >
-        <div
+      <draggable v-model="this.store.categories" item-key="id" @end="updateSortOrder">
+        <template #item="{element}">
+          <div
+          v-bind:class="{ 'selected': (store.currentSelection.categoryId == element.id) && (store.currentSelection.feedId === '%') }"
+          v-bind:id="element.id"
           class="sidebar-category-main"
-          v-bind:class="{ 'selected': (store.currentSelection.categoryId == category.id) && (store.currentSelection.feedId === '%') }"
-          v-on:click="loadCategory(category)"
-          v-bind:id="category.id"
-          v-for="(category, index) in this.store.categories"
-          :key="index"
-        >
+          v-on:click="loadCategory(element)"
+          >
           <div class="sidebar-category-sub">
             <span class="glyphicon">
-              <v-icon fill="white" name="folder" scale="0.8"/>
+              <BootstrapIcon icon="folder-fill" variant="light" />
             </span>
-            <span class="title">{{category.name}}</span>
+            <span class="title">{{element.name}}</span>
             <span class="badge-unread">
               <span
-                v-if="store.currentSelection.status === 'unread'"
-                class="badge white"
-              >{{ category.unreadCount }}</span>
+                v-if="store.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
               <span
-                v-if="store.currentSelection.status === 'read'"
-                class="badge white"
-              >{{ category.readCount }}</span>
+                v-if="store.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
               <span
-                v-if="store.currentSelection.status === 'star'"
-                class="badge white"
-              >{{ category.starCount }}</span>
+                v-if="store.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
             </span>
           </div>
-          <div v-if="category.feeds">
-            <div
-              v-if="store.currentSelection.categoryId == category.id"
-              class="sidebar-category-feeds"
-            >
-              <div
-                class="sidebar-category-feed"
-                v-on:click.stop="loadFeed(feed)"
-                v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (category.feeds.length-1) }"
-                v-bind:id="feed.id"
-                v-for="(feed, index) in category.feeds"
-                :key="index"
-              >
-                <span class="glyphicon">
-                  <v-icon fill="white" v-if="!feed.favicon" name="rss-square"/>
-                  <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
-                </span>
-                <span class="title">{{feed.feedName}}</span>
-                <span class="badge-unread">
+          <div v-if="element.feeds">
+            <div v-if="store.currentSelection.categoryId == element.id" class="sidebar-category-feeds">
+              <div v-for="(feed, index) in element.feeds" v-bind:key="index">
+                <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
+                  <span class="glyphicon">
+                    <BootstrapIcon icon="rss-fill" variant="light" />
+                    <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
+                  </span>
+                  <span class="title">{{feed.feedName}}</span>
+                  <span class="badge-unread">
                   <span
                     v-if="store.currentSelection.status === 'unread'"
                     class="badge white"
@@ -174,16 +152,19 @@
                     v-if="store.currentSelection.status === 'star'"
                     class="badge white"
                   >{{ feed.starCount }}</span>
-                </span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
         </div>
+        </template>
       </draggable>
+
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <v-icon fill="white" name="plus-square"/>
+            <BootstrapIcon icon="plus-square-fill" variant="light" />
             <div class="text">Add</div>
           </div>
         </div>
@@ -194,7 +175,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="trash-alt"/>
+            <BootstrapIcon icon="trash3-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -205,7 +186,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="edit"/>
+            <BootstrapIcon icon="pencil-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -216,7 +197,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="trash-alt"/>
+            <BootstrapIcon icon="trash3-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
@@ -227,7 +208,7 @@
           class="category-button"
         >
           <div>
-            <v-icon fill="white" name="edit"/>
+            <BootstrapIcon icon="pencil-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -422,6 +403,7 @@ div.category-button div.text {
 <script>
 import draggable from "vuedraggable";
 import store from "../store";
+import axios from 'axios';
 
 export default {
   data() {
@@ -457,9 +439,9 @@ export default {
       this.store.currentSelection.feedId = "%";
     },
     markAll: function() {
-      this.$http.post("api/articles", {}).then(
+      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {}).then(
         response => {
-          if (response.body) {
+          if (response.data) {
             //refresh after one second
             setTimeout(function() {
               location.reload();
@@ -476,9 +458,9 @@ export default {
     refreshFeeds: function() {
       //show spinner
       this.refreshing = true;
-      this.$http.get("api/crawl", {}).then(
+      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/crawl", {}).then(
         response => {
-          if (response.body) {
+          if (response.data) {
             //refresh after one second
             setTimeout(this.refresh, 1000);
           }
@@ -503,7 +485,7 @@ export default {
       }
 
       //make ajax request to change categories order
-      this.$http.post("api/manager/updateorder", { order: orderList }).then(
+      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/updateorder", { order: orderList }).then(
         response => {
           //get status & status text
           /* eslint-disable no-console */

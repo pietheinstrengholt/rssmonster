@@ -1,7 +1,7 @@
 <template>
   <div class="toolbar">
     <div class="status-toolbar" @click="toggleShowStatus">
-      <p id="status">{{ this.store.currentSelection.status | capitalize }}</p>
+      <p id="status">{{ capitalize(this.store.currentSelection.status) }}</p>
     </div>
     <div v-if="showStatusMenu" class="dropdownmenu" id="status">
       <div class="item" href="#" @click="statusClicked('unread')">
@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="status-toolbar" @click="toggleShowFilter">
-      <p id="filter">{{ this.store.filter | capitalize }}</p>
+      <p id="filter">{{ capitalize(this.store.filter) }}</p>
     </div>
     <div v-if="showFilterMenu" class="dropdownmenu" id="filter">
       <div class="item" href="#" @click="filterClicked('full')">
@@ -213,11 +213,11 @@ export default {
       this.toggleShowSort();
     }
   },
-  filters: {
-    capitalize: function(value) {
-      if (!value) return "";
-      value = value.toString();
-      return value.charAt(0).toUpperCase() + value.slice(1);
+  computed:{
+    capitalize() {
+      return (value)=> {
+        return value.charAt(0).toUpperCase() + value.slice(1);
+      }
     }
   }
 };

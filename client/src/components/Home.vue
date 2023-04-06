@@ -8,7 +8,7 @@
               <a target="_blank" :href="article.url" v-text="article.subject"></a>
             </h5>
             <div class="feedname">
-              <span class="published_date">{{ article.published | formatDate }}</span>
+              <span class="published_date">{{ formatDate(article.published) }}</span>
               <span class="break">by</span>
               <span class="feed_name">
                 <a target="_blank" :href="article.feed.url" v-text="article.feed.feedName"></a>
@@ -19,19 +19,19 @@
             <div class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'" v-html="article.content"></div>
           </div>
           <div v-if="store.filter === 'minimal'" class="article-content">
-            <p class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'">{{ article.content | stripHTML }}</p>
+            <p class="article-body" v-if="article.content !== '<html><head></head><body>null</body></html>'">{{ stripHTML(article.content) }}</p>
           </div>
         </div>
       </div>
       <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
-        <span slot="no-more">
+        <template v-slot:no-more>
           <p
             v-on:click="flushPool()"
           >No more posts for this selection - Click here to mark all remaining items as read!</p>
-        </span>
-        <span slot="no-results">
+        </template>
+        <template v-slot:no-results>
           <p v-on:click="flushPool()">No posts have been found!</p>
-        </span>
+        </template>
       </infinite-loading>
     </div>
   </div>
@@ -286,9 +286,10 @@ div.infinite-loading-container {
 </style>
 
 <script>
-require("waypoints/lib/noframework.waypoints.js");
+import "waypoints/lib/noframework.waypoints.js";
 import InfiniteLoading from "vue-infinite-loading";
 import moment from "moment";
+import axios from 'axios';
 
 import store from "../store";
 
@@ -318,14 +319,37 @@ export default {
   computed: {
     remainingItems: function() {
       return this.container.length - this.pool.length;
+    },
+    formatDate: function(){
+      return (value)=> {
+        if (value) {
+          //use fromNow function to calculate time from article published
+          value = moment(String(value)).fromNow();
+          //uppercase first character of sentence
+          value = value.charAt(0).toUpperCase() + value.slice(1);
+          return value;
+        }
+      }
+    },
+    stripHTML: function(){
+      return (value)=> {
+        //strip out all HTML
+        var str1 = value.replace(/<(.|\n)*?>/g, "");
+        //take first 100 words
+        var str2 = str1
+          .split(/\s+/)
+          .slice(0, 100)
+          .join(" ");
+        return str2;
+      }
     }
   },
   //watch the data store, when changing reload the article details
   watch: {
     "store.currentSelection": {
       handler: function(data) {
-        this.$http
-          .get("api/articles", {
+        axios
+          .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
             params: {
               //the following arguments are used
               status: data.status,
@@ -336,12 +360,12 @@ export default {
             }
           })
           .then(response => {
-            return response.json();
+            return response;
           })
-          .then(data => {
+          .then(response => {
             //reset the pool, attach data to container and get first set of article details
             this.resetPool();
-            this.container = data.itemIds;
+            this.container = response.data.itemIds;
             //reset onInfinite using the new container data
             this.$refs.infiniteLoading.stateChanger.reset();
           });
@@ -352,18 +376,18 @@ export default {
   created: function() {
     window.addEventListener("scroll", this.handleScroll);
   },
-  destroyed: function() {
+  unmounted: function() {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
     //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-    this.$http
-      .get("api/setting")
+    axios
+      .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting")
       .then(response => {
-        return response.json();
+        return response;
       })
-      .then(data => {
-        this.store.currentSelection = data;
+      .then(response => {
+        this.store.currentSelection = response.data;
         this.firstLoad = true;
       });
   },
@@ -389,7 +413,7 @@ export default {
         mobileToolbar.classList.add('hide');
       }
 
-      //dectect change of scroll direction, show back menu when scrolling up
+      //detect change of scroll direction, show back menu when scrolling up
       if (direction !== this.prevDirection) {
         if (direction === "up") {
           mobileToolbar.classList.remove('hide');
@@ -414,17 +438,17 @@ export default {
       //only fetch article details if the container is filled with items
       if (this.container.length > 0) {
         //get all the articles by using the api
-        this.$http
-          .post("api/manager/details", {
+        axios
+          .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
             articleIds: this.container
               .slice(this.distance, this.distance + this.fetchCount)
               .join(","),
             sort: this.store.currentSelection.sort
           })
-          .then(res => {
-            if (res.data.length) {
-              this.distance = this.distance + res.data.length;
-              this.articles = this.articles.concat(res.data);
+          .then(response => {
+            if (response.data.length) {
+              this.distance = this.distance + response.data.length;
+              this.articles = this.articles.concat(response.data);
               //set state to loaded
               $state.loaded();
               //add waypoint to every article
@@ -442,7 +466,7 @@ export default {
                 }
               }, 50);
               //if the returned set has a length of less than fetchCount set the state to complete
-              if (res.data.length < this.fetchCount) {
+              if (response.data.length < this.fetchCount) {
                 $state.complete();
               }
               //if no articles are returned, flush remaining items in queue and mark all as read
@@ -475,25 +499,28 @@ export default {
       this.distance = 0;
     },
     waypointCreate(article) {
-      // eslint-disable-next-line
-      const waypoint = new Waypoint({
-        element: document.getElementById(article),
-        offset: -150,
-        //use the ES2015 arrow syntax to avoid error Cannot read property 'post' of undefined
-        handler: direction => {
-          if (direction == "down") {
-            //make ajax request to change bookmark status
-            this.markArticleRead(article);
-            //destroy after the article has been marked as read
-            waypoint.destroy();
+      //add additional check to fix error: https://stackoverflow.com/questions/40252534/waypoints-no-element-option-passed-to-waypoint-constructor
+      if (document.getElementById(article)) {
+        // eslint-disable-next-line
+        const waypoint = new Waypoint({
+          element: document.getElementById(article),
+          offset: -150,
+          //use the ES2015 arrow syntax to avoid error Cannot read property 'post' of undefined
+          handler: direction => {
+            if (direction == "down") {
+              //make ajax request to change bookmark status
+              this.markArticleRead(article);
+              //destroy after the article has been marked as read
+              waypoint.destroy();
+            }
           }
-        }
-      });
+        });
+      }
     },
     markArticleRead(article) {
       if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
-        this.$http.post("api/manager/marktoread/" + article).then(
+        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + article).then(
           response => {
             if (!this.pool.includes(article)) {
               //push id to the pool
@@ -501,14 +528,14 @@ export default {
 
               //decrease the unread count
               var categoryIndex = this.store.categories.findIndex(
-                category => category.id === response.body.feed.categoryId
+                category => category.id === response.data.feed.categoryId
               );
               //avoid having any negative numbers
               if (this.store.categories[categoryIndex].unreadCount != 0) {
                 this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
                 this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
               }
-              var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+              var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
               //avoid having any negative numbers
               if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount != 0) {
                 this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
@@ -536,16 +563,16 @@ export default {
         //determine if classname already contains bookmarked, if so, the change is unmark
         if (event.currentTarget.className.indexOf("starred") >= 0) {
           //make ajax request to change bookmark status
-          this.$http
-            .post("api/manager/markwithstar/" + article, { update: "unmark" })
+          axios
+            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "unmark" })
             .then(
               response => {
                 //decrease the star count
                 var categoryIndex = this.store.categories.findIndex(
-                  category => category.id === response.body.feed.categoryId
+                  category => category.id === response.data.feed.categoryId
                 );
                 this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount - 1;
-                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
                 this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount - 1;
 
                 //also increase total count
@@ -559,16 +586,16 @@ export default {
             );
         } else {
           //make ajax request to change bookmark status
-          this.$http
-            .post("api/manager/markwithstar/" + article, { update: "mark" })
+          axios
+            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "mark" })
             .then(
               response => {
                 //increase the star count
                 var categoryIndex = this.store.categories.findIndex(
-                  category => category.id === response.body.feed.categoryId
+                  category => category.id === response.data.feed.categoryId
                 );
                 this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount + 1;
-                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.body.feedId);
+                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
                 this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount + 1;
 
                 //also increase total count
@@ -583,32 +610,6 @@ export default {
         }
         //toggle div element class
         event.currentTarget.classList.toggle('starred');
-      }
-    }
-  },
-  filters: {
-    capitalize: function(value) {
-      if (!value) return "";
-      value = value.toString();
-      return value.charAt(0).toUpperCase() + value.slice(1);
-    },
-    stripHTML: function(value) {
-      //strip out all HTML
-      var str1 = value.replace(/<(.|\n)*?>/g, "");
-      //take first 100 words
-      var str2 = str1
-        .split(/\s+/)
-        .slice(0, 100)
-        .join(" ");
-      return str2;
-    },
-    formatDate: function(value) {
-      if (value) {
-        //use fromNow function to calculate time from article published
-        value = moment(String(value)).fromNow();
-        //uppercase first character of sentence
-        value = value.charAt(0).toUpperCase() + value.slice(1);
-        return value;
       }
     }
   }
