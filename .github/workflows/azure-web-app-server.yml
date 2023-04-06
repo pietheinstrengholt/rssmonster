@@ -18,7 +18,6 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
-
     - name: Install packages and build
       run: |
         npm install
