@@ -19,11 +19,6 @@ jobs:
     steps:
     - uses: actions/checkout@v3
 
-    - name: Set up Node.js version
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
-
     - name: Install packages and build
       run: |
         npm install
