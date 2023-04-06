@@ -133,7 +133,7 @@ export default {
       offlineStatus: false
     };
   },
-  created: function() {
+  created: async function() {
     //fetch all category and feed information for an complete overview including total read and unread counts
     this.getOverview(true);
 
@@ -287,7 +287,7 @@ export default {
           this.offlineStatus = true;
         });
     },
-    showNotification(input) {
+    showNotification: async function (input) {
       if ('serviceWorker' in navigator) {
         navigator.serviceWorker.ready // returns a Promise, the active SW registration
           .then(swreg => swreg.showNotification('New articles', {

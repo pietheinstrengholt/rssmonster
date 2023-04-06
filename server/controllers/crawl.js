@@ -44,8 +44,10 @@ const getCrawl = catchAsync(async (req, res, next) => {
         //discover rssUrl
         const url = await autodiscover.discover(feed.url);
 
+        console.log("Collecting new articles for feed: " + url);
+
         //do not process undefined URLs
-        if(typeof url !== "undefined") {
+        if (typeof url !== "undefined") {
           try {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {
@@ -90,91 +92,100 @@ const getCrawl = catchAsync(async (req, res, next) => {
 });
 
 const processArticle = async (feed, post) => {
-  try {
-    //try to find any existing article with the same link and post title
-    const article = await Article.findOne({
-      where: {
-        [Op.or]: [
-          {
-            url: post.link
-          },
-          {
-            subject: post.title
+
+  //don't process empty post URLs
+  if (empty(post.link)) {
+    try {
+      //try to find any existing article with the same link and post title
+      const article = await Article.findOne({
+        where: {
+          [Op.or]: [
+            {
+              url: post.link
+            },
+            {
+              subject: post.title
+            }
+          ],
+          [Op.and]: {
+            feedId: feed.id
           }
-        ],
-        [Op.and]: {
-          feedId: feed.id
         }
-      }
-    });
-
-    //if none, add new article to the database
-    if (!article) {
-      //remove any script tags
-      //dismiss "cheerio.load() expects a string" by converting to string
-
-      //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
-      const dom = htmlparser2.parseDocument(post.description);
-      const $ = cheerio.load(dom, { _useHtmlParser2: true });
-
-      //dismiss undefined errors
-      if (typeof $ !== 'undefined') {
-        $('script').remove();
-
-        //execute hotlink feature by collecting all the links in each RSS post
-        //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
-        $('a').each(function() {
-          //find domain name for each link
-          var domain = (new URL(post.link));
-          domain = domain.hostname;
-
-          //fetch all urls referenced to other websites. Insert these into the hotlinks table
-          if ($(this).attr('href')) {
-            if (!$(this).attr('href').includes(domain)) {
-              //only add http and https urls to database
-              if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
-                //update cache
-                cache.set($(this).attr('href'));
+      });
+  
+      //if none, add new article to the database
+      if (!article) {
+        //remove any script tags
+        //dismiss "cheerio.load() expects a string" by converting to string
+  
+        //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
+        const dom = htmlparser2.parseDocument(post.description);
+        const $ = cheerio.load(dom, { _useHtmlParser2: true });
+  
+        //dismiss undefined errors
+        if (typeof $ !== 'undefined') {
+          $('script').remove();
+  
+          //execute hotlink feature by collecting all the links in each RSS post
+          //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
+          $('a').each(function() {
+            try {
+              //find domain name for each link
+              var domain = (new URL(post.link));
+              domain = domain.hostname;
+            } catch (err) {
+              console.log(err);
+              var domain = post.link;
+            }
+  
+            //fetch all urls referenced to other websites. Insert these into the hotlinks table
+            if ($(this).attr('href')) {
+              if (!$(this).attr('href').includes(domain)) {
+                //only add http and https urls to database
+                if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
+                  //update cache
+                  cache.set($(this).attr('href'));
+                }
               }
             }
+          });
+  
+          //parse media RSS feeds: https://www.rssboard.org/media-rss
+          if (post['media:group']) {
+            var postLink = post['media:group']['media:content']['@']['url'];
+            var postTitle = post['media:group']['media:title']['#'];
+            var postContent = post['media:group']['media:description']['#'];
+            var postContentStripped = striptags(post['media:group']['media:description']['#']);
+            var postLanguage = language.get(post['media:group']['media:description']['#']);
+          } else {
+            var postLink = post.link;
+            var postTitle = post.title;
+            var postContent = $.html();
+            var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
+            var postLanguage = language.get($.html());
           }
-        });
-
-        //parse media RSS feeds: https://www.rssboard.org/media-rss
-        if (post['media:group']) {
-          var postLink = post['media:group']['media:content']['@']['url'];
-          var postTitle = post['media:group']['media:title']['#'];
-          var postContent = post['media:group']['media:description']['#'];
-          var postContentStripped = striptags(post['media:group']['media:description']['#']);
-          var postLanguage = language.get(post['media:group']['media:description']['#']);
-        } else {
-          var postLink = post.link;
-          var postTitle = post.title;
-          var postContent = $.html();
-          var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
-          var postLanguage = language.get($.html());
+  
+          //add article
+          Article.create({
+            feedId: feed.id,
+            status: "unread",
+            star_ind: 0,
+            url: postLink,
+            image_url: "",
+            subject: postTitle || 'No title',
+            content: postContent,
+            contentStripped: postContentStripped,
+            language: postLanguage,
+            //contentSnippet: item.contentSnippet,
+            //author: item.author,
+            //default post.pubdate with new Date when empty
+            published: post.pubdate || new Date()
+          });
         }
-
-        //add article
-        Article.create({
-          feedId: feed.id,
-          status: "unread",
-          star_ind: 0,
-          url: postLink,
-          image_url: "",
-          subject: postTitle || 'No title',
-          content: postContent,
-          contentStripped: postContentStripped,
-          language: postLanguage,
-          //contentSnippet: item.contentSnippet,
-          //author: item.author,
-          //default post.pubdate with new Date when empty
-          published: post.pubdate || new Date()
-        });
       }
+    } catch (err) {
+      console.log(err);
     }
-  } catch (err) {
-    console.log(err);
   }
 };
 

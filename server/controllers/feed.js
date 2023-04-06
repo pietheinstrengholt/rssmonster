@@ -108,6 +108,12 @@ const validateFeed = async (req, res, next) => {
   const url = await autodiscover.discover(req.body.url);
   const categoryId = req.body.categoryId;
 
+  if (typeof url === "undefined") {
+    return res.status(500).json({
+      error_msg: "Feed url is invalid. Are you sure the RSS feed is correct?"
+    });
+  }
+
   try {
 
     const feeditem = await parseFeed.process(url);

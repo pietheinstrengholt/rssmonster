@@ -461,7 +461,7 @@ export default {
             this.feed = result.data;
           },
           response => {
-            this.error_msg = response.data.error_msg;
+            this.error_msg = response.response.data.error_msg;
           }
         )
         .catch(err => {

@@ -14,8 +14,8 @@
         <span class="glyphicon">
           <BootstrapIcon icon="arrow-down-square-fill" variant="light" />
         </span>Refresh feeds
-        <span v-show="refreshing">
-          <BootstrapIcon icon="circle-fill" variant="light" />
+        <span v-show="refreshing" class="spin">
+          <BootstrapIcon icon="arrow-repeat" variant="light" />
         </span>
       </div>
 
@@ -438,8 +438,8 @@ export default {
       this.store.currentSelection.categoryId = "%";
       this.store.currentSelection.feedId = "%";
     },
-    markAll: function() {
-      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {}).then(
+    markAll: async function() {
+      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {}).then(
         response => {
           if (response.data) {
             //refresh after one second
@@ -455,10 +455,10 @@ export default {
         }
       );
     },
-    refreshFeeds: function() {
+    refreshFeeds: async function() {
       //show spinner
       this.refreshing = true;
-      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/crawl", {}).then(
+      await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/crawl", {}).then(
         response => {
           if (response.data) {
             //refresh after one second

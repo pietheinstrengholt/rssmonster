@@ -481,7 +481,7 @@ export default {
         this.flushPool();
       }
     },
-    flushPool() {
+    async flushPool() {
       //check if the container is present
       if (this.container.length) {
         //loop through the container and mark every item that is not part of the pool as read
@@ -492,7 +492,7 @@ export default {
         }
       }
     },
-    resetPool() {
+    async resetPool() {
       //reset the articles, container and distance
       this.articles = [];
       this.container = [];
@@ -517,10 +517,10 @@ export default {
         });
       }
     },
-    markArticleRead(article) {
+    async markArticleRead(article) {
       if (this.store.currentSelection.status === "unread") {
         //make ajax request to change read status
-        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + article).then(
+        await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + article).then(
           response => {
             if (!this.pool.includes(article)) {
               //push id to the pool
@@ -556,14 +556,14 @@ export default {
         );
       }
     },
-    bookmark(article, event) {
+    async bookmark(article, event) {
       //do not bookmark when clicking on hyperlinks
       if (event.srcElement.nodeName != "A") {
 
         //determine if classname already contains bookmarked, if so, the change is unmark
         if (event.currentTarget.className.indexOf("starred") >= 0) {
           //make ajax request to change bookmark status
-          axios
+          await axios
             .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "unmark" })
             .then(
               response => {
@@ -586,7 +586,7 @@ export default {
             );
         } else {
           //make ajax request to change bookmark status
-          axios
+          await axios
             .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "mark" })
             .then(
               response => {
