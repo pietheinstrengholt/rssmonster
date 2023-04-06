@@ -28,14 +28,13 @@ jobs:
         CI: true
 
     - name: Zip artifact for deployment
-      run: zip release.zip ./* -r
-      working-directory: server
+      run: zip -r release.zip ./server/*
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
       with:
         name: node-app
-        path: /server/release.zip
+        path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
