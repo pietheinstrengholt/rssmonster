@@ -18,6 +18,7 @@ jobs:
 
     steps:
     - uses: actions/checkout@v3
+
     - name: Install packages and build
       run: |
         npm install
@@ -26,9 +27,8 @@ jobs:
       env:
         CI: true
 
-    - name: Zip all files for upload between jobs
-        # IMPORTANT: .next is a hidden folder and will NOT be included in the zip unless we specify it
-        run: zip release.zip ./* -r
+    - name: Zip artifact for deployment
+      run: zip release.zip ./* -r
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
@@ -57,6 +57,3 @@ jobs:
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_2dd7d8e7c60b483f86aabb734cd49aa0 }}
         package: release.zip
-
-    - name: Delete zip file
-      run: rm release.zip
