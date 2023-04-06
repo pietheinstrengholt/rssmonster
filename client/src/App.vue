@@ -245,9 +245,9 @@ export default {
         }
       }
     },
-    getOverview: function(initial) {
+    getOverview: async function(initial) {
       //get an overview with the count for all feeds
-      axios
+      await axios
         .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview")
         .then(response => {
           return response;
