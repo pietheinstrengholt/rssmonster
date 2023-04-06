@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+    paths-ignore:
+      - 'server/**'
   pull_request:
     types: [opened, synchronize, reopened, closed]
     branches:
@@ -16,16 +18,14 @@ jobs:
     name: Build and Deploy Job
     steps:
       - name: Checkout
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           submodules: true
-
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: javascript
           config-file: ./.github/codeql/codeql-config.yml
-
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
@@ -44,7 +44,6 @@ jobs:
           VITE_VUE_APP_HOSTNAME: "https://rssmonster-server.azurewebsites.net"
           VITE_NODE_ENV: production
           SKIP_DEPLOY_ON_MISSING_SECRETS: true
-
       - name: Perform CodeQL Analysis
         uses: github/codeql-action/analyze@v2
 
