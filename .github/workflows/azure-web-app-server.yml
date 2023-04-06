@@ -12,10 +12,13 @@ on:
     branches:
       - master
 
+env:
+  AZURE_WEBAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
+  NODE_VERSION: '16.x' # set this to the node version to use
+
 jobs:
   build:
     runs-on: ubuntu-latest
-
     steps:
     - uses: actions/checkout@v3
 
@@ -32,11 +35,15 @@ jobs:
       env:
         CI: true
 
+    - name: Zip artifact for deployment
+      run: zip release.zip ./* -r
+      working-directory: server
+
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
       with:
         name: node-app
-        path: server/
+        path: release.zip
 
   deploy:
     runs-on: ubuntu-latest
@@ -51,11 +58,14 @@ jobs:
       with:
         name: node-app
 
+    - name: unzip artifact for deployment
+      run: unzip release.zip
+
     - name: 'Deploy to Azure Web App'
-      id: deploy-to-webapp
+      id: 'deploy-to-webapp'
       uses: azure/webapps-deploy@v2
       with:
         app-name: 'rssmonster-server'
         slot-name: 'production'
         publish-profile: ${{ secrets.AzureAppService_PublishProfile_2dd7d8e7c60b483f86aabb734cd49aa0 }}
-        package: .
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
