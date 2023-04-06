@@ -11,6 +11,8 @@ on:
     types: [opened, synchronize, reopened, closed]
     branches:
       - master
+  paths-ignore:
+    - 'client/**'
 
 env:
   AZURE_WEBAPP_PACKAGE_PATH: '.' # set this to the path to your web app project, defaults to the repository root
@@ -21,12 +23,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v3
-
-    - name: Set up Node.js version
-      uses: actions/setup-node@v2
-      with:
-        node-version: 16
-
     - name: Install packages and build
       run: |
         npm install
@@ -36,8 +32,7 @@ jobs:
         CI: true
 
     - name: Zip artifact for deployment
-      run: zip release.zip ./* -r
-      working-directory: server
+      run: zip release.zip ./server/* -r
 
     - name: Upload artifact for deployment job
       uses: actions/upload-artifact@v3
