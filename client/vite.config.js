@@ -8,13 +8,15 @@ export default defineConfig({
         vue(),
         VitePWA({
             devOptions: {
-                enabled: true
+                enabled: true,
+                type: module
             },
             registerType: 'autoUpdate',
             injectRegister: 'auto',
             workbox: {
+              sourcemap: false,
               globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
-              cleanupOutdatedCaches: false
+              cleanupOutdatedCaches: false,
             },
             includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
             manifest: {

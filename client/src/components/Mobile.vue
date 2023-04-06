@@ -44,6 +44,10 @@
 
       <p class="content-header">Click the button below to add a new feed</p>
       <button @click="showNewFeed()" type="button" class="btn btn-primary">Add new feed</button>
+      <br>
+
+      <p class="content-header">Click the button below to enable notifications</p>
+      <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
       <br><br>
     </div>
   </div>
@@ -161,6 +165,14 @@ export default {
     showNewFeed() {
       this.emitClickEvent("mobile", null);
       this.$emit("modal", "newfeed");
+    },
+    subscribeNotifications() {
+      //register service worker
+      Notification.requestPermission().then(function(permission) {
+        if (permission !== 'granted') {
+          throw new Error('Permission not granted for Notification')
+        }
+      });
     }
   }
 };
