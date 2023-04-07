@@ -201,7 +201,12 @@ export default {
       this.showStatusMenu = false;
     },
     statusClicked: function(status) {
-      this.store.currentSelection.status = status;
+      //if user selects current selection, then do a forceReload by emitting an event to parent
+      if (status == this.store.currentSelection.status) {
+        this.$emit('forceReload');
+      } else {
+        this.store.currentSelection.status = status;
+      }
       this.toggleShowStatus();
     },
     filterClicked: function(filter) {
