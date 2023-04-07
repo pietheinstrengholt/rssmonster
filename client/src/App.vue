@@ -308,7 +308,9 @@ export default {
       }
     },
     forceReload: function(data) {
-      //refresh the overview with categories and feeds counts
+      //set newUnreads count back to zero. This removes the notification from the Sidebar.
+      this.store.newUnreads = 0;
+      //refresh the overview with updated categories and feeds counts
       this.getOverview(true);
       //invoke ref home child component function to reload content
       this.$refs.home.loadContent(this.store.currentSelection);
