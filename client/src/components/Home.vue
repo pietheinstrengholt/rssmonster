@@ -25,12 +25,10 @@
       </div>
       <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
         <template v-slot:no-more>
-          <p
-            v-on:click="flushPool()"
-          >No more posts for this selection - Click here to mark all remaining items as read!</p>
+          <p v-on:click="flushPool()" id="no-more">No more posts for this selection - Click here to mark all remaining items as read!</p>
         </template>
         <template v-slot:no-results>
-          <p v-on:click="flushPool()">No posts have been found!</p>
+          <p v-on:click="flushPool()" id="no-results">No posts have been found!<br><br></p>
         </template>
       </infinite-loading>
     </div>
@@ -201,6 +199,10 @@ div.infinite-loading-container {
   padding-top: 20px;
 }
 
+p#no-results {
+  margin-top: 10px;
+}
+
 @media (prefers-color-scheme: dark) {
   #main, #articles, div.block, div.block .article, .article-content, h5.heading, div.block div.feedname, div.infinite-loading-container {
     color: #fff;
@@ -348,27 +350,7 @@ export default {
   watch: {
     "store.currentSelection": {
       handler: function(data) {
-        axios
-          .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
-            params: {
-              //the following arguments are used
-              status: data.status,
-              categoryId: data.categoryId,
-              feedId: data.feedId,
-              search: data.search,
-              sort: data.sort
-            }
-          })
-          .then(response => {
-            return response;
-          })
-          .then(response => {
-            //reset the pool, attach data to container and get first set of article details
-            this.resetPool();
-            this.container = response.data.itemIds;
-            //reset onInfinite using the new container data
-            this.$refs.infiniteLoading.stateChanger.reset();
-          });
+        this.loadContent(data);
       },
       deep: true
     }
@@ -392,6 +374,30 @@ export default {
       });
   },
   methods: {
+    loadContent(data) {
+      console.log("Load content");
+      axios
+        .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
+          params: {
+            //the following arguments are used
+            status: data.status,
+            categoryId: data.categoryId,
+            feedId: data.feedId,
+            search: data.search,
+            sort: data.sort
+          }
+        })
+        .then(response => {
+          return response;
+        })
+        .then(response => {
+          //reset the pool, attach data to container and get first set of article details
+          this.resetPool();
+          this.container = response.data.itemIds;
+          //reset onInfinite using the new container data
+          this.$refs.infiniteLoading.stateChanger.reset();
+        });
+    },
     handleScroll: function() {
 
       //get mobileToolbar element

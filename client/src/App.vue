@@ -2,18 +2,22 @@
   <div id="app">
     <div class="row">
       <div class="sidebar col-md-3 col-sm-0">
-        <app-sidebar @modal="modalClick"></app-sidebar>
+        <!-- Sidebar events -->
+        <app-sidebar @modal="modalClick" @forceReload="forceReload"></app-sidebar>
       </div>
       <div class="home col-md-9 offset-md-3 col-sm-12">
-        <app-quickbar @mobile="mobileClick"></app-quickbar>
+        <!-- Quickbar events -->
+        <app-quickbar @mobile="mobileClick" @forceReload="forceReload"></app-quickbar>
+        <!-- Toolbar events -->
         <app-toolbar class="toolbar"></app-toolbar>
           <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
-        <app-home></app-home>
+        <!-- Add reference to home for calling child loadContent component function -->
+        <app-home ref="home"></app-home>
       </div>
     </div>
-    <!-- Modal -->
+    <!-- Modal events -->
     <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
-    <!-- Mobile Pop-up -->
+    <!-- Mobile events -->
     <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick"></app-mobile>
   </div>
 </template>
@@ -70,7 +74,7 @@ p.offline {
 }
 
 html, #app {
-  background-color: #f9f9f9;
+  background-color: #eee;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -296,6 +300,12 @@ export default {
             vibrate: [300, 200, 300]
         }))
       }
+    },
+    forceReload: function(data) {
+      //refresh the overview with categories and feeds counts
+      this.getOverview(true);
+      //invoke ref home child component function to reload content
+      this.$refs.home.loadContent(this.store.currentSelection);
     }
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection

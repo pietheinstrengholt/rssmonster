@@ -49,6 +49,13 @@
       <p class="content-header">Click the button below to enable notifications</p>
       <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
       <br><br>
+      <button
+          type="button"
+          class="btn btn-secondary"
+          data-dismiss="modal"
+          @click="closeModal()"
+        >Cancel
+      </button>
     </div>
   </div>
 </template>

@@ -13,34 +13,19 @@
                 <h5 class="modal-title" v-if="this.store.showModal==='deletefeed'">Delete feed</h5>
                 <h5 class="modal-title" v-if="this.store.showModal==='renamefeed'">Rename feed</h5>
                 <h5 class="modal-title" v-if="this.store.showModal==='mobile'">Categories</h5>
-                <button
-                  type="button"
-                  class="close"
-                  data-dismiss="modal"
-                  aria-label="Close"
-                  @click="closeModal"
-                >
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                   <span aria-hidden="true">&times;</span>
                 </button>
               </div>
 
               <div class="modal-body" v-if="this.store.showModal==='newfeed'">
                 <div v-if="this.store.categories.length > 0">
-                  <input
-                    class="form-control form-control-lg"
-                    type="text"
-                    placeholder="Enter feed or website url..."
-                    v-model="url"
-                  >
+                  <input class="form-control"  type="text" placeholder="Enter feed or website url..." v-model="url">
                   <br>
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select
-                        class="form-control"
-                        id="category"
-                        v-model="store.currentSelection.categoryId"
-                      >
+                      <select class="form-select" id="category" v-model="store.currentSelection.categoryId" aria-label="Select Category">
                         <option
                           v-for="category in this.store.categories"
                           :value="category.id"
@@ -55,6 +40,7 @@
                   <p>No categories exist at this moment.</p>
                   <p>First create a new category before adding a new feed.</p>
                 </div>
+                <br>
                 <button
                   v-if="this.store.categories.length > 0"
                   type="submit"
@@ -66,41 +52,23 @@
                 <br>
                 <span class="error" v-if="error_msg">{{ error_msg }}</span>
                 <div v-if="feed.feedName">
-                  <div class="form-group row">
+                  <div class="form-control">
                     <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                     <div class="col-sm-9">
-                      <input
-                        type="text"
-                        class="form-control"
-                        v-model="feed.feedName"
-                        placeholder="Feed name"
-                      >
+                      <input type="text" class="form-control" v-model="feed.feedName" placeholder="Feed name">
                     </div>
                   </div>
                   <div class="form-group row">
-                    <label
-                      for="inputFeedDescription"
-                      class="col-sm-3 col-form-label"
-                    >Feed description</label>
+                    <label for="inputFeedDescription" class="col-sm-3 col-form-label">Feed description</label>
                     <div class="col-sm-9">
-                      <input
-                        type="text"
-                        class="form-control"
-                        v-model="feed.feedDesc"
-                        placeholder="Feed description"
-                      >
+                      <input type="text" class="form-control" v-model="feed.feedDesc" placeholder="Feed description">
                     </div>
                   </div>
                 </div>
               </div>
 
               <div class="modal-body" v-if="this.store.showModal==='newcategory'">
-                <input
-                  class="form-control form-control-lg"
-                  type="text"
-                  placeholder="Enter new category name.."
-                  v-model="category.name"
-                >
+                <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
                 <br>
               </div>
 
@@ -110,12 +78,7 @@
               </div>
 
               <div class="modal-body" v-if="this.store.showModal==='renamecategory'">
-                <input
-                  class="form-control form-control-lg"
-                  type="text"
-                  placeholder="Enter new category name.."
-                  v-model="category.name"
-                >
+                <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
                 <br>
               </div>
 
@@ -128,47 +91,26 @@
                 <div class="form-group row">
                   <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                   <div class="col-sm-9">
-                    <input
-                      class="form-control"
-                      type="text"
-                      id="feed_name"
-                      placeholder="Feed name"
-                      v-model="feed.feedName"
-                    >
+                    <input class="form-control" type="text" id="feed_name" placeholder="Feed name" v-model="feed.feedName">
                   </div>
                 </div>
                 <div class="form-group row" v-if="feed.errorCount > 10">
                   <label for="inputFeedUrl" class="col-sm-3 col-form-label">Feed url</label>
                   <div class="col-sm-9">
-                    <input
-                      class="form-control red"
-                      type="text"
-                      id="rssUrl"
-                      placeholder="Feed RSS Url"
-                      v-model="feed.rssUrl"
-                    >
+                    <input class="form-control" type="text" id="rssUrl" placeholder="Feed RSS Url" v-model="feed.rssUrl">
                   </div>
                 </div>
                 <div v-if="this.store.categories.length > 0">
                   <div class="form-group row">
-                    <label
-                      for="inputFeedDescription"
-                      class="col-sm-3 col-form-label"
-                    >Feed description</label>
+                    <label for="inputFeedDescription" class="col-sm-3 col-form-label" >Feed description</label>
                     <div class="col-sm-9">
-                      <input
-                        class="form-control"
-                        type="text"
-                        id="feed_desc"
-                        placeholder="Feed description"
-                        v-model="feed.feedDesc"
-                      >
+                      <input class="form-control" type="text" id="feed_desc" placeholder="Feed description" v-model="feed.feedDesc">
                     </div>
                   </div>
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-control" id="category" v-model="selectedCategory">
+                      <select class="form-select" id="category" v-model="selectedCategory" aria-label="Select Category">
                         <option
                           v-for="category in this.categories"
                           :selected="selectedCategory == feed.categoryId"
@@ -301,6 +243,10 @@
 
 div.modal-dialog {
   max-width: 800px;
+}
+
+div.close, button.close {
+  visibility: hidden;
 }
 
 .modal-mask {

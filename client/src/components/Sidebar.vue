@@ -425,7 +425,12 @@ export default {
       this.$emit(eventType, value);
     },
     loadType: function(status) {
-      this.store.currentSelection.status = status;
+      //if user selects current selection, then do a forceReload by emitting an event to parent
+      if (status == this.store.currentSelection.status) {
+        this.$emit('forceReload');
+      } else {
+        this.store.currentSelection.status = status;
+      }
     },
     loadCategory: function(category) {
       this.store.currentSelection.categoryId = category.id;
