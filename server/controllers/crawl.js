@@ -151,7 +151,7 @@ const processArticle = async (feed, post) => {
           });
   
           //parse media RSS feeds: https://www.rssboard.org/media-rss
-          if (post['media:group']) {
+          if (post?.['media:group']?.['media:content']?.['@']?.['url'] !== undefined) {
             var postLink = post['media:group']['media:content']['@']['url'];
             var postTitle = post['media:group']['media:title']['#'];
             var postContent = post['media:group']['media:description']['#'];
