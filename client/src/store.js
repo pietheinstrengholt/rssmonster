@@ -12,5 +12,6 @@ export default {
     readCount: 0,
     starCount: 0,
     hotCount: 0,
-    showModal: false
+    showModal: false,
+    newUnreads: 0
 }

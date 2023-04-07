@@ -138,6 +138,9 @@ export default {
     };
   },
   created: async function() {
+    //reset newUnreads count to zero
+    this.store.newUnreads = 0;
+
     //fetch all category and feed information for an complete overview including total read and unread counts
     this.getOverview(true);
 
@@ -165,11 +168,10 @@ export default {
       //save reference to 'this', while it's still this!
       var self = this;
 
-      //background update overview every fifteen minutes
+      //background update overview every five minutes
       setInterval(function() {
         self.getOverview(false);
-      }, 900 * 1000);
-
+      }, 300 * 1000);
     }
 
     //default body background color to black for dark mode.
@@ -257,7 +259,6 @@ export default {
           return response;
         })
         .then(response => {
-
           //set offlineStatus to false
           this.offlineStatus = false;
 
@@ -276,9 +277,14 @@ export default {
           //update the categories in the store
           this.store.categories = response.data.categories;
 
+          //update newUnreads count, so we could show a message that new content is ready
+          if (!initial) {
+            this.store.newUnreads = response.data.unreadCount - previousUnreadCount;
+          }
+
           //update local category and feed based on current selection
           if (initial === true) {
-            this.updateSelection(this.store.currentSelection);  
+            this.updateSelection(this.store.currentSelection);
           } else {
             //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
             if (previousUnreadCount < response.data.unreadCount) {

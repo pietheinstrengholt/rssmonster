@@ -52,7 +52,7 @@
                 <br>
                 <span class="error" v-if="error_msg">{{ error_msg }}</span>
                 <div v-if="feed.feedName">
-                  <div class="form-control">
+                  <div class="form-group row">
                     <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                     <div class="col-sm-9">
                       <input type="text" class="form-control" v-model="feed.feedName" placeholder="Feed name">

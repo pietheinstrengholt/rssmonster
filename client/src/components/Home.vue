@@ -106,7 +106,7 @@ div.block .article {
   border-color: #e0e0e0;
   border-width: 1px;
   border: 1px solid #ecf0f1;
-  border-radius: 2px;
+  border-radius: 4px;
   background-color: #FBFBFB;
   width: 100%;
 }
@@ -562,14 +562,14 @@ export default {
         );
       }
     },
-    async bookmark(article, event) {
+    bookmark(article, event) {
       //do not bookmark when clicking on hyperlinks
       if (event.srcElement.nodeName != "A") {
 
         //determine if classname already contains bookmarked, if so, the change is unmark
         if (event.currentTarget.className.indexOf("starred") >= 0) {
           //make ajax request to change bookmark status
-          await axios
+          axios
             .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "unmark" })
             .then(
               response => {
@@ -592,7 +592,7 @@ export default {
             );
         } else {
           //make ajax request to change bookmark status
-          await axios
+          axios
             .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + article, { update: "mark" })
             .then(
               response => {

@@ -7,7 +7,7 @@
       <div @click="markAll()" class="option" id="mark-all-as-read">
         <span class="glyphicon">
           <BootstrapIcon icon="check-square-fill" variant="light" />
-        </span>Mark all read
+        </span>Mark all as read
       </div>
 
       <div @click="refreshFeeds()" class="option" id="refresh">
@@ -15,7 +15,7 @@
           <BootstrapIcon icon="arrow-down-square-fill" variant="light" />
         </span>Refresh feeds
         <span v-show="refreshing" class="spin">
-          <BootstrapIcon icon="arrow-repeat" variant="light" />
+          <BootstrapIcon icon="arrow-repeat" variant="light" animation="spin"/>
         </span>
       </div>
 
@@ -29,13 +29,27 @@
         <p class="title">All feeds</p>
       </div>
       <div
+        v-if="(this.store.newUnreads !== 0)"
+        v-on:click="loadType('refresh')"
+        id="newunreads"
+        class="sidebar-category-top"
+      >
+        <span class="glyphicon">
+          <BootstrapIcon icon="lightbulb-fill" variant="light" />
+        </span>
+        <span class="title">Click to refresh!</span>
+        <span class="badge-unread">
+          <span class="badge">{{ this.store.newUnreads }}</span>
+        </span>
+      </div>
+      <div
         v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
         v-on:click="loadType('unread')"
         id="unread"
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <BootstrapIcon icon="heart-fill" variant="light" />
+          <BootstrapIcon icon="record-circle-fill" variant="light" />
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
@@ -49,7 +63,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <BootstrapIcon icon="record-circle-fill" variant="light" />
+          <BootstrapIcon icon="heart-fill" variant="light" />
         </span>
         <span class="title">Favorites</span>
         <span class="badge-unread">
@@ -77,7 +91,7 @@
         class="sidebar-category-top"
       >
         <span class="glyphicon">
-          <BootstrapIcon icon="circle-fill" variant="light" />
+          <BootstrapIcon icon="check-circle-fill" variant="light" />
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
@@ -279,6 +293,10 @@ div.sidebar-category-main {
   cursor: pointer;
 }
 
+div#newunreads.sidebar-category-top {
+	background-color: #536f5b;
+}
+
 div.sidebar-category-feed {
   background-color: #696a7b !important;
 }
@@ -425,8 +443,8 @@ export default {
       this.$emit(eventType, value);
     },
     loadType: function(status) {
-      //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.store.currentSelection.status) {
+      //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
+      if (status == this.store.currentSelection.status || status == "refresh") {
         this.$emit('forceReload');
       } else {
         this.store.currentSelection.status = status;
@@ -467,7 +485,7 @@ export default {
         response => {
           if (response.data) {
             //refresh after one second
-            setTimeout(this.refresh, 1000);
+            setTimeout(this.refresh, 2000);
           }
         },
         response => {
