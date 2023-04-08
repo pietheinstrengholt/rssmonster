@@ -6,8 +6,10 @@
 
 Copyright (c) 2023 Piethein Strengholt, piethein@strengholt-online.nl
 
-RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.
-RSSMonster features a lightweight fluid responsive design. The font-end has been written in JavaScript (VueJS) and the back-end in Express (NodeJS). It also uses the Twitter Bootstrap framework. Several features are implemented such as progressive web app support, marking as read when scrolling, hotlinks, drag and drop style for managing your feeds, dark mode, and more! RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
+### Background
+RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader. RSSMonster features a lightweight fluid responsive design. It is written in JavaScript: Vue.js 3 for the frontend and Express for the backend. It uses Bootstrap for making the design responsive. 
+
+RSSMonster tries to mimic the behaviour of Google Reader. It marks items when you start scrolling. It knows what content is hot. It features progressive web app support, drag and drop support for managing feeds, dark mode, and more! RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
@@ -33,7 +35,7 @@ If you would like to run RSSMonster in development mode I recommend to run:
 ### Production
 If you would like to run RSSMonster in production mode I recommend to run:
 - Update the `VITE_APP_HOSTNAME` and `VITE_NODE_ENV` inside the file `client/.env`. Most likely you want to remove port 3000 and point to the url where the backend will be running. For production, make sure you set the `VITE_NODE_ENV` to `production`.
-- Update the `NODE_ENV` inside the file `server/.env`. For production, make sure you set the `VITE_NODE_ENV` to `production`.
+- Update the `NODE_ENV` inside the file `server/.env`. For production, make sure you set the `NODE_ENV` to `production`.
 - Inside the client folder build all the static files with: `npm run build`.
 - Move the `dist` output folder created inside the `client` folder to the `server` folder. The NodeJS server is also capable of serving out static content.
 - Inside the server folder: `npm run start`.
