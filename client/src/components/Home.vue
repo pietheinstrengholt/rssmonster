@@ -188,7 +188,7 @@ div.article {
   max-width: 100% !important;
 }
 
-div.block div.article-content img {
+div.block div.article-content img, div.block div.article-content figure {
   max-width: 100%;
   height: auto;
 }
