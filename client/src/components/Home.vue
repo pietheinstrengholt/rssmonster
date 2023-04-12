@@ -162,7 +162,7 @@ span.badge.badge-danger {
 
 div.block div.article-content img {
   max-width: 100%;
-  height: auto;
+  height: auto !important;
 }
 
 span.feed_name a {
