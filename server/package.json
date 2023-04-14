@@ -13,7 +13,8 @@
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node app.js",
     "start-server": "node app.js",
-    "debug": "nodemon -L --watch app.js"
+    "debug": "nodemon -L --watch app.js",
+    "db": "./node_modules/.bin/sequelize db:migrate"
   },
   "license": "MIT",
   "devDependencies": {
