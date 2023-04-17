@@ -25,7 +25,7 @@
       </div>
       <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
         <template v-slot:no-more>
-          <p v-if="this.store.currentSelection.status == 'unread'" v-on:click="flushPool()" id="no-more">No more posts for this selection <br><BootstrapIcon icon="check-square-fill" variant="dark" /> Click here to mark all remaining items as read!</p>
+          <p v-if="this.store.currentSelection.status == 'unread'" v-on:click="flushPool()" id="no-more">No more posts for this selection. <br><BootstrapIcon icon="check-square-fill" variant="dark" /> Click here to mark all remaining items as read!</p>
           <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts for this selection. You reached the bottom!</p>
         </template>
         <template v-slot:no-results>
