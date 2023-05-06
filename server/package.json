@@ -31,10 +31,10 @@
     "he": "^1.2.0",
     "htmlparser2": "^8.0.2",
     "morgan": "^1.10.0",
-    "mysql2": "^3.2.0",
+    "mysql2": "^3.3.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.1",
-    "sequelize": "^6.31.0",
+    "sequelize": "^6.31.1",
     "sequelize-cli": "^6.6.0",
     "striptags": "^3.2.0"
   },

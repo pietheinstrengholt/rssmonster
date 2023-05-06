@@ -25,11 +25,12 @@
       </div>
       <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
         <template v-slot:no-more>
-          <p v-if="this.store.currentSelection.status == 'unread'" v-on:click="flushPool()" id="no-more">No more posts for this selection. <br><BootstrapIcon icon="check-square-fill" variant="dark" /> Click here to mark all remaining items as read!</p>
+          <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts for this selection. <br>Click here to mark all remaining items as read!</p>
+          <p v-if="this.store.currentSelection.status == 'unread' && container.length == pool.length" id="no-more"><BootstrapIcon icon="check-square-fill" variant="dark" /> Everything has been marked as read!</p>
           <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts for this selection. You reached the bottom!</p>
         </template>
         <template v-slot:no-results>
-          <p v-on:click="flushPool()" id="no-results">No posts have been found!<br><br></p>
+          <p v-if="container.length == 0" id="no-results">No posts have been found!<br><br></p>
         </template>
       </infinite-loading>
     </div>
@@ -202,6 +203,7 @@ div.infinite-loading-container {
 
 p#no-results {
   margin-top: 10px;
+  margin-bottom: 10px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -371,7 +373,6 @@ export default {
       })
       .then(response => {
         this.store.currentSelection = response.data;
-        this.firstLoad = true;
       });
   },
   methods: {
@@ -395,12 +396,16 @@ export default {
           //reset the pool, attach data to container and get first set of article details
           this.resetPool();
           this.container = response.data.itemIds;
-          //reset onInfinite using the new container data
-          this.$refs.infiniteLoading.stateChanger.reset();
+          //reset onInfinite using the new container data, if this isn't the first load
+          if (this.firstLoad) {
+            this.$refs.infiniteLoading.stateChanger.reset();
+          } else {
+            //enable infinite-loading by setting firstLoad to true
+            this.firstLoad = true;
+          }
         });
     },
     handleScroll: function() {
-
       //get mobileToolbar element
       var mobileToolbar = document.getElementById('mobile-toolbar');
 
