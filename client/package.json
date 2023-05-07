@@ -14,7 +14,7 @@
   "dependencies": {
     "@dvuckovic/vue3-bootstrap-icons": "^1.0.6",
     "axios": "^1.4.0",
-    "idb-keyval": "^6.2.0",
+    "idb-keyval": "^6.2.1",
     "moment": "^2.29.4",
     "register-service-worker": "^1.7.2",
     "vue": "^3.2.47",

@@ -76,6 +76,7 @@
   top: 0;
   background-color: white;
   overflow-x: hidden;
+  touch-action: none;
 }
 
 .mobile-title {

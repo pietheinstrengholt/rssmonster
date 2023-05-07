@@ -12,7 +12,7 @@
         <app-toolbar class="toolbar" @forceReload="forceReload"></app-toolbar>
           <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home ref="home"></app-home>
+        <app-home ref="home" @forceReload="forceReload"></app-home>
       </div>
     </div>
     <!-- Modal events -->
@@ -23,6 +23,11 @@
 </template>
 
 <style>
+/* Disables pull-to-refresh but allows overscroll glow effects. */
+html, body {
+  overscroll-behavior-y: contain;
+}
+
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
   div.sidebar,
