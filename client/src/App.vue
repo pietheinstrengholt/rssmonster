@@ -24,8 +24,35 @@
 
 <style>
 /* Disables pull-to-refresh but allows overscroll glow effects. */
-html, body {
-  overscroll-behavior-y: contain;
+/* prevent pull-to-refresh for Safari 16+ */
+@media screen and (pointer: coarse) {
+  @supports (-webkit-backdrop-filter: blur(1px)) and (overscroll-behavior-y: none)  {
+    html {
+      min-height: 100.3%;
+      overscroll-behavior-y: none;
+    }
+  }
+}
+/* prevent pull-to-refresh for Safari 9~15 */
+@media screen and (pointer: coarse) {
+  @supports (-webkit-backdrop-filter: blur(1px)) and (not (overscroll-behavior-y: none)) {
+    html {
+      height: 100%;
+      overflow: hidden;
+    }
+    body {
+      margin: 0px;
+      max-height: 100%; /* or `height: calc(100% - 16px);` if body has default margin */
+      overflow: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    /* in this case to disable pinch-zoom, set `touch-action: pan-x pan-y;` on `body` instead of `html` */
+  }
+}
+
+/* prevent pull-to-refresh for Chrome 63+ */
+body {
+  overscroll-behavior-y: none;
 }
 
 /* Landscape phones and portrait tablets */
