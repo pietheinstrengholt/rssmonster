@@ -420,11 +420,6 @@ export default {
         direction = "up";
       }
 
-      //refresh current selection when overscroll-behavior is detected
-      if (document.scrollingElement.scrollTop === 0 && direction === "up") {
-        this.$emit('forceReload');
-      }
-
       //start hiding the top toolbar when scrolling down and distance is more than 200px
       if (direction === "down" && curScroll > 200) { 
         mobileToolbar.classList.add('hide');
