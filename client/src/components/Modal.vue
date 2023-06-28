@@ -397,7 +397,7 @@ export default {
       this.ajaxRequest = true;
 
       axios
-        .post("http://localhost:3000/api/feeds/validate", { url: this.url })
+        .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/validate", { url: this.url })
         .then(
           result => {
             /* eslint-disable no-console */
@@ -429,7 +429,7 @@ export default {
     },
     newFeed: function() {
       axios
-        .post("http://localhost:3000/api/feeds", {
+        .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds", {
           categoryId: this.category.id,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
