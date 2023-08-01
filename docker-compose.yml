@@ -22,6 +22,7 @@ services:
       - ./client/src:/app/src
     links:
       - server:server
+    hostname: client
 
   server:
     depends_on:
@@ -50,6 +51,7 @@ services:
       - ./server/seeders:/app/seeders
     links:
       - mysql:mysql
+    hostname: server
 
   mysql:
     container_name: mysqldb
