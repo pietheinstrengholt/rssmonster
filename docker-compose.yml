@@ -11,7 +11,7 @@ services:
     ports:
       - 8080:8080
     environment:
-      VITE_APP_HOSTNAME: http://server:3000
+      VITE_VUE_APP_HOSTNAME: http://server:3000
       VITE_NODE_ENV: development
       VITE_BASE_URL: /
       PORT: 8080
