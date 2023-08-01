@@ -43,7 +43,7 @@ If you would like to run RSSMonster in production mode I recommend to run:
 ### Docker for development
 - Run the following command to build all the images: `docker-compose build`
 - Run the following command to start the containers: `docker-compose up`
-- The client will be running on port 8080 and communication with the backend takes place via 3000. Make sure these ports aren't being used. The mysql database is accessible via port 3307.
+- The client will be running on port 8080 and communication with the backend takes place via 3000. Make sure these ports aren't being used. The mysql database is accessible via port 3306.
 
 ### Docker for production
 The production version has the server and client combined into a single container. The VueJS is also compiled into an optimized version. To build this single image, run the following command: `docker build -t rssmonster .`
