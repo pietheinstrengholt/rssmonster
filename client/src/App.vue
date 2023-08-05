@@ -22,6 +22,10 @@
   </div>
 </template>
 
+<style lang="scss">
+@import "./assets/scss/global.scss";
+</style>
+
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
