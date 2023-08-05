@@ -35,10 +35,6 @@
   }
 }
 
-#articles.completed p#no-more, #articles.completed p#no-more svg {
-  color: #00663e;
-}
-
 #articles {
   padding-top: 40px;
   overflow-x: hidden;
