@@ -89,7 +89,7 @@
   border: none;
   line-height: 1;
   color: #212325;
-  background: url(../assets/search.svg) 8px 13px no-repeat;
+  background: url(../assets/images/search.svg) 8px 13px no-repeat;
 }
 
 .status-toolbar {

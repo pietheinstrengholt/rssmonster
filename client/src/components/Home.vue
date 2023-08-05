@@ -98,7 +98,7 @@ div.block .article.hot {
 }
 
 div.block .article.hot .heading {
-  background-image: url("../assets/fire.png");
+  background-image: url("../assets/images/fire.png");
 }
 
 div.block .article.starred {
@@ -107,7 +107,7 @@ div.block .article.starred {
 }
 
 div.block .article.starred .heading {
-  background-image: url("../assets/heart_red.png");
+  background-image: url("../assets/images/heart_red.png");
 }
 
 div.block .article {
@@ -241,11 +241,11 @@ p#no-results {
   }
 
   div.block div.bookmark {
-    background-image: url("../assets/heart_grey.png");
+    background-image: url("../assets/images/heart_grey.png");
   }
 
   div.block div.bookmarked {
-    background-image: url("../assets/heart_red.png");
+    background-image: url("../assets/images/heart_red.png");
   }
 
   footer p {

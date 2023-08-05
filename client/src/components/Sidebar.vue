@@ -352,7 +352,7 @@ div#addnew.option {
 }
 
 div#monster {
-  background: url(../assets/monster.svg) 14px 30px no-repeat;
+  background: url(../assets/images/monster.svg) 14px 30px no-repeat;
   background-size: 30px 30px;
   height: 90px;
 }
