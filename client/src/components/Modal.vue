@@ -217,10 +217,10 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div#myModal {
+  #myModal {
     padding-top: 100px;
   }
 
@@ -243,10 +243,6 @@
 
 div.modal-dialog {
   max-width: 800px;
-}
-
-div.close, button.close {
-  visibility: hidden;
 }
 
 .modal-mask {
@@ -329,7 +325,12 @@ button.btn.btn-primary.content {
     color: #ffb1b1;
   }
 }
+</style>
 
+<style>
+div.close, button.close {
+  visibility: hidden;
+}
 </style>
 
 <script>

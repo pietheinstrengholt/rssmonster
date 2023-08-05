@@ -12,7 +12,7 @@
         <app-toolbar class="toolbar" @forceReload="forceReload"></app-toolbar>
           <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home ref="home" @forceReload="forceReload"></app-home>
+        <app-home ref="home"></app-home>
       </div>
     </div>
     <!-- Modal events -->
@@ -29,16 +29,16 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  .sidebar,
-  .toolbar {
+  div.sidebar,
+  div.toolbar {
     display: none;
   }
 
-  .col-md-9 {
+  div.col-md-9 {
     padding-right: 0px;
   }
 
-  .quickbar {
+  div.quickbar {
     position: fixed;
     z-index: 9999;
   }
@@ -46,11 +46,11 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  .quickbar {
+  div.quickbar {
     display: none;
   }
 
-  .sidebar {
+  div.sidebar {
     height: 100%;
     background-color: #31344b;
     overflow-y: auto;
@@ -58,21 +58,21 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    .sidebar {
+    div.sidebar {
       background-color: #2c2c2c;
     }
   }
 }
 
-.row {
+div.row {
   margin-right: 0px;
 }
 
-.sidebar {
+div.sidebar {
   position: fixed;
 }
 
-.offline {
+p.offline {
   margin-top: 50px;
   text-align: center;
 }
@@ -90,7 +90,7 @@ html, #app, body {
     background-color: #121212;
   }
 
-  .home {
+  div.home {
     background: black;
   }
 
@@ -98,7 +98,7 @@ html, #app, body {
     filter: brightness(.8) contrast(1.2);
   }
 
-  body .icon path {
+  body svg.icon path {
     fill: #efefef;
   }
 

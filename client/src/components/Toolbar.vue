@@ -60,7 +60,7 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 .toolbar {
   height: 40px;
   border-bottom: 1px solid transparent;
@@ -163,7 +163,6 @@
     border-left: 1px solid #fff;
   }
 }
-
 </style>
 
 <script>

@@ -87,8 +87,9 @@ export default {
   }
 };
 </script>
+
 <style>
-div.quickbar a {
+.quickbar a {
   font-size: 12px;
   cursor: pointer;
 }

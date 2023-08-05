@@ -60,7 +60,7 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 @media screen and (max-height: 450px) {
   .overlay a {
     font-size: 20px;
@@ -149,7 +149,6 @@ p.content-header {
       background-color: #606060;
   }
 }
-
 </style>
 
 <script>
