@@ -77,6 +77,10 @@ html, #app {
   background-color: #eee;
 }
 
+html, #app, body {
+    height: 100%;
+}
+
 @media (prefers-color-scheme: dark) {
   html, #app {
     background-color: #121212;

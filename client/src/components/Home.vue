@@ -1,6 +1,6 @@
 <template>
   <div id="main">
-    <div id="articles">
+    <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
       <div :key="article.id" v-bind:id="article.id" class="block" v-for="article in articles">
         <div class="article" v-bind:class="{'starred': article.starInd == 1, 'hot': article.hotlinks }" v-on:click="bookmark(article.id, $event)">
           <div class="maximal">
@@ -46,7 +46,6 @@
 
   div#articles {
     padding-top: 0px !important;
-    background-color: #ddd;
   }
 
   div.block {
@@ -57,6 +56,7 @@
   div.article {
     display: inline-block;
     position: relative;
+    margin-top: 2px;
   }
 }
 
@@ -66,6 +66,7 @@
     margin-bottom: 0px;
     padding-top: 6px;
   }
+
   div#articles {
     margin-left: -10px;
     margin-right: -8px;
@@ -74,6 +75,14 @@
 
 div.main {
   margin-top: 50px;
+}
+
+div#articles.completed p#no-more, div#articles.completed p#no-more svg {
+  color: #00663e;
+}
+
+div.block div.article {
+  border: 1px solid #bebebe;
 }
 
 div.block .article.hot .heading, div.block .article.starred .heading {
