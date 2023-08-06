@@ -23,6 +23,30 @@
   </div>
 </template>
 
+<style>
+.block .article-body iframe {
+  display: none;
+}
+
+.article-content img, .article-content div {
+  float: none !important;
+}
+
+.article-content iframe {
+    width: 100% !important;
+    height: auto !important;
+}
+
+.article {
+  max-width: 100% !important;
+}
+
+.block .article-content img, .block .article-content figure {
+  max-width: 100%;
+  height: auto;
+}
+</style>
+
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
@@ -91,19 +115,6 @@
   margin-left: 0px;
 }
 
-.block .article-body iframe {
-  display: none;
-}
-
-.article-content img, .article-content div {
-  float: none !important;
-}
-
-.article-content iframe {
-    width: 100% !important;
-    height: auto !important;
-}
-
 .block .article h5 a {
   color: #51556a;
   font-weight: 600;
@@ -143,15 +154,6 @@ span.feed_name a {
   height: 18px;
   width: 18px;
   margin-top: -1px;
-}
-
-.article {
-  max-width: 100% !important;
-}
-
-.block .article-content img, .block .article-content figure {
-  max-width: 100%;
-  height: auto;
 }
 
 @media (prefers-color-scheme: dark) {
