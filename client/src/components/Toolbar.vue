@@ -73,6 +73,27 @@
   margin-left: -15px;
 }
 
+.status-toolbar {
+  float: left;
+  border-right: 1px solid #e0e0e0;
+  margin-left: 10px;
+  text-align: center;
+  cursor: pointer;
+  color: #111;
+}
+
+.status-toolbar p {
+  padding: 4px;
+  font-size: 14px;
+  margin-right: 12px;
+  margin-top: 5px;
+}
+
+.status-toolbar #status,
+.status-toolbar #filter {
+  width: 50px;
+}
+
 .search-wrap {
   width: 50%;
   float: left;
@@ -90,22 +111,6 @@
   line-height: 1;
   color: #212325;
   background: url(../assets/images/search.svg) 8px 13px no-repeat;
-}
-
-.status-toolbar {
-  float: left;
-  border-right: 1px solid #e0e0e0;
-  margin-left: 10px;
-  text-align: center;
-  cursor: pointer;
-  color: #111;
-}
-
-.status-toolbar p {
-  padding: 4px;
-  font-size: 14px;
-  margin-right: 12px;
-  margin-top: 5px;
 }
 
 .dropdownmenu {
@@ -132,11 +137,6 @@
   margin-bottom: 0px;
   font-weight: 400;
   font-size: 14px;
-}
-
-.status-toolbar #status,
-.status-toolbar #filter {
-  width: 50px;
 }
 
 #filter.dropdownmenu {

@@ -1,5 +1,5 @@
 <template>
-  <div class="quickbar view-toolbar" id="mobile-toolbar">
+  <div class="mobile-toolbar">
     <a
       @click="emitClickEvent('mobile','mobile')"
       id="rssmonster"
@@ -63,38 +63,8 @@
   </div>
 </template>
 
-<script>
-import store from "../store";
-
-export default {
-  data() {
-    return {
-      store: store
-    };
-  },
-  methods: {
-    loadType: function(status) {
-      //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.store.currentSelection.status) {
-        this.$emit('forceReload');
-      } else {
-        this.store.currentSelection.status = status;
-      }
-    },
-    emitClickEvent(eventType, value) {
-      this.$emit(eventType, value);
-    }
-  }
-};
-</script>
-
 <style>
-.quickbar a {
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.view-toolbar {
+.mobile-toolbar {
   width: 100%;
   background-color: #31344B;
   display: -webkit-box;
@@ -111,7 +81,12 @@ export default {
   transition: visibility 0s linear 0s, opacity 150ms;
 }
 
-.view-toolbar.hide {
+.mobile-toolbar a {
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.mobile-toolbar.hide {
   visibility: hidden;
   opacity: 0;
   transition: visibility 0s linear 150ms, opacity 150ms;
@@ -178,6 +153,30 @@ a#hot.view-button {
   a#hot.view-button {
     border-bottom: 1px solid #fff;
   }
-
 }
 </style>
+
+<script>
+import store from "../store";
+
+export default {
+  data() {
+    return {
+      store: store
+    };
+  },
+  methods: {
+    loadType: function(status) {
+      //if user selects current selection, then do a forceReload by emitting an event to parent
+      if (status == this.store.currentSelection.status) {
+        this.$emit('forceReload');
+      } else {
+        this.store.currentSelection.status = status;
+      }
+    },
+    emitClickEvent(eventType, value) {
+      this.$emit(eventType, value);
+    }
+  }
+};
+</script>

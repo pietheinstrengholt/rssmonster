@@ -38,7 +38,7 @@
     padding-right: 0px;
   }
 
-  div.quickbar {
+  div.mobile-bar {
     position: fixed;
     z-index: 9999;
   }
@@ -46,7 +46,7 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  div.quickbar {
+  div.mobile-toolbar {
     display: none;
   }
 
