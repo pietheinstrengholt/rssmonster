@@ -38,7 +38,7 @@
     padding-right: 0px;
   }
 
-  div.mobile-bar {
+  div.mobile-toolbar {
     position: fixed;
     z-index: 9999;
   }
