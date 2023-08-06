@@ -100,8 +100,8 @@
 }
 
 span.close {
-  color: #FFF !important;
-  opacity: none !important;
+  color: #FFF;
+  opacity: none;
 }
 
 .overlay-content .categories {

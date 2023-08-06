@@ -254,7 +254,7 @@
 .badge.white {
   float: right;
   color: #fff;
-  background-color: transparent !important;
+  background-color: transparent;
   margin-top: 2px;
 }
 
@@ -294,13 +294,13 @@
 }
 
 .sidebar-category-feed {
-  background-color: #696a7b !important;
+  background-color: #696a7b;
 }
 
 .sidebar-category-top.selected,
 .sidebar-category-main.selected,
 .sidebar-category-feed.selected {
-  background-color: #464f9e !important;
+  background-color: #464f9e;
 }
 
 p.title {
@@ -391,7 +391,7 @@ div.option {
 
 .sidebar-category-feed.error,
 .sidebar-category-feed.selected.error {
-  background-color: #bf7c74 !important;
+  background-color: #bf7c74;
 }
 
 @media (prefers-color-scheme: dark) {

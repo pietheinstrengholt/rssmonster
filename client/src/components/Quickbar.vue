@@ -137,7 +137,7 @@
 }
 
 .view-button.selected {
-  color: #18bc9c !important;
+  color: #18bc9c;
 }
 
 @media (prefers-color-scheme: dark) {

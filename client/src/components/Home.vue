@@ -23,7 +23,7 @@
   }
 
   #articles {
-    padding-top: 0px !important;
+    padding-top: 0px;
   }
 }
 
@@ -32,11 +32,11 @@
   #articles {
     margin-left: -10px;
     margin-right: -8px;
+    padding-top: 40px;
   }
 }
 
 #articles {
-  padding-top: 40px;
   overflow-x: hidden;
   overflow-y: hidden;
   right: 0;

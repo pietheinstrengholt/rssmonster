@@ -28,15 +28,18 @@
   display: none;
 }
 
+/* Override css that comes from other websites */
 .article-content img, .article-content div {
   float: none !important;
 }
 
+/* Override css that comes from other websites */
 .article-content iframe {
     width: 100% !important;
     height: auto !important;
 }
 
+/* Override css that comes from other websites */
 .article {
   max-width: 100% !important;
 }
@@ -119,10 +122,12 @@
   color: #51556a;
   font-weight: 600;
   font-size: 19px;
+  text-decoration: none;
+  border-bottom: none;
 }
 
 .block .feedname {
-  margin-top: -8px !important;
+  margin-top: -8px;
   font-size: 12px;
   padding-top: 1px;
   padding-left: 0px;
@@ -140,6 +145,7 @@
   margin-right: 2px;
 }
 
+/* Override css that comes from other websites */
 .block .article-content img {
   max-width: 100%;
   height: auto !important;
@@ -186,13 +192,8 @@ span.feed_name a {
     color: #fff;
   }
 
-  h5.heading a {
-    text-decoration: none !important;
-    border-bottom: none !important;
-  }
-
   .article {
-    border-bottom-color: black !important;
+    border-bottom-color: black;
   }
 
   .block .article.hot {
