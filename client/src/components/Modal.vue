@@ -217,6 +217,12 @@
   </div>
 </template>
 
+<style>
+.btn.btn-primary.content {
+  margin-right: 7px;
+}
+</style>
+
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
@@ -290,10 +296,6 @@ div.modal-dialog {
 
 span.error, .form-control.red {
   color: red;
-}
-
-.btn.btn-primary.content {
-  margin-right: 7px;
 }
 
 @media (prefers-color-scheme: dark) {
