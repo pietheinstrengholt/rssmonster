@@ -65,7 +65,7 @@ div.infinite-loading-container {
   padding-top: 20px;
 }
 
-p#no-results {
+#no-results {
   margin-top: 10px;
   margin-bottom: 10px;
 }

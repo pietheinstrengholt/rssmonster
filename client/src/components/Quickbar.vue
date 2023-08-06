@@ -74,7 +74,7 @@
   height: 41px;
   border-bottom: 1px solid transparent;
   border-color: #dcdee0;
-  position: absolute;
+  position: fixed;
   color: #fff;
   visibility: visible;
   opacity: 1;
@@ -114,23 +114,23 @@
   color: #b4b6b8;
 }
 
-a#rssmonster.view-button {
+#rssmonster.view-button {
   background: url(../assets/images/monster.svg) 10px 10px no-repeat;
   background-size: 20px 20px;
   max-width: 40px;
   min-width: 40px;
 }
 
-a#title.view-button {
+#title.view-button {
   text-align: left;
   margin-left: 10px;
   max-width: 90px;
 }
 
-a#unread.view-button,
-a#star.view-button,
-a#read.view-button,
-a#hot.view-button {
+#unread.view-button,
+#star.view-button,
+#read.view-button,
+#hot.view-button {
   border-left: 1px solid transparent;
   border-color: #dcdee0;
   cursor: pointer;
@@ -148,11 +148,11 @@ a#hot.view-button {
     border-color: #000;
   }
 
-  a#rssmonster.view-button,
-  a#unread.view-button,
-  a#star.view-button,
-  a#read.view-button,
-  a#hot.view-button {
+  #rssmonster.view-button,
+  #unread.view-button,
+  #star.view-button,
+  #read.view-button,
+  #hot.view-button {
     border-bottom: 1px solid #fff;
   }
 }

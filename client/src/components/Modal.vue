@@ -252,7 +252,7 @@ div.modal-dialog {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: #000000;
   display: table;
   transition: opacity 0.3s ease;
 }
@@ -261,7 +261,7 @@ div.modal-dialog {
   margin: 0px auto;
   background-color: #fff;
   border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
+  box-shadow: 0 2px 8px #000000;
   transition: all 0.3s ease;
   color: #111;
 }
@@ -273,6 +273,9 @@ div.modal-dialog {
 .modal-enter .modal-container,
 .modal-leave-active .modal-container {
   -webkit-transform: scale(1.1);
+  -moz-transform: scale(1.1);
+  -ms-transform: scale(1.1);
+  -o-transform: scale(1.1);
   transform: scale(1.1);
 }
 
@@ -289,7 +292,7 @@ span.error, .form-control.red {
   color: red;
 }
 
-button.btn.btn-primary.content {
+.btn.btn-primary.content {
   margin-right: 7px;
 }
 

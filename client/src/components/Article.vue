@@ -91,7 +91,7 @@
   border-color: #ffc7c7;
 }
 
-.block .article.starred .heading {
+.block .article.starred .heading, .block .bookmarked {
   background-image: url("../assets/images/heart_red.png");
 }
 
@@ -135,7 +135,7 @@
   background-color: #ffffe5;
 }
 
-span.break {
+.break {
   margin-left: 2px;
   margin-right: 2px;
 }
@@ -171,10 +171,6 @@ span.feed_name a {
 
   .block .bookmark {
     background-image: url("../assets/images/heart_grey.png");
-  }
-
-  .block .bookmarked {
-    background-image: url("../assets/images/heart_red.png");
   }
 
   .block {

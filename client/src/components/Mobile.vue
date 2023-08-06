@@ -104,7 +104,7 @@ span.close {
   opacity: none !important;
 }
 
-.overlay-content ul.categories {
+.overlay-content .categories {
   list-style-type: none;
   text-indent: 4px;
   padding-left: 0px;

@@ -384,7 +384,7 @@ div.option {
   text-align: center;
 }
 
-.category-button div.text {
+.category-button .text {
   font-size: 13px;
   margin-top: 3px;
 }
