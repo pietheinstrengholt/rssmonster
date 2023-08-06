@@ -29,8 +29,8 @@
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div.sidebar,
-  div.toolbar {
+  .sidebar,
+  .toolbar {
     display: none;
   }
 
@@ -38,7 +38,7 @@
     padding-right: 0px;
   }
 
-  div.mobile-toolbar {
+  div#mobile-toolbar {
     position: fixed;
     z-index: 9999;
   }
@@ -46,11 +46,11 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  div.mobile-toolbar {
+  div#mobile-toolbar {
     display: none;
   }
 
-  div.sidebar {
+  .sidebar {
     height: 100%;
     background-color: #31344b;
     overflow-y: auto;
@@ -58,7 +58,7 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    div.sidebar {
+    .sidebar {
       background-color: #2c2c2c;
     }
   }
@@ -68,7 +68,7 @@ div.row {
   margin-right: 0px;
 }
 
-div.sidebar {
+.sidebar {
   position: fixed;
 }
 
@@ -90,7 +90,7 @@ html, #app, body {
     background-color: #121212;
   }
 
-  div.home {
+  .home {
     background: black;
   }
 

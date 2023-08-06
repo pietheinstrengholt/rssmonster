@@ -1,5 +1,5 @@
 <template>
-  <div class="mobile-toolbar">
+  <div id="mobile-toolbar">
     <a
       @click="emitClickEvent('mobile','mobile')"
       id="rssmonster"
@@ -64,7 +64,7 @@
 </template>
 
 <style>
-.mobile-toolbar {
+#mobile-toolbar {
   width: 100%;
   background-color: #31344B;
   display: -webkit-box;
@@ -80,13 +80,15 @@
   opacity: 1;
   transition: visibility 0s linear 0s, opacity 150ms;
 }
+</style>
 
-.mobile-toolbar a {
+<style scoped>
+#mobile-toolbar a {
   font-size: 12px;
   cursor: pointer;
 }
 
-.mobile-toolbar.hide {
+#mobile-toolbar.hide {
   visibility: hidden;
   opacity: 0;
   transition: visibility 0s linear 150ms, opacity 150ms;
