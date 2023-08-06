@@ -1,18 +1,18 @@
 <template>
   <div id="app">
     <div class="row">
-      <div class="sidebar col-md-3 col-sm-0">
+      <div id="sidebar" class="col-md-3 col-sm-0">
         <!-- Sidebar events -->
         <app-sidebar @modal="modalClick" @forceReload="forceReload"></app-sidebar>
       </div>
-      <div class="home col-md-9 offset-md-3 col-sm-12">
+      <div id="home" class="col-md-9 offset-md-3 col-sm-12">
         <!-- Quickbar events -->
         <app-quickbar @mobile="mobileClick" @forceReload="forceReload"></app-quickbar>
         <!-- Toolbar events -->
-        <app-toolbar class="toolbar" @forceReload="forceReload"></app-toolbar>
+        <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
           <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home ref="home" @forceReload="forceReload"></app-home>
+        <app-home ref="home"></app-home>
       </div>
     </div>
     <!-- Modal events -->
@@ -22,11 +22,15 @@
   </div>
 </template>
 
+<style lang="scss">
+@import "./assets/scss/global.scss";
+</style>
+
 <style>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div.sidebar,
-  div.toolbar {
+  #sidebar,
+  #toolbar {
     display: none;
   }
 
@@ -34,7 +38,7 @@
     padding-right: 0px;
   }
 
-  div.quickbar {
+  div#mobile-toolbar {
     position: fixed;
     z-index: 9999;
   }
@@ -42,11 +46,11 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  div.quickbar {
+  div#mobile-toolbar {
     display: none;
   }
 
-  div.sidebar {
+  #sidebar {
     height: 100%;
     background-color: #31344b;
     overflow-y: auto;
@@ -54,7 +58,7 @@
   }
 
   @media (prefers-color-scheme: dark) {
-    div.sidebar {
+    #sidebar {
       background-color: #2c2c2c;
     }
   }
@@ -64,7 +68,7 @@ div.row {
   margin-right: 0px;
 }
 
-div.sidebar {
+#sidebar {
   position: fixed;
 }
 
@@ -86,7 +90,7 @@ html, #app, body {
     background-color: #121212;
   }
 
-  div.home {
+  #home {
     background: black;
   }
 

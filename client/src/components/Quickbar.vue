@@ -1,5 +1,5 @@
 <template>
-  <div class="quickbar view-toolbar" id="mobile-toolbar">
+  <div id="mobile-toolbar">
     <a
       @click="emitClickEvent('mobile','mobile')"
       id="rssmonster"
@@ -63,37 +63,8 @@
   </div>
 </template>
 
-<script>
-import store from "../store";
-
-export default {
-  data() {
-    return {
-      store: store
-    };
-  },
-  methods: {
-    loadType: function(status) {
-      //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.store.currentSelection.status) {
-        this.$emit('forceReload');
-      } else {
-        this.store.currentSelection.status = status;
-      }
-    },
-    emitClickEvent(eventType, value) {
-      this.$emit(eventType, value);
-    }
-  }
-};
-</script>
 <style>
-div.quickbar a {
-  font-size: 12px;
-  cursor: pointer;
-}
-
-.view-toolbar {
+#mobile-toolbar {
   width: 100%;
   background-color: #31344B;
   display: -webkit-box;
@@ -103,14 +74,21 @@ div.quickbar a {
   height: 41px;
   border-bottom: 1px solid transparent;
   border-color: #dcdee0;
-  position: absolute;
+  position: fixed;
   color: #fff;
   visibility: visible;
   opacity: 1;
   transition: visibility 0s linear 0s, opacity 150ms;
 }
+</style>
 
-.view-toolbar.hide {
+<style scoped>
+#mobile-toolbar a {
+  font-size: 12px;
+  cursor: pointer;
+}
+
+#mobile-toolbar.hide {
   visibility: hidden;
   opacity: 0;
   transition: visibility 0s linear 150ms, opacity 150ms;
@@ -136,30 +114,30 @@ div.quickbar a {
   color: #b4b6b8;
 }
 
-a#rssmonster.view-button {
-  background: url(../assets/monster.svg) 10px 10px no-repeat;
+#rssmonster.view-button {
+  background: url(../assets/images/monster.svg) 10px 10px no-repeat;
   background-size: 20px 20px;
   max-width: 40px;
   min-width: 40px;
 }
 
-a#title.view-button {
+#title.view-button {
   text-align: left;
   margin-left: 10px;
   max-width: 90px;
 }
 
-a#unread.view-button,
-a#star.view-button,
-a#read.view-button,
-a#hot.view-button {
+#unread.view-button,
+#star.view-button,
+#read.view-button,
+#hot.view-button {
   border-left: 1px solid transparent;
   border-color: #dcdee0;
   cursor: pointer;
 }
 
 .view-button.selected {
-  color: #18bc9c !important;
+  color: #18bc9c;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -170,13 +148,37 @@ a#hot.view-button {
     border-color: #000;
   }
 
-  a#rssmonster.view-button,
-  a#unread.view-button,
-  a#star.view-button,
-  a#read.view-button,
-  a#hot.view-button {
+  #rssmonster.view-button,
+  #unread.view-button,
+  #star.view-button,
+  #read.view-button,
+  #hot.view-button {
     border-bottom: 1px solid #fff;
   }
-
 }
 </style>
+
+<script>
+import store from "../store";
+
+export default {
+  data() {
+    return {
+      store: store
+    };
+  },
+  methods: {
+    loadType: function(status) {
+      //if user selects current selection, then do a forceReload by emitting an event to parent
+      if (status == this.store.currentSelection.status) {
+        this.$emit('forceReload');
+      } else {
+        this.store.currentSelection.status = status;
+      }
+    },
+    emitClickEvent(eventType, value) {
+      this.$emit(eventType, value);
+    }
+  }
+};
+</script>

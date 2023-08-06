@@ -28,12 +28,7 @@
       <div>
         <p class="title">All feeds</p>
       </div>
-      <div
-        v-if="(this.store.newUnreads !== 0)"
-        v-on:click="loadType('refresh')"
-        id="newunreads"
-        class="sidebar-category-top"
-      >
+      <div v-if="(this.store.newUnreads !== 0)" v-on:click="loadType('refresh')" id="newunreads" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="lightbulb-fill" variant="light" />
         </span>
@@ -42,12 +37,7 @@
           <span class="badge">{{ this.store.newUnreads }}</span>
         </span>
       </div>
-      <div
-        v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }"
-        v-on:click="loadType('unread')"
-        id="unread"
-        class="sidebar-category-top"
-      >
+      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="record-circle-fill" variant="light" />
         </span>
@@ -56,12 +46,7 @@
           <span class="badge">{{ this.store.unreadCount }}</span>
         </span>
       </div>
-      <div
-        v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }"
-        v-on:click="loadType('star')"
-        id="star"
-        class="sidebar-category-top"
-      >
+      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="heart-fill" variant="light" />
         </span>
@@ -70,12 +55,7 @@
           <span class="badge">{{ this.store.starCount }}</span>
         </span>
       </div>
-      <div
-        v-bind:class="{ 'selected':  store.currentSelection.status === 'hot' }"
-        v-on:click="loadType('hot')"
-        id="hot"
-        class="sidebar-category-top"
-      >
+      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="fire" variant="light" />
         </span>
@@ -84,12 +64,7 @@
           <span class="badge">{{ this.store.hotCount }}</span>
         </span>
       </div>
-      <div
-        v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }"
-        v-on:click="loadType('read')"
-        id="read"
-        class="sidebar-category-top"
-      >
+      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="check-circle-fill" variant="light" />
         </span>
@@ -102,12 +77,7 @@
       <div>
         <p class="title">All</p>
       </div>
-      <div
-        v-bind:class="{ 'selected': store.currentSelection.categoryId === '%' }"
-        v-on:click="loadAll()"
-        id="all"
-        class="sidebar-category-top"
-      >
+      <div v-bind:class="{ 'selected': store.currentSelection.categoryId === '%' }" v-on:click="loadAll()" id="all" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="star-fill" variant="light" />
         </span>
@@ -124,12 +94,7 @@
       </div>
       <draggable v-model="this.store.categories" item-key="id" @end="updateSortOrder">
         <template #item="{element}">
-          <div
-          v-bind:class="{ 'selected': (store.currentSelection.categoryId == element.id) && (store.currentSelection.feedId === '%') }"
-          v-bind:id="element.id"
-          class="sidebar-category-main"
-          v-on:click="loadCategory(element)"
-          >
+          <div v-bind:class="{ 'selected': (store.currentSelection.categoryId == element.id) && (store.currentSelection.feedId === '%') }" v-bind:id="element.id" class="sidebar-category-main" v-on:click="loadCategory(element)">
           <div class="sidebar-category-sub">
             <span class="glyphicon">
               <BootstrapIcon icon="folder-fill" variant="light" />
@@ -182,45 +147,25 @@
             <div class="text">Add</div>
           </div>
         </div>
-        <div
-          v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId == '%')"
-          @click="emitClickEvent('modal','deletecategory')"
-          id="delete"
-          class="category-button"
-        >
+        <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
           <div>
             <BootstrapIcon icon="trash3-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
-        <div
-          v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId === '%')"
-          @click="emitClickEvent('modal','renamecategory')"
-          id="rename"
-          class="category-button"
-        >
+        <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId === '%')" @click="emitClickEvent('modal','renamecategory')" id="rename" class="category-button">
           <div>
             <BootstrapIcon icon="pencil-fill" variant="light" />
             <div class="text">Edit</div>
           </div>
         </div>
-        <div
-          v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId !== '%')"
-          @click="emitClickEvent('modal','deletefeed')"
-          id="delete"
-          class="category-button"
-        >
+        <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId !== '%')" @click="emitClickEvent('modal','deletefeed')" id="delete" class="category-button">
           <div>
             <BootstrapIcon icon="trash3-fill" variant="light" />
             <div class="text">Delete</div>
           </div>
         </div>
-        <div
-          v-if="(store.currentSelection.categoryId != '%') && (store.currentSelection.feedId != '%')"
-          @click="emitClickEvent('modal','renamefeed')"
-          id="rename"
-          class="category-button"
-        >
+        <div v-if="(store.currentSelection.categoryId != '%') && (store.currentSelection.feedId != '%')" @click="emitClickEvent('modal','renamefeed')" id="rename" class="category-button">
           <div>
             <BootstrapIcon icon="pencil-fill" variant="light" />
             <div class="text">Edit</div>
@@ -231,8 +176,8 @@
   </div>
 </template>
 
-<style>
-div.drag {
+<style scoped>
+.drag {
   background-color: transparent;
   color: #fff;
 }
@@ -241,34 +186,30 @@ div.drag {
   min-height: 20px;
 }
 
-div.sidebar-category-sub,
-div.sidebar-category-feed,
-div.sidebar-category-top {
+.sidebar-category-sub,
+.sidebar-category-feed,
+.sidebar-category-top {
   padding: 4px 4px 4px 12px;
 }
 
-div#refresh.option, div#addnew.option, div#addnew.option {
+#refresh.option, #addnew.option {
   background-color: #6f79d3;
 }
 
-span.badge.white {
+.badge.white {
   float: right;
   color: #fff;
-  background-color: transparent !important;
+  background-color: transparent;
   margin-top: 2px;
 }
 
-sidebar-category-main {
-  width: 100%;
-}
-
-span.glyphicon {
+.glyphicon {
   float: left;
   margin-right: 5px;
   min-width: 13px;
 }
 
-span.title {
+.title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -276,15 +217,15 @@ span.title {
   padding-right: 25px;
 }
 
-span.badge-unread {
+.badge-unread {
   float: right;
   position: absolute;
   right: 28px;
   margin-top: -25px;
 }
 
-div.sidebar-category-top,
-div.sidebar-category-main {
+.sidebar-category-top,
+.sidebar-category-main {
   background-color: #696a7b;
   margin-left: 12px;
   margin-right: 12px;
@@ -293,18 +234,18 @@ div.sidebar-category-main {
   cursor: pointer;
 }
 
-div#newunreads.sidebar-category-top {
+#newunreads.sidebar-category-top {
 	background-color: #536f5b;
 }
 
-div.sidebar-category-feed {
-  background-color: #696a7b !important;
+.sidebar-category-feed {
+  background-color: #696a7b;
 }
 
-div.sidebar-category-top.selected,
-div.sidebar-category-main.selected,
-div.sidebar-category-feed.selected {
-  background-color: #464f9e !important;
+.sidebar-category-top.selected,
+.sidebar-category-main.selected,
+.sidebar-category-feed.selected {
+  background-color: #464f9e;
 }
 
 p.title {
@@ -319,45 +260,40 @@ div.option {
   padding: 6px;
   color: #fff;
   border-radius: 4px;
-  text-indent: 10px;
+  text-indent: 4px;
   margin-bottom: 20px;
   cursor: pointer;
-}
-
-div#refresh,
-div#addnew,
-div#mark-all-as-read {
   white-space: nowrap;
   text-overflow: ellipsis;
   overflow: hidden;
-}
-
-div#refresh.option,
-div#mark-all-as-read {
-  margin-right: 70px;
-  min-width: 165px;
 }
 
 .sidebar-category-feed.last {
   border-radius: 0px 0px 4px 4px;
 }
 
-div#mark-all-as-read {
+#mark-all-as-read {
   background-color: #464f9e;
 }
 
-div#addnew.option {
+#refresh.option,
+#mark-all-as-read {
+  margin-right: 70px;
+  min-width: 165px;
+}
+
+#addnew.option {
   margin-right: 60px;
   min-width: 165px;
 }
 
-div#monster {
-  background: url(../assets/monster.svg) 14px 30px no-repeat;
+#monster {
+  background: url(../assets/images/monster.svg) 14px 30px no-repeat;
   background-size: 30px 30px;
   height: 90px;
 }
 
-div#monster p {
+#monster p {
   padding: 30px 0px 0px 50px;
   color: #fff;
   font-size: 20px;
@@ -376,14 +312,14 @@ div#monster p {
   background: rgba(0, 0, 0, 0.5);
 }
 
-div.category-options {
+.category-options {
   margin-top: 10px;
   margin-bottom: 20px;
   height: 40px;
   width: 105%;
 }
 
-div.category-button {
+.category-button {
   margin-left: 8%;
   height: 44px;
   color: #fff;
@@ -393,28 +329,28 @@ div.category-button {
   text-align: center;
 }
 
-@media (prefers-color-scheme: dark) {
-  div.category-button#add, div.category-button#delete, div.category-button#rename {
-    background-color: #464646;
-  }
-
-  div#refresh.option, div#addnew.option, div#addnew.option {
-    background-color: #535353;
-  }
-
-  div#mark-all-as-read {
-    background-color: #606060;
-  }
-}
-
-div.category-button div.text {
+.category-button .text {
   font-size: 13px;
   margin-top: 3px;
 }
 
 .sidebar-category-feed.error,
 .sidebar-category-feed.selected.error {
-  background-color: #bf7c74 !important;
+  background-color: #bf7c74;
+}
+
+@media (prefers-color-scheme: dark) {
+  .category-button {
+    background-color: #464646;
+  }
+
+  .option {
+    background-color: #535353;
+  }
+
+  #mark-all-as-read {
+    background-color: #606060;
+  }
 }
 </style>
 

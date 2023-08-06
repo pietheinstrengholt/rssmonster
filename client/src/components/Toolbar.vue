@@ -60,36 +60,16 @@
   </div>
 </template>
 
-<style>
+<style scoped>
 .toolbar {
   height: 40px;
   border-bottom: 1px solid transparent;
   border-color: #dcdee0;
-  position: absolute;
   width: 100%;
   overflow: hidden;
   background-color: #eff1f3;
   position: fixed;
   margin-left: -15px;
-}
-
-.search-wrap {
-  width: 50%;
-  float: left;
-}
-
-.search {
-  width: 100%;
-  color: #3399ff;
-  height: 39px;
-  margin: 0;
-  padding: 4px 0px 3px 28px;
-  font-size: 14px;
-  background-color: #eff1f3;
-  border: none;
-  line-height: 1;
-  color: #212325;
-  background: url(../assets/search.svg) 8px 13px no-repeat;
 }
 
 .status-toolbar {
@@ -108,12 +88,35 @@
   margin-top: 5px;
 }
 
+.status-toolbar #status,
+.status-toolbar #filter {
+  width: 50px;
+}
+
+.search-wrap {
+  width: 50%;
+  float: left;
+}
+
+.search {
+  width: 100%;
+  height: 39px;
+  margin: 0;
+  padding: 4px 0px 3px 28px;
+  font-size: 14px;
+  background-color: #eff1f3;
+  border: none;
+  line-height: 1;
+  color: #212325;
+  background: url(../assets/images/search.svg) 8px 13px no-repeat;
+}
+
 .dropdownmenu {
   position: fixed;
   margin-top: 40px;
   background-color: #eff1f3;
   cursor: pointer;
-  box-shadow: 0px 8px 16px 0px rgba(0, 0, 0, 0.2);
+  box-shadow: 0px 8px 16px 0px #000000;
   min-width: 100px;
   color: #111;
 }
@@ -132,11 +135,6 @@
   margin-bottom: 0px;
   font-weight: 400;
   font-size: 14px;
-}
-
-.status-toolbar #status,
-.status-toolbar #filter {
-  width: 50px;
 }
 
 #filter.dropdownmenu {
@@ -163,7 +161,6 @@
     border-left: 1px solid #fff;
   }
 }
-
 </style>
 
 <script>

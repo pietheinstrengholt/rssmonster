@@ -218,9 +218,15 @@
 </template>
 
 <style>
+.btn.btn-primary.content {
+  margin-right: 7px;
+}
+</style>
+
+<style scoped>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  div#myModal {
+  #myModal {
     padding-top: 100px;
   }
 
@@ -245,10 +251,6 @@ div.modal-dialog {
   max-width: 800px;
 }
 
-div.close, button.close {
-  visibility: hidden;
-}
-
 .modal-mask {
   position: fixed;
   z-index: 9998;
@@ -256,7 +258,7 @@ div.close, button.close {
   left: 0;
   width: 100%;
   height: 100%;
-  background-color: rgba(0, 0, 0, 0.5);
+  background-color: #000000;
   display: table;
   transition: opacity 0.3s ease;
 }
@@ -265,7 +267,7 @@ div.close, button.close {
   margin: 0px auto;
   background-color: #fff;
   border-radius: 2px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.33);
+  box-shadow: 0 2px 8px #000000;
   transition: all 0.3s ease;
   color: #111;
 }
@@ -277,6 +279,9 @@ div.close, button.close {
 .modal-enter .modal-container,
 .modal-leave-active .modal-container {
   -webkit-transform: scale(1.1);
+  -moz-transform: scale(1.1);
+  -ms-transform: scale(1.1);
+  -o-transform: scale(1.1);
   transform: scale(1.1);
 }
 
@@ -291,10 +296,6 @@ div.close, button.close {
 
 span.error, .form-control.red {
   color: red;
-}
-
-button.btn.btn-primary.content {
-  margin-right: 7px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -329,7 +330,12 @@ button.btn.btn-primary.content {
     color: #ffb1b1;
   }
 }
+</style>
 
+<style>
+div.close, button.close {
+  visibility: hidden;
+}
 </style>
 
 <script>
