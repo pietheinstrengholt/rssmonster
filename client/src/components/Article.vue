@@ -46,10 +46,6 @@
   }
 }
 
-.block .article {
-  border: 1px solid #bebebe;
-}
-
 .block .article.hot .heading, .block .article.starred .heading {
   padding-left: 20px;
   background-repeat: no-repeat;
