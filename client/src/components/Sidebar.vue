@@ -114,23 +114,14 @@
               <div v-for="(feed, index) in element.feeds" v-bind:key="index">
                 <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': store.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
                   <span class="glyphicon">
-                    <BootstrapIcon icon="rss-fill" variant="light" />
                     <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
+                    <BootstrapIcon v-if="!feed.favicon" icon="rss-fill" variant="light" />
                   </span>
                   <span class="title">{{feed.feedName}}</span>
                   <span class="badge-unread">
-                  <span
-                    v-if="store.currentSelection.status === 'unread'"
-                    class="badge white"
-                  >{{ feed.unreadCount }}</span>
-                  <span
-                    v-if="store.currentSelection.status === 'read'"
-                    class="badge white"
-                  >{{ feed.readCount }}</span>
-                  <span
-                    v-if="store.currentSelection.status === 'star'"
-                    class="badge white"
-                  >{{ feed.starCount }}</span>
+                  <span v-if="store.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
+                  <span v-if="store.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
+                  <span v-if="store.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
                   </span>
                 </div>
               </div>
