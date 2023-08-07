@@ -24,9 +24,9 @@
 /* Landscape phones and portrait tablets */
 @media (min-width: 767px) {
   #articles {
-    margin-left: -10px;
-    margin-right: -8px;
-    padding-top: 40px;
+    margin-left: -15px;
+    margin-right: -12px;
+    padding-top: 35px;
   }
 }
 

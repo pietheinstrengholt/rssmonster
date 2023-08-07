@@ -159,6 +159,11 @@
   #hot.view-button {
     border-bottom: 1px solid #fff;
   }
+
+  .view-button.selected {
+    color: #3be6c4;
+  }
+
 }
 </style>
 

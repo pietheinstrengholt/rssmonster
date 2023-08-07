@@ -69,7 +69,7 @@
 @media (min-width: 767px) {
   .block {
     margin-bottom: 0px;
-    padding-top: 6px;
+    padding-top: 4px;
   }
 }
 
@@ -180,6 +180,7 @@ span.feed_name a {
 
   .block {
     border-bottom-color: #121212;
+    background: #424242;
   }
 
   /* Landscape phones and portrait tablets */
