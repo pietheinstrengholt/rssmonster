@@ -23,7 +23,7 @@
 }
 
 #articles {
-  padding-top: 40px;
+  padding-top: 38px;
   overflow-x: hidden;
   overflow-y: hidden;
   right: 0;

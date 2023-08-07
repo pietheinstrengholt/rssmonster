@@ -54,7 +54,6 @@
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
   .block {
-    margin-bottom: 0px;
     padding-top: 2px;
   }
 
@@ -68,9 +67,12 @@
 /* Landscape phones and portrait tablets */
 @media (min-width: 767px) {
   .block {
-    margin-bottom: 0px;
     padding-top: 4px;
   }
+}
+
+.block {
+  margin-bottom: 0px;
 }
 
 .block .article.hot .heading, .block .article.starred .heading {
@@ -157,6 +159,12 @@ span.feed_name a {
   height: 18px;
   width: 18px;
   margin-top: -1px;
+}
+
+@media (prefers-color-scheme: light) {
+  .block {
+  box-shadow: 0 4px 2px -2px gray;
+}
 }
 
 @media (prefers-color-scheme: dark) {
