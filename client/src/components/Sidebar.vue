@@ -331,7 +331,6 @@ div.option {
 
 .category-button .text {
   font-size: 13px;
-  margin-top: 3px;
 }
 
 .sidebar-category-feed.error,

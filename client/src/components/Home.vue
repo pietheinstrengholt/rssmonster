@@ -1,8 +1,6 @@
 <template>
-  <div id="main">
-    <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
-      <Article v-for="article in articles" v-bind="article"/>
-    </div>
+  <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
+    <Article v-for="article in articles" v-bind="article"/>
   </div>
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
     <template v-slot:no-more>
@@ -18,12 +16,8 @@
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  #main {
-    padding-top: 38px;
-  }
-
   #articles {
-    padding-top: 0px;
+    padding-top: 12px;
   }
 }
 
@@ -44,15 +38,11 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  #main, #articles {
+  #articles {
     color: #fff;
     background: #121212;
     border-color: #121212;
     border-bottom-color: #fff;
-    background-color: #121212;
-  }
-
-  #articles {
     background-color: #121212;
   }
 }

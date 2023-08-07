@@ -180,7 +180,13 @@ span.feed_name a {
 
   .block {
     border-bottom-color: #121212;
-    background: #424242;
+  }
+
+  /* Landscape phones and portrait tablets */
+  @media (max-width: 766px) {
+    .block {
+      background: #424242;
+    }
   }
 
   .article h1.heading, .article h2.heading {
@@ -191,8 +197,10 @@ span.feed_name a {
     color: #fff;
   }
 
-  .article {
+  .block .article {
     border-bottom-color: black;
+    border-width: 0px;
+    border-radius: 0px;
   }
 
   .block .article.hot {
