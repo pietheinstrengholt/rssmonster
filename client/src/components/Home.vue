@@ -4,11 +4,11 @@
   </div>
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
     <template v-slot:no-more>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts for this selection. <br>Click here to mark all remaining items as read!</p>
-      <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts for this selection. You reached the bottom!</p>
+      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts found. <br>Click here to mark all remaining items as read!</p>
+      <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts found. You reached the bottom!</p>
     </template>
     <template v-slot:no-results>
-      <p v-if="container.length == 0" id="no-results">No posts have been found!<br><br></p>
+      <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
     </template>
   </infinite-loading>
 </template>
