@@ -141,6 +141,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  #mobile-toolbar {
+    background: #3a3a3a;
+  }
+
   .view-toolbar,
   .view-button {
     color: #fff;
@@ -155,6 +159,11 @@
   #hot.view-button {
     border-bottom: 1px solid #fff;
   }
+
+  .view-button.selected {
+    color: #3be6c4;
+  }
+
 }
 </style>
 

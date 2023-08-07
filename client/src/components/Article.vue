@@ -69,7 +69,7 @@
 @media (min-width: 767px) {
   .block {
     margin-bottom: 0px;
-    padding-top: 6px;
+    padding-top: 4px;
   }
 }
 
@@ -99,13 +99,10 @@
 }
 
 .block .article {
-  padding-top: 4px;
+  padding-top: 2px;
   padding-left: 5px;
   padding-right: 5px;
   border-color: #e0e0e0;
-  border-width: 1px;
-  border: 1px solid #ecf0f1;
-  border-radius: 4px;
   background-color: #FBFBFB;
   width: 100%;
 }
@@ -181,7 +178,14 @@ span.feed_name a {
 
   .block {
     border-bottom-color: #121212;
-    background: black;
+    background: #424242;
+  }
+
+  /* Landscape phones and portrait tablets */
+  @media (max-width: 766px) {
+    .block {
+      background: #424242;
+    }
   }
 
   .article h1.heading, .article h2.heading {
@@ -192,8 +196,10 @@ span.feed_name a {
     color: #fff;
   }
 
-  .article {
+  .block .article {
     border-bottom-color: black;
+    border-width: 0px;
+    border-radius: 0px;
   }
 
   .block .article.hot {

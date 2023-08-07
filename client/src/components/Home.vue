@@ -1,16 +1,14 @@
 <template>
-  <div id="main">
-    <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
-      <Article v-for="article in articles" v-bind="article"/>
-    </div>
+  <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
+    <Article v-for="article in articles" v-bind="article"/>
   </div>
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
     <template v-slot:no-more>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">You reached the bottom. <br>Click here to mark all remaining items as read!</p>
-      <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">You reached the bottom!</p>
+      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts for this selection. <br>Click here to mark all remaining items as read!</p>
+      <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts for this selection. You reached the bottom!</p>
     </template>
     <template v-slot:no-results>
-      <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
+      <p v-if="container.length == 0" id="no-results">No posts have been found!<br><br></p>
     </template>
   </infinite-loading>
 </template>
@@ -18,20 +16,16 @@
 <style scoped>
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  #main {
-    padding-top: 38px;
-  }
-
   #articles {
-    padding-top: 0px;
+    padding-top: 12px;
   }
 }
 
 /* Landscape phones and portrait tablets */
 @media (min-width: 767px) {
   #articles {
-    margin-left: -10px;
-    margin-right: -8px;
+    margin-left: -15px;
+    margin-right: -12px;
     padding-top: 40px;
   }
 }
@@ -44,15 +38,11 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  #main, #articles {
+  #articles {
     color: #fff;
     background: #121212;
     border-color: #121212;
     border-bottom-color: #fff;
-    background-color: #121212;
-  }
-
-  #articles {
     background-color: #121212;
   }
 }
