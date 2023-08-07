@@ -589,7 +589,7 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.feed.id).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.store.currentSelection.feedId).then(
         () => {
           //find the index of both the category and feed
           var indexCategory = this.store.categories.indexOf(this.inputCategory);
