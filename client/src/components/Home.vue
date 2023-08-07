@@ -15,22 +15,15 @@
 
 <style scoped>
 /* Landscape phones and portrait tablets */
-@media (max-width: 766px) {
-  #articles {
-    padding-top: 12px;
-  }
-}
-
-/* Landscape phones and portrait tablets */
 @media (min-width: 767px) {
   #articles {
     margin-left: -15px;
     margin-right: -12px;
-    padding-top: 40px;
   }
 }
 
 #articles {
+  padding-top: 40px;
   overflow-x: hidden;
   overflow-y: hidden;
   right: 0;
