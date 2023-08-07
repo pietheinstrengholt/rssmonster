@@ -141,6 +141,10 @@
 }
 
 @media (prefers-color-scheme: dark) {
+  #mobile-toolbar {
+    background: #3a3a3a;
+  }
+
   .view-toolbar,
   .view-button {
     color: #fff;

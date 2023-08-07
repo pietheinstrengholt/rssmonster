@@ -104,7 +104,6 @@
   padding-right: 5px;
   border-color: #e0e0e0;
   border-width: 1px;
-  border: 1px solid #ecf0f1;
   border-radius: 4px;
   background-color: #FBFBFB;
   width: 100%;
@@ -181,7 +180,7 @@ span.feed_name a {
 
   .block {
     border-bottom-color: #121212;
-    background: black;
+    background: #424242;
   }
 
   .article h1.heading, .article h2.heading {
