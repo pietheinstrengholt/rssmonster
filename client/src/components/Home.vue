@@ -26,7 +26,7 @@
   #articles {
     margin-left: -15px;
     margin-right: -12px;
-    padding-top: 35px;
+    padding-top: 40px;
   }
 }
 

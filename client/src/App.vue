@@ -78,7 +78,7 @@ p.offline {
 }
 
 html, #app {
-  background-color: #eee;
+  background-color: #d6d6d6;
 }
 
 html, #app, body {

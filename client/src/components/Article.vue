@@ -99,12 +99,10 @@
 }
 
 .block .article {
-  padding-top: 4px;
+  padding-top: 2px;
   padding-left: 5px;
   padding-right: 5px;
   border-color: #e0e0e0;
-  border-width: 1px;
-  border-radius: 4px;
   background-color: #FBFBFB;
   width: 100%;
 }
