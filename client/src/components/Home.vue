@@ -5,6 +5,7 @@
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
     <template v-slot:no-more>
       <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts found. <br>Click here to mark all remaining items as read!</p>
+      <p v-if="this.store.currentSelection.status == 'unread' && container.length == pool.length" id="no-more">No more posts found. <br>All posts are marked as read</p>
       <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts found. You reached the bottom!</p>
     </template>
     <template v-slot:no-results>
@@ -49,7 +50,7 @@ div.infinite-loading-container {
 }
 
 .infinite-status-prompt {
-  padding-bottom: 20px;
+  padding-bottom: 10px;
 }
 
 @media (prefers-color-scheme: dark) {
