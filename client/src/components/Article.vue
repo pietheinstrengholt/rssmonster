@@ -45,8 +45,9 @@
 }
 
 .block .article-content img, .block .article-content figure {
-  max-width: 100%;
-  height: auto;
+  display: block;
+  width: 100% !important;
+  height: auto !important;
 }
 </style>
 

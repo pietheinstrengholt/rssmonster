@@ -48,9 +48,8 @@ div.infinite-loading-container {
   padding-top: 20px;
 }
 
-#no-results {
-  margin-top: 10px;
-  margin-bottom: 10px;
+.infinite-status-prompt {
+  padding-bottom: 20px;
 }
 
 @media (prefers-color-scheme: dark) {
