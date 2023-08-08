@@ -49,6 +49,10 @@
   width: 100% !important;
   height: auto !important;
 }
+
+.block .article-content p {
+  display: inline !important;
+}
 </style>
 
 <style scoped>
