@@ -25,9 +25,9 @@
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.2.3",
+    "@vitejs/plugin-vue": "^4.3.1",
     "@vue/compiler-sfc": "^3.3.4",
-    "sass": "^1.64.2",
+    "sass": "^1.66.1",
     "vite": "^4.4.9",
     "vite-plugin-pwa": "^0.16.4"
   },
