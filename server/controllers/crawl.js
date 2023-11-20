@@ -9,6 +9,7 @@ import cheerio from "cheerio";
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
+import openai from "../util/openai.js";
 
 const Op = Sequelize.Op;
 
@@ -164,6 +165,9 @@ const processArticle = async (feed, post) => {
             var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
             var postLanguage = language.get($.html());
           }
+
+          const summarization = await openai.summarize(postContentStripped);
+          console.log(summarization);
   
           //add article
           Article.create({
@@ -173,7 +177,7 @@ const processArticle = async (feed, post) => {
             url: postLink,
             image_url: "",
             subject: postTitle || 'No title',
-            content: postContent,
+            content: summarization, //postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
             //contentSnippet: item.contentSnippet,

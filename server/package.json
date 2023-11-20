@@ -34,6 +34,7 @@
     "mysql2": "^3.6.3",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
+    "openai": "^4.19.0",
     "sequelize": "^6.35.0",
     "sequelize-cli": "^6.6.2",
     "striptags": "^3.2.0"
