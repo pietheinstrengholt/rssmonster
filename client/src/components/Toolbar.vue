@@ -25,7 +25,7 @@
         <p>Full</p>
       </div>
       <div class="item" href="#" @click="filterClicked('minimal')">
-        <p>Minimal</p>
+        <p>Summarized</p>
       </div>
     </div>
     <div class="status-toolbar" @click="toggleShowSort">

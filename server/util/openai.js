@@ -24,9 +24,11 @@ const openai = new OpenAI({
 
 export const summarize = async (text, postLanguage) => {
     if (text) {
+        // The code below is for localized text improvements. GPT3 doesn't perform that well on localized text and may return the completion back in English. 
+        // Overwriting the prompt may help in this respect.
         var promptSystem = "You are a journalist. You process blog posts and articles. You are not allowed to change the language of the text.";
         var promptUser = "Remove any advertisements or promotional appearances. Wrap up the post with a concise conclusion or summary. Return in text format using the original language. " + text;
-        if (typeof postLanguage != 'undefined' && postLanguage == process.env['NATIVE_LANGUAGE']) {
+        if (typeof postLanguage != 'undefined' && postLanguage == process.env['NATIVE_LANGUAGE'] && typeof process.env['NATIVE_SYSTEM_PROMPT'] != 'undefined' && typeof process.env['NATIVE_USER_PROMPT'] != 'undefined') {
             var promptSystem = process.env['NATIVE_SYSTEM_PROMPT'];
             var promptUser = process.env['NATIVE_USER_PROMPT'] + " " + text;
         }

@@ -166,11 +166,10 @@ const processArticle = async (feed, post) => {
             var postLanguage = language.get($.html());
           }
 
-          //call openai service for summarizing content
+          //call OpenAI service for summarizing content
           try {
             const summarization = await openai.summarize(postContentStripped, postLanguage);
             if (summarization !== undefined) {
-              console.log(summarization);
               postContentStripped = summarization.choices[0].message.content;
             }
           } catch(err) {
@@ -185,7 +184,7 @@ const processArticle = async (feed, post) => {
             url: postLink,
             image_url: "",
             subject: postTitle || 'No title',
-            content: postContentStripped, //postContent,
+            content: postContent, //postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
             //contentSnippet: item.contentSnippet,

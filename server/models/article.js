@@ -47,6 +47,19 @@ export const Article = sequelize.define(
   {
     charset: "utf8mb4",
     collate: "utf8mb4_unicode_ci"
+  },
+  {
+    indexes: [
+      // Create a index on status
+      {
+        name: "article_status",
+        fields: ['status']
+      },
+      {
+        name: "article_starInd",
+        fields: ['starInd']
+      }
+    ]
   }
 );
 
