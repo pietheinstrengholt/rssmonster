@@ -22,25 +22,31 @@ const openai = new OpenAI({
     defaultHeaders: { 'api-key': apiKey }
 });
 
-export const summarize = async (text) => {
+export const summarize = async (text, postLanguage) => {
     if (text) {
+        var promptSystem = "You are a journalist. You process blog posts and articles. You are not allowed to change the language of the text.";
+        var promptUser = "Remove any advertisements or promotional appearances. Wrap up the post with a concise conclusion or summary. Return in text format using the original language. " + text;
+        if (typeof postLanguage != 'undefined' && postLanguage == process.env['NATIVE_LANGUAGE']) {
+            var promptSystem = process.env['NATIVE_SYSTEM_PROMPT'];
+            var promptUser = process.env['NATIVE_USER_PROMPT'] + " " + text;
+        }
         // Submit stripped article content to OpenAI for summarization.
-        const result = await openai.chat.completions.create({
+        const chatCompletion = await openai.chat.completions.create({
             model,
             messages: [
-                {"role": "system", "content": "You are a journalist. You process blog posts and articles. You are not allowed to change the language of the text."},
-                {"role": "user", "content": 'Remove any advertisements or promotional appearances and return a summary in text format using the original language: ' + text }
+                {"role": "system", "content": promptSystem},
+                {"role": "user", "content": promptUser }
             ],
         });
 
-        console.log('Summarization by OpenAI: ' + result.choices[0].message.content);
+        return chatCompletion;
     }
 };
 
 export const classify = async (text) => {
     if (text) {
         // Submit stripped article content to OpenAI for classifications.
-        const classifications = await openai.chat.completions.create({
+        const chatCompletion = await openai.chat.completions.create({
             model,
             messages: [
                 {"role": "system", "content": "You are a journalist. You process blog posts and articles. You are not allowed to change the language of the text. "},
@@ -49,8 +55,8 @@ export const classify = async (text) => {
                 {"role": "user", "content": text}
             ],
             });
-            
-        console.log('Classifications by OpenAI: ' + classifications.choices[0].message.content);
+        console.log('Classifications by OpenAI: ' + chatCompletion.choices[0].message.content);        
+        return chatCompletion.choices[0].message.content;
     }
 };
 

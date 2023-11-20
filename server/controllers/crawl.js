@@ -166,8 +166,16 @@ const processArticle = async (feed, post) => {
             var postLanguage = language.get($.html());
           }
 
-          const summarization = await openai.summarize(postContentStripped);
-          console.log(summarization);
+          //call openai service for summarizing content
+          try {
+            const summarization = await openai.summarize(postContentStripped, postLanguage);
+            if (summarization !== undefined) {
+              console.log(summarization);
+              postContentStripped = summarization.choices[0].message.content;
+            }
+          } catch(err) {
+            console.log(err);
+          }
   
           //add article
           Article.create({
@@ -177,7 +185,7 @@ const processArticle = async (feed, post) => {
             url: postLink,
             image_url: "",
             subject: postTitle || 'No title',
-            content: summarization, //postContent,
+            content: postContentStripped, //postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
             //contentSnippet: item.contentSnippet,
