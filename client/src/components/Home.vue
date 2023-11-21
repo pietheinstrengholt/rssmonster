@@ -1,5 +1,6 @@
 <template>
-  <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
+  <div>
+    <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
     <Article v-for="article in articles" v-bind="article"/>
   </div>
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
@@ -12,6 +13,7 @@
       <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
     </template>
   </infinite-loading>
+  </div>
 </template>
 
 <style scoped>

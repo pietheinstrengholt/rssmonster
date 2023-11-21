@@ -1,6 +1,7 @@
 {
   "name": "rssmonster-client",
   "version": "1.0.0",
+  "type": "module",
   "private": true,
   "author": "Piethein Strengholt",
   "scripts": {
