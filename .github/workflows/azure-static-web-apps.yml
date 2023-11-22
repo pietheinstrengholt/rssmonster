@@ -16,7 +16,7 @@ jobs:
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
     runs-on: ubuntu-latest
     container: 
-      image: alpine:latest
+      image: docker.io/homebrew/ubuntu22.04
       options: --user root
     name: Build and Deploy Job
     steps:
