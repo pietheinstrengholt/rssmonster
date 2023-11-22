@@ -20,14 +20,14 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         with:
-          submodules: true
-      - name: Reclaim cache directory
-        run: chown -R 1001:1001 /github/home/.npm && echo "pwn dat cache"          
+          submodules: true       
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
           languages: javascript
           config-file: ./.github/codeql/codeql-config.yml
+      - name: Reclaim cache directory
+        run: chown -R 1001:1001 /github/home/.npm && echo "pwn dat cache"  
       - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
