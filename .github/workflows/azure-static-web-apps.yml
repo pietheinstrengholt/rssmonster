@@ -23,7 +23,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v3
         #with:
-          #submodules: true       
+          #submodules: true
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v2
         with:
