@@ -1,7 +1,7 @@
 <template>
   <div>
     <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
-    <Article v-for="article in articles" v-bind="article"/>
+    <Article v-for="article in articles" v-bind="article" :key="article.id"/>
   </div>
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
     <template v-slot:no-more>
