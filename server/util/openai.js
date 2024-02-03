@@ -26,12 +26,13 @@ export const summarize = async (text, postLanguage) => {
     if (text) {
         // The code below is for localized text improvements. GPT3 doesn't perform that well on localized text and may return the completion back in English. 
         // Overwriting the prompt may help in this respect.
-        var promptSystem = "You are a journalist. You process blog posts and articles. You are not allowed to change the language of the text.";
-        var promptUser = "Remove any advertisements or promotional appearances. Wrap up the post with a concise conclusion or summary. Return in text format using the original language. " + text;
-        if (typeof postLanguage != 'undefined' && postLanguage == process.env['NATIVE_LANGUAGE'] && typeof process.env['NATIVE_SYSTEM_PROMPT'] != 'undefined' && typeof process.env['NATIVE_USER_PROMPT'] != 'undefined') {
-            var promptSystem = process.env['NATIVE_SYSTEM_PROMPT'];
-            var promptUser = process.env['NATIVE_USER_PROMPT'] + " " + text;
-        }
+        //var promptSystem = "You are a helpful assistant that summarizes news articles in a serious tone yet witty way. Start with a bulleted list containing a breakdown of the article's key points and create a closing paragraph with your opinions titled 'Personal opinions'. Include h1,h2,h3 tags in the final output where appropriate. Use the following template if applicable. Even if you don't have opinions or emotions regarding the subject, pretend you do in accordance with the context. Don't start your responses with confirmatory statements like 'Sure, here you go:', 'Yes, here's your summary:', etc.\n\nTitle\n\nShort Summary\nKey Highlights (bulleted list)\nMain article\nPersonal Opinions/Analysis\nConclusion (Optional)\nReferences/Sources\nSource: LINK (<link> tag we get from rss feed)\nDont forget the html tags";
+        var promptSystem = "You are a helpful assistant that summarizes news articles in a serious tone yet witty way. Start with a short summary including a bulleted list containing a breakdown of the article's key points. Next, add a longer summary of the main article. Use the following template:\n\n<h4>Short summary</h4>\n<h4>Key highlights</h4> (bulleted list)\n<h4>Main article</h4>\n\nDont forget the html tags";
+        var promptUser = text;
+        //if (typeof postLanguage != 'undefined' && postLanguage == process.env['NATIVE_LANGUAGE'] && typeof process.env['NATIVE_SYSTEM_PROMPT'] != 'undefined' && typeof process.env['NATIVE_USER_PROMPT'] != 'undefined') {
+            //var promptSystem = process.env['NATIVE_SYSTEM_PROMPT'];
+            //var promptUser = process.env['NATIVE_USER_PROMPT'] + " " + text;
+        //}
         // Submit stripped article content to OpenAI for summarization.
         const chatCompletion = await openai.chat.completions.create({
             model,
@@ -51,7 +52,7 @@ export const classify = async (text) => {
         const chatCompletion = await openai.chat.completions.create({
             model,
             messages: [
-                {"role": "system", "content": "You are a journalist. You process blog posts and articles. You are not allowed to change the language of the text. "},
+                {"role": "system", "content": "You are a journalist. You process blog posts and articles."},
                 {"role": "assistant", "content": "provide 5 tags for this blog post"},
                 {"role": "assistant", "content": "output tags as CSV, comma separated values"},
                 {"role": "user", "content": text}

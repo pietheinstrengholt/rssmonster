@@ -171,6 +171,8 @@ const processArticle = async (feed, post) => {
             const summarization = await openai.summarize(postContentStripped, postLanguage);
             if (summarization !== undefined) {
               postContentStripped = summarization.choices[0].message.content;
+              //debug
+              console.log(postContentStripped);
             }
           } catch(err) {
             console.log(err);
@@ -184,7 +186,7 @@ const processArticle = async (feed, post) => {
             url: postLink,
             image_url: "",
             subject: postTitle || 'No title',
-            content: postContent, //postContent,
+            content: postContentStripped, //postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
             //contentSnippet: item.contentSnippet,
