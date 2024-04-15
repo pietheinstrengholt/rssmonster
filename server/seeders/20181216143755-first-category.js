@@ -1,11 +1,10 @@
-import sequelize from "../util/database.js";
-
-export default {
-  up: async (queryInterface, Sequelize) => {
+'use strict';
+module.exports = {
+  up: (queryInterface, Sequelize) => {
     return queryInterface.bulkInsert('categories', [{
       name: 'Index',
-      createdAt: sequelize.literal('NOW()'),
-      updatedAt: sequelize.literal('NOW()')
+      createdAt: Sequelize.literal('NOW()'),
+      updatedAt: Sequelize.literal('NOW()')
     }], {});
   },
 
