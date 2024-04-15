@@ -12,24 +12,24 @@
     "node": "14.x"
   },
   "dependencies": {
-    "@dvuckovic/vue3-bootstrap-icons": "^1.0.6",
-    "axios": "^1.6.1",
-    "bootstrap": "^5.3.2",
-    "bootswatch": "^5.3.2",
+    "@dvuckovic/vue3-bootstrap-icons": "^2.0.0",
+    "axios": "^1.6.8",
+    "bootstrap": "^5.3.3",
+    "bootswatch": "^5.3.3",
     "idb-keyval": "^6.2.1",
-    "moment": "^2.29.4",
+    "moment": "^2.30.1",
     "register-service-worker": "^1.7.2",
-    "vue": "^3.3.8",
+    "vue": "^3.4.21",
     "vue-infinite-loading": "github:nvitius/vue-infinite-loading#next",
     "vuedraggable": "^4.1.0",
     "waypoints": "^4.0.1"
   },
   "devDependencies": {
-    "@vitejs/plugin-vue": "^4.4.1",
-    "@vue/compiler-sfc": "^3.3.8",
-    "sass": "^1.69.5",
-    "vite": "^4.5.0",
-    "vite-plugin-pwa": "^0.16.7"
+    "@vitejs/plugin-vue": "^5.0.4",
+    "@vue/compiler-sfc": "^3.4.21",
+    "sass": "^1.75.0",
+    "vite": "^5.2.8",
+    "vite-plugin-pwa": "^0.19.8"
   },
   "browserslist": [
     "> 1%",

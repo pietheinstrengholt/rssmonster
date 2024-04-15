@@ -29,6 +29,11 @@ import errorController from "./controllers/error.js";
 //init cache
 import cache from "./util/cache.js";
 
+//import vector
+import vector from "./util/vector.js";
+//create index for vector
+vector.index();
+
 const app = express();
 
 app.use(morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-time ms)'));

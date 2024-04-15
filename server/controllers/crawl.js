@@ -10,6 +10,7 @@ import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
 import openai from "../util/openai.js";
+import vector from "../util/vector.js";
 
 const Op = Sequelize.Op;
 
@@ -193,6 +194,16 @@ const processArticle = async (feed, post) => {
             //author: item.author,
             //default post.pubdate with new Date when empty
             published: post.pubdate || new Date()
+          });
+
+          vector.add({
+            Id: postLink.replace(/[^a-zA-Z ]/g, ""),
+            articleUrl: postLink,
+            feedName: feed.feedName,
+            articlePublishDate: post.pubdate || new Date(),
+            articleSubject: postTitle || 'No title',
+            articleContent: postContent,
+            hiddenWeight: 1
           });
         }
       }
