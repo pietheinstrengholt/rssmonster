@@ -1,3 +1,5 @@
+import embedding from "../util/embedding.js";
+
 import {SearchClient,SearchIndexClient,SearchIndexerClient,AzureKeyCredential} from '@azure/search-documents';
 
 //set the index name for the azure ai search
@@ -48,6 +50,13 @@ export const index = async () => {
                 searchable: true
             },
             {
+                type: "Collection(Edm.Single)",
+                name: "articleSubjectVector",
+                searchable: true,
+                vectorSearchDimensions: 1536,
+                vectorSearchProfileName: "myHnswProfile"
+            },
+            {
                 type: "Edm.String",
                 name: "articleContent",
                 searchable: true
@@ -56,16 +65,35 @@ export const index = async () => {
                 type: "Collection(Edm.Single)",
                 name: "articleContentVector",
                 searchable: true,
-                retrievable: true,
-                dimensions: 1536,
-                vectorSearchProfile: null
+                vectorSearchDimensions: 1536,
+                vectorSearchProfileName: "myHnswProfile"
             },
             {
                 type: "Edm.Int32",
                 name: "hiddenWeight",
                 hidden: true,
             }
-        ]
+        ],
+        vectorSearch: {
+            algorithms: [{ name: "myHnswAlgorithm", kind: "hnsw" }],
+            profiles: [
+                {
+                    name: "myHnswProfile",
+                    algorithmConfigurationName: "myHnswAlgorithm",
+                },
+            ],
+        },
+        semanticSearch: {
+            configurations: [
+                {
+                name: "my-semantic-config",
+                prioritizedFields: {
+                    contentFields: [{ name: "articleContent" }],
+                    keywordsFields: [{ name: "feedName" }],
+                },
+                }
+            ]
+        }
     });
 
     console.log(result);
@@ -79,11 +107,14 @@ export const add = async (article) => {
                 feedName: article.feedName,
                 articlePublishDate: article.articlePublishDate,
                 articleSubject: article.articleSubject,
+                articleSubjectVector: await embedding.embed(article.articleSubject),
                 articleContent: article.articleContent,
+                articleContentVector: await embedding.embed(article.articleContent),
                 hiddenWeight: 1
             }
         ]);
     for (const result of uploadResult.results) {
+        console.log("========= ADDED TO INDEX ===========")
         console.log(`Uploaded ${result.key}; succeeded? ${result.succeeded}`);
     }
 }

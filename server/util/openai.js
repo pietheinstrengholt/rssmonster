@@ -16,7 +16,7 @@ if (!apiKey) {
 
 // Azure OpenAI requires a custom baseURL, api-version query param, and api-key header.
 const openai = new OpenAI({
-    apiKey,
+    apiKey: apiKey,
     baseURL: `https://${resource}.openai.azure.com/openai/deployments/${model}`,
     defaultQuery: { 'api-version': '2023-06-01-preview' },
     defaultHeaders: { 'api-key': apiKey }
