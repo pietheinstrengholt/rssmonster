@@ -4,7 +4,12 @@ import App from './App.vue';
 //progressive web app
 import './registerServiceWorker'
 
-import BootstrapIcon from '@dvuckovic/vue3-bootstrap-icons';
+import { BootstrapIcon } from '@dvuckovic/vue3-bootstrap-icons'
+import { injectBootstrapIcons } from '@dvuckovic/vue3-bootstrap-icons/utils'
+import BootstrapIcons from 'bootstrap-icons/bootstrap-icons.svg?raw'
+import '@dvuckovic/vue3-bootstrap-icons/dist/style.css'
+
+injectBootstrapIcons(BootstrapIcons)
 
 // create an instance using the function
 const app = createApp(App)
