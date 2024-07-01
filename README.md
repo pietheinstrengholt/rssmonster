@@ -4,7 +4,7 @@
 [![Azure Web App](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml/badge.svg)](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/azure-web-app-server.yml)
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
 
-Copyright (c) 2023 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2024 Piethein Strengholt, piethein@strengholt-online.nl
 
 ### Background
 RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader. RSSMonster features a lightweight fluid responsive design. It is written in JavaScript: Vue.js 3 for the frontend and Express for the backend. It uses Bootstrap for making the design responsive. 

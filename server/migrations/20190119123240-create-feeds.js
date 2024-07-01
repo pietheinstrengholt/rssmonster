@@ -1,5 +1,6 @@
-export default {
-  up: async (queryInterface, Sequelize) => {
+'use strict';
+module.exports = {
+  up: (queryInterface, Sequelize) => {
     return queryInterface.createTable('feeds', {
       id: {
         type: Sequelize.INTEGER,
