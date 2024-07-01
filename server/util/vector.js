@@ -1,9 +1,9 @@
 import embedding from "../util/embedding.js";
 
-import {SearchClient,SearchIndexClient,SearchIndexerClient,AzureKeyCredential} from '@azure/search-documents';
+import {SearchClient,SearchIndexClient,AzureKeyCredential} from '@azure/search-documents';
 
 //set the index name for the azure ai search
-const index_name = "rssmonster-index";
+const index_name = process.env['SEARCH_INDEX'];
 
 //set the search endpoint for the azure ai search
 const endpoint = process.env['SEARCH_ENDPOINT'];
