@@ -202,7 +202,7 @@ const processArticle = async (feed, post) => {
             feedName: feed.feedName,
             articlePublishDate: post.pubdate || new Date(),
             articleSubject: postTitle || 'No title',
-            articleContent: postContent,
+            articleContent: postContentStripped,
             hiddenWeight: 1
           });
         }
