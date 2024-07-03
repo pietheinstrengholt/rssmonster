@@ -28,7 +28,7 @@
     "@vitejs/plugin-vue": "^5.0.5",
     "@vue/compiler-sfc": "^3.4.31",
     "sass": "^1.77.6",
-    "vite": "^5.3.2",
+    "vite": "^5.3.3",
     "vite-plugin-pwa": "^0.20.0"
   },
   "browserslist": [
