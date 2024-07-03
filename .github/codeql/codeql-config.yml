@@ -5,7 +5,6 @@ queries:
     
 paths:
   - client/src
-  - server
     
 paths-ignore:
   - client/dist
