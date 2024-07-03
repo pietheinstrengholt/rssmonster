@@ -68,7 +68,6 @@ div.infinite-loading-container {
 
 <script>
 import Article from "./Article.vue";
-import "waypoints/lib/noframework.waypoints.js";
 import InfiniteLoading from "vue-infinite-loading";
 import axios from 'axios';
 
@@ -91,8 +90,6 @@ export default {
       container: [],
       //is used to keep track of which articles are already flagged as read
       pool: [],
-      //is used to keep track of which articles are already set with the waypoint method
-      waypointPool: [],
       firstLoad: false,
       prevScroll: 0,
       prevDirection: "down"
@@ -185,6 +182,25 @@ export default {
         }
       }
 
+      //calculate the scroll position and mark items as read when scrolling down
+      if ((direction === "down") && (this.store.currentSelection.status === "unread")) {
+        if (document.getElementById('articles')) {
+          //set initial screen height to the current scroll position
+          var screenHeight = Math.ceil(document.documentElement.scrollTop);
+          //loop through all articles and check if they are in the viewport
+          for (const child of document.getElementById('articles').children) {
+            //check if the article is still in the viewport
+            screenHeight = screenHeight - document.getElementById(child.id).offsetHeight;
+            //if the article is no longer in the viewport, mark it as read
+            if (screenHeight > 0) {
+              if (!this.pool.includes(child.id)) {
+                this.markArticleRead(child.id);
+              }
+            }
+          }
+        }
+      }
+
       //overwrite the prevScroll and prevDirection after doing the comparison
       this.prevScroll = curScroll;
       this.prevDirection = direction;
@@ -216,20 +232,6 @@ export default {
               this.articles = this.articles.concat(response.data);
               //set state to loaded
               $state.loaded();
-              //add waypoint to every article
-              setTimeout(() => {
-                for (var key in this.articles) {
-                  var article = this.articles[key];
-                  //only add triggers if the status is unread
-                  if (article.status == "unread") {
-                    //make sure only one waypoint per article is set, check the waypointPool for this
-                    if (!this.waypointPool.includes(article.id)) {
-                      this.waypointCreate(article.id);
-                      this.waypointPool.push(article.id);
-                    }
-                  }
-                }
-              }, 50);
               //if the returned set has a length of less than fetchCount set the state to complete
               if (response.data.length < this.fetchCount) {
                 $state.complete();
@@ -263,63 +265,42 @@ export default {
       this.container = [];
       this.distance = 0;
     },
-    waypointCreate(article) {
-      //add additional check to fix error: https://stackoverflow.com/questions/40252534/waypoints-no-element-option-passed-to-waypoint-constructor
-      if (document.getElementById(article)) {
-        // eslint-disable-next-line
-        const waypoint = new Waypoint({
-          element: document.getElementById(article),
-          offset: -150,
-          //use the ES2015 arrow syntax to avoid error Cannot read property 'post' of undefined
-          handler: direction => {
-            if (direction == "down") {
-              //make ajax request to change bookmark status
-              this.markArticleRead(article);
-              //destroy after the article has been marked as read
-              waypoint.destroy();
-            }
-          }
-        });
-      }
-    },
-    async markArticleRead(article) {
-      if (this.store.currentSelection.status === "unread") {
-        //make ajax request to change read status
-        await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + article).then(
-          response => {
-            if (!this.pool.includes(article)) {
-              //push id to the pool
-              this.pool.push(article);
+    async markArticleRead(articleId) {
+      //make ajax request to change read status
+      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
+        response => {
+          if (!this.pool.includes(articleId)) {
+            //push articleId to the pool
+            this.pool.push(articleId);
 
-              //decrease the unread count
-              var categoryIndex = this.store.categories.findIndex(
-                category => category.id === response.data.feed.categoryId
-              );
-              //avoid having any negative numbers
-              if (this.store.categories[categoryIndex].unreadCount != 0) {
-                this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
-                this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
-              }
-              var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
-              //avoid having any negative numbers
-              if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount != 0) {
-                this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
-                this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
-              }
-              //also increase total count
-              if (this.store.unreadCount != 0) {
-                this.store.readCount = this.store.readCount + 1;
-                this.store.unreadCount = this.store.unreadCount - 1;
-              }
+            //decrease the unread count
+            var categoryIndex = this.store.categories.findIndex(
+              category => category.id === response.data.feed.categoryId
+            );
+            //avoid having any negative numbers
+            if (this.store.categories[categoryIndex].unreadCount != 0) {
+              this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
+              this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
             }
-          },
-          response => {
-            /* eslint-disable no-console */
-            console.log("oops something went wrong", response);
-            /* eslint-enable no-console */
+            var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
+            //avoid having any negative numbers
+            if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount != 0) {
+              this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
+              this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
+            }
+            //also increase total count
+            if (this.store.unreadCount != 0) {
+              this.store.readCount = this.store.readCount + 1;
+              this.store.unreadCount = this.store.unreadCount - 1;
+            }
           }
-        );
-      }
+        },
+        response => {
+          /* eslint-disable no-console */
+          console.log("oops something went wrong", response);
+          /* eslint-enable no-console */
+        }
+      );
     }
   }
 };

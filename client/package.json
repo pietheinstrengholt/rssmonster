@@ -22,8 +22,7 @@
     "register-service-worker": "^1.7.2",
     "vue": "^3.4.31",
     "vue-infinite-loading": "github:nvitius/vue-infinite-loading#next",
-    "vuedraggable": "^4.1.0",
-    "waypoints": "^4.0.1"
+    "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.0.5",

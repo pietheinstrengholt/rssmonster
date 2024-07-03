@@ -7,11 +7,17 @@
 Copyright (c) 2024 Piethein Strengholt, piethein@strengholt-online.nl
 
 ### Background
-RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader. RSSMonster features a lightweight fluid responsive design. It is written in JavaScript: Vue.js 3 for the frontend and Express for the backend. It uses Bootstrap for making the design responsive. 
-
-RSSMonster tries to mimic the behaviour of Google Reader. It marks items when you start scrolling. It knows what content is hot. It features progressive web app support, drag and drop support for managing feeds, dark mode, and more! RSSMonster is compatible with the Fever API. Feel free to add any contributions or new features.
+RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternative to one of my favorite tools, Google Reader. Motivated by the need to replace Google Reader for tracking RSS feeds, RSSMonster aims to replicate its functionality while offering modern enhancements.
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
+
+### Features
+- Lightweight and Responsive Design: Built using Vue.js 3 for the frontend and Express for the backend, RSSMonster leverages Bootstrap to ensure a fluid and responsive user experience.
+- Google Reader-like Behavior: Mimics the behavior of Google Reader, such as marking items as read when you start scrolling and identifying trending content.
+- Progressive Web App Support: Install RSSMonster as a PWA for a seamless experience across devices.
+- Drag and Drop: Easily manage your feeds with intuitive drag and drop functionality.
+- Dark Mode: Switch to dark mode for a comfortable reading experience in low-light environments.
+- Fever API Compatibility: Fully compatible with the Fever API, allowing for integration with other RSS tools.
 
 ### Prerequisites
 * NodeJS 16.x or higher
@@ -67,6 +73,9 @@ Any username and password will work.
 
 ![Screenshot Fever](client/src/assets/screenshots/fever.png)
 
+### Contributions
+I welcome contributions and new features from the community. Feel free to fork the repository and submit pull requests.
+
 #### Credits
 The following scripts and plug-ins are used within RSSMonster
 
@@ -75,4 +84,3 @@ The following scripts and plug-ins are used within RSSMonster
 * Feedparser: https://github.com/danmactough/node-feedparser/
 * VueJS: https://vuejs.org/
 * Vue infinite scrolling: https://github.com/PeachScript/vue-infinite-loading
-* Waypoints: https://github.com/imakewebthings/waypoints
