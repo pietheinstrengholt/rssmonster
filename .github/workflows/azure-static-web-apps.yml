@@ -22,8 +22,9 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
-        #with:
-          #submodules: true
+        with:
+          env: # Add environment variables here
+          FORCE_JAVASCRIPT_ACTIONS_TO_NODE20: true
       - name: Initialize CodeQL
         uses: github/codeql-action/init@v3
         with:
