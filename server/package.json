@@ -25,7 +25,7 @@
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
-    "feedparser": "^2.2.10",
+    "feedparser": "https://github.com/lesion/node-feedparser.git",
     "franc-min": "^6.2.0",
     "got": "^14.4.1",
     "he": "^1.2.0",

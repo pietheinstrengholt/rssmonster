@@ -4,13 +4,15 @@
     <Article v-for="article in articles" v-bind="article" :key="article.id"/>
   </div>
   <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
-    <template v-slot:no-more>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts found. <br>Click here to mark all remaining items as read!</p>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length == pool.length" id="no-more">No more posts found. <br>All posts are marked as read</p>
-      <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts found. You reached the bottom!</p>
+    <template #complete>
+      <div>
+        <p class="infinite-status-prompt" v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts found. <br>Click here to mark all remaining items as read!</p>
+        <p class="infinite-status-prompt" v-if="this.store.currentSelection.status == 'unread' && container.length == 0" id="no-more">No new unread posts are found!</p>
+        <p class="infinite-status-prompt" v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts found. You reached the bottom!</p>
+      </div>
     </template>
-    <template v-slot:no-results>
-      <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
+    <template #error>
+      <p>Oops! Something went wrong...<br><br></p>
     </template>
   </infinite-loading>
   </div>
@@ -52,7 +54,9 @@ div.infinite-loading-container {
 }
 
 .infinite-status-prompt {
-  padding-bottom: 10px;
+  padding-top: 10px;
+  padding-bottom: 30px;
+  text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -68,7 +72,7 @@ div.infinite-loading-container {
 
 <script>
 import Article from "./Article.vue";
-import InfiniteLoading from "vue-infinite-loading";
+import InfiniteLoading from "v3-infinite-loading";
 import axios from 'axios';
 
 import store from "../store";
@@ -104,6 +108,7 @@ export default {
   watch: {
     "store.currentSelection": {
       handler: function(data) {
+        console.log("get data!");
         this.loadContent(data);
       },
       deep: true
@@ -148,7 +153,7 @@ export default {
           this.container = response.data.itemIds;
           //reset onInfinite using the new container data, if this isn't the first load
           if (this.firstLoad) {
-            this.$refs.infiniteLoading.stateChanger.reset();
+            infiniteLoadingRef.value?.$emit('infinite', infiniteLoadingRef.value.stateChanger);
           } else {
             //enable infinite-loading by setting firstLoad to true
             this.firstLoad = true;
