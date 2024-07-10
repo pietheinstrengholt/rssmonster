@@ -153,7 +153,7 @@ export default {
           this.container = response.data.itemIds;
           //reset onInfinite using the new container data, if this isn't the first load
           if (this.firstLoad) {
-            infiniteLoadingRef.value?.$emit('infinite', infiniteLoadingRef.value.stateChanger);
+            infiniteLoading.value?.$emit('infinite', infiniteLoading.value.stateChanger);
           } else {
             //enable infinite-loading by setting firstLoad to true
             this.firstLoad = true;
