@@ -52,7 +52,9 @@ div.infinite-loading-container {
 }
 
 .infinite-status-prompt {
-  padding-bottom: 10px;
+  padding-top: 10px;
+  padding-bottom: 30px;
+  text-align: center;
 }
 
 @media (prefers-color-scheme: dark) {
