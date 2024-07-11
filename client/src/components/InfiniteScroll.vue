@@ -6,7 +6,7 @@
     <div id="no-more" v-if="firstLoad">
       <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
       <p v-if="currentSelection != 'unread' && container.length > 0 && remainingItems < fetchCount">You reached the bottom!</p>
-      <p v-if="currentSelection == 'unread' && container.length > pool.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
+      <p v-if="currentSelection == 'unread' && container.length != pool.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
       <p v-if="currentSelection == 'unread' && container.length == pool.length && container.length > 0">All items are marked as read.</p>
     </div>
   </div>
