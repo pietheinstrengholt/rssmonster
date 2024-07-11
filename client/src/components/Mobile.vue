@@ -31,16 +31,8 @@
         </li>
       </ul>
       <p class="content-header">Select how the articles should be displayed</p>
-      <button
-        @click="store.filter = 'full'"
-        type="button"
-        class="btn btn-primary content"
-      >Full content</button>
-      <button
-        @click="store.filter = 'minimal'"
-        type="button"
-        class="btn btn-primary content"
-      >Minimal content</button>
+      <button @click="store.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
+      <button @click="store.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
 
       <p class="content-header">Click the button below to add a new feed</p>
       <button @click="showNewFeed()" type="button" class="btn btn-primary">Add new feed</button>
