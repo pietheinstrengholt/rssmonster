@@ -1,18 +1,14 @@
 <template>
-  <div>
+  <div id="main-container">
     <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
-    <Article v-for="article in articles" v-bind="article" :key="article.id"/>
-  </div>
-  <infinite-loading v-if="firstLoad" ref="infiniteLoading" @infinite="infiniteHandler">
-    <template v-slot:no-more>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()" id="no-more">No more posts found. <br>Click here to mark all remaining items as read!</p>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length == pool.length" id="no-more">No more posts found. <br>All posts are marked as read</p>
-      <p v-if="this.store.currentSelection.status != 'unread'" id="no-more">No more posts found. You reached the bottom!</p>
-    </template>
-    <template v-slot:no-results>
+      <Article v-for="article in articles" v-bind="article" :key="article.id"/>
+    </div>
+    <div id="no-more" v-if="firstLoad">
       <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
-    </template>
-  </infinite-loading>
+      <p v-if="this.store.currentSelection.status != 'unread' && container.length > 0">You reached the bottom!</p>
+      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
+      <p v-if="this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length > 0">All items are marked as read.</p>
+    </div>
   </div>
 </template>
 
@@ -51,8 +47,8 @@ div.infinite-loading-container {
   padding-top: 20px;
 }
 
-.infinite-status-prompt {
-  padding-top: 10px;
+#no-more {
+  padding-top: 30px;
   padding-bottom: 30px;
   text-align: center;
 }
@@ -70,43 +66,43 @@ div.infinite-loading-container {
 
 <script>
 import Article from "./Article.vue";
-import InfiniteLoading from "vue-infinite-loading";
 import axios from 'axios';
-
 import store from "../store";
 
 export default {
   components: {
-    InfiniteLoading,
     Article
   },
   data() {
     return {
       store: store,
+      //distance is used to keep track of the current position in the container
       distance: 0,
       //amount of article leaded at once
       fetchCount: 20,
-      isActive: false,
+      //articles contains the article details
       articles: [],
       //container contains a list with all article ids
       container: [],
       //is used to keep track of which articles are already flagged as read
       pool: [],
       firstLoad: false,
+      //scroll variables for comparing the scroll positions
       prevScroll: 0,
-      prevDirection: "down"
+      scrollDirection: "down"
     };
   },
   computed: {
+    //calculate the remaining items in the container
     remainingItems: function() {
       return this.container.length - this.pool.length;
     }
   },
-  //watch the data store, when changing reload the article details
+  //watch the currentSelection, fetch articleIds when detecting changes
   watch: {
     "store.currentSelection": {
       handler: function(data) {
-        this.loadContent(data);
+        this.fetchArticleIds(data);
       },
       deep: true
     }
@@ -119,17 +115,16 @@ export default {
   },
   beforeCreate() {
     //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-    axios
-      .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting")
-      .then(response => {
+    axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
         return response;
       })
       .then(response => {
         this.store.currentSelection = response.data;
-      });
+      }
+    );
   },
   methods: {
-    loadContent(data) {
+    fetchArticleIds(data) {
       axios
         .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
           params: {
@@ -148,12 +143,13 @@ export default {
           //reset the pool, attach data to container and get first set of article details
           this.resetPool();
           this.container = response.data.itemIds;
-          //reset onInfinite using the new container data, if this isn't the first load
+          //reset and get new content when the status changes
           if (this.firstLoad) {
-            this.$refs.infiniteLoading.stateChanger.reset();
+            this.getContent();
           } else {
             //enable infinite-loading by setting firstLoad to true
             this.firstLoad = true;
+            this.getContent();
           }
         });
     },
@@ -172,20 +168,31 @@ export default {
         direction = "up";
       }
 
-      //start hiding the top toolbar when scrolling down and distance is more than 200px
-      if (direction === "down" && curScroll > 200) { 
-        mobileToolbar.classList.add('hide');
-      }
-
       //detect change of scroll direction, show back menu when scrolling up
-      if (direction !== this.prevDirection) {
+      if (direction !== this.scrollDirection) {
         if (direction === "up") {
           mobileToolbar.classList.remove('hide');
         }
       }
 
       //calculate the scroll position and mark items as read when scrolling down
-      if ((direction === "down") && (this.store.currentSelection.status === "unread")) {
+      if (direction === "down") {
+
+        //start hiding the top toolbar when scrolling down and distance is more than 200px
+        if (curScroll > 200) { 
+          mobileToolbar.classList.add('hide');
+        }
+
+        //get new content when the end of bottom page is reached
+        if (window.innerHeight + Math.ceil(document.documentElement.scrollTop) >= document.getElementById('main-container').offsetHeight) {
+          if (this.remainingItems <= 20) {
+            this.flushPool();
+          } else {
+            this.getContent();
+          }
+        }
+
+        //mark articles as read when scrolling down
         if (document.getElementById('articles')) {
           //set initial screen height to the current scroll position
           var screenHeight = Math.ceil(document.documentElement.scrollTop);
@@ -193,60 +200,44 @@ export default {
           for (const child of document.getElementById('articles').children) {
             //check if the article is still in the viewport
             screenHeight = screenHeight - document.getElementById(child.id).offsetHeight;
-            //if the article is no longer in the viewport, mark it as read
+            //if the article is no longer in the viewport, add it to the pool and mark it as read
             if (screenHeight > 0) {
               if (!this.pool.includes(child.id)) {
-                this.markArticleRead(child.id);
+                //push articleId to the pool
+                if (this.store.currentSelection.status === "unread") {
+                  //mark article as read
+                  console.log("marking article as read", child.id);
+                  this.markArticleRead(child.id);
+                }
               }
             }
           }
         }
       }
 
-      //overwrite the prevScroll and prevDirection after doing the comparison
+      //overwrite the prevScroll and scrollDirection after doing the comparison
       this.prevScroll = curScroll;
-      this.prevDirection = direction;
-
-      //ceil document.documentElement.scrollTop, because images can have not nicely rounded heights
-      let bottomOfWindow = Math.ceil(document.documentElement.scrollTop) + window.innerHeight === document.documentElement.offsetHeight;
-
-      if (bottomOfWindow) {
-        //when reaching the bottom of the page and less than 10 articles are in the queue, mark everything as read
-        if (this.remainingItems < 10) {
-          this.flushPool();
-        }
-      }
+      this.scrollDirection = direction;
     },
-    infiniteHandler($state) {
+    getContent() {
       //only fetch article details if the container is filled with items
       if (this.container.length > 0) {
-        //get all the articles by using the api
-        axios
-          .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
-            articleIds: this.container
-              .slice(this.distance, this.distance + this.fetchCount)
-              .join(","),
+        //get all the article content by using the api
+        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
+            articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
             sort: this.store.currentSelection.sort
           })
           .then(response => {
             if (response.data.length) {
               this.distance = this.distance + response.data.length;
               this.articles = this.articles.concat(response.data);
-              //set state to loaded
-              $state.loaded();
-              //if the returned set has a length of less than fetchCount set the state to complete
-              if (response.data.length < this.fetchCount) {
-                $state.complete();
-              }
-              //if no articles are returned, flush remaining items in queue and mark all as read
+            //if no articles are returned, flush remaining items in queue and mark all as read
             } else {
-              $state.complete();
               this.flushPool();
             }
           });
         //set state to complete if container is empty
       } else {
-        $state.complete();
         this.flushPool();
       }
     },
@@ -268,13 +259,11 @@ export default {
       this.distance = 0;
     },
     async markArticleRead(articleId) {
-      //make ajax request to change read status
-      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
-        response => {
-          if (!this.pool.includes(articleId)) {
-            //push articleId to the pool
+      if (!this.pool.includes(articleId)) {
+        //make ajax request to change read status
+        await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
+          response => {
             this.pool.push(articleId);
-
             //decrease the unread count
             var categoryIndex = this.store.categories.findIndex(
               category => category.id === response.data.feed.categoryId
@@ -295,14 +284,14 @@ export default {
               this.store.readCount = this.store.readCount + 1;
               this.store.unreadCount = this.store.unreadCount - 1;
             }
+          },
+          response => {
+            /* eslint-disable no-console */
+            console.log("oops something went wrong", response);
+            /* eslint-enable no-console */
           }
-        },
-        response => {
-          /* eslint-disable no-console */
-          console.log("oops something went wrong", response);
-          /* eslint-enable no-console */
-        }
-      );
+        );
+      }
     }
   }
 };
