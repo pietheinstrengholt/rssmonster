@@ -44,10 +44,9 @@ const getCrawl = catchAsync(async (req, res, next) => {
         //discover rssUrl
         const url = await autodiscover.discover(feed.url);
 
-        console.log("Collecting new articles for feed: " + url);
-
         //do not process undefined URLs
         if (typeof url !== "undefined") {
+          console.log("Collecting new articles for feed: " + url);
           try {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {

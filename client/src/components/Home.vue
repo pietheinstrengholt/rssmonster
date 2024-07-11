@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :firstLoad="firstLoad" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount">
   </InfiniteScroll>
 </template>
 
@@ -23,9 +23,8 @@ export default {
       articles: [],
       //container contains a list with all article ids
       container: [],
-      //is used to keep track of which articles are already flagged as read
+      //is used to keep track of which articles are already flagged as passed
       pool: [],
-      firstLoad: false,
       //scroll variables for comparing the scroll positions
       prevScroll: 0,
       scrollDirection: "down"
@@ -58,14 +57,14 @@ export default {
         return response;
       })
       .then(response => {
+        //update the currentSelection. This will trigger the watch to get the articles
         this.store.currentSelection = response.data;
       }
     );
   },
   methods: {
     fetchArticleIds(data) {
-      axios
-        .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
+      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
           params: {
             //the following arguments are used
             status: data.status,
@@ -76,20 +75,10 @@ export default {
           }
         })
         .then(response => {
-          return response;
-        })
-        .then(response => {
           //reset the pool, attach data to container and get first set of article details
           this.resetPool();
           this.container = response.data.itemIds;
-          //reset and get new content when the status changes
-          if (this.firstLoad) {
-            this.getContent();
-          } else {
-            //enable infinite-loading by setting firstLoad to true
-            this.firstLoad = true;
-            this.getContent();
-          }
+          this.getContent();
         });
     },
     handleScroll: function() {
@@ -122,12 +111,14 @@ export default {
           mobileToolbar.classList.add('hide');
         }
 
-        //get new content when the end of bottom page is reached, if the number of remaining items is less than the fetchCount, flush the pool
-        if (window.innerHeight + Math.ceil(document.documentElement.scrollTop) >= document.getElementById('main-container').offsetHeight) {
-          if (this.remainingItems <= this.fetchCount) {
-            this.flushPool();
-          } else {
-            this.getContent();
+        //get new content when the end of bottom page is almost reached. If the number of remaining items is less than the fetchCount, flush the pool
+        if (window.innerHeight + Math.ceil(document.documentElement.scrollTop) + 150 >= document.getElementById('main-container').offsetHeight) {
+          if (this.pool != this.container) {
+            if (this.remainingItems <= this.fetchCount) {
+              this.flushPool();
+            } else {
+              this.getContent();
+            }
           }
         }
 
@@ -141,13 +132,8 @@ export default {
             screenHeight = screenHeight - document.getElementById(child.id).offsetHeight;
             //if the article is no longer in the viewport, add it to the pool and mark it as read
             if (screenHeight > 0) {
-              if (!this.pool.includes(child.id)) {
-                //push articleId to the pool
-                if (this.store.currentSelection.status === "unread") {
-                  //mark article as read
-                  this.markArticleRead(child.id);
-                }
-              }
+              //push articleId to the pool
+              this.addToPool(child.id);
             }
           }
         }
@@ -173,21 +159,32 @@ export default {
             } else {
               this.flushPool();
             }
-          });
-        //set state to complete if container is empty
-      } else {
-        this.flushPool();
+          }
+        );
+      }
+    },
+    addToPool(articleId) {
+      if (!this.pool.includes(articleId)) {
+        this.pool.push(articleId);
+        if (this.store.currentSelection.status === "unread") {
+          //mark article as read
+          this.markArticleRead(articleId);
+        }
       }
     },
     async flushPool() {
       //check if the container has a length
       if (this.container.length) {
-        //loop through the container and mark every item that is not part of the pool as read
-        for (var i in this.container) {
-          if (!this.pool.includes(this.container[i])) {
-            this.markArticleRead(this.container[i]);
+        if (this.store.currentSelection.status === "unread") {
+          //loop through the container and mark every item that is not part of the pool as read
+          for (var i in this.container) {
+            if (!this.pool.includes(this.container[i])) {
+              this.markArticleRead(this.container[i]);
+            }
           }
         }
+        //make the pool equal to the container
+        this.pool = this.container;
       }
     },
     async resetPool() {
@@ -198,38 +195,38 @@ export default {
       this.distance = 0;
     },
     async markArticleRead(articleId) {
-      if (!this.pool.includes(articleId)) {
-        //make ajax request to change read status
-        await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
-          response => {
-            this.pool.push(articleId);
-            //decrease the unread count
-            var categoryIndex = this.store.categories.findIndex(
-              category => category.id === response.data.feed.categoryId
-            );
-            //avoid having any negative numbers
-            if (this.store.categories[categoryIndex].unreadCount > 0) {
-              this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
-              this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
-            }
-            var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
-            //avoid having any negative numbers
-            if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
-              this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
-              this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
-            }
-            //also increase total count
-            if (this.store.unreadCount > 0) {
-              this.store.readCount = this.store.readCount + 1;
-              this.store.unreadCount = this.store.unreadCount - 1;
-            }
-          },
-          response => {
-            /* eslint-disable no-console */
-            console.log("oops something went wrong", response);
-            /* eslint-enable no-console */
-          }
-        );
+      //make ajax request to change read status
+      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
+        response => {
+          this.increaseReadCount(response.data);
+        },
+        response => {
+          /* eslint-disable no-console */
+          console.log("oops something went wrong", response);
+          /* eslint-enable no-console */
+        }
+      );
+    },
+    increaseReadCount(article) {
+      //decrease the unread count
+      var categoryIndex = this.store.categories.findIndex(
+        category => category.id === article.feed.categoryId
+      );
+      //avoid having any negative numbers
+      if (this.store.categories[categoryIndex].unreadCount > 0) {
+        this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
+        this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
+      }
+      var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
+      //avoid having any negative numbers
+      if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
+        this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
+        this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
+      }
+      //also increase total count
+      if (this.store.unreadCount > 0) {
+        this.store.readCount = this.store.readCount + 1;
+        this.store.unreadCount = this.store.unreadCount - 1;
       }
     }
   }

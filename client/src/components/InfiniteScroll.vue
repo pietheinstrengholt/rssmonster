@@ -3,7 +3,7 @@
     <div id="articles">
       <Article v-for="article in articles" v-bind="article" :key="article.id"/>
     </div>
-    <div id="no-more" v-if="firstLoad">
+    <div id="no-more">
       <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
       <p v-if="currentSelection != 'unread' && container.length > 0 && remainingItems < fetchCount">You reached the bottom!</p>
       <p v-if="currentSelection == 'unread' && container.length != pool.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
@@ -31,9 +31,6 @@ export default {
     container: {
       type: Array,
       required: true
-    },
-    firstLoad: {
-      type: Boolean
     },
     currentSelection: {
       type: String,
