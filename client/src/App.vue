@@ -321,7 +321,7 @@ export default {
       //refresh the overview with updated categories and feeds counts
       this.getOverview(true);
       //invoke ref home child component function to reload content
-      this.$refs.home.loadContent(this.store.currentSelection);
+      this.$refs.home.fetchArticleIds(this.store.currentSelection);
     }
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
