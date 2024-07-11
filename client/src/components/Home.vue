@@ -1,77 +1,16 @@
 <template>
-  <div id="main-container">
-    <div id="articles" :class="{ completed: this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length != 0 }">
-      <Article v-for="article in articles" v-bind="article" :key="article.id"/>
-    </div>
-    <div id="no-more" v-if="firstLoad">
-      <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
-      <p v-if="this.store.currentSelection.status != 'unread' && container.length > 0">You reached the bottom!</p>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length > pool.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
-      <p v-if="this.store.currentSelection.status == 'unread' && container.length == pool.length && container.length > 0">All items are marked as read.</p>
-    </div>
-  </div>
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :firstLoad="firstLoad" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount">
+  </InfiniteScroll>
 </template>
 
-<style scoped>
-/* Landscape phones and portrait tablets */
-@media (min-width: 767px) {
-  #articles {
-    margin-left: -15px;
-    margin-right: -12px;
-  }
-}
-
-#articles {
-  padding-top: 38px;
-  overflow-x: hidden;
-  overflow-y: hidden;
-  right: 0;
-  left: 0;
-}
-
-@media (prefers-color-scheme: dark) {
-  #articles {
-    color: #fff;
-    background: #121212;
-    border-color: #121212;
-    border-bottom-color: #fff;
-    background-color: #121212;
-  }
-}
-</style>
-
-<style>
-div.infinite-loading-container {
-  display: block;
-  min-height: 50px;
-  padding-top: 20px;
-}
-
-#no-more {
-  padding-top: 30px;
-  padding-bottom: 30px;
-  text-align: center;
-}
-
-@media (prefers-color-scheme: dark) {
-  div.infinite-loading-container {
-    color: #fff;
-    background: #121212;
-    border-color: #121212;
-    border-bottom-color: #fff;
-    background-color: #121212;
-  }
-}
-</style>
-
 <script>
-import Article from "./Article.vue";
-import axios from 'axios';
+import InfiniteScroll from "./InfiniteScroll.vue";
 import store from "../store";
+import axios from 'axios';
 
 export default {
   components: {
-    Article
+    InfiniteScroll
   },
   data() {
     return {
@@ -80,7 +19,7 @@ export default {
       distance: 0,
       //amount of article leaded at once
       fetchCount: 20,
-      //articles contains the article details
+      //articles containing the article details
       articles: [],
       //container contains a list with all article ids
       container: [],
@@ -183,9 +122,9 @@ export default {
           mobileToolbar.classList.add('hide');
         }
 
-        //get new content when the end of bottom page is reached
+        //get new content when the end of bottom page is reached, if the number of remaining items is less than the fetchCount, flush the pool
         if (window.innerHeight + Math.ceil(document.documentElement.scrollTop) >= document.getElementById('main-container').offsetHeight) {
-          if (this.remainingItems <= 20) {
+          if (this.remainingItems <= this.fetchCount) {
             this.flushPool();
           } else {
             this.getContent();
@@ -206,7 +145,6 @@ export default {
                 //push articleId to the pool
                 if (this.store.currentSelection.status === "unread") {
                   //mark article as read
-                  console.log("marking article as read", child.id);
                   this.markArticleRead(child.id);
                 }
               }
@@ -222,7 +160,7 @@ export default {
     getContent() {
       //only fetch article details if the container is filled with items
       if (this.container.length > 0) {
-        //get all the article content by using the api
+        //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
         axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
             articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
             sort: this.store.currentSelection.sort
@@ -242,7 +180,7 @@ export default {
       }
     },
     async flushPool() {
-      //check if the container is present
+      //check if the container has a length
       if (this.container.length) {
         //loop through the container and mark every item that is not part of the pool as read
         for (var i in this.container) {
@@ -253,9 +191,10 @@ export default {
       }
     },
     async resetPool() {
-      //reset the articles, container and distance
+      //reset the articles, container, pool and distance
       this.articles = [];
       this.container = [];
+      this.pool = [];
       this.distance = 0;
     },
     async markArticleRead(articleId) {
@@ -269,18 +208,18 @@ export default {
               category => category.id === response.data.feed.categoryId
             );
             //avoid having any negative numbers
-            if (this.store.categories[categoryIndex].unreadCount != 0) {
+            if (this.store.categories[categoryIndex].unreadCount > 0) {
               this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
               this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
             }
             var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
             //avoid having any negative numbers
-            if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount != 0) {
+            if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
               this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
               this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
             }
             //also increase total count
-            if (this.store.unreadCount != 0) {
+            if (this.store.unreadCount > 0) {
               this.store.readCount = this.store.readCount + 1;
               this.store.unreadCount = this.store.unreadCount - 1;
             }
