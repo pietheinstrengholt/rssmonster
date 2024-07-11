@@ -78,7 +78,10 @@ export default {
           //reset the pool, attach data to container and get first set of article details
           this.resetPool();
           this.container = response.data.itemIds;
-          this.getContent();
+          //get content if the container is not empty
+          if (this.container.length > 0) {
+            this.getContent();
+          }
         });
     },
     handleScroll: function() {
@@ -155,7 +158,7 @@ export default {
             if (response.data.length) {
               this.distance = this.distance + response.data.length;
               this.articles = this.articles.concat(response.data);
-            //if no articles are returned, flush remaining items in queue and mark all as read
+            //if no articles are returned, flush remaining items in the pool
             } else {
               this.flushPool();
             }
@@ -208,22 +211,21 @@ export default {
       );
     },
     increaseReadCount(article) {
-      //decrease the unread count
-      var categoryIndex = this.store.categories.findIndex(
-        category => category.id === article.feed.categoryId
-      );
+      //find the category and feed index
+      var categoryIndex = this.store.categories.findIndex(category => category.id === article.feed.categoryId);
+      var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
+      //increase the read count and decrease the unread count
       //avoid having any negative numbers
       if (this.store.categories[categoryIndex].unreadCount > 0) {
         this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
         this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
       }
-      var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
       //avoid having any negative numbers
       if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
         this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
         this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
       }
-      //also increase total count
+      //increase total counts
       if (this.store.unreadCount > 0) {
         this.store.readCount = this.store.readCount + 1;
         this.store.unreadCount = this.store.unreadCount - 1;
