@@ -83,4 +83,3 @@ The following scripts and plug-ins are used within RSSMonster
 * Twitter bootstrap: https://twitter.github.io/bootstrap/
 * Feedparser: https://github.com/danmactough/node-feedparser/
 * VueJS: https://vuejs.org/
-* Vue infinite scrolling: https://github.com/PeachScript/vue-infinite-loading
