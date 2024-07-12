@@ -82,6 +82,8 @@ export default {
           //get content if the container is not empty
           if (this.container.length > 0) {
             this.getContent();
+          } else {
+            this.hasLoaded = true;
           }
         });
     },

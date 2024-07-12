@@ -5,7 +5,7 @@ import Article from "../models/article.js";
 import autodiscover from "../util/autodiscover.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
-import cheerio from "cheerio";
+import { load } from 'cheerio'
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
@@ -119,7 +119,7 @@ const processArticle = async (feed, post) => {
   
         //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
         const dom = htmlparser2.parseDocument(post.description);
-        const $ = cheerio.load(dom, { _useHtmlParser2: true });
+        const $ = load(dom, { _useHtmlParser2: true });
   
         //dismiss undefined errors
         if (typeof $ !== 'undefined') {

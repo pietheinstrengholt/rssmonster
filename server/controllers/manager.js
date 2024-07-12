@@ -415,7 +415,7 @@ export const feedChangeCategory = async (req, res, next) => {
   const feedId = req.body.feedId;
   const categoryId = req.body.categoryId;
 
-  if (feedId === undefined || feedId === categoryId) {
+  if (feedId === undefined || categoryId === undefined) {
     return res.status(404).json({
       message: "feedId or categoryId is not set"
     });
@@ -423,8 +423,9 @@ export const feedChangeCategory = async (req, res, next) => {
 
   try {
     const feed = await Feed.findByPk(feedId);
+    const category = await Category.findByPk(categoryId);
 
-    if (feed) {
+    if (feed && category) {
       feed
         .update({
           categoryId: req.body.categoryId
