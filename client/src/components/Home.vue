@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoaded="hasLoaded">
   </InfiniteScroll>
 </template>
 
@@ -27,7 +27,8 @@ export default {
       pool: [],
       //scroll variables for comparing the scroll positions
       prevScroll: 0,
-      scrollDirection: "down"
+      scrollDirection: "down",
+      hasLoaded: false
     };
   },
   computed: {
@@ -155,6 +156,7 @@ export default {
             sort: this.store.currentSelection.sort
           })
           .then(response => {
+            this.hasLoaded = true;
             if (response.data.length) {
               this.distance = this.distance + response.data.length;
               this.articles = this.articles.concat(response.data);
