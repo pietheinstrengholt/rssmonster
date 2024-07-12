@@ -5,7 +5,7 @@ import Article from "../models/article.js";
 import autodiscover from "../util/autodiscover.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
-import { load } from 'cheerio'
+import { load } from 'cheerio';
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
@@ -22,7 +22,7 @@ const catchAsync = fn => {
   };
 };
 
-const getCrawl = catchAsync(async (req, res, next) => {
+const getFeeds = async () => {
   try {
     //only get feeds with an errorCount lower than 25
     const feeds = await Feed.findAll({
@@ -37,12 +37,23 @@ const getCrawl = catchAsync(async (req, res, next) => {
       ],
       limit: feedCount
     });
+    return feeds;
+  } catch (e) {
+    console.log(
+      "Error fetching feeds from database " + e.message
+    );
+  }
+}
+
+const crawlRssLinks = catchAsync(async (req, res, next) => {
+  try {
+    let feeds = await getFeeds();
 
     if (feeds.length > 0) {
       feeds.forEach(async function(feed) {
 
-        //discover rssUrl
-        const url = await autodiscover.discover(feed.url);
+        //discover RssLink
+        const url = await autodiscover.discoverRssLink(feed.url);
 
         //do not process undefined URLs
         if (typeof url !== "undefined") {
@@ -51,10 +62,15 @@ const getCrawl = catchAsync(async (req, res, next) => {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {
 
+              var articleCount = 0;
+
               //process all feed posts
               feeditem.posts.forEach(function(post) {
                 processArticle(feed, post);
+                articleCount++;
               });
+
+              console.log("Discovered " + articleCount + " articles for feed: " + url)
   
               //reset the feed count
               feed.update({
@@ -115,14 +131,13 @@ const processArticle = async (feed, post) => {
       //if none, add new article to the database
       if (!article) {
         //remove any script tags
-        //dismiss "cheerio.load() expects a string" by converting to string
-  
         //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
         const dom = htmlparser2.parseDocument(post.description);
         const $ = load(dom, { _useHtmlParser2: true });
   
         //dismiss undefined errors
         if (typeof $ !== 'undefined') {
+          //remove all script tags from post content
           $('script').remove();
   
           //execute hotlink feature by collecting all the links in each RSS post
@@ -175,8 +190,6 @@ const processArticle = async (feed, post) => {
             content: postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
-            //contentSnippet: item.contentSnippet,
-            //author: item.author,
             //default post.pubdate with new Date when empty
             published: post.pubdate || new Date()
           });
@@ -189,6 +202,6 @@ const processArticle = async (feed, post) => {
 };
 
 export default {
-  getCrawl,
+  crawlRssLinks,
   processArticle
 }

@@ -1,4 +1,4 @@
-import cheerio from "cheerio";
+import { load } from 'cheerio';
 import fetch from "node-fetch";
 //import http and https, needed for setting the agents for node-fetch
 import http from 'http';
@@ -8,7 +8,7 @@ http.globalAgent.maxSockets = 1000000;
 https.globalAgent.maxSockets = 1000000;
 
 //function to return overlap
-export const findOverlap = (a, b) => {
+const findOverlap = (a, b) => {
   if (b.length === 0) {
     return "";
   }
@@ -21,8 +21,8 @@ export const findOverlap = (a, b) => {
   return findOverlap(a, b.substring(0, b.length - 1));
 }
 
-//function to validate if url is valid
-export const isURL = (str) => {
+//function to validate if url is valid url
+const isURL = (str) => {
   var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#:.?+=&%!\-\/]))?/;
   if (!regex.test(str)) {
     return false;
@@ -31,10 +31,10 @@ export const isURL = (str) => {
   }
 }
 
-export const getUrl = async (url) => {
+const fetchURL = async (url) => {
   try {
 
-    //set httpAgents
+    //set agents for http or https
     const httpAgent = new http.Agent({
       keepAlive: true
     });
@@ -59,7 +59,20 @@ export const getUrl = async (url) => {
     };
 
     //fetch url by using proper user agent
-    const response = await fetch(url, options);
+    const response = fetch(url, options);
+    return response;
+
+  } catch (e) {
+    console.log(
+      "Error fetching RSS link for " + url + " " + e.message
+    );
+  }
+}
+
+export const discoverRssLink = async (url) => {
+  try {
+    //fetch url by using proper user agent
+    const response = await fetchURL(url);
 
     if (response.ok) {
 
@@ -68,65 +81,34 @@ export const getUrl = async (url) => {
       //return response url, in case the url has been changed
       const responseUrl = response.url;
 
-      //validate body
+      //This piece of code takes in the origin link of the site. 
+      //It validates the body. And then it uses cheerio to see if at least one of two types of links to the RSS feed are found in the head of the page.
       if (body) {
-        //load body into cheerio
-        //dismiss "cheerio.load() expects a string" by converting to string
-        const $ = cheerio.load(String(body));
-
-        //validate if application/rss+xml attribute is present in header
-        if ($("head").find('link[type="application/rss+xml"]').length > 0) {
-          var autoDiscoverUrl = $('head link[type="application/rss+xml"]').attr(
-            "href"
-          );
-
-          //validate if the url is valid
-          if (isURL(autoDiscoverUrl)) {
-            url = autoDiscoverUrl;
-          } else {
+        const $ = load(String(body));
+        let rssLink = $('head link[type="application/rss+xml"]').attr("href") || $('head link[type="application/atom+xml"]').attr("href");
+        //There was no link found in the head of the page.
+        if (rssLink == undefined) {
+          return url;
+        } else {
+          //There is a link, but it could be an invalid URL.
+          if (isURL(rssLink)) {
             //find overlap and create new url
-            var overlap = findOverlap(responseUrl, autoDiscoverUrl);
-            url = responseUrl.replace(overlap, "") + autoDiscoverUrl;
-          }
-        }
-
-        //validate if application/atom+xml attribute is present in header
-        if ($("head").find('link[type="application/atom+xml"]').length > 0) {
-          autoDiscoverUrl = $('head link[type="application/atom+xml"]').attr(
-            "href"
-          );
-
-          //validate if the url is valid
-          //sometimes the RSS url in the header points to a new or different URL than the processed URL itself
-          if (isURL(autoDiscoverUrl)) {
-            url = autoDiscoverUrl;
+            var overlap = findOverlap(responseUrl, rssLink);
+            url = responseUrl.replace(overlap, "") + rssLink;
+            return url;
           } else {
-            //find overlap and create new url
-            var overlap = findOverlap(responseUrl, autoDiscoverUrl);
-            url = responseUrl.replace(overlap, "") + autoDiscoverUrl;
+            return url;
           }
         }
       }
-      //return final result set
-      return url;
     }
-  } catch (err) {
-    console.log(err.message);
+  } catch (e) {
+    console.log(
+      "Error discovering RSS link for " + url + " " + e.message
+    );
   }
 }
 
-export const discover = async (url) => {
-  try {
-    const autodiscover = await getUrl(url);
-    return autodiscover;
-  } catch (err) {
-    console.log(err);
-  }
-};
-
 export default {
-  findOverlap,
-  isURL,
-  getUrl,
-  discover
+  discoverRssLink
 }
