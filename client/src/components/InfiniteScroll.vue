@@ -106,5 +106,9 @@ div.infinite-loading-container {
     border-bottom-color: #fff;
     background-color: #121212;
   }
+
+  #no-more p {
+    color: white;
+  }
 }
 </style>
