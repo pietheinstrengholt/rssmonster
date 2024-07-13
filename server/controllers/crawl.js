@@ -111,20 +111,16 @@ const processArticle = async (feed, post) => {
   //don't process empty post URLs
   if (post.link) {
     try {
-      //try to find any existing article with the same link and post title
+      //try to find any existing article with the same link or same feedId and postTitle
       const article = await Article.findOne({
         where: {
           [Op.or]: [
-            {
-              url: post.link
-            },
-            {
-              subject: post.title
-            }
-          ],
-          [Op.and]: {
-            feedId: feed.id
-          }
+            {url: post.link},
+            {[Op.and] : [
+              {subject: post.title},
+              {feedId: feed.id}
+            ]}
+          ]
         }
       });
   
