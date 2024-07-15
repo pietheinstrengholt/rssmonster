@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoaded="hasLoaded">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoaded="hasLoaded" :isFlushed="isFlushed">
   </InfiniteScroll>
 </template>
 
@@ -28,7 +28,8 @@ export default {
       //scroll variables for comparing the scroll positions
       prevScroll: 0,
       scrollDirection: "down",
-      hasLoaded: false
+      hasLoaded: false,
+      isFlushed: false
     };
   },
   computed: {
@@ -119,12 +120,10 @@ export default {
 
         //get new content when the end of bottom page is almost reached. If the number of remaining items is less than the fetchCount, flush the pool
         if (window.innerHeight + Math.ceil(document.documentElement.scrollTop) + 150 >= document.getElementById('main-container').offsetHeight) {
-          if (this.pool != this.container) {
-            if (this.remainingItems <= this.fetchCount) {
-              this.flushPool();
-            } else {
-              this.getContent();
-            }
+          if (!(this.container.length < this.distance)) {
+            this.getContent();
+          } else {
+            this.flushPool();
           }
         }
 
@@ -154,13 +153,14 @@ export default {
       if (this.container.length > 0) {
         //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
         axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
-            articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
-            sort: this.store.currentSelection.sort
+          articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
+          sort: this.store.currentSelection.sort
           })
           .then(response => {
             this.hasLoaded = true;
+            //increase the distance and append the new articles to the existing list
             if (response.data.length) {
-              this.distance = this.distance + response.data.length;
+              this.distance = this.distance + this.fetchCount;
               this.articles = this.articles.concat(response.data);
             //if no articles are returned, flush remaining items in the pool
             } else {
@@ -180,8 +180,8 @@ export default {
       }
     },
     async flushPool() {
-      //check if the container has a length
-      if (this.container.length) {
+      //check if the container has a length and if the pool is not flushed yet
+      if (this.container.length && this.isFlushed === false) {
         if (this.store.currentSelection.status === "unread") {
           //loop through the container and mark every item that is not part of the pool as read
           for (var i in this.container) {
@@ -190,9 +190,8 @@ export default {
             }
           }
         }
-        //make the pool equal to the container
-        this.pool = this.container;
       }
+      this.isFlushed = true;
     },
     async resetPool() {
       //reset the articles, container, pool and distance
@@ -200,6 +199,7 @@ export default {
       this.container = [];
       this.pool = [];
       this.distance = 0;
+      this.isFlushed = false;
     },
     async markArticleRead(articleId) {
       //make ajax request to change read status
