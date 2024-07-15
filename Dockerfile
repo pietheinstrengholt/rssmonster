@@ -1,7 +1,7 @@
 FROM node:18-alpine
 
 RUN apk update
-RUN apk add g++ make python3
+RUN apk add g++ make python3 git
 
 WORKDIR /app/client
 ADD ./client /app/client
