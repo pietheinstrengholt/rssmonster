@@ -307,12 +307,14 @@ export default {
     },
     showNotification: async function (input) {
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.ready // returns a Promise, the active SW registration
-          .then(swreg => swreg.showNotification('New articles', {
-            body: input + ' new articles arrived',
-            icon: '/img/icons/android-icon-192x192.png',
-            vibrate: [300, 200, 300]
-        }))
+        if(Notification.permission === 'granted') {
+          navigator.serviceWorker.ready // returns a Promise, the active SW registration
+            .then(swreg => swreg.showNotification('New articles', {
+              body: input + ' new articles arrived',
+              icon: '/img/icons/android-icon-192x192.png',
+              vibrate: [300, 200, 300]
+          }))
+        }
       }
     },
     forceReload: function(data) {
