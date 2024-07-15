@@ -194,7 +194,7 @@ export default {
       this.isFlushed = true;
     },
     async resetPool() {
-      //reset the articles, container, pool and distance
+      //reset the articles, container, pool, distance and isFlushed
       this.articles = [];
       this.container = [];
       this.pool = [];
