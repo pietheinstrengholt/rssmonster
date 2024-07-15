@@ -18,20 +18,17 @@
                 </button>
               </div>
 
+              <!-- This piece of code is for adding new feeds -->
               <div class="modal-body" v-if="this.store.showModal==='newfeed'">
-                <div v-if="this.clonedCategories.length > 0">
+                <!-- Instead of manipulating the store, we operate on a cloned object -->
+                <div v-if="this.categories.length > 0">
                   <input class="form-control"  type="text" placeholder="Enter feed or website url..." v-model="url">
                   <br>
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-select" id="category" v-model="clonedSelectedCategory" aria-label="Select Category">
-                        <option
-                          v-for="category in this.clonedCategories"
-                          :value="category.id"
-                          :key="category.id"
-                          v-bind:id="category.id"
-                        >{{ category.name }}</option>
+                      <select class="form-select" id="category" v-model="selectedCategory" aria-label="Select Category">
+                        <option v-for="category in this.categories" :value="category.id" :key="category.id" v-bind:id="category.id">{{ category.name }}</option>
                       </select>
                     </div>
                   </div>
@@ -41,12 +38,7 @@
                   <p>First create a new category before adding a new feed.</p>
                 </div>
                 <br>
-                <button
-                  v-if="this.clonedCategories.length > 0"
-                  type="submit"
-                  class="btn btn-primary mb-2"
-                  @click="checkWebsite"
-                >Validate feed</button>
+                <button v-if="this.categories.length > 0" type="submit" class="btn btn-primary mb-2" @click="checkWebsite">Validate feed</button>
                 <br>
                 <span v-if="ajaxRequest">Please Wait ...</span>
                 <br>
@@ -67,26 +59,31 @@
                 </div>
               </div>
 
+              <!-- This piece of code is for adding new categories -->
               <div class="modal-body" v-if="this.store.showModal==='newcategory'">
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
                 <br>
               </div>
 
+              <!-- This piece of code is for deleting categories -->
               <div class="modal-body" v-if="this.store.showModal==='deletecategory'">
                 <p>Are you sure to delete this category?</p>
                 <br>
               </div>
 
+              <!-- This piece of code is for renaming categories -->
               <div class="modal-body" v-if="this.store.showModal==='renamecategory'">
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
                 <br>
               </div>
 
+              <!-- This piece of code is for deleting feeds -->
               <div class="modal-body" v-if="this.store.showModal==='deletefeed'">
                 <p>Are you sure to delete this feed?</p>
                 <br>
               </div>
 
+              <!-- This piece of code is for renaming feeds -->
               <div class="modal-body" v-if="this.store.showModal==='renamefeed'">
                 <div class="form-group row">
                   <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
@@ -100,7 +97,7 @@
                     <input class="form-control" type="text" id="rssUrl" placeholder="Feed RSS Url" v-model="feed.rssUrl">
                   </div>
                 </div>
-                <div v-if="this.store.categories.length > 0">
+                <div v-if="this.categories.length > 0">
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label" >Feed description</label>
                     <div class="col-sm-9">
@@ -111,13 +108,7 @@
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
                       <select class="form-select" id="category" v-model="selectedCategory" aria-label="Select Category">
-                        <option
-                          v-for="category in this.categories"
-                          :selected="selectedCategory == feed.categoryId"
-                          :value="category.id"
-                          :key="category.id"
-                          v-bind:id="category.id"
-                        >{{ category.name }}</option>
+                        <option v-for="category in this.categories" :selected="this.selectedCategory == category.id" :value="category.id" :key="category.id" v-bind:id="category.id">{{ category.name }}</option>
                       </select>
                     </div>
                   </div>
@@ -133,13 +124,7 @@
                     </span>
                     <span>Show all categories</span>
                   </li>
-                  <li
-                    class="category"
-                    v-on:click="store.currentSelection.categoryId = category.id"
-                    v-for="category in store.categories"
-                    :key="category.id"
-                    v-bind:id="category.id"
-                  >
+                  <li class="category" v-on:click="store.currentSelection.categoryId = category.id" v-for="category in store.categories" :key="category.id" v-bind:id="category.id">
                     <span class="glyphicon">
                       <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
                     </span>
@@ -147,67 +132,20 @@
                   </li>
                 </ul>
                 <p>Select how the articles should be displayed</p>
-                <button
-                  @click="store.filter = 'full'"
-                  type="button"
-                  class="btn btn-primary content"
-                >Full content</button>
-                <button
-                  @click="store.filter = 'minimal'"
-                  type="button"
-                  class="btn btn-primary content"
-                >Minimal content</button>
+                <button @click="store.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
+                <button @click="store.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
 
                 <p>Click the button below to add a new feed</p>
-                <button
-                  @click="this.store.showModal = 'newfeed'"
-                  type="button"
-                  class="btn btn-success"
-                >Add new feed</button>
+                <button @click="this.store.showModal = 'newfeed'" type="button" class="btn btn-success">Add new feed</button>
               </div>
               <div class="modal-footer">
-                <button
-                  v-if="feed.feedName && this.store.showModal==='newfeed'"
-                  type="button"
-                  class="btn btn-primary"
-                  @click="newFeed"
-                >Save changes</button>
-                <button
-                  v-if="this.store.showModal==='newcategory'"
-                  type="button"
-                  class="btn btn-primary"
-                  @click="saveCategory"
-                >Add new category</button>
-                <button
-                  v-if="this.store.showModal==='deletecategory'"
-                  type="button"
-                  class="btn btn-primary"
-                  @click="deleteCategory"
-                >Delete category</button>
-                <button
-                  v-if="this.store.showModal==='renamecategory'"
-                  type="button"
-                  class="btn btn-primary"
-                  @click="renameCategory"
-                >Update category</button>
-                <button
-                  v-if="this.store.showModal==='deletefeed'"
-                  type="button"
-                  class="btn btn-primary"
-                  @click="deleteFeed"
-                >Delete feed</button>
-                <button
-                  v-if="this.store.showModal==='renamefeed'"
-                  type="button"
-                  class="btn btn-primary"
-                  @click="renameFeed"
-                >Update feed</button>
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-dismiss="modal"
-                  @click="emitClickEvent('modal',null)"
-                >Cancel</button>
+                <button v-if="feed.feedName && this.store.showModal==='newfeed'" type="button" class="btn btn-primary" @click="newFeed">Save changes</button>
+                <button v-if="this.store.showModal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
+                <button v-if="this.store.showModal==='deletecategory'" type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
+                <button v-if="this.store.showModal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Update category</button>
+                <button v-if="this.store.showModal==='deletefeed'" type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>
+                <button v-if="this.store.showModal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Update feed</button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="emitClickEvent('modal',null)">Cancel</button>
               </div>
             </div>
           </div>
@@ -352,30 +290,9 @@ export default {
       url: null,
       category: {},
       categories: {},
-      categories2: {},
       feed: {},
-      selectedCategory: null,
-      clonedSelectedCategory: null
+      selectedCategory: null
     };
-  },
-  created: function() {
-    //get initial starting values (copied data)
-    this.categories = JSON.parse(JSON.stringify(this.store.categories));
-    this.selectedCategory = this.store.currentSelection.categoryId;
-    //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
-    if (this.store.currentSelection.categoryId) {
-      for (var x = 0; x < this.store.categories.length; x++) {
-        if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
-          this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
-          //and also try to find the feed
-          for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
-            if (this.store.categories[x].feeds[i].id === this.store.currentSelection.feedId) {
-              this.feed = JSON.parse(JSON.stringify( this.store.categories[x].feeds[i]));
-            }
-          }
-        }
-      }
-    }
   },
   //watchers are used to avoid two way binding.
   //a copy of the data used and only the central store is updated, once we know for sure the api has returned a 200 status.
@@ -388,8 +305,26 @@ export default {
     },
     "store.showModal": {
       handler: function(data) {
-        this.clonedCategories = JSON.parse(JSON.stringify(this.store.categories));
-        this.clonedSelectedCategory = this.store.currentSelection.categoryId;
+        this.categories = JSON.parse(JSON.stringify(this.store.categories));
+        this.selectedCategory = this.store.currentSelection.categoryId;
+
+        //get initial starting values (copied data)
+        this.categories = JSON.parse(JSON.stringify(this.store.categories));
+        this.selectedCategory = this.store.currentSelection.categoryId;
+        //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
+        if (this.store.currentSelection.categoryId) {
+          for (var x = 0; x < this.store.categories.length; x++) {
+            if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
+              this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
+              //and also try to find the feed
+              for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
+                if (this.store.categories[x].feeds[i].id === this.store.currentSelection.feedId) {
+                  this.feed = JSON.parse(JSON.stringify( this.store.categories[x].feeds[i]));
+                }
+              }
+            }
+          }
+        }
       },
     },
     inputCategory() {
@@ -443,7 +378,7 @@ export default {
     newFeed: function() {
       axios
         .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds", {
-          categoryId: this.clonedSelectedCategory,
+          categoryId: this.selectedCategory,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
           url: this.feed.url,
@@ -466,8 +401,10 @@ export default {
             //find the index of the category
             var index = this.store.categories.indexOf(this.inputCategory);
 
-            //push the new feed to the store
-            this.store.categories[index].feeds.push(this.feed);
+            if (this.store.categories[index].feeds) {
+              //push the new feed to the store
+              this.store.categories[index].feeds.push(this.feed);
+            }
           },
           response => {
             /* eslint-disable no-console */
@@ -633,37 +570,23 @@ export default {
         .then(
           result => {
             //find the index of both the category and feed
-            var indexCategory = this.store.categories.indexOf(
-              this.inputCategory
-            );
-            var indexFeed = this.store.categories[indexCategory].feeds.indexOf(
-              this.inputFeed
-            );
+            var indexCategory = this.store.categories.indexOf(this.inputCategory);
+            var indexFeed = this.store.categories[indexCategory].feeds.indexOf(this.inputFeed);
 
             //update the feed in the store with the results from the api
-            this.store.categories[indexCategory].feeds[indexFeed].feedName =
-              result.data.feedName;
-            this.store.categories[indexCategory].feeds[indexFeed].feedDesc =
-              result.data.feedDesc;
+            this.store.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
+            this.store.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
 
             //if the categoryId, this means the feed has been moved
-            if (
-              this.store.categories[indexCategory].feeds[indexFeed]
-                .categoryId !== result.data.categoryId
-            ) {
+            if (this.store.categories[indexCategory].feeds[indexFeed].categoryId !== result.data.categoryId) {
               //update the categoryId to the new categoryId
-              this.store.categories[indexCategory].feeds[indexFeed].categoryId =
-                result.data.categoryId;
+              this.store.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
 
               //lookup the new categoryIndex
-              var indexCategoryNew = this.store.categories.findIndex(
-                category => category.id === result.data.categoryId
-              );
+              var indexCategoryNew = this.store.categories.findIndex(category => category.id === result.data.categoryId);
 
-              //dupplicate the feed into the new category
-              this.store.categories[indexCategoryNew].feeds.push(
-                this.store.categories[indexCategory].feeds[indexFeed]
-              );
+              //duplicate the feed into the new category
+              this.store.categories[indexCategoryNew].feeds.push(this.store.categories[indexCategory].feeds[indexFeed]);
 
               //decrease the counts for the old category
               this.store.categories[indexCategory].unreadCount = this.store.categories[indexCategory].unreadCount - this.inputFeed.unreadCount;
@@ -676,13 +599,10 @@ export default {
               this.store.categories[indexCategoryNew].starCount = this.store.categories[indexCategoryNew].starCount + this.inputFeed.starCount; 
 
               //remove the feed from the store from the old category
-              this.store.categories[indexCategory].feeds = this.arrayRemove(
-                this.store.categories[indexCategory].feeds,
-                this.inputFeed
-              );
+              this.store.categories[indexCategory].feeds = this.arrayRemove(this.store.categories[indexCategory].feeds,this.inputFeed);
 
               //change current selection
-              this.store.currentSelection.categoryId = indexCategoryNew;
+              this.store.currentSelection.categoryId = this.selectedCategory;
               this.store.currentSelection.feedId = this.inputFeed.id;
             }
 
