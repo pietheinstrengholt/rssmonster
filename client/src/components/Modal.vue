@@ -19,15 +19,15 @@
               </div>
 
               <div class="modal-body" v-if="this.store.showModal==='newfeed'">
-                <div v-if="this.store.categories.length > 0">
+                <div v-if="this.clonedCategories.length > 0">
                   <input class="form-control"  type="text" placeholder="Enter feed or website url..." v-model="url">
                   <br>
                   <div class="form-group row">
                     <label for="inputFeedDescription" class="col-sm-3 col-form-label">Category</label>
                     <div class="col-sm-9">
-                      <select class="form-select" id="category" v-model="store.currentSelection.categoryId" aria-label="Select Category">
+                      <select class="form-select" id="category" v-model="clonedSelectedCategory" aria-label="Select Category">
                         <option
-                          v-for="category in this.store.categories"
+                          v-for="category in this.clonedCategories"
                           :value="category.id"
                           :key="category.id"
                           v-bind:id="category.id"
@@ -42,7 +42,7 @@
                 </div>
                 <br>
                 <button
-                  v-if="this.store.categories.length > 0"
+                  v-if="this.clonedCategories.length > 0"
                   type="submit"
                   class="btn btn-primary mb-2"
                   @click="checkWebsite"
@@ -352,8 +352,10 @@ export default {
       url: null,
       category: {},
       categories: {},
+      categories2: {},
       feed: {},
-      selectedCategory: null
+      selectedCategory: null,
+      clonedSelectedCategory: null
     };
   },
   created: function() {
@@ -371,7 +373,6 @@ export default {
               this.feed = JSON.parse(JSON.stringify( this.store.categories[x].feeds[i]));
             }
           }
-
         }
       }
     }
@@ -384,6 +385,12 @@ export default {
         this.categories = data;
       },
       deep: true
+    },
+    "store.showModal": {
+      handler: function(data) {
+        this.clonedCategories = JSON.parse(JSON.stringify(this.store.categories));
+        this.clonedSelectedCategory = this.store.currentSelection.categoryId;
+      },
     },
     inputCategory() {
       if (this.inputCategory) {
@@ -436,7 +443,7 @@ export default {
     newFeed: function() {
       axios
         .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds", {
-          categoryId: this.category.id,
+          categoryId: this.clonedSelectedCategory,
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
           url: this.feed.url,

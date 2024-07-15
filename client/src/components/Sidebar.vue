@@ -37,7 +37,7 @@
           <span class="badge">{{ this.store.newUnreads }}</span>
         </span>
       </div>
-      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="sidebar-category-top">
+      <div v-bind:class="{ 'selected': store.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="record-circle-fill" variant="light" />
         </span>
@@ -46,7 +46,7 @@
           <span class="badge">{{ this.store.unreadCount }}</span>
         </span>
       </div>
-      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="sidebar-category-top">
+      <div v-bind:class="{ 'selected': store.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="heart-fill" variant="light" />
         </span>
@@ -55,7 +55,7 @@
           <span class="badge">{{ this.store.starCount }}</span>
         </span>
       </div>
-      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="sidebar-category-top">
+      <div v-bind:class="{ 'selected': store.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="fire" variant="light" />
         </span>
@@ -64,7 +64,7 @@
           <span class="badge">{{ this.store.hotCount }}</span>
         </span>
       </div>
-      <div v-bind:class="{ 'selected':  store.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="sidebar-category-top">
+      <div v-bind:class="{ 'selected': store.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="check-circle-fill" variant="light" />
         </span>
