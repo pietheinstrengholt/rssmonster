@@ -104,8 +104,9 @@ const deleteFeed = async (req, res, next) => {
 };
 
 const validateFeed = async (req, res, next) => {
+
   //resolve url
-  const url = await autodiscover.discover(req.body.url);
+  const url = await autodiscover.discoverRssLink(req.body.url);
   const categoryId = req.body.categoryId;
 
   if (typeof url === "undefined") {
