@@ -581,40 +581,46 @@ export default {
             var indexCategory = this.findIndexById(this.store.categories, this.inputFeed.categoryId);
             var indexFeed = this.findIndexById(this.store.categories[indexCategory].feeds, this.inputFeed.id);
 
-            //update the feed in the store with the results from the api
-            this.store.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
-            this.store.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
+            //check if the feed or category is not found
+            if (indexFeed == -1 || indexCategory == -1) {
+              console.log("Manipulating the store failed... Refreshing page.");
+              location.reload();
+            } else {
+              //update the feed in the store with the results from the api
+              this.store.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
+              this.store.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
 
-            //reset error count
-            this.store.categories[indexCategory].feeds[indexFeed].errorCount = 0;
+              //reset error count
+              this.store.categories[indexCategory].feeds[indexFeed].errorCount = 0;
 
-            //compare the categoryId, if not equal it means that the feed has been moved
-            if (this.inputFeed.categoryId != result.data.categoryId) {
-              //update the categoryId to the new categoryId
-              this.store.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
+              //compare the categoryId, if not equal it means that the feed has been moved
+              if (this.inputFeed.categoryId != result.data.categoryId) {
+                //update the categoryId to the new categoryId
+                this.store.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
 
-              //lookup the new categoryIndex
-              var indexCategoryNew = this.findIndexById(this.store.categories, result.data.categoryId);
+                //lookup the new categoryIndex
+                var indexCategoryNew = this.findIndexById(this.store.categories, result.data.categoryId);
 
-              //duplicate the feed into the new category
-              this.store.categories[indexCategoryNew].feeds.push(this.store.categories[indexCategory].feeds[indexFeed]);
+                //duplicate the feed into the new category
+                this.store.categories[indexCategoryNew].feeds.push(this.store.categories[indexCategory].feeds[indexFeed]);
 
-              //decrease the counts for the old category
-              this.store.categories[indexCategory].unreadCount = this.store.categories[indexCategory].unreadCount - this.inputFeed.unreadCount;
-              this.store.categories[indexCategory].readCount = this.store.categories[indexCategory].readCount - this.inputFeed.readCount;
-              this.store.categories[indexCategory].starCount = this.store.categories[indexCategory].starCount - this.inputFeed.starCount; 
+                //decrease the counts for the old category
+                this.store.categories[indexCategory].unreadCount = this.store.categories[indexCategory].unreadCount - this.inputFeed.unreadCount;
+                this.store.categories[indexCategory].readCount = this.store.categories[indexCategory].readCount - this.inputFeed.readCount;
+                this.store.categories[indexCategory].starCount = this.store.categories[indexCategory].starCount - this.inputFeed.starCount; 
 
-              //increase the counts for the new category
-              this.store.categories[indexCategoryNew].unreadCount = this.store.categories[indexCategoryNew].unreadCount + this.inputFeed.unreadCount;
-              this.store.categories[indexCategoryNew].readCount = this.store.categories[indexCategoryNew].readCount + this.inputFeed.readCount;
-              this.store.categories[indexCategoryNew].starCount = this.store.categories[indexCategoryNew].starCount + this.inputFeed.starCount; 
+                //increase the counts for the new category
+                this.store.categories[indexCategoryNew].unreadCount = this.store.categories[indexCategoryNew].unreadCount + this.inputFeed.unreadCount;
+                this.store.categories[indexCategoryNew].readCount = this.store.categories[indexCategoryNew].readCount + this.inputFeed.readCount;
+                this.store.categories[indexCategoryNew].starCount = this.store.categories[indexCategoryNew].starCount + this.inputFeed.starCount; 
 
-              //remove the feed from the store from the old category
-              this.store.categories[indexCategory].feeds = this.arrayRemove(this.store.categories[indexCategory].feeds,this.inputFeed);
+                //remove the feed from the store from the old category
+                this.store.categories[indexCategory].feeds = this.arrayRemove(this.store.categories[indexCategory].feeds,this.inputFeed);
 
-              //change current selection
-              this.store.currentSelection.categoryId = this.selectedCategory;
-              this.store.currentSelection.feedId = this.inputFeed.id;
+                //change current selection
+                this.store.currentSelection.categoryId = this.selectedCategory;
+                this.store.currentSelection.feedId = this.inputFeed.id;
+              }
             }
 
             //close the modal
