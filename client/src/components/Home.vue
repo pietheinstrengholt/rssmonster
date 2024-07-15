@@ -153,8 +153,8 @@ export default {
       if (this.container.length > 0) {
         //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
         axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
-          articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
-          sort: this.store.currentSelection.sort
+            articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
+            sort: this.store.currentSelection.sort
           })
           .then(response => {
             this.hasLoaded = true;
