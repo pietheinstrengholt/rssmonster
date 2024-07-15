@@ -574,11 +574,11 @@ export default {
           rssUrl: this.feed.rssUrl
         })
         .then(
-          //we did change the feed in the backend, but 
+          //we did change the feed in the backend, but not yet in the frontend. Therefore, we need to manipulate the store with the code below.
           result => {
 
             //find indexes of the category and feed
-            var indexCategory = this.findIndexById(this.store.categories, this.selectedCategory);
+            var indexCategory = this.findIndexById(this.store.categories, this.inputFeed.categoryId);
             var indexFeed = this.findIndexById(this.store.categories[indexCategory].feeds, this.inputFeed.id);
 
             //update the feed in the store with the results from the api
@@ -589,12 +589,12 @@ export default {
             this.store.categories[indexCategory].feeds[indexFeed].errorCount = 0;
 
             //compare the categoryId, if not equal it means that the feed has been moved
-            if (this.store.categories[indexCategory].feeds[indexFeed].categoryId != result.data.categoryId) {
+            if (this.inputFeed.categoryId != result.data.categoryId) {
               //update the categoryId to the new categoryId
               this.store.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
 
               //lookup the new categoryIndex
-              var indexCategoryNew = this.store.categories.findIndex(category => category.id === result.data.categoryId);
+              var indexCategoryNew = this.findIndexById(this.store.categories, result.data.categoryId);
 
               //duplicate the feed into the new category
               this.store.categories[indexCategoryNew].feeds.push(this.store.categories[indexCategory].feeds[indexFeed]);
