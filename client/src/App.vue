@@ -3,7 +3,7 @@
     <div class="row">
       <div id="sidebar" class="col-md-3 col-sm-0">
         <!-- Sidebar events -->
-        <app-sidebar @modal="modalClick" @forceReload="forceReload"></app-sidebar>
+        <app-sidebar ref="sidebar" @modal="modalClick" @forceReload="forceReload"></app-sidebar>
       </div>
       <div id="home" class="col-md-9 offset-md-3 col-sm-12">
         <!-- Quickbar events -->
@@ -18,7 +18,7 @@
     <!-- Modal events -->
     <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
     <!-- Mobile events -->
-    <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick"></app-mobile>
+    <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick" @refresh="refreshFeeds"></app-mobile>
   </div>
 </template>
 
@@ -322,7 +322,11 @@ export default {
       this.getOverview(true);
       //invoke ref home child component function to reload content
       this.$refs.home.fetchArticleIds(this.store.currentSelection);
-    }
+    },
+    refreshFeeds() {
+      //call sidebar refreshFeeds function
+      this.$refs.sidebar.refreshFeeds();
+    },
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {

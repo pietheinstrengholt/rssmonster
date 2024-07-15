@@ -34,6 +34,10 @@
       <button @click="store.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
       <button @click="store.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
 
+      <p class="content-header">Refresh feeds</p>
+      <button @click="refreshFeeds()" type="button" class="btn btn-danger">Refresh feeds</button>
+      <br>      
+
       <p class="content-header">Click the button below to add a new feed</p>
       <button @click="showNewFeed()" type="button" class="btn btn-primary">Add new feed</button>
       <br>
@@ -163,6 +167,9 @@ export default {
     showNewFeed() {
       this.emitClickEvent("mobile", null);
       this.$emit("modal", "newfeed");
+    },
+    refreshFeeds() {
+      this.$emit('refresh');
     },
     subscribeNotifications() {
       //register service worker

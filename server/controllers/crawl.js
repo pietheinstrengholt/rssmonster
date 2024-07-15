@@ -2,7 +2,7 @@ import Sequelize from 'sequelize';
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 
-import autodiscover from "../util/autodiscover.js";
+import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
 import { load } from 'cheerio';
@@ -53,7 +53,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
       feeds.forEach(async function(feed) {
 
         //discover RssLink
-        const url = await autodiscover.discoverRssLink(feed.url);
+        const url = await discoverRssLink.discoverRssLink(feed.url);
 
         //do not process undefined URLs
         if (typeof url !== "undefined") {
@@ -62,15 +62,10 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {
 
-              var articleCount = 0;
-
               //process all feed posts
               feeditem.posts.forEach(function(post) {
                 processArticle(feed, post);
-                articleCount++;
               });
-
-              console.log("Discovered " + articleCount + " articles for feed: " + url)
   
               //reset the feed count
               feed.update({
