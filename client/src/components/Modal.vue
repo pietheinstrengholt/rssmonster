@@ -115,6 +115,7 @@
                 </div>
               </div>
 
+              <!-- This piece of code is for when viewing using the mobile version -->
               <div class="modal-body" id="mobile" v-if="this.store.showModal==='mobile'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
@@ -399,12 +400,10 @@ export default {
             this.feed.starCount = 0;
 
             //find the index of the category
-            var index = this.store.categories.indexOf(this.inputCategory);
+            var index = this.findIndexById(this.store.categories, this.inputCategory.id);
 
-            if (this.store.categories[index].feeds) {
-              //push the new feed to the store
-              this.store.categories[index].feeds.push(this.feed);
-            }
+            //push the new feed to the store
+            this.store.categories[index].feeds.push(this.feed);
           },
           response => {
             /* eslint-disable no-console */
@@ -482,10 +481,7 @@ export default {
       axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.category.id).then(
         () => {
           //remove the category from the store
-          this.store.categories = this.arrayRemove(
-            this.store.categories,
-            this.inputCategory
-          );
+          this.store.categories = this.arrayRemove(this.store.categories, this.inputCategory);
           //close the modal
           this.closeModal();
           //set the selection back to all
@@ -515,7 +511,7 @@ export default {
         .then(
           result => {
             //find the index of the category
-            var index = this.store.categories.indexOf(this.inputCategory);
+            var index = this.findIndexById(this.store.categories, this.inputCategory.id);
 
             //update the store with the returned name of the category
             this.store.categories[index].name = result.data.name;
@@ -536,7 +532,7 @@ export default {
       axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.store.currentSelection.feedId).then(
         () => {
           //find the index of both the category and feed
-          var indexCategory = this.store.categories.indexOf(this.inputCategory);
+          var indexCategory = this.findIndexById(this.store.categories, this.inputCategory.id);
 
           //remove the feed from the store
           this.store.categories[indexCategory].feeds = this.arrayRemove(
@@ -558,6 +554,16 @@ export default {
         }
       );
     },
+    findIndexById: function(array, id) {
+      var index = -1
+      for(var i = 0; i < array.length; i++) {
+          if(array[i].id == id) {
+            index = i;
+              break;
+          }
+      }
+      return index;
+    },
     renameFeed: function() {
       //rename feed
       axios
@@ -568,17 +574,22 @@ export default {
           rssUrl: this.feed.rssUrl
         })
         .then(
+          //we did change the feed in the backend, but 
           result => {
-            //find the index of both the category and feed
-            var indexCategory = this.store.categories.indexOf(this.inputCategory);
-            var indexFeed = this.store.categories[indexCategory].feeds.indexOf(this.inputFeed);
+
+            //find indexes of the category and feed
+            var indexCategory = this.findIndexById(this.store.categories, this.selectedCategory);
+            var indexFeed = this.findIndexById(this.store.categories[indexCategory].feeds, this.inputFeed.id);
 
             //update the feed in the store with the results from the api
             this.store.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
             this.store.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
 
-            //if the categoryId, this means the feed has been moved
-            if (this.store.categories[indexCategory].feeds[indexFeed].categoryId !== result.data.categoryId) {
+            //reset error count
+            this.store.categories[indexCategory].feeds[indexFeed].errorCount = 0;
+
+            //compare the categoryId, if not equal it means that the feed has been moved
+            if (this.store.categories[indexCategory].feeds[indexFeed].categoryId != result.data.categoryId) {
               //update the categoryId to the new categoryId
               this.store.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
 
