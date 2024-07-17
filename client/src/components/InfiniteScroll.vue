@@ -3,11 +3,14 @@
     <div id="articles">
       <Article v-for="article in articles" v-bind="article" :key="article.id"/>
     </div>
-    <div id="no-more" v-if="hasLoaded">
+    <div id="no-more" v-if="hasLoadedContent">
       <p v-if="container.length == 0" id="no-results">No posts found!<br><br></p>
       <p v-if="currentSelection != 'unread' && container.length != 0 && remainingItems < fetchCount">You reached the bottom!</p>
       <p v-if="currentSelection == 'unread' && container.length != 0 && isFlushed === false" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
       <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0">All items are marked as read.</p>
+    </div>
+    <div id="no-more" v-else>
+      <p>Loading <BootstrapIcon icon="arrow-repeat" variant="dark" animation="spin"/></p>
     </div>
   </div>
 </template>
@@ -44,7 +47,7 @@ export default {
       type: Number,
       required: true
     },
-    hasLoaded: {
+    hasLoadedContent: {
       type: Boolean,
       required: true
     },

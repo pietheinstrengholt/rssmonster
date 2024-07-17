@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoaded="hasLoaded" :isFlushed="isFlushed">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed">
   </InfiniteScroll>
 </template>
 
@@ -28,8 +28,9 @@ export default {
       //scroll variables for comparing the scroll positions
       prevScroll: 0,
       scrollDirection: "down",
-      hasLoaded: false,
-      isFlushed: false
+      hasLoadedContent: false,
+      isFlushed: false,
+      isLoading: false
     };
   },
   computed: {
@@ -84,7 +85,7 @@ export default {
           if (this.container.length > 0) {
             this.getContent();
           } else {
-            this.hasLoaded = true;
+            this.hasLoadedContent = true;
           }
         });
     },
@@ -121,7 +122,12 @@ export default {
         //get new content when the end of bottom page is almost reached. If the number of remaining items is less than the fetchCount, flush the pool
         if (window.innerHeight + Math.ceil(document.documentElement.scrollTop) + 150 >= document.getElementById('main-container').offsetHeight) {
           if (!(this.container.length < this.distance)) {
-            this.getContent();
+            //prevent function execution twice within multiple triggered scroll events
+            if (this.isLoading === false) {
+              //set isLoading to true to prevent multiple fetches
+              this.isLoading = true;
+              this.getContent();
+            }
           } else {
             this.flushPool();
           }
@@ -149,26 +155,33 @@ export default {
       this.scrollDirection = direction;
     },
     getContent() {
-      //only fetch article details if the container is filled with items
-      if (this.container.length > 0) {
-        //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
-        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
-            articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
-            sort: this.store.currentSelection.sort
-          })
-          .then(response => {
-            this.hasLoaded = true;
-            //increase the distance and append the new articles to the existing list
-            if (response.data.length) {
-              this.distance = this.distance + this.fetchCount;
-              this.articles = this.articles.concat(response.data);
-            //if no articles are returned, flush remaining items in the pool
-            } else {
-              this.flushPool();
+      //set a timeout to prevent multiple fetches within a short period of time
+      setTimeout(() => {
+        //only fetch article details if the container is filled with items
+        if (this.container.length > 0) {
+          //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
+          axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
+              articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
+              sort: this.store.currentSelection.sort
+            })
+            .then(response => {
+              //change hasLoadedContent. This removes the loading icon from the front-page
+              this.hasLoadedContent = true;
+              //increase the distance and append the new articles to the existing list
+              if (response.data.length) {
+                this.distance = this.distance + this.fetchCount;
+                this.articles = this.articles.concat(response.data);
+              //if no articles are returned, flush remaining items in the pool
+              } else {
+                this.flushPool();
+              }
+
+              //set isLoading to false to allow new content to be fetched
+              this.isLoading = false;
             }
-          }
-        );
-      }
+          );
+        }
+      }, 10);  
     },
     addToPool(articleId) {
       if (!this.pool.includes(articleId)) {
