@@ -63,8 +63,8 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
             if (feeditem) {
 
               //process all feed posts
-              feeditem.posts.forEach(function(post) {
-                processArticle(feed, post);
+              feeditem.items.forEach(function(item) {
+                processArticle(feed, item);
               });
   
               //reset the feed count
@@ -123,7 +123,7 @@ const processArticle = async (feed, post) => {
       if (!article) {
         //remove any script tags
         //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
-        const dom = htmlparser2.parseDocument(post.description);
+        const dom = htmlparser2.parseDocument(post.content);
         const $ = load(dom, { _useHtmlParser2: true });
   
         //dismiss undefined errors
@@ -181,8 +181,8 @@ const processArticle = async (feed, post) => {
             content: postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
-            //default post.pubdate with new Date when empty
-            published: post.pubdate || new Date()
+            //default post.pubDate with new Date when empty
+            published: post.pubDate || new Date()
           });
         }
       }

@@ -1,6 +1,5 @@
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
-
 import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
 
@@ -123,17 +122,17 @@ const validateFeed = async (req, res, next) => {
       //add feed
       Feed.findOne({
         where: {
-          url: feeditem.meta.xmlurl
+          url: feeditem.link
         }
       }).then(feed => {
         if (!feed) {
           return res.status(200).json({
             categoryId: categoryId,
-            feedName: feeditem.meta.title,
-            feedDesc: feeditem.meta.description,
-            url: req.body.url,
-            rssUrl: feeditem.meta.xmlurl,
-            favicon: feeditem.meta.favicon
+            feedName: feeditem.title,
+            feedDesc: feeditem.description,
+            url: feeditem.link,
+            rssUrl: feeditem.feedUrl,
+            favicon: ''
           });
         } else {
           return res.status(402).json({
