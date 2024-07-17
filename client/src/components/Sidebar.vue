@@ -138,6 +138,12 @@
             <div class="text">Add</div>
           </div>
         </div>
+        <div v-if="(store.currentSelection.categoryId === '%') && (store.currentSelection.feedId == '%')">
+          <div @click="emitClickEvent('modal','cleanup')" id="cleanup" class="category-button">
+            <BootstrapIcon icon="eraser-fill" variant="light" />
+            <div class="text">Cleanup</div>
+          </div>
+        </div>
         <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
           <div>
             <BootstrapIcon icon="trash3-fill" variant="light" />

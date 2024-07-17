@@ -13,6 +13,7 @@
                 <h5 class="modal-title" v-if="this.store.showModal==='deletefeed'">Delete feed</h5>
                 <h5 class="modal-title" v-if="this.store.showModal==='renamefeed'">Rename feed</h5>
                 <h5 class="modal-title" v-if="this.store.showModal==='mobile'">Categories</h5>
+                <h5 class="modal-title" v-if="this.store.showModal==='cleanup'">Clean up old articles</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                   <span aria-hidden="true">&times;</span>
                 </button>
@@ -83,6 +84,13 @@
                 <br>
               </div>
 
+              <!-- This piece of code is for deleting feeds -->
+              <div class="modal-body" v-if="this.store.showModal==='cleanup'">
+                <p>Pressing the cleanup button will delete all articles that are not starred and older than one week.</p>
+                <p>Are you sure to perform this cleanup?</p>
+                <br>
+              </div>
+
               <!-- This piece of code is for renaming feeds -->
               <div class="modal-body" v-if="this.store.showModal==='renamefeed'">
                 <div class="form-group row">
@@ -146,6 +154,7 @@
                 <button v-if="this.store.showModal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Update category</button>
                 <button v-if="this.store.showModal==='deletefeed'" type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>
                 <button v-if="this.store.showModal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Update feed</button>
+                <button v-if="this.store.showModal==='cleanup'" type="button" class="btn btn-danger" @click="cleanup">Cleanup</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="emitClickEvent('modal',null)">Cancel</button>
               </div>
             </div>
@@ -501,6 +510,22 @@ export default {
       return arr.filter(function(ele) {
         return ele != value;
       });
+    },
+    cleanup: function() {
+      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/cleanup").then(
+        () => {
+          //set the selection back to all and refresh the page
+          this.store.currentSelection.categoryId = "%";
+          this.store.currentSelection.feedId = "%";
+          location.reload();
+        },
+        response => {
+          /* eslint-disable no-console */
+          console.log("oops something went wrong", response);
+          /* eslint-enable no-console */
+          this.closeModal();
+        }
+      );
     },
     renameCategory: function() {
       //rename category

@@ -22,6 +22,7 @@ import managerRoutes from "./routes/manager.js";
 import settingRoutes from "./routes/setting.js";
 import feverRoutes from "./routes/fever.js";
 import healthRoutes from "./routes/health.js";
+import cleanupRoutes from "./routes/cleanup.js";
 
 //controller
 import errorController from "./controllers/error.js";
@@ -58,6 +59,7 @@ app.use("/api/manager", managerRoutes);
 app.use("/api/setting", settingRoutes);
 app.use("/api/fever", feverRoutes);
 app.use("/api/health", healthRoutes);
+app.use("/api/cleanup", cleanupRoutes);
 app.use(errorController.get404);
 
 //define relationships
