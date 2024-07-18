@@ -122,14 +122,12 @@ const processArticle = async (feed, post) => {
       if (!article) {
         //if no content is found, use the description as content
         if (typeof post.content === 'undefined' || post.content === null) {
-          console.log("No content found for " + post.url);
           postContent = post.description;
           postContentStripped = post.description;
           postLanguage = language.get(post.description);
         } else {
           //content is set, so we might expect html rich content. Because of this we want to remove any script tags
           //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
-          console.log("Processing article: " + post.url);
           const dom = htmlparser2.parseDocument(post.content);
           const $ = load(dom, { _useHtmlParser2: true });
     
@@ -161,29 +159,32 @@ const processArticle = async (feed, post) => {
                 }
               }
             });
-    
+
+            //set postContent and postContentStripped
             var postContent = $.html();
             var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
             var postLanguage = language.get($.html());
           } 
         }
         
-        console.log("Adding article: " + post.url);
+        //add article to database, if content or a description has been found
+        if (postContent) {
+          Article.create({
+            feedId: feed.id,
+            status: "unread",
+            star_ind: 0,
+            url: post.url,
+            image_url: "",
+            subject: post.title || 'No title',
+            content: postContent,
+            contentStripped: postContentStripped,
+            language: postLanguage,
+            //default post.published with new Date when empty
+            published: post.published || new Date()
+          });
+        }
 
-        //add article
-        Article.create({
-          feedId: feed.id,
-          status: "unread",
-          star_ind: 0,
-          url: post.url,
-          image_url: "",
-          subject: post.title || 'No title',
-          content: postContent,
-          contentStripped: postContentStripped,
-          language: postLanguage,
-          //default post.published with new Date when empty
-          published: post.published || new Date()
-        });
+
       }
     } catch (err) {
       console.log(err);
