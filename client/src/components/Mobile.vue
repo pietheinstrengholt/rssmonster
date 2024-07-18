@@ -47,6 +47,7 @@
       <br><br>
 
       <button @click="closeModal()" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <br><br>
     </div>
   </div>
 </template>

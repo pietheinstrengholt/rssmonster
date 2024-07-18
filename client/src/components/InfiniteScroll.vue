@@ -105,6 +105,11 @@ div.infinite-loading-container {
   text-align: center;
 }
 
+#no-more p {
+  margin: 0px;
+  vertical-align: middle;
+}
+
 @media (prefers-color-scheme: dark) {
   div.infinite-loading-container {
     color: #fff;
