@@ -31,7 +31,7 @@ const isURL = (str) => {
   }
 }
 
-const fetchURL = async (url) => {
+export const fetchURL = async (url) => {
   try {
 
     //set agents for http or https
@@ -110,5 +110,6 @@ export const discoverRssLink = async (url) => {
 }
 
 export default {
+  fetchURL,
   discoverRssLink
 }

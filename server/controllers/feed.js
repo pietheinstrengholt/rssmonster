@@ -123,7 +123,7 @@ const validateFeed = async (req, res, next) => {
       //add feed
       Feed.findOne({
         where: {
-          url: feeditem.meta.xmlurl
+          url: feeditem.self
         }
       }).then(feed => {
         if (!feed) {
@@ -132,8 +132,8 @@ const validateFeed = async (req, res, next) => {
             feedName: feeditem.meta.title,
             feedDesc: feeditem.meta.description,
             url: req.body.url,
-            rssUrl: feeditem.meta.xmlurl,
-            favicon: feeditem.meta.favicon
+            rssUrl: feeditem.self,
+            favicon: feeditem.image
           });
         } else {
           return res.status(402).json({
