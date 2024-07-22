@@ -52,7 +52,7 @@
 
   #sidebar {
     height: 100%;
-    background-color: #31344b;
+    background-color: #e3e3e3;
     overflow-y: auto;
     overflow-x: hidden;
   }

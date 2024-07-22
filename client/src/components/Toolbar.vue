@@ -41,6 +41,7 @@
       </div>
     </div>
     <form
+      id="search-form"
       class="search-wrap"
       data-behavior="search_form"
       accept-charset="UTF-8"

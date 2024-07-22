@@ -134,37 +134,37 @@
       <div class="category-options">
         <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
           <div>
-            <BootstrapIcon icon="plus-square-fill" variant="light" />
+            <BootstrapIcon icon="plus-square-fill" color="3b4651" />
             <div class="text">Add</div>
           </div>
         </div>
         <div v-if="(store.currentSelection.categoryId === '%') && (store.currentSelection.feedId == '%')">
           <div @click="emitClickEvent('modal','cleanup')" id="cleanup" class="category-button">
-            <BootstrapIcon icon="eraser-fill" variant="light" />
+            <BootstrapIcon icon="eraser-fill" color="3b4651" />
             <div class="text">Cleanup</div>
           </div>
         </div>
         <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
           <div>
-            <BootstrapIcon icon="trash3-fill" variant="light" />
+            <BootstrapIcon icon="trash3-fill" color="3b4651" />
             <div class="text">Delete</div>
           </div>
         </div>
         <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId === '%')" @click="emitClickEvent('modal','renamecategory')" id="rename" class="category-button">
           <div>
-            <BootstrapIcon icon="pencil-fill" variant="light" />
+            <BootstrapIcon icon="pencil-fill" color="3b4651" />
             <div class="text">Edit</div>
           </div>
         </div>
         <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId !== '%')" @click="emitClickEvent('modal','deletefeed')" id="delete" class="category-button">
           <div>
-            <BootstrapIcon icon="trash3-fill" variant="light" />
+            <BootstrapIcon icon="trash3-fill" color="3b4651" />
             <div class="text">Delete</div>
           </div>
         </div>
         <div v-if="(store.currentSelection.categoryId != '%') && (store.currentSelection.feedId != '%')" @click="emitClickEvent('modal','renamefeed')" id="rename" class="category-button">
           <div>
-            <BootstrapIcon icon="pencil-fill" variant="light" />
+            <BootstrapIcon icon="pencil-fill" color="3b4651" />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -190,7 +190,11 @@
 }
 
 #refresh.option, #addnew.option {
-  background-color: #6f79d3;
+  background-color: #2b79c2;
+}
+
+#mark-all-as-read {
+  background-color: #3b4651;
 }
 
 .badge.white {
@@ -223,7 +227,6 @@
 
 .sidebar-category-top,
 .sidebar-category-main {
-  background-color: #696a7b;
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
@@ -235,18 +238,20 @@
 	background-color: #536f5b;
 }
 
-.sidebar-category-feed {
-  background-color: #696a7b;
+.sidebar-category-feed,
+.sidebar-category-top,
+.sidebar-category-main {
+  background-color: #9f9f9f;
 }
 
 .sidebar-category-top.selected,
 .sidebar-category-main.selected,
 .sidebar-category-feed.selected {
-  background-color: #464f9e;
+  background-color: #3b4651;
 }
 
 p.title {
-  color: #aeb1d4;
+  color: #111;
   margin-left: 14px;
   margin-top: 10px;
   margin-bottom: 5px;
@@ -269,10 +274,6 @@ div.option {
   border-radius: 0px 0px 4px 4px;
 }
 
-#mark-all-as-read {
-  background-color: #464f9e;
-}
-
 #refresh.option,
 #mark-all-as-read {
   margin-right: 70px;
@@ -285,14 +286,14 @@ div.option {
 }
 
 #monster {
-  background: url(../assets/images/monster.svg) 14px 30px no-repeat;
+  background: url('../assets/images/monster.png') 14px 30px no-repeat;
   background-size: 30px 30px;
   height: 90px;
 }
 
 #monster p {
   padding: 30px 0px 0px 50px;
-  color: #fff;
+  color: #111;
   font-size: 20px;
 }
 
@@ -319,7 +320,7 @@ div.option {
 .category-button {
   margin-left: 8%;
   height: 44px;
-  color: #fff;
+  color: #111;
   border-radius: 4px;
   width: 42px;
   float: left;
@@ -346,6 +347,24 @@ div.option {
 
   #mark-all-as-read {
     background-color: #606060;
+  }
+  p.title {
+    color: #fff;
+  }
+  #monster {
+    background: url('../assets/images/monster-dark.png') 14px 30px no-repeat;
+    background-size: 30px 30px;
+    height: 90px;
+  }
+  #monster p {
+    color: #fff;
+  }
+  .category-button {
+    color: #fff;
+    background-color: #2c2c2c;
+  }
+  .category-options svg {
+    fill: #fff;
   }
 }
 </style>

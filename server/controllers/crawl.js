@@ -63,8 +63,8 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
             if (feeditem) {
 
               //process all feed posts
-              feeditem.posts.forEach(function(post) {
-                processArticle(feed, post);
+              feeditem.items.forEach(function(item) {
+                processArticle(feed, item);
               });
   
               //reset the feed count
@@ -102,15 +102,14 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 });
 
 const processArticle = async (feed, post) => {
-
   //don't process empty post URLs
-  if (post.link) {
+  if (post.url) {
     try {
       //try to find any existing article with the same link or same feedId and postTitle
       const article = await Article.findOne({
         where: {
           [Op.or]: [
-            {url: post.link},
+            {url: post.url},
             {[Op.and] : [
               {subject: post.title},
               {feedId: feed.id}
@@ -121,70 +120,71 @@ const processArticle = async (feed, post) => {
   
       //if none, add new article to the database
       if (!article) {
-        //remove any script tags
-        //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
-        const dom = htmlparser2.parseDocument(post.description);
-        const $ = load(dom, { _useHtmlParser2: true });
-  
-        //dismiss undefined errors
-        if (typeof $ !== 'undefined') {
-          //remove all script tags from post content
-          $('script').remove();
-  
-          //execute hotlink feature by collecting all the links in each RSS post
-          //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
-          $('a').each(function() {
-            try {
-              //find domain name for each link
-              var domain = (new URL(post.link));
-              domain = domain.hostname;
-            } catch (err) {
-              console.log(err);
-              var domain = post.link;
-            }
-  
-            //fetch all urls referenced to other websites. Insert these into the hotlinks table
-            if ($(this).attr('href')) {
-              if (!$(this).attr('href').includes(domain)) {
-                //only add http and https urls to database
-                if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
-                  //update cache
-                  cache.set($(this).attr('href'));
+        //if no content is found, use the description as content
+        if (typeof post.content === 'undefined' || post.content === null) {
+          postContent = post.description;
+          postContentStripped = post.description;
+          postLanguage = language.get(post.description);
+        } else {
+          //content is set, so we might expect html rich content. Because of this we want to remove any script tags
+          //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
+          const dom = htmlparser2.parseDocument(post.content);
+          const $ = load(dom, { _useHtmlParser2: true });
+    
+          //dismiss undefined errors
+          if (typeof $ !== 'undefined') {
+            //remove all script tags from post content
+            $('script').remove();
+    
+            //execute hotlink feature by collecting all the links in each RSS post
+            //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
+            $('a').each(function() {
+              try {
+                //find domain name for each link
+                var domain = (new URL(post.url));
+                domain = domain.hostname;
+              } catch (err) {
+                console.log(err);
+                var domain = post.url;
+              }
+    
+              //fetch all urls referenced to other websites. Insert these into the hotlinks table
+              if ($(this).attr('href')) {
+                if (!$(this).attr('href').includes(domain)) {
+                  //only add http and https urls to database
+                  if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
+                    //update cache
+                    cache.set($(this).attr('href'));
+                  }
                 }
               }
-            }
-          });
-  
-          //parse media RSS feeds: https://www.rssboard.org/media-rss
-          if (post?.['media:group']?.['media:content']?.['@']?.['url'] !== undefined) {
-            var postLink = post['media:group']['media:content']['@']['url'];
-            var postTitle = post['media:group']['media:title']['#'];
-            var postContent = post['media:group']['media:description']['#'];
-            var postContentStripped = striptags(post['media:group']['media:description']['#']);
-            var postLanguage = language.get(post['media:group']['media:description']['#']);
-          } else {
-            var postLink = post.link;
-            var postTitle = post.title;
+            });
+
+            //set postContent and postContentStripped
             var postContent = $.html();
             var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
             var postLanguage = language.get($.html());
-          }
-  
-          //add article
+          } 
+        }
+        
+        //add article to database, if content or a description has been found
+        if (postContent) {
           Article.create({
             feedId: feed.id,
             status: "unread",
             star_ind: 0,
-            url: postLink,
+            url: post.url,
             image_url: "",
-            subject: postTitle || 'No title',
+            subject: post.title || 'No title',
             content: postContent,
             contentStripped: postContentStripped,
             language: postLanguage,
-            //default post.pubdate with new Date when empty
-            published: post.pubdate || new Date()
+            //default post.published with new Date when empty
+            published: post.published || new Date()
           });
         }
+
+
       }
     } catch (err) {
       console.log(err);
