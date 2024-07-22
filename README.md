@@ -81,5 +81,5 @@ The following scripts and plug-ins are used within RSSMonster
 
 * NodeJS https://nodejs.org/en/
 * Twitter bootstrap: https://twitter.github.io/bootstrap/
-* Feedparser: https://github.com/danmactough/node-feedparser/
+* feed-parser: https://github.com/rowanmanning/feed-parser
 * VueJS: https://vuejs.org/
