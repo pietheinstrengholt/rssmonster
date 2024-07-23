@@ -26,7 +26,7 @@ services:
       PORT: 3000
       DB_DATABASE: rssmonster
       DB_USERNAME: rssmonster
-      DB_PASSWORD: password
+      DB_PASSWORD: rssmonster
       DB_HOSTNAME: db
     ports:
       - 3000:3000
@@ -71,10 +71,10 @@ services:
       - ../mysql-data:/var/lib/mysql
     command: [mysqld, --default-authentication-plugin=mysql_native_password, --character-set-server=utf8mb4, --collation-server=utf8mb4_unicode_ci, --innodb_monitor_enable=all]
     environment:
-      MYSQL_ROOT_PASSWORD: "password"
+      MYSQL_ROOT_PASSWORD: "rssmonster"
       MYSQL_DATABASE: "rssmonster"
       MYSQL_USER: "rssmonster"
-      MYSQL_PASSWORD: "password"
+      MYSQL_PASSWORD: "rssmonster"
       MYSQL_ROOT_HOST: '%'
     ports:
       - 3306:3306

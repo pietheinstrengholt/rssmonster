@@ -8,6 +8,7 @@
 
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
+		"terminal.integrated.shell.linux": "/bin/bash",
 		"sqltools.connections": [{
 			"name": "Container database",
 			"driver": "MySQL",
@@ -16,18 +17,19 @@
 			"port": 3306,
 			"database": "rssmonster",
 			"username": "rssmonster",
-			"password": "password"
+			"password": "rssmonster"
 		}]
 	},
 
 	"remoteEnv": {
-		"VITE_APP_HOSTNAME": "http://localhost:3000"
+		"VITE_VUE_APP_HOSTNAME": "http://localhost:3000"
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
 	"extensions": [
 		"dbaeumer.vscode-eslint",
-		"mtxr.sqltools"
+		"mtxr.sqltools",
+		"mtxr.sqltools-driver-mysql"
 	],
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
