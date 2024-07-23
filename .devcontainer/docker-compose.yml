@@ -19,7 +19,7 @@ services:
     command: sleep infinity
 
     # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    #network_mode: service:mysql
+    network_mode: service:mysql
 
     environment:
       NODE_ENV: development
@@ -30,6 +30,9 @@ services:
       DB_HOSTNAME: mysql
     ports:
       - 3000:3000
+
+    depends_on:
+      - mysql
 
     # Uncomment the next line to use a non-root user for all processes.
     # user: node
@@ -52,7 +55,7 @@ services:
     command: sleep infinity
 
     # Runs app on the same network as the database container, allows "forwardPorts" in devcontainer.json function.
-    #network_mode: service:mysql
+    network_mode: service:mysql
 
     environment:
       NODE_ENV: development
@@ -60,8 +63,8 @@ services:
       VITE_BASE_URL: /
       PORT: 8080
 
-    # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
+    depends_on:
+      - app
 
   mysql:
     container_name: mysql
@@ -78,10 +81,3 @@ services:
       MYSQL_ROOT_HOST: '%'
     ports:
       - 3306:3306
-    networks:
-      - default      
-    # Add "forwardPorts": ["3306"] to **devcontainer.json** to forward MySQL locally.
-    # (Adding the "ports" property to this file will not forward from a Codespace.)
-
-#volumes:
-  #mysql-data:
