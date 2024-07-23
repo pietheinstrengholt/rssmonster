@@ -3,7 +3,7 @@
 	"name": "RSSMonster",
 	"dockerComposeFile": "docker-compose.yml",
 	"service": "app",
-	"runServices": ["app", "client", "db"],
+	"runServices": ["app", "client", "mysql"],
 	"workspaceFolder": "/workspace",
 
 	// Set *default* container specific settings.json values on container create.
@@ -26,14 +26,22 @@
 	},
 
 	// Add the IDs of extensions you want installed when the container is created.
-	"extensions": [
-		"dbaeumer.vscode-eslint",
-		"mtxr.sqltools",
-		"mtxr.sqltools-driver-mysql"
-	],
+	"customizations": {
+		"vscode": {
+			"extensions": [
+				"dbaeumer.vscode-eslint",
+				"mtxr.sqltools",
+				"mtxr.sqltools-driver-mysql"
+			]
+		}
+	},
 
 	// Use 'forwardPorts' to make a list of ports inside the container available locally.
 	"forwardPorts": [3000, 3306, 8080],
+
+	"containerEnv": {
+		"DB_HOST": "mysql"
+	},
 
 	// Use 'postCreateCommand' to run commands after the container is created.
 	// "postCreateCommand": "yarn install",
