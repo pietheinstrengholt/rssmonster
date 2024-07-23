@@ -7,7 +7,7 @@ services:
       dockerfile: server.dockerfile
       args:
         # [Choice] Node.js version: 14, 12, 10
-        VARIANT: 12
+        VARIANT: 18
         # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
         USER_UID: 1000
         USER_GID: 1000
@@ -24,9 +24,9 @@ services:
     environment:
       NODE_ENV: development
       PORT: 3000
+      DB_DATABASE: rssmonster
       DB_USERNAME: rssmonster
       DB_PASSWORD: password
-      DB_DATABASE: rssmonster
       DB_HOSTNAME: db
     ports:
       - 3000:3000
@@ -40,7 +40,7 @@ services:
       dockerfile: client.dockerfile
       args:
         # [Choice] Node.js version: 14, 12, 10
-        VARIANT: 12
+        VARIANT: 18
         # On Linux, you may need to update USER_UID and USER_GID below if not your local UID is not 1000.
         USER_UID: 1000
         USER_GID: 1000
@@ -56,7 +56,9 @@ services:
 
     environment:
       NODE_ENV: development
-      VITE_APP_HOSTNAME: http://app:3000/
+      VITE_VUE_APP_HOSTNAME: http://app:3000/
+      VITE_BASE_URL: /
+      PORT: 8080
 
     # Use "forwardPorts" in **devcontainer.json** to forward an app port locally. 
     # (Adding the "ports" property to this file will not forward from a Codespace.)
