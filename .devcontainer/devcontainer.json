@@ -6,11 +6,6 @@
 	"runServices": ["app", "client", "mysql"],
 	"workspaceFolder": "/workspace",
 
-	// https://stackoverflow.com/questions/64071161/use-host-networking-while-building-a-vscode-devcontainer
-	"initializeCommand": [
-		"docker", "build", "--network=host",".devcontainer"
-	],
-
 	// Set *default* container specific settings.json values on container create.
 	"settings": {
 		"terminal.integrated.shell.linux": "/bin/bash",
