@@ -66,7 +66,7 @@
 <style>
 #mobile-toolbar {
   width: 100%;
-  background-color: #31344B;
+  background-color: #3b4651;
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
@@ -137,7 +137,7 @@
 }
 
 .view-button.selected {
-  color: #18bc9c;
+  color: #fff;
 }
 
 @media (prefers-color-scheme: dark) {

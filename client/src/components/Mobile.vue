@@ -104,7 +104,7 @@ span.close {
 }
 
 .overlay-content li.category {
-  background-color: #464f9e;
+  background-color: #9f9f9f;
   border-radius: 4px;
   color: #fff;
   padding: 0px;
@@ -121,7 +121,7 @@ p.content-header {
 }
 
 .overlay-content li.category.selected {
-  background-color: #18bc9c;
+  background-color: #3b4651;
 }
 
 @media (prefers-color-scheme: dark) {
