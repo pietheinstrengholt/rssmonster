@@ -115,6 +115,12 @@ const validateFeed = async (req, res, next) => {
     });
   }
 
+  if (typeof categoryId === "undefined") {
+    return res.status(500).json({
+      error_msg: "Category is invalid."
+    });
+  }
+
   try {
 
     const feeditem = await parseFeed.process(url);
@@ -126,11 +132,10 @@ const validateFeed = async (req, res, next) => {
           url: feeditem.self
         }
       }).then(feed => {
-        if (!feed) {
-          return res.status(200).json({
+        if (!feed) {          return res.status(200).json({
             categoryId: categoryId,
-            feedName: feeditem.meta.title,
-            feedDesc: feeditem.meta.description,
+            feedName: feeditem.title || feeditem.meta.title,
+            feedDesc: feeditem.description || feeditem.meta.description,
             url: req.body.url,
             rssUrl: feeditem.self,
             favicon: feeditem.image
