@@ -29,7 +29,7 @@
     "franc-min": "^6.2.0",
     "htmlparser2": "^9.1.0",
     "morgan": "^1.10.0",
-    "mysql2": "^3.10.3",
+    "mysql2": "^3.11.0",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
     "sequelize": "^6.37.3",
