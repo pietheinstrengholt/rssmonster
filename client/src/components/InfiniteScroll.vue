@@ -6,7 +6,7 @@
     <div id="no-more" v-if="hasLoadedContent">
       <p v-if="container.length == 0" id="no-results">No posts found!</p>
       <p v-if="currentSelection != 'unread' && container.length != 0 && remainingItems < fetchCount">You reached the bottom!</p>
-      <p v-if="currentSelection == 'unread' && container.length != 0 && isFlushed === false" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
+      <p v-if="currentSelection == 'unread' && container.length != 0 && isFlushed === false && distance > container.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
       <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0">All items are marked as read.</p>
     </div>
     <div id="no-more" v-else>
@@ -53,6 +53,10 @@ export default {
     },
     isFlushed: {
       type: Boolean,
+      required: true
+    },
+    distance: {
+      type: Number,
       required: true
     }
   },

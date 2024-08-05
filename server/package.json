@@ -21,7 +21,7 @@
     "nodemon": "^3.1.4"
   },
   "dependencies": {
-    "@rowanmanning/feed-parser": "^1.0.0",
+    "@rowanmanning/feed-parser": "^1.0.1",
     "body-parser": "^1.20.2",
     "cheerio": "^1.0.0-rc.12",
     "dotenv": "^16.4.5",
