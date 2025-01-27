@@ -5,7 +5,7 @@
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
 [![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/pietheinstrengholt/rssmonster)
 
-Copyright (c) 2024 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2025 Piethein Strengholt, piethein@strengholt-online.nl
 
 ### Background
 RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternative to one of my favorite tools, Google Reader. Motivated by the need to replace Google Reader for tracking RSS feeds, RSSMonster aims to replicate its functionality while offering modern enhancements.
