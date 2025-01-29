@@ -65,9 +65,8 @@ If you would like to host RSSMonster in a trusted environment using a certificat
 The code above copies the certificates to the cert folder in the RSSMonster directory. From there, you can include the certificates in your application using the following code in app.js:
 
 ```
-const fs = require('fs');  
-const https = require('https');  
-const port = process.env.PORT || 3000; 
+const fs = require('fs');
+const https = require('https');
 
 const options = {
   cert: fs.readFileSync('cert/fullchain.pem'),
