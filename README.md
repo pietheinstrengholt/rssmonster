@@ -56,6 +56,31 @@ If you would like to run RSSMonster in production mode I recommend to run:
 The production version has the server and client combined into a single container. The VueJS is also compiled into an optimized version. To build this single image, run the following command: `docker build -t rssmonster .`
 Lastly you need to run the docker container. You need to provide the correct environment variables for the database server to connect to. Here's is an example: `docker run -d -t -i -e NODE_ENV=production -e DB_HOSTNAME=localhost -e DB_DATABASE=rssmonster -e DB_USERNAME=rssmonser -e DB_PASSWORD=password -p 3000:3000 rssmonster`
 
+### HTTPS Certificate
+If you would like to host RSSMonster in a trusted environment using a certificate, I recommend installing Certbot, obtaining a certificate, and setting up automatic renewal, for example, by using a cron job. Below is the script that I have scheduled to run every week:
+
+`certbot certonly --standalone -d yourdomain --agree-tos -q`
+`cp /etc/letsencrypt/live/yourdomain/* /dir/to/rssmonster/cert/`
+
+The code above copies the certificates to the cert folder in the RSSMonster directory. From there, you can include the certificates in your application using the following code in app.js:
+
+```
+const fs = require('fs');  
+const https = require('https');  
+const port = process.env.PORT || 3000; 
+
+const options = {
+  cert: fs.readFileSync('cert/fullchain.pem'),
+  key: fs.readFileSync('cert/privkey.pem')
+};
+
+https.createServer(options, app).listen(port, () => {
+  console.log(`Server has started on port ${port}!`);
+});
+```
+
+This configuration sets up an HTTPS server that utilizes the SSL/TLS certificates for secure communication. Ensure that the domain name and directory paths are correctly configured to your specific setup.
+
 ### AWS Beanstalk
 - Setup your AWS Security credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html
 - Download and install the Beanstalk CLI: https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3.html
