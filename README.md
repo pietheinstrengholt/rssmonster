@@ -1,7 +1,6 @@
 ## RSSMonster
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
-[![Open in GitHub Codespaces](https://github.com/codespaces/badge.svg)](https://codespaces.new/pietheinstrengholt/rssmonster)
 
 Copyright (c) 2025 Piethein Strengholt, piethein@strengholt-online.nl
 
