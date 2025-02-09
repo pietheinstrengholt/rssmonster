@@ -18,7 +18,7 @@ RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternat
 - Fever API Compatibility: Fully compatible with the Fever API, allowing for integration with other RSS tools.
 
 ### Prerequisites
-* NodeJS 16.x or higher
+* NPM and NodeJS 18.x or higher
 * Git
 * A Mysql installation (other databases will as well with some configuration)
 
