@@ -16,12 +16,15 @@
     "debug": "nodemon -L --watch app.js",
     "db": "./node_modules/.bin/sequelize db:migrate"
   },
+  "engines": {
+    "node": ">=18.x"
+  },
   "license": "MIT",
   "devDependencies": {
     "nodemon": "^3.1.9"
   },
   "dependencies": {
-    "@rowanmanning/feed-parser": "^1.1.0",
+    "@rowanmanning/feed-parser": "^1.1.1",
     "body-parser": "^1.20.3",
     "cheerio": "^1.0.0",
     "dotenv": "^16.4.7",
