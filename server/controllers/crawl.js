@@ -1,6 +1,7 @@
 import Sequelize from 'sequelize';
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
+import Tag from "../models/tag.js";
 
 import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
@@ -174,30 +175,54 @@ const processArticle = async (feed, post) => {
           } catch(err) {
             console.log(err);
           }
-
-          try {
-            const classifications = await openai.classify(postContentStripped);
-            console.log("Classifications by OpenAI: " + classifications);
-          } catch(err) {
-            console.log(err);
-          }
         }
-        
-        //add article to database, if content or a description has been found
-        if (postContent) {
-          Article.create({
-            feedId: feed.id,
-            status: "unread",
-            star_ind: 0,
-            url: post.url,
-            image_url: "",
-            subject: post.title || 'No title',
-            content: postContent,
-            contentStripped: postContentStripped,
-            language: postLanguage,
-            //default post.published with new Date when empty
-            published: post.published || new Date()
-          });
+
+        try {
+          //add article to database, if content or a description has been found
+          if (postContent) {
+            const article = await Article.create({
+              feedId: feed.id,
+              status: "unread",
+              star_ind: 0,
+              url: post.url,
+              image_url: "",
+              subject: post.title || 'No title',
+              content: postContent,
+              contentStripped: postContentStripped,
+              language: postLanguage,
+              published: post.published || new Date() //default post.published with new Date when empty
+            });
+
+            if (article) {
+              console.log("ArticleID: " + article.id);
+              //try to classify the article
+              try {
+                const classifications = await openai.classify(postContentStripped);
+                console.log("Classifications by OpenAI: ");
+                console.log(classifications);
+                console.log(typeof classifications);
+                //if tags are found, add them to the database
+                if (classifications["tags"]) {
+                  for (const tag of classifications["tags"]) {
+                    try {
+                      const tagResult = await Tag.findOrCreate({
+                        where: { name: tag.toUpperCase() }
+                      });
+                      if (tagResult) {
+                        await console.log(tagResult);
+                      }
+                    } catch(err) {
+                      console.log(err);
+                    }
+                  }
+                }
+              } catch(err) {
+                console.log(err);
+              }
+            }
+          }
+        } catch(err) {
+          console.log(err);
         }
       }
     } catch (err) {

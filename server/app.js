@@ -12,6 +12,8 @@ import sequelize from './util/database.js';
 import Category from './models/category.js';
 import Feed from './models/feed.js';
 import Article from './models/article.js';
+import Tag from './models/tag.js';
+import ArticleTag from './models/articletag.js';
 
 //routes
 import categoryRoutes from "./routes/category.js";
@@ -67,6 +69,8 @@ Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
 Category.hasMany(Feed);
 Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE'});
 Feed.hasMany(Article);
+Article.belongsToMany(Tag, { through: ArticleTag})
+Tag.belongsToMany(Article, { through: ArticleTag})
 
 sequelize
   .sync({

@@ -33,15 +33,16 @@ export const classify = async (text) => {
         // Submit stripped article content to OpenAI for classifications.
         const classifications = await openai.chat.completions.create({
             model: model,
+            response_format: { type: "json_object" },
             messages: [
                 {"role": "system", "content": "You are a content analysis assistant specialized in generating SEO tags for articles. Your task is to create a list of relevant, high-volume SEO tags that help visitors find articles by identifying specific themes or ideas discussed in the content. Tags must be simple, direct, and in the singular form. Tags must be composed of natural English words only. Tags must focus on the core concepts without using general terms."},
                 {"role": "assistant", "content": "Generate a list of 5-7 relevant, high-volume SEO tags based on the following article content."},
-                {"role": "assistant", "content": "The tags will be output into a JSON array of strings."},
+                {"role": "assistant", "content": "Your response must be in json format, with a parent element named tags, and each tag as a child element."},
                 {"role": "user", "content": text}
             ],
         });
 
-        return classifications.choices[0].message.content;
+        return JSON.parse(classifications.choices[0].message.content);
     }
 };
 
