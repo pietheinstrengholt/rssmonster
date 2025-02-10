@@ -7,9 +7,7 @@ export const ArticleTag = sequelize.define(
     articleId: {
       type: Sequelize.STRING,
       allowNull: false
-    }
-  },
-  {
+    },
     tagId: {
       type: Sequelize.STRING,
       allowNull: false
