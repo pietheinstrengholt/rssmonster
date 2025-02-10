@@ -171,7 +171,6 @@ const processArticle = async (feed, post) => {
 
           try {
             const summarization = await openai.summarize(postContentStripped);
-            console.log("Summarization by OpenAI: " + summarization);
             postContentStripped = summarization;
           } catch(err) {
             console.log(err);
@@ -195,13 +194,9 @@ const processArticle = async (feed, post) => {
             });
 
             if (article) {
-              console.log("ArticleID: " + article.id);
               //try to classify the article
               try {
                 const classifications = await openai.classify(postContentStripped);
-                console.log("Classifications by OpenAI: ");
-                console.log(classifications);
-                console.log(typeof classifications);
                 //if tags are found, add them to the database
                 if (classifications["tags"]) {
                   for (const tag of classifications["tags"]) {
@@ -210,13 +205,10 @@ const processArticle = async (feed, post) => {
                     });
 
                     if (result) {
-                      console.log(result);
-                      console.log("Result ID: " + result[0].getDataValue('id'));
-                      const articleTag = await ArticleTag.create({
+                      await ArticleTag.create({
                         articleId: article.id,
                         tagId: result[0].getDataValue('id')
                       });
-                      console.log(articleTag);
                     }
                   }
                 }
