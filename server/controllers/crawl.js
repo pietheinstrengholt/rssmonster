@@ -2,6 +2,7 @@ import Sequelize from 'sequelize';
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 import Tag from "../models/tag.js";
+import ArticleTag from "../models/articletag.js";
 
 import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
@@ -204,15 +205,18 @@ const processArticle = async (feed, post) => {
                 //if tags are found, add them to the database
                 if (classifications["tags"]) {
                   for (const tag of classifications["tags"]) {
-                    try {
-                      const tagResult = await Tag.findOrCreate({
-                        where: { name: tag.toUpperCase() }
+                    const result = await Tag.findOrCreate({
+                      where: { name: tag.toUpperCase() }
+                    });
+
+                    if (result) {
+                      console.log(result);
+                      console.log("Result ID: " + result[0].getDataValue('id'));
+                      const articleTag = await ArticleTag.create({
+                        articleId: article.id,
+                        tagId: result[0].getDataValue('id')
                       });
-                      if (tagResult) {
-                        await console.log(tagResult);
-                      }
-                    } catch(err) {
-                      console.log(err);
+                      console.log(articleTag);
                     }
                   }
                 }
