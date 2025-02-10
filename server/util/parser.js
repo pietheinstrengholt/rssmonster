@@ -14,4 +14,4 @@ export const process = async (feedUrl) => {
 
 export default {
   process
-}
+};

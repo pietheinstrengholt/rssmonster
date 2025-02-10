@@ -9,6 +9,7 @@ import { load } from 'cheerio';
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
+import openai from "../util/openai.js";
 
 const Op = Sequelize.Op;
 
@@ -164,7 +165,22 @@ const processArticle = async (feed, post) => {
             var postContent = $.html();
             var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
             var postLanguage = language.get($.html());
-          } 
+          }
+
+          try {
+            const summarization = await openai.summarize(postContentStripped);
+            console.log("Summarization by OpenAI: " + summarization);
+            postContentStripped = summarization;
+          } catch(err) {
+            console.log(err);
+          }
+
+          try {
+            const classifications = await openai.classify(postContentStripped);
+            console.log("Classifications by OpenAI: " + classifications);
+          } catch(err) {
+            console.log(err);
+          }
         }
         
         //add article to database, if content or a description has been found
@@ -183,8 +199,6 @@ const processArticle = async (feed, post) => {
             published: post.published || new Date()
           });
         }
-
-
       }
     } catch (err) {
       console.log(err);

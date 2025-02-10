@@ -112,4 +112,4 @@ export const discoverRssLink = async (url) => {
 export default {
   fetchURL,
   discoverRssLink
-}
+};

@@ -11,4 +11,4 @@ export const get = (text) => {
 
 export default {
   get
-}
+};
