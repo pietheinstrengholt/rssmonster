@@ -17,26 +17,26 @@
     "db": "./node_modules/.bin/sequelize db:migrate"
   },
   "engines": {
-    "node": ">=18.x"
+    "node": ">=20.x"
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^3.1.9"
+    "nodemon": "^3.1.10"
   },
   "dependencies": {
-    "@rowanmanning/feed-parser": "^1.1.1",
-    "body-parser": "^1.20.3",
+    "@rowanmanning/feed-parser": "^2.1.0",
+    "body-parser": "^2.2.0",
     "cheerio": "^1.0.0",
-    "dotenv": "^16.4.7",
-    "express": "^4.21.2",
+    "dotenv": "^16.5.0",
+    "express": "^5.1.0",
     "franc-min": "^6.2.0",
     "htmlparser2": "^10.0.0",
     "morgan": "^1.10.0",
-    "mysql2": "^3.12.0",
+    "mysql2": "^3.14.1",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
-    "sequelize": "^6.37.5",
-    "sequelize-cli": "^6.6.2",
+    "sequelize": "^6.37.7",
+    "sequelize-cli": "^6.6.3",
     "striptags": "^3.2.0"
   },
   "optionalDependencies": {
