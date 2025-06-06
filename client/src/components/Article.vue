@@ -9,7 +9,7 @@
           <span class="published_date">{{ formatDate(published) }}</span>
           <span class="break">by</span>
           <span class="feed_name">
-            <a target="_blank" :href="feed.url" v-text="feed.feedName"></a>
+            <a target="_blank" :href="mainURL(feed.url)" v-text="feed.feedName"></a>
           </span>
         </div>
       </div>
@@ -269,6 +269,17 @@ export default {
           .slice(0, 100)
           .join(" ");
         return str2;
+      }
+    },
+    mainURL: function() {
+      return (value)=> {
+        try {  
+          const urlObject = new URL(value);  
+          return `${urlObject.protocol}//${urlObject.host}/`;  
+        } catch (error) {  
+          console.error("Invalid URL", error);  
+          return value;  
+        }
       }
     }
   },
