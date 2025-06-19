@@ -79,6 +79,12 @@ authRoutes.post('/login', async (req, res) => {
             message: err.message || 'An error occurred during login'  
         });
     }  
-});  
+});
+
+authRoutes.get('/secret-route', userMiddleware.isLoggedIn, (req, res, next) => {
+  console.log(req.userData);
+  return res.status(200).json({ message: "This is the secret content. Only logged in users can see that!" });
+});
+
 export default authRoutes;
 

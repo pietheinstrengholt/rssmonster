@@ -1,3 +1,5 @@
+import jwt from "jsonwebtoken";
+
 const validateRegister = (req, res, next) => {
   // username min length 3
   if (!req.body.username || req.body.username.length < 3) {
@@ -23,6 +25,26 @@ const validateRegister = (req, res, next) => {
   next();
 };
 
+const isLoggedIn = (req, res, next) => {
+    if (!req.headers.authorization) {
+        return res.status(400).send({
+        message: 'Your session is not valid!',
+        });
+    }
+    try {
+      const authHeader = req.headers.authorization;
+      const token = authHeader.split(' ')[1];
+      const decoded = jwt.verify(token, 'SECRETKEY');
+      req.userData = decoded;
+      next();
+    } catch (err) {
+      return res.status(400).send({
+        message: 'Your session is not valid!',
+      });
+    }
+};
+
 export default {
-  validateRegister
+  validateRegister,
+  isLoggedIn
 }
