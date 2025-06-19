@@ -1,90 +1,11 @@
 import express from 'express';
+import authController from '../controllers/auth.js';
 export const authRoutes = express.Router();
-import User from "../models/user.js";
-import jwt from "jsonwebtoken";
-import bcrypt from "bcryptjs";
 import userMiddleware from "../middleware/users.js";
 
-authRoutes.post('/register', userMiddleware.validateRegister, async (req, res) => {  
-    try {        
-        // Check if the user already exists
-        const user = await User.findOne({ where: { username: req.body.username } });
-  
-        if (user) {
-            return res.status(409).send({
-                message: 'This username is already in use!'
-            });
-        } else {
-            console.log("no user found!"); // username is available
-              
-            // Hash the password
-            const hash = await bcrypt.hash(req.body.password, 10);
-              
-            // Add the new user to the database
-            await User.create({
-                username: req.body.username,
-                password: hash
-            });
-  
-            return res.status(201).send({
-                message: 'Registered!'
-            });
-        }  
-    } catch (err) {
-        console.error(err);
-        return res.status(500).send({
-            message: err.message || 'An error occurred during registration'
-        });
-    }  
-});
-
-authRoutes.post('/login', async (req, res) => {  
-    try {
-        // Check if the user exists
-        const user = await User.findOne({ where: { username: req.body.username } });
-        
-        if (user) {
-            // Compare the provided password with the stored hash
-            const isMatch = await bcrypt.compare(req.body.password, user.password);            
-            if (!isMatch) {
-                return res.status(401).json({ message: "Username or password incorrect!!" });  
-            } else {
-                //set jwt token
-                const token = jwt.sign(
-                {
-                    username: user.username,
-                    userId: user.id,
-                },
-                'SECRETKEY',
-                {
-                    expiresIn: '7d' }
-                );
-
-                //update the last login date
-                user.update({
-                    lastLogin: new Date()
-                });
-
-                return res.status(200).json({ message: "Connected!", token, user: user });
-            }
-        } else {
-            // Username not found in database
-            return res.status(401).send({
-                message: 'Username or password incorrect!!'
-            });
-        }  
-    } catch (err) {
-        console.error(err);
-        return res.status(500).send({
-            message: err.message || 'An error occurred during login'  
-        });
-    }  
-});
-
-authRoutes.get('/secret-route', userMiddleware.isLoggedIn, (req, res, next) => {
-  console.log(req.userData);
-  return res.status(200).json({ message: "This is the secret content. Only logged in users can see that!" });
-});
+// POST /api/auth
+authRoutes.post('/register', userMiddleware.validateRegister, authController.register);
+authRoutes.post('/login', authController.login);
+authRoutes.get('/secret-route', userMiddleware.isLoggedIn, authController.secret);
 
 export default authRoutes;
-
