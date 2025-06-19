@@ -59,7 +59,7 @@ module.exports = {
       collate: "utf8mb4_unicode_ci"
     });
   },
-  down: (queryInterface, Sequelize) => {
+  down: (queryInterface) => {
     return queryInterface.dropTable('articles');
   }
 };

@@ -2,7 +2,7 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.createTable(
-      "settings",
+      "users",
       {
         id: {
           type: Sequelize.INTEGER,
@@ -10,29 +10,16 @@ module.exports = {
           allowNull: false,
           primaryKey: true
         },
-        categoryId: {
+        username: {
           type: Sequelize.STRING,
-          autoIncrement: false,
-          allowNull: false,
-          defaultValue: "%"
+          allowNull: false
         },
-        feedId: {
+        password: {
           type: Sequelize.STRING,
-          autoIncrement: false,
-          allowNull: false,
-          defaultValue: "%"
+          allowNull: false
         },
-        status: {
-          type: Sequelize.STRING,
-          autoIncrement: false,
-          allowNull: false,
-          defaultValue: "unread"
-        },
-        sort: {
-          type: Sequelize.STRING,
-          autoIncrement: false,
-          allowNull: false,
-          defaultValue: "DESC"
+        lastLogin: {
+          type: Sequelize.DATE
         },
         createdAt: {
           type: Sequelize.DATE
@@ -48,6 +35,6 @@ module.exports = {
     );
   },
   down: (queryInterface) => {
-    return queryInterface.dropTable("settings");
+    return queryInterface.dropTable("users");
   }
 };

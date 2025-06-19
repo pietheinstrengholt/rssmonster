@@ -1,5 +1,5 @@
 <template>
-  <div id="app">
+  <div v-if="this.loggedIn" id="app">
     <div class="row">
       <div id="sidebar" class="col-md-3 col-sm-0">
         <!-- Sidebar events -->
@@ -19,6 +19,9 @@
     <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
     <!-- Mobile events -->
     <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick" @refresh="refreshFeeds"></app-mobile>
+  </div>
+  <div v-else>
+    <app-login></app-login>
   </div>
 </template>
 
@@ -112,6 +115,9 @@ html, #app, body {
 import store from "./store";
 import axios from 'axios';
 
+//set auth header
+axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
+
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
@@ -124,6 +130,7 @@ const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar
 const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
 const Modal = defineAsyncComponent(() =>  import(/* webpackChunkName: "modal" */ "./components/Modal.vue"));
 const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
+const Login = defineAsyncComponent(() =>  import(/* webpackChunkName: "login" */ "./components/Login.vue"));
 
 export default {
   components: {
@@ -132,7 +139,8 @@ export default {
     appToolbar: Toolbar,
     appQuickbar: Quickbar,
     appModal: Modal,
-    appMobile: Mobile
+    appMobile: Mobile,
+    appLogin: Login
   },
   data() {
     return {
@@ -370,6 +378,11 @@ export default {
         }
       },
       deep: true
+    }
+  },
+  computed:{
+    loggedIn() {
+      return this.store.auth.status;
     }
   }
 };

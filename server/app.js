@@ -1,6 +1,7 @@
 import express from 'express';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
+import cors from "cors";
 
 //set port
 const port = process.env.PORT || 3000;
@@ -23,6 +24,7 @@ import settingRoutes from "./routes/setting.js";
 import feverRoutes from "./routes/fever.js";
 import healthRoutes from "./routes/health.js";
 import cleanupRoutes from "./routes/cleanup.js";
+import authRoutes from "./routes/auth.js";
 
 //controller
 import errorController from "./controllers/error.js";
@@ -37,6 +39,10 @@ app.use(morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-t
 //serve the content straight from the distribution folder (output after npm run build)
 app.use(express.static("dist"));
 
+//use cors
+app.use(cors())
+
+//bodyparser
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({extended: true}));
 
@@ -60,6 +66,7 @@ app.use("/api/setting", settingRoutes);
 app.use("/api/fever", feverRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/cleanup", cleanupRoutes);
+app.use("/api/auth", authRoutes);
 app.use(errorController.get404);
 
 //define relationships
