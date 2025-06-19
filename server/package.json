@@ -24,6 +24,7 @@
     "nodemon": "^3.1.10"
   },
   "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.3",
     "@rowanmanning/feed-parser": "^2.1.0",
     "body-parser": "^2.2.0",
     "cheerio": "^1.0.0",

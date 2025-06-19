@@ -1,3 +1,4 @@
+//import express, morgan, bodyparser
 import express from 'express';
 import morgan from 'morgan';
 import bodyParser from 'body-parser';
@@ -23,6 +24,7 @@ import settingRoutes from "./routes/setting.js";
 import feverRoutes from "./routes/fever.js";
 import healthRoutes from "./routes/health.js";
 import cleanupRoutes from "./routes/cleanup.js";
+import mcpRoutes from "./routes/mcp.js";
 
 //controller
 import errorController from "./controllers/error.js";
@@ -60,6 +62,7 @@ app.use("/api/setting", settingRoutes);
 app.use("/api/fever", feverRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/cleanup", cleanupRoutes);
+app.use("/mcp", mcpRoutes);
 app.use(errorController.get404);
 
 //define relationships
