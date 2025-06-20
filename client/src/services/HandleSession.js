@@ -1,5 +1,8 @@
 import store from "../store";
 import Cookies from 'js-cookie';
+import axios from 'axios';
+const url = import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/auth/';
+axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
 export default {
   validateSession(error) {
@@ -14,9 +17,7 @@ export default {
     store.auth.userId = null;
     store.auth.token = null;
     store.auth.status = null;
-    setTimeout(function() {
-        location.reload();
-    }, 500);
+    parent.location.hash = "/login";
   },
   createSession(response) {
     store.auth.userId = response.user.id;
@@ -24,5 +25,14 @@ export default {
     store.auth.token = response.token;
     Cookies.set('userId', response.user.id);
     Cookies.set('token', response.token);
+    parent.location.hash = "/";
+  },
+  checkSession() {
+    axios
+      .post(url + 'secret-route')
+      .then(response => response.data).catch((error) => {
+            this.closeSession;
+        }
+    );
   }
 };
