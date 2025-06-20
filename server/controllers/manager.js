@@ -41,6 +41,9 @@ export const getOverview = async (req, res, next) => {
     const totalCount = (await readCount) + unreadCount;
 
     const categories = await Category.findAll({
+      where: {
+        userId: userId
+      },
       include: [{
         userId: userId,
         model: Feed,
