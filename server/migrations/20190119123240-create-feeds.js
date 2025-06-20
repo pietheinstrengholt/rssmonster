@@ -8,6 +8,17 @@ module.exports = {
         allowNull: false,
         primaryKey: true
       },
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          // This is a reference to another model
+          model: "users",
+
+          // This is the column name of the referenced model
+          key: "id"
+        }
+      },
       // It is possible to create foreign keys:
       categoryId: {
         type: Sequelize.INTEGER,

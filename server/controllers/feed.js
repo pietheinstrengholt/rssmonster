@@ -6,7 +6,12 @@ import parseFeed from "../util/parser.js";
 
 const getFeeds = async (req, res, next) => {
   try {
-    const feeds = await Feed.findAll();
+    const userId = req.userData.userId;
+    const feeds = await Feed.findAll({
+      where: {
+        userId: userId
+      }
+    });
     return res.status(200).json({
       feeds: feeds
     });
@@ -18,9 +23,13 @@ const getFeeds = async (req, res, next) => {
 };
 
 const getFeed = async (req, res, next) => {
+  const userId = req.userData.userId;
   const feedId = req.params.feedId;
   try {
-    const feed = await Feed.findByPk(feedId);
+    const feed = await Feed.findByPk(feedId, {
+      where: {
+        userId : userId
+      }});
     return res.status(200).json({
       feed: feed
     });
@@ -31,9 +40,13 @@ const getFeed = async (req, res, next) => {
 };
 
 const updateFeed = async (req, res, next) => {
+  const userId = req.userData.userId;
   const feedId = req.params.feedId;
   try {
-    const feed = await Feed.findByPk(feedId);
+    const feed = await Feed.findByPk(feedId, {
+      where: {
+        userId : userId
+      }});
     if (!feed) {
       return res.status(404).json({
         message: "Feed not found"
@@ -41,6 +54,7 @@ const updateFeed = async (req, res, next) => {
     }
     if (feed) {
       feed.update({
+        userId: userId,
         feedName: req.body.feedName,
         feedDesc: req.body.feedDesc,
         categoryId: req.body.categoryId,
@@ -61,6 +75,7 @@ const updateFeed = async (req, res, next) => {
 const newFeed = async (req, res, next) => {
   try {
     const feed = await Feed.create({
+      userId: req.userData.userId,
       categoryId: req.body.categoryId,
       feedName: req.body.feedName,
       feedDesc: req.body.feedDesc,
@@ -77,9 +92,13 @@ const newFeed = async (req, res, next) => {
 };
 
 const deleteFeed = async (req, res, next) => {
+  const userId = req.userData.userId;
   const feedId = req.params.feedId;
   try {
-    var feed = await Feed.findByPk(feedId);
+    var feed = await Feed.findByPk(feedId, {
+      where: {
+        userId : userId
+      }});
     if (!feed) {
       return res.status(400).json({
         message: "Feed not found"
@@ -108,6 +127,7 @@ const validateFeed = async (req, res, next) => {
   //resolve url
   const url = await discoverRssLink.discoverRssLink(req.body.url);
   const categoryId = req.body.categoryId;
+  const userId = req.userData.userId;
 
   if (typeof url === "undefined") {
     return res.status(500).json({
@@ -129,10 +149,13 @@ const validateFeed = async (req, res, next) => {
       //add feed
       Feed.findOne({
         where: {
+          userId: userId,
           url: feeditem.self
         }
       }).then(feed => {
-        if (!feed) {          return res.status(200).json({
+        if (!feed) { 
+          return res.status(200).json({
+            userId, userId,
             categoryId: categoryId,
             feedName: feeditem.title || feeditem.meta.title,
             feedDesc: feeditem.description || feeditem.meta.description,

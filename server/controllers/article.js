@@ -14,6 +14,9 @@ const getArticles = async (req, res, next) => {
     var feedId = req.query.feedId ? req.query.feedId : "%";
     var status = req.query.status ? req.query.status : "unread";
     var sort = req.query.sort ? req.query.sort : "DESC";
+    var userId = req.userData.userId;
+
+    console.log("This is the userId: " + userId);
 
     //set default values before querying all items
     let search = req.query.search || "%";
@@ -28,6 +31,7 @@ const getArticles = async (req, res, next) => {
       var feeds = await Feed.findAll({
         attributes: ["id"],
         where: {
+          userId: userId,
           categoryId: {
             [Op.like]: categoryId
           }
@@ -54,6 +58,7 @@ const getArticles = async (req, res, next) => {
         attributes: ["id"],
         order: [["published", sort]],
         where: {
+          userId: userId,
           status: status,
           feedId: feedIds,
           subject: {
@@ -72,6 +77,7 @@ const getArticles = async (req, res, next) => {
         attributes: ["id"],
         order: [["published", sort]],
         where: {
+          userId: userId,
           feedId: feedIds,
           subject: {
             [Op.like]: search
@@ -92,6 +98,7 @@ const getArticles = async (req, res, next) => {
         attributes: ["id"],
         order: [["published", sort]],
         where: {
+          userId: userId,
           subject: {
             [Op.like]: search
           },
@@ -115,6 +122,7 @@ const getArticles = async (req, res, next) => {
     res.status(200).json({
       query: [
         {
+          userId: userId,
           categoryId: categoryId,
           feedId: feedId,
           sort: sort,
@@ -125,11 +133,12 @@ const getArticles = async (req, res, next) => {
       itemIds: itemIds
     });
 
-    //destroy settings
-    await Setting.destroy({ where: {} });
+    //destroy user settings
+    await Setting.destroy({ where: { userId: userId } });
 
     //update all settings
     await Setting.create({
+      userId: userId,
       categoryId: categoryId,
       feedId: feedId,
       status: status,
@@ -144,7 +153,11 @@ const getArticles = async (req, res, next) => {
 //the getArticle function returns the article details based on the articleId (array) argument
 const getArticle = (req, res, next) => {
   const articleId = req.params.articleId;
+  const userId = req.userData.userId;
   Article.findByPk(articleId, {
+    where: {
+      userId: userId
+    },
     include: [
       {
         model: Feed,
@@ -165,13 +178,17 @@ const getArticle = (req, res, next) => {
 
 //the postArticles function marks all articles as read
 const postArticles = (req, res, next) => {
+  const userId = req.userData.userId;
   try {
     Article.update(
       {
         status: "read"
       },
       {
-        where: { status: "unread" }
+        where: {
+          userId: userId,
+          status: "unread" 
+        }
       }
     );
 

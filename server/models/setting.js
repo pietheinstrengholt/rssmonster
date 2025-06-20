@@ -10,6 +10,11 @@ export const Setting = sequelize.define(
       allowNull: false,
       primaryKey: true
     },
+    userId: {
+      type: Sequelize.STRING,
+      autoIncrement: false,
+      allowNull: false,
+    },
     categoryId: {
       type: Sequelize.STRING,
       autoIncrement: false,

@@ -1,5 +1,8 @@
 import Sequelize from 'sequelize';
 import { sequelize } from '../util/database.js';
+import { Category } from './category.js';
+import { Feed } from './feed.js';
+import { Article } from './article.js';
 
 export const User = sequelize.define(
   "users",
@@ -31,5 +34,10 @@ export const User = sequelize.define(
     collate: "utf8mb4_unicode_ci"
   }
 );
+
+//add associations
+User.hasMany(Category);
+User.hasMany(Feed);
+User.hasMany(Article);
 
 export default User;

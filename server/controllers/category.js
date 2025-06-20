@@ -2,8 +2,12 @@ import Category from "../models/category.js";
 import Feed from "../models/feed.js";
 
 const getCategories = async (req, res, next) => {
+  const userId = req.userData.userId;
   try {
     const categories = await Category.findAll({
+      where: {
+        userId: userId,
+      },
       include: [{
         model: Feed,
         required: true
@@ -22,7 +26,11 @@ const getCategories = async (req, res, next) => {
 const getCategory = async (req, res, next) => {
   try {
     const categoryId = req.params.categoryId;
+    const userId = req.userData.userId;
     const category = await Category.findByPk(categoryId, {
+      where: {
+        userId: userId,
+      },
       include: [{
         model: Feed,
         required: true
@@ -38,10 +46,12 @@ const getCategory = async (req, res, next) => {
 };
 
 const addCategory = async (req, res, next) => {
+  const userId = req.userData.userId;
   try {
     const name = req.body.name;
     const categoryOrder = req.body.categoryOrder;
     const category = await Category.create({
+      userId: userId,
       name: name,
       categoryOrder: categoryOrder
     });

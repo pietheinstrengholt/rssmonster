@@ -4,6 +4,17 @@ module.exports = {
     return queryInterface.createTable(
       "hotlinks",
       {
+        userId: {
+          type: Sequelize.INTEGER,
+          allowNull: false,
+          references: {
+            // This is a reference to another model
+            model: "users",
+
+            // This is the column name of the referenced model
+            key: "id"
+          }
+        },
         url: {
           type: Sequelize.TEXT('medium'),
           allowNull: false

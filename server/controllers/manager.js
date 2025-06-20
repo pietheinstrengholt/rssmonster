@@ -7,21 +7,25 @@ import cache from '../util/cache.js';
 import Sequelize from "sequelize";
 
 export const getOverview = async (req, res, next) => {
+  const userId = req.userData.userId;
   try {
     const starCount = await Article.count({
       where: {
+        userId: userId,
         starInd: 1
       }
     });
 
     const unreadCount = await Article.count({
       where: {
+        userId: userId,
         status: "unread"
       }
     });
 
     const readCount = await Article.count({
       where: {
+        userId: userId,
         status: "read"
       }
     });
@@ -29,6 +33,7 @@ export const getOverview = async (req, res, next) => {
     //finally we count using the array with ids
     const hotCount = await Article.count({
       where: {
+        userId: userId,
         url: cache.all()
       }
     });
@@ -37,6 +42,7 @@ export const getOverview = async (req, res, next) => {
 
     const categories = await Category.findAll({
       include: [{
+        userId: userId,
         model: Feed,
         required: false
       }],
@@ -48,6 +54,7 @@ export const getOverview = async (req, res, next) => {
         model: Article,
         attributes: [],
         where: {
+          userId: userId,
           status: "unread"
         }
       }],
@@ -65,6 +72,7 @@ export const getOverview = async (req, res, next) => {
         model: Article,
         attributes: [],
         where: {
+          userId: userId,
           status: "read"
         }
       }],
@@ -82,6 +90,7 @@ export const getOverview = async (req, res, next) => {
         model: Article,
         attributes: [],
         where: {
+          userId: userId,
           starInd: 1
         }
       }],
@@ -222,6 +231,7 @@ export const getOverview = async (req, res, next) => {
 
 export const articleDetails = async (req, res, next) => {
   try {
+    const userId = req.userData.userId;
     const articleIds = req.body.articleIds;
     const sort = req.body.sort;
 
@@ -243,6 +253,7 @@ export const articleDetails = async (req, res, next) => {
         ["published", sort]
       ],
       where: {
+        userId: userId,
         id: articlesArray
       }
     });
@@ -262,8 +273,12 @@ export const articleDetails = async (req, res, next) => {
 
 export const articleMarkToRead = async (req, res, next) => {
   try {
+    const userId = req.userData.userId;
     const articleId = req.params.articleId;
     const article = await Article.findByPk(articleId, {
+      where: {
+        userId : userId
+      },
       include: [{
         model: Feed,
         required: true
@@ -290,7 +305,11 @@ export const articleMarkToRead = async (req, res, next) => {
 export const articleMarkToUnread = async (req, res, next) => {
   try {
     const articleId = req.params.articleId;
+    const userId = req.userData.userId;
     const article = await Article.findByPk(articleId, {
+      where: {
+        userId: userId
+      },
       include: [{
         model: Feed,
         required: true
@@ -318,7 +337,11 @@ export const articleMarkWithStar = async (req, res, next) => {
   try {
     const articleId = req.params.articleId;
     const update = req.body.update;
+    const userId = req.userData.userId;
     const article = await Article.findByPk(articleId, {
+      where: {
+        userId: userId
+      },
       include: [{
         model: Feed,
         required: true
@@ -340,7 +363,7 @@ export const articleMarkWithStar = async (req, res, next) => {
         article
           .update({
             starInd: 1
-          })
+          }, { where: { userId: userId }})
           .then(() => res.status(200).json(article))
           .catch(error => res.status(400).json(error));
       }
@@ -349,7 +372,7 @@ export const articleMarkWithStar = async (req, res, next) => {
         article
           .update({
             starInd: 0
-          })
+          }, { where: { userId: userId }})
           .then(() => res.status(200).json(article))
           .catch(error => res.status(400).json(error));
       }
@@ -362,11 +385,13 @@ export const articleMarkWithStar = async (req, res, next) => {
 
 export const articleMarkAllAsRead = async (req, res, next) => {
   try {
+    const userId = req.userData.userId;
     await Article.update({
       status: "read"
     }, {
       where: {
-        status: "unread"
+        status: "unread",
+        userId: userId
       }
     });
 
@@ -379,6 +404,7 @@ export const articleMarkAllAsRead = async (req, res, next) => {
 export const categoryUpdateOrder = async (req, res, next) => {
   //categories are received in the preferred order
   const order = req.body.order;
+  const userId = req.userData.userId;
 
   if (order === undefined) {
     return res.status(404).json({
@@ -395,6 +421,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
           categoryOrder: count
         }, {
           where: {
+            userId: userId,
             id: item
           }
         });
@@ -414,6 +441,7 @@ export const feedChangeCategory = async (req, res, next) => {
   //categories are received in the preferred order
   const feedId = req.body.feedId;
   const categoryId = req.body.categoryId;
+  const userId = req.userData.userId;
 
   if (feedId === undefined || categoryId === undefined) {
     return res.status(404).json({
@@ -422,14 +450,25 @@ export const feedChangeCategory = async (req, res, next) => {
   }
 
   try {
-    const feed = await Feed.findByPk(feedId);
-    const category = await Category.findByPk(categoryId);
+    const feed = await Feed.findOne({
+      where: {
+        id: feedId,
+        userId: userId
+      }
+    })
+
+    const category = await Category.findOne({
+      where: {
+        id: categoryId,
+        userId: userId
+      }
+    })
 
     if (feed && category) {
       feed
         .update({
           categoryId: req.body.categoryId
-        })
+        }, { where: { userId: userId }})
         .then(() => res.status(200).json(feed))
         .catch(error => res.status(400).json(error));
     }

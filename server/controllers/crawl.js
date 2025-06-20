@@ -154,7 +154,7 @@ const processArticle = async (feed, post) => {
                   //only add http and https urls to database
                   if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
                     //update cache
-                    cache.set($(this).attr('href'));
+                    cache.set($(this).attr('href'), feed.userId);
                   }
                 }
               }
@@ -170,6 +170,7 @@ const processArticle = async (feed, post) => {
         //add article to database, if content or a description has been found
         if (postContent) {
           Article.create({
+            userId: feed.userId,
             feedId: feed.id,
             status: "unread",
             star_ind: 0,
