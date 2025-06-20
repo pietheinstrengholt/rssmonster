@@ -329,6 +329,7 @@ div.option {
   width: 42px;
   float: left;
   text-align: center;
+  cursor: pointer;
 }
 
 .category-button .text {
