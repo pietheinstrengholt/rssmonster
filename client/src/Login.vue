@@ -1,5 +1,4 @@
 <template>
-  <div>{{ store.auth }}</div>
   <div class="form-box">
     <h1>Login</h1>
     <div class="form-group">

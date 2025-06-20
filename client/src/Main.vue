@@ -1,5 +1,4 @@
 <template>
-  <div>{{ store.auth }}</div>
   <div id="app">
     <div class="row">
       <div id="sidebar" class="col-md-3 col-sm-0">
