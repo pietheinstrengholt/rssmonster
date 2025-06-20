@@ -143,6 +143,10 @@
             <BootstrapIcon icon="eraser-fill" color="3b4651" />
             <div class="text">Cleanup</div>
           </div>
+          <div @click="logout()" id="logout" class="category-button">
+            <BootstrapIcon icon="box-arrow-right" color="3b4651" />
+            <div class="text">Logout</div>
+          </div>
         </div>
         <div v-if="(store.currentSelection.categoryId !== '%') && (store.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
           <div>
@@ -375,6 +379,7 @@ import store from "../store";
 import axios from 'axios';
 //set auth header
 axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
+import Cookies from 'js-cookie';
 
 export default {
   data() {
@@ -392,6 +397,14 @@ export default {
     draggable
   },
   methods: {
+    logout() {
+      Cookies.remove('token');
+      Cookies.remove('userId');
+      this.store.auth.userId = null;
+      this.store.auth.token = null;
+      this.store.auth.status = null;
+      this.$router.push('/login');
+    },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
     },

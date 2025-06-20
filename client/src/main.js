@@ -8,7 +8,6 @@ import { BootstrapIcon } from '@dvuckovic/vue3-bootstrap-icons'
 import { injectBootstrapIcons } from '@dvuckovic/vue3-bootstrap-icons/utils'
 import BootstrapIcons from 'bootstrap-icons/bootstrap-icons.svg?raw'
 import '@dvuckovic/vue3-bootstrap-icons/dist/style.css'
-
 injectBootstrapIcons(BootstrapIcons)
 
 // create an instance using the function
@@ -22,7 +21,7 @@ const router = createRouter({
     {
       path: '/',
       name: 'home',
-      component: () => import('./Home.vue')
+      component: () => import('./Main.vue')
     },
     {
       path: '/login',

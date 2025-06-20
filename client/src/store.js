@@ -15,7 +15,7 @@ export default {
     showModal: false,
     newUnreads: 0,
     auth: {
-        user: null,
+        userId: null,
         status: null,
         token: null
     }
