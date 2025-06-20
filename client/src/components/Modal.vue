@@ -2,7 +2,7 @@
   <div v-if="this.store.showModal">
     <transition name="modal">
       <div class="modal-mask">
-        <div class="modal fade" id="myModal" tabindex="-1" role="dialog" aria-hidden="true">
+        <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-dialog-centered modal-wrapper" role="document">
             <div class="modal-content modal-container">
               <div class="modal-header">
@@ -15,7 +15,7 @@
                 <h5 class="modal-title" v-if="this.store.showModal==='mobile'">Categories</h5>
                 <h5 class="modal-title" v-if="this.store.showModal==='cleanup'">Clean up old articles</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
-                  <span aria-hidden="true">&times;</span>
+                  <span>&times;</span>
                 </button>
               </div>
 
@@ -289,6 +289,8 @@ div.close, button.close {
 <script>
 import store from "../store";
 import axios from 'axios';
+//set auth header
+axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
 export default {
   props: ["inputCategory", "inputFeed"],

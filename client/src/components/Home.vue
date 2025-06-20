@@ -8,6 +8,9 @@ import InfiniteScroll from "./InfiniteScroll.vue";
 import store from "../store";
 import axios from 'axios';
 
+//set auth header
+axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
+
 export default {
   components: {
     InfiniteScroll

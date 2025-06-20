@@ -1,5 +1,5 @@
 import {createApp} from 'vue'
-import App from './App.vue';
+import App from './App.vue'
 
 //progressive web app
 import './registerServiceWorker'
@@ -14,6 +14,26 @@ injectBootstrapIcons(BootstrapIcons)
 // create an instance using the function
 const app = createApp(App)
 
+import { createRouter, createWebHistory } from 'vue-router'
+
+const router = createRouter({
+  history: createWebHistory(import.meta.env.BASE_URL),
+  routes: [
+    {
+      path: '/',
+      name: 'home',
+      component: () => import('./Home.vue')
+    },
+    {
+      path: '/login',
+      name: 'login',
+      component: () => import('./Login.vue')
+    }
+  ]
+})
+
+export default router
+
 // Global component registration.
 app.component('BootstrapIcon', BootstrapIcon);
 
@@ -25,4 +45,5 @@ if (import.meta.env.VITE_NODE_ENV == 'development') {
 }
 
 // no dollar sign
+app.use(router)
 app.mount('#app');

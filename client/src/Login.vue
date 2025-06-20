@@ -3,19 +3,19 @@
     <h1>Login</h1>
     <div class="form-group">
         <div class="form-group row">
-            <label for="inputEmail3" class="col-sm-2 col-form-label">Username</label>
+            <label class="col-sm-2 col-form-label">Username</label>
             <div class="col-sm-10">
             <input class="form-control" type="text" placeholder="Username" v-model="username" />
             </div>
         </div>
         <div class="form-group row">
-            <label for="inputPassword3" class="col-sm-2 col-form-label">Password</label>
+            <label  class="col-sm-2 col-form-label">Password</label>
             <div class="col-sm-10">
                 <input class="form-control" type="password" placeholder="Password" v-model="password" />
             </div>
         </div>
         <div v-if="this.signup" class="form-group row">
-            <label for="inputPassword3" class="col-sm-2 col-form-label">Password</label>
+            <label class="col-sm-2 col-form-label">Password</label>
             <div class="col-sm-10">
                 <input class="form-control" type="password" placeholder="Password (repeat)" v-model="password_repeat" />
             </div>
@@ -35,9 +35,25 @@
     </div>
   </div>
 </template>
+
+<style lang="scss">
+@import "./assets/scss/global.scss";
+</style>
+
+<style>
+.form-box {
+  margin-left: 50px;
+  margin-right: 50px;
+}
+
+.form-group.row {
+  margin-top: 10px;
+}
+</style>
+
 <script>
-import store from "../store";
-import AuthService from '../services/AuthService.js';
+import store from "./store.js";
+import AuthService from './services/AuthService.js';
 export default {
   data() {
     return {
@@ -61,8 +77,10 @@ export default {
         const token = response.token;
         const user = response.user;
         this.store.auth.user = user;
+        //set status to loggedIn and redirect to home view
         this.store.auth.status = "LoggedIn";
         this.store.auth.token = token;
+        this.$router.push('/');
       } catch (error) {
         console.log(error);
         if (error.response.data.message) {
@@ -92,15 +110,3 @@ export default {
   }
 };
 </script>
-
-<style>
-.form-box {
-  margin-left: 50px;
-  margin-right: 50px;
-}
-
-.form-group.row {
-  margin-top: 10px;
-}
-
-</style>

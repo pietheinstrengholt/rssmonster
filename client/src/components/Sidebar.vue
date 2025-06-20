@@ -373,6 +373,8 @@ div.option {
 import draggable from "vuedraggable";
 import store from "../store";
 import axios from 'axios';
+//set auth header
+axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
 export default {
   data() {
