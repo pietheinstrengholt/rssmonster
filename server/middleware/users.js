@@ -28,7 +28,7 @@ const validateRegister = (req, res, next) => {
 const isLoggedIn = (req, res, next) => {
     if (!req.headers.authorization) {
         return res.status(400).send({
-        message: 'Your session is not valid!',
+          message: 'Your session is not valid!',
         });
     }
     try {

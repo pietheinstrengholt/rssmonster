@@ -7,6 +7,7 @@
 import InfiniteScroll from "./InfiniteScroll.vue";
 import store from "../store";
 import axios from 'axios';
+import HandleSession from '../services/HandleSession.js';
 
 //set auth header
 axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
@@ -66,7 +67,9 @@ export default {
         //update the currentSelection. This will trigger the watch to get the articles
         this.store.currentSelection = response.data;
       }
-    );
+    ).catch((error) => {
+      HandleSession.validateSession(error);
+    });
   },
   methods: {
     fetchArticleIds(data) {

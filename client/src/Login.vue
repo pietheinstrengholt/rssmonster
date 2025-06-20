@@ -54,7 +54,8 @@
 <script>
 import store from "./store.js";
 import AuthService from './services/AuthService.js';
-import Cookies from 'js-cookie';
+import HandleSession from './services/HandleSession.js';
+
 export default {
   data() {
     return {
@@ -76,13 +77,10 @@ export default {
         const response = await AuthService.login(credentials);
         this.message = response.message;
 
-        //set status to loggedIn and redirect to home view
-        this.store.auth.userId = response.user.id;
-        this.store.auth.status = "LoggedIn";
-        this.store.auth.token = response.token;
-        Cookies.set('userId', response.user.id);
-        Cookies.set('token', response.token);
-        //refresh after one second
+        //set status to loggedIn
+        HandleSession.createSession(response);
+
+        //refresh after 500ms
         setTimeout(function() {
           location.reload();
         }, 500);
@@ -114,11 +112,7 @@ export default {
     },
     Signup() {
       this.showSignup = true;
-      Cookies.remove('token');
-      Cookies.remove('userId');
-      this.store.auth.userId = null;
-      this.store.auth.token = null;
-      this.store.auth.status = null;
+      HandleSession.closeSession();
     }
   }
 };
