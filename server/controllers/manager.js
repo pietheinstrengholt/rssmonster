@@ -363,7 +363,8 @@ export const articleMarkWithStar = async (req, res, next) => {
         article
           .update({
             starInd: 1
-          }, { where: { userId: userId }})
+          },
+          { where: { userId: userId }})
           .then(() => res.status(200).json(article))
           .catch(error => res.status(400).json(error));
       }
