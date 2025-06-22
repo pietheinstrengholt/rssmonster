@@ -115,8 +115,6 @@ import axios from 'axios';
 //set auth header
 axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
-import HandleSession from './services/HandleSession.js';
-
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
@@ -307,7 +305,7 @@ export default {
         })
         .catch(error => {
           console.error("There was an error!", error);
-          HandleSession.closeSession();
+          this.store.auth.token = null;
           this.offlineStatus = true;
         });
     },

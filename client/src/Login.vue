@@ -54,7 +54,6 @@
 <script>
 import store from "./store.js";
 import AuthService from './services/AuthService.js';
-import HandleSession from './services/HandleSession.js';
 
 export default {
   data() {
@@ -77,13 +76,13 @@ export default {
         const response = await AuthService.login(credentials);
         this.message = response.message;
 
-        //set status to loggedIn
-        HandleSession.createSession(response);
+        //setup session if token was found in return message
+        if (response) {
+          this.store.auth.userId = response.user.id;
+          this.store.auth.token = response.token;
+          this.store.auth.status = "LoggedIn";
+        }
 
-        //refresh after 500ms
-        setTimeout(function() {
-          location.reload();
-        }, 500);
       } catch (error) {
         console.log(error);
         if (error.response.data.message) {
@@ -112,7 +111,6 @@ export default {
     },
     Signup() {
       this.showSignup = true;
-      HandleSession.closeSession();
     }
   }
 };

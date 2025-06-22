@@ -7,7 +7,6 @@
 import InfiniteScroll from "./InfiniteScroll.vue";
 import store from "../store";
 import axios from 'axios';
-import HandleSession from '../services/HandleSession.js';
 
 //set auth header
 axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
@@ -59,17 +58,21 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
-    //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-    axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
-        return response;
-      })
-      .then(response => {
-        //update the currentSelection. This will trigger the watch to get the articles
-        this.store.currentSelection = response.data;
+    setTimeout(() => {
+      if (this.store.auth.token) {
+        //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
+        axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
+            return response;
+          })
+          .then(response => {
+            //update the currentSelection. This will trigger the watch to get the articles
+            this.store.currentSelection = response.data;
+          }
+        ).catch((error) => {
+          this.store.auth.token = null;
+        });
       }
-    ).catch((error) => {
-      HandleSession.validateSession(error);
-    });
+     }, 50);
   },
   methods: {
     fetchArticleIds(data) {

@@ -380,7 +380,6 @@ import store from "../store";
 import axios from 'axios';
 //set auth header
 axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
-import HandleSession from '../services/HandleSession.js';
 
 export default {
   data() {
@@ -399,7 +398,7 @@ export default {
   },
   methods: {
     logout() {
-      HandleSession.closeSession();
+      this.store.auth.token = null;
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
