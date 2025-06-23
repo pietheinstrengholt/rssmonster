@@ -1,7 +1,12 @@
 <template>
-  <div class="form-box">
-    <h1>Login</h1>
-    <div class="form-group">
+  <div id="form-box">
+    <div id="title">
+      <div id="monster">
+        <p>RSSMonster</p>
+      </div>
+    </div>
+    <div class="form-group" id="login">
+        <p class="font-bold text-lg mb-4" id="signin">Sign in to RSSMonster</p>
         <div class="form-group row">
             <label class="col-sm-2 col-form-label">Username</label>
             <div class="col-sm-10">
@@ -27,11 +32,12 @@
             </div>
         </div>
         <!-- Buttons -->
-        <div class="text-center">
-            <p v-if="this.showSignup"><a href="#!" @click="this.showSignup = false">Click here to sign in</a></p>
-            <p v-else>Not a member? <a href="#!" @click="Signup()">Register</a></p>
-        </div>
         <p v-if="message">{{ message }}</p>
+    </div>
+    <br></br>
+    <div class="text-center">
+      <p v-if="this.showSignup"><a href="#!" @click="this.showSignup = false">Click here to sign in</a></p>
+      <p v-else>Not a member? <a href="#!" @click="Signup()">Create an account</a></p>
     </div>
   </div>
 </template>
@@ -41,9 +47,35 @@
 </style>
 
 <style>
-.form-box {
-  margin-left: 50px;
-  margin-right: 50px;
+#monster {
+  background: url('./assets/images/monster.png') 14px 30px no-repeat;
+  background-size: 30px 30px;
+  height: 90px;
+}
+
+#monster p {
+  padding: 30px 0px 0px 50px;
+  color: #111;
+  font-size: 20px;
+}
+
+#signin {
+  font-weight: bold;
+}
+
+#login {
+  border-width: 1px;
+  border-radius: 0.375rem;
+  border-color: lightgrey;
+  border-style: solid;
+  padding: 10px;
+}
+
+#form-box {
+  width: 50%;
+  margin: auto;
+  flex-grow: 1;
+  align-items: center;
 }
 
 .form-group.row {
