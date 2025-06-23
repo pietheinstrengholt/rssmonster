@@ -7,6 +7,24 @@
 <script>
 import store from "./store";
 import Cookies from 'js-cookie';
+import axios from 'axios';
+
+//set header
+axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
+
+//axios interceptor use
+axios.interceptors.response.use(
+  response => response,
+  error => {
+    if (error.response.status === 400) {
+      if (error.response.data.message === "Your session is not valid!") {
+        store.auth.token = null;
+      }
+    }
+  
+    return Promise.reject(error);
+  }
+);
 
 export default {
   data() {
@@ -15,15 +33,35 @@ export default {
     };
   },
   created: async function() {
-    if (!(Cookies.get('token') && Cookies.get('userId'))) {
-        // Cookie is not set, redirect the user to the login page
-        this.$router.push('/login');
-    } else {
-        // Cookie is set, we can redirect the user to home
-        store.auth.token = Cookies.get('token');
-        store.auth.userId = Cookies.get('userId');
-        store.auth.status = "LoggedIn";
-        this.$router.push('/');
+    //Check if cookies are set. If so, validate the session
+    if (Cookies.get('token') && Cookies.get('userId')) {
+      store.auth.token = Cookies.get('token');
+      store.auth.userId = Cookies.get('userId');
+      this.checkSession();
+    }
+  },
+  methods: {
+    async checkSession() {
+      try {
+        console.log("check session");
+        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/auth/validate").then(response => {
+          })
+          .then(response => {
+            //session if valid, redirect to home
+            this.$router.push('/');
+          }
+        ).catch((error) => {
+          //if session is not valid, redirect to login
+          if (error.response.data.message === "Your session is not valid!") {
+            this.$router.push('/login');
+          }
+        });
+      } catch (error) {
+        console.log(error);
+        if (error.response.data.message) {
+            this.message = error.response.data.message;
+        }
+      }
     }
   },
   watch: {

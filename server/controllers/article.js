@@ -16,8 +16,6 @@ const getArticles = async (req, res, next) => {
     var sort = req.query.sort ? req.query.sort : "DESC";
     var userId = req.userData.userId;
 
-    console.log("This is the userId: " + userId);
-
     //set default values before querying all items
     let search = req.query.search || "%";
     if (search !== "%") search = "%" + search + "%";

@@ -22,6 +22,7 @@ const catchAsync = fn => {
   };
 };
 
+//this function crawls all feeds for all users
 const getFeeds = async () => {
   try {
     //only get feeds with an errorCount lower than 25
@@ -112,7 +113,8 @@ const processArticle = async (feed, post) => {
             {url: post.url},
             {[Op.and] : [
               {subject: post.title},
-              {feedId: feed.id}
+              {feedId: feed.id},
+              {userId: feed.userId}
             ]}
           ]
         }
