@@ -37,7 +37,7 @@ export default {
     if (Cookies.get('token') && Cookies.get('userId')) {
       store.auth.token = Cookies.get('token');
       store.auth.userId = Cookies.get('userId');
-      this.checkSession();
+      //this.checkSession();
     }
   },
   methods: {

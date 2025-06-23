@@ -54,7 +54,7 @@ const login = async (req, res, next) => {
                 },
                 'SECRETKEY',
                 {
-                    expiresIn: process.env.JWT_EXPIRES_IN | '1d' }
+                    expiresIn: process.env.JWT_EXPIRES_IN || '1d' }
                 );
 
                 //update the last login date
