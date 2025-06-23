@@ -47,7 +47,7 @@ export const init = async () => {
   //next we push all ids to an array
   if (hotlinks.length > 0) {
     hotlinks.forEach(hotlink => {
-      cache.set(hotlink.url);
+      cache.set(hotlink.url, hotlink.userId);
     });
   }
 }
