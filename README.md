@@ -16,6 +16,7 @@ RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternat
 - Drag and Drop: Easily manage your feeds with intuitive drag and drop functionality.
 - Dark Mode: Switch to dark mode for a comfortable reading experience in low-light environments.
 - Fever API Compatibility: Fully compatible with the Fever API, allowing for integration with other RSS tools.
+- Multi-user: RSSMonster allows multiple users to create and manage their own accounts, each with personalized feed preferences and settings.
 
 ### Prerequisites
 * NPM and NodeJS 20.x or higher
@@ -28,7 +29,7 @@ RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternat
 * Find the `.env.example` file in the root of both the `client` and `server` folder. Copy and rename the files to `.env`
 * Edit `.env` inside the `server` folder and enter your Mysql or Database server login data (at least fill DB_DATABASE, DB_USERNAME and DB_PASSWORD).
 * Edit `.env` inside the `client` folder. Change the VITE_APP_HOSTNAME, so it points to the back-end.
-* Run `./node_modules/.bin/sequelize db:migrate && ./node_modules/.bin/sequelize db:seed:all` in side the `server` folder. this will add all needed database tables and content to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder to create the schema structure.
+* Run `./node_modules/.bin/sequelize db:migrate && ./node_modules/.bin/sequelize db:seed:all` in side the `server` folder. this will add all needed database tables and content to your mysql database. Alternatively you can also uncomment the `//force:` true in the app.js inside the server folder to create the schema structure. Note that the seeding scripts will also create a user called "rssmonster" with the password "rssmonster."
 * Optional: Add a cronjob to crawl http://localhost/api/crawl every 5 minutes.
 
 ### Development
@@ -99,7 +100,7 @@ Any username and password will work.
 I welcome contributions and new features from the community. Feel free to fork the repository and submit pull requests.
 
 #### Credits
-The following scripts and plug-ins are used within RSSMonster
+The following frameworks and libraries are used within RSSMonster
 
 * NodeJS https://nodejs.org/en/
 * Twitter bootstrap: https://twitter.github.io/bootstrap/
