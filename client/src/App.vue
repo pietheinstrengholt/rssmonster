@@ -5,7 +5,6 @@
 </template>
 
 <script>
-import store from "./store";
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
@@ -13,11 +12,6 @@ export default {
   mounted() {
     console.log("Store: " + this.$store.auth.token);
     console.log("Cookie: " + Cookies.get('token'));
-  },
-  data() {
-    return {
-      store: store
-    };
   },
   created: async function() {
     //Check if cookies are set. If so, validate the session

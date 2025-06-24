@@ -28,13 +28,13 @@
       <div>
         <p class="title">All feeds</p>
       </div>
-      <div v-if="(this.store.newUnreads !== 0)" v-on:click="loadType('refresh')" id="newunreads" class="sidebar-category-top">
+      <div v-if="($store.data.newUnreads !== 0)" v-on:click="loadType('refresh')" id="newunreads" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="lightbulb-fill" variant="light" />
         </span>
         <span class="title">Click to refresh!</span>
         <span class="badge-unread">
-          <span class="badge">{{ this.store.newUnreads }}</span>
+          <span class="badge">{{ $store.data.newUnreads }}</span>
         </span>
       </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="sidebar-category-top">
@@ -43,7 +43,7 @@
         </span>
         <span class="title">Unread</span>
         <span class="badge-unread">
-          <span class="badge">{{ this.store.unreadCount }}</span>
+          <span class="badge">{{ $store.data.unreadCount }}</span>
         </span>
       </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="sidebar-category-top">
@@ -52,7 +52,7 @@
         </span>
         <span class="title">Favorites</span>
         <span class="badge-unread">
-          <span class="badge">{{ this.store.starCount }}</span>
+          <span class="badge">{{ $store.data.starCount }}</span>
         </span>
       </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="sidebar-category-top">
@@ -61,7 +61,7 @@
         </span>
         <span class="title">Hot</span>
         <span class="badge-unread">
-          <span class="badge">{{ this.store.hotCount }}</span>
+          <span class="badge">{{ $store.data.hotCount }}</span>
         </span>
       </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="sidebar-category-top">
@@ -70,7 +70,7 @@
         </span>
         <span class="title">Read</span>
         <span class="badge-unread">
-          <span class="badge">{{ this.store.readCount }}</span>
+          <span class="badge">{{ $store.data.readCount }}</span>
         </span>
       </div>
 
@@ -92,7 +92,7 @@
       <div>
         <p v-if="$store.data.currentSelection.status != 'hot'" class="title">Categories</p>
       </div>
-      <draggable v-model="this.store.categories" item-key="id" @end="updateSortOrder">
+      <draggable v-model="this.$store.data.categories" item-key="id" @end="updateSortOrder">
         <template #item="{element}">
           <div v-bind:class="{ 'selected': ($store.data.currentSelection.categoryId == element.id) && ($store.data.currentSelection.feedId === '%') }" v-bind:id="element.id" class="sidebar-category-main" v-on:click="loadCategory(element)">
           <div class="sidebar-category-sub">
@@ -376,13 +376,11 @@ div.option {
 
 <script>
 import draggable from "vuedraggable";
-import store from "../store";
 import axios from 'axios';
 
 export default {
   data() {
     return {
-      store: store,
       categoriesOrder: [],
       refreshing: false,
       unreadCount: 0,
@@ -466,8 +464,8 @@ export default {
     },
     updateSortOrder() {
       var orderList = new Array();
-      for (let i = 0; i < this.store.categories.length; i++) {
-        orderList.push(this.store.categories[i]["id"]);
+      for (let i = 0; i < this.$store.data.categories.length; i++) {
+        orderList.push(this.$store.data.categories[i]["id"]);
       }
 
       //make ajax request to change categories order
@@ -489,13 +487,14 @@ export default {
   //watch the refreshCategories, when changing, reload the categories
   watch: {
     composedSum: function(val) {
-      this.store.composedSum = val;
+      //TODO: investigate why this is needed
+      this.$store.data.composedSum = val;
     }
   },
   computed: {
     orderList() {
       var orderList = new Array();
-      this.store.categories.forEach(function(category) {
+      this.$store.data.categories.forEach(function(category) {
         orderList.push(category.id);
       });
       // eslint-disable-next-line

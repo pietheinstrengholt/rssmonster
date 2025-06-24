@@ -109,7 +109,6 @@ html, #app, body {
 </style>
 
 <script>
-import store from "./store";
 import axios from 'axios';
 
 //import idb-keyval
@@ -143,14 +142,13 @@ export default {
       feed: {},
       modal: false,
       mobile: null,
-      store: store,
       notificationStatus: null,
       offlineStatus: false
     };
   },
   created: async function() {
     //reset newUnreads count to zero
-    this.store.newUnreads = 0;
+    this.$store.data.newUnreads = 0;
 
     //fetch all category and feed information for an complete overview including total read and unread counts
     this.getOverview(true);
@@ -203,10 +201,10 @@ export default {
   methods: {
     closeModal: function() {
       this.error_msg = "";
-      this.store.showModal = false;
+      this.$store.data.showModal = false;
     },
     modalClick: function(value) {
-      this.store.showModal = value;
+      this.$store.data.showModal = value;
       if (value == "newfeed") {
         this.feed = {};
       }
@@ -228,30 +226,30 @@ export default {
       this.mobile = value;
     },
     lookupFeedById: function(feedId) {
-      for (var x = 0; x < this.store.categories.length; x++) {
-        for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
-          if (this.store.categories[x].feeds[i].id === feedId) {
-            return this.store.categories[x].feeds[i];
+      for (var x = 0; x < this.$store.data.categories.length; x++) {
+        for (var i = 0; i < this.$store.data.categories[x].feeds.length; i++) {
+          if (this.$store.data.categories[x].feeds[i].id === feedId) {
+            return this.$store.data.categories[x].feeds[i];
           }
         }
       }
     },
     lookupCategoryById: function(categoryId) {
-      for (var x = 0; x < this.store.categories.length; x++) {
-        if (this.store.categories[x].id === categoryId) {
-          return this.store.categories[x];
+      for (var x = 0; x < this.$store.data.categories.length; x++) {
+        if (this.$store.data.categories[x].id === categoryId) {
+          return this.$store.data.categories[x];
         }
       }
     },
     updateSelection: function(data) {
       //only update the local values of some categories exist
-      if (this.store.categories.length) {
+      if (this.$store.data.categories.length) {
         //set the feed to empty when the store changes, e.g. change can be that only a category is selected
         this.feed = {};
 
         //lookup category name based on the categoryId received
         if (data.categoryId) {
-          var category = this.store.categories.filter(function(a) {
+          var category = this.$store.data.categories.filter(function(a) {
             return a.id == data.categoryId;
           })[0];
           this.category = category;
@@ -277,11 +275,11 @@ export default {
             this.offlineStatus = false;
 
             //update the store counts
-            var previousUnreadCount = this.store.unreadCount;
-            this.store.unreadCount = response.data.unreadCount;
-            this.store.readCount = response.data.readCount;
-            this.store.starCount = response.data.starCount;
-            this.store.hotCount = response.data.hotCount;
+            var previousUnreadCount = this.$store.data.unreadCount;
+            this.$store.data.unreadCount = response.data.unreadCount;
+            this.$store.data.readCount = response.data.readCount;
+            this.$store.data.starCount = response.data.starCount;
+            this.$store.data.hotCount = response.data.hotCount;
 
             //set PWA badge using unread count
             if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
@@ -289,11 +287,11 @@ export default {
             }
 
             //update the categories in the store
-            this.store.categories = response.data.categories;
+            this.$store.data.setCategories(response.data.categories);
 
             //update newUnreads count, so we could show a message that new content is ready
             if (!initial) {
-              this.store.newUnreads = response.data.unreadCount - previousUnreadCount;
+              this.$store.data.newUnreads = response.data.unreadCount - previousUnreadCount;
             }
 
             //update local category and feed based on current selection
@@ -308,7 +306,8 @@ export default {
           })
           .catch(error => {
             console.error("There was an error!", error);
-            //this.store.auth.token = null;
+            //TODO: investigate
+            //this.$store.data.auth.token = null;
             this.offlineStatus = true;
           });
       }, 1000);
@@ -327,7 +326,7 @@ export default {
     },
     forceReload: function(data) {
       //set newUnreads count back to zero. This removes the notification from the Sidebar.
-      this.store.newUnreads = 0;
+      this.$store.data.newUnreads = 0;
       //refresh the overview with updated categories and feeds counts
       this.getOverview(true);
       //invoke ref home child component function to reload content

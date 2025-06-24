@@ -1,26 +1,26 @@
 <template>
-  <div v-if="this.store.showModal">
+  <div v-if="$store.data.showModal">
     <transition name="modal">
       <div class="modal-mask">
         <div class="modal fade" id="myModal" tabindex="-1" role="dialog">
           <div class="modal-dialog modal-dialog-centered modal-wrapper" role="document">
             <div class="modal-content modal-container">
               <div class="modal-header">
-                <h5 class="modal-title" v-if="this.store.showModal==='newfeed'">Add new feed</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='newcategory'">Add new category</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='deletecategory'">Delete category</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='renamecategory'">Rename category</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='deletefeed'">Delete feed</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='renamefeed'">Rename feed</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='mobile'">Categories</h5>
-                <h5 class="modal-title" v-if="this.store.showModal==='cleanup'">Clean up old articles</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='newfeed'">Add new feed</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='newcategory'">Add new category</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='deletecategory'">Delete category</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='renamecategory'">Rename category</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='deletefeed'">Delete feed</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='renamefeed'">Rename feed</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='mobile'">Categories</h5>
+                <h5 class="modal-title" v-if="$store.data.showModal==='cleanup'">Clean up old articles</h5>
                 <button type="button" class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
                   <span>&times;</span>
                 </button>
               </div>
 
               <!-- This piece of code is for adding new feeds -->
-              <div class="modal-body" v-if="this.store.showModal==='newfeed'">
+              <div class="modal-body" v-if="$store.data.showModal==='newfeed'">
                 <!-- Instead of manipulating the store, we operate on a cloned object -->
                 <div v-if="this.categories.length > 0">
                   <input class="form-control"  type="text" placeholder="Enter feed or website url..." v-model="url">
@@ -61,38 +61,38 @@
               </div>
 
               <!-- This piece of code is for adding new categories -->
-              <div class="modal-body" v-if="this.store.showModal==='newcategory'">
+              <div class="modal-body" v-if="$store.data.showModal==='newcategory'">
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
                 <br>
               </div>
 
               <!-- This piece of code is for deleting categories -->
-              <div class="modal-body" v-if="this.store.showModal==='deletecategory'">
+              <div class="modal-body" v-if="$store.data.showModal==='deletecategory'">
                 <p>Are you sure to delete this category?</p>
                 <br>
               </div>
 
               <!-- This piece of code is for renaming categories -->
-              <div class="modal-body" v-if="this.store.showModal==='renamecategory'">
+              <div class="modal-body" v-if="$store.data.showModal==='renamecategory'">
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
                 <br>
               </div>
 
               <!-- This piece of code is for deleting feeds -->
-              <div class="modal-body" v-if="this.store.showModal==='deletefeed'">
+              <div class="modal-body" v-if="$store.data.showModal==='deletefeed'">
                 <p>Are you sure to delete this feed?</p>
                 <br>
               </div>
 
               <!-- This piece of code is for deleting feeds -->
-              <div class="modal-body" v-if="this.store.showModal==='cleanup'">
+              <div class="modal-body" v-if="$store.data.showModal==='cleanup'">
                 <p>Pressing the cleanup button will delete all articles that are not starred and older than one week.</p>
                 <p>Are you sure to perform this cleanup?</p>
                 <br>
               </div>
 
               <!-- This piece of code is for renaming feeds -->
-              <div class="modal-body" v-if="this.store.showModal==='renamefeed'">
+              <div class="modal-body" v-if="$store.data.showModal==='renamefeed'">
                 <div class="form-group row">
                   <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
                   <div class="col-sm-9">
@@ -124,7 +124,7 @@
               </div>
 
               <!-- This piece of code is for when viewing using the mobile version -->
-              <div class="modal-body" id="mobile" v-if="this.store.showModal==='mobile'">
+              <div class="modal-body" id="mobile" v-if="$store.data.showModal==='mobile'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
                   <li class="category" v-on:click="$store.data.currentSelection.categoryId = null">
@@ -141,20 +141,20 @@
                   </li>
                 </ul>
                 <p>Select how the articles should be displayed</p>
-                <button @click="store.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
-                <button @click="store.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
+                <button @click="$store.data.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
+                <button @click="$store.data.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
 
                 <p>Click the button below to add a new feed</p>
-                <button @click="this.store.showModal = 'newfeed'" type="button" class="btn btn-success">Add new feed</button>
+                <button @click="$store.data.showModal = 'newfeed'" type="button" class="btn btn-success">Add new feed</button>
               </div>
               <div class="modal-footer">
-                <button v-if="feed.feedName && this.store.showModal==='newfeed'" type="button" class="btn btn-primary" @click="newFeed">Save changes</button>
-                <button v-if="this.store.showModal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
-                <button v-if="this.store.showModal==='deletecategory'" type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
-                <button v-if="this.store.showModal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Update category</button>
-                <button v-if="this.store.showModal==='deletefeed'" type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>
-                <button v-if="this.store.showModal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Update feed</button>
-                <button v-if="this.store.showModal==='cleanup'" type="button" class="btn btn-danger" @click="cleanup">Cleanup</button>
+                <button v-if="feed.feedName && $store.data.showModal==='newfeed'" type="button" class="btn btn-primary" @click="newFeed">Save changes</button>
+                <button v-if="$store.data.showModal==='newcategory'" type="button" class="btn btn-primary" @click="saveCategory">Add new category</button>
+                <button v-if="$store.data.showModal==='deletecategory'" type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>
+                <button v-if="$store.data.showModal==='renamecategory'" type="button" class="btn btn-primary" @click="renameCategory">Update category</button>
+                <button v-if="$store.data.showModal==='deletefeed'" type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>
+                <button v-if="$store.data.showModal==='renamefeed'" type="button" class="btn btn-primary" @click="renameFeed">Update feed</button>
+                <button v-if="$store.data.showModal==='cleanup'" type="button" class="btn btn-danger" @click="cleanup">Cleanup</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="emitClickEvent('modal',null)">Cancel</button>
               </div>
             </div>
@@ -287,7 +287,6 @@ div.close, button.close {
 </style>
 
 <script>
-import store from "../store";
 import axios from 'axios';
 //set auth header
 
@@ -298,7 +297,6 @@ export default {
   },
   data() {
     return {
-      store: store,
       ajaxRequest: false,
       error_msg: "",
       url: null,
@@ -319,21 +317,21 @@ export default {
     },
     "store.showModal": {
       handler: function(data) {
-        this.categories = JSON.parse(JSON.stringify(this.store.categories));
+        this.categories = JSON.parse(JSON.stringify(this.$store.data.categories));
         this.selectedCategory = this.$store.data.currentSelection.categoryId;
 
         //get initial starting values (copied data)
-        this.categories = JSON.parse(JSON.stringify(this.store.categories));
+        this.categories = JSON.parse(JSON.stringify(this.$store.data.categories));
         this.selectedCategory = this.$store.data.currentSelection.categoryId;
         //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
         if (this.$store.data.currentSelection.categoryId) {
-          for (var x = 0; x < this.store.categories.length; x++) {
-            if (this.store.categories[x].id == this.$store.data.currentSelection.categoryId) {
-              this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
+          for (var x = 0; x < this.$store.data.categories.length; x++) {
+            if (this.$store.data.categories[x].id == this.$store.data.currentSelection.categoryId) {
+              this.category = JSON.parse(JSON.stringify(this.$store.data.categories[x]));
               //and also try to find the feed
-              for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
-                if (this.store.categories[x].feeds[i].id === this.$store.data.currentSelection.feedId) {
-                  this.feed = JSON.parse(JSON.stringify( this.store.categories[x].feeds[i]));
+              for (var i = 0; i < this.$store.data.categories[x].feeds.length; i++) {
+                if (this.$store.data.categories[x].feeds[i].id === this.$store.data.currentSelection.feedId) {
+                  this.feed = JSON.parse(JSON.stringify( this.$store.data.categories[x].feeds[i]));
                 }
               }
             }
@@ -413,10 +411,10 @@ export default {
             this.feed.starCount = 0;
 
             //find the index of the category
-            var index = this.findIndexById(this.store.categories, this.inputCategory.id);
+            var index = this.findIndexById(this.$store.data.categories, this.inputCategory.id);
 
             //push the new feed to the store
-            this.store.categories[index].feeds.push(this.feed);
+            this.$store.data.categories[index].feeds.push(this.feed);
           },
           response => {
             /* eslint-disable no-console */
@@ -426,6 +424,7 @@ export default {
         );
 
       //send event to refresh the categories
+      //TODO: investigate this
       this.store.refreshCategories++;
 
       //close modal
@@ -455,6 +454,7 @@ export default {
         );
 
       //send event to refresh the categories
+      //TODO: investigate this
       this.store.refreshCategories++;
 
       //close modal
@@ -475,7 +475,7 @@ export default {
             this.category.feeds = [];
 
             //push the new category to categories in store
-            this.store.categories.push(result.data);
+            this.$store.data.categories.push(result.data);
 
             //close the modal
             this.closeModal();
@@ -494,7 +494,7 @@ export default {
       axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.category.id).then(
         () => {
           //remove the category from the store
-          this.store.categories = this.arrayRemove(this.store.categories, this.inputCategory);
+          this.$store.data.categories = this.arrayRemove(this.$store.data.categories, this.inputCategory);
           //close the modal
           this.closeModal();
           //set the selection back to all
@@ -540,10 +540,10 @@ export default {
         .then(
           result => {
             //find the index of the category
-            var index = this.findIndexById(this.store.categories, this.inputCategory.id);
+            var index = this.findIndexById(this.$store.data.categories, this.inputCategory.id);
 
             //update the store with the returned name of the category
-            this.store.categories[index].name = result.data.name;
+            this.$store.data.categories[index].name = result.data.name;
 
             //close the modal
             this.closeModal();
@@ -561,11 +561,11 @@ export default {
       axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
         () => {
           //find the index of both the category and feed
-          var indexCategory = this.findIndexById(this.store.categories, this.inputCategory.id);
+          var indexCategory = this.findIndexById(this.$store.data.categories, this.inputCategory.id);
 
           //remove the feed from the store
-          this.store.categories[indexCategory].feeds = this.arrayRemove(
-            this.store.categories[indexCategory].feeds,
+          this.$store.data.categories[indexCategory].feeds = this.arrayRemove(
+            this.$store.data.categories[indexCategory].feeds,
             this.inputFeed
           );
 
@@ -607,8 +607,8 @@ export default {
           result => {
 
             //find indexes of the category and feed
-            var indexCategory = this.findIndexById(this.store.categories, this.inputFeed.categoryId);
-            var indexFeed = this.findIndexById(this.store.categories[indexCategory].feeds, this.inputFeed.id);
+            var indexCategory = this.findIndexById(this.$store.data.categories, this.inputFeed.categoryId);
+            var indexFeed = this.findIndexById(this.$store.data.categories[indexCategory].feeds, this.inputFeed.id);
 
             //check if the feed or category is not found
             if (indexFeed == -1 || indexCategory == -1) {
@@ -616,35 +616,35 @@ export default {
               location.reload();
             } else {
               //update the feed in the store with the results from the api
-              this.store.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
-              this.store.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
+              this.$store.data.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
+              this.$store.data.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
 
               //reset error count
-              this.store.categories[indexCategory].feeds[indexFeed].errorCount = 0;
+              this.$store.data.categories[indexCategory].feeds[indexFeed].errorCount = 0;
 
               //compare the categoryId, if not equal it means that the feed has been moved
               if (this.inputFeed.categoryId != result.data.categoryId) {
                 //update the categoryId to the new categoryId
-                this.store.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
+                this.$store.data.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
 
                 //lookup the new categoryIndex
-                var indexCategoryNew = this.findIndexById(this.store.categories, result.data.categoryId);
+                var indexCategoryNew = this.findIndexById(this.$store.data.categories, result.data.categoryId);
 
                 //duplicate the feed into the new category
-                this.store.categories[indexCategoryNew].feeds.push(this.store.categories[indexCategory].feeds[indexFeed]);
+                this.$store.data.categories[indexCategoryNew].feeds.push(this.$store.data.categories[indexCategory].feeds[indexFeed]);
 
                 //decrease the counts for the old category
-                this.store.categories[indexCategory].unreadCount = this.store.categories[indexCategory].unreadCount - this.inputFeed.unreadCount;
-                this.store.categories[indexCategory].readCount = this.store.categories[indexCategory].readCount - this.inputFeed.readCount;
-                this.store.categories[indexCategory].starCount = this.store.categories[indexCategory].starCount - this.inputFeed.starCount; 
+                this.$store.data.categories[indexCategory].unreadCount = this.$store.data.categories[indexCategory].unreadCount - this.inputFeed.unreadCount;
+                this.$store.data.categories[indexCategory].readCount = this.$store.data.categories[indexCategory].readCount - this.inputFeed.readCount;
+                this.$store.data.categories[indexCategory].starCount = this.$store.data.categories[indexCategory].starCount - this.inputFeed.starCount; 
 
                 //increase the counts for the new category
-                this.store.categories[indexCategoryNew].unreadCount = this.store.categories[indexCategoryNew].unreadCount + this.inputFeed.unreadCount;
-                this.store.categories[indexCategoryNew].readCount = this.store.categories[indexCategoryNew].readCount + this.inputFeed.readCount;
-                this.store.categories[indexCategoryNew].starCount = this.store.categories[indexCategoryNew].starCount + this.inputFeed.starCount; 
+                this.$store.data.categories[indexCategoryNew].unreadCount = this.$store.data.categories[indexCategoryNew].unreadCount + this.inputFeed.unreadCount;
+                this.$store.data.categories[indexCategoryNew].readCount = this.$store.data.categories[indexCategoryNew].readCount + this.inputFeed.readCount;
+                this.$store.data.categories[indexCategoryNew].starCount = this.$store.data.categories[indexCategoryNew].starCount + this.inputFeed.starCount; 
 
                 //remove the feed from the store from the old category
-                this.store.categories[indexCategory].feeds = this.arrayRemove(this.store.categories[indexCategory].feeds,this.inputFeed);
+                this.$store.data.categories[indexCategory].feeds = this.arrayRemove(this.$store.data.categories[indexCategory].feeds,this.inputFeed);
 
                 //change current selection
                 this.$store.data.currentSelection.categoryId = this.selectedCategory;

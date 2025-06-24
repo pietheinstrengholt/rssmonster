@@ -5,7 +5,6 @@
 
 <script>
 import InfiniteScroll from "./InfiniteScroll.vue";
-import store from "../store";
 import axios from 'axios';
 
 export default {
@@ -14,7 +13,6 @@ export default {
   },
   data() {
     return {
-      store: store,
       //distance is used to keep track of the current position in the container
       distance: 0,
       //amount of article leaded at once
@@ -236,23 +234,23 @@ export default {
     },
     increaseReadCount(article) {
       //find the category and feed index
-      var categoryIndex = this.store.categories.findIndex(category => category.id === article.feed.categoryId);
-      var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
+      var categoryIndex = this.$store.data.categories.findIndex(category => category.id === article.feed.categoryId);
+      var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
       //increase the read count and decrease the unread count
       //avoid having any negative numbers
-      if (this.store.categories[categoryIndex].unreadCount > 0) {
-        this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
-        this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
+      if (this.$store.data.categories[categoryIndex].unreadCount > 0) {
+        this.$store.data.categories[categoryIndex].unreadCount = this.$store.data.categories[categoryIndex].unreadCount - 1;
+        this.$store.data.categories[categoryIndex].readCount = this.$store.data.categories[categoryIndex].readCount + 1;
       }
       //avoid having any negative numbers
-      if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
-        this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
-        this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
+      if (this.$store.data.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
+        this.$store.data.categories[categoryIndex].feeds[feedIndex].unreadCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
+        this.$store.data.categories[categoryIndex].feeds[feedIndex].readCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].readCount + 1;
       }
       //increase total counts
-      if (this.store.unreadCount > 0) {
-        this.store.readCount = this.store.readCount + 1;
-        this.store.unreadCount = this.store.unreadCount - 1;
+      if (this.$store.data.unreadCount > 0) {
+        this.$store.data.readCount = this.$store.data.readCount + 1;
+        this.$store.data.unreadCount = this.$store.data.unreadCount - 1;
       }
     }
   }

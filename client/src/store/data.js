@@ -27,6 +27,27 @@ export const useStore = defineStore('data', {
     },
     setFilter(filter) {
       this.filter = filter;
+    },
+    setCategories(categories) {
+      this.categories = categories;
+    },
+    setUnreadCount(count) {
+      this.unreadCount = count;
+    },
+    setReadCount(count) {
+      this.readCount = count;
+    },
+    setStarCount(count) {
+      this.starCount = count;
+    },
+    setHotCount(count) {
+      this.hotCount = count;
+    },
+    setShowModal(show) {
+      this.showModal = show;
+    },
+    setNewUnreads(count) {  
+      this.newUnreads = count;
     }
   },
   getters: {
@@ -39,6 +60,27 @@ export const useStore = defineStore('data', {
     getFilter: state => {
       return state.filter
     },
+    getCategories: state => {
+      return state.categories
+    },
+    getUnreadCount: state => {
+      return state.unreadCount
+    },
+    getReadCount: state => {
+      return state.readCount
+    },
+    getStarCount: state => {
+      return state.starCount
+    },
+    getHotCount: state => {
+      return state.hotCount
+    },
+    getShowModal: state => {
+      return state.showModal
+    },
+    getNewUnreads: state => {
+      return state.newUnreads
+    }
   }
 });
 

@@ -18,7 +18,7 @@
       </div>
     </div>
     <div class="status-toolbar" @click="toggleShowFilter">
-      <p id="filter">{{ capitalize(this.store.filter) }}</p>
+      <p id="filter">{{ capitalize($store.data.filter) }}</p>
     </div>
     <div v-if="showFilterMenu" class="dropdownmenu" id="filter">
       <div class="item" href="#" @click="filterClicked('full')">
@@ -165,12 +165,9 @@
 </style>
 
 <script>
-import store from "../store";
-
 export default {
   data() {
     return {
-      store: store,
       search: null,
       showStatusMenu: false,
       showFilterMenu: false,
@@ -208,7 +205,7 @@ export default {
       this.toggleShowStatus();
     },
     filterClicked: function(filter) {
-      this.store.filter = filter;
+      this.$store.data.setFilter(filter)
       this.toggleShowFilter();
     },
     sortClicked: function(sort) {

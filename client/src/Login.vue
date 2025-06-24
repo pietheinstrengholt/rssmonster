@@ -84,13 +84,11 @@
 </style>
 
 <script>
-import store from "./store.js";
 import AuthService from './services/AuthService.js';
 
 export default {
   data() {
     return {
-      store: store,
       username: '',
       password: '',
       password_repeat: '',

@@ -19,7 +19,7 @@
       data-remote="true"
     >
       <i class="fas fa-circle" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Unread {{ this.store.unreadCount }}
+      Unread {{ $store.data.unreadCount }}
     </a>
     <a
       v-on:click="loadType('read')"
@@ -32,7 +32,7 @@
       data-remote="true"
     >
       <i class="far fa-circle" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Read {{ this.store.readCount }}
+      Read {{ $store.data.readCount }}
     </a>
     <a
       v-on:click="loadType('star')"
@@ -45,7 +45,7 @@
       data-remote="true"
     >
       <i class="far fa-heart" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Star {{ this.store.starCount }}
+      Star {{ $store.data.starCount }}
     </a>
     <a
       v-on:click="loadType('hot')"
@@ -58,7 +58,7 @@
       data-remote="true"
     >
       <i class="far fa-heart" data-fa-transform="down-0 shrink-0 left-5"></i>
-      Hot {{ this.store.hotCount }}
+      Hot {{ $store.data.hotCount }}
     </a>
   </div>
 </template>
@@ -168,14 +168,7 @@
 </style>
 
 <script>
-import store from "../store";
-
 export default {
-  data() {
-    return {
-      store: store
-    };
-  },
   methods: {
     loadType: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
