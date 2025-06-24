@@ -3,7 +3,7 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 
 //progressive web app
-import './registerServiceWorker'
+import './services/registerServiceWorker.js'
 
 import { BootstrapIcon } from '@dvuckovic/vue3-bootstrap-icons'
 import { injectBootstrapIcons } from '@dvuckovic/vue3-bootstrap-icons/utils'
