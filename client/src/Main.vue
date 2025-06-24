@@ -112,8 +112,8 @@ html, #app, body {
 import store from "./store";
 import axios from 'axios';
 
-//set auth header
-axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
+// Import the session store
+//import { useSessionStore } from './store/auth.js';
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
@@ -137,6 +137,9 @@ export default {
     appModal: Modal,
     appMobile: Mobile
   },
+	created() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+	},
   data() {
     return {
       category: {},
@@ -263,51 +266,55 @@ export default {
       }
     },
     getOverview: async function(initial) {
-      //get an overview with the count for all feeds
-      await axios
-        .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview")
-        .then(response => {
-          return response;
-        })
-        .then(response => {
-          //set offlineStatus to false
-          this.offlineStatus = false;
+      await setTimeout(() => {
+        //get an overview with the count for all feeds
+        //const session = useSessionStore();
+        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        axios
+          .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview")
+          .then(response => {
+            return response;
+          })
+          .then(response => {
+            //set offlineStatus to false
+            this.offlineStatus = false;
 
-          //update the store counts
-          var previousUnreadCount = this.store.unreadCount;
-          this.store.unreadCount = response.data.unreadCount;
-          this.store.readCount = response.data.readCount;
-          this.store.starCount = response.data.starCount;
-          this.store.hotCount = response.data.hotCount;
+            //update the store counts
+            var previousUnreadCount = this.store.unreadCount;
+            this.store.unreadCount = response.data.unreadCount;
+            this.store.readCount = response.data.readCount;
+            this.store.starCount = response.data.starCount;
+            this.store.hotCount = response.data.hotCount;
 
-          //set PWA badge using unread count
-          if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
-            navigator.setAppBadge(response.data.unreadCount);
-          }
-
-          //update the categories in the store
-          this.store.categories = response.data.categories;
-
-          //update newUnreads count, so we could show a message that new content is ready
-          if (!initial) {
-            this.store.newUnreads = response.data.unreadCount - previousUnreadCount;
-          }
-
-          //update local category and feed based on current selection
-          if (initial === true) {
-            this.updateSelection(this.store.currentSelection);
-          } else {
-            //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
-            if (previousUnreadCount < response.data.unreadCount) {
-              this.showNotification(response.data.unreadCount - previousUnreadCount);
+            //set PWA badge using unread count
+            if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
+              navigator.setAppBadge(response.data.unreadCount);
             }
-          }
-        })
-        .catch(error => {
-          console.error("There was an error!", error);
-          this.store.auth.token = null;
-          this.offlineStatus = true;
-        });
+
+            //update the categories in the store
+            this.store.categories = response.data.categories;
+
+            //update newUnreads count, so we could show a message that new content is ready
+            if (!initial) {
+              this.store.newUnreads = response.data.unreadCount - previousUnreadCount;
+            }
+
+            //update local category and feed based on current selection
+            if (initial === true) {
+              this.updateSelection(this.store.currentSelection);
+            } else {
+              //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
+              if (previousUnreadCount < response.data.unreadCount) {
+                this.showNotification(response.data.unreadCount - previousUnreadCount);
+              }
+            }
+          })
+          .catch(error => {
+            console.error("There was an error!", error);
+            //this.store.auth.token = null;
+            this.offlineStatus = true;
+          });
+      }, 1000);
     },
     showNotification: async function (input) {
       if ('serviceWorker' in navigator) {

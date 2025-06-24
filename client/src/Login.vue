@@ -108,11 +108,10 @@ export default {
         const response = await AuthService.login(credentials);
         this.message = response.message;
 
-        //setup session if token was found in return message
+        //set token in store and redirect to home
         if (response) {
-          this.store.auth.userId = response.user.id;
-          this.store.auth.token = response.token;
-          this.store.auth.status = "LoggedIn";
+          this.$store.auth.setToken(response.token);
+          this.$router.push('/');
         }
 
       } catch (error) {

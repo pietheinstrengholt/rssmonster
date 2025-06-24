@@ -378,8 +378,6 @@ div.option {
 import draggable from "vuedraggable";
 import store from "../store";
 import axios from 'axios';
-//set auth header
-axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
 export default {
   data() {
@@ -393,11 +391,15 @@ export default {
       hotCount: 0
     };
   },
+  created() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+  },
   components: {
     draggable
   },
   methods: {
     logout() {
+      console.log("logout");
       this.store.auth.token = null;
     },
     emitClickEvent(eventType, value) {

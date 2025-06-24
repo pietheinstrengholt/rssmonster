@@ -8,9 +8,6 @@ import InfiniteScroll from "./InfiniteScroll.vue";
 import store from "../store";
 import axios from 'axios';
 
-//set auth header
-axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
-
 export default {
   components: {
     InfiniteScroll
@@ -53,13 +50,14 @@ export default {
   },
   created: function() {
     window.addEventListener("scroll", this.handleScroll);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
   unmounted: function() {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
     setTimeout(() => {
-      if (this.store.auth.token) {
+      if (this.$store.auth.token) {
         //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
         axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
             return response;
@@ -169,6 +167,7 @@ export default {
         //only fetch article details if the container is filled with items
         if (this.container.length > 0) {
           //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
+          axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
           axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
               articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
               sort: this.store.currentSelection.sort
