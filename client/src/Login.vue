@@ -108,10 +108,9 @@ export default {
 
         //set token in store and redirect to home
         if (response) {
-          this.$store.auth.setToken(response.token);
-          this.$router.push('/');
+          await this.$store.auth.setToken(response.token);
+          await this.$router.push('/');
         }
-
       } catch (error) {
         console.log(error);
         if (error.response.data.message) {
