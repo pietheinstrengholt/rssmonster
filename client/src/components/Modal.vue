@@ -290,10 +290,12 @@ div.close, button.close {
 import store from "../store";
 import axios from 'axios';
 //set auth header
-axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
 export default {
   props: ["inputCategory", "inputFeed"],
+  created: function() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+  },
   data() {
     return {
       store: store,

@@ -239,14 +239,15 @@ span.feed_name a {
 import moment from "moment";
 import store from "../store";
 import axios from 'axios';
-//set auth header
-axios.defaults.headers.common['Authorization'] = `Bearer ${store.auth.token}`;
 
 export default {
   data() {
     return {
       store: store
     };
+  },
+  created() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
   props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId'],
   computed: {

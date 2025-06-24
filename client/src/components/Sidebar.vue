@@ -400,7 +400,7 @@ export default {
   methods: {
     logout() {
       console.log("logout");
-      this.store.auth.token = null;
+      this.$store.auth.setToken(null);
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
