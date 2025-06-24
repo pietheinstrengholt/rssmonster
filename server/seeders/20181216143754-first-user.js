@@ -1,10 +1,9 @@
-import bcrypt from "bcryptjs";
 'use strict';
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.bulkInsert('users', [{
-      name: 'rssmonster',
-      password: bcrypt.hash('rssmonster'),
+      username: 'rssmonster',
+      password: "$2a$12$1XdLGt8wKPV4YOsrpCHZX.99JD8uWIThKJFBTp/HoZ8PhWHYcr5.q", // 'rssmonster'
       createdAt: Sequelize.literal('NOW()'),
       updatedAt: Sequelize.literal('NOW()')
     }], {});
