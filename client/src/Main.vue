@@ -306,7 +306,7 @@ export default {
           })
           .catch(error => {
             console.error("There was an error!", error);
-            this.$store.data.auth.token = null;
+            this.$store.auth.setToken(null);
             this.offlineStatus = true;
           });
       }, 50);
