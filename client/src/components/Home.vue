@@ -54,21 +54,19 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
-    setTimeout(() => {
-      if (this.$store.auth.token) {
-        //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-        axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
-            return response;
-          })
-          .then(response => {
-            //update the currentSelection. This will trigger the watch to get the articles
-            this.$store.data.setCurrentSelection(response.data);
-          }
-        ).catch((error) => {
-          this.$store.auth.token = null;
-        });
-      }
-     }, 50);
+    if (this.$store.auth.token) {
+      //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
+      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
+          return response;
+        })
+        .then(response => {
+          //update the currentSelection. This will trigger the watch to get the articles
+          this.$store.data.setCurrentSelection(response.data);
+        }
+      ).catch((error) => {
+        this.$store.auth.token = null;
+      });
+    }
   },
   methods: {
     fetchArticleIds(data) {
@@ -223,7 +221,7 @@ export default {
       //make ajax request to change read status
       await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
         response => {
-          this.increaseReadCount(response.data);
+          this.$store.data.increaseReadCount(response.data);
         },
         response => {
           /* eslint-disable no-console */
@@ -231,27 +229,6 @@ export default {
           /* eslint-enable no-console */
         }
       );
-    },
-    increaseReadCount(article) {
-      //find the category and feed index
-      var categoryIndex = this.$store.data.categories.findIndex(category => category.id === article.feed.categoryId);
-      var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
-      //increase the read count and decrease the unread count
-      //avoid having any negative numbers
-      if (this.$store.data.categories[categoryIndex].unreadCount > 0) {
-        this.$store.data.categories[categoryIndex].unreadCount = this.$store.data.categories[categoryIndex].unreadCount - 1;
-        this.$store.data.categories[categoryIndex].readCount = this.$store.data.categories[categoryIndex].readCount + 1;
-      }
-      //avoid having any negative numbers
-      if (this.$store.data.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
-        this.$store.data.categories[categoryIndex].feeds[feedIndex].unreadCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
-        this.$store.data.categories[categoryIndex].feeds[feedIndex].readCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].readCount + 1;
-      }
-      //increase total counts
-      if (this.$store.data.unreadCount > 0) {
-        this.$store.data.readCount = this.$store.data.readCount + 1;
-        this.$store.data.unreadCount = this.$store.data.unreadCount - 1;
-      }
     }
   }
 };

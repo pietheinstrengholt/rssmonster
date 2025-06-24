@@ -397,7 +397,7 @@ export default {
   },
   methods: {
     logout() {
-      console.log("logout");
+      //remove token from store, user will be redirected to login page by the watcher
       this.$store.auth.setToken(null);
     },
     emitClickEvent(eventType, value) {
@@ -482,13 +482,6 @@ export default {
           /* eslint-enable no-console */
         }
       );
-    }
-  },
-  //watch the refreshCategories, when changing, reload the categories
-  watch: {
-    composedSum: function(val) {
-      //TODO: investigate why this is needed
-      this.$store.data.composedSum = val;
     }
   },
   computed: {

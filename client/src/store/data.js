@@ -16,7 +16,8 @@ export const useStore = defineStore('data', {
     starCount: 0,
     hotCount: 0,
     showModal: false,
-    newUnreads: 0
+    newUnreads: 0,
+    refreshCategories: 0
   }),
   actions: {
     setCategories(categories) {
@@ -48,6 +49,38 @@ export const useStore = defineStore('data', {
     },
     setNewUnreads(count) {  
       this.newUnreads = count;
+    },
+    increaseStarCount() {
+      this.starCount++;
+    },
+    decreaseStarCount() {
+      if (this.starCount > 0) {
+        this.starCount--;
+      }
+    },
+    increaseReadCount(article) {
+      //find the category and feed index
+      var categoryIndex = this.categories.findIndex(category => category.id === article.feed.categoryId);
+      var feedIndex = this.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
+      //increase the read count and decrease the unread count
+      //avoid having any negative numbers
+      if (this.categories[categoryIndex].unreadCount > 0) {
+        this.categories[categoryIndex].unreadCount = this.categories[categoryIndex].unreadCount - 1;
+        this.categories[categoryIndex].readCount = this.categories[categoryIndex].readCount + 1;
+      }
+      //avoid having any negative numbers
+      if (this.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
+        this.categories[categoryIndex].feeds[feedIndex].unreadCount = this.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
+        this.categories[categoryIndex].feeds[feedIndex].readCount = this.categories[categoryIndex].feeds[feedIndex].readCount + 1;
+      }
+      //increase total counts
+      if (this.unreadCount > 0) {
+        this.readCount = this.readCount + 1;
+        this.unreadCount = this.unreadCount - 1;
+      }
+    },
+    increaseRefreshCategories() {
+      this.refreshCategories++;
     }
   },
   getters: {

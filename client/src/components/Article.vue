@@ -300,8 +300,8 @@ export default {
                 var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
                 this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount - 1;
 
-                //also increase total count
-                this.$store.data.starCount = this.$store.data.starCount - 1;
+                //also decrease star count
+                this.$store.data.decreaseStarCount();
               },
               response => {
                 /* eslint-disable no-console */
@@ -323,8 +323,8 @@ export default {
                 var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
                 this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount + 1;
 
-                //also increase total count
-                this.$store.data.starCount = this.$store.data.starCount + 1;
+                //also increase star count
+                this.$store.data.increaseStarCount();
               },
               response => {
                 /* eslint-disable no-console */

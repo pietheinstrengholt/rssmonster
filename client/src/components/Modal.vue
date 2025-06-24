@@ -309,14 +309,14 @@ export default {
   //watchers are used to avoid two way binding.
   //a copy of the data used and only the central store is updated, once we know for sure the api has returned a 200 status.
   watch: {
-    "store.categories": {
+    "$store.data.categories": {
       handler: function(data) {
         this.categories = data;
       },
       deep: true
     },
-    "store.showModal": {
-      handler: function(data) {
+    "$store.data.showModal": {
+      handler: function() {
         this.categories = JSON.parse(JSON.stringify(this.$store.data.categories));
         this.selectedCategory = this.$store.data.currentSelection.categoryId;
 
@@ -424,8 +424,7 @@ export default {
         );
 
       //send event to refresh the categories
-      //TODO: investigate this
-      this.store.refreshCategories++;
+      this.$store.data.increaseRefreshCategories();
 
       //close modal
       this.closeModal();
@@ -454,8 +453,7 @@ export default {
         );
 
       //send event to refresh the categories
-      //TODO: investigate this
-      this.store.refreshCategories++;
+      this.$store.data.increaseRefreshCategories();
 
       //close modal
       this.closeModal();
