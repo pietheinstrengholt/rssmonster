@@ -9,8 +9,8 @@
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
-        <li class="category" v-on:click="store.currentSelection.categoryId = '%'; store.currentSelection.feedId = '%';"
-        v-bind:class="{'selected': store.currentSelection.categoryId == '%'}">
+        <li class="category" v-on:click="$store.data.currentSelection.categoryId = '%'; $store.data.currentSelection.feedId = '%';"
+        v-bind:class="{'selected': $store.data.currentSelection.categoryId == '%'}">
           <span class="glyphicon">
             <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
           </span>
@@ -18,8 +18,8 @@
         </li>
         <li
           class="category"
-          v-on:click="store.currentSelection.categoryId = category.id; store.currentSelection.feedId = '%';"
-          v-bind:class="{'selected': store.currentSelection.categoryId === category.id}"
+          v-on:click="$store.data.currentSelection.categoryId = category.id; $store.data.currentSelection.feedId = '%';"
+          v-bind:class="{'selected': $store.data.currentSelection.categoryId === category.id}"
           v-for="category in store.categories"
           :key="category.id"
           v-bind:id="category.id"
@@ -31,8 +31,8 @@
         </li>
       </ul>
       <p class="content-header">Select how the articles should be displayed</p>
-      <button @click="store.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
-      <button @click="store.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
+      <button @click="$store.data.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
+      <button @click="$store.data.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
 
       <p class="content-header">Refresh feeds</p>
       <button @click="refreshFeeds()" type="button" class="btn btn-danger">Refresh feeds</button>
@@ -144,15 +144,8 @@ p.content-header {
 </style>
 
 <script>
-import store from "../store";
-
 export default {
   props: ["mobile"],
-  data() {
-    return {
-      store: store
-    };
-  },
   methods: {
     closeModal: function() {
       this.emitClickEvent("mobile", null);

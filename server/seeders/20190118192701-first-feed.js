@@ -2,6 +2,7 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.bulkInsert('feeds', [{
+      userId: 1,
       categoryId: 1,
       feedName: 'reddit.com',
       feedDesc: 'reddit: the front page of the internet',
@@ -12,7 +13,7 @@ module.exports = {
     }], {});
   },
 
-  down: (queryInterface, Sequelize) => {
+  down: (queryInterface) => {
     return queryInterface.bulkDelete('feeds', null, {});
   }
 };

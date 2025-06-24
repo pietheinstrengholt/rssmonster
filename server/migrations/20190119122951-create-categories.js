@@ -8,6 +8,18 @@ module.exports = {
         allowNull: false,
         primaryKey: true
       },
+      // It is possible to create foreign keys:
+      userId: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        references: {
+          // This is a reference to another model
+          model: "users",
+
+          // This is the column name of the referenced model
+          key: "id"
+        }
+      },
       name: {
         type: Sequelize.STRING,
         allowNull: false
@@ -27,7 +39,7 @@ module.exports = {
       collate: "utf8mb4_unicode_ci"
     });
   },
-  down: (queryInterface, Sequelize) => {
+  down: (queryInterface) => {
     return queryInterface.dropTable('categories');
   }
 };

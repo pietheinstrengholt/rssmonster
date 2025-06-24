@@ -1,11 +1,10 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance">
   </InfiniteScroll>
 </template>
 
 <script>
 import InfiniteScroll from "./InfiniteScroll.vue";
-import store from "../store";
 import axios from 'axios';
 
 export default {
@@ -14,7 +13,6 @@ export default {
   },
   data() {
     return {
-      store: store,
       //distance is used to keep track of the current position in the container
       distance: 0,
       //amount of article leaded at once
@@ -41,7 +39,7 @@ export default {
   },
   //watch the currentSelection, fetch articleIds when detecting changes
   watch: {
-    "store.currentSelection": {
+    "$store.data.currentSelection": {
       handler: function(data) {
         this.fetchArticleIds(data);
       },
@@ -50,20 +48,25 @@ export default {
   },
   created: function() {
     window.addEventListener("scroll", this.handleScroll);
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
   unmounted: function() {
     window.removeEventListener("scroll", this.handleScroll);
   },
   beforeCreate() {
-    //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-    axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
-        return response;
-      })
-      .then(response => {
-        //update the currentSelection. This will trigger the watch to get the articles
-        this.store.currentSelection = response.data;
-      }
-    );
+    if (this.$store.auth.token) {
+      //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
+      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
+          return response;
+        })
+        .then(response => {
+          //update the currentSelection. This will trigger the watch to get the articles
+          this.$store.data.setCurrentSelection(response.data);
+        }
+      ).catch((error) => {
+        this.$store.auth.token = null;
+      });
+    }
   },
   methods: {
     fetchArticleIds(data) {
@@ -162,7 +165,7 @@ export default {
           //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
           axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
               articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
-              sort: this.store.currentSelection.sort
+              sort: this.$store.data.currentSelection.sort
             })
             .then(response => {
               //change hasLoadedContent. This removes the loading icon from the front-page
@@ -186,7 +189,7 @@ export default {
     addToPool(articleId) {
       if (!this.pool.includes(articleId)) {
         this.pool.push(articleId);
-        if (this.store.currentSelection.status === "unread") {
+        if (this.$store.data.currentSelection.status === "unread") {
           //mark article as read
           this.markArticleRead(articleId);
         }
@@ -195,7 +198,7 @@ export default {
     async flushPool() {
       //check if the container has a length and if the pool is not flushed yet
       if (this.container.length && this.isFlushed === false) {
-        if (this.store.currentSelection.status === "unread") {
+        if (this.$store.data.currentSelection.status === "unread") {
           //loop through the container and mark every item that is not part of the pool as read
           for (var i in this.container) {
             if (!this.pool.includes(this.container[i])) {
@@ -218,7 +221,7 @@ export default {
       //make ajax request to change read status
       await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
         response => {
-          this.increaseReadCount(response.data);
+          this.$store.data.increaseReadCount(response.data);
         },
         response => {
           /* eslint-disable no-console */
@@ -226,27 +229,6 @@ export default {
           /* eslint-enable no-console */
         }
       );
-    },
-    increaseReadCount(article) {
-      //find the category and feed index
-      var categoryIndex = this.store.categories.findIndex(category => category.id === article.feed.categoryId);
-      var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
-      //increase the read count and decrease the unread count
-      //avoid having any negative numbers
-      if (this.store.categories[categoryIndex].unreadCount > 0) {
-        this.store.categories[categoryIndex].unreadCount = this.store.categories[categoryIndex].unreadCount - 1;
-        this.store.categories[categoryIndex].readCount = this.store.categories[categoryIndex].readCount + 1;
-      }
-      //avoid having any negative numbers
-      if (this.store.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
-        this.store.categories[categoryIndex].feeds[feedIndex].unreadCount = this.store.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
-        this.store.categories[categoryIndex].feeds[feedIndex].readCount = this.store.categories[categoryIndex].feeds[feedIndex].readCount + 1;
-      }
-      //increase total counts
-      if (this.store.unreadCount > 0) {
-        this.store.readCount = this.store.readCount + 1;
-        this.store.unreadCount = this.store.unreadCount - 1;
-      }
     }
   }
 };

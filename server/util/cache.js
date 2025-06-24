@@ -7,13 +7,14 @@ const Op = Sequelize.Op;
 // stdTTL: time to live in seconds for every generated cache element.
 const cache = new NodeCache({ stdTTL: 14 * 24 * 60 * 60 })
 
-export const set = (url) => {
+export const set = (url, userId) => {
   //set cache
-  cache.set(url)
+  cache.set(url, userId)
 
   //store in database
   Hotlink.create({
-    url: url
+    url: url,
+    userId: userId
   });
 }
 
@@ -46,7 +47,7 @@ export const init = async () => {
   //next we push all ids to an array
   if (hotlinks.length > 0) {
     hotlinks.forEach(hotlink => {
-      cache.set(hotlink.url);
+      cache.set(hotlink.url, hotlink.userId);
     });
   }
 }

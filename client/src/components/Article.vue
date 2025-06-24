@@ -13,10 +13,10 @@
           </span>
         </div>
       </div>
-      <div v-if="store.filter === 'full'" class="article-content">
+      <div v-if="$store.data.filter === 'full'" class="article-content">
         <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
       </div>
-      <div v-if="store.filter === 'minimal'" class="article-content">
+      <div v-if="$store.data.filter === 'minimal'" class="article-content">
         <p class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'">{{ stripHTML(content) }}</p>
       </div>
     </div>
@@ -237,14 +237,11 @@ span.feed_name a {
 
 <script>
 import moment from "moment";
-import store from "../store";
 import axios from 'axios';
 
 export default {
-  data() {
-    return {
-      store: store
-    };
+  created() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
   props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId'],
   computed: {
@@ -296,15 +293,15 @@ export default {
             .then(
               response => {
                 //decrease the star count
-                var categoryIndex = this.store.categories.findIndex(
+                var categoryIndex = this.$store.data.categories.findIndex(
                   category => category.id === response.data.feed.categoryId
                 );
-                this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount - 1;
-                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
-                this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount - 1;
+                this.$store.data.categories[categoryIndex].starCount = this.$store.data.categories[categoryIndex].starCount - 1;
+                var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
+                this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount - 1;
 
-                //also increase total count
-                this.store.starCount = this.store.starCount - 1;
+                //also decrease star count
+                this.$store.data.decreaseStarCount();
               },
               response => {
                 /* eslint-disable no-console */
@@ -319,15 +316,15 @@ export default {
             .then(
               response => {
                 //increase the star count
-                var categoryIndex = this.store.categories.findIndex(
+                var categoryIndex = this.$store.data.categories.findIndex(
                   category => category.id === response.data.feed.categoryId
                 );
-                this.store.categories[categoryIndex].starCount = this.store.categories[categoryIndex].starCount + 1;
-                var feedIndex = this.store.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
-                this.store.categories[categoryIndex].feeds[feedIndex].starCount = this.store.categories[categoryIndex].feeds[feedIndex].starCount + 1;
+                this.$store.data.categories[categoryIndex].starCount = this.$store.data.categories[categoryIndex].starCount + 1;
+                var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
+                this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount + 1;
 
-                //also increase total count
-                this.store.starCount = this.store.starCount + 1;
+                //also increase star count
+                this.$store.data.increaseStarCount();
               },
               response => {
                 /* eslint-disable no-console */

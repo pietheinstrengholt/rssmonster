@@ -4,6 +4,11 @@ import { sequelize } from '../util/database.js';
 export const Hotlink = sequelize.define(
   "hotlinks",
   {
+    userId: {
+      type: Sequelize.STRING,
+      autoIncrement: false,
+      allowNull: false,
+    },
     url: {
       type: Sequelize.STRING,
       allowNull: false

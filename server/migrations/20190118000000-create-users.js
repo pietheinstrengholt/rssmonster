@@ -2,26 +2,31 @@
 module.exports = {
   up: (queryInterface, Sequelize) => {
     return queryInterface.createTable(
-      "hotlinks",
+      "users",
       {
-        userId: {
+        id: {
           type: Sequelize.INTEGER,
+          autoIncrement: true,
           allowNull: false,
-          references: {
-            // This is a reference to another model
-            model: "users",
-
-            // This is the column name of the referenced model
-            key: "id"
-          }
+          primaryKey: true
         },
-        url: {
-          type: Sequelize.TEXT('medium'),
+        username: {
+          type: Sequelize.STRING,
           allowNull: false
+        },
+        password: {
+          type: Sequelize.STRING,
+          allowNull: false
+        },
+        lastLogin: {
+          type: Sequelize.DATE
         },
         createdAt: {
           type: Sequelize.DATE
         },
+        updatedAt: {
+          type: Sequelize.DATE
+        }
       },
       {
         charset: "utf8mb4",
@@ -30,6 +35,6 @@ module.exports = {
     );
   },
   down: (queryInterface) => {
-    return queryInterface.dropTable("hotlinks");
+    return queryInterface.dropTable("users");
   }
 };
