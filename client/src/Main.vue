@@ -306,11 +306,10 @@ export default {
           })
           .catch(error => {
             console.error("There was an error!", error);
-            //TODO: investigate
-            //this.$store.data.auth.token = null;
+            this.$store.data.auth.token = null;
             this.offlineStatus = true;
           });
-      }, 1000);
+      }, 50);
     },
     showNotification: async function (input) {
       if ('serviceWorker' in navigator) {
