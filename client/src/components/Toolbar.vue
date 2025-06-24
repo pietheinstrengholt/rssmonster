@@ -1,7 +1,7 @@
 <template>
   <div class="toolbar">
     <div class="status-toolbar" @click="toggleShowStatus">
-      <p id="status">{{ capitalize(this.store.currentSelection.status) }}</p>
+      <p id="status">{{ capitalize($store.data.currentSelection.status) }}</p>
     </div>
     <div v-if="showStatusMenu" class="dropdownmenu" id="status">
       <div class="item" href="#" @click="statusClicked('unread')">
@@ -29,8 +29,8 @@
       </div>
     </div>
     <div class="status-toolbar" @click="toggleShowSort">
-      <p id="filter" v-if="this.store.currentSelection.sort == 'DESC'">Newest</p>
-      <p id="filter" v-if="this.store.currentSelection.sort == 'ASC'">Oldest</p>
+      <p id="filter" v-if="$store.data.currentSelection.sort == 'DESC'">Newest</p>
+      <p id="filter" v-if="$store.data.currentSelection.sort == 'ASC'">Oldest</p>
     </div>
     <div v-if="showSortMenu" class="dropdownmenu" id="sort">
       <div class="item" href="#" @click="sortClicked('ASC')">
@@ -180,7 +180,7 @@ export default {
   methods: {
     emitSearchEvent: function() {
       if (!(this.search === undefined || this.search === null)) {
-        this.store.currentSelection.search = this.search;
+        this.$store.data.currentSelection.search = this.search;
       }
     },
     toggleShowStatus: function() {
@@ -200,10 +200,10 @@ export default {
     },
     statusClicked: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.store.currentSelection.status) {
+      if (status == this.$store.data.currentSelection.status) {
         this.$emit('forceReload');
       } else {
-        this.store.currentSelection.status = status;
+        this.$store.data.currentSelection.status = status;
       }
       this.toggleShowStatus();
     },
@@ -212,7 +212,7 @@ export default {
       this.toggleShowFilter();
     },
     sortClicked: function(sort) {
-      this.store.currentSelection.sort = sort;
+      this.$store.data.currentSelection.sort = sort;
       this.toggleShowSort();
     }
   },

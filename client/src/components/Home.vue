@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="this.store.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance">
   </InfiniteScroll>
 </template>
 
@@ -41,7 +41,7 @@ export default {
   },
   //watch the currentSelection, fetch articleIds when detecting changes
   watch: {
-    "store.currentSelection": {
+    "$store.data.currentSelection": {
       handler: function(data) {
         this.fetchArticleIds(data);
       },
@@ -64,10 +64,10 @@ export default {
           })
           .then(response => {
             //update the currentSelection. This will trigger the watch to get the articles
-            this.store.currentSelection = response.data;
+            this.$store.data.setCurrentSelection(response.data);
           }
         ).catch((error) => {
-          this.store.auth.token = null;
+          this.$store.auth.token = null;
         });
       }
      }, 50);
@@ -169,7 +169,7 @@ export default {
           //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
           axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
               articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
-              sort: this.store.currentSelection.sort
+              sort: this.$store.data.currentSelection.sort
             })
             .then(response => {
               //change hasLoadedContent. This removes the loading icon from the front-page
@@ -193,7 +193,7 @@ export default {
     addToPool(articleId) {
       if (!this.pool.includes(articleId)) {
         this.pool.push(articleId);
-        if (this.store.currentSelection.status === "unread") {
+        if (this.$store.data.currentSelection.status === "unread") {
           //mark article as read
           this.markArticleRead(articleId);
         }
@@ -202,7 +202,7 @@ export default {
     async flushPool() {
       //check if the container has a length and if the pool is not flushed yet
       if (this.container.length && this.isFlushed === false) {
-        if (this.store.currentSelection.status === "unread") {
+        if (this.$store.data.currentSelection.status === "unread") {
           //loop through the container and mark every item that is not part of the pool as read
           for (var i in this.container) {
             if (!this.pool.includes(this.container[i])) {

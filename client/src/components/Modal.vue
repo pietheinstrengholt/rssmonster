@@ -127,13 +127,13 @@
               <div class="modal-body" id="mobile" v-if="this.store.showModal==='mobile'">
                 <p>Select which category you want to display</p>
                 <ul class="categories">
-                  <li class="category" v-on:click="store.currentSelection.categoryId = null">
+                  <li class="category" v-on:click="$store.data.currentSelection.categoryId = null">
                     <span class="glyphicon">
                       <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
                     </span>
                     <span>Show all categories</span>
                   </li>
-                  <li class="category" v-on:click="store.currentSelection.categoryId = category.id" v-for="category in store.categories" :key="category.id" v-bind:id="category.id">
+                  <li class="category" v-on:click="$store.data.currentSelection.categoryId = category.id" v-for="category in store.categories" :key="category.id" v-bind:id="category.id">
                     <span class="glyphicon">
                       <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
                     </span>
@@ -320,19 +320,19 @@ export default {
     "store.showModal": {
       handler: function(data) {
         this.categories = JSON.parse(JSON.stringify(this.store.categories));
-        this.selectedCategory = this.store.currentSelection.categoryId;
+        this.selectedCategory = this.$store.data.currentSelection.categoryId;
 
         //get initial starting values (copied data)
         this.categories = JSON.parse(JSON.stringify(this.store.categories));
-        this.selectedCategory = this.store.currentSelection.categoryId;
+        this.selectedCategory = this.$store.data.currentSelection.categoryId;
         //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
-        if (this.store.currentSelection.categoryId) {
+        if (this.$store.data.currentSelection.categoryId) {
           for (var x = 0; x < this.store.categories.length; x++) {
-            if (this.store.categories[x].id == this.store.currentSelection.categoryId) {
+            if (this.store.categories[x].id == this.$store.data.currentSelection.categoryId) {
               this.category = JSON.parse(JSON.stringify(this.store.categories[x]));
               //and also try to find the feed
               for (var i = 0; i < this.store.categories[x].feeds.length; i++) {
-                if (this.store.categories[x].feeds[i].id === this.store.currentSelection.feedId) {
+                if (this.store.categories[x].feeds[i].id === this.$store.data.currentSelection.feedId) {
                   this.feed = JSON.parse(JSON.stringify( this.store.categories[x].feeds[i]));
                 }
               }
@@ -498,8 +498,8 @@ export default {
           //close the modal
           this.closeModal();
           //set the selection back to all
-          this.store.currentSelection.categoryId = "%";
-          this.store.currentSelection.feedId = "%";
+          this.$store.data.currentSelection.categoryId = "%";
+          this.$store.data.currentSelection.feedId = "%";
         },
         response => {
           /* eslint-disable no-console */
@@ -519,8 +519,8 @@ export default {
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/cleanup").then(
         () => {
           //set the selection back to all and refresh the page
-          this.store.currentSelection.categoryId = "%";
-          this.store.currentSelection.feedId = "%";
+          this.$store.data.currentSelection.categoryId = "%";
+          this.$store.data.currentSelection.feedId = "%";
           location.reload();
         },
         response => {
@@ -534,7 +534,7 @@ export default {
     renameCategory: function() {
       //rename category
       axios
-        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.store.currentSelection.categoryId, {
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.currentSelection.categoryId, {
           name: this.category.name
         })
         .then(
@@ -558,7 +558,7 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.store.currentSelection.feedId).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
         () => {
           //find the index of both the category and feed
           var indexCategory = this.findIndexById(this.store.categories, this.inputCategory.id);
@@ -570,7 +570,7 @@ export default {
           );
 
           //set the feed selection back to all
-          this.store.currentSelection.feedId = "%";
+          this.$store.data.currentSelection.feedId = "%";
 
           //close the modal
           this.closeModal();
@@ -647,8 +647,8 @@ export default {
                 this.store.categories[indexCategory].feeds = this.arrayRemove(this.store.categories[indexCategory].feeds,this.inputFeed);
 
                 //change current selection
-                this.store.currentSelection.categoryId = this.selectedCategory;
-                this.store.currentSelection.feedId = this.inputFeed.id;
+                this.$store.data.currentSelection.categoryId = this.selectedCategory;
+                this.$store.data.currentSelection.feedId = this.inputFeed.id;
               }
             }
 

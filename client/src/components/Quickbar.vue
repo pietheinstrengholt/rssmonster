@@ -10,7 +10,7 @@
     ></a>
     <a
       v-on:click="loadType('unread')"
-      v-bind:class="{ 'selected':  store.currentSelection.status == 'unread' }"
+      v-bind:class="{ 'selected':  $store.data.currentSelection.status == 'unread' }"
       id="unread"
       class="view-button"
       title="View unread"
@@ -23,7 +23,7 @@
     </a>
     <a
       v-on:click="loadType('read')"
-      v-bind:class="{ 'selected':  store.currentSelection.status == 'read' }"
+      v-bind:class="{ 'selected':  $store.data.currentSelection.status == 'read' }"
       id="read"
       class="view-button"
       title="View read"
@@ -36,7 +36,7 @@
     </a>
     <a
       v-on:click="loadType('star')"
-      v-bind:class="{ 'selected':  store.currentSelection.status == 'star' }"
+      v-bind:class="{ 'selected':  $store.data.currentSelection.status == 'star' }"
       id="star"
       class="view-button"
       title="View starred"
@@ -49,7 +49,7 @@
     </a>
     <a
       v-on:click="loadType('hot')"
-      v-bind:class="{ 'selected':  store.currentSelection.status == 'hot' }"
+      v-bind:class="{ 'selected':  $store.data.currentSelection.status == 'hot' }"
       id="hot"
       class="view-button"
       title="View hot"
@@ -179,10 +179,10 @@ export default {
   methods: {
     loadType: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.store.currentSelection.status) {
+      if (status == this.$store.data.currentSelection.status) {
         this.$emit('forceReload');
       } else {
-        this.store.currentSelection.status = status;
+        this.$store.data.currentSelection.status = status;
       }
     },
     emitClickEvent(eventType, value) {

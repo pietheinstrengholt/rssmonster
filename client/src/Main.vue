@@ -112,9 +112,6 @@ html, #app, body {
 import store from "./store";
 import axios from 'axios';
 
-// Import the session store
-//import { useSessionStore } from './store/auth.js';
-
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
@@ -218,12 +215,12 @@ export default {
       }
       if (value == "renamefeed") {
         this.feed = this.lookupFeedById(
-          parseInt(this.store.currentSelection.feedId)
+          parseInt(this.$store.data.currentSelection.feedId)
         );
       }
       if (value == "renamecategory") {
         this.category = this.lookupCategoryById(
-          parseInt(this.store.currentSelection.categoryId)
+          parseInt(this.$store.data.currentSelection.categoryId)
         );
       }
     },
@@ -301,7 +298,7 @@ export default {
 
             //update local category and feed based on current selection
             if (initial === true) {
-              this.updateSelection(this.store.currentSelection);
+              this.updateSelection(this.$store.data.currentSelection);
             } else {
               //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
               if (previousUnreadCount < response.data.unreadCount) {
@@ -334,7 +331,7 @@ export default {
       //refresh the overview with updated categories and feeds counts
       this.getOverview(true);
       //invoke ref home child component function to reload content
-      this.$refs.home.fetchArticleIds(this.store.currentSelection);
+      this.$refs.home.fetchArticleIds(this.$store.data.currentSelection);
     },
     refreshFeeds() {
       //call sidebar refreshFeeds function
@@ -343,31 +340,31 @@ export default {
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
-    "store.currentSelection": {
+    "$store.data.currentSelection": {
       handler: function(data) {
         this.updateSelection(data);
       },
       deep: true
     },
-    "store.currentSelection.categoryId": {
+    "$store.data.currentSelection.categoryId": {
       handler: function() {
         this.feed = {};
       },
       deep: true
     },
-    "store.currentSelection.feedId": {
+    "$store.data.currentSelection.feedId": {
       handler: function() {
         this.closeModal();
       },
       deep: true
     },
-    "store.currentSelection.filter": {
+    "$store.data.currentSelection.filter": {
       handler: function() {
         this.closeModal();
       },
       deep: true
     },
-    "store.currentSelection.status": {
+    "$store.data.currentSelection.status": {
       handler: function() {
         this.closeModal();
       },

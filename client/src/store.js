@@ -1,11 +1,4 @@
 export default {
-    currentSelection: {
-        status: 'unread',
-        categoryId: '%',
-        feedId: '%',
-        search: null,
-        sort: 'DESC'
-    },
     filter: 'full',
     categories: [],
     unreadCount: 0,
@@ -13,10 +6,5 @@ export default {
     starCount: 0,
     hotCount: 0,
     showModal: false,
-    newUnreads: 0,
-    auth: {
-        userId: null,
-        status: null,
-        token: null
-    }
+    newUnreads: 0
 }
