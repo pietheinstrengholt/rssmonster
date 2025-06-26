@@ -155,7 +155,8 @@ export default {
     },
     showNewFeed() {
       this.emitClickEvent("mobile", null);
-      this.$emit("modal", "newfeed");
+      //TODO: fix this
+      //this.$emit("modal", "newfeed");
     },
     refreshFeeds() {
       this.$emit('refresh');

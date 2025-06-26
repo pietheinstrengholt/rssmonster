@@ -3,7 +3,7 @@
     <div class="row">
       <div id="sidebar" class="col-md-3 col-sm-0">
         <!-- Sidebar events -->
-        <app-sidebar ref="sidebar" @modal="modalClick" @forceReload="forceReload"></app-sidebar>
+        <app-sidebar ref="sidebar" @forceReload="forceReload"></app-sidebar>
       </div>
       <div id="home" class="col-md-9 offset-md-3 col-sm-12">
         <!-- Quickbar events -->
@@ -15,10 +15,22 @@
         <app-home ref="home"></app-home>
       </div>
     </div>
-    <!-- Modal events -->
-    <app-modal @modal="modalClick" :modal="modal" :input-category="category" :input-feed="feed"></app-modal>
     <!-- Mobile events -->
-    <app-mobile :mobile="mobile" @mobile="mobileClick" @modal="modalClick" @refresh="refreshFeeds"></app-mobile>
+    <app-mobile :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile>
+
+    <!-- New category modal -->
+    <app-new-category v-if="$store.data.getShowModal === 'NewCategory'"></app-new-category>
+    <!-- New feed modal -->
+    <app-new-feed v-if="$store.data.getShowModal === 'NewFeed'"></app-new-feed>
+    <!-- Delete category modal -->
+    <app-delete-category v-if="$store.data.getShowModal === 'DeleteCategory'"></app-delete-category>
+    <!-- Delete feed modal -->
+    <app-delete-feed v-if="$store.data.getShowModal === 'DeleteFeed'"></app-delete-feed>
+    <!-- Rename category modal -->
+    <app-rename-category v-if="$store.data.getShowModal === 'RenameCategory'"></app-rename-category>
+    <!-- Rename feed modal -->
+    <app-rename-feed v-if="$store.data.getShowModal === 'RenameFeed'"></app-rename-feed>
+
   </div>
 </template>
 
@@ -121,8 +133,15 @@ import { defineAsyncComponent } from 'vue'
 const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue"));
 const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue"));
 const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
-const Modal = defineAsyncComponent(() =>  import(/* webpackChunkName: "modal" */ "./components/Modal.vue"));
 const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
+
+//import modals
+const NewCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "newcategory" */ "./components/Modal/NewCategory.vue"));
+const NewFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "newfeed" */ "./components/Modal/NewFeed.vue"));
+const DeleteCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletecategory" */ "./components/Modal/DeleteCategory.vue"));
+const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletefeed" */ "./components/Modal/DeleteFeed.vue"));
+const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/Modal/RenameCategory.vue"));
+const RenameFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamefeed" */ "./components/Modal/RenameFeed.vue"));
 
 export default {
   components: {
@@ -130,8 +149,14 @@ export default {
     appHome: Home,
     appToolbar: Toolbar,
     appQuickbar: Quickbar,
-    appModal: Modal,
-    appMobile: Mobile
+    appMobile: Mobile,
+    //import modals
+    appNewCategory: NewCategory,
+    appNewFeed: NewFeed,
+    appDeleteCategory: DeleteCategory,
+    appDeleteFeed: DeleteFeed,
+    appRenameCategory: RenameCategory,
+    appRenameFeed: RenameFeed
   },
 	created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
@@ -140,7 +165,6 @@ export default {
     return {
       category: {},
       feed: {},
-      modal: false,
       mobile: null,
       notificationStatus: null,
       offlineStatus: false
@@ -199,29 +223,6 @@ export default {
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
   methods: {
-    closeModal: function() {
-      this.error_msg = "";
-      this.$store.data.showModal = false;
-    },
-    modalClick: function(value) {
-      this.$store.data.showModal = value;
-      if (value == "newfeed") {
-        this.feed = {};
-      }
-      if (value == "newcategory") {
-        this.category = {};
-      }
-      if (value == "renamefeed") {
-        this.feed = this.lookupFeedById(
-          parseInt(this.$store.data.getSelectedFeedId)
-        );
-      }
-      if (value == "renamecategory") {
-        this.category = this.lookupCategoryById(
-          parseInt(this.$store.data.getSelectedCategoryId)
-        );
-      }
-    },
     mobileClick: function(value) {
       this.mobile = value;
     },
@@ -347,24 +348,6 @@ export default {
     "$store.data.currentSelection.categoryId": {
       handler: function() {
         this.feed = {};
-      },
-      deep: true
-    },
-    "$store.data.currentSelection.feedId": {
-      handler: function() {
-        this.closeModal();
-      },
-      deep: true
-    },
-    "$store.data.currentSelection.filter": {
-      handler: function() {
-        this.closeModal();
-      },
-      deep: true
-    },
-    "$store.data.currentSelection.status": {
-      handler: function() {
-        this.closeModal();
       },
       deep: true
     },
