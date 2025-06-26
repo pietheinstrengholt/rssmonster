@@ -84,35 +84,35 @@ export const useStore = defineStore('data', {
     }
   },
   getters: {
-    getCategories: state => {
-      return state.categories
+    getCategories() {
+      return this.categories
     },
-    getCurrentSelection: state => {
-      return state.currentSelection
+    getCurrentSelection() {
+      return this.currentSelection
     },
-    getFilter: state => {
-      return state.filter
+    getFilter() {
+      return this.filter
     },
-    getCategories: state => {
-      return state.categories
+    getCategories() {
+      return this.categories
     },
-    getUnreadCount: state => {
-      return state.unreadCount
+    getUnreadCount() {
+      return this.unreadCount
     },
-    getReadCount: state => {
-      return state.readCount
+    getReadCount() {
+      return this.readCount
     },
-    getStarCount: state => {
-      return state.starCount
+    getStarCount() {
+      return this.starCount
     },
-    getHotCount: state => {
-      return state.hotCount
+    getHotCount() {
+      return this.hotCount
     },
-    getShowModal: state => {
-      return state.showModal
+    getShowModal() {
+      return this.showModal
     },
-    getNewUnreads: state => {
-      return state.newUnreads
+    getNewUnreads() {
+      return this.newUnreads
     }
   }
 });

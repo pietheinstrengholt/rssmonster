@@ -53,19 +53,17 @@ export default {
   unmounted: function() {
     window.removeEventListener("scroll", this.handleScroll);
   },
-  beforeCreate() {
+  async beforeCreate() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
     if (this.$store.auth.token) {
       //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-      axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting").then(response => {
-          return response;
-        })
-        .then(response => {
-          //update the currentSelection. This will trigger the watch to get the articles
-          this.$store.data.setCurrentSelection(response.data);
-        }
-      ).catch((error) => {
+      try {
+        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting");
+        await this.$store.data.setCurrentSelection(response.data);
+      } catch (error) {
+        console.error("Error fetching settings:", error);
         this.$store.auth.token = null;
-      });
+      }
     }
   },
   methods: {
