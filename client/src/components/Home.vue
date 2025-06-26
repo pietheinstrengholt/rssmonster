@@ -54,17 +54,8 @@ export default {
     window.removeEventListener("scroll", this.handleScroll);
   },
   async beforeCreate() {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-    if (this.$store.auth.token) {
-      //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-      try {
-        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting");
-        await this.$store.data.setCurrentSelection(response.data);
-      } catch (error) {
-        console.error("Error fetching settings:", error);
-        this.$store.auth.token = null;
-      }
-    }
+    //fetch the current selection by triggering the action in the store
+    await this.$store.data.fetchCurrentSelection(this.$store.auth.token);
   },
   methods: {
     fetchArticleIds(data) {
@@ -163,7 +154,7 @@ export default {
           //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
           axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
               articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
-              sort: this.$store.data.currentSelection.sort
+              sort: this.$store.data.getSelectedSort
             })
             .then(response => {
               //change hasLoadedContent. This removes the loading icon from the front-page
@@ -187,7 +178,7 @@ export default {
     addToPool(articleId) {
       if (!this.pool.includes(articleId)) {
         this.pool.push(articleId);
-        if (this.$store.data.currentSelection.status === "unread") {
+        if (this.$store.data.getSelectedStatus === "unread") {
           //mark article as read
           this.markArticleRead(articleId);
         }
@@ -196,7 +187,7 @@ export default {
     async flushPool() {
       //check if the container has a length and if the pool is not flushed yet
       if (this.container.length && this.isFlushed === false) {
-        if (this.$store.data.currentSelection.status === "unread") {
+        if (this.$store.data.getSelectedStatus === "unread") {
           //loop through the container and mark every item that is not part of the pool as read
           for (var i in this.container) {
             if (!this.pool.includes(this.container[i])) {

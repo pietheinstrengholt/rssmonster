@@ -83,10 +83,10 @@
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
-          <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ unreadCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ readCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ starCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ hotCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ $store.data.unreadCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
         </span>
       </div>
       <div>
@@ -405,22 +405,22 @@ export default {
     },
     loadType: function(status) {
       //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.currentSelection.status || status == "refresh") {
+      if (status == this.$store.data.getSelectedStatus || status == "refresh") {
         this.$emit('forceReload');
       } else {
-        this.$store.data.currentSelection.status = status;
+        this.$store.data.setSelectedStatus(status);
       }
     },
     loadCategory: function(category) {
-      this.$store.data.currentSelection.categoryId = category.id;
-      this.$store.data.currentSelection.feedId = "%";
+      this.$store.data.setSelectedCategoryId(category.id);
+      this.$store.data.setSelectedFeedId("%");
     },
     loadFeed: function(feed) {
-      this.$store.data.currentSelection.feedId = feed.id;
+      this.$store.data.setSelectedFeedId(feed.id);
     },
     loadAll: function() {
-      this.$store.data.currentSelection.categoryId = "%";
-      this.$store.data.currentSelection.feedId = "%";
+      this.$store.data.setSelectedCategoryId("%");
+      this.$store.data.setSelectedFeedId("%");
     },
     markAll: async function() {
       await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {}).then(

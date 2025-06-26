@@ -213,12 +213,12 @@ export default {
       }
       if (value == "renamefeed") {
         this.feed = this.lookupFeedById(
-          parseInt(this.$store.data.currentSelection.feedId)
+          parseInt(this.$store.data.getSelectedFeedId)
         );
       }
       if (value == "renamecategory") {
         this.category = this.lookupCategoryById(
-          parseInt(this.$store.data.currentSelection.categoryId)
+          parseInt(this.$store.data.getSelectedCategoryId)
         );
       }
     },

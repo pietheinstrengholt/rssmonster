@@ -177,7 +177,7 @@ export default {
   methods: {
     emitSearchEvent: function() {
       if (!(this.search === undefined || this.search === null)) {
-        this.$store.data.currentSelection.search = this.search;
+        this.$store.data.setSelectedSearch(this.search);
       }
     },
     toggleShowStatus: function() {
@@ -197,10 +197,10 @@ export default {
     },
     statusClicked: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.currentSelection.status) {
+      if (status == this.$store.data.getSelectedStatus) {
         this.$emit('forceReload');
       } else {
-        this.$store.data.currentSelection.status = status;
+        this.$store.data.setSelectedStatus(status);
       }
       this.toggleShowStatus();
     },
@@ -209,7 +209,7 @@ export default {
       this.toggleShowFilter();
     },
     sortClicked: function(sort) {
-      this.$store.data.currentSelection.sort = sort;
+      this.$store.data.setSelectedSort(sort);
       this.toggleShowSort();
     }
   },

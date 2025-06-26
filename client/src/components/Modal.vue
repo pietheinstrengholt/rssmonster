@@ -317,20 +317,17 @@ export default {
     },
     "$store.data.showModal": {
       handler: function() {
-        this.categories = JSON.parse(JSON.stringify(this.$store.data.categories));
-        this.selectedCategory = this.$store.data.currentSelection.categoryId;
-
         //get initial starting values (copied data)
         this.categories = JSON.parse(JSON.stringify(this.$store.data.categories));
-        this.selectedCategory = this.$store.data.currentSelection.categoryId;
+        this.selectedCategory = this.$store.data.getSelectedCategoryId;
         //Fetch category data from store, because on initial load the cloned category doesn't exist yet.
-        if (this.$store.data.currentSelection.categoryId) {
+        if (this.$store.data.getSelectedCategoryId) {
           for (var x = 0; x < this.$store.data.categories.length; x++) {
-            if (this.$store.data.categories[x].id == this.$store.data.currentSelection.categoryId) {
+            if (this.$store.data.categories[x].id == this.$store.data.getSelectedCategoryId) {
               this.category = JSON.parse(JSON.stringify(this.$store.data.categories[x]));
               //and also try to find the feed
               for (var i = 0; i < this.$store.data.categories[x].feeds.length; i++) {
-                if (this.$store.data.categories[x].feeds[i].id === this.$store.data.currentSelection.feedId) {
+                if (this.$store.data.categories[x].feeds[i].id === this.$store.data.getSelectedFeedId) {
                   this.feed = JSON.parse(JSON.stringify( this.$store.data.categories[x].feeds[i]));
                 }
               }
@@ -496,8 +493,8 @@ export default {
           //close the modal
           this.closeModal();
           //set the selection back to all
-          this.$store.data.currentSelection.categoryId = "%";
-          this.$store.data.currentSelection.feedId = "%";
+          this.$store.data.setSelectedCategoryId("%");
+          this.$store.data.setSelectedFeedId("%");
         },
         response => {
           /* eslint-disable no-console */
@@ -517,8 +514,8 @@ export default {
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/cleanup").then(
         () => {
           //set the selection back to all and refresh the page
-          this.$store.data.currentSelection.categoryId = "%";
-          this.$store.data.currentSelection.feedId = "%";
+          this.$store.data.setSelectedCategoryId("%");
+          this.$store.data.setSelectedFeedId("%");
           location.reload();
         },
         response => {
@@ -532,7 +529,7 @@ export default {
     renameCategory: function() {
       //rename category
       axios
-        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.currentSelection.categoryId, {
+        .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.getSelectedCategoryId, {
           name: this.category.name
         })
         .then(
@@ -556,7 +553,7 @@ export default {
     },
     deleteFeed: function() {
       //delete category
-      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
+      axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.getSelectedFeedId).then(
         () => {
           //find the index of both the category and feed
           var indexCategory = this.findIndexById(this.$store.data.categories, this.inputCategory.id);
@@ -568,7 +565,7 @@ export default {
           );
 
           //set the feed selection back to all
-          this.$store.data.currentSelection.feedId = "%";
+          this.$store.data.setSelectedFeedId("%");
 
           //close the modal
           this.closeModal();
@@ -645,8 +642,8 @@ export default {
                 this.$store.data.categories[indexCategory].feeds = this.arrayRemove(this.$store.data.categories[indexCategory].feeds,this.inputFeed);
 
                 //change current selection
-                this.$store.data.currentSelection.categoryId = this.selectedCategory;
-                this.$store.data.currentSelection.feedId = this.inputFeed.id;
+                this.$store.data.setSelectedCategoryId(this.selectedCategory);
+                this.$store.data.setSelectedFeedId(this.inputFeed.id);
               }
             }
 

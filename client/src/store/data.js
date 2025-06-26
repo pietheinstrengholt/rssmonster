@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import axios from 'axios';
 
 export const useStore = defineStore('data', {
   state: () => ({
@@ -23,8 +24,17 @@ export const useStore = defineStore('data', {
     setCategories(categories) {
       this.categories = categories;
     },
-    setCurrentSelection(selection) {
-      this.currentSelection = selection;
+    async fetchCurrentSelection(token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      if (token) {
+        //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
+        try {
+          const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting");
+          this.currentSelection = response.data;
+        } catch (error) {
+          console.error("Error fetching settings:", error);
+        }
+      }
     },
     setFilter(filter) {
       this.filter = filter;
@@ -81,38 +91,68 @@ export const useStore = defineStore('data', {
     },
     increaseRefreshCategories() {
       this.refreshCategories++;
+    },
+    setSelectedStatus(status) {
+      this.currentSelection.status = status;
+    },
+    setSelectedCategoryId(categoryId) {
+      this.currentSelection.categoryId = categoryId;
+    },
+    setSelectedFeedId(feedId) {
+      this.currentSelection.feedId = feedId;
+    },
+    setSelectedSearch(search) {
+      this.currentSelection.search = search;
+    },
+    setSelectedSort(sort) {
+      this.currentSelection.sort = sort;
     }
   },
   getters: {
-    getCategories() {
-      return this.categories
+    getSelectedStatus: (data) => {
+      return data.currentSelection.status;
     },
-    getCurrentSelection() {
-      return this.currentSelection
+    getSelectedCategoryId: (data) => {
+      return data.currentSelection.categoryId;
     },
-    getFilter() {
-      return this.filter
+    getSelectedFeedId: (data) => {
+      return data.currentSelection.feedId;
     },
-    getCategories() {
-      return this.categories
+    getSelectedSearch: (data) => {
+      return data.currentSelection.search;
     },
-    getUnreadCount() {
-      return this.unreadCount
+    getSelectedSort: (data) => {
+      return data.currentSelection.sort;
     },
-    getReadCount() {
-      return this.readCount
+    getCategories: (data) => {
+      return data.categories;
     },
-    getStarCount() {
-      return this.starCount
+    getCurrentSelection: (data) => {
+      return data.currentSelection;
     },
-    getHotCount() {
-      return this.hotCount
+    getFilter: (data) => {
+      return data.filter;
     },
-    getShowModal() {
-      return this.showModal
+    getCategories: (data) => {
+      return data.categories;
     },
-    getNewUnreads() {
-      return this.newUnreads
+    getUnreadCount: (data) => {
+      return data.unreadCount;
+    },
+    getReadCount: (data) => {
+      return data.readCount;
+    },
+    getStarCount: (data) => {
+      return data.starCount;
+    },
+    getHotCount: (data) => {
+      return data.hotCount;
+    },
+    getShowModal: (data) => {
+      return data.showModal;
+    },
+    getNewUnreads: (data) => {
+      return data.newUnreads;
     }
   }
 });

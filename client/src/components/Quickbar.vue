@@ -172,10 +172,10 @@ export default {
   methods: {
     loadType: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.currentSelection.status) {
+      if (status == this.$store.data.getSelectedStatus) {
         this.$emit('forceReload');
       } else {
-        this.$store.data.currentSelection.status = status;
+        this.$store.data.setSelectedStatus(status);
       }
     },
     emitClickEvent(eventType, value) {
