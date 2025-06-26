@@ -24,10 +24,10 @@
     "nodemon": "^3.1.10"
   },
   "dependencies": {
-    "@rowanmanning/feed-parser": "^2.1.0",
+    "@rowanmanning/feed-parser": "^2.1.1",
     "bcryptjs": "^3.0.2",
     "body-parser": "^2.2.0",
-    "cheerio": "^1.0.0",
+    "cheerio": "^1.1.0",
     "cors": "^2.8.5",
     "dotenv": "^16.5.0",
     "express": "^5.1.0",
