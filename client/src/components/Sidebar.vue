@@ -74,105 +74,110 @@
         </span>
       </div>
 
-      <div>
-        <p class="title">All</p>
-      </div>
-      <div v-bind:class="{ 'selected': $store.data.currentSelection.categoryId === '%' }" v-on:click="loadAll()" id="all" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="star-fill" variant="light" />
-        </span>
-        <span class="title">Load all categories</span>
-        <span class="badge-unread">
-          <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ $store.data.unreadCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
-        </span>
-      </div>
-      <div>
-        <p v-if="$store.data.currentSelection.status != 'hot'" class="title">Categories</p>
-      </div>
-      <draggable v-model="this.$store.data.categories" item-key="id" @end="updateSortOrder">
-        <template #item="{element}">
-          <div v-bind:class="{ 'selected': ($store.data.currentSelection.categoryId == element.id) && ($store.data.currentSelection.feedId === '%') }" v-bind:id="element.id" class="sidebar-category-main" v-on:click="loadCategory(element)">
-          <div class="sidebar-category-sub">
-            <span class="glyphicon">
-              <BootstrapIcon icon="folder-fill" variant="light" />
-            </span>
-            <span class="title">{{element.name}}</span>
-            <span class="badge-unread">
-              <span
-                v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
-              <span
-                v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
-              <span
-                v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
-            </span>
-          </div>
-          <div v-if="element.feeds">
-            <div v-if="$store.data.currentSelection.categoryId == element.id" class="sidebar-category-feeds">
-              <div v-for="(feed, index) in element.feeds" v-bind:key="index">
-                <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
-                  <span class="glyphicon">
-                    <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
-                    <BootstrapIcon v-if="!feed.favicon" icon="rss-fill" variant="light" />
-                  </span>
-                  <span class="title">{{feed.feedName}}</span>
-                  <span class="badge-unread">
-                  <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
-                  <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
-                  <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
-                  </span>
+      <div v-if="$store.data.currentSelection.status != 'hot'">
+
+        <div>
+          <p class="title">All</p>
+        </div>
+        <div v-bind:class="{ 'selected': $store.data.currentSelection.categoryId === '%' }" v-on:click="loadAll()" id="all" class="sidebar-category-top">
+          <span class="glyphicon">
+            <BootstrapIcon icon="star-fill" variant="light" />
+          </span>
+          <span class="title">Load all categories</span>
+          <span class="badge-unread">
+            <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ $store.data.unreadCount }}</span>
+            <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
+            <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
+            <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
+          </span>
+        </div>
+
+        <div>
+          <p class="title">Categories</p>
+        </div>
+        <draggable v-model="this.$store.data.categories" item-key="id" @end="updateSortOrder">
+          <template #item="{element}">
+            <div v-bind:class="{ 'selected': ($store.data.currentSelection.categoryId == element.id) && ($store.data.currentSelection.feedId === '%') }" v-bind:id="element.id" class="sidebar-category-main" v-on:click="loadCategory(element)">
+            <div class="sidebar-category-sub">
+              <span class="glyphicon">
+                <BootstrapIcon icon="folder-fill" variant="light" />
+              </span>
+              <span class="title">{{element.name}}</span>
+              <span class="badge-unread">
+                <span
+                  v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
+                <span
+                  v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
+                <span
+                  v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
+              </span>
+            </div>
+            <div v-if="element.feeds">
+              <div v-if="$store.data.currentSelection.categoryId == element.id" class="sidebar-category-feeds">
+                <div v-for="(feed, index) in element.feeds" v-bind:key="index">
+                  <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
+                    <span class="glyphicon">
+                      <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
+                      <BootstrapIcon v-if="!feed.favicon" icon="rss-fill" variant="light" />
+                    </span>
+                    <span class="title">{{feed.feedName}}</span>
+                    <span class="badge-unread">
+                    <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
+                    <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
+                    <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
+                    </span>
+                  </div>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-        </template>
-      </draggable>
+          </template>
+        </draggable>
 
-      <div class="category-options">
-        <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
-          <div>
-            <BootstrapIcon icon="plus-square-fill" color="3b4651" />
-            <div class="text">Add</div>
+        <div class="category-options">
+          <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
+            <div>
+              <BootstrapIcon icon="plus-square-fill" color="3b4651" />
+              <div class="text">Add</div>
+            </div>
           </div>
-        </div>
-        <div v-if="($store.data.currentSelection.categoryId === '%') && ($store.data.currentSelection.feedId == '%')">
-          <div @click="emitClickEvent('modal','cleanup')" id="cleanup" class="category-button">
-            <BootstrapIcon icon="eraser-fill" color="3b4651" />
-            <div class="text">Cleanup</div>
+          <div v-if="($store.data.currentSelection.categoryId === '%') && ($store.data.currentSelection.feedId == '%')">
+            <div @click="emitClickEvent('modal','cleanup')" id="cleanup" class="category-button">
+              <BootstrapIcon icon="eraser-fill" color="3b4651" />
+              <div class="text">Cleanup</div>
+            </div>
+            <div @click="logout()" id="logout" class="category-button">
+              <BootstrapIcon icon="box-arrow-right" color="3b4651" />
+              <div class="text">Logout</div>
+            </div>
           </div>
-          <div @click="logout()" id="logout" class="category-button">
-            <BootstrapIcon icon="box-arrow-right" color="3b4651" />
-            <div class="text">Logout</div>
+          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
+            <div>
+              <BootstrapIcon icon="trash3-fill" color="3b4651" />
+              <div class="text">Delete</div>
+            </div>
           </div>
-        </div>
-        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
-          <div>
-            <BootstrapIcon icon="trash3-fill" color="3b4651" />
-            <div class="text">Delete</div>
+          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="emitClickEvent('modal','renamecategory')" id="rename" class="category-button">
+            <div>
+              <BootstrapIcon icon="pencil-fill" color="3b4651" />
+              <div class="text">Edit</div>
+            </div>
           </div>
-        </div>
-        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="emitClickEvent('modal','renamecategory')" id="rename" class="category-button">
-          <div>
-            <BootstrapIcon icon="pencil-fill" color="3b4651" />
-            <div class="text">Edit</div>
+          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="emitClickEvent('modal','deletefeed')" id="delete" class="category-button">
+            <div>
+              <BootstrapIcon icon="trash3-fill" color="3b4651" />
+              <div class="text">Delete</div>
+            </div>
           </div>
-        </div>
-        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="emitClickEvent('modal','deletefeed')" id="delete" class="category-button">
-          <div>
-            <BootstrapIcon icon="trash3-fill" color="3b4651" />
-            <div class="text">Delete</div>
-          </div>
-        </div>
-        <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="emitClickEvent('modal','renamefeed')" id="rename" class="category-button">
-          <div>
-            <BootstrapIcon icon="pencil-fill" color="3b4651" />
-            <div class="text">Edit</div>
+          <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="emitClickEvent('modal','renamefeed')" id="rename" class="category-button">
+            <div>
+              <BootstrapIcon icon="pencil-fill" color="3b4651" />
+              <div class="text">Edit</div>
+            </div>
           </div>
         </div>
       </div>
+
     </div>
   </div>
 </template>
