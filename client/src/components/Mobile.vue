@@ -1,7 +1,7 @@
 <template>
   <div id="mobile-container" v-if="mobile" class="overlay">
     <h5 class="mobile-title">Options</h5>
-    <div class="close" data-dismiss="modal" aria-label="Close" @click="closeModal">
+    <div class="close" data-dismiss="modal" aria-label="Close" @click="$store.data.setShowModal('')">
       <span class="glyphicon">
         <BootstrapIcon icon="x-square-fill" variant="light" />
       </span>
@@ -46,7 +46,7 @@
       <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
       <br><br>
 
-      <button @click="closeModal()" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button @click="$store.data.setShowModal('')" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <br><br>
     </div>
   </div>
@@ -147,16 +147,12 @@ p.content-header {
 export default {
   props: ["mobile"],
   methods: {
-    closeModal: function() {
-      this.emitClickEvent("mobile", null);
-    },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
     },
     showNewFeed() {
       this.emitClickEvent("mobile", null);
-      //TODO: fix this
-      //this.$emit("modal", "newfeed");
+      $store.data.setShowModal('NewFeed')
     },
     refreshFeeds() {
       this.$emit('refresh');
