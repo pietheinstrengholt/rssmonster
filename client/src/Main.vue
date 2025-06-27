@@ -29,7 +29,9 @@
     <!-- Rename category modal -->
     <app-rename-category v-if="$store.data.getShowModal === 'RenameCategory'"></app-rename-category>
     <!-- Rename feed modal -->
-    <app-rename-feed v-if="$store.data.getShowModal === 'RenameFeed'"></app-rename-feed>
+    <app-update-feed v-if="$store.data.getShowModal === 'UpdateFeed'"></app-update-feed>
+    <!-- Cleanup modal -->
+    <app-cleanup v-if="$store.data.getShowModal === 'Cleanup'"></app-cleanup>
 
   </div>
 </template>
@@ -141,7 +143,8 @@ const NewFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "newfeed
 const DeleteCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletecategory" */ "./components/Modal/DeleteCategory.vue"));
 const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletefeed" */ "./components/Modal/DeleteFeed.vue"));
 const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/Modal/RenameCategory.vue"));
-const RenameFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamefeed" */ "./components/Modal/RenameFeed.vue"));
+const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/Modal/UpdateFeed.vue"));
+const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/Modal/Cleanup.vue"));
 
 export default {
   components: {
@@ -156,7 +159,8 @@ export default {
     appDeleteCategory: DeleteCategory,
     appDeleteFeed: DeleteFeed,
     appRenameCategory: RenameCategory,
-    appRenameFeed: RenameFeed
+    appUpdateFeed: UpdateFeed,
+    appCleanup: Cleanup
   },
 	created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
