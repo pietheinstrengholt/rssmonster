@@ -6,7 +6,7 @@
                 <h5 class="modal-title">Rename category</h5>
             </div>
             <div class="modal-body">
-                <input class="form-control" type="text" placeholder="Enter new category name.." v-model="categoryName">
+                <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
@@ -42,26 +42,27 @@ export default {
     name: 'DeleteCategory',
     data() {
         return {
-            categoryName: ''
+            category: {},
+            index: -1
         }
     },
     created: function() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        //clone the selected feed from the store
+        this.index = this.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
+        this.category = this.$store.data.categories[this.index];
     },
     methods: {
         async renameCategory() {
             //rename category
             axios
                 .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.currentSelection.categoryId, {
-                name: this.categoryName
+                    name: this.category.name
                 })
                 .then(
                 result => {
-                    //find the index of the category
-                    var index = this.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
-
                     //update the store with the returned name of the category
-                    this.$store.data.categories[index].name = result.data.name;
+                    this.$store.data.categories[this.index].name = result.data.name;
 
                     //close the modal
                     this.$store.data.setShowModal('')

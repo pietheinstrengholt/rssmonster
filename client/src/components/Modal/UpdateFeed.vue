@@ -83,7 +83,6 @@ export default {
         //clone the selected feed from the store
         this.feed = JSON.parse(JSON.stringify(this.selectedFeed));
     },
-
     methods: {
         async updateFeed() {
             //find indexes of the category and feed
