@@ -70,6 +70,7 @@
 
 <script>
 import axios from 'axios';
+import helper from '../../services/helper.js';
 export default {
     name: 'UpdateFeed',
     data() {
@@ -86,8 +87,8 @@ export default {
     methods: {
         async updateFeed() {
             //find indexes of the category and feed
-            var indexCategory = this.findIndexById(this.$store.data.categories, this.$store.data.getSelectedCategoryId);
-            var indexFeed = this.findIndexById(this.$store.data.categories[indexCategory].feeds, this.$store.data.getSelectedFeedId);
+            var indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.getSelectedCategoryId);
+            var indexFeed = helper.findIndexById(this.$store.data.categories[indexCategory].feeds, this.$store.data.getSelectedFeedId);
 
             //rename feed
             axios
@@ -119,7 +120,7 @@ export default {
                             this.$store.data.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
 
                             //lookup the new categoryIndex
-                            var indexCategoryNew = this.findIndexById(this.$store.data.categories, result.data.categoryId);
+                            var indexCategoryNew = helper.findIndexById(this.$store.data.categories, result.data.categoryId);
 
                             //duplicate the feed into the new category
                             this.$store.data.categories[indexCategoryNew].feeds.push(this.$store.data.categories[indexCategory].feeds[indexFeed]);
@@ -149,36 +150,14 @@ export default {
                     this.$store.data.setShowModal('')
                 }
             );
-        },
-        // This function finds the index of an object in an array by its id
-        findIndexById: function(array, id) {
-            var index = -1
-            for(var i = 0; i < array.length; i++) {
-                if(array[i].id == id) {
-                    index = i;
-                    break;
-                }
-            }
-            return index;
-        },
-        // This function finds the array by searching on its id
-        findArrayById: function(array, id) {
-            var index = -1
-            for(var i = 0; i < array.length; i++) {
-                if(array[i].id == id) {
-                    index = i;
-                    break;
-                }
-            }
-            return array[index];
         }
     },
     computed: {
         selectedFeed() {
-            return this.findArrayById(this.selectedCategory.feeds, this.$store.data.getSelectedFeedId);
+            return helper.findArrayById(this.selectedCategory.feeds, this.$store.data.getSelectedFeedId);
         },
         selectedCategory() {
-            return this.findArrayById(this.$store.data.categories, this.$store.data.getSelectedCategoryId);
+            return helper.findArrayById(this.$store.data.categories, this.$store.data.getSelectedCategoryId);
         }
     }
 }

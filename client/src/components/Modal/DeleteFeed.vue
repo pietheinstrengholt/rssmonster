@@ -38,6 +38,7 @@
 
 <script>
 import axios from 'axios';
+import helper from '../../services/helper.js';
 export default {
     name: 'DeleteFeed',
     created: function() {
@@ -51,13 +52,13 @@ export default {
             axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
                 () => {
                 //find the index of both the category and feed
-                var indexCategory = this.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
+                var indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
 
                 //find the feed using the indexCategory
-                this.inputFeed = this.findArrayById(this.$store.data.categories[indexCategory].feeds, this.$store.data.currentSelection.feedId);
+                this.inputFeed = helper.findArrayById(this.$store.data.categories[indexCategory].feeds, this.$store.data.currentSelection.feedId);
 
                 //remove the feed from the store
-                this.$store.data.categories[indexCategory].feeds = this.arrayRemove(
+                this.$store.data.categories[indexCategory].feeds = helper.arrayRemove(
                     this.$store.data.categories[indexCategory].feeds,
                     this.inputFeed
                 );
@@ -75,34 +76,6 @@ export default {
                     this.$store.data.setShowModal('');
                 }
             );
-        },
-        arrayRemove(arr, value) {
-            //filter function to remove item from an array
-            return arr.filter(function(ele) {
-                return ele != value;
-            });
-        },
-        // This function finds the array by searching on its id
-        findArrayById: function(array, id) {
-            var index = -1
-            for(var i = 0; i < array.length; i++) {
-                if(array[i].id == id) {
-                    index = i;
-                    break;
-                }
-            }
-            return array[index];
-        },
-        // This function finds the index of an object in an array by its id
-        findIndexById: function(array, id) {
-            var index = -1
-            for(var i = 0; i < array.length; i++) {
-                if(array[i].id == id) {
-                    index = i;
-                    break;
-                }
-            }
-            return index;
         }
     }
 }

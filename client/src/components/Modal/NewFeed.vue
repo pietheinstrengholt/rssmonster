@@ -84,6 +84,7 @@
 
 <script>
 import axios from 'axios';
+import helper from '../../services/helper.js';
 export default {
     name: 'NewFeed',
     created: function() {
@@ -150,7 +151,7 @@ export default {
                     this.feed.starCount = 0;
 
                     //find the index of the category
-                    var index = this.findIndexById(this.$store.data.categories, this.selectedCategory);
+                    var index = helper.findIndexById(this.$store.data.categories, this.selectedCategory);
 
                     //push the new feed to the store
                     this.$store.data.categories[index].feeds.push(this.feed);
@@ -167,17 +168,6 @@ export default {
 
             //close modal
             this.$store.data.setShowModal('')
-        },
-        // This function finds the index of an object in an array by its id
-        findIndexById: function(array, id) {
-            var index = -1
-            for(var i = 0; i < array.length; i++) {
-                if(array[i].id == id) {
-                    index = i;
-                    break;
-                }
-            }
-            return index;
         }
     }
 }
