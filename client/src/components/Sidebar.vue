@@ -19,7 +19,7 @@
         </span>
       </div>
 
-      <div @click="emitClickEvent('modal','newfeed')" class="option" id="addnew">
+      <div class="option" @click="$store.data.setShowModal('NewFeed')" id="addnew">
         <span class="glyphicon">
           <BootstrapIcon icon="plus-square-fill" variant="light" />
         </span>Add new feed
@@ -135,14 +135,14 @@
         </draggable>
 
         <div class="category-options">
-          <div @click="emitClickEvent('modal','newcategory')" id="add" class="category-button">
+          <div id="add" class="category-button" @click="$store.data.setShowModal('NewCategory')">
             <div>
               <BootstrapIcon icon="plus-square-fill" color="3b4651" />
               <div class="text">Add</div>
             </div>
           </div>
           <div v-if="($store.data.currentSelection.categoryId === '%') && ($store.data.currentSelection.feedId == '%')">
-            <div @click="emitClickEvent('modal','cleanup')" id="cleanup" class="category-button">
+            <div id="cleanup" class="category-button" @click="$store.data.setShowModal('Cleanup')">
               <BootstrapIcon icon="eraser-fill" color="3b4651" />
               <div class="text">Cleanup</div>
             </div>
@@ -151,25 +151,25 @@
               <div class="text">Logout</div>
             </div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="emitClickEvent('modal','deletecategory')" id="delete" class="category-button">
+          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="$store.data.setShowModal('DeleteCategory')" id="delete" class="category-button">
             <div>
               <BootstrapIcon icon="trash3-fill" color="3b4651" />
               <div class="text">Delete</div>
             </div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="emitClickEvent('modal','renamecategory')" id="rename" class="category-button">
+          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="$store.data.setShowModal('RenameCategory')" id="rename" class="category-button">
             <div>
               <BootstrapIcon icon="pencil-fill" color="3b4651" />
               <div class="text">Edit</div>
             </div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="emitClickEvent('modal','deletefeed')" id="delete" class="category-button">
+          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="$store.data.setShowModal('DeleteFeed')" id="delete" class="category-button">
             <div>
               <BootstrapIcon icon="trash3-fill" color="3b4651" />
               <div class="text">Delete</div>
             </div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="emitClickEvent('modal','renamefeed')" id="rename" class="category-button">
+          <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('RenameFeed')" id="rename" class="category-button">
             <div>
               <BootstrapIcon icon="pencil-fill" color="3b4651" />
               <div class="text">Edit</div>
