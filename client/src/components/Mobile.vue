@@ -1,11 +1,6 @@
 <template>
   <div id="mobile-container" v-if="mobile" class="overlay">
     <h5 class="mobile-title">Options</h5>
-    <div class="close" data-dismiss="modal" aria-label="Close" @click="$store.data.setShowModal('')">
-      <span class="glyphicon">
-        <BootstrapIcon icon="x-square-fill" variant="light" />
-      </span>
-    </div>
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
@@ -20,7 +15,7 @@
           class="category"
           v-on:click="$store.data.currentSelection.categoryId = category.id; $store.data.currentSelection.feedId = '%';"
           v-bind:class="{'selected': $store.data.currentSelection.categoryId === category.id}"
-          v-for="category in store.categories"
+          v-for="category in $store.data.categories"
           :key="category.id"
           v-bind:id="category.id"
         >
@@ -46,7 +41,7 @@
       <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
       <br><br>
 
-      <button @click="$store.data.setShowModal('')" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button @click="emitClickEvent('mobile', null);" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <br><br>
     </div>
   </div>
@@ -124,6 +119,10 @@ p.content-header {
   background-color: #3b4651;
 }
 
+.btn-primary.content {
+  margin-right: 5px;
+}
+
 @media (prefers-color-scheme: dark) {
   .overlay {
     background-color: #121212;
@@ -152,7 +151,7 @@ export default {
     },
     showNewFeed() {
       this.emitClickEvent("mobile", null);
-      $store.data.setShowModal('NewFeed')
+      this.$store.data.setShowModal('NewFeed');
     },
     refreshFeeds() {
       this.$emit('refresh');
