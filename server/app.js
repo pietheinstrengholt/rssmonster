@@ -3,13 +3,8 @@ import express from 'express';
 import morgan from 'morgan';
 import cors from "cors";
 
-//set port
-const port = process.env.PORT || 3000;
-
-//import sequelize
-import sequelize from './util/database.js';
-
 //include models in order to define associations
+import User from './models/user.js';
 import Category from './models/category.js';
 import Feed from './models/feed.js';
 import Article from './models/article.js';
@@ -33,8 +28,10 @@ import errorController from "./controllers/error.js";
 //init cache
 import cache from "./util/cache.js";
 
+//create express app
 const app = express();
 
+//use morgan for logging
 app.use(morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-time ms)'));
 
 //serve the content straight from the distribution folder (output after npm run build)
@@ -43,10 +40,12 @@ app.use(express.static("dist"));
 //use cors
 app.use(cors())
 
-//bodyparser
+//parse incoming requests
+//body-parser is deprecated in express 4.16.0 and later, so we can use express's built-in middleware instead
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+//set headers for CORS
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader(
@@ -72,22 +71,14 @@ app.use("/api/users", userRoutes);
 app.use(errorController.get404);
 
 //define relationships
+User.hasMany(Category, { constraints: true, onDelete: 'CASCADE'});
 Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE'});
 Category.hasMany(Feed);
 Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE'});
 Feed.hasMany(Article);
 
-sequelize
-  .sync({
-    //force: true
-  })
-  .then(result => {
-    //console.log(result);
-  })
-  .catch(err => {
-    console.log(err);
-  });
-
+//start the server
+const port = process.env.PORT || 3000;
 app.listen(port, () => {
   console.log(`Server has started on port ${port}!`);
 });
