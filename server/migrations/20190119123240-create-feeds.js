@@ -40,8 +40,7 @@ module.exports = {
         type: Sequelize.STRING
       },
       rssUrl: {
-        type: Sequelize.STRING,
-        unique: true
+        type: Sequelize.STRING
       },
       favicon: Sequelize.STRING,
       errorCount: {
@@ -59,7 +58,16 @@ module.exports = {
       updatedAt: {
         type: Sequelize.DATE
       }
-    }, {
+    },
+    {
+        indexes: [
+            {
+                unique: true,
+                fields: ['userId', 'rssUrl']
+            }
+        ]
+    },
+    {
       charset: "utf8mb4",
       collate: "utf8mb4_unicode_ci"
     });
