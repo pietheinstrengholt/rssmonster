@@ -4,15 +4,16 @@
       <p>RSSMonster</p>
     </div>
     <div class="drag">
-      <div @click="markAll()" class="option" id="mark-all-as-read">
+
+      <div class="option" v-if="$store.auth.getRole === 'admin'" @click="$store.data.setShowModal('ManageUsers')" id="manage-users">
         <span class="glyphicon">
-          <BootstrapIcon icon="check-square-fill" variant="light" />
-        </span>Mark all as read
+          <BootstrapIcon icon="people-fill" variant="light" />
+        </span>Manage users
       </div>
 
       <div @click="refreshFeeds()" class="option" id="refresh">
         <span class="glyphicon">
-          <BootstrapIcon icon="arrow-down-square-fill" variant="light" />
+          <BootstrapIcon icon="arrow-down-circle-fill" variant="light" />
         </span>Refresh feeds
         <span v-show="refreshing" class="spin">
           <BootstrapIcon icon="arrow-repeat" variant="light" animation="spin"/>
@@ -23,6 +24,12 @@
         <span class="glyphicon">
           <BootstrapIcon icon="plus-square-fill" variant="light" />
         </span>Add new feed
+      </div>
+
+      <div @click="markAll()" class="option" id="mark-all-as-read">
+        <span class="glyphicon">
+          <BootstrapIcon icon="check-square-fill" variant="light" />
+        </span>Mark all as read
       </div>
 
       <div>
@@ -198,8 +205,14 @@
   padding: 4px 4px 4px 12px;
 }
 
-#refresh.option, #addnew.option {
+#refresh.option, 
+#addnew.option,
+#manage-users.option {
   background-color: #2b79c2;
+}
+
+#manage-users.option {
+  width: 150px;
 }
 
 #mark-all-as-read {
@@ -402,8 +415,10 @@ export default {
   },
   methods: {
     logout() {
-      //remove token from store, user will be redirected to login page by the watcher
+      //remove token from store and redirect user to login page
       this.$store.auth.setToken(null);
+      this.$store.auth.setRole(null);
+      this.$router.push('/login');
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);

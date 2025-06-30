@@ -6,6 +6,6 @@ import userMiddleware from "../middleware/users.js";
 // POST /api/auth
 authRoutes.post('/register', userMiddleware.validateRegister, authController.register);
 authRoutes.post('/login', authController.login);
-authRoutes.post('/validate', userMiddleware.isLoggedIn, authController.secret);
+authRoutes.post('/validate', userMiddleware.isLoggedIn, authController.validate);
 
 export default authRoutes;

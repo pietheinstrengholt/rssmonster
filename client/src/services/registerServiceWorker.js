@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 import { register } from 'register-service-worker'
 if (import.meta.env.VITE_NODE_ENV === 'production') {
-  register(`${import.meta.env.VITE_BASE_URL}sw.js`, {
+  register(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/sw.js`, {
     ready () {
       console.log(
         'App is being served from cache by a service worker.\n' +

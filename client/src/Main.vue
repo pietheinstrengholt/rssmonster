@@ -32,6 +32,8 @@
     <app-update-feed v-if="$store.data.getShowModal === 'UpdateFeed'"></app-update-feed>
     <!-- Cleanup modal -->
     <app-cleanup v-if="$store.data.getShowModal === 'Cleanup'"></app-cleanup>
+    <!-- Manage users modal -->
+    <app-manage-users v-if="$store.data.getShowModal === 'ManageUsers'"></app-manage-users>
 
   </div>
 </template>
@@ -145,6 +147,7 @@ const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "dele
 const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/Modal/RenameCategory.vue"));
 const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/Modal/UpdateFeed.vue"));
 const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/Modal/Cleanup.vue"));
+const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/Modal/ManageUsers.vue"));
 
 export default {
   components: {
@@ -160,7 +163,8 @@ export default {
     appDeleteFeed: DeleteFeed,
     appRenameCategory: RenameCategory,
     appUpdateFeed: UpdateFeed,
-    appCleanup: Cleanup
+    appCleanup: Cleanup,
+    appManageUsers: ManageUsers
   },
 	created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;

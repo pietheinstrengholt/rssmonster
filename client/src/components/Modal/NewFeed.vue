@@ -29,7 +29,7 @@
                 <br>
                 <span v-if="ajaxRequest">Please Wait ...</span>
                 <br>
-                <span class="error" v-if="error_msg">{{ error_msg }}</span>
+                <span class="text-danger" v-if="error_msg">{{ error_msg }}</span>
                 <div v-if="feed.feedName">
                   <div class="form-group row">
                     <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
@@ -79,6 +79,12 @@
     text-align: center;
     border-right: 1px solid black;
     border-color: #dcdee0;
+}
+
+.text-danger {
+    margin-top: 40px;
+    margin-bottom: 20px;
+    color: red;
 }
 </style>
 

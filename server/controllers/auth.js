@@ -78,12 +78,25 @@ const login = async (req, res, next) => {
     }
 };
 
-const secret = async (req, res, next) => {
-  return res.status(200).json({ message: "This is the secret content. Only logged in users can see that!", data: req.userData });
+const validate = async (req, res, next) => {
+
+    // Check if the user exists
+    const user = await User.findOne({ 
+        where: { id: req.userData.userId }, 
+        attributes: {
+         exclude: ['password']
+          }
+    });
+
+    if (!user) {
+        return res.status(401).json({ message: "User not found!" });
+    } else {
+        return res.status(200).json({ message: "This is the secret content. Only logged in users can see that!", data: req.userData, user: user  });
+    }
 };
 
 export default {
   register,
   login,
-  secret
+  validate
 }

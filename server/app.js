@@ -26,6 +26,7 @@ import feverRoutes from "./routes/fever.js";
 import healthRoutes from "./routes/health.js";
 import cleanupRoutes from "./routes/cleanup.js";
 import authRoutes from "./routes/auth.js";
+import userRoutes from "./routes/user.js";
 
 //controller
 import errorController from "./controllers/error.js";
@@ -68,6 +69,7 @@ app.use("/api/fever", feverRoutes);
 app.use("/api/health", healthRoutes);
 app.use("/api/cleanup", cleanupRoutes);
 app.use("/api/auth", authRoutes);
+app.use("/api/users", userRoutes);
 app.use(errorController.get404);
 
 //define relationships

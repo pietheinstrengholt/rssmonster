@@ -109,6 +109,7 @@ export default {
         //set token in store and redirect to home
         if (response) {
           await this.$store.auth.setToken(response.token);
+          await this.$store.auth.setRole(response.user.role);
           await this.$router.push('/');
         }
       } catch (error) {

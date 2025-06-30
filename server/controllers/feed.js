@@ -133,14 +133,11 @@ const validateFeed = async (req, res, next) => {
     return res.status(500).json({
       error_msg: "Feed url is invalid. Are you sure the RSS feed is correct?"
     });
-  }
-
-  if (typeof categoryId === "undefined") {
+  } else if (typeof categoryId === "undefined") {
     return res.status(500).json({
       error_msg: "Category is invalid."
     });
-  }
-
+  } else {
   try {
 
     const feeditem = await parseFeed.process(url);
@@ -164,22 +161,22 @@ const validateFeed = async (req, res, next) => {
             favicon: feeditem.image
           });
         } else {
-          return res.status(402).json({
-            error_msg: "Feed already exists."
-          });
-        }
-      });
-
-    } else {
+            return res.status(402).json({
+              error_msg: "Feed already exists."
+            });
+          }
+        });
+      } else {
+        return res.status(500).json({
+          error_msg: "Feed has no meta attributes"
+        });
+      }
+    } catch (err) {
+      console.log(err);
       return res.status(500).json({
-        error_msg: "Feed has no meta attributes"
+        error_msg: "" + err
       });
     }
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json({
-      error_msg: "" + err
-    });
   }
 };
 
