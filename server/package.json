@@ -26,10 +26,9 @@
   "dependencies": {
     "@rowanmanning/feed-parser": "^2.1.1",
     "bcryptjs": "^3.0.2",
-    "body-parser": "^2.2.0",
     "cheerio": "^1.1.0",
     "cors": "^2.8.5",
-    "dotenv": "^16.5.0",
+    "dotenv": "^17.0.0",
     "express": "^5.1.0",
     "franc-min": "^6.2.0",
     "htmlparser2": "^10.0.0",

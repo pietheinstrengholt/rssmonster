@@ -1,7 +1,6 @@
 //import libraries
 import express from 'express';
 import morgan from 'morgan';
-import bodyParser from 'body-parser';
 import cors from "cors";
 
 //set port
@@ -45,8 +44,8 @@ app.use(express.static("dist"));
 app.use(cors())
 
 //bodyparser
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({extended: true}));
+app.use(express.urlencoded({ extended: true }));
+app.use(express.json());
 
 app.use((req, res, next) => {
   res.setHeader("Access-Control-Allow-Origin", "*");
