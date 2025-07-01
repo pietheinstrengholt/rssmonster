@@ -125,6 +125,10 @@ html, #app, body {
 </style>
 
 <script>
+//import Cookies from 'js-cookie';
+import Cookies from 'js-cookie';
+
+//import axios
 import axios from 'axios';
 
 //import idb-keyval
@@ -166,9 +170,6 @@ export default {
     appCleanup: Cleanup,
     appManageUsers: ManageUsers
   },
-	created() {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-	},
   data() {
     return {
       category: {},
@@ -179,6 +180,8 @@ export default {
     };
   },
   created: async function() {
+    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+
     //reset newUnreads count to zero
     this.$store.data.newUnreads = 0;
 
