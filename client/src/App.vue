@@ -25,27 +25,20 @@ export default {
         axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
 
 
-        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/auth/validate")
+        await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/auth/validate")
           .then(response => {
             this.$store.auth.setRole(response.data.user.role);
           })
           .catch(error => {
             console.error("Error fetching users:", error);
+            // If session is not valid, redirect to login
+            if (error.response && error.response.data && error.response.data.message === "Your session is not valid!") {
+              this.$store.auth.setToken(null);
+              this.$store.auth.setRole(null);
+              Cookies.remove('token');
+              this.$router.push('/login');
+            }
           });
-
-        /* axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/auth/validate").then(response => {
-          })
-          .then(response => {
-            //session if valid, redirect to home
-            console.log(response);
-            this.$router.push('/');
-          }
-        ).catch((error) => {
-          //if session is not valid, redirect to login
-          if (error.response.data.message === "Your session is not valid!") {
-            this.$router.push('/login');
-          }
-        }); */
       } catch (error) {
         console.log(error);
         if (error.response.data.message) {
