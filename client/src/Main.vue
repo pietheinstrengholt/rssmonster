@@ -10,9 +10,9 @@
         <app-quickbar @mobile="mobileClick" @forceReload="forceReload"></app-quickbar>
         <!-- Toolbar events -->
         <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
-          <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
+        <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home ref="home"></app-home>
+        <app-home v-if="!offlineStatus" ref="home"></app-home>
       </div>
     </div>
     <!-- Mobile events -->
