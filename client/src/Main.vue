@@ -335,7 +335,7 @@ export default {
         }
       }
     },
-    forceReload: function(data) {
+    forceReload: function() {
       //set newUnreads count back to zero. This removes the notification from the Sidebar.
       this.$store.data.newUnreads = 0;
       //refresh the overview with updated categories and feeds counts
