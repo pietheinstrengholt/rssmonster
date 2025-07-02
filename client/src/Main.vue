@@ -125,9 +125,6 @@ html, #app, body {
 </style>
 
 <script>
-//import Cookies from 'js-cookie';
-import Cookies from 'js-cookie';
-
 //import axios
 import axios from 'axios';
 
