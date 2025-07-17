@@ -149,13 +149,15 @@ export default {
     },
     methods: {
       async fetchUsers() {
-        await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users')
-          .then(response => {
-            this.users = response.data.users; // Store the fetched users in the component's data
-          })
-          .catch(error => {
-            console.error("Error fetching users:", error);
-          });
+        await setTimeout(() => {
+          axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users')
+            .then(response => {
+              this.users = response.data.users; // Store the fetched users in the component's data
+            })
+            .catch(error => {
+              console.error("Error fetching users:", error);
+            });
+        }, 100);
       },
       editUser(userId) {
         // Find the user by ID and set it to the user data property
@@ -169,28 +171,42 @@ export default {
         this.message = null; // Clear any previous messages
         this.fetchUsers(); // Refresh the user list
       },
-      updateUser() {
+      async updateUser() {
         // Logic to update user
         const userPassword = this.$el.querySelector('#password').value;
         const userPasswordRepeat = this.$el.querySelector('#password-repeat').value;
 
-        if (userPassword !== userPasswordRepeat) {
-          console.error("Passwords do not match");
-          this.message = "Passwords do not match";
+        try {
+          // Validate password length
+          if (userPassword.length > 0) {
+            if (userPassword.length < 8) {
+              this.message = "Password must be at least 8 characters long";
+              throw new Error("Password must be at least 8 characters long");
+            }
+
+            if (userPassword !== userPasswordRepeat) {
+              this.message = "Passwords do not match";
+              throw new Error("Passwords do not match");
+            }
+          }
+
+          await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users/' + this.user.id, {
+            username: this.user.username,
+            role: this.user.role,
+            password: userPassword
+          }).then(response => {
+            this.message = null; // Clear any previous messages
+            this.user = null; // Clear the user being edited, return to user list
+            this.fetchUsers(); // Refresh the user list
+          }).catch(error => {
+            console.error("Error updating user:", error);
+            this.message = "Error updating user";
+          });
+        } catch (error) {
+          console.error("Password validation error:", error);
+          this.message = error.message;
           return;
         }
-
-        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users/' + this.user.id, {
-          username: this.user.username,
-          role: this.user.role,
-          password: userPassword
-        }).then(response => {
-          this.message = null; // Clear any previous messages
-          this.user = null; // Clear the user being edited, return to user list
-        }).catch(error => {
-          console.error("Error updating user:", error);
-          this.message = "Error updating user";
-        });
       },
       deleteUser(userId) {
         // Logic to delete user
