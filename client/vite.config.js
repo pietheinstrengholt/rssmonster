@@ -7,7 +7,9 @@ export default defineConfig({
   css: {
     preprocessorOptions: {
       scss: {
-        quietDeps: true
+        quietDeps: true,
+        includePaths: ['node_modules'],
+        silenceDeprecations: ['mixed-decls', 'color-functions', 'global-builtin', 'import'] // Suppress deprecation warnings: https://github.com/twbs/bootstrap/issues/40962
       }
     }
   },
@@ -52,4 +54,5 @@ export default defineConfig({
             usePolling: true
         }
     },
-})
+  }
+)
