@@ -3,6 +3,7 @@ import { sequelize } from '../util/database.js';
 import { Category } from './category.js';
 import { Feed } from './feed.js';
 import { Article } from './article.js';
+import { hash } from 'bcryptjs';
 
 export const User = sequelize.define(
   "users",
@@ -25,6 +26,10 @@ export const User = sequelize.define(
       validate: {
         notEmpty: true
       }
+    },
+    hash: {
+      type: Sequelize.STRING,
+      allowNull: false
     },
     role: {
       type: Sequelize.STRING,

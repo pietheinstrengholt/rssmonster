@@ -5,6 +5,7 @@ import Article from "../models/article.js";
 import Feed from "../models/feed.js";
 import Category from "../models/category.js";
 import Hotlink from "../models/hotlink.js";
+import crypto from 'node:crypto'
 
 const getUsers = async (req, res, next) => {
 
@@ -24,7 +25,7 @@ const getUsers = async (req, res, next) => {
       const users = await User.findAll({
         order: [["username"]],
         attributes: {
-          exclude: ['password']
+          exclude: ['password', 'hash']
         }
       });
 
@@ -99,7 +100,8 @@ const postUsers = async (req, res, next) => {
           user.update({
             username: req.body.username,
             role: req.body.role,
-            password: hash
+            password: hash,
+            hash: crypto.createHash('md5').update(req.body.username + ":" + req.body.password).digest('hex').toString()
           });
         } else {
           // Update the user with the new username and role only

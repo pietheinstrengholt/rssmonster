@@ -1,6 +1,7 @@
 import User from "../models/user.js";
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
+import crypto from 'node:crypto'
 
 const register = async (req, res, next) => {
     try {        
@@ -20,7 +21,8 @@ const register = async (req, res, next) => {
             // Add the new user to the database
             await User.create({
                 username: req.body.username,
-                password: hash
+                password: hash,
+                hash: crypto.createHash('md5').update(req.body.username + ":" + req.body.password).digest('hex').toString()
             });
   
             return res.status(201).send({
