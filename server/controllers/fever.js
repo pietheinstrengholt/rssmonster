@@ -28,12 +28,12 @@ export const postFever = async (req, res, next) => {
   try {
     var arr = responseBase();
 
-    //check if api_key is provided
-    if ("api_key" in req.query) {
+    //check if api_key is provided, clients implement the api_key in different ways
+    if ("api_key" in req.query || req.body?.api_key) {
       console.log("api_key found in query");
       const loggedInUser = await User.findOne({
           where: {
-            hash: req.query.api_key,
+            hash: req.query.api_key || req.body?.api_key
           }
         });
       if (!loggedInUser.id) {
