@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@dvuckovic/vue3-bootstrap-icons": "^2.0.0",
-    "axios": "^1.11.0",
+    "axios": "^1.12.0",
     "bootstrap": "^5.3.8",
     "bootswatch": "^5.3.7",
     "idb-keyval": "^6.2.2",
