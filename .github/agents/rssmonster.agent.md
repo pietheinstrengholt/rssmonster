@@ -4,7 +4,9 @@ tools: [
   mcp-rssmonster-server/get_feed, 
   mcp-rssmonster-server/get_categories, 
   mcp-rssmonster-server/search_articles_by_keyword,
-  mcp-rssmonster-server/search_articles_by_time
+  mcp-rssmonster-server/search_articles_by_time,
+  mcp-rssmonster-server/get_feeds,
+  mcp-rssmonster-server/get_articles_by_feed_id
 ]
 ---
 Agent that manages and retrieves RSS feeds and categories.
