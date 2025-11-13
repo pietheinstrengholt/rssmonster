@@ -1,0 +1,9 @@
+{
+	"servers": {
+		"mcp-rssmonster-server": {
+			"url": "http://localhost:3000/mcp",
+			"type": "http"
+		}
+	},
+	"inputs": []
+}
