@@ -5,6 +5,7 @@ import Category from "../models/category.js";
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 import { Op } from 'sequelize';
+import cache from "../util/cache.js";
 
 // Shared helper to build tool result
 function makeResult({ structured, error=false }) {
@@ -55,6 +56,15 @@ const postMcp = async (req, res) => {
       - Retrieves all articles for a specific feed using feedId.
       - The agent must summarize each article returned.
       - If the feedId is unknown, first use get_feeds to obtain all feedIds.
+
+    7. get_favorite_articles
+      - Returns all articles where status = "star".  
+      - You MUST summarize each returned article.
+
+    8. get_hot_articles
+      - Returns all articles considered “hot”, based on an internal cache of URLs.  
+      - Does not require a search term.  
+      - You MUST summarize each article.
 
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
@@ -299,6 +309,109 @@ const postMcp = async (req, res) => {
         } catch (err) {
           console.error("Error fetching feeds:", err);
           return makeResult({ structured: { error: "Failed to fetch feeds." }, error: true });
+        }
+      }
+    );
+
+    // Tool: get_favorite_articles
+    server.tool(
+      "get_favorite_articles",
+      `
+      Retrieves all articles that are marked as favorites (where status = "star").
+      The agent must summarize each article returned in the results (e.g., a 2–3 sentence summary).
+      `,
+      {},
+      async () => {
+        try {
+          const articles = await Article.findAll({
+            where: { starInd: 1 },
+            order: [["createdAt", "DESC"]],
+            raw: true,
+          });
+
+          console.log(`Fetched ${articles.length} favorite (starred) articles`);
+
+          const structured = {
+            totalFavorites: articles.length,
+            articles: articles.map(article => ({
+              id: article.id,
+              title: article.title,
+              subject: article.subject,
+              author: article.author,
+              createdAt: article.createdAt,
+              status: article.status,
+              contentSnippet: article.content?.slice(0, 300) || "",
+              note: "The agent must summarize this article based on its title, subject, and content.",
+            })),
+          };
+
+          return makeResult({ structured });
+        } catch (err) {
+          console.error("Error fetching favorite articles:", err);
+          return makeResult({
+            structured: { error: "Failed to fetch favorite articles." },
+            error: true,
+          });
+        }
+      }
+    );
+
+    // Tool: get_hot_articles
+    server.tool(
+      "get_hot_articles",
+      `
+      Retrieves all hot articles. Hot articles are determined by your internal cache
+      (via cache.all()), which provides a list of URLs that should be considered hot.
+      Results are sorted by the 'published' field in the requested order.
+
+      The agent must summarize each article returned.
+      `,
+      {
+        sort: z.enum(["ASC", "DESC"])
+          .default("DESC")
+          .describe("Sorting order for the 'published' field."),
+      },
+      async ({ sort }) => {
+        try {
+          // Retrieve list of hot article URLs or IDs from cache
+          const hotArticleIds = cache.all(); // must be an array of URLs (or IDs)
+
+          const articles = await Article.findAll({
+            where: {
+              url: hotArticleIds
+            },
+            order: [["published", sort]],
+            raw: true
+          });
+
+          console.log(
+            `Fetched ${articles.length} hot articles sorted=${sort}`
+          );
+
+          const structured = {
+            sortOrder: sort,
+            totalHotArticles: articles.length,
+            articles: articles.map(a => ({
+              id: a.id,
+              title: a.title,
+              subject: a.subject,
+              author: a.author,
+              createdAt: a.createdAt,
+              published: a.published,
+              status: a.status,
+              url: a.url,
+              contentSnippet: a.content?.slice(0, 300) || "",
+              note: "The agent must summarize this article based on its title, subject, and content."
+            })),
+          };
+
+          return makeResult({ structured });
+        } catch (err) {
+          console.error("Error fetching hot articles:", err);
+          return makeResult({
+            structured: { error: "Failed to fetch hot articles." },
+            error: true
+          });
         }
       }
     );
