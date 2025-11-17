@@ -23,8 +23,8 @@ const postAgent = async (req, res) => {
 
     // 1. Load tools from MCP
     const toolListResponse = await client.listTools();
-    console.log("Loaded tools from MCP:", toolListResponse);
     const tools = toolListResponse.tools;
+    console.log("Loaded tools from MCP:", tools);
 
     // 2. Convert to OpenAI format
     const openaiTools = tools.map(t => ({
