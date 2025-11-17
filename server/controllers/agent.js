@@ -1,29 +1,31 @@
 import OpenAI from "openai";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import { StdioClientTransport } from "@modelcontextprotocol/sdk/client/stdio.js";
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
+import { Client } from "@modelcontextprotocol/sdk/client/index.js"
 
 const postAgent = async (req, res) => {
 
-    // Launch your own MCP server executable OR connect programmatically
-    const mcpClient = new Client({
-        transport: new StdioClientTransport("/mcp-rssmonster-server")
-    });
+    const baseUrl = new URL('http://localhost:3000/mcp'); // MCP server URL
+    let client = undefined;
 
-    await mcpClient.connect()
+    try {
+        // First try Streamable HTTP
+        client = new Client({
+            name: 'streamable-http-client',
+            version: '1.0.0'
+        });
+        const transport = new StreamableHTTPClientTransport(new URL(baseUrl));
+        await client.connect(transport);
+        console.log("Connected using Streamable HTTP transport");
+    } catch (error) {
+        // If that fails, fall back to SSE
+        console.log("Streamable HTTP connection failed");
+    }
 
-    const toolListResponse = await mcpClient.listTools();
-    
-    const tools = toolListResponse.tools; // Array of MCP tool definitions
-
-    console.log("Available MCP Tools:", tools);
-
-    const openai = new OpenAI({
-        apiKey: process.env.OPENAI_API_KEY
-    });
-
+    console.log(req.body);
     const { messages } = req.body;
 
     try {
+        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const response = await openai.chat.completions.create({
             model: "gpt-4.1",
             messages,
