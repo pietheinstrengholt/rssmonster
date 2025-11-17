@@ -21,7 +21,24 @@ const postAgent = async (req, res) => {
         console.log("Streamable HTTP connection failed");
     }
 
-    console.log(req.body);
+    // 1. Load tools from MCP
+    const toolListResponse = await client.listTools();
+    console.log("Loaded tools from MCP:", toolListResponse);
+    const tools = toolListResponse.tools;
+
+    // 2. Convert to OpenAI format
+    const openaiTools = tools.map(t => ({
+        type: "function",
+        function: {
+        name: t.name,
+        description: t.description ?? "",
+        parameters: t.inputSchema ?? {
+            type: "object",
+            properties: {}
+        }
+        }
+    }));
+
     const { messages } = req.body;
 
     try {
@@ -29,7 +46,7 @@ const postAgent = async (req, res) => {
         const response = await openai.chat.completions.create({
             model: "gpt-4.1",
             messages,
-            tools: mcpClient.tools(), // Provide MCP tools to OpenAI
+            tools: openaiTools
         });
 
         res.json(response);
