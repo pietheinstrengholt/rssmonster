@@ -25,6 +25,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.22.0",
+    "@openai/agents": "^0.3.3",
     "@rowanmanning/feed-parser": "^2.1.1",
     "body-parser": "^2.2.0",
     "cheerio": "^1.1.2",
@@ -36,10 +37,10 @@
     "mysql2": "^3.15.3",
     "node-cache": "^5.1.2",
     "node-fetch": "^3.3.2",
-    "openai": "^6.9.0",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
-    "striptags": "^3.2.0"
+    "striptags": "^3.2.0",
+    "zod": "^3.25.76"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"

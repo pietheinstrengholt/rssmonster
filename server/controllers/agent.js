@@ -1,73 +1,46 @@
-import OpenAI from "openai";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
-import { Client } from "@modelcontextprotocol/sdk/client/index.js";
-import dotenv from 'dotenv';
+import { Agent, run, MCPServerStreamableHttp } from "@openai/agents";
+import dotenv from "dotenv";
 dotenv.config();
-
 //set port
 const port = process.env.PORT || 3000;
 
-const postAgent = async (req, res) => {
+export const postAgent = async (req, res) => {
+  try {
+    // 1. Define the MCP server
+    const mcpServer = new MCPServerStreamableHttp({
+        url: `http://localhost:${port}/mcp`,
+        name: 'mcp-rssmonster-server',
+    });
 
-    const baseUrl = new URL(`http://localhost:${port}/mcp`); // MCP server URL
-    let client = undefined;
+    // 2. Build the agent
+    const agent = new Agent({
+      name: "Assistant",
+      instructions: `
+        You are an autonomous RSS feeds management and retrieval assistant. Your goal is to provide a complete answer 
+        using the available MCP tools. You may call any tools provided by the MCP server 
+        to obtain information. Do NOT ask the user for follow-up questions. 
+        Use the tools to find the correct answer and return it directly. 
+        Provide clear, final, and concise output whenever possible.
+            `,
+      model: process.env.OPENAI_MODEL_NAME || "gpt-4.1",
+      mcpServers: [mcpServer]
+    });
 
+    // 3. Fetch input
+    const input = req.body.messages ?? req.body.input ?? "";
+
+    // 4. Connect to MCP server, run the agent, and ensure closure
     try {
-        // First try Streamable HTTP
-        client = new Client({
-            name: 'streamable-http-client',
-            version: '1.0.0'
-        });
-        const transport = new StreamableHTTPClientTransport(new URL(baseUrl));
-        await client.connect(transport);
-        console.log("Connected using Streamable HTTP transport");
-    } catch (error) {
-        // If that fails, fall back to SSE
-        console.log("Streamable HTTP connection failed");
+        await mcpServer.connect();
+        const result = await run(agent, input);
+        return res.status(200).json({ output: result.finalOutput });
+    } finally {
+        await mcpServer.close();
     }
-
-    // 1. Load tools from MCP
-    const toolListResponse = await client.listTools();
-    const tools = toolListResponse.tools;
-    //console.log("Loaded tools from MCP:", tools);
-
-    // 2. Convert to OpenAI format
-    const openaiTools = tools.map(t => ({
-        type: "function",
-        function: {
-        name: t.name,
-        description: t.description ?? "",
-        parameters: t.inputSchema ?? {
-            type: "object",
-            properties: {}
-        }
-        }
-    }));
-
-    const { messages } = req.body;
-
-    const systemPrompt = {
-        role: "system",
-        content: "Agent that manages and retrieves RSS feeds and categories using MCP tools."
-    };
-
-    const finalMessages = [systemPrompt, ...messages];
-
-    try {
-        const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
-        const response = await openai.chat.completions.create({
-            model: process.env.OPENAI_MODEL_NAME || "gpt-5.1",
-            messages: finalMessages,
-            tools: openaiTools
-        });
-        console.log("OpenAI response:", response);
-        res.json(response);
-    } catch (err) {
-        console.error(err);
-        res.status(500).json({ error: err.message });
-    }
+  } catch (err) {
+    console.error("Agent run error:", err);
+    res.status(500).json({ error: err?.message ?? String(err) });
+  }
 };
 
-export default {
-  postAgent
-}
+export default { postAgent };
