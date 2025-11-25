@@ -1,10 +1,15 @@
 import OpenAI from "openai";
-import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js"
-import { Client } from "@modelcontextprotocol/sdk/client/index.js"
+import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/streamableHttp.js";
+import { Client } from "@modelcontextprotocol/sdk/client/index.js";
+import dotenv from 'dotenv';
+dotenv.config();
+
+//set port
+const port = process.env.PORT || 3000;
 
 const postAgent = async (req, res) => {
 
-    const baseUrl = new URL('http://localhost:3000/mcp'); // MCP server URL
+    const baseUrl = new URL(`http://localhost:${port}/mcp`); // MCP server URL
     let client = undefined;
 
     try {
@@ -24,7 +29,7 @@ const postAgent = async (req, res) => {
     // 1. Load tools from MCP
     const toolListResponse = await client.listTools();
     const tools = toolListResponse.tools;
-    console.log("Loaded tools from MCP:", tools);
+    //console.log("Loaded tools from MCP:", tools);
 
     // 2. Convert to OpenAI format
     const openaiTools = tools.map(t => ({
@@ -41,14 +46,21 @@ const postAgent = async (req, res) => {
 
     const { messages } = req.body;
 
+    const systemPrompt = {
+        role: "system",
+        content: "Agent that manages and retrieves RSS feeds and categories using MCP tools."
+    };
+
+    const finalMessages = [systemPrompt, ...messages];
+
     try {
         const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
         const response = await openai.chat.completions.create({
-            model: "gpt-4.1",
-            messages,
+            model: process.env.OPENAI_MODEL_NAME || "gpt-5.1",
+            messages: finalMessages,
             tools: openaiTools
         });
-
+        console.log("OpenAI response:", response);
         res.json(response);
     } catch (err) {
         console.error(err);

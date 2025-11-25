@@ -66,6 +66,10 @@ const postMcp = async (req, res) => {
       - Does not require a search term.  
       - You MUST summarize each article.
 
+    9. get_feeds_by_category_id
+      - Retrieves all feeds associated with a specific category, identified by its categoryId.
+      - Provides a list of all feeds with details like ID, name, URL, and category.
+
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
       For example, to get articles from a feed by name:
@@ -184,25 +188,33 @@ const postMcp = async (req, res) => {
       }
     );
 
-    // Tool: search_articles_by_time
-    server.tool(
-      "search_articles_by_time",
-      `
-      Searches for articles created within a specified time window (in seconds) from now,
-      based on the "createdAt" field.
+  // Tool: search_articles_by_time
+  server.tool(
+    "search_articles_by_time",
+    `
+    Searches for articles created within a specified time window (in seconds) from now,
+    based on the "createdAt" field.
+
+    You may optionally provide a feedId:
+    - If "feedId" is provided, only articles from that feed are returned.
+    - If "feedId" is NOT provided, articles from ALL feeds are returned.
+
+    Examples:
+    - Last hour: seconds = 3600
+    - Last day: seconds = 86400
+
+    The agent must summarize each article returned.
+    `,
+    {
+      seconds: z.number()
+        .min(1)
+        .describe("The time window (in seconds) from the current time to look back."),
       
-      For example:
-      - To get articles from the last hour, set "seconds" to 3600.
-      - To get articles from the last day, set "seconds" to 86400.
-      
-      The agent should summarize each article returned in the results.
-      `,
-      {
-        seconds: z.number()
-          .min(1)
-          .describe("The time range (in seconds) from the current time to look back for recent articles."),
-      },
-      async ({ seconds }) => {
+      feedId: z.string()
+        .optional()
+        .describe("Optional feedId. If omitted, articles from all feeds are included."),
+    },
+      async ({ seconds, feedId }) => {
         try {
           const now = new Date();
           const fromTime = new Date(now.getTime() - seconds * 1000);
@@ -212,6 +224,7 @@ const postMcp = async (req, res) => {
               createdAt: {
                 [Op.between]: [fromTime, now],
               },
+              ...(feedId ? { feedId: feedId } : {}),
             },
             order: [["createdAt", "DESC"]],
             raw: true,
@@ -313,18 +326,54 @@ const postMcp = async (req, res) => {
       }
     );
 
+    // Tool: get_feeds_by_category_id
+    server.tool(
+      "get_feeds_by_category_id",
+      `
+      Retrieves all feeds associated with a specific category, identified by its categoryId.
+      Provides a list of all feeds with details like ID, name, URL, and category.
+      `,
+      {
+        category_id: z.string()
+      },
+      async ({ category_id }) => {
+        try {
+          const feeds = await Feed.findAll({
+            where: { categoryId: category_id },
+            order: [["feedName", "ASC"]],
+            raw: true
+          });
+
+          console.log("Fetched feeds:", feeds);
+
+          return makeResult({ structured: { feeds } });
+        } catch (err) {
+          console.error("Error fetching feeds:", err);
+          return makeResult({ structured: { error: "Failed to fetch feeds." }, error: true });
+        }
+      }
+    );
+
     // Tool: get_favorite_articles
     server.tool(
       "get_favorite_articles",
       `
       Retrieves all articles that are marked as favorites (where status = "star").
       The agent must summarize each article returned in the results (e.g., a 2–3 sentence summary).
+
+      You may optionally provide a feedId:
+      - If "feedId" is provided, only articles from that feed are returned.
+      - If "feedId" is NOT provided, articles from ALL feeds are returned.      
       `,
-      {},
-      async () => {
+      {
+        feedId: z.string()
+          .optional()
+          .describe("Optional feedId. If omitted, articles from all feeds are included."),
+      },
+      async ({ feedId }) => {
         try {
           const articles = await Article.findAll({
-            where: { starInd: 1 },
+            where: { starInd: 1, ...(feedId ? { feedId: feedId } : {}) },
             order: [["createdAt", "DESC"]],
             raw: true,
           });
