@@ -13,17 +13,21 @@
                 data-lpignore="true"
                 data-1p-ignore="true"
                 data-form-type="other"
+                @keydown.enter.prevent="chatInput.trim() && submitChat()"
             ></textarea>
         </div>
         <div>
-            <button type="button" class="btn btn-primary mb-3" @click="submitChat">Submit</button>
+            <button type="button" class="btn btn-primary mb-3" :disabled="!chatInput.trim()" @click="submitChat">Submit</button>
         </div>
         <div v-if="messages.length > 0">
             <h5>Response:</h5>
               <div v-for="message in messages" :key="message.content">
-                <strong v-if="message.role === 'user'">You:</strong>
-                <strong v-else-if="message.role === 'assistant'">Assistant:</strong>
-                {{ message.content }}
+                <div class="user-message" v-if="message.role === 'user'">
+                    <strong>You:</strong> {{ message.content }}
+                </div>
+                <div class="assistant-message" v-else-if="message.role === 'assistant'">
+                    <strong>Assistant:</strong> {{ message.content }}
+                </div>
               </div>
         </div>
     </div>
@@ -32,6 +36,20 @@
 <style>
 div#inputArea {
   margin-top: 50px;
+}
+
+.user-message {
+  background-color: #e0f7fa;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
+}
+
+.assistant-message {
+  background-color: #f1f8e9;
+  padding: 10px;
+  margin-bottom: 10px;
+  border-radius: 5px;
 }
 </style>
 
@@ -51,16 +69,17 @@ export default {
     },
     methods: {
         submitChat: function() {
-            console.log('submitting chat:', this.chatInput);
+            if (!this.chatInput || !this.chatInput.trim()) return;
             const inputMessage = { role: 'user', content: this.chatInput };
             this.messages.push(inputMessage);
+            //empty input field
+            this.chatInput = '';
             axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent", {
             params: {
                 messages: this.messages
             }
             })
             .then(response => {
-                this.chatInput = '';
                 this.chatOutput = response.data.output;
                 this.messages.push({ role: 'assistant', content: this.chatOutput });
             });
