@@ -13,5 +13,6 @@ export default {
     starCount: 0,
     hotCount: 0,
     showModal: false,
-    newUnreads: 0
+    newUnreads: 0,
+    chatAssistantOpen: false
 }

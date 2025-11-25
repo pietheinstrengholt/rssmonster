@@ -40,6 +40,9 @@
         <p>Newest</p>
       </div>
     </div>
+    <div class="status-toolbar" @click="chatAssistant">
+      <p>Chat</p>
+    </div>
     <form
       id="search-form"
       class="search-wrap"
@@ -95,7 +98,7 @@
 }
 
 .search-wrap {
-  width: 50%;
+  width: 40%;
   float: left;
 }
 
@@ -214,6 +217,9 @@ export default {
     sortClicked: function(sort) {
       this.store.currentSelection.sort = sort;
       this.toggleShowSort();
+    },
+    chatAssistant: function() {
+      this.$emit('chatAssistant');
     }
   },
   computed:{

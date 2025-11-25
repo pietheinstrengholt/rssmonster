@@ -9,10 +9,11 @@
         <!-- Quickbar events -->
         <app-quickbar @mobile="mobileClick" @forceReload="forceReload"></app-quickbar>
         <!-- Toolbar events -->
-        <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
+        <app-toolbar id="toolbar" @forceReload="forceReload" @chatAssistant="chatAssistant"></app-toolbar>
           <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home ref="home"></app-home>
+        <app-home v-if="!store.chatAssistantOpen" ref="home"></app-home>
+        <app-assistant v-if="store.chatAssistantOpen" @close="store.chatAssistantOpen = false"></app-assistant>
       </div>
     </div>
     <!-- Modal events -->
@@ -124,6 +125,7 @@ const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar
 const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
 const Modal = defineAsyncComponent(() =>  import(/* webpackChunkName: "modal" */ "./components/Modal.vue"));
 const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
+const Assistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "assistant" */ "./components/Assistant.vue"));
 
 export default {
   components: {
@@ -132,7 +134,8 @@ export default {
     appToolbar: Toolbar,
     appQuickbar: Quickbar,
     appModal: Modal,
-    appMobile: Mobile
+    appMobile: Mobile,
+    appAssistant: Assistant
   },
   data() {
     return {
@@ -324,6 +327,11 @@ export default {
       this.getOverview(true);
       //invoke ref home child component function to reload content
       this.$refs.home.fetchArticleIds(this.store.currentSelection);
+    },
+    chatAssistant() {
+      console.log("Chat Assistant invoked from App.vue");
+      //invoke ref sidebar child component function to refresh feeds
+      this.store.chatAssistantOpen = true;
     },
     refreshFeeds() {
       //call sidebar refreshFeeds function
