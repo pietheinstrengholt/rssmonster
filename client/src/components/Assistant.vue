@@ -18,6 +18,7 @@
         </div>
         <div>
             <button type="button" class="btn btn-primary mb-3" :disabled="!chatInput.trim()" @click="submitChat">Submit</button>
+            <button type="button" class="btn btn-secondary mb-3 ms-2" :disabled="messages.length === 0" @click="clearConversation">Clear</button>
         </div>
         <div v-if="messages.length > 0">
             <h5>Response:</h5>
@@ -92,6 +93,10 @@ export default {
                     content: this.chatOutput
                 });
             });
+        },
+        clearConversation: function() {
+            this.messages = [];
+            this.chatOutput = '';
         }
     },
     created() {
