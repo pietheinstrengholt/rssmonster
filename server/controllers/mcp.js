@@ -70,6 +70,10 @@ const postMcp = async (req, res) => {
       - Retrieves all feeds associated with a specific category, identified by its categoryId.
       - Provides a list of all feeds with details like ID, name, URL, and category.
 
+    10. get_current_time
+      - Returns the current server time as an ISO-8601 timestamp.
+      - This is the standard format agents typically use for time calculations.
+
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
       For example, to get articles from a feed by name:
@@ -399,6 +403,28 @@ const postMcp = async (req, res) => {
           console.error("Error fetching favorite articles:", err);
           return makeResult({
             structured: { error: "Failed to fetch favorite articles." },
+            error: true,
+          });
+        }
+      }
+    );
+
+    // Tool: get_current_time
+    server.tool(
+      "get_current_time",
+      `
+      Returns the current server time as an ISO-8601 timestamp.
+      This is the standard format agents typically use for time calculations.
+      `,
+      {},
+      async () => {
+        try {
+          const now = new Date().toISOString();
+          return makeResult({ structured: { now } });
+        } catch (err) {
+          console.error("Error returning current time:", err);
+          return makeResult({
+            structured: { error: "Failed to retrieve current server time." },
             error: true,
           });
         }
