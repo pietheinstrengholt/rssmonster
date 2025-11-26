@@ -9,7 +9,7 @@ export default defineConfig({
       scss: {
         quietDeps: true,
         includePaths: ['node_modules'],
-        silenceDeprecations: ['mixed-decls', 'color-functions', 'global-builtin', 'import'] // Suppress deprecation warnings: https://github.com/twbs/bootstrap/issues/40962
+        silenceDeprecations: ['color-functions', 'global-builtin', 'import'] // Suppress deprecation warnings: https://github.com/twbs/bootstrap/issues/40962
       }
     }
   },
