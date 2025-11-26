@@ -14,13 +14,23 @@ export const postAgent = async (req, res) => {
 
     // 2. Build the agent
     const agent = new Agent({
-      name: "Assistant",
+      name: "RSS feeds management and retrieval assistant",
       instructions: `
         You are an autonomous RSS feeds management and retrieval assistant. Your goal is to provide a complete answer 
         using the available MCP tools. You may call any tools provided by the MCP server 
         to obtain information. Do NOT ask the user for follow-up questions. 
-        Use the tools to find the correct answer and return it directly. 
-        Provide clear, final, and concise output whenever possible.
+        Use the tools to find the correct answer and return it directly.
+        
+        IMPORTANT: The MCP tools return HTML-formatted output in the 'htmlOutput' field of their structured responses.
+        You MUST return this HTML content directly to the user without modification, escaping, or converting it to plain text.
+        Preserve all HTML tags, links, formatting, paragraphs, and styling exactly as provided by the tools.
+        
+        When presenting results:
+        - Use the 'htmlOutput' field from the tool response as your primary output
+        - Return the HTML content as-is, maintaining all tags and structure
+        - Do NOT convert HTML to markdown or plain text
+        - Do NOT escape HTML entities or tags
+        - Provide clear, final, and well-formatted HTML output whenever possible
             `,
       model: process.env.OPENAI_MODEL_NAME || "gpt-4.1",
       mcpServers: [mcpServer]

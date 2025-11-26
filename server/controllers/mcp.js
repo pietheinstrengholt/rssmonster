@@ -111,17 +111,30 @@ const postMcp = async (req, res) => {
 
           console.log(`Fetched ${articles.length} articles for search "${search}"`);
 
+          let html = `<h3>Search Results for "${search}"</h3>`;
+          html += `<p>Found <strong>${articles.length}</strong> article(s) matching your search.</p>`;
+          
+          if (articles.length > 0) {
+            html += '<div class="articles">';
+            articles.forEach(article => {
+              html += '<div class="article" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">';
+              html += `<h4><a href="${article.url || '#'}" target="_blank">${article.subject || 'No Subject'}</a></h4>`;
+              if (article.author) html += `<p><em>By ${article.author}</em></p>`;
+              html += `<p><small>Created: ${new Date(article.createdAt).toLocaleString()}</small></p>`;
+              const snippet = article.content?.replace(/<[^>]*>/g, '').slice(0, 300) || "";
+              if (snippet) html += `<p>${snippet}${article.content?.length > 300 ? '...' : ''}</p>`;
+              html += '</div>';
+            });
+            html += '</div>';
+          } else {
+            html += '<p><em>No articles found.</em></p>';
+          }
+
           const structured = {
             searchQuery: search,
-            articles: articles.map(article => ({
-              id: article.id,
-              title: article.title,
-              subject: article.subject,
-              author: article.author,
-              createdAt: article.createdAt,
-              contentSnippet: article.content?.slice(0, 300) || "",
-              note: "The agent must summarize this article based on its title, subject, and content.",
-            })),
+            totalResults: articles.length,
+            htmlOutput: html,
+            articles: articles
           };
 
           return makeResult({ structured });
@@ -167,18 +180,32 @@ const postMcp = async (req, res) => {
 
           console.log(`Fetched ${articles.length} articles for feed ID ${feedId}`);
 
+          let html = `<h3>Articles from ${feed.feedName}</h3>`;
+          html += `<p><strong>Feed:</strong> <a href="${feed.url || '#'}" target="_blank">${feed.feedName}</a></p>`;
+          if (feed.feedDesc) html += `<p><em>${feed.feedDesc}</em></p>`;
+          html += `<p>Total articles: <strong>${articles.length}</strong></p><br>`;
+          
+          if (articles.length > 0) {
+            html += '<div class="articles">';
+            articles.forEach(article => {
+              html += '<div class="article" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px;">';
+              html += `<h4><a href="${article.url || '#'}" target="_blank">${article.subject || 'No Subject'}</a></h4>`;
+              if (article.author) html += `<p><em>By ${article.author}</em></p>`;
+              html += `<p><small>Created: ${new Date(article.createdAt).toLocaleString()}</small></p>`;
+              const snippet = article.content?.replace(/<[^>]*>/g, '').slice(0, 300) || "";
+              if (snippet) html += `<p>${snippet}${article.content?.length > 300 ? '...' : ''}</p>`;
+              html += '</div>';
+            });
+            html += '</div>';
+          } else {
+            html += '<p><em>No articles found in this feed.</em></p>';
+          }
+
           const structured = {
             feed,
             totalArticles: articles.length,
-            articles: articles.map(article => ({
-              id: article.id,
-              title: article.title,
-              subject: article.subject,
-              author: article.author,
-              createdAt: article.createdAt,
-              contentSnippet: article.content?.slice(0, 300) || "",
-              note: "The agent must summarize this article based on its title, subject, and content.",
-            })),
+            htmlOutput: html,
+            articles: articles
           };
 
           return makeResult({ structured });
@@ -384,18 +411,30 @@ const postMcp = async (req, res) => {
 
           console.log(`Fetched ${articles.length} favorite (starred) articles`);
 
+          let html = `<h3>⭐ Favorite Articles</h3>`;
+          if (feedId) html += `<p>Filtered by feed ID: <strong>${feedId}</strong></p>`;
+          html += `<p>Total favorites: <strong>${articles.length}</strong></p><br>`;
+          
+          if (articles.length > 0) {
+            html += '<div class="articles">';
+            articles.forEach(article => {
+              html += '<div class="article" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fffbea;">';
+              html += `<h4>⭐ <a href="${article.url || '#'}" target="_blank">${article.subject || 'No Subject'}</a></h4>`;
+              if (article.author) html += `<p><em>By ${article.author}</em></p>`;
+              html += `<p><small>Created: ${new Date(article.createdAt).toLocaleString()}</small></p>`;
+              const snippet = article.content?.replace(/<[^>]*>/g, '').slice(0, 300) || "";
+              if (snippet) html += `<p>${snippet}${article.content?.length > 300 ? '...' : ''}</p>`;
+              html += '</div>';
+            });
+            html += '</div>';
+          } else {
+            html += '<p><em>No favorite articles yet. Star some articles to see them here!</em></p>';
+          }
+
           const structured = {
             totalFavorites: articles.length,
-            articles: articles.map(article => ({
-              id: article.id,
-              title: article.title,
-              subject: article.subject,
-              author: article.author,
-              createdAt: article.createdAt,
-              status: article.status,
-              contentSnippet: article.content?.slice(0, 300) || "",
-              note: "The agent must summarize this article based on its title, subject, and content.",
-            })),
+            htmlOutput: html,
+            articles: articles
           };
 
           return makeResult({ structured });
@@ -463,21 +502,31 @@ const postMcp = async (req, res) => {
             `Fetched ${articles.length} hot articles sorted=${sort}`
           );
 
+          let html = `<h3>🔥 Hot Articles</h3>`;
+          html += `<p>Total hot articles: <strong>${articles.length}</strong></p>`;
+          html += `<p><small>Sorted by published date: ${sort === 'DESC' ? 'Newest first' : 'Oldest first'}</small></p><br>`;
+          
+          if (articles.length > 0) {
+            html += '<div class="articles">';
+            articles.forEach(article => {
+              html += '<div class="article" style="margin-bottom: 20px; padding: 15px; border: 1px solid #ddd; border-radius: 5px; background-color: #fff3f3;">';
+              html += `<h4>🔥 <a href="${article.url || '#'}" target="_blank">${article.subject || 'No Subject'}</a></h4>`;
+              if (article.author) html += `<p><em>By ${article.author}</em></p>`;
+              html += `<p><small>Published: ${article.published ? new Date(article.published).toLocaleString() : 'N/A'}</small></p>`;
+              const snippet = article.content?.replace(/<[^>]*>/g, '').slice(0, 300) || "";
+              if (snippet) html += `<p>${snippet}${article.content?.length > 300 ? '...' : ''}</p>`;
+              html += '</div>';
+            });
+            html += '</div>';
+          } else {
+            html += '<p><em>No hot articles at the moment.</em></p>';
+          }
+
           const structured = {
             sortOrder: sort,
             totalHotArticles: articles.length,
-            articles: articles.map(a => ({
-              id: a.id,
-              title: a.title,
-              subject: a.subject,
-              author: a.author,
-              createdAt: a.createdAt,
-              published: a.published,
-              status: a.status,
-              url: a.url,
-              contentSnippet: a.content?.slice(0, 300) || "",
-              note: "The agent must summarize this article based on its title, subject, and content."
-            })),
+            htmlOutput: html,
+            articles: articles
           };
 
           return makeResult({ structured });
