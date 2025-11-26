@@ -69,19 +69,28 @@ export default {
     },
     methods: {
         submitChat: function() {
+            //prevent empty input
             if (!this.chatInput || !this.chatInput.trim()) return;
+            //add user input to messages
             const inputMessage = { role: 'user', content: this.chatInput };
             this.messages.push(inputMessage);
             //empty input field
             this.chatInput = '';
-            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent", {
-            params: {
+            //send messages to server
+            axios.post(
+            import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent",
+            {
                 messages: this.messages
             }
-            })
+            )
             .then(response => {
+                //handle server response
                 this.chatOutput = response.data.output;
-                this.messages.push({ role: 'assistant', content: this.chatOutput });
+                //add assistant response to messages
+                this.messages.push({
+                    role: 'assistant',
+                    content: this.chatOutput
+                });
             });
         }
     },
