@@ -12,7 +12,8 @@
         <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home v-if="!offlineStatus" ref="home"></app-home>
+        <app-home v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="home"></app-home>
+        <app-assistant v-if="enableAgent && $store.data.chatAssistantOpen"></app-assistant>
       </div>
     </div>
     <!-- Mobile events -->
@@ -139,6 +140,7 @@ const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar"
 const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue"));
 const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
 const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
+const Assistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "assistant" */ "./components/Assistant.vue"));
 
 //import modals
 const NewCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "newcategory" */ "./components/Modal/NewCategory.vue"));
@@ -157,6 +159,7 @@ export default {
     appToolbar: Toolbar,
     appQuickbar: Quickbar,
     appMobile: Mobile,
+    appAssistant: Assistant,
     //import modals
     appNewCategory: NewCategory,
     appNewFeed: NewFeed,
@@ -175,6 +178,11 @@ export default {
       notificationStatus: null,
       offlineStatus: false
     };
+  },
+  computed: {
+    enableAgent() {
+      return import.meta.env.VITE_ENABLE_AGENT === 'true';
+    }
   },
   created: async function() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;

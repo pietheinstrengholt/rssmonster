@@ -18,7 +18,8 @@ export const useStore = defineStore('data', {
     hotCount: 0,
     showModal: false,
     newUnreads: 0,
-    refreshCategories: 0
+    refreshCategories: 0,
+    chatAssistantOpen: false
   }),
   actions: {
     setCategories(categories) {
