@@ -40,6 +40,9 @@
         <p>Newest</p>
       </div>
     </div>
+    <div v-if="enableAgent" class="status-toolbar" @click="chatAssistant">
+      <p>{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}</p>
+    </div>    
     <form
       id="search-form"
       class="search-wrap"
@@ -211,6 +214,9 @@ export default {
     sortClicked: function(sort) {
       this.$store.data.setSelectedSort(sort);
       this.toggleShowSort();
+    },
+    chatAssistant: function() {
+      this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
     }
   },
   computed:{
@@ -218,6 +224,9 @@ export default {
       return (value)=> {
         return value.charAt(0).toUpperCase() + value.slice(1);
       }
+    },
+    enableAgent() {
+      return import.meta.env.VITE_ENABLE_AGENT === 'true';
     }
   }
 };

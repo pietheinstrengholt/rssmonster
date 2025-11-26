@@ -5,7 +5,7 @@
 Copyright (c) 2025 Piethein Strengholt, piethein@strengholt-online.nl
 
 ### Background
-RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternative to one of my favorite tools, Google Reader. Motivated by the need to replace Google Reader for tracking RSS feeds, RSSMonster aims to replicate its functionality while offering modern enhancements.
+RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternative to one of my favorite tools, Google Reader. Motivated by the need to replace Google Reader for tracking RSS feeds, RSSMonster aims to replicate its functionality while offering modern enhancements. With built-in support for the Model Context Protocol (MCP), RSSMonster now features an AI-powered assistant that helps you discover, search, and manage your RSS feeds using natural language.
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
@@ -17,6 +17,7 @@ RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternat
 - Dark Mode: Switch to dark mode for a comfortable reading experience in low-light environments.
 - Fever API Compatibility: Fully compatible with the Fever API, allowing for integration with other RSS tools.
 - Multi-user: RSSMonster allows multiple users to create and manage their own accounts, each with personalized feed preferences and settings.
+- AI Assistant (MCP): Integrated AI assistant powered by the Model Context Protocol (MCP) for natural language search and feed management.
 
 ### Prerequisites
 * NPM and NodeJS 20.x or higher
@@ -31,6 +32,32 @@ RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternat
 * Edit `.env` inside the `client` folder. Change the VITE_APP_HOSTNAME, so it points to the back-end.
 * Run `./node_modules/.bin/sequelize db:migrate && ./node_modules/.bin/sequelize db:seed:all` in side the `server` folder. this will add all needed database tables and content to your mysql database.
 * Optional: Add a cronjob to crawl http://localhost/api/crawl every 5 minutes.
+
+### AI Assistant with Model Context Protocol (MCP)
+RSSMonster features an integrated AI assistant powered by the Model Context Protocol (MCP), enabling natural language interactions with your RSS feeds. You can ask questions like "Show me articles about technology from the last week" or "What are my favorite articles?" and the assistant will search and present results in a user-friendly format.
+
+#### Enabling the AI Assistant
+To enable the AI assistant feature, you need to configure environment variables on both the server and client side:
+
+**Server Configuration** (`server/.env`):
+```
+OPENAI_API_KEY=your-openai-api-key
+OPENAI_MODEL_NAME=gpt-5.1
+```
+
+**Client Configuration** (`client/.env`):
+```
+VITE_ENABLE_AGENT=true
+```
+
+After configuring these settings and restarting both the client and server, the AI assistant will be available in the RSSMonster interface. The assistant provides:
+- Natural language search across all your articles
+- Time-based article filtering (e.g., "articles from last month")
+- Feed and category management queries
+- Favorite and hot article discovery
+- Smart recommendations based on your reading habits
+
+All assistant interactions respect multi-user boundaries, ensuring each user can only access their own feeds and articles.
 
 ### Development
 If you would like to run RSSMonster in development mode I recommend to run:
