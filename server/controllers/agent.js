@@ -30,7 +30,6 @@ export const postAgent = async (req, res) => {
     const messages = req.body.messages;
     let input = req.body.input ?? "";
     let chatHistory = [];
-    let chatHistoryString = "";
     
     // If messages array exists, build chat history and find the last user message
     if (Array.isArray(messages) && messages.length > 0) {
@@ -40,25 +39,17 @@ export const postAgent = async (req, res) => {
         content: msg.content
       }));
       
-      // Convert chat history to string format
-      chatHistoryString = chatHistory
-        .map(msg => `${msg.role}: ${msg.content}`)
-        .join('\n');
-      
       // Find last message with role 'user'
       const lastUserMessage = [...messages].reverse().find(msg => msg.role === 'user');
       if (lastUserMessage) {
         input = lastUserMessage.content;
       }
     }
-    
-    console.log("Received input:", input);
-    console.log("Chat history string:", chatHistoryString);
 
     // 4. Connect to MCP server, run the agent, and ensure closure
     try {
         await mcpServer.connect();
-        const result = await run(agent, input, { chatHistoryString });
+        const result = await run(agent, input, { chatHistory });
         return res.status(200).json({ output: result.finalOutput });
     } finally {
         await mcpServer.close();
