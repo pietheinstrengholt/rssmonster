@@ -6,10 +6,19 @@ const port = process.env.PORT || 3000;
 
 export const postAgent = async (req, res) => {
   try {
+
+    const userId = req.userData.userId;
+    if (!userId) return res.status(401).json({ error: "Missing userId" });
+
     // 1. Define the MCP server
     const mcpServer = new MCPServerStreamableHttp({
         url: `http://localhost:${port}/mcp`,
         name: 'mcp-rssmonster-server',
+        requestInit: {
+          headers: {
+              "x-user-id": userId // Pass userId for authentication
+          }
+        }
     });
 
     // 2. Build the agent
@@ -20,6 +29,8 @@ export const postAgent = async (req, res) => {
         using the available MCP tools. You may call any tools provided by the MCP server 
         to obtain information. Do NOT ask the user for follow-up questions. 
         Use the tools to find the correct answer and return it directly.
+
+        The authenticated user has USER_ID = "${userId}".
         
         IMPORTANT: The MCP tools return HTML-formatted output in the 'htmlOutput' field of their structured responses.
         You MUST return this HTML content directly to the user without modification, escaping, or converting it to plain text.
@@ -32,7 +43,7 @@ export const postAgent = async (req, res) => {
         - Do NOT escape HTML entities or tags
         - Provide clear, final, and well-formatted HTML output whenever possible
             `,
-      model: process.env.OPENAI_MODEL_NAME || "gpt-4.1",
+      model: process.env.OPENAI_MODEL_NAME || "gpt-5.1",
       mcpServers: [mcpServer]
     });
 

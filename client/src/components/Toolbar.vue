@@ -41,7 +41,7 @@
       </div>
     </div>
     <div v-if="enableAgent" class="status-toolbar" @click="chatAssistant">
-      <p>Chat</p>
+      <p>{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}</p>
     </div>    
     <form
       id="search-form"

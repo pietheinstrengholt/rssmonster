@@ -102,10 +102,13 @@ const postMcp = async (req, res) => {
       {
         search: z.string().describe("Keyword to search for in the article subject or content."),
       },
-      async ({ search }) => {
+      async ({ search }, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
+          console.log('userId:', userId);
           const articles = await Article.findAll({
             where: {
+              userId: userId,
               [Op.or]: [
                 { subject: { [Op.like]: `%${search}%` } },
                 { content: { [Op.like]: `%${search}%` } },
@@ -168,9 +171,10 @@ const postMcp = async (req, res) => {
       {
         feedId: z.number().describe("The unique identifier (ID) of the feed to fetch articles for."),
       },
-      async ({ feedId }) => {
+      async ({ feedId }, context) => {
         try {
-          const feed = await Feed.findOne({ where: { id: feedId }, raw: true });
+          const userId = context.requestInfo.headers["x-user-id"];
+          const feed = await Feed.findOne({ where: { id: feedId, userId: userId }, raw: true });
           if (!feed) {
             return makeResult({
               structured: { error: `No feed found with ID ${feedId}.` },
@@ -179,7 +183,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
-            where: { feedId },
+            where: { feedId, userId: userId },
             order: [["createdAt", "DESC"]],
             raw: true,
           });
@@ -225,39 +229,41 @@ const postMcp = async (req, res) => {
       }
     );
 
-  // Tool: search_articles_by_time
-  server.tool(
-    "search_articles_by_time",
-    `
-    Searches for articles created within a specified time window (in seconds) from now,
-    based on the "createdAt" field.
+    // Tool: search_articles_by_time
+    server.tool(
+      "search_articles_by_time",
+      `
+      Searches for articles created within a specified time window (in seconds) from now,
+      based on the "createdAt" field.
 
-    You may optionally provide a feedId:
-    - If "feedId" is provided, only articles from that feed are returned.
-    - If "feedId" is NOT provided, articles from ALL feeds are returned.
+      You may optionally provide a feedId:
+      - If "feedId" is provided, only articles from that feed are returned.
+      - If "feedId" is NOT provided, articles from ALL feeds are returned.
 
-    Examples:
-    - Last hour: seconds = 3600
-    - Last day: seconds = 86400
+      Examples:
+      - Last hour: seconds = 3600
+      - Last day: seconds = 86400
 
-    The agent must summarize each article returned.
-    `,
-    {
-      seconds: z.number()
-        .min(1)
-        .describe("The time window (in seconds) from the current time to look back."),
-      
-      feedId: z.string()
-        .optional()
-        .describe("Optional feedId. If omitted, articles from all feeds are included."),
-    },
-      async ({ seconds, feedId }) => {
+      The agent must summarize each article returned.
+      `,
+      {
+        seconds: z.number()
+          .min(1)
+          .describe("The time window (in seconds) from the current time to look back."),
+        
+        feedId: z.string()
+          .optional()
+          .describe("Optional feedId. If omitted, articles from all feeds are included."),
+      },
+      async ({ seconds, feedId }, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
           const now = new Date();
           const fromTime = new Date(now.getTime() - seconds * 1000);
 
           const articles = await Article.findAll({
             where: {
+              userId: userId,
               createdAt: {
                 [Op.between]: [fromTime, now],
               },
@@ -304,9 +310,10 @@ const postMcp = async (req, res) => {
       {
         feed_name: z.string()
       },
-      async ({ feed_name }) => {
+      async ({ feed_name }, context) => {
         try {
-          const feed = await Feed.findOne({ where: { feedName: { [Op.like]: `%${feed_name}%` } }, raw: true });
+          const userId = context.requestInfo.headers["x-user-id"];
+          const feed = await Feed.findOne({ where: { feedName: { [Op.like]: `%${feed_name}%` }, userId: userId }, raw: true });
           console.log(`Fetched feed for name "${feed_name}":`, feed);
 
           if (!feed) {
@@ -325,9 +332,11 @@ const postMcp = async (req, res) => {
     server.tool(
       "get_categories",
       "Provides a list of all categories with details like ID, name, description, and order.",
-      async () => {
+      async (params, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
           const categories = await Category.findAll({
+            where: { userId: userId },
             order: [["categoryOrder", "ASC"], ["name", "ASC"]],
             raw: true
           });
@@ -346,9 +355,11 @@ const postMcp = async (req, res) => {
     server.tool(
       "get_feeds",
       "Provides a list of all feeds with details like ID, name, URL, and category.",
-      async () => {
+      async (params, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
           const feeds = await Feed.findAll({
+            where: { userId: userId },
             order: [["feedName", "ASC"]],
             raw: true
           });
@@ -373,10 +384,11 @@ const postMcp = async (req, res) => {
       {
         category_id: z.string()
       },
-      async ({ category_id }) => {
+      async ({ category_id }, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
           const feeds = await Feed.findAll({
-            where: { categoryId: category_id },
+            where: { categoryId: category_id, userId: userId },
             order: [["feedName", "ASC"]],
             raw: true
           });
@@ -407,10 +419,11 @@ const postMcp = async (req, res) => {
           .optional()
           .describe("Optional feedId. If omitted, articles from all feeds are included."),
       },
-      async ({ feedId }) => {
+      async ({ feedId }, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
           const articles = await Article.findAll({
-            where: { starInd: 1, ...(feedId ? { feedId: feedId } : {}) },
+            where: { starInd: 1, userId: userId, ...(feedId ? { feedId: feedId } : {}) },
             order: [["createdAt", "DESC"]],
             raw: true,
           });
@@ -491,14 +504,16 @@ const postMcp = async (req, res) => {
           .default("DESC")
           .describe("Sorting order for the 'published' field."),
       },
-      async ({ sort }) => {
+      async ({ sort }, context) => {
         try {
+          const userId = context.requestInfo.headers["x-user-id"];
           // Retrieve list of hot article URLs or IDs from cache
           const hotArticleIds = cache.all(); // must be an array of URLs (or IDs)
 
           const articles = await Article.findAll({
             where: {
-              url: hotArticleIds
+              url: hotArticleIds,
+              userId: userId
             },
             order: [["published", sort]],
             raw: true
