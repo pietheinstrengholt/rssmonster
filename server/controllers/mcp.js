@@ -6,6 +6,7 @@ import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 import { Op } from 'sequelize';
 import cache from "../util/cache.js";
+import crawlController from "./crawl.js";
 
 // Shared helper to build tool result
 function makeResult({ structured, error=false }) {
@@ -73,6 +74,11 @@ const postMcp = async (req, res) => {
     10. get_current_time
       - Returns the current server time as an ISO-8601 timestamp.
       - This is the standard format agents typically use for time calculations.
+
+    11. crawl
+      - Triggers the RSS feed crawler to fetch new articles from all active feeds.
+      - This will check all feeds and import new articles into the database.
+      - Use this when the user asks to refresh feeds, update articles, or crawl for new content.
 
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
@@ -534,6 +540,51 @@ const postMcp = async (req, res) => {
           console.error("Error fetching hot articles:", err);
           return makeResult({
             structured: { error: "Failed to fetch hot articles." },
+            error: true
+          });
+        }
+      }
+    );
+
+    // Tool: crawl
+    server.tool(
+      "crawl",
+      `
+      Triggers the RSS feed crawler to fetch new articles from all active feeds.
+      This will check all feeds and import new articles into the database.
+      Use this when the user asks to refresh feeds, update articles, or crawl for new content.
+      `,
+      {},
+      async () => {
+        try {
+          // Create mock request/response objects for the crawl controller
+          const mockReq = {};
+          const mockRes = {
+            status: (code) => ({
+              json: (data) => {
+                console.log(`Crawl response: ${JSON.stringify(data)}`);
+                return data;
+              }
+            })
+          };
+          const mockNext = (err) => {
+            if (err) throw err;
+          };
+
+          // Call the crawlRssLinks function
+          await crawlController.crawlRssLinks(mockReq, mockRes, mockNext);
+
+          const structured = {
+            success: true,
+            message: "RSS feed crawling has been initiated. New articles will be fetched from all active feeds.",
+            note: "The crawling process runs asynchronously. Articles should appear shortly."
+          };
+
+          return makeResult({ structured });
+        } catch (err) {
+          console.error("Error triggering crawl:", err);
+          return makeResult({
+            structured: { error: "Failed to trigger RSS crawl: " + err.message },
             error: true
           });
         }
