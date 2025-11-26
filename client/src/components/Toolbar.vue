@@ -40,7 +40,7 @@
         <p>Newest</p>
       </div>
     </div>
-    <div class="status-toolbar" @click="chatAssistant">
+    <div v-if="enableAgent" class="status-toolbar" @click="chatAssistant">
       <p>Chat</p>
     </div>
     <form
@@ -227,6 +227,9 @@ export default {
       return (value)=> {
         return value.charAt(0).toUpperCase() + value.slice(1);
       }
+    },
+    enableAgent() {
+      return import.meta.env.VITE_ENABLE_AGENT === 'true';
     }
   }
 };

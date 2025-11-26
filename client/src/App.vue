@@ -13,7 +13,7 @@
           <p class="offline" v-show="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
         <app-home v-if="!store.chatAssistantOpen" ref="home"></app-home>
-        <app-assistant v-if="store.chatAssistantOpen" @close="store.chatAssistantOpen = false"></app-assistant>
+        <app-assistant v-if="enableAgent && store.chatAssistantOpen" @close="store.chatAssistantOpen = false"></app-assistant>
       </div>
     </div>
     <!-- Modal events -->
@@ -147,6 +147,11 @@ export default {
       notificationStatus: null,
       offlineStatus: false
     };
+  },
+  computed: {
+    enableAgent() {
+      return import.meta.env.VITE_ENABLE_AGENT === 'true';
+    }
   },
   created: async function() {
     //reset newUnreads count to zero
