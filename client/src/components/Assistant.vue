@@ -17,8 +17,14 @@
             ></textarea>
         </div>
         <div>
-            <button type="button" class="btn btn-primary mb-3" :disabled="!chatInput.trim()" @click="submitChat">Submit</button>
+            <button type="button" class="btn btn-primary mb-3" :disabled="!chatInput.trim() || isLoading" @click="submitChat">Submit</button>
             <button type="button" class="btn btn-secondary mb-3 ms-2" :disabled="messages.length === 0" @click="clearConversation">Clear</button>
+        </div>
+        <div v-if="isLoading" class="loading-spinner">
+            <div class="spinner-border text-primary" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+            <span class="ms-2">Agent is thinking...</span>
         </div>
         <div v-if="messages.length > 0">
             <h5>Response:</h5>
@@ -27,7 +33,7 @@
                     <strong>You:</strong> {{ message.content }}
                 </div>
                 <div class="assistant-message" v-else-if="message.role === 'assistant'">
-                    <strong>Assistant:</strong> {{ message.content }}
+                    <strong>Assistant:</strong> <span v-html="message.content"></span>
                 </div>
               </div>
         </div>
@@ -52,6 +58,13 @@ div#inputArea {
   margin-bottom: 10px;
   border-radius: 5px;
 }
+
+.loading-spinner {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+  color: #666;
+}
 </style>
 
 <script>
@@ -65,7 +78,8 @@ export default {
             store: store,
             chatInput: '',
             chatOutput: '',
-            messages: []
+            messages: [],
+            isLoading: false
         };
     },
     methods: {
@@ -77,6 +91,8 @@ export default {
             this.messages.push(inputMessage);
             //empty input field
             this.chatInput = '';
+            //set loading state
+            this.isLoading = true;
             //send messages to server
             axios.post(
             import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent",
@@ -92,6 +108,17 @@ export default {
                     role: 'assistant',
                     content: this.chatOutput
                 });
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                this.messages.push({
+                    role: 'assistant',
+                    content: 'Sorry, there was an error processing your request.'
+                });
+            })
+            .finally(() => {
+                //clear loading state
+                this.isLoading = false;
             });
         },
         clearConversation: function() {
