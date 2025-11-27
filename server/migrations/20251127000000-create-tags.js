@@ -52,11 +52,16 @@ module.exports = {
       name: 'tags_userId_name_idx',
       unique: false
     });
+    await queryInterface.addIndex('tags', ['name'], {
+      name: 'tags_name_idx',
+      unique: false
+    });
   },
 
   down: async (queryInterface) => {
     await queryInterface.removeIndex('tags', 'tags_articleId_name_idx');
     await queryInterface.removeIndex('tags', 'tags_userId_name_idx');
+    await queryInterface.removeIndex('tags', 'tags_name_idx');
     await queryInterface.dropTable('tags');
   }
 };
