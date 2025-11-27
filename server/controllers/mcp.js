@@ -234,6 +234,10 @@ const postMcp = async (req, res) => {
       You may optionally provide a feedId:
       - If "feedId" is provided, only articles from that feed are returned.
       - If "feedId" is NOT provided, articles from ALL feeds are returned.
+      
+      You may optionally provide a status:
+      - If "status" is provided, only articles with that status are returned.
+      - If "status" is NOT provided, defaults to "unread".
       `,
       {
         search: z.string().describe("Keyword to search for in the article subject or content."),
@@ -241,12 +245,17 @@ const postMcp = async (req, res) => {
         feedId: z.string()
           .optional()
           .describe("Optional feedId. If omitted, articles from all feeds are included."),
+
+        status: z.enum(["read", "unread"])
+          .default("unread")
+          .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
-      async ({ search, feedId }) => {
+      async ({ search, feedId, status }) => {
         try {
           const articles = await Article.findAll({
             where: {
               userId: userId,
+              status: status,
               ...(feedId ? { feedId: feedId } : {}),
               [Op.or]: [
                 { subject: { [Op.like]: `%${search}%` } },
@@ -292,6 +301,10 @@ const postMcp = async (req, res) => {
       - If "feedId" is provided, only articles from that feed are returned.
       - If "feedId" is NOT provided, articles from ALL feeds are returned.
 
+      You may optionally provide a status:
+      - If "status" is provided, only articles with that status are returned.
+      - If "status" is NOT provided, defaults to "unread".
+
       Examples:
       - Last hour: seconds = 3600
       - Last day: seconds = 86400
@@ -306,8 +319,12 @@ const postMcp = async (req, res) => {
         feedId: z.string()
           .optional()
           .describe("Optional feedId. If omitted, articles from all feeds are included."),
+
+        status: z.enum(["read", "unread"])
+          .default("unread")
+          .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
-      async ({ seconds, feedId }) => {
+      async ({ seconds, feedId, status }) => {
         try {
           const now = new Date();
           const fromTime = new Date(now.getTime() - seconds * 1000);
@@ -315,6 +332,7 @@ const postMcp = async (req, res) => {
           const articles = await Article.findAll({
             where: {
               userId: userId,
+              status: status,
               createdAt: {
                 [Op.between]: [fromTime, now],
               },
@@ -364,11 +382,19 @@ const postMcp = async (req, res) => {
       
       Note: If the agent does not know the feedId, it must first call the "feeds" tool 
       to retrieve a list of all available feeds along with their corresponding feedIds.
+
+      You may optionally provide a status:
+      - If "status" is provided, only articles with that status are returned.
+      - If "status" is NOT provided, defaults to "unread".
       `,
       {
         feedId: z.number().describe("The unique identifier (ID) of the feed to fetch articles for."),
+
+        status: z.enum(["read", "unread"])
+          .default("unread")
+          .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
-      async ({ feedId }) => {
+      async ({ feedId, status }) => {
         try {
           const feed = await Feed.findOne({ where: { id: feedId, userId: userId }, raw: true });
           if (!feed) {
@@ -379,7 +405,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
-            where: { feedId, userId: userId },
+            where: { feedId, userId: userId, status: status },
             order: [["createdAt", "DESC"]],
             raw: true,
           });
@@ -419,17 +445,25 @@ const postMcp = async (req, res) => {
 
       You may optionally provide a feedId:
       - If "feedId" is provided, only articles from that feed are returned.
-      - If "feedId" is NOT provided, articles from ALL feeds are returned.      
+      - If "feedId" is NOT provided, articles from ALL feeds are returned.
+
+      You may optionally provide a status:
+      - If "status" is provided, only articles with that status are returned.
+      - If "status" is NOT provided, defaults to "unread".
       `,
       {
         feedId: z.string()
           .optional()
           .describe("Optional feedId. If omitted, articles from all feeds are included."),
+
+        status: z.enum(["read", "unread"])
+          .default("unread")
+          .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
-      async ({ feedId }) => {
+      async ({ feedId, status }) => {
         try {
           const articles = await Article.findAll({
-            where: { starInd: 1, userId: userId, ...(feedId ? { feedId: feedId } : {}) },
+            where: { starInd: 1, userId: userId, status: status, ...(feedId ? { feedId: feedId } : {}) },
             order: [["createdAt", "DESC"]],
             raw: true,
           });
@@ -466,14 +500,22 @@ const postMcp = async (req, res) => {
       (via cache.all()), which provides a list of URLs that should be considered hot.
       Results are sorted by the 'published' field in the requested order.
 
+      You may optionally provide a status:
+      - If "status" is provided, only articles with that status are returned.
+      - If "status" is NOT provided, defaults to "unread".
+
       The agent must summarize each article returned.
       `,
       {
         sort: z.enum(["ASC", "DESC"])
           .default("DESC")
           .describe("Sorting order for the 'published' field."),
+
+        status: z.enum(["read", "unread"])
+          .default("unread")
+          .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
-      async ({ sort }) => {
+      async ({ sort, status }) => {
         try {
           // Retrieve list of hot article URLs or IDs from cache
           const hotArticleIds = cache.all(); // must be an array of URLs (or IDs)
@@ -481,7 +523,8 @@ const postMcp = async (req, res) => {
           const articles = await Article.findAll({
             where: {
               url: hotArticleIds,
-              userId: userId
+              userId: userId,
+              status: status
             },
             order: [["published", sort]],
             raw: true
