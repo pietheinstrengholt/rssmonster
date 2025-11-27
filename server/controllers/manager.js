@@ -1,6 +1,7 @@
 import Article from "../models/article.js";
 import Category from "../models/category.js";
 import Feed from "../models/feed.js";
+import Tag from "../models/tag.js";
 
 import cache from '../util/cache.js';
 
@@ -250,7 +251,13 @@ export const articleDetails = async (req, res, next) => {
         {
           model: Feed,
           required: true
-        }],
+        },
+        {
+          model: Tag,
+          required: false,
+          attributes: ['id', 'name']
+        }
+      ],
       order: [
         ["published", sort]
       ],

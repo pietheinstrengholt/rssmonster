@@ -8,7 +8,8 @@ export const useStore = defineStore('data', {
         categoryId: '%',
         feedId: '%',
         search: null,
-        sort: 'DESC'
+        sort: 'DESC',
+        tag: null
     },
     filter: 'full',
     categories: [],
@@ -95,15 +96,19 @@ export const useStore = defineStore('data', {
     },
     setSelectedStatus(status) {
       this.currentSelection.status = status;
+      this.currentSelection.tag = null;
     },
     setSelectedCategoryId(categoryId) {
       this.currentSelection.categoryId = categoryId;
+      this.currentSelection.tag = null;
     },
     setSelectedFeedId(feedId) {
       this.currentSelection.feedId = feedId;
+      this.currentSelection.tag = null;
     },
     setSelectedSearch(search) {
       this.currentSelection.search = search;
+      this.currentSelection.tag = null;
     },
     setSelectedSort(sort) {
       this.currentSelection.sort = sort;

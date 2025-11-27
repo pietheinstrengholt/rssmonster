@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
-  up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('feeds', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('feeds', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -60,19 +60,19 @@ module.exports = {
       }
     },
     {
-        indexes: [
-            {
-                unique: true,
-                fields: ['userId', 'rssUrl']
-            }
-        ]
-    },
-    {
       charset: "utf8mb4",
       collate: "utf8mb4_unicode_ci"
     });
+
+    // Indexes for fast lookups
+    await queryInterface.addIndex('feeds', ['userId'], { name: 'feeds_userId_idx' });
+    await queryInterface.addIndex('feeds', ['categoryId'], { name: 'feeds_categoryId_idx' });
+    await queryInterface.addIndex('feeds', ['userId', 'rssUrl'], { name: 'feeds_userId_rssUrl_unique', unique: true });
   },
-  down: (queryInterface) => {
-    return queryInterface.dropTable('feeds');
+  down: async (queryInterface) => {
+    await queryInterface.removeIndex('feeds', 'feeds_userId_idx');
+    await queryInterface.removeIndex('feeds', 'feeds_categoryId_idx');
+    await queryInterface.removeIndex('feeds', 'feeds_userId_rssUrl_unique');
+    await queryInterface.dropTable('feeds');
   }
 };

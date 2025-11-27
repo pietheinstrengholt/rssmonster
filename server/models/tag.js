@@ -1,9 +1,9 @@
 import Sequelize from 'sequelize';
 import { sequelize } from '../util/database.js';
-import { Feed } from './feed.js';
+import { Article } from './article.js';
 
-export const Category = sequelize.define(
-  "categories",
+export const Tag = sequelize.define(
+  "tags",
   {
     id: {
       type: Sequelize.INTEGER,
@@ -11,27 +11,29 @@ export const Category = sequelize.define(
       allowNull: false,
       primaryKey: true
     },
-    userId: {
+    articleId: {
       type: Sequelize.INTEGER,
       allowNull: false
+    },
+    userId: {
+      type: Sequelize.INTEGER,
+      autoIncrement: false,
+      allowNull: false,
     },
     name: {
       type: Sequelize.STRING,
       allowNull: false
-    },
-    categoryOrder: {
-      type: Sequelize.INTEGER,
-      defaultValue: 0
     }
   },
   {
+    updatedAt: false,
     charset: "utf8mb4",
     collate: "utf8mb4_unicode_ci"
   }
 );
 
-//add associations
-Category.hasMany(Feed);
-Feed.belongsTo(Category);
+// Associations: Article 1..* Tag (direct foreign key)
+Tag.belongsTo(Article, { foreignKey: 'articleId' });
+Article.hasMany(Tag, { foreignKey: 'articleId' });
 
-export default Category;
+export default Tag;

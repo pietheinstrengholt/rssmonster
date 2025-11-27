@@ -11,6 +11,14 @@ export const Article = sequelize.define(
       allowNull: false,
       primaryKey: true
     },
+    userId: {
+      type: Sequelize.INTEGER,
+      allowNull: false
+    },
+    feedId: {
+      type: Sequelize.INTEGER,
+      allowNull: false
+    },
     status: {
       type: Sequelize.STRING,
       allowNull: false,

@@ -12,6 +12,14 @@
             <a target="_blank" :href="mainURL(feed.url)" v-text="feed.feedName"></a>
           </span>
         </div>
+        <div v-if="tags && tags.length > 0" class="article-tags">
+          <span
+            v-for="tag in tags"
+            :key="tag.id"
+            class="tag"
+            v-on:click.stop="selectTag(tag)"
+          >{{ tag.name }}</span>
+        </div>
       </div>
       <div v-if="$store.data.filter === 'full'" class="article-content">
         <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
@@ -140,6 +148,25 @@
   color: #51556a;
 }
 
+.block .article-tags {
+  margin-top: 5px;
+  margin-bottom: 5px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.block .article-tags .tag {
+  display: inline-block;
+  background-color: #e8f4f8;
+  color: #2c5aa0;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+}
+
 .block.active {
   background-color: #ffffe5;
 }
@@ -225,6 +252,11 @@ span.feed_name a {
     border-color: #121212;
   }
 
+  .block .article-tags .tag {
+    background-color: #1e3a5f;
+    color: #a8c5e8;
+  }
+
   nav ul li {
     background: #000;
   }
@@ -243,7 +275,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId'],
+  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags'],
   computed: {
     formatDate: function() {
       return (value)=> {
@@ -335,6 +367,13 @@ export default {
         }
         //toggle div element class
         event.currentTarget.classList.toggle('starred');
+      }
+    },
+    selectTag(tag) {
+      const name = tag && tag.name ? tag.name : '';
+      // Update the store current selection tag with the tag name
+      if (this.$store.data.currentSelection) {
+        this.$store.data.currentSelection.tag = name;
       }
     }
   }

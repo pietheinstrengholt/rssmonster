@@ -66,7 +66,8 @@ export default {
             categoryId: data.categoryId,
             feedId: data.feedId,
             search: data.search,
-            sort: data.sort
+            sort: data.sort,
+            tag: data.tag
           }
         })
         .then(response => {

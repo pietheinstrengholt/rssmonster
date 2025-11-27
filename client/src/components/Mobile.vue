@@ -39,7 +39,11 @@
 
       <p class="content-header">Click the button below to enable notifications</p>
       <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
-      <br><br>
+      <br>
+
+      <p v-if="enableAgent" class="content-header">Chat assistant</p>
+      <button v-if="enableAgent" @click="chatAssistant()" type="button" class="btn btn-primary">{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Open Chat' }}</button>
+      <br v-if="enableAgent"><br v-if="enableAgent"><br v-if="enableAgent">
 
       <button @click="emitClickEvent('mobile', null);" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <br><br>
@@ -163,6 +167,15 @@ export default {
           throw new Error('Permission not granted for Notification')
         }
       });
+    },
+    chatAssistant() {
+      this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
+      this.emitClickEvent('mobile', null);
+    }
+  },
+  computed: {
+    enableAgent() {
+      return import.meta.env.VITE_ENABLE_AGENT === 'true';
     }
   }
 };

@@ -1,10 +1,13 @@
 import { Op } from 'sequelize';
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
+import Tag from "../models/tag.js";
 
 import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
+import { summarizeContent } from "../util/summarizer.js";
+import { generateSeoTags } from "../util/classifier.js";
 import { load } from 'cheerio';
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
@@ -169,20 +172,78 @@ const processArticle = async (feed, post) => {
         
         //add article to database, if content or a description has been found
         if (postContent) {
-          await Article.create({
-            userId: feed.userId,
-            feedId: feed.id,
-            status: "unread",
-            star_ind: 0,
-            url: post.url,
-            image_url: "",
-            subject: post.title || 'No title',
-            content: postContent,
-            contentStripped: postContentStripped,
-            language: postLanguage,
-            //default post.published with new Date when empty
-            published: post.published || new Date()
-          });
+          // Use summarization if OpenAI is configured
+          let summarizedContent = postContentStripped;
+          if (process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL_NAME) {
+            try {
+              summarizedContent = await summarizeContent(postContentStripped);
+              console.log(`Summarized article: ${post.title?.substring(0, 50)}...`);
+            } catch (err) {
+              console.error('Error summarizing article:', err.message);
+              // Fall back to original stripped content
+              summarizedContent = postContentStripped;
+            }
+          }
+
+          // Generate SEO tags using OpenAI and save to database
+          let createdArticle;
+          if (process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL_NAME) {
+            try {
+              const seoTags = await generateSeoTags(postContentStripped || summarizedContent);
+              if (Array.isArray(seoTags) && seoTags.length) {
+                console.log(`SEO tags for "${post.title || 'No title'}": ${seoTags.join(', ')}`);
+                
+                // Create article first
+                createdArticle = await Article.create({
+                  userId: feed.userId,
+                  feedId: feed.id,
+                  status: "unread",
+                  star_ind: 0,
+                  url: post.url,
+                  image_url: "",
+                  subject: post.title || 'No title',
+                  content: postContent,
+                  contentStripped: summarizedContent,
+                  language: postLanguage,
+                  published: post.published || new Date()
+                });
+
+                // Save tags to database
+                const tagPromises = seoTags.map(tagName => 
+                  Tag.create({
+                    articleId: createdArticle.id,
+                    userId: feed.userId,
+                    name: tagName
+                  }).catch(err => {
+                    console.error(`Error saving tag "${tagName}":`, err.message);
+                  })
+                );
+                await Promise.all(tagPromises);
+                console.log(`Saved ${seoTags.length} tags for article ${createdArticle.id}`);
+              } else {
+                console.log(`SEO tags for "${post.title || 'No title'}": [none]`);
+              }
+            } catch (err) {
+              console.error('Error generating SEO tags:', err.message);
+            }
+          }
+
+          // Create article if not already created (when OpenAI not configured)
+          if (!createdArticle) {
+            await Article.create({
+              userId: feed.userId,
+              feedId: feed.id,
+              status: "unread",
+              star_ind: 0,
+              url: post.url,
+              image_url: "",
+              subject: post.title || 'No title',
+              content: postContent,
+              contentStripped: summarizedContent,
+              language: postLanguage,
+              published: post.published || new Date()
+            });
+          }
         }
       }
     } catch (err) {
