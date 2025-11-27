@@ -272,7 +272,7 @@ export const articleDetails = async (req, res, next) => {
         message: "No articles found"
       });
     } else {
-      return res.status(200).json({ articles });
+      return res.status(200).json(articles);
     }
   } catch (err) {
     console.log(err);
