@@ -65,6 +65,48 @@ div#inputArea {
   margin-bottom: 20px;
   color: #666;
 }
+
+/* Override css that comes from other websites */
+.article {
+  max-width: 100% !important;
+}
+
+.block .article-content img, .block .article-content figure {
+  display: block;
+  width: 100% !important;
+  height: auto !important;
+}
+
+.block .article-content p {
+  display: inline !important;
+}
+
+.block .article {
+  padding-top: 2px;
+  width: 100%;
+}
+
+.block .article-content {
+  color: #1b1f23;
+  font-size: 14px;
+  margin-bottom: 5px;
+  margin-top: 1px;
+  margin-left: 0px;
+}
+
+.block .article h5 a {
+  color: #51556a;
+  font-weight: 600;
+  font-size: 19px;
+  text-decoration: none;
+  border-bottom: none;
+}
+
+/* Override css that comes from other websites */
+.block .article-content img {
+  max-width: 100%;
+  height: auto !important;
+}
 </style>
 
 <script>
