@@ -8,7 +8,8 @@ export const useStore = defineStore('data', {
         categoryId: '%',
         feedId: '%',
         search: null,
-        sort: 'DESC'
+        sort: 'DESC',
+        tag: null
     },
     filter: 'full',
     categories: [],

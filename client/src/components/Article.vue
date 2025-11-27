@@ -13,7 +13,12 @@
           </span>
         </div>
         <div v-if="tags && tags.length > 0" class="article-tags">
-          <span v-for="tag in tags" :key="tag.id" class="tag">{{ tag.name }}</span>
+          <span
+            v-for="tag in tags"
+            :key="tag.id"
+            class="tag"
+            v-on:click.stop="selectTag(tag)"
+          >{{ tag.name }}</span>
         </div>
       </div>
       <div v-if="$store.data.filter === 'full'" class="article-content">
@@ -363,6 +368,15 @@ export default {
         //toggle div element class
         event.currentTarget.classList.toggle('starred');
       }
+    },
+    selectTag(tag) {
+      const name = tag && tag.name ? tag.name : '';
+      // Update the store current selection tag with the tag name
+      if (this.$store.data.currentSelection) {
+        this.$store.data.currentSelection.tag = name;
+      }
+      // eslint-disable-next-line no-console
+      console.log('Selected tag:', name);
     }
   }
 }

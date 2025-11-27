@@ -13,10 +13,48 @@ const getArticles = async (req, res, next) => {
     const feedId = req.query.feedId || "%";
     const status = req.query.status || "unread";
     const sort = req.query.sort || "DESC";
+    const tag = (req.query.tag || "").trim();
     
     // Set default values for search
     let search = req.query.search || "%";
     if (search !== "%") search = `%${search}%`;
+
+    // If tag is provided, short-circuit and return articles by tag only
+    if (tag) {
+      try {
+        // Find all tag rows for this user and tag name
+        const tagRows = await Tag.findAll({
+          where: { userId: userId, name: tag },
+          attributes: ["articleId"],
+        });
+
+        const taggedArticleIds = tagRows.map(t => t.articleId);
+
+        if (taggedArticleIds.length === 0) {
+          return res.status(200).json({
+            query: [{ userId: userId, tag: tag, sort: sort }],
+            itemIds: []
+          });
+        }
+
+        // Order by published to be consistent with other flows
+        const taggedArticles = await Article.findAll({
+          attributes: ["id"],
+          where: { userId: userId, id: taggedArticleIds },
+          order: [["published", sort]]
+        });
+
+        const itemIds = taggedArticles.map(a => a.id);
+
+        return res.status(200).json({
+          query: [{ userId: userId, tag: tag, sort: sort }],
+          itemIds: itemIds
+        });
+      } catch (err) {
+        console.error("Error fetching articles by tag:", err);
+        return res.status(500).json({ error: err.message });
+      }
+    }
 
     // Get feeds based on categoryId
     const feedQuery = categoryId === "%" 
@@ -63,7 +101,8 @@ const getArticles = async (req, res, next) => {
     const articles = await Article.findAll(articleQuery);
     const itemIds = articles.map(article => article.id);
 
-    // Update user settings
+    // Update user settings (skip when tag-based query is used)
+    // Note: tag is not persisted in settings currently
     await Setting.destroy({ where: { userId: userId } });
     await Setting.create({
       userId: userId,
@@ -80,7 +119,8 @@ const getArticles = async (req, res, next) => {
         feedId: feedId,
         sort: sort,
         status: status,
-        search: search
+        search: search,
+        tag: tag
       }],
       itemIds: itemIds
     });
