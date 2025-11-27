@@ -4,9 +4,10 @@ import { z } from "zod";
 import Category from "../models/category.js";
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
-import { Op } from 'sequelize';
+import { Op, fn, col, literal } from 'sequelize';
 import cache from "../util/cache.js";
 import crawlController from "./crawl.js";
+import Tag from "../models/tag.js";
 
 // Shared helper to build tool result
 function makeResult({ structured, error=false }) {
@@ -140,6 +141,19 @@ const postMcp = async (req, res) => {
       - Triggers the RSS feed crawler to fetch new articles from all active feeds.
       - This will check all feeds and import new articles into the database.
       - Use this when the user asks to refresh feeds, update articles, or crawl for new content.
+
+    12. popular_tags
+      - Returns the top 10 most popular tags for the authenticated user.
+      - Useful to understand reader interests and guide queries.
+
+    13. articles_by_tag
+      - Returns all articles that have a given tag name for the authenticated user.
+      - Use this after popular_tags (or when user specifies a tag) to focus content.
+
+    14. search_tag_by_keyword
+      - Searches for tags whose names contain the given keyword (substring match).
+      - Returns matched tag names with usage counts (frequency across articles).
+      - Useful to discover related or emerging interest areas from partial terms.
 
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
@@ -669,6 +683,113 @@ const postMcp = async (req, res) => {
       }
     );
 
+    // Tool: 12. popular_tags
+    server.tool(
+      "popular_tags",
+      `
+      Returns the top 10 most popular tags for the authenticated user.
+      Popularity is determined by frequency of tag usage across the user's articles.
+      `,
+      {},
+      async () => {
+        console.log('[MCP Tool Called] popular_tags');
+        try {
+          const popularTags = await Tag.findAll({
+            where: { userId: userId },
+            attributes: [
+              'name',
+              [fn('COUNT', col('name')), 'count']
+            ],
+            group: ['name'],
+            order: [[literal('count'), 'DESC'], ['name', 'ASC']],
+            limit: 10,
+            raw: true
+          });
+
+          return makeResult({ structured: { popularTags } });
+        } catch (err) {
+          console.error('Error fetching popular tags:', err);
+          return makeResult({ structured: { error: 'Failed to fetch popular tags.' }, error: true });
+        }
+      }
+    );
+
+    // Tool: 13. articles_by_tag
+    server.tool(
+      "articles_by_tag",
+      `
+      Retrieves all articles that have a specified tag (exact match on tag name).
+      The agent should summarize each returned article (2–3 sentences) based on title, subject, and content.
+      `,
+      {
+        tag: z.string().describe("The tag name to filter articles by (case-sensitive match).")
+      },
+      async ({ tag }) => {
+        console.log('[MCP Tool Called] articles_by_tag - tag:', tag);
+        try {
+          // Fetch article IDs for this tag
+          const tagRows = await Tag.findAll({
+            where: { userId: userId, name: tag },
+            attributes: ['articleId'],
+            raw: true
+          });
+
+          const articleIds = tagRows.map(r => r.articleId).filter(Boolean);
+
+          if (articleIds.length === 0) {
+            return makeResult({ structured: { tag, totalArticles: 0, articles: [], htmlOutput: generateArticlesHtml([], { title: `Articles tagged '${tag}'` }) } });
+          }
+
+          const articles = await Article.findAll({
+            where: { id: articleIds, userId: userId },
+            order: [["createdAt", "DESC"]],
+            raw: true
+          });
+
+          const html = generateArticlesHtml(articles, { title: `Articles tagged '${tag}'` });
+
+          return makeResult({ structured: { tag, totalArticles: articles.length, htmlOutput: html, articles } });
+        } catch (err) {
+          console.error('Error fetching articles by tag:', err);
+          return makeResult({ structured: { error: 'Failed to fetch articles by tag.' }, error: true });
+        }
+      }
+    );
+
+    // Tool 14: search_tag_by_keyword
+    server.tool(
+      "search_tag_by_keyword",
+      `
+      Searches for tags whose names contain the given keyword (case-insensitive substring match may depend on DB collation).
+      Returns matched tag names with usage counts (number of occurrences across articles).
+      `,
+      {
+        keyword: z.string().min(1).describe("Partial text to match inside tag names.")
+      },
+      async ({ keyword }) => {
+        console.log('[MCP Tool Called] search_tag_by_keyword - keyword:', keyword);
+        try {
+          const pattern = `%${keyword}%`;
+          const matches = await Tag.findAll({
+            where: { userId: userId, name: { [Op.like]: pattern } },
+            attributes: [
+              'name',
+              [fn('COUNT', col('name')), 'count']
+            ],
+            group: ['name'],
+            order: [[literal('count'), 'DESC'], ['name', 'ASC']],
+            limit: 25,
+            raw: true
+          });
+
+          return makeResult({ structured: { keyword, totalMatches: matches.length, tags: matches } });
+        } catch (err) {
+          console.error('Error searching tags by keyword:', err);
+          return makeResult({ structured: { error: 'Failed to search tags.' }, error: true });
+        }
+      }
+    );
+    
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
