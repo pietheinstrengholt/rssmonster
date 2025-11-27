@@ -149,7 +149,10 @@ const postMcp = async (req, res) => {
       Or to get articles from a feed by name:
         1) Call feeds to find the feedId.
         2) Call articles_by_feed_id with the obtained feedId.
-    - For all article-related tools, always provide summaries of each article's content to the user.
+    - On the client side, the user may provide a series of messages as chat history.
+      Use this chat history to understand the context of the conversation and provide relevant answers.
+    - On the client side, the front end renders HTML content directly.
+    - For all article-related tools, always provide summaries of each article's content to the user. Wrap the article subject/title in a link to the article URL.
     - Structured data from each tool is returned in structuredContent, but you may also use the textual fallback for communication.
     - Follow these guidelines to combine results and ensure all relevant information is provided in a structured and user-friendly way.
       `
@@ -160,6 +163,7 @@ const postMcp = async (req, res) => {
       "categories",
       "Provides a list of all categories with details like ID, name, description, and order.",
       async () => {
+        console.log('[MCP Tool Called] categories');
         try {
           const categories = await Category.findAll({
             where: { userId: userId },
@@ -182,6 +186,7 @@ const postMcp = async (req, res) => {
       "feeds",
       "Provides a list of all feeds with details like ID, name, URL, and category.",
       async () => {
+        console.log('[MCP Tool Called] feeds');
         try {
           const feeds = await Feed.findAll({
             where: { userId: userId },
@@ -207,6 +212,7 @@ const postMcp = async (req, res) => {
         feed_name: z.string()
       },
       async ({ feed_name }) => {
+        console.log('[MCP Tool Called] search_feed_by_name - feed_name:', feed_name);
         try {
           const feed = await Feed.findOne({ where: { feedName: { [Op.like]: `%${feed_name}%` }, userId: userId }, raw: true });
           console.log(`Fetched feed for name "${feed_name}":`, feed);
@@ -228,7 +234,7 @@ const postMcp = async (req, res) => {
       "search_articles_by_keyword",
       `
       Searches for articles containing a specific keyword in the subject or content.
-      The agent must summarize each article in the results (e.g., 2–3 sentence summaries 
+      The agent must summarize each article in the results (e.g., 2-3 sentence summaries 
       based on the article title, subject, and content).
 
       You may optionally provide a feedId:
@@ -251,6 +257,7 @@ const postMcp = async (req, res) => {
           .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
       async ({ search, feedId, status }) => {
+        console.log('[MCP Tool Called] search_articles_by_keyword - search:', search, 'feedId:', feedId, 'status:', status);
         try {
           const articles = await Article.findAll({
             where: {
@@ -325,6 +332,7 @@ const postMcp = async (req, res) => {
           .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
       async ({ seconds, feedId, status }) => {
+        console.log('[MCP Tool Called] search_articles_by_time - seconds:', seconds, 'feedId:', feedId, 'status:', status);
         try {
           const now = new Date();
           const fromTime = new Date(now.getTime() - seconds * 1000);
@@ -395,6 +403,7 @@ const postMcp = async (req, res) => {
           .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
       async ({ feedId, status }) => {
+        console.log('[MCP Tool Called] articles_by_feed_id - feedId:', feedId, 'status:', status);
         try {
           const feed = await Feed.findOne({ where: { id: feedId, userId: userId }, raw: true });
           if (!feed) {
@@ -461,6 +470,7 @@ const postMcp = async (req, res) => {
           .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
       async ({ feedId, status }) => {
+        console.log('[MCP Tool Called] favorite_articles - feedId:', feedId, 'status:', status);
         try {
           const articles = await Article.findAll({
             where: { starInd: 1, userId: userId, status: status, ...(feedId ? { feedId: feedId } : {}) },
@@ -516,6 +526,7 @@ const postMcp = async (req, res) => {
           .describe("Filter by read/unread status. Defaults to 'unread'."),
       },
       async ({ sort, status }) => {
+        console.log('[MCP Tool Called] hot_articles - sort:', sort, 'status:', status);
         try {
           // Retrieve list of hot article URLs or IDs from cache
           const hotArticleIds = cache.all(); // must be an array of URLs (or IDs)
@@ -571,6 +582,7 @@ const postMcp = async (req, res) => {
         category_id: z.string()
       },
       async ({ category_id }) => {
+        console.log('[MCP Tool Called] feeds_by_category_id - category_id:', category_id);
         try {
           const feeds = await Feed.findAll({
             where: { categoryId: category_id, userId: userId },
@@ -597,6 +609,7 @@ const postMcp = async (req, res) => {
       `,
       {},
       async () => {
+        console.log('[MCP Tool Called] current_time');
         try {
           const now = new Date().toISOString();
           return makeResult({ structured: { now } });
@@ -620,6 +633,7 @@ const postMcp = async (req, res) => {
       `,
       {},
       async () => {
+        console.log('[MCP Tool Called] crawl');
         try {
           // Create mock request/response objects for the crawl controller
           const mockReq = {};

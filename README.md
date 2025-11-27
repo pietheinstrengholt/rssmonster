@@ -36,6 +36,8 @@ RSSMonster is a user-friendly, web-based RSS aggregator developed as an alternat
 ### AI Assistant with Model Context Protocol (MCP)
 RSSMonster features an integrated AI assistant powered by the Model Context Protocol (MCP), enabling natural language interactions with your RSS feeds. You can ask questions like "Show me articles about technology from the last week" or "What are my favorite articles?" and the assistant will search and present results in a user-friendly format.
 
+![Screenshot](client/src/assets/screenshots/screenshot02.png)
+
 #### Enabling the AI Assistant
 To enable the AI assistant feature, you need to configure environment variables on both the server and client side:
 

@@ -42,6 +42,12 @@ export const postAgent = async (req, res) => {
         - Do NOT convert HTML to markdown or plain text
         - Do NOT escape HTML entities or tags
         - Provide clear, final, and well-formatted HTML output whenever possible
+        
+        When summarizing articles:
+        - ALWAYS format article titles/subjects as clickable HTML hyperlinks: <a href="article_url" target="_blank">Article Title</a>
+        - Include additional metadata like author, publication date, and feed name when available
+        - Keep summaries concise (2-3 sentences) but informative
+        - Use proper HTML formatting for readability (paragraphs, line breaks, lists, etc.)
             `,
       model: process.env.OPENAI_MODEL_NAME || "gpt-5.1",
       mcpServers: [mcpServer]
