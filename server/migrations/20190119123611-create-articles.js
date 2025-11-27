@@ -1,7 +1,7 @@
 'use strict';
 module.exports = {
-  up: (queryInterface, Sequelize) => {
-    return queryInterface.createTable('articles', {
+  up: async (queryInterface, Sequelize) => {
+    await queryInterface.createTable('articles', {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
@@ -69,8 +69,18 @@ module.exports = {
       charset: "utf8mb4",
       collate: "utf8mb4_unicode_ci"
     });
+
+    // Indexes to optimize common queries
+    await queryInterface.addIndex('articles', ['feedId'], { name: 'articles_feedId_idx' });
+    await queryInterface.addIndex('articles', ['status'], { name: 'articles_status_idx' });
+    await queryInterface.addIndex('articles', ['starInd'], { name: 'articles_starInd_idx' });
+    await queryInterface.addIndex('articles', ['userId'], { name: 'articles_userId_idx' });
   },
-  down: (queryInterface) => {
-    return queryInterface.dropTable('articles');
+  down: async (queryInterface) => {
+    await queryInterface.removeIndex('articles', 'articles_feedId_idx');
+    await queryInterface.removeIndex('articles', 'articles_status_idx');
+    await queryInterface.removeIndex('articles', 'articles_starInd_idx');
+    await queryInterface.removeIndex('articles', 'articles_userId_idx');
+    await queryInterface.dropTable('articles');
   }
 };

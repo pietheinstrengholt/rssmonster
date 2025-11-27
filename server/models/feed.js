@@ -11,6 +11,10 @@ export const Feed = sequelize.define(
       allowNull: false,
       primaryKey: true
     },
+    userId: {
+      type: Sequelize.INTEGER,
+      allowNull: false
+    },
     feedName: {
       type: Sequelize.STRING,
       allowNull: false

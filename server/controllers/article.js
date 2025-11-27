@@ -1,5 +1,6 @@
 import Article from "../models/article.js";
 import Feed from "../models/feed.js";
+import Tag from "../models/tag.js";
 import Setting from "../models/setting.js";
 import cache from "../util/cache.js";
 import { Op } from 'sequelize';
@@ -97,10 +98,17 @@ const getArticle = async (req, res, next) => {
     
     const article = await Article.findByPk(articleId, {
       where: { userId: userId },
-      include: [{
-        model: Feed,
-        required: true
-      }]
+      include: [
+        {
+          model: Feed,
+          required: true
+        },
+        {
+          model: Tag,
+          required: false,
+          attributes: ['id', 'name']
+        }
+      ]
     });
 
     if (!article) {
