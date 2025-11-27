@@ -1,4 +1,4 @@
-import Sequelize from 'sequelize';
+import { Op } from 'sequelize';
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 
@@ -9,8 +9,6 @@ import { load } from 'cheerio';
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
 import striptags from "striptags";
-
-const Op = Sequelize.Op;
 
 //set the maximum number of feeds to be processed at once
 const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
@@ -39,19 +37,18 @@ const getFeeds = async () => {
       limit: feedCount
     });
     return feeds;
-  } catch (e) {
-    console.log(
-      "Error fetching feeds from database " + e.message
-    );
+  } catch (err) {
+    console.error('Error fetching feeds from database:', err.message);
+    return [];
   }
 }
 
 const crawlRssLinks = catchAsync(async (req, res, next) => {
   try {
-    let feeds = await getFeeds();
+    const feeds = await getFeeds();
 
     if (feeds.length > 0) {
-      feeds.forEach(async function(feed) {
+      feeds.forEach(async (feed) => {
 
         //discover RssLink
         const url = await discoverRssLink.discoverRssLink(feed.url);
@@ -64,40 +61,37 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
             if (feeditem) {
 
               //process all feed posts
-              feeditem.items.forEach(function(item) {
+              feeditem.items.forEach((item) => {
                 processArticle(feed, item);
               });
   
               //reset the feed count
-              feed.update({
+              await feed.update({
                 errorCount: 0
               });
             }
           } catch (err) {
-            console.log(err.stack.split("\n", 1).join("") + " - " + feed.url);
+            console.error('Error processing feed:', err.stack.split("\n", 1).join(""), '-', feed.url);
             //update the errorCount
-            feed.update({
-              errorCount: Sequelize.literal("errorCount + 1")
-            });
+            await feed.increment('errorCount');
           }
         } else {
           //update the errorCount
-          feed.update({
-            errorCount: Sequelize.literal("errorCount + 1")
-          });
+          await feed.increment('errorCount');
         }
 
         //touch updatedAt
         feed.changed('updatedAt', true);
-        feed.update({
+        await feed.update({
           updatedAt: new Date()
         });
 
       });
     }
 
-    return res.status(200).json("Crawling started.");
+    return res.status(200).json({ message: 'Crawling started.' });
   } catch (err) {
+    console.error('Error in crawlRssLinks:', err);
     return next(err);
   }
 });
@@ -122,6 +116,8 @@ const processArticle = async (feed, post) => {
   
       //if none, add new article to the database
       if (!article) {
+        let postContent, postContentStripped, postLanguage;
+        
         //if no content is found, use the description as content
         if (typeof post.content === 'undefined' || post.content === null) {
           postContent = post.description;
@@ -141,37 +137,39 @@ const processArticle = async (feed, post) => {
             //execute hotlink feature by collecting all the links in each RSS post
             //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
             $('a').each(function() {
+              let domain;
               try {
                 //find domain name for each link
-                var domain = (new URL(post.url));
-                domain = domain.hostname;
+                const urlObj = new URL(post.url);
+                domain = urlObj.hostname;
               } catch (err) {
-                console.log(err);
-                var domain = post.url;
+                console.error('Error parsing URL:', err);
+                domain = post.url;
               }
     
               //fetch all urls referenced to other websites. Insert these into the hotlinks table
-              if ($(this).attr('href')) {
-                if (!$(this).attr('href').includes(domain)) {
+              const href = $(this).attr('href');
+              if (href) {
+                if (!href.includes(domain)) {
                   //only add http and https urls to database
-                  if ($(this).attr('href').indexOf("http://") == 0 || $(this).attr('href').indexOf("https://") == 0) {
+                  if (href.startsWith("http://") || href.startsWith("https://")) {
                     //update cache
-                    cache.set($(this).attr('href'), feed.userId);
+                    cache.set(href, feed.userId);
                   }
                 }
               }
             });
 
             //set postContent and postContentStripped
-            var postContent = $.html();
-            var postContentStripped = striptags($.html(), ["a", "img", "strong"]);
-            var postLanguage = language.get($.html());
+            postContent = $.html();
+            postContentStripped = striptags($.html(), ["a", "img", "strong"]);
+            postLanguage = language.get($.html());
           } 
         }
         
         //add article to database, if content or a description has been found
         if (postContent) {
-          Article.create({
+          await Article.create({
             userId: feed.userId,
             feedId: feed.id,
             status: "unread",
@@ -186,11 +184,9 @@ const processArticle = async (feed, post) => {
             published: post.published || new Date()
           });
         }
-
-
       }
     } catch (err) {
-      console.log(err);
+      console.error('Error processing article:', err);
     }
   }
 };

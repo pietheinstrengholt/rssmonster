@@ -38,7 +38,7 @@ export const getOverview = async (req, res, next) => {
       }
     });
 
-    const totalCount = (await readCount) + unreadCount;
+    const totalCount = readCount + unreadCount;
 
     const categories = await Category.findAll({
       where: {
@@ -139,14 +139,13 @@ export const getOverview = async (req, res, next) => {
 
     //Sequelize raw: true or plain: true results into errors, so we will use the custom toPlain function here
     //we need to manipulate the results, so it is required to transform these into plain Array's
-    var categoriesArray = await toPlain(categories);
-    var readArray = await toPlain(readCountGrouped);
-    var unreadArray = await toPlain(unreadCountGrouped);
-    var starArray = await toPlain(starCountGrouped);
-    //hotArray = await toPlain(hotCountGrouped);
+    const categoriesArray = toPlain(categories);
+    const readArray = toPlain(readCountGrouped);
+    const unreadArray = toPlain(unreadCountGrouped);
+    const starArray = toPlain(starCountGrouped);
 
     //give each category and feed in the categoriesArray a readCount, unreadCount and starCount
-    await categoriesArray.forEach(category => {
+    categoriesArray.forEach(category => {
       category["readCount"] = 0;
       category["unreadCount"] = 0;
       category["starCount"] = 0;
@@ -162,9 +161,9 @@ export const getOverview = async (req, res, next) => {
     });
 
     //the readArray holds the read count for every categoryId and feedId. For the categoryId we need to sum, for the feedId we can just overwrite.
-    await readArray.forEach(item => {
+    readArray.forEach(item => {
       //find the index by comparing the categoryId from every element in the readArray, against the category.id in the categoriesArray
-      var categoryIndex = categoriesArray.findIndex(
+      const categoryIndex = categoriesArray.findIndex(
         category => category.id === item.categoryId
       );
       //increase the count
@@ -174,7 +173,7 @@ export const getOverview = async (req, res, next) => {
       //also update the individual feeds inside every category
       if (categoriesArray[categoryIndex]["feeds"]) {
         //find the index by comparing the categoryId from every element in the readArray, against the category.id in the categoriesArray
-        var feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
+        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
           feed => feed.id === item.feedId
         );
         //overwrite the count property
@@ -184,15 +183,15 @@ export const getOverview = async (req, res, next) => {
     });
 
     //repeat for the unread
-    await unreadArray.forEach(item => {
-      var categoryIndex = categoriesArray.findIndex(
+    unreadArray.forEach(item => {
+      const categoryIndex = categoriesArray.findIndex(
         category => category.id === item.categoryId
       );
       categoriesArray[categoryIndex]["unreadCount"] =
         categoriesArray[categoryIndex]["unreadCount"] + item["count"];
 
       if (categoriesArray[categoryIndex]["feeds"]) {
-        var feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
+        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
           feed => feed.id === item.feedId
         );
         categoriesArray[categoryIndex]["feeds"][feedIndex]["unreadCount"] =
@@ -201,8 +200,8 @@ export const getOverview = async (req, res, next) => {
     });
 
     //repeat for the star
-    await starArray.forEach(item => {
-      var categoryIndex = categoriesArray.findIndex(
+    starArray.forEach(item => {
+      const categoryIndex = categoriesArray.findIndex(
         category => category.id === item.categoryId
       );
 
@@ -210,7 +209,7 @@ export const getOverview = async (req, res, next) => {
         categoriesArray[categoryIndex]["starCount"] + item["count"];
 
       if (categoriesArray[categoryIndex]["feeds"]) {
-        var feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
+        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
           feed => feed.id === item.feedId
         );
         categoriesArray[categoryIndex]["feeds"][feedIndex]["starCount"] =
@@ -239,12 +238,12 @@ export const articleDetails = async (req, res, next) => {
     const sort = req.body.sort;
 
     if (articleIds === undefined) {
-      return res.status(404).json({
+      return res.status(400).json({
         message: "articleIds is not set"
       });
     }
 
-    var articlesArray = articleIds.split(",");
+    const articlesArray = articleIds.split(",");
 
     const articles = await Article.findAll({
       include: [
@@ -266,7 +265,7 @@ export const articleDetails = async (req, res, next) => {
         message: "No articles found"
       });
     } else {
-      res.status(200).json(articles);
+      return res.status(200).json(articles);
     }
   } catch (err) {
     console.log(err);
@@ -352,7 +351,7 @@ export const articleMarkWithStar = async (req, res, next) => {
     });
 
     if (update === undefined) {
-      return res.status(404).json({
+      return res.status(400).json({
         message: "Star indicator is not set"
       });
     }
@@ -361,26 +360,13 @@ export const articleMarkWithStar = async (req, res, next) => {
       return res.status(404).json({
         message: "Article not found"
       });
-    } else {
-      if (update === "mark") {
-        article
-          .update({
-            starInd: 1
-          },
-          { where: { userId: userId }})
-          .then(() => res.status(200).json(article))
-          .catch(error => res.status(400).json(error));
-      }
-
-      if (update !== "mark") {
-        article
-          .update({
-            starInd: 0
-          }, { where: { userId: userId }})
-          .then(() => res.status(200).json(article))
-          .catch(error => res.status(400).json(error));
-      }
     }
+    
+    const starInd = update === "mark" ? 1 : 0;
+    article
+      .update({ starInd }, { where: { userId: userId }})
+      .then(() => res.status(200).json(article))
+      .catch(error => res.status(400).json(error));
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);
@@ -399,7 +385,7 @@ export const articleMarkAllAsRead = async (req, res, next) => {
       }
     });
 
-    res.status(200).json("marked all as read");
+    return res.status(200).json("marked all as read");
   } catch (err) {
     console.log(err);
   }
@@ -411,7 +397,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
   const userId = req.userData.userId;
 
   if (order === undefined) {
-    return res.status(404).json({
+    return res.status(400).json({
       message: "order is not set"
     });
   }
@@ -419,7 +405,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
   try {
     if (order.length > 0) {
       //start counting
-      var count = 0;
+      let count = 0;
       order.forEach(item => {
         Category.update({
           categoryOrder: count
@@ -434,7 +420,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
       });
     }
 
-    res.status(200).json("order updated");
+    return res.status(200).json("order updated");
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);
@@ -448,7 +434,7 @@ export const feedChangeCategory = async (req, res, next) => {
   const userId = req.userData.userId;
 
   if (feedId === undefined || categoryId === undefined) {
-    return res.status(404).json({
+    return res.status(400).json({
       message: "feedId or categoryId is not set"
     });
   }
@@ -467,6 +453,12 @@ export const feedChangeCategory = async (req, res, next) => {
         userId: userId
       }
     })
+
+    if (!feed || !category) {
+      return res.status(404).json({
+        message: "Feed or category not found"
+      });
+    }
 
     if (feed && category) {
       feed

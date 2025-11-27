@@ -12,63 +12,59 @@ const getFeeds = async (req, res, next) => {
         userId: userId
       }
     });
-    return res.status(200).json({
-      feeds: feeds
-    });
+    return res.status(200).json({ feeds });
   } catch (err) {
-    //return server if something goes wrong
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in getFeeds:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const getFeed = async (req, res, next) => {
-  const userId = req.userData.userId;
-  const feedId = req.params.feedId;
   try {
+    const userId = req.userData.userId;
+    const feedId = req.params.feedId;
     const feed = await Feed.findByPk(feedId, {
       where: {
-        userId : userId
-      }});
-    return res.status(200).json({
-      feed: feed
+        userId: userId
+      }
     });
+    if (!feed) {
+      return res.status(404).json({ message: 'Feed not found' });
+    }
+    return res.status(200).json({ feed });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in getFeed:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const updateFeed = async (req, res, next) => {
-  const userId = req.userData.userId;
-  const feedId = req.params.feedId;
   try {
+    const userId = req.userData.userId;
+    const feedId = req.params.feedId;
     const feed = await Feed.findByPk(feedId, {
       where: {
-        userId : userId
-      }});
+        userId: userId
+      }
+    });
     if (!feed) {
-      return res.status(404).json({
-        message: "Feed not found"
-      });
+      return res.status(404).json({ message: 'Feed not found' });
     }
-    if (feed) {
-      feed.update({
-        userId: userId,
-        feedName: req.body.feedName,
-        feedDesc: req.body.feedDesc,
-        categoryId: req.body.categoryId,
-        url: req.body.url,
-        rssUrl: req.body.rssUrl,
-        favicon: req.body.favicon,
-        active: req.body.active,
-        errorCount: 0
-      });
-      return res.status(200).json(feed);
-    }
+    await feed.update({
+      userId: userId,
+      feedName: req.body.feedName,
+      feedDesc: req.body.feedDesc,
+      categoryId: req.body.categoryId,
+      url: req.body.url,
+      rssUrl: req.body.rssUrl,
+      favicon: req.body.favicon,
+      active: req.body.active,
+      errorCount: 0
+    });
+    return res.status(200).json({ feed });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in updateFeed:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -84,99 +80,93 @@ const newFeed = async (req, res, next) => {
       favicon: req.body.favicon,
       active: req.body.active
     });
-    return res.status(200).json(feed);
+    return res.status(201).json({ feed });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in newFeed:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const deleteFeed = async (req, res, next) => {
-  const userId = req.userData.userId;
-  const feedId = req.params.feedId;
   try {
-    var feed = await Feed.findByPk(feedId, {
+    const userId = req.userData.userId;
+    const feedId = req.params.feedId;
+    const feed = await Feed.findByPk(feedId, {
       where: {
-        userId : userId
-      }});
+        userId: userId
+      }
+    });
     if (!feed) {
-      return res.status(400).json({
-        message: "Feed not found"
-      });
-    } else {
-      //delete all articles
-      Article.destroy({
-        where: {
-          feedId: feed.id
-        }
-      });
-      //delete feed
-      feed.destroy();
-      return res.status(204).json({
-        message: "Deleted successfully"
-      });
+      return res.status(404).json({ message: 'Feed not found' });
     }
+    //delete all articles
+    await Article.destroy({
+      where: { feedId: feed.id }
+    });
+    //delete feed
+    await feed.destroy();
+    return res.status(204).send();
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in deleteFeed:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const validateFeed = async (req, res, next) => {
-
-  //resolve url
-  const url = await discoverRssLink.discoverRssLink(req.body.url);
-  const categoryId = req.body.categoryId;
-  const userId = req.userData.userId;
-
-  if (typeof url === "undefined") {
-    return res.status(500).json({
-      error_msg: "Feed url is invalid. Are you sure the RSS feed is correct?"
-    });
-  } else if (typeof categoryId === "undefined") {
-    return res.status(500).json({
-      error_msg: "Category is invalid."
-    });
-  } else {
   try {
+    const categoryId = req.body.categoryId;
+    const userId = req.userData.userId;
 
-    const feeditem = await parseFeed.process(url);
-    if (feeditem) {
+    //resolve url
+    const url = await discoverRssLink.discoverRssLink(req.body.url);
 
-      //add feed
-      Feed.findOne({
-        where: {
-          userId: userId,
-          url: feeditem.self
-        }
-      }).then(feed => {
-        if (!feed) { 
-          return res.status(200).json({
-            userId, userId,
-            categoryId: categoryId,
-            feedName: feeditem.title || feeditem.meta.title,
-            feedDesc: feeditem.description || feeditem.meta.description,
-            url: req.body.url,
-            rssUrl: feeditem.self,
-            favicon: feeditem.image
-          });
-        } else {
-            return res.status(402).json({
-              error_msg: "Feed already exists."
-            });
-          }
-        });
-      } else {
-        return res.status(500).json({
-          error_msg: "Feed has no meta attributes"
-        });
-      }
-    } catch (err) {
-      console.log(err);
-      return res.status(500).json({
-        error_msg: "" + err
+    if (typeof url === 'undefined') {
+      return res.status(400).json({
+        error_msg: 'Feed url is invalid. Are you sure the RSS feed is correct?'
       });
     }
+    
+    if (typeof categoryId === 'undefined') {
+      return res.status(400).json({
+        error_msg: 'Category is invalid.'
+      });
+    }
+
+    const feeditem = await parseFeed.process(url);
+    if (!feeditem) {
+      return res.status(400).json({
+        error_msg: 'Feed has no meta attributes'
+      });
+    }
+
+    //check if feed already exists
+    const existingFeed = await Feed.findOne({
+      where: {
+        userId: userId,
+        url: feeditem.self
+      }
+    });
+    
+    if (existingFeed) {
+      return res.status(409).json({
+        error_msg: 'Feed already exists.'
+      });
+    }
+    
+    return res.status(200).json({
+      userId: userId,
+      categoryId: categoryId,
+      feedName: feeditem.title || feeditem.meta.title,
+      feedDesc: feeditem.description || feeditem.meta.description,
+      url: req.body.url,
+      rssUrl: feeditem.self,
+      favicon: feeditem.image
+    });
+  } catch (err) {
+    console.error('Error in validateFeed:', err);
+    return res.status(500).json({
+      error_msg: err.message
+    });
   }
 };
 

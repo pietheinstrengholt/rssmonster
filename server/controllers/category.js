@@ -2,111 +2,116 @@ import Category from "../models/category.js";
 import Feed from "../models/feed.js";
 
 const getCategories = async (req, res, next) => {
-  const userId = req.userData.userId;
   try {
+    const userId = req.userData.userId;
+    
     const categories = await Category.findAll({
-      where: {
-        userId: userId,
-      },
+      where: { userId },
       include: [{
         model: Feed,
         required: true
       }],
-      order: ["categoryOrder", "name"]
+      order: [["categoryOrder", "ASC"], ["name", "ASC"]]
     });
-    return res.status(200).json({
-      categories: categories
-    });
+
+    return res.status(200).json({ categories });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in getCategories:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const getCategory = async (req, res, next) => {
   try {
-    const categoryId = req.params.categoryId;
+    const { categoryId } = req.params;
     const userId = req.userData.userId;
+
     const category = await Category.findByPk(categoryId, {
-      where: {
-        userId: userId,
-      },
+      where: { userId },
       include: [{
         model: Feed,
         required: true
       }]
     });
-    return res.status(200).json({
-      category: category
-    });
+
+    if (!category) {
+      return res.status(404).json({ error: 'Category not found' });
+    }
+
+    return res.status(200).json({ category });
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in getCategory:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const addCategory = async (req, res, next) => {
-  const userId = req.userData.userId;
   try {
-    const name = req.body.name;
-    const categoryOrder = req.body.categoryOrder;
+    const userId = req.userData.userId;
+    const { name, categoryOrder } = req.body;
+
     const category = await Category.create({
-      userId: userId,
-      name: name,
-      categoryOrder: categoryOrder
+      userId,
+      name,
+      categoryOrder
     });
-    return res.status(200).json(category);
+
+    return res.status(201).json(category);
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in addCategory:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const updateCategory = async (req, res, next) => {
   try {
-    const categoryId = req.params.categoryId;
-    var category = await Category.findByPk(categoryId);
+    const { categoryId } = req.params;
+    const { name, categoryOrder } = req.body;
+
+    const category = await Category.findByPk(categoryId);
+
     if (!category) {
       return res.status(404).json({
-        message: "Category not found."
+        error: 'Category not found'
       });
-    } else {
-      category.update({
-        name: req.body.name,
-        categoryOrder: req.body.categoryOrder
-      });
-      return res.status(200).json(category);
     }
+
+    await category.update({
+      name,
+      categoryOrder
+    });
+
+    return res.status(200).json(category);
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in updateCategory:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 const deleteCategory = async (req, res, next) => {
   try {
-    const categoryId = req.params.categoryId;
-    var category = await Category.findByPk(categoryId);
+    const { categoryId } = req.params;
+
+    const category = await Category.findByPk(categoryId);
+
     if (!category) {
-      return res.status(400).json({
-        message: "Category not found."
-      });
-    } else {
-      //delete all feeds
-      Feed.destroy({
-        where: {
-          categoryId: category.id
-        }
-      });
-      //delete category
-      category.destroy();
-      return res.status(204).json({
-        message: "Deleted successfully."
+      return res.status(404).json({
+        error: 'Category not found'
       });
     }
+
+    // Delete all feeds associated with this category
+    await Feed.destroy({
+      where: { categoryId: category.id }
+    });
+
+    // Delete the category
+    await category.destroy();
+
+    return res.status(204).send();
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in deleteCategory:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -116,4 +121,4 @@ export default {
   addCategory,
   updateCategory,
   deleteCategory
-}
+};

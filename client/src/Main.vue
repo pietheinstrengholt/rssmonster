@@ -184,7 +184,7 @@ export default {
       return import.meta.env.VITE_ENABLE_AGENT === 'true';
     }
   },
-  created: async function() {
+  async created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
 
     //reset newUnreads count to zero
@@ -215,10 +215,10 @@ export default {
       });
 
       //save reference to 'this', while it's still this!
-      var self = this;
+      const self = this;
 
       //background update overview every five minutes
-      setInterval(function() {
+      setInterval(() => {
         self.getOverview(false);
       }, 300 * 1000);
     }
@@ -239,26 +239,26 @@ export default {
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
   methods: {
-    mobileClick: function(value) {
+    mobileClick(value) {
       this.mobile = value;
     },
-    lookupFeedById: function(feedId) {
-      for (var x = 0; x < this.$store.data.categories.length; x++) {
-        for (var i = 0; i < this.$store.data.categories[x].feeds.length; i++) {
+    lookupFeedById(feedId) {
+      for (let x = 0; x < this.$store.data.categories.length; x++) {
+        for (let i = 0; i < this.$store.data.categories[x].feeds.length; i++) {
           if (this.$store.data.categories[x].feeds[i].id === feedId) {
             return this.$store.data.categories[x].feeds[i];
           }
         }
       }
     },
-    lookupCategoryById: function(categoryId) {
-      for (var x = 0; x < this.$store.data.categories.length; x++) {
+    lookupCategoryById(categoryId) {
+      for (let x = 0; x < this.$store.data.categories.length; x++) {
         if (this.$store.data.categories[x].id === categoryId) {
           return this.$store.data.categories[x];
         }
       }
     },
-    updateSelection: function(data) {
+    updateSelection(data) {
       //only update the local values of some categories exist
       if (this.$store.data.categories.length) {
         //set the feed to empty when the store changes, e.g. change can be that only a category is selected
@@ -266,7 +266,7 @@ export default {
 
         //lookup category name based on the categoryId received
         if (data.categoryId) {
-          var category = this.$store.data.categories.filter(function(a) {
+          const category = this.$store.data.categories.filter(function(a) {
             return a.id == data.categoryId;
           })[0];
           this.category = category;
@@ -277,7 +277,7 @@ export default {
         }
       }
     },
-    getOverview: async function(initial) {
+    async getOverview(initial) {
       await setTimeout(() => {
         //get an overview with the count for all feeds
         //const session = useSessionStore();
@@ -292,7 +292,7 @@ export default {
             this.offlineStatus = false;
 
             //update the store counts
-            var previousUnreadCount = this.$store.data.unreadCount;
+            const previousUnreadCount = this.$store.data.unreadCount;
             this.$store.data.unreadCount = response.data.unreadCount;
             this.$store.data.readCount = response.data.readCount;
             this.$store.data.starCount = response.data.starCount;
@@ -328,7 +328,7 @@ export default {
           });
       }, 50);
     },
-    showNotification: async function (input) {
+    async showNotification(input) {
       if ('serviceWorker' in navigator) {
         if(Notification.permission === 'granted') {
           navigator.serviceWorker.ready // returns a Promise, the active SW registration
@@ -340,7 +340,7 @@ export default {
         }
       }
     },
-    forceReload: function() {
+    forceReload() {
       //set newUnreads count back to zero. This removes the notification from the Sidebar.
       this.$store.data.newUnreads = 0;
       //refresh the overview with updated categories and feeds counts
@@ -351,7 +351,7 @@ export default {
     refreshFeeds() {
       //call sidebar refreshFeeds function
       this.$refs.sidebar.refreshFeeds();
-    },
+    }
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {

@@ -3,30 +3,27 @@ import Feed from "../models/feed.js";
 import Category from "../models/category.js";
 import cache from '../util/cache.js';
 import User from "../models/user.js";
-
-import Sequelize from "sequelize";
-const Op = Sequelize.Op;
+import { Op } from 'sequelize';
 
 //use Fever API
 //specs: https://feedafever.com/api
 
 export const getFever = async (req, res, next) => {
   try {
-    var arr = responseBase();
+    const arr = responseBase();
 
     //return 200 with arr
     res.status(200).json(arr);
 
   } catch (err) {
-    //return server if something goes wrong
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in getFever:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
 export const postFever = async (req, res, next) => {
   try {
-    var arr = responseBase();
+    const arr = responseBase();
 
     //check if api_key is provided, clients implement the api_key in different ways
     if ("api_key" in req.query || req.body?.api_key) {
@@ -36,7 +33,7 @@ export const postFever = async (req, res, next) => {
             hash: req.query.api_key || req.body?.api_key
           }
         });
-      if (!loggedInUser.id) {
+      if (!loggedInUser?.id) {
         //api_key is invalid
         return res.status(200).json(arr);
       } else {
@@ -45,19 +42,19 @@ export const postFever = async (req, res, next) => {
 
         //when argument is groups, retrieve list with categories names and id's
         if ("groups" in req.query) {
-          var groups = [];
+          const groups = [];
           const categories = await Category.findAll({
             where: {
               userId: loggedInUser.id
             },
-            order: ['categoryOrder', 'name']
+            order: [['categoryOrder', 'ASC'], ['name', 'ASC']]
           });
           if (categories) {
             categories.forEach(category => {
-              var categoryObject = {
+              const categoryObject = {
                 id: category.id,
                 title: category.name
-              }
+              };
               groups.push(categoryObject);
             });
           }
@@ -65,18 +62,18 @@ export const postFever = async (req, res, next) => {
           arr['groups'] = groups;
         }
 
-        //when argument is groups, retrieve list with categories names and id's
+        //when argument is feeds, retrieve list with feed details
         if ("feeds" in req.query) {
-          var feeds = [];
+          const feeds = [];
           const results = await Feed.findAll({
             where: {
               userId: loggedInUser.id
             },
-            order: ['feedName']
+            order: [['feedName', 'ASC']]
           });
           if (results) {
             results.forEach(feed => {
-              var feedObject = {
+              const feedObject = {
                 id: String(feed.id),
                 favicon: '<img src="data:' + feed.favicon + '">',
                 title: feed.feedName,
@@ -84,20 +81,20 @@ export const postFever = async (req, res, next) => {
                 site_url: feed.url,
                 is_spark: 0,
                 last_updated_on_time: Math.floor(feed.updatedAt / 1000)
-              }
+              };
               feeds.push(feedObject);
             });
           }
-          //append groups to arr
+          //append feeds to arr
           arr['feeds'] = feeds;
         }
 
         if ("groups" in req.query || "feeds" in req.query) {
           //create empty feeds_groups array
-          var feeds_groups = [];
+          const feeds_groups = [];
 
           //get all categories including feeds
-          var categories = await Category.findAll({
+          const categories = await Category.findAll({
             where: {
               userId: loggedInUser.id
             },
@@ -105,47 +102,45 @@ export const postFever = async (req, res, next) => {
               model: Feed,
               required: true
             }],
-            order: ['categoryOrder', 'name']
+            order: [['categoryOrder', 'ASC'], ['name', 'ASC']]
           });
 
           //if categories is defined
           if (categories) {
-            categories.forEach(function (category, i) {
+            categories.forEach((category) => {
 
               //create empty feedIds array
-              var feedIds = [];
+              const feedIds = [];
 
               //push all feed ids to the array
-              category.feeds.forEach(function (feed, i) {
+              category.feeds.forEach((feed) => {
                 feedIds.push(feed.id);
               });
 
               //create a feedgroup object holding the category id and feeds (comma seperated)
-              var feedGroupObject = {
+              const feedGroupObject = {
                 group_id: category.id,
                 feed_ids: feedIds.join(", ")
-              }
+              };
 
               //push the object to the feeds_groups array
               feeds_groups.push(feedGroupObject);
             });
           }
-          //append groups to arr
+          //append feeds_groups to arr
           arr['feeds_groups'] = feeds_groups;
         }
 
         //return list with all unread article id's
         if ("unread_item_ids" in req.query) {
-          var unread_item_ids = [];
+          const unread_item_ids = [];
           const articles = await Article.findAll({
             attributes: ["id"],
             where: {
               status: 'unread',
               userId: loggedInUser.id
             },
-            order: [
-              ['id', 'ASC']
-            ]
+            order: [['id', 'ASC']]
           });
           if (articles) {
             articles.forEach(article => {
@@ -156,43 +151,42 @@ export const postFever = async (req, res, next) => {
           arr['unread_item_ids'] = unread_item_ids.join(",");
         }
 
-        //return string/comma-separated list with id's from read and starred articles
+        //return string/comma-separated list with id's from starred articles
         if ("saved_item_ids" in req.query) {
-          var unread_item_ids = [];
+          const saved_item_ids = [];
           const articles = await Article.findAll({
             attributes: ["id"],
             where: {
               starInd: 1,
               userId: loggedInUser.id
             },
-            order: [
-              ['id', 'ASC']
-            ]
+            order: [['id', 'ASC']]
           });
           if (articles) {
             articles.forEach(article => {
-              unread_item_ids.push(article.id);
+              saved_item_ids.push(article.id);
             });
           }
           //string/comma-separated list of positive integers instead of array
-          arr['saved_item_ids'] = unread_item_ids.join(",");
+          arr['saved_item_ids'] = saved_item_ids.join(",");
         }
 
-        //return string/comma-separated list with id's from read and starred articles
+        //return articles with optional filtering
         if ("items" in req.query) {
           //add total number of articles to arr
           const total_articles = await Article.count();
           arr['total_items'] = total_articles;
 
           //create empty items array where all articles will be pushed to
-          var items = [];
+          const items = [];
 
+          let articles;
           //request specific items, a maximum of 50 specific items requested by comma-separated argument
           if (req.query.with_ids) {
             //list with id's is comma-separated, so transform to array
-            var arrayIds = req.query.with_ids.split(',');
+            const arrayIds = req.query.with_ids.split(',');
 
-            var articles = await Article.findAll({
+            articles = await Article.findAll({
               where: {
                 id: arrayIds,
                 userId: loggedInUser.id
@@ -201,7 +195,7 @@ export const postFever = async (req, res, next) => {
             //request 50 additional items using the highest id of locally cached items
           } else if (req.query.since_id) {
 
-            var articles = await Article.findAll({
+            articles = await Article.findAll({
               where: {
                 id: {
                   [Op.gt]: req.query.since_id
@@ -213,7 +207,7 @@ export const postFever = async (req, res, next) => {
             //request 50 previous items using the lowest id of locally cached items
           } else if (req.query.max_id) {
 
-            var articles = await Article.findAll({
+            articles = await Article.findAll({
               where: {
                 id: {
                   [Op.lt]: req.query.max_id
@@ -224,19 +218,17 @@ export const postFever = async (req, res, next) => {
             });
             //if no argument is given provide total_items and up to 50 items
           } else {
-            var articles = await Article.findAll({
+            articles = await Article.findAll({
               where: {
                 userId: loggedInUser.id
               },
-              order: [
-                ['id', 'ASC']
-              ],
+              order: [['id', 'ASC']],
               limit: 50
             });
           }
 
-          await articles.forEach(function (article) {
-            var articleObject = {
+          articles.forEach((article) => {
+            const articleObject = {
               id: article.id,
               feed_id: parseInt(article.feedId),
               title: article.subject,
@@ -255,11 +247,11 @@ export const postFever = async (req, res, next) => {
 
         }
 
-        //when argument is links, don't return anything at this moment
+        //when argument is links, return hot links
         if ("links" in req.query) {
           
           //select all items with hot links
-          var articles = await Article.findAll({
+          const articles = await Article.findAll({
             where: {
               id: {
                 [Op.gt]: req.query.since_id,
@@ -278,7 +270,7 @@ export const postFever = async (req, res, next) => {
               }]
           });
 
-          var item_ids = [];
+          const item_ids = [];
 
           if (articles) {
             articles.forEach(article => {
@@ -286,8 +278,9 @@ export const postFever = async (req, res, next) => {
             });
           }
 
-          await articles.forEach(function (article) {
-            var articleObject = {
+          const links = [];
+          articles.forEach((article) => {
+            const articleObject = {
               id: article.id,
               feed_id: parseInt(article.feedId),
               item_id: parseInt(article.feedId),
@@ -301,24 +294,22 @@ export const postFever = async (req, res, next) => {
               //string/comma-separated list of positive integers of all hot links
               item_ids: item_ids.join(",")
             };
-            items.push(articleObject);
+            links.push(articleObject);
           });
 
           //add links to arr
-          arr['links'] = items;
+          arr['links'] = links;
         }
 
         //favicons
         if ("favicons" in req.query) {
-          var favicons = [];
+          const favicons = [];
           const feeds = await Feed.findAll({
-            order: [
-              ['feedName', 'ASC']
-            ]
+            order: [['feedName', 'ASC']]
           });
           if (feeds) {
             feeds.forEach(feed => {
-              var feedObject = {
+              const feedObject = {
                 id: String(feed.id),
                 favicon: '<img src="data:' + feed.favicon + '">'
               };
@@ -330,11 +321,12 @@ export const postFever = async (req, res, next) => {
         }
 
         //set before argument, which needs to be a JavaScript Data Object for Sequelize
+        let timestamp;
         if ("before" in req.query) {
-          var timestamp = Date.parse(req.body.before * 1000);
+          timestamp = Date.parse(req.body.before * 1000);
         } else {
           //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
-          var timestamp = Date.now();
+          timestamp = Date.now();
         }
 
         //check if mark argument is provided, which means that articles need to be updated
@@ -342,7 +334,7 @@ export const postFever = async (req, res, next) => {
           //update per article item
           if (req.body.mark === "item" && req.body.id) {
             const update = genUpdate(req.body.as);
-            Article.update(update, {
+            await Article.update(update, {
               where: {
                 id: req.body.id,
                 userId: loggedInUser.id
@@ -353,7 +345,7 @@ export const postFever = async (req, res, next) => {
           //update per feed
           if (req.body.mark === "feed" && req.body.id) {
             const update = genUpdate(req.body.as);
-            Article.update(update, {
+            await Article.update(update, {
               where: {
                 feedId: req.body.id,
                 published: {
@@ -368,7 +360,7 @@ export const postFever = async (req, res, next) => {
           if (req.body.mark === "group" && req.body.id !== undefined) {
             const update = genUpdate(req.body.as);
 
-            var where = {
+            const where = {
               published: {
                 [Op.lte]: timestamp
               },
@@ -380,8 +372,8 @@ export const postFever = async (req, res, next) => {
               where['feedId'] = Number(req.body.id);
             }
 
-            Article.update(update, {
-              where: where,
+            await Article.update(update, {
+              where,
               userId: loggedInUser.id
             });
           }
@@ -393,9 +385,8 @@ export const postFever = async (req, res, next) => {
     //return 200 with arr
     res.status(200).json(arr);
   } catch (err) {
-    //return server if something goes wrong
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in postFever:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 

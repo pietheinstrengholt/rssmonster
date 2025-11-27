@@ -33,7 +33,7 @@ export default {
   },
   computed: {
     //calculate the remaining items in the container
-    remainingItems: function() {
+    remainingItems() {
       return this.container.length - this.pool.length;
     }
   },
@@ -46,11 +46,11 @@ export default {
       deep: true
     }
   },
-  created: function() {
+  created() {
     window.addEventListener("scroll", this.handleScroll);
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  unmounted: function() {
+  unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
   },
   async beforeCreate() {
@@ -81,13 +81,13 @@ export default {
           }
         });
     },
-    handleScroll: function() {
+    handleScroll() {
       //get mobileToolbar element
-      var mobileToolbar = document.getElementById('mobile-toolbar');
+      const mobileToolbar = document.getElementById('mobile-toolbar');
 
       //get the curScroll and set default direction
-      var curScroll = Math.ceil(window.scrollY) || Math.ceil(document.documentElement.scrollTop);
-      var direction = "down";
+      const curScroll = Math.ceil(window.scrollY) || Math.ceil(document.documentElement.scrollTop);
+      let direction = "down";
 
       //compare the curScroll with the prevScroll and update direction
       if (curScroll > this.prevScroll) { 
@@ -128,7 +128,7 @@ export default {
         //mark articles as read when scrolling down
         if (document.getElementById('articles')) {
           //set initial screen height to the current scroll position
-          var screenHeight = Math.ceil(document.documentElement.scrollTop);
+          let screenHeight = Math.ceil(document.documentElement.scrollTop);
           //loop through all articles and check if they are in the viewport
           for (const child of document.getElementById('articles').children) {
             //check if the article is still in the viewport
@@ -189,7 +189,7 @@ export default {
       if (this.container.length && this.isFlushed === false) {
         if (this.$store.data.getSelectedStatus === "unread") {
           //loop through the container and mark every item that is not part of the pool as read
-          for (var i in this.container) {
+          for (const i in this.container) {
             if (!this.pool.includes(this.container[i])) {
               this.markArticleRead(this.container[i]);
             }
