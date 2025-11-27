@@ -124,7 +124,7 @@ VITE_ENABLE_AGENT=true
 After configuration, restart both the client and server. The assistant provides:
 - Natural language search across all articles
 - Time-based filtering (e.g., "articles from last month")
-- Feed and category management queries
+- Article summarization, classification, and tagging
 - Favorite and trending article discovery
 - Smart recommendations based on reading habits
 
