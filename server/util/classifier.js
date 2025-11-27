@@ -89,30 +89,6 @@ export const generateSeoTags = async (content) => {
   }
 };
 
-/**
- * Batch-generate tags for multiple articles.
- * @param {Array<{id: number|string, content: string}>} items
- * @returns {Promise<Array<{id: number|string, tags: string[]}>>}
- */
-export const generateSeoTagsForArticles = async (items) => {
-  if (!Array.isArray(items) || items.length === 0) return [];
-
-  const results = await Promise.all(
-    items.map(async (it) => {
-      try {
-        const tags = await generateSeoTags(it.content || "");
-        return { id: it.id, tags };
-      } catch (err) {
-        console.error(`Error generating tags for ${it.id}:`, err.message);
-        return { id: it.id, tags: [] };
-      }
-    })
-  );
-
-  return results;
-};
-
 export default {
-  generateSeoTags,
-  generateSeoTagsForArticles
+  generateSeoTags
 };
