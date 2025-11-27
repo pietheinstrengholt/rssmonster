@@ -375,8 +375,6 @@ export default {
       if (this.$store.data.currentSelection) {
         this.$store.data.currentSelection.tag = name;
       }
-      // eslint-disable-next-line no-console
-      console.log('Selected tag:', name);
     }
   }
 }

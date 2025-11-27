@@ -5,7 +5,7 @@
             <textarea
                 class="form-control" 
                 id="chatTextarea" 
-                rows="3" 
+                rows="2" 
                 v-model="chatInput"
                 autocomplete="off"
                 autocapitalize="none"
@@ -106,6 +106,14 @@ div#inputArea {
 .block .article-content img {
   max-width: 100%;
   height: auto !important;
+}
+
+/* Mobile responsive margins */
+@media screen and (max-width: 768px) {
+  div#inputArea {
+    margin-left: 15px;
+    margin-right: 15px;
+  }
 }
 </style>
 
