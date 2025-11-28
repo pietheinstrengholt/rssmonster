@@ -37,6 +37,11 @@ module.exports = {
         defaultValue: "unread"
       },
       starInd: Sequelize.INTEGER,
+      clickedInd: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       hotlinks: {
         type: Sequelize.INTEGER,
         allowNull: false,

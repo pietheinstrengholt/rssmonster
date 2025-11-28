@@ -184,8 +184,38 @@ const postArticles = async (req, res, next) => {
   }
 };
 
+// Mark article as clicked
+const markClicked = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+
+    const article = await Article.findOne({
+      where: {
+        id: articleId,
+        userId: userId
+      }
+    });
+
+    if (!article) {
+      return res.status(404).json({ error: "Article not found" });
+    }
+
+    await article.update({ clickedInd: 1 });
+
+    res.status(200).json({ 
+      message: "Article marked as clicked",
+      articleId: articleId
+    });
+  } catch (err) {
+    console.error("Error in markClicked:", err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 export default {
   getArticles,
   getArticle,
-  postArticles
+  postArticles,
+  markClicked
 }

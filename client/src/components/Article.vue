@@ -3,7 +3,7 @@
     <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotlinks }" v-on:click="bookmark(id, $event)">    
       <div class="maximal">
         <h5 class="heading">
-          <a target="_blank" :href="url" v-text="subject"></a>
+          <a href="#" v-text="subject" @click.prevent="articleClicked(id, url)"></a>
         </h5>
         <div class="feedname">
           <span class="published_date">{{ formatDate(published) }}</span>
@@ -375,6 +375,16 @@ export default {
       if (this.$store.data.currentSelection) {
         this.$store.data.currentSelection.tag = name;
       }
+    },
+    articleClicked(articleId, articleUrl) {
+      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markclicked/" + articleId)
+        .then(() => {
+          window.open(articleUrl, '_blank');
+        })
+        .catch(error => {
+          console.error("Error marking article as clicked:", error);
+          window.open(articleUrl, '_blank');
+        });
     }
   }
 }
