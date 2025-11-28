@@ -128,6 +128,8 @@ After configuration, restart both the client and server. The assistant provides:
 - Favorite and trending article discovery
 - Smart recommendations based on reading habits
 
+RSSMonster automatically tracks article clicks and uses AI to classify content with three quality metrics: **advertisementScore** (ad/promotional content detection), **sentimentScore** (emotional tone analysis), and **qualityScore** (content depth and accuracy assessment). These scores provide at-a-glance insights into article quality.
+
 **Note:** All interactions are user-scoped, ensuring privacy and data isolation in multi-user environments.
 
 ## Development

@@ -59,6 +59,21 @@ module.exports = {
       content: Sequelize.TEXT('medium'),
       contentStripped: Sequelize.TEXT('medium'),
       language: Sequelize.TEXT('tiny'),
+      advertisementScore: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      sentimentScore: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 50
+      },
+      qualityScore: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 50
+      },
       published: {
         type: Sequelize.DATE,
         allowNull: false,

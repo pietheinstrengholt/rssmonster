@@ -7,7 +7,7 @@ import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
 import { summarizeContent } from "../util/summarizer.js";
-import { generateSeoTags } from "../util/classifier.js";
+import { classifyContent } from "../util/classifier.js";
 import { load } from 'cheerio';
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
@@ -185,64 +185,57 @@ const processArticle = async (feed, post) => {
             }
           }
 
-          // Generate SEO tags using OpenAI and save to database
+          // Classify content using OpenAI (tags + scores) and save to database
           let createdArticle;
+          let classification = {
+            tags: [],
+            advertisementScore: 0,
+            sentimentScore: 50,
+            qualityScore: 50
+          };
+
           if (process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL_NAME) {
             try {
-              const seoTags = await generateSeoTags(postContentStripped || summarizedContent);
-              if (Array.isArray(seoTags) && seoTags.length) {
-                console.log(`SEO tags for "${post.title || 'No title'}": ${seoTags.join(', ')}`);
-                
-                // Create article first
-                createdArticle = await Article.create({
-                  userId: feed.userId,
-                  feedId: feed.id,
-                  status: "unread",
-                  star_ind: 0,
-                  url: post.url,
-                  image_url: "",
-                  subject: post.title || 'No title',
-                  content: postContent,
-                  contentStripped: summarizedContent,
-                  language: postLanguage,
-                  published: post.published || new Date()
-                });
-
-                // Save tags to database
-                const tagPromises = seoTags.map(tagName => 
-                  Tag.create({
-                    articleId: createdArticle.id,
-                    userId: feed.userId,
-                    name: tagName
-                  }).catch(err => {
-                    console.error(`Error saving tag "${tagName}":`, err.message);
-                  })
-                );
-                await Promise.all(tagPromises);
-                console.log(`Saved ${seoTags.length} tags for article ${createdArticle.id}`);
-              } else {
-                console.log(`SEO tags for "${post.title || 'No title'}": [none]`);
-              }
+              classification = await classifyContent(postContentStripped || summarizedContent);
+              console.log(`Classification for "${post.title || 'No title'}":`);
+              console.log(`  Tags: ${classification.tags.join(', ')}`);
+              console.log(`  Ad Score: ${classification.advertisementScore}, Sentiment: ${classification.sentimentScore}, Quality: ${classification.qualityScore}`);
             } catch (err) {
-              console.error('Error generating SEO tags:', err.message);
+              console.error('Error classifying content:', err.message);
             }
           }
 
-          // Create article if not already created (when OpenAI not configured)
-          if (!createdArticle) {
-            await Article.create({
-              userId: feed.userId,
-              feedId: feed.id,
-              status: "unread",
-              star_ind: 0,
-              url: post.url,
-              image_url: "",
-              subject: post.title || 'No title',
-              content: postContent,
-              contentStripped: summarizedContent,
-              language: postLanguage,
-              published: post.published || new Date()
-            });
+          // Create article with classification scores
+          createdArticle = await Article.create({
+            userId: feed.userId,
+            feedId: feed.id,
+            status: "unread",
+            star_ind: 0,
+            url: post.url,
+            image_url: "",
+            subject: post.title || 'No title',
+            content: postContent,
+            contentStripped: summarizedContent,
+            language: postLanguage,
+            advertisementScore: classification.advertisementScore,
+            sentimentScore: classification.sentimentScore,
+            qualityScore: classification.qualityScore,
+            published: post.published || new Date()
+          });
+
+          // Save tags to database if any were generated
+          if (classification.tags.length > 0) {
+            const tagPromises = classification.tags.map(tagName => 
+              Tag.create({
+                articleId: createdArticle.id,
+                userId: feed.userId,
+                name: tagName
+              }).catch(err => {
+                console.error(`Error saving tag "${tagName}":`, err.message);
+              })
+            );
+            await Promise.all(tagPromises);
+            console.log(`Saved ${classification.tags.length} tags for article ${createdArticle.id}`);
           }
         }
       }

@@ -19,6 +19,9 @@
             class="tag"
             v-on:click.stop="selectTag(tag)"
           >{{ tag.name }}</span>
+          <span v-if="advertisementScore !== undefined" class="score ad-score" :title="'Advertisement Score: ' + advertisementScore">Ad: {{ advertisementScore }}</span>
+          <span v-if="sentimentScore !== undefined" class="score sentiment-score" :title="'Sentiment Score: ' + sentimentScore">Sentiment: {{ sentimentScore }}</span>
+          <span v-if="qualityScore !== undefined" class="score quality-score" :title="'Quality Score: ' + qualityScore">Quality: {{ qualityScore }}</span>
         </div>
       </div>
       <div v-if="$store.data.filter === 'full'" class="article-content">
@@ -167,6 +170,32 @@
   white-space: nowrap;
 }
 
+.block .article-tags .score {
+  display: inline-block;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 500;
+  white-space: nowrap;
+  background-color: #f5f5f5;
+  color: #666;
+}
+
+.block .article-tags .ad-score {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.block .article-tags .sentiment-score {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+}
+
+.block .article-tags .quality-score {
+  background-color: #e8f5e9;
+  color: #2e7d32;
+}
+
 .block.active {
   background-color: #ffffe5;
 }
@@ -257,6 +286,26 @@ span.feed_name a {
     color: #a8c5e8;
   }
 
+  .block .article-tags .score {
+    background-color: #2a2a2a;
+    color: #ccc;
+  }
+
+  .block .article-tags .ad-score {
+    background-color: #3d2a1f;
+    color: #ffb74d;
+  }
+
+  .block .article-tags .sentiment-score {
+    background-color: #1a1f3a;
+    color: #9fa8da;
+  }
+
+  .block .article-tags .quality-score {
+    background-color: #1f2e1f;
+    color: #81c784;
+  }
+
   nav ul li {
     background: #000;
   }
@@ -275,7 +324,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags'],
+  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
   computed: {
     formatDate: function() {
       return (value)=> {

@@ -3,35 +3,67 @@ import dotenv from "dotenv";
 dotenv.config();
 
 /**
- * Generate 5-7 relevant, high-volume SEO tags for the given content using OpenAI.
- * - Returns concise tags (1-3 words), no hashes, no duplicates
- * - Tries to preserve the original language
- *
+ * Generate comprehensive content analysis including SEO tags and quality scores.
+ * 
  * @param {string} content - The article content to analyze
- * @returns {Promise<string[]>} Array of tags
+ * @returns {Promise<Object>} Object containing:
+ *   - tags: Array of 5-7 SEO tags
+ *   - advertisementScore: 0-100 (higher = more ads/promotional content)
+ *   - sentimentScore: 0-100 (0 = very negative, 50 = neutral, 100 = very positive)
+ *   - qualityScore: 0-100 (higher = better content quality)
  */
-export const generateSeoTags = async (content) => {
+export const classifyContent = async (content) => {
   try {
     if (!content || typeof content !== "string" || !content.trim()) {
       throw new Error("Invalid content provided for classification");
     }
 
     if (!process.env.OPENAI_API_KEY) {
-      console.warn("OPENAI_API_KEY not configured. Skipping SEO tag generation.");
-      return [];
+      console.warn("OPENAI_API_KEY not configured. Skipping content classification.");
+      return {
+        tags: [],
+        advertisementScore: 0,
+        sentimentScore: 50,
+        qualityScore: 50
+      };
     }
 
     const openai = new OpenAI({ apiKey: process.env.OPENAI_API_KEY });
     const modelName = process.env.OPENAI_MODEL_NAME || "gpt-4";
 
     const userPrompt = [
-      "Generate a list of 5-7 relevant, high-volume SEO tags based on the following article content.",
-      "Guidelines:",
-      "- Keep each tag concise (1-3 words)",
-      "- No # symbols, punctuation, or emojis",
-      "- Avoid duplicates; prefer generic but accurate topic terms",
-      "- Use the same language as the original content",
-      "- Output ONLY a JSON array of strings, no prose",
+      "Analyze the following article content and provide:",
+      "",
+      "1. SEO Tags: Generate 5-7 relevant, high-volume SEO tags",
+      "   - Keep each tag concise (1-3 words)",
+      "   - No # symbols, punctuation, or emojis",
+      "   - Avoid duplicates; prefer generic but accurate topic terms",
+      "   - Use the same language as the original content",
+      "",
+      "2. Advertisement Score (0-100):",
+      "   - 0 = No promotional content, pure editorial",
+      "   - 50 = Moderate promotional elements",
+      "   - 100 = Heavy advertisements, affiliate links, spam-like",
+      "   - Consider: affiliate links (Amazon, etc.), product placements, sponsored content indicators, excessive CTAs",
+      "",
+      "3. Sentiment Score (0-100):",
+      "   - 0 = Very negative (angry, critical, pessimistic)",
+      "   - 50 = Neutral (balanced, objective, factual)",
+      "   - 100 = Very positive (optimistic, enthusiastic, praising)",
+      "",
+      "4. Quality Score (0-100):",
+      "   - Consider: depth of analysis, accuracy, writing quality, structure, originality",
+      "   - 0-30 = Poor (clickbait, shallow, errors)",
+      "   - 40-60 = Average (basic information, acceptable)",
+      "   - 70-100 = High quality (well-researched, insightful, professional)",
+      "",
+      "Output ONLY a JSON object with this exact structure:",
+      "{",
+      '  "tags": ["tag1", "tag2", ...],',
+      '  "advertisementScore": 0-100,',
+      '  "sentimentScore": 0-100,',
+      '  "qualityScore": 0-100',
+      "}",
       "",
       "Content:",
       content
@@ -43,52 +75,57 @@ export const generateSeoTags = async (content) => {
         {
           role: "system",
           content:
-            "You are an expert SEO tagging assistant. Given article content, produce 5-7 concise, high-volume SEO tags in the original language. Respond strictly as a JSON array of strings with no extra text."
+            "You are an expert content analyst. Analyze articles and provide SEO tags along with advertisement, sentiment, and quality scores. Always respond with valid JSON only, no additional text."
         },
         { role: "user", content: userPrompt }
       ],
       temperature: 0.2,
-      max_completion_tokens: 150
+      max_completion_tokens: 300
     });
 
     const raw = completion.choices?.[0]?.message?.content?.trim() || "";
 
-    // Try to parse JSON array directly
-    let tags;
+    // Parse JSON response
+    let result;
     try {
-      tags = JSON.parse(raw);
+      result = JSON.parse(raw);
     } catch (e) {
-      // Fallback: parse comma or newline separated text
-      tags = raw
-        .replace(/^[\[\(\{\s]+|[\]\)\}\s]+$/g, "")
-        .split(/[\n,]+/)
-        .map((t) => t.replace(/^"|"$/g, "").trim())
-        .filter(Boolean);
+      console.error("Failed to parse OpenAI response as JSON:", raw);
+      throw new Error("Invalid JSON response from OpenAI");
     }
 
-    // Normalize & sanitize
-    const normalized = Array.from(
+    // Validate and normalize the response
+    const tags = Array.isArray(result.tags) ? result.tags : [];
+    const normalizedTags = Array.from(
       new Set(
-        (Array.isArray(tags) ? tags : [])
+        tags
           .map(String)
           .map((t) => t.replace(/[#"'`]/g, "").trim())
           .filter((t) => t.length > 0)
           .map((t) => (t.length > 48 ? t.slice(0, 48) : t))
       )
-    );
+    ).slice(0, 7); // Limit to 7 tags
 
-    // Enforce 5-7 tags boundary
-    if (normalized.length > 7) return normalized.slice(0, 7);
-    if (normalized.length >= 5) return normalized;
+    // Ensure scores are valid numbers within 0-100 range
+    const clamp = (val, min, max) => Math.max(min, Math.min(max, Number(val) || 0));
 
-    // If fewer than 5, attempt to pad by splitting phrases; otherwise return what we have
-    return normalized;
+    return {
+      tags: normalizedTags,
+      advertisementScore: clamp(result.advertisementScore, 0, 100),
+      sentimentScore: clamp(result.sentimentScore, 0, 100),
+      qualityScore: clamp(result.qualityScore, 0, 100)
+    };
   } catch (error) {
-    console.error("Error in generateSeoTags:", error.message);
-    return [];
+    console.error("Error in classifyContent:", error.message);
+    return {
+      tags: [],
+      advertisementScore: 0,
+      sentimentScore: 50,
+      qualityScore: 50
+    };
   }
 };
 
 export default {
-  generateSeoTags
+  classifyContent
 };

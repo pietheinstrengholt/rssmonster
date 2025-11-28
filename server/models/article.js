@@ -50,6 +50,18 @@ export const Article = sequelize.define(
     content: Sequelize.TEXT("medium"),
     contentStripped: Sequelize.TEXT("medium"),
     language: Sequelize.TEXT("tiny"),
+    advertisementScore: {
+      type: Sequelize.INTEGER,
+      defaultValue: 0
+    },
+    sentimentScore: {
+      type: Sequelize.INTEGER,
+      defaultValue: 50
+    },
+    qualityScore: {
+      type: Sequelize.INTEGER,
+      defaultValue: 50
+    },
     published: {
       type: Sequelize.DATE,
       allowNull: false,
