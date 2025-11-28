@@ -155,6 +155,11 @@ const postMcp = async (req, res) => {
       - Returns matched tag names with usage counts (frequency across articles).
       - Useful to discover related or emerging interest areas from partial terms.
 
+    15. search_clicked_articles
+      - Returns articles that have been clicked by the user (clickedInd = 1).
+      - Optionally filter by feedId and/or time window (seconds from now).
+      - Useful to understand which articles users actually engaged with.
+
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
       For example, to get all articles from feeds in a specific category:
@@ -789,7 +794,83 @@ const postMcp = async (req, res) => {
         }
       }
     );
-    
+
+    // Tool 15: search_clicked_articles
+    server.tool(
+      "search_clicked_articles",
+      `
+      Retrieves all articles that have been clicked by the user (clickedInd = 1).
+      The agent should summarize each returned article (2–3 sentences) based on title, subject, and content.
+
+      You may optionally provide a feedId:
+      - If "feedId" is provided, only articles from that feed are returned.
+      - If "feedId" is NOT provided, articles from ALL feeds are returned.
+
+      You may optionally provide a time window:
+      - If "seconds" is provided, only articles clicked within that time window are returned.
+      - If "seconds" is NOT provided, all clicked articles are returned regardless of when.
+
+      Examples:
+      - Last hour: seconds = 3600
+      - Last day: seconds = 86400
+      `,
+      {
+        feedId: z.string()
+          .optional()
+          .describe("Optional feedId. If omitted, articles from all feeds are included."),
+
+        seconds: z.number()
+          .min(1)
+          .optional()
+          .describe("Optional time window (in seconds) from the current time to look back. If omitted, all clicked articles are returned."),
+      },
+      async ({ feedId, seconds }) => {
+        console.log('[MCP Tool Called] search_clicked_articles - feedId:', feedId, 'seconds:', seconds);
+        try {
+          const whereClause = {
+            userId: userId,
+            clickedInd: 1,
+            ...(feedId ? { feedId: feedId } : {}),
+          };
+
+          // If seconds is provided, add time filter
+          if (seconds) {
+            const now = new Date();
+            const fromTime = new Date(now.getTime() - seconds * 1000);
+            whereClause.updatedAt = {
+              [Op.between]: [fromTime, now],
+            };
+          }
+
+          const articles = await Article.findAll({
+            where: whereClause,
+            order: [["updatedAt", "DESC"]],
+            raw: true,
+          });
+
+          console.log(`Fetched ${articles.length} clicked articles`);
+
+          const html = generateArticlesHtml(articles, {
+            title: 'Clicked Articles',
+            emoji: '👆'
+          });
+
+          const structured = {
+            totalClicked: articles.length,
+            ...(seconds ? { timeWindowSeconds: seconds } : {}),
+            ...(feedId ? { feedId: feedId } : {}),
+            htmlOutput: html,
+            articles: articles
+          };
+
+          return makeResult({ structured });
+        } catch (err) {
+          console.error('Error fetching clicked articles:', err);
+          return makeResult({ structured: { error: 'Failed to fetch clicked articles.' }, error: true });
+        }
+      }
+    );
+
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
     });
