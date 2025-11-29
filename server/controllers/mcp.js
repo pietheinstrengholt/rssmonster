@@ -160,6 +160,10 @@ const postMcp = async (req, res) => {
       - Optionally filter by feedId and/or time window (seconds from now).
       - Useful to understand which articles users actually engaged with.
 
+    16. tags_clicked_articles
+      - Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1).
+      - Useful to analyze engagement topics and guide queries.
+
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
       For example, to get all articles from feeds in a specific category:
@@ -867,6 +871,53 @@ const postMcp = async (req, res) => {
         } catch (err) {
           console.error('Error fetching clicked articles:', err);
           return makeResult({ structured: { error: 'Failed to fetch clicked articles.' }, error: true });
+        }
+      }
+    );
+
+    // 16. tags_clicked_articles
+    //   - Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1).
+    //   - Useful to analyze engagement topics for the authenticated user.
+
+    // Tool 16: tags_clicked_articles
+    server.tool(
+      "tags_clicked_articles",
+      `
+      Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1)
+      for the authenticated user. Useful to understand which topics users engage with most.
+      `,
+      async () => {
+        console.log('[MCP Tool Called] tags_clicked_articles');
+        try {
+          // 1) Fetch clicked article IDs for this user
+          const clicked = await Article.findAll({
+            where: { userId: userId, clickedInd: 1 },
+            attributes: ['id'],
+            raw: true
+          });
+
+          const articleIds = clicked.map(r => r.id);
+          if (articleIds.length === 0) {
+            return makeResult({ structured: { totalClickedArticles: 0, topTags: [] } });
+          }
+
+          // 2) Aggregate tags for those articles
+          const topTags = await Tag.findAll({
+            where: { userId: userId, articleId: articleIds },
+            attributes: [
+              'name',
+              [fn('COUNT', col('name')), 'count']
+            ],
+            group: ['name'],
+            order: [[literal('count'), 'DESC'], ['name', 'ASC']],
+            limit: 10,
+            raw: true
+          });
+
+          return makeResult({ structured: { totalClickedArticles: articleIds.length, topTags } });
+        } catch (err) {
+          console.error('Error fetching clicked tags:', err);
+          return makeResult({ structured: { error: 'Failed to fetch clicked tags.' }, error: true });
         }
       }
     );
