@@ -57,7 +57,7 @@
 
 .block .article-content img, .block .article-content figure {
   display: block;
-  width: 100% !important;
+  max-width: 100% !important;
   height: auto !important;
 }
 
