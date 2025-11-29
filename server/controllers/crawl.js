@@ -6,8 +6,7 @@ import Tag from "../models/tag.js";
 import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
 import language from "../util/language.js";
-import { summarizeContent } from "../util/summarizer.js";
-import { classifyContent } from "../util/classifier.js";
+import { analyzeContent } from "../util/analyzer.js";
 import { load } from 'cheerio';
 import * as htmlparser2 from "htmlparser2";
 import cache from '../util/cache.js';
@@ -172,41 +171,29 @@ const processArticle = async (feed, post) => {
         
         //add article to database, if content or a description has been found
         if (postContent) {
-          // Use summarization if OpenAI is configured
-          let summarizedContent = postContentStripped;
-          if (process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL_NAME) {
-            try {
-              summarizedContent = await summarizeContent(postContentStripped);
-              console.log(`Summarized article: ${post.title?.substring(0, 50)}...`);
-            } catch (err) {
-              console.error('Error summarizing article:', err.message);
-              // Fall back to original stripped content
-              summarizedContent = postContentStripped;
-            }
-          }
-
-          // Classify content using OpenAI (tags + scores) and save to database
-          let createdArticle;
-          let classification = {
+          // Analyze content once (summary + tags + scores)
+          let analysis = {
+            summary: postContentStripped,
             tags: [],
             advertisementScore: 0,
             sentimentScore: 50,
-            qualityScore: 50
+            qualityScore: 50,
           };
 
-          if (process.env.OPENAI_API_KEY && process.env.OPENAI_MODEL_NAME) {
+          if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
             try {
-              classification = await classifyContent(postContentStripped || summarizedContent);
-              console.log(`Classification for "${post.title || 'No title'}":`);
-              console.log(`  Tags: ${classification.tags.join(', ')}`);
-              console.log(`  Ad Score: ${classification.advertisementScore}, Sentiment: ${classification.sentimentScore}, Quality: ${classification.qualityScore}`);
+              analysis = await analyzeContent(postContentStripped);
+              console.log(`Analysis for "${post.title || 'No title'}":`);
+              console.log(`  Summary: ${analysis.summary.substring(0, 120)}...`);
+              console.log(`  Tags: ${analysis.tags.join(', ')}`);
+              console.log(`  Ad: ${analysis.advertisementScore}, Sentiment: ${analysis.sentimentScore}, Quality: ${analysis.qualityScore}`);
             } catch (err) {
-              console.error('Error classifying content:', err.message);
+              console.error('Error analyzing content:', err.message);
             }
           }
 
-          // Create article with classification scores
-          createdArticle = await Article.create({
+          // Create article with analysis results
+          const createdArticle = await Article.create({
             userId: feed.userId,
             feedId: feed.id,
             status: "unread",
@@ -215,17 +202,17 @@ const processArticle = async (feed, post) => {
             image_url: "",
             subject: post.title || 'No title',
             content: postContent,
-            contentStripped: summarizedContent,
+            contentStripped: analysis.summary,
             language: postLanguage,
-            advertisementScore: classification.advertisementScore,
-            sentimentScore: classification.sentimentScore,
-            qualityScore: classification.qualityScore,
+            advertisementScore: analysis.advertisementScore,
+            sentimentScore: analysis.sentimentScore,
+            qualityScore: analysis.qualityScore,
             published: post.published || new Date()
           });
 
           // Save tags to database if any were generated
-          if (classification.tags.length > 0) {
-            const tagPromises = classification.tags.map(tagName => 
+          if (analysis.tags.length > 0) {
+            const tagPromises = analysis.tags.map(tagName => 
               Tag.create({
                 articleId: createdArticle.id,
                 userId: feed.userId,
@@ -235,7 +222,7 @@ const processArticle = async (feed, post) => {
               })
             );
             await Promise.all(tagPromises);
-            console.log(`Saved ${classification.tags.length} tags for article ${createdArticle.id}`);
+            console.log(`Saved ${analysis.tags.length} tags for article ${createdArticle.id}`);
           }
         }
       }

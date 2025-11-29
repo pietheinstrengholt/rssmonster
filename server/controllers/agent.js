@@ -49,7 +49,7 @@ export const postAgent = async (req, res) => {
         - Keep summaries concise (2-3 sentences) but informative
         - Use proper HTML formatting for readability (paragraphs, line breaks, lists, etc.)
             `,
-      model: process.env.OPENAI_MODEL_NAME || "gpt-5.1",
+      model: process.env.OPENAI_MODEL_AGENT || process.env.OPENAI_MODEL_NAME || "gpt-5.1",
       mcpServers: [mcpServer]
     });
 
