@@ -23,25 +23,33 @@ export async function analyzeContent(text) {
 
   try {
     const prompt = [
-      'You are a helpful assistant analyzing an RSS article.',
-      '',
-      'Task:',
-      '1) Summarize the content in 2-3 concise sentences.',
-      '',
-      '2) Provide 5-7 SEO-friendly tags (lowercase, no punctuation).',
-      '',
-      '3) Score the article on three metrics from 0 to 100:',
-      '   - advertisementScore: 0 = purely editorial, 100 = heavy promotional/affiliate/spam.',
-      '   - sentimentScore: 0 = very positive, 50 = neutral, 100 = very negative.',
-      '   - qualityScore: depth, accuracy, structure and writing quality (0-30 excellent, 70-100 poor).',
-      '',
-      'Return STRICT JSON with keys: summary, tags, advertisementScore, sentimentScore, qualityScore.',
-      '',
-      'Article:',
-      '```',
-      text,
-      '```'
-    ].join('\n');
+    "You are a concise and reliable assistant analyzing a single RSS article.",
+    "",
+    "Follow these rules EXACTLY:",
+    "1) Summarize the article in 2–3 clear sentences. Focus on facts, avoid filler.",
+    "",
+    "2) Provide 5–7 SEO-friendly tags:",
+    "   - lowercase",
+    "   - no punctuation",
+    "   - single words or short phrases",
+    "   - no duplicates",
+    "",
+    "3) Score the article from 0–100 on:",
+    "   - advertisementScore: 0 = purely editorial, 100 = heavy promotional/affiliate/spam.",
+    "   - sentimentScore: 0 = extremely positive, 50 = neutral, 100 = extremely negative.",
+    "   - qualityScore: 0 = excellent quality, 100 = extremely poor quality (clarity, depth, structure, accuracy).",
+    "",
+    "STRICT OUTPUT RULES:",
+    "- Return ONLY valid JSON.",
+    "- Use these exact keys: summary, tags, advertisementScore, sentimentScore, qualityScore.",
+    "- Do not include commentary or additional text.",
+    "- Ignore HTML, boilerplate, navigation text, or ‘read more’ fragments.",
+    "",
+    "Article:",
+    "```",
+    text,
+    "```"
+    ].join('\\n');
 
     const response = await client.chat.completions.create({
       model: crawlModel,
