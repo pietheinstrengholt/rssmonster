@@ -6,7 +6,7 @@ import userMiddleware from "../middleware/users.js";
 // GET /api/articles
 articleRoutes.get('/', userMiddleware.isLoggedIn, articleController.getArticles);
 articleRoutes.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
-articleRoutes.post('/', userMiddleware.isLoggedIn, articleController.postArticles);
+articleRoutes.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
 articleRoutes.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
 
 export default articleRoutes;

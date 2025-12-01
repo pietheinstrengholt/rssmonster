@@ -2,32 +2,53 @@ import Article from "../models/article.js";
 import Category from "../models/category.js";
 import Feed from "../models/feed.js";
 import Tag from "../models/tag.js";
+import Setting from "../models/setting.js";
 
 import cache from '../util/cache.js';
 
 import Sequelize from "sequelize";
+import { Op } from 'sequelize';
 
 export const getOverview = async (req, res, next) => {
   const userId = req.userData.userId;
   try {
+    // Get user settings for score filters
+    const settings = await Setting.findOne({ 
+      where: { userId: userId },
+      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+    });
+
+    const minAdvertisementScore = settings?.minAdvertisementScore || 100;
+    const minSentimentScore = settings?.minSentimentScore || 100;
+    const minQualityScore = settings?.minQualityScore || 100;
+
     const starCount = await Article.count({
       where: {
         userId: userId,
-        starInd: 1
+        starInd: 1,
+        advertisementScore: { [Op.lte]: minAdvertisementScore },
+        sentimentScore: { [Op.lte]: minSentimentScore },
+        qualityScore: { [Op.lte]: minQualityScore }
       }
     });
 
     const unreadCount = await Article.count({
       where: {
         userId: userId,
-        status: "unread"
+        status: "unread",
+        advertisementScore: { [Op.lte]: minAdvertisementScore },
+        sentimentScore: { [Op.lte]: minSentimentScore },
+        qualityScore: { [Op.lte]: minQualityScore }
       }
     });
 
     const readCount = await Article.count({
       where: {
         userId: userId,
-        status: "read"
+        status: "read",
+        advertisementScore: { [Op.lte]: minAdvertisementScore },
+        sentimentScore: { [Op.lte]: minSentimentScore },
+        qualityScore: { [Op.lte]: minQualityScore }
       }
     });
 
@@ -35,7 +56,10 @@ export const getOverview = async (req, res, next) => {
     const hotCount = await Article.count({
       where: {
         userId: userId,
-        url: cache.all()
+        url: cache.all(),
+        advertisementScore: { [Op.lte]: minAdvertisementScore },
+        sentimentScore: { [Op.lte]: minSentimentScore },
+        qualityScore: { [Op.lte]: minQualityScore }
       }
     });
 
@@ -59,7 +83,10 @@ export const getOverview = async (req, res, next) => {
         attributes: [],
         where: {
           userId: userId,
-          status: "unread"
+          status: "unread",
+          advertisementScore: { [Op.lte]: minAdvertisementScore },
+          sentimentScore: { [Op.lte]: minSentimentScore },
+          qualityScore: { [Op.lte]: minQualityScore }
         }
       }],
       attributes: [
@@ -77,7 +104,10 @@ export const getOverview = async (req, res, next) => {
         attributes: [],
         where: {
           userId: userId,
-          status: "read"
+          status: "read",
+          advertisementScore: { [Op.lte]: minAdvertisementScore },
+          sentimentScore: { [Op.lte]: minSentimentScore },
+          qualityScore: { [Op.lte]: minQualityScore }
         }
       }],
       attributes: [
@@ -95,7 +125,10 @@ export const getOverview = async (req, res, next) => {
         attributes: [],
         where: {
           userId: userId,
-          starInd: 1
+          starInd: 1,
+          advertisementScore: { [Op.lte]: minAdvertisementScore },
+          sentimentScore: { [Op.lte]: minSentimentScore },
+          qualityScore: { [Op.lte]: minQualityScore }
         }
       }],
       attributes: [

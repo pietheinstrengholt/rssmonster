@@ -11,7 +11,7 @@ export const Setting = sequelize.define(
       primaryKey: true
     },
     userId: {
-      type: Sequelize.STRING,
+      type: Sequelize.INTEGER,
       autoIncrement: false,
       allowNull: false,
     },
@@ -26,7 +26,7 @@ export const Setting = sequelize.define(
       autoIncrement: false,
       allowNull: false,
       defaultValue: "%"
-    },
+    }, 
     status: {
       type: Sequelize.STRING,
       autoIncrement: false,
@@ -38,6 +38,24 @@ export const Setting = sequelize.define(
       autoIncrement: false,
       allowNull: false,
       defaultValue: "DESC"
+    },
+    minAdvertisementScore: {
+      type: Sequelize.INTEGER,
+      autoIncrement: false,
+      allowNull: false,
+      defaultValue: 0
+    },
+    minSentimentScore: {
+      type: Sequelize.INTEGER,
+      autoIncrement: false,
+      allowNull: false,
+      defaultValue: 0
+    },
+    minQualityScore: {
+      type: Sequelize.INTEGER,
+      autoIncrement: false,
+      allowNull: false,
+      defaultValue: 0
     }
   },
   {

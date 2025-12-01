@@ -4,12 +4,15 @@ import axios from 'axios';
 export const useStore = defineStore('data', {
   state: () => ({
     currentSelection: {
-        status: 'unread',
-        categoryId: '%',
-        feedId: '%',
-        search: null,
-        sort: 'DESC',
-        tag: null
+      status: 'unread',
+      categoryId: '%',
+      feedId: '%',
+      search: null,
+      sort: 'DESC',
+      tag: null,
+      minAdvertisementScore: 100,
+      minSentimentScore: 100,
+      minQualityScore: 100
     },
     filter: 'full',
     categories: [],
@@ -113,6 +116,16 @@ export const useStore = defineStore('data', {
     setSelectedSort(sort) {
       this.currentSelection.sort = sort;
     }
+    ,
+    setMinAdvertisementScore(value) {
+      this.currentSelection.minAdvertisementScore = value;
+    },
+    setMinSentimentScore(value) {
+      this.currentSelection.minSentimentScore = value;
+    },
+    setMinQualityScore(value) {
+      this.currentSelection.minQualityScore = value;
+    }
   },
   getters: {
     getSelectedStatus: (data) => {
@@ -159,6 +172,15 @@ export const useStore = defineStore('data', {
     },
     getNewUnreads: (data) => {
       return data.newUnreads;
+    },
+    getMinAdvertisementScore: (data) => {
+      return data.currentSelection.minAdvertisementScore;
+    },
+    getMinSentimentScore: (data) => {
+      return data.currentSelection.minSentimentScore;
+    },
+    getMinQualityScore: (data) => {
+      return data.currentSelection.minQualityScore;
     }
   }
 });

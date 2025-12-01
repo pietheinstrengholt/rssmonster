@@ -14,6 +14,9 @@ const getArticles = async (req, res, next) => {
     const status = req.query.status || "unread";
     const sort = req.query.sort || "DESC";
     const tag = (req.query.tag || "").trim();
+    const minAdvertisementScore = parseInt(req.query.minAdvertisementScore) || 100;
+    const minSentimentScore = parseInt(req.query.minSentimentScore) || 100;
+    const minQualityScore = parseInt(req.query.minQualityScore) || 100;
     
     // Set default values for search
     let search = req.query.search || "%";
@@ -79,7 +82,10 @@ const getArticles = async (req, res, next) => {
       userId: userId,
       feedId: feedIds,
       subject: { [Op.like]: search },
-      content: { [Op.like]: search }
+      content: { [Op.like]: search },
+      advertisementScore: { [Op.lte]: minAdvertisementScore },
+      sentimentScore: { [Op.lte]: minSentimentScore },
+      qualityScore: { [Op.lte]: minQualityScore }
     };
 
     // Build query based on status
@@ -103,14 +109,32 @@ const getArticles = async (req, res, next) => {
 
     // Update user settings (skip when tag-based query is used)
     // Note: tag is not persisted in settings currently
-    await Setting.destroy({ where: { userId: userId } });
-    await Setting.create({
-      userId: userId,
-      categoryId: categoryId,
-      feedId: feedId,
-      status: status,
-      sort: sort
-    });
+    const existingSettings = await Setting.findOne({ where: { userId: userId }, raw: true });
+    
+    if (existingSettings) {
+      await Setting.update({
+        categoryId: categoryId,
+        feedId: feedId,
+        status: status,
+        sort: sort,
+        minAdvertisementScore: minAdvertisementScore,
+        minSentimentScore: minSentimentScore,
+        minQualityScore: minQualityScore
+      }, {
+        where: { userId: userId }
+      });
+    } else {
+      await Setting.create({
+        userId: userId,
+        categoryId: categoryId,
+        feedId: feedId,
+        status: status,
+        sort: sort,
+        minAdvertisementScore: minAdvertisementScore,
+        minSentimentScore: minSentimentScore,
+        minQualityScore: minQualityScore
+      });
+    }
 
     res.status(200).json({
       query: [{
@@ -163,23 +187,51 @@ const getArticle = async (req, res, next) => {
 };
 
 // Mark all unread articles as read
-const postArticles = async (req, res, next) => {
+const markAsRead = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+    const categoryId = req.body.categoryId || "%";
+    const feedId = req.body.feedId || "%";
+    const minAdvertisementScore = parseInt(req.body.minAdvertisementScore) || 100;
+    const minSentimentScore = parseInt(req.body.minSentimentScore) || 100;
+    const minQualityScore = parseInt(req.body.minQualityScore) || 100;
+
+    // Build where clause based on currentSelection
+    const whereClause = {
+      userId: userId,
+      status: "unread",
+      advertisementScore: { [Op.lte]: minAdvertisementScore },
+      sentimentScore: { [Op.lte]: minSentimentScore },
+      qualityScore: { [Op.lte]: minQualityScore }
+    };
+
+    // Add categoryId filter if not "all"
+    if (categoryId !== "%") {
+      // Get feeds for this category
+      const feeds = await Feed.findAll({
+        attributes: ["id"],
+        where: { 
+          userId: userId,
+          categoryId: categoryId
+        }
+      });
+      const feedIds = feeds.map(feed => feed.id);
+      whereClause.feedId = feedIds;
+    }
+
+    // Add feedId filter if specific feed selected
+    if (feedId !== "%") {
+      whereClause.feedId = feedId;
+    }
     
     await Article.update(
       { status: "read" },
-      { 
-        where: {
-          userId: userId,
-          status: "unread" 
-        }
-      }
+      { where: whereClause }
     );
 
     res.status(200).json({ message: "All articles marked as read" });
   } catch (err) {
-    console.error("Error in postArticles:", err);
+    console.error("Error in markAsRead:", err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -216,6 +268,6 @@ const markClicked = async (req, res, next) => {
 export default {
   getArticles,
   getArticle,
-  postArticles,
+  markAsRead,
   markClicked
 }

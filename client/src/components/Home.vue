@@ -67,7 +67,10 @@ export default {
             feedId: data.feedId,
             search: data.search,
             sort: data.sort,
-            tag: data.tag
+            tag: data.tag,
+            minAdvertisementScore: data.minAdvertisementScore,
+            minSentimentScore: data.minSentimentScore,
+            minQualityScore: data.minQualityScore
           }
         })
         .then(response => {

@@ -26,10 +26,10 @@
         </span>Add new feed
       </div>
 
-      <div @click="markAll()" class="option" id="mark-all-as-read">
+      <div @click="markAsRead($store.data.currentSelection)" class="option" id="mark-as-read">
         <span class="glyphicon">
           <BootstrapIcon icon="check-square-fill" variant="light" />
-        </span>Mark all as read
+        </span>Mark as read
       </div>
 
       <div>
@@ -215,7 +215,7 @@
   width: 150px;
 }
 
-#mark-all-as-read {
+#mark-as-read {
   background-color: #3b4651;
 }
 
@@ -297,7 +297,7 @@ div.option {
 }
 
 #refresh.option,
-#mark-all-as-read {
+#mark-as-read {
   margin-right: 70px;
   min-width: 165px;
 }
@@ -368,7 +368,7 @@ div.option {
     background-color: #535353;
   }
 
-  #mark-all-as-read {
+  #mark-as-read {
     background-color: #606060;
   }
   p.title {
@@ -442,8 +442,8 @@ export default {
       this.$store.data.setSelectedCategoryId("%");
       this.$store.data.setSelectedFeedId("%");
     },
-    markAll: async function() {
-      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {}).then(
+    markAsRead: async function(currentSelection) {
+      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markasread", currentSelection).then(
         response => {
           if (response.data) {
             //refresh after one second

@@ -11,7 +11,7 @@ export async function analyzeContent(text) {
   const defaultResult = {
     summary: text,
     tags: [],
-    advertisementScore: 0,
+    advertisementScore: 50,
     sentimentScore: 50,
     qualityScore: 50,
   };
@@ -22,7 +22,26 @@ export async function analyzeContent(text) {
   }
 
   try {
-    const prompt = `You are a helpful assistant analyzing an RSS article.\n\nTask:\n1) Summarize the content in 2-3 concise sentences.\n2) Provide 5-7 SEO-friendly tags (lowercase, no punctuation).\n3) Score the article on three metrics from 0 to 100.\n   - advertisementScore: 0 = purely editorial, 100 = heavy promotional/affiliate/spam.\n   - sentimentScore: 0 = very negative, 50 = neutral, 100 = very positive.\n   - qualityScore: depth, accuracy, structure and writing quality (0-30 poor, 70-100 excellent).\n\nReturn STRICT JSON with keys: summary, tags, advertisementScore, sentimentScore, qualityScore.\n\nArticle:\n${text}`;
+    const prompt = [
+      'You are a helpful assistant analyzing an RSS article.',
+      '',
+      'Task:',
+      '1) Summarize the content in 2-3 concise sentences.',
+      '',
+      '2) Provide 5-7 SEO-friendly tags (lowercase, no punctuation).',
+      '',
+      '3) Score the article on three metrics from 0 to 100:',
+      '   - advertisementScore: 0 = purely editorial, 100 = heavy promotional/affiliate/spam.',
+      '   - sentimentScore: 0 = very positive, 50 = neutral, 100 = very negative.',
+      '   - qualityScore: depth, accuracy, structure and writing quality (0-30 excellent, 70-100 poor).',
+      '',
+      'Return STRICT JSON with keys: summary, tags, advertisementScore, sentimentScore, qualityScore.',
+      '',
+      'Article:',
+      '```',
+      text,
+      '```'
+    ].join('\n');
 
     const response = await client.chat.completions.create({
       model: crawlModel,

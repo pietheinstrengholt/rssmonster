@@ -45,6 +45,24 @@ module.exports = {
           allowNull: false,
           defaultValue: "DESC"
         },
+        minAdvertisementScore: {
+          type: Sequelize.INTEGER,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: 100
+        },
+        minSentimentScore: {
+          type: Sequelize.INTEGER,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: 100
+        },
+        minQualityScore: {
+          type: Sequelize.INTEGER,
+          autoIncrement: false,
+          allowNull: false,
+          defaultValue: 100
+        },
         createdAt: {
           type: Sequelize.DATE
         },

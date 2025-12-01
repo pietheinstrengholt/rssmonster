@@ -1,5 +1,10 @@
 <template>
   <div class="toolbar">
+    <div class="settings-icon" @click="settingsClicked" title="Settings">
+      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="currentColor" class="bi bi-gear-fill" viewBox="0 0 16 16">
+        <path d="M9.405 1.05c-.413-1.4-2.397-1.4-2.81 0l-.1.34a1.464 1.464 0 0 1-2.105.872l-.31-.17c-1.283-.698-2.686.705-1.987 1.987l.169.311c.446.82.023 1.841-.872 2.105l-.34.1c-1.4.413-1.4 2.397 0 2.81l.34.1a1.464 1.464 0 0 1 .872 2.105l-.17.31c-.698 1.283.705 2.686 1.987 1.987l.311-.169a1.464 1.464 0 0 1 2.105.872l.1.34c.413 1.4 2.397 1.4 2.81 0l.1-.34a1.464 1.464 0 0 1 2.105-.872l.31.17c1.283.698 2.686-.705 1.987-1.987l-.169-.311a1.464 1.464 0 0 1 .872-2.105l.34-.1c1.4-.413 1.4-2.397 0-2.81l-.34-.1a1.464 1.464 0 0 1-.872-2.105l.17-.31c.698-1.283-.705-2.686-1.987-1.987l-.311.169a1.464 1.464 0 0 1-2.105-.872zM8 10.93a2.929 2.929 0 1 1 0-5.86 2.929 2.929 0 0 1 0 5.858z"/>
+      </svg>
+    </div>
     <div class="status-toolbar" @click="toggleShowStatus">
       <p id="status">{{ capitalize($store.data.currentSelection.status) }}</p>
     </div>
@@ -61,6 +66,7 @@
         autocomplete="off"
       >
     </form>
+    <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
   </div>
 </template>
 
@@ -149,6 +155,27 @@
   margin-left: 145px;
 }
 
+.settings-icon {
+  float: left;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  color: #111;
+  border-right: 1px solid #e0e0e0;
+}
+
+.settings-icon:hover {
+  background-color: #dcdee0;
+}
+
+.settings-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
 @media (prefers-color-scheme: dark) {
   .toolbar,
   .status-toolbar,
@@ -157,6 +184,15 @@
     background: #3a3a3a;
     border-color: #000;
     border-bottom: 1px solid #fff;
+  }
+
+  .settings-icon {
+    color: #fff;
+    border-right: 1px solid #000;
+  }
+
+  .settings-icon:hover {
+    background-color: #4a4a4a;
   }
 
   .dropdownmenu .item {
@@ -168,13 +204,19 @@
 </style>
 
 <script>
+import Settings from './Modal/Settings.vue';
+
 export default {
+  components: {
+    Settings
+  },
   data() {
     return {
       search: null,
       showStatusMenu: false,
       showFilterMenu: false,
-      showSortMenu: false
+      showSortMenu: false,
+      showSettingsModal: false
     };
   },
   methods: {
@@ -214,6 +256,18 @@ export default {
     sortClicked: function(sort) {
       this.$store.data.setSelectedSort(sort);
       this.toggleShowSort();
+    },
+    settingsClicked: function() {
+      this.showSettingsModal = true;
+      this.showStatusMenu = false;
+      this.showFilterMenu = false;
+      this.showSortMenu = false;
+    },
+    closeSettingsModal: function() {
+      this.showSettingsModal = false;
+    },
+    handleForceReload: function() {
+      this.$emit('forceReload');
     },
     chatAssistant: function() {
       this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;

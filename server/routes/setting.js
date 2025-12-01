@@ -6,4 +6,7 @@ import userMiddleware from "../middleware/users.js";
 // GET /api/setting
 settingRoutes.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
 
+// POST /api/setting
+settingRoutes.post('/', userMiddleware.isLoggedIn, settingController.setSettings);
+
 export default settingRoutes;
