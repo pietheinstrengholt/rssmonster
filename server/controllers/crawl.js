@@ -67,8 +67,9 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
                 processArticle(feed, item);
               });
   
-              //reset the feed count
+              //reset the feed count and update the favicon if available
               await feed.update({
+                favicon: feeditem.image.url,
                 errorCount: 0
               });
             }
