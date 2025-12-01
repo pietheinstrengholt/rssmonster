@@ -1,9 +1,10 @@
 import express from 'express';
 import agentController from '../controllers/agent.js';
-export const agentRoutes = express.Router();
 import userMiddleware from "../middleware/users.js";
 
-// POST /agent
-agentRoutes.post('/', userMiddleware.isLoggedIn, agentController.postAgent);
+export const router = express.Router();
 
-export default agentRoutes;
+// POST /agent
+router.post('/', userMiddleware.isLoggedIn, agentController.postAgent);
+
+export default router;

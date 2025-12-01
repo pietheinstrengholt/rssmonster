@@ -1,12 +1,13 @@
 import express from 'express';
 import articleController from '../controllers/article.js';
-export const articleRoutes = express.Router();
 import userMiddleware from "../middleware/users.js";
 
-// GET /api/articles
-articleRoutes.get('/', userMiddleware.isLoggedIn, articleController.getArticles);
-articleRoutes.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
-articleRoutes.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
-articleRoutes.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
+export const router = express.Router();
 
-export default articleRoutes;
+// GET /api/articles
+router.get('/', userMiddleware.isLoggedIn, articleController.getArticles);
+router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
+router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
+router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
+
+export default router;

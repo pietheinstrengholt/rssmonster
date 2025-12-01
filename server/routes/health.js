@@ -1,8 +1,9 @@
 import express from 'express';
-export const healthRoutes = express.Router();
+
+export const router = express.Router();
 
 // GET /api/health
-healthRoutes.get('/', async (_req, res, _next) => {
+router.get('/', async (_req, res, _next) => {
 
     const healthcheck = {
         uptime: process.uptime(),
@@ -17,4 +18,4 @@ healthRoutes.get('/', async (_req, res, _next) => {
     }
 });
 
-export default healthRoutes;
+export default router;

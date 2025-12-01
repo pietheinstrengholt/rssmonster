@@ -41,6 +41,14 @@
                         <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
                     </select>
                 </div>
+
+                <div class="settings-group">
+                    <label>Export Feeds</label>
+                    <button type="button" class="btn btn-download" @click="downloadOpml">
+                        <BootstrapIcon icon="download" />
+                        Download OPML
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings">Save</button>
@@ -164,6 +172,18 @@
     background-color: #5a6268;
 }
 
+.btn-download {
+    background-color: #28a745;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-download:hover {
+    background-color: #218838;
+}
+
 @media (prefers-color-scheme: dark) {
     .modal-content {
         background: #2a2a2a;
@@ -252,6 +272,27 @@ export default {
         },
         closeModal() {
             this.$emit('close');
+        },
+        async downloadOpml() {
+            try {
+                const response = await axios.get(
+                    import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/opml/export",
+                    { responseType: 'blob' }
+                );
+                
+                // Create blob link to download
+                const url = window.URL.createObjectURL(new Blob([response.data]));
+                const link = document.createElement('a');
+                link.href = url;
+                link.setAttribute('download', 'feeds.opml');
+                document.body.appendChild(link);
+                link.click();
+                link.parentNode.removeChild(link);
+                window.URL.revokeObjectURL(url);
+            } catch (error) {
+                console.error('Error downloading OPML:', error);
+                alert('Failed to download OPML file. Please try again.');
+            }
         }
     }
 };

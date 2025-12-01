@@ -1,8 +1,9 @@
 import express from 'express';
 import crawlController from '../controllers/crawl.js';
-export const crawlRoutes = express.Router();
+
+export const router = express.Router();
 
 // GET /api/crawl
-crawlRoutes.get('/', crawlController.crawlRssLinks);
+router.get('/', crawlController.crawlRssLinks);
 
-export default crawlRoutes;
+export default router;
