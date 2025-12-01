@@ -113,7 +113,8 @@ To enable the AI assistant, configure the following environment variables:
 **Server (`server/.env`):**
 ```env
 OPENAI_API_KEY=your-openai-api-key-here
-OPENAI_MODEL_NAME=gpt-4
+OPENAI_MODEL_AGENT=gpt-5.1
+OPENAI_MODEL_CRAWL=gpt-4o-mini
 ```
 
 **Client (`client/.env`):**
