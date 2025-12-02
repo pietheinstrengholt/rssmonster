@@ -207,11 +207,9 @@
 
 #refresh.option, 
 #addnew.option,
-#manage-users.option {
+#manage-users.option,
+#mark-as-read {
   background-color: #2b79c2;
-}
-
-#manage-users.option {
   width: 150px;
 }
 
@@ -294,17 +292,6 @@ div.option {
 
 .sidebar-category-feed.last {
   border-radius: 0px 0px 4px 4px;
-}
-
-#refresh.option,
-#mark-as-read {
-  margin-right: 70px;
-  min-width: 165px;
-}
-
-#addnew.option {
-  margin-right: 60px;
-  min-width: 165px;
 }
 
 #monster {
