@@ -49,13 +49,11 @@ export default {
   created() {
     window.addEventListener("scroll", this.handleScroll);
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+    //fetch the current selection by triggering the action in the store (non-blocking)
+    this.$store.data.fetchCurrentSelection(this.$store.auth.token);
   },
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
-  },
-  async beforeCreate() {
-    //fetch the current selection by triggering the action in the store
-    await this.$store.data.fetchCurrentSelection(this.$store.auth.token);
   },
   methods: {
     fetchArticleIds(data) {
