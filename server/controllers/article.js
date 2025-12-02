@@ -17,6 +17,7 @@ const getArticles = async (req, res, next) => {
     const minAdvertisementScore = parseInt(req.query.minAdvertisementScore) || 100;
     const minSentimentScore = parseInt(req.query.minSentimentScore) || 100;
     const minQualityScore = parseInt(req.query.minQualityScore) || 100;
+    const viewMode = req.query.viewMode || "full";
     
     // Set default values for search
     let search = req.query.search || "%";
@@ -119,7 +120,8 @@ const getArticles = async (req, res, next) => {
         sort: sort,
         minAdvertisementScore: minAdvertisementScore,
         minSentimentScore: minSentimentScore,
-        minQualityScore: minQualityScore
+        minQualityScore: minQualityScore,
+        viewMode: viewMode
       }, {
         where: { userId: userId }
       });
@@ -132,7 +134,8 @@ const getArticles = async (req, res, next) => {
         sort: sort,
         minAdvertisementScore: minAdvertisementScore,
         minSentimentScore: minSentimentScore,
-        minQualityScore: minQualityScore
+        minQualityScore: minQualityScore,
+        viewMode: viewMode
       });
     }
 

@@ -1,6 +1,6 @@
 <template>
   <div class="block" :id="id">
-    <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotlinks }" v-on:click="bookmark(id, $event)">    
+    <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotlinks }" v-on:click="articleTouched(id, $event)">    
       <div class="maximal">
         <h5 class="heading">
           <a href="#" v-text="subject" @click.prevent="articleClicked(id, url)"></a>
@@ -12,7 +12,7 @@
             <a target="_blank" :href="mainURL(feed.url)" v-text="feed.feedName"></a>
           </span>
         </div>
-        <div v-if="tags && tags.length > 0" class="article-tags">
+        <div v-if="tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'" class="article-tags">
           <span
             v-for="tag in tags"
             :key="tag.id"
@@ -24,11 +24,14 @@
           <span v-if="qualityScore !== undefined" class="score quality-score" :title="'Quality Score: ' + qualityScore">Quality: {{ qualityScore }}</span>
         </div>
       </div>
-      <div v-if="$store.data.filter === 'full'" class="article-content">
+      <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
         <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
       </div>
-      <div v-if="$store.data.filter === 'minimal'" class="article-content">
+      <div v-if="$store.data.currentSelection.viewMode === 'summarized'" class="article-content">
         <p class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'">{{ stripHTML(content) }}</p>
+      </div>
+      <div v-if="$store.data.currentSelection.viewMode === 'minimal' && showMinimalContent" class="article-content">
+        <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
       </div>
     </div>
   </div>
@@ -321,6 +324,11 @@ import moment from "moment";
 import axios from 'axios';
 
 export default {
+  data() {
+    return {
+      showMinimalContent: false
+    };
+  },
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
@@ -362,6 +370,15 @@ export default {
     }
   },
   methods: {
+    articleTouched(articleId, event) {
+      if (this.$store.data.currentSelection.viewMode === 'full' || this.$store.data.currentSelection.viewMode === 'summarized') {
+        this.bookmark(articleId, event);
+      } else if (this.$store.data.currentSelection.viewMode === 'minimal') {
+        // Avoid toggling when clicking actual links
+        if (event.srcElement && event.srcElement.nodeName === 'A') return;
+        this.showMinimalContent = !this.showMinimalContent;
+      }
+    },
     bookmark(articleId, event) {
       //do not bookmark when clicking on hyperlinks
       if (event.srcElement.nodeName != "A") {

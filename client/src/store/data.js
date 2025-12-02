@@ -1,5 +1,6 @@
 import { defineStore } from 'pinia';
 import axios from 'axios';
+import { set } from 'idb-keyval';
 
 export const useStore = defineStore('data', {
   state: () => ({
@@ -12,9 +13,9 @@ export const useStore = defineStore('data', {
       tag: null,
       minAdvertisementScore: 100,
       minSentimentScore: 100,
-      minQualityScore: 100
+      minQualityScore: 100,
+      viewMode: 'full'
     },
-    filter: 'full',
     categories: [],
     unreadCount: 0,
     readCount: 0,
@@ -40,9 +41,6 @@ export const useStore = defineStore('data', {
           console.error("Error fetching settings:", error);
         }
       }
-    },
-    setFilter(filter) {
-      this.filter = filter;
     },
     setCategories(categories) {
       this.categories = categories;
@@ -125,6 +123,9 @@ export const useStore = defineStore('data', {
     },
     setMinQualityScore(value) {
       this.currentSelection.minQualityScore = value;
+    },
+    setViewMode(value) {
+      this.currentSelection.viewMode = value;
     }
   },
   getters: {
@@ -148,9 +149,6 @@ export const useStore = defineStore('data', {
     },
     getCurrentSelection: (data) => {
       return data.currentSelection;
-    },
-    getFilter: (data) => {
-      return data.filter;
     },
     getCategories: (data) => {
       return data.categories;
@@ -181,6 +179,9 @@ export const useStore = defineStore('data', {
     },
     getMinQualityScore: (data) => {
       return data.currentSelection.minQualityScore;
+    },
+    getViewMode: (data) => {
+      return data.currentSelection.viewMode;
     }
   }
 });

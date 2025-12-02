@@ -12,6 +12,7 @@ export const getSettings = async (req, res, next) => {
     let minAdvertisementScore = 0;
     let minSentimentScore = 0;
     let minQualityScore = 0;
+    let viewMode = "full";
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
 
@@ -24,6 +25,7 @@ export const getSettings = async (req, res, next) => {
       minAdvertisementScore = settings.minAdvertisementScore || 100;
       minSentimentScore = settings.minSentimentScore || 100;
       minQualityScore = settings.minQualityScore || 100;
+      viewMode = settings.viewMode || 'full';
     }
 
     //return all query params
@@ -36,7 +38,8 @@ export const getSettings = async (req, res, next) => {
       search: null,
       minAdvertisementScore: minAdvertisementScore,
       minSentimentScore: minSentimentScore,
-      minQualityScore: minQualityScore
+      minQualityScore: minQualityScore,
+      viewMode: viewMode
     });
   } catch (err) {
     console.error('Error in getSettings:', err);

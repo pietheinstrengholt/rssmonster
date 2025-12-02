@@ -63,6 +63,11 @@ module.exports = {
           allowNull: false,
           defaultValue: 100
         },
+        viewMode: {
+          type: Sequelize.STRING,
+          allowNull: false,
+          defaultValue: 'full', // can be 'full', 'minimal', 'summarized'
+        },
         createdAt: {
           type: Sequelize.DATE
         },

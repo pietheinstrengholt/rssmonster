@@ -70,7 +70,8 @@ export default {
             tag: data.tag,
             minAdvertisementScore: data.minAdvertisementScore,
             minSentimentScore: data.minSentimentScore,
-            minQualityScore: data.minQualityScore
+            minQualityScore: data.minQualityScore,
+            viewMode: data.viewMode
           }
         })
         .then(response => {
@@ -182,7 +183,7 @@ export default {
     addToPool(articleId) {
       if (!this.pool.includes(articleId)) {
         this.pool.push(articleId);
-        if (this.$store.data.getSelectedStatus === "unread") {
+        if (this.$store.data.getSelectedStatus === "unread" && this.$store.data.currentSelection.viewMode !== "minimal") {
           //mark article as read
           this.markArticleRead(articleId);
         }
@@ -191,7 +192,7 @@ export default {
     async flushPool() {
       //check if the container has a length and if the pool is not flushed yet
       if (this.container.length && this.isFlushed === false) {
-        if (this.$store.data.getSelectedStatus === "unread") {
+        if (this.$store.data.getSelectedStatus === "unread" && this.$store.data.currentSelection.viewMode !== "minimal") {
           //loop through the container and mark every item that is not part of the pool as read
           for (const i in this.container) {
             if (!this.pool.includes(this.container[i])) {
@@ -211,6 +212,7 @@ export default {
       this.isFlushed = false;
     },
     async markArticleRead(articleId) {
+
       //make ajax request to change read status
       await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
         response => {

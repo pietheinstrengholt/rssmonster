@@ -56,6 +56,11 @@ export const Setting = sequelize.define(
       autoIncrement: false,
       allowNull: false,
       defaultValue: 0
+    },
+    viewMode: {
+      type: Sequelize.STRING,
+      allowNull: false,
+      defaultValue: 'full'
     }
   },
   {

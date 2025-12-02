@@ -26,8 +26,9 @@
         </li>
       </ul>
       <p class="content-header">Select how the articles should be displayed</p>
-      <button @click="$store.data.filter = 'full'" type="button" class="btn btn-primary content">Full content</button>
-      <button @click="$store.data.filter = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
+      <button @click="$store.data.currentSelection.viewMode = 'full'" type="button" class="btn btn-primary content">Full content</button>
+      <button @click="$store.data.currentSelection.viewMode = 'summarized'" type="button" class="btn btn-primary content">Summarized content</button>
+      <button @click="$store.data.currentSelection.viewMode = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
 
       <p class="content-header">Refresh feeds</p>
       <button @click="refreshFeeds()" type="button" class="btn btn-danger">Refresh feeds</button>

@@ -22,14 +22,17 @@
         <p>Hot</p>
       </div>
     </div>
-    <div class="status-toolbar" @click="toggleShowFilter">
-      <p id="filter">{{ capitalize($store.data.filter) }}</p>
+    <div class="status-toolbar" @click="toggleShowViewMode">
+      <p id="filter">{{ capitalize($store.data.currentSelection.viewMode) }}</p>
     </div>
-    <div v-if="showFilterMenu" class="dropdownmenu" id="filter">
-      <div class="item" href="#" @click="filterClicked('full')">
+    <div v-if="showViewModeMenu" class="dropdownmenu" id="filter">
+      <div class="item" href="#" @click="viewModeClicked('full')">
         <p>Full</p>
       </div>
-      <div class="item" href="#" @click="filterClicked('minimal')">
+      <div class="item" href="#" @click="viewModeClicked('summarized')">
+        <p>Summarized</p>
+      </div>
+      <div class="item" href="#" @click="viewModeClicked('minimal')">
         <p>Minimal</p>
       </div>
     </div>
@@ -101,8 +104,7 @@
   margin-top: 5px;
 }
 
-.status-toolbar #status,
-.status-toolbar #filter {
+.status-toolbar #status {
   width: 50px;
 }
 
@@ -150,8 +152,10 @@
   font-size: 14px;
 }
 
+
 #filter.dropdownmenu {
   margin-left: 72px;
+  min-width: 120px;
 }
 
 #sort.dropdownmenu {
@@ -217,7 +221,7 @@ export default {
     return {
       search: null,
       showStatusMenu: false,
-      showFilterMenu: false,
+      showViewModeMenu: false,
       showSortMenu: false,
       showSettingsModal: false
     };
@@ -231,16 +235,16 @@ export default {
     toggleShowStatus: function() {
       this.showStatusMenu = !this.showStatusMenu;
       this.showSortMenu = false;
-      this.showFilterMenu = false;
+      this.showViewModeMenu = false;
     },
-    toggleShowFilter: function() {
-      this.showFilterMenu = !this.showFilterMenu;
+    toggleShowViewMode: function() {
+      this.showViewModeMenu = !this.showViewModeMenu;
       this.showSortMenu = false;
       this.showStatusMenu = false;
     },
     toggleShowSort: function() {
       this.showSortMenu = !this.showSortMenu;
-      this.showFilterMenu = false;
+      this.showViewModeMenu = false;
       this.showStatusMenu = false;
     },
     statusClicked: function(status) {
@@ -252,9 +256,9 @@ export default {
       }
       this.toggleShowStatus();
     },
-    filterClicked: function(filter) {
-      this.$store.data.setFilter(filter)
-      this.toggleShowFilter();
+    viewModeClicked: function(filter) {
+      this.$store.data.setViewMode(filter)
+      this.toggleShowViewMode();
     },
     sortClicked: function(sort) {
       this.$store.data.setSelectedSort(sort);
@@ -263,7 +267,7 @@ export default {
     settingsClicked: function() {
       this.showSettingsModal = true;
       this.showStatusMenu = false;
-      this.showFilterMenu = false;
+      this.showViewModeMenu = false;
       this.showSortMenu = false;
     },
     closeSettingsModal: function() {
