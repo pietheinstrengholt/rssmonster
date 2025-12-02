@@ -245,8 +245,8 @@ Create a weekly cron job:
 ### 3. Configure HTTPS in `server/app.js`
 
 ```javascript
-const fs = require('fs');
-const https = require('https');
+import fs from 'fs';
+import https from 'https';
 
 const options = {
   cert: fs.readFileSync('cert/fullchain.pem'),
