@@ -1,7 +1,6 @@
 import Article from "../models/article.js";
 import Feed from "../models/feed.js";
 import Tag from "../models/tag.js";
-import Setting from "../models/setting.js";
 import cache from "../util/cache.js";
 import { Op } from 'sequelize';
 import { updateSettings } from "./setting.js";
