@@ -4,6 +4,7 @@ import Tag from "../models/tag.js";
 import Setting from "../models/setting.js";
 import cache from "../util/cache.js";
 import { Op } from 'sequelize';
+import { updateSettings } from "./setting.js";
 
 // Get all article IDs based on query parameters
 const getArticles = async (req, res, next) => {
@@ -110,34 +111,16 @@ const getArticles = async (req, res, next) => {
 
     // Update user settings (skip when tag-based query is used)
     // Note: tag is not persisted in settings currently
-    const existingSettings = await Setting.findOne({ where: { userId: userId }, raw: true });
-    
-    if (existingSettings) {
-      await Setting.update({
-        categoryId: categoryId,
-        feedId: feedId,
-        status: status,
-        sort: sort,
-        minAdvertisementScore: minAdvertisementScore,
-        minSentimentScore: minSentimentScore,
-        minQualityScore: minQualityScore,
-        viewMode: viewMode
-      }, {
-        where: { userId: userId }
-      });
-    } else {
-      await Setting.create({
-        userId: userId,
-        categoryId: categoryId,
-        feedId: feedId,
-        status: status,
-        sort: sort,
-        minAdvertisementScore: minAdvertisementScore,
-        minSentimentScore: minSentimentScore,
-        minQualityScore: minQualityScore,
-        viewMode: viewMode
-      });
-    }
+    await updateSettings(userId, {
+      categoryId,
+      feedId,
+      status,
+      sort,
+      minAdvertisementScore,
+      minSentimentScore,
+      minQualityScore,
+      viewMode
+    });
 
     res.status(200).json({
       query: [{

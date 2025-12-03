@@ -46,31 +46,28 @@ export default {
       deep: true
     }
   },
-  created() {
+  async created() {
     window.addEventListener("scroll", this.handleScroll);
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-    //fetch the current selection by triggering the action in the store (non-blocking)
-    this.$store.data.fetchCurrentSelection(this.$store.auth.token);
+    
+    //fetch the current selection from the server
+    try {
+      console.log("Fetching current selection from server.");
+      const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting");
+      this.$store.data.setCurrentSelection(response.data); // Note: this triggers the watcher to fetch article IDs
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    }
   },
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
   },
   methods: {
     fetchArticleIds(data) {
+      console.log("Fetching article IDs using current selection.");
       axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles", {
-          params: {
-            //the following arguments are used
-            status: data.status,
-            categoryId: data.categoryId,
-            feedId: data.feedId,
-            search: data.search,
-            sort: data.sort,
-            tag: data.tag,
-            minAdvertisementScore: data.minAdvertisementScore,
-            minSentimentScore: data.minSentimentScore,
-            minQualityScore: data.minQualityScore,
-            viewMode: data.viewMode
-          }
+          // pass the currentSelection object directly; server will use relevant keys
+          params: data
         })
         .then(response => {
           //reset the pool, attach data to container and get first set of article details
@@ -150,6 +147,7 @@ export default {
       this.scrollDirection = direction;
     },
     getContent() {
+      console.log("Fetching article details from server.");
       //set a timeout to prevent multiple fetches within a short period of time
       setTimeout(() => {
         //only fetch article details if the container is filled with items

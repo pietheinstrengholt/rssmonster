@@ -185,8 +185,6 @@ export default {
     }
   },
   async created() {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-
     //reset newUnreads count to zero
     this.$store.data.newUnreads = 0;
 
@@ -279,7 +277,7 @@ export default {
     },
     async getOverview(initial) {
       //get an overview with the count for all feeds
-      //const session = useSessionStore();
+      console.log("Fetching overview from server.");
       axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
       axios
         .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview")

@@ -1,6 +1,4 @@
 import { defineStore } from 'pinia';
-import axios from 'axios';
-import { set } from 'idb-keyval';
 
 export const useStore = defineStore('data', {
   state: () => ({
@@ -30,20 +28,8 @@ export const useStore = defineStore('data', {
     setCategories(categories) {
       this.categories = categories;
     },
-    async fetchCurrentSelection(token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      if (token) {
-        //retrieve settings on initial load with either previous query or default settings. This will trigger the watch to get the articles
-        try {
-          const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting");
-          this.currentSelection = response.data;
-        } catch (error) {
-          console.error("Error fetching settings:", error);
-        }
-      }
-    },
-    setCategories(categories) {
-      this.categories = categories;
+    setCurrentSelection(selection) {
+      this.currentSelection = selection;
     },
     setUnreadCount(count) {
       this.unreadCount = count;
