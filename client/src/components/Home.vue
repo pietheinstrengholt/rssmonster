@@ -15,8 +15,6 @@ export default {
     return {
       //distance is used to keep track of the current position in the container
       distance: 0,
-      //amount of article leaded at once
-      fetchCount: 20,
       //articles containing the article details
       articles: [],
       //container contains a list with all article ids
@@ -35,6 +33,10 @@ export default {
     //calculate the remaining items in the container
     remainingItems() {
       return this.container.length - this.pool.length;
+    },
+    //adjust fetchCount based on viewMode
+    fetchCount() {
+      return this.$store.data.currentSelection.viewMode === "minimal" ? 50 : 20;
     }
   },
   //watch the currentSelection, fetch articleIds when detecting changes
