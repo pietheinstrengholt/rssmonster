@@ -49,6 +49,15 @@
                         Download OPML
                     </button>
                 </div>
+
+                <div class="settings-group">
+                    <label>Import Feeds</label>
+                    <input type="file" ref="opmlFileInput" accept=".opml,.xml" style="display: none" @change="handleFileSelect" />
+                    <button type="button" class="btn btn-upload" @click="$refs.opmlFileInput.click()">
+                        <BootstrapIcon icon="upload" />
+                        Upload OPML
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings">Save</button>
@@ -184,6 +193,18 @@
     background-color: #218838;
 }
 
+.btn-upload {
+    background-color: #007bff;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-upload:hover {
+    background-color: #0056b3;
+}
+
 @media (prefers-color-scheme: dark) {
     .modal-content {
         background: #2a2a2a;
@@ -292,6 +313,42 @@ export default {
             } catch (error) {
                 console.error('Error downloading OPML:', error);
                 alert('Failed to download OPML file. Please try again.');
+            }
+        },
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.uploadOpml(file);
+            }
+        },
+        async uploadOpml(file) {
+            try {
+                const formData = new FormData();
+                formData.append('opmlFile', file);
+
+                const response = await axios.post(
+                    import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/opml/import",
+                    formData,
+                    {
+                        headers: {
+                            'Content-Type': 'multipart/form-data'
+                        }
+                    }
+                );
+
+                console.log('OPML import result:', response.data);
+                alert(`Import completed!\nCategories created: ${response.data.categoriesCreated}\nFeeds created: ${response.data.feedsCreated}`);
+                
+                // Reset file input
+                this.$refs.opmlFileInput.value = '';
+                
+                // Trigger reload to show new feeds/categories
+                this.$emit('forceReload');
+            } catch (error) {
+                console.error('Error uploading OPML:', error);
+                alert('Failed to upload OPML file. Please try again.');
+                // Reset file input
+                this.$refs.opmlFileInput.value = '';
             }
         }
     }
