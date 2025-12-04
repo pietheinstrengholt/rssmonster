@@ -6,7 +6,7 @@ import User from "../models/user.js";
 import { Op } from 'sequelize';
 
 //use Fever API
-//specs: https://feedafever.com/api
+//specs: https://github.com/dasmurphy/tinytinyrss-fever-plugin/blob/master/fever-api.md
 
 export const getFever = async (req, res, next) => {
   try {
@@ -74,11 +74,11 @@ export const postFever = async (req, res, next) => {
           if (results) {
             results.forEach(feed => {
               const feedObject = {
-                id: String(feed.id),
-                favicon: '<img src="data:' + feed.favicon + '">',
+                id: feed.id,
+                favicon_id: feed.id, // Using feed id as favicon_id
                 title: feed.feedName,
-                url: feed.rssUrl,
-                site_url: feed.url,
+                url: feed.url, // RSS feed URL
+                site_url: feed.link, // Website URL
                 is_spark: 0,
                 last_updated_on_time: Math.floor(feed.updatedAt / 1000)
               };
@@ -249,25 +249,23 @@ export const postFever = async (req, res, next) => {
 
         //when argument is links, return hot links
         if ("links" in req.query) {
+          // Support optional offset, range, page parameters (defaults: offset=0, range=7, page=1)
+          const offset = parseInt(req.query.offset) || 0;
+          const range = parseInt(req.query.range) || 7;
+          const page = parseInt(req.query.page) || 1;
           
           //select all items with hot links
+          const whereClause = {
+            url: cache.all(),
+            userId: loggedInUser.id
+          };
+          
+          if (req.query.since_id) {
+            whereClause.id = { [Op.gt]: req.query.since_id };
+          }
+          
           const articles = await Article.findAll({
-            where: {
-              id: {
-                [Op.gt]: req.query.since_id,
-                url: cache.all()
-              },
-              userId: loggedInUser.id
-            },
-            include: [
-              {
-                where: {
-                  url: {
-                    [Op.not]: null
-                  }
-                },
-                required: true
-              }]
+            where: whereClause
           });
 
           const item_ids = [];
@@ -309,11 +307,11 @@ export const postFever = async (req, res, next) => {
           });
           if (feeds) {
             feeds.forEach(feed => {
-              const feedObject = {
-                id: String(feed.id),
-                favicon: '<img src="data:' + feed.favicon + '">'
+              const faviconObject = {
+                id: feed.id,
+                data: feed.favicon || '' // Should be format: image/gif;base64,R0lGOD...
               };
-              favicons.push(feedObject);
+              favicons.push(faviconObject);
             });
           }
           //append favicons to arr
@@ -327,6 +325,22 @@ export const postFever = async (req, res, next) => {
         } else {
           //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
           timestamp = Date.now();
+        }
+
+        //unread recently read items
+        if ("unread_recently_read" in req.query && req.query.unread_recently_read === '1') {
+          // Mark recently read items as unread (within last 24 hours)
+          const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+          await Article.update(
+            { status: 'unread' },
+            {
+              where: {
+                status: 'read',
+                updatedAt: { [Op.gte]: oneDayAgo },
+                userId: loggedInUser.id
+              }
+            }
+          );
         }
 
         //check if mark argument is provided, which means that articles need to be updated
@@ -367,10 +381,12 @@ export const postFever = async (req, res, next) => {
               userId: loggedInUser.id
             };
 
-            // id === '0' means all
-            if (req.body.id !== '0') {
+            // id === '0' means all items (Kindling super group)
+            // id === '-1' means Sparks super group (feeds with is_spark = 1)
+            if (req.body.id !== '0' && req.body.id !== '-1') {
               where['feedId'] = Number(req.body.id);
             }
+            // Note: is_spark filtering would need to be added when that feature is implemented
 
             await Article.update(update, {
               where,
