@@ -63,6 +63,16 @@ export const getOverview = async (req, res, next) => {
       }
     });
 
+    const clickedCount = await Article.count({
+      where: {
+        userId: userId,
+        clickedInd: 1,
+        advertisementScore: { [Op.lte]: minAdvertisementScore },
+        sentimentScore: { [Op.lte]: minSentimentScore },
+        qualityScore: { [Op.lte]: minQualityScore }
+      }
+    });
+
     const totalCount = readCount + unreadCount;
 
     const categories = await Category.findAll({
@@ -140,6 +150,27 @@ export const getOverview = async (req, res, next) => {
       group: ["categoryId", "id"]
     });
 
+    const clickedCountGrouped = await Feed.findAll({
+      include: [{
+        model: Article,
+        attributes: [],
+        where: {
+          userId: userId,
+          clickedInd: 1,
+          advertisementScore: { [Op.lte]: minAdvertisementScore },
+          sentimentScore: { [Op.lte]: minSentimentScore },
+          qualityScore: { [Op.lte]: minQualityScore }
+        }
+      }],
+      attributes: [
+        "categoryId",
+        ["id", "feedId"],
+        [Sequelize.fn("COUNT", "article.id"), "count"]
+      ],
+      order: ["id"],
+      group: ["categoryId", "id"]
+    });
+
     const toPlain = response => {
       const flattenDataValues = ({
         dataValues
@@ -177,6 +208,7 @@ export const getOverview = async (req, res, next) => {
     const readArray = toPlain(readCountGrouped);
     const unreadArray = toPlain(unreadCountGrouped);
     const starArray = toPlain(starCountGrouped);
+    const clickedArray = toPlain(clickedCountGrouped);
 
     //give each category and feed in the categoriesArray a readCount, unreadCount and starCount
     categoriesArray.forEach(category => {
@@ -184,12 +216,14 @@ export const getOverview = async (req, res, next) => {
       category["unreadCount"] = 0;
       category["starCount"] = 0;
       category["hotCount"] = 0;
+      category["clickedCount"] = 0;
       if (category["feeds"]) {
         category["feeds"].forEach(feed => {
           feed["readCount"] = 0;
           feed["unreadCount"] = 0;
           feed["starCount"] = 0;
           feed["hotCount"] = 0;
+          feed["clickedCount"] = 0;
         });
       }
     });
@@ -251,12 +285,31 @@ export const getOverview = async (req, res, next) => {
       }
     });
 
+    //repeat for the clicked
+    clickedArray.forEach(item => {
+      const categoryIndex = categoriesArray.findIndex(
+        category => category.id === item.categoryId
+      );
+
+      categoriesArray[categoryIndex]["clickedCount"] =
+        categoriesArray[categoryIndex]["clickedCount"] + item["count"];
+
+      if (categoriesArray[categoryIndex]["feeds"]) {
+        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
+          feed => feed.id === item.feedId
+        );
+        categoriesArray[categoryIndex]["feeds"][feedIndex]["clickedCount"] =
+          item["count"];
+      }
+    });
+
     return res.status(200).json({
       total: totalCount,
       readCount: readCount,
       unreadCount: unreadCount,
       starCount: starCount,
       hotCount: hotCount,
+      clickedCount: clickedCount,
       categories: categoriesArray
     });
   } catch (err) {

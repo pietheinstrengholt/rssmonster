@@ -12,14 +12,17 @@
       <div class="item" href="#" @click="statusClicked('unread')">
         <p>Unread</p>
       </div>
-      <div class="item" href="#" @click="statusClicked('read')">
-        <p>Read</p>
-      </div>
       <div class="item" href="#" @click="statusClicked('star')">
         <p>Star</p>
       </div>
       <div class="item" href="#" @click="statusClicked('hot')">
         <p>Hot</p>
+      </div>
+      <div class="item" href="#" @click="statusClicked('clicked')">
+        <p>Clicked</p>
+      </div>
+      <div class="item" href="#" @click="statusClicked('read')">
+        <p>Read</p>
       </div>
     </div>
     <div class="status-toolbar" @click="toggleShowViewMode">

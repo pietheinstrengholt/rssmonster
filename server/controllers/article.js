@@ -102,6 +102,8 @@ const getArticles = async (req, res, next) => {
     } else if (status === "hot") {
       delete articleQuery.where.feedId; // Hot articles ignore feedId
       articleQuery.where.url = cache.all();
+    } else if (status === "clicked") {
+      articleQuery.where.clickedInd = 1;
     } else {
       articleQuery.where.status = status;
     }

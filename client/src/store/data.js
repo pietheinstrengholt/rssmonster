@@ -20,6 +20,7 @@ export const useStore = defineStore('data', {
     readCount: 0,
     starCount: 0,
     hotCount: 0,
+    clickedCount: 0,
     showModal: false,
     newUnreads: 0,
     refreshCategories: 0,
@@ -31,12 +32,13 @@ export const useStore = defineStore('data', {
     },
     // Update store state based on overview payload
     updateOverview(payload, { initial = false } = {}) {
-      const { unreadCount, readCount, starCount, hotCount, categories } = payload;
+      const { unreadCount, readCount, starCount, hotCount, clickedCount, categories } = payload;
       const previousUnreadCount = this.unreadCount;
       this.unreadCount = unreadCount;
       this.readCount = readCount;
       this.starCount = starCount;
       this.hotCount = hotCount;
+      this.clickedCount = clickedCount;
       this.setCategories(categories);
       // compute newUnreads delta when not initial
       if (!initial) {
@@ -64,6 +66,9 @@ export const useStore = defineStore('data', {
     },
     setHotCount(count) {
       this.hotCount = count;
+    },
+    setClickedCount(count) {
+      this.clickedCount = count;
     },
     setShowModal(show) {
       this.showModal = show;
@@ -172,6 +177,9 @@ export const useStore = defineStore('data', {
     },
     getHotCount: (data) => {
       return data.hotCount;
+    },
+    getClickedCount: (data) => {
+      return data.clickedCount;
     },
     getShowModal: (data) => {
       return data.showModal;

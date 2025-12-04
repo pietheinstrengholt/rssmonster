@@ -71,6 +71,15 @@
           <span class="badge">{{ $store.data.hotCount }}</span>
         </span>
       </div>
+      <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'clicked' }" v-on:click="loadType('clicked')" id="clicked" class="sidebar-category-top">
+        <span class="glyphicon">
+          <BootstrapIcon icon="bookmark-fill" variant="light" />
+        </span>
+        <span class="title">Clicked</span>
+        <span class="badge-unread">
+          <span class="badge">{{ $store.data.clickedCount }}</span>
+        </span>
+      </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="check-circle-fill" variant="light" />
@@ -96,6 +105,7 @@
             <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
             <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
             <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
+            <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ $store.data.clickedCount }}</span>
           </span>
         </div>
 
@@ -117,6 +127,8 @@
                   v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
                 <span
                   v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
+                <span
+                  v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ element.clickedCount }}</span>
               </span>
             </div>
             <div v-if="element.feeds">
@@ -132,6 +144,7 @@
                     <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
                     <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
                     <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
+                    <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ feed.clickedCount }}</span>
                     </span>
                   </div>
                 </div>
