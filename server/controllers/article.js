@@ -3,20 +3,21 @@ import Feed from "../models/feed.js";
 import Tag from "../models/tag.js";
 import cache from "../util/cache.js";
 import { Op } from 'sequelize';
-import { updateSettings } from "./setting.js";
+import Setting from "../models/setting.js";
 
 // Get all article IDs based on query parameters
 const getArticles = async (req, res, next) => {
   try {
+    console.log("getArticles called with query:", req.query);
     const userId = req.userData.userId;
     const categoryId = req.query.categoryId || "%";
     const feedId = req.query.feedId || "%";
     const status = req.query.status || "unread";
     const sort = req.query.sort || "DESC";
     const tag = (req.query.tag || "").trim();
-    const minAdvertisementScore = parseInt(req.query.minAdvertisementScore) || 100;
-    const minSentimentScore = parseInt(req.query.minSentimentScore) || 100;
-    const minQualityScore = parseInt(req.query.minQualityScore) || 100;
+    const minAdvertisementScore = req.query.minAdvertisementScore != null ? parseInt(req.query.minAdvertisementScore) : 100;
+    const minSentimentScore = req.query.minSentimentScore != null ? parseInt(req.query.minSentimentScore) : 100;
+    const minQualityScore = req.query.minQualityScore != null ? parseInt(req.query.minQualityScore) : 100;
     const viewMode = req.query.viewMode || "full";
     
     // Set default values for search
@@ -110,16 +111,34 @@ const getArticles = async (req, res, next) => {
 
     // Update user settings (skip when tag-based query is used)
     // Note: tag is not persisted in settings currently
-    await updateSettings(userId, {
-      categoryId,
-      feedId,
-      status,
-      sort,
-      minAdvertisementScore,
-      minSentimentScore,
-      minQualityScore,
-      viewMode
-    });
+    const existingSettings = await Setting.findOne({ where: { userId: userId }, raw: true });
+    
+    if (existingSettings) {
+      await Setting.update({
+        categoryId: categoryId,
+        feedId: feedId,
+        status: status,
+        sort: sort,
+        minAdvertisementScore: minAdvertisementScore,
+        minSentimentScore: minSentimentScore,
+        minQualityScore: minQualityScore,
+        viewMode: viewMode
+      }, {
+        where: { userId: userId }
+      });
+    } else {
+      await Setting.create({
+        userId: userId,
+        categoryId: categoryId,
+        feedId: feedId,
+        status: status,
+        sort: sort,
+        minAdvertisementScore: minAdvertisementScore,
+        minSentimentScore: minSentimentScore,
+        minQualityScore: minQualityScore,
+        viewMode: viewMode
+      });
+    }
 
     res.status(200).json({
       query: [{
@@ -177,9 +196,9 @@ const markAsRead = async (req, res, next) => {
     const userId = req.userData.userId;
     const categoryId = req.body.categoryId || "%";
     const feedId = req.body.feedId || "%";
-    const minAdvertisementScore = parseInt(req.body.minAdvertisementScore) || 100;
-    const minSentimentScore = parseInt(req.body.minSentimentScore) || 100;
-    const minQualityScore = parseInt(req.body.minQualityScore) || 100;
+    const minAdvertisementScore = req.body.minAdvertisementScore != null ? parseInt(req.body.minAdvertisementScore) : 100;
+    const minSentimentScore = req.body.minSentimentScore != null ? parseInt(req.body.minSentimentScore) : 100;
+    const minQualityScore = req.body.minQualityScore != null ? parseInt(req.body.minQualityScore) : 100;
 
     // Build where clause based on currentSelection
     const whereClause = {
