@@ -16,26 +16,6 @@ import store from "./store/index"
 // create an instance using the function
 const app = createApp(App)
 
-import { createRouter, createWebHistory } from 'vue-router'
-
-const router = createRouter({
-  history: createWebHistory(import.meta.env.BASE_URL),
-  routes: [
-    {
-      path: '/',
-      name: 'home',
-      component: () => import('./Main.vue')
-    },
-    {
-      path: '/login',
-      name: 'login',
-      component: () => import('./Login.vue')
-    }
-  ]
-})
-
-export default router
-
 // Global component registration.
 app.component('BootstrapIcon', BootstrapIcon);
 
@@ -46,8 +26,7 @@ if (import.meta.env.VITE_NODE_ENV == 'development') {
 	app.config.silent = true;
 }
 
-// no dollar sign
-app.use(router)
+// setup pinia and store
 app.use(createPinia())
 export const $store = store()
 app.config.globalProperties.$store = $store

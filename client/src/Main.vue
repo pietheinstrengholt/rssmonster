@@ -126,9 +126,6 @@ html, #app, body {
 </style>
 
 <script>
-//import axios
-import axios from 'axios';
-
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
@@ -185,9 +182,6 @@ export default {
     }
   },
   async created() {
-    //reset newUnreads count to zero
-    this.$store.data.newUnreads = 0;
-
     //fetch all category and feed information for an complete overview including total read and unread counts
     this.getOverview(true);
 
@@ -276,53 +270,30 @@ export default {
       }
     },
     async getOverview(initial) {
-      //get an overview with the count for all feeds
-      console.log("Fetching overview from server.");
-      axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-      axios
-        .get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview")
-        .then(response => {
-          return response;
-        })
-        .then(response => {
-          //set offlineStatus to false
-          this.offlineStatus = false;
+      console.log("Fetching overview from server via store.");
+      try {
+        const { response, previousUnreadCount } = await this.$store.data.fetchOverview(initial, this.$store.auth.token);
+        //set offlineStatus to false
+        this.offlineStatus = false;
 
-          //update the store counts
-          const previousUnreadCount = this.$store.data.unreadCount;
-          this.$store.data.unreadCount = response.data.unreadCount;
-          this.$store.data.readCount = response.data.readCount;
-          this.$store.data.starCount = response.data.starCount;
-          this.$store.data.hotCount = response.data.hotCount;
+        //set PWA badge using unread count (keep in Main)
+        if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
+          navigator.setAppBadge(response.data.unreadCount);
+        }
 
-          //set PWA badge using unread count
-          if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
-            navigator.setAppBadge(response.data.unreadCount);
+        //update local selection and notifications (kept in Main)
+        if (initial === true) {
+          this.updateSelection(this.$store.data.currentSelection);
+        } else {
+          if (previousUnreadCount < response.data.unreadCount) {
+            this.showNotification(response.data.unreadCount - previousUnreadCount);
           }
-
-          //update the categories in the store
-          this.$store.data.setCategories(response.data.categories);
-
-          //update newUnreads count, so we could show a message that new content is ready
-          if (!initial) {
-            this.$store.data.newUnreads = response.data.unreadCount - previousUnreadCount;
-          }
-
-          //update local category and feed based on current selection
-          if (initial === true) {
-            this.updateSelection(this.$store.data.currentSelection);
-          } else {
-            //only show notification when new messages have arrived (previousUnreadCount is larger than current unreadCount)
-            if (previousUnreadCount < response.data.unreadCount) {
-              this.showNotification(response.data.unreadCount - previousUnreadCount);
-            }
-          }
-        })
-        .catch(error => {
-          console.error("There was an error!", error);
-          this.$store.auth.setToken(null);
-          this.offlineStatus = true;
-        });
+        }
+      } catch (error) {
+        console.error("There was an error!", error);
+        this.$store.auth.setToken(null);
+        this.offlineStatus = true;
+      }
     },
     async showNotification(input) {
       if ('serviceWorker' in navigator) {

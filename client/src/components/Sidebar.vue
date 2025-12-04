@@ -382,6 +382,7 @@ div.option {
 <script>
 import draggable from "vuedraggable";
 import axios from 'axios';
+import Cookies from 'js-cookie';
 
 export default {
   data() {
@@ -402,10 +403,11 @@ export default {
   },
   methods: {
     logout() {
-      //remove token from store and redirect user to login page
+      //remove token from store which triggers App.vue to show login
       this.$store.auth.setToken(null);
       this.$store.auth.setRole(null);
-      this.$router.push('/login');
+      // Remove cookie to complete logout
+      Cookies.remove('token');
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);

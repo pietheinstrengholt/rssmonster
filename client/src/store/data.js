@@ -1,4 +1,5 @@
 import { defineStore } from 'pinia';
+import axios from 'axios';
 
 export const useStore = defineStore('data', {
   state: () => ({
@@ -28,6 +29,27 @@ export const useStore = defineStore('data', {
     setCategories(categories) {
       this.categories = categories;
     },
+    // Update store state based on overview payload
+    updateOverview(payload, { initial = false } = {}) {
+      const { unreadCount, readCount, starCount, hotCount, categories } = payload;
+      const previousUnreadCount = this.unreadCount;
+      this.unreadCount = unreadCount;
+      this.readCount = readCount;
+      this.starCount = starCount;
+      this.hotCount = hotCount;
+      this.setCategories(categories);
+      // compute newUnreads delta when not initial
+      if (!initial) {
+        this.newUnreads = unreadCount - previousUnreadCount;
+      }
+      return { previousUnreadCount };
+    },
+      async fetchOverview(initial, token) {
+        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview");
+        const { previousUnreadCount } = this.updateOverview(response.data, { initial });
+        return { response, previousUnreadCount };
+      },
     setCurrentSelection(selection) {
       this.currentSelection = selection;
     },
