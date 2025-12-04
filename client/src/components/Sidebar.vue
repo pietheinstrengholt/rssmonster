@@ -223,7 +223,7 @@
 #manage-users.option,
 #mark-as-read {
   background-color: #2b79c2;
-  width: 150px;
+  width: 170px;
 }
 
 #mark-as-read {
