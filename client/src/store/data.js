@@ -33,7 +33,9 @@ export const useStore = defineStore('data', {
     // Update store state based on overview payload
     updateOverview(payload, { initial = false } = {}) {
       const { unreadCount, readCount, starCount, hotCount, clickedCount, categories } = payload;
-      const previousUnreadCount = this.unreadCount;
+      if (!initial) {
+        this.setNewUnreads(unreadCount - this.unreadCount);
+      }
       // update counts in store
       this.setUnreadCount(unreadCount);
       this.setReadCount(readCount);
@@ -41,10 +43,7 @@ export const useStore = defineStore('data', {
       this.setHotCount(hotCount);
       this.setClickedCount(clickedCount);
       this.setCategories(categories);
-      // compute newUnreads delta when not initial
-      if (!initial) {
-        this.newUnreads = unreadCount - previousUnreadCount;
-      }
+
       return { previousUnreadCount };
     },
       async fetchOverview(initial, token) {
@@ -75,7 +74,7 @@ export const useStore = defineStore('data', {
       this.showModal = show;
     },
     setNewUnreads(count) {  
-      this.newUnreads = count;
+      this.newUnreads = this.newUnreads + count;
     },
     increaseStarCount() {
       this.starCount++;
