@@ -18,6 +18,7 @@ export const getOverview = async (req, res, next) => {
       attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
     });
 
+    // Use settings or default to 100
     const minAdvertisementScore = settings?.minAdvertisementScore || 100;
     const minSentimentScore = settings?.minSentimentScore || 100;
     const minQualityScore = settings?.minQualityScore || 100;
@@ -48,6 +49,7 @@ export const getOverview = async (req, res, next) => {
       raw: true
     });
 
+    // Parse counts safely
     const unreadCount = parseInt(counts.unreadCount) || 0;
     const readCount = parseInt(counts.readCount) || 0;
     const starCount = parseInt(counts.starCount) || 0;
@@ -55,6 +57,7 @@ export const getOverview = async (req, res, next) => {
     const hotCount = parseInt(counts.hotCount) || 0;
     const totalCount = readCount + unreadCount;
 
+    // Fetch categories with nested feeds
     const categories = await Category.findAll({
       where: {
         userId: userId
@@ -67,90 +70,44 @@ export const getOverview = async (req, res, next) => {
       order: ["categoryOrder", "name"]
     });
 
-    const unreadCountGrouped = await Feed.findAll({
+    // Combine all grouped counts into a single SQL query
+    const countsGrouped = await Feed.findAll({
       include: [{
         model: Article,
         attributes: [],
-        where: {
-          userId: userId,
-          status: "unread",
-          advertisementScore: { [Op.lte]: minAdvertisementScore },
-          sentimentScore: { [Op.lte]: minSentimentScore },
-          qualityScore: { [Op.lte]: minQualityScore }
-        }
+        where: baseWhere
       }],
       attributes: [
-        "categoryId",
-        ["id", "feedId"],
-        [Sequelize.fn("COUNT", "article.id"), "count"]
+        'categoryId',
+        ['id', 'feedId'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`starInd` = 1 THEN 1 END)"), 'starCount'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`clickedInd` = 1 THEN 1 END)"), 'clickedCount']
       ],
-      order: ["id"],
-      group: ["categoryId", "id"]
+      order: ['id'],
+      group: ['feeds.categoryId', 'feeds.id'],
+      raw: true
     });
 
-    const readCountGrouped = await Feed.findAll({
-      include: [{
-        model: Article,
-        attributes: [],
-        where: {
-          userId: userId,
-          status: "read",
-          advertisementScore: { [Op.lte]: minAdvertisementScore },
-          sentimentScore: { [Op.lte]: minSentimentScore },
-          qualityScore: { [Op.lte]: minQualityScore }
-        }
-      }],
-      attributes: [
-        "categoryId",
-        ["id", "feedId"],
-        [Sequelize.fn("COUNT", "article.id"), "count"]
-      ],
-      order: ["id"],
-      group: ["categoryId", "id"]
+    // Convert countsGrouped to nested structure: category[categoryId].feed[feedId]
+    const countsNested = {};
+    countsGrouped.forEach(item => {
+      // Initialize category if it doesn't exist
+      if (!countsNested[item.categoryId]) {
+        countsNested[item.categoryId] = { feeds: {} };
+      }
+      
+      // Add feed data under category
+      countsNested[item.categoryId].feeds[item.feedId] = {
+        unreadCount: parseInt(item.unreadCount) || 0,
+        readCount: parseInt(item.readCount) || 0,
+        starCount: parseInt(item.starCount) || 0,
+        clickedCount: parseInt(item.clickedCount) || 0
+      };
     });
 
-    const starCountGrouped = await Feed.findAll({
-      include: [{
-        model: Article,
-        attributes: [],
-        where: {
-          userId: userId,
-          starInd: 1,
-          advertisementScore: { [Op.lte]: minAdvertisementScore },
-          sentimentScore: { [Op.lte]: minSentimentScore },
-          qualityScore: { [Op.lte]: minQualityScore }
-        }
-      }],
-      attributes: [
-        "categoryId",
-        ["id", "feedId"],
-        [Sequelize.fn("COUNT", "article.id"), "count"]
-      ],
-      order: ["id"],
-      group: ["categoryId", "id"]
-    });
-
-    const clickedCountGrouped = await Feed.findAll({
-      include: [{
-        model: Article,
-        attributes: [],
-        where: {
-          userId: userId,
-          clickedInd: 1,
-          advertisementScore: { [Op.lte]: minAdvertisementScore },
-          sentimentScore: { [Op.lte]: minSentimentScore },
-          qualityScore: { [Op.lte]: minQualityScore }
-        }
-      }],
-      attributes: [
-        "categoryId",
-        ["id", "feedId"],
-        [Sequelize.fn("COUNT", "article.id"), "count"]
-      ],
-      order: ["id"],
-      group: ["categoryId", "id"]
-    });
-
+    // Function to convert Sequelize instances to plain objects
     const toPlain = response => {
       const flattenDataValues = ({
         dataValues
@@ -185,10 +142,6 @@ export const getOverview = async (req, res, next) => {
     //Sequelize raw: true or plain: true results into errors, so we will use the custom toPlain function here
     //we need to manipulate the results, so it is required to transform these into plain Array's
     const categoriesArray = toPlain(categories);
-    const readArray = toPlain(readCountGrouped);
-    const unreadArray = toPlain(unreadCountGrouped);
-    const starArray = toPlain(starCountGrouped);
-    const clickedArray = toPlain(clickedCountGrouped);
 
     //give each category and feed in the categoriesArray a readCount, unreadCount and starCount
     categoriesArray.forEach(category => {
@@ -208,81 +161,43 @@ export const getOverview = async (req, res, next) => {
       }
     });
 
-    //the readArray holds the read count for every categoryId and feedId. For the categoryId we need to sum, for the feedId we can just overwrite.
-    readArray.forEach(item => {
-      //find the index by comparing the categoryId from every element in the readArray, against the category.id in the categoriesArray
+    //Iterate over countsNested object to populate categoriesArray with counts
+    Object.keys(countsNested).forEach(categoryId => {
+      //find the index by comparing the categoryId against the category.id in the categoriesArray
       const categoryIndex = categoriesArray.findIndex(
-        category => category.id === item.categoryId
+        category => category.id === parseInt(categoryId)
       );
-      //increase the count
-      categoriesArray[categoryIndex]["readCount"] =
-        categoriesArray[categoryIndex]["readCount"] + item["count"];
+
+      if (categoryIndex === -1) return;
 
       //also update the individual feeds inside every category
       if (categoriesArray[categoryIndex]["feeds"]) {
-        //find the index by comparing the categoryId from every element in the readArray, against the category.id in the categoriesArray
-        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
-          feed => feed.id === item.feedId
-        );
-        //overwrite the count property
-        categoriesArray[categoryIndex]["feeds"][feedIndex]["readCount"] =
-          item["count"];
+        Object.keys(countsNested[categoryId].feeds).forEach(feedId => {
+          //find the feed index
+          const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
+            feed => feed.id === parseInt(feedId)
+          );
+          
+          if (feedIndex === -1) return;
+          
+          const feedCounts = countsNested[categoryId].feeds[feedId];
+          
+          //increase the category counts
+          categoriesArray[categoryIndex]["unreadCount"] += feedCounts.unreadCount;
+          categoriesArray[categoryIndex]["readCount"] += feedCounts.readCount;
+          categoriesArray[categoryIndex]["starCount"] += feedCounts.starCount;
+          categoriesArray[categoryIndex]["clickedCount"] += feedCounts.clickedCount;
+          
+          //set the feed counts
+          categoriesArray[categoryIndex]["feeds"][feedIndex]["unreadCount"] = feedCounts.unreadCount;
+          categoriesArray[categoryIndex]["feeds"][feedIndex]["readCount"] = feedCounts.readCount;
+          categoriesArray[categoryIndex]["feeds"][feedIndex]["starCount"] = feedCounts.starCount;
+          categoriesArray[categoryIndex]["feeds"][feedIndex]["clickedCount"] = feedCounts.clickedCount;
+        });
       }
     });
 
-    //repeat for the unread
-    unreadArray.forEach(item => {
-      const categoryIndex = categoriesArray.findIndex(
-        category => category.id === item.categoryId
-      );
-      categoriesArray[categoryIndex]["unreadCount"] =
-        categoriesArray[categoryIndex]["unreadCount"] + item["count"];
-
-      if (categoriesArray[categoryIndex]["feeds"]) {
-        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
-          feed => feed.id === item.feedId
-        );
-        categoriesArray[categoryIndex]["feeds"][feedIndex]["unreadCount"] =
-          item["count"];
-      }
-    });
-
-    //repeat for the star
-    starArray.forEach(item => {
-      const categoryIndex = categoriesArray.findIndex(
-        category => category.id === item.categoryId
-      );
-
-      categoriesArray[categoryIndex]["starCount"] =
-        categoriesArray[categoryIndex]["starCount"] + item["count"];
-
-      if (categoriesArray[categoryIndex]["feeds"]) {
-        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
-          feed => feed.id === item.feedId
-        );
-        categoriesArray[categoryIndex]["feeds"][feedIndex]["starCount"] =
-          item["count"];
-      }
-    });
-
-    //repeat for the clicked
-    clickedArray.forEach(item => {
-      const categoryIndex = categoriesArray.findIndex(
-        category => category.id === item.categoryId
-      );
-
-      categoriesArray[categoryIndex]["clickedCount"] =
-        categoriesArray[categoryIndex]["clickedCount"] + item["count"];
-
-      if (categoriesArray[categoryIndex]["feeds"]) {
-        const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
-          feed => feed.id === item.feedId
-        );
-        categoriesArray[categoryIndex]["feeds"][feedIndex]["clickedCount"] =
-          item["count"];
-      }
-    });
-
+    // Return the final overview response
     return res.status(200).json({
       total: totalCount,
       readCount: readCount,
