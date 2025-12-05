@@ -261,41 +261,8 @@ export const articleDetails = async (req, res, next) => {
   }
 };
 
-export const articleMarkToRead = async (req, res, next) => {
+const updateArticleStatus = async (userId, articleId, status) => {
   try {
-    const userId = req.userData.userId;
-    const articleId = req.params.articleId;
-    const article = await Article.findByPk(articleId, {
-      where: {
-        userId : userId
-      },
-      include: [{
-        model: Feed,
-        required: true
-      }]
-    });
-    if (!article) {
-      return res.status(404).json({
-        message: "Article not found"
-      });
-    } else {
-      article
-        .update({
-          status: "read"
-        })
-        .then(() => res.status(200).json(article))
-        .catch(error => res.status(400).json(error));
-    }
-  } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
-  }
-};
-
-export const articleMarkToUnread = async (req, res, next) => {
-  try {
-    const articleId = req.params.articleId;
-    const userId = req.userData.userId;
     const article = await Article.findByPk(articleId, {
       where: {
         userId: userId
@@ -305,18 +272,52 @@ export const articleMarkToUnread = async (req, res, next) => {
         required: true
       }]
     });
+
     if (!article) {
-      return res.status(404).json({
-        message: "Article not found"
-      });
-    } else {
-      article
-        .update({
-          status: "unread"
-        })
-        .then(() => res.status(200).json(article))
-        .catch(error => res.status(400).json(error));
+      return { success: false, statusCode: 404, message: "Article not found" };
     }
+
+    await article.update({ status: status });
+    return { success: true, statusCode: 200, article: article };
+  } catch (error) {
+    return { success: false, statusCode: 400, error: error };
+  }
+};
+
+export const articleMarkToRead = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+    
+    const result = await updateArticleStatus(userId, articleId, "read");
+    
+    if (!result.success) {
+      return res.status(result.statusCode).json({
+        message: result.message || "Error updating article"
+      });
+    }
+    
+    return res.status(result.statusCode).json(result.article);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+export const articleMarkToUnread = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+    
+    const result = await updateArticleStatus(userId, articleId, "unread");
+    
+    if (!result.success) {
+      return res.status(result.statusCode).json({
+        message: result.message || "Error updating article"
+      });
+    }
+    
+    return res.status(result.statusCode).json(result.article);
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);
