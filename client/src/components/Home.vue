@@ -155,7 +155,7 @@ export default {
         //only fetch article details if the container is filled with items
         if (this.container.length > 0) {
           //get all the article content by using the api. Submit the maximum number of articles to fetch as set by the fetchCount
-          axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/details", {
+          axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/details", {
               articleIds: this.container.slice(this.distance, this.distance + this.fetchCount).join(","),
               sort: this.$store.data.getSelectedSort
             })
@@ -212,7 +212,7 @@ export default {
     async markArticleRead(articleId) {
 
       //make ajax request to change read status
-      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/marktoread/" + articleId).then(
+      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/marktoread/" + articleId).then(
         response => {
           this.$store.data.increaseReadCount(response.data);
         },

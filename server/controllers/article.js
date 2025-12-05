@@ -33,8 +33,10 @@ const getArticles = async (req, res, next) => {
           attributes: ["articleId"],
         });
 
+        // Extract article IDs from tag rows
         const taggedArticleIds = tagRows.map(t => t.articleId);
 
+        // If no articles found for this tag, return empty result
         if (taggedArticleIds.length === 0) {
           return res.status(200).json({
             query: [{ userId: userId, tag: tag, sort: sort }],
@@ -49,8 +51,10 @@ const getArticles = async (req, res, next) => {
           order: [["published", sort]]
         });
 
+        // Extract article IDs in order
         const itemIds = taggedArticles.map(a => a.id);
 
+        // Return the result
         return res.status(200).json({
           query: [{ userId: userId, tag: tag, sort: sort }],
           itemIds: itemIds
@@ -72,6 +76,7 @@ const getArticles = async (req, res, next) => {
           }
         };
     
+    // Fetch feeds for the user based on category
     const feeds = await Feed.findAll(feedQuery);
 
     // Determine feed IDs to query
@@ -97,6 +102,7 @@ const getArticles = async (req, res, next) => {
       where: baseWhere
     };
 
+    // Modify query based on special status values
     if (status === "star") {
       articleQuery.where.starInd = 1;
     } else if (status === "hot") {
@@ -108,6 +114,7 @@ const getArticles = async (req, res, next) => {
       articleQuery.where.status = status;
     }
 
+    // Fetch articles based on constructed query
     const articles = await Article.findAll(articleQuery);
     const itemIds = articles.map(article => article.id);
 
@@ -192,7 +199,7 @@ const getArticle = async (req, res, next) => {
   }
 };
 
-// Mark all unread articles as read
+// Mark unread articles as read
 const markAsRead = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
@@ -271,9 +278,187 @@ const markClicked = async (req, res, next) => {
   }
 };
 
+// Get multiple article details by IDs
+const articleDetails = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleIds = req.body.articleIds;
+    const sort = req.body.sort;
+
+    if (articleIds === undefined) {
+      return res.status(400).json({
+        message: "articleIds is not set"
+      });
+    }
+
+    const articlesArray = articleIds.split(",");
+
+    const articles = await Article.findAll({
+      include: [
+        {
+          model: Feed,
+          required: true
+        },
+        {
+          model: Tag,
+          required: false,
+          attributes: ['id', 'name']
+        }
+      ],
+      order: [
+        ["published", sort]
+      ],
+      where: {
+        userId: userId,
+        id: articlesArray
+      }
+    });
+
+    if (!articles) {
+      return res.status(404).json({
+        message: "No articles found"
+      });
+    } else {
+      return res.status(200).json(articles);
+    }
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+// Helper function to update article status
+const updateArticleStatus = async (userId, articleId, status) => {
+  try {
+    const article = await Article.findByPk(articleId, {
+      where: {
+        userId: userId
+      },
+      include: [{
+        model: Feed,
+        required: true
+      }]
+    });
+
+    if (!article) {
+      return { success: false, statusCode: 404, message: "Article not found" };
+    }
+
+    await article.update({ status: status });
+    return { success: true, statusCode: 200, article: article };
+  } catch (error) {
+    return { success: false, statusCode: 400, error: error };
+  }
+};
+
+// Mark article as read
+const articleMarkToRead = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+    
+    const result = await updateArticleStatus(userId, articleId, "read");
+    
+    if (!result.success) {
+      return res.status(result.statusCode).json({
+        message: result.message || "Error updating article"
+      });
+    }
+    
+    return res.status(result.statusCode).json(result.article);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+// Mark article as unread
+const articleMarkToUnread = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+    
+    const result = await updateArticleStatus(userId, articleId, "unread");
+    
+    if (!result.success) {
+      return res.status(result.statusCode).json({
+        message: result.message || "Error updating article"
+      });
+    }
+    
+    return res.status(result.statusCode).json(result.article);
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+// Mark article with star
+const articleMarkWithStar = async (req, res, next) => {
+  try {
+    const articleId = req.params.articleId;
+    const update = req.body.update;
+    const userId = req.userData.userId;
+    const article = await Article.findByPk(articleId, {
+      where: {
+        userId: userId
+      },
+      include: [{
+        model: Feed,
+        required: true
+      }]
+    });
+
+    if (update === undefined) {
+      return res.status(400).json({
+        message: "Star indicator is not set"
+      });
+    }
+
+    if (!article) {
+      return res.status(404).json({
+        message: "Article not found"
+      });
+    }
+    
+    const starInd = update === "mark" ? 1 : 0;
+    article
+      .update({ starInd }, { where: { userId: userId }})
+      .then(() => res.status(200).json(article))
+      .catch(error => res.status(400).json(error));
+  } catch (err) {
+    console.log(err);
+    return res.status(500).json(err);
+  }
+};
+
+// Mark all articles as read
+const articleMarkAllAsRead = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    await Article.update({
+      status: "read"
+    }, {
+      where: {
+        status: "unread",
+        userId: userId
+      }
+    });
+
+    return res.status(200).json("marked all as read");
+  } catch (err) {
+    console.log(err);
+  }
+};
+
 export default {
   getArticles,
   getArticle,
   markAsRead,
-  markClicked
+  markClicked,
+  articleDetails,
+  articleMarkToRead,
+  articleMarkToUnread,
+  articleMarkWithStar,
+  articleMarkAllAsRead
 }

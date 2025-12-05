@@ -34,11 +34,12 @@ export const useStore = defineStore('data', {
     updateOverview(payload, { initial = false } = {}) {
       const { unreadCount, readCount, starCount, hotCount, clickedCount, categories } = payload;
       const previousUnreadCount = this.unreadCount;
-      this.unreadCount = unreadCount;
-      this.readCount = readCount;
-      this.starCount = starCount;
-      this.hotCount = hotCount;
-      this.clickedCount = clickedCount;
+      // update counts in store
+      this.setUnreadCount(unreadCount);
+      this.setReadCount(readCount);
+      this.setStarCount(starCount);
+      this.setHotCount(hotCount);
+      this.setClickedCount(clickedCount);
       this.setCategories(categories);
       // compute newUnreads delta when not initial
       if (!initial) {

@@ -387,7 +387,7 @@ export default {
         if (event.currentTarget.className.indexOf("starred") >= 0) {
           //make ajax request to change bookmark status
           axios
-            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + articleId, { update: "unmark" })
+            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markwithstar/" + articleId, { update: "unmark" })
             .then(
               response => {
                 //decrease the star count
@@ -410,7 +410,7 @@ export default {
         } else {
           //make ajax request to change bookmark status
           axios
-            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/markwithstar/" + articleId, { update: "mark" })
+            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markwithstar/" + articleId, { update: "mark" })
             .then(
               response => {
                 //increase the star count
