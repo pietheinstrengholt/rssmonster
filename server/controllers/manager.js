@@ -22,57 +22,37 @@ export const getOverview = async (req, res, next) => {
     const minSentimentScore = settings?.minSentimentScore || 100;
     const minQualityScore = settings?.minQualityScore || 100;
 
-    const starCount = await Article.count({
-      where: {
-        userId: userId,
-        starInd: 1,
-        advertisementScore: { [Op.lte]: minAdvertisementScore },
-        sentimentScore: { [Op.lte]: minSentimentScore },
-        qualityScore: { [Op.lte]: minQualityScore }
-      }
+    // Merge all counts into a single SQL statement
+    const baseWhere = {
+      userId: userId,
+      advertisementScore: { [Op.lte]: minAdvertisementScore },
+      sentimentScore: { [Op.lte]: minSentimentScore },
+      qualityScore: { [Op.lte]: minQualityScore }
+    };
+
+    // Build hotCount SQL for URLs
+    const hotUrls = cache.all();
+    const hotSql = hotUrls.length > 0
+      ? `CASE WHEN url IN (${hotUrls.map(url => `'${url.replace(/'/g, "''")}'`).join(',')}) THEN 1 END`
+      : `NULL`;
+
+    const counts = await Article.findOne({
+      where: baseWhere,
+      attributes: [
+        [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
+        [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
+        [Sequelize.literal("COUNT(CASE WHEN starInd = 1 THEN 1 END)"), 'starCount'],
+        [Sequelize.literal("COUNT(CASE WHEN clickedInd = 1 THEN 1 END)"), 'clickedCount'],
+        [Sequelize.literal(`COUNT(${hotSql})`), 'hotCount']
+      ],
+      raw: true
     });
 
-    const unreadCount = await Article.count({
-      where: {
-        userId: userId,
-        status: "unread",
-        advertisementScore: { [Op.lte]: minAdvertisementScore },
-        sentimentScore: { [Op.lte]: minSentimentScore },
-        qualityScore: { [Op.lte]: minQualityScore }
-      }
-    });
-
-    const readCount = await Article.count({
-      where: {
-        userId: userId,
-        status: "read",
-        advertisementScore: { [Op.lte]: minAdvertisementScore },
-        sentimentScore: { [Op.lte]: minSentimentScore },
-        qualityScore: { [Op.lte]: minQualityScore }
-      }
-    });
-
-    //finally we count using the array with ids
-    const hotCount = await Article.count({
-      where: {
-        userId: userId,
-        url: cache.all(),
-        advertisementScore: { [Op.lte]: minAdvertisementScore },
-        sentimentScore: { [Op.lte]: minSentimentScore },
-        qualityScore: { [Op.lte]: minQualityScore }
-      }
-    });
-
-    const clickedCount = await Article.count({
-      where: {
-        userId: userId,
-        clickedInd: 1,
-        advertisementScore: { [Op.lte]: minAdvertisementScore },
-        sentimentScore: { [Op.lte]: minSentimentScore },
-        qualityScore: { [Op.lte]: minQualityScore }
-      }
-    });
-
+    const unreadCount = parseInt(counts.unreadCount) || 0;
+    const readCount = parseInt(counts.readCount) || 0;
+    const starCount = parseInt(counts.starCount) || 0;
+    const clickedCount = parseInt(counts.clickedCount) || 0;
+    const hotCount = parseInt(counts.hotCount) || 0;
     const totalCount = readCount + unreadCount;
 
     const categories = await Category.findAll({
