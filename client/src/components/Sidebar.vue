@@ -35,13 +35,13 @@
       <div>
         <p class="title">All feeds</p>
       </div>
-      <div v-if="($store.data.newUnreads !== 0)" v-on:click="loadType('refresh')" id="newunreads" class="sidebar-category-top">
+      <div v-if="($store.data.unreadsSinceLastUpdate !== 0)" v-on:click="loadType('refresh')" id="unreadsSinceLastUpdate" class="sidebar-category-top">
         <span class="glyphicon">
           <BootstrapIcon icon="lightbulb-fill" variant="light" />
         </span>
         <span class="title">Click to refresh!</span>
         <span class="badge-unread">
-          <span class="badge">{{ $store.data.newUnreads }}</span>
+          <span class="badge">{{ $store.data.unreadsSinceLastUpdate }}</span>
         </span>
       </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="sidebar-category-top">
@@ -267,7 +267,7 @@
   cursor: pointer;
 }
 
-#newunreads.sidebar-category-top {
+#unreadsSinceLastUpdate.sidebar-category-top {
 	background-color: #536f5b;
 }
 

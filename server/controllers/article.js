@@ -8,7 +8,6 @@ import Setting from "../models/setting.js";
 // Get all article IDs based on query parameters
 const getArticles = async (req, res, next) => {
   try {
-    console.log("getArticles called with query:", req.query);
     const userId = req.userData.userId;
     const categoryId = req.query.categoryId || "%";
     const feedId = req.query.feedId || "%";

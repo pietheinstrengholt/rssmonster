@@ -173,7 +173,8 @@ export default {
       feed: {},
       mobile: null,
       notificationStatus: null,
-      offlineStatus: false
+      offlineStatus: false,
+      overviewIntervalId: null
     };
   },
   computed: {
@@ -210,7 +211,7 @@ export default {
       const self = this;
 
       //background update overview every five minutes
-      setInterval(() => {
+      this.overviewIntervalId = setInterval(() => {
         self.getOverview(false);
       }, 300 * 1000);
     }
@@ -291,6 +292,11 @@ export default {
         }
       } catch (error) {
         console.error("There was an error!", error);
+        // Clear the background interval on authentication failure
+        if (this.overviewIntervalId) {
+          clearInterval(this.overviewIntervalId);
+          this.overviewIntervalId = null;
+        }
         this.$store.auth.setToken(null);
         this.offlineStatus = true;
       }
@@ -308,8 +314,8 @@ export default {
       }
     },
     forceReload() {
-      //set newUnreads count back to zero. This removes the notification from the Sidebar.
-      this.$store.data.newUnreads = 0;
+      //set unreadsSinceLastUpdate count back to zero. This removes the notification from the Sidebar.
+      this.$store.data.unreadsSinceLastUpdate = 0;
       //refresh the overview with updated categories and feeds counts
       this.getOverview(true);
       //invoke ref home child component function to reload content
@@ -334,7 +340,7 @@ export default {
       },
       deep: true
     },
-    "store.unreadCount": {
+    "$store.data.unreadsSinceLastUpdate": {
       handler: function(count) {
         //set PWA badge count
         if ('serviceWorker' in navigator) {

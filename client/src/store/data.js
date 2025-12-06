@@ -22,7 +22,7 @@ export const useStore = defineStore('data', {
     hotCount: 0,
     clickedCount: 0,
     showModal: false,
-    newUnreads: 0,
+    unreadsSinceLastUpdate: 0,
     refreshCategories: 0,
     chatAssistantOpen: false
   }),
@@ -33,25 +33,27 @@ export const useStore = defineStore('data', {
     // Update store state based on overview payload
     updateOverview(payload, { initial = false } = {}) {
       const { unreadCount, readCount, starCount, hotCount, clickedCount, categories } = payload;
-      if (!initial) {
-        this.setNewUnreads(unreadCount - this.unreadCount);
-      }
       // update counts in store
-      this.setUnreadCount(unreadCount);
-      this.setReadCount(readCount);
-      this.setStarCount(starCount);
-      this.setHotCount(hotCount);
-      this.setClickedCount(clickedCount);
-      this.setCategories(categories);
-
-      return { previousUnreadCount };
+      if (initial) {
+        this.setUnreadCount(unreadCount);
+        this.setReadCount(readCount);
+        this.setStarCount(starCount);
+        this.setHotCount(hotCount);
+        this.setClickedCount(clickedCount);
+        this.setCategories(categories);
+      } else {
+        // calculate unreads since last update
+        this.setUnreadsSinceLastUpdate(unreadCount - this.unreadCount);
+      }
     },
-      async fetchOverview(initial, token) {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview");
-        const { previousUnreadCount } = this.updateOverview(response.data, { initial });
-        return { response, previousUnreadCount };
-      },
+    async fetchOverview(initial, token) {
+      // Fetch overview data from server
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview");
+      // Update store with fetched data
+      this.updateOverview(response.data, { initial });
+      return { response };
+    },
     setCurrentSelection(selection) {
       this.currentSelection = selection;
     },
@@ -73,8 +75,8 @@ export const useStore = defineStore('data', {
     setShowModal(show) {
       this.showModal = show;
     },
-    setNewUnreads(count) {  
-      this.newUnreads = this.newUnreads + count;
+    setUnreadsSinceLastUpdate(count) {  
+      this.unreadsSinceLastUpdate = count;
     },
     increaseStarCount() {
       this.starCount++;
@@ -184,8 +186,8 @@ export const useStore = defineStore('data', {
     getShowModal: (data) => {
       return data.showModal;
     },
-    getNewUnreads: (data) => {
-      return data.newUnreads;
+    getunreadsSinceLastUpdate: (data) => {
+      return data.unreadsSinceLastUpdate;
     },
     getMinAdvertisementScore: (data) => {
       return data.currentSelection.minAdvertisementScore;
