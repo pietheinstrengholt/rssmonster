@@ -12,7 +12,7 @@
         <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="home"></app-home>
+        <app-home v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="home" @forceReload="forceReload"></app-home>
         <app-assistant v-if="enableAgent && $store.data.chatAssistantOpen"></app-assistant>
       </div>
     </div>

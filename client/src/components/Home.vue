@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload">
   </InfiniteScroll>
 </template>
 
@@ -222,6 +222,9 @@ export default {
           /* eslint-enable no-console */
         }
       );
+    },
+    forceReload() {
+      this.$emit('forceReload');
     }
   }
 };
