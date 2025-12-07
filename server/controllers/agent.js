@@ -6,13 +6,16 @@ const port = process.env.PORT || 3000;
 
 export const postAgent = async (req, res) => {
   try {
+    // Construct MCP URL
+    const mcpUrl = `${req.protocol}://${req.get('host')}/mcp`;
 
+    // Extract userId from request (assuming authentication middleware has set req.userData)
     const userId = req.userData.userId;
     if (!userId) return res.status(401).json({ error: "Missing userId" });
 
     // 1. Define the MCP server
     const mcpServer = new MCPServerStreamableHttp({
-        url: `http://localhost:${port}/mcp`,
+        url: mcpUrl, // MCP server URL
         name: 'mcp-rssmonster-server',
         requestInit: {
           headers: {
