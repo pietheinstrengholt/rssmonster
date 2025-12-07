@@ -207,7 +207,8 @@ export default {
   border-radius: 0.375rem;
   border-color: lightgrey;
   border-style: solid;
-  padding: 10px;
+  padding: 20px;
+  background-color: #dee2e6;
 }
 
 #form-box {
@@ -223,6 +224,7 @@ export default {
 
 .form-group.row input {
   margin-left: 20px;
+  margin-right: 0;
 }
 
 .loading-container {
@@ -236,6 +238,56 @@ export default {
 
 html, body, #app {
   height: 100%;
+}
+
+@media (prefers-color-scheme: dark) {
+  #form-box {
+    color: #fff;
+  }
+
+  #monster p {
+    color: #fff;
+  }
+
+  #login {
+    background: #2a2a2a;
+    border-color: #444;
+  }
+
+  .form-control {
+    background-color: #1a1a1a;
+    color: #fff;
+    border-color: #555;
+  }
+
+  .form-control:focus {
+    background-color: #1a1a1a;
+    color: #fff;
+    border-color: #4a7fc7;
+    box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
+  }
+
+  .form-control::placeholder {
+    color: #888;
+  }
+
+  .btn-primary {
+    background-color: #4a7fc7;
+    border-color: #4a7fc7;
+  }
+
+  .btn-primary:hover {
+    background-color: #3a6fb7;
+    border-color: #3a6fb7;
+  }
+
+  a {
+    color: #4a7fc7;
+  }
+
+  a:hover {
+    color: #3a6fb7;
+  }
 }
 
 @media (max-width: 600px) {
@@ -255,7 +307,7 @@ html, body, #app {
     margin-left: 10px;
     margin-right: 10px;
     text-align: left;
-    width: 100%;
+    width: auto;
   }
   .form-group.row .col-sm-10 {
     width: 100%;
@@ -264,11 +316,17 @@ html, body, #app {
   }
   .form-group.row input {
     margin-left: 0;
+    margin-right: 0;
     width: 100%;
     box-sizing: border-box;
   }
   #login {
-    padding: 10px 0;
+    padding: 10px;
+  }
+  button.btn-primary {
+    width: auto;
+    margin-left: 10px;
+    margin-right: 10px;
   }
 }
 </style>
