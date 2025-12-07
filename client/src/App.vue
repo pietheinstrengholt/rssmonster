@@ -237,4 +237,38 @@ export default {
 html, body, #app {
   height: 100%;
 }
+
+@media (max-width: 600px) {
+  #form-box {
+    width: 100%;
+    margin: 0;
+    padding: 0 10px;
+  }
+  .form-group.row {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    margin-top: 10px;
+  }
+  .form-group.row label {
+    margin-bottom: 5px;
+    margin-left: 10px;
+    margin-right: 10px;
+    text-align: left;
+    width: 100%;
+  }
+  .form-group.row .col-sm-10 {
+    width: 100%;
+    margin-left: 0;
+    padding: 0 10px;
+  }
+  .form-group.row input {
+    margin-left: 0;
+    width: 100%;
+    box-sizing: border-box;
+  }
+  #login {
+    padding: 10px 0;
+  }
+}
 </style>
