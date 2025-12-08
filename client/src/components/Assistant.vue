@@ -115,6 +115,34 @@ div#inputArea {
     margin-right: 15px;
   }
 }
+
+@media (prefers-color-scheme: dark) {
+  div#inputArea {
+    color: #fff;
+  }
+
+  .form-label {
+    color: #fff;
+  }
+
+  h5 {
+    color: #fff;
+  }
+
+  .user-message {
+    background-color: #1a4d4f;
+    color: #fff;
+  }
+
+  .assistant-message {
+    background-color: #3a4a2a;
+    color: #fff;
+  }
+
+  .loading-spinner {
+    color: #aaa;
+  }
+}
 </style>
 
 <script>
