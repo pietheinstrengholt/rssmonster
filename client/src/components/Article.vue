@@ -67,6 +67,11 @@
 .block .article-content p {
   display: inline !important;
 }
+
+/* Remove position: relative from all elements in article body */
+.article-body * {
+  position: static !important;
+}
 </style>
 
 <style scoped>
