@@ -59,6 +59,10 @@
   }
 }
 
+button.btn.btn-primary.content {
+  margin-bottom: 10px;
+}
+
 .overlay {
   height: 100%;
   width: 100%;
@@ -81,8 +85,8 @@
   width: 100%;
   text-align: left;
   margin-top: 5px;
-  margin-left: 10px;
-  margin-right: 10px;
+  padding-left: 10px;
+  padding-right: 10px;
 }
 
 .close {
@@ -100,7 +104,7 @@ span.close {
   list-style-type: none;
   text-indent: 4px;
   padding-left: 0px;
-  width: 95%;
+  width: 100%;
 }
 
 .overlay-content li.category {
@@ -126,6 +130,10 @@ p.content-header {
 
 .btn-primary.content {
   margin-right: 5px;
+}
+
+.overlay-content .btn {
+  width: 100%;
 }
 
 @media (prefers-color-scheme: dark) {

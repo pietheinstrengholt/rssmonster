@@ -325,7 +325,6 @@ html, body, #app {
   }
   button.btn-primary {
     width: auto;
-    margin-left: 10px;
     margin-right: 10px;
   }
 }
