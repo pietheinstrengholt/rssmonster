@@ -189,7 +189,7 @@
               <div class="text">Delete</div>
             </div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('RenameFeed')" id="rename" class="category-button">
+          <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('UpdateFeed')" id="rename" class="category-button">
             <div>
               <BootstrapIcon icon="pencil-fill" color="3b4651" />
               <div class="text">Edit</div>

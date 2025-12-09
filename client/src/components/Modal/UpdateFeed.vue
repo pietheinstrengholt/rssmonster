@@ -58,13 +58,17 @@
     justify-content: center;
 }
 
-.modal-dialog{
+.modal-dialog {
     max-width: 600px;
     width: 100%;
 }
 
 .row {
     margin-bottom: 5px;
+}
+
+select#category {
+    margin-left: 20px;
 }
 </style>
 
