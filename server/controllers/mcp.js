@@ -72,9 +72,12 @@ function generateArticlesHtml(articles, options = {}) {
 const postMcp = async (req, res) => {
   try {
     // Authenticate user
-    const userId = req.headers["x-user-id"];
+    const userId = req.userData.userId;
     if (!userId) {
-      return res.status(401).json({ error: "Missing x-user-id header for authentication" });
+      return res.status(401).json({ 
+        error: "Authentication error", 
+        message: "Missing or invalid authentication token. Please include a valid JWT token in the request headers using 'Authorization: Bearer <token>'. You can obtain a token by authenticating through the /api/auth/login endpoint." 
+      });
     }
 
     // Define MCP server with tools

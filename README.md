@@ -133,6 +133,8 @@ RSSMonster automatically tracks article clicks and uses AI to classify content w
 
 **Note:** All interactions are user-scoped, ensuring privacy and data isolation in multi-user environments.
 
+**Note for Developers:** You can access the MCP server directly at `/mcp` for programmatic integration. Authentication requires a valid JWT token passed via the `Authorization: Bearer <token>` header. Obtain your token by authenticating through the `/api/auth/login` endpoint.
+
 ## Development
 
 ### Running in Development Mode

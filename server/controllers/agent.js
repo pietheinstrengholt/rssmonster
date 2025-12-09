@@ -1,17 +1,11 @@
 import { Agent, run, MCPServerStreamableHttp } from "@openai/agents";
 import dotenv from "dotenv";
 dotenv.config();
-//set port
-const port = process.env.PORT || 3000;
 
 export const postAgent = async (req, res) => {
   try {
     // Construct MCP URL
     const mcpUrl = `${req.protocol}://${req.get('host')}/mcp`;
-
-    // Extract userId from request (assuming authentication middleware has set req.userData)
-    const userId = req.userData.userId;
-    if (!userId) return res.status(401).json({ error: "Missing userId" });
 
     // 1. Define the MCP server
     const mcpServer = new MCPServerStreamableHttp({
@@ -19,7 +13,7 @@ export const postAgent = async (req, res) => {
         name: 'mcp-rssmonster-server',
         requestInit: {
           headers: {
-              "x-user-id": userId // Pass userId for authentication
+              "authorization": req.headers.authorization || "",
           }
         }
     });
@@ -32,8 +26,6 @@ export const postAgent = async (req, res) => {
         using the available MCP tools. You may call any tools provided by the MCP server 
         to obtain information. Do NOT ask the user for follow-up questions. 
         Use the tools to find the correct answer and return it directly.
-
-        The authenticated user has USER_ID = "${userId}".
         
         IMPORTANT: The MCP tools return HTML-formatted output in the 'htmlOutput' field of their structured responses.
         You MUST return this HTML content directly to the user without modification, escaping, or converting it to plain text.
