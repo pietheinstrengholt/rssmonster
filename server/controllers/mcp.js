@@ -167,6 +167,11 @@ const postMcp = async (req, res) => {
       - Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1).
       - Useful to analyze engagement topics and guide queries.
 
+    17. category_details
+      - Returns detailed information about a specific category by its categoryId.
+      - Provides metadata like name, description, and order.
+      - Includes all feeds associated with that category.
+
     Important Notes for the Agent:
     - You are allowed and encouraged to **use multiple tools together** to obtain the required results.
       For example, to get all articles from feeds in a specific category:
@@ -233,14 +238,23 @@ const postMcp = async (req, res) => {
     // Tool: 3. search_feed_by_name
     server.tool(
       "search_feed_by_name",
-      "Searches for a feed by its name and returns detailed information about the feed.",
+      "Searches for a feed by its name and returns detailed information about the feed, like ID, URL, description, and categoryId.",
       {
         feed_name: z.string()
       },
       async ({ feed_name }) => {
         console.log('[MCP Tool Called] search_feed_by_name - feed_name:', feed_name);
         try {
-          const feed = await Feed.findOne({ where: { feedName: { [Op.like]: `%${feed_name}%` }, userId: userId }, raw: true });
+          const feed = await Feed.findOne({ 
+            where: { 
+              [Op.or]: [
+                { feedName: { [Op.like]: `%${feed_name}%` } },
+                { feedDesc: { [Op.like]: `%${feed_name}%` } }
+              ],
+              userId: userId 
+            }, 
+            raw: true 
+          });
           console.log(`Fetched feed for name "${feed_name}":`, feed);
 
           if (!feed) {
@@ -420,6 +434,14 @@ const postMcp = async (req, res) => {
       You may optionally provide a status:
       - If "status" is provided, only articles with that status are returned.
       - If "status" is NOT provided, defaults to "unread".
+
+      You may optionally provide a time window:
+      - If "seconds" is provided, only articles created within that time window are returned.
+      - If "seconds" is NOT provided, all articles from the feed are returned regardless of when.
+
+      Examples:
+      - Last hour: seconds = 3600
+      - Last day: seconds = 86400
       `,
       {
         feedId: z.number().describe("The unique identifier (ID) of the feed to fetch articles for."),
@@ -427,9 +449,14 @@ const postMcp = async (req, res) => {
         status: z.enum(["read", "unread"])
           .default("unread")
           .describe("Filter by read/unread status. Defaults to 'unread'."),
+
+        seconds: z.number()
+          .min(1)
+          .optional()
+          .describe("Optional time window (in seconds) from the current time to look back. If omitted, all articles from the feed are returned."),
       },
-      async ({ feedId, status }) => {
-        console.log('[MCP Tool Called] articles_by_feed_id - feedId:', feedId, 'status:', status);
+      async ({ feedId, status, seconds }) => {
+        console.log('[MCP Tool Called] articles_by_feed_id - feedId:', feedId, 'status:', status, 'seconds:', seconds);
         try {
           const feed = await Feed.findOne({ where: { id: feedId, userId: userId }, raw: true });
           if (!feed) {
@@ -439,8 +466,23 @@ const postMcp = async (req, res) => {
             });
           }
 
+          const whereClause = {
+            feedId,
+            userId: userId,
+            status: status
+          };
+
+          // If seconds is provided, add time filter
+          if (seconds) {
+            const now = new Date();
+            const fromTime = new Date(now.getTime() - seconds * 1000);
+            whereClause.createdAt = {
+              [Op.between]: [fromTime, now],
+            };
+          }
+
           const articles = await Article.findAll({
-            where: { feedId, userId: userId, status: status },
+            where: whereClause,
             order: [["createdAt", "DESC"]],
             raw: true,
           });
@@ -456,6 +498,7 @@ const postMcp = async (req, res) => {
           const structured = {
             feed,
             totalArticles: articles.length,
+            ...(seconds ? { timeWindowSeconds: seconds } : {}),
             htmlOutput: html,
             articles: articles
           };
@@ -475,7 +518,7 @@ const postMcp = async (req, res) => {
     server.tool(
       "favorite_articles",
       `
-      Retrieves all articles that are marked as favorites (where status = "star").
+      Retrieves all articles that are marked as favorites (where starInd = 1).
       The agent must summarize each article returned in the results (e.g., a 2–3 sentence summary).
 
       You may optionally provide a feedId:
@@ -485,6 +528,14 @@ const postMcp = async (req, res) => {
       You may optionally provide a status:
       - If "status" is provided, only articles with that status are returned.
       - If "status" is NOT provided, defaults to "unread".
+
+      You may optionally provide a time window:
+      - If "seconds" is provided, only articles favorited within that time window are returned.
+      - If "seconds" is NOT provided, all favorite articles are returned regardless of when.
+
+      Examples:
+      - Last hour: seconds = 3600
+      - Last day: seconds = 86400
       `,
       {
         feedId: z.string()
@@ -494,12 +545,33 @@ const postMcp = async (req, res) => {
         status: z.enum(["read", "unread"])
           .default("unread")
           .describe("Filter by read/unread status. Defaults to 'unread'."),
+
+        seconds: z.number()
+          .min(1)
+          .optional()
+          .describe("Optional time window (in seconds) from the current time to look back. If omitted, all favorite articles are returned."),
       },
-      async ({ feedId, status }) => {
-        console.log('[MCP Tool Called] favorite_articles - feedId:', feedId, 'status:', status);
+      async ({ feedId, status, seconds }) => {
+        console.log('[MCP Tool Called] favorite_articles - feedId:', feedId, 'status:', status, 'seconds:', seconds);
         try {
+          const whereClause = {
+            starInd: 1,
+            userId: userId,
+            status: status,
+            ...(feedId ? { feedId: feedId } : {}),
+          };
+
+          // If seconds is provided, add time filter
+          if (seconds) {
+            const now = new Date();
+            const fromTime = new Date(now.getTime() - seconds * 1000);
+            whereClause.updatedAt = {
+              [Op.between]: [fromTime, now],
+            };
+          }
+
           const articles = await Article.findAll({
-            where: { starInd: 1, userId: userId, status: status, ...(feedId ? { feedId: feedId } : {}) },
+            where: whereClause,
             order: [["createdAt", "DESC"]],
             raw: true,
           });
@@ -513,6 +585,8 @@ const postMcp = async (req, res) => {
 
           const structured = {
             totalFavorites: articles.length,
+            ...(seconds ? { timeWindowSeconds: seconds } : {}),
+            ...(feedId ? { feedId: feedId } : {}),
             htmlOutput: html,
             articles: articles
           };
@@ -924,6 +998,90 @@ const postMcp = async (req, res) => {
         }
       }
     );
+
+    // Tool 17: category_details
+    server.tool(
+      "category_details",
+      `
+      Returns detailed information about a specific category by searching its name or using its ID.
+      Includes all feeds associated with that category.
+      You can search by either categoryId or categoryName (but not both at once).
+      `,
+      {
+        categoryId: z.string()
+          .optional()
+          .describe("The unique identifier (ID) of the category to fetch."),
+        
+        categoryName: z.string()
+          .optional()
+          .describe("The name of the category to search for (partial match supported).")
+      },
+      async ({ categoryId, categoryName }) => {
+        console.log('[MCP Tool Called] category_details - categoryId:', categoryId, 'categoryName:', categoryName);
+        try {
+          // Validate that exactly one parameter is provided
+          if (!categoryId && !categoryName) {
+            return makeResult({
+              structured: { error: "Either categoryId or categoryName must be provided." },
+              error: true
+            });
+          }
+
+          if (categoryId && categoryName) {
+            return makeResult({
+              structured: { error: "Provide either categoryId or categoryName, not both." },
+              error: true
+            });
+          }
+
+          // Build where clause
+          const whereClause = { userId: userId };
+          if (categoryId) {
+            whereClause.id = categoryId;
+          } else {
+            whereClause.name = { [Op.like]: `%${categoryName}%` };
+          }
+
+          // Fetch category with associated feeds
+          const category = await Category.findOne({
+            where: whereClause,
+            include: [{
+              model: Feed,
+              as: 'feeds',
+              required: false
+            }],
+            raw: false
+          });
+
+          if (!category) {
+            const searchTerm = categoryId ? `ID ${categoryId}` : `name "${categoryName}"`;
+            return makeResult({
+              structured: { error: `No category found with ${searchTerm}.` },
+              error: true
+            });
+          }
+
+          // Convert to plain object for structured response
+          const categoryData = category.toJSON();
+
+          console.log(`Fetched category:`, categoryData);
+
+          return makeResult({ 
+            structured: { 
+              category: categoryData,
+              totalFeeds: categoryData.feeds?.length || 0
+            } 
+          });
+        } catch (err) {
+          console.error('Error fetching category details:', err);
+          return makeResult({ 
+            structured: { error: 'Failed to fetch category details.' }, 
+            error: true 
+          });
+        }
+      }
+    );
+
 
     const transport = new StreamableHTTPServerTransport({
       sessionIdGenerator: undefined,
