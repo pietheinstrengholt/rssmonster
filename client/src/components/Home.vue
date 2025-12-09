@@ -1,5 +1,5 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload">
+  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd">
   </InfiniteScroll>
 </template>
 
@@ -225,6 +225,12 @@ export default {
     },
     forceReload() {
       this.$emit('forceReload');
+    },
+    updateStarInd({ id, starInd }) {
+      const idx = this.articles.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        this.articles[idx].starInd = starInd;
+      }
     }
   }
 };

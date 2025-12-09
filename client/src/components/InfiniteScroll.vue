@@ -1,7 +1,12 @@
 <template>
   <div id="main-container">
     <div id="articles">
-      <Article v-for="article in articles" v-bind="article" :key="article.id"/>
+      <Article
+        v-for="article in articles"
+        v-bind="article"
+        :key="article.id"
+        @update-star="forwardUpdateStar"
+      />
     </div>
     <div id="no-more" v-if="hasLoadedContent">
       <p v-if="container.length == 0" id="no-results">No posts found!</p>
@@ -64,6 +69,9 @@ export default {
   methods: {
     flushPool() {
         this.$parent.flushPool();
+    },
+    forwardUpdateStar(payload) {
+        this.$emit('update-star', payload);
     }
   }
 }

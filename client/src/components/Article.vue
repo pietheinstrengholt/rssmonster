@@ -3,6 +3,8 @@
     <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotlinks }" v-on:click="articleTouched(id, $event)">    
       <div class="maximal">
         <h5 class="heading">
+          <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
+          <BootstrapIcon v-if="hotlinks" icon="fire" class="hot-icon" />
           <a href="#" v-text="subject" @click.prevent="articleClicked(id, url)"></a>
         </h5>
         <div class="feedname">
@@ -99,20 +101,9 @@
   margin-bottom: 0px;
 }
 
-.block .article.hot .heading, .block .article.starred .heading {
-  padding-left: 20px;
-  background-repeat: no-repeat;
-  background-size: 16px 16px;
-  background-position: left 0px top 5px;
-}
-
 .block .article.hot {
   background-color: #fffff4;
   border-color: #ffc7c7;
-}
-
-.block .article.hot .heading {
-  background-image: url("../assets/images/fire.png");
 }
 
 .block .article.starred {
@@ -120,8 +111,16 @@
   border-color: #ffc7c7;
 }
 
-.block .article.starred .heading, .block .bookmarked {
-  background-image: url("../assets/images/heart_red.png");
+.star-icon {
+  color: #dc3545;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.hot-icon {
+  color: #e36209;
+  margin-right: 4px;
+  vertical-align: middle;
 }
 
 .block .article {
@@ -329,6 +328,7 @@ import moment from "moment";
 import axios from 'axios';
 
 export default {
+  emits: ['update-star'],
   data() {
     return {
       showMinimalContent: false
@@ -385,60 +385,49 @@ export default {
       }
     },
     bookmark(articleId, event) {
-      //do not bookmark when clicking on hyperlinks
-      if (event.srcElement.nodeName != "A") {
+      // do not bookmark when clicking on hyperlinks
+      if (event.srcElement.nodeName === "A") return;
 
-        //determine if classname already contains bookmarked, if so, the change is unmark
-        if (event.currentTarget.className.indexOf("starred") >= 0) {
-          //make ajax request to change bookmark status
-          axios
-            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markwithstar/" + articleId, { update: "unmark" })
-            .then(
-              response => {
-                //decrease the star count
-                var categoryIndex = this.$store.data.categories.findIndex(
-                  category => category.id === response.data.feed.categoryId
-                );
-                this.$store.data.categories[categoryIndex].starCount = this.$store.data.categories[categoryIndex].starCount - 1;
-                var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
-                this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount - 1;
+      const isStarred = event.currentTarget.className.indexOf("starred") >= 0;
+      const updateType = isStarred ? "unmark" : "mark";
+      const delta = isStarred ? -1 : 1;
+      const newStarInd = isStarred ? 0 : 1;
 
-                //also decrease star count
-                this.$store.data.decreaseStarCount();
-              },
-              response => {
-                /* eslint-disable no-console */
-                console.log("oops something went wrong", response);
-                /* eslint-enable no-console */
-              }
+      axios
+        .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markwithstar/" + articleId, { update: updateType })
+        .then(
+          response => {
+            const categoryIndex = this.$store.data.categories.findIndex(
+              category => category.id === response.data.feed.categoryId
             );
-        } else {
-          //make ajax request to change bookmark status
-          axios
-            .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markwithstar/" + articleId, { update: "mark" })
-            .then(
-              response => {
-                //increase the star count
-                var categoryIndex = this.$store.data.categories.findIndex(
-                  category => category.id === response.data.feed.categoryId
-                );
-                this.$store.data.categories[categoryIndex].starCount = this.$store.data.categories[categoryIndex].starCount + 1;
-                var feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(feed => feed.id === response.data.feedId);
-                this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount = this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount + 1;
 
-                //also increase star count
-                this.$store.data.increaseStarCount();
-              },
-              response => {
-                /* eslint-disable no-console */
-                console.log("oops something went wrong", response);
-                /* eslint-enable no-console */
+            if (categoryIndex >= 0) {
+              this.$store.data.categories[categoryIndex].starCount += delta;
+
+              const feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(
+                feed => feed.id === response.data.feedId
+              );
+
+              if (feedIndex >= 0) {
+                this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount += delta;
               }
-            );
-        }
-        //toggle div element class
-        event.currentTarget.classList.toggle('starred');
-      }
+            }
+
+            if (delta > 0) {
+              this.$store.data.increaseStarCount();
+            } else {
+              this.$store.data.decreaseStarCount();
+            }
+
+            // notify parent to update star indicator
+            this.$emit('update-star', { id: articleId, starInd: newStarInd });
+          },
+          response => {
+            /* eslint-disable no-console */
+            console.log("oops something went wrong", response);
+            /* eslint-enable no-console */
+          }
+        );
     },
     selectTag(tag) {
       const name = tag && tag.name ? tag.name : '';
