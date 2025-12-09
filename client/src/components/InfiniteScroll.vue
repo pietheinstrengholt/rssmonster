@@ -6,6 +6,7 @@
         v-bind="article"
         :key="article.id"
         @update-star="forwardUpdateStar"
+        @update-clicked="forwardUpdateClicked"
       />
     </div>
     <div id="no-more" v-if="hasLoadedContent">
@@ -72,6 +73,9 @@ export default {
     },
     forwardUpdateStar(payload) {
         this.$emit('update-star', payload);
+    },
+    forwardUpdateClicked(payload) {
+      this.$emit('update-clicked', payload);
     }
   }
 }

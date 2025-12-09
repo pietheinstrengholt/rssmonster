@@ -3,6 +3,7 @@
     <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotlinks }" v-on:click="articleTouched(id, $event)">    
       <div class="maximal">
         <h5 class="heading">
+          <BootstrapIcon v-if="clickedInd == 1" icon="bookmark-fill" class="clicked-icon" />
           <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
           <BootstrapIcon v-if="hotlinks" icon="fire" class="hot-icon" />
           <a href="#" v-text="subject" @click.prevent="articleClicked(id, url)"></a>
@@ -116,6 +117,13 @@
   margin-right: 4px;
   vertical-align: middle;
 }
+
+.clicked-icon {
+  color: #2b79c2;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
 
 .hot-icon {
   color: #e36209;
@@ -324,7 +332,7 @@ import moment from "moment";
 import axios from 'axios';
 
 export default {
-  emits: ['update-star'],
+  emits: ['update-star', 'update-clicked'],
   data() {
     return {
       showMinimalContent: false
@@ -333,7 +341,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
+  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
   computed: {
     formatDate: function() {
       return (value)=> {
@@ -440,6 +448,9 @@ export default {
         .catch(error => {
           console.error("Error marking article as clicked:", error);
           window.open(articleUrl, '_blank');
+        })
+        .finally(() => {
+          this.$emit('update-clicked', { id: articleId, clickedInd: 1 });
         });
     }
   }
