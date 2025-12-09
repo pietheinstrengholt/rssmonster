@@ -248,10 +248,6 @@ span.feed_name a {
     color: #fff;
   }
 
-  .block .bookmark {
-    background-image: url("../assets/images/heart_grey.png");
-  }
-
   .block {
     border-bottom-color: #121212;
     background: #424242;
