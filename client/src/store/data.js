@@ -129,8 +129,7 @@ export const useStore = defineStore('data', {
     },
     setSelectedSort(sort) {
       this.currentSelection.sort = sort;
-    }
-    ,
+    },
     setMinAdvertisementScore(value) {
       this.currentSelection.minAdvertisementScore = value;
     },
