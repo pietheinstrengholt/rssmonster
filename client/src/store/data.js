@@ -41,6 +41,7 @@ export const useStore = defineStore('data', {
         this.setHotCount(hotCount);
         this.setClickedCount(clickedCount);
         this.setCategories(categories);
+        this.setChatAssistantOpen(false);
       } else {
         // calculate unreads since last update
         this.setUnreadsSinceLastUpdate(unreadCount - this.unreadCount);
@@ -141,6 +142,9 @@ export const useStore = defineStore('data', {
     },
     setViewMode(value) {
       this.currentSelection.viewMode = value;
+    },
+    setChatAssistantOpen(value) {
+      this.chatAssistantOpen = value;
     }
   },
   getters: {
@@ -200,6 +204,9 @@ export const useStore = defineStore('data', {
     },
     getViewMode: (data) => {
       return data.currentSelection.viewMode;
+    },
+    getChatAssistantOpen: (data) => {
+      return data.chatAssistantOpen;
     }
   }
 });
