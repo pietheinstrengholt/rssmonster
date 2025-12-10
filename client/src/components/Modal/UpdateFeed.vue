@@ -90,77 +90,69 @@ export default {
     },
     methods: {
         async updateFeed() {
-            // get the selected categoryId
-            var selectedCategoryId = this.feed.categoryId;
-            var currentCategoryId = this.selectedFeed.categoryId;
-            var currentIndexCategory = helper.findIndexById(this.$store.data.categories, this.selectedFeed.categoryId);           
-            var currentIndexFeed = helper.findIndexById(this.$store.data.categories[currentIndexCategory].feeds, this.feed.id);
-            var newIndexCategory = helper.findIndexById(this.$store.data.categories, this.feed.categoryId);
+            const selectedCategoryId = this.feed.categoryId;
+            const currentCategoryId = this.selectedFeed.categoryId;
+            const currentIndexCategory = helper.findIndexById(this.$store.data.categories, this.selectedFeed.categoryId);           
+            const currentIndexFeed = helper.findIndexById(this.$store.data.categories[currentIndexCategory].feeds, this.feed.id);
+            const newIndexCategory = helper.findIndexById(this.$store.data.categories, this.feed.categoryId);
 
-            // make the API call to update the feed
-            await axios
-                .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.getSelectedFeedId, {
-                    feedName: this.feed.feedName,
-                    feedDesc: this.feed.feedDesc,
-                    categoryId: selectedCategoryId,
-                    rssUrl: this.feed.rssUrl
-                })
-                .then(
-                //we did change the feed in the backend, but not yet in the frontend. Therefore, we need to manipulate the store with the code below.
-                result => {
-
-                    console.log("Feed successfully updated. This is the new categoryId: ", result.data.feed.categoryId);
-
-                    //check if the feed or category is not found
-                    if (currentIndexFeed == -1 || currentIndexCategory == -1) {
-                        console.log("Manipulating the store failed... Refreshing page.");
-                        //location.reload();
-                    } else {
-                        //update the feed in the store with the results from the api
-                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].feedName = result.data.feed.feedName;
-                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].feedDesc = result.data.feed.feedDesc;
-
-                        //reset error count
-                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].errorCount = 0;
-
-                        //compare the categoryId, if not equal it means that the feed has been moved
-                        if (currentCategoryId != result.data.feed.categoryId) {
-                            console.log("Feed has been moved to another category. Manipulating the store...");
-
-                            //update the categoryId to the new categoryId
-                            this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].categoryId = result.data.feed.categoryId;
-
-                            //duplicate the feed into the new category
-                            this.$store.data.categories[newIndexCategory].feeds.push(this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed]);
-
-                            //decrease the counts for the old category
-                            this.$store.data.categories[currentIndexCategory].unreadCount = this.$store.data.categories[currentIndexCategory].unreadCount - this.feed.unreadCount;
-                            this.$store.data.categories[currentIndexCategory].readCount = this.$store.data.categories[currentIndexCategory].readCount - this.feed.readCount;
-                            this.$store.data.categories[currentIndexCategory].starCount = this.$store.data.categories[currentIndexCategory].starCount - this.feed.starCount; 
-
-                            //increase the counts for the new category
-                            this.$store.data.categories[newIndexCategory].unreadCount = this.$store.data.categories[newIndexCategory].unreadCount + this.feed.unreadCount;
-                            this.$store.data.categories[newIndexCategory].readCount = this.$store.data.categories[newIndexCategory].readCount + this.feed.readCount;
-                            this.$store.data.categories[newIndexCategory].starCount = this.$store.data.categories[newIndexCategory].starCount + this.feed.starCount; 
-
-                            //remove the feed from the store from the old category
-                            this.$store.data.categories[currentIndexCategory].feeds.splice(currentIndexFeed, 1);
-
-                            //update the selectedCategoryId and selectedFeedId in the store
-                            this.$store.data.setSelectedCategoryId(result.data.feed.categoryId);
-                        }
+            try {
+                const result = await axios.put(
+                    `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/${this.$store.data.getSelectedFeedId}`,
+                    {
+                        feedName: this.feed.feedName,
+                        feedDesc: this.feed.feedDesc,
+                        categoryId: selectedCategoryId,
+                        rssUrl: this.feed.rssUrl
                     }
+                );
 
-                    //close the modal
-                    this.$store.data.setShowModal('')
-                },
-                response => {
-                    /* eslint-disable no-console */
-                    console.log("oops something went wrong", response);
-                    /* eslint-enable no-console */
-                    this.$store.data.setShowModal('')
+                // Check if the feed or category is not found
+                if (currentIndexFeed === -1 || currentIndexCategory === -1) {
+                    console.log("Manipulating the store failed... Refreshing page.");
+                    return;
                 }
-            );
+
+                // Update the feed in the store with the results from the API
+                this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].feedName = result.data.feed.feedName;
+                this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].feedDesc = result.data.feed.feedDesc;
+                this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].errorCount = 0;
+
+                // Check if the feed has been moved to another category
+                if (currentCategoryId !== result.data.feed.categoryId) {
+                    console.log("Feed has been moved to another category. Manipulating the store...");
+
+                    // Update the categoryId to the new categoryId
+                    this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].categoryId = result.data.feed.categoryId;
+
+                    // Duplicate the feed into the new category
+                    this.$store.data.categories[newIndexCategory].feeds.push(
+                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed]
+                    );
+
+                    // Decrease the counts for the old category
+                    this.$store.data.categories[currentIndexCategory].unreadCount -= this.feed.unreadCount;
+                    this.$store.data.categories[currentIndexCategory].readCount -= this.feed.readCount;
+                    this.$store.data.categories[currentIndexCategory].starCount -= this.feed.starCount;
+
+                    // Increase the counts for the new category
+                    this.$store.data.categories[newIndexCategory].unreadCount += this.feed.unreadCount;
+                    this.$store.data.categories[newIndexCategory].readCount += this.feed.readCount;
+                    this.$store.data.categories[newIndexCategory].starCount += this.feed.starCount;
+
+                    // Remove the feed from the old category
+                    this.$store.data.categories[currentIndexCategory].feeds.splice(currentIndexFeed, 1);
+
+                    // Update the selectedCategoryId in the store
+                    this.$store.data.setSelectedCategoryId(result.data.feed.categoryId);
+                }
+
+                // Close the modal
+                this.$store.data.setShowModal('');
+            } catch (error) {
+                console.log("oops something went wrong", error);
+                this.$store.data.setShowModal('');
+            }
         }
     },
     computed: {
