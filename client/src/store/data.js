@@ -116,11 +116,11 @@ export const useStore = defineStore('data', {
       this.currentSelection.tag = null;
     },
     setSelectedCategoryId(categoryId) {
-      this.currentSelection.categoryId = categoryId;
+      this.currentSelection.categoryId = String(categoryId);
       this.currentSelection.tag = null;
     },
     setSelectedFeedId(feedId) {
-      this.currentSelection.feedId = feedId;
+      this.currentSelection.feedId = String(feedId);
       this.currentSelection.tag = null;
     },
     setSelectedSearch(search) {

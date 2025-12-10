@@ -90,57 +90,64 @@ export default {
     },
     methods: {
         async updateFeed() {
-            //find indexes of the category and feed
-            var indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.getSelectedCategoryId);
-            var indexFeed = helper.findIndexById(this.$store.data.categories[indexCategory].feeds, this.$store.data.getSelectedFeedId);
+            // get the selected categoryId
+            var selectedCategoryId = this.feed.categoryId;
+            var currentCategoryId = this.selectedFeed.categoryId;
+            var currentIndexCategory = helper.findIndexById(this.$store.data.categories, this.selectedFeed.categoryId);           
+            var currentIndexFeed = helper.findIndexById(this.$store.data.categories[currentIndexCategory].feeds, this.feed.id);
+            var newIndexCategory = helper.findIndexById(this.$store.data.categories, this.feed.categoryId);
 
-            //rename feed
-            axios
+            // make the API call to update the feed
+            await axios
                 .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.getSelectedFeedId, {
                     feedName: this.feed.feedName,
                     feedDesc: this.feed.feedDesc,
-                    categoryId: this.feed.categoryId,
+                    categoryId: selectedCategoryId,
                     rssUrl: this.feed.rssUrl
                 })
                 .then(
                 //we did change the feed in the backend, but not yet in the frontend. Therefore, we need to manipulate the store with the code below.
                 result => {
 
+                    console.log("Feed successfully updated. This is the new categoryId: ", result.data.feed.categoryId);
+
                     //check if the feed or category is not found
-                    if (indexFeed == -1 || indexCategory == -1) {
+                    if (currentIndexFeed == -1 || currentIndexCategory == -1) {
                         console.log("Manipulating the store failed... Refreshing page.");
-                        location.reload();
+                        //location.reload();
                     } else {
                         //update the feed in the store with the results from the api
-                        this.$store.data.categories[indexCategory].feeds[indexFeed].feedName = result.data.feedName;
-                        this.$store.data.categories[indexCategory].feeds[indexFeed].feedDesc = result.data.feedDesc;
+                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].feedName = result.data.feed.feedName;
+                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].feedDesc = result.data.feed.feedDesc;
 
                         //reset error count
-                        this.$store.data.categories[indexCategory].feeds[indexFeed].errorCount = 0;
+                        this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].errorCount = 0;
 
                         //compare the categoryId, if not equal it means that the feed has been moved
-                        if (this.feed.categoryId != result.data.categoryId) {
-                            //update the categoryId to the new categoryId
-                            this.$store.data.categories[indexCategory].feeds[indexFeed].categoryId = result.data.categoryId;
+                        if (currentCategoryId != result.data.feed.categoryId) {
+                            console.log("Feed has been moved to another category. Manipulating the store...");
 
-                            //lookup the new categoryIndex
-                            var indexCategoryNew = helper.findIndexById(this.$store.data.categories, result.data.categoryId);
+                            //update the categoryId to the new categoryId
+                            this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed].categoryId = result.data.feed.categoryId;
 
                             //duplicate the feed into the new category
-                            this.$store.data.categories[indexCategoryNew].feeds.push(this.$store.data.categories[indexCategory].feeds[indexFeed]);
+                            this.$store.data.categories[newIndexCategory].feeds.push(this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed]);
 
                             //decrease the counts for the old category
-                            this.$store.data.categories[indexCategory].unreadCount = this.$store.data.categories[indexCategory].unreadCount - this.feed.unreadCount;
-                            this.$store.data.categories[indexCategory].readCount = this.$store.data.categories[indexCategory].readCount - this.feed.readCount;
-                            this.$store.data.categories[indexCategory].starCount = this.$store.data.categories[indexCategory].starCount - this.feed.starCount; 
+                            this.$store.data.categories[currentIndexCategory].unreadCount = this.$store.data.categories[currentIndexCategory].unreadCount - this.feed.unreadCount;
+                            this.$store.data.categories[currentIndexCategory].readCount = this.$store.data.categories[currentIndexCategory].readCount - this.feed.readCount;
+                            this.$store.data.categories[currentIndexCategory].starCount = this.$store.data.categories[currentIndexCategory].starCount - this.feed.starCount; 
 
                             //increase the counts for the new category
-                            this.$store.data.categories[indexCategoryNew].unreadCount = this.$store.data.categories[indexCategoryNew].unreadCount + this.feed.unreadCount;
-                            this.$store.data.categories[indexCategoryNew].readCount = this.$store.data.categories[indexCategoryNew].readCount + this.feed.readCount;
-                            this.$store.data.categories[indexCategoryNew].starCount = this.$store.data.categories[indexCategoryNew].starCount + this.feed.starCount; 
+                            this.$store.data.categories[newIndexCategory].unreadCount = this.$store.data.categories[newIndexCategory].unreadCount + this.feed.unreadCount;
+                            this.$store.data.categories[newIndexCategory].readCount = this.$store.data.categories[newIndexCategory].readCount + this.feed.readCount;
+                            this.$store.data.categories[newIndexCategory].starCount = this.$store.data.categories[newIndexCategory].starCount + this.feed.starCount; 
 
                             //remove the feed from the store from the old category
-                            this.$store.data.categories[indexCategory].feeds = this.arrayRemove(this.$store.data.categories[indexCategory].feeds,this.feed);
+                            this.$store.data.categories[currentIndexCategory].feeds.splice(currentIndexFeed, 1);
+
+                            //update the selectedCategoryId and selectedFeedId in the store
+                            this.$store.data.setSelectedCategoryId(result.data.feed.categoryId);
                         }
                     }
 
