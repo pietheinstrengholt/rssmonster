@@ -113,7 +113,7 @@
 }
 
 .star-icon {
-  color: #dc3545;
+  color: #DB2B39;
   margin-right: 4px;
   vertical-align: middle;
 }
@@ -126,7 +126,7 @@
 
 
 .hot-icon {
-  color: #e36209;
+  color: #F3A712;
   margin-right: 4px;
   vertical-align: middle;
 }

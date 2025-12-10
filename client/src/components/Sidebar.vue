@@ -268,7 +268,7 @@
 }
 
 #unreadsSinceLastUpdate.sidebar-category-top {
-	background-color: #536f5b;
+	background-color: #DB2B39;
 }
 
 .sidebar-category-feed,
