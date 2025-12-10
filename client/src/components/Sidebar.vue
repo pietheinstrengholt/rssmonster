@@ -157,7 +157,7 @@
         <div class="category-options">
           <div id="add" class="category-button" @click="$store.data.setShowModal('NewCategory')">
             <div>
-              <BootstrapIcon icon="plus-square-fill" color="3b4651" />
+              <BootstrapIcon icon="plus-circle-fill" color="3b4651" />
               <div class="text">Add</div>
             </div>
           </div>
@@ -234,7 +234,7 @@
   float: right;
   color: #fff;
   background-color: transparent;
-  margin-top: 2px;
+  margin-top: 3px;
 }
 
 .glyphicon {
