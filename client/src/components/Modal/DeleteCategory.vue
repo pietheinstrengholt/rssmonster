@@ -38,6 +38,7 @@
 
 <script>
 import axios from 'axios';
+import helper from '../../services/helper.js';
 export default {
     name: 'DeleteCategory',
     created: function() {
@@ -49,39 +50,25 @@ export default {
             await axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.currentSelection.categoryId).then(
                 () => {
                     //remove the category from the store
-                    this.$store.data.categories = this.arrayRemove(this.$store.data.categories, this.findArrayById(this.$store.data.categories, this.$store.data.currentSelection.categoryId));
+                                        this.$store.data.categories = helper.arrayRemove(
+                                            this.$store.data.categories,
+                                            helper.findArrayById(this.$store.data.categories, this.$store.data.currentSelection.categoryId)
+                                        );
 
                     //close the modal
                     this.$store.data.setShowModal('');
                     
                     //set the selection back to all
-                    this.$store.data.currentSelection.categoryId = "%";
-                    this.$store.data.currentSelection.feedId = "%";
+                    this.$store.data.setSelectedCategoryId("%");
+                    this.$store.data.setSelectedFeedId("%");
                 },
                 response => {
                     /* eslint-disable no-console */
                     console.log("oops something went wrong", response);
                     /* eslint-enable no-console */
-                    //this.$store.data.setShowModal('')
+                    this.$store.data.setShowModal('');
                 }
             );
-        },
-        arrayRemove(arr, value) {
-            //filter function to remove item from an array
-            return arr.filter(function(ele) {
-                return ele != value;
-            });
-        },
-        // This function finds the array by searching on its id
-        findArrayById: function(array, id) {
-            var index = -1
-            for(var i = 0; i < array.length; i++) {
-                if(array[i].id == id) {
-                    index = i;
-                    break;
-                }
-            }
-            return array[index];
         }
     }
 }

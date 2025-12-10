@@ -173,7 +173,7 @@ export default {
             this.$store.data.increaseRefreshCategories();
 
             //close modal
-            this.$store.data.setShowModal('')
+            this.$store.data.setShowModal('');
         }
     }
 }

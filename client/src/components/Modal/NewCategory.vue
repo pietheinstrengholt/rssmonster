@@ -71,13 +71,13 @@ export default {
                     this.$store.data.categories.push(this.category);
 
                     //close the modal
-                    this.$store.data.setShowModal('')
+                    this.$store.data.setShowModal('');
                 },
                 response => {
                     /* eslint-disable no-console */
                     console.log("oops something went wrong", response);
                     /* eslint-enable no-console */
-                    this.$store.data.setShowModal('')
+                    this.$store.data.setShowModal('');
                 }
                 );
             }

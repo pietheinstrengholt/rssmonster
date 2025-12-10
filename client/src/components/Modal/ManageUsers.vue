@@ -128,6 +128,10 @@
     margin-bottom: 20px;
     color: red;
 }
+
+select#role {
+    margin-left: 20px;
+}
 </style>
 
 <script>

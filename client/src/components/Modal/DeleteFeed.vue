@@ -49,10 +49,10 @@ export default {
             console.log("Deleting feed with id: " + this.$store.data.currentSelection.feedId);
 
             //delete category
-            axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
+            await axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
                 () => {
                 //find the index of both the category and feed
-                var indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
+                const indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
 
                 //find the feed using the indexCategory
                 this.inputFeed = helper.findArrayById(this.$store.data.categories[indexCategory].feeds, this.$store.data.currentSelection.feedId);
@@ -64,7 +64,7 @@ export default {
                 );
 
                 //set the feed selection back to all
-                this.$store.data.currentSelection.feedId = "%";
+                this.$store.data.setSelectedFeedId("%");
 
                 //close the modal
                 this.$store.data.setShowModal('');
