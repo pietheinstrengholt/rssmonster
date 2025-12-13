@@ -13,7 +13,6 @@ const getArticles = async (req, res, next) => {
     const feedId = req.query.feedId || "%";
     const status = req.query.status || "unread";
     const sort = req.query.sort || "DESC";
-    const tag = (req.query.tag || "").trim();
     const minAdvertisementScore = req.query.minAdvertisementScore != null ? parseInt(req.query.minAdvertisementScore) : 100;
     const minSentimentScore = req.query.minSentimentScore != null ? parseInt(req.query.minSentimentScore) : 100;
     const minQualityScore = req.query.minQualityScore != null ? parseInt(req.query.minQualityScore) : 100;
@@ -24,6 +23,7 @@ const getArticles = async (req, res, next) => {
     let starFilter = null; // overrides status when set
     let unreadFilter = null; // overrides status when set
     let clickedFilter = null; // explicit clicked filter
+    let tagFilter = null; // extracted from search
 
     // Split on whitespace or commas to tolerate inputs like "star:false unread:true" or "star:false, unread:true"
     const tokens = rawSearch === "%" ? [] : rawSearch.split(/[\s,]+/).filter(Boolean);
@@ -36,6 +36,8 @@ const getArticles = async (req, res, next) => {
       const starMatch = cleaned.match(/^star:(true|false)$/i);
       const unreadMatch = cleaned.match(/^unread:(true|false)$/i);
       const clickedMatch = cleaned.match(/^clicked:(true|false)$/i);
+      const tagMatch = cleaned.match(/^tag:(.+)$/i);
+      
       if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
         console.log(`Star filter applied via search token: ${starFilter}`);
@@ -45,15 +47,23 @@ const getArticles = async (req, res, next) => {
       } else if (clickedMatch) {
         clickedFilter = clickedMatch[1].toLowerCase() === 'true';
         console.log(`Clicked filter applied via search token: ${clickedFilter}`);
+      } else if (tagMatch) {
+        tagFilter = tagMatch[1].trim();
+        console.log(`Tag filter applied via search token: ${tagFilter}`);
       } else {
         remainingTokens.push(cleaned);
       }
     });
 
-    // Build LIKE search; if only star filter provided, fall back to wildcard
+    // Build LIKE search; if only filters provided, fall back to wildcard
     const search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
 
-    // If tag is provided, short-circuit and return articles by tag only
+    // Determine final tag value: use tagFilter from search if provided, otherwise use query param
+    let tag = tagFilter !== null ? tagFilter : (req.query.tag || "").trim();
+    console.log(`Final tag value: "${tag}"`);
+
+    // Extract tagged article IDs if tag is provided
+    let taggedArticleIds = null;
     if (tag) {
       try {
         // Find all tag rows for this user and tag name
@@ -63,31 +73,16 @@ const getArticles = async (req, res, next) => {
         });
 
         // Extract article IDs from tag rows
-        const taggedArticleIds = tagRows.map(t => t.articleId);
+        taggedArticleIds = tagRows.map(t => t.articleId);
+        console.log(`Found ${taggedArticleIds.length} articles with tag "${tag}" for user ${userId}`);
 
-        // If no articles found for this tag, return empty result
+        // If tag was provided but no articles found, return empty result
         if (taggedArticleIds.length === 0) {
           return res.status(200).json({
             query: [{ userId: userId, tag: tag, sort: sort }],
             itemIds: []
           });
         }
-
-        // Order by published to be consistent with other flows
-        const taggedArticles = await Article.findAll({
-          attributes: ["id"],
-          where: { userId: userId, id: taggedArticleIds },
-          order: [["published", sort]]
-        });
-
-        // Extract article IDs in order
-        const itemIds = taggedArticles.map(a => a.id);
-
-        // Return the result
-        return res.status(200).json({
-          query: [{ userId: userId, tag: tag, sort: sort }],
-          itemIds: itemIds
-        });
       } catch (err) {
         console.error("Error fetching articles by tag:", err);
         return res.status(500).json({ error: err.message });
@@ -125,6 +120,11 @@ const getArticles = async (req, res, next) => {
       sentimentScore: { [Op.lte]: minSentimentScore },
       qualityScore: { [Op.lte]: minQualityScore }
     };
+
+    // If tag filter is active and has results, restrict to tagged article IDs
+    if (taggedArticleIds !== null && taggedArticleIds.length > 0) {
+      baseWhere.id = taggedArticleIds;
+    }
 
     // Build query based on status
     let articleQuery = {
