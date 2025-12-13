@@ -19,9 +19,39 @@ const getArticles = async (req, res, next) => {
     const minQualityScore = req.query.minQualityScore != null ? parseInt(req.query.minQualityScore) : 100;
     const viewMode = req.query.viewMode || "full";
     
-    // Set default values for search
-    let search = req.query.search || "%";
-    if (search !== "%") search = `%${search}%`;
+    // Parse search query and extract field filters like star:true|false
+    const rawSearch = (req.query.search || "").trim();
+    let starFilter = null; // overrides status when set
+    let unreadFilter = null; // overrides status when set
+    let clickedFilter = null; // explicit clicked filter
+
+    // Split on whitespace or commas to tolerate inputs like "star:false unread:true" or "star:false, unread:true"
+    const tokens = rawSearch === "%" ? [] : rawSearch.split(/[\s,]+/).filter(Boolean);
+    const remainingTokens = [];
+
+    tokens.forEach(tok => {
+      // Allow trailing punctuation (comma/semicolon/period)
+      const cleaned = tok.replace(/[.,;]+$/, "");
+
+      const starMatch = cleaned.match(/^star:(true|false)$/i);
+      const unreadMatch = cleaned.match(/^unread:(true|false)$/i);
+      const clickedMatch = cleaned.match(/^clicked:(true|false)$/i);
+      if (starMatch) {
+        starFilter = starMatch[1].toLowerCase() === 'true';
+        console.log(`Star filter applied via search token: ${starFilter}`);
+      } else if (unreadMatch) {
+        unreadFilter = unreadMatch[1].toLowerCase() === 'true';
+        console.log(`Unread filter applied via search token: ${unreadFilter}`);
+      } else if (clickedMatch) {
+        clickedFilter = clickedMatch[1].toLowerCase() === 'true';
+        console.log(`Clicked filter applied via search token: ${clickedFilter}`);
+      } else {
+        remainingTokens.push(cleaned);
+      }
+    });
+
+    // Build LIKE search; if only star filter provided, fall back to wildcard
+    const search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
 
     // If tag is provided, short-circuit and return articles by tag only
     if (tag) {
@@ -101,16 +131,31 @@ const getArticles = async (req, res, next) => {
       where: baseWhere
     };
 
-    // Modify query based on special status values
-    if (status === "star") {
-      articleQuery.where.starInd = 1;
-    } else if (status === "hot") {
-      delete articleQuery.where.feedId; // Hot articles ignore feedId
-      articleQuery.where.url = cache.all();
-    } else if (status === "clicked") {
-      articleQuery.where.clickedInd = 1;
-    } else {
-      articleQuery.where.status = status;
+    // Apply field filters; they override status when present
+    if (starFilter !== null) {
+      articleQuery.where.starInd = starFilter ? 1 : 0;
+    }
+
+    if (unreadFilter !== null) {
+      articleQuery.where.status = unreadFilter ? "unread" : "read";
+    }
+
+    if (clickedFilter !== null) {
+      articleQuery.where.clickedInd = clickedFilter ? 1 : 0;
+    }
+
+    // If no overriding filters, use status-driven logic
+    if (starFilter === null && unreadFilter === null && clickedFilter === null) {
+      if (status === "star") {
+        articleQuery.where.starInd = 1;
+      } else if (status === "hot") {
+        delete articleQuery.where.feedId; // Hot articles ignore feedId
+        articleQuery.where.url = cache.all();
+      } else if (status === "clicked") {
+        articleQuery.where.clickedInd = 1;
+      } else {
+        articleQuery.where.status = status;
+      }
     }
 
     // Fetch articles based on constructed query
