@@ -91,6 +91,7 @@
                                     <option value="delete">Delete article</option>
                                     <option value="star">Set starred</option>
                                     <option value="read">Mark as read</option>
+                                    <option value="clicked">Mark as clicked</option>
                                     <option value="advertisement">Mark as advertisement</option>
                                     <option value="badquality">Mark as low quality</option>
                                 </select>

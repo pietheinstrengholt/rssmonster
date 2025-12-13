@@ -206,6 +206,7 @@ const processArticle = async (feed, post) => {
           let starInd = 0;
           let shouldDelete = false;
           let statusToSet = 'unread';
+          let clickedInd = 0;
           if (actions && actions.length > 0) {
             for (const action of actions) {
               // Check delete actions first - they take precedence over all other actions
@@ -271,6 +272,18 @@ const processArticle = async (feed, post) => {
                   console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
                 }
               }
+              // Clicked action: marks article as clicked/read-later indicator
+              else if (action.actionType === 'clicked' && action.regularExpression) {
+                try {
+                  const regex = new RegExp(action.regularExpression);
+                  if (regex.test(postContentStripped)) {
+                    clickedInd = 1;
+                    console.log(`Clicked action "${action.name}" matched article "${post.title}". Setting clickedInd to 1.`);
+                  }
+                } catch (regexErr) {
+                  console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
+                }
+              }
             }
           }
 
@@ -285,6 +298,7 @@ const processArticle = async (feed, post) => {
             feedId: feed.id,
             status: statusToSet,
             starInd: starInd,
+            clickedInd: clickedInd,
             url: post.url,
             image_url: "",
             subject: post.title || 'No title',
