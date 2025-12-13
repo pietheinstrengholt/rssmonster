@@ -58,6 +58,71 @@
                         Upload OPML
                     </button>
                 </div>
+
+                <div class="settings-group">
+                    <label>
+                        Actions
+                        <span class="info-icon" :title="'Define automated actions based on article content patterns'">
+                            <BootstrapIcon icon="info-circle-fill" />
+                        </span>
+                    </label>
+                    
+                    <div v-for="(action, index) in actions" :key="index" class="action-row">
+                        <div class="action-fields">
+                            <div class="form-group">
+                                <label :for="'action-name-' + index" class="small-label">Name</label>
+                                <input 
+                                    :id="'action-name-' + index"
+                                    v-model="action.name" 
+                                    type="text" 
+                                    class="form-control" 
+                                    placeholder="Action name"
+                                />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label :for="'action-type-' + index" class="small-label">Type</label>
+                                <select 
+                                    :id="'action-type-' + index"
+                                    v-model="action.actionType" 
+                                    class="form-select"
+                                >
+                                    <option value="">Select action type</option>
+                                    <option value="delete">Delete article</option>
+                                    <option value="star">Set starred</option>
+                                    <option value="read">Mark as read</option>
+                                    <option value="advertisement">Mark as advertisement</option>
+                                    <option value="badquality">Mark as low quality</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label :for="'action-regex-' + index" class="small-label">Regular Expression</label>
+                                <input 
+                                    :id="'action-regex-' + index"
+                                    v-model="action.regularExpression" 
+                                    type="text" 
+                                    class="form-control" 
+                                    placeholder="e.g., /keyword|phrase/i"
+                                />
+                            </div>
+                            
+                            <button 
+                                type="button" 
+                                class="btn btn-remove" 
+                                @click="removeAction(index)"
+                                :title="'Remove action'"
+                            >
+                                <BootstrapIcon icon="trash-fill" />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-add" @click="addAction">
+                        <BootstrapIcon icon="plus-circle-fill" />
+                        Add Action
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings">Save</button>
@@ -205,6 +270,77 @@
     background-color: #0056b3;
 }
 
+.action-row {
+    margin-bottom: 15px;
+    padding: 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    background-color: #f8f9fa;
+}
+
+.action-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.form-group {
+    display: flex;
+    flex-direction: column;
+}
+
+.form-group-full {
+    grid-column: 1 / -1;
+}
+
+.small-label {
+    font-size: 12px;
+    font-weight: 500;
+    margin-bottom: 4px;
+    color: #555;
+}
+
+.form-control {
+    width: 100%;
+    padding: 6px 10px;
+    border: 1px solid #dcdee0;
+    border-radius: 4px;
+    font-size: 14px;
+    background-color: #fff;
+}
+
+.form-control:focus {
+    outline: none;
+    border-color: #2c5aa0;
+    box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1);
+}
+
+.btn-remove {
+    background-color: #dc3545;
+    color: #fff;
+    padding: 6px 10px;
+    height: fit-content;
+    align-self: end;
+    width: 54px;
+}
+
+.btn-remove:hover {
+    background-color: #c82333;
+}
+
+.btn-add {
+    background-color: #28a745;
+    color: #fff;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-add:hover {
+    background-color: #218838;
+}
+
 @media (prefers-color-scheme: dark) {
     .modal-content {
         background: #2a2a2a;
@@ -223,6 +359,26 @@
     }
 
     .form-select:focus {
+        border-color: #4a7fc7;
+        box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
+    }
+
+    .action-row {
+        background-color: #3a3a3a;
+        border-color: #555;
+    }
+
+    .small-label {
+        color: #ccc;
+    }
+
+    .form-control {
+        background-color: #3a3a3a;
+        color: #fff;
+        border-color: #555;
+    }
+
+    .form-control:focus {
         border-color: #4a7fc7;
         box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
     }
@@ -247,17 +403,57 @@ export default {
         if (typeof sel.minQualityScore !== 'undefined') {
             this.qualityScore = sel.minQualityScore;
         }
+        // Fetch existing actions for this user
+        this.fetchActions();
     },
     data() {
         return {
             advertisementScore: 100,
             sentimentScore: 100,
             qualityScore: 100,
-            scoreOptions: [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
+            scoreOptions: [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0],
+            actions: []
         };
     },
     methods: {
+        async fetchActions() {
+            try {
+                const resp = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/actions");
+                if (resp && resp.data && Array.isArray(resp.data.actions)) {
+                    this.actions = resp.data.actions.map(a => ({
+                        name: a.name || '',
+                        actionType: a.actionType || '',
+                        regularExpression: a.regularExpression || ''
+                    }));
+                }
+            } catch (err) {
+                console.error('Failed to fetch actions:', err);
+            }
+        },
+        addAction() {
+            this.actions.push({
+                name: '',
+                actionType: '',
+                regularExpression: ''
+            });
+        },
+        removeAction(index) {
+            this.actions.splice(index, 1);
+        },
         saveSettings() {
+            // Persist actions to the server
+            const filteredActions = this.actions.filter(a => a && a.actionType && a.actionType.trim() !== '');
+            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/actions", {
+                actions: filteredActions
+            })
+            .then(resp => {
+                console.log('Actions saved:', resp.data);
+            })
+            .catch(err => {
+                console.error('Error saving actions:', err);
+                alert('Failed to save actions. Please try again.');
+            });
+
             axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting", {
                 minAdvertisementScore: this.advertisementScore,
                 minSentimentScore: this.sentimentScore,

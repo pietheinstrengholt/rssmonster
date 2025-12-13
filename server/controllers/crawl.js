@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 import Tag from "../models/tag.js";
+import Action from "../models/action.js";
 
 import discoverRssLink from "../util/discoverRssLink.js";
 import parseFeed from "../util/parser.js";
@@ -181,8 +182,10 @@ const processArticle = async (feed, post) => {
             qualityScore: 50,
           };
 
+          // Only analyze content if OpenAI API key and model are configured
           if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
             try {
+              // Analyze content using OpenAI API
               analysis = await analyzeContent(postContentStripped);
               console.log(`Analysis for "${post.title || 'No title'}":`);
               console.log(`  Summary: ${analysis.summary.substring(0, 120)}...`);
@@ -193,12 +196,95 @@ const processArticle = async (feed, post) => {
             }
           }
 
+          // Retrieve actions for applying rules to the article
+          const actions = await Action.findAll({
+            where: { userId: feed.userId }
+          });
+
+          // Apply each action to the article
+          // Actions allow users to automatically modify article properties based on regex patterns
+          let starInd = 0;
+          let shouldDelete = false;
+          let statusToSet = 'unread';
+          if (actions && actions.length > 0) {
+            for (const action of actions) {
+              // Check delete actions first - they take precedence over all other actions
+              // If a delete action matches, the article won't be created at all
+              if (action.actionType === 'delete' && action.regularExpression) {
+                try {
+                  const regex = new RegExp(action.regularExpression);
+                  if (regex.test(postContentStripped)) {
+                    shouldDelete = true;
+                    console.log(`Delete action "${action.name}" matched article "${post.title}". Skipping article creation.`);
+                    break; // Stop processing once we find a matching delete action
+                  }
+                } catch (regexErr) {
+                  console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
+                }
+              } 
+              // Read action: marks article as read instead of unread
+              else if (action.actionType === 'read' && action.regularExpression) {
+                try {
+                  const regex = new RegExp(action.regularExpression);
+                  if (regex.test(postContentStripped)) {
+                    statusToSet = 'read';
+                    console.log(`Read action "${action.name}" matched article "${post.title}". Setting status to read.`);
+                  }
+                } catch (regexErr) {
+                  console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
+                }
+              } 
+              // Advertisement action: marks article as advertisement (high ad score)
+              else if (action.actionType === 'advertisement' && action.regularExpression) {
+                try {
+                  const regex = new RegExp(action.regularExpression);
+                  if (regex.test(postContentStripped)) {
+                    analysis.advertisementScore = 100;
+                    console.log(`Advertisement action "${action.name}" matched article "${post.title}". Setting advertisementScore to 100.`);
+                  }
+                } catch (regexErr) {
+                  console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
+                }
+              } 
+              // Bad quality action: marks article as low quality
+              else if (action.actionType === 'badquality' && action.regularExpression) {
+                try {
+                  const regex = new RegExp(action.regularExpression);
+                  if (regex.test(postContentStripped)) {
+                    analysis.qualityScore = 100;
+                    console.log(`Bad quality action "${action.name}" matched article "${post.title}". Setting qualityScore to 100.`);
+                  }
+                } catch (regexErr) {
+                  console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
+                }
+              } 
+              // Star action: marks article as starred/important
+              else if (action.actionType === 'star' && action.regularExpression) {
+                try {
+                  // Test the regex against the article content (stripped version)
+                  const regex = new RegExp(action.regularExpression);
+                  if (regex.test(postContentStripped)) {
+                    starInd = 1;
+                    console.log(`Action "${action.name}" matched article "${post.title}". Setting starInd to 1.`);
+                  }
+                } catch (regexErr) {
+                  console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
+                }
+              }
+            }
+          }
+
+          // Skip article creation if delete action matched
+          if (shouldDelete) {
+            return;
+          }
+
           // Create article with analysis results
           const createdArticle = await Article.create({
             userId: feed.userId,
             feedId: feed.id,
-            status: "unread",
-            star_ind: 0,
+            status: statusToSet,
+            starInd: starInd,
             url: post.url,
             image_url: "",
             subject: post.title || 'No title',
