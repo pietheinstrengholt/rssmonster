@@ -25,6 +25,7 @@ import mcpRoutes from "./routes/mcp.js";
 import agentRoutes from "./routes/agent.js";
 import opmlRoutes from "./routes/opml.js";
 import actionRoutes from "./routes/action.js";
+import rssRoutes from "./routes/rss.js";
 
 //controller
 import errorController from "./controllers/error.js";
@@ -76,6 +77,7 @@ app.use("/mcp", mcpRoutes);
 app.use("/agent", agentRoutes);
 app.use("/api/opml", opmlRoutes);
 app.use("/api/actions", actionRoutes);
+app.use("/rss", rssRoutes);
 app.use(errorController.get404);
 
 //define relationships
