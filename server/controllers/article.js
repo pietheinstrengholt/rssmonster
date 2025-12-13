@@ -117,8 +117,10 @@ const getArticles = async (req, res, next) => {
     const baseWhere = {
       userId: userId,
       feedId: feedIds,
-      subject: { [Op.like]: search },
-      content: { [Op.like]: search },
+      [Op.or]: [
+        { subject: { [Op.like]: search } },
+        { content: { [Op.like]: search } }
+      ],
       advertisementScore: { [Op.lte]: minAdvertisementScore },
       sentimentScore: { [Op.lte]: minSentimentScore },
       qualityScore: { [Op.lte]: minQualityScore }
