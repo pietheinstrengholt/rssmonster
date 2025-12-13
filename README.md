@@ -18,7 +18,9 @@ RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google R
 - **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
 - **Drag & Drop Management**: Intuitive feed organization and categorization
 - **Dark Mode**: Easy on the eyes with automatic or manual dark theme switching
+- **OPML Support**: Import and export feeds in OPML format for seamless migration
 - **Fever API Compatible**: Works with popular RSS clients like Reeder (iOS)
+- **Automated Actions**: Define custom rules using regular expressions to automatically delete, star, mark as read, flag as advertisement, or mark articles as low quality
 - **Multi-user Support**: Separate accounts with personalized feeds and preferences
 - **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP)
 
