@@ -395,6 +395,7 @@ import axios from 'axios';
 import Cookies from 'js-cookie';
 
 export default {
+  emits: ['forceReload'],
   data() {
     return {
       categoriesOrder: [],
