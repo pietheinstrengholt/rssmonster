@@ -12,7 +12,6 @@ const getArticles = async (req, res, next) => {
     const categoryId = req.query.categoryId || "%";
     const feedId = req.query.feedId || "%";
     const status = req.query.status || "unread";
-    const sort = req.query.sort || "DESC";
     const minAdvertisementScore = req.query.minAdvertisementScore != null ? parseInt(req.query.minAdvertisementScore) : 100;
     const minSentimentScore = req.query.minSentimentScore != null ? parseInt(req.query.minSentimentScore) : 100;
     const minQualityScore = req.query.minQualityScore != null ? parseInt(req.query.minQualityScore) : 100;
@@ -24,6 +23,7 @@ const getArticles = async (req, res, next) => {
     let unreadFilter = null; // overrides status when set
     let clickedFilter = null; // explicit clicked filter
     let tagFilter = null; // extracted from search
+    let sortFilter = null; // extracted from search
 
     // Split on whitespace or commas to tolerate inputs like "star:false unread:true" or "star:false, unread:true"
     const tokens = rawSearch === "%" ? [] : rawSearch.split(/[\s,]+/).filter(Boolean);
@@ -37,6 +37,7 @@ const getArticles = async (req, res, next) => {
       const unreadMatch = cleaned.match(/^unread:(true|false)$/i);
       const clickedMatch = cleaned.match(/^clicked:(true|false)$/i);
       const tagMatch = cleaned.match(/^tag:(.+)$/i);
+      const sortMatch = cleaned.match(/^sort:(DESC|ASC)$/i);
       
       if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
@@ -50,6 +51,9 @@ const getArticles = async (req, res, next) => {
       } else if (tagMatch) {
         tagFilter = tagMatch[1].trim();
         console.log(`Tag filter applied via search token: ${tagFilter}`);
+      } else if (sortMatch) {
+        sortFilter = sortMatch[1].toUpperCase();
+        console.log(`Sort filter applied via search token: ${sortFilter}`);
       } else {
         remainingTokens.push(cleaned);
       }
@@ -57,6 +61,10 @@ const getArticles = async (req, res, next) => {
 
     // Build LIKE search; if only filters provided, fall back to wildcard
     const search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
+
+    // Determine final sort value: use sortFilter from search if provided, otherwise use query param
+    let sort = sortFilter !== null ? sortFilter : (req.query.sort || "DESC");
+    console.log(`Final sort value: "${sort}"`);
 
     // Determine final tag value: use tagFilter from search if provided, otherwise use query param
     let tag = tagFilter !== null ? tagFilter : (req.query.tag || "").trim();

@@ -75,6 +75,13 @@ export default {
           //reset the pool, attach data to container and get first set of article details
           this.resetPool();
           this.container = response.data.itemIds;
+          // Update store with the final sort value determined by server (may come from search filters)
+          if (response.data.query && response.data.query.length > 0) {
+            const sort = response.data.query[0].sort;
+            if (sort) {
+              this.$store.data.setSelectedSort(sort);
+            }
+          }
           //get content if the container is not empty
           if (this.container.length > 0) {
             this.getContent();
