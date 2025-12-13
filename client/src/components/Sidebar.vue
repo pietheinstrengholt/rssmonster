@@ -1,203 +1,200 @@
 <template>
-  <div class="feeds-inner">
-    <div id="monster">
-      <p>RSSMonster</p>
+  <div id="monster">
+    <p>RSSMonster</p>
+  </div>
+  <div class="drag">
+
+    <div class="option" v-if="$store.auth.getRole === 'admin'" @click="$store.data.setShowModal('ManageUsers')" id="manage-users">
+      <span class="glyphicon">
+        <BootstrapIcon icon="people-fill" variant="light" />
+      </span>Manage users
     </div>
-    <div class="drag">
 
-      <div class="option" v-if="$store.auth.getRole === 'admin'" @click="$store.data.setShowModal('ManageUsers')" id="manage-users">
-        <span class="glyphicon">
-          <BootstrapIcon icon="people-fill" variant="light" />
-        </span>Manage users
+    <div @click="refreshFeeds()" class="option" id="refresh">
+      <span class="glyphicon">
+        <BootstrapIcon icon="arrow-down-circle-fill" variant="light" />
+      </span>Refresh feeds
+      <span v-show="refreshing" class="spin">
+        <BootstrapIcon icon="arrow-repeat" variant="light" animation="spin"/>
+      </span>
+    </div>
+
+    <div class="option" @click="$store.data.setShowModal('NewFeed')" id="addnew">
+      <span class="glyphicon">
+        <BootstrapIcon icon="plus-square-fill" variant="light" />
+      </span>Add new feed
+    </div>
+
+    <div @click="markAsRead($store.data.currentSelection)" class="option" id="mark-as-read">
+      <span class="glyphicon">
+        <BootstrapIcon icon="check-square-fill" variant="light" />
+      </span>Mark as read
+    </div>
+
+    <div class="title-box">
+      <p class="title">All feeds</p>
+    </div>
+    <div v-if="($store.data.unreadsSinceLastUpdate !== 0)" v-on:click="loadType('refresh')" id="unreadsSinceLastUpdate" class="category-top">
+      <span class="glyphicon">
+        <BootstrapIcon icon="lightbulb-fill" variant="light" />
+      </span>
+      <span class="title">Click to refresh!</span>
+      <span class="badge-unread">
+        <span class="badge">{{ $store.data.unreadsSinceLastUpdate }}</span>
+      </span>
+    </div>
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="category-top">
+      <span class="glyphicon">
+        <BootstrapIcon icon="record-circle-fill" variant="light" />
+      </span>
+      <span class="title">Unread</span>
+      <span class="badge-unread">
+        <span class="badge">{{ $store.data.unreadCount }}</span>
+      </span>
+    </div>
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="category-top">
+      <span class="glyphicon">
+        <BootstrapIcon icon="heart-fill" variant="light" />
+      </span>
+      <span class="title">Favorites</span>
+      <span class="badge-unread">
+        <span class="badge">{{ $store.data.starCount }}</span>
+      </span>
+    </div>
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="category-top">
+      <span class="glyphicon">
+        <BootstrapIcon icon="fire" variant="light" />
+      </span>
+      <span class="title">Hot</span>
+      <span class="badge-unread">
+        <span class="badge">{{ $store.data.hotCount }}</span>
+      </span>
+    </div>
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'clicked' }" v-on:click="loadType('clicked')" id="clicked" class="category-top">
+      <span class="glyphicon">
+        <BootstrapIcon icon="bookmark-fill" variant="light" />
+      </span>
+      <span class="title">Clicked</span>
+      <span class="badge-unread">
+        <span class="badge">{{ $store.data.clickedCount }}</span>
+      </span>
+    </div>
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="category-top">
+      <span class="glyphicon">
+        <BootstrapIcon icon="check-circle-fill" variant="light" />
+      </span>
+      <span class="title">Read</span>
+      <span class="badge-unread">
+        <span class="badge">{{ $store.data.readCount }}</span>
+      </span>
+    </div>
+
+    <div v-if="$store.data.currentSelection.status != 'hot'">
+
+      <div class="title-box">
+        <p class="title">All</p>
       </div>
-
-      <div @click="refreshFeeds()" class="option" id="refresh">
+      <div v-bind:class="{ 'selected': $store.data.currentSelection.categoryId === '%' }" v-on:click="loadAll()" id="all" class="category-top">
         <span class="glyphicon">
-          <BootstrapIcon icon="arrow-down-circle-fill" variant="light" />
-        </span>Refresh feeds
-        <span v-show="refreshing" class="spin">
-          <BootstrapIcon icon="arrow-repeat" variant="light" animation="spin"/>
+          <BootstrapIcon icon="star-fill" variant="light" />
         </span>
-      </div>
-
-      <div class="option" @click="$store.data.setShowModal('NewFeed')" id="addnew">
-        <span class="glyphicon">
-          <BootstrapIcon icon="plus-square-fill" variant="light" />
-        </span>Add new feed
-      </div>
-
-      <div @click="markAsRead($store.data.currentSelection)" class="option" id="mark-as-read">
-        <span class="glyphicon">
-          <BootstrapIcon icon="check-square-fill" variant="light" />
-        </span>Mark as read
-      </div>
-
-      <div>
-        <p class="title">All feeds</p>
-      </div>
-      <div v-if="($store.data.unreadsSinceLastUpdate !== 0)" v-on:click="loadType('refresh')" id="unreadsSinceLastUpdate" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="lightbulb-fill" variant="light" />
-        </span>
-        <span class="title">Click to refresh!</span>
+        <span class="title">Load all categories</span>
         <span class="badge-unread">
-          <span class="badge">{{ $store.data.unreadsSinceLastUpdate }}</span>
-        </span>
-      </div>
-      <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="record-circle-fill" variant="light" />
-        </span>
-        <span class="title">Unread</span>
-        <span class="badge-unread">
-          <span class="badge">{{ $store.data.unreadCount }}</span>
-        </span>
-      </div>
-      <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="heart-fill" variant="light" />
-        </span>
-        <span class="title">Favorites</span>
-        <span class="badge-unread">
-          <span class="badge">{{ $store.data.starCount }}</span>
-        </span>
-      </div>
-      <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="fire" variant="light" />
-        </span>
-        <span class="title">Hot</span>
-        <span class="badge-unread">
-          <span class="badge">{{ $store.data.hotCount }}</span>
-        </span>
-      </div>
-      <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'clicked' }" v-on:click="loadType('clicked')" id="clicked" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="bookmark-fill" variant="light" />
-        </span>
-        <span class="title">Clicked</span>
-        <span class="badge-unread">
-          <span class="badge">{{ $store.data.clickedCount }}</span>
-        </span>
-      </div>
-      <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="sidebar-category-top">
-        <span class="glyphicon">
-          <BootstrapIcon icon="check-circle-fill" variant="light" />
-        </span>
-        <span class="title">Read</span>
-        <span class="badge-unread">
-          <span class="badge">{{ $store.data.readCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ $store.data.unreadCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
+          <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ $store.data.clickedCount }}</span>
         </span>
       </div>
 
-      <div v-if="$store.data.currentSelection.status != 'hot'">
-
-        <div>
-          <p class="title">All</p>
-        </div>
-        <div v-bind:class="{ 'selected': $store.data.currentSelection.categoryId === '%' }" v-on:click="loadAll()" id="all" class="sidebar-category-top">
-          <span class="glyphicon">
-            <BootstrapIcon icon="star-fill" variant="light" />
-          </span>
-          <span class="title">Load all categories</span>
-          <span class="badge-unread">
-            <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ $store.data.unreadCount }}</span>
-            <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
-            <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
-            <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
-            <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ $store.data.clickedCount }}</span>
-          </span>
-        </div>
-
-        <div>
-          <p class="title">Categories</p>
-        </div>
-        <draggable v-model="this.$store.data.categories" item-key="id" @end="updateSortOrder">
-          <template #item="{element}">
-            <div v-bind:class="{ 'selected': ($store.data.currentSelection.categoryId == element.id) && ($store.data.currentSelection.feedId === '%') }" v-bind:id="element.id" class="sidebar-category-main" v-on:click="loadCategory(element)">
-            <div class="sidebar-category-sub">
-              <span class="glyphicon">
-                <BootstrapIcon icon="folder-fill" variant="light" />
-              </span>
-              <span class="title">{{element.name}}</span>
-              <span class="badge-unread">
-                <span
-                  v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
-                <span
-                  v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
-                <span
-                  v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
-                <span
-                  v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ element.clickedCount }}</span>
-              </span>
-            </div>
-            <div v-if="element.feeds">
-              <div v-if="$store.data.currentSelection.categoryId == element.id" class="sidebar-category-feeds">
-                <div v-for="(feed, index) in element.feeds" v-bind:key="index">
-                  <div class="sidebar-category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
-                    <span class="glyphicon">
-                      <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
-                      <BootstrapIcon v-if="!feed.favicon" icon="rss-fill" variant="light" />
-                    </span>
-                    <span class="title">{{feed.feedName}}</span>
-                    <span class="badge-unread">
-                    <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
-                    <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
-                    <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
-                    <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ feed.clickedCount }}</span>
-                    </span>
-                  </div>
+      <div class="title-box">
+        <p class="title">Categories</p>
+      </div>
+      <draggable v-model="this.$store.data.categories" item-key="id" @end="updateSortOrder">
+        <template #item="{element}">
+          <div v-bind:class="{ 'selected': ($store.data.currentSelection.categoryId == element.id) && ($store.data.currentSelection.feedId === '%') }" v-bind:id="element.id" class="category-main" v-on:click="loadCategory(element)">
+          <div class="category-sub">
+            <span class="glyphicon">
+              <BootstrapIcon icon="folder-fill" variant="light" />
+            </span>
+            <span class="title">{{element.name}}</span>
+            <span class="badge-unread">
+              <span
+                v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
+              <span
+                v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
+              <span
+                v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
+              <span
+                v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ element.clickedCount }}</span>
+            </span>
+          </div>
+          <div v-if="element.feeds">
+            <div v-if="$store.data.currentSelection.categoryId == element.id" class="category-feeds">
+              <div v-for="(feed, index) in element.feeds" v-bind:key="index">
+                <div class="category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
+                  <span class="glyphicon">
+                    <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
+                    <BootstrapIcon v-if="!feed.favicon" icon="rss-fill" variant="light" />
+                  </span>
+                  <span class="title">{{feed.feedName}}</span>
+                  <span class="badge-unread">
+                  <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
+                  <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
+                  <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
+                  <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ feed.clickedCount }}</span>
+                  </span>
                 </div>
               </div>
             </div>
           </div>
-          </template>
-        </draggable>
+        </div>
+        </template>
+      </draggable>
 
-        <div class="category-options">
-          <div id="add" class="category-button" @click="$store.data.setShowModal('NewCategory')">
-            <div>
-              <BootstrapIcon icon="plus-circle-fill" color="3b4651" />
-              <div class="text">Add</div>
-            </div>
+      <div class="sidebar-options">
+        <div id="add" class="sidebar-option" @click="$store.data.setShowModal('NewCategory')">
+          <div>
+            <BootstrapIcon icon="plus-circle-fill" color="3b4651" />
+            <div class="text">Add</div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId === '%') && ($store.data.currentSelection.feedId == '%')">
-            <div id="cleanup" class="category-button" @click="$store.data.setShowModal('Cleanup')">
-              <BootstrapIcon icon="eraser-fill" color="3b4651" />
-              <div class="text">Cleanup</div>
-            </div>
-            <div @click="logout()" id="logout" class="category-button">
-              <BootstrapIcon icon="box-arrow-right" color="3b4651" />
-              <div class="text">Logout</div>
-            </div>
+        </div>
+        <div v-if="($store.data.currentSelection.categoryId === '%') && ($store.data.currentSelection.feedId == '%')">
+          <div id="cleanup" class="sidebar-option" @click="$store.data.setShowModal('Cleanup')">
+            <BootstrapIcon icon="eraser-fill" color="3b4651" />
+            <div class="text">Cleanup</div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="$store.data.setShowModal('DeleteCategory')" id="delete" class="category-button">
-            <div>
-              <BootstrapIcon icon="trash3-fill" color="3b4651" />
-              <div class="text">Delete</div>
-            </div>
+          <div @click="logout()" id="logout" class="sidebar-option">
+            <BootstrapIcon icon="box-arrow-right" color="3b4651" />
+            <div class="text">Logout</div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="$store.data.setShowModal('RenameCategory')" id="rename" class="category-button">
-            <div>
-              <BootstrapIcon icon="pencil-fill" color="3b4651" />
-              <div class="text">Edit</div>
-            </div>
+        </div>
+        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="$store.data.setShowModal('DeleteCategory')" id="delete" class="sidebar-option">
+          <div>
+            <BootstrapIcon icon="trash3-fill" color="3b4651" />
+            <div class="text">Delete</div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="$store.data.setShowModal('DeleteFeed')" id="delete" class="category-button">
-            <div>
-              <BootstrapIcon icon="trash3-fill" color="3b4651" />
-              <div class="text">Delete</div>
-            </div>
+        </div>
+        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="$store.data.setShowModal('RenameCategory')" id="rename" class="sidebar-option">
+          <div>
+            <BootstrapIcon icon="pencil-fill" color="3b4651" />
+            <div class="text">Edit</div>
           </div>
-          <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('UpdateFeed')" id="rename" class="category-button">
-            <div>
-              <BootstrapIcon icon="pencil-fill" color="3b4651" />
-              <div class="text">Edit</div>
-            </div>
+        </div>
+        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="$store.data.setShowModal('DeleteFeed')" id="delete" class="sidebar-option">
+          <div>
+            <BootstrapIcon icon="trash3-fill" color="3b4651" />
+            <div class="text">Delete</div>
+          </div>
+        </div>
+        <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('UpdateFeed')" id="rename" class="sidebar-option">
+          <div>
+            <BootstrapIcon icon="pencil-fill" color="3b4651" />
+            <div class="text">Edit</div>
           </div>
         </div>
       </div>
-
     </div>
   </div>
 </template>
@@ -212,9 +209,9 @@
   min-height: 20px;
 }
 
-.sidebar-category-sub,
-.sidebar-category-feed,
-.sidebar-category-top {
+.category-sub,
+.category-feed,
+.category-top {
   padding: 4px 4px 4px 12px;
 }
 
@@ -258,8 +255,8 @@
   margin-top: -25px;
 }
 
-.sidebar-category-top,
-.sidebar-category-main {
+.category-top,
+.category-main {
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
@@ -267,19 +264,19 @@
   cursor: pointer;
 }
 
-#unreadsSinceLastUpdate.sidebar-category-top {
+#unreadsSinceLastUpdate.category-top {
 	background-color: #DB2B39;
 }
 
-.sidebar-category-feed,
-.sidebar-category-top,
-.sidebar-category-main {
+.category-feed,
+.category-top,
+.category-main {
   background-color: #9f9f9f;
 }
 
-.sidebar-category-top.selected,
-.sidebar-category-main.selected,
-.sidebar-category-feed.selected {
+.category-top.selected,
+.category-main.selected,
+.category-feed.selected {
   background-color: #3b4651;
 }
 
@@ -303,7 +300,7 @@ div.option {
   overflow: hidden;
 }
 
-.sidebar-category-feed.last {
+.category-feed.last {
   border-radius: 0px 0px 4px 4px;
 }
 
@@ -332,14 +329,14 @@ div.option {
   background: rgba(0, 0, 0, 0.5);
 }
 
-.category-options {
+.sidebar-options {
   margin-top: 10px;
   margin-bottom: 20px;
   height: 40px;
   width: 105%;
 }
 
-.category-button {
+.sidebar-option {
   margin-left: 8%;
   height: 44px;
   color: #111;
@@ -350,17 +347,17 @@ div.option {
   cursor: pointer;
 }
 
-.category-button .text {
+.sidebar-option .text {
   font-size: 13px;
 }
 
-.sidebar-category-feed.error,
-.sidebar-category-feed.selected.error {
+.category-feed.error,
+.category-feed.selected.error {
   background-color: #bf7c74;
 }
 
 @media (prefers-color-scheme: dark) {
-  .category-button {
+  .sidebar-option {
     background-color: #464646;
   }
 
@@ -382,11 +379,11 @@ div.option {
   #monster p {
     color: #fff;
   }
-  .category-button {
+  .sidebar-option {
     color: #fff;
     background-color: #2c2c2c;
   }
-  .category-options svg {
+  .sidebar-options svg {
     fill: #fff;
   }
 }
