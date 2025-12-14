@@ -134,6 +134,7 @@ export const useStore = defineStore('data', {
       this.currentSelection.tag = tag;
       this.currentSelection.categoryId = '%';
       this.currentSelection.feedId = '%';
+      this.currentSelection.search = null;
     },
     setMinAdvertisementScore(value) {
       this.currentSelection.minAdvertisementScore = value;

@@ -4,7 +4,7 @@
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
-        <li class="category" v-on:click="$store.data.currentSelection.categoryId = '%'; $store.data.currentSelection.feedId = '%';"
+        <li class="category" @click="selectCategory('%')"
         v-bind:class="{'selected': $store.data.currentSelection.categoryId == '%'}">
           <span class="glyphicon">
             <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
@@ -13,7 +13,7 @@
         </li>
         <li
           class="category"
-          v-on:click="$store.data.currentSelection.categoryId = category.id; $store.data.currentSelection.feedId = '%';"
+          @click="selectCategory(category.id)"
           v-bind:class="{'selected': $store.data.currentSelection.categoryId === category.id}"
           v-for="category in $store.data.categories"
           :key="category.id"
@@ -26,9 +26,9 @@
         </li>
       </ul>
       <p class="content-header">Select how the articles should be displayed</p>
-      <button @click="$store.data.currentSelection.viewMode = 'full'" type="button" class="btn btn-primary content">Full content</button>
-      <button @click="$store.data.currentSelection.viewMode = 'summarized'" type="button" class="btn btn-primary content">Summarized content</button>
-      <button @click="$store.data.currentSelection.viewMode = 'minimal'" type="button" class="btn btn-primary content">Minimal content</button>
+      <button @click="selectViewMode('full')" type="button" class="btn btn-primary content">Full content</button>
+      <button @click="selectViewMode('summarized')" type="button" class="btn btn-primary content">Summarized content</button>
+      <button @click="selectViewMode('minimal')" type="button" class="btn btn-primary content">Minimal content</button>
 
       <p class="content-header">Refresh feeds</p>
       <button @click="refreshFeeds()" type="button" class="btn btn-danger">Refresh feeds</button>
@@ -46,7 +46,7 @@
       <button v-if="enableAgent" @click="chatAssistant()" type="button" class="btn btn-primary">{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Open Chat' }}</button>
       <br v-if="enableAgent"><br v-if="enableAgent"><br v-if="enableAgent">
 
-      <button @click="emitClickEvent('mobile', null);" type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button @click="emitClickEvent('mobile', null);" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <br><br>
     </div>
   </div>
@@ -180,6 +180,19 @@ export default {
     chatAssistant() {
       this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
       this.emitClickEvent('mobile', null);
+    },
+    selectCategory(categoryId) {
+      this.$store.data.currentSelection.categoryId = categoryId;
+      this.$store.data.currentSelection.feedId = '%';
+      setTimeout(() => {
+        this.emitClickEvent('mobile', null);
+      }, 150);
+    },
+    selectViewMode(mode) {
+      this.$store.data.currentSelection.viewMode = mode;
+      setTimeout(() => {
+        this.emitClickEvent('mobile', null);
+      }, 150);
     }
   },
   computed: {
