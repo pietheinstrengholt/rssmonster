@@ -162,24 +162,12 @@ const getArticles = async (req, res, next) => {
      * If only field filters were provided (no text search), use wildcard to match all.
      * Example: "javascript @today" → search for "javascript", filter by today
      * Example: "@today sort:ASC" → no text search (wildcard), just filters
-     * 
-     * Special case: if title: filter is present, combine it with remaining tokens
+     *
+     * Special case: if title: filter is present, it searches title separately
      * Example: "title:meter" → search title for "meter"
-     * Example: "title:meter javascript" → search title for "meter javascript"
+    * Example: "title:javascript ai" → title contains "javascript" AND content contains "ai"
      */
-    let search;
-    let titleSearchTerm = null;
-    
-    if (titleFilter) {
-      // Combine title: value with any remaining text tokens
-      titleSearchTerm = remainingTokens.length === 0 
-        ? `%${titleFilter}%` 
-        : `%${titleFilter} ${remainingTokens.join(" ")}%`;
-      search = "%"; // Set to wildcard since we'll use title-specific search
-      console.log(`Title-only search term: "${titleSearchTerm}"`);
-    } else {
-      search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
-    }
+    const search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
 
     /**
      * Determine final filter values.
@@ -262,10 +250,19 @@ const getArticles = async (req, res, next) => {
       qualityScore: { [Op.lte]: minQualityScore }
     };
 
-    // Text search: if title: filter is present, search only title; otherwise search both title and content
-    if (titleSearchTerm) {
-      baseWhere.title = { [Op.like]: titleSearchTerm };
+    // Text search logic:
+    // - If title: filter present: search title for that value, AND content for remaining tokens
+    // - If no title: filter: search both title OR content for all tokens
+    if (titleFilter) {
+      // title:value specified - search title for exact value
+      baseWhere.title = { [Op.like]: `%${titleFilter}%` };
+      // If there are remaining tokens, also search content for them
+      if (remainingTokens.length > 0) {
+        baseWhere.content = { [Op.like]: search };
+      }
+      console.log(`Title search: "%${titleFilter}%", Content search: "${search}"`);
     } else {
+      // No title: filter - search both title OR content
       baseWhere[Op.or] = [
         { title: { [Op.like]: search } },
         { content: { [Op.like]: search } }
