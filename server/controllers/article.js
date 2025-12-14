@@ -8,7 +8,7 @@ import Setting from "../models/setting.js";
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
- * tag:name, sort:DESC/ASC, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * tag:name, title:text, sort:DESC/ASC, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 const getArticles = async (req, res, next) => {
   try {
@@ -26,7 +26,7 @@ const getArticles = async (req, res, next) => {
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.
      * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-     * tag:name, sort:DESC/ASC, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+     * tag:name, title:text, sort:DESC/ASC, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
      */
     const rawSearch = (req.query.search || "").trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
@@ -34,6 +34,7 @@ const getArticles = async (req, res, next) => {
     let clickedFilter = null; // When set, filters by clickedInd
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC)
+    let titleFilter = null; // Title-specific search (title:text) - searches title only
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
 
@@ -104,6 +105,7 @@ const getArticles = async (req, res, next) => {
       const unreadMatch = cleaned.match(/^unread:(true|false)$/i); // unread:true or unread:false
       const clickedMatch = cleaned.match(/^clicked:(true|false)$/i); // clicked:true or clicked:false
       const tagMatch = cleaned.match(/^tag:(.+)$/i); // tag:technology, tag:news, etc.
+      const titleMatch = cleaned.match(/^title:(.+)$/i); // title:javascript, title:AI, etc.
       const sortMatch = cleaned.match(/^sort:(DESC|ASC)$/i); // sort:DESC or sort:ASC
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
@@ -121,6 +123,9 @@ const getArticles = async (req, res, next) => {
       } else if (tagMatch) {
         tagFilter = tagMatch[1].trim();
         console.log(`Tag filter applied via search token: ${tagFilter}`);
+      } else if (titleMatch) {
+        titleFilter = titleMatch[1].trim();
+        console.log(`Title filter applied via search token: ${titleFilter}`);
       } else if (sortMatch) {
         sortFilter = sortMatch[1].toUpperCase();
         console.log(`Sort filter applied via search token: ${sortFilter}`);
@@ -157,8 +162,24 @@ const getArticles = async (req, res, next) => {
      * If only field filters were provided (no text search), use wildcard to match all.
      * Example: "javascript @today" → search for "javascript", filter by today
      * Example: "@today sort:ASC" → no text search (wildcard), just filters
+     * 
+     * Special case: if title: filter is present, combine it with remaining tokens
+     * Example: "title:meter" → search title for "meter"
+     * Example: "title:meter javascript" → search title for "meter javascript"
      */
-    const search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
+    let search;
+    let titleSearchTerm = null;
+    
+    if (titleFilter) {
+      // Combine title: value with any remaining text tokens
+      titleSearchTerm = remainingTokens.length === 0 
+        ? `%${titleFilter}%` 
+        : `%${titleFilter} ${remainingTokens.join(" ")}%`;
+      search = "%"; // Set to wildcard since we'll use title-specific search
+      console.log(`Title-only search term: "${titleSearchTerm}"`);
+    } else {
+      search = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
+    }
 
     /**
      * Determine final filter values.
@@ -235,16 +256,21 @@ const getArticles = async (req, res, next) => {
     const baseWhere = {
       userId: userId,
       feedId: feedIds,
-      // Text search: match either title OR content (case-insensitive LIKE)
-      [Op.or]: [
-        { title: { [Op.like]: search } },
-        { content: { [Op.like]: search } }
-      ],
       // Quality filters: exclude low-quality/spam articles
       advertisementScore: { [Op.lte]: minAdvertisementScore },
       sentimentScore: { [Op.lte]: minSentimentScore },
       qualityScore: { [Op.lte]: minQualityScore }
     };
+
+    // Text search: if title: filter is present, search only title; otherwise search both title and content
+    if (titleSearchTerm) {
+      baseWhere.title = { [Op.like]: titleSearchTerm };
+    } else {
+      baseWhere[Op.or] = [
+        { title: { [Op.like]: search } },
+        { content: { [Op.like]: search } }
+      ];
+    }
 
     // Apply date range filter if present (supports all date patterns)
     if (dateRange) {
