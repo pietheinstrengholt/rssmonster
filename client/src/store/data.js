@@ -132,6 +132,8 @@ export const useStore = defineStore('data', {
     },
     setTag(tag) {
       this.currentSelection.tag = tag;
+      this.currentSelection.categoryId = '%';
+      this.currentSelection.feedId = '%';
     },
     setMinAdvertisementScore(value) {
       this.currentSelection.minAdvertisementScore = value;
