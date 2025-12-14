@@ -12,7 +12,7 @@
         <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="home" @forceReload="forceReload"></app-home>
+        <app-home v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="home" @forceReload="forceReload" @pull-refresh="pullToRefresh"></app-home>
         <app-assistant v-if="enableAgent && $store.data.chatAssistantOpen"></app-assistant>
       </div>
     </div>
@@ -324,6 +324,12 @@ export default {
     refreshFeeds() {
       //call sidebar refreshFeeds function
       this.$refs.sidebar.refreshFeeds();
+    },
+    pullToRefresh() {
+      this.refreshFeeds();
+      setTimeout(() => {
+        location.reload();
+      }, 1000);
     }
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
