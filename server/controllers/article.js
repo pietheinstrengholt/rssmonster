@@ -24,6 +24,7 @@ const getArticles = async (req, res, next) => {
     let clickedFilter = null; // explicit clicked filter
     let tagFilter = null; // extracted from search
     let sortFilter = null; // extracted from search
+    let dateFilter = null; // extracted from search in format @YYYY-MM-DD
 
     // Split on whitespace or commas to tolerate inputs like "star:false unread:true" or "star:false, unread:true"
     const tokens = rawSearch === "%" ? [] : rawSearch.split(/[\s,]+/).filter(Boolean);
@@ -38,6 +39,7 @@ const getArticles = async (req, res, next) => {
       const clickedMatch = cleaned.match(/^clicked:(true|false)$/i);
       const tagMatch = cleaned.match(/^tag:(.+)$/i);
       const sortMatch = cleaned.match(/^sort:(DESC|ASC)$/i);
+      const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/);
       
       if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
@@ -54,6 +56,9 @@ const getArticles = async (req, res, next) => {
       } else if (sortMatch) {
         sortFilter = sortMatch[1].toUpperCase();
         console.log(`Sort filter applied via search token: ${sortFilter}`);
+      } else if (dateMatch) {
+        dateFilter = dateMatch[1];
+        console.log(`Date filter applied via search token: ${dateFilter}`);
       } else {
         remainingTokens.push(cleaned);
       }
@@ -128,6 +133,13 @@ const getArticles = async (req, res, next) => {
       sentimentScore: { [Op.lte]: minSentimentScore },
       qualityScore: { [Op.lte]: minQualityScore }
     };
+
+    // If date filter present, constrain published to the specific day (UTC)
+    if (dateFilter) {
+      const start = new Date(`${dateFilter}T00:00:00.000Z`);
+      const end = new Date(`${dateFilter}T23:59:59.999Z`);
+      baseWhere.published = { [Op.between]: [start, end] };
+    }
 
     // If tag filter is active and has results, restrict to tagged article IDs
     if (taggedArticleIds !== null && taggedArticleIds.length > 0) {
@@ -211,7 +223,8 @@ const getArticles = async (req, res, next) => {
         sort: sort,
         status: status,
         search: search,
-        tag: tag
+        tag: tag,
+        date: dateFilter
       }],
       itemIds: itemIds
     });
