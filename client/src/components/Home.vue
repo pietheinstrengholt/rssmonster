@@ -26,11 +26,7 @@ export default {
       scrollDirection: "down",
       hasLoadedContent: false,
       isFlushed: false,
-      isLoading: false,
-      pullStartY: 0,
-      isPulling: false,
-      pullTriggered: false,
-      pullRefreshing: false
+      isLoading: false
     };
   },
   computed: {
@@ -54,9 +50,6 @@ export default {
   },
   async created() {
     window.addEventListener("scroll", this.handleScroll);
-    window.addEventListener("touchstart", this.onTouchStart, { passive: true });
-    window.addEventListener("touchmove", this.onTouchMove, { passive: true });
-    window.addEventListener("touchend", this.onTouchEnd, { passive: true });
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
     
     //fetch the current selection from the server
@@ -70,9 +63,6 @@ export default {
   },
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
-    window.removeEventListener("touchstart", this.onTouchStart);
-    window.removeEventListener("touchmove", this.onTouchMove);
-    window.removeEventListener("touchend", this.onTouchEnd);
   },
   methods: {
     fetchArticleIds(data) {
@@ -164,42 +154,6 @@ export default {
       //overwrite the prevScroll and scrollDirection after doing the comparison
       this.prevScroll = curScroll;
       this.scrollDirection = direction;
-    },
-    onTouchStart(event) {
-      if (this.pullRefreshing) {
-        return;
-      }
-      if ((window.scrollY || document.documentElement.scrollTop) <= 0) {
-        this.pullStartY = event.touches[0].clientY;
-        this.isPulling = true;
-        this.pullTriggered = false;
-      }
-    },
-    onTouchMove(event) {
-      if (!this.isPulling || this.pullRefreshing) {
-        return;
-      }
-      const currentY = event.touches[0].clientY;
-      const deltaY = currentY - this.pullStartY;
-      if (deltaY > 60) {
-        this.pullTriggered = true;
-      }
-    },
-    onTouchEnd() {
-      if (this.pullTriggered && !this.pullRefreshing) {
-        this.pullRefreshing = true;
-        this.triggerPullRefresh();
-      }
-      this.isPulling = false;
-      this.pullTriggered = false;
-      this.pullStartY = 0;
-    },
-    triggerPullRefresh() {
-      this.$emit('pull-refresh');
-      // reset in case reload is prevented
-      setTimeout(() => {
-        this.pullRefreshing = false;
-      }, 2000);
     },
     getContent() {
       console.log("Fetching article details from server.");
