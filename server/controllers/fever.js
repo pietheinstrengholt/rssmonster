@@ -231,7 +231,7 @@ export const postFever = async (req, res, next) => {
             const articleObject = {
               id: article.id,
               feed_id: parseInt(article.feedId),
-              title: article.subject,
+              title: article.title,
               author: '',
               html: article.content,
               url: article.url,
@@ -287,7 +287,7 @@ export const postFever = async (req, res, next) => {
               is_item: 1,
               is_local: 1,
               is_saved: parseInt(article.starInd),
-              title: article.subject,
+              title: article.title,
               url: article.url,
               //string/comma-separated list of positive integers of all hot links
               item_ids: item_ids.join(",")

@@ -43,7 +43,7 @@ export const Article = sequelize.define(
       }
     },
     imageUrl: Sequelize.STRING(1024),
-    subject: {
+    title: {
       type: Sequelize.TEXT,
       allowNull: false
     },

@@ -52,7 +52,7 @@ module.exports = {
         allowNull: false
       },
       imageUrl: Sequelize.TEXT('medium'),
-      subject: {
+      title: {
         type: Sequelize.TEXT,
         allowNull: false
       },

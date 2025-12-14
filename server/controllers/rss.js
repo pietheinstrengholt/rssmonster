@@ -8,7 +8,7 @@ const buildRssXml = (articles, meta) => {
   const builder = new Builder({ cdata: true });
 
   const items = articles.map(article => ({
-    title: article.subject || 'No title',
+    title: article.title || 'No title',
     link: article.url,
     guid: article.id,
     pubDate: new Date(article.published || article.createdAt || Date.now()).toUTCString(),

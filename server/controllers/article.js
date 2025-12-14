@@ -121,7 +121,7 @@ const getArticles = async (req, res, next) => {
       userId: userId,
       feedId: feedIds,
       [Op.or]: [
-        { subject: { [Op.like]: search } },
+        { title: { [Op.like]: search } },
         { content: { [Op.like]: search } }
       ],
       advertisementScore: { [Op.lte]: minAdvertisementScore },

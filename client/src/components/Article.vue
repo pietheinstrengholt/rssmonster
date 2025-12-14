@@ -6,7 +6,7 @@
           <BootstrapIcon v-if="clickedInd == 1" icon="bookmark-fill" class="clicked-icon" />
           <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
           <BootstrapIcon v-if="hotlinks" icon="fire" class="hot-icon" />
-          <a href="#" v-text="subject" @click.prevent="articleClicked(id, url)"></a>
+          <a href="#" v-text="title" @click.prevent="articleClicked(id, url)"></a>
         </h5>
         <div class="feedname">
           <span class="published_date">{{ formatDate(published) }}</span>
@@ -341,7 +341,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id','url','subject','published','feed','content','hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
+  props: ['id','url','title','published','feed','content','hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
   computed: {
     formatDate: function() {
       return (value)=> {

@@ -110,7 +110,7 @@ const processArticle = async (feed, post) => {
           [Op.or]: [
             {url: post.url},
             {[Op.and] : [
-              {subject: post.title},
+              {title: post.title},
               {feedId: feed.id},
               {userId: feed.userId}
             ]}
@@ -301,7 +301,7 @@ const processArticle = async (feed, post) => {
             clickedInd: clickedInd,
             url: post.url,
             image_url: "",
-            subject: post.title || 'No title',
+            title: post.title || 'No title',
             content: postContent,
             contentStripped: analysis.summary,
             language: postLanguage,

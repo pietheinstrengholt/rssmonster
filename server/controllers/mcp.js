@@ -40,7 +40,7 @@ function generateArticlesHtml(articles, options = {}) {
       html += '<div class="article">';
       html += '<div class="maximal">';
       html += '<h5 class="heading">';
-      html += `${emoji ? emoji + ' ' : ''}<a target="_blank" href="${article.url || '#'}">${article.subject || 'No Subject'}</a>`;
+      html += `${emoji ? emoji + ' ' : ''}<a target="_blank" href="${article.url || '#'}">${article.title || 'No Title'}</a>`;
       html += '</h5>';
       html += '<div class="feedname">';
       html += `<span class="published_date">${article.published ? new Date(article.published).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;
@@ -107,7 +107,7 @@ const postMcp = async (req, res) => {
       - Useful to get metadata for a single feed before querying its articles.
 
     4. search_articles_by_keyword
-      - Searches for articles containing a specific keyword in the subject or content.
+      - Searches for articles containing a specific keyword in the title or content.
       - The agent must summarize each article in the results.
       - Use this when the user wants content on a specific topic.
 
@@ -183,7 +183,7 @@ const postMcp = async (req, res) => {
     - On the client side, the user may provide a series of messages as chat history.
       Use this chat history to understand the context of the conversation and provide relevant answers.
     - On the client side, the front end renders HTML content directly.
-    - For all article-related tools, always provide summaries of each article's content to the user. Wrap the article subject/title in a link to the article URL.
+    - For all article-related tools, always provide summaries of each article's content to the user. Wrap the article title in a link to the article URL.
     - Structured data from each tool is returned in structuredContent, but you may also use the textual fallback for communication.
     - Follow these guidelines to combine results and ensure all relevant information is provided in a structured and user-friendly way.
       `
@@ -273,9 +273,9 @@ const postMcp = async (req, res) => {
     server.tool(
       "search_articles_by_keyword",
       `
-      Searches for articles containing a specific keyword in the subject or content.
+      Searches for articles containing a specific keyword in the title or content.
       The agent must summarize each article in the results (e.g., 2-3 sentence summaries 
-      based on the article title, subject, and content).
+      based on the article title and content).
 
       You may optionally provide a feedId:
       - If "feedId" is provided, only articles from that feed are returned.
@@ -286,7 +286,7 @@ const postMcp = async (req, res) => {
       - If "status" is NOT provided, defaults to "unread".
       `,
       {
-        search: z.string().describe("Keyword to search for in the article subject or content."),
+        search: z.string().describe("Keyword to search for in the article title or content."),
 
         feedId: z.string()
           .optional()
@@ -305,7 +305,7 @@ const postMcp = async (req, res) => {
               status: status,
               ...(feedId ? { feedId: feedId } : {}),
               [Op.or]: [
-                { subject: { [Op.like]: `%${search}%` } },
+                { title: { [Op.like]: `%${search}%` } },
                 { content: { [Op.like]: `%${search}%` } },
               ],
             },
@@ -401,11 +401,10 @@ const postMcp = async (req, res) => {
             articles: articles.map(article => ({
               id: article.id,
               title: article.title,
-              subject: article.subject,
               author: article.author,
               createdAt: article.createdAt,
               contentSnippet: article.content?.slice(0, 300) || "",
-              note: "The agent must summarize this article based on its title, subject, and content.",
+              note: "The agent must summarize this article based on its title and content.",
             })),
           };
 
@@ -426,7 +425,7 @@ const postMcp = async (req, res) => {
       `
       Retrieves all articles associated with a specific feed, identified by its feedId.
       The agent should summarize each article returned in the results 
-      (e.g., a 2–3 sentence summary based on title, subject, and content).
+      (e.g., a 2–3 sentence summary based on title and content).
       
       Note: If the agent does not know the feedId, it must first call the "feeds" tool 
       to retrieve a list of all available feeds along with their corresponding feedIds.
@@ -805,7 +804,7 @@ const postMcp = async (req, res) => {
       "articles_by_tag",
       `
       Retrieves all articles that have a specified tag (exact match on tag name).
-      The agent should summarize each returned article (2–3 sentences) based on title, subject, and content.
+      The agent should summarize each returned article (2–3 sentences) based on title and content.
       `,
       {
         tag: z.string().describe("The tag name to filter articles by (case-sensitive match).")
@@ -881,7 +880,7 @@ const postMcp = async (req, res) => {
       "search_clicked_articles",
       `
       Retrieves all articles that have been clicked by the user (clickedInd = 1).
-      The agent should summarize each returned article (2–3 sentences) based on title, subject, and content.
+      The agent should summarize each returned article (2–3 sentences) based on title and content.
 
       You may optionally provide a feedId:
       - If "feedId" is provided, only articles from that feed are returned.
