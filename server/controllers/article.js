@@ -24,10 +24,28 @@ const getArticles = async (req, res, next) => {
     let clickedFilter = null; // explicit clicked filter
     let tagFilter = null; // extracted from search
     let sortFilter = null; // extracted from search
-    let dateFilter = null; // extracted from search in format @YYYY-MM-DD
+    let dateRange = null; // { start: Date, end: Date }
+    let dateToken = null; // echoed back in response
+
+    // Pre-scan for @"N days ago" pattern (works even with spaces); remove it from search string once captured
+    let workingSearch = rawSearch;
+    const daysAgoMatch = rawSearch.match(/@"?(\d+)\s+days\s+ago"?/i);
+    if (daysAgoMatch) {
+      const days = parseInt(daysAgoMatch[1], 10);
+      if (!Number.isNaN(days)) {
+        dateToken = `${days} days ago`;
+        const today = new Date();
+        const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days, 0, 0, 0, 0));
+        const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days, 23, 59, 59, 999));
+        dateRange = { start, end };
+        console.log(`Date filter applied via search token: ${dateToken} (exact UTC day)`);
+        // Remove the matched segment so it doesn't pollute text search tokens
+        workingSearch = workingSearch.replace(daysAgoMatch[0], "").trim();
+      }
+    }
 
     // Split on whitespace or commas to tolerate inputs like "star:false unread:true" or "star:false, unread:true"
-    const tokens = rawSearch === "%" ? [] : rawSearch.split(/[\s,]+/).filter(Boolean);
+    const tokens = workingSearch === "%" ? [] : workingSearch.split(/[\s,]+/).filter(Boolean);
     const remainingTokens = [];
 
     tokens.forEach(tok => {
@@ -40,6 +58,8 @@ const getArticles = async (req, res, next) => {
       const tagMatch = cleaned.match(/^tag:(.+)$/i);
       const sortMatch = cleaned.match(/^sort:(DESC|ASC)$/i);
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/);
+      const todayMatch = cleaned.match(/^@today$/i);
+      const yesterdayMatch = cleaned.match(/^@yesterday$/i);
       
       if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
@@ -57,8 +77,25 @@ const getArticles = async (req, res, next) => {
         sortFilter = sortMatch[1].toUpperCase();
         console.log(`Sort filter applied via search token: ${sortFilter}`);
       } else if (dateMatch) {
-        dateFilter = dateMatch[1];
-        console.log(`Date filter applied via search token: ${dateFilter}`);
+        dateToken = dateMatch[1];
+        dateRange = {
+          start: new Date(`${dateMatch[1]}T00:00:00.000Z`),
+          end: new Date(`${dateMatch[1]}T23:59:59.999Z`)
+        };
+        console.log(`Date filter applied via search token: ${dateToken}`);
+      } else if (todayMatch) {
+        dateToken = "today";
+        const now = new Date();
+        const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
+        dateRange = { start, end: now };
+        console.log("Date filter applied via search token: today (last 24h)");
+      } else if (yesterdayMatch) {
+        dateToken = "yesterday";
+        const today = new Date();
+        const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 0, 0, 0, 0));
+        const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 23, 59, 59, 999));
+        dateRange = { start, end };
+        console.log("Date filter applied via search token: yesterday (UTC day)");
       } else {
         remainingTokens.push(cleaned);
       }
@@ -134,11 +171,9 @@ const getArticles = async (req, res, next) => {
       qualityScore: { [Op.lte]: minQualityScore }
     };
 
-    // If date filter present, constrain published to the specific day (UTC)
-    if (dateFilter) {
-      const start = new Date(`${dateFilter}T00:00:00.000Z`);
-      const end = new Date(`${dateFilter}T23:59:59.999Z`);
-      baseWhere.published = { [Op.between]: [start, end] };
+    // If date filter present, constrain published between computed range (supports @YYYY-MM-DD and @today)
+    if (dateRange) {
+      baseWhere.published = { [Op.between]: [dateRange.start, dateRange.end] };
     }
 
     // If tag filter is active and has results, restrict to tagged article IDs
@@ -224,7 +259,7 @@ const getArticles = async (req, res, next) => {
         status: status,
         search: search,
         tag: tag,
-        date: dateFilter
+        date: dateToken
       }],
       itemIds: itemIds
     });
