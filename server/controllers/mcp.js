@@ -183,6 +183,7 @@ const postMcp = async (req, res) => {
     - On the client side, the user may provide a series of messages as chat history.
       Use this chat history to understand the context of the conversation and provide relevant answers.
     - On the client side, the front end renders HTML content directly.
+    - When returning or summarizing articles, always include the article URL and wrap the title in an <a href="..."> link so the user can click through.
     - For all article-related tools, always provide summaries of each article's content to the user. Wrap the article title in a link to the article URL.
     - Structured data from each tool is returned in structuredContent, but you may also use the textual fallback for communication.
     - Follow these guidelines to combine results and ensure all relevant information is provided in a structured and user-friendly way.
@@ -401,6 +402,7 @@ const postMcp = async (req, res) => {
             articles: articles.map(article => ({
               id: article.id,
               title: article.title,
+              url: article.url,
               author: article.author,
               createdAt: article.createdAt,
               contentSnippet: article.content?.slice(0, 300) || "",
