@@ -26,6 +26,7 @@ import agentRoutes from "./routes/agent.js";
 import opmlRoutes from "./routes/opml.js";
 import actionRoutes from "./routes/action.js";
 import rssRoutes from "./routes/rss.js";
+import tagRoutes from "./routes/tag.js";
 
 //controller
 import errorController from "./controllers/error.js";
@@ -77,6 +78,7 @@ app.use("/mcp", mcpRoutes);
 app.use("/agent", agentRoutes);
 app.use("/api/opml", opmlRoutes);
 app.use("/api/actions", actionRoutes);
+app.use("/api/tags", tagRoutes);
 app.use("/rss", rssRoutes);
 app.use(errorController.get404);
 

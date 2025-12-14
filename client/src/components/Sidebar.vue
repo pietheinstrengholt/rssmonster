@@ -31,6 +31,24 @@
       </span>Mark as read
     </div>
 
+    <div v-if="topTags.length" class="title-box">
+      <p class="title">Top tags</p>
+    </div>
+    <div
+      v-for="(tag, index) in topTagsDisplay"
+      :key="index"
+      class="category-top tag-item"
+      :class="{ selected: $store.data.currentSelection.tag === tag.name }"
+      @click="selectTag(tag.name)">
+      <span class="glyphicon">
+        <BootstrapIcon icon="tag-fill" variant="light" />
+      </span>
+      <span class="title">{{ tag.name }}</span>
+      <span class="badge-unread">
+        <span class="badge">{{ tag.count }}</span>
+      </span>
+    </div>
+
     <div class="title-box">
       <p class="title">All feeds</p>
     </div>
@@ -280,6 +298,10 @@
   background-color: #3b4651;
 }
 
+.tag-item {
+  background-color: #8b8b8b;
+}
+
 p.title {
   color: #111;
   margin-left: 14px;
@@ -403,11 +425,13 @@ export default {
       unreadCount: 0,
       readCount: 0,
       starCount: 0,
-      hotCount: 0
+      hotCount: 0,
+      topTags: []
     };
   },
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+    this.fetchTopTags();
   },
   components: {
     draggable
@@ -482,6 +506,22 @@ export default {
       //remove spinner
       this.refreshing = false;
     },
+    selectTag(tagName) {
+      if (this.$store.data.currentSelection.tag === tagName) {
+        //tag is already selected, so deselect
+        this.$store.data.setTag('');
+      } else {
+        this.$store.data.setTag(tagName);
+      }
+    },
+    async fetchTopTags() {
+      try {
+        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/tags");
+        this.topTags = response.data.tags || [];
+      } catch (error) {
+        console.error("Error fetching top tags", error);
+      }
+    },
     updateSortOrder() {
       var orderList = new Array();
       for (let i = 0; i < this.$store.data.categories.length; i++) {
@@ -513,6 +553,9 @@ export default {
       // eslint-disable-next-line
       this.categoriesOrder = orderList;
       return this.categoriesOrder;
+    },
+    topTagsDisplay() {
+      return this.topTags.slice(0, 5);
     }
   }
 };

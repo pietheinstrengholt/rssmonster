@@ -1,0 +1,24 @@
+import Sequelize from "sequelize";
+import Tag from "../models/tag.js";
+
+const getTags = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+    const tags = await Tag.findAll({
+      where: { userId },
+      attributes: [
+        "name",
+        [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]
+      ],
+      group: ["name"],
+      order: [[Sequelize.fn("COUNT", Sequelize.col("id")), "DESC"], ["name", "ASC"]],
+      limit: 10
+    });
+    return res.status(200).json({ tags });
+  } catch (err) {
+    console.error("Error fetching tags:", err);
+    return res.status(500).json({ error: "Failed to fetch tags" });
+  }
+};
+
+export default { getTags };

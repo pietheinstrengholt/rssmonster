@@ -130,6 +130,9 @@ export const useStore = defineStore('data', {
     setSelectedSort(sort) {
       this.currentSelection.sort = sort;
     },
+    setTag(tag) {
+      this.currentSelection.tag = tag;
+    },
     setMinAdvertisementScore(value) {
       this.currentSelection.minAdvertisementScore = value;
     },
