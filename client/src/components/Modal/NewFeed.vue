@@ -149,7 +149,7 @@ export default {
                     /* eslint-enable no-console */
 
                     //overwrite results with results from the database
-                    this.feed = result.data;
+                    this.feed = result.data.feed;
 
                     //add missing count properties, since these are populated dynamically on an initial load
                     this.feed.unreadCount = 0;
