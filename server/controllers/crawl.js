@@ -126,6 +126,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 });
 
 const processArticle = async (feed, post) => {
+
   //don't process empty post URLs
   if (post.url) {
     try {
@@ -149,51 +150,93 @@ const processArticle = async (feed, post) => {
         
         //if no content is found, use the description as content
         if (typeof post.content === 'undefined' || post.content === null) {
-          postContent = post.description;
-          postContentStripped = post.description;
-          postLanguage = language.get(post.description);
+          // Check if there's media content (e.g., YouTube videos)
+          if (post.media && Array.isArray(post.media) && post.media.length > 0) {
+            const media = post.media[0];
+            // Build content from media information
+            postContent = `
+              <div class="media-content">
+                ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width: 100%; height: auto;">` : ''}
+                ${media.title ? `<h4>${media.title}</h4>` : ''}
+                ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
+              </div>
+            `;
+            postContentStripped = media.title || post.description || post.title || '';
+            try {
+              postLanguage = language.get(postContentStripped);
+            } catch (langErr) {
+              console.error(`[${feed.feedName}] Error detecting language for article "${post.title}":`, langErr.message);
+              postLanguage = 'unknown';
+            }
+          } else {
+            // Fallback to description
+            postContent = post.description;
+            postContentStripped = post.description;
+            try {
+              postLanguage = language.get(post.description);
+            } catch (langErr) {
+              console.error(`[${feed.feedName}] Error detecting language for article "${post.title}":`, langErr.message);
+              postLanguage = 'unknown';
+            }
+          }
         } else {
           //content is set, so we might expect html rich content. Because of this we want to remove any script tags
           //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
-          const dom = htmlparser2.parseDocument(post.content);
-          const $ = load(dom, { _useHtmlParser2: true });
+          try {
+            const dom = htmlparser2.parseDocument(post.content);
+            const $ = load(dom, { _useHtmlParser2: true });
+      
+            //dismiss undefined errors
+            if (typeof $ !== 'undefined') {
+              //remove all script tags from post content
+              $('script').remove();
+      
+              //execute hotlink feature by collecting all the links in each RSS post
+              //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
+              $('a').each(function() {
+                let domain;
+                try {
+                  //find domain name for each link
+                  if (!post.url) {
+                    console.warn(`[${feed.feedName}] Article "${post.title}" has no URL property`);
+                    return; // Skip this link if post.url is missing
+                  }
+                  const urlObj = new URL(post.url);
+                  domain = urlObj.hostname;
+                } catch (err) {
+                  console.error(`[${feed.feedName}] Error parsing URL "${post.url}":`, err.message);
+                  domain = post.url;
+                }
     
-          //dismiss undefined errors
-          if (typeof $ !== 'undefined') {
-            //remove all script tags from post content
-            $('script').remove();
-    
-            //execute hotlink feature by collecting all the links in each RSS post
-            //https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
-            $('a').each(function() {
-              let domain;
-              try {
-                //find domain name for each link
-                const urlObj = new URL(post.url);
-                domain = urlObj.hostname;
-              } catch (err) {
-                console.error('Error parsing URL:', err);
-                domain = post.url;
-              }
-    
-              //fetch all urls referenced to other websites. Insert these into the hotlinks table
-              const href = $(this).attr('href');
-              if (href) {
-                if (!href.includes(domain)) {
-                  //only add http and https urls to database
-                  if (href.startsWith("http://") || href.startsWith("https://")) {
-                    //update cache
-                    cache.set(href, feed.userId);
+                //fetch all urls referenced to other websites. Insert these into the hotlinks table
+                const href = $(this).attr('href');
+                if (href) {
+                  if (!href.includes(domain)) {
+                    //only add http and https urls to database
+                    if (href.startsWith("http://") || href.startsWith("https://")) {
+                      //update cache
+                      cache.set(href, feed.userId);
+                    }
                   }
                 }
-              }
-            });
+              });
 
-            //set postContent and postContentStripped
-            postContent = $.html();
-            postContentStripped = striptags($.html(), ["a", "img", "strong"]);
-            postLanguage = language.get($.html());
-          } 
+              //set postContent and postContentStripped
+              postContent = $.html();
+              postContentStripped = striptags($.html(), ["a", "img", "strong"]);
+              try {
+                postLanguage = language.get($.html());
+              } catch (langErr) {
+                console.error(`[${feed.feedName}] Error detecting language for article "${post.title}":`, langErr.message);
+                postLanguage = 'unknown';
+              }
+            }
+          } catch (parseErr) {
+            console.error(`[${feed.feedName}] Error parsing content for article "${post.title}":`, parseErr.message);
+            postContent = post.description || post.title || '';
+            postContentStripped = post.description || post.title || '';
+            postLanguage = 'unknown';
+          }
         }
         
         //add article to database, if content or a description has been found
