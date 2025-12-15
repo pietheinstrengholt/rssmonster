@@ -293,6 +293,7 @@ export default {
       this.showStatusMenu = false;
       this.showViewModeMenu = false;
       this.showSortMenu = false;
+      this.$store.data.searchQuery = null;
       this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
     }
   },
