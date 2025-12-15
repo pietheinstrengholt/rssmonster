@@ -6,8 +6,8 @@
         <app-sidebar ref="sidebar" @forceReload="forceReload"></app-sidebar>
       </div>
       <div id="home" class="col-md-9 offset-md-3 col-sm-12">
-        <!-- Quickbar events -->
-        <app-quickbar @mobile="mobileClick" @forceReload="forceReload"></app-quickbar>
+        <!-- MobileToolbar events -->
+        <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
         <!-- Toolbar events -->
         <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
@@ -17,7 +17,7 @@
       </div>
     </div>
     <!-- Mobile events -->
-    <app-mobile :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile>
+    <app-mobile-menu-overlay :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile-menu-overlay>
 
     <!-- New category modal -->
     <app-new-category v-if="$store.data.getShowModal === 'NewCategory'"></app-new-category>
@@ -135,8 +135,8 @@ import Home from "./components/Home.vue";
 import { defineAsyncComponent } from 'vue'
 const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue"));
 const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue"));
-const Quickbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "quickbar" */ "./components/Quickbar.vue"));
-const Mobile = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobile" */ "./components/Mobile.vue"));
+const MobileToolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobiletoolbar" */ "./components/MobileToolbar.vue"));
+const MobileMenuOverlay = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobilemenuoverlay" */ "./components/MobileMenuOverlay.vue"));
 const Assistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "assistant" */ "./components/Assistant.vue"));
 
 //import modals
@@ -154,8 +154,8 @@ export default {
     appSidebar: Sidebar,
     appHome: Home,
     appToolbar: Toolbar,
-    appQuickbar: Quickbar,
-    appMobile: Mobile,
+    appMobileToolbar: MobileToolbar,
+    appMobileMenuOverlay: MobileMenuOverlay,
     appAssistant: Assistant,
     //import modals
     appNewCategory: NewCategory,

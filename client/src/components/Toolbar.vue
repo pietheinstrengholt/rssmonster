@@ -60,7 +60,7 @@
     <div class="search-wrap">
       <input
         type="text"
-        v-model="searchQuery"
+        v-model="$store.data.searchQuery"
         @keyup="emitSearchEvent()"
         placeholder="Search articles..."
         autocomplete="off"
@@ -230,7 +230,6 @@ export default {
   },
   data() {
     return {
-      searchQuery: null,
       showStatusMenu: false,
       showViewModeMenu: false,
       showSortMenu: false,
@@ -239,8 +238,8 @@ export default {
   },
   methods: {
     emitSearchEvent: function() {
-      if (!(this.searchQuery === undefined || this.searchQuery === null)) {
-        this.$store.data.setSelectedSearch(this.searchQuery);
+      if (!(this.$store.data.searchQuery === undefined || this.$store.data.searchQuery === null)) {
+        this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
       }
     },
     toggleShowStatus: function() {

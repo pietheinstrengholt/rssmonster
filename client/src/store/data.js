@@ -25,7 +25,8 @@ export const useStore = defineStore('data', {
     unreadsSinceLastUpdate: 0,
     refreshCategories: 0,
     chatAssistantOpen: false,
-    mobileSearchOpen: false
+    mobileSearchOpen: false,
+    searchQuery: ''
   }),
   actions: {
     setCategories(categories) {
@@ -154,6 +155,9 @@ export const useStore = defineStore('data', {
     },
     setMobileSearchOpen(value) {
       this.mobileSearchOpen = value;
+    },
+    setSearchQuery(query) {
+      this.searchQuery = query;
     }
   },
   getters: {

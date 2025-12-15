@@ -1,5 +1,5 @@
 <template>
-  <div class="quickbar-container">
+  <div class="navbar-container">
     <div id="mobile-toolbar">
       <a
         @click="emitClickEvent('mobile','mobile')"
@@ -75,7 +75,7 @@
     </div>
     <div v-if="showSearch" class="search-dialog">
       <input
-        v-model="searchQuery"
+        v-model="$store.data.searchQuery"
         @input="updateSearch"
         type="text"
         class="search-input"
@@ -89,7 +89,7 @@
 </template>
 
 <style>
-.quickbar-container {
+.navbar-container {
   display: contents;
 }
 
@@ -294,8 +294,7 @@ export default {
   emits: ['mobile', 'forceReload'],
   data() {
     return {
-      showSearch: false,
-      searchQuery: ''
+      showSearch: false
     };
   },
   mounted() {
@@ -323,15 +322,15 @@ export default {
       }
     },
     updateSearch() {
-      this.$store.data.setSelectedSearch(this.searchQuery);
+      this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
     },
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.$store.data.setMobileSearchOpen(this.showSearch);
     },
     performSearch() {
-      if (this.searchQuery.trim()) {
-        this.$store.data.setSelectedSearch(this.searchQuery);
+      if (this.$store.data.searchQuery.trim()) {
+        this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
         this.toggleSearch();
       }
     }

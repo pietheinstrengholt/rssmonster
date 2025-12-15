@@ -342,6 +342,12 @@
     background-color: #218838;
 }
 
+@media (max-height: 600px) {
+    div.modal-dialog {
+        margin-top: 320px;
+    }
+}
+
 @media (prefers-color-scheme: dark) {
     .modal-content {
         background: #2a2a2a;
