@@ -14,7 +14,8 @@
     "start": "node app.js",
     "start-server": "node app.js",
     "debug": "nodemon -L --watch app.js",
-    "db": "./node_modules/.bin/sequelize db:migrate"
+    "db": "./node_modules/.bin/sequelize db:migrate",
+    "crawl": "NODE_ENV=production node scripts/crawl.js"
   },
   "engines": {
     "node": ">=20.x"

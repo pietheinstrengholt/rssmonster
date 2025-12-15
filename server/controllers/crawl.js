@@ -46,13 +46,16 @@ const getFeeds = async () => {
   }
 }
 
-const crawlRssLinks = catchAsync(async (req, res, next) => {
-  try {
-    const feeds = await getFeeds();
+// Core crawl function that processes feeds synchronously
+const performCrawl = async () => {
+  const feeds = await getFeeds();
+  let processedCount = 0;
+  let errorCount = 0;
 
-    if (feeds.length > 0) {
-      feeds.forEach(async (feed) => {
-
+  if (feeds.length > 0) {
+    // Use Promise.all with map to wait for all feeds to be processed
+    await Promise.all(feeds.map(async (feed) => {
+      try {
         //discover RssLink
         const url = await discoverRssLink.discoverRssLink(feed.url);
 
@@ -63,25 +66,26 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {
 
-              //process all feed posts
-              feeditem.items.forEach((item) => {
-                processArticle(feed, item);
-              });
+              //process all feed posts - use Promise.all to wait for all articles
+              await Promise.all(feeditem.items.map((item) => processArticle(feed, item)));
   
               //reset the feed count and update the favicon if available
               await feed.update({
                 favicon: feeditem.image.url,
                 errorCount: 0
               });
+              processedCount++;
             }
           } catch (err) {
             console.error('Error processing feed:', err.stack.split("\n", 1).join(""), '-', feed.url);
             //update the errorCount
             await feed.increment('errorCount');
+            errorCount++;
           }
         } else {
           //update the errorCount
           await feed.increment('errorCount');
+          errorCount++;
         }
 
         //touch updatedAt
@@ -89,9 +93,28 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
         await feed.update({
           updatedAt: new Date()
         });
+      } catch (err) {
+        console.error('Error processing feed:', feed.url, err);
+        errorCount++;
+      }
+    }));
+  }
 
-      });
-    }
+  return { 
+    total: feeds.length, 
+    processed: processedCount, 
+    errors: errorCount 
+  };
+};
+
+const crawlRssLinks = catchAsync(async (req, res, next) => {
+  try {
+    // For HTTP requests, start crawling asynchronously and return immediately
+    performCrawl().then(result => {
+      console.log(`Crawl completed: ${result.processed} feeds processed, ${result.errors} errors`);
+    }).catch(err => {
+      console.error('Error during async crawl:', err);
+    });
 
     return res.status(200).json({ message: 'Crawling started.' });
   } catch (err) {
@@ -335,5 +358,6 @@ const processArticle = async (feed, post) => {
 
 export default {
   crawlRssLinks,
-  processArticle
+  processArticle,
+  performCrawl
 }
