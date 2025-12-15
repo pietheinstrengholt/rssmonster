@@ -239,7 +239,7 @@ const postMcp = async (req, res) => {
     // Tool: 3. search_feed_by_name
     server.tool(
       "search_feed_by_name",
-      "Searches for a feed by its name and returns detailed information about the feed, like ID, URL, description, and categoryId.",
+      "Searches for a feed by its name and returns detailed information about the feed, like ID, URL, description, and categoryId. If the search returns no results, try again with a different name or a subset of the original name (e.g., if 'TechCrunch News' fails, try 'TechCrunch'). Alternatively, you can call the 'feeds' tool to retrieve a list of all feeds including their names and descriptions to help identify the correct feed.",
       {
         feed_name: z.string()
       },
