@@ -61,7 +61,6 @@ const performCrawl = async () => {
 
         //do not process undefined URLs
         if (typeof url !== "undefined") {
-          console.log("Collecting new articles for feed: " + url);
           try {
             const feeditem = await parseFeed.process(url);
             if (feeditem) {
@@ -70,12 +69,14 @@ const performCrawl = async () => {
               await Promise.all(feeditem.items.map((item) => processArticle(feed, item)));
   
               //reset the feed count and update the favicon if available
+              const faviconUrl = feeditem.image?.url || null;
               await feed.update({
-                favicon: feeditem.image.url,
+                favicon: faviconUrl,
                 errorCount: 0
               });
               processedCount++;
             }
+            console.log(`Successfully processed feed: ${feed.url}` + (feeditem ? ` with ${feeditem.items.length} items.` : ''));
           } catch (err) {
             console.error('Error processing feed:', err.stack.split("\n", 1).join(""), '-', feed.url);
             //update the errorCount
@@ -83,6 +84,7 @@ const performCrawl = async () => {
             errorCount++;
           }
         } else {
+          console.log(`No RSS link discovered for feed: ${feed.url}`);
           //update the errorCount
           await feed.increment('errorCount');
           errorCount++;
