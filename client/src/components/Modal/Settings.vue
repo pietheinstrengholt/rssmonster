@@ -6,57 +6,59 @@
                 <h5 class="modal-title">Settings</h5>
             </div>
             <div class="modal-body">
-                <div class="settings-group">
-                    <label for="adScore">
+                <div class="settings-group d-flex align-items-center gap-3">
+                    <label for="adScore" class="flex-shrink-0 mb-0">
                         Advertisement Score Threshold
                         <span class="info-icon" :title="'Filter out promotional content. 0 = editorial only, 100 = show all including heavy ads/spam'">
                             <BootstrapIcon icon="info-circle-fill" />
                         </span>
                     </label>
-                    <select id="adScore" v-model="advertisementScore" class="form-select">
+                    <select id="adScore" v-model="advertisementScore" class="form-select flex-grow-1">
                         <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
                     </select>
                 </div>
                 
-                <div class="settings-group">
-                    <label for="sentimentScore">
+                <div class="settings-group d-flex align-items-center gap-3">
+                    <label for="sentimentScore" class="flex-shrink-0 mb-0">
                         Sentiment Score Threshold
                         <span class="info-icon" :title="'Filter by article tone. 0 = very positive, 50 = neutral, 100 = very negative'">
                             <BootstrapIcon icon="info-circle-fill" />
                         </span>
                     </label>
-                    <select id="sentimentScore" v-model="sentimentScore" class="form-select">
+                    <select id="sentimentScore" v-model="sentimentScore" class="form-select flex-grow-1">
                         <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
                     </select>
                 </div>
                 
-                <div class="settings-group">
-                    <label for="qualityScore">
+                <div class="settings-group d-flex align-items-center gap-3">
+                    <label for="qualityScore" class="flex-shrink-0 mb-0">
                         Quality Score Threshold
                         <span class="info-icon" :title="'Filter by content quality. Lower scores = better depth, accuracy & writing. 0-30 = excellent, 70-100 = poor'">
                             <BootstrapIcon icon="info-circle-fill" />
                         </span>
                     </label>
-                    <select id="qualityScore" v-model="qualityScore" class="form-select">
+                    <select id="qualityScore" v-model="qualityScore" class="form-select flex-grow-1">
                         <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
                     </select>
                 </div>
 
-                <div class="settings-group">
-                    <label>Export Feeds</label>
-                    <button type="button" class="btn btn-download" @click="downloadOpml">
-                        <BootstrapIcon icon="download" />
-                        Download OPML
-                    </button>
-                </div>
+                <div class="d-flex gap-3">
+                    <div class="settings-group flex-grow-1">
+                        <label>Export Feeds</label>
+                        <button type="button" class="btn btn-download w-100" @click="downloadOpml">
+                            <BootstrapIcon icon="download" />
+                            Download OPML
+                        </button>
+                    </div>
 
-                <div class="settings-group">
-                    <label>Import Feeds</label>
-                    <input type="file" ref="opmlFileInput" accept=".opml,.xml" style="display: none" @change="handleFileSelect" />
-                    <button type="button" class="btn btn-upload" @click="$refs.opmlFileInput.click()">
-                        <BootstrapIcon icon="upload" />
-                        Upload OPML
-                    </button>
+                    <div class="settings-group flex-grow-1">
+                        <label>Import Feeds</label>
+                        <input type="file" ref="opmlFileInput" accept=".opml,.xml" style="display: none" @change="handleFileSelect" />
+                        <button type="button" class="btn btn-upload w-100" @click="$refs.opmlFileInput.click()">
+                            <BootstrapIcon icon="upload" />
+                            Upload OPML
+                        </button>
+                    </div>
                 </div>
 
                 <div class="settings-group">
@@ -344,7 +346,7 @@
 
 @media (max-height: 600px) {
     div.modal-dialog {
-        margin-top: 320px;
+        margin-top: 140px;
     }
 }
 
