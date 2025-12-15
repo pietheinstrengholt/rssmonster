@@ -1,6 +1,6 @@
 <template>
   <div id="main-container">
-    <div id="articles">
+    <div id="articles" :style="articlesStyle">
       <Article
         v-for="article in articles"
         v-bind="article"
@@ -65,6 +65,15 @@ export default {
     distance: {
       type: Number,
       required: true
+    }
+  },
+  computed: {
+    articlesStyle() {
+      // Only apply extra padding in portrait mode (max-width: 766px)
+      if (this.$store.data.mobileSearchOpen && window.innerWidth < 767) {
+        return { paddingTop: '98px' }; // 38px default + 60px for search dialog
+      }
+      return {};
     }
   },
   methods: {

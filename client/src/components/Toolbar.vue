@@ -50,32 +50,22 @@
       </div>
     </div>
     <div v-if="enableAgent" class="status-toolbar" @click="chatAssistant">
-      <p>
-        <BootstrapIcon icon="chat-text-fill" />
+      <div id="chat-icon">
+          <BootstrapIcon icon="robot" size="20" />
+      </div>
+      <p id="chat-text">
         {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
       </p>
-    </div>    
-    <form
-      id="search-form"
-      class="search-wrap"
-      data-behavior="search_form"
-      accept-charset="UTF-8"
-      data-remote="true"
-      method="post"
-      role="url"
-    >
-      <div class="search-icon-wrapper">
-        <BootstrapIcon icon="search" class="search-icon" />
-      </div>
+    </div>
+    <div class="search-wrap">
       <input
-        @keyup="emitSearchEvent()"
-        v-model="search"
         type="text"
-        class="search"
-        placeholder="Search"
+        v-model="searchQuery"
+        @keyup="emitSearchEvent()"
+        placeholder="Search articles..."
         autocomplete="off"
-      >
-    </form>
+      />
+    </div>
     <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
   </div>
 </template>
@@ -92,99 +82,8 @@
   margin-left: -15px;
 }
 
-.status-toolbar {
-  float: left;
-  border-right: 1px solid #e0e0e0;
-  margin-left: 10px;
-  text-align: center;
-  cursor: pointer;
-  color: #111;
-}
-
-.status-toolbar p {
-  padding: 4px;
-  font-size: 14px;
-  margin-right: 12px;
-  margin-top: 5px;
-}
-
-.status-toolbar #status {
-  width: 50px;
-}
-
-.search-wrap {
-  width: 50%;
-  float: left;
-}
-
-.search-wrap {
-  position: relative;
-}
-
-.search-icon-wrapper {
-  position: absolute;
-  left: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  display: flex;
-  align-items: center;
-  pointer-events: none;
-  color: #212325;
-}
-
-.search-icon {
-  font-size: 16px;
-}
-
-.search {
-  width: 100%;
-  height: 39px;
-  margin: 0;
-  padding: 4px 0px 3px 28px;
-  font-size: 14px;
-  background-color: #eff1f3;
-  border: none;
-  line-height: 1;
-  color: #212325;
-}
-
-.dropdownmenu {
-  position: fixed;
-  margin-top: 40px;
-  background-color: #eff1f3;
-  cursor: pointer;
-  box-shadow: 0px 8px 16px 0px #000000;
-  min-width: 100px;
-  color: #111;
-}
-
-.dropdownmenu .item {
-  border-bottom: 1px solid #e0e0e0;
-  border-right: 1px solid #e0e0e0;
-  border-left: 1px solid #e0e0e0;
-  padding: 4px;
-  cursor: pointer;
-}
-
-.dropdownmenu .item p {
-  margin-left: 10px;
-  margin-right: 10px;
-  margin-bottom: 0px;
-  font-weight: 400;
-  font-size: 14px;
-}
-
-
-#filter.dropdownmenu {
-  margin-left: 72px;
-  min-width: 120px;
-}
-
-#sort.dropdownmenu {
-  margin-left: 145px;
-}
-
 .settings-icon {
+  margin-top: 1px;
   float: left;
   display: flex;
   align-items: center;
@@ -203,6 +102,96 @@
 .settings-icon svg {
   width: 20px;
   height: 20px;
+}
+
+.status-toolbar {
+  float: left;
+  border-right: 1px solid #e0e0e0;
+  margin-left: 10px;
+  text-align: center;
+  cursor: pointer;
+  color: #111;
+  height: 40px;
+}
+
+.status-toolbar p {
+  padding: 5px;
+  font-size: 14px;
+  margin-right: 12px;
+  margin-top: 5px;
+  height: 20px;
+}
+
+.status-toolbar #status {
+  width: 50px;
+}
+
+.dropdownmenu {
+  position: fixed;
+  margin-top: 40px;
+  background-color: #eff1f3;
+  cursor: pointer;
+  box-shadow: 0px 8px 16px 0px #000000;
+  min-width: 100px;
+  color: #111;
+}
+
+.dropdownmenu .item {
+  border-bottom: 1px solid #e0e0e0;
+  border-right: 1px solid #e0e0e0;
+  border-left: 1px solid #e0e0e0;
+  padding: px;
+  cursor: pointer;
+}
+
+.dropdownmenu .item p {
+  margin-left: 10px;
+  margin-right: 10px;
+  margin-bottom: 0px;
+  font-weight: 400;
+  font-size: 14px;
+}
+
+#status.dropdownmenu {
+  margin-left: 40px;
+}
+
+#filter.dropdownmenu {
+  margin-left: 112px;
+  min-width: 120px;
+}
+
+#sort.dropdownmenu {
+  margin-left: 165px;
+}
+
+#chat-icon {
+  float:left;
+  width: 20px;
+  height: 20px;
+  margin-top: 7px;
+}
+
+#chat-text {
+  float:left;
+  margin: 0;
+  padding: 4px;
+  font-size: 14px;
+  margin-top: 6px;
+  margin-right: 6px;
+}
+
+.search-wrap input {
+  width: 34%;
+  height: 40px;
+  background-color: #eff1f3;
+  font-size: 14px;
+  border: none;
+  margin-left: 6px;
+}
+
+.search-wrap input:focus {
+  outline: none;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -241,7 +230,7 @@ export default {
   },
   data() {
     return {
-      search: null,
+      searchQuery: null,
       showStatusMenu: false,
       showViewModeMenu: false,
       showSortMenu: false,
@@ -250,8 +239,8 @@ export default {
   },
   methods: {
     emitSearchEvent: function() {
-      if (!(this.search === undefined || this.search === null)) {
-        this.$store.data.setSelectedSearch(this.search);
+      if (!(this.searchQuery === undefined || this.searchQuery === null)) {
+        this.$store.data.setSelectedSearch(this.searchQuery);
       }
     },
     toggleShowStatus: function() {
@@ -293,12 +282,18 @@ export default {
       this.showSortMenu = false;
     },
     closeSettingsModal: function() {
+      this.showStatusMenu = false;
+      this.showViewModeMenu = false;
+      this.showSortMenu = false;
       this.showSettingsModal = false;
     },
     handleForceReload: function() {
       this.$emit('forceReload');
     },
     chatAssistant: function() {
+      this.showStatusMenu = false;
+      this.showViewModeMenu = false;
+      this.showSortMenu = false;
       this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
     }
   },
