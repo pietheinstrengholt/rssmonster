@@ -58,6 +58,7 @@ export const useStore = defineStore('data', {
       return { response };
     },
     setCurrentSelection(selection) {
+      this.setChatAssistantOpen(false);
       this.currentSelection = selection;
     },
     setUnreadCount(count) {
@@ -114,25 +115,31 @@ export const useStore = defineStore('data', {
       this.refreshCategories++;
     },
     setSelectedStatus(status) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.status = status;
       this.currentSelection.tag = null;
     },
     setSelectedCategoryId(categoryId) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.categoryId = String(categoryId);
       this.currentSelection.tag = null;
     },
     setSelectedFeedId(feedId) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.feedId = String(feedId);
       this.currentSelection.tag = null;
     },
     setSelectedSearch(search) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.search = search;
       this.currentSelection.tag = null;
     },
     setSelectedSort(sort) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.sort = sort;
     },
     setTag(tag) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.tag = tag;
       this.currentSelection.categoryId = '%';
       this.currentSelection.feedId = '%';
@@ -148,6 +155,7 @@ export const useStore = defineStore('data', {
       this.currentSelection.minQualityScore = value;
     },
     setViewMode(value) {
+      this.setChatAssistantOpen(false);
       this.currentSelection.viewMode = value;
     },
     setChatAssistantOpen(value) {
@@ -157,6 +165,7 @@ export const useStore = defineStore('data', {
       this.mobileSearchOpen = value;
     },
     setSearchQuery(query) {
+      this.setChatAssistantOpen(false);
       this.searchQuery = query;
     }
   },
