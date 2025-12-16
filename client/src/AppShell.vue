@@ -316,8 +316,15 @@ export default {
       this.$store.data.unreadsSinceLastUpdate = 0;
       //refresh the overview with updated categories and feeds counts
       this.getOverview(true);
-      //invoke ref home child component function to reload content
-      this.$refs.home.fetchArticleIds(this.$store.data.currentSelection);
+      //invoke ref articleFeed child component function to reload content
+      const ref = this.$refs.articleFeed;
+      if (ref) {
+        if (Array.isArray(ref)) {
+          ref.forEach(r => r && typeof r.fetchArticleIds === 'function' && r.fetchArticleIds(this.$store.data.currentSelection));
+        } else if (typeof ref.fetchArticleIds === 'function') {
+          ref.fetchArticleIds(this.$store.data.currentSelection);
+        }
+      }
     },
     refreshFeeds() {
       //call sidebar refreshFeeds function

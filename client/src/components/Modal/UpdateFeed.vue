@@ -13,10 +13,10 @@
                     <input class="form-control" type="text" id="feed_name" placeholder="Feed name" v-model="feed.feedName">
                   </div>
                 </div>
-                <div class="form-group row" v-if="feed.errorCount > 10">
+                <div class="form-group row" v-if="feed.errorCount > 0">
                   <label for="feedUrl" class="col-sm-3 col-form-label">Feed url</label>
                   <div class="col-sm-9">
-                    <input class="form-control" type="text" id="rssUrl" placeholder="Feed RSS Url" v-model="feed.rssUrl">
+                    <input class="form-control" type="text" id="rssUrl" placeholder="Feed RSS Url" v-model="feed.url">
                   </div>
                 </div>
                 <div v-if="$store.data.categories.length > 0">
@@ -35,7 +35,16 @@
                     </div>
                   </div>
                 </div>
-              </div>
+                <div class="form-group row" v-if="feed.errorCount > 0 && feed.errorMessage">
+                  <label class="col-sm-3 col-form-label text-danger">Error</label>
+                  <div class="col-sm-9">
+                    <div class="alert alert-danger mb-0 py-2">
+                      <small><strong>Error count:</strong> {{ feed.errorCount }}</small><br>
+                      <small>{{ feed.errorMessage }}</small>
+                    </div>
+                  </div>
+                </div>
+            </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="updateFeed">Update feed</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="$store.data.setShowModal('')">Close</button>
@@ -69,6 +78,11 @@
 
 select#category {
     margin-left: 20px;
+}
+
+.alert-danger {
+    margin-left: 20px;
+    margin-right: 10px;
 }
 </style>
 

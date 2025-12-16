@@ -25,6 +25,26 @@ export default defineConfig({
             sourcemap: false,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
             cleanupOutdatedCaches: false,
+            // Don't try to cache external images (CORS issues)
+            runtimeCaching: [
+              {
+                urlPattern: /^https:\/\/.*\.(png|jpg|jpeg|gif|webp|svg)$/i,
+                handler: 'CacheFirst',
+                options: {
+                  cacheName: 'external-images',
+                  expiration: {
+                    maxEntries: 100,
+                    maxAgeSeconds: 60 * 60 * 24 * 7 // 7 days
+                  },
+                  cacheableResponse: {
+                    statuses: [0, 200] // Cache opaque responses (status 0)
+                  },
+                  fetchOptions: {
+                    mode: 'no-cors' // Avoid CORS errors for external images
+                  }
+                }
+              }
+            ]
           },
           includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
           manifest: {

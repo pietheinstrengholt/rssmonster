@@ -55,6 +55,9 @@ const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
 let rateLimitDelay = 0;
 const RATE_LIMIT_DELAY_MS = 3000; // 3 seconds delay when rate limited
 
+// Mutex for sequential OpenAI API calls when rate limited
+let openAIQueue = Promise.resolve();
+
 const withTimeout = (promise, timeoutMs, feedUrl) => {
   return Promise.race([
     promise,
@@ -455,23 +458,29 @@ const processArticle = async (feed, post) => {
 
           // Only analyze content if OpenAI API key and model are configured
           if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
-            try {
-              // Apply rate limit delay if we hit a rate limit previously
-              if (rateLimitDelay > 0) {
-                console.log(`[OpenAI LLM] Rate limit active, waiting ${rateLimitDelay / 1000}s before next request...`);
-                await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
-              }
-              // Analyze content using OpenAI API
-              analysis = await analyzeContent(postContentStripped);
-              console.log(`[OpenAI LLM] Analysis completed for "${post.title || 'No title'}"`);
-            } catch (err) {
-              // Check for rate limit error (429)
-              if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('rate limit'))) {
-                console.warn(`[OpenAI LLM] Rate limit hit, enabling ${RATE_LIMIT_DELAY_MS / 1000}s delay for subsequent requests`);
-                rateLimitDelay = RATE_LIMIT_DELAY_MS;
-              }
-              console.error('Error analyzing content:', err.message);
-            }
+            // Use a queue to ensure sequential API calls and respect rate limits
+            await new Promise((resolve) => {
+              openAIQueue = openAIQueue.then(async () => {
+                try {
+                  // Apply rate limit delay if we hit a rate limit previously
+                  if (rateLimitDelay > 0) {
+                    console.log(`[OpenAI LLM] Rate limit active, waiting ${rateLimitDelay / 1000}s before next request...`);
+                    await new Promise(r => setTimeout(r, rateLimitDelay));
+                  }
+                  // Analyze content using OpenAI API
+                  analysis = await analyzeContent(postContentStripped);
+                  console.log(`[OpenAI LLM] Analysis completed for "${post.title || 'No title'}"`);
+                } catch (err) {
+                  // Check for rate limit error (429)
+                  if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('rate limit'))) {
+                    console.warn(`[OpenAI LLM] Rate limit hit, enabling ${RATE_LIMIT_DELAY_MS / 1000}s delay for subsequent requests`);
+                    rateLimitDelay = RATE_LIMIT_DELAY_MS;
+                  }
+                  console.error('Error analyzing content:', err.message);
+                }
+                resolve();
+              });
+            });
           }
 
           // Apply action overrides after analysis
