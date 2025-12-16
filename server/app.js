@@ -2,6 +2,8 @@
 import express from 'express';
 import morgan from 'morgan';
 import cors from "cors";
+import fs from 'fs';
+import https from 'https';
 
 //include models in order to define associations
 import User from './models/user.js';
@@ -91,9 +93,23 @@ Feed.hasMany(Article);
 
 //start the server
 const port = process.env.PORT || 3000;
-app.listen(port, () => {
-  console.log(`Server has started on port ${port}!`);
-});
+
+if (process.env.ENABLE_HTTPS === 'true') {
+  // HTTPS server configuration
+  const options = {
+    cert: fs.readFileSync('cert/fullchain.pem'),
+    key: fs.readFileSync('cert/privkey.pem')
+  };
+
+  https.createServer(options, app).listen(port, () => {
+    console.log(`HTTPS server running on port ${port}`);
+  });
+} else {
+  // HTTP server (default)
+  app.listen(port, () => {
+    console.log(`HTTP server has started on port ${port}!`);
+  });
+}
 
 process.on('uncaughtException', err => {
   if (err.name === 'RequestError') {

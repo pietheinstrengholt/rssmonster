@@ -263,20 +263,23 @@ Create a weekly cron job:
 0 0 * * 0 certbot renew --quiet && cp /etc/letsencrypt/live/yourdomain.com/* /path/to/rssmonster/cert/
 ```
 
-### 3. Configure HTTPS in `server/app.js`
+### 3. Enable HTTPS
 
-```javascript
-import fs from 'fs';
-import https from 'https';
+Add the following to your `server/.env` file:
 
-const options = {
-  cert: fs.readFileSync('cert/fullchain.pem'),
-  key: fs.readFileSync('cert/privkey.pem')
-};
+```env
+ENABLE_HTTPS=true
+```
 
-https.createServer(options, app).listen(port, () => {
-  console.log(`HTTPS server running on port ${port}`);
-});
+The server will automatically use HTTPS with certificates from the `cert/` directory. Ensure your SSL certificates are properly placed:
+- `cert/fullchain.pem`
+- `cert/privkey.pem`
+
+Restart the server to apply the changes:
+
+```bash
+cd server
+npm run start
 ```
 
 ## AWS Elastic Beanstalk Deployment
