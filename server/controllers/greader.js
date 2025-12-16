@@ -4,6 +4,7 @@ import Category from "../models/category.js";
 import User from "../models/user.js";
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
+import { generateOpml } from './opml.js';
 
 /**
  * Google Reader API compatible implementation
@@ -1045,7 +1046,7 @@ export const disableTag = async (req, res) => {
 
 /**
  * GET /api/greader/reader/api/0/subscription/export
- * Export subscriptions as OPML (placeholder - returns empty)
+ * Export subscriptions as OPML
  */
 export const exportSubscriptions = async (req, res) => {
   try {
@@ -1054,8 +1055,11 @@ export const exportSubscriptions = async (req, res) => {
       return unauthorized(res);
     }
     
-    // TODO: Implement OPML export
-    res.type('application/xml').send('<?xml version="1.0" encoding="UTF-8"?><opml version="1.0"><body></body></opml>');
+    const opml = await generateOpml(user.id);
+    
+    res.setHeader('Content-Type', 'application/xml; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="subscriptions.opml"`);
+    res.send(opml);
   } catch (err) {
     console.error('Error in exportSubscriptions:', err);
     return res.status(500).json({ error: err.message });

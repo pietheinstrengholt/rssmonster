@@ -2,27 +2,29 @@ import Category from "../models/category.js";
 import Feed from "../models/feed.js";
 import { parseStringPromise } from 'xml2js';
 
-export const exportOpml = async (req, res, next) => {
-  try {
-    const userId = req.userData.userId;
+/**
+ * Generate OPML content for a user's feeds
+ * @param {number} userId - The user ID to generate OPML for
+ * @returns {Promise<string>} - The OPML XML content
+ */
+export const generateOpml = async (userId) => {
+  // Fetch all categories with their feeds for this user
+  const categories = await Category.findAll({
+    where: { userId: userId },
+    include: [{
+      model: Feed,
+      required: false
+    }],
+    order: [
+      ["categoryOrder", "ASC"],
+      ["name", "ASC"],
+      [Feed, "feedName", "ASC"]
+    ]
+  });
 
-    // Fetch all categories with their feeds for this user
-    const categories = await Category.findAll({
-      where: { userId: userId },
-      include: [{
-        model: Feed,
-        required: false
-      }],
-      order: [
-        ["categoryOrder", "ASC"],
-        ["name", "ASC"],
-        [Feed, "feedName", "ASC"]
-      ]
-    });
-
-    // Build OPML XML
-    const timestamp = new Date().toUTCString();
-    let opml = `<?xml version="1.0" encoding="UTF-8"?>
+  // Build OPML XML
+  const timestamp = new Date().toUTCString();
+  let opml = `<?xml version="1.0" encoding="UTF-8"?>
 <opml version="2.0">
   <head>
     <title>RSSMonster Feed Export</title>
@@ -31,28 +33,37 @@ export const exportOpml = async (req, res, next) => {
   <body>
 `;
 
-    // Add each category as an outline with nested feed outlines
-    categories.forEach(category => {
-      opml += `    <outline text="${escapeXml(category.name)}" title="${escapeXml(category.name)}">\n`;
-      
-      if (category.feeds && category.feeds.length > 0) {
-        category.feeds.forEach(feed => {
-          opml += `      <outline type="rss" text="${escapeXml(feed.feedName)}" title="${escapeXml(feed.feedName)}" xmlUrl="${escapeXml(feed.url)}"`;
-          if (feed.description) {
-            opml += ` description="${escapeXml(feed.description)}"`;
-          }
-          if (feed.link) {
-            opml += ` htmlUrl="${escapeXml(feed.link)}"`;
-          }
-          opml += ` />\n`;
-        });
-      }
-      
-      opml += `    </outline>\n`;
-    });
+  // Add each category as an outline with nested feed outlines
+  categories.forEach(category => {
+    opml += `    <outline text="${escapeXml(category.name)}" title="${escapeXml(category.name)}">\n`;
+    
+    if (category.feeds && category.feeds.length > 0) {
+      category.feeds.forEach(feed => {
+        opml += `      <outline type="rss" text="${escapeXml(feed.feedName)}" title="${escapeXml(feed.feedName)}" xmlUrl="${escapeXml(feed.url)}"`;
+        if (feed.description) {
+          opml += ` description="${escapeXml(feed.description)}"`;
+        }
+        if (feed.link) {
+          opml += ` htmlUrl="${escapeXml(feed.link)}"`;
+        }
+        opml += ` />\n`;
+      });
+    }
+    
+    opml += `    </outline>\n`;
+  });
 
-    opml += `  </body>
+  opml += `  </body>
 </opml>`;
+
+  return opml;
+};
+
+export const exportOpml = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+
+    const opml = await generateOpml(userId);
 
     // Set headers for XML download
     res.setHeader('Content-Type', 'application/xml; charset=utf-8');
