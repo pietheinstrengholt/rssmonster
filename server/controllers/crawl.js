@@ -32,7 +32,9 @@ const getFeeds = async () => {
         active: true,
         errorCount: {
           [Op.lt]: 25
-        }
+        },
+        // DEBUG: Filter for specific URL - remove this line after debugging
+        //url: 'http://blog.feedbin.com/'
       },
       order: [
         ['updatedAt', 'ASC']
@@ -46,57 +48,110 @@ const getFeeds = async () => {
   }
 }
 
+// Timeout wrapper for feed processing (default 60 seconds)
+const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
+
+const withTimeout = (promise, timeoutMs, feedUrl) => {
+  return Promise.race([
+    promise,
+    new Promise((_, reject) => 
+      setTimeout(() => reject(new Error(`Feed processing timed out after ${timeoutMs / 1000} seconds`)), timeoutMs)
+    )
+  ]);
+};
+
 // Core crawl function that processes feeds synchronously
 const performCrawl = async () => {
   const feeds = await getFeeds();
   let processedCount = 0;
   let errorCount = 0;
+  let timeoutCount = 0;
 
   if (feeds.length > 0) {
     // Use Promise.all with map to wait for all feeds to be processed
     await Promise.all(feeds.map(async (feed) => {
       try {
-        //discover RssLink
-        const url = await discoverRssLink.discoverRssLink(feed.url);
+        // Wrap entire feed processing in a timeout
+        await withTimeout((async () => {
+          //discover RssLink - first try feed.url, then fallback to rssUrl if available
+          let url = await discoverRssLink.discoverRssLink(feed.url);
+          console.log(`Crawling feed: ${feed.url} (Discovered RSS: ${url})`);
+          
+          // If discovery failed and we have a stored rssUrl, try that instead
+          if (typeof url === "undefined" && feed.rssUrl) {
+            console.log(`Discovery failed for ${feed.url}, trying stored rssUrl: ${feed.rssUrl}`);
+            url = await discoverRssLink.discoverRssLink(feed.rssUrl);
+          }
 
-        //do not process undefined URLs
-        if (typeof url !== "undefined") {
-          try {
-            const feeditem = await parseFeed.process(url);
-            if (feeditem) {
+          //do not process undefined URLs
+          if (typeof url !== "undefined") {
+            try {
+              const feeditem = await parseFeed.process(url);
+              if (feeditem) {
 
-              //process all feed posts - use Promise.all to wait for all articles
-              await Promise.all(feeditem.items.map((item) => processArticle(feed, item)));
-  
-              //reset the feed count and update the favicon if available
-              const faviconUrl = feeditem.image?.url || null;
+                //process all feed posts - use Promise.all to wait for all articles
+                await Promise.all(feeditem.items.map((item) => processArticle(feed, item)));
+    
+                //reset the feed count, clear error message, and update the favicon if available
+                const faviconUrl = feeditem.image?.url || null;
+                await feed.update({
+                  favicon: faviconUrl,
+                  rssUrl: url,
+                  errorCount: 0,
+                  errorMessage: null
+                });
+                processedCount++;
+                console.log(`Successfully processed feed: ${feed.url} with ${feeditem.items.length} items.`);
+              } else {
+                // feeditem is null/undefined - treat as error
+                const errMsg = 'No valid feed data returned';
+                console.error('Error processing feed:', errMsg, '-', feed.url);
+                await feed.update({
+                  errorCount: feed.errorCount + 1,
+                  errorMessage: errMsg
+                });
+                errorCount++;
+              }
+            } catch (err) {
+              const errMsg = err.message || 'Unknown error';
+              console.error('Error processing feed:', err.stack?.split("\n", 1).join("") || errMsg, '-', feed.url);
+              //update the errorCount and errorMessage
               await feed.update({
-                favicon: faviconUrl,
-                errorCount: 0
+                errorCount: feed.errorCount + 1,
+                errorMessage: errMsg
               });
-              processedCount++;
+              errorCount++;
             }
-            console.log(`Successfully processed feed: ${feed.url}` + (feeditem ? ` with ${feeditem.items.length} items.` : ''));
-          } catch (err) {
-            console.error('Error processing feed:', err.stack.split("\n", 1).join(""), '-', feed.url);
-            //update the errorCount
-            await feed.increment('errorCount');
+          } else {
+            const errMsg = 'No RSS link discovered';
+            console.log(`${errMsg} for feed: ${feed.url}`);
+            //update the errorCount and errorMessage
+            await feed.update({
+              errorCount: feed.errorCount + 1,
+              errorMessage: errMsg
+            });
             errorCount++;
           }
-        } else {
-          console.log(`No RSS link discovered for feed: ${feed.url}`);
-          //update the errorCount
-          await feed.increment('errorCount');
-          errorCount++;
-        }
 
-        //touch updatedAt
-        feed.changed('updatedAt', true);
-        await feed.update({
-          updatedAt: new Date()
-        });
+          //touch updatedAt
+          feed.changed('updatedAt', true);
+          await feed.update({
+            updatedAt: new Date()
+          });
+        })(), FEED_TIMEOUT_MS, feed.url);
       } catch (err) {
-        console.error('Error processing feed:', feed.url, err);
+        if (err.message.includes('timed out')) {
+          console.error(`Timeout processing feed: ${feed.url} - skipping to next feed`);
+          timeoutCount++;
+          // Update error count and message for timeout
+          await feed.update({
+            errorCount: feed.errorCount + 1,
+            errorMessage: err.message,
+            updatedAt: new Date()
+          });
+        } else {
+          console.error('Error processing feed:', feed.url, err);
+        }
         errorCount++;
       }
     }));
@@ -105,7 +160,8 @@ const performCrawl = async () => {
   return { 
     total: feeds.length, 
     processed: processedCount, 
-    errors: errorCount 
+    errors: errorCount,
+    timeouts: timeoutCount
   };
 };
 
@@ -113,7 +169,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
     performCrawl().then(result => {
-      console.log(`Crawl completed: ${result.processed} feeds processed, ${result.errors} errors`);
+      console.log(`Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`);
     }).catch(err => {
       console.error('Error during async crawl:', err);
     });
@@ -241,30 +297,8 @@ const processArticle = async (feed, post) => {
         
         //add article to database, if content or a description has been found
         if (postContent) {
-          // Analyze content once (summary + tags + scores)
-          let analysis = {
-            summary: postContentStripped,
-            tags: [],
-            advertisementScore: 0,
-            sentimentScore: 50,
-            qualityScore: 50,
-          };
-
-          // Only analyze content if OpenAI API key and model are configured
-          if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
-            try {
-              // Analyze content using OpenAI API
-              analysis = await analyzeContent(postContentStripped);
-              console.log(`Analysis for "${post.title || 'No title'}":`);
-              console.log(`  Summary: ${analysis.summary.substring(0, 120)}...`);
-              console.log(`  Tags: ${analysis.tags.join(', ')}`);
-              console.log(`  Ad: ${analysis.advertisementScore}, Sentiment: ${analysis.sentimentScore}, Quality: ${analysis.qualityScore}`);
-            } catch (err) {
-              console.error('Error analyzing content:', err.message);
-            }
-          }
-
           // Retrieve actions for applying rules to the article
+          // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
           const actions = await Action.findAll({
             where: { userId: feed.userId }
           });
@@ -275,6 +309,8 @@ const processArticle = async (feed, post) => {
           let shouldDelete = false;
           let statusToSet = 'unread';
           let clickedInd = 0;
+          let actionAdvertisementScore = null;
+          let actionQualityScore = null;
           if (actions && actions.length > 0) {
             for (const action of actions) {
               // Check delete actions first - they take precedence over all other actions
@@ -308,7 +344,7 @@ const processArticle = async (feed, post) => {
                 try {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
-                    analysis.advertisementScore = 100;
+                    actionAdvertisementScore = 100;
                     console.log(`Advertisement action "${action.name}" matched article "${post.title}". Setting advertisementScore to 100.`);
                   }
                 } catch (regexErr) {
@@ -320,7 +356,7 @@ const processArticle = async (feed, post) => {
                 try {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
-                    analysis.qualityScore = 100;
+                    actionQualityScore = 100;
                     console.log(`Bad quality action "${action.name}" matched article "${post.title}". Setting qualityScore to 100.`);
                   }
                 } catch (regexErr) {
@@ -358,6 +394,35 @@ const processArticle = async (feed, post) => {
           // Skip article creation if delete action matched
           if (shouldDelete) {
             return;
+          }
+
+          // Analyze content once (summary + tags + scores)
+          // Done AFTER delete check to avoid wasting API calls
+          let analysis = {
+            summary: postContentStripped,
+            tags: [],
+            advertisementScore: 0,
+            sentimentScore: 50,
+            qualityScore: 50,
+          };
+
+          // Only analyze content if OpenAI API key and model are configured
+          if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
+            try {
+              // Analyze content using OpenAI API
+              analysis = await analyzeContent(postContentStripped);
+              console.log(`[OpenAI LLM] Analysis completed for "${post.title || 'No title'}"`);
+            } catch (err) {
+              console.error('Error analyzing content:', err.message);
+            }
+          }
+
+          // Apply action overrides after analysis
+          if (actionAdvertisementScore !== null) {
+            analysis.advertisementScore = actionAdvertisementScore;
+          }
+          if (actionQualityScore !== null) {
+            analysis.qualityScore = actionQualityScore;
           }
 
           // Create article with analysis results

@@ -47,6 +47,10 @@ module.exports = {
         type: Sequelize.INTEGER,
         defaultValue: 0
       },
+      errorMessage: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
       active: { 
         type: Sequelize.BOOLEAN, 
         allowNull: false, 

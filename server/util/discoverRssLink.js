@@ -92,7 +92,11 @@ export const discoverRssLink = async (url) => {
         } else {
           //There is a link, but it could be an invalid URL.
           if (isURL(rssLink)) {
-            //find overlap and create new url
+            //If rssLink is already an absolute URL, return it directly
+            if (rssLink.startsWith('http://') || rssLink.startsWith('https://')) {
+              return rssLink;
+            }
+            //find overlap and create new url for relative URLs
             var overlap = findOverlap(responseUrl, rssLink);
             url = responseUrl.replace(overlap, "") + rssLink;
             return url;
