@@ -25,8 +25,8 @@
     "nodemon": "^3.1.11"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.24.3",
-    "@openai/agents": "^0.3.4",
+    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@openai/agents": "^0.3.5",
     "@rowanmanning/feed-parser": "^2.1.1",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.1.2",
@@ -40,12 +40,12 @@
     "multer": "^2.0.2",
     "mysql2": "^3.15.3",
     "node-cache": "^5.1.2",
-    "openai": "^6.10.0",
+    "openai": "^6.13.0",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
     "striptags": "^3.2.0",
     "xml2js": "^0.6.2",
-    "zod": "^4.2.0"
+    "zod": "^4.2.1"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"
