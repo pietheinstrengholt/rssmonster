@@ -31,7 +31,7 @@ export async function analyzeContent(text) {
   "   - If the article is long (many paragraphs), write a detailed summary of 10-20 sentences, covering all main points and nuances.",
   "   - Always focus on facts and key points, avoid filler or off-topic commentary.",
   "",
-  "2) Provide 5-7 SEO-friendly tags:",
+  "2) Provide 3-5 SEO-friendly tags:",
   "   - lowercase",
   "   - no punctuation",
   "   - single words or short phrases",
