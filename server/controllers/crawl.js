@@ -157,7 +157,7 @@ const processArticle = async (feed, post) => {
             postContent = `
               <div class="media-content">
                 ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width: 100%; height: auto;">` : ''}
-                ${media.title ? `<h4>${media.title}</h4>` : ''}
+                ${media.title ? `<h5>${media.title}</h5>` : ''}
                 ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
               </div>
             `;
