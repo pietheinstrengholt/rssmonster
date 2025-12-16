@@ -325,7 +325,7 @@ Please ensure your code follows the existing style and includes appropriate test
 
 ## Credits
 
-RSSMonster is built with the following technologies:
+RSSMonster is built with the following frameworks and libraries:
 
 - **[Node.js](https://nodejs.org/)** - JavaScript runtime
 - **[Express](https://expressjs.com/)** - Web framework
