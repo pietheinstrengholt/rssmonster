@@ -22,6 +22,7 @@ RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google R
 - **Dark Mode**: Automatic theme switching
 - **OPML Support**: Import and export feeds in OPML format for seamless migration
 - **Fever API Compatible**: Works with popular RSS clients like Reeder (iOS)
+- **Google Reader API Compatible**: Works with apps like News+, FeedMe, Reeder, and Vienna RSS
 - **Automated Actions**: Define custom rules using regular expressions to automatically delete, star, mark as read, flag as advertisement, or mark articles as low quality
 - **Multi-user Support**: Separate accounts with personalized feeds and preferences
 - **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP)
@@ -328,6 +329,54 @@ RSSMonster is compatible with the Fever API, enabling integration with third-par
 - **Reeder (iOS)**: Configure by adding a Fever account with the endpoint above
 
 ![Screenshot Fever](client/src/assets/screenshots/fever.png)
+
+## Google Reader API Integration
+
+RSSMonster supports the Google Reader API, providing compatibility with a wide range of RSS clients.
+
+### Configuration
+
+- **API Endpoint:** `http://your-rssmonster-url/api/greader`
+- **Authentication:** Use your RSSMonster username and password
+
+### Supported Clients
+
+| App | Platform | Notes |
+|-----|----------|-------|
+| [News+](https://github.com/noinnion/newsplus) | Android | With Google Reader extension |
+| [FeedMe](https://play.google.com/store/apps/details?id=com.seazon.feedme) | Android | Full sync support |
+| [Reeder](https://www.reederapp.com/) | iOS/macOS | Classic version |
+| [Vienna RSS](http://www.vienna-rss.com/) | macOS | Open source |
+| [ReadKit](https://readkit.app/) | macOS | Multi-service reader |
+
+### API Endpoints
+
+```bash
+# Login (returns SID and Auth tokens)
+curl 'http://localhost:3000/api/greader/accounts/ClientLogin?Email=username&Passwd=password'
+
+# Get subscriptions
+curl -H "Authorization:GoogleLogin auth=username/token" \
+  'http://localhost:3000/api/greader/reader/api/0/subscription/list?output=json'
+
+# Get unread counts
+curl -H "Authorization:GoogleLogin auth=username/token" \
+  'http://localhost:3000/api/greader/reader/api/0/unread-count?output=json'
+
+# Get articles
+curl -H "Authorization:GoogleLogin auth=username/token" \
+  'http://localhost:3000/api/greader/reader/api/0/stream/contents/reading-list'
+```
+
+### Supported Operations
+
+- **Authentication:** ClientLogin with username/password
+- **Subscriptions:** List, add, edit, remove feeds
+- **Tags/Categories:** List, rename, delete categories
+- **Articles:** Fetch by stream, feed, or category with pagination
+- **Mark as read/unread:** Individual articles or mark all as read
+- **Star/unstar:** Favorite articles
+- **Unread counts:** Per feed, category, and total
 
 ## Contributing
 
