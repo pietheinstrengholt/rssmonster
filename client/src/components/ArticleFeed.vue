@@ -1,15 +1,15 @@
 <template>
-  <InfiniteScroll :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd">
-  </InfiniteScroll>
+  <ArticleListView :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd">
+  </ArticleListView>
 </template>
 
 <script>
-import InfiniteScroll from "./InfiniteScroll.vue";
+import ArticleListView from "./ArticleListView.vue";
 import axios from 'axios';
 
 export default {
   components: {
-    InfiniteScroll
+    ArticleListView
   },
   data() {
     return {

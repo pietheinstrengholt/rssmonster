@@ -47,20 +47,20 @@
     </div>
     <!-- Main app view -->
     <main v-else>
-      <app-main></app-main>
+      <app-shell></app-shell>
     </main>
   </div>
 </template>
 
 <script>
-import Main from './Main.vue';
+import AppShell from './AppShell.vue';
 import AuthService from './services/AuthService.js';
 import Cookies from 'js-cookie';
 import axios from 'axios';
 
 export default {
   components: {
-    appMain: Main
+    appShell: AppShell
   },
   data() {
     return {

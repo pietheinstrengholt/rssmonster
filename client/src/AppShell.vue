@@ -9,11 +9,11 @@
         <!-- MobileToolbar events -->
         <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
         <!-- Toolbar events -->
-        <app-toolbar id="toolbar" @forceReload="forceReload"></app-toolbar>
+        <app-desktop-toolbar id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-home v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="home" @forceReload="forceReload"></app-home>
-        <app-assistant v-if="enableAgent && $store.data.chatAssistantOpen"></app-assistant>
+        <app-article-feed v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
+        <app-chat-assistant v-if="enableAgent && $store.data.chatAssistantOpen"></app-chat-assistant>
       </div>
     </div>
     <!-- Mobile events -->
@@ -129,15 +129,15 @@ html, #app, body {
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
-import Home from "./components/Home.vue";
+import ArticleFeed from "./components/ArticleFeed.vue";
 
 //import components
 import { defineAsyncComponent } from 'vue'
 const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue"));
-const Toolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "toolbar" */ "./components/Toolbar.vue"));
+const DesktopToolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "desktoptoolbar" */ "./components/DesktopToolbar.vue"));
 const MobileToolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobiletoolbar" */ "./components/MobileToolbar.vue"));
 const MobileMenuOverlay = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobilemenuoverlay" */ "./components/MobileMenuOverlay.vue"));
-const Assistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "assistant" */ "./components/Assistant.vue"));
+const ChatAssistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "chatassistant" */ "./components/ChatAssistant.vue"));
 
 //import modals
 const NewCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "newcategory" */ "./components/Modal/NewCategory.vue"));
@@ -152,11 +152,11 @@ const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "man
 export default {
   components: {
     appSidebar: Sidebar,
-    appHome: Home,
-    appToolbar: Toolbar,
+    appArticleFeed: ArticleFeed,
+    appDesktopToolbar: DesktopToolbar,
     appMobileToolbar: MobileToolbar,
     appMobileMenuOverlay: MobileMenuOverlay,
-    appAssistant: Assistant,
+    appChatAssistant: ChatAssistant,
     //import modals
     appNewCategory: NewCategory,
     appNewFeed: NewFeed,
