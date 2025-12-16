@@ -91,24 +91,28 @@ Category.hasMany(Feed);
 Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE' });
 Feed.hasMany(Article);
 
-//start the server
+//start the server (skip when disabled via env)
 const port = process.env.PORT || 3000;
 
-if (process.env.ENABLE_HTTPS === 'true') {
-  // HTTPS server configuration
-  const options = {
-    cert: fs.readFileSync('cert/fullchain.pem'),
-    key: fs.readFileSync('cert/privkey.pem')
-  };
-
-  https.createServer(options, app).listen(port, () => {
-    console.log(`HTTPS server running on port ${port}`);
-  });
+if (process.env.DISABLE_LISTENER === 'true') {
+  console.log('Server listener disabled by DISABLE_LISTENER env.');
 } else {
-  // HTTP server (default)
-  app.listen(port, () => {
-    console.log(`HTTP server has started on port ${port}!`);
-  });
+  if (process.env.ENABLE_HTTPS === 'true') {
+    // HTTPS server configuration
+    const options = {
+      cert: fs.readFileSync('cert/fullchain.pem'),
+      key: fs.readFileSync('cert/privkey.pem')
+    };
+
+    https.createServer(options, app).listen(port, () => {
+      console.log(`HTTPS server running on port ${port}`);
+    });
+  } else {
+    // HTTP server (default)
+    app.listen(port, () => {
+      console.log(`HTTP server has started on port ${port}!`);
+    });
+  }
 }
 
 process.on('uncaughtException', err => {
