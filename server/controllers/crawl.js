@@ -34,7 +34,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        //url: 'http://blog.feedbin.com/'
+        //url: 'http://www.jamesserra.com/'
       },
       order: [
         ['updatedAt', 'ASC']
@@ -51,6 +51,10 @@ const getFeeds = async () => {
 // Timeout wrapper for feed processing (default 60 seconds)
 const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
 
+// Rate limit delay tracking for OpenAI API
+let rateLimitDelay = 0;
+const RATE_LIMIT_DELAY_MS = 3000; // 3 seconds delay when rate limited
+
 const withTimeout = (promise, timeoutMs, feedUrl) => {
   return Promise.race([
     promise,
@@ -60,6 +64,16 @@ const withTimeout = (promise, timeoutMs, feedUrl) => {
   ]);
 };
 
+// Helper function to extract base URL from a feed URL
+const getBaseUrl = (feedUrl) => {
+  try {
+    const urlObj = new URL(feedUrl);
+    return `${urlObj.protocol}//${urlObj.hostname}${urlObj.port ? ':' + urlObj.port : ''}/`;
+  } catch (e) {
+    return null;
+  }
+};
+
 // Core crawl function that processes feeds synchronously
 const performCrawl = async () => {
   const feeds = await getFeeds();
@@ -67,20 +81,35 @@ const performCrawl = async () => {
   let errorCount = 0;
   let timeoutCount = 0;
 
+  console.log(`Starting crawl for ${feeds.length} feeds...`);
+
   if (feeds.length > 0) {
     // Use Promise.all with map to wait for all feeds to be processed
     await Promise.all(feeds.map(async (feed) => {
       try {
         // Wrap entire feed processing in a timeout
         await withTimeout((async () => {
-          //discover RssLink - first try feed.url, then fallback to rssUrl if available
+          //discover RssLink - first try feed.url, then fallback to rssUrl, then try base URL
           let url = await discoverRssLink.discoverRssLink(feed.url);
+          let usedBaseUrl = false;
           console.log(`Crawling feed: ${feed.url} (Discovered RSS: ${url})`);
           
           // If discovery failed and we have a stored rssUrl, try that instead
           if (typeof url === "undefined" && feed.rssUrl) {
             console.log(`Discovery failed for ${feed.url}, trying stored rssUrl: ${feed.rssUrl}`);
             url = await discoverRssLink.discoverRssLink(feed.rssUrl);
+          }
+
+          // If still no URL and the feed.url looks like a feed path, try the base URL
+          if (typeof url === "undefined") {
+            const baseUrl = getBaseUrl(feed.url);
+            if (baseUrl && baseUrl !== feed.url) {
+              console.log(`Discovery failed, trying base URL: ${baseUrl}`);
+              url = await discoverRssLink.discoverRssLink(baseUrl);
+              if (typeof url !== "undefined") {
+                usedBaseUrl = true;
+              }
+            }
           }
 
           //do not process undefined URLs
@@ -94,12 +123,20 @@ const performCrawl = async () => {
     
                 //reset the feed count, clear error message, and update the favicon if available
                 const faviconUrl = feeditem.image?.url || null;
-                await feed.update({
+                const updateData = {
                   favicon: faviconUrl,
                   rssUrl: url,
                   errorCount: 0,
                   errorMessage: null
-                });
+                };
+                
+                // If we used the base URL to discover a working feed, update feed.url too
+                if (usedBaseUrl) {
+                  updateData.url = getBaseUrl(feed.url);
+                  console.log(`Updating feed.url from ${feed.url} to ${updateData.url}`);
+                }
+                
+                await feed.update(updateData);
                 processedCount++;
                 console.log(`Successfully processed feed: ${feed.url} with ${feeditem.items.length} items.`);
               } else {
@@ -165,12 +202,22 @@ const performCrawl = async () => {
   };
 };
 
+// Reset rate limit delay after crawl completes
+const resetRateLimitDelay = () => {
+  if (rateLimitDelay > 0) {
+    console.log('[OpenAI LLM] Resetting rate limit delay');
+    rateLimitDelay = 0;
+  }
+};
+
 const crawlRssLinks = catchAsync(async (req, res, next) => {
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
     performCrawl().then(result => {
+      resetRateLimitDelay();
       console.log(`Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`);
     }).catch(err => {
+      resetRateLimitDelay();
       console.error('Error during async crawl:', err);
     });
 
@@ -409,10 +456,20 @@ const processArticle = async (feed, post) => {
           // Only analyze content if OpenAI API key and model are configured
           if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
             try {
+              // Apply rate limit delay if we hit a rate limit previously
+              if (rateLimitDelay > 0) {
+                console.log(`[OpenAI LLM] Rate limit active, waiting ${rateLimitDelay / 1000}s before next request...`);
+                await new Promise(resolve => setTimeout(resolve, rateLimitDelay));
+              }
               // Analyze content using OpenAI API
               analysis = await analyzeContent(postContentStripped);
               console.log(`[OpenAI LLM] Analysis completed for "${post.title || 'No title'}"`);
             } catch (err) {
+              // Check for rate limit error (429)
+              if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('rate limit'))) {
+                console.warn(`[OpenAI LLM] Rate limit hit, enabling ${RATE_LIMIT_DELAY_MS / 1000}s delay for subsequent requests`);
+                rateLimitDelay = RATE_LIMIT_DELAY_MS;
+              }
               console.error('Error analyzing content:', err.message);
             }
           }

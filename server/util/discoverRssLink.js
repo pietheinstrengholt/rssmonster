@@ -1,11 +1,8 @@
 import { load } from 'cheerio';
-import fetch from "node-fetch";
-//import http and https, needed for setting the agents for node-fetch
-import http from 'http';
-import https from 'https';
+// Use native fetch (Node.js 18+) for better HTTP/2 support
 
-http.globalAgent.maxSockets = 1000000;
-https.globalAgent.maxSockets = 1000000;
+// Helper function for delay
+const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
 
 //function to return overlap
 const findOverlap = (a, b) => {
@@ -31,36 +28,52 @@ const isURL = (str) => {
   }
 }
 
-export const fetchURL = async (url) => {
-  try {
-
-    //set agents for http or https
-    const httpAgent = new http.Agent({
-      keepAlive: true
-    });
-    const httpsAgent = new https.Agent({
-      keepAlive: true
-    });
+export const fetchURL = async (url, retries = 2) => {
+  const attemptFetch = async (attempt) => {
+    // Use AbortController for timeout
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 30000);
 
     const options = {
-      agent: function(_parsedURL) {
-        if (_parsedURL.protocol == 'http:') {
-          return httpAgent;
-        } else {
-          return httpsAgent;
-        }
-      },
+      signal: controller.signal,
       headers: {
         "User-Agent":
-          "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_8_5) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36",
-        Accept: "text/html,application/xhtml+xml",
-        Connection: 'keep-alive'
+          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/rss+xml,application/atom+xml,*/*;q=0.8",
+        "Accept-Language": "en-US,en;q=0.9",
+        "Cache-Control": "no-cache"
       }
     };
 
-    //fetch url by using proper user agent
-    const response = fetch(url, options);
-    return response;
+    try {
+      const response = await fetch(url, options);
+      clearTimeout(timeoutId);
+      return response;
+    } catch (err) {
+      clearTimeout(timeoutId);
+      
+      // Retry on network errors
+      const isRetryable = err.message && (
+        err.message.includes('socket hang up') ||
+        err.message.includes('ECONNRESET') ||
+        err.message.includes('ETIMEDOUT') ||
+        err.message.includes('fetch failed') ||
+        err.name === 'AbortError'
+      );
+      
+      if (isRetryable && attempt < retries) {
+        const waitTime = 1000 * (attempt + 1); // Exponential backoff: 1s, 2s
+        console.log(`Fetch attempt ${attempt + 1} failed for ${url}, retrying in ${waitTime}ms...`);
+        await delay(waitTime);
+        return attemptFetch(attempt + 1);
+      }
+      
+      throw err;
+    }
+  };
+
+  try {
+    return await attemptFetch(0);
 
   } catch (e) {
     console.log(
