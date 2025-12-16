@@ -101,7 +101,7 @@ You can crawl feeds in two ways:
 
 ```bash
 cd server
-npm run crawl
+DISABLE_LISTENER=true npm run crawl
 ```
 
 This runs a synchronous crawl of all active feeds and provides a summary upon completion.
