@@ -399,6 +399,7 @@ import axios from 'axios';
 
 export default {
     name: 'Settings',
+    emits: ['close', 'forceReload'],
     created() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
         // Initialize dropdowns from store currentSelection values
