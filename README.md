@@ -95,11 +95,26 @@ cd server
 
 ### 5. Optional: Set Up Feed Crawler
 
-Add a cron job to crawl feeds every 5 minutes:
+You can crawl feeds in two ways:
+
+**Option A: Manual crawl from command line**
+
+```bash
+cd server
+npm run crawl
+```
+
+This runs a synchronous crawl of all active feeds and provides a summary upon completion.
+
+**Option B: Automated crawl via cron**
+
+Add a cron job to crawl feeds every 5 minutes by calling the API endpoint:
 
 ```bash
 */5 * * * * curl http://localhost:3000/api/crawl
 ```
+
+Note: The API endpoint runs the crawl asynchronously in the background and returns immediately without output.
 
 ## AI Assistant (Model Context Protocol)
 
