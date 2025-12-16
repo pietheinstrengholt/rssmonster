@@ -328,8 +328,29 @@ span.feed_name a {
 </style>
 
 <script>
-import moment from "moment";
 import axios from 'axios';
+
+function timeDifference(current, previous) {
+  const msPerMinute = 60 * 1000;
+  const msPerHour = msPerMinute * 60;
+  const msPerDay = msPerHour * 24;
+  const msPerMonth = msPerDay * 30;
+  const msPerYear = msPerDay * 365;
+  const elapsed = current - previous;
+  if (elapsed < msPerMinute) {
+    return Math.round(elapsed / 1000) + ' seconds ago';
+  } else if (elapsed < msPerHour) {
+    return Math.round(elapsed / msPerMinute) + ' minutes ago';
+  } else if (elapsed < msPerDay) {
+    return Math.round(elapsed / msPerHour) + ' hours ago';
+  } else if (elapsed < msPerMonth) {
+    return 'approximately ' + Math.round(elapsed / msPerDay) + ' days ago';
+  } else if (elapsed < msPerYear) {
+    return 'approximately ' + Math.round(elapsed / msPerMonth) + ' months ago';
+  } else {
+    return 'approximately ' + Math.round(elapsed / msPerYear) + ' years ago';
+  }
+}
 
 export default {
   emits: ['update-star', 'update-clicked'],
@@ -346,11 +367,12 @@ export default {
     formatDate: function() {
       return (value)=> {
         if (value) {
-          //use fromNow function to calculate time from article published
-          value = moment(String(value)).fromNow();
-          //uppercase first character of sentence
-          value = value.charAt(0).toUpperCase() + value.slice(1);
-          return value;
+          // Use custom timeDifference instead of moment.js
+          const now = Date.now();
+          const then = new Date(value).getTime();
+          let result = timeDifference(now, then);
+          result = result.charAt(0).toUpperCase() + result.slice(1);
+          return result;
         }
       }
     },

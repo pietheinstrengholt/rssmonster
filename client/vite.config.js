@@ -74,5 +74,19 @@ export default defineConfig({
             usePolling: true
         }
     },
+    build: {
+      rollupOptions: {
+        output: {
+          manualChunks(id) {
+            if (id.includes('node_modules')) {
+              if (id.includes('vue')) return 'vue-vendor';
+              if (id.includes('axios')) return 'axios-vendor';
+              return 'vendor';
+            }
+          }
+        }
+      },
+      chunkSizeWarningLimit: 1000 // Optional: increase warning limit if needed
+    },
   }
 )
