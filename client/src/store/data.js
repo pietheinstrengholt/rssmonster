@@ -213,7 +213,10 @@ export const useStore = defineStore('data', {
       return data.showModal;
     },
     getunreadsSinceLastUpdate: (data) => {
-      return data.unreadsSinceLastUpdate;
+      const n = Number(data.unreadsSinceLastUpdate);
+      if (!Number.isFinite(n)) return 0;
+      // Always positive; if 15 -> 15, if -15 -> 15, if 0 -> 0
+      return Math.trunc(Math.abs(n));
     },
     getMinAdvertisementScore: (data) => {
       return data.currentSelection.minAdvertisementScore;
