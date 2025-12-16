@@ -277,10 +277,8 @@ export default {
         //set offlineStatus to false
         this.offlineStatus = false;
 
-        //set PWA badge using unread count (keep in Main)
-        if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
-          navigator.setAppBadge(response.data.unreadCount);
-        }
+        // Set PWA badge using unread count safely
+        this.setBadge(response.data.unreadCount);
 
         //update local selection and notifications (kept in Main)
         if (initial === true) {
@@ -324,6 +322,33 @@ export default {
     refreshFeeds() {
       //call sidebar refreshFeeds function
       this.$refs.sidebar.refreshFeeds();
+    },
+    // Safely set/clear the app badge to avoid range/type errors
+    setBadge(count) {
+      try {
+        // Require SW and API support
+        if (!('serviceWorker' in navigator) || typeof navigator.setAppBadge !== 'function') {
+          return;
+        }
+
+        const n = Number(count);
+        // Normalize: integers only, clamp to valid non-negative, clear on zero/invalid
+        const safe = Number.isFinite(n) && n > 0 ? Math.min(Math.floor(n), Number.MAX_SAFE_INTEGER) : 0;
+
+        if (safe > 0) {
+          navigator.setAppBadge(safe);
+        } else {
+          if (typeof navigator.clearAppBadge === 'function') {
+            navigator.clearAppBadge();
+          } else {
+            // Fallback: set to 0 if clear is not available
+            navigator.setAppBadge(0);
+          }
+        }
+      } catch (e) {
+        // Silently ignore badge errors (unsupported platform or range issues)
+        console.warn('setBadge error:', e?.message || e);
+      }
     }
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
@@ -342,10 +367,8 @@ export default {
     },
     "$store.data.unreadsSinceLastUpdate": {
       handler: function(count) {
-        //set PWA badge count
-        if ('serviceWorker' in navigator) {
-          navigator.setAppBadge(count);
-        }
+        // Update PWA badge safely on unread delta changes
+        this.setBadge(count);
       },
       deep: true
     }
