@@ -465,31 +465,17 @@ export default {
     articleClicked(articleId, articleUrl) {
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markclicked/" + articleId)
         .then(() => {
-          let win = window.open(articleUrl, '_blank');
+          const win = window.open(articleUrl, '_blank');
           if (!win) {
-            // iOS workaround: create an <a> element and click it
-            const a = document.createElement('a');
-            a.href = articleUrl;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            // Fallback for iOS Safari (popup blockers): open in same tab
+            window.location.href = articleUrl;
           }
         })
         .catch(error => {
           console.error("Error marking article as clicked:", error);
-          let win = window.open(articleUrl, '_blank');
+          const win = window.open(articleUrl, '_blank');
           if (!win) {
-            const a = document.createElement('a');
-            a.href = articleUrl;
-            a.target = '_blank';
-            a.rel = 'noopener noreferrer';
-            a.style.display = 'none';
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
+            window.location.href = articleUrl;
           }
         })
         .finally(() => {
