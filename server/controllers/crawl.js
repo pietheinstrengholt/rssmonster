@@ -238,20 +238,24 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   }
 });
 
-const processArticle = async (feed, post) => {
+const processArticle = async (feed, entry) => {
+  console.log("=====================");
+  console.log(entry);
+  console.log("=====================");
 
-  console.log(post);
+  const title = entry.title || 'No title';
+  const link = entry.links?.[0]?.href;
 
   //don't process empty post URLs
-  if (post.url) {
+  if (link) {
     try {
-      //try to find any existing article with the same link or same feedId and postTitle
+      //try to find any existing article with the same link or title
       const article = await Article.findOne({
         where: {
           [Op.or]: [
-            {url: post.url},
+            {url: link},
             {[Op.and] : [
-              {title: post.title},
+              {title: title},
               {feedId: feed.id},
               {userId: feed.userId}
             ]}
@@ -261,13 +265,14 @@ const processArticle = async (feed, post) => {
   
       //if none, add new article to the database
       if (!article) {
+        console.log(`[${feed.feedName}] New article found: "${title}" - adding to database.`);
         let postContent, postContentStripped, postLanguage;
         
         //if no content is found, use the description as content
-        if (typeof post.content === 'undefined' || post.content === null) {
+        if (typeof entry.content === 'undefined' || entry.content === null) {
           // Check if there's media content (e.g., YouTube videos)
-          if (post.media && Array.isArray(post.media) && post.media.length > 0) {
-            const media = post.media[0];
+          if (entry.media && Array.isArray(entry.media) && entry.media.length > 0) {
+            const media = entry.media[0];
             // Build content from media information
             postContent = `
               <div class="media-content">
@@ -276,21 +281,21 @@ const processArticle = async (feed, post) => {
                 ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
               </div>
             `;
-            postContentStripped = media.title || post.description || post.title || '';
+            postContentStripped = media.title || entry.content || title || '';
             try {
               postLanguage = language.get(postContentStripped);
             } catch (langErr) {
-              console.error(`[${feed.feedName}] Error detecting language for article "${post.title}":`, langErr.message);
+              console.error(`[${feed.feedName}] Error detecting language for article "${title}":`, langErr.message);
               postLanguage = 'unknown';
             }
           } else {
             // Fallback to description
-            postContent = post.description;
-            postContentStripped = post.description;
+            postContent = entry.content;
+            postContentStripped = entry.content;
             try {
-              postLanguage = language.get(post.description);
+              postLanguage = language.get(entry.content);
             } catch (langErr) {
-              console.error(`[${feed.feedName}] Error detecting language for article "${post.title}":`, langErr.message);
+              console.error(`[${feed.feedName}] Error detecting language for article "${title}":`, langErr.message);
               postLanguage = 'unknown';
             }
           }
@@ -298,7 +303,7 @@ const processArticle = async (feed, post) => {
           //content is set, so we might expect html rich content. Because of this we want to remove any script tags
           //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
           try {
-            const dom = htmlparser2.parseDocument(post.content);
+            const dom = htmlparser2.parseDocument(entry.content);
             const $ = load(dom, { _useHtmlParser2: true });
       
             //dismiss undefined errors
@@ -312,15 +317,15 @@ const processArticle = async (feed, post) => {
                 let domain;
                 try {
                   //find domain name for each link
-                  if (!post.url) {
-                    console.warn(`[${feed.feedName}] Article "${post.title}" has no URL property`);
-                    return; // Skip this link if post.url is missing
+                  if (!link) {
+                    console.warn(`[${feed.feedName}] Article "${title}" has no URL property`);
+                    return; // Skip this link if entry.url is missing
                   }
-                  const urlObj = new URL(post.url);
+                  const urlObj = new URL(link);
                   domain = urlObj.hostname;
                 } catch (err) {
-                  console.error(`[${feed.feedName}] Error parsing URL "${post.url}":`, err.message);
-                  domain = post.url;
+                  console.error(`[${feed.feedName}] Error parsing URL "${link}":`, err.message);
+                  domain = link;
                 }
     
                 //fetch all urls referenced to other websites. Insert these into the hotlinks table
@@ -342,14 +347,14 @@ const processArticle = async (feed, post) => {
               try {
                 postLanguage = language.get($.html());
               } catch (langErr) {
-                console.error(`[${feed.feedName}] Error detecting language for article "${post.title}":`, langErr.message);
+                console.error(`[${feed.feedName}] Error detecting language for article "${title}":`, langErr.message);
                 postLanguage = 'unknown';
               }
             }
           } catch (parseErr) {
-            console.error(`[${feed.feedName}] Error parsing content for article "${post.title}":`, parseErr.message);
-            postContent = post.description || post.title || '';
-            postContentStripped = post.description || post.title || '';
+            console.error(`[${feed.feedName}] Error parsing content for article "${title}":`, parseErr.message);
+            postContent = entry.content || title || '';
+            postContentStripped = entry.content || title || '';
             postLanguage = 'unknown';
           }
         }
@@ -379,7 +384,7 @@ const processArticle = async (feed, post) => {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
                     shouldDelete = true;
-                    console.log(`Delete action "${action.name}" matched article "${post.title}". Skipping article creation.`);
+                    console.log(`Delete action "${action.name}" matched article "${title}". Skipping article creation.`);
                     break; // Stop processing once we find a matching delete action
                   }
                 } catch (regexErr) {
@@ -392,7 +397,7 @@ const processArticle = async (feed, post) => {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
                     statusToSet = 'read';
-                    console.log(`Read action "${action.name}" matched article "${post.title}". Setting status to read.`);
+                    console.log(`Read action "${action.name}" matched article "${title}". Setting status to read.`);
                   }
                 } catch (regexErr) {
                   console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
@@ -404,7 +409,7 @@ const processArticle = async (feed, post) => {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
                     actionAdvertisementScore = 100;
-                    console.log(`Advertisement action "${action.name}" matched article "${post.title}". Setting advertisementScore to 100.`);
+                    console.log(`Advertisement action "${action.name}" matched article "${title}". Setting advertisementScore to 100.`);
                   }
                 } catch (regexErr) {
                   console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
@@ -416,7 +421,7 @@ const processArticle = async (feed, post) => {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
                     actionQualityScore = 100;
-                    console.log(`Bad quality action "${action.name}" matched article "${post.title}". Setting qualityScore to 100.`);
+                    console.log(`Bad quality action "${action.name}" matched article "${title}". Setting qualityScore to 100.`);
                   }
                 } catch (regexErr) {
                   console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
@@ -429,7 +434,7 @@ const processArticle = async (feed, post) => {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
                     starInd = 1;
-                    console.log(`Action "${action.name}" matched article "${post.title}". Setting starInd to 1.`);
+                    console.log(`Action "${action.name}" matched article "${title}". Setting starInd to 1.`);
                   }
                 } catch (regexErr) {
                   console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
@@ -441,7 +446,7 @@ const processArticle = async (feed, post) => {
                   const regex = new RegExp(action.regularExpression);
                   if (regex.test(postContentStripped)) {
                     clickedInd = 1;
-                    console.log(`Clicked action "${action.name}" matched article "${post.title}". Setting clickedInd to 1.`);
+                    console.log(`Clicked action "${action.name}" matched article "${title}". Setting clickedInd to 1.`);
                   }
                 } catch (regexErr) {
                   console.error(`Error testing regex for action "${action.name}":`, regexErr.message);
@@ -452,6 +457,7 @@ const processArticle = async (feed, post) => {
 
           // Skip article creation if delete action matched
           if (shouldDelete) {
+            console.log(`Article "${title}" deleted by action rule. Skipping creation.`);
             return;
           }
 
@@ -464,6 +470,10 @@ const processArticle = async (feed, post) => {
             sentimentScore: 50,
             qualityScore: 50,
           };
+
+          console.log('reached analysis step');
+          console.log(process.env.OPENAI_API_KEY);
+          console.log(process.env.OPENAI_MODEL_CRAWL);
 
           // Only analyze content if OpenAI API key and model are configured
           if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
@@ -478,7 +488,7 @@ const processArticle = async (feed, post) => {
                   }
                   // Analyze content using OpenAI API
                   analysis = await analyzeContent(postContentStripped);
-                  console.log(`[OpenAI LLM] Analysis completed for "${post.title || 'No title'}"`);
+                  console.log(`[OpenAI LLM] Analysis completed for "${title}"`);
                 } catch (err) {
                   // Check for rate limit error (429)
                   if (err.message && (err.message.includes('429') || err.message.toLowerCase().includes('rate limit'))) {
@@ -500,6 +510,8 @@ const processArticle = async (feed, post) => {
             analysis.qualityScore = actionQualityScore;
           }
 
+          console.log(`Creating article "${title}" with advertisementScore=${analysis.advertisementScore}, qualityScore=${analysis.qualityScore}, starInd=${starInd}, status=${statusToSet}`);
+
           // Create article with analysis results
           const createdArticle = await Article.create({
             userId: feed.userId,
@@ -507,16 +519,16 @@ const processArticle = async (feed, post) => {
             status: statusToSet,
             starInd: starInd,
             clickedInd: clickedInd,
-            url: post.url,
+            url: link,
             image_url: "",
-            title: post.title || 'No title',
+            title: title,
             content: postContent,
             contentStripped: analysis.summary,
             language: postLanguage,
             advertisementScore: analysis.advertisementScore,
             sentimentScore: analysis.sentimentScore,
             qualityScore: analysis.qualityScore,
-            published: post.published || new Date()
+            published: entry.published || new Date()
           });
 
           // Save tags to database if any were generated
