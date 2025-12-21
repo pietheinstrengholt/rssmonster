@@ -465,11 +465,18 @@ export default {
     articleClicked(articleId, articleUrl) {
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markclicked/" + articleId)
         .then(() => {
-          window.open(articleUrl, '_blank');
+          const win = window.open(articleUrl, '_blank');
+          if (!win) {
+            // Fallback for iOS Safari (popup blockers): open in same tab
+            window.location.href = articleUrl;
+          }
         })
         .catch(error => {
           console.error("Error marking article as clicked:", error);
-          window.open(articleUrl, '_blank');
+          const win = window.open(articleUrl, '_blank');
+          if (!win) {
+            window.location.href = articleUrl;
+          }
         })
         .finally(() => {
           this.$emit('update-clicked', { id: articleId, clickedInd: 1 });
