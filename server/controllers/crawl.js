@@ -118,17 +118,21 @@ const performCrawl = async () => {
           //do not process undefined URLs
           if (typeof url !== "undefined") {
             try {
-              const feeditem = await parseFeed.process(url);
-              console.log(feeditem.feed.entries.length);
-              if (feeditem) {
-                // feedsmith: entries are in feeditem.feed.entries
-                const entries = feeditem.feed.entries || [];
+              const feedJson = await parseFeed.process(url);
+              const feedObject = JSON.parse(feedJson);
+              if (feedJson) {
+                // feedsmith: entries are in feedJson.feed.entries
+                const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
                 console.log(`Processing ${entries.length} entries for feed: ${feed.url}`);
-                console.log(`Feed title: ${feeditem.feed.title || 'No title found'}`);
-                await Promise.all(entries.map((item) => processArticle(feed, item)));
+                console.log(`Feed title: ${feedObject.feed.title || 'No title found'}`);
 
-                // feedsmith: favicon/image is feeditem.feed.icon or feeditem.feed.logo or null
-                const faviconUrl = feeditem.feed?.icon || feeditem.feed?.logo || null;
+                //wait Promise.all(entries.map((item) => processArticle(feed, item)));
+                await entries.forEach(entry => {
+                  processArticle(feed, entry);
+                });
+                
+                // feedsmith: favicon/image is feedObject.feed.icon or feedObject.feed.logo or null
+                const faviconUrl = feedObject.feed?.icon || feedObject.feed?.logo || null;
                 const updateData = {
                   favicon: faviconUrl,
                   rssUrl: url,
@@ -235,6 +239,8 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 });
 
 const processArticle = async (feed, post) => {
+
+  console.log(post);
 
   //don't process empty post URLs
   if (post.url) {
