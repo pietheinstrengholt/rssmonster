@@ -119,29 +119,32 @@ const performCrawl = async () => {
           if (typeof url !== "undefined") {
             try {
               const feeditem = await parseFeed.process(url);
+              console.log(feeditem.feed.entries.length);
               if (feeditem) {
+                // feedsmith: entries are in feeditem.feed.entries
+                const entries = feeditem.feed.entries || [];
+                console.log(`Processing ${entries.length} entries for feed: ${feed.url}`);
+                console.log(`Feed title: ${feeditem.feed.title || 'No title found'}`);
+                await Promise.all(entries.map((item) => processArticle(feed, item)));
 
-                //process all feed posts - use Promise.all to wait for all articles
-                await Promise.all(feeditem.items.map((item) => processArticle(feed, item)));
-    
-                //reset the feed count, clear error message, and update the favicon if available
-                const faviconUrl = feeditem.image?.url || null;
+                // feedsmith: favicon/image is feeditem.feed.icon or feeditem.feed.logo or null
+                const faviconUrl = feeditem.feed?.icon || feeditem.feed?.logo || null;
                 const updateData = {
                   favicon: faviconUrl,
                   rssUrl: url,
                   errorCount: 0,
                   errorMessage: null
                 };
-                
+
                 // If we used the base URL to discover a working feed, update feed.url too
                 if (usedBaseUrl) {
                   updateData.url = getBaseUrl(feed.url);
                   console.log(`Updating feed.url from ${feed.url} to ${updateData.url}`);
                 }
-                
+
                 await feed.update(updateData);
                 processedCount++;
-                console.log(`Successfully processed feed: ${feed.url} with ${feeditem.items.length} items.`);
+                console.log(`Successfully processed feed: ${feed.url} with ${entries.length} items.`);
               } else {
                 // feeditem is null/undefined - treat as error
                 const errMsg = 'No valid feed data returned';
