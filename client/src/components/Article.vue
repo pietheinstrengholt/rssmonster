@@ -6,7 +6,7 @@
           <BootstrapIcon v-if="clickedInd == 1" icon="bookmark-fill" class="clicked-icon" />
           <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
           <BootstrapIcon v-if="hotlinks" icon="fire" class="hot-icon" />
-          <a href="#" v-text="title" @click.prevent="articleClicked(id, url)"></a>
+          <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
         </h5>
         <div class="feedname">
           <span class="published_date">{{ formatDate(published) }}</span>
@@ -462,21 +462,17 @@ export default {
         this.$store.data.currentSelection.tag = name;
       }
     },
-    articleClicked(articleId, articleUrl) {
+    articleClicked(articleId) {
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markclicked/" + articleId)
         .then(() => {
-          const win = window.open(articleUrl, '_blank');
-          if (!win) {
-            // Fallback for iOS Safari (popup blockers): open in same tab
-            window.location.href = articleUrl;
-          }
+          /* eslint-disable no-console */
+          console.log("Article marked as clicked");
+          /* eslint-enable no-console */
         })
         .catch(error => {
+          /* eslint-disable no-console */
           console.error("Error marking article as clicked:", error);
-          const win = window.open(articleUrl, '_blank');
-          if (!win) {
-            window.location.href = articleUrl;
-          }
+          /* eslint-enable no-console */
         })
         .finally(() => {
           this.$emit('update-clicked', { id: articleId, clickedInd: 1 });
