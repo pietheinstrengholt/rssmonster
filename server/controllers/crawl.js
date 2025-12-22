@@ -34,7 +34,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        //url: 'http://www.jamesserra.com/'
+        url: 'http://www.osnews.com/files/recent.xml'
       },
       order: [
         ['updatedAt', 'ASC']
@@ -124,12 +124,11 @@ const performCrawl = async () => {
                 // feedsmith: entries are in feedJson.feed.entries
                 const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
                 console.log(`Processing ${entries.length} entries for feed: ${feed.url}`);
-                console.log(`Feed title: ${feedObject.feed.title || 'No title found'}`);
 
-                //wait Promise.all(entries.map((item) => processArticle(feed, item)));
-                await entries.forEach(entry => {
-                  processArticle(feed, entry);
-                });
+                //process each article entry
+                for (const entry of entries) {
+                  await processArticle(feed, entry);
+                }
                 
                 // feedsmith: favicon/image is feedObject.feed.icon or feedObject.feed.logo or null
                 const faviconUrl = feedObject.feed?.icon || feedObject.feed?.logo || null;
@@ -243,19 +242,23 @@ const processArticle = async (feed, entry) => {
   console.log(entry);
   console.log("=====================");
 
-  const title = entry.title || 'No title';
-  const link = entry.links?.[0]?.href;
+  const entryTitle = entry.title || 'No title';
+  const entryLink = entry.links?.[0]?.href || entry.link;
+  const entryDescription = entry.description || entry.contentSnippet || '';
+  const entryContent = entry.content?.encoded || entry.content || entry.description || null;
+
+  console.log(`Processing article: "${entryTitle}" - ${entryLink}`);
 
   //don't process empty post URLs
-  if (link) {
+  if (entryLink) {
     try {
       //try to find any existing article with the same link or title
       const article = await Article.findOne({
         where: {
           [Op.or]: [
-            {url: link},
+            {url: entryLink},
             {[Op.and] : [
-              {title: title},
+              {title: entryTitle},
               {feedId: feed.id},
               {userId: feed.userId}
             ]}
@@ -265,45 +268,30 @@ const processArticle = async (feed, entry) => {
   
       //if none, add new article to the database
       if (!article) {
-        console.log(`[${feed.feedName}] New article found: "${title}" - adding to database.`);
+        console.log(`[${feed.feedName}] New article found: "${entryTitle}" - adding to database.`);
         let postContent, postContentStripped, postLanguage;
+
+        //TODO: block for adding media
+        // Check if there's media content (e.g., YouTube videos)
+        if (entry.media && Array.isArray(entry.media) && entry.media.length > 0) {
+          const media = entry.media[0];
+          // Build content from media information
+          postContent = `
+            <div class="media-content">
+              ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width: 100%; height: auto;">` : ''}
+              ${media.title ? `<h5>${media.title}</h5>` : ''}
+              ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
+            </div>
+          `;
+        }
         
         //if no content is found, use the description as content
-        if (typeof entry.content === 'undefined' || entry.content === null) {
-          // Check if there's media content (e.g., YouTube videos)
-          if (entry.media && Array.isArray(entry.media) && entry.media.length > 0) {
-            const media = entry.media[0];
-            // Build content from media information
-            postContent = `
-              <div class="media-content">
-                ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width: 100%; height: auto;">` : ''}
-                ${media.title ? `<h5>${media.title}</h5>` : ''}
-                ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
-              </div>
-            `;
-            postContentStripped = media.title || entry.content || title || '';
-            try {
-              postLanguage = language.get(postContentStripped);
-            } catch (langErr) {
-              console.error(`[${feed.feedName}] Error detecting language for article "${title}":`, langErr.message);
-              postLanguage = 'unknown';
-            }
-          } else {
-            // Fallback to description
-            postContent = entry.content;
-            postContentStripped = entry.content;
-            try {
-              postLanguage = language.get(entry.content);
-            } catch (langErr) {
-              console.error(`[${feed.feedName}] Error detecting language for article "${title}":`, langErr.message);
-              postLanguage = 'unknown';
-            }
-          }
-        } else {
+        if (entryContent) {
+
           //content is set, so we might expect html rich content. Because of this we want to remove any script tags
           //htmlparser2 has error-correcting mechanisms, which may be useful when parsing non-HTML content.
           try {
-            const dom = htmlparser2.parseDocument(entry.content);
+            const dom = htmlparser2.parseDocument(entryContent);
             const $ = load(dom, { _useHtmlParser2: true });
       
             //dismiss undefined errors
@@ -317,15 +305,15 @@ const processArticle = async (feed, entry) => {
                 let domain;
                 try {
                   //find domain name for each link
-                  if (!link) {
+                  if (!entryLink) {
                     console.warn(`[${feed.feedName}] Article "${title}" has no URL property`);
                     return; // Skip this link if entry.url is missing
                   }
-                  const urlObj = new URL(link);
+                  const urlObj = new URL(entryLink);
                   domain = urlObj.hostname;
                 } catch (err) {
-                  console.error(`[${feed.feedName}] Error parsing URL "${link}":`, err.message);
-                  domain = link;
+                  console.error(`[${feed.feedName}] Error parsing URL "${entryLink}":`, err.message);
+                  domain = entryLink;
                 }
     
                 //fetch all urls referenced to other websites. Insert these into the hotlinks table
@@ -347,14 +335,14 @@ const processArticle = async (feed, entry) => {
               try {
                 postLanguage = language.get($.html());
               } catch (langErr) {
-                console.error(`[${feed.feedName}] Error detecting language for article "${title}":`, langErr.message);
+                console.error(`[${feed.feedName}] Error detecting language for article "${entryTitle}":`, langErr.message);
                 postLanguage = 'unknown';
               }
             }
           } catch (parseErr) {
-            console.error(`[${feed.feedName}] Error parsing content for article "${title}":`, parseErr.message);
-            postContent = entry.content || title || '';
-            postContentStripped = entry.content || title || '';
+            console.error(`[${feed.feedName}] Error parsing content for article "${entryTitle}":`, parseErr.message);
+            postContent = entryContent;
+            postContentStripped = entryContent;
             postLanguage = 'unknown';
           }
         }
@@ -471,10 +459,6 @@ const processArticle = async (feed, entry) => {
             qualityScore: 50,
           };
 
-          console.log('reached analysis step');
-          console.log(process.env.OPENAI_API_KEY);
-          console.log(process.env.OPENAI_MODEL_CRAWL);
-
           // Only analyze content if OpenAI API key and model are configured
           if (process.env.OPENAI_API_KEY && (process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME)) {
             // Use a queue to ensure sequential API calls and respect rate limits
@@ -510,7 +494,7 @@ const processArticle = async (feed, entry) => {
             analysis.qualityScore = actionQualityScore;
           }
 
-          console.log(`Creating article "${title}" with advertisementScore=${analysis.advertisementScore}, qualityScore=${analysis.qualityScore}, starInd=${starInd}, status=${statusToSet}`);
+          console.log(`Creating article "${entryTitle}" with advertisementScore=${analysis.advertisementScore}, qualityScore=${analysis.qualityScore}, starInd=${starInd}, status=${statusToSet}`);
 
           // Create article with analysis results
           const createdArticle = await Article.create({
@@ -519,10 +503,10 @@ const processArticle = async (feed, entry) => {
             status: statusToSet,
             starInd: starInd,
             clickedInd: clickedInd,
-            url: link,
+            url: entryLink,
             image_url: "",
-            title: title,
-            content: postContent,
+            title: entryTitle,
+            content: entryContent,
             contentStripped: analysis.summary,
             language: postLanguage,
             advertisementScore: analysis.advertisementScore,
