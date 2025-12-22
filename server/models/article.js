@@ -47,8 +47,10 @@ export const Article = sequelize.define(
       type: Sequelize.TEXT,
       allowNull: false
     },
+    author: Sequelize.TEXT,
+    description: Sequelize.TEXT,
     content: Sequelize.TEXT("medium"),
-    contentStripped: Sequelize.TEXT("medium"),
+    contentStripped: Sequelize.TEXT,
     language: Sequelize.TEXT("tiny"),
     advertisementScore: {
       type: Sequelize.INTEGER,

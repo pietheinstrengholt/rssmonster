@@ -34,7 +34,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        url: 'http://www.osnews.com/files/recent.xml'
+        // url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCHCUGm7WwWCEVVN0Gzl3KAA'
       },
       order: [
         ['updatedAt', 'ASC']
@@ -133,6 +133,7 @@ const performCrawl = async () => {
                 // feedsmith: favicon/image is feedObject.feed.icon or feedObject.feed.logo or null
                 const faviconUrl = feedObject.feed?.icon || feedObject.feed?.logo || null;
                 const updateData = {
+                  feedType: feedObject.format || null,
                   favicon: faviconUrl,
                   rssUrl: url,
                   errorCount: 0,
@@ -238,16 +239,12 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 });
 
 const processArticle = async (feed, entry) => {
-  console.log("=====================");
-  console.log(entry);
-  console.log("=====================");
-
-  const entryTitle = entry.title || 'No title';
+  // Extract relevant fields from the entry
+  const entryTitle = entry.title?.trim() || 'Untitled';
   const entryLink = entry.links?.[0]?.href || entry.link;
-  const entryDescription = entry.description || entry.contentSnippet || '';
+  const entryDescription = entry.description || entry.summary || entry.contentSnippet || null;
   const entryContent = entry.content?.encoded || entry.content || entry.description || null;
-
-  console.log(`Processing article: "${entryTitle}" - ${entryLink}`);
+  const author = entry.dc?.creator || entry.author || entry.dc?.creators?.[0] || null;
 
   //don't process empty post URLs
   if (entryLink) {
@@ -268,21 +265,50 @@ const processArticle = async (feed, entry) => {
   
       //if none, add new article to the database
       if (!article) {
-        console.log(`[${feed.feedName}] New article found: "${entryTitle}" - adding to database.`);
-        let postContent, postContentStripped, postLanguage;
 
-        //TODO: block for adding media
+        // Process content
+        let postContent, postContentStripped, postLanguage, leadImage;
+
         // Check if there's media content (e.g., YouTube videos)
-        if (entry.media && Array.isArray(entry.media) && entry.media.length > 0) {
-          const media = entry.media[0];
-          // Build content from media information
-          postContent = `
-            <div class="media-content">
-              ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width: 100%; height: auto;">` : ''}
-              ${media.title ? `<h5>${media.title}</h5>` : ''}
-              ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
-            </div>
-          `;
+        if (entry.media) {
+
+          const rawMedia = entry.media;
+
+          // Normalize media to array (feedsmith quirk)
+          const mediaArray = Array.isArray(rawMedia)
+            ? rawMedia
+            : rawMedia?.group?.contents || [];
+
+          if (mediaArray.length > 0) {
+
+            // Collect media items
+            const mediaItems = mediaArray.map(m => ({
+              type: m.type || 'video',
+              url: m.url || m.player?.url || null,
+              image:
+                m.image ||
+                m.thumbnail ||
+                rawMedia?.group?.thumbnails?.[0]?.url ||
+                null,
+              title: m.title?.value || m.title || null
+            }));
+
+            // Pick lead image (first image found)
+            leadImage =
+              mediaItems.find(m => m.image)?.image ||
+              null;
+
+            // Build content from FIRST media item
+            const media = mediaItems[0];
+
+            postContent = `
+              <div class="media-content">
+                ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width: 100%; height: auto;">` : ''}
+                ${media.title ? `<h5>${media.title}</h5>` : ''}
+                ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
+              </div>
+            `;
+          }
         }
         
         //if no content is found, use the description as content
@@ -494,8 +520,6 @@ const processArticle = async (feed, entry) => {
             analysis.qualityScore = actionQualityScore;
           }
 
-          console.log(`Creating article "${entryTitle}" with advertisementScore=${analysis.advertisementScore}, qualityScore=${analysis.qualityScore}, starInd=${starInd}, status=${statusToSet}`);
-
           // Create article with analysis results
           const createdArticle = await Article.create({
             userId: feed.userId,
@@ -504,8 +528,10 @@ const processArticle = async (feed, entry) => {
             starInd: starInd,
             clickedInd: clickedInd,
             url: entryLink,
-            image_url: "",
+            imageUrl: leadImage || null,
             title: entryTitle,
+            author: author,
+            description: entryDescription,
             content: entryContent,
             contentStripped: analysis.summary,
             language: postLanguage,

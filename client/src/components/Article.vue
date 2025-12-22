@@ -12,7 +12,7 @@
           <span class="published_date">{{ formatDate(published) }}</span>
           <span class="break">by</span>
           <span class="feed_name">
-            <a target="_blank" :href="mainURL(feed.url)" v-text="feed.feedName"></a>
+            <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
         </div>
         <div v-if="tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'" class="article-tags">
@@ -362,7 +362,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id','url','title','published','feed','content','hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
+  props: ['id', 'url', 'title', 'published', 'feed', 'content', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
   computed: {
     formatDate: function() {
       return (value)=> {

@@ -157,7 +157,8 @@ const validateFeed = async (req, res, next) => {
       userId: userId,
       categoryId: categoryId,
       feedName: feeditem.title || feeditem.meta.title,
-      feedDesc: feeditem.description || feeditem.meta.description,
+      feedDesc: feeditem.description || feeditem.meta.description || null,
+      feedType: feeditem.version || null,
       url: req.body.url,
       rssUrl: feeditem.self,
       favicon: feeditem.image
