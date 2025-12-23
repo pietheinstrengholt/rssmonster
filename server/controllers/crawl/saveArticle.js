@@ -6,7 +6,7 @@ import Tag from '../../models/tag.js';
    ------------------------------------------------------
    Persists article and generated tags
 ====================================================== */
-async function saveArticle(feed, entry, data, analysis, actionResult) {
+async function saveArticle(feed, data, analysis, actionResult) {
   const article = await Article.create({
     userId: feed.userId,
     feedId: feed.id,
@@ -24,7 +24,7 @@ async function saveArticle(feed, entry, data, analysis, actionResult) {
     advertisementScore: analysis.advertisementScore,
     sentimentScore: analysis.sentimentScore,
     qualityScore: analysis.qualityScore,
-    published: entry.published || new Date()
+    published: data.published || new Date()
   });
 
   // Save tags to database if any were generated

@@ -37,14 +37,6 @@ const processArticle = async (feed, entry) => {
     let contentLanguage = 'unknown';
     let leadImage = null;
 
-    // Categories extraction
-    let categoryNames = Array.isArray(entry.categories)
-      ? entry.categories
-          .map(c => c.name)
-          .filter(Boolean)
-          .filter(name => !name.includes('|'))
-      : [];
-
     // Check if there's media content (e.g., YouTube videos)
     const mediaResult = processMedia(entry);
     if (mediaResult.content) {
@@ -92,7 +84,7 @@ const processArticle = async (feed, entry) => {
     let analysis = await analyzeArticleContent(
       contentStripped,
       fields.title,
-      categoryNames,
+      fields.categories,
       RATE_LIMIT_DELAY_MS
     );
 
@@ -107,13 +99,13 @@ const processArticle = async (feed, entry) => {
     // Create article with analysis results
     await saveArticle(
       feed,
-      entry,
       {
         ...fields,
         contentStripped: contentStripped,
         contentOriginal: contentOriginal,
         leadImage,
-        language: contentLanguage
+        language: contentLanguage,
+        published: fields.published
       },
       analysis,
       actionResult
