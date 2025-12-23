@@ -36,11 +36,7 @@ const defaultAnalysis = text => ({
   qualityScore: 50
 });
 
-async function analyzeArticleContent(
-  strippedContent,
-  title,
-  RATE_LIMIT_DELAY_MS
-) {
+async function analyzeArticleContent(strippedContent, title, RATE_LIMIT_DELAY_MS) {
   let analysis = defaultAnalysis(strippedContent);
 
   // If no API key, skip analysis
@@ -48,8 +44,7 @@ async function analyzeArticleContent(
     return analysis;
   }
 
-  const model =
-    process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME;
+  const model = process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME;
 
   if (!model) return analysis;
 
@@ -85,7 +80,10 @@ async function analyzeArticleContent(
           "- Return ONLY valid JSON",
           "- Use keys: summary, tags, advertisementScore, sentimentScore, qualityScore",
           "",
-          "Article:",
+          "Article Title:",
+          `"${title}"`,
+          "",
+          "Article Content:",
           "```",
           strippedContent,
           "```"
