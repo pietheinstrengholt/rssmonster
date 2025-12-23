@@ -1,4 +1,7 @@
-import { analyzeContent } from '../../util/analyzer.js';
+import dotenv from 'dotenv';
+import OpenAI from 'openai';
+
+dotenv.config();
 
 /* ======================================================
    OpenAI analysis (rate limited)
@@ -11,32 +14,119 @@ import { analyzeContent } from '../../util/analyzer.js';
    - quality score
 ====================================================== */
 
-// Mutex for sequential OpenAI API calls when rate limited
+// OpenAI client
+const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const client = hasApiKey
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
+
+// Mutex for sequential OpenAI API calls
 let openAIQueue = Promise.resolve();
 let rateLimitDelay = 0;
 
-async function analyzeArticleContent(strippedContent, title, RATE_LIMIT_DELAY_MS) {
-  let analysis = {
-    summary: strippedContent,
-    tags: [],
-    advertisementScore: 0,
-    sentimentScore: 50,
-    qualityScore: 50
-  };
+// Helpers
+const clamp = (n, min, max) =>
+  Math.max(min, Math.min(max, Number.isFinite(n) ? n : min));
 
-  // Only analyze content if OpenAI API key is configured
-  if (!process.env.OPENAI_API_KEY) return analysis;
+const defaultAnalysis = text => ({
+  summary: text,
+  tags: [],
+  advertisementScore: 50,
+  sentimentScore: 50,
+  qualityScore: 50
+});
 
-  // Use a queue to ensure sequential API calls and respect rate limits
+async function analyzeArticleContent(
+  strippedContent,
+  title,
+  RATE_LIMIT_DELAY_MS
+) {
+  let analysis = defaultAnalysis(strippedContent);
+
+  // If no API key, skip analysis
+  if (!hasApiKey) {
+    return analysis;
+  }
+
+  const model =
+    process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME;
+
+  if (!model) return analysis;
+
+  // Queue execution to respect rate limits
   await new Promise(resolve => {
     openAIQueue = openAIQueue.then(async () => {
       try {
-        // Apply rate limit delay if we hit a rate limit previously
         if (rateLimitDelay > 0) {
           await new Promise(r => setTimeout(r, rateLimitDelay));
         }
 
-        analysis = await analyzeContent(strippedContent);
+        const prompt = [
+          "You are a concise and reliable assistant analyzing a single RSS article.",
+          "",
+          "Follow these rules EXACTLY:",
+          "1) Summarize the article:",
+          "   - If the article is short (a few paragraphs), write a concise summary of up to 5 sentences.",
+          "   - If the article is long (many paragraphs), write a detailed summary of 10-20 sentences.",
+          "   - Always focus on facts and key points, avoid filler.",
+          "",
+          "2) Provide 3-5 SEO-friendly tags:",
+          "   - lowercase",
+          "   - no punctuation",
+          "   - single words or short phrases",
+          "   - no duplicates",
+          "",
+          "3) Score the article from 0-100 on:",
+          "   - advertisementScore (0 = editorial, 100 = promotional)",
+          "   - sentimentScore (0 = positive, 50 = neutral, 100 = negative)",
+          "   - qualityScore (0 = excellent, 100 = very poor)",
+          "",
+          "STRICT OUTPUT RULES:",
+          "- Return ONLY valid JSON",
+          "- Use keys: summary, tags, advertisementScore, sentimentScore, qualityScore",
+          "",
+          "Article:",
+          "```",
+          strippedContent,
+          "```"
+        ].join('\n');
+
+        const response = await client.chat.completions.create({
+          model,
+          messages: [
+            { role: 'system', content: 'You produce strict JSON only.' },
+            { role: 'user', content: prompt }
+          ],
+          temperature: 0.2,
+          max_completion_tokens: 800
+        });
+
+        const raw = response.choices?.[0]?.message?.content || '';
+        let parsed;
+
+        try {
+          parsed = JSON.parse(raw);
+        } catch {
+          const match = raw.match(/\{[\s\S]*\}/);
+          parsed = match ? JSON.parse(match[0]) : {};
+        }
+
+        analysis = {
+          summary:
+            typeof parsed.summary === 'string' && parsed.summary.length > 0
+              ? parsed.summary
+              : strippedContent,
+          tags: Array.isArray(parsed.tags)
+            ? parsed.tags
+                .filter(Boolean)
+                .map(t => String(t).toLowerCase())
+                .slice(0, 7)
+            : [],
+          advertisementScore: clamp(parsed.advertisementScore, 0, 100),
+          sentimentScore: clamp(parsed.sentimentScore, 0, 100),
+          qualityScore: clamp(parsed.qualityScore, 0, 100)
+        };
+
         console.log(`[OpenAI LLM] Analysis completed for "${title}"`);
       } catch (err) {
         if (
@@ -44,12 +134,11 @@ async function analyzeArticleContent(strippedContent, title, RATE_LIMIT_DELAY_MS
           err.message?.toLowerCase().includes('rate limit')
         ) {
           rateLimitDelay = RATE_LIMIT_DELAY_MS;
-          console.warn(
-            `[OpenAI LLM] Rate limit hit, enabling delay for subsequent requests`
-          );
+          console.warn('[OpenAI LLM] Rate limit hit, enabling delay for subsequent requests');
         }
         console.error('Error analyzing content:', err.message);
       }
+
       resolve();
     });
   });
