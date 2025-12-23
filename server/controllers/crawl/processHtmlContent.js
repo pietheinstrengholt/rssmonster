@@ -10,10 +10,10 @@ import cache from '../../util/cache.js';
    - Strips HTML for content analysis
    - Detects language
 ====================================================== */
-function processHtmlContent(entryContent, entryLink, feed, entryTitle) {
+function processHtmlContent(contentOriginal, entryLink, feed, entryTitle) {
   try {
     // Parse HTML content into a mutable DOM
-    const $ = load(entryContent);
+    const $ = load(contentOriginal);
 
     // Remove all script-related tags from post content
     $('script, style, noscript').remove();
@@ -45,9 +45,12 @@ function processHtmlContent(entryContent, entryLink, feed, entryTitle) {
     // Serialize cleaned HTML
     const html = $.html();
 
-    // Strip HTML for language detection & content analysis
+    // Strip HTML for language detection & content analysis; this is ideal for NLP tasks
     // (text extraction without an extra parsing pass)
-    const text = $('body').text();
+    const text = $('body')
+      .text()
+      .replace(/\s+/g, ' ')
+      .trim();
 
     let detectedLanguage = 'unknown';
 
@@ -71,8 +74,8 @@ function processHtmlContent(entryContent, entryLink, feed, entryTitle) {
       err.message
     );
     return {
-      content: entryContent,
-      stripped: entryContent,
+      content: contentOriginal,
+      stripped: contentOriginal,
       language: 'unknown'
     };
   }

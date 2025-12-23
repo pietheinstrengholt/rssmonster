@@ -18,8 +18,8 @@ async function saveArticle(feed, entry, data, analysis, actionResult) {
     title: data.title,
     author: data.author,
     description: data.description,
-    content: data.rawContent,
-    contentStripped: analysis.summary,
+    content: data.contentOriginal, // use clean HTML content without scripts/styles from HTML processing
+    contentStripped: analysis.summary || data.contentStripped, // use summary from analysis if available
     language: data.language,
     advertisementScore: analysis.advertisementScore,
     sentimentScore: analysis.sentimentScore,

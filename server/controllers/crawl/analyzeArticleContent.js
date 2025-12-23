@@ -36,8 +36,8 @@ const defaultAnalysis = text => ({
   qualityScore: 50
 });
 
-async function analyzeArticleContent(strippedContent, title, RATE_LIMIT_DELAY_MS) {
-  let analysis = defaultAnalysis(strippedContent);
+async function analyzeArticleContent(contentStripped, title, RATE_LIMIT_DELAY_MS) {
+  let analysis = defaultAnalysis(contentStripped);
 
   // If no API key, skip analysis
   if (!hasApiKey) {
@@ -85,7 +85,7 @@ async function analyzeArticleContent(strippedContent, title, RATE_LIMIT_DELAY_MS
           "",
           "Article Content:",
           "```",
-          strippedContent,
+          contentStripped,
           "```"
         ].join('\n');
 
@@ -113,7 +113,7 @@ async function analyzeArticleContent(strippedContent, title, RATE_LIMIT_DELAY_MS
           summary:
             typeof parsed.summary === 'string' && parsed.summary.length > 0
               ? parsed.summary
-              : strippedContent,
+              : contentStripped,
           tags: Array.isArray(parsed.tags)
             ? parsed.tags
                 .filter(Boolean)

@@ -9,7 +9,7 @@
    - star
    - clicked
 ====================================================== */
-function applyActions(actions, strippedContent, title) {
+function applyActions(actions, contentStripped, title) {
   const result = {
     starInd: 0,
     clickedInd: 0,
@@ -30,7 +30,7 @@ function applyActions(actions, strippedContent, title) {
       continue;
     }
 
-    if (!regex.test(strippedContent)) continue;
+    if (!regex.test(contentStripped)) continue;
 
     switch (action.actionType) {
       // Delete action: takes precedence over all others

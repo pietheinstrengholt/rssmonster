@@ -32,39 +32,43 @@ const processArticle = async (feed, entry) => {
     );
     if (existing) return;
 
-    let postContent = null;
-    let postStripped = null;
-    let postLanguage = 'unknown';
+    let contentOriginal = null;
+    let contentStripped = null;
+    let contentLanguage = 'unknown';
     let leadImage = null;
 
     // Categories extraction
     let categoryNames = Array.isArray(entry.categories)
-      ? entry.categories.map(c => c.name).filter(Boolean)
+      ? entry.categories
+          .map(c => c.name)
+          .filter(Boolean)
+          .filter(name => !name.includes('|'))
       : [];
 
     // Check if there's media content (e.g., YouTube videos)
     const mediaResult = processMedia(entry);
     if (mediaResult.content) {
       // Media-based content
-      postContent = mediaResult.content;
-      postStripped = mediaResult.content;
+      contentOriginal = mediaResult.content;
+      contentStripped = mediaResult.content;
       leadImage = mediaResult.leadImage;
     }
-    // If no media content is found, use the entry content / description
-    else if (fields.content) {
+
+    // If generic content is found, use the entry content / description. Override media content.
+    if (fields.content) {
       const htmlResult = processHtmlContent(
         fields.content,
         fields.link,
         feed,
         fields.title
       );
-      postContent = htmlResult.content;
-      postStripped = htmlResult.stripped;
-      postLanguage = htmlResult.language;
+      contentOriginal = htmlResult.content;
+      contentStripped = htmlResult.stripped;
+      contentLanguage = htmlResult.language;
     }
 
     // Add article only if content was found
-    if (!postContent) return;
+    if (!contentOriginal) return;
 
     // Retrieve actions for applying rules to the article
     // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
@@ -76,7 +80,7 @@ const processArticle = async (feed, entry) => {
     // Actions allow users to automatically modify article properties based on regex patterns
     const actionResult = applyActions(
       actions,
-      postStripped,
+      contentStripped,
       fields.title
     );
 
@@ -86,17 +90,17 @@ const processArticle = async (feed, entry) => {
     // Analyze content once (summary + tags + scores)
     // Done AFTER delete check to avoid wasting API calls
     let analysis = await analyzeArticleContent(
-      postStripped,
+      contentStripped,
       fields.title,
       RATE_LIMIT_DELAY_MS
     );
 
-    // Overwrite empty tags with categories
+    // Overwrite empty tags with categories from feedsmith if available
     if ((!Array.isArray(analysis.tags) || analysis.tags.length === 0) && categoryNames.length > 0) {
       analysis.tags = categoryNames;
     }
 
-    // Apply action overrides after analysis
+    // Apply action overrides for scores after analysis
     if (actionResult.advertisementScore !== null) {
       analysis.advertisementScore = actionResult.advertisementScore;
     }
@@ -110,9 +114,10 @@ const processArticle = async (feed, entry) => {
       entry,
       {
         ...fields,
-        rawContent: fields.content,
+        contentStripped: contentStripped,
+        contentOriginal: contentOriginal,
         leadImage,
-        language: postLanguage
+        language: contentLanguage
       },
       analysis,
       actionResult

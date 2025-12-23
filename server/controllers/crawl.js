@@ -83,7 +83,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        // url: 'http://www.nu.nl/feeds/rss/algemeen.rss'
+        // url: 'http://www.engadget.com/rss.xml'
       },
       order: [['updatedAt', 'ASC']],
       limit: feedCount
@@ -129,15 +129,11 @@ const performCrawl = async () => {
             let url = await discoverRssLink.discoverRssLink(feed.url);
             let usedBaseUrl = false;
 
-            console.log(
-              `Crawling feed: ${feed.url} (Discovered RSS: ${url})`
-            );
+            console.log(`Crawling feed: ${feed.url} (Discovered RSS: ${url})`);
 
             // If discovery failed and we have a stored rssUrl, try that instead
             if (typeof url === 'undefined' && feed.rssUrl) {
-              console.log(
-                `Discovery failed for ${feed.url}, trying stored rssUrl: ${feed.rssUrl}`
-              );
+              console.log(`Discovery failed for ${feed.url}, trying stored rssUrl: ${feed.rssUrl}`);
               url = await discoverRssLink.discoverRssLink(feed.rssUrl);
             }
 
@@ -153,7 +149,7 @@ const performCrawl = async () => {
               }
             }
 
-            //do not process undefined URLs
+            // Do not process undefined URLs
             if (typeof url === 'undefined') {
               const errMsg = 'No RSS link discovered';
               console.log(`${errMsg} for feed: ${feed.url}`);
@@ -167,24 +163,27 @@ const performCrawl = async () => {
               return;
             }
 
+            // If the url is valid, process the feed
             try {
+              // parse the feed using feedsmith
               const feedJson = await parseFeed.process(url);
               const feedObject = JSON.parse(feedJson);
 
+              // Sanity check
               if (!feedJson) {
                 throw new Error('No valid feed data returned');
               }
 
               // feedsmith: entries are in feedJson.feed.entries
               const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
-
               console.log(`Processing ${entries.length} entries for feed: ${feed.url}`);
 
-              //process each article entry
+              // Process each article entry. This will add newly discovered articles to the database
               for (const entry of entries) {
                 await processArticle(feed, entry);
               }
 
+              // Update feed metadata to use latest info from feed
               // feedsmith: favicon/image is feedObject.feed.icon or feedObject.feed.logo or null
               const faviconUrl = feedObject.feed?.icon || feedObject.feed?.logo || null;
 
