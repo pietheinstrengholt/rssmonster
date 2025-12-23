@@ -83,7 +83,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        // url: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCHCUGm7WwWCEVVN0Gzl3KAA'
+        // url: 'http://oceanhorn.blogspot.nl/'
       },
       order: [['updatedAt', 'ASC']],
       limit: feedCount
