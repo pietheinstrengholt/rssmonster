@@ -75,6 +75,7 @@ const newFeed = async (req, res, next) => {
       categoryId: req.body.categoryId,
       feedName: req.body.feedName,
       feedDesc: req.body.feedDesc,
+      feedType: req.body.feedType,
       url: req.body.url,
       rssUrl: req.body.rssUrl,
       favicon: req.body.favicon,
