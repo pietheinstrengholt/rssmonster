@@ -36,7 +36,7 @@ const defaultAnalysis = text => ({
   qualityScore: 50
 });
 
-async function analyzeArticleContent(contentStripped, title, RATE_LIMIT_DELAY_MS) {
+async function analyzeArticleContent(contentStripped, title, categoryNames, RATE_LIMIT_DELAY_MS) {
   let analysis = defaultAnalysis(contentStripped);
 
   // If no API key, skip analysis
@@ -60,6 +60,7 @@ async function analyzeArticleContent(contentStripped, title, RATE_LIMIT_DELAY_MS
           "You are a concise and reliable assistant analyzing a single RSS article.",
           "",
           "Follow these rules EXACTLY:",
+          "",
           "1) Summarize the article:",
           "   - If the article is short (a few paragraphs), write a concise summary of up to 5 sentences.",
           "   - If the article is long (many paragraphs), write a detailed summary of 10-20 sentences.",
@@ -71,6 +72,15 @@ async function analyzeArticleContent(contentStripped, title, RATE_LIMIT_DELAY_MS
           "   - single words or short phrases",
           "   - no duplicates",
           "",
+          "   TAG SELECTION RULES (IMPORTANT):",
+          "   - Article Categories are the PRIMARY signal for tag generation.",
+          "   - Prefer categories that clearly describe the article topic.",
+          "   - Validate categories against the article content:",
+          "       • If a category matches the content, use it as a tag (or a close normalized variant).",
+          "       • If a category is vague, misleading, irrelevant, or inconsistent with the content, discard it.",
+          "   - If categories are missing, insufficient, or unreliable, derive tags from the article content instead.",
+          "   - Tags must accurately reflect what the article is actually about, not just how it is labeled.",
+          "",
           "3) Score the article from 0-100 on:",
           "   - advertisementScore (0 = editorial, 100 = promotional)",
           "   - sentimentScore (0 = positive, 50 = neutral, 100 = negative)",
@@ -80,9 +90,8 @@ async function analyzeArticleContent(contentStripped, title, RATE_LIMIT_DELAY_MS
           "- Return ONLY valid JSON",
           "- Use keys: summary, tags, advertisementScore, sentimentScore, qualityScore",
           "",
-          "Article Title:",
-          `"${title}"`,
-          "",
+          `Article Title: ${title}`,
+          `Article Categories: ${categoryNames.join(', ')}`,
           "Article Content:",
           "```",
           contentStripped,

@@ -13,8 +13,8 @@ import processArticle from './crawl/processArticle.js';
 //set the maximum number of feeds to be processed at once
 const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
 
-// Timeout wrapper for feed processing (default 60 seconds)
-const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
+// Timeout wrapper for feed processing (default 120 seconds)
+const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 120000;
 
 // Rate limit delay tracking for OpenAI API
 let rateLimitDelay = 0;
@@ -83,7 +83,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        // url: 'http://www.engadget.com/rss.xml'
+        url: 'http://www.engadget.com/rss.xml'
       },
       order: [['updatedAt', 'ASC']],
       limit: feedCount

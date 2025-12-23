@@ -92,13 +92,9 @@ const processArticle = async (feed, entry) => {
     let analysis = await analyzeArticleContent(
       contentStripped,
       fields.title,
+      categoryNames,
       RATE_LIMIT_DELAY_MS
     );
-
-    // Overwrite empty tags with categories from feedsmith if available
-    if ((!Array.isArray(analysis.tags) || analysis.tags.length === 0) && categoryNames.length > 0) {
-      analysis.tags = categoryNames;
-    }
 
     // Apply action overrides for scores after analysis
     if (actionResult.advertisementScore !== null) {
