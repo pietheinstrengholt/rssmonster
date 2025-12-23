@@ -42,9 +42,9 @@
       <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
       <br>
 
-      <p v-if="enableAgent" class="content-header">Chat assistant</p>
-      <button v-if="enableAgent" @click="chatAssistant()" type="button" class="btn btn-primary">{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Open Chat' }}</button>
-      <br v-if="enableAgent"><br v-if="enableAgent"><br v-if="enableAgent">
+      <p v-if="$store.data.currentSelection.AIEnabled" class="content-header">Chat assistant</p>
+      <button v-if="$store.data.currentSelection.AIEnabled" @click="chatAssistant()" type="button" class="btn btn-primary">{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Open Chat' }}</button>
+      <br v-if="$store.data.currentSelection.AIEnabled"><br v-if="$store.data.currentSelection.AIEnabled"><br v-if="$store.data.currentSelection.AIEnabled">
 
       <button @click="emitClickEvent('mobile', null);" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <br><br>
