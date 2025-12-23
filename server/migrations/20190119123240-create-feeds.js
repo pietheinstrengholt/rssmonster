@@ -36,6 +36,10 @@ module.exports = {
         allowNull: false
       },
       feedDesc: Sequelize.TEXT,
+      feedType: {
+        type: Sequelize.STRING(16),
+        allowNull: true
+      },
       url: {
         type: Sequelize.STRING
       },

@@ -27,12 +27,12 @@
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.1",
     "@openai/agents": "^0.3.7",
-    "@rowanmanning/feed-parser": "^2.1.1",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
+    "feedsmith": "^2.8.0",
     "franc-min": "^6.2.0",
     "htmlparser2": "^10.0.0",
     "jsonwebtoken": "^9.0.3",

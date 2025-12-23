@@ -1,4 +1,7 @@
+import dotenv from 'dotenv';
 import Setting from "../models/setting.js";
+
+dotenv.config();
 
 export const getSettings = async (req, res, next) => {
   try {
@@ -39,7 +42,8 @@ export const getSettings = async (req, res, next) => {
       minAdvertisementScore: minAdvertisementScore,
       minSentimentScore: minSentimentScore,
       minQualityScore: minQualityScore,
-      viewMode: viewMode
+      viewMode: viewMode,
+      AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
   } catch (err) {
     console.error('Error in getSettings:', err);

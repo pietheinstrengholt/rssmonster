@@ -49,7 +49,7 @@
         <p>Newest</p>
       </div>
     </div>
-    <div v-if="enableAgent" class="status-toolbar" @click="chatAssistant">
+    <div v-if="$store.data.currentSelection.AIEnabled" class="status-toolbar" @click="chatAssistant">
       <div id="chat-icon">
           <BootstrapIcon icon="robot" size="20" />
       </div>

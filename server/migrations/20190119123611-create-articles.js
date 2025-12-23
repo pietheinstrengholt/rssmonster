@@ -51,13 +51,15 @@ module.exports = {
         type: Sequelize.TEXT('medium'),
         allowNull: false
       },
-      imageUrl: Sequelize.TEXT('medium'),
+      imageUrl: Sequelize.TEXT,
       title: {
         type: Sequelize.TEXT,
         allowNull: false
       },
+      author: Sequelize.TEXT,
+      description: Sequelize.TEXT,
       content: Sequelize.TEXT('medium'),
-      contentStripped: Sequelize.TEXT('medium'),
+      contentStripped: Sequelize.TEXT,
       language: Sequelize.TEXT('tiny'),
       advertisementScore: {
         type: Sequelize.INTEGER,

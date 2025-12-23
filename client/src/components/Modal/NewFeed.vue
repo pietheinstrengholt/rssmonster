@@ -98,12 +98,12 @@ export default {
     },
     data() {
         return {
-        ajaxRequest: false,
-        error_msg: "",
-        url: null,
-        category: {},
-        feed: {},
-        selectedCategory: null
+          ajaxRequest: false,
+          error_msg: "",
+          url: null,
+          category: {},
+          feed: {},
+          selectedCategory: null
         };
     },
     methods: {
@@ -139,6 +139,7 @@ export default {
                     categoryId: this.selectedCategory,
                     feedName: this.feed.feedName,
                     feedDesc: this.feed.feedDesc,
+                    feedType: this.feed.feedType,
                     url: this.feed.url,
                     rssUrl: this.feed.rssUrl
                 })
