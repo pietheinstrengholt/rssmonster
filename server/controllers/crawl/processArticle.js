@@ -92,10 +92,7 @@ const processArticle = async (feed, entry) => {
     );
 
     // Overwrite empty tags with categories
-    if (
-      (!Array.isArray(analysis.tags) || analysis.tags.length === 0) &&
-      categoryNames.length > 0
-    ) {
+    if ((!Array.isArray(analysis.tags) || analysis.tags.length === 0) && categoryNames.length > 0) {
       analysis.tags = categoryNames;
     }
 
