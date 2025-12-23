@@ -7,6 +7,10 @@ export const getSettings = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
 
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     //set default values
     let categoryId = "%";
     let feedId = "%";
@@ -54,6 +58,10 @@ export const getSettings = async (req, res, next) => {
 export const setSettings = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
     const { minAdvertisementScore, minSentimentScore, minQualityScore } = req.body;
 
     // Validate score values (0-100)

@@ -10,6 +10,11 @@ import { Op } from 'sequelize';
 
 export const getOverview = async (req, res, next) => {
   const userId = req.userData.userId;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
   try {
     // Get user settings for score filters
     const settings = await Setting.findOne({ 
@@ -213,9 +218,15 @@ export const getOverview = async (req, res, next) => {
 };
 
 export const categoryUpdateOrder = async (req, res, next) => {
+
+  const userId = req.userData.userId;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
   //categories are received in the preferred order
   const order = req.body.order;
-  const userId = req.userData.userId;
 
   if (order === undefined) {
     return res.status(400).json({
@@ -249,10 +260,15 @@ export const categoryUpdateOrder = async (req, res, next) => {
 };
 
 export const feedChangeCategory = async (req, res, next) => {
+  const userId = req.userData.userId;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
   //categories are received in the preferred order
   const feedId = req.body.feedId;
   const categoryId = req.body.categoryId;
-  const userId = req.userData.userId;
 
   if (feedId === undefined || categoryId === undefined) {
     return res.status(400).json({

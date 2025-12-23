@@ -7,6 +7,11 @@ import parseFeed from "../util/parser.js";
 const getFeeds = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const feeds = await Feed.findAll({
       where: {
         userId: userId
@@ -22,6 +27,11 @@ const getFeeds = async (req, res, next) => {
 const getFeed = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const feedId = req.params.feedId;
     const feed = await Feed.findByPk(feedId, {
       where: {
@@ -41,6 +51,11 @@ const getFeed = async (req, res, next) => {
 const updateFeed = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const feedId = req.params.feedId;
     const feed = await Feed.findByPk(feedId, {
       where: {
@@ -70,6 +85,12 @@ const updateFeed = async (req, res, next) => {
 
 const newFeed = async (req, res, next) => {
   try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const feed = await Feed.create({
       userId: req.userData.userId,
       categoryId: req.body.categoryId,
@@ -91,6 +112,11 @@ const newFeed = async (req, res, next) => {
 const deleteFeed = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const feedId = req.params.feedId;
     const feed = await Feed.findByPk(feedId, {
       where: {
@@ -115,9 +141,12 @@ const deleteFeed = async (req, res, next) => {
 
 const validateFeed = async (req, res, next) => {
   try {
-    const categoryId = req.body.categoryId;
     const userId = req.userData.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
 
+    const categoryId = req.body.categoryId;
     //resolve url
     const url = await discoverRssLink.discoverRssLink(req.body.url);
 

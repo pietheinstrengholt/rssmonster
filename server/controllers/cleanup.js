@@ -4,12 +4,19 @@ import { Op } from 'sequelize';
 // Delete all non-starred articles older than one week
 const cleanup = async (req, res, next) => {
   try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const oneWeekAgo = new Date(Date.now() - (7 * 24 * 60 * 60 * 1000));
 
     const deletedCount = await Article.destroy({
       where: {
         starInd: 0,
-        createdAt: { [Op.lte]: oneWeekAgo }
+        createdAt: { [Op.lte]: oneWeekAgo },
+        userId: userId
       }
     });
 

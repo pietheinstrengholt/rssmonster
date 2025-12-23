@@ -4,6 +4,11 @@ import Tag from "../models/tag.js";
 const getTags = async (req, res) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const tags = await Tag.findAll({
       where: { userId },
       attributes: [

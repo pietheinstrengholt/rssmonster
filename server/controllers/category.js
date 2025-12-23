@@ -4,6 +4,10 @@ import Feed from "../models/feed.js";
 const getCategories = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
     
     const categories = await Category.findAll({
       where: { userId },
@@ -23,8 +27,13 @@ const getCategories = async (req, res, next) => {
 
 const getCategory = async (req, res, next) => {
   try {
-    const { categoryId } = req.params;
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const { categoryId } = req.params;
 
     const category = await Category.findByPk(categoryId, {
       where: { userId },
@@ -48,6 +57,11 @@ const getCategory = async (req, res, next) => {
 const addCategory = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const { name, categoryOrder } = req.body;
 
     const category = await Category.create({
@@ -65,6 +79,13 @@ const addCategory = async (req, res, next) => {
 
 const updateCategory = async (req, res, next) => {
   try {
+
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const { categoryId } = req.params;
     const { name, categoryOrder } = req.body;
 
@@ -79,6 +100,8 @@ const updateCategory = async (req, res, next) => {
     await category.update({
       name,
       categoryOrder
+    }, {
+      where: { userId }
     });
 
     return res.status(200).json(category);
@@ -90,9 +113,17 @@ const updateCategory = async (req, res, next) => {
 
 const deleteCategory = async (req, res, next) => {
   try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const { categoryId } = req.params;
 
-    const category = await Category.findByPk(categoryId);
+    const category = await Category.findByPk(categoryId, {
+      where: { userId }
+    });
 
     if (!category) {
       return res.status(404).json({

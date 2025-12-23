@@ -63,6 +63,10 @@ export const exportOpml = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
 
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const opml = await generateOpml(userId);
 
     // Set headers for XML download
@@ -90,6 +94,10 @@ function escapeXml(unsafe) {
 export const importOpml = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
 
     // Check if file was uploaded
     if (!req.file || !req.file.buffer) {

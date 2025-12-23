@@ -9,8 +9,15 @@ import crypto from 'node:crypto';
 
 const getUsers = async (req, res, next) => {
   try {
+
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
     const loggedInUser = await User.findOne({
-      where: { id: req.userData.userId }
+      where: { id: userId }
     });
 
     // Check if the user has the 'admin' role
@@ -36,6 +43,7 @@ const getUsers = async (req, res, next) => {
 
 const getUser = async (req, res, next) => {
   try {
+
     // Check if the user has the 'admin' role
     if (req.userData.role !== 'admin') {
       return res.status(403).json({
