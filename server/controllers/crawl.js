@@ -83,7 +83,7 @@ const getFeeds = async () => {
           [Op.lt]: 25
         },
         // DEBUG: Filter for specific URL - remove this line after debugging
-        // url: 'http://oceanhorn.blogspot.nl/'
+        // url: 'http://www.nu.nl/feeds/rss/algemeen.rss'
       },
       order: [['updatedAt', 'ASC']],
       limit: feedCount

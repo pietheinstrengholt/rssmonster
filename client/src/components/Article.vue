@@ -29,6 +29,9 @@
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
         <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
+        <div class="media-content enclosure" v-if="imageUrl">
+          <img :src="imageUrl" alt="Image" />
+        </div>
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'summarized'" class="article-content">
         <p class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'">{{ stripHTML(content) }}</p>
@@ -235,6 +238,12 @@ span.feed_name a {
   height: 18px;
   width: 18px;
   margin-top: -1px;
+}
+
+.media-content.enclosure img {
+  max-width: 100%;
+  height: auto;
+  margin-bottom: 10px;
 }
 
 @media (prefers-color-scheme: light) {
