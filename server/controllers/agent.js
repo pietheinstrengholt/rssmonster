@@ -3,6 +3,9 @@ import dotenv from "dotenv";
 dotenv.config();
 
 export const postAgent = async (req, res) => {
+  if (!req.headers.authorization) {
+    return res.status(401).json({ error: 'Missing authorization header' });
+  }
   try {
     // Construct MCP URL
     const mcpUrl = `${req.protocol}://${req.get('host')}/mcp`;
