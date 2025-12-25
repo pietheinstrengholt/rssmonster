@@ -34,7 +34,7 @@
           </div>
 
           <!-- Rediscover RSS -->
-          <div class="form-group row" v-if="feed.errorCount > 0">
+          <div class="form-group row" v-if="feed.errorCount > 0 && $store.data.currentSelection.AIEnabled">
             <div class="col-sm-3"></div>
             <div class="col-sm-9">
               <button
@@ -42,13 +42,13 @@
                 :disabled="rediscovering"
                 @click="rediscoverRss"
               >
-                {{ rediscovering ? 'Searching…' : 'Rediscover RSS feed' }}
+                {{ rediscovering ? 'Searching…' : 'Rediscover RSS feed using AI' }}
               </button>
             </div>
           </div>
 
           <!-- Rediscovery result -->
-          <div class="form-group row" v-if="rediscoveredRss">
+          <div class="form-group row" v-if="rediscoveredRss && $store.data.currentSelection.AIEnabled">
             <label class="col-sm-3 col-form-label">Suggestion</label>
             <div class="col-sm-9">
               <div class="alert alert-info mb-0 py-2">
@@ -147,6 +147,9 @@ export default {
 
   methods: {
     async rediscoverRss() {
+      if (!this.$store.data.currentSelection.AIEnabled) {
+        return false
+      }
       this.rediscovering = true;
       this.rediscoveredRss = null;
 
@@ -267,5 +270,9 @@ export default {
 .alert-info {
   margin-left: 20px;
   margin-right: 10px;
+}
+
+select.form-select, button.btn.btn-warning.btn-sm {
+  margin-left: 20px;
 }
 </style>
