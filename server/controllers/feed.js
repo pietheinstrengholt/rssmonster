@@ -2,6 +2,7 @@ import Feed from "../models/feed.js";
 import Article from "../models/article.js";
 
 import discoverRssLink from "../util/discoverRssLink.js";
+import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';
 import parseFeed from "../util/parser.js";
 
 const getFeeds = async (req, res, next) => {
@@ -201,11 +202,55 @@ const validateFeed = async (req, res, next) => {
   }
 };
 
+const rediscoverFeedRss = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const feedId = req.params.feedId;
+
+    const feed = await Feed.findByPk(feedId, {
+      where: { userId }
+    });
+
+    if (!feed) {
+      return res.status(404).json({ error: 'Feed not found' });
+    }
+
+    const result = await rediscoverRssUrl({
+      feedName: feed.feedName,
+      websiteUrl: feed.url,
+      oldRssUrl: feed.rssUrl
+    });
+
+    if (!result.rssUrl) {
+      return res.status(404).json({
+        error: 'No RSS feed found',
+        confidence: result.confidence,
+        reason: result.reason
+      });
+    }
+
+    return res.status(200).json({
+      suggestedRssUrl: result.rssUrl,
+      confidence: result.confidence,
+      reason: result.reason
+    });
+
+  } catch (err) {
+    console.error('Error in rediscoverFeedRss:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 export default {
   getFeeds,
   getFeed,
   updateFeed,
   newFeed,
   deleteFeed,
-  validateFeed
+  validateFeed,
+  rediscoverFeedRss
 }
