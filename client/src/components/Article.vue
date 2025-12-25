@@ -29,7 +29,7 @@
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
         <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
-        <div class="media-content enclosure" v-if="imageUrl && !hasEmbeddedMedia()">
+        <div class="media-content enclosure" v-if="imageUrl && !hasEmbeddedMedia">
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>

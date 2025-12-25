@@ -6,7 +6,7 @@
                 <h5 class="modal-title">Delete feed</h5>
             </div>
             <div class="modal-body">
-                <p>Are you sure to delete this feed?</p>
+                <p>Do you really want to delete the feed <b>{{ $store.data.getSelectedFeedDetails?.feed.feedName }}</b>, including all of the related articles and content?</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="deleteFeed">Delete feed</button>

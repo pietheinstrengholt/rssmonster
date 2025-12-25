@@ -6,7 +6,7 @@
                 <h5 class="modal-title">Delete category</h5>
             </div>
             <div class="modal-body">
-                <p>Are you sure to delete this category?</p>
+                <p>Do you really want to delete the category <b>{{ $store.data.getSelectedCategory?.name }}</b>, including all of the related feeds, articles, and content?</p>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="deleteCategory">Delete category</button>

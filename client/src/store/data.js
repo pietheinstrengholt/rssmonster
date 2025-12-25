@@ -232,6 +232,42 @@ export const useStore = defineStore('data', {
     },
     getChatAssistantOpen: (data) => {
       return data.chatAssistantOpen;
+    },
+    getSelectedCategory: (state) => {
+      const { categoryId } = state.currentSelection;
+
+      // Guard clauses
+      if (!categoryId || categoryId === '%') return null;
+
+      const catId = Number(categoryId);
+      if (!Number.isFinite(catId)) return null;
+
+      return state.categories.find(category => category.id === catId) || null;
+    },
+    getSelectedFeedDetails: (state) => {
+      const { categoryId, feedId } = state.currentSelection;
+
+      // Guard clauses
+      if (!categoryId || !feedId) return null;
+      if (categoryId === '%' || feedId === '%') return null;
+
+      const catId = Number(categoryId);
+      const fId = Number(feedId);
+
+      if (!Number.isFinite(catId) || !Number.isFinite(fId)) return null;
+
+      // Find category
+      const category = state.categories.find(c => c.id === catId);
+      if (!category || !Array.isArray(category.feeds)) return null;
+
+      // Find feed
+      const feed = category.feeds.find(f => f.id === fId);
+      if (!feed) return null;
+
+      // Optional: return combined info
+      return {
+        feed
+      };
     }
   }
 });
