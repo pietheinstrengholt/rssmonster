@@ -11,5 +11,6 @@ router.put('/:feedId', userMiddleware.isLoggedIn, feedController.updateFeed);
 router.delete('/:feedId', userMiddleware.isLoggedIn, feedController.deleteFeed);
 router.post('/validate', userMiddleware.isLoggedIn, feedController.validateFeed);
 router.post('/', userMiddleware.isLoggedIn, feedController.newFeed);
+router.post('/:feedId/rediscover-rss',  userMiddleware.isLoggedIn, feedController.rediscoverFeedRss);
 
 export default router;
