@@ -243,7 +243,7 @@ span.feed_name a {
 .media-content.enclosure img {
   max-width: 100%;
   height: auto;
-  margin-bottom: 10px;
+  padding-bottom: 5px;
 }
 
 @media (prefers-color-scheme: light) {
