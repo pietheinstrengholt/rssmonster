@@ -1,7 +1,58 @@
-client/node_modules
-server/node_modules
-client/.env
-server/.env
-# Elastic Beanstalk Files
-.elasticbeanstalk/*
+# =========================
+# VCS
+# =========================
 .git
+.gitignore
+
+# =========================
+# Node / JS
+# =========================
+**/node_modules
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/pnpm-debug.log*
+
+# =========================
+# Build output (rebuilt inside Docker)
+# =========================
+client/dist
+server/dist
+server/public
+
+# =========================
+# Environment / secrets
+# =========================
+.env
+.env.*
+*.pem
+*.key
+
+# =========================
+# OS / Editor junk
+# =========================
+.DS_Store
+Thumbs.db
+.vscode
+.idea
+
+# =========================
+# Docker / Compose (optional)
+# =========================
+docker-compose*.yml
+Dockerfile.dev
+
+# =========================
+# Tests & coverage
+# =========================
+**/__tests__
+**/*.test.js
+**/*.spec.js
+coverage
+
+# =========================
+# Misc
+# =========================
+*.log
+tmp
+.cache
