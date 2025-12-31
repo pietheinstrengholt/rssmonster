@@ -1,20 +1,40 @@
+# ---------- client build ----------
+FROM node:20-alpine AS client-build
+
+WORKDIR /build/client
+COPY client/package*.json ./
+RUN npm ci
+COPY client .
+RUN npm run build
+
+# ---------- server deps ----------
+FROM node:20-alpine AS server-deps
+
+WORKDIR /build/server
+COPY server/package*.json ./
+RUN npm ci --omit=dev
+
+# ---------- runtime ----------
 FROM node:20-alpine
 
-RUN apk update
-RUN apk add g++ make python3 git
+ENV NODE_ENV=production
 
-WORKDIR /app/client
-ADD ./client /app/client
-RUN npm install
+WORKDIR /app
 
-WORKDIR /app/server
-ADD server /app/server
-RUN npm install
+# copy server code
+COPY server /app
+COPY --from=server-deps /build/server/node_modules /app/node_modules
 
-WORKDIR /app/client
-RUN npm run build
-RUN mv ./dist ../server
+# copy built client
+COPY --from=client-build /build/client/dist /app/public
 
-WORKDIR /app/server
+# non-root user
+RUN addgroup -S rssmonster && adduser -S rssmonster -G rssmonster
+USER rssmonster
+
 EXPOSE 3000
-CMD npm run start
+
+HEALTHCHECK --interval=30s --timeout=5s \
+  CMD wget -qO- http://localhost:3000/health || exit 1
+
+CMD ["node", "app.js"]
