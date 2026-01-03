@@ -218,6 +218,16 @@
     border-right: 1px solid #fff;
     border-left: 1px solid #fff;
   }
+
+  .search-wrap input {
+    background-color: #1e1e1e;
+    color: #fff;
+    border-color: #333;
+  }
+
+  .search-wrap input::placeholder {
+    color: #999;
+  }
 }
 </style>
 
