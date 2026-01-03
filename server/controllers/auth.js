@@ -62,6 +62,9 @@ const login = async (req, res, next) => {
       });  
     }
 
+    // Get JWT expiry in seconds (default to 86400 = 1 day)
+    const expiresInSeconds = Number(process.env.JWT_EXPIRES_IN) || 86400;
+
     // Generate JWT token
     const token = jwt.sign(
       {
@@ -70,7 +73,7 @@ const login = async (req, res, next) => {
       },
       process.env.JWT_SECRET || 'SECRETKEY',
       {
-        expiresIn: process.env.JWT_EXPIRES_IN || '1d'
+        expiresIn: expiresInSeconds
       }
     );
 
@@ -82,7 +85,8 @@ const login = async (req, res, next) => {
     return res.status(200).json({ 
       message: 'Connected!', 
       token, 
-      user 
+      user,
+      expiresInSeconds
     });
   } catch (err) {
     console.error('Login error:', err);

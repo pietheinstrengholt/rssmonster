@@ -115,7 +115,9 @@ export default {
         this.message = response.message;
 
         if (response) {
-          Cookies.set('token', response.token);
+          // Convert expiresInSeconds to days for cookie (default to 1 day if not provided)
+          const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
+          Cookies.set('token', response.token, { expires: expiresInDays });
           this.$store.auth.setToken(response.token);
           this.$store.auth.setRole(response.user.role);
           this.isAuthenticated = true;
