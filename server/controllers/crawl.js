@@ -166,15 +166,14 @@ const performCrawl = async () => {
             // If the url is valid, process the feed
             try {
               // parse the feed using feedsmith
-              const feedJson = await parseFeed.process(url);
-              const feedObject = JSON.parse(feedJson);
+              const feedObject = await parseFeed.process(url);
 
               // Sanity check
-              if (!feedJson) {
+              if (!feedObject) {
                 throw new Error('No valid feed data returned');
               }
 
-              // feedsmith: entries are in feedJson.feed.entries
+              // feedsmith: entries are in feedObject.feed.entries
               const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
               console.log(`Processing ${entries.length} entries for feed: ${feed.url}`);
 

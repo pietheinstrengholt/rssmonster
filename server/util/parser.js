@@ -7,7 +7,7 @@ export const process = async (feedUrl) => {
     const body = await response.text();
 
     const feed = parseFeed(body);
-    return JSON.stringify(feed, null, 2);
+    return feed; // return object, NOT string
 
   } catch (err) {
     // Suppress feedsmith stack trace

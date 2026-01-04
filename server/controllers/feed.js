@@ -148,8 +148,9 @@ const validateFeed = async (req, res, next) => {
     }
 
     const categoryId = req.body.categoryId;
-    //resolve url
+
     const url = await discoverRssLink.discoverRssLink(req.body.url);
+    console.log("Discovered RSS URL: " + url);
 
     if (typeof url === 'undefined') {
       return res.status(400).json({
@@ -163,18 +164,32 @@ const validateFeed = async (req, res, next) => {
       });
     }
 
-    const feeditem = await parseFeed.process(url);
-    if (!feeditem) {
+    let feedItem = await parseFeed.process(url);
+    if (!feedItem) {
       return res.status(400).json({
         error_msg: 'Feed has no meta attributes'
       });
     }
 
+    //console.log("Parsed feed item:");
+    //console.log(JSON.stringify(feedItem, null, 2));
+
+    //extract feed data
+    let feed = feedItem.feed;
+
+    //sanity check
+    if (!feed || typeof feed !== "object") {
+      throw new Error("Invalid feed structure");
+    }
+
+    //use self link as rss url if available
+    let feedUrl = feedItem.self || url;
+
     //check if feed already exists
     const existingFeed = await Feed.findOne({
       where: {
         userId: userId,
-        url: feeditem.self
+        url: feedUrl
       }
     });
     
@@ -184,15 +199,39 @@ const validateFeed = async (req, res, next) => {
       });
     }
     
+    // --- Resolve RSS self URL (RSS vs Atom)
+    const rssUrl =
+      feedItem.format === "atom"
+        ? feed?.links?.find(l => l.rel === "self")?.href || null
+        : req.body.url;
+
+    // --- Resolve feed title
+    const feedName =
+      feed?.title ||
+      null;
+
+    // --- Resolve feed description
+    const feedDesc =
+      feedItem.format === "rss"
+        ? feed?.description || null
+        : null;
+    
+    // --- Resolve favicon / image
+    const favicon =
+      feedItem.format === "rss"
+        ? feed?.image?.url || null
+        : null;
+
+    //return feed data to the frontend, the frontend will create the feed by invoking the newFeed endpoint
     return res.status(200).json({
-      userId: userId,
-      categoryId: categoryId,
-      feedName: feeditem.title || feeditem.meta.title,
-      feedDesc: feeditem.description || feeditem.meta.description || null,
-      feedType: feeditem.version || null,
-      url: req.body.url,
-      rssUrl: feeditem.self,
-      favicon: feeditem.image
+      userId,
+      categoryId,
+      feedName,
+      feedDesc,
+      feedType: feedItem.format || null,
+      url: feedItem.self || url || req.body.url,
+      rssUrl,
+      favicon
     });
   } catch (err) {
     console.error('Error in validateFeed:', err);

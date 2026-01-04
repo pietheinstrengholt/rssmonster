@@ -21,12 +21,18 @@ const findOverlap = (a, b) => {
 //function to validate if url is valid url
 const isURL = (str) => {
   var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#:.?+=&%!\-\/]))?/;
-  if (!regex.test(str)) {
-    return false;
-  } else {
-    return true;
-  }
+  return regex.test(str);
 }
+
+const resolveLink = (base, href) => {
+  try {
+    return new URL(href, base).toString();
+  } catch (e) {
+    return null;
+  }
+};
+
+const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
 
 export const fetchURL = async (url, retries = 2) => {
   const attemptFetch = async (attempt) => {
@@ -84,41 +90,60 @@ export const fetchURL = async (url, retries = 2) => {
 
 export const discoverRssLink = async (url) => {
   try {
-    //fetch url by using proper user agent
+    if (!isURL(url)) {
+      return undefined;
+    }
+
     const response = await fetchURL(url);
+    if (!response?.ok) {
+      return undefined;
+    }
 
-    if (response.ok) {
+    const responseUrl = response.url || url;
+    const contentType = response.headers.get("content-type") || "";
 
-      //set body text, needed for cheerio for trying to retrieve rss link
-      const body = await response.text();
-      //return response url, in case the url has been changed
-      const responseUrl = response.url;
+    // If the response is already a feed, accept the URL as-is (handles users pasting feed URLs directly)
+    if (isLikelyFeedContentType(contentType)) {
+      return responseUrl;
+    }
 
-      //This piece of code takes in the origin link of the site. 
-      //It validates the body. And then it uses cheerio to see if at least one of two types of links to the RSS feed are found in the head of the page.
-      if (body) {
-        const $ = load(String(body));
-        let rssLink = $('head link[type="application/rss+xml"]').attr("href") || $('head link[type="application/atom+xml"]').attr("href");
-        //There was no link found in the head of the page.
-        if (rssLink == undefined) {
-          return url;
-        } else {
-          //There is a link, but it could be an invalid URL.
-          if (isURL(rssLink)) {
-            //If rssLink is already an absolute URL, return it directly
-            if (rssLink.startsWith('http://') || rssLink.startsWith('https://')) {
-              return rssLink;
-            }
-            //find overlap and create new url for relative URLs
-            var overlap = findOverlap(responseUrl, rssLink);
-            url = responseUrl.replace(overlap, "") + rssLink;
-            return url;
-          } else {
-            return url;
-          }
-        }
+    const body = await response.text();
+
+    if (body) {
+      const $ = load(String(body));
+
+      // Only use legacy type selectors; skip rel="alternate" parsing
+      const legacy = $('head link[type="application/rss+xml"]').attr("href") || $('head link[type="application/atom+xml"]').attr("href");
+      const rssLink = legacy ? resolveLink(responseUrl, legacy) : null;
+
+      if (rssLink) {
+        return rssLink;
       }
     }
+
+    // Fallback guesses for common feed endpoints
+    const fallbackPaths = ['/feed', '/rss.xml', '/atom.xml'];
+    for (const path of fallbackPaths) {
+      const candidate = resolveLink(responseUrl, path);
+      if (!candidate) {
+        continue;
+      }
+
+      try {
+        const guessResponse = await fetchURL(candidate);
+        if (!guessResponse?.ok) {
+          continue;
+        }
+        const guessCt = guessResponse.headers.get('content-type') || '';
+        if (isLikelyFeedContentType(guessCt)) {
+          return guessResponse.url || candidate;
+        }
+      } catch (e) {
+        // Ignore and continue trying other fallbacks
+      }
+    }
+
+    return responseUrl;
   } catch (e) {
     console.log(
       "Error discovering RSS link for " + url + " " + e.message
