@@ -31,24 +31,6 @@
       </span>Mark as read
     </div>
 
-    <div v-if="topTags.length" class="title-box">
-      <p class="title">Top tags</p>
-    </div>
-    <div
-      v-for="(tag, index) in topTagsDisplay"
-      :key="index"
-      class="category-top tag-item"
-      :class="{ selected: $store.data.currentSelection.tag === tag.name }"
-      @click="selectTag(tag.name)">
-      <span class="glyphicon">
-        <BootstrapIcon icon="tag-fill" variant="light" />
-      </span>
-      <span class="title">{{ tag.name }}</span>
-      <span class="badge-unread">
-        <span class="badge">{{ tag.count }}</span>
-      </span>
-    </div>
-
     <div class="title-box">
       <p class="title">All feeds</p>
     </div>
@@ -104,6 +86,24 @@
       <span class="title">Read</span>
       <span class="badge-unread">
         <span class="badge">{{ $store.data.readCount }}</span>
+      </span>
+    </div>
+
+    <div v-if="topTags.length" class="title-box">
+      <p class="title">Top tags</p>
+    </div>
+    <div
+      v-for="(tag, index) in topTagsDisplay"
+      :key="index"
+      class="category-top tag-item"
+      :class="{ selected: $store.data.currentSelection.tag === tag.name }"
+      @click="selectTag(tag.name)">
+      <span class="glyphicon">
+        <BootstrapIcon icon="tag-fill" variant="light" />
+      </span>
+      <span class="title">{{ tag.name }}</span>
+      <span class="badge-unread">
+        <span class="badge">{{ tag.count }}</span>
       </span>
     </div>
 
