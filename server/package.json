@@ -43,7 +43,7 @@
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.3",
     "xml2js": "^0.6.2",
-    "zod": "^4.2.1"
+    "zod": "^4.3.5"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"
