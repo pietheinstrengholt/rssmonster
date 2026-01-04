@@ -36,6 +36,7 @@ const processArticle = async (feed, entry) => {
     let contentStripped = null;
     let contentLanguage = 'unknown';
     let leadImage = null;
+    let mediaFound = false;
 
     // Check if there's media content (e.g., YouTube videos)
     const mediaResult = processMedia(entry);
@@ -44,6 +45,7 @@ const processArticle = async (feed, entry) => {
       contentOriginal = mediaResult.content;
       contentStripped = mediaResult.content;
       leadImage = mediaResult.leadImage;
+      mediaFound = true;
     }
 
     // If generic content is found, use the entry content / description. Override media content.
@@ -103,6 +105,7 @@ const processArticle = async (feed, entry) => {
         ...fields,
         contentStripped: contentStripped,
         contentOriginal: contentOriginal,
+        mediaFound,
         leadImage,
         language: contentLanguage,
         published: fields.published

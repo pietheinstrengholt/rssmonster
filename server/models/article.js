@@ -32,6 +32,11 @@ export const Article = sequelize.define(
       type: Sequelize.INTEGER,
       defaultValue: 0
     },
+    media: {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
+    },
     url: {
       type: Sequelize.STRING(1024),
       allowNull: false

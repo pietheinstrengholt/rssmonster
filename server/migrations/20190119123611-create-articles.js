@@ -47,6 +47,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
+      media: {
+        type: Sequelize.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       url: {
         type: Sequelize.TEXT('medium'),
         allowNull: false

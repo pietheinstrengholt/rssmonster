@@ -29,7 +29,7 @@
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
         <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
-        <div class="media-content enclosure" v-if="imageUrl && !hasEmbeddedMedia">
+        <div class="media-content enclosure" v-if="imageUrl && !media">
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
@@ -371,7 +371,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id', 'url', 'title', 'published', 'feed', 'content', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
+  props: ['id', 'url', 'title', 'published', 'feed', 'content', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
   computed: {
     formatDate: function() {
       return (value)=> {
@@ -407,12 +407,6 @@ export default {
           return value;  
         }
       }
-    },
-    hasEmbeddedMedia() {
-      if (!this.content) return false;
-      const parser = new DOMParser();
-      const doc = parser.parseFromString(this.content, 'text/html');
-      return !!doc.querySelector('.media-content.media');
     }
   },
   methods: {
