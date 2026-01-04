@@ -481,12 +481,15 @@ const markAsRead = async (req, res, next) => {
 const markClicked = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+    const articleId = req.params.articleId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const articleId = req.params.articleId;
+    if (!articleId) {
+      return res.status(400).json({ error: "articleId is required" });
+    }
 
     const article = await Article.findOne({
       where: {
@@ -521,7 +524,7 @@ const articleDetails = async (req, res, next) => {
     }
 
     const articleIds = req.body.articleIds;
-    const sort = req.body.sort;
+    const sort = req.body.sort || "DESC";
 
     if (articleIds === undefined) {
       return res.status(400).json({
@@ -569,10 +572,16 @@ const articleDetails = async (req, res, next) => {
 const updateArticleStatus = async (userId, articleId, status) => {
   try {
 
-    const userId = req.userData.userId;
-
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!status) {
+      return res.status(400).json({ error: "status is required" });
+    }
+
+    if (!articleId) {
+      return res.status(400).json({ error: "articleId is required" });
     }
 
     const article = await Article.findByPk(articleId, {
@@ -600,12 +609,11 @@ const updateArticleStatus = async (userId, articleId, status) => {
 const articleMarkToRead = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+    const articleId = req.params.articleId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-
-    const articleId = req.params.articleId;
     
     const result = await updateArticleStatus(userId, articleId, "read");
     
@@ -626,13 +634,12 @@ const articleMarkToRead = async (req, res, next) => {
 const articleMarkToUnread = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+    const articleId = req.params.articleId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-
-    const articleId = req.params.articleId;
-    
+   
     const result = await updateArticleStatus(userId, articleId, "unread");
     
     if (!result.success) {
@@ -652,13 +659,12 @@ const articleMarkToUnread = async (req, res, next) => {
 const articleMarkWithStar = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+    const update = req.body.update;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-
-    const articleId = req.params.articleId;
-    const update = req.body.update;
 
     const article = await Article.findByPk(articleId, {
       where: {
