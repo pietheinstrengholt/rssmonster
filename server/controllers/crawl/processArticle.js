@@ -6,6 +6,7 @@ import processMedia from './processMedia.js';
 import processHtmlContent from './processHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
+import embedArticle from './embedArticle.js';
 import saveArticle from './saveArticle.js';
 
 /* ------------------------------------------------------------------
@@ -24,17 +25,10 @@ const processArticle = async (feed, entry) => {
     // Don't process empty post URLs
     if (!fields.link) return;
 
-    // Try to find any existing article with the same link or title
-    const existing = await findExistingArticle(
-      feed,
-      fields.title,
-      fields.link
-    );
-    if (existing) return;
-
     let contentOriginal = null;
     let contentStripped = null;
     let contentLanguage = 'unknown';
+    let contentHash = null;
     let leadImage = null;
     let mediaFound = false;
 
@@ -44,6 +38,8 @@ const processArticle = async (feed, entry) => {
       // Media-based content
       contentOriginal = mediaResult.content;
       contentStripped = mediaResult.content;
+      contentLanguage = 'unknown';
+      contentHash = null;
       leadImage = mediaResult.leadImage;
       mediaFound = true;
     }
@@ -59,7 +55,17 @@ const processArticle = async (feed, entry) => {
       contentOriginal = htmlResult.content;
       contentStripped = htmlResult.stripped;
       contentLanguage = htmlResult.language;
+      contentHash = htmlResult.contentHash;
     }
+
+    // Try to find any existing article with the same link or title
+    const existing = await findExistingArticle(
+      feed,
+      fields.title,
+      fields.link,
+      contentHash
+    );
+    if (existing) return; // Duplicate found, skip processing
 
     // Add article only if content was found
     if (!contentOriginal) return;
@@ -98,6 +104,13 @@ const processArticle = async (feed, entry) => {
       analysis.qualityScore = actionResult.qualityScore;
     }
 
+    // Generate embedding (optional, soft-fail)
+    const embedding = await embedArticle({
+      title: fields.title,
+      contentStripped,
+      description: fields.description
+    });
+
     // Create article with analysis results
     await saveArticle(
       feed,
@@ -105,9 +118,12 @@ const processArticle = async (feed, entry) => {
         ...fields,
         contentStripped: contentStripped,
         contentOriginal: contentOriginal,
+        contentHash: contentHash,
         mediaFound,
         leadImage,
         language: contentLanguage,
+        vector: embedding?.vector || null,
+        embedding_model: embedding?.embedding_model || null,
         published: fields.published
       },
       analysis,

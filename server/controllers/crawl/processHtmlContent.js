@@ -1,6 +1,7 @@
 import { load } from 'cheerio';
 import language from '../../util/language.js';
 import cache from '../../util/cache.js';
+import crypto from 'crypto';
 
 /* ======================================================
    HTML parsing & sanitization
@@ -9,6 +10,7 @@ import cache from '../../util/cache.js';
    - Collects outbound links for hotlinking
    - Strips HTML for content analysis
    - Detects language
+   - Computes content hash for duplication checks
 ====================================================== */
 function processHtmlContent(contentOriginal, entryLink, feed, entryTitle) {
   try {
@@ -52,6 +54,11 @@ function processHtmlContent(contentOriginal, entryLink, feed, entryTitle) {
       .replace(/\s+/g, ' ')
       .trim();
 
+    const contentHash = crypto
+      .createHash('sha256')
+      .update(text || '', 'utf8')
+      .digest('hex');
+
     let detectedLanguage = 'unknown';
 
     try {
@@ -66,7 +73,8 @@ function processHtmlContent(contentOriginal, entryLink, feed, entryTitle) {
     return {
       content: html,
       stripped: text,
-      language: detectedLanguage
+      language: detectedLanguage,
+      contentHash: contentHash
     };
   } catch (err) {
     console.error(
@@ -76,7 +84,8 @@ function processHtmlContent(contentOriginal, entryLink, feed, entryTitle) {
     return {
       content: contentOriginal,
       stripped: contentOriginal,
-      language: 'unknown'
+      language: 'unknown',
+      contentHash: null
     };
   }
 }

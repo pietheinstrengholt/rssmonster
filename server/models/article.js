@@ -54,8 +54,24 @@ export const Article = sequelize.define(
     },
     author: Sequelize.TEXT,
     description: Sequelize.TEXT,
-    content: Sequelize.TEXT("medium"),
+    contentOriginal: Sequelize.TEXT("medium"),
     contentStripped: Sequelize.TEXT,
+    contentSummaryBullets: {
+      type: Sequelize.JSON,
+      allowNull: true
+    },
+    contentHash: {
+      type: Sequelize.STRING(64),
+      allowNull: true
+    },
+    vector: {
+      type: Sequelize.JSON,
+      allowNull: true
+    },
+    embedding_model: {
+      type: Sequelize.STRING(64),
+      allowNull: true
+    },
     language: Sequelize.TEXT("tiny"),
     advertisementScore: {
       type: Sequelize.INTEGER,

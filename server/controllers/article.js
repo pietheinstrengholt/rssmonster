@@ -264,14 +264,14 @@ const getArticles = async (req, res, next) => {
       baseWhere.title = { [Op.like]: `%${titleFilter}%` };
       // If there are remaining tokens, also search content for them
       if (remainingTokens.length > 0) {
-        baseWhere.content = { [Op.like]: search };
+        baseWhere.contentOriginal = { [Op.like]: search };
       }
       console.log(`Title search: "%${titleFilter}%", Content search: "${search}"`);
     } else {
       // No title: filter - search both title OR content
       baseWhere[Op.or] = [
         { title: { [Op.like]: search } },
-        { content: { [Op.like]: search } }
+        { contentOriginal: { [Op.like]: search } }
       ];
     }
 

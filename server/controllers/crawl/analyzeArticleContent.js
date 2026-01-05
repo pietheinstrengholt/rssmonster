@@ -30,6 +30,7 @@ const clamp = (n, min, max) =>
 
 const defaultAnalysis = text => ({
   summary: text,
+  contentSummaryBullets: [],
   tags: [],
   advertisementScore: 50,
   sentimentScore: 50,
@@ -61,12 +62,17 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
           "",
           "Follow these rules EXACTLY:",
           "",
-          "1) Summarize the article:",
-          "   - If the article is short (a few paragraphs), write a concise summary of up to 5 sentences.",
-          "   - If the article is long (many paragraphs), write a detailed summary of 10-20 sentences.",
-          "   - Always focus on facts and key points, avoid filler.",
+          "1) Write a paragraph summary:",
+          "   - Short articles: up to 5 sentences",
+          "   - Long articles: 10-20 sentences",
+          "   - Focus on facts and key points only",
           "",
-          "2) Provide 3-5 SEO-friendly tags:",
+          "2) Write 3-6 bullet point summaries (contentSummaryBullets):",
+          "   - Each bullet is a single clear fact or takeaway",
+          "   - No filler, no opinions",
+          "   - Each bullet must be understandable on its own",
+          "",
+          "3) Provide 3-5 SEO-friendly tags:",
           "   - lowercase",
           "   - no punctuation",
           "   - single words or short phrases",
@@ -77,18 +83,18 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
           "   - Prefer categories that clearly describe the article topic.",
           "   - Validate categories against the article content:",
           "       • If a category matches the content, use it as a tag (or a close normalized variant).",
-          "       • If a category is vague, misleading, irrelevant, or inconsistent with the content, discard it.",
-          "   - If categories are missing, insufficient, or unreliable, derive tags from the article content instead.",
-          "   - Tags must accurately reflect what the article is actually about, not just how it is labeled.",
+          "       • If a category is vague, misleading, or irrelevant, discard it.",
+          "   - If categories are missing or unreliable, derive tags from the article content instead.",
           "",
-          "3) Score the article from 0-100 on:",
+          "4) Score the article from 0-100 on:",
           "   - advertisementScore (0 = editorial, 100 = promotional)",
           "   - sentimentScore (0 = positive, 50 = neutral, 100 = negative)",
           "   - qualityScore (0 = excellent, 100 = very poor)",
           "",
           "STRICT OUTPUT RULES:",
           "- Return ONLY valid JSON",
-          "- Use keys: summary, tags, advertisementScore, sentimentScore, qualityScore",
+          "- Use EXACTLY these keys:",
+          "  summary, contentSummaryBullets, tags, advertisementScore, sentimentScore, qualityScore",
           "",
           `Article Title: ${title}`,
           `Article Categories: ${categoryNames.join(', ')}`,
@@ -123,6 +129,12 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
             typeof parsed.summary === 'string' && parsed.summary.length > 0
               ? parsed.summary
               : contentStripped,
+          contentSummaryBullets: Array.isArray(parsed.contentSummaryBullets)
+            ? parsed.contentSummaryBullets
+                .filter(b => typeof b === 'string' && b.trim().length > 0)
+                .map(b => b.trim())
+                .slice(0, 7)
+            : [],
           tags: Array.isArray(parsed.tags)
             ? parsed.tags
                 .filter(Boolean)

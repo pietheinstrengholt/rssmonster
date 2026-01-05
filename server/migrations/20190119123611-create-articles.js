@@ -12,31 +12,28 @@ module.exports = {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          // This is a reference to another model
-          model: "users",
-
-          // This is the column name of the referenced model
-          key: "id"
+          model: 'users',
+          key: 'id'
         }
       },
-      // It is possible to create foreign keys:
       feedId: {
         type: Sequelize.INTEGER,
         allowNull: false,
         references: {
-          // This is a reference to another model
-          model: "feeds",
-
-          // This is the column name of the referenced model
-          key: "id"
+          model: 'feeds',
+          key: 'id'
         }
       },
       status: {
         type: Sequelize.STRING,
         allowNull: false,
-        defaultValue: "unread"
+        defaultValue: 'unread'
       },
-      starInd: Sequelize.INTEGER,
+      starInd: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       clickedInd: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -56,16 +53,50 @@ module.exports = {
         type: Sequelize.TEXT('medium'),
         allowNull: false
       },
-      imageUrl: Sequelize.TEXT,
+      imageUrl: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
       title: {
         type: Sequelize.TEXT,
         allowNull: false
       },
-      author: Sequelize.TEXT,
-      description: Sequelize.TEXT,
-      content: Sequelize.TEXT('medium'),
-      contentStripped: Sequelize.TEXT,
-      language: Sequelize.TEXT('tiny'),
+      author: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      description: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      contentOriginal: {
+        type: Sequelize.TEXT('medium'),
+        allowNull: true
+      },
+      contentStripped: {
+        type: Sequelize.TEXT,
+        allowNull: true
+      },
+      contentSummaryBullets: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
+      contentHash: {
+        type: Sequelize.STRING(64),
+        allowNull: true
+      },
+      vector: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
+      embedding_model: {
+        type: Sequelize.STRING(64),
+        allowNull: true
+      },
+      language: {
+        type: Sequelize.TEXT('tiny'),
+        allowNull: true
+      },
       advertisementScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
@@ -87,27 +118,52 @@ module.exports = {
         defaultValue: Sequelize.NOW
       },
       createdAt: {
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.NOW
       },
       updatedAt: {
-        type: Sequelize.DATE
+        type: Sequelize.DATE,
+        allowNull: false,
+        defaultValue: Sequelize.NOW
       }
-    }, {
-      charset: "utf8mb4",
-      collate: "utf8mb4_unicode_ci"
+    },
+    {
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
+    }
+  );
+
+    // ------------------------------------
+    // Indexes
+    // ------------------------------------
+    await queryInterface.addIndex('articles', ['feedId'], {
+      name: 'articles_feedId_idx'
     });
 
-    // Indexes to optimize common queries
-    await queryInterface.addIndex('articles', ['feedId'], { name: 'articles_feedId_idx' });
-    await queryInterface.addIndex('articles', ['status'], { name: 'articles_status_idx' });
-    await queryInterface.addIndex('articles', ['starInd'], { name: 'articles_starInd_idx' });
-    await queryInterface.addIndex('articles', ['userId'], { name: 'articles_userId_idx' });
+    await queryInterface.addIndex('articles', ['userId'], {
+      name: 'articles_userId_idx'
+    });
+
+    await queryInterface.addIndex('articles', ['status'], {
+      name: 'articles_status_idx'
+    });
+
+    await queryInterface.addIndex('articles', ['starInd'], {
+      name: 'articles_starInd_idx'
+    });
+
+    await queryInterface.addIndex('articles', ['contentHash'], {
+      name: 'articles_contentHash_idx'
+    });
   },
+
   down: async (queryInterface) => {
     await queryInterface.removeIndex('articles', 'articles_feedId_idx');
     await queryInterface.removeIndex('articles', 'articles_status_idx');
     await queryInterface.removeIndex('articles', 'articles_starInd_idx');
     await queryInterface.removeIndex('articles', 'articles_userId_idx');
+    await queryInterface.removeIndex('articles', 'articles_contentHash_idx');
     await queryInterface.dropTable('articles');
   }
 };

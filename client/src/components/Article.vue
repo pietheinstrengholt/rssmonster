@@ -28,16 +28,16 @@
         </div>
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
-        <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
+        <div class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'" v-html="contentOriginal"></div>
         <div class="media-content enclosure" v-if="imageUrl && !media">
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'summarized'" class="article-content">
-        <p class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'">{{ stripHTML(content) }}</p>
+        <p class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'">{{ stripHTML(contentOriginal) }}</p>
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'minimal' && showMinimalContent" class="article-content">
-        <div class="article-body" v-if="content !== '<html><head></head><body>null</body></html>'" v-html="content"></div>
+        <div class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'" v-html="contentOriginal"></div>
       </div>
     </div>
   </div>
@@ -371,7 +371,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id', 'url', 'title', 'published', 'feed', 'content', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
+  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
   computed: {
     formatDate: function() {
       return (value)=> {
