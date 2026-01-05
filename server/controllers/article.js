@@ -367,22 +367,12 @@ const getArticles = async (req, res, next) => {
     let articles = await Article.findAll(articleQuery);
     
     // If sorting by importance, compute importance scores and sort
-    let itemIds;
     if (sortImportance) {
-      const sortedArticles = articles
-        .map(article => ({
-          article,
-          importance: computeImportance(article)
-        }))
-        .sort((a, b) => b.importance - a.importance);
-      
-      itemIds = sortedArticles.map(item => item.article.id);
       sort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
-      console.log(`Found ${itemIds.length} articles matching query for user ${userId} (sorted by importance)`);
-    } else {
-      itemIds = articles.map(article => article.id);
-      console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
     }
+    let itemIds;
+    itemIds = articles.map(article => article.id);
+    console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
 
     // Update user settings (skip when tag-based query is used)
     // Note: tag is not persisted in settings currently
