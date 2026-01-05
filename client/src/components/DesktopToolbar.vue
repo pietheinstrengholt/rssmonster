@@ -41,6 +41,10 @@
       <p id="filter" v-if="$store.data.currentSelection.sort == 'DESC'">Newest</p>
       <p id="filter" v-if="$store.data.currentSelection.sort == 'ASC'">Oldest</p>
     </div>
+    <div class="status-toolbar" @click="toggleClusteredView" v-if="enableAgent">
+      <p id="filter" v-if="$store.data.currentSelection.clusterView">Grouped view</p>
+      <p id="filter" v-else>All articles</p>
+    </div>
     <div v-if="showSortMenu" class="dropdownmenu" id="sort">
       <div class="item" href="#" @click="sortClicked('ASC')">
         <p>Oldest</p>
@@ -243,7 +247,8 @@ export default {
       showStatusMenu: false,
       showViewModeMenu: false,
       showSortMenu: false,
-      showSettingsModal: false
+      showSettingsModal: false,
+      showClusteredView: false
     };
   },
   methods: {
@@ -256,14 +261,24 @@ export default {
       this.showStatusMenu = !this.showStatusMenu;
       this.showSortMenu = false;
       this.showViewModeMenu = false;
+      this.showClusteredView = false;
     },
     toggleShowViewMode: function() {
       this.showViewModeMenu = !this.showViewModeMenu;
       this.showSortMenu = false;
       this.showStatusMenu = false;
+      this.showClusteredView = false;
     },
     toggleShowSort: function() {
       this.showSortMenu = !this.showSortMenu;
+      this.showViewModeMenu = false;
+      this.showStatusMenu = false;
+      this.showClusteredView = false;
+    },
+    toggleClusteredView: function() {
+      const newValue = !this.$store.data.currentSelection.clusterView;
+      this.$store.data.setClusterView(newValue);
+      this.showSortMenu = false;
       this.showViewModeMenu = false;
       this.showStatusMenu = false;
     },

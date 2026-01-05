@@ -13,7 +13,8 @@ export const useStore = defineStore('data', {
       minAdvertisementScore: 100,
       minSentimentScore: 100,
       minQualityScore: 100,
-      viewMode: 'full'
+      viewMode: 'full',
+      clusterView: false
     },
     categories: [],
     unreadCount: 0,
@@ -167,6 +168,9 @@ export const useStore = defineStore('data', {
     setSearchQuery(query) {
       this.setChatAssistantOpen(false);
       this.searchQuery = query;
+    },
+    setClusterView(value) {
+      this.currentSelection.clusterView = value;
     }
   },
   getters: {
@@ -229,6 +233,9 @@ export const useStore = defineStore('data', {
     },
     getViewMode: (data) => {
       return data.currentSelection.viewMode;
+    },
+    getClusterView: (data) => {
+      return data.currentSelection.clusterView;
     },
     getChatAssistantOpen: (data) => {
       return data.chatAssistantOpen;

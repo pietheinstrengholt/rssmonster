@@ -24,13 +24,10 @@ function extractEntryFields(entry) {
     link: entry.links?.[0]?.href || entry.link,
     description:
       entry.description ||
-      entry.summary ||
-      entry.contentSnippet ||
       null,
     content:
       entry.content?.encoded ||
       entry.content ||
-      entry.description ||
       null,
     author:
       entry.dc?.creator ||
