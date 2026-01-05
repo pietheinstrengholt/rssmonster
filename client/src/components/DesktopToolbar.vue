@@ -40,6 +40,7 @@
     <div class="status-toolbar" @click="toggleShowSort">
       <p id="filter" v-if="$store.data.currentSelection.sort == 'DESC'">Newest</p>
       <p id="filter" v-if="$store.data.currentSelection.sort == 'ASC'">Oldest</p>
+      <p id="filter" v-if="$store.data.currentSelection.sort == 'IMPORTANCE'">Importance</p>
     </div>
     <div class="status-toolbar" @click="toggleClusteredView" v-if="enableAgent">
       <p id="filter" v-if="$store.data.currentSelection.clusterView">Grouped view</p>
@@ -51,6 +52,9 @@
       </div>
       <div class="item" href="#" @click="sortClicked('DESC')">
         <p>Newest</p>
+      </div>
+      <div class="item" href="#" @click="sortClicked('IMPORTANCE')">
+        <p>Importance</p>
       </div>
     </div>
     <div v-if="$store.data.currentSelection.AIEnabled" class="status-toolbar" @click="chatAssistant">

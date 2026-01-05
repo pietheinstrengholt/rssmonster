@@ -4,6 +4,7 @@ import Tag from "../models/tag.js";
 import cache from "../util/cache.js";
 import { Op } from 'sequelize';
 import Setting from "../models/setting.js";
+import { computeImportance } from '../util/importanceScore.js';
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -181,7 +182,15 @@ const getArticles = async (req, res, next) => {
      * Field filters from search string take precedence over query parameters.
      */
     // Sort: search token (sort:ASC/DESC) overrides query param
+    // SortImportance flag set if sort is IMPORTANCE
     let sort = sortFilter !== null ? sortFilter : (req.query.sort || "DESC");
+    let sortImportance = false;
+
+    // Normalize sort value when "IMPORTANCE" is specified
+    if (sort.toUpperCase() === "IMPORTANCE") {
+      sort = "DESC";
+      sortImportance = true;
+    }
     console.log(`Final sort value: "${sort}"`);
 
     // Tag: search token (tag:name) overrides query param
@@ -355,9 +364,25 @@ const getArticles = async (req, res, next) => {
     }
 
     // Fetch articles based on constructed query
-    const articles = await Article.findAll(articleQuery);
-    const itemIds = articles.map(article => article.id);
-    console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
+    let articles = await Article.findAll(articleQuery);
+    
+    // If sorting by importance, compute importance scores and sort
+    let itemIds;
+    if (sortImportance) {
+      const sortedArticles = articles
+        .map(article => ({
+          article,
+          importance: computeImportance(article)
+        }))
+        .sort((a, b) => b.importance - a.importance);
+      
+      itemIds = sortedArticles.map(item => item.article.id);
+      sort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
+      console.log(`Found ${itemIds.length} articles matching query for user ${userId} (sorted by importance)`);
+    } else {
+      itemIds = articles.map(article => article.id);
+      console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
+    }
 
     // Update user settings (skip when tag-based query is used)
     // Note: tag is not persisted in settings currently
@@ -571,7 +596,7 @@ const articleDetails = async (req, res, next) => {
         }
       ],
       order: [
-        ["published", sort]
+        ["published", sort === "IMPORTANCE" ? "DESC" : sort]
       ],
       where: {
         userId: userId,
@@ -583,6 +608,19 @@ const articleDetails = async (req, res, next) => {
       return res.status(404).json({
         message: "No articles found"
       });
+    }
+    
+    // If sorting by importance, compute importance scores and sort
+    if (sort.toUpperCase() === "IMPORTANCE") {
+      const sortedArticles = articles
+        .map(article => ({
+          article,
+          importance: computeImportance(article)
+        }))
+        .sort((a, b) => b.importance - a.importance)
+        .map(item => item.article);
+      
+      return res.status(200).json(sortedArticles);
     } else {
       return res.status(200).json(articles);
     }
