@@ -26,15 +26,16 @@ import ArticleCluster from '../models/articleCluster.js';
  * -------------------------------------------------------------
  */
 
-//const CLUSTER_SIM_THRESHOLD = 0.85; // Minimum similarity to assign to existing cluster 
-//const DEDUP_SIM_THRESHOLD = 0.93; // Similarity threshold to mark as duplicate
-//const LOOKBACK_DAYS = 7; // Only consider articles published within the last N days
-//const MAX_CANDIDATES = 200; // Max number of cluster candidates to evaluate
+const CLUSTER_SIM_THRESHOLD = 0.85; // Minimum similarity to assign to existing cluster 
+const DEDUP_SIM_THRESHOLD = 0.93; // Similarity threshold to mark as duplicate
+const LOOKBACK_DAYS = 7; // Only consider articles published within the last N days
+const MAX_CANDIDATES = 200; // Max number of cluster candidates to evaluate
 
-const CLUSTER_SIM_THRESHOLD = 0.72;
-const DEDUP_SIM_THRESHOLD   = 0.88;
-const LOOKBACK_DAYS         = 14;
-const MAX_CANDIDATES        = 500;
+// Alternative thresholds for experimentation
+//const CLUSTER_SIM_THRESHOLD = 0.72;
+//const DEDUP_SIM_THRESHOLD   = 0.88;
+//const LOOKBACK_DAYS         = 14;
+//const MAX_CANDIDATES        = 500;
 
 /* ------------------------------------------------------------------
  * Vector math
