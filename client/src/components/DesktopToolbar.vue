@@ -62,7 +62,7 @@
         type="text"
         v-model="$store.data.searchQuery"
         @keyup="emitSearchEvent()"
-        placeholder="Search articles..."
+        placeholder="Search for words or tag:name, title:text, etc."
         autocomplete="off"
       />
     </div>
