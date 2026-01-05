@@ -29,7 +29,11 @@ module.exports = {
           type: Sequelize.STRING(255),
           allowNull: true
         },
-
+        articleCount: { 
+          type: Sequelize.INTEGER,
+          allowNull: false,
+          defaultValue: 1
+        },
         createdAt: {
           type: Sequelize.DATE,
           allowNull: false,

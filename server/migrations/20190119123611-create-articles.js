@@ -95,13 +95,7 @@ module.exports = {
       },
       clusterId: {
         type: Sequelize.INTEGER,
-        allowNull: true,
-        references: {
-          model: 'article_clusters',
-          key: 'id'
-        },
-        onUpdate: 'CASCADE',
-        onDelete: 'SET NULL'
+        allowNull: true
       },
       language: {
         type: Sequelize.TEXT('tiny'),

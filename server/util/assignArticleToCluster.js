@@ -136,7 +136,8 @@ export async function assignArticleToCluster(articleId) {
 
     const cluster = await ArticleCluster.create({
       representativeArticleId: article.id,
-      name
+      name,
+      articleCount: 1
     });
 
     await article.update({ clusterId: cluster.id });
@@ -152,7 +153,12 @@ export async function assignArticleToCluster(articleId) {
   /* --------------------------------------------------------------
    * Assign to existing cluster
    * -------------------------------------------------------------- */
+  const cluster = await ArticleCluster.findByPk(bestMatch.clusterId);
+  
   await article.update({ clusterId: bestMatch.clusterId });
+  
+  // Increment article count
+  await cluster.increment('articleCount');
 
   console.log(
     `[CLUSTER] Article ${article.id} → cluster ${bestMatch.clusterId} (sim=${bestScore.toFixed(3)})`
@@ -181,7 +187,6 @@ export async function assignArticleToCluster(articleId) {
     }
   }
 
-  const cluster = await ArticleCluster.findByPk(bestMatch.clusterId);
   const repChanged = bestRep.id !== cluster.representativeArticleId;
 
   if (repChanged) {
