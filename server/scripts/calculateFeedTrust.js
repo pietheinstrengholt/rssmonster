@@ -19,6 +19,9 @@ import ArticleCluster from '../models/articleCluster.js';
 const EMA_ALPHA = 0.05;
 const LOOKBACK_DAYS = 30;
 
+// Cluster size at which an article is considered duplicated/syndicated
+const DUPLICATION_CLUSTER_THRESHOLD = 3;
+
 /* ------------------------------------------------------------------
  * Helpers
  * ------------------------------------------------------------------ */
@@ -55,8 +58,34 @@ export async function calculateFeedTrustForFeed(feedId) {
   });
 
   if (!articles.length) {
-    return feed.feedTrust;
+    return {
+      trust: feed.feedTrust,
+      duplicationRate: 0
+    };
   }
+
+  /* --------------------------------------------------------------
+   * Feed duplication rate
+   * -------------------------------------------------------------- */
+
+  let duplicatedArticles = 0;
+  let duplicationSamples = 0;
+
+  for (const article of articles) {
+    const cluster = article.cluster;
+    if (!cluster) continue;
+
+    duplicationSamples++;
+
+    if ((cluster.articleCount || 1) >= DUPLICATION_CLUSTER_THRESHOLD) {
+      duplicatedArticles++;
+    }
+  }
+
+  const feedDuplicationRate =
+    duplicationSamples > 0
+      ? duplicatedArticles / duplicationSamples
+      : 0;
 
   /* --------------------------------------------------------------
    * 1) ORIGINALITY
@@ -88,9 +117,14 @@ export async function calculateFeedTrustForFeed(feedId) {
       ? totalClusterSize / clusterSamples
       : 1;
 
-  const originality = clamp(
+  const baseOriginality = clamp(
     0.7 * representativeRatio +
     0.3 * (1 / Math.log2(avgClusterSize + 1))
+  );
+
+  // Penalize feeds that frequently publish duplicated content
+  const originality = clamp(
+    baseOriginality * (1 - feedDuplicationRate)
   );
 
   /* --------------------------------------------------------------
@@ -128,7 +162,7 @@ export async function calculateFeedTrustForFeed(feedId) {
     0.35 * originality +
     0.25 * avgQuality +
     0.20 * engagement +
-    0.20 * 1 // consistency placeholder
+    0.20 * 1 // consistency placeholder (future)
   );
 
   /* --------------------------------------------------------------
@@ -145,7 +179,10 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedTrust: clamp(newTrust)
   });
 
-  return newTrust;
+  return {
+    trust: newTrust,
+    duplicationRate: feedDuplicationRate
+  };
 }
 
 /* ------------------------------------------------------------------
@@ -165,9 +202,21 @@ export async function calculateFeedTrustForAllFeeds() {
 
   for (const feed of feeds) {
     try {
-      const trust = await calculateFeedTrustForFeed(feed.id);
+      const result = await calculateFeedTrustForFeed(feed.id);
       console.log(
-        `[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) → ${trust.toFixed(3)}`
+        `[FEED-TRUST] Updated feed ${feed.id} (${feed.feedName}): ` +
+        `trust=${feed.feedTrust.toFixed(3)}`
+      );
+
+      if (!result || result.trust === undefined || result.duplicationRate === undefined) {
+        console.log(`[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> skipped (no valid result)`);
+        continue;
+      }
+
+      console.log(
+        `[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> ` +
+        `trust=${result.trust.toFixed(3)} ` +
+        `dup=${result.duplicationRate.toFixed(2)}`
       );
     } catch (err) {
       console.error(

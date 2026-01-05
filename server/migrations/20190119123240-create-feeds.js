@@ -65,6 +65,11 @@ module.exports = {
           allowNull: false,
           defaultValue: 0.5
         },
+        feedDuplicationRate: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+          defaultValue: 0
+        },
         lastFetched: {
           type: Sequelize.DATE,
           allowNull: true
