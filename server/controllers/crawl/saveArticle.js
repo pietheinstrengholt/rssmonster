@@ -46,6 +46,9 @@ async function saveArticle(feed, data, analysis, actionResult) {
       )
     );
   }
+
+  // Return saved article
+  return article;
 }
 
 export default saveArticle;

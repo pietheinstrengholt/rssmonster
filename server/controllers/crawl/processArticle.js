@@ -8,6 +8,7 @@ import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
 import embedArticle from './embedArticle.js';
 import saveArticle from './saveArticle.js';
+import assignArticleToCluster from '../../util/assignArticleToCluster.js';
 
 /* ------------------------------------------------------------------
  * Article Processor
@@ -112,7 +113,7 @@ const processArticle = async (feed, entry) => {
     });
 
     // Create article with analysis results
-    await saveArticle(
+    const article = await saveArticle(
       feed,
       {
         ...fields,
@@ -129,6 +130,13 @@ const processArticle = async (feed, entry) => {
       analysis,
       actionResult
     );
+
+    // Assign article to cluster
+    if (article?.id && article.vector) {
+      console.log(`[ARTICLE] Processing clustering for article ${article.id}`);
+      assignArticleToCluster(article.id).catch(console.error);
+    }
+
   } catch (err) {
     console.error('Error processing article:', err);
   }

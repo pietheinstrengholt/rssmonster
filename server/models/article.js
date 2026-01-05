@@ -1,6 +1,7 @@
 import Sequelize from 'sequelize';
 import { sequelize } from '../util/database.js';
 import cache from '../util/cache.js';
+import ArticleCluster from './articleCluster.js';
 
 export const Article = sequelize.define(
   "articles",
@@ -72,6 +73,10 @@ export const Article = sequelize.define(
       type: Sequelize.STRING(64),
       allowNull: true
     },
+    clusterId: {
+      type: Sequelize.INTEGER,
+      allowNull: true
+    },
     language: Sequelize.TEXT("tiny"),
     advertisementScore: {
       type: Sequelize.INTEGER,
@@ -96,5 +101,23 @@ export const Article = sequelize.define(
     collate: "utf8mb4_unicode_ci"
   }
 );
+
+// Article -> Cluster
+Article.belongsTo(ArticleCluster, {
+  foreignKey: 'clusterId',
+  as: 'cluster'
+});
+
+// Cluster -> Articles
+ArticleCluster.hasMany(Article, {
+  foreignKey: 'clusterId',
+  as: 'articles'
+});
+
+// Representative article
+ArticleCluster.belongsTo(Article, {
+  foreignKey: 'representativeArticleId',
+  as: 'representative'
+});
 
 export default Article;

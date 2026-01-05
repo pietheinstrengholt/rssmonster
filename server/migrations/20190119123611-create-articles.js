@@ -93,6 +93,16 @@ module.exports = {
         type: Sequelize.STRING(64),
         allowNull: true
       },
+      clusterId: {
+        type: Sequelize.INTEGER,
+        allowNull: true,
+        references: {
+          model: 'article_clusters',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
+      },
       language: {
         type: Sequelize.TEXT('tiny'),
         allowNull: true
@@ -156,6 +166,10 @@ module.exports = {
     await queryInterface.addIndex('articles', ['contentHash'], {
       name: 'articles_contentHash_idx'
     });
+
+    await queryInterface.addIndex('articles', ['clusterId'], {
+      name: 'articles_clusterId_idx'
+    });
   },
 
   down: async (queryInterface) => {
@@ -164,6 +178,7 @@ module.exports = {
     await queryInterface.removeIndex('articles', 'articles_starInd_idx');
     await queryInterface.removeIndex('articles', 'articles_userId_idx');
     await queryInterface.removeIndex('articles', 'articles_contentHash_idx');
+    await queryInterface.removeIndex('articles', 'articles_clusterId_idx');
     await queryInterface.dropTable('articles');
   }
 };
