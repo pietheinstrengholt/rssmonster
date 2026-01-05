@@ -48,6 +48,11 @@ export const Feed = sequelize.define(
       allowNull: false,
       defaultValue: 'active'
     },
+    feedTrust: {
+      type: Sequelize.FLOAT,
+      allowNull: false,
+      defaultValue: 0.5
+    },
     lastFetched: {
       type: Sequelize.DATE,
       allowNull: true

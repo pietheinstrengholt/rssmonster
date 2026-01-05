@@ -118,14 +118,49 @@ Add a cron job to crawl feeds every 5 minutes by calling the API endpoint:
 
 Note: The API endpoint runs the crawl asynchronously in the background and returns immediately without output.
 
-### 6. Optional: Rebuild Article Clusters
+### 6. Recommended: Rebuild Article Clusters
 
-If you have semantic search enabled, it is recommended to rebuild article clusters after a while (e.g., after importing many feeds). This can be done with:
+If you have semantic search enabled and need to rebuild article clusters from scratch:
 
 ```bash
 cd server
 npm run recluster
 ```
+
+This command will:
+- Clear all existing article clusters
+- Rebuild clusters deterministically based on article embeddings
+- Process articles in chronological order (oldest first)
+
+**When to use this:**
+- After bulk importing articles
+- When cluster quality degrades over time
+- After changing clustering algorithms or parameters
+- To fix cluster assignment inconsistencies
+
+**Note:** This is a destructive operation that rebuilds all clusters. It requires articles to have embedding vectors already generated.
+
+### 7. Recommended: Calculate Feed Trust Scores
+
+Feed trust scores help identify high-quality sources based on originality, article quality, and user engagement:
+
+```bash
+cd server
+npm run feedtrust
+```
+
+This command calculates trust scores (0.0 to 1.0) for all active feeds using:
+- **Originality (35%)**: How often the feed publishes original content vs syndicated articles
+- **Quality (25%)**: Average quality score of articles from this feed
+- **Engagement (20%)**: User interaction (stars, clicks) with feed content
+- **Consistency (20%)**: Placeholder for future enhancements
+
+**When to use this:**
+- Periodically (e.g., weekly) to update feed rankings
+- After significant changes in reading patterns
+- To identify low-quality or spam feeds
+
+The trust score uses exponential moving average (EMA) to smoothly adapt over time while being resistant to short-term fluctuations.
 
 ## AI Assistant (Model Context Protocol)
 

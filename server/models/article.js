@@ -127,6 +127,24 @@ export const Article = sequelize.define(
         return quality / 100;
       }
     },
+    uniqueness: {
+      type: Sequelize.VIRTUAL(Sequelize.FLOAT),
+      get() {
+        const cluster = this.get('cluster');
+
+        // No cluster → unique by definition
+        if (!cluster || !cluster.articleCount || cluster.articleCount <= 1) {
+          return 1.0;
+        }
+
+        const clusterSize = cluster.articleCount;
+
+        const uniqueness = 1 / Math.log2(clusterSize + 1);
+
+        // Clamp just in case
+        return Math.max(0, Math.min(1, uniqueness));
+      }
+    },
     published: {
       type: Sequelize.DATE,
       allowNull: false,

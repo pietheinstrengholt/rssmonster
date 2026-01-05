@@ -16,7 +16,8 @@
     "debug": "nodemon -L --watch app.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/crawl.js",
-    "recluster": "node scripts/reclusterArticles.js"
+    "recluster": "node scripts/reclusterArticles.js",
+    "feedtrust": "node scripts/calculateFeedTrust.js"
   },
   "engines": {
     "node": ">=20.x"
