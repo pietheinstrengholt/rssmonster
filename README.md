@@ -118,6 +118,15 @@ Add a cron job to crawl feeds every 5 minutes by calling the API endpoint:
 
 Note: The API endpoint runs the crawl asynchronously in the background and returns immediately without output.
 
+### 6. Optional: Rebuild Article Clusters
+
+If you have semantic search enabled, it is recommended to rebuild article clusters after a while (e.g., after importing many feeds). This can be done with:
+
+```bash
+cd server
+npm run recluster
+```
+
 ## AI Assistant (Model Context Protocol)
 
 RSSMonster includes an AI-powered assistant that enables natural language interactions with your RSS feeds. Ask questions like:
