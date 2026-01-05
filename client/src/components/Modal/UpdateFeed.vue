@@ -92,6 +92,19 @@
                 </select>
               </div>
             </div>
+
+            <div class="form-group row">
+              <label class="col-sm-3 col-form-label">Status</label>
+              <div class="col-sm-9">
+                <select
+                  class="form-select"
+                  v-model="feed.status"
+                >
+                  <option value="active">Active</option>
+                  <option value="disabled">Disabled</option>
+                </select>
+              </div>
+            </div>
           </div>
 
           <!-- Error info -->
@@ -192,7 +205,8 @@ export default {
             feedName: this.feed.feedName,
             feedDesc: this.feed.feedDesc,
             categoryId: selectedCategoryId,
-            rssUrl: this.feed.rssUrl
+            rssUrl: this.feed.rssUrl,
+            status: this.feed.status
           }
         );
 
@@ -229,7 +243,6 @@ export default {
       }
     }
   },
-
   computed: {
     selectedFeed() {
       return helper.findArrayById(

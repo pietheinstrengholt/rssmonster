@@ -74,7 +74,7 @@ const updateFeed = async (req, res, next) => {
       url: req.body.url,
       rssUrl: req.body.rssUrl,
       favicon: req.body.favicon,
-      active: req.body.active,
+      status: req.body.status,
       errorCount: 0
     });
     return res.status(200).json({ feed });
@@ -101,7 +101,7 @@ const newFeed = async (req, res, next) => {
       url: req.body.url,
       rssUrl: req.body.rssUrl,
       favicon: req.body.favicon,
-      active: req.body.active
+      status: req.body.status
     });
     return res.status(201).json({ feed });
   } catch (err) {
@@ -170,9 +170,6 @@ const validateFeed = async (req, res, next) => {
         error_msg: 'Feed has no meta attributes'
       });
     }
-
-    //console.log("Parsed feed item:");
-    //console.log(JSON.stringify(feedItem, null, 2));
 
     //extract feed data
     let feed = feedItem.feed;

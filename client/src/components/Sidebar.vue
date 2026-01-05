@@ -151,7 +151,7 @@
           <div v-if="element.feeds">
             <div v-if="$store.data.currentSelection.categoryId == element.id" class="category-feeds">
               <div v-for="(feed, index) in element.feeds" v-bind:key="index">
-                <div class="category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.currentSelection.feedId == feed.id, 'error': feed.errorCount > 10, last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
+                <div class="category-feed" v-on:click.stop="loadFeed(feed)" v-bind:class="{ 'selected': $store.data.currentSelection.feedId == feed.id, 'error': feed.status == 'error', 'disabled': feed.status == 'disabled', last : index === (element.feeds.length-1) }" v-bind:id="feed.id">
                   <span class="glyphicon">
                     <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16">
                     <BootstrapIcon v-if="!feed.favicon" icon="rss-fill" variant="light" />
@@ -376,6 +376,22 @@ div.option {
 .category-feed.error,
 .category-feed.selected.error {
   background-color: #bf7c74;
+}
+
+.category-feed.disabled {
+  background-color: #b0b0b0;
+}
+
+.category-feed.disabled .title {
+  color: #d3d3d3;
+}
+
+.category-feed.selected.disabled {
+  background-color: #606060;
+}
+
+.category-feed.selected.disabled .title {
+  color: #b0b0b0;
 }
 
 @media (prefers-color-scheme: dark) {

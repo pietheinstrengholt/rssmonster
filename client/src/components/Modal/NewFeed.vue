@@ -141,7 +141,8 @@ export default {
                     feedDesc: this.feed.feedDesc,
                     feedType: this.feed.feedType,
                     url: this.feed.url,
-                    rssUrl: this.feed.rssUrl
+                    rssUrl: this.feed.rssUrl,
+                    status: 'active'
                 })
                 .then(
                 result => {

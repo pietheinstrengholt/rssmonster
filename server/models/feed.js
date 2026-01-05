@@ -3,7 +3,7 @@ import { sequelize } from '../util/database.js';
 import { Article } from './article.js';
 
 export const Feed = sequelize.define(
-  "feeds",
+  'feeds',
   {
     id: {
       type: Sequelize.INTEGER,
@@ -19,7 +19,9 @@ export const Feed = sequelize.define(
       type: Sequelize.STRING,
       allowNull: false
     },
-    feedDesc: Sequelize.TEXT,
+    feedDesc: {
+      type: Sequelize.TEXT
+    },
     feedType: {
       type: Sequelize.STRING(16),
       allowNull: true
@@ -28,10 +30,11 @@ export const Feed = sequelize.define(
       type: Sequelize.STRING
     },
     rssUrl: {
-      type: Sequelize.STRING,
-      unique: true
+      type: Sequelize.STRING
     },
-    favicon: Sequelize.STRING,
+    favicon: {
+      type: Sequelize.STRING
+    },
     errorCount: {
       type: Sequelize.INTEGER,
       defaultValue: 0
@@ -40,20 +43,24 @@ export const Feed = sequelize.define(
       type: Sequelize.TEXT,
       allowNull: true
     },
-    active: {
-      type: Sequelize.BOOLEAN, 
-      allowNull: false, 
-      defaultValue: true 
+    status: {
+      type: Sequelize.ENUM('active', 'error', 'disabled'),
+      allowNull: false,
+      defaultValue: 'active'
+    },
+    lastFetched: {
+      type: Sequelize.DATE,
+      allowNull: true
     }
   },
   {
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
+    charset: 'utf8mb4',
+    collate: 'utf8mb4_unicode_ci'
   }
 );
 
-//add associations
-Feed.hasMany(Article);
-Article.belongsTo(Feed);
+// associations
+Feed.hasMany(Article, { foreignKey: 'feedId' });
+Article.belongsTo(Feed, { foreignKey: 'feedId' });
 
 export default Feed;

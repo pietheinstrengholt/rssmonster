@@ -78,10 +78,7 @@ const getFeeds = async () => {
     //only get feeds with an errorCount lower than 25
     const feeds = await Feed.findAll({
       where: {
-        active: true,
-        errorCount: {
-          [Op.lt]: 25
-        },
+        status: 'active',
         // DEBUG: Filter for specific URL - remove this line after debugging
         // url: 'http://www.engadget.com/rss.xml'
       },
@@ -154,10 +151,15 @@ const performCrawl = async () => {
               const errMsg = 'No RSS link discovered';
               console.log(`${errMsg} for feed: ${feed.url}`);
 
-              await feed.update({
-                errorCount: feed.errorCount + 1,
+              const newErrorCount = feed.errorCount + 1;
+              const updateData = {
+                errorCount: newErrorCount,
                 errorMessage: errMsg
-              });
+              };
+              if (newErrorCount > 25) {
+                updateData.status = 'error';
+              }
+              await feed.update(updateData);
 
               errorCount++;
               return;
@@ -214,18 +216,22 @@ const performCrawl = async () => {
                 feed.url
               );
 
-              await feed.update({
-                errorCount: feed.errorCount + 1,
+              const newErrorCount = feed.errorCount + 1;
+              const updateData = {
+                errorCount: newErrorCount,
                 errorMessage: errMsg
-              });
+              };
+              if (newErrorCount > 25) {
+                updateData.status = 'error';
+              }
+              await feed.update(updateData);
 
               errorCount++;
             }
 
-            //touch updatedAt
-            feed.changed('updatedAt', true);
+            //update lastFetched
             await feed.update({
-              updatedAt: new Date()
+              lastFetched: new Date()
             });
           })(),
           FEED_TIMEOUT_MS,
@@ -237,11 +243,16 @@ const performCrawl = async () => {
 
           timeoutCount++;
 
-          await feed.update({
-            errorCount: feed.errorCount + 1,
+          const newErrorCount = feed.errorCount + 1;
+          const updateData = {
+            errorCount: newErrorCount,
             errorMessage: err.message,
             updatedAt: new Date()
-          });
+          };
+          if (newErrorCount > 25) {
+            updateData.status = 'error';
+          }
+          await feed.update(updateData);
         } else {
           console.error('Error processing feed:', feed.url, err);
         }
