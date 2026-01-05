@@ -16,7 +16,11 @@ RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google R
 - **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap for a fluid experience across all devices
 - **Google Reader-inspired UX**: Automatic mark-as-read on scroll and trending content identification
 - **Advanced Search Expressions**: Powerful filtering with field operators (`star:true`, `unread:false`, `clicked:true`, `tag:tech`, `title:javascript`) and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@"3 days ago"`, `@"last Monday"`). Combine multiple filters like `title:javascript ai @today star:false sort:ASC` for precise content discovery
-- **Semantic Search**: Intelligent article discovery powered by semantic embeddings and clustering. Articles are automatically embedded and grouped by meaning for contextual search beyond keyword matching
+- **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
+- **Semantic Deduplication & Clustering**: Similar articles are grouped into clusters, reducing noise from syndication and duplicate coverage
+- **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content
+- **Feed Trust Scoring**: Sources earn a long-term trust score based on originality, quality, and user engagement, improving ranking reliability over time
+- **Importance-Based Ranking**: Articles are ranked using a transparent, runtime importance score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
 - **RSS Feed Generation**: Create custom RSS feeds from your stored articles with flexible filtering by user, feed, category, starred status, and read/unread state. Perfect for sharing curated content or syncing with other applications (accessible via `/rss` endpoint with query parameters)
 - **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
 - **Drag & Drop Management**: Intuitive feed organization and categorization
