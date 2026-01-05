@@ -24,6 +24,12 @@ module.exports = {
           onDelete: 'CASCADE'
         },
 
+        // Human-readable cluster name
+        name: {
+          type: Sequelize.STRING(255),
+          allowNull: true
+        },
+
         createdAt: {
           type: Sequelize.DATE,
           allowNull: false,
@@ -42,7 +48,7 @@ module.exports = {
       }
     );
 
-    // Optional but useful index
+    // Index for fast lookup of representative
     await queryInterface.addIndex(
       'article_clusters',
       ['representativeArticleId'],
@@ -50,14 +56,32 @@ module.exports = {
         name: 'article_clusters_rep_article_idx'
       }
     );
+
+    // Optional but useful: index for sorting / searching clusters
+    await queryInterface.addIndex(
+      'article_clusters',
+      ['name'],
+      {
+        name: 'article_clusters_name_idx'
+      }
+    );
   },
 
   down: async (queryInterface) => {
     await queryInterface.removeIndex(
       'article_clusters',
+      'article_clusters_name_idx'
+    );
+
+    await queryInterface.removeIndex(
+      'article_clusters',
       'article_clusters_rep_article_idx'
     );
 
+    // ENUM must be explicitly dropped in MySQL
     await queryInterface.dropTable('article_clusters');
+    await queryInterface.sequelize.query(
+      'DROP TYPE IF EXISTS enum_article_clusters_nameSource;'
+    );
   }
 };

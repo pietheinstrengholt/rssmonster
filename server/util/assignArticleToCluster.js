@@ -26,10 +26,10 @@ import ArticleCluster from '../models/articleCluster.js';
  * -------------------------------------------------------------
  */
 
-const CLUSTER_SIM_THRESHOLD = 0.85; // Minimum similarity to assign to existing cluster 
-const DEDUP_SIM_THRESHOLD = 0.93; // Similarity threshold to mark as duplicate
-const LOOKBACK_DAYS = 7; // Only consider articles published within the last N days
-const MAX_CANDIDATES = 200; // Max number of cluster candidates to evaluate
+const CLUSTER_SIM_THRESHOLD = 0.85; // Minimum similarity to assign to existing cluster
+const DEDUP_SIM_THRESHOLD = 0.93;   // Similarity threshold to mark as duplicate
+const LOOKBACK_DAYS = 7;            // Only consider articles published within the last N days
+const MAX_CANDIDATES = 200;         // Max number of cluster candidates to evaluate
 
 // Alternative thresholds for experimentation
 //const CLUSTER_SIM_THRESHOLD = 0.72;
@@ -70,17 +70,40 @@ function representativeScore(article) {
 }
 
 /* ------------------------------------------------------------------
- * Core logic
+ * Cluster naming (Phase 1: deterministic, no LLM)
+ * ------------------------------------------------------------------ */
+
+function generateClusterName(article) {
+  if (!article?.title) return null;
+
+  let name = article.title
+    // Remove common site suffixes
+    .replace(/\s*[-–—|:]\s*[^-–—|:]+$/, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  // Keep names readable
+  if (name.length > 120) {
+    name = name.slice(0, 120).replace(/\s+\S*$/, '') + '…';
+  }
+
+  return name || null;
+}
+
+/* ------------------------------------------------------------------
+ * Core clustering logic
  * ------------------------------------------------------------------ */
 
 export async function assignArticleToCluster(articleId) {
   const article = await Article.findByPk(articleId);
-  if (!article || !article.vector) return; // Skip: cannot cluster if no vector exists
+  if (!article || !article.vector) return;
 
   // Already clustered → skip
   if (article.clusterId) return;
 
-  // Fetch recent cluster representatives
+  /* --------------------------------------------------------------
+   * Fetch recent cluster representatives
+   * -------------------------------------------------------------- */
   const representatives = await Article.findAll({
     where: {
       vector: { [Op.ne]: null },
@@ -109,29 +132,31 @@ export async function assignArticleToCluster(articleId) {
    * No suitable cluster → create new
    * -------------------------------------------------------------- */
   if (!bestMatch || bestScore < CLUSTER_SIM_THRESHOLD) {
+    const name = generateClusterName(article);
+
     const cluster = await ArticleCluster.create({
-      representativeArticleId: article.id
+      representativeArticleId: article.id,
+      name
     });
 
     await article.update({ clusterId: cluster.id });
-    return;
-  }
 
-  // Log assignment
-  if (bestMatch) {
     console.log(
-      `[CLUSTER] Article ${article.id} → cluster ${bestMatch.clusterId} (sim=${bestScore.toFixed(3)})`
+      `[CLUSTER] Article ${article.id} → NEW cluster ${cluster.id}` +
+      (name ? ` (${name})` : '')
     );
-  } else {
-    console.log(
-      `[CLUSTER] Article ${article.id} → NEW cluster`
-    );
+
+    return;
   }
 
   /* --------------------------------------------------------------
    * Assign to existing cluster
    * -------------------------------------------------------------- */
   await article.update({ clusterId: bestMatch.clusterId });
+
+  console.log(
+    `[CLUSTER] Article ${article.id} → cluster ${bestMatch.clusterId} (sim=${bestScore.toFixed(3)})`
+  );
 
   // Optional: mark near-duplicates
   if (bestScore >= DEDUP_SIM_THRESHOLD) {
@@ -156,10 +181,26 @@ export async function assignArticleToCluster(articleId) {
     }
   }
 
-  await ArticleCluster.update(
-    { representativeArticleId: bestRep.id },
-    { where: { id: bestMatch.clusterId } }
-  );
+  const cluster = await ArticleCluster.findByPk(bestMatch.clusterId);
+  const repChanged = bestRep.id !== cluster.representativeArticleId;
+
+  if (repChanged) {
+    const newName = generateClusterName(bestRep);
+
+    await cluster.update({
+      representativeArticleId: bestRep.id,
+      name: cluster.name ?? newName
+    });
+
+    console.log(
+      `[CLUSTER] Cluster ${cluster.id} representative updated → article ${bestRep.id}` +
+      (newName ? ` (${newName})` : '')
+    );
+  } else {
+    await cluster.update({
+      representativeArticleId: bestRep.id
+    });
+  }
 }
 
 export default assignArticleToCluster;
