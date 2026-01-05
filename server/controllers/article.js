@@ -27,6 +27,7 @@ const getArticles = async (req, res, next) => {
     const minSentimentScore = req.query.minSentimentScore != null ? parseInt(req.query.minSentimentScore) : 100;
     const minQualityScore = req.query.minQualityScore != null ? parseInt(req.query.minQualityScore) : 100;
     const viewMode = req.query.viewMode || "full";
+    const clusterView = req.query.clusterView === "true" || req.query.clusterView === true;
     
     /**
      * Parse search query and extract field filters.
@@ -282,7 +283,15 @@ const getArticles = async (req, res, next) => {
 
     // Apply tag filter if present (restricts to specific article IDs)
     if (taggedArticleIds !== null && taggedArticleIds.length > 0) {
-      baseWhere.id = taggedArticleIds;
+      baseWhere.id = clusterView
+        ? {
+            [Op.in]: Article.sequelize.literal(
+              `(SELECT representativeArticleId
+                FROM article_clusters
+                WHERE representativeArticleId IN (${taggedArticleIds.join(',')}))`
+            )
+          }
+        : taggedArticleIds;
     }
 
     /**
@@ -331,9 +340,24 @@ const getArticles = async (req, res, next) => {
       }
     }
 
+    /**
+     * Cluster view:
+     * When enabled, only return cluster representatives.
+     * This collapses related articles into one item per cluster.
+     */
+    if (clusterView) {
+      // Only articles that are cluster representatives
+      articleQuery.where.id = {
+        [Op.in]: Article.sequelize.literal(
+          `(SELECT representativeArticleId FROM article_clusters)`
+        )
+      };
+    }
+
     // Fetch articles based on constructed query
     const articles = await Article.findAll(articleQuery);
     const itemIds = articles.map(article => article.id);
+    console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
 
     // Update user settings (skip when tag-based query is used)
     // Note: tag is not persisted in settings currently
