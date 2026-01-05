@@ -3,7 +3,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
 [![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
 
-Copyright (c) 2025 Piethein Strengholt, piethein@strengholt-online.nl
+Copyright (c) 2026 Piethein Strengholt, piethein@strengholt-online.nl
 
 ## Overview
 
@@ -16,6 +16,7 @@ RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google R
 - **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap for a fluid experience across all devices
 - **Google Reader-inspired UX**: Automatic mark-as-read on scroll and trending content identification
 - **Advanced Search Expressions**: Powerful filtering with field operators (`star:true`, `unread:false`, `clicked:true`, `tag:tech`, `title:javascript`) and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@"3 days ago"`, `@"last Monday"`). Combine multiple filters like `title:javascript ai @today star:false sort:ASC` for precise content discovery
+- **Semantic Search**: Intelligent article discovery powered by semantic embeddings and clustering. Articles are automatically embedded and grouped by meaning for contextual search beyond keyword matching
 - **RSS Feed Generation**: Create custom RSS feeds from your stored articles with flexible filtering by user, feed, category, starred status, and read/unread state. Perfect for sharing curated content or syncing with other applications (accessible via `/rss` endpoint with query parameters)
 - **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
 - **Drag & Drop Management**: Intuitive feed organization and categorization
@@ -281,38 +282,6 @@ Restart the server to apply the changes:
 ```bash
 cd server
 npm run start
-```
-
-## AWS Elastic Beanstalk Deployment
-
-### 1. Configure AWS Credentials
-
-Set up your AWS credentials: https://docs.aws.amazon.com/general/latest/gr/aws-sec-cred-types.html
-
-### 2. Install Elastic Beanstalk CLI
-
-Download and install: https://docs.aws.amazon.com/elasticbeanstalk/latest/dg/eb-cli3.html
-
-### 3. Initialize and Deploy
-
-```bash
-# Initialize EB application
-eb init
-
-# Create environment with MySQL database
-eb create rssmonster-app \
-  --envvars "NODE_ENV=production" \
-  --database \
-  --database.engine mysql \
-  --database.username rssmonster \
-  --database.password "your-secure-password"
-
-# SSH into instance to run migrations
-eb ssh rssmonster-app
-
-# Run migrations inside the instance
-/app/server/node_modules/.bin/sequelize db:migrate
-/app/server/node_modules/.bin/sequelize db:seed:all
 ```
 
 ## Fever API Integration
