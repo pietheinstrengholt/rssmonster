@@ -48,7 +48,7 @@
           </div>
 
           <!-- Rediscovery result -->
-          <div class="form-group row" v-if="rediscoveredRss && $store.data.currentSelection.AIEnabled">
+          <div class="form-group row" v-if="rediscoveredRss && agenticFeaturesEnabled">
             <label class="col-sm-3 col-form-label">Suggestion</label>
             <div class="col-sm-9">
               <div class="alert alert-info mb-0 py-2">
@@ -160,7 +160,7 @@ export default {
 
   methods: {
     async rediscoverRss() {
-      if (!this.$store.data.currentSelection.AIEnabled) {
+      if (!this.agenticFeaturesEnabled) {
         return false
       }
       this.rediscovering = true;
@@ -255,6 +255,9 @@ export default {
         this.$store.data.categories,
         this.$store.data.getSelectedCategoryId
       );
+    },
+    agenticFeaturesEnabled() {
+      return this.$store.auth.isAgenticFeaturesEnabled;
     }
   }
 };

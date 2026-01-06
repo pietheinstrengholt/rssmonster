@@ -11,6 +11,9 @@ export const useStore = defineStore('auth', {
     },
     setRole(newValue) {
       this.role = newValue;
+    },
+    setAgenticFeaturesEnabled(newValue) {
+      this.agenticFeaturesEnabled = newValue;
     }
   },
   getters: {
@@ -19,6 +22,9 @@ export const useStore = defineStore('auth', {
     },
     getRole: state => {
       return state.role
+    },
+    isAgenticFeaturesEnabled: state => {
+      return state.agenticFeaturesEnabled
     }
   },
 });

@@ -177,18 +177,13 @@ RSSMonster includes an AI-powered assistant that enables natural language intera
 
 ### Configuration
 
-To enable the AI assistant, configure the following environment variables:
+To enable the AI assistant and other agentic features, configure the following environment variables:
 
 **Server (`server/.env`):**
 ```env
 OPENAI_API_KEY=your-openai-api-key-here
 OPENAI_MODEL_AGENT=gpt-5.1
 OPENAI_MODEL_CRAWL=gpt-4o-mini
-```
-
-**Client (`client/.env`):**
-```env
-VITE_ENABLE_AGENT=true
 ```
 
 After configuration, restart both the client and server. The assistant provides:

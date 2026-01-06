@@ -121,6 +121,7 @@ export default {
           this.$store.auth.setToken(response.token);
           this.$store.auth.setRole(response.user.role);
           this.isAuthenticated = true;
+          this.$store.auth.setAgenticFeaturesEnabled(response.agenticFeaturesEnabled || false);
           // Clear form fields
           this.username = '';
           this.password = '';

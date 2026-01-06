@@ -86,7 +86,8 @@ const login = async (req, res, next) => {
       message: 'Connected!', 
       token, 
       user,
-      expiresInSeconds
+      expiresInSeconds,
+      agenticFeaturesEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
   } catch (err) {
     console.error('Login error:', err);

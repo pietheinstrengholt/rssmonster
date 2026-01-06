@@ -1,5 +1,5 @@
 <template>
-    <div id="inputArea">
+    <div v-if="agenticFeaturesEnabled" id="inputArea">
         <div class="mb-3">
             <label for="chatTextarea" class="form-label">What would you like to know?</label>
             <textarea
@@ -37,6 +37,10 @@
                 </div>
               </div>
         </div>
+    </div>
+    <div v-else class="alert alert-warning mt-4">
+      <strong>Agentic features are not enabled.</strong><br>
+      Please contact your administrator or set up the required API key to use AI-powered chat features.
     </div>
 </template>
 
@@ -160,6 +164,10 @@ export default {
             isLoading: false
         };
     },
+    created() {
+        this.chatInput = '';
+        this.chatOutput = '';
+    },
     methods: {
         submitChat: function() {
             //prevent empty input
@@ -172,9 +180,7 @@ export default {
             //set loading state
             this.isLoading = true;
             //send messages to server
-            axios.post(
-            import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent",
-            {
+            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent", {
                 messages: this.messages
             }
             )
@@ -204,9 +210,10 @@ export default {
             this.chatOutput = '';
         }
     },
-    created() {
-        this.chatInput = '';
-        this.chatOutput = '';
+    computed:{
+      agenticFeaturesEnabled() {
+        return this.$store.auth.isAgenticFeaturesEnabled;
+      }
     }
 };
 </script>

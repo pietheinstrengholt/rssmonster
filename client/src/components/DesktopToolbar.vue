@@ -42,7 +42,7 @@
       <p id="filter" v-if="$store.data.currentSelection.sort == 'ASC'">Oldest</p>
       <p id="filter" v-if="$store.data.currentSelection.sort == 'IMPORTANCE'">Importance</p>
     </div>
-    <div class="status-toolbar" @click="toggleClusteredView" v-if="enableAgent">
+    <div class="status-toolbar" @click="toggleClusteredView" v-if="agenticFeaturesEnabled">
       <p id="filter" v-if="$store.data.currentSelection.clusterView">Grouped view</p>
       <p id="filter" v-else>All articles</p>
     </div>
@@ -53,7 +53,7 @@
       <div class="item" href="#" @click="sortClicked('DESC')">
         <p>Newest</p>
       </div>
-      <div class="item" href="#" @click="sortClicked('IMPORTANCE')">
+      <div v-if="agenticFeaturesEnabled" class="item" href="#" @click="sortClicked('IMPORTANCE')">
         <p>Importance</p>
       </div>
     </div>
@@ -332,8 +332,8 @@ export default {
         return value.charAt(0).toUpperCase() + value.slice(1);
       }
     },
-    enableAgent() {
-      return import.meta.env.VITE_ENABLE_AGENT === 'true';
+    agenticFeaturesEnabled() {
+      return this.$store.auth.isAgenticFeaturesEnabled;
     }
   }
 };
