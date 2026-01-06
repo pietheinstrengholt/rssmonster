@@ -61,6 +61,11 @@ export const Setting = sequelize.define(
       type: Sequelize.STRING,
       allowNull: false,
       defaultValue: 'full'
+    },
+    clusterView: {
+      type: Sequelize.BOOLEAN,
+      allowNull: false,
+      defaultValue: false
     }
   },
   {

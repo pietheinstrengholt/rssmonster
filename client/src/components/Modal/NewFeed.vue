@@ -169,7 +169,7 @@ export default {
                     console.log("oops something went wrong", response);
                     /* eslint-enable no-console */
                 }
-                );
+              );
 
             //send event to refresh the categories. This triggers a re-fetch of the categories and updates the counts
             this.$store.data.increaseRefreshCategories();

@@ -65,8 +65,7 @@ const getFeeds = async () => {
       where: {
         status: 'active',
         // DEBUG: Filter for specific URL - remove this line after debugging
-        //url: 'http://www.engadget.com/rss.xml'
-        //url: 'https://blog.laravel.com/feed'
+        // url: 'http://www.engadget.com/rss.xml'
       },
       order: [['updatedAt', 'ASC']],
       limit: feedCount

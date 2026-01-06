@@ -34,7 +34,7 @@
     <div class="title-box">
       <p class="title">All feeds</p>
     </div>
-    <div v-if="($store.data.unreadsSinceLastUpdate !== 0)" v-on:click="loadType('refresh')" id="unreadsSinceLastUpdate" class="category-top">
+    <div v-if="($store.data.unreadsSinceLastUpdate > 0)" v-on:click="loadType('refresh')" id="unreadsSinceLastUpdate" class="category-top">
       <span class="glyphicon">
         <BootstrapIcon icon="lightbulb-fill" variant="light" />
       </span>

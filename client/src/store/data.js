@@ -60,7 +60,15 @@ export const useStore = defineStore('data', {
     },
     setCurrentSelection(selection) {
       this.setChatAssistantOpen(false);
-      this.currentSelection = selection;
+      const prev = this.currentSelection || {};
+      this.currentSelection = {
+        ...prev,
+        ...(selection || {}),
+        // Keep a boolean value even if the server doesn't send it
+        clusterView: (selection && selection.clusterView != null)
+          ? Boolean(selection.clusterView)
+          : Boolean(prev.clusterView)
+      };
     },
     setUnreadCount(count) {
       this.unreadCount = count;

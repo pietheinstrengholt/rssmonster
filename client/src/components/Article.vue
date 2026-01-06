@@ -14,6 +14,7 @@
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
+          <span v-if="cluster && (cluster.articleCount || 0) > 1" class="cluster"> + {{ cluster.articleCount }} similar articles</span>
         </div>
         <div v-if="tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'" class="article-tags">
           <span
@@ -371,7 +372,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore'],
+  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore', 'cluster'],
   computed: {
     formatDate: function() {
       return (value)=> {

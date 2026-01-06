@@ -42,9 +42,9 @@
       <p id="filter" v-if="$store.data.currentSelection.sort == 'ASC'">Oldest</p>
       <p id="filter" v-if="$store.data.currentSelection.sort == 'IMPORTANCE'">Importance</p>
     </div>
-    <div class="status-toolbar" @click="toggleClusteredView" v-if="agenticFeaturesEnabled">
-      <p id="filter" v-if="$store.data.currentSelection.clusterView">Grouped view</p>
-      <p id="filter" v-else>All articles</p>
+    <div class="status-toolbar" @click="toggleClusteredView" v-if="$store.data.currentSelection.AIEnabled">
+      <p id="filter" v-if="$store.data.currentSelection.clusterView">All articles</p>
+      <p id="filter" v-else>Grouped view</p>
     </div>
     <div v-if="showSortMenu" class="dropdownmenu" id="sort">
       <div class="item" href="#" @click="sortClicked('ASC')">
@@ -53,7 +53,7 @@
       <div class="item" href="#" @click="sortClicked('DESC')">
         <p>Newest</p>
       </div>
-      <div v-if="agenticFeaturesEnabled" class="item" href="#" @click="sortClicked('IMPORTANCE')">
+      <div v-if="$store.data.currentSelection.AIEnabled" class="item" href="#" @click="sortClicked('IMPORTANCE')">
         <p>Importance</p>
       </div>
     </div>
@@ -331,9 +331,6 @@ export default {
       return (value)=> {
         return value.charAt(0).toUpperCase() + value.slice(1);
       }
-    },
-    agenticFeaturesEnabled() {
-      return this.$store.auth.isAgenticFeaturesEnabled;
     }
   }
 };

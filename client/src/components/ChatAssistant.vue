@@ -1,5 +1,5 @@
 <template>
-    <div v-if="agenticFeaturesEnabled" id="inputArea">
+    <div v-if="$store.data.currentSelection.AIEnabled" id="inputArea">
         <div class="mb-3">
             <label for="chatTextarea" class="form-label">What would you like to know?</label>
             <textarea
@@ -209,11 +209,6 @@ export default {
             this.messages = [];
             this.chatOutput = '';
         }
-    },
-    computed:{
-      agenticFeaturesEnabled() {
-        return this.$store.auth.isAgenticFeaturesEnabled;
-      }
     }
 };
 </script>

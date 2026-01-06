@@ -42,9 +42,11 @@
       <button @click="subscribeNotifications()" type="button" class="btn btn-danger">Subscribe to notifications</button>
       <br>
 
-      <p v-if="agenticFeaturesEnabled" class="content-header">Chat assistant</p>
-      <button v-if="agenticFeaturesEnabled" @click="chatAssistant()" type="button" class="btn btn-primary">{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Open Chat' }}</button>
-      <br v-if="agenticFeaturesEnabled"><br v-if="agenticFeaturesEnabled"><br v-if="agenticFeaturesEnabled">
+      <div v-if="$store.data.currentSelection.AIEnabled">
+        <p class="content-header">Chat assistant</p>
+        <button @click="chatAssistant()" type="button" class="btn btn-primary">{{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Open Chat' }}</button>
+        <br><br><br>
+      </div>
 
       <button @click="emitClickEvent('mobile', null);" type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <br><br>
@@ -193,11 +195,6 @@ export default {
       setTimeout(() => {
         this.emitClickEvent('mobile', null);
       }, 150);
-    }
-  },
-  computed: {
-    agenticFeaturesEnabled() {
-      return this.$store.auth.isAgenticFeaturesEnabled;
     }
   }
 };

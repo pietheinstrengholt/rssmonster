@@ -172,7 +172,13 @@ export default {
     },
     async markArticleRead(articleId) {
       try {
-        const response = await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/marktoread/" + articleId);
+        console.log("ClusterView when marking to read:", this.$store.data.currentSelection.clusterView);
+        const response = await axios.post(
+          import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/marktoread/" + articleId,
+          {
+            clusterView: true //this.$store.data.currentSelection.clusterView
+          }
+        );
         this.$store.data.increaseReadCount(response.data);
       } catch (error) {
         console.log("oops something went wrong", error);

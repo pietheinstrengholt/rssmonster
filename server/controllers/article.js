@@ -5,6 +5,7 @@ import cache from "../util/cache.js";
 import { Op } from 'sequelize';
 import Setting from "../models/setting.js";
 import { computeImportance } from '../util/importanceScore.js';
+import ArticleCluster from "../models/articleCluster.js";
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -387,7 +388,8 @@ const getArticles = async (req, res, next) => {
         minAdvertisementScore: minAdvertisementScore,
         minSentimentScore: minSentimentScore,
         minQualityScore: minQualityScore,
-        viewMode: viewMode
+        viewMode: viewMode,
+        clusterView: clusterView
       }, {
         where: { userId: userId }
       });
@@ -401,7 +403,8 @@ const getArticles = async (req, res, next) => {
         minAdvertisementScore: minAdvertisementScore,
         minSentimentScore: minSentimentScore,
         minQualityScore: minQualityScore,
-        viewMode: viewMode
+        viewMode: viewMode,
+        clusterView: clusterView
       });
     }
 
@@ -583,7 +586,12 @@ const articleDetails = async (req, res, next) => {
           model: Tag,
           required: false,
           attributes: ['id', 'name']
-        }
+        },
+        {
+          model: ArticleCluster,
+          as: 'cluster',
+          required: false
+        },
       ],
       order: [
         ["published", sort === "IMPORTANCE" ? "DESC" : sort]
@@ -666,13 +674,32 @@ const articleMarkToRead = async (req, res, next) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-    
+
+    // Mark article as read
     const result = await updateArticleStatus(userId, articleId, "read");
     
     if (!result.success) {
       return res.status(result.statusCode).json({
         message: result.message || "Error updating article"
       });
+    }
+
+    // If clusterView is enabled, mark all articles in the same cluster as read
+    const clusterView = req.body?.clusterView === true || req.body?.clusterView === 'true';
+    if (clusterView) {
+      if (result.article.clusterId) {
+        console.log(`Cluster view enabled: marking all articles in cluster ${result.article.clusterId} as read`);
+        await Article.update(
+          { status: 'read' },
+          {
+            where: {
+              id: { [Op.ne]: articleId }, // Exclude the already updated article
+              userId: userId,
+              clusterId: result.article.clusterId
+            }
+          }
+        );
+      }
     }
     
     return res.status(result.statusCode).json(result.article);

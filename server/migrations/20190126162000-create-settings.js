@@ -68,6 +68,11 @@ module.exports = {
           allowNull: false,
           defaultValue: 'full', // can be 'full', 'minimal', 'summarized'
         },
+        clusterView: {
+          type: Sequelize.BOOLEAN,
+          allowNull: false,
+          defaultValue: false
+        },
         createdAt: {
           type: Sequelize.DATE
         },
