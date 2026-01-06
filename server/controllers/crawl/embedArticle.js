@@ -5,9 +5,11 @@ const EMBEDDING_MODEL = "text-embedding-3-small";
 // Minimum text length to embed
 const MIN_TEXT_LENGTH = 200;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY
-});
+// OpenAI client
+const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+const openai = hasApiKey
+  ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
+  : null;
 
 /**
  * Select text for embedding
