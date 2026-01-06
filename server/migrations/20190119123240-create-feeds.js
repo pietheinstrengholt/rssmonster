@@ -39,10 +39,8 @@ module.exports = {
           allowNull: true
         },
         url: {
-          type: Sequelize.STRING
-        },
-        rssUrl: {
-          type: Sequelize.STRING
+          type: Sequelize.STRING,
+          allowNull: false
         },
         favicon: {
           type: Sequelize.STRING
@@ -98,8 +96,8 @@ module.exports = {
       name: 'feeds_categoryId_idx'
     });
 
-    await queryInterface.addIndex('feeds', ['userId', 'rssUrl'], {
-      name: 'feeds_userId_rssUrl_unique',
+    await queryInterface.addIndex('feeds', ['userId', 'url'], {
+      name: 'feeds_userId_url_unique',
       unique: true
     });
   },
@@ -107,7 +105,7 @@ module.exports = {
   down: async (queryInterface, Sequelize) => {
     await queryInterface.removeIndex('feeds', 'feeds_userId_idx');
     await queryInterface.removeIndex('feeds', 'feeds_categoryId_idx');
-    await queryInterface.removeIndex('feeds', 'feeds_userId_rssUrl_unique');
+    await queryInterface.removeIndex('feeds', 'feeds_userId_url_unique');
 
     await queryInterface.dropTable('feeds');
 

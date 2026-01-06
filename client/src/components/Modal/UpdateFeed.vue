@@ -27,8 +27,8 @@
               <input
                 class="form-control"
                 type="text"
-                placeholder="Feed RSS Url"
-                v-model="feed.rssUrl"
+                placeholder="Feed URL"
+                v-model="feed.url"
               />
             </div>
           </div>
@@ -173,8 +173,8 @@ export default {
 
         this.rediscoveredRss = result.data;
 
-        if (result.data.suggestedRssUrl) {
-          this.feed.rssUrl = result.data.suggestedRssUrl;
+        if (result.data.suggestedUrl) {
+          this.feed.url = result.data.suggestedUrl;
         }
       } catch (err) {
         console.error('RSS rediscovery failed:', err);
@@ -205,7 +205,7 @@ export default {
             feedName: this.feed.feedName,
             feedDesc: this.feed.feedDesc,
             categoryId: selectedCategoryId,
-            rssUrl: this.feed.rssUrl,
+            url: this.feed.url,
             status: this.feed.status
           }
         );

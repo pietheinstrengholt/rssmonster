@@ -1,7 +1,4 @@
-import { Op } from 'sequelize';
-
 import Feed from '../models/feed.js';
-
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
@@ -48,18 +45,6 @@ const withTimeout = (promise, timeoutMs, feedUrl) => {
   ]);
 };
 
-// Helper function to extract base URL from a feed URL
-const getBaseUrl = feedUrl => {
-  try {
-    const urlObj = new URL(feedUrl);
-    return `${urlObj.protocol}//${urlObj.hostname}${
-      urlObj.port ? ':' + urlObj.port : ''
-    }/`;
-  } catch (e) {
-    return null;
-  }
-};
-
 // Reset rate limit delay after crawl completes
 const resetRateLimitDelay = () => {
   if (rateLimitDelay > 0) {
@@ -80,7 +65,8 @@ const getFeeds = async () => {
       where: {
         status: 'active',
         // DEBUG: Filter for specific URL - remove this line after debugging
-        // url: 'http://www.engadget.com/rss.xml'
+        //url: 'http://www.engadget.com/rss.xml'
+        //url: 'https://blog.laravel.com/feed'
       },
       order: [['updatedAt', 'ASC']],
       limit: feedCount
@@ -122,47 +108,12 @@ const performCrawl = async () => {
         // Wrap entire feed processing in a timeout
         await withTimeout(
           (async () => {
-            //discover RssLink - first try feed.url, then fallback to rssUrl, then try base URL
-            let url = await discoverRssLink.discoverRssLink(feed.url);
-            let usedBaseUrl = false;
+            //discover RssLink
+            const discoveryInputUrl = feed.url;
+            let url = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
 
-            console.log(`Crawling feed: ${feed.url} (Discovered RSS: ${url})`);
-
-            // If discovery failed and we have a stored rssUrl, try that instead
-            if (typeof url === 'undefined' && feed.rssUrl) {
-              console.log(`Discovery failed for ${feed.url}, trying stored rssUrl: ${feed.rssUrl}`);
-              url = await discoverRssLink.discoverRssLink(feed.rssUrl);
-            }
-
-            // If still no URL and the feed.url looks like a feed path, try the base URL
-            if (typeof url === 'undefined') {
-              const baseUrl = getBaseUrl(feed.url);
-              if (baseUrl && baseUrl !== feed.url) {
-                console.log(`Discovery failed, trying base URL: ${baseUrl}`);
-                url = await discoverRssLink.discoverRssLink(baseUrl);
-                if (typeof url !== 'undefined') {
-                  usedBaseUrl = true;
-                }
-              }
-            }
-
-            // Do not process undefined URLs
-            if (typeof url === 'undefined') {
-              const errMsg = 'No RSS link discovered';
-              console.log(`${errMsg} for feed: ${feed.url}`);
-
-              const newErrorCount = feed.errorCount + 1;
-              const updateData = {
-                errorCount: newErrorCount,
-                errorMessage: errMsg
-              };
-              if (newErrorCount > 25) {
-                updateData.status = 'error';
-              }
-              await feed.update(updateData);
-
-              errorCount++;
-              return;
+            if (!url) {
+              throw new Error('Unable to discover RSS/Atom URL');
             }
 
             // If the url is valid, process the feed
@@ -177,7 +128,6 @@ const performCrawl = async () => {
 
               // feedsmith: entries are in feedObject.feed.entries
               const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
-              console.log(`Processing ${entries.length} entries for feed: ${feed.url}`);
 
               // Process each article entry. This will add newly discovered articles to the database
               for (const entry of entries) {
@@ -191,31 +141,18 @@ const performCrawl = async () => {
               const updateData = {
                 feedType: feedObject.format || null,
                 favicon: faviconUrl,
-                rssUrl: url,
+                url: url,
                 errorCount: 0,
                 errorMessage: null
               };
-
-              // If we used the base URL to discover a working feed, update feed.url too
-              if (usedBaseUrl) {
-                updateData.url = getBaseUrl(feed.url);
-                console.log(`Updating feed.url from ${feed.url} to ${updateData.url}`);
-              }
-
               await feed.update(updateData);
 
               processedCount++;
-              console.log( `Successfully processed feed: ${feed.url} with ${entries.length} items.`);
+              console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
             } catch (err) {
-              const errMsg = err.message || 'Unknown error';
+              const errMsg = err?.message || String(err) || 'Unknown error';
 
-              console.error(
-                'Error processing feed:',
-                err.stack?.split('\n', 1).join('') || errMsg,
-                '-',
-                feed.url
-              );
-
+              console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
               const newErrorCount = feed.errorCount + 1;
               const updateData = {
                 errorCount: newErrorCount,
@@ -238,8 +175,10 @@ const performCrawl = async () => {
           feed.url
         );
       } catch (err) {
-        if (err.message.includes('timed out')) {
-          console.error(`Timeout processing feed: ${feed.url} - skipping to next feed`);
+        const errMsg = err?.message || String(err) || 'Unknown error';
+
+        if (errMsg.includes('timed out')) {
+          console.log(`Timeout processing feed: ${feed.url} - skipping to next feed`);
 
           timeoutCount++;
 
@@ -254,7 +193,7 @@ const performCrawl = async () => {
           }
           await feed.update(updateData);
         } else {
-          console.error('Error processing feed:', feed.url, err);
+          console.log(`Failed to process feed: ${feed.url} - ${errMsg}`);
         }
 
         errorCount++;

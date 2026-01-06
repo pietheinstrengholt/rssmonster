@@ -27,10 +27,8 @@ export const Feed = sequelize.define(
       allowNull: true
     },
     url: {
-      type: Sequelize.STRING
-    },
-    rssUrl: {
-      type: Sequelize.STRING
+      type: Sequelize.STRING,
+      allowNull: false
     },
     favicon: {
       type: Sequelize.STRING

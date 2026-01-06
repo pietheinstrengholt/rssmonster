@@ -72,7 +72,6 @@ const updateFeed = async (req, res, next) => {
       feedDesc: req.body.feedDesc,
       categoryId: req.body.categoryId,
       url: req.body.url,
-      rssUrl: req.body.rssUrl,
       favicon: req.body.favicon,
       status: req.body.status,
       errorCount: 0
@@ -99,7 +98,6 @@ const newFeed = async (req, res, next) => {
       feedDesc: req.body.feedDesc,
       feedType: req.body.feedType,
       url: req.body.url,
-      rssUrl: req.body.rssUrl,
       favicon: req.body.favicon,
       status: req.body.status
     });
@@ -195,12 +193,6 @@ const validateFeed = async (req, res, next) => {
         error_msg: 'Feed already exists.'
       });
     }
-    
-    // --- Resolve RSS self URL (RSS vs Atom)
-    const rssUrl =
-      feedItem.format === "atom"
-        ? feed?.links?.find(l => l.rel === "self")?.href || null
-        : req.body.url;
 
     // --- Resolve feed title
     const feedName =
@@ -227,7 +219,6 @@ const validateFeed = async (req, res, next) => {
       feedDesc,
       feedType: feedItem.format || null,
       url: feedItem.self || url || req.body.url,
-      rssUrl,
       favicon
     });
   } catch (err) {
@@ -258,10 +249,10 @@ const rediscoverFeedRss = async (req, res) => {
     const result = await rediscoverRssUrl({
       feedName: feed.feedName,
       websiteUrl: feed.url,
-      oldRssUrl: feed.rssUrl
+      oldUrl: feed.url
     });
 
-    if (!result.rssUrl) {
+    if (!result.url) {
       return res.status(404).json({
         error: 'No RSS feed found',
         confidence: result.confidence,
@@ -270,7 +261,7 @@ const rediscoverFeedRss = async (req, res) => {
     }
 
     return res.status(200).json({
-      suggestedRssUrl: result.rssUrl,
+      suggestedUrl: result.url,
       confidence: result.confidence,
       reason: result.reason
     });

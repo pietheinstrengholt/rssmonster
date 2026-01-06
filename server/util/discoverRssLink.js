@@ -1,8 +1,6 @@
 import { load } from 'cheerio';
-// Use native fetch (Node.js 18+) for better HTTP/2 support
-
-// Helper function for delay
-const delay = (ms) => new Promise(resolve => setTimeout(resolve, ms));
+import { parseFeed } from 'feedsmith';
+import { fetchURL as fetchURLInternal } from './fetchURL.js';
 
 //function to return overlap
 const findOverlap = (a, b) => {
@@ -32,124 +30,188 @@ const resolveLink = (base, href) => {
   }
 };
 
-const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
+const getBaseUrl = (url) => {
+  try {
+    const u = new URL(url);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return null;
+  }
+};
 
-export const fetchURL = async (url, retries = 2) => {
-  const attemptFetch = async (attempt) => {
-    // Use AbortController for timeout
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 30000);
+const registerDiscoveryError = async (feed, message) => {
+  if (!feed) return;
 
-    const options = {
-      signal: controller.signal,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
-        "Accept": "text/html,application/xhtml+xml,application/xml;q=0.9,application/rss+xml,application/atom+xml,*/*;q=0.8",
-        "Accept-Language": "en-US,en;q=0.9",
-        "Cache-Control": "no-cache"
-      }
-    };
+  const newErrorCount = (feed.errorCount || 0) + 1;
 
-    try {
-      const response = await fetch(url, options);
-      clearTimeout(timeoutId);
-      return response;
-    } catch (err) {
-      clearTimeout(timeoutId);
-      
-      // Retry on network errors
-      const isRetryable = err.message && (
-        err.message.includes('socket hang up') ||
-        err.message.includes('ECONNRESET') ||
-        err.message.includes('ETIMEDOUT') ||
-        err.message.includes('fetch failed') ||
-        err.name === 'AbortError'
-      );
-      
-      if (isRetryable && attempt < retries) {
-        const waitTime = 1000 * (attempt + 1); // Exponential backoff: 1s, 2s
-        console.log(`Fetch attempt ${attempt + 1} failed for ${url}, retrying in ${waitTime}ms...`);
-        await delay(waitTime);
-        return attemptFetch(attempt + 1);
-      }
-      
-      throw err;
-    }
+  const updateData = {
+    errorCount: newErrorCount,
+    errorMessage: message
   };
 
-  try {
-    return await attemptFetch(0);
-
-  } catch (e) {
-    console.log(
-      "Error fetching RSS link for " + url + " " + e.message
-    );
+  if (newErrorCount > 25) {
+    updateData.status = 'error';
   }
-}
 
-export const discoverRssLink = async (url) => {
+  try {
+    await feed.update(updateData);
+  } catch {
+    // fail silently – discovery should never crash crawl
+  }
+};
+
+const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
+
+const isLikelyFeedBody = (body = "") => {
+  const head = String(body).trim().slice(0, 500).toLowerCase();
+  return (
+    head.startsWith('<?xml') ||
+    head.includes('<rss') ||
+    head.includes('<feed')
+  );
+};
+
+const canParseFeed = (body) => {
+  try {
+    parseFeed(String(body));
+    return true;
+  } catch {
+    return false;
+  }
+};
+
+const isValidFeedResponse = async (response) => {
+  if (!response?.ok) return false;
+
+  // Always validate by body content. Content-Type is unreliable in the wild
+  // and we want retries when a URL returns non-feed XML/HTML.
+  const body = await response.text();
+  if (!body) return false;
+
+  return isLikelyFeedBody(body) || canParseFeed(body);
+};
+
+const persistDiscoveredUrl = async (feed, discoveredUrl) => {
+  if (!feed) return;
+  if (!discoveredUrl) return;
+  if (feed.url === discoveredUrl) return;
+
+  try {
+    await feed.update({ url: discoveredUrl });
+  } catch {
+    // Ignore (e.g. unique constraint). Discovery should not crash crawling.
+  }
+};
+
+const unique = (arr) => {
+  const seen = new Set();
+  const out = [];
+  for (const item of arr) {
+    if (!item) continue;
+    if (seen.has(item)) continue;
+    seen.add(item);
+    out.push(item);
+  }
+  return out;
+};
+
+export const fetchURL = async (url, retries = 2) => {
+  // Backwards-compatible export: throw on failure so callers can handle
+  return fetchURLInternal(url, retries);
+};
+
+export const discoverRssLink = async (url, feed) => {
   try {
     if (!isURL(url)) {
+      await registerDiscoveryError(feed, 'Invalid URL');
       return undefined;
     }
 
-    const response = await fetchURL(url);
-    if (!response?.ok) {
-      return undefined;
+    // Build candidate list, and validate each candidate by fetching + parsing.
+    // This ensures that if one "looks" like a feed but fails to parse, we keep trying.
+
+    let initialResponse;
+    try {
+      initialResponse = await fetchURL(url);
+    } catch (e) {
+      // Still try fallbacks based on the URL we were given.
+      console.log(`[Error] Initial fetch failed for ${url}: ${e.message}`);
     }
 
-    const responseUrl = response.url || url;
-    const contentType = response.headers.get("content-type") || "";
+    const responseUrl = initialResponse?.url || url;
 
-    // If the response is already a feed, accept the URL as-is (handles users pasting feed URLs directly)
-    if (isLikelyFeedContentType(contentType)) {
-      return responseUrl;
-    }
-
-    const body = await response.text();
-
-    if (body) {
-      const $ = load(String(body));
-
-      // Only use legacy type selectors; skip rel="alternate" parsing
-      const legacy = $('head link[type="application/rss+xml"]').attr("href") || $('head link[type="application/atom+xml"]').attr("href");
-      const rssLink = legacy ? resolveLink(responseUrl, legacy) : null;
-
-      if (rssLink) {
-        return rssLink;
-      }
-    }
-
-    // Fallback guesses for common feed endpoints
-    const fallbackPaths = ['/feed', '/rss.xml', '/atom.xml'];
-    for (const path of fallbackPaths) {
-      const candidate = resolveLink(responseUrl, path);
-      if (!candidate) {
-        continue;
-      }
-
-      try {
-        const guessResponse = await fetchURL(candidate);
-        if (!guessResponse?.ok) {
-          continue;
+    const htmlCandidates = [];
+    if (initialResponse?.ok) {
+      const ct = initialResponse.headers.get('content-type') || '';
+      if (isLikelyFeedContentType(ct)) {
+        // Don't immediately accept; validate by parsing to enable retry fallback on parse failures.
+        const body = await initialResponse.text();
+        if (body && (isLikelyFeedBody(body) || canParseFeed(body))) {
+          console.log(`Discovered feed URL directly: ${responseUrl}`);
+          await persistDiscoveredUrl(feed, responseUrl);
+          return responseUrl;
         }
-        const guessCt = guessResponse.headers.get('content-type') || '';
-        if (isLikelyFeedContentType(guessCt)) {
-          return guessResponse.url || candidate;
+      } else {
+        const body = await initialResponse.text();
+        if (body) {
+          const $ = load(String(body));
+          const legacy =
+            $('head link[type="application/rss+xml"]').attr('href') ||
+            $('head link[type="application/atom+xml"]').attr('href');
+
+          const rssLink = legacy ? resolveLink(responseUrl, legacy) : null;
+          if (rssLink) {
+            htmlCandidates.push(rssLink);
+          }
+        }
+      }
+    }
+
+    const baseUrl = getBaseUrl(responseUrl);
+
+    const commonPaths = [
+      '/feed',
+      '/feed.xml',
+      '/rss',
+      '/rss.xml',
+      '/atom',
+      '/atom.xml'
+    ];
+
+    const fallbackCandidates = unique([
+      responseUrl,
+      ...htmlCandidates,
+      baseUrl,
+      ...(baseUrl ? commonPaths.map(p => resolveLink(baseUrl, p)) : [])
+    ]);
+
+    for (const candidate of fallbackCandidates) {
+      try {
+        console.log(`Trying RSS candidate: ${candidate}`);
+        const candidateResponse = await fetchURL(candidate);
+        if (await isValidFeedResponse(candidateResponse)) {
+          const discoveredUrl = candidateResponse.url || candidate;
+          await persistDiscoveredUrl(feed, discoveredUrl);
+          return discoveredUrl;
         }
       } catch (e) {
-        // Ignore and continue trying other fallbacks
+        // Candidate failed (fetch or parse). Continue to next candidate.
+        console.log(`[Error] Candidate failed: ${candidate} - ${e.message}`);
       }
     }
 
-    return responseUrl;
+    await registerDiscoveryError(feed, 'No RSS link discovered');
+    return undefined;
+
   } catch (e) {
     console.log(
-      "Error discovering RSS link for " + url + " " + e.message
+      `[Error] Error discovering RSS link for ${url} ${e.message}`
     );
+
+    await registerDiscoveryError(feed, e.message);
+    return undefined;
   }
-}
+};
 
 export default {
   fetchURL,
