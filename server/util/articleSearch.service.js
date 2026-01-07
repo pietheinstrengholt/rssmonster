@@ -344,18 +344,23 @@ export const searchArticles = async ({
     /**
      * If no field filters are present, use traditional status-driven logic.
      * Status can be: "unread", "read", "star", "hot", or "clicked".
+     * When rawSearch is set, default to "%" (all statuses) unless overridden by unread/read filters.
      */
     if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null) {
-      if (status === "star") {
+      // If there's a search query, default to "%" unless status is a special type (star, hot, clicked)
+      const effectiveStatus = rawSearch && !["star", "hot", "clicked"].includes(status) ? "%" : status;
+      
+      if (effectiveStatus === "star") {
         articleQuery.where.starInd = 1;
-      } else if (status === "hot") {
+      } else if (effectiveStatus === "hot") {
         delete articleQuery.where.feedId; // Hot articles ignore feedId
         articleQuery.where.url = cache.all();
-      } else if (status === "clicked") {
+      } else if (effectiveStatus === "clicked") {
         articleQuery.where.clickedInd = 1;
-      } else {
-        articleQuery.where.status = status;
+      } else if (effectiveStatus !== "%") {
+        articleQuery.where.status = effectiveStatus;
       }
+      // If effectiveStatus === "%", don't add any status filter (search all statuses)
     }
 
     /**
