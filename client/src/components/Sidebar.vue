@@ -114,8 +114,8 @@
       v-for="(smartFolder, index) in smartFolders"
       :key="index"
       class="category-top tag-item"
-      :class="{ selected: $store.data.currentSelection.tag === smartFolder.name }"
-      @click="selectSmartFolder(smartFolder.query)">
+      :class="{ selected: $store.data.currentSelection.smartFolderId === smartFolder.id }"
+      @click="selectSmartFolder(smartFolder)">
       <span class="glyphicon">
         <BootstrapIcon icon="tag-fill" variant="light" />
       </span>
@@ -550,9 +550,11 @@ export default {
         this.$store.data.setTag(tagName);
       }
     },
-    selectSmartFolder(query) {
-      if (!(this.$store.data.searchQuery === undefined || this.$store.data.searchQuery === null)) {
-        this.$store.data.setSelectedSearch(query);
+    selectSmartFolder(smartFolder) {
+      if (this.$store.data.currentSelection.smartFolderId === smartFolder.id) {
+        this.$store.data.setSmartFolder(null);
+      } else {
+        this.$store.data.setSmartFolder(smartFolder);
       }
     },
     async fetchTopTags() {

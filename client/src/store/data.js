@@ -10,6 +10,7 @@ export const useStore = defineStore('data', {
       search: null,
       sort: 'DESC',
       tag: null,
+      smartFolderId: null,
       minAdvertisementScore: 100,
       minSentimentScore: 100,
       minQualityScore: 100,
@@ -153,6 +154,20 @@ export const useStore = defineStore('data', {
       this.currentSelection.categoryId = '%';
       this.currentSelection.feedId = '%';
       this.currentSelection.search = null;
+      this.currentSelection.smartFolderId = null;
+    },
+    setSmartFolder(smartFolder) {
+      this.currentSelection.categoryId = '%';
+      this.currentSelection.feedId = '%';
+      this.setChatAssistantOpen(false);
+      this.currentSelection.tag = null;
+      if (smartFolder) {
+        this.currentSelection.smartFolderId = smartFolder.id;
+        this.currentSelection.search = smartFolder.query;
+      } else {
+        this.currentSelection.smartFolderId = null;
+        this.currentSelection.search = null;
+      }
     },
     setMinAdvertisementScore(value) {
       this.currentSelection.minAdvertisementScore = value;
@@ -192,6 +207,9 @@ export const useStore = defineStore('data', {
     },
     getSelectedFeedId: (data) => {
       return data.currentSelection.feedId;
+    },
+    getSelectedSmartFolderId: (data) => {
+      return data.currentSelection.smartFolderId;
     },
     getSelectedSearch: (data) => {
       return data.currentSelection.search;
