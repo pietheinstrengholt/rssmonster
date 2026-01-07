@@ -28,7 +28,7 @@ export const searchArticles = async ({
     if (!userId) {
         throw new Error("Missing userId");
     }
-    
+
     /**
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.

@@ -11,6 +11,7 @@ const getSmartFolders = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    // Fetch all smart folders for this user
     const smartFolders = await SmartFolder.findAll({ where: { userId }, order: [['createdAt', 'DESC']] });
 
     // For each smart folder, perform a searchArticles and get count of matching articles
@@ -25,8 +26,6 @@ const getSmartFolders = async (req, res, next) => {
         folder.dataValues.ArticleCount = 0;
       }
     }
-
-    console.log(smartFolders);
 
     res.status(200).json({ total: smartFolders.length, smartFolders });
   } catch (err) {

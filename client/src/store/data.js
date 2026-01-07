@@ -128,6 +128,8 @@ export const useStore = defineStore('data', {
       this.setChatAssistantOpen(false);
       this.currentSelection.status = status;
       this.currentSelection.tag = null;
+      this.currentSelection.search = null;
+      this.currentSelection.smartFolderId = null;
     },
     setSelectedCategoryId(categoryId) {
       this.setChatAssistantOpen(false);
@@ -157,13 +159,16 @@ export const useStore = defineStore('data', {
       this.currentSelection.smartFolderId = null;
     },
     setSmartFolder(smartFolder) {
-      this.currentSelection.categoryId = '%';
+      // set defaults, unless overridden by search
+      this.currentSelection.categoryId = '%'; 
       this.currentSelection.feedId = '%';
+      this.currentSelection.status = 'unread';
+      this.currentSelection.sort = 'DESC';
       this.setChatAssistantOpen(false);
       this.currentSelection.tag = null;
       if (smartFolder) {
         this.currentSelection.smartFolderId = smartFolder.id;
-        this.currentSelection.search = smartFolder.query;
+        this.currentSelection.search = smartFolder.query; // e.g., "tag:ai unread:true"
       } else {
         this.currentSelection.smartFolderId = null;
         this.currentSelection.search = null;
