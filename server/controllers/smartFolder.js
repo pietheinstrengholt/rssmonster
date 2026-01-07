@@ -1,5 +1,6 @@
 'use strict';
 import SmartFolder from '../models/smartFolder.js';
+import { searchArticles } from "../util/articleSearch.service.js";
 
 // Minimal controller for smartFolders with only two handlers.
 
@@ -11,6 +12,22 @@ const getSmartFolders = async (req, res, next) => {
     }
 
     const smartFolders = await SmartFolder.findAll({ where: { userId }, order: [['createdAt', 'DESC']] });
+
+    // For each smart folder, perform a searchArticles and get count of matching articles
+    for (const folder of smartFolders) {
+      try {
+        const result = await searchArticles({
+          userId,
+          search: folder.query,
+        });
+        folder.dataValues.ArticleCount = result.itemIds.length;
+      } catch (err) {
+        folder.dataValues.ArticleCount = 0;
+      }
+    }
+
+    console.log(smartFolders);
+
     res.status(200).json({ total: smartFolders.length, smartFolders });
   } catch (err) {
     next(err);

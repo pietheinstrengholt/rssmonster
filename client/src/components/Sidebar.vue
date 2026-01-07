@@ -121,7 +121,7 @@
       </span>
       <span class="title">{{ smartFolder.name }}</span>
       <span class="badge-unread">
-        <span class="badge">{{ smartFolder.count }}</span>
+        <span class="badge">{{ smartFolder.ArticleCount }}</span>
       </span>
     </div>
 
