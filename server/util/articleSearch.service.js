@@ -38,6 +38,7 @@ export const searchArticles = async ({
     const rawSearch = search.trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
     let unreadFilter = null; // When set, overrides status parameter to filter by read/unread
+    let readFilter = null; // When set, overrides status parameter to filter by read/unread
     let clickedFilter = null; // When set, filters by clickedInd
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC)
@@ -110,6 +111,7 @@ export const searchArticles = async ({
       // Match various field filter patterns
       const starMatch = cleaned.match(/^star:(true|false)$/i); // star:true or star:false
       const unreadMatch = cleaned.match(/^unread:(true|false)$/i); // unread:true or unread:false
+      const readMatch = cleaned.match(/^read:(true|false)$/i); // read:true or read:false
       const clickedMatch = cleaned.match(/^clicked:(true|false)$/i); // clicked:true or clicked:false
       const tagMatch = cleaned.match(/^tag:(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:(.+)$/i); // title:javascript, title:AI, etc.
@@ -124,6 +126,9 @@ export const searchArticles = async ({
       } else if (unreadMatch) {
         unreadFilter = unreadMatch[1].toLowerCase() === 'true';
         console.log(`Unread filter applied via search token: ${unreadFilter}`);
+      } else if (readMatch) {
+        readFilter = readMatch[1].toLowerCase() === 'true';
+        console.log(`Read filter applied via search token: ${readFilter}`);
       } else if (clickedMatch) {
         clickedFilter = clickedMatch[1].toLowerCase() === 'true';
         console.log(`Clicked filter applied via search token: ${clickedFilter}`);
@@ -326,6 +331,11 @@ export const searchArticles = async ({
       articleQuery.where.status = unreadFilter ? "unread" : "read";
     }
 
+    if (readFilter !== null) {
+      // read:true → only read, read:false → only unread
+      articleQuery.where.status = readFilter ? "read" : "unread";
+    }
+
     if (clickedFilter !== null) {
       // clicked:true → only clicked articles, clicked:false → only non-clicked
       articleQuery.where.clickedInd = clickedFilter ? 1 : 0;
@@ -335,7 +345,7 @@ export const searchArticles = async ({
      * If no field filters are present, use traditional status-driven logic.
      * Status can be: "unread", "read", "star", "hot", or "clicked".
      */
-    if (starFilter === null && unreadFilter === null && clickedFilter === null) {
+    if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null) {
       if (status === "star") {
         articleQuery.where.starInd = 1;
       } else if (status === "hot") {
