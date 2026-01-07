@@ -107,6 +107,24 @@
       </span>
     </div>
 
+    <div v-if="smartFolders.length" class="title-box">
+      <p class="title">Smart Folders</p>
+    </div>
+    <div
+      v-for="(smartFolder, index) in smartFolders"
+      :key="index"
+      class="category-top tag-item"
+      :class="{ selected: $store.data.currentSelection.tag === smartFolder.name }"
+      @click="selectSmartFolder(smartFolder.query)">
+      <span class="glyphicon">
+        <BootstrapIcon icon="tag-fill" variant="light" />
+      </span>
+      <span class="title">{{ smartFolder.name }}</span>
+      <span class="badge-unread">
+        <span class="badge">{{ smartFolder.count }}</span>
+      </span>
+    </div>
+
     <div v-if="$store.data.currentSelection.status != 'hot'">
 
       <div class="title-box">
@@ -442,12 +460,14 @@ export default {
       readCount: 0,
       starCount: 0,
       hotCount: 0,
-      topTags: []
+      topTags: [],
+      smartFolders: []
     };
   },
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
     this.fetchTopTags();
+    this.fetchSmartFolders();
   },
   components: {
     draggable
@@ -530,12 +550,26 @@ export default {
         this.$store.data.setTag(tagName);
       }
     },
+    selectSmartFolder(query) {
+      if (!(this.$store.data.searchQuery === undefined || this.$store.data.searchQuery === null)) {
+        this.$store.data.setSelectedSearch(query);
+      }
+    },
     async fetchTopTags() {
       try {
         const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/tags");
         this.topTags = response.data.tags || [];
       } catch (error) {
         console.error("Error fetching top tags", error);
+      }
+    },
+    async fetchSmartFolders() {
+      try {
+        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
+        this.smartFolders = response.data.smartFolders || [];
+        console.log("Smart folders fetched:", this.smartFolders);
+      } catch (error) {
+        console.error("Error fetching smart folders", error);
       }
     },
     updateSortOrder() {

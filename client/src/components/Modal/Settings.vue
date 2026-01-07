@@ -126,6 +126,69 @@
                         Add Action
                     </button>
                 </div>
+
+                <div class="settings-group">
+                    <label>
+                        Smart Folders
+                        <span class="info-icon" :title="'Define smart folders to automatically organize articles based on criteria'">
+                            <BootstrapIcon icon="info-circle-fill" />
+                        </span>
+                    </label>
+                    
+                    <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row">
+                        <div class="action-fields">
+                            <div class="form-group">
+                                <label :for="'smart-folder-name-' + index" class="small-label">Name</label>
+                                <input 
+                                    :id="'smart-folder-name-' + index"
+                                    v-model="smartFolder.name" 
+                                    type="text" 
+                                    class="form-control" 
+                                    placeholder="Smart folder name"
+                                />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label :for="'smart-folder-limitCount-' + index" class="small-label">Maximum Articles</label>
+                                <select 
+                                    :id="'smart-folder-limitCount-' + index"
+                                    v-model="smartFolder.limitCount" 
+                                    class="form-select"
+                                >
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="250">250</option>
+                                    <option value="1000">1000</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label :for="'smart-folder-regex-' + index" class="small-label">Query</label>
+                                <input 
+                                    :id="'smart-folder-regex-' + index"
+                                    v-model="smartFolder.query" 
+                                    type="text" 
+                                    class="form-control" 
+                                    placeholder="e.g., tag:ai unread:true quality:>0.6"
+                                />
+                            </div>
+                            
+                            <button 
+                                type="button" 
+                                class="btn btn-remove" 
+                                @click="removeSmartFolder(index)"
+                                :title="'Remove smart folder'"
+                            >
+                                <BootstrapIcon icon="trash-fill" />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-add" @click="addSmartFolder">
+                        <BootstrapIcon icon="plus-circle-fill" />
+                        Add Smart Folder
+                    </button>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings">Save</button>
@@ -413,8 +476,9 @@ export default {
         if (typeof sel.minQualityScore !== 'undefined') {
             this.qualityScore = sel.minQualityScore;
         }
-        // Fetch existing actions for this user
+        // Fetch existing actions and smart folders for this user
         this.fetchActions();
+        this.fetchSmartFolders();
     },
     data() {
         return {
@@ -422,7 +486,8 @@ export default {
             sentimentScore: 100,
             qualityScore: 100,
             scoreOptions: [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0],
-            actions: []
+            actions: [],
+            smartFolders: []
         };
     },
     methods: {
@@ -440,6 +505,20 @@ export default {
                 console.error('Failed to fetch actions:', err);
             }
         },
+        async fetchSmartFolders() {
+            try {
+                const resp = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
+                if (resp && resp.data && Array.isArray(resp.data.smartFolders)) {
+                    this.smartFolders = resp.data.smartFolders.map(sf => ({
+                        name: sf.name || '',
+                        query: sf.query || '',
+                        limitCount: sf.limitCount || 50
+                    }));
+                }
+            } catch (err) {
+                console.error('Failed to fetch smart folders:', err);
+            }
+        },
         addAction() {
             this.actions.push({
                 name: '',
@@ -449,6 +528,16 @@ export default {
         },
         removeAction(index) {
             this.actions.splice(index, 1);
+        },
+        addSmartFolder() {
+            this.smartFolders.push({
+                name: '',
+                query: '',
+                limitCount: 50
+            });
+        },
+        removeSmartFolder(index) {
+            this.smartFolders.splice(index, 1);
         },
         saveSettings() {
             // Persist actions to the server
@@ -462,6 +551,19 @@ export default {
             .catch(err => {
                 console.error('Error saving actions:', err);
                 alert('Failed to save actions. Please try again.');
+            });
+
+            // Persist smart folders to the server
+            const filteredSmartFolders = this.smartFolders.filter(sf => sf && sf.name && sf.name.trim() !== '');
+            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders", {
+                smartFolders: filteredSmartFolders
+            })
+            .then(resp => {
+                console.log('Smart folders saved:', resp.data);
+            })
+            .catch(err => {
+                console.error('Error saving smart folders:', err);
+                alert('Failed to save smart folders. Please try again.');
             });
 
             axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting", {

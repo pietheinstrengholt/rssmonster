@@ -174,8 +174,10 @@ export const useStore = defineStore('data', {
       this.mobileSearchOpen = value;
     },
     setSearchQuery(query) {
+      console.log("Setting search query to:", query);
       this.setChatAssistantOpen(false);
       this.searchQuery = query;
+      console.log("Search query set to:", this.searchQuery);
     },
     setClusterView(value) {
       this.currentSelection.clusterView = value;
