@@ -23,9 +23,10 @@
             class="tag"
             v-on:click.stop="selectTag(tag)"
           >{{ tag.name }}</span>
-          <span v-if="advertisementScore !== undefined" class="score ad-score" :title="'Advertisement Score: ' + advertisementScore">Ad: {{ advertisementScore }}</span>
-          <span v-if="sentimentScore !== undefined" class="score sentiment-score" :title="'Sentiment Score: ' + sentimentScore">Sentiment: {{ sentimentScore }}</span>
-          <span v-if="qualityScore !== undefined" class="score quality-score" :title="'Quality Score: ' + qualityScore">Quality: {{ qualityScore }}</span>
+          <span v-if="quality !== undefined" class="score overall-score" :title="'Quality Score: ' + quality">Quality: {{ quality * 100 }}</span>
+          <span v-if="advertisementScore !== undefined && advertisementScore > 0" class="score ad-score" :title="'Advertisement Score: ' + advertisementScore">Ad: {{ advertisementScore }}</span>
+          <span v-if="sentimentScore !== undefined && sentimentScore !== 50" class="score sentiment-score" :title="'Sentiment Score: ' + sentimentScore">Sentiment: {{ sentimentScore }}</span>
+          <span v-if="qualityScore !== undefined && qualityScore !== 50" class="score quality-score" :title="'Quality Score: ' + qualityScore">Writing: {{ qualityScore }}</span>
         </div>
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
@@ -200,6 +201,11 @@
   color: #666;
 }
 
+.block .article-tags .overall-score {
+  background-color: #ffebee;  /* Pale red */
+  color: #c62828;             /* Darker red */
+}
+
 .block .article-tags .ad-score {
   background-color: #fff3e0;
   color: #e65100;
@@ -312,6 +318,11 @@ span.feed_name a {
     color: #ccc;
   }
 
+ .block .article-tags .overall-score {
+    background-color: #2d1a1f;  /* Dark reddish-brown */
+    color: #ef5350;             /* Bright red */
+  }
+
   .block .article-tags .ad-score {
     background-color: #3d2a1f;
     color: #ffb74d;
@@ -372,7 +383,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore', 'cluster'],
+  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore', 'quality', 'cluster'],
   computed: {
     formatDate: function() {
       return (value)=> {
