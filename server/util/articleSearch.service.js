@@ -44,6 +44,7 @@ export const searchArticles = async ({
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
+    let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
 
@@ -118,6 +119,7 @@ export const searchArticles = async ({
       const titleMatch = cleaned.match(/^title:(.+)$/i); // title:javascript, title:AI, etc.
       const sortMatch = cleaned.match(/^sort:(DESC|ASC|IMPORTANCE|QUALITY)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, or sort:QUALITY
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
+      const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
@@ -149,6 +151,12 @@ export const searchArticles = async ({
           value: parseFloat(qualityMatch[2])
         };
         console.log("Quality filter applied via search token:", qualityMatch.slice(1));
+      } else if (freshnessMatch) {
+        freshnessFilter = {
+          operator: freshnessMatch[1] || ">=",
+          value: parseFloat(freshnessMatch[2])
+        };
+        console.log("Freshness filter applied via search token:", freshnessMatch.slice(1));
       } else if (dateMatch) {
         // @YYYY-MM-DD: Specific calendar day in UTC
         dateToken = dateMatch[1];
@@ -414,6 +422,30 @@ export const searchArticles = async ({
         }
       });
       console.log(`Applied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${articles.length} articles remaining`);
+    }
+
+    // Apply freshness score filter if present (must be done in-memory since freshness is a virtual field)
+    if (freshnessFilter) {
+      articles = articles.filter(article => {
+        const articleFreshness = article.freshness;
+        const { operator, value } = freshnessFilter;
+        
+        switch (operator) {
+          case '=':
+            return articleFreshness === value;
+          case '>':
+            return articleFreshness > value;
+          case '<':
+            return articleFreshness < value;
+          case '>=':
+            return articleFreshness >= value;
+          case '<=':
+            return articleFreshness <= value;
+          default:
+            return true;
+        }
+      });
+      console.log(`Applied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${articles.length} articles remaining`);
     }
     
     // If sorting by importance, compute importance scores and sort
