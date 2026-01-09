@@ -127,7 +127,6 @@ export const useStore = defineStore('data', {
     setSelectedStatus(status) {
       this.setChatAssistantOpen(false);
       this.currentSelection.status = status;
-      this.currentSelection.tag = null;
       this.currentSelection.search = null;
       this.currentSelection.smartFolderId = null;
     },
