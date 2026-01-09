@@ -43,6 +43,7 @@ export const searchArticles = async ({
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
+    let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
 
@@ -116,6 +117,7 @@ export const searchArticles = async ({
       const tagMatch = cleaned.match(/^tag:(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:(.+)$/i); // title:javascript, title:AI, etc.
       const sortMatch = cleaned.match(/^sort:(DESC|ASC|IMPORTANCE)$/i); // sort:DESC, sort:ASC, or sort:IMPORTANCE
+      const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
@@ -141,6 +143,12 @@ export const searchArticles = async ({
       } else if (sortMatch) {
         sortFilter = sortMatch[1].toUpperCase();
         console.log(`Sort filter applied via search token: ${sortFilter}`);
+      } else if (qualityMatch) {
+        qualityFilter = {
+          operator: qualityMatch[1] || ">=",
+          value: parseFloat(qualityMatch[2])
+        };
+        console.log("Quality filter applied via search token:", qualityMatch.slice(1));
       } else if (dateMatch) {
         // @YYYY-MM-DD: Specific calendar day in UTC
         dateToken = dateMatch[1];
@@ -312,7 +320,7 @@ export const searchArticles = async ({
      * Start with base WHERE conditions, then apply field filters if present.
      */
     let articleQuery = {
-      attributes: ["id"], // Only fetch IDs for performance (full details fetched later)
+      attributes: ["id", "quality"], // Only fetch IDs for performance (full details fetched later)
       order: [["published", workingSort]], // Sort by publication date
       where: baseWhere
     };
@@ -379,6 +387,30 @@ export const searchArticles = async ({
 
     // Fetch articles based on constructed query
     let articles = await Article.findAll(articleQuery);
+
+    // Apply quality score filter if present (must be done in-memory since quality is a virtual field)
+    if (qualityFilter) {
+      articles = articles.filter(article => {
+        const articleQuality = article.quality;
+        const { operator, value } = qualityFilter;
+        
+        switch (operator) {
+          case '=':
+            return articleQuality === value;
+          case '>':
+            return articleQuality > value;
+          case '<':
+            return articleQuality < value;
+          case '>=':
+            return articleQuality >= value;
+          case '<=':
+            return articleQuality <= value;
+          default:
+            return true;
+        }
+      });
+      console.log(`Applied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${articles.length} articles remaining`);
+    }
     
     // If sorting by importance, compute importance scores and sort
     if (sortImportance) {
