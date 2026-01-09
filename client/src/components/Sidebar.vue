@@ -31,6 +31,24 @@
       </span>Mark as read
     </div>
 
+    <div v-if="smartFolders.length" class="title-box">
+      <p class="title">Smart Folders</p>
+    </div>
+    <div
+      v-for="(smartFolder, index) in smartFolders"
+      :key="index"
+      class="category-top tag-item"
+      :class="{ selected: $store.data.currentSelection.smartFolderId === smartFolder.id }"
+      @click="selectSmartFolder(smartFolder)">
+      <span class="glyphicon">
+        <BootstrapIcon icon="tag-fill" variant="light" />
+      </span>
+      <span class="title">{{ smartFolder.name }}</span>
+      <span class="badge-unread">
+        <span class="badge">{{ smartFolder.ArticleCount }}</span>
+      </span>
+    </div>
+
     <div class="title-box">
       <p class="title">All feeds</p>
     </div>
@@ -43,7 +61,7 @@
         <span class="badge">{{ $store.data.unreadsSinceLastUpdate }}</span>
       </span>
     </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' }" v-on:click="loadType('unread')" id="unread" class="category-top">
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' && $store.data.currentSelection.smartFolderId === null }" v-on:click="loadType('unread')" id="unread" class="category-top">
       <span class="glyphicon">
         <BootstrapIcon icon="record-circle-fill" variant="light" />
       </span>
@@ -52,7 +70,7 @@
         <span class="badge">{{ $store.data.unreadCount }}</span>
       </span>
     </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'star' }" v-on:click="loadType('star')" id="star" class="category-top">
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'star' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('star')" id="star" class="category-top">
       <span class="glyphicon">
         <BootstrapIcon icon="heart-fill" variant="light" />
       </span>
@@ -61,7 +79,7 @@
         <span class="badge">{{ $store.data.starCount }}</span>
       </span>
     </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'hot' }" v-on:click="loadType('hot')" id="hot" class="category-top">
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'hot' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('hot')" id="hot" class="category-top">
       <span class="glyphicon">
         <BootstrapIcon icon="fire" variant="light" />
       </span>
@@ -70,7 +88,7 @@
         <span class="badge">{{ $store.data.hotCount }}</span>
       </span>
     </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'clicked' }" v-on:click="loadType('clicked')" id="clicked" class="category-top">
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'clicked' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('clicked')" id="clicked" class="category-top">
       <span class="glyphicon">
         <BootstrapIcon icon="bookmark-fill" variant="light" />
       </span>
@@ -79,7 +97,7 @@
         <span class="badge">{{ $store.data.clickedCount }}</span>
       </span>
     </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' }" v-on:click="loadType('read')" id="read" class="category-top">
+    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('read')" id="read" class="category-top">
       <span class="glyphicon">
         <BootstrapIcon icon="check-circle-fill" variant="light" />
       </span>
@@ -104,24 +122,6 @@
       <span class="title">{{ tag.name }}</span>
       <span class="badge-unread">
         <span class="badge">{{ tag.count }}</span>
-      </span>
-    </div>
-
-    <div v-if="smartFolders.length" class="title-box">
-      <p class="title">Smart Folders</p>
-    </div>
-    <div
-      v-for="(smartFolder, index) in smartFolders"
-      :key="index"
-      class="category-top tag-item"
-      :class="{ selected: $store.data.currentSelection.smartFolderId === smartFolder.id }"
-      @click="selectSmartFolder(smartFolder)">
-      <span class="glyphicon">
-        <BootstrapIcon icon="tag-fill" variant="light" />
-      </span>
-      <span class="title">{{ smartFolder.name }}</span>
-      <span class="badge-unread">
-        <span class="badge">{{ smartFolder.ArticleCount }}</span>
       </span>
     </div>
 
@@ -484,6 +484,7 @@ export default {
       this.$emit(eventType, value);
     },
     loadType: function(status) {
+      this.$store.data.setSmartFolder(null);
       //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
       if (status == this.$store.data.getSelectedStatus || status == "refresh") {
         this.$emit('forceReload');
