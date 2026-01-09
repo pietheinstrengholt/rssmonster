@@ -116,7 +116,7 @@ export const searchArticles = async ({
       const clickedMatch = cleaned.match(/^clicked:(true|false)$/i); // clicked:true or clicked:false
       const tagMatch = cleaned.match(/^tag:(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:(DESC|ASC|IMPORTANCE)$/i); // sort:DESC, sort:ASC, or sort:IMPORTANCE
+      const sortMatch = cleaned.match(/^sort:(DESC|ASC|IMPORTANCE|QUALITY)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, or sort:QUALITY
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
@@ -197,11 +197,15 @@ export const searchArticles = async ({
     // SortImportance flag set if sort is IMPORTANCE
     let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
     let sortImportance = false;
+    let sortQuality = false;
 
     // Normalize sort value when "IMPORTANCE" is specified
     if (workingSort.toUpperCase() === "IMPORTANCE") {
       workingSort = "DESC";
       sortImportance = true;
+    } else if (workingSort.toUpperCase() === "QUALITY") {
+      workingSort = "DESC";
+      sortQuality = true;
     }
     console.log(`Final sort value: "${workingSort}"`);
 
@@ -415,6 +419,9 @@ export const searchArticles = async ({
     // If sorting by importance, compute importance scores and sort
     if (sortImportance) {
       workingSort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
+    }
+    if (sortQuality) {
+      workingSort = "QUALITY";
     }
     let itemIds;
     itemIds = articles.map(article => article.id);

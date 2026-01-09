@@ -198,7 +198,7 @@ const articleDetails = async (req, res, next) => {
         },
       ],
       order: [
-        ["published", sort === "IMPORTANCE" ? "DESC" : sort]
+        ["published", ["IMPORTANCE", "QUALITY"].includes((sort || "").toUpperCase()) ? "DESC" : sort]
       ],
       where: {
         userId: userId,
@@ -222,6 +222,16 @@ const articleDetails = async (req, res, next) => {
         .sort((a, b) => b.importance - a.importance)
         .map(item => item.article);
       
+      return res.status(200).json(sortedArticles);
+    } else if (sort.toUpperCase() === "QUALITY") {
+      const sortedArticles = articles
+        .map(article => ({
+          article,
+          quality: article.quality
+        }))
+        .sort((a, b) => b.quality - a.quality)
+        .map(item => item.article);
+
       return res.status(200).json(sortedArticles);
     } else {
       return res.status(200).json(articles);
