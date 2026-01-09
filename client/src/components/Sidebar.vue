@@ -486,6 +486,7 @@ export default {
     loadType: function(status) {
       //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
       if (status == this.$store.data.getSelectedStatus || status == "refresh") {
+        this.$store.data.setSmartFolder(null);
         this.$emit('forceReload');
       } else {
         this.$store.data.setSelectedStatus(status);
