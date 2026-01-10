@@ -457,6 +457,14 @@ export const searchArticles = async ({
     }
     let itemIds;
     itemIds = articles.map(article => article.id);
+    
+    // Limit to 500 articles when search expressions are used
+    const hasSearchExpression = rawSearch && rawSearch.trim() !== "" && rawSearch.trim() !== "%";
+    if (hasSearchExpression && itemIds.length > 500) {
+      itemIds = itemIds.slice(0, 500);
+      console.log(`Limited results to 500 articles due to search expression usage`);
+    }
+    
     console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
 
     if (persistSettings) {
