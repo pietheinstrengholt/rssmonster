@@ -30,12 +30,14 @@
     <!-- Sort Mode Dropdown -->
     <div class="dropdown">
       <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ capitalize($store.data.currentSelection.sort) }}
+        <span v-if="$store.data.currentSelection.sort === 'ASC'">Oldest</span>
+        <span v-else-if="$store.data.currentSelection.sort === 'DESC'">Newest</span>
+        <span v-else-if="$store.data.currentSelection.sort === 'IMPORTANCE'">Importance</span>
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">ASC</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">DESC</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'IMPORTANCE' }" href="#" @click="sortClicked('IMPORTANCE')">IMPORTANCE</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">Oldest</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">Newest</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'IMPORTANCE' }" href="#" @click="sortClicked('IMPORTANCE')">Importance</a>
       </div>
     </div>
 
@@ -101,6 +103,7 @@
 
 .dropdown-item {
   color: #111;
+  font-size: 14px;
 }
 
 .dropdown-item.active,
@@ -125,6 +128,7 @@
 }
 
 .settings-icon svg {
+  margin-top: 3px;
   width: 20px;
   height: 20px;
 }
