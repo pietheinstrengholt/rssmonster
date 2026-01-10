@@ -3,60 +3,47 @@
     <div class="settings-icon" @click="settingsClicked" title="Settings">
       <BootstrapIcon icon="gear-fill" size="20" />
     </div>
-    <div class="status-toolbar" @click="toggleShowStatus">
-      <p id="status">{{ capitalize($store.data.currentSelection.status) }}</p>
-    </div>
-    <div v-if="showStatusMenu" class="dropdownmenu" id="status">
-      <div class="item" href="#" @click="statusClicked('unread')">
-        <p>Unread</p>
-      </div>
-      <div class="item" href="#" @click="statusClicked('star')">
-        <p>Star</p>
-      </div>
-      <div class="item" href="#" @click="statusClicked('hot')">
-        <p>Hot</p>
-      </div>
-      <div class="item" href="#" @click="statusClicked('clicked')">
-        <p>Clicked</p>
-      </div>
-      <div class="item" href="#" @click="statusClicked('read')">
-        <p>Read</p>
+    <!-- Read Mode Dropdown -->
+    <div class="dropdown">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ capitalize($store.data.currentSelection.status) }}
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'unread' }" href="#" @click="statusClicked('unread')">Unread</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'star' }" href="#" @click="statusClicked('star')">Star</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'hot' }" href="#" @click="statusClicked('hot')">Hot</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'clicked' }" href="#" @click="statusClicked('clicked')">Clicked</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'read' }" href="#" @click="statusClicked('read')">Read</a>
       </div>
     </div>
-    <div class="status-toolbar" @click="toggleShowViewMode">
-      <p id="filter">{{ capitalize($store.data.currentSelection.viewMode) }}</p>
-    </div>
-    <div v-if="showViewModeMenu" class="dropdownmenu" id="filter">
-      <div class="item" href="#" @click="viewModeClicked('full')">
-        <p>Full</p>
-      </div>
-      <div class="item" href="#" @click="viewModeClicked('summarized')">
-        <p>Summarized</p>
-      </div>
-      <div class="item" href="#" @click="viewModeClicked('minimal')">
-        <p>Minimal</p>
+    <!-- View Mode Dropdown -->
+    <div class="dropdown">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ capitalize($store.data.currentSelection.viewMode) }}
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'full' }" href="#" @click="viewModeClicked('full')">Full</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'summarized' }" href="#" @click="viewModeClicked('summarized')">Summarized</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'minimal' }" href="#" @click="viewModeClicked('minimal')">Minimal</a>
       </div>
     </div>
-    <div class="status-toolbar" @click="toggleShowSort">
-      <p id="filter" v-if="$store.data.currentSelection.sort == 'DESC'">Newest</p>
-      <p id="filter" v-if="$store.data.currentSelection.sort == 'ASC'">Oldest</p>
-      <p id="filter" v-if="$store.data.currentSelection.sort == 'IMPORTANCE'">Importance</p>
+    <!-- Sort Mode Dropdown -->
+    <div class="dropdown">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ capitalize($store.data.currentSelection.sort) }}
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">ASC</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">DESC</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'IMPORTANCE' }" href="#" @click="sortClicked('IMPORTANCE')">IMPORTANCE</a>
+      </div>
     </div>
+
     <div class="status-toolbar" @click="toggleClusteredView" v-if="$store.data.currentSelection.AIEnabled">
       <p id="filter" v-if="$store.data.currentSelection.clusterView">All articles</p>
       <p id="filter" v-else>Grouped view</p>
     </div>
-    <div v-if="showSortMenu" class="dropdownmenu" id="sort">
-      <div class="item" href="#" @click="sortClicked('ASC')">
-        <p>Oldest</p>
-      </div>
-      <div class="item" href="#" @click="sortClicked('DESC')">
-        <p>Newest</p>
-      </div>
-      <div v-if="$store.data.currentSelection.AIEnabled" class="item" href="#" @click="sortClicked('IMPORTANCE')">
-        <p>Importance</p>
-      </div>
-    </div>
+
     <div v-if="$store.data.currentSelection.AIEnabled" class="status-toolbar" @click="chatAssistant">
       <div id="chat-icon">
           <BootstrapIcon icon="robot" size="20" />
@@ -86,12 +73,39 @@
   border-bottom: 1px solid transparent;
   border-color: #dcdee0;
   width: 100%;
-  overflow: hidden;
+  overflow: visible;
   background-color: #eff1f3;
   position: fixed;
   margin-left: -15px;
   display: flex;
   align-items: center;
+}
+
+.toolbar-dropdown {
+  background: transparent;
+  border: none;
+  color: inherit;
+  box-shadow: none;
+  padding: 6px 10px;
+  height: 40px;
+  line-height: 20px;
+  font-size: 14px;
+}
+
+.toolbar-dropdown:focus,
+.toolbar-dropdown:active,
+.toolbar-dropdown:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+.dropdown-item {
+  color: #111;
+}
+
+.dropdown-item.active,
+.dropdown-item:hover {
+  color: #fff;
 }
 
 .settings-icon {
@@ -135,45 +149,6 @@
 
 .status-toolbar #status {
   width: 50px;
-}
-
-.dropdownmenu {
-  position: fixed;
-  margin-top: 40px;
-  background-color: #eff1f3;
-  cursor: pointer;
-  box-shadow: 0px 8px 16px 0px #000000;
-  min-width: 100px;
-  color: #111;
-}
-
-.dropdownmenu .item {
-  border-bottom: 1px solid #e0e0e0;
-  border-right: 1px solid #e0e0e0;
-  border-left: 1px solid #e0e0e0;
-  padding: px;
-  cursor: pointer;
-}
-
-.dropdownmenu .item p {
-  margin-left: 10px;
-  margin-right: 10px;
-  margin-bottom: 0px;
-  font-weight: 400;
-  font-size: 14px;
-}
-
-#status.dropdownmenu {
-  margin-left: 40px;
-}
-
-#filter.dropdownmenu {
-  margin-left: 112px;
-  min-width: 120px;
-}
-
-#sort.dropdownmenu {
-  margin-left: 165px;
 }
 
 #chat-icon {
@@ -250,6 +225,10 @@
 
   .settings-icon:hover {
     background-color: #4a4a4a;
+  }
+
+  .dropdown-item {
+    color: #fff;
   }
 
   .dropdownmenu .item {
