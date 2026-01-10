@@ -48,9 +48,4 @@ export const User = sequelize.define(
   }
 );
 
-//add associations
-User.hasMany(Category);
-User.hasMany(Feed);
-User.hasMany(Article);
-
 export default User;

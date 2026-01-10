@@ -32,8 +32,4 @@ export const Tag = sequelize.define(
   }
 );
 
-// Associations: Article 1..* Tag (direct foreign key)
-Tag.belongsTo(Article, { foreignKey: 'articleId' });
-Article.hasMany(Tag, { foreignKey: 'articleId' });
-
 export default Tag;

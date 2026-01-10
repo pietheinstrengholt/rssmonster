@@ -1,7 +1,6 @@
 import Sequelize from 'sequelize';
 import { sequelize } from '../util/database.js';
 import cache from '../util/cache.js';
-import ArticleCluster from './articleCluster.js';
 
 const TAU_HOURS = 48; // tune this globally
 
@@ -156,23 +155,5 @@ export const Article = sequelize.define(
     collate: "utf8mb4_unicode_ci"
   }
 );
-
-// Article -> Cluster
-Article.belongsTo(ArticleCluster, {
-  foreignKey: 'clusterId',
-  as: 'cluster'
-});
-
-// Cluster -> Articles
-ArticleCluster.hasMany(Article, {
-  foreignKey: 'clusterId',
-  as: 'articles'
-});
-
-// Representative article
-ArticleCluster.belongsTo(Article, {
-  foreignKey: 'representativeArticleId',
-  as: 'representative'
-});
 
 export default Article;

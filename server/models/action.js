@@ -1,6 +1,5 @@
 import Sequelize from 'sequelize';
 import { sequelize } from '../util/database.js';
-import { User } from './user.js';
 
 export const Action = sequelize.define(
   "actions",
@@ -34,9 +33,5 @@ export const Action = sequelize.define(
     collate: "utf8mb4_unicode_ci"
   }
 );
-
-// Associations: User 1..* Action
-Action.belongsTo(User, { foreignKey: 'userId' });
-User.hasMany(Action, { foreignKey: 'userId' });
 
 export default Action;

@@ -30,8 +30,4 @@ export const Category = sequelize.define(
   }
 );
 
-//add associations
-Category.hasMany(Feed);
-Feed.belongsTo(Category);
-
 export default Category;

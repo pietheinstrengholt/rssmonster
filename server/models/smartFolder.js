@@ -39,10 +39,4 @@ export const SmartFolder = sequelize.define(
   }
 );
 
-// Associations
-SmartFolder.belongsTo(User, {
-  foreignKey: 'userId',
-  onDelete: 'CASCADE'
-});
-
 export default SmartFolder;

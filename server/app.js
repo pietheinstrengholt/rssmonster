@@ -5,11 +5,9 @@ import cors from "cors";
 import fs from 'fs';
 import https from 'https';
 
-//include models in order to define associations
-import User from './models/user.js';
-import Category from './models/category.js';
-import Feed from './models/feed.js';
-import Article from './models/article.js';
+// initialize Sequelize & models (associations are registered on import)
+import db from './models/index.js';
+const { sequelize } = db;
 
 //routes
 import categoryRoutes from "./routes/category.js";
@@ -88,36 +86,41 @@ app.use("/api/greader", greaderRoutes);
 app.use("/rss", rssRoutes);
 app.use(errorController.get404);
 
-//define relationships
-User.hasMany(Category, { constraints: true, onDelete: 'CASCADE' });
-Feed.belongsTo(Category, { constraints: true, onDelete: 'CASCADE' });
-Category.hasMany(Feed);
-Article.belongsTo(Feed, { constraints: true, onDelete: 'CASCADE' });
-Feed.hasMany(Article);
-
-//start the server (skip when disabled via env)
+// start the server (skip when disabled via env)
 const port = process.env.PORT || 3000;
 
-if (process.env.DISABLE_LISTENER === 'true') {
-  console.log('Server listener disabled by DISABLE_LISTENER env.');
-} else {
-  if (process.env.ENABLE_HTTPS === 'true') {
-    // HTTPS server configuration
-    const options = {
-      cert: fs.readFileSync('cert/fullchain.pem'),
-      key: fs.readFileSync('cert/privkey.pem')
-    };
+// start server function
+const startServer = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('Database connection established');
 
-    https.createServer(options, app).listen(port, () => {
-      console.log(`HTTPS server running on port ${port}`);
-    });
-  } else {
-    // HTTP server (default)
-    app.listen(port, () => {
-      console.log(`HTTP server has started on port ${port}!`);
-    });
+    if (process.env.DISABLE_LISTENER === 'true') {
+      console.log('Server listener disabled by DISABLE_LISTENER env.');
+      return;
+    }
+
+    if (process.env.ENABLE_HTTPS === 'true') {
+      const options = {
+        cert: fs.readFileSync('cert/fullchain.pem'),
+        key: fs.readFileSync('cert/privkey.pem')
+      };
+
+      https.createServer(options, app).listen(port, () => {
+        console.log(`HTTPS server running on port ${port}`);
+      });
+    } else {
+      app.listen(port, () => {
+        console.log(`HTTP server has started on port ${port}!`);
+      });
+    }
+  } catch (err) {
+    console.error('Unable to connect to database:', err);
+    process.exit(1);
   }
-}
+};
+
+startServer();
 
 process.on('uncaughtException', err => {
   if (err.name === 'RequestError') {

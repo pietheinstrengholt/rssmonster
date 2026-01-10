@@ -67,8 +67,4 @@ export const Feed = sequelize.define(
   }
 );
 
-// associations
-Feed.hasMany(Article, { foreignKey: 'feedId' });
-Article.belongsTo(Feed, { foreignKey: 'feedId' });
-
 export default Feed;
