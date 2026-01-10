@@ -218,12 +218,17 @@
 .modal-dialog {
     max-width: 600px;
     width: 100%;
+    max-height: calc(100vh - 40px);
+    display: flex;
 }
 
 .modal-content {
     background: #fff;
     border-radius: 4px;
     box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    max-height: 100%;
+    display: flex;
+    flex-direction: column;
 }
 
 .modal-header {
@@ -239,6 +244,7 @@
 
 .modal-body {
     padding: 15px;
+    overflow-y: auto;
 }
 
 .settings-group {
