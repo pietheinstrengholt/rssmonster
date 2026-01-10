@@ -1,7 +1,5 @@
-import dotenv from 'dotenv';
-import Setting from "../models/setting.js";
-
-dotenv.config();
+import db from '../models/index.js';
+const { Setting } = db;
 
 export const getSettings = async (req, res, next) => {
   try {

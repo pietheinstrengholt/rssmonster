@@ -1,70 +1,70 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
-import { Article } from './article.js';
+import { DataTypes } from 'sequelize';
 
-export const Feed = sequelize.define(
-  'feeds',
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
+export default (sequelize) => {
+  const Feed = sequelize.define(
+    'feeds',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      feedName: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      feedDesc: {
+        type: DataTypes.TEXT
+      },
+      feedType: {
+        type: DataTypes.STRING(16),
+        allowNull: true
+      },
+      url: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      favicon: {
+        type: DataTypes.STRING
+      },
+      errorCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+      },
+      errorMessage: {
+        type: DataTypes.TEXT,
+        allowNull: true
+      },
+      status: {
+        type: DataTypes.ENUM('active', 'error', 'disabled'),
+        allowNull: false,
+        defaultValue: 'active'
+      },
+      feedTrust: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0.5
+      },
+      feedDuplicationRate: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      lastFetched: {
+        type: DataTypes.DATE,
+        allowNull: true
+      }
     },
-    userId: {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    },
-    feedName: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    feedDesc: {
-      type: Sequelize.TEXT
-    },
-    feedType: {
-      type: Sequelize.STRING(16),
-      allowNull: true
-    },
-    url: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    favicon: {
-      type: Sequelize.STRING
-    },
-    errorCount: {
-      type: Sequelize.INTEGER,
-      defaultValue: 0
-    },
-    errorMessage: {
-      type: Sequelize.TEXT,
-      allowNull: true
-    },
-    status: {
-      type: Sequelize.ENUM('active', 'error', 'disabled'),
-      allowNull: false,
-      defaultValue: 'active'
-    },
-    feedTrust: {
-      type: Sequelize.FLOAT,
-      allowNull: false,
-      defaultValue: 0.5
-    },
-    feedDuplicationRate: {
-      type: Sequelize.FLOAT,
-      allowNull: false,
-      defaultValue: 0
-    },
-    lastFetched: {
-      type: Sequelize.DATE,
-      allowNull: true
+    {
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
-  },
-  {
-    charset: 'utf8mb4',
-    collate: 'utf8mb4_unicode_ci'
-  }
-);
+  );
 
-export default Feed;
+  return Feed;
+};

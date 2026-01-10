@@ -1,9 +1,7 @@
-import Article from "../models/article.js";
-import Feed from "../models/feed.js";
-import Tag from "../models/tag.js";
+import db from '../models/index.js';
+const { Article, Feed, Tag, Setting } = db;
 import cache from "../util/cache.js";
 import { Op } from 'sequelize';
-import Setting from "../models/setting.js";
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.

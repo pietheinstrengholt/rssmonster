@@ -1,5 +1,5 @@
-import Article from '../../models/article.js';
-import Tag from '../../models/tag.js';
+import db from '../../models/index.js';
+const { Article, Tag } = db;
 
 /* ======================================================
    Save article & tags to database

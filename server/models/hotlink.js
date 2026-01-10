@@ -1,27 +1,26 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
+import { DataTypes } from 'sequelize';
 
-export const Hotlink = sequelize.define(
-  "hotlinks",
-  {
-    userId: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false,
+export default (sequelize) => {
+  const Hotlink = sequelize.define(
+    'hotlinks',
+    {
+      userId: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      url: {
+        type: DataTypes.STRING,
+        allowNull: false
+      }
     },
-    url: {
-      type: Sequelize.STRING,
-      allowNull: false
+    {
+      updatedAt: false,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
-  },
-  {
-    updatedAt: false,
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
-  }
-);
+  );
 
-//sequelize assumes a primary key
-Hotlink.removeAttribute('id');
+  Hotlink.removeAttribute('id');
 
-export default Hotlink;
+  return Hotlink;
+};

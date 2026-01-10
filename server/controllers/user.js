@@ -1,10 +1,6 @@
-import User from "../models/user.js";
+import db from '../models/index.js';
+const { User, Setting, Article, Feed, Category, Hotlink } = db;
 import bcrypt from "bcryptjs";
-import Setting from "../models/setting.js";
-import Article from "../models/article.js";
-import Feed from "../models/feed.js";
-import Category from "../models/category.js";
-import Hotlink from "../models/hotlink.js";
 import crypto from 'node:crypto';
 
 const getUsers = async (req, res, next) => {

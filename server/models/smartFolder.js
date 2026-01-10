@@ -1,42 +1,42 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
-import { User } from './user.js';
+import { DataTypes } from 'sequelize';
 
-export const SmartFolder = sequelize.define(
-  'smartFolder',
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
+export default (sequelize) => {
+  const SmartFolder = sequelize.define(
+    'smartFolder',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      name: {
+        type: DataTypes.STRING(255),
+        allowNull: false
+      },
+      /**
+       * Advanced search expression
+       * Example:
+       *   "tag:ai unread:true quality:>0.6"
+       */
+      query: {
+        type: DataTypes.TEXT,
+        allowNull: false
+      },
+      limitCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 50
+      }
     },
-    userId: {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    },
-    name: {
-      type: Sequelize.STRING(255),
-      allowNull: false
-    },
-    /**
-     * Advanced search expression
-     * Example:
-     *   "tag:ai unread:true quality:>0.6"
-     */
-    query: {
-      type: Sequelize.TEXT,
-      allowNull: false
-    },
-    limitCount: {
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      defaultValue: 50
-    },
-  },
-  {
-    timestamps: true
-  }
-);
+    {
+      timestamps: true
+    }
+  );
 
-export default SmartFolder;
+  return SmartFolder;
+};

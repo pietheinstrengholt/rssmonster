@@ -1,33 +1,34 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
+import { DataTypes } from 'sequelize';
 
-export const ArticleCluster = sequelize.define(
-  'article_clusters',
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
+export default (sequelize) => {
+  const ArticleCluster = sequelize.define(
+    'article_clusters',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      representativeArticleId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      name: {
+        type: DataTypes.STRING(255),
+        allowNull: true
+      },
+      articleCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 1
+      }
     },
-    representativeArticleId: {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    },
-    name: {
-      type: Sequelize.STRING(255),
-      allowNull: true
-    },
-    articleCount: { 
-      type: Sequelize.INTEGER,
-      allowNull: false,
-      defaultValue: 1
-    },
-  },
-  {
-    charset: 'utf8mb4',
-    collate: 'utf8mb4_unicode_ci'
-  }
-);
+    {
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
+    }
+  );
 
-export default ArticleCluster;
+  return ArticleCluster;
+};

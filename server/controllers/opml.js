@@ -1,5 +1,5 @@
-import Category from "../models/category.js";
-import Feed from "../models/feed.js";
+import db from '../models/index.js';
+const { Feed, Category } = db;
 import { parseStringPromise } from 'xml2js';
 
 /**

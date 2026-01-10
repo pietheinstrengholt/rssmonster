@@ -1,5 +1,6 @@
 import Sequelize from "sequelize";
-import Tag from "../models/tag.js";
+import db from '../models/index.js';
+const { Tag } = db;
 
 const getTags = async (req, res) => {
   try {

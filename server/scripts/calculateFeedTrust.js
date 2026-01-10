@@ -8,9 +8,8 @@
  */
 
 import { Op } from 'sequelize';
-import Feed from '../models/feed.js';
-import { Article } from '../models/article.js';
-import ArticleCluster from '../models/articleCluster.js';
+import db from '../models/index.js';
+const { Feed, Article, ArticleCluster } = db;
 
 /* ------------------------------------------------------------------
  * Configuration

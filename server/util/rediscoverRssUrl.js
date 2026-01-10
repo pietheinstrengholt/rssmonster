@@ -1,8 +1,7 @@
 // util/rediscoverRssUrl.js
-import dotenv from 'dotenv';
-import OpenAI from 'openai';
 
-dotenv.config();
+// Rediscover RSS URL using OpenAI
+import OpenAI from 'openai';
 
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
 const client = hasApiKey

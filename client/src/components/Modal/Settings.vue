@@ -44,22 +44,6 @@
                 </div>
 
                 <div class="d-flex gap-3">
-                    <div class="settings-group flex-grow-1">
-                        <label>Export Feeds</label>
-                        <button type="button" class="btn btn-download w-100" @click="downloadOpml">
-                            <BootstrapIcon icon="download" />
-                            Download OPML
-                        </button>
-                    </div>
-
-                    <div class="settings-group flex-grow-1">
-                        <label>Import Feeds</label>
-                        <input type="file" ref="opmlFileInput" accept=".opml,.xml" style="display: none" @change="handleFileSelect" />
-                        <button type="button" class="btn btn-upload w-100" @click="$refs.opmlFileInput.click()">
-                            <BootstrapIcon icon="upload" />
-                            Upload OPML
-                        </button>
-                    </div>
                 </div>
 
                 <div class="settings-group">
@@ -213,6 +197,25 @@
                     <div v-if="feedsLoading">Loading feeds…</div>
                     <div v-else-if="feedsError" class="text-danger">{{ feedsError }}</div>
                     <div v-else>
+                        <div class="d-flex gap-3 mb-4">
+                            <div class="settings-group flex-grow-1">
+                                <label>Export Feeds</label>
+                                <button type="button" class="btn btn-download w-100" @click="downloadOpml">
+                                    <BootstrapIcon icon="download" />
+                                    Download OPML
+                                </button>
+                            </div>
+
+                            <div class="settings-group flex-grow-1">
+                                <label>Import Feeds</label>
+                                <input type="file" ref="opmlFileInput" accept=".opml,.xml" style="display: none" @change="handleFileSelect" />
+                                <button type="button" class="btn btn-upload w-100" @click="$refs.opmlFileInput.click()">
+                                    <BootstrapIcon icon="upload" />
+                                    Upload OPML
+                                </button>
+                            </div>
+                        </div>
+
                         <div v-if="feeds.length === 0">No feeds found.</div>
                         <div v-else class="feeds-table-wrapper">
                             <table class="feeds-table table">

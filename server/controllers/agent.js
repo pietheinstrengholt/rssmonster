@@ -1,6 +1,5 @@
+// server/controllers/agent.js
 import { Agent, run, MCPServerStreamableHttp } from "@openai/agents";
-import dotenv from "dotenv";
-dotenv.config();
 
 export const postAgent = async (req, res) => {
   if (!req.headers.authorization) {

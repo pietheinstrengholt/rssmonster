@@ -1,7 +1,6 @@
-import dotenv from 'dotenv';
-import OpenAI from 'openai';
+// server/controllers/crawl/analyzeArticleContent.js
 
-dotenv.config();
+import OpenAI from 'openai';
 
 /* ======================================================
    OpenAI analysis (rate limited)

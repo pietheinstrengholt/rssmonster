@@ -1,7 +1,6 @@
 'use strict';
-import Action from '../models/action.js';
-
-// Minimal controller for actions with only two handlers.
+import db from '../models/index.js';
+const { Action } = db;
 
 const getActions = async (req, res, next) => {
   try {

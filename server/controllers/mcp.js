@@ -1,13 +1,12 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
-import Category from "../models/category.js";
-import Feed from "../models/feed.js";
-import Article from "../models/article.js";
+
+import db from '../models/index.js';
+const { Feed, Category, Article, Tag } = db;
 import { Op, fn, col, literal } from 'sequelize';
 import cache from "../util/cache.js";
 import crawlController from "./crawl.js";
-import Tag from "../models/tag.js";
 
 // Shared helper to build tool result
 function makeResult({ structured, error=false }) {

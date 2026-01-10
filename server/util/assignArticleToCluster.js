@@ -1,6 +1,6 @@
 import { Op } from 'sequelize';
-import Article from '../models/article.js';
-import ArticleCluster from '../models/articleCluster.js';
+import db from '../models/index.js';
+const { Article, ArticleCluster } = db;
 
 /* ------------------------------------------------------------------
  * Configuration

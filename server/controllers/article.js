@@ -1,9 +1,7 @@
-import Article from "../models/article.js";
-import Feed from "../models/feed.js";
-import Tag from "../models/tag.js";
+import db from '../models/index.js';
+const { Article, Feed, Tag, ArticleCluster } = db;
 import { Op } from 'sequelize';
 import { computeImportance } from '../util/importanceScore.js';
-import ArticleCluster from "../models/articleCluster.js";
 import { searchArticles } from "../util/articleSearch.service.js";
 
 export const getArticles = async (req, res) => {

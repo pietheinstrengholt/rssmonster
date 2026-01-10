@@ -1,4 +1,5 @@
-import Article from "../models/article.js";
+import db from '../models/index.js';
+const { Article } = db;
 import { Op } from 'sequelize';
 
 // Delete all non-starred articles older than one week

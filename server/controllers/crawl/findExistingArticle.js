@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
-import Article from '../../models/article.js';
+import db from '../../models/index.js';
+const { Article } = db;
 
 /* ======================================================
    Find existing article

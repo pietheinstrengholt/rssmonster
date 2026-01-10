@@ -1,37 +1,38 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
+import { DataTypes } from 'sequelize';
 
-export const Action = sequelize.define(
-  "actions",
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
+export default (sequelize) => {
+  const Action = sequelize.define(
+    'actions',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      actionType: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      regularExpression: {
+        type: DataTypes.TEXT,
+        allowNull: false
+      }
     },
-    userId: {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    },
-    name: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    actionType: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    regularExpression: {
-      type: Sequelize.TEXT,
-      allowNull: false
+    {
+      timestamps: true,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
-  },
-  {
-    timestamps: true,
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
-  }
-);
+  );
 
-export default Action;
+  return Action;
+};

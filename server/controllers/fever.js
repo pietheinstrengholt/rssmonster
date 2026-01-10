@@ -1,8 +1,6 @@
-import Article from "../models/article.js";
-import Feed from "../models/feed.js";
-import Category from "../models/category.js";
+import db from '../models/index.js';
+const { Feed, Category, Article, User } = db;
 import cache from '../util/cache.js';
-import User from "../models/user.js";
 import { Op } from 'sequelize';
 
 //use Fever API

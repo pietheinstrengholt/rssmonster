@@ -1,5 +1,6 @@
 'use strict';
-import SmartFolder from '../models/smartFolder.js';
+import db from '../models/index.js';
+const { SmartFolder } = db;
 import { searchArticles } from "../util/articleSearch.service.js";
 
 // Minimal controller for smartFolders with only two handlers.

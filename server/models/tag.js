@@ -1,35 +1,34 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
-import { Article } from './article.js';
+import { DataTypes } from 'sequelize';
 
-export const Tag = sequelize.define(
-  "tags",
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
+export default (sequelize) => {
+  const Tag = sequelize.define(
+    'tags',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      articleId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      name: {
+        type: DataTypes.STRING,
+        allowNull: false
+      }
     },
-    articleId: {
-      type: Sequelize.INTEGER,
-      allowNull: false
-    },
-    userId: {
-      type: Sequelize.INTEGER,
-      autoIncrement: false,
-      allowNull: false,
-    },
-    name: {
-      type: Sequelize.STRING,
-      allowNull: false
+    {
+      updatedAt: false,
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
-  },
-  {
-    updatedAt: false,
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
-  }
-);
+  );
 
-export default Tag;
+  return Tag;
+};

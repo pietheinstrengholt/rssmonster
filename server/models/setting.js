@@ -1,77 +1,70 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
+import { DataTypes } from 'sequelize';
 
-export const Setting = sequelize.define(
-  "settings",
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
+export default (sequelize) => {
+  const Setting = sequelize.define(
+    'settings',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      categoryId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: '%'
+      },
+      feedId: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: '%'
+      },
+      status: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'unread'
+      },
+      sort: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'DESC'
+      },
+      minAdvertisementScore: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      minSentimentScore: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      minQualityScore: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      viewMode: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'full'
+      },
+      clusterView: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      }
     },
-    userId: {
-      type: Sequelize.INTEGER,
-      autoIncrement: false,
-      allowNull: false,
-    },
-    categoryId: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: "%"
-    },
-    feedId: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: "%"
-    }, 
-    status: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: "unread"
-    },
-    sort: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: "DESC"
-    },
-    minAdvertisementScore: {
-      type: Sequelize.INTEGER,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: 0
-    },
-    minSentimentScore: {
-      type: Sequelize.INTEGER,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: 0
-    },
-    minQualityScore: {
-      type: Sequelize.INTEGER,
-      autoIncrement: false,
-      allowNull: false,
-      defaultValue: 0
-    },
-    viewMode: {
-      type: Sequelize.STRING,
-      allowNull: false,
-      defaultValue: 'full'
-    },
-    clusterView: {
-      type: Sequelize.BOOLEAN,
-      allowNull: false,
-      defaultValue: false
+    {
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
-  },
-  {
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
-  }
-);
+  );
 
-export default Setting;
+  return Setting;
+};

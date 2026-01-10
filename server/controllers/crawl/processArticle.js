@@ -1,4 +1,5 @@
-import Action from '../../models/action.js';
+import db from '../../models/index.js';
+const { Action } = db;
 
 import extractEntryFields from './extractEntryFields.js';
 import findExistingArticle from './findExistingArticle.js';

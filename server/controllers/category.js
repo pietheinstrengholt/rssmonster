@@ -1,5 +1,5 @@
-import Category from "../models/category.js";
-import Feed from "../models/feed.js";
+import db from '../models/index.js';
+const { Category, Feed } = db;
 
 const getCategories = async (req, res, next) => {
   try {

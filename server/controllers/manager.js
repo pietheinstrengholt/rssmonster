@@ -1,7 +1,5 @@
-import Article from "../models/article.js";
-import Category from "../models/category.js";
-import Feed from "../models/feed.js";
-import Setting from "../models/setting.js";
+import db from '../models/index.js';
+const { Feed, Category, Article, Setting } = db;
 
 import cache from '../util/cache.js';
 

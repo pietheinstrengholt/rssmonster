@@ -1,4 +1,5 @@
-import Feed from '../models/feed.js';
+import db from '../models/index.js';
+const { Feed } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';

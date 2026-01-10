@@ -1,5 +1,5 @@
-import Feed from "../models/feed.js";
-import Article from "../models/article.js";
+import db from '../models/index.js';
+const { Feed, Article } = db;
 
 import discoverRssLink from "../util/discoverRssLink.js";
 import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';

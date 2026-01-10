@@ -1,7 +1,6 @@
-import Article from "../models/article.js";
-import Feed from "../models/feed.js";
-import Category from "../models/category.js";
-import User from "../models/user.js";
+import db from '../models/index.js';
+const { Feed, Category, Article, User } = db;
+
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 import { generateOpml } from './opml.js';

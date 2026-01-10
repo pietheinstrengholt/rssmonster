@@ -1,7 +1,6 @@
 import { Builder } from 'xml2js';
-import Article from '../models/article.js';
-import Feed from '../models/feed.js';
-import Category from '../models/category.js';
+import db from '../models/index.js';
+const { Article, Feed, Category } = db;
 
 // Build an RSS 2.0 XML document from a list of articles
 const buildRssXml = (articles, meta) => {

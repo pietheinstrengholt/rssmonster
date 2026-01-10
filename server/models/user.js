@@ -1,51 +1,47 @@
-import Sequelize from 'sequelize';
-import { sequelize } from '../util/database.js';
-import { Category } from './category.js';
-import { Feed } from './feed.js';
-import { Article } from './article.js';
+import { DataTypes } from 'sequelize';
 import { hash } from 'bcryptjs';
 
-export const User = sequelize.define(
-  "users",
-  {
-    id: {
-      type: Sequelize.INTEGER,
-      autoIncrement: true,
-      allowNull: false,
-      primaryKey: true
-    },
-    username: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false
-    },
-    password: {
-      type: Sequelize.STRING,
-      autoIncrement: false,
-      allowNull: false,
-      validate: {
-        notEmpty: true
+export default (sequelize) => {
+  const User = sequelize.define(
+    'users',
+    {
+      id: {
+        type: DataTypes.INTEGER,
+        autoIncrement: true,
+        allowNull: false,
+        primaryKey: true
+      },
+      username: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      password: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        validate: {
+          notEmpty: true
+        }
+      },
+      hash: {
+        type: DataTypes.STRING,
+        allowNull: false
+      },
+      role: {
+        type: DataTypes.STRING,
+        allowNull: false,
+        defaultValue: 'user'
+      },
+      lastLogin: {
+        type: DataTypes.DATE,
+        allowNull: false,
+        defaultValue: DataTypes.NOW
       }
     },
-    hash: {
-      type: Sequelize.STRING,
-      allowNull: false
-    },
-    role: {
-      type: Sequelize.STRING,
-      allowNull: false,
-      defaultValue: 'user' // Default role is set to 'user'
-    },
-    lastLogin: {
-      type: Sequelize.DATE,
-      allowNull: false,
-      defaultValue: Sequelize.NOW
+    {
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     }
-  },
-  {
-    charset: "utf8mb4",
-    collate: "utf8mb4_unicode_ci"
-  }
-);
+  );
 
-export default User;
+  return User;
+};
