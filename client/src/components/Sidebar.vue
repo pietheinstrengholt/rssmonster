@@ -570,7 +570,6 @@ export default {
       try {
         const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
         this.smartFolders = response.data.smartFolders || [];
-        console.log("Smart folders fetched:", this.smartFolders);
       } catch (error) {
         console.error("Error fetching smart folders", error);
       }

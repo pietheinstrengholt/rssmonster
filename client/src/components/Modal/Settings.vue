@@ -168,7 +168,9 @@
                                     :id="'smart-folder-regex-' + index"
                                     v-model="smartFolder.query" 
                                     type="text" 
-                                    class="form-control" 
+                                    class="form-control"
+                                    :class="{ 'input-invalid': isSmartFolderQueryInvalid(smartFolder) }"
+                                    :title="smartFolderQueryError(smartFolder)"
                                     placeholder="e.g., tag:ai unread:true quality:>0.6"
                                 />
                             </div>
@@ -382,6 +384,16 @@
     box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1);
 }
 
+.input-invalid {
+    background-color: #fdecea;
+    color: #b71c1c;
+    border-color: #f5c6cb;
+}
+
+.input-invalid::placeholder {
+    color: #d32f2f;
+}
+
 .btn-remove {
     background-color: #dc3545;
     color: #fff;
@@ -454,11 +466,22 @@
         border-color: #4a7fc7;
         box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
     }
+
+    .input-invalid {
+        background-color: #4a1f1f;
+        color: #ffbaba;
+        border-color: #d77;
+    }
+
+    .input-invalid::placeholder {
+        color: #ffbaba;
+    }
 }
 </style>
 
 <script>
 import axios from 'axios';
+import { validateSmartFolderQuery } from '../../services/queryValidation.js';
 
 export default {
     name: 'Settings',
@@ -538,6 +561,14 @@ export default {
         },
         removeSmartFolder(index) {
             this.smartFolders.splice(index, 1);
+        },
+        isSmartFolderQueryInvalid(smartFolder) {
+            const { valid } = validateSmartFolderQuery(smartFolder?.query || '');
+            return !valid;
+        },
+        smartFolderQueryError(smartFolder) {
+            const { error } = validateSmartFolderQuery(smartFolder?.query || '');
+            return error;
         },
         saveSettings() {
             // Persist actions to the server

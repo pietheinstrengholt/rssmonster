@@ -27,7 +27,7 @@
     "nodemon": "^3.1.11"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.1",
+    "@modelcontextprotocol/sdk": "^1.25.2",
     "@openai/agents": "^0.3.7",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.1.2",
@@ -41,7 +41,7 @@
     "multer": "^2.0.2",
     "mysql2": "^3.16.0",
     "node-cache": "^5.1.2",
-    "openai": "^6.15.0",
+    "openai": "^6.16.0",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.5",
     "xml2js": "^0.6.2",

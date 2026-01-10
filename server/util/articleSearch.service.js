@@ -462,36 +462,20 @@ export const searchArticles = async ({
     if (persistSettings) {
         // Update user settings (skip when tag-based query is used)
         // Note: tag is not persisted in settings currently
-        const existingSettings = await Setting.findOne({ where: { userId: userId }, raw: true });
-        
-        if (existingSettings) {
-        await Setting.update({
-            categoryId: categoryId,
-            feedId: feedId,
-            status: status,
-            sort: workingSort,
-            minAdvertisementScore: minAdvertisementScore,
-            minSentimentScore: minSentimentScore,
-            minQualityScore: minQualityScore,
-            viewMode: viewMode,
-            clusterView: clusterView
-        }, {
-            where: { userId: userId }
-        });
-        } else {
-        await Setting.create({
-            userId: userId,
-            categoryId: categoryId,
-            feedId: feedId,
-            status: status,
-            sort: workingSort,
-            minAdvertisementScore: minAdvertisementScore,
-            minSentimentScore: minSentimentScore,
-            minQualityScore: minQualityScore,
-            viewMode: viewMode,
-            clusterView: clusterView
-        });
-        }
+      const settingsPayload = {
+        userId: userId,
+        categoryId: categoryId,
+        feedId: feedId,
+        status: status,
+        sort: workingSort,
+        minAdvertisementScore: minAdvertisementScore,
+        minSentimentScore: minSentimentScore,
+        minQualityScore: minQualityScore,
+        viewMode: viewMode,
+        clusterView: clusterView
+      };
+
+      await Setting.upsert(settingsPayload);
     }
 
     return {

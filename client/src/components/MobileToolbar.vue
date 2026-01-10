@@ -257,7 +257,8 @@
   #unread.view-button,
   #star.view-button,
   #read.view-button,
-  #hot.view-button {
+  #hot.view-button,
+  #search.view-button {
     border-bottom: 1px solid #fff;
   }
 
