@@ -485,10 +485,10 @@ export default {
     },
     loadType: function(status) {
       //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.getSelectedStatus || status == "refresh") {
+      if (status == "refresh") {
         this.$store.data.setSmartFolder(null);
         this.$emit('forceReload');
-      } else {
+      } else if (status !== this.$store.data.getSelectedStatus) {
         this.$store.data.setSelectedStatus(status);
       }
     },
@@ -552,9 +552,7 @@ export default {
       }
     },
     selectSmartFolder(smartFolder) {
-      if (this.$store.data.currentSelection.smartFolderId === smartFolder.id) {
-        this.$store.data.setSmartFolder(null);
-      } else {
+      if (this.$store.data.currentSelection.smartFolderId !== smartFolder.id) {
         this.$store.data.setSmartFolder(smartFolder);
       }
     },

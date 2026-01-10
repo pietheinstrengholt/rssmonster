@@ -4,6 +4,7 @@
             <div class="modal-content">
             <div class="modal-header">
                 <h5 class="modal-title">Settings</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="closeModal"></button>
             </div>
             <div class="modal-body">
                 <div class="settings-group d-flex align-items-center gap-3">
@@ -216,7 +217,7 @@
 }
 
 .modal-dialog {
-    max-width: 600px;
+    max-width: 900px;
     width: 100%;
     max-height: calc(100vh - 40px);
     display: flex;
