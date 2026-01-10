@@ -25,6 +25,11 @@ export const getOverview = async (req, res, next) => {
     const minSentimentScore = settings?.minSentimentScore || 100;
     const minQualityScore = settings?.minQualityScore || 100;
 
+    // Get hot URLs from cache (limit to reasonable number for performance)
+    const hotUrls = cache.all();
+    const MAX_HOT_URLS = 50000; // Limit to prevent massive SQL
+    const limitedHotUrls = hotUrls.slice(0, MAX_HOT_URLS);
+
     // Merge all counts into a single SQL statement
     const baseWhere = {
       userId: userId,
@@ -33,12 +38,6 @@ export const getOverview = async (req, res, next) => {
       qualityScore: { [Op.lte]: minQualityScore }
     };
 
-    // Build hotCount SQL for URLs
-    const hotUrls = cache.all();
-    const hotSql = hotUrls.length > 0
-      ? `CASE WHEN url IN (${hotUrls.map(url => `'${url.replace(/'/g, "''")}'`).join(',')}) THEN 1 END`
-      : `NULL`;
-
     const counts = await Article.findOne({
       where: baseWhere,
       attributes: [
@@ -46,8 +45,13 @@ export const getOverview = async (req, res, next) => {
         [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
         [Sequelize.literal("COUNT(CASE WHEN starInd = 1 THEN 1 END)"), 'starCount'],
         [Sequelize.literal("COUNT(CASE WHEN clickedInd = 1 THEN 1 END)"), 'clickedCount'],
-        [Sequelize.literal(`COUNT(${hotSql})`), 'hotCount']
+        [Sequelize.literal(
+          limitedHotUrls.length > 0
+            ? `COUNT(CASE WHEN url IN (:hotUrls) THEN 1 END)`
+            : 'COUNT(NULL)'
+        ), 'hotCount']
       ],
+      replacements: { hotUrls: limitedHotUrls },
       raw: true
     });
 
