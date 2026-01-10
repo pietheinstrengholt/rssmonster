@@ -314,15 +314,7 @@ export const searchArticles = async ({
 
     // Apply tag filter if present (restricts to specific article IDs)
     if (taggedArticleIds !== null && taggedArticleIds.length > 0) {
-      baseWhere.id = clusterView
-        ? {
-            [Op.in]: Article.sequelize.literal(
-              `(SELECT representativeArticleId
-                FROM article_clusters
-                WHERE representativeArticleId IN (${taggedArticleIds.join(',')}))`
-            )
-          }
-        : taggedArticleIds;
+      baseWhere.id = taggedArticleIds;
     }
 
     /**
@@ -387,12 +379,20 @@ export const searchArticles = async ({
      * This collapses related articles into one item per cluster.
      */
     if (clusterView) {
-      // Only articles that are cluster representatives
-      articleQuery.where.id = {
-        [Op.in]: Article.sequelize.literal(
-          `(SELECT representativeArticleId FROM article_clusters)`
-        )
-      };
+      articleQuery.where[Op.or] = [
+        {
+          id: {
+            [Op.in]: Article.sequelize.literal(
+              `(SELECT representativeArticleId FROM article_clusters)`
+            )
+          }
+        },
+        {
+          clusterId: {
+            [Op.is]: null
+          }
+        }
+      ];
     }
 
     // Fetch articles based on constructed query
