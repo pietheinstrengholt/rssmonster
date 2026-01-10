@@ -287,7 +287,10 @@ export default {
   methods: {
     emitSearchEvent: function() {
       if (!(this.$store.data.searchQuery === undefined || this.$store.data.searchQuery === null)) {
-        this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
+        const { valid } = validateSearchQuery(this.$store.data.searchQuery);
+        if (valid) {
+          this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
+        }
       }
     },
     toggleShowStatus: function() {
