@@ -15,7 +15,7 @@ const { Feed, Article, ArticleCluster } = db;
  * Configuration
  * ------------------------------------------------------------------ */
 
-const EMA_ALPHA = 0.05;
+const EMA_ALPHA = 0.15;            // Faster convergence
 const LOOKBACK_DAYS = 30;
 
 // Cluster size at which an article is considered duplicated/syndicated
@@ -34,7 +34,6 @@ const clamp = (value, min = 0, max = 1) =>
 
 export async function calculateFeedTrustForFeed(feedId) {
   const feed = await Feed.findByPk(feedId);
-
   if (!feed) return null;
 
   const since = new Date(
@@ -58,7 +57,7 @@ export async function calculateFeedTrustForFeed(feedId) {
 
   if (!articles.length) {
     return {
-      trust: feed.feedTrust,
+      trust: feed.feedTrust ?? 0.5,
       duplicationRate: 0
     };
   }
@@ -117,13 +116,13 @@ export async function calculateFeedTrustForFeed(feedId) {
       : 1;
 
   const baseOriginality = clamp(
-    0.7 * representativeRatio +
-    0.3 * (1 / Math.log2(avgClusterSize + 1))
+    0.65 * representativeRatio +
+    0.35 * (1 / Math.log2(avgClusterSize + 1))
   );
 
-  // Penalize feeds that frequently publish duplicated content
+  // Softer duplication penalty (avoid double punishment)
   const originality = clamp(
-    baseOriginality * (1 - feedDuplicationRate)
+    baseOriginality * (1 - feedDuplicationRate * 0.7)
   );
 
   /* --------------------------------------------------------------
@@ -131,7 +130,6 @@ export async function calculateFeedTrustForFeed(feedId) {
    * -------------------------------------------------------------- */
 
   let qualitySum = 0;
-
   for (const article of articles) {
     qualitySum += article.quality;
   }
@@ -151,24 +149,34 @@ export async function calculateFeedTrustForFeed(feedId) {
   }
 
   const engagementRate = engagementSum / articles.length;
-  const engagement = clamp(engagementRate / 2); // soft normalization
+  const engagement = clamp(engagementRate / 1.5);
 
   /* --------------------------------------------------------------
-   * 4) OBSERVED TRUST
+   * 4) CONSISTENCY (publishing cadence)
+   * -------------------------------------------------------------- */
+
+  const articlesPerDay = articles.length / LOOKBACK_DAYS;
+
+  // 0–5 articles/day → 0–1 score
+  const consistency = clamp(articlesPerDay / 5);
+
+  /* --------------------------------------------------------------
+   * 5) OBSERVED TRUST
    * -------------------------------------------------------------- */
 
   const observedTrust = clamp(
-    0.35 * originality +
-    0.25 * avgQuality +
-    0.20 * engagement +
-    0.20 * 1 // consistency placeholder (future)
+    0.40 * originality +
+    0.30 * avgQuality +
+    0.15 * engagement +
+    0.15 * consistency
   );
 
   /* --------------------------------------------------------------
-   * 5) EMA UPDATE
+   * 6) EMA UPDATE
    * -------------------------------------------------------------- */
 
-  const previousTrust = feed.feedTrust ?? 0.5;
+  const previousTrust =
+    feed.feedTrust ?? observedTrust;
 
   const newTrust =
     EMA_ALPHA * observedTrust +
@@ -190,9 +198,7 @@ export async function calculateFeedTrustForFeed(feedId) {
 
 export async function calculateFeedTrustForAllFeeds() {
   const feeds = await Feed.findAll({
-    where: {
-      status: 'active'
-    }
+    where: { status: 'active' }
   });
 
   console.log(
@@ -202,15 +208,7 @@ export async function calculateFeedTrustForAllFeeds() {
   for (const feed of feeds) {
     try {
       const result = await calculateFeedTrustForFeed(feed.id);
-      console.log(
-        `[FEED-TRUST] Updated feed ${feed.id} (${feed.feedName}): ` +
-        `trust=${feed.feedTrust.toFixed(3)}`
-      );
-
-      if (!result || result.trust === undefined || result.duplicationRate === undefined) {
-        console.log(`[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> skipped (no valid result)`);
-        continue;
-      }
+      if (!result) continue;
 
       console.log(
         `[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> ` +
