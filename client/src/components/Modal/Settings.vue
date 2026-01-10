@@ -227,6 +227,7 @@
                                         <th>Articles</th>
                                         <th>Trust</th>
                                         <th>Duplication</th>
+                                        <th>Edit</th>
                                     </tr>
                                 </thead>
                                 <tbody>
@@ -237,6 +238,9 @@
                                         <td>{{ feed.articleCount || 0}}</td>
                                         <td>{{ formatScore(feed.feedTrust) }}</td>
                                         <td>{{ formatScore(feed.feedDuplicationRate) }}</td>
+                                        <td>
+                                            <button class="btn btn-link p-0" @click="openFeedEdit(feed)">Edit</button>
+                                        </td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -734,6 +738,12 @@ export default {
             if (status === 'error') return 'row-error';
             if (status === 'disabled') return 'row-disabled';
             return '';
+        },
+        openFeedEdit(feed) {
+            if (!feed) return;
+            this.$store.data.setSelectedCategoryId(feed.categoryId ?? '%');
+            this.$store.data.setSelectedFeedId(feed.id);
+            this.$store.data.setShowModal('UpdateFeed');
         },
         saveSettings() {
             // Persist actions to the server
