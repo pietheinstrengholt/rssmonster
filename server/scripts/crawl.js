@@ -1,3 +1,12 @@
+/**
+ * Crawl CLI runner
+ *
+ * Usage:
+ *   npm run crawl
+ *   or
+ *   node scripts/crawl.js
+ */
+
 import dotenv from 'dotenv';
 dotenv.config();
 

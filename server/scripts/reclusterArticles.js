@@ -1,3 +1,12 @@
+/**
+ * Recluster Articles CLI runner
+ *
+ * Usage:
+ *   npm run recluster
+ *   or
+ *   node scripts/reclusterArticles.js
+ */
+
 import { Op } from 'sequelize';
 import db from '../models/index.js';
 const { Article, ArticleCluster } = db;
