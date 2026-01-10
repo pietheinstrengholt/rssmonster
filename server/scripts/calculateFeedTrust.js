@@ -19,7 +19,7 @@ const EMA_ALPHA = 0.15;            // Faster convergence
 const LOOKBACK_DAYS = 30;
 
 // Cluster size at which an article is considered duplicated/syndicated
-const DUPLICATION_CLUSTER_THRESHOLD = 3;
+const DUPLICATION_CLUSTER_THRESHOLD = 2;
 
 /* ------------------------------------------------------------------
  * Helpers

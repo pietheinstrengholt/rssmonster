@@ -10,4 +10,7 @@ router.get("/", userMiddleware.isLoggedIn, smartFolderController.getSmartFolders
 // POST /api/smartfolders
 router.post('/', userMiddleware.isLoggedIn, smartFolderController.postSmartFolder);
 
+// GET /api/smartfolders/insights
+router.get("/insights", userMiddleware.isLoggedIn, smartFolderController.getSmartFolderInsights);
+
 export default router;

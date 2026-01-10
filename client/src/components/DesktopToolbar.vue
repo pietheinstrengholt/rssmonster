@@ -41,9 +41,15 @@
       </div>
     </div>
 
-    <div class="status-toolbar" @click="toggleClusteredView" v-if="$store.data.currentSelection.AIEnabled">
-      <p id="filter" v-if="$store.data.currentSelection.clusterView">All articles</p>
-      <p id="filter" v-else>Grouped view</p>
+    <!-- Cluster View Dropdown -->
+    <div v-if="$store.data.currentSelection.AIEnabled" class="dropdown">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ $store.data.currentSelection.clusterView ? 'All articles' : 'Cluster Reading Mode' }}
+      </button>
+      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
+        <a class="dropdown-item" :class="{ active: !$store.data.currentSelection.clusterView }" href="#" @click="toggleClusteredView">Cluster Reading Mode</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView }" href="#" @click="toggleClusteredView">All articles</a>
+      </div>
     </div>
 
     <div v-if="$store.data.currentSelection.AIEnabled" class="status-toolbar" @click="chatAssistant">
