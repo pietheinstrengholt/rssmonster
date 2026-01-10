@@ -13,7 +13,7 @@
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
         <app-article-feed v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
-        <app-chat-assistant v-if="enableAgent && $store.data.chatAssistantOpen"></app-chat-assistant>
+        <app-chat-assistant v-if="$store.data.chatAssistantOpen"></app-chat-assistant>
       </div>
     </div>
     <!-- Mobile events -->
@@ -176,11 +176,6 @@ export default {
       offlineStatus: false,
       overviewIntervalId: null
     };
-  },
-  computed: {
-    enableAgent() {
-      return import.meta.env.VITE_ENABLE_AGENT === 'true';
-    }
   },
   async created() {
     //fetch all category and feed information for an complete overview including total read and unread counts
