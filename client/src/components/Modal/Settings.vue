@@ -499,6 +499,26 @@
     background-color: #fff;
 }
 
+.row-error {
+    background-color: #fdecea !important;
+    color: #b71c1c !important;
+}
+
+.row-error td {
+    background-color: #fdecea !important;
+    color: #b71c1c !important;
+}
+
+.row-disabled {
+    background-color: #e0e0e0 !important;
+    color: #616161 !important;
+}
+
+.row-disabled td {
+    background-color: #e0e0e0 !important;
+    color: #616161 !important;
+}
+
 @media (max-height: 600px) {
     div.modal-dialog {
         margin-top: 140px;
@@ -563,6 +583,26 @@
 
     .feeds-table td {
         background-color: #2a2a2a;
+    }
+
+    .row-error {
+        background-color: #4a1f1f !important;
+        color: #ffbaba !important;
+    }
+
+    .row-error td {
+        background-color: #4a1f1f !important;
+        color: #ffbaba !important;
+    }
+
+    .row-disabled {
+        background-color: #3a3a3a !important;
+        color: #999 !important;
+    }
+
+    .row-disabled td {
+        background-color: #3a3a3a !important;
+        color: #999 !important;
     }
 }
 </style>
@@ -688,8 +728,8 @@ export default {
         },
         feedRowClass(feed) {
             const status = (feed?.status || '').toLowerCase();
-            if (status === 'error') return 'table-danger';
-            if (status === 'disabled') return 'table-secondary';
+            if (status === 'error') return 'row-error';
+            if (status === 'disabled') return 'row-disabled';
             return '';
         },
         saveSettings() {
