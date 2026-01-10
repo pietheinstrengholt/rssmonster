@@ -193,7 +193,7 @@
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @click="saveSettings">Save</button>
+                <button type="button" class="btn btn-primary" @click="saveSettings" :disabled="hasInvalidSmartFolders">Save</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Close</button>
             </div>
             </div>
@@ -695,6 +695,15 @@ export default {
                 // Reset file input
                 this.$refs.opmlFileInput.value = '';
             }
+        }
+    },
+    computed: {
+        hasInvalidSmartFolders() {
+            return this.smartFolders.some(sf => {
+                if (!sf.name || sf.name.trim() === '') return false;
+                const { valid } = validateSmartFolderQuery(sf.query || '');
+                return !valid;
+            });
         }
     }
 };
