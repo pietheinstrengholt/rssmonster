@@ -65,7 +65,7 @@
         {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
       </p>
     </div>
-    <div class="search-wrap">
+    <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid }">
       <input
         type="text"
         v-model="$store.data.searchQuery"
@@ -195,6 +195,8 @@
 .search-wrap {
   flex-grow: 1;
   display: flex;
+  align-items: center;
+  padding-left: 6px;
 }
 
 .search-wrap input {
@@ -203,11 +205,22 @@
   background-color: #eff1f3;
   font-size: 14px;
   border: none;
-  margin-left: 6px;
 }
 
 .search-wrap input:focus {
   outline: none;
+}
+
+.search-wrap.invalid {
+  background-color: #fdecea;
+}
+
+.search-wrap.invalid input.input-invalid {
+  color: #b71c1c;
+}
+
+.search-wrap.invalid input.input-invalid::placeholder {
+  color: #d32f2f;
 }
 
 .search-wrap input.input-invalid {
@@ -255,13 +268,16 @@
     color: #999;
   }
 
-  .search-wrap input.input-invalid {
+  .search-wrap.invalid {
     background-color: #4a1f1f;
+  }
+
+  .search-wrap.invalid input.input-invalid {
     color: #ffbaba;
     border-color: #d77;
   }
 
-  .search-wrap input.input-invalid::placeholder {
+  .search-wrap.invalid input.input-invalid::placeholder {
     color: #ffbaba;
   }
 }
