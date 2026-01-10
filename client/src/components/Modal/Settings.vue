@@ -195,8 +195,54 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings" :disabled="hasInvalidSmartFolders">Save</button>
+                <button type="button" class="btn btn-secondary" @click="openFeedsModal">Feeds overview</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Close</button>
             </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Feeds overview modal (placeholder; feed logic to be implemented) -->
+    <div class="modal" tabindex="-1" role="dialog" v-if="showFeedsModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Feeds Overview</h5>
+                </div>
+                <div class="modal-body">
+                    <div v-if="feedsLoading">Loading feeds…</div>
+                    <div v-else-if="feedsError" class="text-danger">{{ feedsError }}</div>
+                    <div v-else>
+                        <div v-if="feeds.length === 0">No feeds found.</div>
+                        <div v-else class="feeds-table-wrapper">
+                            <table class="feeds-table table">
+                                <thead>
+                                    <tr>
+                                        <th>Name</th>
+                                        <th>Type</th>
+                                        <th>Status</th>
+                                        <th>Articles</th>
+                                        <th>Trust</th>
+                                        <th>Duplication</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr v-for="feed in feeds" :key="feed.id" :class="feedRowClass(feed)">
+                                        <td>{{ feed.feedName }}</td>
+                                        <td>{{ feed.feedType || '-' }}</td>
+                                        <td>{{ feed.status }}</td>
+                                        <td>{{ feed.articleCount || 0}}</td>
+                                        <td>{{ formatScore(feed.feedTrust) }}</td>
+                                        <td>{{ formatScore(feed.feedDuplicationRate) }}</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="closeFeedsModal">Back to settings</button>
+                </div>
             </div>
         </div>
     </div>
@@ -217,7 +263,7 @@
 }
 
 .modal-dialog {
-    max-width: 900px;
+    max-width: 90%;
     width: 100%;
     max-height: calc(100vh - 40px);
     display: flex;
@@ -426,6 +472,33 @@
     background-color: #218838;
 }
 
+.feeds-table-wrapper {
+    max-height: 60vh;
+    overflow-y: auto;
+}
+
+.feeds-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+.feeds-table th,
+.feeds-table td {
+    padding: 8px;
+    border: 1px solid #e0e0e0;
+    vertical-align: top;
+}
+
+.feeds-table th {
+    background-color: #f5f5f5;
+    font-weight: 600;
+}
+
+.feeds-table td {
+    background-color: #fff;
+}
+
 @media (max-height: 600px) {
     div.modal-dialog {
         margin-top: 140px;
@@ -483,6 +556,14 @@
     .input-invalid::placeholder {
         color: #ffbaba;
     }
+
+    .feeds-table th {
+        background-color: #333;
+    }
+
+    .feeds-table td {
+        background-color: #2a2a2a;
+    }
 }
 </style>
 
@@ -517,7 +598,11 @@ export default {
             qualityScore: 100,
             scoreOptions: [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0],
             actions: [],
-            smartFolders: []
+            smartFolders: [],
+            showFeedsModal: false,
+            feeds: [],
+            feedsLoading: false,
+            feedsError: null
         };
     },
     methods: {
@@ -576,6 +661,36 @@ export default {
         smartFolderQueryError(smartFolder) {
             const { error } = validateSmartFolderQuery(smartFolder?.query || '');
             return error;
+        },
+        openFeedsModal() {
+            this.fetchFeeds();
+            this.showFeedsModal = true;
+        },
+        closeFeedsModal() {
+            this.showFeedsModal = false;
+        },
+        async fetchFeeds() {
+            try {
+                this.feedsLoading = true;
+                this.feedsError = null;
+                const resp = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds");
+                if (resp && resp.data && Array.isArray(resp.data.feeds)) {
+                    this.feeds = resp.data.feeds;
+                } else {
+                    this.feeds = [];
+                }
+            } catch (err) {
+                console.error('Failed to fetch feeds:', err);
+                this.feedsError = 'Failed to fetch feeds';
+            } finally {
+                this.feedsLoading = false;
+            }
+        },
+        feedRowClass(feed) {
+            const status = (feed?.status || '').toLowerCase();
+            if (status === 'error') return 'table-danger';
+            if (status === 'disabled') return 'table-secondary';
+            return '';
         },
         saveSettings() {
             // Persist actions to the server
@@ -705,6 +820,15 @@ export default {
                 const { valid } = validateSmartFolderQuery(sf.query || '');
                 return !valid;
             });
+        },
+        formatScore() {
+            return (value) => {
+                if (value === null || value === undefined) return '-';
+                const num = Number(value);
+                if (Number.isNaN(num)) return '-';
+                const pct = num * 100;
+                return `${pct.toFixed(0)}%`;
+            };
         }
     }
 };

@@ -16,9 +16,31 @@ const getFeeds = async (req, res, next) => {
     const feeds = await Feed.findAll({
       where: {
         userId: userId
-      }
+      },
+      order: [["feedName", "ASC"]]
     });
-    return res.status(200).json({ feeds });
+    // Aggregate article counts per feed for this user
+    const articleCounts = await Article.findAll({
+      attributes: [
+        'feedId',
+        [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount']
+      ],
+      where: { userId: userId },
+      group: ['feedId'],
+      raw: true
+    });
+
+    const countsByFeedId = articleCounts.reduce((acc, row) => {
+      acc[row.feedId] = Number(row.articleCount) || 0;
+      return acc;
+    }, {});
+
+    const feedsWithCounts = feeds.map(feed => ({
+      ...feed.toJSON(),
+      articleCount: countsByFeedId[feed.id] ?? 0
+    }));
+
+    return res.status(200).json({ feeds: feedsWithCounts });
   } catch (err) {
     console.error('Error in getFeeds:', err);
     return res.status(500).json({ error: err.message });
