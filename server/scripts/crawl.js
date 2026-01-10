@@ -1,18 +1,37 @@
+import dotenv from 'dotenv';
+dotenv.config();
+
+// ---- Runtime bootstrap ----
+import db from '../models/index.js';
+import cache from '../util/cache.js';
 import crawlController from '../controllers/crawl.js';
 
-console.log('Starting RSS feed crawl...');
+const { sequelize, Hotlink } = db;
 
-// Call the synchronous crawl function directly
-crawlController.performCrawl()
-  .then(result => {
+const run = async () => {
+  try {
+    console.log('Starting RSS feed crawl...');
+
+    // 1. Ensure DB connection
+    await sequelize.authenticate();
+
+    // 2. Initialize cache (CRITICAL)
+    await cache.initCache(Hotlink);
+
+    // 3. Run crawl
+    const result = await crawlController.performCrawl();
+
     console.log('\n=== Crawl Completed ===');
     console.log(`Total feeds: ${result.total}`);
     console.log(`Successfully processed: ${result.processed}`);
     console.log(`Errors: ${result.errors}`);
+
     process.exit(0);
-  })
-  .catch(err => {
+  } catch (err) {
     console.error('\n=== Crawl Failed ===');
     console.error('Error during crawl:', err);
     process.exit(1);
-  });
+  }
+};
+
+await run();

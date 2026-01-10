@@ -4,10 +4,11 @@ import { Op } from 'sequelize';
 // stdTTL: time to live in seconds
 const cache = new NodeCache({ stdTTL: 14 * 24 * 60 * 60 });
 
+// module-local reference (dependency injection)
 let HotlinkModel = null;
 
 /**
- * Inject dependencies explicitly
+ * Initialize cache with injected Hotlink model
  */
 export const initCache = async (Hotlink) => {
   HotlinkModel = Hotlink;
