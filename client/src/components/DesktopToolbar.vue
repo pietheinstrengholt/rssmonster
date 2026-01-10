@@ -72,6 +72,8 @@
         @keyup="emitSearchEvent()"
         placeholder="Search for words or tag:name, title:text, etc."
         autocomplete="off"
+        :class="{ 'input-invalid': isSearchQueryInvalid }"
+        :title="searchQueryError"
       />
     </div>
     <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
@@ -88,16 +90,17 @@
   background-color: #eff1f3;
   position: fixed;
   margin-left: -15px;
+  display: flex;
+  align-items: center;
 }
 
 .settings-icon {
-  margin-top: 1px;
-  float: left;
   display: flex;
   align-items: center;
   justify-content: center;
   width: 40px;
   height: 40px;
+  flex-shrink: 0;
   cursor: pointer;
   color: #111;
   border-right: 1px solid #e0e0e0;
@@ -113,13 +116,13 @@
 }
 
 .status-toolbar {
-  float: left;
   border-right: 1px solid #e0e0e0;
   margin-left: 10px;
   text-align: center;
   cursor: pointer;
   color: #111;
   height: 40px;
+  flex-shrink: 0;
 }
 
 .status-toolbar p {
@@ -189,8 +192,13 @@
   margin-right: 6px;
 }
 
+.search-wrap {
+  flex-grow: 1;
+  display: flex;
+}
+
 .search-wrap input {
-  width: 34%;
+  width: 100%;
   height: 40px;
   background-color: #eff1f3;
   font-size: 14px;
@@ -200,6 +208,16 @@
 
 .search-wrap input:focus {
   outline: none;
+}
+
+.search-wrap input.input-invalid {
+  background-color: #fdecea;
+  color: #b71c1c;
+  border-color: #f5c6cb;
+}
+
+.search-wrap input.input-invalid::placeholder {
+  color: #d32f2f;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -236,11 +254,22 @@
   .search-wrap input::placeholder {
     color: #999;
   }
+
+  .search-wrap input.input-invalid {
+    background-color: #4a1f1f;
+    color: #ffbaba;
+    border-color: #d77;
+  }
+
+  .search-wrap input.input-invalid::placeholder {
+    color: #ffbaba;
+  }
 }
 </style>
 
 <script>
 import Settings from './Modal/Settings.vue';
+import { validateSearchQuery } from '../services/queryValidation.js';
 
 export default {
   components: {
@@ -331,6 +360,16 @@ export default {
       return (value)=> {
         return value.charAt(0).toUpperCase() + value.slice(1);
       }
+    },
+    isSearchQueryInvalid() {
+      const query = this.$store.data.searchQuery || '';
+      const { valid } = validateSearchQuery(query);
+      return !valid;
+    },
+    searchQueryError() {
+      const query = this.$store.data.searchQuery || '';
+      const { error } = validateSearchQuery(query);
+      return error;
     }
   }
 };
