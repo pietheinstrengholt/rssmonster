@@ -20,17 +20,21 @@ export async function rediscoverRssUrl({
   const prompt = `
   You are an expert in RSS and Atom feeds.
 
-  Given the following feed information, determine the most likely current RSS or Atom feed URL.
+  The previously used RSS feed URL is no longer valid and cannot be processed.
+  Your task is to discover and suggest the most likely *replacement* RSS or Atom feed URL
+  for the same website or publisher.
+
   Return ONLY valid JSON.
 
   Rules:
-  - Prefer official RSS or Atom feeds published by the site
+  - Assume oldRssUrl is broken and MUST NOT be reused
+  - Prefer official RSS or Atom feeds published by the website
   - Do not invent domains or URLs
-  - If unsure, return null
+  - The suggested feed must belong to the same site as websiteUrl
+  - If no reliable replacement can be found, return null
   - Validate that the URL looks like a feed (rss, atom, feed, xml)
-  - The reason MUST be written for end users (non-technical)
-  - Avoid generic phrases like "common pattern" or "context match"
-  - Explain *why this specific URL* is likely correct in clear, simple language
+  - Write the reason for end users (non-technical)
+  - Avoid generic or AI-style explanations
 
   Input:
   {
@@ -47,10 +51,10 @@ export async function rediscoverRssUrl({
   }
 
   Reason guidelines:
-  - One short sentence
-  - Concrete and specific
-  - No AI/meta explanations
-  - Example: "This is the site's official RSS feed, available at /feed/."
+  - One short, clear sentence
+  - Explain why this is a good *replacement* feed
+  - Be specific and concrete
+  - Example: "This is the website’s official RSS feed that replaces the previously broken feed."
   `;
 
   const response = await client.chat.completions.create({
