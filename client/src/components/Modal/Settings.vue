@@ -141,119 +141,153 @@
                     </button>
                 </div>
 
-                <!-- Score Thresholds -->
-                <div class="settings-group d-flex align-items-center gap-3">
-                    <label for="adScore" class="flex-shrink-0 mb-0">
-                        Advertisement Score Threshold
-                        <span class="info-icon" :title="'Filter out promotional content. 0 = editorial only, 100 = show all including heavy ads/spam'">
-                            <BootstrapIcon icon="info-circle-fill" />
-                        </span>
-                    </label>
-                    <select id="adScore" v-model="advertisementScore" class="form-select flex-grow-1">
-                        <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
-                    </select>
-                </div>
-                
-                <div class="settings-group d-flex align-items-center gap-3">
-                    <label for="sentimentScore" class="flex-shrink-0 mb-0">
-                        Sentiment Score Threshold
-                        <span class="info-icon" :title="'Filter by article tone. 0 = very positive, 50 = neutral, 100 = very negative'">
-                            <BootstrapIcon icon="info-circle-fill" />
-                        </span>
-                    </label>
-                    <select id="sentimentScore" v-model="sentimentScore" class="form-select flex-grow-1">
-                        <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
-                    </select>
-                </div>
-                
-                <div class="settings-group d-flex align-items-center gap-3">
-                    <label for="qualityScore" class="flex-shrink-0 mb-0">
-                        Quality Score Threshold
-                        <span class="info-icon" :title="'Filter by content quality. Lower scores = better depth, accuracy & writing. 0-30 = excellent, 70-100 = poor'">
-                            <BootstrapIcon icon="info-circle-fill" />
-                        </span>
-                    </label>
-                    <select id="qualityScore" v-model="qualityScore" class="form-select flex-grow-1">
-                        <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
-                    </select>
-                </div>
-
                 <div class="d-flex gap-3">
-                </div>
-
-                <!-- Actions -->
-                <div class="settings-group">
-                    <label>
-                        Actions
-                        <span class="info-icon" :title="'Define automated actions based on article content patterns'">
-                            <BootstrapIcon icon="info-circle-fill" />
-                        </span>
-                    </label>
-                    
-                    <div v-for="(action, index) in actions" :key="index" class="action-row">
-                        <div class="action-fields">
-                            <div class="form-group">
-                                <label :for="'action-name-' + index" class="small-label">Name</label>
-                                <input 
-                                    :id="'action-name-' + index"
-                                    v-model="action.name" 
-                                    type="text" 
-                                    class="form-control" 
-                                    placeholder="Action name"
-                                />
-                            </div>
-                            
-                            <div class="form-group">
-                                <label :for="'action-type-' + index" class="small-label">Type</label>
-                                <select 
-                                    :id="'action-type-' + index"
-                                    v-model="action.actionType" 
-                                    class="form-select"
-                                >
-                                    <option value="">Select action type</option>
-                                    <option value="delete">Delete article</option>
-                                    <option value="star">Set starred</option>
-                                    <option value="read">Mark as read</option>
-                                    <option value="clicked">Mark as clicked</option>
-                                    <option value="advertisement">Mark as advertisement</option>
-                                    <option value="badquality">Mark as low quality</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group form-group-full">
-                                <label :for="'action-regex-' + index" class="small-label">Regular Expression</label>
-                                <input 
-                                    :id="'action-regex-' + index"
-                                    v-model="action.regularExpression" 
-                                    type="text" 
-                                    class="form-control" 
-                                    placeholder="e.g., /keyword|phrase/i"
-                                />
-                            </div>
-                            
-                            <button 
-                                type="button" 
-                                class="btn btn-remove" 
-                                @click="removeAction(index)"
-                                :title="'Remove action'"
-                            >
-                                <BootstrapIcon icon="trash-fill" />
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <button type="button" class="btn btn-add" @click="addAction">
-                        <BootstrapIcon icon="plus-circle-fill" />
-                        Add Action
-                    </button>
                 </div>
 
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings" :disabled="hasInvalidSmartFolders">Save</button>
+                <button type="button" class="btn btn-secondary" @click="openScoreThresholdsModal">Score Thresholds</button>
+                <button type="button" class="btn btn-secondary" @click="openActionsModal">Actions Overview</button>
                 <button type="button" class="btn btn-secondary" @click="openFeedsModal">Feeds overview</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="closeModal">Close</button>
             </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Score Thresholds modal -->
+    <div class="modal" tabindex="-1" role="dialog" v-if="showScoreThresholdsModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Score Thresholds</h5>
+                </div>
+                <div class="modal-body">
+                    <!-- Advertisement Score Threshold -->
+                    <div class="settings-group">
+                        <label for="adScore">
+                            Advertisement Score Threshold
+                            <span class="info-icon" :title="'Filter out promotional content. 0 = editorial only, 100 = show all including heavy ads/spam'">
+                                <BootstrapIcon icon="info-circle-fill" />
+                            </span>
+                        </label>
+                        <select id="adScore" v-model="advertisementScore" class="form-select">
+                            <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Sentiment Score Threshold -->
+                    <div class="settings-group">
+                        <label for="sentimentScore">
+                            Sentiment Score Threshold
+                            <span class="info-icon" :title="'Filter by article tone. 0 = very positive, 50 = neutral, 100 = very negative'">
+                                <BootstrapIcon icon="info-circle-fill" />
+                            </span>
+                        </label>
+                        <select id="sentimentScore" v-model="sentimentScore" class="form-select">
+                            <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
+                        </select>
+                    </div>
+                    
+                    <!-- Quality Score Threshold -->
+                    <div class="settings-group">
+                        <label for="qualityScore">
+                            Quality Score Threshold
+                            <span class="info-icon" :title="'Filter by content quality. Lower scores = better depth, accuracy & writing. 0-30 = excellent, 70-100 = poor'">
+                                <BootstrapIcon icon="info-circle-fill" />
+                            </span>
+                        </label>
+                        <select id="qualityScore" v-model="qualityScore" class="form-select">
+                            <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="saveScoreThresholds">Save</button>
+                    <button type="button" class="btn btn-secondary" @click="closeScoreThresholdsModal">Back to settings</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Actions overview modal -->
+    <div class="modal" tabindex="-1" role="dialog" v-if="showActionsModal">
+        <div class="modal-dialog" role="document">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Actions Overview</h5>
+                </div>
+                <div class="modal-body">
+                    <div class="settings-group">
+                        <label>
+                            Actions
+                            <span class="info-icon" :title="'Define automated actions based on article content patterns'">
+                                <BootstrapIcon icon="info-circle-fill" />
+                            </span>
+                        </label>
+                        
+                        <div v-for="(action, index) in actions" :key="index" class="action-row">
+                            <div class="action-fields">
+                                <div class="form-group">
+                                    <label :for="'action-name-' + index" class="small-label">Name</label>
+                                    <input 
+                                        :id="'action-name-' + index"
+                                        v-model="action.name" 
+                                        type="text" 
+                                        class="form-control" 
+                                        placeholder="Action name"
+                                    />
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label :for="'action-type-' + index" class="small-label">Type</label>
+                                    <select 
+                                        :id="'action-type-' + index"
+                                        v-model="action.actionType" 
+                                        class="form-select"
+                                    >
+                                        <option value="">Select action type</option>
+                                        <option value="delete">Delete article</option>
+                                        <option value="star">Set starred</option>
+                                        <option value="read">Mark as read</option>
+                                        <option value="clicked">Mark as clicked</option>
+                                        <option value="advertisement">Mark as advertisement</option>
+                                        <option value="badquality">Mark as low quality</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group form-group-full">
+                                    <label :for="'action-regex-' + index" class="small-label">Regular Expression</label>
+                                    <input 
+                                        :id="'action-regex-' + index"
+                                        v-model="action.regularExpression" 
+                                        type="text" 
+                                        class="form-control" 
+                                        placeholder="e.g., /keyword|phrase/i"
+                                    />
+                                </div>
+                                
+                                <button 
+                                    type="button" 
+                                    class="btn btn-remove" 
+                                    @click="removeAction(index)"
+                                    :title="'Remove action'"
+                                >
+                                    <BootstrapIcon icon="trash-fill" />
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <button type="button" class="btn btn-add" @click="addAction">
+                            <BootstrapIcon icon="plus-circle-fill" />
+                            Add Action
+                        </button>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" @click="closeActionsModal">Back to settings</button>
+                </div>
             </div>
         </div>
     </div>
@@ -719,6 +753,8 @@ export default {
             actions: [],
             smartFolders: [],
             showFeedsModal: false,
+            showActionsModal: false,
+            showScoreThresholdsModal: false,
             feeds: [],
             feedsLoading: false,
             feedsError: null,
@@ -829,6 +865,18 @@ export default {
         },
         closeFeedsModal() {
             this.showFeedsModal = false;
+        },
+        openActionsModal() {
+            this.showActionsModal = true;
+        },
+        closeActionsModal() {
+            this.showActionsModal = false;
+        },
+        openScoreThresholdsModal() {
+            this.showScoreThresholdsModal = true;
+        },
+        closeScoreThresholdsModal() {
+            this.showScoreThresholdsModal = false;
         },
         async fetchFeeds() {
             try {
