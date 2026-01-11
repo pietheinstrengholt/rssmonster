@@ -74,6 +74,74 @@
                 >
                     No smart folder insights available yet.
                 </div>
+
+                <!-- Smart Folders -->
+                <div class="settings-group">
+                    <label>
+                        Smart Folders
+                        <span class="info-icon" :title="'Define smart folders to automatically organize articles based on criteria'">
+                            <BootstrapIcon icon="info-circle-fill" />
+                        </span>
+                    </label>
+                    
+                    <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row">
+                        <div class="action-fields">
+                            <div class="form-group">
+                                <label :for="'smart-folder-name-' + index" class="small-label">Name</label>
+                                <input 
+                                    :id="'smart-folder-name-' + index"
+                                    v-model="smartFolder.name" 
+                                    type="text" 
+                                    class="form-control" 
+                                    placeholder="Smart folder name"
+                                />
+                            </div>
+                            
+                            <div class="form-group">
+                                <label :for="'smart-folder-limitCount-' + index" class="small-label">Maximum Articles</label>
+                                <select 
+                                    :id="'smart-folder-limitCount-' + index"
+                                    v-model="smartFolder.limitCount" 
+                                    class="form-select"
+                                >
+                                    <option value="50">50</option>
+                                    <option value="100">100</option>
+                                    <option value="250">250</option>
+                                    <option value="500">500</option>
+                                </select>
+                            </div>
+                            
+                            <div class="form-group form-group-full">
+                                <label :for="'smart-folder-regex-' + index" class="small-label">Query</label>
+                                <input 
+                                    :id="'smart-folder-regex-' + index"
+                                    v-model="smartFolder.query" 
+                                    type="text" 
+                                    class="form-control"
+                                    :class="{ 'input-invalid': isSmartFolderQueryInvalid(smartFolder) }"
+                                    :title="smartFolderQueryError(smartFolder)"
+                                    placeholder="e.g., tag:ai unread:true quality:>0.6"
+                                />
+                            </div>
+                            
+                            <button 
+                                type="button" 
+                                class="btn btn-remove" 
+                                @click="removeSmartFolder(index)"
+                                :title="'Remove smart folder'"
+                            >
+                                <BootstrapIcon icon="trash-fill" />
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <button type="button" class="btn btn-add" @click="addSmartFolder">
+                        <BootstrapIcon icon="plus-circle-fill" />
+                        Add Smart Folder
+                    </button>
+                </div>
+
+                <!-- Score Thresholds -->
                 <div class="settings-group d-flex align-items-center gap-3">
                     <label for="adScore" class="flex-shrink-0 mb-0">
                         Advertisement Score Threshold
@@ -113,6 +181,7 @@
                 <div class="d-flex gap-3">
                 </div>
 
+                <!-- Actions -->
                 <div class="settings-group">
                     <label>
                         Actions
@@ -179,70 +248,6 @@
                     </button>
                 </div>
 
-                <div class="settings-group">
-                    <label>
-                        Smart Folders
-                        <span class="info-icon" :title="'Define smart folders to automatically organize articles based on criteria'">
-                            <BootstrapIcon icon="info-circle-fill" />
-                        </span>
-                    </label>
-                    
-                    <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row">
-                        <div class="action-fields">
-                            <div class="form-group">
-                                <label :for="'smart-folder-name-' + index" class="small-label">Name</label>
-                                <input 
-                                    :id="'smart-folder-name-' + index"
-                                    v-model="smartFolder.name" 
-                                    type="text" 
-                                    class="form-control" 
-                                    placeholder="Smart folder name"
-                                />
-                            </div>
-                            
-                            <div class="form-group">
-                                <label :for="'smart-folder-limitCount-' + index" class="small-label">Maximum Articles</label>
-                                <select 
-                                    :id="'smart-folder-limitCount-' + index"
-                                    v-model="smartFolder.limitCount" 
-                                    class="form-select"
-                                >
-                                    <option value="50">50</option>
-                                    <option value="100">100</option>
-                                    <option value="250">250</option>
-                                    <option value="500">500</option>
-                                </select>
-                            </div>
-                            
-                            <div class="form-group form-group-full">
-                                <label :for="'smart-folder-regex-' + index" class="small-label">Query</label>
-                                <input 
-                                    :id="'smart-folder-regex-' + index"
-                                    v-model="smartFolder.query" 
-                                    type="text" 
-                                    class="form-control"
-                                    :class="{ 'input-invalid': isSmartFolderQueryInvalid(smartFolder) }"
-                                    :title="smartFolderQueryError(smartFolder)"
-                                    placeholder="e.g., tag:ai unread:true quality:>0.6"
-                                />
-                            </div>
-                            
-                            <button 
-                                type="button" 
-                                class="btn btn-remove" 
-                                @click="removeSmartFolder(index)"
-                                :title="'Remove smart folder'"
-                            >
-                                <BootstrapIcon icon="trash-fill" />
-                            </button>
-                        </div>
-                    </div>
-                    
-                    <button type="button" class="btn btn-add" @click="addSmartFolder">
-                        <BootstrapIcon icon="plus-circle-fill" />
-                        Add Smart Folder
-                    </button>
-                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveSettings" :disabled="hasInvalidSmartFolders">Save</button>
