@@ -82,10 +82,6 @@ const collectSmartFolderSignals = async (
   userId,
   { days = 365, maxStarredTitles = 500 } = {}
 ) => {
-  console.log(
-    `Collecting Smart Folder signals (Articles + Feeds + Tags) for user ${userId} over last ${days} days`
-  );
-
   const since = new Date(Date.now() - days * 86400000);
 
   /* -----------------------------------
@@ -111,20 +107,16 @@ const collectSmartFolderSignals = async (
   /* -----------------------------------
    * Fetch feeds
    * ----------------------------------- */
-  const feedList = await Feed.findAll({
+  const feeds = await Feed.findAll({
     where: { userId },
-    attributes: ['id', 'feedName', 'feedType', 'status'],
+    attributes: ['id', 'feedName'],
     raw: true
   });
 
   const feedMap = new Map();
-
-  for (const feed of feedList) {
+  for (const feed of feeds) {
     feedMap.set(feed.id, {
-      feedId: feed.id,
       name: feed.feedName,
-      type: feed.feedType,
-      status: feed.status,
       total: 0,
       unread: 0,
       read: 0,
@@ -145,7 +137,7 @@ const collectSmartFolderSignals = async (
   }
 
   /* -----------------------------------
-   * Overall engagement summary
+   * Engagement summary
    * ----------------------------------- */
   const engagement = {
     totalArticles: 0,
@@ -155,49 +147,49 @@ const collectSmartFolderSignals = async (
     starred: 0
   };
 
-  for (const feed of feedMap.values()) {
-    engagement.totalArticles += feed.total;
-    engagement.unread += feed.unread;
-    engagement.read += feed.read;
-    engagement.clicked += feed.clicked;
-    engagement.starred += feed.starred;
+  for (const f of feedMap.values()) {
+    engagement.totalArticles += f.total;
+    engagement.unread += f.unread;
+    engagement.read += f.read;
+    engagement.clicked += f.clicked;
+    engagement.starred += f.starred;
   }
 
   /* -----------------------------------
-   * Tag frequency (global, time-bound)
+   * Tag stats (global)
    * ----------------------------------- */
   const tagStats = await Tag.findAll({
-    where: {
-      userId
-    },
+    where: { userId },
     attributes: [
       'name',
       [fn('COUNT', col('name')), 'count']
     ],
     group: ['name'],
     order: [[literal('count'), 'DESC']],
-    limit: 50,
     raw: true
   });
 
   /* -----------------------------------
-   * Starred article titles (high signal)
-   * ----------------------------------- */
+  * Starred articles (high signal)
+  * ----------------------------------- */
   const starredArticles = await Article.findAll({
     where: {
       userId,
       starInd: 1,
       published: { [Op.gte]: since }
     },
-    attributes: ['title'],
+    attributes: ['title', 'published', 'feedId'],
     order: [['published', 'DESC']],
     limit: maxStarredTitles,
     raw: true
   });
 
-  /* -----------------------------------
-   * Final insights payload (STEP 2)
-   * ----------------------------------- */
+  // Map feedId to feedName
+  const feedNames = new Map();
+  for (const feed of feeds) {
+    feedNames.set(feed.id, feed.feedName);
+  }
+
   return {
     window: { days },
     engagement,
@@ -206,7 +198,80 @@ const collectSmartFolderSignals = async (
       name: t.name,
       count: Number(t.count) || 0
     })),
-    starredTitles: starredArticles.map(a => a.title)
+    starredItems: starredArticles.map(a => ({
+      feed: feedNames.get(a.feedId),
+      title: a.title
+    }))
+  };
+};
+
+const distillSmartFolderInsights = (raw) => {
+  /* -----------------------------------
+   * Feed filtering + ranking
+   * ----------------------------------- */
+  const feeds = raw.feeds
+    .filter(f =>
+      f.total >= 5 ||
+      f.starred > 0 ||
+      (f.total > 0 && f.unread / f.total >= 0.7)
+    )
+    .map(f => ({
+      name: f.name,
+      unreadRatio: f.total
+        ? Number((f.unread / f.total).toFixed(2))
+        : 0,
+      starred: f.starred,
+      volume: f.total
+    }))
+    .sort((a, b) => b.volume - a.volume)
+    .slice(0, 15)
+    .map(({ name, unreadRatio, starred }) => ({
+      name,
+      unreadRatio,
+      starred
+    }));
+
+  /* -----------------------------------
+   * Tag compression
+   * ----------------------------------- */
+  const topTags = raw.tags.slice(0, 12).map(t => t.name);
+
+  /* -----------------------------------
+   * Starred article overview
+   * ----------------------------------- */
+  const starredItems = Array.isArray(raw.starredItems)
+    ? raw.starredItems.slice(0, 10).map(item => ({
+        feed: item.feed,
+        title: item.title
+      }))
+    : [];
+
+  /* -----------------------------------
+   * Engagement ratios
+   * ----------------------------------- */
+  const unreadRatio =
+    raw.engagement.totalArticles > 0
+      ? Number(
+          (raw.engagement.unread / raw.engagement.totalArticles).toFixed(2)
+        )
+      : 0;
+
+  return {
+    window: `last ${raw.window.days} days`,
+
+    engagement: {
+      unreadRatio,
+      starredArticles: raw.engagement.starred
+    },
+
+    feeds,
+
+    interests: {
+      topTags,
+      longTailTagCount: Math.max(raw.tags.length - topTags.length, 0)
+    },
+
+    starredItems
   };
 };
 
@@ -217,16 +282,20 @@ const getSmartFolderInsights = async (req, res, next) => {
   try {
     const userId = req.userData.userId;
     if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+      return res.status(401).json({ error: 'Unauthorized' });
     }
 
     const days = Number(req.query.days) || 30;
 
-    const insights = await collectSmartFolderSignals(userId, { days });
-    console.log('Smart Folder insights collected:', insights);
-    const recommendations = await getSmartFolderRecommendations({ insights });
-
+    const rawInsights = await collectSmartFolderSignals(userId, { days });
+    const distilledInsights = distillSmartFolderInsights(rawInsights);
+    console.log('Distilled Smart Folder Insights:', distilledInsights);
+    const recommendations = await getSmartFolderRecommendations({ distilledInsights });
     res.status(200).json({ insights, recommendations });
+
+    res.status(200).json({
+      insights: distilledInsights
+    });
   } catch (err) {
     next(err);
   }

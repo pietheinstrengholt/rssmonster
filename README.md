@@ -13,7 +13,7 @@ RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google R
 
 ## Key Features
 
-- **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap for a fluid experience across all devices
+- **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap 5 for a fluid experience across all devices
 - **Google Reader-inspired UX**: Automatic mark-as-read on scroll and trending content identification
 - **Advanced Search Expressions**: Composable filters using field operators (`star:true`, `unread:false`, `read:true`, `clicked:true`, `tag:tech`, `title:javascript`), quality & freshness thresholds (`quality:>0.6`, `freshness:>=0.5`), sorting (`sort:ASC`, `sort:DESC`, `sort:IMPORTANCE`, `sort:QUALITY`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:IMPORTANCE`
 - **Smart Folders**: Create dynamic, saved searches with custom filter queries like `tag:ai unread:true quality:>0.6` to automatically organize and surface relevant content without manual curation
