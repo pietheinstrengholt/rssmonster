@@ -291,10 +291,10 @@ const getSmartFolderInsights = async (req, res, next) => {
     const distilledInsights = distillSmartFolderInsights(rawInsights);
     console.log('Distilled Smart Folder Insights:', distilledInsights);
     const recommendations = await getSmartFolderRecommendations({ distilledInsights });
-    res.status(200).json({ insights, recommendations });
 
     res.status(200).json({
-      insights: distilledInsights
+      insights: distilledInsights,
+      recommendations
     });
   } catch (err) {
     next(err);

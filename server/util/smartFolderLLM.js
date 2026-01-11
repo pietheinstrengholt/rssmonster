@@ -42,7 +42,7 @@ export async function getSmartFolderRecommendations({ insights }) {
   }
 
   const prompt = `
-You generate Smart Folder suggestions for an RSS reader.
+You generate PERSONALIZED Smart Folder suggestions for an RSS reader.
 
 You MUST produce queries using ONLY the supported filtering expressions listed below.
 DO NOT invent new fields, operators, or syntax.
