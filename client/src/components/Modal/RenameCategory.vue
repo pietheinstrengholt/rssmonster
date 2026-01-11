@@ -6,6 +6,9 @@
                 <h5 class="modal-title">Rename category</h5>
             </div>
             <div class="modal-body">
+            <div class="alert alert-info mb-3">
+                <small>Update your category name below. Changes are saved immediately when you click the Rename button.</small>
+            </div>
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
             </div>
             <div class="modal-footer">

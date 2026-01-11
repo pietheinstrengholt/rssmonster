@@ -1,43 +1,56 @@
 <template>
   <div class="modal" tabindex="-1" role="dialog">
-    <div class="modal-dialog" role="document">
+    <div class="modal-dialog modal-lg modal-dialog-centered" role="document">
       <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">Update feed</h5>
+          <button
+            type="button"
+            class="btn-close"
+            @click="$store.data.setShowModal('')"
+          ></button>
         </div>
 
         <div class="modal-body">
-          <!-- Feed name -->
-          <div class="form-group row">
-            <label class="col-sm-3 col-form-label">Feed name</label>
-            <div class="col-sm-9">
+          <div class="alert alert-info mb-3">
+            <small>Update your feed settings below. Changes are saved immediately when you click the Update button.</small>
+          </div>
+          <form @submit.prevent>
+            <!-- Feed name -->
+            <div class="mb-3">
+              <label class="form-label">Feed name</label>
               <input
-                class="form-control"
                 type="text"
+                class="form-control"
                 placeholder="Feed name"
                 v-model="feed.feedName"
               />
             </div>
-          </div>
 
-          <!-- RSS URL (only visible when feed has errors) -->
-          <div class="form-group row" v-if="feed.errorCount > 0">
-            <label class="col-sm-3 col-form-label">Feed URL</label>
-            <div class="col-sm-9">
+            <!-- Feed URL (only when errors) -->
+            <div
+              class="mb-3"
+              v-if="feed.errorCount > 0"
+            >
+              <label class="form-label">Feed URL</label>
               <input
-                class="form-control"
                 type="text"
+                class="form-control"
                 placeholder="Feed URL"
                 v-model="feed.url"
               />
+              <div class="form-text">
+                This feed has errors. You can update the URL or rediscover it.
+              </div>
             </div>
-          </div>
 
-          <!-- Rediscover RSS -->
-          <div class="form-group row" v-if="feed.errorCount > 0 && $store.data.currentSelection.AIEnabled">
-            <div class="col-sm-3"></div>
-            <div class="col-sm-9">
+            <!-- Rediscover RSS -->
+            <div
+              class="mb-3"
+              v-if="feed.errorCount > 0 && $store.data.currentSelection.AIEnabled"
+            >
               <button
+                type="button"
                 class="btn btn-warning btn-sm"
                 :disabled="rediscovering"
                 @click="rediscoverRss"
@@ -45,82 +58,95 @@
                 {{ rediscovering ? 'Searching…' : 'Rediscover RSS feed using AI' }}
               </button>
             </div>
-          </div>
 
-          <!-- Rediscovery result -->
-          <div class="form-group row" v-if="rediscoveredRss && $store.data.currentSelection.AIEnabled">
-            <label class="col-sm-3 col-form-label">Suggestion</label>
-            <div class="col-sm-9">
-              <div class="alert alert-info mb-0 py-2">
-                <small>
+            <!-- Rediscovery result -->
+            <div
+              class="mb-3"
+              v-if="rediscoveredRss && $store.data.currentSelection.AIEnabled"
+            >
+              <div class="alert alert-info">
+                <div class="fw-semibold mb-1">
+                  Suggested feed found
+                </div>
+                <small class="d-block">
                   <strong>Confidence:</strong> {{ rediscoveredRss.confidence }}%
                 </small>
-                <br />
                 <small>{{ rediscoveredRss.reason }}</small>
               </div>
             </div>
-          </div>
 
-          <!-- Description & category -->
-          <div v-if="$store.data.categories.length > 0">
-            <div class="form-group row">
-              <label class="col-sm-3 col-form-label">Feed description</label>
-              <div class="col-sm-9">
-                <input
-                  class="form-control"
-                  type="text"
-                  placeholder="Feed description"
-                  v-model="feed.feedDesc"
-                />
-              </div>
+            <!-- Description -->
+            <div
+              class="mb-3"
+              v-if="$store.data.categories.length > 0"
+            >
+              <label class="form-label">Feed description</label>
+              <input
+                type="text"
+                class="form-control"
+                placeholder="Optional description"
+                v-model="feed.feedDesc"
+              />
             </div>
 
-            <div class="form-group row">
-              <label class="col-sm-3 col-form-label">Category</label>
-              <div class="col-sm-9">
-                <select
-                  class="form-select"
-                  v-model="feed.categoryId"
+            <!-- Category -->
+            <div
+              class="mb-3"
+              v-if="$store.data.categories.length > 0"
+            >
+              <label class="form-label">Category</label>
+              <select
+                class="form-select"
+                v-model="feed.categoryId"
+              >
+                <option
+                  v-for="category in $store.data.categories"
+                  :key="category.id"
+                  :value="category.id"
                 >
-                  <option
-                    v-for="category in $store.data.categories"
-                    :key="category.id"
-                    :value="category.id"
-                  >
-                    {{ category.name }}
-                  </option>
-                </select>
-              </div>
+                  {{ category.name }}
+                </option>
+              </select>
             </div>
 
-            <div class="form-group row">
-              <label class="col-sm-3 col-form-label">Status</label>
-              <div class="col-sm-9">
-                <select
-                  class="form-select"
-                  v-model="feed.status"
-                >
-                  <option value="active">Active</option>
-                  <option value="disabled">Disabled</option>
-                </select>
-              </div>
+            <!-- Status -->
+            <div
+              class="mb-3"
+              v-if="$store.data.categories.length > 0"
+            >
+              <label class="form-label">Status</label>
+              <select
+                class="form-select"
+                v-model="feed.status"
+              >
+                <option value="active">Active</option>
+                <option value="disabled">Disabled</option>
+              </select>
             </div>
-          </div>
 
-          <!-- Error info -->
-          <div class="form-group row" v-if="feed.errorCount > 0 && feed.errorMessage">
-            <label class="col-sm-3 col-form-label text-danger">Error</label>
-            <div class="col-sm-9">
-              <div class="alert alert-danger mb-0 py-2">
-                <small><strong>Error count:</strong> {{ feed.errorCount }}</small><br>
+            <!-- Error info -->
+            <div
+              class="mb-3"
+              v-if="feed.errorCount > 0 && feed.errorMessage"
+            >
+              <div class="alert alert-danger">
+                <div class="fw-semibold mb-1">
+                  Feed error
+                </div>
+                <small class="d-block">
+                  <strong>Error count:</strong> {{ feed.errorCount }}
+                </small>
                 <small>{{ feed.errorMessage }}</small>
               </div>
             </div>
-          </div>
+          </form>
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-primary" @click="updateFeed">
+          <button
+            class="btn btn-primary"
+            @click="updateFeed"
+          >
             Update feed
           </button>
           <button
@@ -265,27 +291,13 @@ export default {
   position: fixed;
   inset: 0;
   background: rgba(0, 0, 0, 0.5);
-  display: flex;
-  align-items: center;
-  justify-content: center;
 }
 
-.modal-dialog {
-  max-width: 600px;
-  width: 100%;
+.modal-content {
+  border-radius: 0.5rem;
 }
 
-.row {
-  margin-bottom: 5px;
-}
-
-.alert-danger,
-.alert-info {
-  margin-left: 20px;
-  margin-right: 10px;
-}
-
-select.form-select, button.btn.btn-warning.btn-sm {
-  margin-left: 20px;
+.form-label {
+  font-weight: 500;
 }
 </style>

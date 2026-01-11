@@ -7,7 +7,7 @@
       Configure how articles are processed, filtered, and organized to surface the content that matters most to you.
     </p>
 
-    <div class="mb-3">
+    <div v-if="$store.data.currentSelection.AIEnabled" class="mb-3">
       <h6 class="mb-2"><strong>Smart Folders</strong></h6>
       <p class="small text-muted mb-0">
         Create dynamic, saved searches using powerful query expressions. Filter by status (<code>unread:true</code>), 
@@ -25,7 +25,7 @@
       </p>
     </div>
 
-    <div class="mb-3">
+    <div v-if="$store.data.currentSelection.AIEnabled" class="mb-3">
       <h6 class="mb-2"><strong>Score Thresholds</strong></h6>
       <p class="small text-muted mb-0">
         Control content quality by setting thresholds for advertisement, sentiment, and quality scores. 

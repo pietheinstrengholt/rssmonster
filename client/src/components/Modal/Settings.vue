@@ -18,9 +18,9 @@
 
         <div class="modal-footer">
           <button class="btn btn-secondary" @click="active = 'welcome'">Welcome</button>
-          <button class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
+          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
           <button class="btn btn-secondary" @click="active = 'actions'">Actions</button>
-          <button class="btn btn-secondary" @click="active = 'scores'">Scores</button>
+          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'scores'">Scores</button>
           <button class="btn btn-secondary" @click="active = 'feeds'">Feeds</button>
         </div>
 
