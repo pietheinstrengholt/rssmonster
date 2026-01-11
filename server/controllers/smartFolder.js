@@ -190,7 +190,14 @@ const collectSmartFolderSignals = async (
     feedNames.set(feed.id, feed.feedName);
   }
 
-  //TODO: include current Smart Folders to avoid duplicates
+  /* -----------------------------------
+   * Current Smart Folders (to avoid duplicates)
+   * ----------------------------------- */
+  const existingSmartFolders = await SmartFolder.findAll({
+    where: { userId },
+    attributes: ['name', 'query'],
+    raw: true
+  });
 
   return {
     window: { days },
@@ -203,7 +210,8 @@ const collectSmartFolderSignals = async (
     starredItems: starredArticles.map(a => ({
       feed: feedNames.get(a.feedId),
       title: a.title
-    }))
+    })),
+    existingSmartFolders
   };
 };
 
@@ -273,7 +281,9 @@ const distillSmartFolderInsights = (raw) => {
       longTailTagCount: Math.max(raw.tags.length - topTags.length, 0)
     },
 
-    starredItems
+    starredItems,
+
+    existingSmartFolders: raw.existingSmartFolders || []
   };
 };
 
