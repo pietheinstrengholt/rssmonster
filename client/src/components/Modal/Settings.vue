@@ -7,40 +7,72 @@
                 <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" @click="closeModal"></button>
             </div>
             <div class="modal-body">
-                <!-- Smart Folder Recommendations -->
-                <div
-                v-if="smartFolderRecommendations.length"
-                class="settings-group"
-                >
-                <label>
-                    Smart Folder Suggestions
-                    <span class="info-icon" title="Suggested based on your reading behavior">
-                    <BootstrapIcon icon="info-circle-fill" />
-                    </span>
-                </label>
-
-                <div
-                    v-for="(rec, index) in smartFolderRecommendations"
-                    :key="'rec-' + index"
-                    class="action-row"
-                >
-                    <div class="d-flex justify-content-between align-items-start gap-3">
-                    <div class="flex-grow-1">
-                        <strong>{{ rec.name }}</strong>
-                        <div class="text-muted small mt-1">{{ rec.reason }}</div>
-                        <code class="d-block mt-2">{{ rec.query }}</code>
+                <!-- Smart Folder Recommendations trigger & results -->
+                <div class="settings-group d-flex justify-content-between align-items-center gap-3">
+                    <div>
+                        <label class="mb-1">Smart Folder Insights</label>
+                        <div class="text-muted small">Generate personalized smart folder suggestions on demand.</div>
                     </div>
-
                     <button
                         type="button"
-                        class="btn btn-add"
-                        @click="applySmartFolderRecommendation(rec)"
+                        class="btn btn-secondary"
+                        @click="fetchSmartFolderInsights"
+                        :disabled="smartFolderInsightsLoading"
                     >
-                        <BootstrapIcon icon="plus-circle-fill" />
-                        Add
+                        <span v-if="smartFolderInsightsLoading" class="spinner-border spinner-border-sm me-2" role="status" aria-hidden="true"></span>
+                        <span>{{ smartFolderInsightsLoading ? 'Loading…' : 'Get insights' }}</span>
                     </button>
+                </div>
+
+                <div v-if="smartFolderInsightsLoading" class="settings-group d-flex align-items-center gap-2">
+                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
+                    <span>Loading smart folder insights…</span>
+                </div>
+
+                <div v-if="smartFolderInsightsError" class="settings-group text-danger">
+                    {{ smartFolderInsightsError }}
+                </div>
+
+                <div
+                    v-if="smartFolderRecommendations.length"
+                    class="settings-group"
+                >
+                    <label>
+                        Smart Folder Suggestions
+                        <span class="info-icon" title="Suggested based on your reading behavior">
+                        <BootstrapIcon icon="info-circle-fill" />
+                        </span>
+                    </label>
+
+                    <div
+                        v-for="(rec, index) in smartFolderRecommendations"
+                        :key="'rec-' + index"
+                        class="action-row"
+                    >
+                        <div class="d-flex justify-content-between align-items-start gap-3">
+                        <div class="flex-grow-1">
+                            <strong>{{ rec.name }}</strong>
+                            <div class="text-muted small mt-1">{{ rec.reason }}</div>
+                            <code class="d-block mt-2">{{ rec.query }}</code>
+                        </div>
+
+                        <button
+                            type="button"
+                            class="btn btn-add"
+                            @click="applySmartFolderRecommendation(rec)"
+                        >
+                            <BootstrapIcon icon="plus-circle-fill" />
+                            Add
+                        </button>
+                        </div>
                     </div>
                 </div>
+
+                <div
+                    v-else-if="smartFolderInsightsLoaded && !smartFolderInsightsLoading && !smartFolderInsightsError"
+                    class="settings-group text-muted small"
+                >
+                    No smart folder insights available yet.
                 </div>
                 <div class="settings-group d-flex align-items-center gap-3">
                     <label for="adScore" class="flex-shrink-0 mb-0">
@@ -672,7 +704,6 @@ export default {
         // Fetch existing actions and smart folders for this user
         this.fetchActions();
         this.fetchSmartFolders();
-        this.fetchSmartFolderInsights();
     },
     data() {
         return {
@@ -686,7 +717,10 @@ export default {
             feeds: [],
             feedsLoading: false,
             feedsError: null,
-            smartFolderRecommendations: []
+            smartFolderRecommendations: [],
+            smartFolderInsightsLoading: false,
+            smartFolderInsightsLoaded: false,
+            smartFolderInsightsError: null
         };
     },
     methods: {
@@ -720,6 +754,8 @@ export default {
         },
         async fetchSmartFolderInsights() {
             try {
+                this.smartFolderInsightsLoading = true;
+                this.smartFolderInsightsError = null;
                 const resp = await axios.get(
                     import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders/insights"
                 );
@@ -730,7 +766,10 @@ export default {
                     resp.data?.recommendations?.smartFolders || [];
             } catch (err) {
                 console.error('Failed to fetch smart folder insights:', err);
+                this.smartFolderInsightsError = 'Failed to load smart folder insights. Please try again.';
             }
+            this.smartFolderInsightsLoading = false;
+            this.smartFolderInsightsLoaded = true;
         },
         applySmartFolderRecommendation(rec) {
             if (!rec || !rec.name || !rec.query) return;
