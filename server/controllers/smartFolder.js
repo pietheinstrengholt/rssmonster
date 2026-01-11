@@ -190,6 +190,8 @@ const collectSmartFolderSignals = async (
     feedNames.set(feed.id, feed.feedName);
   }
 
+  //TODO: include current Smart Folders to avoid duplicates
+
   return {
     window: { days },
     engagement,

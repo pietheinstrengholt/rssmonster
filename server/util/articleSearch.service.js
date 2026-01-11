@@ -109,13 +109,13 @@ export const searchArticles = async ({
       const cleaned = tok.replace(/[.,;]+$/, "");
 
       // Match various field filter patterns
-      const starMatch = cleaned.match(/^star:(true|false)$/i); // star:true or star:false
-      const unreadMatch = cleaned.match(/^unread:(true|false)$/i); // unread:true or unread:false
-      const readMatch = cleaned.match(/^read:(true|false)$/i); // read:true or read:false
-      const clickedMatch = cleaned.match(/^clicked:(true|false)$/i); // clicked:true or clicked:false
-      const tagMatch = cleaned.match(/^tag:(.+)$/i); // tag:technology, tag:news, etc.
-      const titleMatch = cleaned.match(/^title:(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:(DESC|ASC|IMPORTANCE|QUALITY)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, or sort:QUALITY
+      const starMatch = cleaned.match(/^star:\s*(true|false)$/i); // star:true or star:false
+      const unreadMatch = cleaned.match(/^unread:\s*(true|false)$/i); // unread:true or unread:false
+      const readMatch = cleaned.match(/^read:\s*(true|false)$/i); // read:true or read:false
+      const clickedMatch = cleaned.match(/^clicked:\s*(true|false)$/i); // clicked:true or clicked:false
+      const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
+      const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
+      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, or sort:QUALITY
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
