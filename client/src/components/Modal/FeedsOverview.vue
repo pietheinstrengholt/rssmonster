@@ -140,7 +140,6 @@ export default {
             if (status === 'disabled') return 'row-disabled';
             return '';
         },
-        //TODO: fix edit dialog
         openFeedEdit(feed) {
             if (!feed) return;
             this.$store.data.setSelectedCategoryId(feed.categoryId ?? '%');
