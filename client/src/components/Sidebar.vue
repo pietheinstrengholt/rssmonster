@@ -490,6 +490,8 @@ export default {
         this.$emit('forceReload');
       } else if (status !== this.$store.data.getSelectedStatus) {
         this.$store.data.setSelectedStatus(status);
+      } else if (status === this.$store.data.getSelectedStatus && this.$store.data.currentSelection.smartFolderId !== null) {
+        this.$store.data.setSelectedStatus(status);
       }
     },
     loadCategory: function(category) {
