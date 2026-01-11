@@ -64,9 +64,18 @@
               class="mb-3"
               v-if="rediscoveredRss && $store.data.currentSelection.AIEnabled"
             >
-              <div class="alert alert-info">
+              <div v-if="rediscoveredRss.url" class="alert alert-info">
                 <div class="fw-semibold mb-1">
                   Suggested feed found
+                </div>
+                <small class="d-block">
+                  <strong>Confidence:</strong> {{ rediscoveredRss.confidence }}%
+                </small>
+                <small>{{ rediscoveredRss.reason }}</small>
+              </div>
+              <div v-else class="alert alert-warning">
+                <div class="fw-semibold mb-1">
+                  No feed found
                 </div>
                 <small class="d-block">
                   <strong>Confidence:</strong> {{ rediscoveredRss.confidence }}%
@@ -204,7 +213,12 @@ export default {
         }
       } catch (err) {
         console.error('RSS rediscovery failed:', err);
-        alert('Could not rediscover RSS feed.');
+        // Check if error response contains feed suggestion data
+        if (err.response?.data) {
+          this.rediscoveredRss = err.response.data;
+        } else {
+          alert('Could not rediscover RSS feed.');
+        }
       } finally {
         this.rediscovering = false;
       }
