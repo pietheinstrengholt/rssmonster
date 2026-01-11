@@ -12,8 +12,11 @@ import crypto from 'crypto';
    - Detects language
    - Computes content hash for duplication checks
 ====================================================== */
-function processHtmlContent(contentOriginal, entryLink, feed, entryTitle) {
+function processHtmlContent(content, description, entryLink, feed, entryTitle) {
   try {
+    // Use content if available, otherwise fall back to description
+    const contentOriginal = content || description;
+    
     // Parse HTML content into a mutable DOM
     const $ = load(contentOriginal);
 

@@ -47,9 +47,10 @@ const processArticle = async (feed, entry) => {
     }
 
     // If generic content is found, use the entry content / description. Override media content.
-    if (fields.content) {
+    if (fields.content || fields.description) {
       const htmlResult = processHtmlContent(
         fields.content,
+        fields.description,
         fields.link,
         feed,
         fields.title
