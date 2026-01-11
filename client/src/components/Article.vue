@@ -31,7 +31,7 @@
       </div>
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
         <div class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'" v-html="contentOriginal"></div>
-        <div class="media-content enclosure" v-if="imageUrl && !media">
+        <div class="media-content enclosure" v-if="imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)">
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
@@ -498,6 +498,19 @@ export default {
         .finally(() => {
           this.$emit('update-clicked', { id: articleId, clickedInd: 1 });
         });
+    },
+
+    // Returns true if the current imageUrl appears inside contentOriginal
+    // Accounts for HTML-encoded query params (e.g., & -> &amp;)
+    isImageUrlInContent() {
+      const content = this.contentOriginal || '';
+      const url = this.imageUrl || '';
+      if (!content || !url) {
+        return false;
+      }
+
+      const encodedUrl = url.replace(/&/g, '&amp;');
+      return content.includes(url) || content.includes(encodedUrl);
     }
   }
 }
