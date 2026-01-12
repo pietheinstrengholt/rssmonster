@@ -13,31 +13,30 @@
       </div>
       <div class="form-group" id="login">
         <p class="font-bold text-lg mb-4" id="signin">Sign in to RSSMonster</p>
-        <div class="form-group row">
-          <label class="col-sm-2 col-form-label">Username</label>
-          <div class="col-sm-10">
-            <input class="form-control" type="text" placeholder="Username" v-model="username" />
-          </div>
+        
+        <!-- Username input -->
+        <div class="form-outline mb-4">
+          <input class="form-control" type="text" id="username" v-model="username" />
+          <label class="form-label" for="username">Username</label>
         </div>
-        <div class="form-group row">
-          <label class="col-sm-2 col-form-label">Password</label>
-          <div class="col-sm-10">
-            <input class="form-control" type="password" placeholder="Password" v-model="password" @keyup.enter="!showSignup ? login() : null" />
-          </div>
+
+        <!-- Password input -->
+        <div class="form-outline mb-4">
+          <input class="form-control" type="password" id="password" v-model="password" @keyup.enter="!showSignup ? login() : null" />
+          <label class="form-label" for="password">Password</label>
         </div>
-        <div v-if="showSignup" class="form-group row">
-          <label class="col-sm-2 col-form-label">Password</label>
-          <div class="col-sm-10">
-            <input class="form-control" type="password" placeholder="Password (repeat)" v-model="password_repeat" />
-          </div>
+
+        <!-- Password repeat input (signup only) -->
+        <div v-if="showSignup" class="form-outline mb-4">
+          <input class="form-control" type="password" id="password_repeat" v-model="password_repeat" />
+          <label class="form-label" for="password_repeat">Password (repeat)</label>
         </div>
-        <div class="form-group row">
-          <div class="col-sm-10">
-            <button v-if="showSignup" type="submit" class="btn btn-primary" @click="register" value="Register">Register</button>
-            <button v-if="!showSignup" type="submit" class="btn btn-primary" @click="login" value="Login">Sign in</button>
-          </div>
-        </div>
-        <p v-if="message">{{ message }}</p>
+
+        <!-- Submit button -->
+        <button v-if="showSignup" type="submit" class="btn btn-primary btn-block mb-4" @click="register" value="Register">Register</button>
+        <button v-if="!showSignup" type="submit" class="btn btn-primary btn-block mb-4" @click="login" value="Login">Sign in</button>
+
+        <p v-if="message" class="text-center mt-2">{{ message }}</p>
       </div>
       <br></br>
       <div class="text-center">
@@ -221,13 +220,30 @@ export default {
   align-items: center;
 }
 
-.form-group.row {
-  margin-top: 10px;
+.form-outline {
+  position: relative;
 }
 
-.form-group.row input {
-  margin-left: 20px;
-  margin-right: 0;
+.form-outline .form-control {
+  min-height: 40px;
+  padding: 10px 12px;
+}
+
+.form-outline .form-label {
+  position: absolute;
+  top: 0;
+  left: 12px;
+  padding: 0 4px;
+  background-color: #dee2e6;
+  color: #666;
+  font-size: 14px;
+  transform: translateY(-50%);
+  pointer-events: none;
+  transition: all 0.2s ease;
+}
+
+.btn-block {
+  width: 100%;
 }
 
 .loading-container {
@@ -243,6 +259,10 @@ html, body, #app {
   height: 100%;
 }
 
+div.form-group.row {
+  margin-bottom: 1rem;
+}
+
 @media (prefers-color-scheme: dark) {
   #form-box {
     color: #fff;
@@ -255,6 +275,11 @@ html, body, #app {
   #login {
     background: #2a2a2a;
     border-color: #444;
+  }
+
+  .form-outline .form-label {
+    background-color: #2a2a2a;
+    color: #aaa;
   }
 
   .form-control {
@@ -294,37 +319,8 @@ html, body, #app {
 }
 
 @media (max-width: 600px) {
-  #form-box {
-    width: 100%;
-    margin: 0;
-    padding: 0 10px;
-  }
-  .form-group.row {
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    margin-top: 10px;
-  }
-  .form-group.row label {
-    margin-bottom: 5px;
-    margin-left: 10px;
-    margin-right: 10px;
-    text-align: left;
-    width: auto;
-  }
-  .form-group.row .col-sm-10 {
-    width: 100%;
-    margin-left: 0;
-    padding: 0 10px;
-  }
-  .form-group.row input {
-    margin-left: 0;
-    margin-right: 0;
-    width: 100%;
-    box-sizing: border-box;
-  }
   #login {
-    padding: 10px;
+    padding-top: 10px;
   }
   button.btn-primary {
     width: auto;
