@@ -31,11 +31,11 @@
       </span>Mark as read
     </div>
 
-    <div v-if="smartFolders.length" class="title-box">
+    <div v-if="$store.data.smartFolders.length" class="title-box">
       <p class="title">Smart Folders</p>
     </div>
     <div
-      v-for="(smartFolder, index) in smartFolders"
+      v-for="(smartFolder, index) in $store.data.smartFolders"
       :key="index"
       class="category-top tag-item"
       :class="{ selected: $store.data.currentSelection.smartFolderId === smartFolder.id }"
@@ -460,14 +460,13 @@ export default {
       readCount: 0,
       starCount: 0,
       hotCount: 0,
-      topTags: [],
-      smartFolders: []
+      topTags: []
     };
   },
-  created() {
+  async created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
     this.fetchTopTags();
-    this.fetchSmartFolders();
+    await this.$store.data.fetchSmartFolders();
   },
   components: {
     draggable
@@ -566,20 +565,11 @@ export default {
         console.error("Error fetching top tags", error);
       }
     },
-    async fetchSmartFolders() {
-      try {
-        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
-        this.smartFolders = response.data.smartFolders || [];
-      } catch (error) {
-        console.error("Error fetching smart folders", error);
-      }
-    },
     updateSortOrder() {
       var orderList = new Array();
       for (let i = 0; i < this.$store.data.categories.length; i++) {
         orderList.push(this.$store.data.categories[i]["id"]);
       }
-
       //make ajax request to change categories order
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/updateorder", { order: orderList }).then(
         response => {

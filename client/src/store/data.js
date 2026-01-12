@@ -18,6 +18,7 @@ export const useStore = defineStore('data', {
       clusterView: false
     },
     categories: [],
+    smartFolders: [],
     unreadCount: 0,
     readCount: 0,
     starCount: 0,
@@ -59,6 +60,14 @@ export const useStore = defineStore('data', {
       this.updateOverview(response.data, { initial });
       return { response };
     },
+    async fetchSmartFolders() {
+      try {
+        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
+        this.smartFolders = response.data.smartFolders || [];
+      } catch (error) {
+        console.error("Error fetching smart folders", error);
+      }
+    },
     setCurrentSelection(selection) {
       this.setChatAssistantOpen(false);
       const prev = this.currentSelection || {};
@@ -91,6 +100,11 @@ export const useStore = defineStore('data', {
     },
     setUnreadsSinceLastUpdate(count) {  
       this.unreadsSinceLastUpdate = count;
+    },
+    setCurrentSmartFolderId(smartFolderId, query) {
+      this.setChatAssistantOpen(false);
+      this.currentSelection.smartFolderId = smartFolderId;
+      this.currentSelection.search = query || null;
     },
     increaseStarCount() {
       this.starCount++;
