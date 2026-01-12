@@ -222,11 +222,6 @@ export const discoverRssLink = async (url, feed) => {
         // Read body once
         const body = await candidateResponse.text();
         
-        // Debug: Log first 500 chars of non-feed responses
-        if (!isValidFeedBody(body)) {
-          console.log(`[Debug] Body preview (${candidate}): ${body.substring(0, 500)}`);
-        }
-        
         // Check if it's a valid feed
         if (isValidFeedBody(body)) {
           const discoveredUrl = candidateResponse.url || candidate;
