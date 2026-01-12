@@ -122,10 +122,6 @@ const startServer = async () => {
     await sequelize.authenticate();
     console.log('Database connection established');
 
-    // Init cache AFTER DB + models
-    await cache.initCache(Hotlink);
-    console.log('Hotlink cache initialized');
-
     if (process.env.DISABLE_LISTENER === 'true') {
       console.log('Server listener disabled by DISABLE_LISTENER env.');
       return;

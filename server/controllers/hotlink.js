@@ -3,7 +3,7 @@ const { Hotlink } = db;
 
 export const clearCache = async () => {
 
-  // cleanup old records
+  // cleanup old records more than 14 days old
   await Hotlink.destroy({
     where: {
       createdAt: {
