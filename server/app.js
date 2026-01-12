@@ -28,7 +28,7 @@ import db from './models/index.js';
 const { sequelize, Hotlink } = db;
 
 // Cache (dependency-injected)
-import cache from './util/cache.js';
+import clearCache from './controllers/hotlink.js';
 
 // Routes
 import categoryRoutes from "./routes/category.js";
@@ -169,12 +169,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // --------------------
-// Cache refresh
+// Clear cache refresh
 // --------------------
 const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 setInterval(() => {
-  cache.initCache(Hotlink).catch(err => {
-    console.error('Cache refresh failed:', err);
-  });
+  clearCache();
 }, CACHE_REFRESH_INTERVAL);

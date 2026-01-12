@@ -5,7 +5,6 @@ import { z } from "zod";
 import db from '../models/index.js';
 const { Feed, Category, Article, Tag } = db;
 import { Op, fn, col, literal } from 'sequelize';
-import cache from "../util/cache.js";
 import crawlController from "./crawl.js";
 
 // Shared helper to build tool result
@@ -606,8 +605,8 @@ const postMcp = async (req, res) => {
     server.tool(
       "hot_articles",
       `
-      Retrieves all hot articles. Hot articles are determined by your internal cache
-      (via cache.all()), which provides a list of URLs that should be considered hot.
+      Retrieves all hot articles. Hot articles are determined by a hotlink cache, 
+      which provides a list of URLs that should be considered hot.
       Results are sorted by the 'published' field in the requested order.
 
       You may optionally provide a status:
@@ -628,14 +627,12 @@ const postMcp = async (req, res) => {
       async ({ sort, status }) => {
         console.log('[MCP Tool Called] hot_articles - sort:', sort, 'status:', status);
         try {
-          // Retrieve list of hot article URLs or IDs from cache
-          const hotArticleIds = cache.all(); // must be an array of URLs (or IDs)
-
           const articles = await Article.findAll({
             where: {
               url: hotArticleIds,
               userId: userId,
-              status: status
+              status: status,
+              hotInd: 1
             },
             order: [["published", sort]],
             raw: true

@@ -1,11 +1,11 @@
 <template>
   <div class="block" :id="id">
-    <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotlinks }" v-on:click="articleTouched(id, $event)">    
+    <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotInd == 1 }" v-on:click="articleTouched(id, $event)">    
       <div class="maximal">
         <h5 class="heading">
           <BootstrapIcon v-if="clickedInd == 1" icon="bookmark-fill" class="clicked-icon" />
           <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
-          <BootstrapIcon v-if="hotlinks" icon="fire" class="hot-icon" />
+          <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
           <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
         </h5>
         <div class="feedname">
@@ -383,7 +383,7 @@ export default {
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotlinks', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore', 'quality', 'cluster'],
+  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotInd', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore', 'quality', 'cluster'],
   computed: {
     formatDate: function() {
       return (value)=> {

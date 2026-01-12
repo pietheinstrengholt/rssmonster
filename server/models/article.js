@@ -1,5 +1,4 @@
 import { DataTypes } from 'sequelize';
-import cache from '../util/cache.js';
 
 const TAU_HOURS = 48; // tune this globally
 
@@ -34,6 +33,10 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      HotInd: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+      },
       media: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
@@ -42,12 +45,6 @@ export default (sequelize) => {
       url: {
         type: DataTypes.STRING(1024),
         allowNull: false
-      },
-      hotlinks: {
-        type: DataTypes.VIRTUAL,
-        get() {
-          return cache.get(this.url);
-        }
       },
       imageUrl: DataTypes.STRING(1024),
       title: {

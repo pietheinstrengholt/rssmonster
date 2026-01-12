@@ -1,6 +1,5 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, Setting } = db;
-import cache from "../util/cache.js";
 import { Op } from 'sequelize';
 
 /**
@@ -364,7 +363,7 @@ export const searchArticles = async ({
         articleQuery.where.starInd = 1;
       } else if (effectiveStatus === "hot") {
         delete articleQuery.where.feedId; // Hot articles ignore feedId
-        articleQuery.where.url = cache.all();
+        articleQuery.where.hotInd = 1;
       } else if (effectiveStatus === "clicked") {
         articleQuery.where.clickedInd = 1;
       } else if (effectiveStatus !== "%") {

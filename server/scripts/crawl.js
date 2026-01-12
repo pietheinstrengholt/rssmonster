@@ -12,7 +12,6 @@ dotenv.config();
 
 // ---- Runtime bootstrap ----
 import db from '../models/index.js';
-import cache from '../util/cache.js';
 import crawlController from '../controllers/crawl.js';
 
 const { sequelize, Hotlink } = db;
@@ -24,10 +23,7 @@ const run = async () => {
     // 1. Ensure DB connection
     await sequelize.authenticate();
 
-    // 2. Initialize cache (CRITICAL)
-    await cache.initCache(Hotlink);
-
-    // 3. Run crawl
+    // 2. Run crawl
     const result = await crawlController.performCrawl();
 
     console.log('\n=== Crawl Completed ===');

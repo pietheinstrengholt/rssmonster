@@ -1,5 +1,5 @@
 import db from '../../models/index.js';
-const { Action } = db;
+const { Action, Hotlink } = db;
 
 import extractEntryFields from './extractEntryFields.js';
 import findExistingArticle from './findExistingArticle.js';
@@ -114,6 +114,15 @@ const processArticle = async (feed, entry) => {
       description: fields.description
     });
 
+    // Search if the article link is a hotlink. Use a cleaned URL without query params.
+    const cleanUrl = fields.link.split('?')[0];
+    const hotlinkEntry = await Hotlink.findOne({
+      where: {
+        url: cleanUrl,
+        userId: feed.userId
+      }
+    });
+
     // Create article with analysis results
     const article = await saveArticle(
       feed,
@@ -124,6 +133,7 @@ const processArticle = async (feed, entry) => {
         contentHash: contentHash,
         mediaFound,
         leadImage,
+        hotlinkEntry: !!hotlinkEntry,
         language: contentLanguage,
         vector: embedding?.vector || null,
         embedding_model: embedding?.embedding_model || null,

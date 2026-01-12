@@ -39,6 +39,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
+      hotInd: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       hotlinks: {
         type: Sequelize.INTEGER,
         allowNull: false,

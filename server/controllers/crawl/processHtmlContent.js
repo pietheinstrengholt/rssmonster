@@ -1,6 +1,6 @@
 import { load } from 'cheerio';
 import language from '../../util/language.js';
-import cache from '../../util/cache.js';
+import hotlink from '../../controllers/hotlink.js';
 import crypto from 'crypto';
 
 /* ======================================================
@@ -42,8 +42,10 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
         !href.includes(domain) &&
         (href.startsWith('http://') || href.startsWith('https://'))
       ) {
+        // Remove query string parameters (everything after ?)
+        const cleanUrl = href.split('?')[0];
         // Update cache
-        cache.set(href, feed.userId);
+        hotlink.set(cleanUrl, feed.userId);
       }
     });
 

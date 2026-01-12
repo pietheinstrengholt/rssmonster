@@ -13,6 +13,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
     status: actionResult.status,
     starInd: actionResult.starInd,
     clickedInd: actionResult.clickedInd,
+    hotInd: actionResult.hotInd,
     url: data.link,
     imageUrl: data.leadImage || null,
     media: data.mediaFound,

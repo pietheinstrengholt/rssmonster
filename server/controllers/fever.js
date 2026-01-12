@@ -1,6 +1,6 @@
 import db from '../models/index.js';
 const { Feed, Category, Article, User } = db;
-import cache from '../util/cache.js';
+import hotlink from '../controllers/hotlink.js';
 import { Op } from 'sequelize';
 
 //use Fever API
@@ -254,7 +254,7 @@ export const postFever = async (req, res, next) => {
           
           //select all items with hot links
           const whereClause = {
-            url: cache.all(),
+            url: hotlink.all(),
             userId: loggedInUser.id
           };
           
