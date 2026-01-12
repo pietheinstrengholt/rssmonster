@@ -1,4 +1,5 @@
 import db from '../models/index.js';
+import { Op } from 'sequelize';
 const { Hotlink } = db;
 
 export const clearCache = async () => {
