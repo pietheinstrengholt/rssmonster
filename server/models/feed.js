@@ -40,6 +40,10 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true
       },
+      errorSince: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       status: {
         type: DataTypes.ENUM('active', 'error', 'disabled'),
         allowNull: false,

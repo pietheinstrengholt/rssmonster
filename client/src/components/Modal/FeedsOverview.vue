@@ -26,7 +26,7 @@
                     <div v-if="feedsLoading">Loading feeds…</div>
                     <div v-else-if="feedsError" class="text-danger">{{ feedsError }}</div>
                     <div v-else>
-                        <div class="d-flex gap-3 mb-4">
+                        <div v-if="feeds.length > 0" class="d-flex gap-3 mb-4">
                             <div class="settings-group flex-grow-1">
                                 <label>Export Feeds</label>
                                 <button type="button" class="btn btn-download w-100" @click="downloadOpml">

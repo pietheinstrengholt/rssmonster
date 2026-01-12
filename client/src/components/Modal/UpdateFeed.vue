@@ -28,7 +28,7 @@
             </div>
 
             <!-- Feed URL (only when errors) -->
-            <div class="mb-3" v-if="(feed.errorCount > 0 || feed.status === 'error') && $store.data.currentSelection.AIEnabled">
+            <div class="mb-3" v-if="(feed.errorSince || feed.status === 'error') && $store.data.currentSelection.AIEnabled">
               <label class="form-label">Feed URL</label>
               <input
                 type="text"
@@ -42,7 +42,7 @@
             </div>
 
             <!-- Rediscover RSS -->
-            <div class="mb-3" v-if="(feed.errorCount > 0 || feed.status === 'error') && $store.data.currentSelection.AIEnabled">
+            <div class="mb-3" v-if="(feed.errorSince || feed.status === 'error') && $store.data.currentSelection.AIEnabled">
               <button
                 type="button"
                 class="btn btn-warning btn-sm"

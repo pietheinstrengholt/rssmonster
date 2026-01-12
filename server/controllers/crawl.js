@@ -143,7 +143,9 @@ const performCrawl = async () => {
                 favicon: faviconUrl,
                 url: url,
                 errorCount: 0,
-                errorMessage: null
+                errorMessage: null,
+                errorSince: null,
+                status: 'active'
               };
               await feed.update(updateData);
 
@@ -158,9 +160,21 @@ const performCrawl = async () => {
                 errorCount: newErrorCount,
                 errorMessage: errMsg
               };
-              if (newErrorCount > 25) {
-                updateData.status = 'error';
+              
+              // Set errorSince on first error (if not already set)
+              if (!feed.errorSince) {
+                updateData.errorSince = new Date();
               }
+              
+              // Mark as error if failures persist for 7+ days
+              if (feed.errorSince) {
+                const daysSinceFirstError = (new Date() - new Date(feed.errorSince)) / (1000 * 60 * 60 * 24);
+                if (daysSinceFirstError >= 7) {
+                  updateData.status = 'error';
+                  console.log(`[Error] Feed marked as error after ${daysSinceFirstError.toFixed(1)} days of failures: ${feed.url}`);
+                }
+              }
+              
               await feed.update(updateData);
 
               errorCount++;
@@ -185,12 +199,23 @@ const performCrawl = async () => {
           const newErrorCount = feed.errorCount + 1;
           const updateData = {
             errorCount: newErrorCount,
-            errorMessage: err.message,
-            updatedAt: new Date()
+            errorMessage: err.message
           };
-          if (newErrorCount > 25) {
-            updateData.status = 'error';
+          
+          // Set errorSince on first error (if not already set)
+          if (!feed.errorSince) {
+            updateData.errorSince = new Date();
           }
+          
+          // Mark as error if failures persist for 7+ days
+          if (feed.errorSince) {
+            const daysSinceFirstError = (new Date() - new Date(feed.errorSince)) / (1000 * 60 * 60 * 24);
+            if (daysSinceFirstError >= 7) {
+              updateData.status = 'error';
+              console.log(`[Timeout] Feed marked as error after ${daysSinceFirstError.toFixed(1)} days of failures: ${feed.url}`);
+            }
+          }
+          
           await feed.update(updateData);
         } else {
           console.log(`Failed to process feed: ${feed.url} - ${errMsg}`);

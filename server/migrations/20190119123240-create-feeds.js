@@ -53,6 +53,10 @@ module.exports = {
           type: Sequelize.TEXT,
           allowNull: true
         },
+        errorSince: {
+          type: Sequelize.DATE,
+          allowNull: true
+        },
         status: {
           type: Sequelize.ENUM('active', 'error', 'disabled'),
           allowNull: false,
