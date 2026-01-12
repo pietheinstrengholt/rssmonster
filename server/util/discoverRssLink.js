@@ -80,15 +80,18 @@ const canParseFeed = (body) => {
   }
 };
 
+const isValidFeedBody = (body) => {
+  if (!body) return false;
+  return isLikelyFeedBody(body) || canParseFeed(body);
+};
+
 const isValidFeedResponse = async (response) => {
   if (!response?.ok) return false;
 
   // Always validate by body content. Content-Type is unreliable in the wild
   // and we want retries when a URL returns non-feed XML/HTML.
   const body = await response.text();
-  if (!body) return false;
-
-  return isLikelyFeedBody(body) || canParseFeed(body);
+  return { isValid: isValidFeedBody(body), body };
 };
 
 const persistDiscoveredUrl = async (feed, discoveredUrl) => {
@@ -138,30 +141,48 @@ export const discoverRssLink = async (url, feed) => {
       console.log(`[Error] Initial fetch failed for ${url}: ${e.message}`);
     }
 
+    // Use the final redirected URL if available
     const responseUrl = initialResponse?.url || url;
 
     const htmlCandidates = [];
     if (initialResponse?.ok) {
       const ct = initialResponse.headers.get('content-type') || '';
+      const body = await initialResponse.text();
+      
       if (isLikelyFeedContentType(ct)) {
         // Don't immediately accept; validate by parsing to enable retry fallback on parse failures.
-        const body = await initialResponse.text();
-        if (body && (isLikelyFeedBody(body) || canParseFeed(body))) {
+        if (isValidFeedBody(body)) {
           console.log(`Discovered feed URL directly: ${responseUrl}`);
           await persistDiscoveredUrl(feed, responseUrl);
           return responseUrl;
         }
       } else {
-        const body = await initialResponse.text();
         if (body) {
           const $ = load(String(body));
+          
+          // Check for RSS/Atom links in HTML head
           const legacy =
             $('head link[type="application/rss+xml"]').attr('href') ||
             $('head link[type="application/atom+xml"]').attr('href');
 
           const rssLink = legacy ? resolveLink(responseUrl, legacy) : null;
           if (rssLink) {
+            console.log(`Found RSS link in HTML head: ${rssLink}`);
             htmlCandidates.push(rssLink);
+          }
+          
+          // Check for meta refresh redirects (e.g., <meta http-equiv="refresh" content="0; url=...">)
+          const metaRefresh = $('meta[http-equiv="refresh"]').attr('content');
+          if (metaRefresh) {
+            const urlMatch = metaRefresh.match(/url=(.+)/i);
+            if (urlMatch) {
+              const metaUrl = urlMatch[1].trim().replace(/['"]/g, '');
+              const resolvedMetaUrl = resolveLink(responseUrl, metaUrl);
+              if (resolvedMetaUrl) {
+                console.log(`Found meta refresh redirect: ${resolvedMetaUrl}`);
+                htmlCandidates.push(resolvedMetaUrl);
+              }
+            }
           }
         }
       }
@@ -174,12 +195,18 @@ export const discoverRssLink = async (url, feed) => {
       '/feed.xml',
       '/rss',
       '/rss.xml',
+      '/rss/news',
+      '/rss/feed',
       '/atom',
-      '/atom.xml'
+      '/atom.xml',
+      '/feeds/all',
+      '/feeds/posts/default'
     ];
 
+    // Include the original URL and the redirected URL as top candidates
     const fallbackCandidates = unique([
-      responseUrl,
+      responseUrl,  // Try the redirected URL first
+      url,          // Then the original URL
       ...htmlCandidates,
       baseUrl,
       ...(baseUrl ? commonPaths.map(p => resolveLink(baseUrl, p)) : [])
@@ -189,10 +216,52 @@ export const discoverRssLink = async (url, feed) => {
       try {
         console.log(`Trying RSS candidate: ${candidate}`);
         const candidateResponse = await fetchURL(candidate);
-        if (await isValidFeedResponse(candidateResponse)) {
+        
+        if (!candidateResponse?.ok) continue;
+        
+        // Read body once
+        const body = await candidateResponse.text();
+        
+        // Debug: Log first 500 chars of non-feed responses
+        if (!isValidFeedBody(body)) {
+          console.log(`[Debug] Body preview (${candidate}): ${body.substring(0, 500)}`);
+        }
+        
+        // Check if it's a valid feed
+        if (isValidFeedBody(body)) {
           const discoveredUrl = candidateResponse.url || candidate;
           await persistDiscoveredUrl(feed, discoveredUrl);
           return discoveredUrl;
+        }
+        
+        // If not a feed, check for meta refresh redirect
+        if (body) {
+          const $ = load(String(body));
+          const metaRefresh = $('meta[http-equiv="refresh"]').attr('content');
+          if (metaRefresh) {
+            const urlMatch = metaRefresh.match(/url=(.+)/i);
+            if (urlMatch) {
+              const metaUrl = urlMatch[1].trim().replace(/['"]/g, '');
+              const resolvedMetaUrl = resolveLink(candidateResponse.url || candidate, metaUrl);
+              if (resolvedMetaUrl) {
+                console.log(`Found meta refresh from ${candidate} → ${resolvedMetaUrl}`);
+                // Try the meta refresh URL immediately
+                try {
+                  const metaResponse = await fetchURL(resolvedMetaUrl);
+                  if (metaResponse?.ok) {
+                    const metaBody = await metaResponse.text();
+                    if (isValidFeedBody(metaBody)) {
+                      const discoveredUrl = metaResponse.url || resolvedMetaUrl;
+                      await persistDiscoveredUrl(feed, discoveredUrl);
+                      return discoveredUrl;
+                    }
+                  }
+                } catch {
+                  // Meta refresh target failed, continue to next candidate
+                }
+              }
+            }
+          }
         }
       } catch (e) {
         // Candidate failed (fetch or parse). Continue to next candidate.

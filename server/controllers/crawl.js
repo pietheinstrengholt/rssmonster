@@ -101,8 +101,139 @@ const performCrawl = async () => {
     };
   }
 
-  // Use Promise.all with map to wait for all feeds to be processed
-  await Promise.all(
+  // Check if AI is enabled (determines sequential vs parallel processing)
+  const aiEnabled = !!process.env.OPENAI_API_KEY;
+  
+  if (aiEnabled) {
+    console.log('[AI Mode] Processing feeds sequentially to avoid rate limits...');
+    
+    // Sequential processing when AI is enabled (avoids overwhelming OpenAI API)
+    for (const feed of feeds) {
+      try {
+        // Wrap entire feed processing in a timeout
+        await withTimeout(
+          (async () => {
+            //discover RssLink
+            const discoveryInputUrl = feed.url;
+            let url = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
+
+            if (!url) {
+              throw new Error('Unable to discover RSS/Atom URL');
+            }
+
+            // If the url is valid, process the feed
+            try {
+              // parse the feed using feedsmith
+              const feedObject = await parseFeed.process(url);
+
+              // Sanity check
+              if (!feedObject) {
+                throw new Error('No valid feed data returned');
+              }
+
+              // feedsmith: entries are in feedObject.feed.entries
+              const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
+
+              // Process each article entry. This will add newly discovered articles to the database
+              for (const entry of entries) {
+                await processArticle(feed, entry);
+              }
+
+              // Update feed metadata to use latest info from feed
+              // feedsmith: favicon/image is feedObject.feed.icon or feedObject.feed.logo or null
+              const faviconUrl = feedObject.feed?.icon || feedObject.feed?.logo || null;
+
+              const updateData = {
+                feedType: feedObject.format || null,
+                favicon: faviconUrl,
+                url: url,
+                errorCount: 0,
+                errorMessage: null,
+                errorSince: null,
+                status: 'active'
+              };
+              await feed.update(updateData);
+
+              processedCount++;
+              console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
+            } catch (err) {
+              const errMsg = err?.message || String(err) || 'Unknown error';
+
+              console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
+              const newErrorCount = feed.errorCount + 1;
+              const updateData = {
+                errorCount: newErrorCount,
+                errorMessage: errMsg
+              };
+              
+              // Set errorSince on first error (if not already set)
+              if (!feed.errorSince) {
+                updateData.errorSince = new Date();
+              }
+              
+              // Mark as error if failures persist for 7+ days
+              if (feed.errorSince) {
+                const daysSinceFirstError = (new Date() - new Date(feed.errorSince)) / (1000 * 60 * 60 * 24);
+                if (daysSinceFirstError >= 7) {
+                  updateData.status = 'error';
+                  console.log(`[Error] Feed marked as error after ${daysSinceFirstError.toFixed(1)} days of failures: ${feed.url}`);
+                }
+              }
+              
+              await feed.update(updateData);
+
+              errorCount++;
+            }
+
+            //update lastFetched
+            await feed.update({
+              lastFetched: new Date()
+            });
+          })(),
+          FEED_TIMEOUT_MS,
+          feed.url
+        );
+      } catch (err) {
+        const errMsg = err?.message || String(err) || 'Unknown error';
+
+        if (errMsg.includes('timed out')) {
+          console.log(`Timeout processing feed: ${feed.url} - skipping to next feed`);
+
+          timeoutCount++;
+
+          const newErrorCount = feed.errorCount + 1;
+          const updateData = {
+            errorCount: newErrorCount,
+            errorMessage: err.message
+          };
+          
+          // Set errorSince on first error (if not already set)
+          if (!feed.errorSince) {
+            updateData.errorSince = new Date();
+          }
+          
+          // Mark as error if failures persist for 7+ days
+          if (feed.errorSince) {
+            const daysSinceFirstError = (new Date() - new Date(feed.errorSince)) / (1000 * 60 * 60 * 24);
+            if (daysSinceFirstError >= 7) {
+              updateData.status = 'error';
+              console.log(`[Timeout] Feed marked as error after ${daysSinceFirstError.toFixed(1)} days of failures: ${feed.url}`);
+            }
+          }
+          
+          await feed.update(updateData);
+        } else {
+          console.log(`Failed to process feed: ${feed.url} - ${errMsg}`);
+        }
+
+        errorCount++;
+      }
+    }
+  } else {
+    console.log('[No AI] Processing feeds in parallel...');
+    
+    // Parallel processing when AI is disabled (faster)
+    await Promise.all(
     feeds.map(async feed => {
       try {
         // Wrap entire feed processing in a timeout
@@ -225,6 +356,7 @@ const performCrawl = async () => {
       }
     })
   );
+  }
 
   return {
     total: feeds.length,
