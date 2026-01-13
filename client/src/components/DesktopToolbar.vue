@@ -108,6 +108,10 @@
   box-shadow: none;
 }
 
+.dropdown, .status-toolbar {
+  border-left: 1px solid #e0e0e0;
+}
+
 .dropdown-item {
   color: #111;
   font-size: 14px;
@@ -171,6 +175,7 @@
   width: 20px;
   height: 20px;
   margin-top: 7px;
+  margin-left: 5px;
 }
 
 #chat-text {
@@ -233,7 +238,7 @@
     border-bottom: 1px solid #fff;
   }
 
-  .dropdown {
+  .dropdown, .status-toolbar {
     border-left: 1px solid #fff;
   }
 
