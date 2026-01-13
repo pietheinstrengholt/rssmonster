@@ -312,6 +312,17 @@
     .modal-footer {
         border-color: #444;
     }
+    .settings-group label {
+        color: #fff;
+    }
+
+    p {
+        color: #fff;
+    }
+
+    .text-muted {
+        color: #999 !important;
+    }
 
     .form-select {
         background-color: #3a3a3a;
