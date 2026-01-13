@@ -87,6 +87,7 @@
   margin-left: -15px;
   display: flex;
   align-items: center;
+  z-index: 1000;
 }
 
 .toolbar-dropdown {
@@ -155,6 +156,10 @@
   margin-right: 12px;
   margin-top: 5px;
   height: 20px;
+}
+
+.search-wrap {
+  border-bottom: 1px solid #e0e0e0;
 }
 
 .status-toolbar #status {
@@ -228,9 +233,31 @@
     border-bottom: 1px solid #fff;
   }
 
+  .dropdown {
+    border-left: 1px solid #fff;
+  }
+
+  .dropdown-menu {
+    background-color: #2a2a2a;
+    border-color: #444;
+  }
+
+  .dropdown-item {
+    color: #ccc;
+  }
+
+  .dropdown-item:hover {
+    background-color: #3a3a3a;
+    color: #fff;
+  }
+
+  .dropdown-item.active {
+    background-color: #4a7fc7;
+    color: #fff;
+  }
+
   .settings-icon {
     color: #fff;
-    border-right: 1px solid #000;
   }
 
   .settings-icon:hover {
@@ -241,9 +268,13 @@
     color: #fff;
   }
 
-  .dropdownmenu .item {
+  .dropdown-menu .item {
     border-bottom: 1px solid #fff;
     border-right: 1px solid #fff;
+    border-left: 1px solid #fff;
+  }
+
+  .search-wrap {
     border-left: 1px solid #fff;
   }
 
@@ -251,6 +282,7 @@
     background-color: #1e1e1e;
     color: #fff;
     border-color: #333;
+    background: #3a3a3a;
   }
 
   .search-wrap input::placeholder {
