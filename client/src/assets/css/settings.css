@@ -324,6 +324,10 @@
         color: #999 !important;
     }
 
+    .btn-close {
+        filter: invert(1) brightness(1.2);
+    }
+
     .form-select {
         background-color: #3a3a3a;
         color: #fff;
