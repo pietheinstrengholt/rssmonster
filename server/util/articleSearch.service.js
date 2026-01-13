@@ -99,8 +99,22 @@ export const searchArticles = async ({
      * Tokenize the search string and extract field filters.
      * Split on whitespace or commas to support various input styles.
      * Examples: "star:true unread:true", "star:true, unread:true", "tag:tech @today"
+     * 
+     * Handle quoted phrases for exact matches:
+     * - "Control Flow" (with quotes) → exact phrase match
+     * - Control Flow (without quotes) → match both words individually
      */
-    const tokens = workingSearch === "%" ? [] : workingSearch.split(/[\s,]+/).filter(Boolean);
+    let quotedPhrase = null;
+    let workingSearchForTokens = workingSearch;
+    
+    // Extract quoted phrase if present (e.g., "Control Flow")
+    const quotedMatch = workingSearch.match(/"([^"]+)"/);
+    if (quotedMatch) {
+      quotedPhrase = quotedMatch[1]; // e.g., "Control Flow"
+      workingSearchForTokens = workingSearch.replace(quotedMatch[0], "").trim(); // Remove the quoted part
+    }
+    
+    const tokens = workingSearchForTokens === "" ? [] : workingSearchForTokens.split(/[\s,]+/).filter(Boolean);
     const remainingTokens = []; // Non-filter tokens that will be used for text search
 
     tokens.forEach(tok => {
@@ -190,9 +204,27 @@ export const searchArticles = async ({
      *
      * Special case: if title: filter is present, it searches title separately
      * Example: "title:meter" → search title for "meter"
-    * Example: "title:javascript ai" → title contains "javascript" AND content contains "ai"
+     * Example: "title:javascript ai" → title contains "javascript" AND content contains "ai"
+     * 
+     * Quote handling:
+     * - "Control Flow" (with quotes) → exact phrase match
+     * - Control Flow (without quotes) → match both words individually (OR logic)
      */
-    const textSearch = remainingTokens.length === 0 ? "%" : `%${remainingTokens.join(" ")}%`;
+    let textSearch = "";
+    let wordMatches = []; // For unquoted searches: individual word matches
+    
+    if (quotedPhrase) {
+      // Exact phrase match from quoted input
+      textSearch = `%${quotedPhrase}%`;
+      console.log(`Using exact phrase match: "${quotedPhrase}"`);
+    } else if (remainingTokens.length > 0) {
+      // Unquoted search: create individual word patterns for OR matching
+      wordMatches = remainingTokens.map(token => ({ [Op.like]: `%${token}%` }));
+      console.log(`Using word-by-word OR matching for: ${remainingTokens.join(", ")}`);
+    } else {
+      // No remaining tokens or quoted phrase: match all
+      textSearch = "%";
+    }
 
     /**
      * Determine final filter values.
@@ -290,21 +322,42 @@ export const searchArticles = async ({
     // Text search logic:
     // - If title: filter present: search title for that value, AND content for remaining tokens
     // - If no title: filter: search both title OR content for all tokens
+    // - Handle quoted vs unquoted searches appropriately
     if (titleFilter) {
       // title:value specified - search title for exact value
       baseWhere.title = { [Op.like]: `%${titleFilter}%` };
-      // If there are remaining tokens, also search content for them
-      if (remainingTokens.length > 0) {
-        baseWhere.contentOriginal = { [Op.like]: textSearch };
+      // If there are remaining tokens or quoted phrase, also search content for them
+      if (quotedPhrase) {
+        baseWhere.contentOriginal = { [Op.like]: `%${quotedPhrase}%` };
+        console.log(`Title search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"`);
+      } else if (remainingTokens.length > 0) {
+        // OR on individual words in content
+        baseWhere[Op.or] = wordMatches.map(match => ({ contentOriginal: match }));
+        console.log(`Title search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}`);
+      } else {
+        console.log(`Title-only search: "%${titleFilter}%"`);
       }
-      console.log(`Title search: "%${titleFilter}%", Content search: "${textSearch}"`);
-    } else {
-      // No title: filter - search both title OR content
+    } else if (quotedPhrase) {
+      // Quoted phrase: search title OR content for exact phrase
       baseWhere[Op.or] = [
-        { title: { [Op.like]: textSearch } },
-        { contentOriginal: { [Op.like]: textSearch } }
+        { title: { [Op.like]: `%${quotedPhrase}%` } },
+        { contentOriginal: { [Op.like]: `%${quotedPhrase}%` } }
       ];
+      console.log(`Quoted phrase search (exact): "${quotedPhrase}"`);
+    } else if (wordMatches.length > 0) {
+      // Unquoted search: each word must appear somewhere in title OR content
+      // Build: (title LIKE %word1% OR content LIKE %word1%) AND (title LIKE %word2% OR content LIKE %word2%) ...
+      const wordConditions = wordMatches.map(match => ({
+        [Op.or]: [
+          { title: match },
+          { contentOriginal: match }
+        ]
+      }));
+      baseWhere[Op.and] = wordConditions;
+      console.log(`Word-by-word AND search: ${remainingTokens.join(", ")}`);
     }
+    // Note: If no search terms at all (no titleFilter, quotedPhrase, or wordMatches), 
+    // we don't add any text search filters - baseWhere will match all articles
 
     // Apply date range filter if present (supports all date patterns)
     if (dateRange) {
