@@ -41,113 +41,127 @@ export async function getSmartFolderRecommendations({ insights }) {
     throw new Error('OpenAI API key not configured');
   }
 
-  const prompt = `
-  You generate PERSONALIZED Smart Folder suggestions for an RSS reader.
+const prompt = `
+You generate PERSONALIZED Smart Folder suggestions for an RSS reader.
 
-  Your PRIMARY goal is to reflect the user's demonstrated interests.
-  Generic folders are allowed, but must NOT dominate the result.
+Your PRIMARY goal is to reflect the user's demonstrated interests.
 
-  --------------------
-  SIGNAL PRIORITY (VERY IMPORTANT)
-  --------------------
+Personalization should be driven by CONVERGING SIGNALS:
+keywords, topics, or entities that appear across multiple sources
+(starredItems, feed names, and tags).
 
-  When generating Smart Folders, you MUST prioritize signals in this order:
+If no strong convergence exists, you may include a small number of
+generally useful folders — but they must not dominate the result.
+Returning an empty list is NOT allowed.
 
-  1. starredItems (STRONGEST SIGNAL - explicit user intent)
-  2. interests.topTags and tag frequency
-  3. feed-level behavior (high unreadRatio, starred per feed)
-  4. general engagement patterns (unread, clicked, freshness, quality)
+--------------------
+SIGNAL PRIORITY & CONVERGENCE (VERY IMPORTANT)
+--------------------
 
-  At least:
-  - 2-3 suggestions MUST be clearly derived from starredItems
-  - 1-2 suggestions SHOULD be derived from tags
-  - At most 1-2 suggestions may be generic
+When generating Smart Folders, look for topics that appear in
+MULTIPLE of the following places:
 
-  --------------------
-  SUPPORTED FILTERING EXPRESSIONS (STRICT)
-  --------------------
+1. starredItems (strongest signal – explicit user intent)
+2. feed names with high starred counts
+3. interests.topTags and frequent tags
+4. general engagement patterns
 
-  You MUST produce queries using ONLY the following:
+A topic that appears in two or more of these sources should be treated
+as a STRONG personal interest.
 
-  Boolean filters:
-  - star:true | star:false
-  - unread:true | unread:false
-  - read:true | read:false
-  - clicked:true | clicked:false
+--------------------
+GUIDELINES
+--------------------
 
-  Tag filter:
-  - tag:<text>
+- Prefer Smart Folders based on topics with clear signal overlap
+  (e.g. a keyword appearing in feed name + starred item + tag)
+- If such a topic does not yet have a Smart Folder, you SHOULD propose one
+- Use free-text search or tag-based filters to capture the topic
+- 2-3 suggestions should be strongly personalized
+- 1-2 suggestions may be more generic if needed
 
-  Title-only filter:
-  - title:<text>
+If starredItems are diverse:
+- You MAY generalize overlapping themes
+  (e.g. "Apple", "Nintendo", "Gaming", "Gadgets", "Software")
+- Avoid overly broad concepts unless they clearly recur
 
-  Free-text content search:
-  - <text>
-    (Searches article title + content. Use for broader or thematic matching.)
+Do NOT propose folders that merely restate existingSmartFolders
+unless you meaningfully refine them (e.g. add unread:true or quality filters).
 
-  Numeric filters:
-  - quality:<number>, quality:>number, quality:<number, quality:>=number, quality:<=number
-  - freshness:<number>, freshness:>number, freshness:<number, freshness:>=number, freshness:<=number
+--------------------
+SUPPORTED FILTERING EXPRESSIONS (STRICT)
+--------------------
 
-  Date filters:
-  - @YYYY-MM-DD
-  - @today
-  - @yesterday
+You MUST produce queries using ONLY the following:
 
-  Sorting:
-  - sort:DESC
-  - sort:ASC
-  - sort:IMPORTANCE
-  - sort:QUALITY
+Boolean filters:
+- star:true | star:false
+- unread:true | unread:false
+- read:true | read:false
+- clicked:true | clicked:false
 
-  --------------------
-  RULES
-  --------------------
-  - Combine filters using spaces only
-  - Do NOT use parentheses
-  - Do NOT use AND / OR keywords
-  - Do NOT invent unsupported fields (e.g. feed:, category:, author:)
-  - Avoid duplicating existingSmartFolders
-  - Suggest at most 5 Smart Folders
-  - Prefer concise, high-signal queries
+Tag filter:
+- tag:<text>
 
-  --------------------
-  GUIDANCE (IMPORTANT)
-  --------------------
+Title-only filter:
+- title:<text>
 
-  When using starredItems:
-  - Look for recurring themes, products, technologies, or entities in titles
-  - Prefer free-text search (<text>) when the topic is conceptual or broad
-    (e.g. "apple siri", "lego pokemon", "nintendo switch")
-  - Prefer title:<text> only when the term is very specific or unique
+Free-text content search:
+- <text>
+  (Searches article title + content. Use for broader or thematic matching.)
 
-  When using tags:
-  - Prefer high-frequency and meaningful tags
-  - Avoid duplicating existing Smart Folders unless you refine them
-    (e.g. add unread:true or quality filter)
+Numeric filters:
+- quality:<number>, quality:>number, quality:<number, quality:>=number, quality:<=number
+- freshness:<number>, freshness:>number, freshness:<number, freshness:>=number, freshness:<=number
 
-  Generic folders:
-  - Use sparingly
-  - Do NOT let them dominate the list
+Date filters:
+- @YYYY-MM-DD
+- @today
+- @yesterday
 
-  --------------------
-  INPUT (JSON)
-  --------------------
-  ${JSON.stringify(insights)}
+Sorting:
+- sort:DESC | sort:ASC | sort:IMPORTANCE | sort:QUALITY
 
-  --------------------
-  OUTPUT (STRICT JSON ONLY)
-  --------------------
-  {
-    "smartFolders": [
-      {
-        "name": "string",
-        "query": "string",
-        "reason": "string (brief explanation tied to the user's behavior)"
-      }
-    ]
-  }
-  `;
+--------------------
+RULES
+--------------------
+- Combine filters using spaces only
+- Do NOT use parentheses
+- Do NOT use AND / OR
+- Avoid duplicating existingSmartFolders
+- Suggest between 2 and 5 Smart Folders
+- Prefer concise, high-signal queries
+
+--------------------
+GUIDANCE
+--------------------
+
+When using starredItems:
+- Look for recurring entities or themes
+- It is acceptable to generalize across multiple starred titles
+- Prefer free-text search for conceptual topics
+
+If exact matches would duplicate existing folders:
+- Refine them (e.g. add unread:true, quality filter, or freshness)
+
+--------------------
+INPUT (JSON)
+--------------------
+${JSON.stringify(insights)}
+
+--------------------
+OUTPUT (STRICT JSON ONLY)
+--------------------
+{
+  "smartFolders": [
+    {
+      "name": "string",
+      "query": "string",
+      "reason": "string"
+    }
+  ]
+}
+`;
 
   const response = await client.chat.completions.create({
     model: 'gpt-4.1-mini',
