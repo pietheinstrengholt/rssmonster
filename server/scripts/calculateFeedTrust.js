@@ -15,7 +15,12 @@ const { Feed, Article, ArticleCluster } = db;
  * Configuration
  * ------------------------------------------------------------------ */
 
-const EMA_ALPHA = 0.15;            // Faster convergence
+// Trust sensitivity: higher alpha responds faster to recent observations
+const EMA_ALPHA = 0.35;
+// Baseline trust for feeds with no history
+const BASELINE_TRUST = 0.8;
+// Amplify deviation from neutral (0.5) to widen score spread
+const SPREAD_FACTOR = 1.5;
 const LOOKBACK_DAYS = 30;
 
 // Cluster size at which an article is considered duplicated/syndicated
@@ -171,15 +176,20 @@ export async function calculateFeedTrustForFeed(feedId) {
     0.15 * consistency
   );
 
+  // Widen the range by pushing values away from 0.5
+  const adjustedObserved = clamp(
+    0.5 + (observedTrust - 0.5) * SPREAD_FACTOR
+  );
+
   /* --------------------------------------------------------------
    * 6) EMA UPDATE
    * -------------------------------------------------------------- */
 
   const previousTrust =
-    feed.feedTrust ?? observedTrust;
+    feed.feedTrust ?? BASELINE_TRUST;
 
   const newTrust =
-    EMA_ALPHA * observedTrust +
+    EMA_ALPHA * adjustedObserved +
     (1 - EMA_ALPHA) * previousTrust;
 
   await feed.update({
