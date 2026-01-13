@@ -210,6 +210,10 @@
     background: #3a3a3a;
   }
 
+  .toolbar-dropdown {
+    color: #fff;
+  }
+
   .view-button {
     color: #fff;
     background: #3a3a3a;
