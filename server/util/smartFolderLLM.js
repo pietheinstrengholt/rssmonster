@@ -42,40 +42,112 @@ export async function getSmartFolderRecommendations({ insights }) {
   }
 
   const prompt = `
-You generate PERSONALIZED Smart Folder suggestions for an RSS reader.
+  You generate PERSONALIZED Smart Folder suggestions for an RSS reader.
 
-You MUST produce queries using ONLY the supported filtering expressions listed below.
-DO NOT invent new fields, operators, or syntax.
+  Your PRIMARY goal is to reflect the user's demonstrated interests.
+  Generic folders are allowed, but must NOT dominate the result.
 
-SUPPORTED FILTERS:
-- star:true | star:false
-- unread:true | unread:false
-- read:true | read:false
-- clicked:true | clicked:false
-- tag:<text>
-- title:<text>
-- quality:<number>, quality:>number, quality:<number, quality:>=number, quality:<=number
-- freshness:<number>, freshness:>number, freshness:<number, freshness:>=number, freshness:<=number
-- @YYYY-MM-DD | @today | @yesterday
-- sort:DESC | sort:ASC | sort:IMPORTANCE | sort:QUALITY
+  --------------------
+  SIGNAL PRIORITY (VERY IMPORTANT)
+  --------------------
 
-RULES:
-- Combine filters using spaces only
-- No parentheses
-- No AND / OR
-- Avoid duplicating existingSmartFolders
-- Max 5 suggestions
+  When generating Smart Folders, you MUST prioritize signals in this order:
 
-INPUT (JSON):
-${JSON.stringify(insights)}
+  1. starredItems (STRONGEST SIGNAL - explicit user intent)
+  2. interests.topTags and tag frequency
+  3. feed-level behavior (high unreadRatio, starred per feed)
+  4. general engagement patterns (unread, clicked, freshness, quality)
 
-OUTPUT (STRICT JSON ONLY):
-{
-  "smartFolders": [
-    { "name": "string", "query": "string", "reason": "string" }
-  ]
-}
-`;
+  At least:
+  - 2-3 suggestions MUST be clearly derived from starredItems
+  - 1-2 suggestions SHOULD be derived from tags
+  - At most 1-2 suggestions may be generic
+
+  --------------------
+  SUPPORTED FILTERING EXPRESSIONS (STRICT)
+  --------------------
+
+  You MUST produce queries using ONLY the following:
+
+  Boolean filters:
+  - star:true | star:false
+  - unread:true | unread:false
+  - read:true | read:false
+  - clicked:true | clicked:false
+
+  Tag filter:
+  - tag:<text>
+
+  Title-only filter:
+  - title:<text>
+
+  Free-text content search:
+  - <text>
+    (Searches article title + content. Use for broader or thematic matching.)
+
+  Numeric filters:
+  - quality:<number>, quality:>number, quality:<number, quality:>=number, quality:<=number
+  - freshness:<number>, freshness:>number, freshness:<number, freshness:>=number, freshness:<=number
+
+  Date filters:
+  - @YYYY-MM-DD
+  - @today
+  - @yesterday
+
+  Sorting:
+  - sort:DESC
+  - sort:ASC
+  - sort:IMPORTANCE
+  - sort:QUALITY
+
+  --------------------
+  RULES
+  --------------------
+  - Combine filters using spaces only
+  - Do NOT use parentheses
+  - Do NOT use AND / OR keywords
+  - Do NOT invent unsupported fields (e.g. feed:, category:, author:)
+  - Avoid duplicating existingSmartFolders
+  - Suggest at most 5 Smart Folders
+  - Prefer concise, high-signal queries
+
+  --------------------
+  GUIDANCE (IMPORTANT)
+  --------------------
+
+  When using starredItems:
+  - Look for recurring themes, products, technologies, or entities in titles
+  - Prefer free-text search (<text>) when the topic is conceptual or broad
+    (e.g. "apple siri", "lego pokemon", "nintendo switch")
+  - Prefer title:<text> only when the term is very specific or unique
+
+  When using tags:
+  - Prefer high-frequency and meaningful tags
+  - Avoid duplicating existing Smart Folders unless you refine them
+    (e.g. add unread:true or quality filter)
+
+  Generic folders:
+  - Use sparingly
+  - Do NOT let them dominate the list
+
+  --------------------
+  INPUT (JSON)
+  --------------------
+  ${JSON.stringify(insights)}
+
+  --------------------
+  OUTPUT (STRICT JSON ONLY)
+  --------------------
+  {
+    "smartFolders": [
+      {
+        "name": "string",
+        "query": "string",
+        "reason": "string (brief explanation tied to the user's behavior)"
+      }
+    ]
+  }
+  `;
 
   const response = await client.chat.completions.create({
     model: 'gpt-4.1-mini',
