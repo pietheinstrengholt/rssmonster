@@ -20,7 +20,11 @@ const EMA_ALPHA = 0.35;
 // Baseline trust for feeds with no history
 const BASELINE_TRUST = 0.8;
 // Amplify deviation from neutral (0.5) to widen score spread
-const SPREAD_FACTOR = 1.5;
+const SPREAD_FACTOR = 2.0;
+// Above this many articles per day, we start penalizing for spammy volume
+const HIGH_VOLUME_THRESHOLD_PER_DAY = 25;
+// Max penalty applied when volume is extremely high
+const HIGH_VOLUME_MAX_PENALTY = 0.4;
 const LOOKBACK_DAYS = 30;
 
 // Cluster size at which an article is considered duplicated/syndicated
@@ -162,8 +166,8 @@ export async function calculateFeedTrustForFeed(feedId) {
 
   const articlesPerDay = articles.length / LOOKBACK_DAYS;
 
-  // 0–5 articles/day → 0–1 score
-  const consistency = clamp(articlesPerDay / 5);
+  // 0–4 articles/day → 0–1 score (slightly stricter)
+  const consistency = clamp(articlesPerDay / 4);
 
   /* --------------------------------------------------------------
    * 5) OBSERVED TRUST
@@ -176,10 +180,25 @@ export async function calculateFeedTrustForFeed(feedId) {
     0.15 * consistency
   );
 
+  // Penalize extremely high-volume feeds (spammy behavior)
+  const highVolumePenalty = clamp(
+    (articlesPerDay - HIGH_VOLUME_THRESHOLD_PER_DAY) /
+      HIGH_VOLUME_THRESHOLD_PER_DAY,
+    0,
+    1
+  ) * HIGH_VOLUME_MAX_PENALTY;
+
+  const observedWithVolume = clamp(observedTrust * (1 - highVolumePenalty));
+
   // Widen the range by pushing values away from 0.5
-  const adjustedObserved = clamp(
-    0.5 + (observedTrust - 0.5) * SPREAD_FACTOR
+  let adjustedObserved = clamp(
+    0.5 + (observedWithVolume - 0.5) * SPREAD_FACTOR
   );
+
+  // Additional uplift for very strong observed scores
+  if (observedWithVolume >= 0.85) {
+    adjustedObserved = clamp(adjustedObserved + 0.05);
+  }
 
   /* --------------------------------------------------------------
    * 6) EMA UPDATE
