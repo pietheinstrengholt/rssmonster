@@ -19,7 +19,7 @@
             </p>
             <ul class="mb-2 small">
                 <li><strong>Status filters:</strong> <code>unread:true</code>, <code>read:false</code>, <code>star:true</code>, <code>clicked:true</code></li>
-                <li><strong>Content filters:</strong> <code>tag:ai</code>, <code>title:javascript</code></li>
+                <li><strong>Content filters:</strong> <code>tag:ai</code>, <code>title:javascript</code>, <code>python</code></li>
                 <li><strong>Quality filters:</strong> <code>quality:>0.6</code>, <code>freshness:>=0.5</code></li>
                 <li><strong>Date filters:</strong> <code>@today</code>, <code>@yesterday</code>, <code>@"3 days ago"</code>, <code>@2025-12-14</code></li>
                 <li><strong>Sorting:</strong> <code>sort:IMPORTANCE</code>, <code>sort:QUALITY</code>, <code>sort:DESC</code>, <code>sort:ASC</code></li>
