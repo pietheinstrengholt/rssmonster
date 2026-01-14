@@ -212,18 +212,11 @@ export default {
     },
     methods: {
         async fetchSmartFolders() {
-            try {
-                const resp = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
-                if (resp && resp.data && Array.isArray(resp.data.smartFolders)) {
-                    this.smartFolders = resp.data.smartFolders.map(sf => ({
-                        name: sf.name || '',
-                        query: sf.query || '',
-                        limitCount: sf.limitCount || 50
-                    }));
-                }
-            } catch (err) {
-                console.error('Failed to fetch smart folders:', err);
-            }
+            this.smartFolders = this.$store.data.smartFolders.map(sf => ({
+                name: sf.name,
+                query: sf.query,
+                limitCount: sf.limitCount || 50
+            }));
         },
         async fetchSmartFolderInsights() {
             try {
@@ -295,6 +288,7 @@ export default {
                 alert('Failed to save smart folders. Please try again.');
             });
             this.$emit('saved');
+            await this.$store.data.fetchSmartFolders();
             this.$emit('close');
         }
     }

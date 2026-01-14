@@ -8,6 +8,7 @@ RSSMonster code **MUST strictly conform** to the existing architecture.
 
 - Backend is **Express using ESM only**
 - Frontend is **Vue**, following existing project conventions
+- Frontend uses **Bootstrap 5** for styling and layout
 - ORM is **Sequelize with factory-style models**
 - All models are initialized exclusively via `models/index.js`
 - All controllers, utilities, background scripts, and services **must import models from `models/index.js`**

@@ -42,6 +42,7 @@ export const searchArticles = async ({
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
+    let clusterFilter = null; // Cluster view filter captured from search (cluster:true/false)
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
 
@@ -134,8 +135,12 @@ export const searchArticles = async ({
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
+      const clusterMatch = cleaned.match(/^cluster:\s*(true|false)$/i); // cluster:true or cluster:false
       
-      if (starMatch) {
+      if (clusterMatch) {
+        clusterFilter = clusterMatch[1].toLowerCase() === 'true';
+        console.log(`Cluster filter applied via search token: ${clusterFilter}`);
+      } else if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
         console.log(`Star filter applied via search token: ${starFilter}`);
       } else if (unreadMatch) {
@@ -429,8 +434,10 @@ export const searchArticles = async ({
      * Cluster view:
      * When enabled, only return cluster representatives.
      * This collapses related articles into one item per cluster.
+     * Search token (cluster:true/false) overrides clusterView parameter.
      */
-    if (clusterView) {
+    const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
+    if (workingClusterView) {
       articleQuery.where[Op.or] = [
         {
           id: {
