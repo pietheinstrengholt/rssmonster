@@ -22,6 +22,8 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
+![Screenshot](client/src/assets/screenshots/screenshot02.png)
+
 ## Key Features
 
 - **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap 5 for a fluid experience across all devices
