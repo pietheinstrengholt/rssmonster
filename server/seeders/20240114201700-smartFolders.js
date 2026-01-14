@@ -16,7 +16,7 @@ module.exports = {
         {
           userId: 1,
           name: 'Worth Your Time',
-          query: 'unread:true quality:>0.7 cluster:true sort:QUALITY',
+          query: 'unread:true quality:>0.65 cluster:true sort:QUALITY',
           limitCount: 25,
           createdAt: Sequelize.literal('NOW()'),
           updatedAt: Sequelize.literal('NOW()')
@@ -32,7 +32,7 @@ module.exports = {
         {
           userId: 1,
           name: 'Low Noise Mode',
-          query: 'unread:true cluster:true quality:>0.8 freshness:>=0.5 sort:IMPORTANCE',
+          query: 'unread:true cluster:true quality:>0.75 freshness:>=0.4 sort:IMPORTANCE',
           limitCount: 15,
           createdAt: Sequelize.literal('NOW()'),
           updatedAt: Sequelize.literal('NOW()')
@@ -41,7 +41,6 @@ module.exports = {
       {}
     );
   },
-
   down: async (queryInterface) => {
     return queryInterface.bulkDelete(
       'smartFolders',
