@@ -12,6 +12,8 @@ export const expressionPatterns = [
     { name: 'unread', regex: /^unread:(true|false)$/i },
     { name: 'read', regex: /^read:(true|false)$/i },
     { name: 'clicked', regex: /^clicked:(true|false)$/i },
+    { name: 'cluster', regex: /^cluster:(true|false)$/i },
+    { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
     { name: 'title', regex: /^title:(.+)$/i },
     { name: 'sort', regex: /^sort:(DESC|ASC|IMPORTANCE|QUALITY)$/i },
@@ -27,17 +29,17 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['star', 'unread', 'read', 'clicked', 'tag', 'title', 'sort', 'quality', 'freshness'];
+export const knownKeywords = ['star', 'unread', 'read', 'clicked', 'cluster', 'hot', 'tag', 'title', 'sort', 'quality', 'freshness'];
 
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(star|unread|read|clicked|tag|title|sort|quality|freshness)=/i;
+const wrongSyntaxPattern = /\b(star|unread|read|clicked|cluster|hot|tag|title|sort|quality|freshness)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)
  */
-const mergedTokenPattern = /(\d+\.?\d*|true|false)(star|unread|read|clicked|tag|title|sort|quality|freshness|@)/i;
+const mergedTokenPattern = /(\d+\.?\d*|true|false)(star|unread|read|clicked|cluster|hot|tag|title|sort|quality|freshness|@)/i;
 
 /**
  * Calculate Levenshtein distance between two strings for typo detection.

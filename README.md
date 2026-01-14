@@ -7,7 +7,18 @@ Copyright (c) 2026 Piethein Strengholt, piethein@strengholt-online.nl
 
 ## Overview
 
-RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google Reader. It provides a lightweight, responsive interface for tracking and reading RSS feeds with built-in AI-powered search capabilities through the Model Context Protocol (MCP). Perfect for developers and power users who want full control over their RSS reading experience.
+RSSMonster is not just another RSS reader — it is an **intelligent reading engine** designed to help you cut through information overload and focus on what actually matters.
+
+Where traditional RSS aggregators like Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
+
+RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and importance-based ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
+
+- *Top Stories Today* — importance-ranked, deduplicated coverage  
+- *Worth Your Time* — high-quality, original long-form content  
+- *Quick Scan* — summary-first daily overview  
+- *Low Noise Mode* — maximum signal, minimal volume  
+
+Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable.
 
 ![Screenshot](client/src/assets/screenshots/screenshot01.png)
 
@@ -15,8 +26,8 @@ RSSMonster is a modern, web-based RSS aggregator and reader inspired by Google R
 
 - **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap 5 for a fluid experience across all devices
 - **Google Reader-inspired UX**: Automatic mark-as-read on scroll and trending content identification
-- **Advanced Search Expressions**: Composable filters using field operators (`star:true`, `unread:false`, `read:true`, `clicked:true`, `tag:tech`, `title:javascript`), quality & freshness thresholds (`quality:>0.6`, `freshness:>=0.5`), sorting (`sort:ASC`, `sort:DESC`, `sort:IMPORTANCE`, `sort:QUALITY`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:IMPORTANCE`
-- **Smart Folders**: Create dynamic, saved searches with custom filter queries like `tag:ai unread:true quality:>0.6` to automatically organize and surface relevant content without manual curation
+- **Advanced Search Expressions**: Composable filters using field operators (`star:true`, `unread:false`, `read:true`, `clicked:true`, `hot:true`, `cluster:true`, `tag:tech`, `title:javascript`), quality & freshness thresholds (`quality:>0.6`, `freshness:>=0.5`), sorting (`sort:ASC`, `sort:DESC`, `sort:IMPORTANCE`, `sort:QUALITY`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:IMPORTANCE`
+- **Smart Folders**: Smart Folders allow you to create declarative, dynamic views of your content using composable search expressions. Examples: `@today unread:true cluster:true sort:IMPORTANCE` (Top Stories Today), `unread:true quality:>0.7 cluster:true sort:QUALITY` (Worth Your Time), `unread:true cluster:true quality:>0.8 freshness:>=0.5 sort:IMPORTANCE` (Low Noise Mode).
 - **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
 - **Semantic Deduplication & Clustering**: Similar articles are grouped into clusters, reducing noise from syndication and duplicate coverage
 - **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content

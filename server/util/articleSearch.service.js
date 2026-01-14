@@ -43,6 +43,7 @@ export const searchArticles = async ({
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
     let clusterFilter = null; // Cluster view filter captured from search (cluster:true/false)
+    let hotFilter = null; // Hot filter captured from search (hot:true/false)
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
 
@@ -136,8 +137,12 @@ export const searchArticles = async ({
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
       const clusterMatch = cleaned.match(/^cluster:\s*(true|false)$/i); // cluster:true or cluster:false
+      const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
       
-      if (clusterMatch) {
+      if (hotMatch) {
+        hotFilter = hotMatch[1].toLowerCase() === 'true';
+        console.log(`Hot filter applied via search token: ${hotFilter}`);
+      } else if (clusterMatch) {
         clusterFilter = clusterMatch[1].toLowerCase() === 'true';
         console.log(`Cluster filter applied via search token: ${clusterFilter}`);
       } else if (starMatch) {
@@ -408,12 +413,20 @@ export const searchArticles = async ({
       articleQuery.where.clickedInd = clickedFilter ? 1 : 0;
     }
 
+    if (hotFilter !== null) {
+      // hot:true → only hot articles, hot:false → only non-hot
+      articleQuery.where.hotInd = hotFilter ? 1 : 0;
+      if (hotFilter) {
+        delete articleQuery.where.feedId; // Hot articles ignore feedId
+      }
+    }
+
     /**
      * If no field filters are present, use traditional status-driven logic.
      * Status can be: "unread", "read", "star", "hot", or "clicked".
      * When rawSearch is set, default to "%" (all statuses) unless overridden by unread/read filters.
      */
-    if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null) {
+    if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
       // If there's a search query, default to "%" unless status is a special type (star, hot, clicked)
       const effectiveStatus = rawSearch && !["star", "hot", "clicked"].includes(status) ? "%" : status;
       

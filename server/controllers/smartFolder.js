@@ -4,7 +4,7 @@ import db from '../models/index.js';
 import { Op, fn, col, literal } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
-const { Article, Feed, Category, Tag, Action, SmartFolder } = db;
+const { Article, Feed, Tag, SmartFolder } = db;
 
 /* ---------------------------------------------------
  * GET /api/smartfolders
@@ -18,7 +18,7 @@ const getSmartFolders = async (req, res, next) => {
 
     const smartFolders = await SmartFolder.findAll({
       where: { userId },
-      order: [['createdAt', 'DESC']]
+      order: [['name', 'ASC']]
     });
 
     for (const folder of smartFolders) {
