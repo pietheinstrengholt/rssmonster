@@ -10,6 +10,7 @@ import analyzeArticleContent from './analyzeArticleContent.js';
 import embedArticle from './embedArticle.js';
 import saveArticle from './saveArticle.js';
 import assignArticleToCluster from '../../util/assignArticleToCluster.js';
+import normalizeUrl from '../../util/normalizeUrl.js';
 
 /* ------------------------------------------------------------------
  * Article Processor
@@ -55,10 +56,12 @@ const processArticle = async (feed, entry) => {
         feed,
         fields.title
       );
-      contentOriginal = htmlResult.content;
-      contentStripped = htmlResult.stripped;
-      contentLanguage = htmlResult.language;
-      contentHash = htmlResult.contentHash;
+      if (htmlResult) {
+        contentOriginal = htmlResult.content;
+        contentStripped = htmlResult.stripped;
+        contentLanguage = htmlResult.language;
+        contentHash = htmlResult.contentHash;
+      }
     }
 
     // Try to find any existing article with the same link or title
@@ -114,11 +117,13 @@ const processArticle = async (feed, entry) => {
       description: fields.description
     });
 
-    // Search if the article link is a hotlink. Use a cleaned URL without query params.
-    const cleanUrl = fields.link.split('?')[0];
-    const hotlinkEntry = await Hotlink.findOne({
+    // Search if the article link is a hotlink.
+    // Hotness is determined by counting how often other articles link to this article URL.
+    const articleUrl = normalizeUrl(fields.link);
+
+    const hotlinkCount = await Hotlink.count({
       where: {
-        url: cleanUrl,
+        url: articleUrl,
         userId: feed.userId
       }
     });
@@ -133,7 +138,8 @@ const processArticle = async (feed, entry) => {
         contentHash: contentHash,
         mediaFound,
         leadImage,
-        hotlinkEntry: !!hotlinkEntry,
+        hotlinkInd: hotlinkCount > 0,
+        hotlinkCount: hotlinkCount,
         language: contentLanguage,
         vector: embedding?.vector || null,
         embedding_model: embedding?.embedding_model || null,

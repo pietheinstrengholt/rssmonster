@@ -1,6 +1,7 @@
 import { load } from 'cheerio';
 import language from '../../util/language.js';
 import hotlink from '../../controllers/hotlink.js';
+import normalizeUrl from '../../util/normalizeUrl.js';
 import crypto from 'crypto';
 
 /* ======================================================
@@ -13,10 +14,13 @@ import crypto from 'crypto';
    - Computes content hash for duplication checks
 ====================================================== */
 function processHtmlContent(content, description, entryLink, feed, entryTitle) {
+  let contentOriginal;
+
   try {
     // Use content if available, otherwise fall back to description
-    const contentOriginal = content || description;
-    
+    contentOriginal = content || description;
+    if (!contentOriginal) return null;
+
     // Parse HTML content into a mutable DOM
     const $ = load(contentOriginal);
 
@@ -43,9 +47,11 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
         (href.startsWith('http://') || href.startsWith('https://'))
       ) {
         // Remove query string parameters (everything after ?)
-        const cleanUrl = href.split('?')[0];
+        const cleanUrl = normalizeUrl(href);
+
         // Update cache
-        hotlink.set(cleanUrl, feed.userId);
+        // (fire-and-forget; hotlinks are best-effort signals)
+        hotlink.set(cleanUrl, feed.userId).catch(console.error);
       }
     });
 
