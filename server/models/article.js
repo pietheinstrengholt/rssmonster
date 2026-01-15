@@ -104,20 +104,41 @@ export default (sequelize) => {
       quality: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
-          const advertisementScore = this.getDataValue('advertisementScore') ?? 0;
-          const sentimentScore = this.getDataValue('sentimentScore') ?? 50;
-          const qualityScore = this.getDataValue('qualityScore') ?? 50;
+          // Default to a neutral-good baseline when no scoring is available
+          const DEFAULT_SCORE = 70;
 
-          const sentimentPenalty = Math.abs(sentimentScore - 50) * 2;
+          const advertisementScore =
+            this.getDataValue('advertisementScore') ?? DEFAULT_SCORE;
 
-          let quality =
-            100
-            - 0.4 * advertisementScore
-            - 0.3 * sentimentPenalty
-            - 0.2 * qualityScore;
+          const sentimentScore =
+            this.getDataValue('sentimentScore') ?? DEFAULT_SCORE;
 
-          quality = Math.max(0, Math.min(100, quality));
-          return quality / 100;
+          const qualityScore =
+            this.getDataValue('qualityScore') ?? DEFAULT_SCORE;
+
+          /**
+           * Overall article quality score (0–1).
+           *
+           * Scoring semantics:
+           * - All component scores range from 0–100
+           * - Higher scores always indicate better quality
+           *
+           * Weighting:
+           * - sentimentScore:      50%  (tone, neutrality, emotional quality)
+           * - qualityScore:        35%  (writing clarity, structure, substance)
+           * - advertisementScore:  15%  (absence of promotion or marketing)
+           *
+           * Default behavior:
+           * - Articles without scores start at a neutral-good baseline (70)
+           *   to avoid unfair penalization during ingestion or reprocessing.
+           */
+          let overall =
+            sentimentScore * 0.5 +
+            qualityScore * 0.35 +
+            advertisementScore * 0.15;
+
+          overall = Math.max(0, Math.min(100, overall));
+          return overall / 100;
         }
       },
       uniqueness: {

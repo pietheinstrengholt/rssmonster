@@ -483,6 +483,7 @@ export default {
       this.$emit(eventType, value);
     },
     loadType: function(status) {
+      console.log("%cLoading type:", "color: red;", status);
       //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
       if (status == "refresh") {
         this.$store.data.setSmartFolder(null);

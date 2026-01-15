@@ -56,6 +56,7 @@ export const searchArticles = async ({
      * The quotes are optional for both patterns.
      */
     let workingSearch = rawSearch;
+    console.log(`\x1b[31mPre-scan search string for date patterns: "${rawSearch}"\x1b[0m`);
     
     // Pattern: @"N days ago"
     const daysAgoMatch = rawSearch.match(/@"?(\d+)\s+days\s+ago"?/i);
@@ -68,7 +69,7 @@ export const searchArticles = async ({
         const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days, 0, 0, 0, 0));
         const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days, 23, 59, 59, 999));
         dateRange = { start, end };
-        console.log(`Date filter applied via search token: ${dateToken} (exact UTC day)`);
+        console.log(`\x1b[31mDate filter applied via search token: ${dateToken} (exact UTC day)\x1b[0m`);
         // Remove the matched segment so it doesn't pollute text search tokens
         workingSearch = workingSearch.replace(daysAgoMatch[0], "").trim();
       }
@@ -92,7 +93,7 @@ export const searchArticles = async ({
       const start = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0, 0));
       const end = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
       dateRange = { start, end };
-      console.log(`Date filter applied via search token: ${dateToken} (${start.toISOString().split('T')[0]})`);
+      console.log(`\x1b[31mDate filter applied via search token: ${dateToken} (${start.toISOString().split('T')[0]})\x1b[0m`);
       // Remove the matched segment so it doesn't pollute text search tokens
       workingSearch = workingSearch.replace(lastDayMatch[0], "").trim();
     }
@@ -122,6 +123,7 @@ export const searchArticles = async ({
     tokens.forEach(tok => {
       // Clean trailing punctuation (allows: "star:true," or "tag:tech;")
       const cleaned = tok.replace(/[.,;]+$/, "");
+      console.log(`\x1b[31mProcessing search token: "${cleaned}"\x1b[0m`);
 
       // Match various field filter patterns
       const starMatch = cleaned.match(/^star:\s*(true|false)$/i); // star:true or star:false
@@ -141,43 +143,43 @@ export const searchArticles = async ({
       
       if (hotMatch) {
         hotFilter = hotMatch[1].toLowerCase() === 'true';
-        console.log(`Hot filter applied via search token: ${hotFilter}`);
+        console.log(`\x1b[31mHot filter applied via search token: ${hotFilter}\x1b[0m`);
       } else if (clusterMatch) {
         clusterFilter = clusterMatch[1].toLowerCase() === 'true';
-        console.log(`Cluster filter applied via search token: ${clusterFilter}`);
+        console.log(`\x1b[31mCluster filter applied via search token: ${clusterFilter}\x1b[0m`);
       } else if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
-        console.log(`Star filter applied via search token: ${starFilter}`);
+        console.log(`\x1b[31mStar filter applied via search token: ${starFilter}\x1b[0m`);
       } else if (unreadMatch) {
         unreadFilter = unreadMatch[1].toLowerCase() === 'true';
-        console.log(`Unread filter applied via search token: ${unreadFilter}`);
+        console.log(`\x1b[31mUnread filter applied via search token: ${unreadFilter}\x1b[0m`);
       } else if (readMatch) {
         readFilter = readMatch[1].toLowerCase() === 'true';
-        console.log(`Read filter applied via search token: ${readFilter}`);
+        console.log(`\x1b[31mRead filter applied via search token: ${readFilter}\x1b[0m`);
       } else if (clickedMatch) {
         clickedFilter = clickedMatch[1].toLowerCase() === 'true';
-        console.log(`Clicked filter applied via search token: ${clickedFilter}`);
+        console.log(`\x1b[31mClicked filter applied via search token: ${clickedFilter}\x1b[0m`);
       } else if (tagMatch) {
         tagFilter = tagMatch[1].trim();
-        console.log(`Tag filter applied via search token: ${tagFilter}`);
+        console.log(`\x1b[31mTag filter applied via search token: ${tagFilter}\x1b[0m`);
       } else if (titleMatch) {
         titleFilter = titleMatch[1].trim();
-        console.log(`Title filter applied via search token: ${titleFilter}`);
+        console.log(`\x1b[31mTitle filter applied via search token: ${titleFilter}\x1b[0m`);
       } else if (sortMatch) {
         sortFilter = sortMatch[1].toUpperCase();
-        console.log(`Sort filter applied via search token: ${sortFilter}`);
+        console.log(`\x1b[31mSort filter applied via search token: ${sortFilter}\x1b[0m`);
       } else if (qualityMatch) {
         qualityFilter = {
-          operator: qualityMatch[1] || ">=",
+          operator: qualityMatch[1] || ">=", // Default: filter IN good articles and filter OUT poor articles.
           value: parseFloat(qualityMatch[2])
         };
-        console.log("Quality filter applied via search token:", qualityMatch.slice(1));
+        console.log(`\x1b[31mQuality filter applied via search token: ${qualityMatch.slice(1).join(', ')}\x1b[0m`);
       } else if (freshnessMatch) {
         freshnessFilter = {
           operator: freshnessMatch[1] || ">=",
           value: parseFloat(freshnessMatch[2])
         };
-        console.log("Freshness filter applied via search token:", freshnessMatch.slice(1));
+        console.log(`\x1b[31mFreshness filter applied via search token: ${freshnessMatch.slice(1).join(', ')}\x1b[0m`);
       } else if (dateMatch) {
         // @YYYY-MM-DD: Specific calendar day in UTC
         dateToken = dateMatch[1];
@@ -185,14 +187,14 @@ export const searchArticles = async ({
           start: new Date(`${dateMatch[1]}T00:00:00.000Z`),
           end: new Date(`${dateMatch[1]}T23:59:59.999Z`)
         };
-        console.log(`Date filter applied via search token: ${dateToken}`);
+        console.log(`\x1b[31mDate filter applied via search token: ${dateToken}\x1b[0m`);
       } else if (todayMatch) {
         // @today: Rolling 24-hour window from now back
         dateToken = "today";
         const now = new Date();
         const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
         dateRange = { start, end: now };
-        console.log("Date filter applied via search token: today (last 24h)");
+        console.log(`\x1b[31mDate filter applied via search token: today (last 24h)\x1b[0m`);
       } else if (yesterdayMatch) {
         // @yesterday: Previous UTC calendar day (00:00:00 to 23:59:59)
         dateToken = "yesterday";
@@ -200,7 +202,7 @@ export const searchArticles = async ({
         const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 0, 0, 0, 0));
         const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 23, 59, 59, 999));
         dateRange = { start, end };
-        console.log("Date filter applied via search token: yesterday (UTC day)");
+        console.log(`\x1b[31mDate filter applied via search token: yesterday (UTC day)\x1b[0m`);
       } else {
         remainingTokens.push(cleaned);
       }
@@ -226,11 +228,11 @@ export const searchArticles = async ({
     if (quotedPhrase) {
       // Exact phrase match from quoted input
       textSearch = `%${quotedPhrase}%`;
-      console.log(`Using exact phrase match: "${quotedPhrase}"`);
+      console.log(`\x1b[31mUsing exact phrase match: "${quotedPhrase}"\x1b[0m`);
     } else if (remainingTokens.length > 0) {
       // Unquoted search: create individual word patterns for OR matching
       wordMatches = remainingTokens.map(token => ({ [Op.like]: `%${token}%` }));
-      console.log(`Using word-by-word OR matching for: ${remainingTokens.join(", ")}`);
+      console.log(`\x1b[31mUsing word-by-word OR matching for: ${remainingTokens.join(", ")}\x1b[0m`);
     } else {
       // No remaining tokens or quoted phrase: match all
       textSearch = "%";
@@ -254,11 +256,11 @@ export const searchArticles = async ({
       workingSort = "DESC";
       sortQuality = true;
     }
-    console.log(`Final sort value: "${workingSort}"`);
+    console.log(`\x1b[31mFinal sort value: "${workingSort}"\x1b[0m`);
 
     // Tag: search token (tag:name) overrides query param
     let workingTag = tagFilter !== null ? tagFilter : (tag || "").trim();
-    console.log(`Final tag value: "${workingTag}"`);
+    console.log(`\x1b[31mFinal tag value: "${workingTag}"\x1b[0m`);
 
     /**
      * If tag filter is present, fetch all article IDs with that tag.
@@ -275,7 +277,7 @@ export const searchArticles = async ({
 
         // Extract article IDs from tag rows
         taggedArticleIds = tagRows.map(t => t.articleId);
-        console.log(`Found ${taggedArticleIds.length} articles with tag "${workingTag}" for user ${userId}`);
+        console.log(`\x1b[31mFound ${taggedArticleIds.length} articles with tag "${workingTag}" for user ${userId}\x1b[0m`);
 
         // If tag was provided but no articles found, return empty result
         if (taggedArticleIds.length === 0) {
@@ -285,7 +287,7 @@ export const searchArticles = async ({
           });
         }
       } catch (err) {
-        console.error("Error fetching articles by tag:", err);
+        console.error(`\x1b[31mError fetching articles by tag:\x1b[0m`, err);
         return res.status(500).json({ error: err.message });
       }
     }
@@ -339,13 +341,13 @@ export const searchArticles = async ({
       // If there are remaining tokens or quoted phrase, also search content for them
       if (quotedPhrase) {
         baseWhere.contentOriginal = { [Op.like]: `%${quotedPhrase}%` };
-        console.log(`Title search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"`);
+        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"\x1b[0m`);
       } else if (remainingTokens.length > 0) {
         // OR on individual words in content
         baseWhere[Op.or] = wordMatches.map(match => ({ contentOriginal: match }));
-        console.log(`Title search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}`);
+        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}\x1b[0m`);
       } else {
-        console.log(`Title-only search: "%${titleFilter}%"`);
+        console.log(`\x1b[31mTitle-only search: "%${titleFilter}%"\x1b[0m`);
       }
     } else if (quotedPhrase) {
       // Quoted phrase: search title OR content for exact phrase
@@ -353,7 +355,7 @@ export const searchArticles = async ({
         { title: { [Op.like]: `%${quotedPhrase}%` } },
         { contentOriginal: { [Op.like]: `%${quotedPhrase}%` } }
       ];
-      console.log(`Quoted phrase search (exact): "${quotedPhrase}"`);
+      console.log(`\x1b[31mQuoted phrase search (exact): "${quotedPhrase}"\x1b[0m`);
     } else if (wordMatches.length > 0) {
       // Unquoted search: each word must appear somewhere in title OR content
       // Build: (title LIKE %word1% OR content LIKE %word1%) AND (title LIKE %word2% OR content LIKE %word2%) ...
@@ -364,7 +366,7 @@ export const searchArticles = async ({
         ]
       }));
       baseWhere[Op.and] = wordConditions;
-      console.log(`Word-by-word AND search: ${remainingTokens.join(", ")}`);
+      console.log(`\x1b[31mWord-by-word AND search: ${remainingTokens.join(", ")}\x1b[0m`);
     }
     // Note: If no search terms at all (no titleFilter, quotedPhrase, or wordMatches), 
     // we don't add any text search filters - baseWhere will match all articles
@@ -491,7 +493,7 @@ export const searchArticles = async ({
             return true;
         }
       });
-      console.log(`Applied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${articles.length} articles remaining`);
+      console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${articles.length} articles remaining\x1b[0m`);
     }
 
     // Apply freshness score filter if present (must be done in-memory since freshness is a virtual field)
@@ -515,7 +517,7 @@ export const searchArticles = async ({
             return true;
         }
       });
-      console.log(`Applied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${articles.length} articles remaining`);
+      console.log(`\x1b[31mApplied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${articles.length} articles remaining\x1b[0m`);
     }
     
     // If sorting by importance, compute importance scores and sort
@@ -532,10 +534,10 @@ export const searchArticles = async ({
     const hasSearchExpression = rawSearch && rawSearch.trim() !== "" && rawSearch.trim() !== "%";
     if (hasSearchExpression && itemIds.length > 500) {
       itemIds = itemIds.slice(0, 500);
-      console.log(`Limited results to 500 articles due to search expression usage`);
+      console.log(`\x1b[31mLimited results to 500 articles due to search expression usage\x1b[0m`);
     }
     
-    console.log(`Found ${itemIds.length} articles matching query for user ${userId}`);
+    console.log(`\x1b[31mFound ${itemIds.length} articles matching query for user ${userId}\x1b[0m`);
 
     if (persistSettings) {
         // Update user settings (skip when tag-based query is used)

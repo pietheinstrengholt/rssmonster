@@ -109,17 +109,17 @@ module.exports = {
       advertisementScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 0
+        defaultValue: 70
       },
       sentimentScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 50
+        defaultValue: 70
       },
       qualityScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 50
+        defaultValue: 70
       },
       published: {
         type: Sequelize.DATE,

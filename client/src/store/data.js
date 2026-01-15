@@ -173,6 +173,7 @@ export const useStore = defineStore('data', {
     },
     setSmartFolder(smartFolder) {
       // set defaults, unless overridden by search
+      console.log("Setting smart folder:", smartFolder);
       this.currentSelection.categoryId = '%'; 
       this.currentSelection.feedId = '%';
       this.currentSelection.status = 'unread';

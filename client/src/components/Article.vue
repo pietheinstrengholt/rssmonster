@@ -1,6 +1,10 @@
 <template>
   <div class="block" :id="id">
-    <div class="article" v-bind:class="{'starred': starInd == 1, 'hot': hotInd == 1 }" v-on:click="articleTouched(id, $event)">    
+    <div
+      class="article"
+      :class="{ starred: starInd == 1, hot: hotInd == 1 }"
+      @click="articleTouched(id, $event)"
+    >
       <div class="maximal">
         <h5 class="heading">
           <BootstrapIcon v-if="clickedInd == 1" icon="bookmark-fill" class="clicked-icon" />
@@ -8,38 +12,105 @@
           <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
           <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
         </h5>
+
         <div class="feedname">
           <span class="published_date">{{ formatDate(published) }}</span>
           <span class="break">by</span>
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
-          <span v-if="cluster && (cluster.articleCount || 0) > 1" class="cluster"> + {{ cluster.articleCount }} similar articles</span>
+          <span v-if="cluster && (cluster.articleCount || 0) > 1" class="cluster">
+            + {{ cluster.articleCount }} similar articles
+          </span>
         </div>
-        <div v-if="tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'" class="article-tags">
+
+        <!-- TAGS + SCORES -->
+        <div
+          v-if="tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'"
+          class="article-tags"
+        >
           <span
             v-for="tag in tags"
             :key="tag.id"
             class="tag"
-            v-on:click.stop="selectTag(tag)"
-          >{{ tag.name }}</span>
-          <span v-if="quality !== undefined" class="score overall-score" :title="'Quality Score: ' + quality">Quality: {{ quality * 100 }}</span>
-          <span v-if="advertisementScore !== undefined && advertisementScore > 0" class="score ad-score" :title="'Advertisement Score: ' + advertisementScore">Ad: {{ advertisementScore }}</span>
-          <span v-if="sentimentScore !== undefined && sentimentScore !== 50" class="score sentiment-score" :title="'Sentiment Score: ' + sentimentScore">Sentiment: {{ sentimentScore }}</span>
-          <span v-if="qualityScore !== undefined && qualityScore !== 50" class="score quality-score" :title="'Quality Score: ' + qualityScore">Writing: {{ qualityScore }}</span>
+            @click.stop="selectTag(tag)"
+          >
+            {{ tag.name }}
+          </span>
+
+          <!-- Overall quality -->
+          <span
+            v-if="quality !== undefined"
+            class="score overall-score"
+            :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`"
+          >
+            Quality: {{ roundedQuality }} · {{ scoreLabel(roundedQuality) }}
+          </span>
+
+          <!-- Advertisement score (only when bad) -->
+          <span
+            v-if="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE"
+            class="score ad-score"
+            :title="`Promotional content detected (score: ${advertisementScore})`"
+          >
+            Ads: {{ advertisementScore }}
+          </span>
+
+          <!-- Sentiment score (only when non-default) -->
+          <span
+            v-if="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE"
+            class="score sentiment-score"
+            :title="`Tone quality: ${sentimentScore}`"
+          >
+            Sentiment: {{ sentimentScore }}
+          </span>
+
+          <!-- Writing quality score (only when non-default) -->
+          <span
+            v-if="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE"
+            class="score quality-score"
+            :title="`Writing quality: ${qualityScore}`"
+          >
+            Writing: {{ qualityScore }}
+          </span>
         </div>
       </div>
+
+      <!-- FULL VIEW -->
       <div v-if="$store.data.currentSelection.viewMode === 'full'" class="article-content">
-        <div class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'" v-html="contentOriginal"></div>
-        <div class="media-content enclosure" v-if="imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)">
+        <div
+          class="article-body"
+          v-if="contentOriginal !== '<html><head></head><body>null</body></html>'"
+          v-html="contentOriginal"
+        ></div>
+        <div
+          class="media-content enclosure"
+          v-if="imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)"
+        >
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
+
+      <!-- SUMMARIZED VIEW -->
       <div v-if="$store.data.currentSelection.viewMode === 'summarized'" class="article-content">
-        <p class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'">{{ stripHTML(contentOriginal) }}</p>
+        <p
+          class="article-body"
+          v-if="contentOriginal !== '<html><head></head><body>null</body></html>'"
+        >
+          {{ stripHTML(contentOriginal) }}
+        </p>
       </div>
-      <div v-if="$store.data.currentSelection.viewMode === 'minimal' && showMinimalContent" class="article-content">
-        <div class="article-body" v-if="contentOriginal !== '<html><head></head><body>null</body></html>'" v-html="contentOriginal"></div>
+
+      <!-- MINIMAL VIEW -->
+      <div
+        v-if="$store.data.currentSelection.viewMode === 'minimal' && showMinimalContent"
+        class="article-content"
+      >
+        <div
+          class="article-body"
+          v-if="contentOriginal !== '<html><head></head><body>null</body></html>'"
+          v-html="contentOriginal"
+        ></div>
       </div>
     </div>
   </div>
@@ -351,6 +422,8 @@ span.feed_name a {
 <script>
 import axios from 'axios';
 
+const NEUTRAL_SCORE = 70;
+
 function timeDifference(current, previous) {
   const msPerMinute = 60 * 1000;
   const msPerHour = msPerMinute * 60;
@@ -358,160 +431,116 @@ function timeDifference(current, previous) {
   const msPerMonth = msPerDay * 30;
   const msPerYear = msPerDay * 365;
   const elapsed = current - previous;
-  if (elapsed < msPerMinute) {
-    return Math.round(elapsed / 1000) + ' seconds ago';
-  } else if (elapsed < msPerHour) {
-    return Math.round(elapsed / msPerMinute) + ' minutes ago';
-  } else if (elapsed < msPerDay) {
-    return Math.round(elapsed / msPerHour) + ' hours ago';
-  } else if (elapsed < msPerMonth) {
-    return 'approximately ' + Math.round(elapsed / msPerDay) + ' days ago';
-  } else if (elapsed < msPerYear) {
-    return 'approximately ' + Math.round(elapsed / msPerMonth) + ' months ago';
-  } else {
-    return 'approximately ' + Math.round(elapsed / msPerYear) + ' years ago';
-  }
+
+  if (elapsed < msPerMinute) return Math.round(elapsed / 1000) + ' seconds ago';
+  if (elapsed < msPerHour) return Math.round(elapsed / msPerMinute) + ' minutes ago';
+  if (elapsed < msPerDay) return Math.round(elapsed / msPerHour) + ' hours ago';
+  if (elapsed < msPerMonth) return 'approximately ' + Math.round(elapsed / msPerDay) + ' days ago';
+  if (elapsed < msPerYear) return 'approximately ' + Math.round(elapsed / msPerMonth) + ' months ago';
+  return 'approximately ' + Math.round(elapsed / msPerYear) + ' years ago';
 }
 
 export default {
   emits: ['update-star', 'update-clicked'],
+  props: [
+    'id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author',
+    'hotInd', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media',
+    'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
+    'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
+    'quality', 'cluster'
+  ],
   data() {
     return {
-      showMinimalContent: false
+      showMinimalContent: false,
+      NEUTRAL_SCORE
     };
   },
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
-  props: ['id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author', 'hotInd', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media', 'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId', 'tags', 'advertisementScore', 'sentimentScore', 'qualityScore', 'quality', 'cluster'],
   computed: {
-    formatDate: function() {
-      return (value)=> {
-        if (value) {
-          // Use custom timeDifference instead of moment.js
-          const now = Date.now();
-          const then = new Date(value).getTime();
-          let result = timeDifference(now, then);
-          result = result.charAt(0).toUpperCase() + result.slice(1);
-          return result;
-        }
-      }
+    roundedQuality() {
+      return Math.round((this.quality || 0) * 100);
     },
-    stripHTML: function() {
-      return (value)=> {
-        //strip out all HTML
-        var str1 = value.replace(/<(.|\n)*?>/g, "");
-        //take first 100 words
-        var str2 = str1
+    formatDate() {
+      return value => {
+        if (!value) return '';
+        const result = timeDifference(Date.now(), new Date(value).getTime());
+        return result.charAt(0).toUpperCase() + result.slice(1);
+      };
+    },
+    stripHTML() {
+      return value =>
+        value
+          .replace(/<(.|\n)*?>/g, '')
           .split(/\s+/)
           .slice(0, 100)
-          .join(" ");
-        return str2;
-      }
+          .join(' ');
     },
-    mainURL: function() {
-      return (value)=> {
-        try {  
-          const urlObject = new URL(value);  
-          return `${urlObject.protocol}//${urlObject.host}/`;  
-        } catch (error) {  
-          console.error("Invalid URL", error);  
-          return value;  
+    mainURL() {
+      return value => {
+        try {
+          const url = new URL(value);
+          return `${url.protocol}//${url.host}/`;
+        } catch {
+          return value;
         }
-      }
+      };
     }
   },
   methods: {
+    scoreLabel(score) {
+      if (score >= 90) return 'Excellent';
+      if (score >= 80) return 'Good';
+      if (score >= 70) return 'Okay';
+      if (score >= 60) return 'Weak';
+      return 'Poor';
+    },
     articleTouched(articleId, event) {
-      if (this.$store.data.currentSelection.viewMode === 'full' || this.$store.data.currentSelection.viewMode === 'summarized') {
+      if (['full', 'summarized'].includes(this.$store.data.currentSelection.viewMode)) {
         this.bookmark(articleId, event);
       } else if (this.$store.data.currentSelection.viewMode === 'minimal') {
-        // Avoid toggling when clicking actual links
-        if (event.srcElement && event.srcElement.nodeName === 'A') return;
+        if (event.srcElement?.nodeName === 'A') return;
         this.showMinimalContent = !this.showMinimalContent;
       }
     },
     bookmark(articleId, event) {
-      // do not bookmark when clicking on hyperlinks
-      if (event.srcElement.nodeName === "A") return;
+      if (event.srcElement.nodeName === 'A') return;
 
-      const isStarred = event.currentTarget.className.indexOf("starred") >= 0;
-      const updateType = isStarred ? "unmark" : "mark";
+      const isStarred = event.currentTarget.className.includes('starred');
+      const updateType = isStarred ? 'unmark' : 'mark';
       const delta = isStarred ? -1 : 1;
       const newStarInd = isStarred ? 0 : 1;
 
       axios
-        .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markwithstar/" + articleId, { update: updateType })
-        .then(
-          response => {
-            const categoryIndex = this.$store.data.categories.findIndex(
-              category => category.id === response.data.feed.categoryId
-            );
-
-            if (categoryIndex >= 0) {
-              this.$store.data.categories[categoryIndex].starCount += delta;
-
-              const feedIndex = this.$store.data.categories[categoryIndex].feeds.findIndex(
-                feed => feed.id === response.data.feedId
-              );
-
-              if (feedIndex >= 0) {
-                this.$store.data.categories[categoryIndex].feeds[feedIndex].starCount += delta;
-              }
-            }
-
-            if (delta > 0) {
-              this.$store.data.increaseStarCount();
-            } else {
-              this.$store.data.decreaseStarCount();
-            }
-
-            // notify parent to update star indicator
-            this.$emit('update-star', { id: articleId, starInd: newStarInd });
-          },
-          response => {
-            /* eslint-disable no-console */
-            console.log("oops something went wrong", response);
-            /* eslint-enable no-console */
+        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markwithstar/${articleId}`, { update: updateType })
+        .then(response => {
+          const category = this.$store.data.categories.find(c => c.id === response.data.feed.categoryId);
+          if (category) {
+            category.starCount += delta;
+            const feed = category.feeds.find(f => f.id === response.data.feedId);
+            if (feed) feed.starCount += delta;
           }
-        );
+          delta > 0 ? this.$store.data.increaseStarCount() : this.$store.data.decreaseStarCount();
+          this.$emit('update-star', { id: articleId, starInd: newStarInd });
+        });
     },
     selectTag(tag) {
-      const name = tag && tag.name ? tag.name : '';
-      // Update the store current selection tag with the tag name
       if (this.$store.data.currentSelection) {
-        this.$store.data.currentSelection.tag = name;
+        this.$store.data.currentSelection.tag = tag?.name || '';
       }
     },
     articleClicked(articleId) {
-      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markclicked/" + articleId)
-        .then(() => {
-          /* eslint-disable no-console */
-          console.log("Article marked as clicked");
-          /* eslint-enable no-console */
-        })
-        .catch(error => {
-          /* eslint-disable no-console */
-          console.error("Error marking article as clicked:", error);
-          /* eslint-enable no-console */
-        })
-        .finally(() => {
-          this.$emit('update-clicked', { id: articleId, clickedInd: 1 });
-        });
+      axios
+        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markclicked/${articleId}`)
+        .finally(() => this.$emit('update-clicked', { id: articleId, clickedInd: 1 }));
     },
-
-    // Returns true if the current imageUrl appears inside contentOriginal
-    // Accounts for HTML-encoded query params (e.g., & -> &amp;)
     isImageUrlInContent() {
       const content = this.contentOriginal || '';
       const url = this.imageUrl || '';
-      if (!content || !url) {
-        return false;
-      }
-
       const encodedUrl = url.replace(/&/g, '&amp;');
       return content.includes(url) || content.includes(encodedUrl);
     }
   }
-}
+};
 </script>
