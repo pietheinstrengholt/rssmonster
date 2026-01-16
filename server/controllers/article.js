@@ -177,6 +177,16 @@ const articleDetails = async (req, res, next) => {
     }
 
     const articlesArray = articleIds.split(",");
+    console.log(`\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`);
+
+    // Determine ordering strategy:
+    // - IMPORTANCE/QUALITY: preserve articleIds order (already sorted by search service)
+    // - DESC/ASC: sort by published date
+    // - Default: DESC
+    const sortUpper = (sort || "").toUpperCase();
+    const orderClause = ["IMPORTANCE", "QUALITY"].includes(sortUpper)
+      ? [] // No database sorting - preserve ID array order
+      : [["published", sort || "DESC"]];
 
     const articles = await Article.findAll({
       include: [
@@ -195,9 +205,7 @@ const articleDetails = async (req, res, next) => {
           required: false
         },
       ],
-      order: [
-        ["published", ["IMPORTANCE", "QUALITY"].includes((sort || "").toUpperCase()) ? "DESC" : sort]
-      ],
+      order: orderClause,
       where: {
         userId: userId,
         id: articlesArray
@@ -210,30 +218,7 @@ const articleDetails = async (req, res, next) => {
       });
     }
     
-    // If sorting by importance, compute importance scores and sort
-    if (sort.toUpperCase() === "IMPORTANCE") {
-      const sortedArticles = articles
-        .map(article => ({
-          article,
-          importance: computeImportance(article)
-        }))
-        .sort((a, b) => b.importance - a.importance)
-        .map(item => item.article);
-      
-      return res.status(200).json(sortedArticles);
-    } else if (sort.toUpperCase() === "QUALITY") {
-      const sortedArticles = articles
-        .map(article => ({
-          article,
-          quality: article.quality
-        }))
-        .sort((a, b) => b.quality - a.quality)
-        .map(item => item.article);
-
-      return res.status(200).json(sortedArticles);
-    } else {
-      return res.status(200).json(articles);
-    }
+    return res.status(200).json(articles);
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);

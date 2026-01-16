@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, Setting } = db;
 import { Op } from 'sequelize';
+import { computeImportance } from './importanceScore.js';
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -527,6 +528,27 @@ export const searchArticles = async ({
     if (sortQuality) {
       workingSort = "QUALITY";
     }
+
+    // Move the sorting logic here to after all filtering is done
+    console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
+    if (sortImportance) {
+      articles = articles
+        .map(article => ({
+          article,
+          importance: computeImportance(article)
+        }))
+        .sort((a, b) => b.importance - a.importance)
+        .map(item => item.article);
+    } else if (sortQuality) {
+      articles = articles
+        .map(article => ({
+          article,
+          quality: article.quality
+        }))
+        .sort((a, b) => b.quality - a.quality)
+        .map(item => item.article);
+    }
+
     let itemIds;
     itemIds = articles.map(article => article.id);
     
@@ -540,8 +562,9 @@ export const searchArticles = async ({
     console.log(`\x1b[31mFound ${itemIds.length} articles matching query for user ${userId}\x1b[0m`);
 
     if (persistSettings) {
-        // Update user settings (skip when tag-based query is used)
-        // Note: tag is not persisted in settings currently
+      // Update user settings (skip when tag-based query is used)
+      // Note: tag is not persisted in settings currently
+      console.log(`\x1b[32mPersisting search settings for user ${userId}\x1b[0m`);
       const settingsPayload = {
         userId: userId,
         categoryId: categoryId,
@@ -555,7 +578,9 @@ export const searchArticles = async ({
         clusterView: clusterView
       };
 
-      await Setting.upsert(settingsPayload);
+      // Enforce a single settings row per user: clear then insert fresh
+      await Setting.destroy({ where: { userId } });
+      await Setting.create(settingsPayload);
     }
 
     return {

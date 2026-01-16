@@ -131,6 +131,10 @@ export default (sequelize) => {
            * Default behavior:
            * - Articles without scores start at a neutral-good baseline (70)
            *   to avoid unfair penalization during ingestion or reprocessing.
+           *
+           * Feed trust adjustment:
+           * - If Feed association is loaded, multiply by feed's trustScore
+           * - This boosts quality for trusted feeds and reduces it for questionable ones
            */
           let overall =
             sentimentScore * 0.5 +
@@ -138,7 +142,15 @@ export default (sequelize) => {
             advertisementScore * 0.15;
 
           overall = Math.max(0, Math.min(100, overall));
-          return overall / 100;
+          let baseQuality = overall / 100;
+
+          // Apply feed trust adjustment if Feed association is loaded
+          const feed = this.get('Feed');
+          if (feed && feed.feedTrust) {
+            baseQuality = baseQuality * feed.feedTrust;
+          }
+
+          return baseQuality;
         }
       },
       uniqueness: {

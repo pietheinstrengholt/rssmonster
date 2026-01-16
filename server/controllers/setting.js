@@ -28,9 +28,9 @@ export const getSettings = async (req, res, next) => {
       feedId = settings.feedId;
       status = settings.status;
       sort = settings.sort;
-      minAdvertisementScore = settings.minAdvertisementScore || 100;
-      minSentimentScore = settings.minSentimentScore || 100;
-      minQualityScore = settings.minQualityScore || 100;
+      minAdvertisementScore = settings.minAdvertisementScore || 0;
+      minSentimentScore = settings.minSentimentScore || 0;
+      minQualityScore = settings.minQualityScore || 0;
       viewMode = settings.viewMode || 'full';
       clusterView = settings.clusterView || false;
     }

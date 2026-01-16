@@ -65,7 +65,7 @@ module.exports = {
         feedTrust: {
           type: Sequelize.FLOAT,
           allowNull: false,
-          defaultValue: 0.5
+          defaultValue: 0.8
         },
         feedDuplicationRate: {
           type: Sequelize.FLOAT,
