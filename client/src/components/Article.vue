@@ -292,6 +292,13 @@
   color: #2e7d32;
 }
 
+/* Hide tags and scores on mobile portrait mode */
+@media (max-width: 766px) and (orientation: portrait) {
+  .block .article-tags {
+    display: none;
+  }
+}
+
 .block.active {
   background-color: #ffffe5;
 }
