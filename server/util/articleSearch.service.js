@@ -13,9 +13,9 @@ export const searchArticles = async ({
     categoryId = "%",
     feedId = "%",
     status = "unread",
-    minAdvertisementScore = 100,
-    minSentimentScore = 100,
-    minQualityScore = 100,
+    minAdvertisementScore = 0,
+    minSentimentScore = 0,
+    minQualityScore = 0,
     sort = "DESC",
     viewMode = "full",
     tag = null,
@@ -325,10 +325,10 @@ export const searchArticles = async ({
     const baseWhere = {
       userId: userId,
       feedId: feedIds,
-      // Quality filters: exclude low-quality/spam articles
-      advertisementScore: { [Op.lte]: minAdvertisementScore },
-      sentimentScore: { [Op.lte]: minSentimentScore },
-      qualityScore: { [Op.lte]: minQualityScore }
+      // Quality filters: get articles above minimum scores
+      advertisementScore: { [Op.gte]: minAdvertisementScore },
+      sentimentScore: { [Op.gte]: minSentimentScore },
+      qualityScore: { [Op.gte]: minQualityScore }
     };
 
     // Text search logic:

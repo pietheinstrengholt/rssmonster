@@ -93,10 +93,10 @@ export default {
   emits: ['close', 'saved', 'forceReload'],
   data() {
     return {
-        advertisementScore: 100,
-        sentimentScore: 100,
-        qualityScore: 100,
-        scoreOptions: [100, 90, 80, 70, 60, 50, 40, 30, 20, 10, 0]
+        advertisementScore: 0,
+        sentimentScore: 0,
+        qualityScore: 0,
+        scoreOptions: [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
     };
   },
   created() {
