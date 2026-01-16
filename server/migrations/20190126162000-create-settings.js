@@ -12,6 +12,7 @@ module.exports = {
         },
         userId: {
           type: Sequelize.INTEGER,
+          unique: true,
           allowNull: false,
           references: {
             // This is a reference to another model
