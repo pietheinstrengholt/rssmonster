@@ -7,11 +7,11 @@
  */
 export function computeImportance(article) {
   // Time decay: newer articles score higher
-  const freshness = article.freshness ?? 0;
+  const freshness = article.freshness ?? 0.5;
 
   // Content signal: editorial > promotional, neutral tone preferred
   // (includes feedTrust boost via the Article model's quality virtual field)
-  const quality = article.quality ?? 0;
+  const quality = article.quality ?? 0.7;
 
   // Coverage signal: articles covered by more sources rank higher (inverted uniqueness)
   // More sources reporting the same story = greater importance
@@ -21,8 +21,10 @@ export function computeImportance(article) {
   const clusterSize = cluster?.articleCount ?? 1;
   const coverage = Math.log2(clusterSize + 1) / (1 + Math.log2(clusterSize + 1));
 
-  // Multiplicative score: weak signals naturally lower importance
-  const importance = freshness * quality * coverage;
+  // Weighted sum: balances all signals to produce importance score (0–1)
+  // Weights: quality (50%), freshness (30%), coverage (20%)
+  // Quality dominates since content is king; freshness ensures recency bias; coverage rewards broad reporting
+  const importance = 0.2 * quality + 0.4 * freshness + 0.4 * coverage;
 
-  return Math.max(0, importance);
+  return Math.max(0, Math.min(1, importance));
 }
