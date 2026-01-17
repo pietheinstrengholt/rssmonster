@@ -156,6 +156,17 @@ export default (sequelize) => {
       uniqueness: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
+          /**
+           * Uniqueness score: penalizes articles in larger clusters (duplicates/near-duplicates).
+           *
+           * Scoring semantics (0–1):
+           * - 1.0 = standalone article or small cluster (highly unique)
+           * - 0.6–0.8 = part of a small cluster (2–4 similar articles)
+           * - 0.3–0.5 = part of a medium cluster (5–16 similar articles)
+           * - <0.3 = part of a large cluster (17+ similar articles, very redundant)
+           *
+           * Used in importance ranking to suppress redundant articles.
+           */
           const cluster = this.get('cluster');
 
           if (!cluster || !cluster.articleCount || cluster.articleCount <= 1) {
