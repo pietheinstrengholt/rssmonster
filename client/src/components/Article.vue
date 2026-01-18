@@ -19,6 +19,51 @@
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
+          <span
+            v-if="isMobilePortrait && tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'"
+            class="inline-mobile-tags"
+          >
+            <span
+              v-for="tag in tags"
+              :key="tag.id"
+              class="tag"
+              @click.stop="selectTag(tag)"
+            >
+              {{ tag.name }}
+            </span>
+
+            <span
+              v-if="quality !== undefined"
+              class="score overall-score"
+              :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`"
+            >
+              Quality: {{ roundedQuality }} · {{ scoreLabel(roundedQuality) }}
+            </span>
+
+            <span
+              v-if="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE"
+              class="score ad-score"
+              :title="`Promotional content detected (score: ${advertisementScore})`"
+            >
+              Ads: {{ advertisementScore }}
+            </span>
+
+            <span
+              v-if="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE"
+              class="score sentiment-score"
+              :title="`Tone quality: ${sentimentScore}`"
+            >
+              Sentiment: {{ sentimentScore }}
+            </span>
+
+            <span
+              v-if="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE"
+              class="score quality-score"
+              :title="`Writing quality: ${qualityScore}`"
+            >
+              Writing: {{ qualityScore }}
+            </span>
+          </span>
           <span v-if="cluster && (cluster.articleCount || 0) > 1" class="cluster">
             + {{ cluster.articleCount }} similar articles
           </span>
@@ -297,6 +342,10 @@
   .block .article-tags {
     display: none;
   }
+
+  .block .article h5 a {
+    font-size: 18px;
+  }
 }
 
 .block.active {
@@ -323,6 +372,43 @@ span.feed_name a {
   height: 18px;
   width: 18px;
   margin-top: -1px;
+}
+
+.inline-mobile-tags {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.inline-mobile-tags .tag,
+.inline-mobile-tags .score {
+  background-color: #f5f5f5;
+  color: #666;
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
+.inline-mobile-tags .overall-score {
+  background-color: #ffebee;
+  color: #c62828;
+}
+
+.inline-mobile-tags .ad-score {
+  background-color: #fff3e0;
+  color: #e65100;
+}
+
+.inline-mobile-tags .sentiment-score {
+  background-color: #e8eaf6;
+  color: #3f51b5;
+}
+
+.inline-mobile-tags .quality-score {
+  background-color: #e8f5e9;
+  color: #2e7d32;
 }
 
 .media-content.enclosure img {
@@ -416,6 +502,32 @@ span.feed_name a {
     color: #81c784;
   }
 
+  .inline-mobile-tags .tag,
+  .inline-mobile-tags .score {
+    background-color: #2a2a2a;
+    color: #ccc;
+  }
+
+  .inline-mobile-tags .overall-score {
+    background-color: #2d1a1f;
+    color: #ef5350;
+  }
+
+  .inline-mobile-tags .ad-score {
+    background-color: #3d2a1f;
+    color: #ffb74d;
+  }
+
+  .inline-mobile-tags .sentiment-score {
+    background-color: #1a1f3a;
+    color: #9fa8da;
+  }
+
+  .inline-mobile-tags .quality-score {
+    background-color: #1f2e1f;
+    color: #81c784;
+  }
+
   nav ul li {
     background: #000;
   }
@@ -459,11 +571,22 @@ export default {
   data() {
     return {
       showMinimalContent: false,
-      NEUTRAL_SCORE
+      NEUTRAL_SCORE,
+      isMobilePortrait: false,
+      mediaQuery: null
     };
   },
   created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+  },
+  mounted() {
+    this.setupMediaQueryListener();
+  },
+  beforeUnmount() {
+    this.teardownMediaQueryListener();
+  },
+  beforeDestroy() {
+    this.teardownMediaQueryListener();
   },
   computed: {
     roundedQuality() {
@@ -496,6 +619,29 @@ export default {
     }
   },
   methods: {
+    setupMediaQueryListener() {
+      if (typeof window === 'undefined' || !window.matchMedia) return;
+      this.mediaQuery = window.matchMedia('(max-width: 766px) and (orientation: portrait)');
+      this.isMobilePortrait = this.mediaQuery.matches;
+      if (this.mediaQuery.addEventListener) {
+        this.mediaQuery.addEventListener('change', this.handleMediaChange);
+      } else if (this.mediaQuery.addListener) {
+        this.mediaQuery.addListener(this.handleMediaChange);
+      }
+    },
+    teardownMediaQueryListener() {
+      if (this.mediaQuery) {
+        if (this.mediaQuery.removeEventListener) {
+          this.mediaQuery.removeEventListener('change', this.handleMediaChange);
+        } else if (this.mediaQuery.removeListener) {
+          this.mediaQuery.removeListener(this.handleMediaChange);
+        }
+        this.mediaQuery = null;
+      }
+    },
+    handleMediaChange(event) {
+      this.isMobilePortrait = event.matches;
+    },
     scoreLabel(score) {
       if (score >= 90) return 'Excellent';
       if (score >= 80) return 'Good';
