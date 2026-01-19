@@ -31,6 +31,11 @@
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'hot' }" href="#" @click="statusClicked('hot')">Hot {{ $store.data.hotCount }}</a>
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'clicked' }" href="#" @click="statusClicked('clicked')">Clicked {{ $store.data.clickedCount }}</a>
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'read' }" href="#" @click="statusClicked('read')">Read {{ $store.data.readCount }}</a>
+        <li><hr class="dropdown-divider"></li>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">Oldest</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">Newest</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'IMPORTANCE' }" href="#" @click="sortClicked('IMPORTANCE')">Importance</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'QUALITY' }" href="#" @click="sortClicked('QUALITY')">Quality</a>
       </div>
     </div>
     <!-- Smart Folder Dropdown -->
@@ -298,6 +303,9 @@ export default {
         this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
         this.toggleSearch();
       }
+    },
+    sortClicked: function(sort) {
+      this.$store.data.setSelectedSort(sort);
     },
     statusClicked: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
