@@ -1,7 +1,6 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, ArticleCluster } = db;
 import { Op } from 'sequelize';
-import { computeImportance } from '../util/importanceScore.js';
 import { searchArticles } from "../util/articleSearch.service.js";
 
 export const getArticles = async (req, res) => {
@@ -262,6 +261,34 @@ const updateArticleStatus = async (userId, articleId, status) => {
   }
 };
 
+// Compute attention bucket based on visible seconds and content length
+const attentionBucketFromSeconds = (visibleSeconds, contentStripped) => {
+  if (!visibleSeconds || visibleSeconds <= 0) {
+    return 0; // not read
+  }
+
+  // Word count from stripped content
+  const wordCount = contentStripped
+    ? contentStripped.trim().split(/\s+/).length
+    : 0;
+
+  // Expected reading time (seconds)
+  // 200 wpm average, clamped
+  const expectedSeconds = Math.max(
+    15,
+    Math.min(300, (wordCount / 200) * 60)
+  );
+
+  const ratio = visibleSeconds / expectedSeconds;
+
+  // Map ratio → bucket (0–4)
+  if (ratio < 0.05) return 0; // passed
+  if (ratio < 0.25) return 1; // skimmed
+  if (ratio < 0.75) return 2; // read
+  if (ratio < 1.25) return 3; // deep read
+  return 4; // highly engaged
+};
+
 // Mark article as read
 const articleMarkToRead = async (req, res, next) => {
   try {
@@ -272,34 +299,64 @@ const articleMarkToRead = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    // Extract visibleSeconds from request (optional)
+    const visibleSeconds = Number(req.body?.visibleSeconds) || 0;
+
     // Mark article as read
     const result = await updateArticleStatus(userId, articleId, "read");
-    
+
     if (!result.success) {
       return res.status(result.statusCode).json({
         message: result.message || "Error updating article"
       });
     }
 
+    const article = result.article;
+
+    // Compute attention bucket
+    const attentionBucket = attentionBucketFromSeconds(
+      visibleSeconds,
+      article.contentStripped
+    );
+
+    // Persist attention bucket
+    await Article.update(
+      { attentionBucket },
+      {
+        where: {
+          id: articleId,
+          userId
+        }
+      }
+    );
+
     // If clusterView is enabled, mark all articles in the same cluster as read
     const clusterView = req.body?.clusterView === true || req.body?.clusterView === 'true';
-    if (clusterView) {
-      if (result.article.clusterId) {
-        console.log(`Cluster view enabled: marking all articles in cluster ${result.article.clusterId} as read`);
-        await Article.update(
-          { status: 'read' },
-          {
-            where: {
-              id: { [Op.ne]: articleId }, // Exclude the already updated article
-              userId: userId,
-              clusterId: result.article.clusterId
-            }
+
+    if (clusterView && article.clusterId) {
+      console.log(`Cluster view enabled: marking all articles in cluster ${article.clusterId} as read`);
+
+      await Article.update(
+        {
+          status: 'read',
+          attentionBucket // propagate same bucket to cluster siblings
+        },
+        {
+          where: {
+            id: { [Op.ne]: articleId },
+            userId,
+            clusterId: article.clusterId
           }
-        );
-      }
+        }
+      );
     }
-    
-    return res.status(result.statusCode).json(result.article);
+
+    // Return updated article (bucket will be reloaded on next fetch)
+    return res.status(result.statusCode).json({
+      ...article.toJSON(),
+      attentionBucket
+    });
+
   } catch (err) {
     console.log(err);
     return res.status(500).json(err);

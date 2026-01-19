@@ -57,6 +57,16 @@ const DUPLICATION_CLUSTER_THRESHOLD = 2;
 const clamp = (value, min = 0, max = 1) =>
   Math.max(min, Math.min(max, value));
 
+const attentionWeightFromBucket = (bucket) => {
+  switch (bucket) {
+    case 1: return 0.25; // skimmed
+    case 2: return 0.75; // read
+    case 3: return 1.25; // deep read
+    case 4: return 1.75; // highly engaged
+    default: return 0;   // not read
+  }
+};
+
 /* ------------------------------------------------------------------
  * Core logic
  * ------------------------------------------------------------------ */
@@ -194,16 +204,27 @@ export async function calculateFeedTrustForFeed(feedId) {
 
   let engagementSum = 0;
 
-  // Calculate engagement points (starred = 1, clicked = 0.5)
   for (const article of articles) {
-    engagementSum +=
+    // Explicit signals
+    const explicitEngagement =
       (article.starInd ? 1 : 0) +
       (article.clickedInd ? 0.5 : 0);
+
+    // Attention-based signal (0–1.75)
+    const attentionEngagement =
+      attentionWeightFromBucket(article.attentionBucket);
+
+    // Combine, but prevent runaway values
+    engagementSum += Math.min(
+      explicitEngagement + attentionEngagement,
+      2.5
+    );
   }
 
-  // Normalize engagement to 0-1 scale (divide by max possible: 1.5 per article)
+  // Normalize engagement to 0–1 scale
+  // Max possible per article ≈ 2.5
   const engagementRate = engagementSum / articles.length;
-  const engagement = clamp(engagementRate / 1.5);
+  const engagement = clamp(engagementRate / 2.5);
 
   /* ============================================================
    * METRIC 5: CONSISTENCY

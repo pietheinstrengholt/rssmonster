@@ -121,6 +121,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 70
       },
+      attentionBucket: {
+        type: DataTypes.TINYINT,
+        allowNull: false,
+        defaultValue: 0
+      },
       published: {
         type: Sequelize.DATE,
         allowNull: false,

@@ -88,6 +88,17 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 50
       },
+      // Attention bucket (0–4)
+      // 0 = not read / passed
+      // 1 = skimmed
+      // 2 = read
+      // 3 = deep read
+      // 4 = highly engaged
+      attentionBucket: {
+        type: DataTypes.TINYINT,
+        allowNull: false,
+        defaultValue: 0
+      },
       // Freshness score: >0.7 = today, 0.3–0.7 = recent (1–2 days), 0.1–0.3 = aging, <0.1 = stale
       freshness: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
