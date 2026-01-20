@@ -46,62 +46,109 @@ export default {
   name: "InitialFeeds",
 
   created() {
-    axios.defaults.headers.common["Authorization"] =
-      `Bearer ${this.$store.auth.token}`;
+    axios.defaults.headers.common["Authorization"] = `Bearer ${this.$store.auth.token}`;
   },
 
   data() {
     return {
-      feeds: [
-        {
-          title: "Reuters - World News",
-          url: "https://www.reuters.com/rssFeed/worldNews",
-          category: "World News",
-          selected: true
-        },
-        {
-          title: "Reuters - Technology",
-          url: "https://www.reuters.com/rssFeed/technologyNews",
-          category: "World News",
-          selected: true
-        },
-        {
-          title: "Ars Technica",
-          url: "https://arstechnica.com/feed/",
-          category: "Technology",
-          selected: true
-        },
-        {
-          title: "The Verge",
-          url: "https://www.theverge.com/rss/index.xml",
-          category: "Technology",
-          selected: true
-        },
-        {
-          title: "Hacker News",
-          url: "https://news.ycombinator.com/rss",
-          category: "Development",
-          selected: true
-        },
-        {
-          title: "Smashing Magazine",
-          url: "https://www.smashingmagazine.com/feed/",
-          category: "Development",
-          selected: true
-        },
-        {
-          title: "MIT Technology Review",
-          url: "https://www.technologyreview.com/feed/",
-          category: "AI & Science",
-          selected: true
-        },
-        {
-          title: "IEEE Spectrum",
-          url: "https://spectrum.ieee.org/rss/fulltext",
-          category: "AI & Science",
-          selected: true
-        }
-      ]
+        feeds: [
+            {
+                title: "Reuters - World News",
+                url: "https://www.reuters.com/rssFeed/worldNews",
+                category: "World News",
+                selected: true
+            },
+            {
+                title: "Reuters - Technology",
+                url: "https://www.reuters.com/rssFeed/technologyNews",
+                category: "World News",
+                selected: true
+            },
+
+            // Technology
+            {
+                title: "Ars Technica",
+                url: "https://arstechnica.com/feed/",
+                category: "Technology",
+                selected: true
+            },
+            {
+                title: "The Verge",
+                url: "https://www.theverge.com/rss/index.xml",
+                category: "Technology",
+                selected: true
+            },
+
+            // Development
+            {
+                title: "Hacker News",
+                url: "https://news.ycombinator.com/rss",
+                category: "Development",
+                selected: true
+            },
+            {
+                title: "Smashing Magazine",
+                url: "https://www.smashingmagazine.com/feed/",
+                category: "Development",
+                selected: true
+            },
+
+            // AI & Science
+            {
+                title: "MIT Technology Review",
+                url: "https://www.technologyreview.com/feed/",
+                category: "AI & Science",
+                selected: true
+            },
+            {
+                title: "IEEE Spectrum",
+                url: "https://spectrum.ieee.org/rss/fulltext",
+                category: "AI & Science",
+                selected: true
+            },
+
+            // Games
+            {
+                title: "Polygon",
+                url: "https://www.polygon.com/rss/index.xml",
+                category: "Games",
+                selected: true
+            },
+            {
+                title: "Rock Paper Shotgun",
+                url: "https://www.rockpapershotgun.com/feed",
+                category: "Games",
+                selected: true
+            },
+
+            // Business & Economy
+            {
+                title: "Financial Times – Technology",
+                url: "https://www.ft.com/technology?format=rss",
+                category: "Business & Economy",
+                selected: true
+            },
+            {
+                title: "Bloomberg – Technology",
+                url: "https://www.bloomberg.com/feeds/technology.xml",
+                category: "Business & Economy",
+                selected: true
+            },
+
+            // Security & Privacy
+            {
+                title: "Krebs on Security",
+                url: "https://krebsonsecurity.com/feed/",
+                category: "Security & Privacy",
+                selected: true
+            },
+            {
+                title: "The Hacker News",
+                url: "https://feeds.feedburner.com/TheHackersNews",
+                category: "Security & Privacy",
+                selected: true
+            }
+        ]
     };
   },
 
