@@ -130,6 +130,16 @@
           v-html="contentOriginal"
         ></div>
       </div>
+
+      <!-- SUMMARY BULLETS VIEW -->
+      <div v-if="$store.data.currentSelection.viewMode === 'summaryBullets'" class="article-content">
+        <ul v-if="contentSummaryBullets && contentSummaryBullets.length > 0" class="summary-bullets">
+          <li v-for="(bullet, index) in contentSummaryBullets" :key="index">
+            {{ bullet }}
+          </li>
+        </ul>
+        <p v-else class="article-body">No summary available.</p>
+      </div>
     </div>
   </div>
 </template>
@@ -441,6 +451,25 @@ span.feed_name a {
   padding-bottom: 5px;
 }
 
+.summary-bullets {
+  margin: 5px 0;
+  padding-left: 20px;
+  list-style-type: disc;
+}
+
+.summary-bullets li {
+  color: #1b1f23;
+  font-size: 14px;
+  margin-bottom: 6px;
+  line-height: 1.5;
+}
+
+@media (prefers-color-scheme: dark) {
+  .summary-bullets li {
+    color: #fff;
+  }
+}
+
 @media (prefers-color-scheme: light) {
   .block {
   box-shadow: 0 4px 2px -2px gray;
@@ -630,7 +659,7 @@ export default {
     'hotInd', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster'
+    'quality', 'cluster', 'contentSummaryBullets'
   ],
   data() {
     return {

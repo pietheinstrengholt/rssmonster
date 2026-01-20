@@ -24,6 +24,7 @@
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'full' }" href="#" @click="viewModeClicked('full')">Full</a>
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'summarized' }" href="#" @click="viewModeClicked('summarized')">Summarized</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'summaryBullets' }" href="#" @click="viewModeClicked('summaryBullets')">Summary Bullets</a>
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'minimal' }" href="#" @click="viewModeClicked('minimal')">Minimal</a>
       </div>
     </div>

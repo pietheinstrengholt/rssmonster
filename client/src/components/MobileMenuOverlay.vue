@@ -28,6 +28,7 @@
       <p class="content-header">Select how the articles should be displayed</p>
       <button @click="selectViewMode('full')" type="button" class="btn btn-primary content">Full content</button>
       <button @click="selectViewMode('summarized')" type="button" class="btn btn-primary content">Summarized content</button>
+      <button v-if="$store.data.currentSelection.AIEnabled" @click="selectViewMode('summaryBullets')" type="button" class="btn btn-primary content">Summary bullets</button>
       <button @click="selectViewMode('minimal')" type="button" class="btn btn-primary content">Minimal content</button>
 
       <p class="content-header">Refresh feeds</p>
