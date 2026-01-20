@@ -3,7 +3,6 @@ import { parseFeed } from 'feedsmith';
 import { fetchURL as fetchURLInternal } from './fetchURL.js';
 import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
 
-
 //function to return overlap
 const findOverlap = (a, b) => {
   if (b.length === 0) {
@@ -86,17 +85,6 @@ const isValidFeedBody = (body) => {
   if (!body) return false;
   return isLikelyFeedBody(body) || canParseFeed(body);
 };
-
-const isValidFeedResponse = async (response) => {
-  if (!response?.ok) return false;
-
-  // Always validate by body content. Content-Type is unreliable in the wild
-  // and we want retries when a URL returns non-feed XML/HTML.
-  const body = await response.text();
-  return { isValid: isValidFeedBody(body), body };
-};
-
-
 
 const persistDiscoveredUrl = async (feed, discoveredUrl) => {
   if (!feed) return;
