@@ -14,55 +14,28 @@
         </h5>
 
         <div class="feedname">
+            <BootstrapIcon
+              v-if="isMobilePortrait && quality !== undefined"
+              :icon="getQualityIcon(roundedQuality)"
+              :class="['mobile-score-icon', 'quality-icon', getQualityClass(roundedQuality)]"
+              :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`"
+            />
+            <BootstrapIcon
+              v-if="isMobilePortrait && advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE"
+              icon="megaphone-fill"
+              class="mobile-score-icon ad-icon"
+              :title="`Promotional content detected (score: ${advertisementScore})`"
+            />
+            <BootstrapIcon
+              v-if="isMobilePortrait && sentimentScore !== undefined && sentimentScore < NEUTRAL_SCORE"
+              icon="arrow-down-circle-fill"
+              :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]"
+              :title="`Tone quality: ${sentimentScore}`"
+            />
           <span class="published_date">{{ formatDate(published) }}</span>
           <span class="break">by</span>
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
-          </span>
-          <span
-            v-if="isMobilePortrait && tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'"
-            class="inline-mobile-tags"
-          >
-            <span
-              v-for="tag in tags"
-              :key="tag.id"
-              class="tag"
-              @click.stop="selectTag(tag)"
-            >
-              {{ tag.name }}
-            </span>
-
-            <span
-              v-if="quality !== undefined"
-              class="score overall-score"
-              :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`"
-            >
-              Quality: {{ roundedQuality }} · {{ scoreLabel(roundedQuality) }}
-            </span>
-
-            <span
-              v-if="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE"
-              class="score ad-score"
-              :title="`Promotional content detected (score: ${advertisementScore})`"
-            >
-              Ads: {{ advertisementScore }}
-            </span>
-
-            <span
-              v-if="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE"
-              class="score sentiment-score"
-              :title="`Tone quality: ${sentimentScore}`"
-            >
-              Sentiment: {{ sentimentScore }}
-            </span>
-
-            <span
-              v-if="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE"
-              class="score quality-score"
-              :title="`Writing quality: ${qualityScore}`"
-            >
-              Writing: {{ qualityScore }}
-            </span>
           </span>
           <span v-if="cluster && (cluster.articleCount || 0) > 1" class="cluster">
             + {{ cluster.articleCount }} similar articles
@@ -367,6 +340,52 @@ span.feed_name a {
   color: #51556a;
 }
 
+.mobile-score-icon {
+  font-size: 11px;
+  margin-right: 3px;
+  vertical-align: middle;
+}
+
+.mobile-score-icon.quality-excellent {
+  color: #2e7d32;
+}
+
+.mobile-score-icon.quality-good {
+  color: #43a047;
+}
+
+.mobile-score-icon.quality-okay {
+  color: #fbc02d;
+}
+
+.mobile-score-icon.quality-weak {
+  color: #f57c00;
+}
+
+.mobile-score-icon.quality-poor {
+  color: #c62828;
+}
+
+.mobile-score-icon.ad-icon {
+  color: #e65100;
+}
+
+.mobile-score-icon.sentiment-icon {
+  color: #3f51b5;
+}
+
+.mobile-score-icon.sentiment-moderate {
+  color: #d4a017;
+}
+
+.mobile-score-icon.sentiment-poor {
+  color: #ff6f00;
+}
+
+.mobile-score-icon.sentiment-very-poor {
+  color: #d32f2f;
+}
+
 .block span.favicon img.favicon {
   margin-right: 5px;
   height: 18px;
@@ -528,6 +547,46 @@ span.feed_name a {
     color: #81c784;
   }
 
+  .mobile-score-icon.quality-excellent {
+    color: #81c784;
+  }
+
+  .mobile-score-icon.quality-good {
+    color: #66bb6a;
+  }
+
+  .mobile-score-icon.quality-okay {
+    color: #fdd835;
+  }
+
+  .mobile-score-icon.quality-weak {
+    color: #ffb74d;
+  }
+
+  .mobile-score-icon.quality-poor {
+    color: #ef5350;
+  }
+
+  .mobile-score-icon.ad-icon {
+    color: #ffb74d;
+  }
+
+  .mobile-score-icon.sentiment-icon {
+    color: #9fa8da;
+  }
+
+  .mobile-score-icon.sentiment-moderate {
+    color: #f9a825;
+  }
+
+  .mobile-score-icon.sentiment-poor {
+    color: #ffb74d;
+  }
+
+  .mobile-score-icon.sentiment-very-poor {
+    color: #ef5350;
+  }
+
   nav ul li {
     background: #000;
   }
@@ -641,6 +700,30 @@ export default {
     },
     handleMediaChange(event) {
       this.isMobilePortrait = event.matches;
+    },
+    getQualityIcon(score) {
+      if (score >= 90) return 'patch-check-fill';
+      if (score >= 80) return 'patch-check-fill';
+      if (score >= 70) return 'exclamation-circle-fill';
+      if (score >= 60) return 'exclamation-triangle-fill';
+      return 'x-octagon-fill';
+    },
+    getQualityClass(score) {
+      if (score >= 90) return 'quality-excellent';
+      if (score >= 80) return 'quality-good';
+      if (score >= 70) return 'quality-okay';
+      if (score >= 60) return 'quality-weak';
+      return 'quality-poor';
+    },
+    getSentimentIcon(score) {
+      if (score > NEUTRAL_SCORE) return 'arrow-up-circle-fill';
+      if (score < NEUTRAL_SCORE) return 'arrow-down-circle-fill';
+      return 'dash-circle';
+    },
+    getSentimentClass(score) {
+      if (score >= 50) return 'sentiment-moderate';
+      if (score >= 30) return 'sentiment-poor';
+      return 'sentiment-very-poor';
     },
     scoreLabel(score) {
       if (score >= 90) return 'Excellent';
