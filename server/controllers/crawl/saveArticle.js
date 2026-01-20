@@ -7,6 +7,11 @@ const { Article, Tag } = db;
    Persists article and generated tags
 ====================================================== */
 async function saveArticle(feed, data, analysis, actionResult) {
+  // Validate userId presence
+  if (!feed || !feed.userId) {
+    throw new Error('Invalid feed: userId is missing. Cannot save article without valid userId.');
+  }
+
   const article = await Article.create({
     userId: feed.userId,
     feedId: feed.id,

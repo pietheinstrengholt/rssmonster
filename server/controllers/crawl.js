@@ -61,16 +61,23 @@ const resetRateLimitDelay = () => {
  * Feed fetching
  * ------------------------------------------------------------------ */
 
-//this function crawls all feeds for all users
-const getFeeds = async () => {
+//this function crawls feeds for a specific user or all users when userId is omitted
+const getFeeds = async (userId = null) => {
   try {
     //only get feeds with an errorCount lower than 25
+    const where = {
+      status: 'active',
+      // DEBUG: Filter for specific URL - remove this line after debugging
+      // url: 'http://www.engadget.com/rss.xml'
+    };
+
+    // If userId is provided (HTTP-triggered crawl), scope feeds to that user
+    if (userId) {
+      where.userId = userId;
+    }
+
     const feeds = await Feed.findAll({
-      where: {
-        status: 'active',
-        // DEBUG: Filter for specific URL - remove this line after debugging
-        // url: 'http://www.engadget.com/rss.xml'
-      },
+      where,
       order: [['updatedAt', 'ASC']],
       limit: feedCount
     });
@@ -86,8 +93,8 @@ const getFeeds = async () => {
  * ------------------------------------------------------------------ */
 
 // Core crawl function with shared feed processing
-const performCrawl = async () => {
-  const feeds = await getFeeds();
+const performCrawl = async (userId = null) => {
+  const feeds = await getFeeds(userId);
 
   let processedCount = 0;
   let errorCount = 0;
@@ -226,9 +233,10 @@ const performCrawl = async () => {
  * ------------------------------------------------------------------ */
 
 const crawlRssLinks = catchAsync(async (req, res, next) => {
+  const userId = req.userData?.userId || null;
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
-    performCrawl()
+    performCrawl(userId)
       .then(result => {
         resetRateLimitDelay();
         console.log(`Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`);
