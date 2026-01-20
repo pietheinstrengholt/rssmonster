@@ -76,17 +76,17 @@ const markAsRead = async (req, res, next) => {
 
     const categoryId = req.body.categoryId || "%";
     const feedId = req.body.feedId || "%";
-    const minAdvertisementScore = req.body.minAdvertisementScore != null ? parseInt(req.body.minAdvertisementScore) : 100;
-    const minSentimentScore = req.body.minSentimentScore != null ? parseInt(req.body.minSentimentScore) : 100;
-    const minQualityScore = req.body.minQualityScore != null ? parseInt(req.body.minQualityScore) : 100;
+    const minAdvertisementScore = req.body.minAdvertisementScore != null ? parseInt(req.body.minAdvertisementScore) : 0;
+    const minSentimentScore = req.body.minSentimentScore != null ? parseInt(req.body.minSentimentScore) : 0;
+    const minQualityScore = req.body.minQualityScore != null ? parseInt(req.body.minQualityScore) : 0;
 
     // Build where clause based on currentSelection
     const whereClause = {
       userId: userId,
       status: "unread",
-      advertisementScore: { [Op.lte]: minAdvertisementScore },
-      sentimentScore: { [Op.lte]: minSentimentScore },
-      qualityScore: { [Op.lte]: minQualityScore }
+      advertisementScore: { [Op.gte]: minAdvertisementScore },
+      sentimentScore: { [Op.gte]: minSentimentScore },
+      qualityScore: { [Op.gte]: minQualityScore }
     };
 
     // Add categoryId filter if not "all"
