@@ -12,7 +12,9 @@
         <app-desktop-toolbar id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
         <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
         <!-- Add reference to home for calling child loadContent component function -->
-        <app-article-feed v-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
+        <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
+        <app-article-feed v-else-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
+        <!-- Show chat assistant -->
         <app-chat-assistant v-if="$store.data.chatAssistantOpen"></app-chat-assistant>
       </div>
     </div>
@@ -149,6 +151,9 @@ const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "upda
 const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/Modal/Cleanup.vue"));
 const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/Modal/ManageUsers.vue"));
 
+//import onboarding component
+const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/Onboarding/InitialFeeds.vue"));
+
 export default {
   components: {
     appSidebar: Sidebar,
@@ -165,7 +170,8 @@ export default {
     appRenameCategory: RenameCategory,
     appUpdateFeed: UpdateFeed,
     appCleanup: Cleanup,
-    appManageUsers: ManageUsers
+    appManageUsers: ManageUsers,
+    appInitialFeeds: InitialFeeds
   },
   data() {
     return {
@@ -229,6 +235,11 @@ export default {
   methods: {
     mobileClick(value) {
       this.mobile = value;
+    },
+    completeOnboarding() {
+      // Mark onboarding as complete and refresh overview
+      this.$store.data.markOnboarded();
+      this.getOverview(true);
     },
     lookupFeedById(feedId) {
       for (let x = 0; x < this.$store.data.categories.length; x++) {
@@ -373,6 +384,12 @@ export default {
         this.setBadge(count);
       },
       deep: true
+    }
+  },
+  computed: {
+    showOnboarding() {
+      // Show onboarding if no categories exist
+      return (this.$store.data.categories.length === 0);
     }
   }
 };
