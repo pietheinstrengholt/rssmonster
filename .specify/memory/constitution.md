@@ -8,11 +8,13 @@ RSSMonster code **MUST strictly conform** to the existing architecture.
 
 - Backend is **Express using ESM only**
 - Frontend is **Vue**, following existing project conventions
-- Frontend uses **Bootstrap 5** for styling and layout
+- Frontend uses **Bootstrap 5** for styling and layout. No alternative CSS frameworks. Bootstrap Icons are standard.
 - ORM is **Sequelize with factory-style models**
 - All models are initialized exclusively via `models/index.js`
 - All controllers, utilities, background scripts, and services **must import models from `models/index.js`**
 - No alternative initialization paths, no global state, no architectural shortcuts
+- Backend owns interpretation of data model and business logic
+- code is deterministic and geometry-based
 
 Deviation from established architecture is a constitutional violation.
 
@@ -43,13 +45,14 @@ Incorrect assumptions are worse than incomplete output.
 
 ---
 
-### IV. Full-Code Output Only
+### IV. Javascript coding standards
 All proposed implementations must be complete.
 
-- Output **entire files**, never fragments
 - No ellipses, placeholders, or omitted logic
 - No pseudo-code unless explicitly requested
-- Code must be copy-paste runnable in the RSSMonster codebase
+- Code must be copy-paste runnable in the RSSMonster codebase.
+- Compact single-expression assignments are preferred.
+- Preserve existing comments when proposing changes.
 
 Partial correctness is not acceptable.
 
