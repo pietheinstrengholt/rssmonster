@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+    branches: [master]
+
+jobs:
+  ci:
+    runs-on: ubuntu-latest
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: rssmonster_test
+          MYSQL_USER: rssmonster
+          MYSQL_PASSWORD: rssmonster
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -u root -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # -----------------------
+      # Server
+      # -----------------------
+      - name: Install server dependencies
+        working-directory: server
+        run: npm ci
+
+      - name: Run migrations
+        working-directory: server
+        env:
+          NODE_ENV: test
+          DB_DATABASE: rssmonster_test
+          DB_USERNAME: rssmonster
+          DB_PASSWORD: rssmonster
+          DB_HOSTNAME: 127.0.0.1
+        run: npx sequelize db:migrate
+
+      - name: Seed database
+        working-directory: server
+        env:
+          NODE_ENV: test
+          DB_DATABASE: rssmonster_test
+          DB_USERNAME: rssmonster
+          DB_PASSWORD: rssmonster
+          DB_HOSTNAME: 127.0.0.1
+        run: npx sequelize db:seed:all
+
+      - name: Test server
+        working-directory: server
+        env:
+          NODE_ENV: test
+          DB_DATABASE: rssmonster_test
+          DB_USERNAME: rssmonster
+          DB_PASSWORD: rssmonster
+          DB_HOSTNAME: 127.0.0.1
+        run: npm test --if-present
+
+      # -----------------------
+      # Client
+      # -----------------------
+      - name: Install client dependencies
+        working-directory: client
+        run: npm ci
+
+      - name: Build client
+        working-directory: client
+        env:
+          VITE_APP_HOSTNAME: http://localhost:3000
+          VITE_NODE_ENV: test
+          VITE_ENABLE_AGENT: false
+        run: npm run build
