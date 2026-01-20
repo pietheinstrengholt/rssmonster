@@ -40,7 +40,7 @@ RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vu
 ## Code Style & Conventions
 
 - **Backend:** ESM modules, single-expression assignments preferred, preserve existing comments
-- **Frontend:** Vue 3 Composition API, Bootstrap 5 classes only, Bootstrap Icons standard
+- **Frontend:** Vue 3 Composition API, Bootstrap 5 classes only, Bootstrap Icons standard. Design must look sleek and stand out.
 - **Naming:** camelCase for variables/functions, PascalCase for components/models
 - **Comments:** Minimal comments unless required for complex logic (match existing style)
 
