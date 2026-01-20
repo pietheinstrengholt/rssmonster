@@ -348,22 +348,27 @@ span.feed_name a {
 
 .mobile-score-icon.quality-excellent {
   color: #2e7d32;
+  margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-good {
   color: #43a047;
+  margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-okay {
   color: #fbc02d;
+  margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-weak {
   color: #f57c00;
+  margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-poor {
   color: #c62828;
+  margin-bottom: 2px;
 }
 
 .mobile-score-icon.ad-icon {
