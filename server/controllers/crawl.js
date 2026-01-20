@@ -234,6 +234,7 @@ const performCrawl = async (userId = null) => {
 
 const crawlRssLinks = catchAsync(async (req, res, next) => {
   const userId = req.userData?.userId || null;
+  console.log(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
     performCrawl(userId)
