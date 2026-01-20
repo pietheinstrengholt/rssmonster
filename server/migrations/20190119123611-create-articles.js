@@ -122,7 +122,7 @@ module.exports = {
         defaultValue: 70
       },
       attentionBucket: {
-        type: DataTypes.TINYINT,
+        type: Sequelize.TINYINT,
         allowNull: false,
         defaultValue: 0
       },
