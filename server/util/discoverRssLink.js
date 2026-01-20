@@ -1,6 +1,8 @@
 import { load } from 'cheerio';
 import { parseFeed } from 'feedsmith';
 import { fetchURL as fetchURLInternal } from './fetchURL.js';
+import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
+
 
 //function to return overlap
 const findOverlap = (a, b) => {
@@ -94,6 +96,8 @@ const isValidFeedResponse = async (response) => {
   return { isValid: isValidFeedBody(body), body };
 };
 
+
+
 const persistDiscoveredUrl = async (feed, discoveredUrl) => {
   if (!feed) return;
   if (!discoveredUrl) return;
@@ -128,6 +132,19 @@ export const discoverRssLink = async (url, feed) => {
     if (!isURL(url)) {
       await registerDiscoveryError(feed, 'Invalid URL');
       return undefined;
+    }
+
+    // YouTube short-circuit
+    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+      const ytRss = await getYoutubeRssFromHandle(url);
+
+      if (ytRss) {
+        console.log(`Discovered YouTube RSS feed: ${ytRss}`);
+        await persistDiscoveredUrl(feed, ytRss);
+        return ytRss;
+      }
+
+      // If YouTube resolution fails, continue with normal discovery
     }
 
     // Build candidate list, and validate each candidate by fetching + parsing.
