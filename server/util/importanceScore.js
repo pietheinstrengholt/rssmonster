@@ -22,9 +22,9 @@ export function computeImportance(article) {
   const coverage = Math.log2(clusterSize + 1) / (1 + Math.log2(clusterSize + 1));
 
   // Weighted sum: balances all signals to produce importance score (0–1)
-  // Weights: quality (50%), freshness (30%), coverage (20%)
+  // Weights: quality (20%), freshness (50%), coverage (30%)
   // Quality dominates since content is king; freshness ensures recency bias; coverage rewards broad reporting
-  const importance = 0.2 * quality + 0.4 * freshness + 0.4 * coverage;
+  const importance = 0.2 * quality + 0.5 * freshness + 0.3 * coverage;
 
   return Math.max(0, Math.min(1, importance));
 }
