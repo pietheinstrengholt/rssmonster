@@ -180,7 +180,8 @@ export default {
       mobile: null,
       notificationStatus: null,
       offlineStatus: false,
-      overviewIntervalId: null
+      overviewIntervalId: null,
+      overviewLoaded: false
     };
   },
   async created() {
@@ -282,6 +283,7 @@ export default {
         const { response, previousUnreadCount } = await this.$store.data.fetchOverview(initial, this.$store.auth.token);
         //set offlineStatus to false
         this.offlineStatus = false;
+        this.overviewLoaded = true;
 
         // Set PWA badge using unread count safely
         this.setBadge(response.data.unreadCount);
@@ -303,6 +305,7 @@ export default {
         }
         this.$store.auth.setToken(null);
         this.offlineStatus = true;
+        this.overviewLoaded = true;
       }
     },
     async showNotification(input) {
@@ -389,7 +392,7 @@ export default {
   computed: {
     showOnboarding() {
       // Show onboarding if no categories exist
-      return (this.$store.data.categories.length === 0);
+      return this.overviewLoaded && (this.$store.data.categories.length === 0);
     }
   }
 };
