@@ -14,7 +14,7 @@ RSSMonster code **MUST strictly conform** to the existing architecture.
 - All controllers, utilities, background scripts, and services **must import models from `models/index.js`**
 - No alternative initialization paths, no global state, no architectural shortcuts
 - Backend owns interpretation of data model and business logic
-- code is deterministic and geometry-based
+- Code is deterministic and geometry-based
 
 Deviation from established architecture is a constitutional violation.
 
