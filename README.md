@@ -33,7 +33,7 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 - **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
 - **Semantic Deduplication & Clustering**: Similar articles are grouped into clusters, reducing noise from syndication and duplicate coverage
 - **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content
-- **Feed Trust Scoring**: Sources earn a long-term trust score based on originality, quality, and user engagement, improving ranking reliability over time
+- **Feed Trust Scoring**: Sources earn a long-term trust score (0.0 to 1.0) based on content generation (articles per day), uniqueness, reading time, clicks, and starred items, improving ranking reliability over time. Run `npm run feedtrust` to calculate scores using originality (35%), quality (25%), engagement (20%), and consistency (20%)
 - **Importance-Based Ranking**: Articles are ranked using a transparent, runtime importance score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
 - **RSS Feed Generation**: Create custom RSS feeds from your stored articles with flexible filtering by user, feed, category, starred status, and read/unread state. Perfect for sharing curated content or syncing with other applications (accessible via `/rss` endpoint with query parameters)
 - **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
