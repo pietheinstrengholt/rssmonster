@@ -104,6 +104,49 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      attentionScore: {
+        type: DataTypes.VIRTUAL(DataTypes.FLOAT),
+        get() {
+          /**
+           * Attention score (0–1)
+           *
+           * Derived from:
+           * - attentionBucket (primary signal)
+           * - openedCount (re-visits)
+           * - clickedAmount (outbound engagement)
+           *
+           * Bucket semantics:
+           * 0 = passed
+           * 1 = skimmed
+           * 2 = read
+           * 3 = deep read
+           * 4 = highly engaged
+           */
+
+          const bucket = this.getDataValue('attentionBucket') ?? 0;
+          const openedCount = this.getDataValue('openedCount') ?? 0;
+          const clickedAmount = this.getDataValue('clickedAmount') ?? 0;
+
+          // Base score from bucket (dominant signal)
+          let base;
+          switch (bucket) {
+            case 1: base = 0.25; break;
+            case 2: base = 0.5;  break;
+            case 3: base = 0.75; break;
+            case 4: base = 1.0;  break;
+            default: return 0.0; // bucket 0 → no attention
+          }
+
+          // Logarithmic reinforcement (bounded, non-dominant)
+          const openBoost = Math.min(Math.log2(openedCount + 1) / 5, 0.15);
+          const clickBoost = Math.min(Math.log2(clickedAmount + 1) / 5, 0.15);
+
+          return Math.min(
+            Number((base + openBoost + clickBoost).toFixed(4)),
+            1
+          );
+        }
+      },
       // Freshness score: >0.7 = today, 0.3–0.7 = recent (1–2 days), 0.1–0.3 = aging, <0.1 = stale
       freshness: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
