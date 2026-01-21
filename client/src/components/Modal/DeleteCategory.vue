@@ -63,9 +63,9 @@ export default {
                     this.$store.data.setSelectedFeedId("%");
                 },
                 response => {
-                    /* eslint-disable no-console */
+                     
                     console.log("oops something went wrong", response);
-                    /* eslint-enable no-console */
+                     
                     this.$store.data.setShowModal('');
                 }
             );

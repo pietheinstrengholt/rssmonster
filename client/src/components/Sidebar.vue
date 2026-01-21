@@ -516,9 +516,9 @@ export default {
           }
         },
         response => {
-          /* eslint-disable no-console */
+           
           console.log("oops something went wrong", response);
-          /* eslint-enable no-console */
+           
         }
       );
     },
@@ -535,9 +535,9 @@ export default {
         response => {
           //remove spinner
           this.refreshing = false;
-          /* eslint-disable no-console */
+           
           console.log("oops something went wrong", response);
-          /* eslint-enable no-console */
+           
         }
       );
     },
@@ -575,14 +575,14 @@ export default {
       axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/updateorder", { order: orderList }).then(
         response => {
           //get status & status text
-          /* eslint-disable no-console */
+           
           console.log(response.status);
-          /* eslint-enable no-console */
+           
         },
         response => {
-          /* eslint-disable no-console */
+           
           console.log("oops something went wrong", response);
-          /* eslint-enable no-console */
+           
         }
       );
     }
@@ -593,7 +593,7 @@ export default {
       this.$store.data.categories.forEach(function(category) {
         orderList.push(category.id);
       });
-      // eslint-disable-next-line
+       
       this.categoriesOrder = orderList;
       return this.categoriesOrder;
     },

@@ -218,75 +218,33 @@ export const useStore = defineStore('data', {
     }
   },
   getters: {
-    getSelectedStatus: (data) => {
-      return data.currentSelection.status;
-    },
-    getSelectedCategoryId: (data) => {
-      return data.currentSelection.categoryId;
-    },
-    getSelectedFeedId: (data) => {
-      return data.currentSelection.feedId;
-    },
-    getSelectedSmartFolderId: (data) => {
-      return data.currentSelection.smartFolderId;
-    },
-    getSelectedSearch: (data) => {
-      return data.currentSelection.search;
-    },
-    getSelectedSort: (data) => {
-      return data.currentSelection.sort;
-    },
-    getCategories: (data) => {
-      return data.categories;
-    },
-    getCurrentSelection: (data) => {
-      return data.currentSelection;
-    },
-    getCategories: (data) => {
-      return data.categories;
-    },
-    getUnreadCount: (data) => {
-      return data.unreadCount;
-    },
-    getReadCount: (data) => {
-      return data.readCount;
-    },
-    getStarCount: (data) => {
-      return data.starCount;
-    },
-    getHotCount: (data) => {
-      return data.hotCount;
-    },
-    getClickedCount: (data) => {
-      return data.clickedCount;
-    },
-    getShowModal: (data) => {
-      return data.showModal;
-    },
+    getSelectedStatus: (data) => data.currentSelection.status,
+    getSelectedCategoryId: (data) => data.currentSelection.categoryId,
+    getSelectedFeedId: (data) => data.currentSelection.feedId,
+    getSelectedSmartFolderId: (data) => data.currentSelection.smartFolderId,
+    getSelectedSearch: (data) => data.currentSelection.search,
+    getSelectedSort: (data) => data.currentSelection.sort,
+    getCategories: (data) => data.categories,
+    getCurrentSelection: (data) => data.currentSelection,
+    getCategories: (data) => data.categories,
+    getUnreadCount: (data) => data.unreadCount,
+    getReadCount: (data) => data.readCount,
+    getStarCount: (data) => data.starCount,
+    getHotCount: (data) => data.hotCount,
+    getClickedCount: (data) => data.clickedCount,
+    getShowModal: (data) => data.showModal,
     getunreadsSinceLastUpdate: (data) => {
       const n = Number(data.unreadsSinceLastUpdate);
       if (!Number.isFinite(n)) return 0;
       // Always positive; if 15 -> 15, if -15 -> 15, if 0 -> 0
       return Math.trunc(Math.abs(n));
     },
-    getMinAdvertisementScore: (data) => {
-      return data.currentSelection.minAdvertisementScore;
-    },
-    getMinSentimentScore: (data) => {
-      return data.currentSelection.minSentimentScore;
-    },
-    getMinQualityScore: (data) => {
-      return data.currentSelection.minQualityScore;
-    },
-    getViewMode: (data) => {
-      return data.currentSelection.viewMode;
-    },
-    getClusterView: (data) => {
-      return data.currentSelection.clusterView;
-    },
-    getChatAssistantOpen: (data) => {
-      return data.chatAssistantOpen;
-    },
+    getMinAdvertisementScore: (data) => data.currentSelection.minAdvertisementScore,
+    getMinSentimentScore: (data) => data.currentSelection.minSentimentScore,
+    getMinQualityScore: (data) => data.currentSelection.minQualityScore,
+    getViewMode: (data) => data.currentSelection.viewMode,
+    getClusterView: (data) => data.currentSelection.clusterView,
+    getChatAssistantOpen: (data) => data.chatAssistantOpen,
     getSelectedCategory: (state) => {
       const { categoryId } = state.currentSelection;
 

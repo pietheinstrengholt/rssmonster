@@ -87,6 +87,10 @@ jobs:
         working-directory: client
         run: npm ci
 
+      - name: Lint client
+        working-directory: client
+        run: npm run lint
+
       - name: Build client
         working-directory: client
         env:

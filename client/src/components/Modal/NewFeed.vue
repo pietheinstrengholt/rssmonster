@@ -115,9 +115,9 @@ export default {
                 .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/validate", { url: this.url, categoryId:this.selectedCategory })
                 .then(
                 result => {
-                    /* eslint-disable no-console */
+                     
                     console.log(result.status);
-                    /* eslint-enable no-console */
+                     
                     this.error_msg = "";
                     this.feed = result.data;
                 },
@@ -126,9 +126,9 @@ export default {
                 }
                 )
                 .catch(err => {
-                    /* eslint-disable no-console */
+                     
                     console.log(err);
-                    /* eslint-enable no-console */
+                     
                 });
 
             this.ajaxRequest = false;
@@ -146,9 +146,9 @@ export default {
                 })
                 .then(
                 result => {
-                    /* eslint-disable no-console */
+                     
                     console.log(result.status);
-                    /* eslint-enable no-console */
+                     
 
                     //overwrite results with results from the database
                     this.feed = result.data.feed;
@@ -165,9 +165,9 @@ export default {
                     this.$store.data.categories[index].feeds.push(this.feed);
                 },
                 response => {
-                    /* eslint-disable no-console */
+                     
                     console.log("oops something went wrong", response);
-                    /* eslint-enable no-console */
+                     
                 }
               );
 

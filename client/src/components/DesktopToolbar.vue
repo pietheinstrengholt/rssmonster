@@ -405,9 +405,7 @@ export default {
   },
   computed:{
     capitalize() {
-      return (value)=> {
-        return value.charAt(0).toUpperCase() + value.slice(1);
-      }
+      return (value)=> value.charAt(0).toUpperCase() + value.slice(1)
     },
     isSearchQueryInvalid() {
       const query = this.$store.data.searchQuery || '';

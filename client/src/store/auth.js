@@ -17,15 +17,9 @@ export const useStore = defineStore('auth', {
     }
   },
   getters: {
-    getToken: state => {
-      return state.token
-    },
-    getRole: state => {
-      return state.role
-    },
-    isAgenticFeaturesEnabled: state => {
-      return state.agenticFeaturesEnabled
-    }
+    getToken: state => state.token,
+    getRole: state => state.role,
+    isAgenticFeaturesEnabled: state => state.agenticFeaturesEnabled
   },
 });
 

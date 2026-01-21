@@ -198,7 +198,7 @@ export default {
             username: this.user.username,
             role: this.user.role,
             password: userPassword
-          }).then(response => {
+          }).then(_response => {
             this.message = null; // Clear any previous messages
             this.user = null; // Clear the user being edited, return to user list
             this.fetchUsers(); // Refresh the user list
@@ -215,7 +215,7 @@ export default {
       deleteUser(userId) {
         // Logic to delete user
         axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users/' + userId)
-          .then(response => {
+          .then(_response => {
             this.fetchUsers(); // Refresh the user list after deletion
             this.user = null;
             this.userIdToDelete = null; // Clear the user ID to delete

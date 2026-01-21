@@ -54,9 +54,9 @@ export default {
                     location.reload();
                 },
                 response => {
-                    /* eslint-disable no-console */
+                     
                     console.log("oops something went wrong", response);
-                    /* eslint-enable no-console */
+                     
                     this.$store.data.setShowModal('')
                 }
             );
