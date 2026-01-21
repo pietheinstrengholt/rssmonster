@@ -14,9 +14,9 @@ export const searchArticles = async ({
     categoryId = "%",
     feedId = "%",
     status = "unread",
-    minAdvertisementScore = 0,
-    minSentimentScore = 0,
-    minQualityScore = 0,
+    minAdvertisementScore = null,
+    minSentimentScore = null,
+    minQualityScore = null,
     sort = "DESC",
     viewMode = "full",
     tag = null,
@@ -26,6 +26,22 @@ export const searchArticles = async ({
     if (!userId) {
         throw new Error("Missing userId");
     }
+
+    /**
+     * Fetch user settings to determine score thresholds if not explicitly provided.
+     * If minAdvertisementScore, minSentimentScore, or minQualityScore are not provided,
+     * use values from settings; otherwise fallback to 0.
+     */
+    const userSettings = await Setting.findOne({
+        where: { userId },
+        attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+    });
+
+    const finalMinAdvertisementScore = minAdvertisementScore ?? userSettings?.minAdvertisementScore ?? 0;
+    const finalMinSentimentScore = minSentimentScore ?? userSettings?.minSentimentScore ?? 0;
+    const finalMinQualityScore = minQualityScore ?? userSettings?.minQualityScore ?? 0;
+
+    console.log(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
 
     /**
      * Parse search query and extract field filters.
@@ -323,9 +339,9 @@ export const searchArticles = async ({
       userId: userId,
       feedId: feedIds,
       // Quality filters: get articles above minimum scores
-      advertisementScore: { [Op.gte]: minAdvertisementScore },
-      sentimentScore: { [Op.gte]: minSentimentScore },
-      qualityScore: { [Op.gte]: minQualityScore }
+      advertisementScore: { [Op.gte]: finalMinAdvertisementScore },
+      sentimentScore: { [Op.gte]: finalMinSentimentScore },
+      qualityScore: { [Op.gte]: finalMinQualityScore }
     };
 
     // Text search logic:
@@ -567,9 +583,9 @@ export const searchArticles = async ({
         feedId: feedId,
         status: status,
         sort: workingSort,
-        minAdvertisementScore: minAdvertisementScore,
-        minSentimentScore: minSentimentScore,
-        minQualityScore: minQualityScore,
+        minAdvertisementScore: finalMinAdvertisementScore,
+        minSentimentScore: finalMinSentimentScore,
+        minQualityScore: finalMinQualityScore,
         viewMode: viewMode,
         clusterView: clusterView
       };
