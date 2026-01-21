@@ -9,6 +9,7 @@ router.get('/', userMiddleware.isLoggedIn, articleController.getArticles);
 router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
 router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
 router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
+router.post('/markopened/:articleId', userMiddleware.isLoggedIn, articleController.markOpened);
 router.post('/details', userMiddleware.isLoggedIn, articleController.articleDetails);
 router.post('/marktoread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToRead);
 router.post('/marktounread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToUnread);

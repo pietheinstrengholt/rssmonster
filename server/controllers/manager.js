@@ -37,7 +37,7 @@ export const getOverview = async (req, res, _next) => {
         [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
         [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
         [Sequelize.literal("COUNT(CASE WHEN starInd = 1 THEN 1 END)"), 'starCount'],
-        [Sequelize.literal("COUNT(CASE WHEN clickedInd = 1 THEN 1 END)"), 'clickedCount'],
+        [Sequelize.literal("COUNT(CASE WHEN clickedAmount > 0 THEN 1 END)"), 'clickedCount'],
         [Sequelize.literal("COUNT(CASE WHEN hotInd = 1 THEN 1 END)"), 'hotCount']
       ],
       raw: true
@@ -77,7 +77,7 @@ export const getOverview = async (req, res, _next) => {
         [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
         [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
         [Sequelize.literal("COUNT(CASE WHEN `articles`.`starInd` = 1 THEN 1 END)"), 'starCount'],
-        [Sequelize.literal("COUNT(CASE WHEN `articles`.`clickedInd` = 1 THEN 1 END)"), 'clickedCount']
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 END)"), 'clickedCount']
       ],
       order: ['id'],
       group: ['feeds.categoryId', 'feeds.id'],

@@ -157,12 +157,12 @@ const postMcp = async (req, res) => {
       - Useful to discover related or emerging interest areas from partial terms.
 
     15. search_clicked_articles
-      - Returns articles that have been clicked by the user (clickedInd = 1).
+      - Returns articles that have been clicked by the user (clickedAmount > 0).
       - Optionally filter by feedId and/or time window (seconds from now).
       - Useful to understand which articles users actually engaged with.
 
     16. tags_clicked_articles
-      - Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1).
+      - Returns the top 10 most used tags among articles that have been clicked (clickedAmount > 0).
       - Useful to analyze engagement topics and guide queries.
 
     17. category_details
@@ -877,7 +877,7 @@ const postMcp = async (req, res) => {
     server.tool(
       "search_clicked_articles",
       `
-      Retrieves all articles that have been clicked by the user (clickedInd = 1).
+      Retrieves all articles that have been clicked by the user (clickedAmount > 0).
       The agent should summarize each returned article (2–3 sentences) based on title and content.
 
       You may optionally provide a feedId:
@@ -907,7 +907,7 @@ const postMcp = async (req, res) => {
         try {
           const whereClause = {
             userId: userId,
-            clickedInd: 1,
+            clickedAmount: { [Op.gt]: 0 },
             ...(feedId ? { feedId: feedId } : {}),
           };
 
@@ -950,14 +950,14 @@ const postMcp = async (req, res) => {
     );
 
     // 16. tags_clicked_articles
-    //   - Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1).
+    //   - Returns the top 10 most used tags among articles that have been clicked (clickedAmount > 0).
     //   - Useful to analyze engagement topics for the authenticated user.
 
     // Tool 16: tags_clicked_articles
     server.tool(
       "tags_clicked_articles",
       `
-      Returns the top 10 most used tags among articles that have been clicked (clickedInd = 1)
+      Returns the top 10 most used tags among articles that have been clicked (clickedAmount > 0)
       for the authenticated user. Useful to understand which topics users engage with most.
       `,
       async () => {
@@ -965,7 +965,7 @@ const postMcp = async (req, res) => {
         try {
           // 1) Fetch clicked article IDs for this user
           const clicked = await Article.findAll({
-            where: { userId: userId, clickedInd: 1 },
+            where: { userId: userId, clickedAmount: { [Op.gt]: 0 } },
             attributes: ['id'],
             raw: true
           });

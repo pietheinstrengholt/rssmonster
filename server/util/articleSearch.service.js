@@ -59,7 +59,7 @@ export const searchArticles = async ({
     let starFilter = null; // When set, overrides status parameter to filter by starInd
     let unreadFilter = null; // When set, overrides status parameter to filter by read/unread
     let readFilter = null; // When set, overrides status parameter to filter by read/unread
-    let clickedFilter = null; // When set, filters by clickedInd
+    let clickedFilter = null; // When set, filters by clickedAmount
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
@@ -492,7 +492,7 @@ export const searchArticles = async ({
 
     if (clickedFilter !== null) {
       // clicked:true → only clicked articles, clicked:false → only non-clicked
-      articleQuery.where.clickedInd = clickedFilter ? 1 : 0;
+      articleQuery.where.clickedAmount = clickedFilter ? { [Op.gt]: 0 } : 0;
     }
 
     if (hotFilter !== null) {
@@ -518,7 +518,7 @@ export const searchArticles = async ({
         delete articleQuery.where.feedId; // Hot articles ignore feedId
         articleQuery.where.hotInd = 1;
       } else if (effectiveStatus === "clicked") {
-        articleQuery.where.clickedInd = 1;
+        articleQuery.where.clickedAmount = { [Op.gt]: 0 };
       } else if (effectiveStatus !== "%") {
         articleQuery.where.status = effectiveStatus;
       }

@@ -208,7 +208,7 @@ export async function calculateFeedTrustForFeed(feedId) {
     // Explicit signals
     const explicitEngagement =
       (article.starInd ? 1 : 0) +
-      (article.clickedInd ? 0.5 : 0);
+      (article.clickedAmount > 0 ? 0.5 : 0);
 
     // Attention-based signal (0–1.75)
     const attentionEngagement =

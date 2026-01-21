@@ -99,7 +99,7 @@ const collectSmartFolderSignals = async (
       [fn('COUNT', col('id')), 'total'],
       [fn('SUM', literal(`CASE WHEN status = 'unread' THEN 1 ELSE 0 END`)), 'unread'],
       [fn('SUM', literal(`CASE WHEN status = 'read' THEN 1 ELSE 0 END`)), 'read'],
-      [fn('SUM', literal(`CASE WHEN clickedInd = 1 THEN 1 ELSE 0 END`)), 'clicked'],
+      [fn('SUM', literal(`CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END`)), 'clicked'],
       [fn('SUM', literal(`CASE WHEN starInd = 1 THEN 1 ELSE 0 END`)), 'starred']
     ],
     group: ['feedId'],

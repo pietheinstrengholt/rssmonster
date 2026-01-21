@@ -64,7 +64,7 @@ describe('Feed -> Article integration', () => {
     // ---- Defaults ----
     expect(article.status).toBe('unread');
     expect(article.starInd).toBe(0);
-    expect(article.clickedInd).toBe(0);
+    expect(article.clickedAmount).toBe(0);
     expect(article.attentionBucket).toBe(0);
     expect(article.media).toBe(false);
 

@@ -7,7 +7,7 @@
     >
       <div class="maximal">
         <h5 class="heading">
-          <BootstrapIcon v-if="clickedInd == 1" icon="bookmark-fill" class="clicked-icon" />
+          <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
           <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
           <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
           <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
@@ -656,7 +656,7 @@ export default {
   emits: ['update-star', 'update-clicked'],
   props: [
     'id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author',
-    'hotInd', 'status', 'starInd', 'clickedInd', 'imageUrl', 'media',
+    'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
     'quality', 'cluster', 'contentSummaryBullets'
@@ -803,7 +803,7 @@ export default {
     articleClicked(articleId) {
       axios
         .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markclicked/${articleId}`)
-        .finally(() => this.$emit('update-clicked', { id: articleId, clickedInd: 1 }));
+        .finally(() => this.$emit('update-clicked', { id: articleId, clickedAmount: 1 }));
     },
     isImageUrlInContent() {
       const content = this.contentOriginal || '';

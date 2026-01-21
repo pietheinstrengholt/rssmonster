@@ -17,7 +17,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
     feedId: feed.id,
     status: actionResult.status,
     starInd: actionResult.starInd,
-    clickedInd: actionResult.clickedInd,
+    clickedAmount: actionResult.clickedAmount,
     hotInd: actionResult.hotInd,
     url: data.link,
     imageUrl: data.leadImage || null,

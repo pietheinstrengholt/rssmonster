@@ -34,7 +34,7 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
-      clickedInd: {
+      clickedAmount: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0
@@ -167,6 +167,10 @@ module.exports = {
       name: 'articles_starInd_idx'
     });
 
+    await queryInterface.addIndex('articles', ['clickedAmount'], {
+      name: 'articles_clickedAmount_idx'
+    });
+
     await queryInterface.addIndex('articles', ['contentHash'], {
       name: 'articles_contentHash_idx'
     });
@@ -181,6 +185,7 @@ module.exports = {
     await queryInterface.removeIndex('articles', 'articles_status_idx');
     await queryInterface.removeIndex('articles', 'articles_starInd_idx');
     await queryInterface.removeIndex('articles', 'articles_userId_idx');
+    await queryInterface.removeIndex('articles', 'articles_clickedAmount_idx');
     await queryInterface.removeIndex('articles', 'articles_contentHash_idx');
     await queryInterface.removeIndex('articles', 'articles_clusterId_idx');
     await queryInterface.dropTable('articles');

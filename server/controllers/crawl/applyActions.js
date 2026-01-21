@@ -12,7 +12,7 @@
 function applyActions(actions, contentStripped, title) {
   const result = {
     starInd: 0,
-    clickedInd: 0,
+    clickedAmount: 0,
     status: 'unread',
     shouldDelete: false,
     advertisementScore: null,
@@ -61,7 +61,7 @@ function applyActions(actions, contentStripped, title) {
 
       // Clicked action: read-later indicator
       case 'clicked':
-        result.clickedInd = 1;
+        result.clickedAmount = 1;
         break;
     }
   }

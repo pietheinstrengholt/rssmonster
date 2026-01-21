@@ -171,8 +171,9 @@ export default {
 
             const wasVisible = this.visibleMap.get(child.id) || false;
 
-            // article just entered viewport
+            // article just entered viewport, call opened()
             if (isVisible && !wasVisible) {
+              this.opened(child.id);
               this.visibleSince.set(child.id, now);
             }
 
@@ -304,12 +305,6 @@ export default {
 
     async markArticleRead(articleId, visibleSeconds = 0) {
       try {
-        console.log(
-          "[API] markArticleRead",
-          articleId,
-          { visibleSeconds }
-        );
-
         const response = await axios.post(
           import.meta.env.VITE_VUE_APP_HOSTNAME +
             "/api/articles/marktoread/" +
@@ -325,6 +320,19 @@ export default {
       }
     },
 
+    async opened(articleId) {
+      try {
+        await axios.post(
+          import.meta.env.VITE_VUE_APP_HOSTNAME +
+            "/api/articles/markopened/" +
+            articleId,
+          {}
+        );
+      } catch (error) {
+        console.log("Error tracking article open", error);
+      }
+    },
+
     forceReload() {
       this.$emit("forceReload");
     },
@@ -336,10 +344,10 @@ export default {
       }
     },
 
-    updateClickedInd({ id, clickedInd }) {
+    updateClickedInd({ id, clickedAmount }) {
       const idx = this.articles.findIndex(a => a.id === id);
       if (idx !== -1) {
-        this.articles[idx].clickedInd = clickedInd;
+        this.articles[idx].clickedAmount = clickedAmount;
       }
     }
   }
