@@ -182,7 +182,7 @@ export const useStore = defineStore('data', {
       this.currentSelection.tag = null;
       if (smartFolder) {
         this.currentSelection.smartFolderId = smartFolder.id;
-        this.currentSelection.search = smartFolder.query; // e.g., "tag:ai unread:true"
+        this.currentSelection.search = smartFolder.query + (smartFolder.limitCount ? ` limit:${smartFolder.limitCount}` : ''); // e.g., "tag:ai unread:true limit:50"
       } else {
         this.currentSelection.smartFolderId = null;
         this.currentSelection.search = null;
