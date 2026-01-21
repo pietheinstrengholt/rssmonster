@@ -54,6 +54,7 @@
                                         <th>Type</th>
                                         <th>Status</th>
                                         <th>Articles</th>
+                                        <th>Per Day</th>
                                         <th>Trust</th>
                                         <th>Duplication</th>
                                         <th>Edit</th>
@@ -65,6 +66,7 @@
                                         <td>{{ feed.feedType || '-' }}</td>
                                         <td>{{ feed.status }}</td>
                                         <td>{{ feed.articleCount || 0}}</td>
+                                        <td>{{ feed.articlesPerDay || 0}}</td>
                                         <td>{{ formatScore(feed.feedTrust) }}</td>
                                         <td>{{ formatScore(feed.feedDuplicationRate) }}</td>
                                         <td>

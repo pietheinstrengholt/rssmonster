@@ -30,14 +30,36 @@ const getFeeds = async (req, res, _next) => {
       raw: true
     });
 
+    // Calculate ingestion rate (average articles per day over last 30 days)
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const ingestionRates = await Article.findAll({
+      attributes: [
+        'feedId',
+        [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount30Days']
+      ],
+      where: { 
+        userId: userId,
+        published: { [db.Sequelize.Op.gte]: thirtyDaysAgo }
+      },
+      group: ['feedId'],
+      raw: true
+    });
+
     const countsByFeedId = articleCounts.reduce((acc, row) => {
       acc[row.feedId] = Number(row.articleCount) || 0;
       return acc;
     }, {});
 
+    const ingestionByFeedId = ingestionRates.reduce((acc, row) => {
+      // Average per day over 30 days
+      acc[row.feedId] = Math.round((Number(row.articleCount30Days) || 0) / 30 * 10) / 10;
+      return acc;
+    }, {});
+
     const feedsWithCounts = feeds.map(feed => ({
       ...feed.toJSON(),
-      articleCount: countsByFeedId[feed.id] ?? 0
+      articleCount: countsByFeedId[feed.id] ?? 0,
+      articlesPerDay: ingestionByFeedId[feed.id] ?? 0
     }));
 
     return res.status(200).json({ feeds: feedsWithCounts });
