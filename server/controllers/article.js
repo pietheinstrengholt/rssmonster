@@ -218,12 +218,12 @@ const articleDetails = async (req, res, _next) => {
     console.log(`\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`);
 
     // Determine ordering strategy:
-    // - IMPORTANCE/QUALITY: preserve articleIds order (already sorted by search service)
+    // - IMPORTANCE/QUALITY/ATTENTION: preserve articleIds order (sorted by search service or in-memory)
     // - DESC/ASC: sort by published date
     // - Default: DESC
     const sortUpper = (sort || "").toUpperCase();
-    const orderClause = ["IMPORTANCE", "QUALITY"].includes(sortUpper)
-      ? [] // No database sorting - preserve ID array order
+    const orderClause = ["IMPORTANCE", "QUALITY", "ATTENTION"].includes(sortUpper)
+      ? [] // No database sorting - preserve ID array order or apply in-memory sorting
       : [["published", sort || "DESC"]];
 
     const articles = await Article.findAll({
@@ -254,6 +254,11 @@ const articleDetails = async (req, res, _next) => {
       return res.status(404).json({
         message: "No articles found"
       });
+    }
+    
+    // Apply in-memory sorting for ATTENTION (must be done after fetch since attentionScore is virtual)
+    if (sortUpper === "ATTENTION") {
+      articles.sort((a, b) => (b.attentionScore || 0) - (a.attentionScore || 0));
     }
     
     return res.status(200).json(articles);
