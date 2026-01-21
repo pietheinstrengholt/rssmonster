@@ -63,6 +63,7 @@ export const searchArticles = async ({
     let hotFilter = null; // Hot filter captured from search (hot:true/false)
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
+    let titleQuoted = false; // Track if title search is quoted for exact matching
 
     /**
      * Pre-scan for patterns with spaces before tokenizing.
@@ -70,10 +71,21 @@ export const searchArticles = async ({
      * Supported patterns:
      * - @"N days ago": @"2 days ago" searches for exactly N calendar days ago
      * - @"last DayName": @"last Monday" searches for most recent occurrence of that day
-     * The quotes are optional for both patterns.
+     * - title:"...": Exact phrase match in title only
+     * The quotes are optional for date patterns.
      */
     let workingSearch = rawSearch;
-    console.log(`\x1b[31mPre-scan search string for date patterns: "${rawSearch}"\x1b[0m`);
+    console.log(`\x1b[31mPre-scan search string for special patterns: "${rawSearch}"\x1b[0m`);
+    
+    // Pattern: title:"exact phrase"
+    const titleQuotedMatch = rawSearch.match(/title:"([^"]+)"/i);
+    if (titleQuotedMatch) {
+      titleFilter = titleQuotedMatch[1];
+      titleQuoted = true;
+      console.log(`\x1b[31mTitle exact match filter applied: "${titleFilter}"\x1b[0m`);
+      // Remove the matched segment so it doesn't get tokenized
+      workingSearch = workingSearch.replace(titleQuotedMatch[0], "").trim();
+    }
     
     // Pattern: @"N days ago"
     const daysAgoMatch = rawSearch.match(/@"?(\d+)\s+days\s+ago"?/i);
@@ -179,7 +191,8 @@ export const searchArticles = async ({
       } else if (tagMatch) {
         tagFilter = tagMatch[1].trim();
         console.log(`\x1b[31mTag filter applied via search token: ${tagFilter}\x1b[0m`);
-      } else if (titleMatch) {
+      } else if (titleMatch && !titleQuoted) {
+        // Only process unquoted title: patterns (quoted ones handled in pre-scan)
         titleFilter = titleMatch[1].trim();
         console.log(`\x1b[31mTitle filter applied via search token: ${titleFilter}\x1b[0m`);
       } else if (sortMatch) {
@@ -349,8 +362,10 @@ export const searchArticles = async ({
     // - If no title: filter: search both title OR content for all tokens
     // - Handle quoted vs unquoted searches appropriately
     if (titleFilter) {
-      // title:value specified - search title for exact value
-      baseWhere.title = { [Op.like]: `%${titleFilter}%` };
+      // title:value specified - search title (exact match if quoted, otherwise LIKE)
+      baseWhere.title = titleQuoted 
+        ? { [Op.like]: `%${titleFilter}%` } // Still use LIKE for case-insensitive exact phrase
+        : { [Op.like]: `%${titleFilter}%` };
       // If there are remaining tokens or quoted phrase, also search content for them
       if (quotedPhrase) {
         baseWhere.contentOriginal = { [Op.like]: `%${quotedPhrase}%` };
