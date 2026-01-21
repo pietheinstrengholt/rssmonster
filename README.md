@@ -269,41 +269,25 @@ The client will typically run on `http://localhost:5173` and the server on `http
    npm run start
    ```
 
-### Docker Deployment
+## Docker
 
-#### Development with Docker Compose
+RSSMonster consists of a Vue.js client and an Express.js server and requires an external **MySQL** database.
 
-```bash
-# Build all images
-docker-compose build
+### Quick start
 
-# Start containers
-docker-compose up
-```
-
-- Client: `http://localhost:8080`
-- Server API: `http://localhost:3000`
-- MySQL: `localhost:3306`
-
-#### Production with Docker
-
-Build the production image (combines server and optimized client):
-
-```bash
-docker build -t rssmonster .
-```
-
-Run the container with environment variables:
+If you already have a MySQL database, you can run rssmonster as a single container. Below an example for Linux / WSL:
 
 ```bash
 docker run -d \
+  -p 3000:3000 \
+  --add-host=host.docker.internal:host-gateway \
   -e NODE_ENV=production \
-  -e DB_HOSTNAME=your-db-host \
+  -e DB_HOSTNAME=host.docker.internal \
+  -e DB_PORT=3306 \
   -e DB_DATABASE=rssmonster \
   -e DB_USERNAME=rssmonster \
-  -e DB_PASSWORD=your-secure-password \
-  -p 3000:3000 \
-  rssmonster
+  -e DB_PASSWORD=rssmonster \
+  rssmonster/rssmonster
 ```
 
 ## HTTPS Configuration
