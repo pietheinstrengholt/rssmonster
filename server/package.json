@@ -10,7 +10,8 @@
   },
   "main": "bootstrap.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
     "debug": "nodemon --watch server --ext js,json --delay 100ms bootstrap.js",
@@ -24,7 +25,8 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "vitest": "^4.0.17"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.2",

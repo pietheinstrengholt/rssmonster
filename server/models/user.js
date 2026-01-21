@@ -1,5 +1,4 @@
 import { DataTypes } from 'sequelize';
-import { hash } from 'bcryptjs';
 
 export default (sequelize) => {
   const User = sequelize.define(

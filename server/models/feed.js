@@ -38,11 +38,13 @@ export default (sequelize) => {
       },
       errorMessage: {
         type: DataTypes.TEXT,
-        allowNull: true
+        allowNull: true,
+        defaultValue: null
       },
       errorSince: {
         type: DataTypes.DATE,
-        allowNull: true
+        allowNull: true,
+        defaultValue: null
       },
       status: {
         type: DataTypes.ENUM('active', 'error', 'disabled'),
@@ -61,7 +63,8 @@ export default (sequelize) => {
       },
       lastFetched: {
         type: DataTypes.DATE,
-        allowNull: true
+        allowNull: true,
+        defaultValue: null
       }
     },
     {
