@@ -275,21 +275,23 @@ export default {
             return error;
         },
         async save() {
-            // Persist smart folders to the server
-            const filteredSmartFolders = this.smartFolders.filter(sf => sf && sf.name && sf.name.trim() !== '');
-            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders", {
-                smartFolders: filteredSmartFolders
-            })
-            .then(resp => {
+            try {
+                // Persist smart folders to the server
+                const filteredSmartFolders = this.smartFolders.filter(sf => sf && sf.name && sf.name.trim() !== '');
+                const resp = await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders", {
+                    smartFolders: filteredSmartFolders
+                });
                 console.log('Smart folders saved:', resp.data);
-            })
-            .catch(err => {
+                
+                // Refresh smart folders from the server
+                await this.$store.data.fetchSmartFolders();
+                
+                this.$emit('saved');
+                this.$emit('close');
+            } catch (err) {
                 console.error('Error saving smart folders:', err);
                 alert('Failed to save smart folders. Please try again.');
-            });
-            this.$emit('saved');
-            await this.$store.data.fetchSmartFolders();
-            this.$emit('close');
+            }
         }
     }
 };
