@@ -8,6 +8,7 @@
     "dev": "vite",
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "eslint .",
     "build": "vite build",
     "preview": "vite preview --port 8080"
   },
@@ -30,6 +31,9 @@
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/compiler-sfc": "^3.5.27",
     "@vue/test-utils": "^2.4.6",
+    "eslint": "^9.39.2",
+    "eslint-plugin-vue": "^10.7.0",
+    "globals": "^17.0.0",
     "jsdom": "^27.4.0",
     "sass": "=1.97.2",
     "vite": "^7.3.1",
