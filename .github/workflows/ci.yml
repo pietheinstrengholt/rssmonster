@@ -75,7 +75,7 @@ jobs:
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
-        run: npx sequelize db:seed:all
+        run: #npx sequelize db:seed:all
 
       - name: Test server
         working-directory: server
