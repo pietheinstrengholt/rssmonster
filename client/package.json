@@ -6,6 +6,8 @@
   "author": "Piethein Strengholt",
   "scripts": {
     "dev": "vite",
+    "test": "vitest run",
+    "test:watch": "vitest",
     "build": "vite build",
     "preview": "vite preview --port 8080"
   },
@@ -27,9 +29,12 @@
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.3",
     "@vue/compiler-sfc": "^3.5.27",
+    "@vue/test-utils": "^2.4.6",
+    "jsdom": "^27.4.0",
     "sass": "=1.97.2",
     "vite": "^7.3.1",
-    "vite-plugin-pwa": "^1.2.0"
+    "vite-plugin-pwa": "^1.2.0",
+    "vitest": "^4.0.17"
   },
   "browserslist": [
     "> 1%",
