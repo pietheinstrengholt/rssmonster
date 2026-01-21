@@ -50,6 +50,11 @@ jobs:
         working-directory: server
         run: npm run lint
 
+      - name: Hard reset database
+        run: |
+          mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE IF EXISTS rssmonster_test;"
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE rssmonster_test;"
+
       - name: Run migrations
         working-directory: server
         env:
