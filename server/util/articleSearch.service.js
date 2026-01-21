@@ -442,6 +442,7 @@ export const searchArticles = async ({
     // Determine what attributes we need based on filters and sort
     const needsQuality = qualityFilter || (!smartFolderSearch && sortQuality);
     const needsFreshness = freshnessFilter || (!smartFolderSearch && sortImportance);
+    const needsAttention = !smartFolderSearch && sortAttention;
     const needsPublished = !smartFolderSearch || needsFreshness;
     
     if (needsQuality) {
@@ -461,6 +462,11 @@ export const searchArticles = async ({
     } else if (needsPublished && !queryAttributes.includes("published")) {
       // Need published for ordering even if we don't compute freshness
       queryAttributes.push("published");
+    }
+    
+    if (needsAttention) {
+      // AttentionScore virtual field needs these columns
+      queryAttributes.push("attentionBucket", "openedCount", "clickedAmount");
     }
     
     console.log(`\x1b[36mQuery attributes: ${queryAttributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
