@@ -172,3 +172,5 @@ const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
 setInterval(() => {
   hotlink.clearCache();
 }, CACHE_REFRESH_INTERVAL);
+
+export default app;

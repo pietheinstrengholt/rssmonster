@@ -1,18 +1,25 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import request from 'supertest';
-
-// IMPORTANT: must be set BEFORE importing app
-process.env.NODE_ENV = 'test';
-process.env.DISABLE_LISTENER = 'true';
-
-import app from '../app.js';
 import db from '../models/index.js';
 
 const { sequelize } = db;
 
+let app;
+
 describe('Express smoke test', () => {
   beforeAll(async () => {
-    // Ensure DB is reachable (app startup already authenticated)
+    // IMPORTANT: env vars must be set BEFORE app import
+    process.env.NODE_ENV = 'test';
+    process.env.DISABLE_LISTENER = 'true';
+
+    // Dynamic import (ESM-safe)
+    const mod = await import('../app.js');
+    app = mod.default;
+
+    if (!app) {
+      throw new Error('Express app was not exported correctly');
+    }
+
     await sequelize.authenticate();
   });
 
