@@ -25,7 +25,9 @@ const getSmartFolders = async (req, res, next) => {
       try {
         const result = await searchArticles({
           userId,
-          search: folder.query
+          search: folder.query,
+          smartFolderSearch: true,
+          limitCount: folder.limitCount || 50
         });
         folder.dataValues.ArticleCount = result.itemIds.length;
       } catch {

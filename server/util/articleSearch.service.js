@@ -21,21 +21,27 @@ export const searchArticles = async ({
     viewMode = "full",
     tag = null,
     clusterView = false,
-    persistSettings = false // IMPORTANT: skip when called internally
+    persistSettings = false, // IMPORTANT: skip when called internally
+    smartFolderSearch = false, // When true, apply smart folder optimizations
+    limitCount = null // Maximum number of results (used by smart folders)
 }) => {
     if (!userId) {
         throw new Error("Missing userId");
     }
 
     /**
+     * Smart folder optimization: skip settings fetch when score thresholds are explicit.
      * Fetch user settings to determine score thresholds if not explicitly provided.
      * If minAdvertisementScore, minSentimentScore, or minQualityScore are not provided,
      * use values from settings; otherwise fallback to 0.
      */
-    const userSettings = await Setting.findOne({
-        where: { userId },
-        attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
-    });
+    let userSettings = null;
+    if (minAdvertisementScore === null || minSentimentScore === null || minQualityScore === null) {
+        userSettings = await Setting.findOne({
+            where: { userId },
+            attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+        });
+    }
 
     const finalMinAdvertisementScore = minAdvertisementScore ?? userSettings?.minAdvertisementScore ?? 0;
     const finalMinSentimentScore = minSentimentScore ?? userSettings?.minSentimentScore ?? 0;
@@ -270,19 +276,22 @@ export const searchArticles = async ({
      */
     // Sort: search token (sort:ASC/DESC) overrides query param
     // SortImportance flag set if sort is IMPORTANCE
-    let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
+    // Smart folder optimization: skip sort entirely (only counting articles)
+    let workingSort = smartFolderSearch ? "DESC" : (sortFilter !== null ? sortFilter : (sort || "DESC"));
     let sortImportance = false;
     let sortQuality = false;
 
-    // Normalize sort value when "IMPORTANCE" is specified
-    if (workingSort.toUpperCase() === "IMPORTANCE") {
-      workingSort = "DESC";
-      sortImportance = true;
-    } else if (workingSort.toUpperCase() === "QUALITY") {
-      workingSort = "DESC";
-      sortQuality = true;
+    if (!smartFolderSearch) {
+      // Normalize sort value when "IMPORTANCE" is specified
+      if (workingSort.toUpperCase() === "IMPORTANCE") {
+        workingSort = "DESC";
+        sortImportance = true;
+      } else if (workingSort.toUpperCase() === "QUALITY") {
+        workingSort = "DESC";
+        sortQuality = true;
+      }
     }
-    console.log(`\x1b[31mFinal sort value: "${workingSort}"\x1b[0m`);
+    console.log(`\x1b[31mFinal sort value: "${workingSort}" (smartFolder: ${smartFolderSearch})\x1b[0m`);
 
     // Tag: search token (tag:name) overrides query param
     const workingTag = tagFilter !== null ? tagFilter : (tag || "").trim();
@@ -412,12 +421,50 @@ export const searchArticles = async ({
     /**
      * Build final article query.
      * Start with base WHERE conditions, then apply field filters if present.
+     * Optimize attribute selection based on what's actually needed:
+     * - Smart folders without filters: only id
+     * - Smart folders with quality/freshness filters: id + score fields + published
+     * - Regular searches with importance sort: id + published + score fields
+     * - Regular searches with quality sort: id + score fields
+     * - Regular searches otherwise: id + published (for ordering)
      */
+    const queryAttributes = ["id"];
+    
+    // Determine what attributes we need based on filters and sort
+    const needsQuality = qualityFilter || (!smartFolderSearch && sortQuality);
+    const needsFreshness = freshnessFilter || (!smartFolderSearch && sortImportance);
+    const needsPublished = !smartFolderSearch || needsFreshness;
+    
+    if (needsQuality) {
+      // Quality virtual field needs these score columns
+      queryAttributes.push("advertisementScore", "sentimentScore", "qualityScore");
+    }
+    
+    if (needsFreshness) {
+      // Freshness virtual field needs published date
+      if (!queryAttributes.includes("published")) {
+        queryAttributes.push("published");
+      }
+      // Also need quality scores for importance computation
+      if (!queryAttributes.includes("qualityScore")) {
+        queryAttributes.push("advertisementScore", "sentimentScore", "qualityScore");
+      }
+    } else if (needsPublished && !queryAttributes.includes("published")) {
+      // Need published for ordering even if we don't compute freshness
+      queryAttributes.push("published");
+    }
+    
+    console.log(`\x1b[36mQuery attributes: ${queryAttributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
+    
     const articleQuery = {
-      attributes: ["id", "quality"], // Only fetch IDs for performance (full details fetched later)
-      order: [["published", workingSort]], // Sort by publication date
+      attributes: queryAttributes,
       where: baseWhere
     };
+
+    // Add order clause only for non-smart folder searches
+    if (!smartFolderSearch) {
+      articleQuery.order = [["published", workingSort]];
+    }
 
     /**
      * Field filters from search take precedence over status parameter.
@@ -499,9 +546,12 @@ export const searchArticles = async ({
 
     // Fetch articles based on constructed query
     let articles = await Article.findAll(articleQuery);
+    
+    console.log(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
     // Apply quality score filter if present (must be done in-memory since quality is a virtual field)
     if (qualityFilter) {
+      const beforeQualityCount = articles.length;
       articles = articles.filter(article => {
         const articleQuality = article.quality;
         const { operator, value } = qualityFilter;
@@ -521,7 +571,7 @@ export const searchArticles = async ({
             return true;
         }
       });
-      console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${articles.length} articles remaining\x1b[0m`);
+      console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${beforeQualityCount} → ${articles.length} articles\x1b[0m`);
     }
 
     // Apply freshness score filter if present (must be done in-memory since freshness is a virtual field)
@@ -549,41 +599,52 @@ export const searchArticles = async ({
     }
     
     // If sorting by importance, compute importance scores and sort
-    if (sortImportance) {
+    if (!smartFolderSearch && sortImportance) {
       workingSort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
     }
-    if (sortQuality) {
+    if (!smartFolderSearch && sortQuality) {
       workingSort = "QUALITY";
     }
 
     // Move the sorting logic here to after all filtering is done
-    console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
-    if (sortImportance) {
-      articles = articles
-        .map(article => ({
-          article,
-          importance: computeImportance(article)
-        }))
-        .sort((a, b) => b.importance - a.importance)
-        .map(item => item.article);
-    } else if (sortQuality) {
-      articles = articles
-        .map(article => ({
-          article,
-          quality: article.quality
-        }))
-        .sort((a, b) => b.quality - a.quality)
-        .map(item => item.article);
+    // Skip for smart folder searches (only counting articles)
+    if (!smartFolderSearch) {
+      console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
+      if (sortImportance) {
+        articles = articles
+          .map(article => ({
+            article,
+            importance: computeImportance(article)
+          }))
+          .sort((a, b) => b.importance - a.importance)
+          .map(item => item.article);
+      } else if (sortQuality) {
+        articles = articles
+          .map(article => ({
+            article,
+            quality: article.quality
+          }))
+          .sort((a, b) => b.quality - a.quality)
+          .map(item => item.article);
+      }
+    } else {
+      console.log(`\x1b[33mSkipping sort for smart folder search\x1b[0m`);
     }
 
     let itemIds;
     itemIds = articles.map(article => article.id);
     
-    // Limit to 500 articles when search expressions are used
-    const hasSearchExpression = rawSearch && rawSearch.trim() !== "" && rawSearch.trim() !== "%";
-    if (hasSearchExpression && itemIds.length > 500) {
-      itemIds = itemIds.slice(0, 500);
-      console.log(`\x1b[31mLimited results to 500 articles due to search expression usage\x1b[0m`);
+    // Smart folder optimization: apply limitCount
+    if (smartFolderSearch && limitCount && itemIds.length > limitCount) {
+      itemIds = itemIds.slice(0, limitCount);
+      console.log(`\x1b[31mLimited smart folder results to ${limitCount} articles\x1b[0m`);
+    } else if (!smartFolderSearch) {
+      // Limit to 500 articles when search expressions are used (non-smart folder)
+      const hasSearchExpression = rawSearch && rawSearch.trim() !== "" && rawSearch.trim() !== "%";
+      if (hasSearchExpression && itemIds.length > 500) {
+        itemIds = itemIds.slice(0, 500);
+        console.log(`\x1b[31mLimited results to 500 articles due to search expression usage\x1b[0m`);
+      }
     }
     
     console.log(`\x1b[31mFound ${itemIds.length} articles matching query for user ${userId}\x1b[0m`);
