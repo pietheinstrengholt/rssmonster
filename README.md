@@ -1,7 +1,7 @@
 # RSSMonster
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Docker](https://img.shields.io/docker/pulls/pietheinstrengholt/rssmonster.svg)](https://hub.docker.com/r/pietheinstrengholt/rssmonster/builds)
+[![Docker](https://img.shields.io/docker/pulls/rssmonster/rssmonster.svg)](https://hub.docker.com/r/rssmonster/rssmonster/builds)
 [![CI](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/ci.yml/badge.svg)](
   https://github.com/pietheinstrengholt/rssmonster/actions/workflows/ci.yml
 )
