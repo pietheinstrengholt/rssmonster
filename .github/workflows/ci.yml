@@ -58,7 +58,9 @@ jobs:
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
-        run: npx sequelize db:migrate
+        run: |
+          npx sequelize db:migrate:undo:all
+          npx sequelize db:migrate
 
       - name: Seed database
         working-directory: server
