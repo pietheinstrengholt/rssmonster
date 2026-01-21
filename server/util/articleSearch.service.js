@@ -168,7 +168,7 @@ export const searchArticles = async ({
       const clickedMatch = cleaned.match(/^clicked:\s*(true|false)$/i); // clicked:true or clicked:false
       const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, or sort:QUALITY
+      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, sort:QUALITY, or sort:ATTENTION
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
@@ -285,6 +285,7 @@ export const searchArticles = async ({
     let workingSort = smartFolderSearch ? "DESC" : (sortFilter !== null ? sortFilter : (sort || "DESC"));
     let sortImportance = false;
     let sortQuality = false;
+    let sortAttention = false;
 
     if (!smartFolderSearch) {
       // Normalize sort value when "IMPORTANCE" is specified
@@ -294,6 +295,9 @@ export const searchArticles = async ({
       } else if (workingSort.toUpperCase() === "QUALITY") {
         workingSort = "DESC";
         sortQuality = true;
+      } else if (workingSort.toUpperCase() === "ATTENTION") {
+        workingSort = "DESC";
+        sortAttention = true;
       }
     }
     console.log(`\x1b[31mFinal sort value: "${workingSort}" (smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -610,6 +614,9 @@ export const searchArticles = async ({
     if (!smartFolderSearch && sortQuality) {
       workingSort = "QUALITY";
     }
+    if (!smartFolderSearch && sortAttention) {
+      workingSort = "ATTENTION";
+    }
 
     // Move the sorting logic here to after all filtering is done
     // Skip for smart folder searches (only counting articles)
@@ -630,6 +637,15 @@ export const searchArticles = async ({
             quality: article.quality
           }))
           .sort((a, b) => b.quality - a.quality)
+          .map(item => item.article);
+      } else if (sortAttention) {
+        // Sort by virtual attentionScore (derives from bucket + opens/clicks)
+        articles = articles
+          .map(article => ({
+            article,
+            attention: article.attentionScore || 0
+          }))
+          .sort((a, b) => b.attention - a.attention)
           .map(item => item.article);
       }
     } else {
