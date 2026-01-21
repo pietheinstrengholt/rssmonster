@@ -65,6 +65,7 @@ describe('Feed -> Article integration', () => {
     expect(article.status).toBe('unread');
     expect(article.starInd).toBe(0);
     expect(article.clickedAmount).toBe(0);
+    expect(article.openedCount).toBe(0);
     expect(article.attentionBucket).toBe(0);
     expect(article.media).toBe(false);
 
@@ -74,6 +75,7 @@ describe('Feed -> Article integration', () => {
     // ---- Virtuals (must not throw) ----
     expect(article.freshness).toBeGreaterThan(0);
     expect(article.quality).toBeGreaterThan(0);
+    expect(article.attentionScore).toBe(0);
     expect(article.uniqueness).toBe(1.0);
   });
 });
