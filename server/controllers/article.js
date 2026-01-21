@@ -226,7 +226,7 @@ const articleDetails = async (req, res, _next) => {
       ? [] // No database sorting - preserve ID array order from search service
       : [["published", sort || "DESC"]];
 
-    let articles = await Article.findAll({
+    const articles = await Article.findAll({
       include: [
         {
           model: Feed,
