@@ -35,12 +35,14 @@
         <span v-else-if="$store.data.currentSelection.sort === 'DESC'">Newest</span>
         <span v-else-if="$store.data.currentSelection.sort === 'IMPORTANCE'">Importance</span>
         <span v-else-if="$store.data.currentSelection.sort === 'QUALITY'">Quality</span>
+        <span v-else-if="$store.data.currentSelection.sort === 'ATTENTION'">Attention</span>
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">Oldest</a>
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">Newest</a>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'IMPORTANCE' }" href="#" @click="sortClicked('IMPORTANCE')">Importance</a>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'QUALITY' }" href="#" @click="sortClicked('QUALITY')">Quality</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ATTENTION' }" href="#" @click="sortClicked('ATTENTION')">Attention</a>
       </div>
     </div>
 

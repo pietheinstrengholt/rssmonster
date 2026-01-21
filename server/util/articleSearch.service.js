@@ -6,7 +6,7 @@ import { computeImportance } from './importanceScore.js';
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
- * tag:name, title:text, sort:DESC/ASC, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 export const searchArticles = async ({
     userId,
@@ -53,7 +53,7 @@ export const searchArticles = async ({
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.
      * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-     * tag:name, title:text, sort:DESC/ASC, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+     * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
      */
     const rawSearch = search.trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
@@ -61,7 +61,7 @@ export const searchArticles = async ({
     let readFilter = null; // When set, overrides status parameter to filter by read/unread
     let clickedFilter = null; // When set, filters by clickedAmount
     let tagFilter = null; // Tag name extracted from search (tag:something)
-    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC)
+    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
@@ -279,7 +279,7 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:ASC/DESC) overrides query param
+    // Sort: search token (sort:ASC/DESC/IMPORTANCE/QUALITY/ATTENTION) overrides query param
     // SortImportance flag set if sort is IMPORTANCE
     // Smart folder optimization: skip sort entirely (only counting articles)
     let workingSort = smartFolderSearch ? "DESC" : (sortFilter !== null ? sortFilter : (sort || "DESC"));

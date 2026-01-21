@@ -36,6 +36,7 @@
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">Newest</a>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'IMPORTANCE' }" href="#" @click="sortClicked('IMPORTANCE')">Importance</a>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'QUALITY' }" href="#" @click="sortClicked('QUALITY')">Quality</a>
+        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ATTENTION' }" href="#" @click="sortClicked('ATTENTION')">Attention</a>
         <li><hr class="dropdown-divider"></li>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: !$store.data.currentSelection.clusterView }" href="#" @click="toggleClusteredView">Cluster Reading Mode</a>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView }" href="#" @click="toggleClusteredView">All articles</a>

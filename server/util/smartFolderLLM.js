@@ -120,7 +120,7 @@ Date filters:
 - @yesterday
 
 Sorting:
-- sort:DESC | sort:ASC | sort:IMPORTANCE | sort:QUALITY
+- sort:DESC | sort:ASC | sort:IMPORTANCE | sort:QUALITY | sort:ATTENTION
 
 --------------------
 RULES
