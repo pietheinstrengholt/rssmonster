@@ -18,10 +18,10 @@ export const getOverview = async (req, res, _next) => {
       attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
     });
 
-    // Use settings or default to 100
-    const minAdvertisementScore = settings?.minAdvertisementScore || 100;
-    const minSentimentScore = settings?.minSentimentScore || 100;
-    const minQualityScore = settings?.minQualityScore || 100;
+    // Use settings or default to 0
+    const minAdvertisementScore = settings?.minAdvertisementScore ?? 0;
+    const minSentimentScore = settings?.minSentimentScore ?? 0;
+    const minQualityScore = settings?.minQualityScore ?? 0;
 
     // Merge all counts into a single SQL statement
     const baseWhere = {

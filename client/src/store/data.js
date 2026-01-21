@@ -11,9 +11,9 @@ export const useStore = defineStore('data', {
       sort: 'DESC',
       tag: null,
       smartFolderId: null,
-      minAdvertisementScore: 100,
-      minSentimentScore: 100,
-      minQualityScore: 100,
+      minAdvertisementScore: 0,
+      minSentimentScore: 0,
+      minQualityScore: 0,
       viewMode: 'full',
       clusterView: false
     },

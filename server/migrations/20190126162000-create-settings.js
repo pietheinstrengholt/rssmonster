@@ -49,19 +49,19 @@ module.exports = {
         type: Sequelize.INTEGER,
         autoIncrement: false,
         allowNull: false,
-        defaultValue: 100
+        defaultValue: 0
       },
       minSentimentScore: {
         type: Sequelize.INTEGER,
         autoIncrement: false,
         allowNull: false,
-        defaultValue: 100
+        defaultValue: 0
       },
       minQualityScore: {
         type: Sequelize.INTEGER,
         autoIncrement: false,
         allowNull: false,
-        defaultValue: 100
+        defaultValue: 0
       },
       viewMode: {
         type: Sequelize.STRING,
