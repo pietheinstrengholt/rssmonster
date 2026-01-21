@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
+//import { resetDatabase } from './helpers/resetDb.js';
 
 const { sequelize, User, Category, Feed, Article } = db;
 
@@ -12,7 +12,7 @@ describe('Feed -> Article integration', () => {
 
   beforeAll(async () => {
     await sequelize.authenticate();
-    await resetDatabase(); // HARD RESET
+    //await resetDatabase(); // HARD RESET
 
     // ---- User ----
     const password = 'secret';
