@@ -53,7 +53,7 @@ export const searchArticles = async ({
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.
      * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-     * tag:name, title:text, sort:DESC/ASC, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+     * tag:name, title:text, sort:DESC/ASC, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
      */
     const rawSearch = search.trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
@@ -67,6 +67,7 @@ export const searchArticles = async ({
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
     let clusterFilter = null; // Cluster view filter captured from search (cluster:true/false)
     let hotFilter = null; // Hot filter captured from search (hot:true/false)
+    let limitFilter = null; // Result limit extracted from search (limit:50)
     let dateRange = null; // Date range object: { start: Date, end: Date }
     let dateToken = null; // Original date token to echo back in response
     let titleQuoted = false; // Track if title search is quoted for exact matching
@@ -175,10 +176,14 @@ export const searchArticles = async ({
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
       const clusterMatch = cleaned.match(/^cluster:\s*(true|false)$/i); // cluster:true or cluster:false
       const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
+      const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
       
       if (hotMatch) {
         hotFilter = hotMatch[1].toLowerCase() === 'true';
         console.log(`\x1b[31mHot filter applied via search token: ${hotFilter}\x1b[0m`);
+      } else if (limitMatch) {
+        limitFilter = parseInt(limitMatch[1], 10);
+        console.log(`\x1b[31mLimit filter applied via search token: ${limitFilter}\x1b[0m`);
       } else if (clusterMatch) {
         clusterFilter = clusterMatch[1].toLowerCase() === 'true';
         console.log(`\x1b[31mCluster filter applied via search token: ${clusterFilter}\x1b[0m`);
@@ -634,12 +639,17 @@ export const searchArticles = async ({
     let itemIds;
     itemIds = articles.map(article => article.id);
     
-    // Smart folder optimization: apply limitCount
-    if (smartFolderSearch && limitCount && itemIds.length > limitCount) {
+    // Apply limit filter from search expression (limit:50)
+    // Takes precedence over default limits
+    if (limitFilter && itemIds.length > limitFilter) {
+      itemIds = itemIds.slice(0, limitFilter);
+      console.log(`\x1b[31mApplied limit filter: ${limitFilter} articles\x1b[0m`);
+    } else if (smartFolderSearch && limitCount && itemIds.length > limitCount) {
+      // Smart folder optimization: apply limitCount
       itemIds = itemIds.slice(0, limitCount);
       console.log(`\x1b[31mLimited smart folder results to ${limitCount} articles\x1b[0m`);
-    } else if (!smartFolderSearch) {
-      // Limit to 500 articles when search expressions are used (non-smart folder)
+    } else if (!smartFolderSearch && !limitFilter) {
+      // Limit to 500 articles when search expressions are used (non-smart folder, no explicit limit)
       const hasSearchExpression = rawSearch && rawSearch.trim() !== "" && rawSearch.trim() !== "%";
       if (hasSearchExpression && itemIds.length > 500) {
         itemIds = itemIds.slice(0, 500);
