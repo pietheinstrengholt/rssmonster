@@ -46,6 +46,10 @@ jobs:
         working-directory: server
         run: npm ci
 
+      - name: Lint server
+        working-directory: server
+        run: npm run lint
+
       - name: Run migrations
         working-directory: server
         env:

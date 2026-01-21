@@ -12,6 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "lint": "eslint .",
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
     "debug": "nodemon --watch server --ext js,json --delay 100ms bootstrap.js",
@@ -25,6 +26,7 @@
   },
   "license": "MIT",
   "devDependencies": {
+    "eslint": "^9.39.2",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2",
     "vitest": "^4.0.17"

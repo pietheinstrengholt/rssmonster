@@ -106,7 +106,7 @@ module.exports = {
     });
   },
 
-  down: async (queryInterface, Sequelize) => {
+  down: async (queryInterface, _Sequelize) => {
     await queryInterface.removeIndex('feeds', 'feeds_userId_idx');
     await queryInterface.removeIndex('feeds', 'feeds_categoryId_idx');
     await queryInterface.removeIndex('feeds', 'feeds_userId_url_unique');

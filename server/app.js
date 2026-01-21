@@ -25,7 +25,7 @@ import https from 'https';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
-const { sequelize, Hotlink } = db;
+const { sequelize } = db;
 
 // Cache (dependency-injected)
 import hotlink from './controllers/hotlink.js';

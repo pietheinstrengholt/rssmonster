@@ -5,7 +5,7 @@ import discoverRssLink from "../util/discoverRssLink.js";
 import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';
 import parseFeed from "../util/parser.js";
 
-const getFeeds = async (req, res, next) => {
+const getFeeds = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -47,7 +47,7 @@ const getFeeds = async (req, res, next) => {
   }
 };
 
-const getFeed = async (req, res, next) => {
+const getFeed = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -71,7 +71,7 @@ const getFeed = async (req, res, next) => {
   }
 };
 
-const updateFeed = async (req, res, next) => {
+const updateFeed = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -105,7 +105,7 @@ const updateFeed = async (req, res, next) => {
   }
 };
 
-const newFeed = async (req, res, next) => {
+const newFeed = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -130,7 +130,7 @@ const newFeed = async (req, res, next) => {
   }
 };
 
-const deleteFeed = async (req, res, next) => {
+const deleteFeed = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -160,7 +160,7 @@ const deleteFeed = async (req, res, next) => {
   }
 };
 
-const validateFeed = async (req, res, next) => {
+const validateFeed = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     if (!userId) {
@@ -184,7 +184,7 @@ const validateFeed = async (req, res, next) => {
       });
     }
 
-    let feedItem = await parseFeed.process(url);
+    const feedItem = await parseFeed.process(url);
     if (!feedItem) {
       return res.status(400).json({
         error_msg: 'Feed has no meta attributes'
@@ -192,7 +192,7 @@ const validateFeed = async (req, res, next) => {
     }
 
     //extract feed data
-    let feed = feedItem.feed;
+    const feed = feedItem.feed;
 
     //sanity check
     if (!feed || typeof feed !== "object") {
@@ -200,7 +200,7 @@ const validateFeed = async (req, res, next) => {
     }
 
     //use self link as rss url if available
-    let feedUrl = feedItem.self || url;
+    const feedUrl = feedItem.self || url;
 
     //check if feed already exists
     const existingFeed = await Feed.findOne({

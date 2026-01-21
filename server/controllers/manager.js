@@ -4,7 +4,7 @@ const { Feed, Category, Article, Setting } = db;
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
 
-export const getOverview = async (req, res, next) => {
+export const getOverview = async (req, res, _next) => {
   const userId = req.userData.userId;
 
   if (!userId) {
@@ -207,7 +207,7 @@ export const getOverview = async (req, res, next) => {
   }
 };
 
-export const categoryUpdateOrder = async (req, res, next) => {
+export const categoryUpdateOrder = async (req, res, _next) => {
 
   const userId = req.userData.userId;
 
@@ -249,7 +249,7 @@ export const categoryUpdateOrder = async (req, res, next) => {
   }
 };
 
-export const feedChangeCategory = async (req, res, next) => {
+export const feedChangeCategory = async (req, res, _next) => {
   const userId = req.userData.userId;
 
   if (!userId) {
@@ -291,7 +291,7 @@ export const feedChangeCategory = async (req, res, next) => {
       feed
         .update({
           categoryId: req.body.categoryId
-        }, { where: { userId: userId }})
+        }, { where: { userId: userId } })
         .then(() => res.status(200).json(feed))
         .catch(error => res.status(400).json(error));
     }

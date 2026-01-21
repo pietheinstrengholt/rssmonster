@@ -59,7 +59,7 @@ export const generateOpml = async (userId) => {
   return opml;
 };
 
-export const exportOpml = async (req, res, next) => {
+export const exportOpml = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -91,7 +91,7 @@ function escapeXml(unsafe) {
     .replace(/'/g, '&apos;');
 }
 
-export const importOpml = async (req, res, next) => {
+export const importOpml = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -124,7 +124,7 @@ export const importOpml = async (req, res, next) => {
 
     let categoriesCreated = 0;
     let feedsCreated = 0;
-    let errors = [];
+    const errors = [];
 
     // Get the maximum categoryOrder to append new categories at the end
     const maxOrderCategory = await Category.findOne({

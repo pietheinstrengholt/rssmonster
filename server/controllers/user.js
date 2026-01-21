@@ -3,7 +3,7 @@ const { User, Setting, Article, Feed, Category, Hotlink } = db;
 import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
 
-const getUsers = async (req, res, next) => {
+const getUsers = async (req, res, _next) => {
   try {
 
     const userId = req.userData.userId;
@@ -37,7 +37,7 @@ const getUsers = async (req, res, next) => {
   }
 };
 
-const getUser = async (req, res, next) => {
+const getUser = async (req, res, _next) => {
   try {
 
     // Check if the user has the 'admin' role
@@ -67,7 +67,7 @@ const getUser = async (req, res, next) => {
   }
 };
 
-const postUsers = async (req, res, next) => {
+const postUsers = async (req, res, _next) => {
   try {
     const loggedInUser = await User.findOne({
       where: { id: req.userData.userId }
@@ -113,7 +113,7 @@ const postUsers = async (req, res, next) => {
   }
 };
 
-const deleteUser = async (req, res, next) => {
+const deleteUser = async (req, res, _next) => {
   try {
     const loggedInUser = await User.findOne({
       where: { id: req.userData.userId }

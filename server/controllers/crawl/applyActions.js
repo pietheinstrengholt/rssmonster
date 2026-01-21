@@ -25,7 +25,7 @@ function applyActions(actions, contentStripped, title) {
     let regex;
     try {
       regex = new RegExp(action.regularExpression);
-    } catch (err) {
+    } catch {
       console.error(`Error testing regex for action "${action.name}"`);
       continue;
     }

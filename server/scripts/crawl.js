@@ -14,7 +14,7 @@ dotenv.config();
 import db from '../models/index.js';
 import crawlController from '../controllers/crawl.js';
 
-const { sequelize, Hotlink } = db;
+const { sequelize } = db;
 
 const run = async () => {
   try {

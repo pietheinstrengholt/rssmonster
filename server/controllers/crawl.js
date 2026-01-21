@@ -25,29 +25,25 @@ let rateLimitDelay = 0;
  * ------------------------------------------------------------------ */
 
 // Helper function to wrap async functions and catch errors
-const catchAsync = fn => {
-  return (req, res, next) => {
-    fn(req, res, next).catch(next);
-  };
+const catchAsync = fn => (req, res, next) => {
+  fn(req, res, next).catch(next);
 };
 
 // Helper function to add timeout to a promise
-const withTimeout = (promise, timeoutMs, feedUrl) => {
-  return Promise.race([
-    promise,
-    new Promise((_, reject) =>
-      setTimeout(
-        () =>
-          reject(
-            new Error(
-              `Feed processing timed out after ${timeoutMs / 1000} seconds`
-            )
-          ),
-        timeoutMs
-      )
+const withTimeout = (promise, timeoutMs, _feedUrl) => Promise.race([
+  promise,
+  new Promise((_, reject) =>
+    setTimeout(
+      () =>
+        reject(
+          new Error(
+            `Feed processing timed out after ${timeoutMs / 1000} seconds`
+          )
+        ),
+      timeoutMs
     )
-  ]);
-};
+  )
+]);
 
 // Reset rate limit delay after crawl completes
 const resetRateLimitDelay = () => {
@@ -139,7 +135,7 @@ const performCrawl = async (userId = null) => {
     try {
       //discover RssLink
       const discoveryInputUrl = feed.url;
-      let url = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
+      const url = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
 
       if (!url) {
         throw new Error('Unable to discover RSS/Atom URL');

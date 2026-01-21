@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 const { Setting } = db;
 
-export const getSettings = async (req, res, next) => {
+export const getSettings = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -56,7 +56,7 @@ export const getSettings = async (req, res, next) => {
   }
 };
 
-export const setSettings = async (req, res, next) => {
+export const setSettings = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -81,7 +81,7 @@ export const setSettings = async (req, res, next) => {
     };
 
     // Find or create settings for user
-    let settings = await Setting.findOne({ where: { userId: userId } });
+    const settings = await Setting.findOne({ where: { userId: userId } });
 
     if (settings) {
       console.log("Updating existing settings for user:", userId);

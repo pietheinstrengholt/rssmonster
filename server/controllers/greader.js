@@ -64,17 +64,11 @@ const validateAuth = async (req) => {
 };
 
 // Helper response methods
-const badRequest = (res, message = 'Bad Request') => {
-  return res.status(400).type('text/plain').send(message);
-};
+const badRequest = (res, message = 'Bad Request') => res.status(400).type('text/plain').send(message);
 
-const unauthorized = (res) => {
-  return res.status(401).type('text/plain').send('Unauthorized');
-};
+const unauthorized = (res) => res.status(401).type('text/plain').send('Unauthorized');
 
-const notImplemented = (res) => {
-  return res.status(501).type('text/plain').send('Not implemented');
-};
+const notImplemented = (res) => res.status(501).type('text/plain').send('Not implemented');
 
 /**
  * POST /api/greader/accounts/ClientLogin
@@ -262,7 +256,6 @@ export const editSubscription = async (req, res) => {
     const action = req.body.ac || req.query.ac;
     const title = req.body.t || req.query.t;
     const addCategory = req.body.a || req.query.a;
-    const removeCategory = req.body.r || req.query.r;
     
     if (!streamId || !action) {
       return badRequest(res, 'Missing required parameters');

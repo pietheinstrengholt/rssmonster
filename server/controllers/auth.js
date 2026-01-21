@@ -4,7 +4,7 @@ import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
 
-const register = async (req, res, next) => {
+const register = async (req, res, _next) => {
   try {        
     const { username, password } = req.body;
 
@@ -41,7 +41,7 @@ const register = async (req, res, next) => {
   }  
 };
 
-const login = async (req, res, next) => {
+const login = async (req, res, _next) => {
   try {
     const { username, password } = req.body;
 
@@ -98,7 +98,7 @@ const login = async (req, res, next) => {
   }
 };
 
-const validate = async (req, res, next) => {
+const validate = async (req, res, _next) => {
   try {
     // Check if the user exists
     const user = await User.findOne({ 

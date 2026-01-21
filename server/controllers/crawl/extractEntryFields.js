@@ -12,7 +12,7 @@ function extractEntryFields(entry) {
   };
 
   // Categories extraction
-  let categoryNames = Array.isArray(entry.categories)
+  const categoryNames = Array.isArray(entry.categories)
     ? entry.categories
         .map(c => c.name)
         .filter(Boolean)

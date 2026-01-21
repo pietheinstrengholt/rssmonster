@@ -95,7 +95,7 @@ const processArticle = async (feed, entry) => {
 
     // Analyze content once (summary + tags + scores)
     // Done AFTER delete check to avoid wasting API calls
-    let analysis = await analyzeArticleContent(
+    const analysis = await analyzeArticleContent(
       contentStripped,
       fields.title,
       fields.categories,

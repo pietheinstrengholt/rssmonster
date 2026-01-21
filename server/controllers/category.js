@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 const { Category, Feed } = db;
 
-const getCategories = async (req, res, next) => {
+const getCategories = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -25,7 +25,7 @@ const getCategories = async (req, res, next) => {
   }
 };
 
-const getCategory = async (req, res, next) => {
+const getCategory = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -54,7 +54,7 @@ const getCategory = async (req, res, next) => {
   }
 };
 
-const addCategory = async (req, res, next) => {
+const addCategory = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -77,7 +77,7 @@ const addCategory = async (req, res, next) => {
   }
 };
 
-const updateCategory = async (req, res, next) => {
+const updateCategory = async (req, res, _next) => {
   try {
 
     const userId = req.userData.userId;
@@ -111,7 +111,7 @@ const updateCategory = async (req, res, next) => {
   }
 };
 
-const deleteCategory = async (req, res, next) => {
+const deleteCategory = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 

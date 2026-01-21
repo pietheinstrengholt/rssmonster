@@ -1,7 +1,7 @@
 'use strict';
 
 module.exports = {
-  up: async (queryInterface, Sequelize) => {
+  up: async (queryInterface, _Sequelize) => {
     // Add foreign key constraint to articles.clusterId
     await queryInterface.addConstraint('articles', {
       fields: ['clusterId'],

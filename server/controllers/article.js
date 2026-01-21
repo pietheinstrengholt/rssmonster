@@ -29,7 +29,7 @@ export const getArticles = async (req, res) => {
 };
 
 // Get single article details by ID
-const getArticle = async (req, res, next) => {
+const getArticle = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -66,7 +66,7 @@ const getArticle = async (req, res, next) => {
 };
 
 // Mark unread articles as read
-const markAsRead = async (req, res, next) => {
+const markAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -121,7 +121,7 @@ const markAsRead = async (req, res, next) => {
 };
 
 // Mark article as clicked
-const markClicked = async (req, res, next) => {
+const markClicked = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -158,7 +158,7 @@ const markClicked = async (req, res, next) => {
 };
 
 // Get multiple article details by IDs
-const articleDetails = async (req, res, next) => {
+const articleDetails = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 
@@ -290,7 +290,7 @@ const attentionBucketFromSeconds = (visibleSeconds, contentStripped) => {
 };
 
 // Mark article as read
-const articleMarkToRead = async (req, res, next) => {
+const articleMarkToRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -364,7 +364,7 @@ const articleMarkToRead = async (req, res, next) => {
 };
 
 // Mark article as unread
-const articleMarkToUnread = async (req, res, next) => {
+const articleMarkToUnread = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -389,7 +389,7 @@ const articleMarkToUnread = async (req, res, next) => {
 };
 
 // Mark article with star
-const articleMarkWithStar = async (req, res, next) => {
+const articleMarkWithStar = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -423,7 +423,7 @@ const articleMarkWithStar = async (req, res, next) => {
     
     const starInd = update === "mark" ? 1 : 0;
     article
-      .update({ starInd }, { where: { userId: userId }})
+      .update({ starInd }, { where: { userId: userId } })
       .then(() => res.status(200).json(article))
       .catch(error => res.status(400).json(error));
   } catch (err) {
@@ -433,7 +433,7 @@ const articleMarkWithStar = async (req, res, next) => {
 };
 
 // Mark all articles as read
-const articleMarkAllAsRead = async (req, res, next) => {
+const articleMarkAllAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 

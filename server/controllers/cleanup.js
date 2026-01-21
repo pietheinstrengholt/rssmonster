@@ -3,7 +3,7 @@ const { Article } = db;
 import { Op } from 'sequelize';
 
 // Delete all non-starred articles older than one week
-const cleanup = async (req, res, next) => {
+const cleanup = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
 

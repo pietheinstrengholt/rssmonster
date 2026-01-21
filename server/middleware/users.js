@@ -37,7 +37,7 @@ const isLoggedIn = (req, res, next) => {
       const decoded = jwt.verify(token, 'SECRETKEY');
       req.userData = decoded;
       next();
-    } catch (err) {
+    } catch {
       return res.status(400).send({
         message: 'Your session is not valid!',
       });

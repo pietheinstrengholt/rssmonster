@@ -24,7 +24,7 @@ function makeResult({ structured, error=false }) {
 
 // Shared helper to generate HTML for articles
 function generateArticlesHtml(articles, options = {}) {
-  const { title = "Articles", emoji = "", backgroundColor = "", feedName = "", feedUrl = "" } = options;
+  const { title = "Articles", emoji = "", feedName = "", feedUrl = "" } = options;
   
   let html = `<h3>${emoji ? emoji + ' ' : ''}${title}</h3>`;
   if (feedName && feedUrl) {
@@ -735,7 +735,7 @@ const postMcp = async (req, res) => {
           // Create mock request/response objects for the crawl controller
           const mockReq = {};
           const mockRes = {
-            status: (code) => ({
+            status: (_code) => ({
               json: (data) => {
                 console.log(`Crawl response: ${JSON.stringify(data)}`);
                 return data;

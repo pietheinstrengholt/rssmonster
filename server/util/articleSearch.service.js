@@ -223,21 +223,17 @@ export const searchArticles = async ({
      * - "Control Flow" (with quotes) → exact phrase match
      * - Control Flow (without quotes) → match both words individually (OR logic)
      */
-    let textSearch = "";
     let wordMatches = []; // For unquoted searches: individual word matches
     
     if (quotedPhrase) {
       // Exact phrase match from quoted input
-      textSearch = `%${quotedPhrase}%`;
       console.log(`\x1b[31mUsing exact phrase match: "${quotedPhrase}"\x1b[0m`);
     } else if (remainingTokens.length > 0) {
       // Unquoted search: create individual word patterns for OR matching
       wordMatches = remainingTokens.map(token => ({ [Op.like]: `%${token}%` }));
       console.log(`\x1b[31mUsing word-by-word OR matching for: ${remainingTokens.join(", ")}\x1b[0m`);
-    } else {
-      // No remaining tokens or quoted phrase: match all
-      textSearch = "%";
     }
+    // No remaining tokens or quoted phrase: match all
 
     /**
      * Determine final filter values.
@@ -260,7 +256,7 @@ export const searchArticles = async ({
     console.log(`\x1b[31mFinal sort value: "${workingSort}"\x1b[0m`);
 
     // Tag: search token (tag:name) overrides query param
-    let workingTag = tagFilter !== null ? tagFilter : (tag || "").trim();
+    const workingTag = tagFilter !== null ? tagFilter : (tag || "").trim();
     console.log(`\x1b[31mFinal tag value: "${workingTag}"\x1b[0m`);
 
     /**
@@ -386,7 +382,7 @@ export const searchArticles = async ({
      * Build final article query.
      * Start with base WHERE conditions, then apply field filters if present.
      */
-    let articleQuery = {
+    const articleQuery = {
       attributes: ["id", "quality"], // Only fetch IDs for performance (full details fetched later)
       order: [["published", workingSort]], // Sort by publication date
       where: baseWhere

@@ -6,7 +6,7 @@ import { Op } from 'sequelize';
 //use Fever API
 //specs: https://github.com/dasmurphy/tinytinyrss-fever-plugin/blob/master/fever-api.md
 
-export const getFever = async (req, res, next) => {
+export const getFever = async (req, res, _next) => {
   try {
     const arr = responseBase();
 
@@ -19,7 +19,7 @@ export const getFever = async (req, res, next) => {
   }
 };
 
-export const postFever = async (req, res, next) => {
+export const postFever = async (req, res, _next) => {
   try {
     const arr = responseBase();
 
@@ -248,9 +248,7 @@ export const postFever = async (req, res, next) => {
         //when argument is links, return hot links
         if ("links" in req.query) {
           // Support optional offset, range, page parameters (defaults: offset=0, range=7, page=1)
-          const offset = parseInt(req.query.offset) || 0;
-          const range = parseInt(req.query.range) || 7;
-          const page = parseInt(req.query.page) || 1;
+          // These parameters are reserved for future pagination implementation
           
           //select all items with hot links
           const whereClause = {

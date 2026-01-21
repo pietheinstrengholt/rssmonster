@@ -3,20 +3,6 @@ import { parseFeed } from 'feedsmith';
 import { fetchURL as fetchURLInternal } from './fetchURL.js';
 import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
 
-//function to return overlap
-const findOverlap = (a, b) => {
-  if (b.length === 0) {
-    return "";
-  }
-  if (a.endsWith(b)) {
-    return b;
-  }
-  if (a.indexOf(b) >= 0) {
-    return b;
-  }
-  return findOverlap(a, b.substring(0, b.length - 1));
-}
-
 //function to validate if url is valid url
 const isURL = (str) => {
   var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#:.?+=&%!\-\/]))?/;
@@ -26,7 +12,7 @@ const isURL = (str) => {
 const resolveLink = (base, href) => {
   try {
     return new URL(href, base).toString();
-  } catch (e) {
+  } catch {
     return null;
   }
 };
@@ -110,10 +96,9 @@ const unique = (arr) => {
   return out;
 };
 
-export const fetchURL = async (url, retries = 2) => {
+export const fetchURL = async (url, retries = 2) =>
   // Backwards-compatible export: throw on failure so callers can handle
-  return fetchURLInternal(url, retries);
-};
+  fetchURLInternal(url, retries);
 
 export const discoverRssLink = async (url, feed) => {
   try {

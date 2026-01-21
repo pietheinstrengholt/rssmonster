@@ -33,7 +33,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
     try {
       if (!entryLink) return;
       domain = new URL(entryLink).hostname;
-    } catch (err) {
+    } catch {
       domain = entryLink;
     }
 
