@@ -9,7 +9,7 @@ Imagine opening your RSS reader and seeing **exactly what matters**—not buried
 
 **That's RSSMonster.**
 
-![Screenshot](../client/src/assets/screenshots/screenshot01.png)
+![Screenshot](/rssmonster/assets/screenshot01.png)
 
 ---
 

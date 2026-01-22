@@ -9,7 +9,7 @@ Smart Folders are **declarative, dynamic views** built using search expressions.
 
 They update automatically as new articles arrive.
 
-![Screenshot](../client/src/assets/screenshots/screenshot03.png)
+![Screenshot](/rssmonster/assets/screenshot03.png)
 
 ---
 ## How They Work

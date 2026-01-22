@@ -23,9 +23,9 @@ RSSMonster combines advanced search expressions, semantic clustering, quality an
 
 Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable.
 
-![Screenshot](client/src/assets/screenshots/screenshot01.png)
+![Screenshot](docs/assets/screenshot01.png)
 
-![Screenshot](client/src/assets/screenshots/screenshot03.png)
+![Screenshot](docs/assets/screenshot03.png)
 
 ## Key Features
 
@@ -196,7 +196,7 @@ RSSMonster includes an AI-powered assistant that enables natural language intera
 - "What are my favorite articles?"
 - "Find unread posts about JavaScript"
 
-![Screenshot](client/src/assets/screenshots/screenshot02.png)
+![Screenshot](docs/assets/screenshot02.png)
 
 ### Configuration
 
@@ -347,7 +347,7 @@ RSSMonster is compatible with the Fever API, enabling integration with third-par
 
 - **Reeder (iOS)**: Configure by adding a Fever account with the endpoint above
 
-![Screenshot Fever](client/src/assets/screenshots/fever.png)
+![Screenshot Fever](docs/assets/fever.png)
 
 ## Google Reader API Integration
 

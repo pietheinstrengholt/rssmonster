@@ -1,6 +1,7 @@
 title: RSSMonster
 description: Signal-driven RSS reader that prioritizes what matters
 theme: minima
+url: https://pietheinstrengholt.github.io/rssmonster
 
 markdown: kramdown
 highlighter: rouge
