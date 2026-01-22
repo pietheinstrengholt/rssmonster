@@ -6,14 +6,14 @@ applyTo: '**'
 
 ## Repository Overview
 
-RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vue.js 3 frontend** and **Express backend using ESM modules**. The application provides advanced features including semantic article clustering, quality scoring, importance-based ranking, and AI-powered search capabilities through Model Context Protocol (MCP).
+RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vue.js 3 frontend** and **Express backend using ESM modules**. The application provides advanced features including semantic article clustering, quality scoring, importance-based ranking, and AI-powered capabilities
 
 **Tech Stack:**
 - **Backend:** Node.js 20+, Express 5.x (ESM only), Sequelize ORM, MySQL
 - **Frontend:** Vue.js 3, Vite, Bootstrap 5, Pinia (state management)
 - **Build Tools:** Vite for client, no build step for server (ESM)
 - **Database:** MySQL 5.7+ with Sequelize migrations
-- **Deployment:** Docker, Azure Static Web Apps (client), Azure Web App (server)
+- **Deployment:** Docker
 
 **Repository Size:** Small-to-medium monorepo with clear client/server separation.
 
@@ -40,7 +40,7 @@ RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vu
 ## Code Style & Conventions
 
 - **Backend:** ESM modules, single-expression assignments preferred, preserve existing comments
-- **Frontend:** Vue 3 Composition API, Bootstrap 5 classes only, Bootstrap Icons standard. Design must look sleek and stand out.
+- **Frontend:** Vue 3 Composition API, Bootstrap 5 classes only, Bootstrap Icons standard. Single-expression assignments. Design must look sleek and stand out.
 - **Naming:** camelCase for variables/functions, PascalCase for components/models
 - **Comments:** Minimal comments unless required for complex logic (match existing style)
 
