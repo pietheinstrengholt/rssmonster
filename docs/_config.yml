@@ -1,0 +1,15 @@
+title: RSSMonster
+description: Signal-driven RSS reader that prioritizes what matters
+theme: minima
+
+markdown: kramdown
+highlighter: rouge
+
+header_pages:
+  - index.md
+  - getting-started.md
+  - concepts.md
+  - smart-folders.md
+  - scoring.md
+  - api.md
+  - faq.md
