@@ -1,6 +1,8 @@
 title: RSSMonster
 description: Signal-driven RSS reader that prioritizes what matters
-theme: minima
+theme: pages-themes/slate@v0.2.0
+plugins:
+- jekyll-remote-theme # add this line to the plugins list if you already have one
 
 markdown: kramdown
 highlighter: rouge
