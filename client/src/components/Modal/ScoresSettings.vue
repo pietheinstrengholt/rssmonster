@@ -29,7 +29,7 @@
                         </p>
                         <p class="mb-0">
                             <strong>Requirements:</strong> Scoring requires an OpenAI API key configured in your backend environment. 
-                            Without it, all articles receive default scores of 50.
+                            Without it, all articles receive default scores of 70.
                         </p>
                     </div>
 
