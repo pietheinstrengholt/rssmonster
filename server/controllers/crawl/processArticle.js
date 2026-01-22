@@ -25,6 +25,17 @@ const processArticle = async (feed, entry) => {
     // Extract relevant fields from the entry
     const fields = extractEntryFields(entry);
 
+    // Skip processing if the article is older than the feed's crawlSince
+    if (feed?.crawlSince && fields.published) {
+      const publishedDate = new Date(fields.published);
+      const sinceDate = new Date(feed.crawlSince);
+      if (!isNaN(publishedDate.getTime()) && !isNaN(sinceDate.getTime())) {
+        if (publishedDate < sinceDate) {
+          return; // Too old, respect crawlSince threshold
+        }
+      }
+    }
+
     // Don't process empty post URLs
     if (!fields.link) return;
 

@@ -46,6 +46,10 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
+      mutedUntil: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       status: {
         type: DataTypes.ENUM('active', 'error', 'disabled'),
         allowNull: false,

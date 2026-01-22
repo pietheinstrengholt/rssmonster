@@ -57,6 +57,10 @@ module.exports = {
           type: Sequelize.DATE,
           allowNull: true
         },
+        mutedUntil: {
+          type: Sequelize.DATE,
+          allowNull: true
+        },
         status: {
           type: Sequelize.ENUM('active', 'error', 'disabled'),
           allowNull: false,
@@ -72,9 +76,15 @@ module.exports = {
           allowNull: false,
           defaultValue: 0
         },
+        crawlSince: {
+          type: Sequelize.DATE,
+          allowNull: true,
+          defaultValue: null
+        },
         lastFetched: {
           type: Sequelize.DATE,
-          allowNull: true
+          allowNull: true,
+          defaultValue: null
         },
         createdAt: {
           type: Sequelize.DATE,

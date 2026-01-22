@@ -42,6 +42,14 @@ const HIGH_VOLUME_THRESHOLD_PER_DAY = 25;
 // HIGH_VOLUME_MAX_PENALTY: Maximum trust reduction applied at extreme volumes
 // e.g., a feed at 50+ articles/day loses up to 40% trust
 const HIGH_VOLUME_MAX_PENALTY = 0.4;
+// NEGATIVE_MAX_PENALTY: Maximum trust reduction for negativeInd articles.
+// Applies a gentle, sublinear scaling (sqrt) so a few negatives still signal
+// an issue without overwhelming the score when counts are low.
+const NEGATIVE_MAX_PENALTY = 0.2;
+// MUTE_MAX_PENALTY: Maximum penalty when a feed has been muted recently
+// MUTE_STALE_MONTHS: Penalize if mutedUntil is within the last MUTE_STALE_MONTHS
+const MUTE_MAX_PENALTY = 0.2;
+const MUTE_STALE_MONTHS = 6;
 // LOOKBACK_DAYS: Only analyze articles published in the last 30 days
 // Prevents old, stale data from influencing current feed trust
 const LOOKBACK_DAYS = 30;
@@ -239,6 +247,17 @@ export async function calculateFeedTrustForFeed(feedId) {
   const consistency = clamp(articlesPerDay / 4);
 
   /* ============================================================
+   * METRIC 6: NEGATIVE FEEDBACK (user "not interested")
+   * Penalize feeds proportionally to the share of negativeInd articles
+   * ============================================================ */
+
+  let negativeCount = 0;
+  for (const article of articles) {
+    if (article.negativeInd === 1) negativeCount++;
+  }
+  const negativeRate = articles.length > 0 ? negativeCount / articles.length : 0;
+
+  /* ============================================================
    * METRIC 6: OBSERVED TRUST (weighted combination)
    * Weights:
    *   40% Originality (most important)
@@ -265,15 +284,34 @@ export async function calculateFeedTrustForFeed(feedId) {
 
   const observedWithVolume = clamp(observedTrust * (1 - highVolumePenalty));
 
+  // Apply negative feedback penalty (sublinear: sqrt) so small counts gently penalize
+  const negativePenalty = clamp(Math.sqrt(negativeRate) * NEGATIVE_MAX_PENALTY, 0, NEGATIVE_MAX_PENALTY);
+  const observedWithVolumeAndNegative = clamp(observedWithVolume * (1 - negativePenalty));
+
+  // Apply mute penalty: if mutedUntil is between now and MUTE_STALE_MONTHS ago
+  let mutePenalty = 0;
+  if (feed.mutedUntil) {
+    const muteDate = new Date(feed.mutedUntil);
+    if (!isNaN(muteDate.getTime())) {
+      const monthsAgoMs = MUTE_STALE_MONTHS * 30 * 24 * 60 * 60 * 1000;
+      const cutoff = Date.now() - monthsAgoMs;
+      if (muteDate.getTime() >= cutoff && muteDate.getTime() <= Date.now()) {
+        mutePenalty = MUTE_MAX_PENALTY;
+      }
+    }
+  }
+
+  const observedWithPenalties = clamp(observedWithVolumeAndNegative * (1 - mutePenalty));
+
   // SPREAD AMPLIFICATION: Push scores away from 0.5 to create wider distribution
   // e.g., 0.5 stays 0.5, but 0.3 becomes 0.1, and 0.7 becomes 0.9
   let adjustedObserved = clamp(
-    0.5 + (observedWithVolume - 0.5) * SPREAD_FACTOR
+    0.5 + (observedWithPenalties - 0.5) * SPREAD_FACTOR
   );
 
   // BONUS: Feeds with very strong scores (≥0.85) get an extra 5% uplift
   // Reward excellence
-  if (observedWithVolume >= 0.85) {
+  if (observedWithPenalties >= 0.85) {
     adjustedObserved = clamp(adjustedObserved + 0.05);
   }
 
@@ -303,7 +341,9 @@ export async function calculateFeedTrustForFeed(feedId) {
   // Return the calculated metrics for logging
   return {
     trust: newTrust,
-    duplicationRate: feedDuplicationRate
+    duplicationRate: feedDuplicationRate,
+    negativeRate,
+    mutePenalty
   };
 }
 

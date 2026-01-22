@@ -9,6 +9,7 @@
               <div class="modal-body">
                 <!-- Instead of manipulating the store, we operate on a cloned object -->
                 <div v-if="$store.data.categories.length > 0">
+                  <label for="Url" class="col-sm-3 col-form-label">Enter url:</label>
                   <input class="form-control"  type="text" placeholder="Enter feed or website url..." v-model="url">
                   <br>
                   <div class="form-group row">
@@ -23,6 +24,19 @@
                 <div v-else>
                   <p>No categories exist at this moment.</p>
                   <p>First create a new category before adding a new feed.</p>
+                </div>
+                <!--Dropdown for selecting the date -->
+                <div class="form-group row" v-if="$store.data.categories.length > 0">
+                  <label for="crawlSince" class="col-sm-3 col-form-label">Crawl since</label>
+                  <div class="col-sm-9">
+                    <select id="crawlSince" class="form-select" v-model="crawlSince" aria-label="Select how far back to crawl">
+                      <option value="7d">Last 7 days (default)</option>
+                      <option value="1m">Last 1 month</option>
+                      <option value="3m">Last 3 months</option>
+                      <option value="1y">Last 1 year</option>
+                      <option value="all">Everything</option>
+                    </select>
+                  </div>
                 </div>
                 <br>
                 <button v-if="$store.data.categories.length > 0" type="submit" class="btn btn-primary mb-2" @click="checkWebsite">Validate feed</button>
@@ -103,7 +117,8 @@ export default {
           url: null,
           category: {},
           feed: {},
-          selectedCategory: null
+          selectedCategory: null,
+          crawlSince: '7d'
         };
     },
     methods: {
@@ -141,8 +156,8 @@ export default {
                     feedDesc: this.feed.feedDesc,
                     feedType: this.feed.feedType,
                     url: this.feed.url,
-                    rssUrl: this.feed.rssUrl,
-                    status: 'active'
+                    status: 'active',
+                    crawlSince: this.crawlSince
                 })
                 .then(
                 result => {

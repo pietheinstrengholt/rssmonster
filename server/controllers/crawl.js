@@ -64,7 +64,12 @@ const getFeeds = async (userId = null) => {
     const where = {
       status: 'active',
       // DEBUG: Filter for specific URL - remove this line after debugging
-      // url: 'http://www.engadget.com/rss.xml'
+      // url: 'http://www.engadget.com/rss.xml',
+      // Exclude muted feeds (mutedUntil is null OR mutedUntil is in the past)
+      [db.Sequelize.Op.or]: [
+        { mutedUntil: { [db.Sequelize.Op.is]: null } },
+        { mutedUntil: { [db.Sequelize.Op.lte]: new Date() } }
+      ]
     };
 
     // If userId is provided (HTTP-triggered crawl), scope feeds to that user

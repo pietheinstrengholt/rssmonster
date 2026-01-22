@@ -34,6 +34,11 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
+      negativeInd: {
+        type: Sequelize.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       clickedAmount: {
         type: Sequelize.INTEGER,
         allowNull: false,

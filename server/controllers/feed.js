@@ -135,6 +135,39 @@ const newFeed = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    // Map crawlSince selector (e.g., '7d', '1m', '3m', '1y', 'all') to a Date or null
+    const toCrawlSinceDate = (value) => {
+      const now = new Date();
+      const v = (value || '7d').toString();
+      try {
+        switch (v) {
+          case '7d': {
+            const d = new Date(now); d.setDate(d.getDate() - 7); return d;
+          }
+          case '1m': {
+            const d = new Date(now); d.setMonth(d.getMonth() - 1); return d;
+          }
+          case '3m': {
+            const d = new Date(now); d.setMonth(d.getMonth() - 3); return d;
+          }
+          case '1y': {
+            const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d;
+          }
+          case 'all':
+            return null; // no limit
+          default: {
+            // If an ISO date string or timestamp is provided, attempt to parse
+            const parsed = new Date(v);
+            return isNaN(parsed.getTime()) ? new Date(now.setDate(now.getDate() - 7)) : parsed;
+          }
+        }
+      } catch {
+        const d = new Date(now); d.setDate(d.getDate() - 7); return d;
+      }
+    };
+
+    const crawlSince = toCrawlSinceDate(req.body.crawlSince);
+
     const feed = await Feed.create({
       userId: req.userData.userId,
       categoryId: req.body.categoryId,
@@ -143,7 +176,8 @@ const newFeed = async (req, res, _next) => {
       feedType: req.body.feedType,
       url: req.body.url,
       favicon: req.body.favicon,
-      status: req.body.status
+      status: req.body.status,
+      crawlSince
     });
     return res.status(201).json({ feed });
   } catch (err) {
@@ -316,6 +350,48 @@ const rediscoverFeedRss = async (req, res) => {
   }
 };
 
+const muteFeed = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const feedId = req.params.feedId;
+    if (!feedId) {
+      return res.status(400).json({ error: 'Bad request: missing feedId' });
+    }
+
+    const mutedUntil = req.body.mutedUntil;
+    if (!mutedUntil) {
+      return res.status(400).json({ error: 'Bad request: missing mutedUntil' });
+    }
+
+    const feed = await Feed.findOne({
+      where: {
+        id: feedId,
+        userId: userId
+      }
+    });
+
+    if (!feed) {
+      return res.status(404).json({ error: 'Feed not found' });
+    }
+
+    await feed.update({ mutedUntil: new Date(mutedUntil) });
+
+    return res.status(200).json({ 
+      message: 'Feed muted successfully', 
+      feedId,
+      mutedUntil 
+    });
+  } catch (err) {
+    console.error('Error in muteFeed:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 export default {
   getFeeds,
   getFeed,
@@ -323,5 +399,6 @@ export default {
   newFeed,
   deleteFeed,
   validateFeed,
-  rediscoverFeedRss
+  rediscoverFeedRss,
+  muteFeed
 }

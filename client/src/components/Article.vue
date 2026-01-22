@@ -1,16 +1,36 @@
 <template>
   <div class="block" :id="id">
-    <div
-      class="article"
-      :class="{ starred: starInd == 1, hot: hotInd == 1 }"
-      @click="articleTouched(id, $event)"
-    >
+    <div class="article" :class="{ starred: starInd == 1, hot: hotInd == 1 }" @click="articleTouched(id, $event)">
       <div class="maximal">
         <h5 class="heading">
-          <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
-          <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
-          <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
-          <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
+          <div class="heading-content">
+            <div class="heading-left">
+              <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
+              <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
+              <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
+              <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
+            </div>
+            <div class="menu-icon-wrapper dropdown">
+              <button 
+                class="btn btn-sm" 
+                type="button" 
+                data-bs-toggle="dropdown" 
+                aria-expanded="false"
+              >
+                <BootstrapIcon icon="three-dots" />
+              </button>
+              <ul class="dropdown-menu">
+                <li>
+                  <a class="dropdown-item" href="#" @click.prevent="markAsFavorite">
+                    {{ starInd ? 'Unmark favorite' : 'Mark as favorite' }}
+                  </a>
+                </li>
+                <li><a class="dropdown-item" href="#" @click.prevent="markNotInterested">Not Interested</a></li>
+                <li><hr class="dropdown-divider" /></li>
+                <li><a class="dropdown-item" href="#" @click.prevent="muteFeedSevenDays">Mute Feed for 7 Days</a></li>
+              </ul>
+            </div>
+          </div>
         </h5>
 
         <div class="feedname">
@@ -258,6 +278,56 @@
   font-size: 19px;
   text-decoration: none;
   border-bottom: none;
+}
+
+.heading-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.heading-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.dropdown {
+  position: relative;
+}
+
+.dropdown .btn {
+  width: 30px !important;
+  height: 30px !important;
+  padding: 0 !important;
+  border: none !important;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #51556a;
+  opacity: 0.7;
+  transition: opacity 0.2s;
+}
+
+.dropdown .btn:hover {
+  opacity: 1;
+  background-color: transparent !important;
+}
+
+.dropdown-menu {
+  min-width: 120px !important;
+}
+
+.dropdown-item {
+  padding: 6px 8px !important;
+  font-size: 13px !important;
+}
+
+.dropdown-item:hover,
+.dropdown-item:focus {
+  color: #fff !important;
 }
 
 .block .feedname {
@@ -735,6 +805,11 @@ export default {
     handleMediaChange(event) {
       this.isMobilePortrait = event.matches;
     },
+    closeMenuOnClickOutside(event) {
+      if (this.showArticleMenu && !event.target.closest('.menu-icon-wrapper')) {
+        this.showArticleMenu = false;
+      }
+    },
     getQualityIcon(score) {
       if (score >= 90) return 'patch-check-fill';
       if (score >= 80) return 'patch-check-fill';
@@ -767,9 +842,7 @@ export default {
       return 'Poor';
     },
     articleTouched(articleId, event) {
-      if (['full', 'summarized'].includes(this.$store.data.currentSelection.viewMode)) {
-        this.bookmark(articleId, event);
-      } else if (this.$store.data.currentSelection.viewMode === 'minimal') {
+      if (this.$store.data.currentSelection.viewMode === 'minimal') {
         if (event.srcElement?.nodeName === 'A') return;
         this.showMinimalContent = !this.showMinimalContent;
       }
@@ -810,6 +883,48 @@ export default {
       const url = this.imageUrl || '';
       const encodedUrl = url.replace(/&/g, '&amp;');
       return content.includes(url) || content.includes(encodedUrl);
+    },
+    markAsFavorite() {
+      // Toggle star status
+      const updateType = this.starInd ? 'unmark' : 'mark';
+      const newStarInd = this.starInd ? 0 : 1;
+      
+      axios
+        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markwithstar/${this.id}`, { update: updateType })
+        .then(response => {
+          const category = this.$store.data.categories.find(c => c.id === response.data.feed.categoryId);
+          if (category) {
+            const delta = newStarInd ? 1 : -1;
+            category.starCount += delta;
+            const feed = category.feeds.find(f => f.id === response.data.feedId);
+            if (feed) feed.starCount += delta;
+          }
+          newStarInd ? this.$store.data.increaseStarCount() : this.$store.data.decreaseStarCount();
+          this.$emit('update-star', { id: this.id, starInd: newStarInd });
+        });
+    },
+    markNotInterested() {
+      // Mark article with negativeInd flag
+      axios
+        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/marknotinterested/${this.id}`)
+        .then(() => {
+          // TODO: Remove article from view or update UI
+          console.log('Marked as not interested:', this.id);
+        });
+    },
+    muteFeedSevenDays() {
+      if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
+        const mutedUntil = new Date();
+        mutedUntil.setDate(mutedUntil.getDate() + 7);
+        
+        axios
+          .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/mute/${this.feedId}`, { 
+            mutedUntil: mutedUntil.toISOString() 
+          })
+          .then(() => {
+            console.log('Feed muted until:', mutedUntil);
+          });
+      }
     }
   }
 };

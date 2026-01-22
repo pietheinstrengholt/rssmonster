@@ -29,6 +29,11 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      negativeInd: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       clickedAmount: {
         type: DataTypes.INTEGER,
         defaultValue: 0
