@@ -610,6 +610,26 @@ span.feed_name a {
     color: #ef5350;             /* Bright red */
   }
 
+  .dropdown .btn {
+    color: #fff;
+    opacity: 0.9;
+  }
+
+  .dropdown-menu {
+    background-color: #1f1f1f;
+    border-color: #2a2a2a;
+  }
+
+  .dropdown-item {
+    color: #fff !important;
+  }
+
+  .dropdown-item:hover,
+  .dropdown-item:focus {
+    background-color: #2a2a2a;
+    color: #fff !important;
+  }
+
   .block .article-tags .ad-score {
     background-color: #3d2a1f;
     color: #ffb74d;

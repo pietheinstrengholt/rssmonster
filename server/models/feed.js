@@ -65,6 +65,11 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      crawlSince: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
       lastFetched: {
         type: DataTypes.DATE,
         allowNull: true,
