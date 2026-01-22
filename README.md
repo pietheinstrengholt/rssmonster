@@ -49,6 +49,12 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 - **Multi-user Support**: Separate accounts with personalized feeds and preferences
 - **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP)
 
+## How Ranking Scores Work (End User)
+
+- **Importance**: Blends freshness (recent items count more), quality, and coverage. Coverage rises when more sources report the same story. Freshness is the largest factor, so the newest high-quality, widely-covered items surface first.
+- **Attention**: Reflects how people interact with an article. A quick skim gives a small boost; reads, deep reads, and highly engaged sessions boost more. Re-opens and outbound clicks add a modest extra lift. No interaction means no attention boost.
+- **Quality**: Evaluates the article’s tone, writing, and promotional-ness. Scores for sentiment, writing quality, and advertisement detection combine into a single 0–1 quality score. Trusted feeds amplify good quality; lower-trust feeds dampen it.
+
 ## Prerequisites
 
 - **Node.js**: Version 20.x or higher
