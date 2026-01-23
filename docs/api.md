@@ -1,4 +1,4 @@
-# API & Integrations
+# API and Integrations
 
 RSSMonster exposes REST-style endpoints plus compatibility layers for common RSS clients.
 
