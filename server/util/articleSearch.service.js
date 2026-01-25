@@ -61,6 +61,7 @@ export const searchArticles = async ({
     let readFilter = null; // When set, overrides status parameter to filter by read/unread
     let clickedFilter = null; // When set, filters by clickedAmount
     let tagFilter = null; // Tag name extracted from search (tag:something)
+    let seenFilter = null; // Seen filter from search (seen:true/false)
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
@@ -166,6 +167,7 @@ export const searchArticles = async ({
       const unreadMatch = cleaned.match(/^unread:\s*(true|false)$/i); // unread:true or unread:false
       const readMatch = cleaned.match(/^read:\s*(true|false)$/i); // read:true or read:false
       const clickedMatch = cleaned.match(/^clicked:\s*(true|false)$/i); // clicked:true or clicked:false
+      const seenMatch = cleaned.match(/^seen:\s*(true|false)$/i); // seen:true or seen:false
       const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
       const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, sort:QUALITY, or sort:ATTENTION
@@ -174,6 +176,7 @@ export const searchArticles = async ({
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
+      const lastWeekMatch = cleaned.match(/^@lastweek$/i); // @lastweek (previous 7 days)
       const clusterMatch = cleaned.match(/^cluster:\s*(true|false)$/i); // cluster:true or cluster:false
       const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
       const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
@@ -199,6 +202,9 @@ export const searchArticles = async ({
       } else if (clickedMatch) {
         clickedFilter = clickedMatch[1].toLowerCase() === 'true';
         console.log(`\x1b[31mClicked filter applied via search token: ${clickedFilter}\x1b[0m`);
+      } else if (seenMatch) {
+        seenFilter = seenMatch[1].toLowerCase() === 'true';
+        console.log(`\x1b[31mSeen filter applied via search token: ${seenFilter}\x1b[0m`);
       } else if (tagMatch) {
         tagFilter = tagMatch[1].trim();
         console.log(`\x1b[31mTag filter applied via search token: ${tagFilter}\x1b[0m`);
@@ -244,7 +250,15 @@ export const searchArticles = async ({
         const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 23, 59, 59, 999));
         dateRange = { start, end };
         console.log(`\x1b[31mDate filter applied via search token: yesterday (UTC day)\x1b[0m`);
+      } else if (lastWeekMatch) {
+        // @lastweek: Previous 7 days from now back
+        dateToken = "lastweek";
+        const now = new Date();
+        const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+        dateRange = { start, end: now };
+        console.log(`\x1b[31mDate filter applied via search token: lastweek (previous 7 days)\x1b[0m`);
       } else {
+        // Not a recognized filter token, keep for text search
         remainingTokens.push(cleaned);
       }
     });
@@ -503,6 +517,11 @@ export const searchArticles = async ({
     if (clickedFilter !== null) {
       // clicked:true → only clicked articles, clicked:false → only non-clicked
       articleQuery.where.clickedAmount = clickedFilter ? { [Op.gt]: 0 } : 0;
+    }
+
+    if (seenFilter !== null) {
+      // seen:true → only articles never seen before (firstSeen IS NULL)
+      articleQuery.where.firstSeen = seenFilter ? { [Op.is]: null } : { [Op.not]: null };
     }
 
     if (hotFilter !== null) {

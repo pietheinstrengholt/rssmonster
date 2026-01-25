@@ -255,35 +255,22 @@ export default {
       const ms = this.visibleDuration.get(articleId) || 0;
       const visibleSeconds = Math.round(ms / 1000);
 
-      console.log("[MARK READ]", articleId, `visibleSeconds=${visibleSeconds}`);
+      console.log("[MARK SEEN]", articleId, `visibleSeconds=${visibleSeconds}`);
 
-      if (
-        this.$store.data.getSelectedStatus === "unread" &&
-        this.$store.data.currentSelection.viewMode !== "minimal"
-      ) {
-        this.markArticleRead(articleId, visibleSeconds);
+      if (this.$store.data.currentSelection.viewMode !== "minimal") {
+        this.markArticleSeen(articleId, visibleSeconds);
       }
     },
 
     async flushPool() {
       if (this.container.length && !this.isFlushed) {
-        if (
-          this.$store.data.getSelectedStatus === "unread" &&
-          this.$store.data.currentSelection.viewMode !==
-            "minimal"
-        ) {
+        if (this.$store.data.currentSelection.viewMode !== "minimal") {
           for (const id of this.container) {
             if (!this.pool.includes(id)) {
               const ms = this.visibleDuration.get(id) || 0;
               const visibleSeconds = Math.round(ms / 1000);
-
-              console.log(
-                "[FLUSH MARK READ]",
-                id,
-                `visibleSeconds=${visibleSeconds}`
-              );
-
-              await this.markArticleRead(id, visibleSeconds);
+              console.log("[FLUSH MARK SEEN]", id, `visibleSeconds=${visibleSeconds}`);
+              await this.markArticleSeen(id, visibleSeconds);
             }
           }
         }
@@ -303,23 +290,29 @@ export default {
       this.visibleDuration.clear();
     },
 
-    async markArticleRead(articleId, visibleSeconds = 0) {
+    async markArticleSeen(articleId, visibleSeconds = 0) {
       try {
         const response = await axios.post(
           import.meta.env.VITE_VUE_APP_HOSTNAME +
-            "/api/articles/marktoread/" +
+            "/api/articles/marktoseen/" +
             articleId,
           {
             clusterView: true,
-            visibleSeconds
+            visibleSeconds,
+            selectedStatus: this.$store.data.getSelectedStatus
           }
         );
-        this.$store.data.increaseReadCount(response.data);
+        //TODO: return from the backend if read count must be increased
+        if (this.$store.data.getSelectedStatus === 'unread') {
+          this.$store.data.increaseReadCount(response.data);
+        }
+        //this.$store.data.increaseReadCount(response.data);
       } catch (error) {
         console.log("oops something went wrong", error);
       }
     },
 
+    // track article opened event
     async opened(articleId) {
       try {
         await axios.post(

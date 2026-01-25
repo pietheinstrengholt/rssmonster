@@ -141,6 +141,11 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.NOW
       },
+      firstSeen: {
+        type: Sequelize.DATE,
+        allowNull: true,
+        defaultValue: Sequelize.NOW
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

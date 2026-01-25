@@ -12,7 +12,7 @@ router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleControl
 router.post('/markopened/:articleId', userMiddleware.isLoggedIn, articleController.markOpened);
 router.post('/marknotinterested/:articleId', userMiddleware.isLoggedIn, articleController.markNotInterested);
 router.post('/details', userMiddleware.isLoggedIn, articleController.articleDetails);
-router.post('/marktoread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToRead);
+router.post('/marktoseen/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToSeen);
 router.post('/marktounread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToUnread);
 router.post('/markwithstar/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkWithStar);
 router.post('/markallasread', userMiddleware.isLoggedIn, articleController.articleMarkAllAsRead);

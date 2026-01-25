@@ -29,13 +29,13 @@
     "eslint": "^9.39.2",
     "nodemon": "^3.1.11",
     "supertest": "^7.2.2",
-    "vitest": "^4.0.17"
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.25.3",
-    "@openai/agents": "^0.4.1",
+    "@openai/agents": "^0.4.3",
     "bcryptjs": "^3.0.3",
-    "cheerio": "^1.1.2",
+    "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.2.3",
     "express": "^5.2.1",
@@ -50,7 +50,7 @@
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.5",
     "xml2js": "^0.6.2",
-    "zod": "^4.3.5"
+    "zod": "^4.3.6"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"

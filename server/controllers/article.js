@@ -371,29 +371,36 @@ const attentionBucketFromSeconds = (visibleSeconds, contentStripped) => {
   return 4; // highly engaged
 };
 
-// Mark article as read
-const articleMarkToRead = async (req, res, _next) => {
+// Mark article as seen
+const articleMarkToSeen = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
+    const selectedStatus = req.body?.selectedStatus || "read";
 
+    // Validate userId
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    // Extract visibleSeconds from request (optional)
-    const visibleSeconds = Number(req.body?.visibleSeconds) || 0;
+    // Fetch article and feed details (needed for updating the categories read and unread counts on the frontend)
+    const article = await Article.findByPk(articleId, {
+      where: {
+        userId: userId
+      },
+      include: [{
+        model: Feed,
+        required: true
+      }]
+    });
 
-    // Mark article as read
-    const result = await updateArticleStatus(userId, articleId, "read");
-
-    if (!result.success) {
-      return res.status(result.statusCode).json({
-        message: result.message || "Error updating article"
-      });
+    // Validate article existence
+    if (!article) {
+      return res.status(404).json({ error: 'Error: article not found' });
     }
 
-    const article = result.article;
+    // Extract visibleSeconds from request (optional)
+    const visibleSeconds = Number(req.body?.visibleSeconds) || 0;
 
     // Compute attention bucket
     const attentionBucket = attentionBucketFromSeconds(
@@ -401,40 +408,49 @@ const articleMarkToRead = async (req, res, _next) => {
       article.contentStripped
     );
 
-    // Persist attention bucket
-    await Article.update(
-      { attentionBucket },
-      {
+    // Start with empty payload
+    const payload = {};
+
+    // Only set firstSeen and attentionBucket if the article does not have firstSeen yet
+    if (!article.firstSeen) {
+      payload.firstSeen = new Date();
+      payload.attentionBucket = attentionBucket;
+    }
+
+    // Mark article as read only when it was unread before
+    if (selectedStatus === 'unread') {
+      payload.status = 'read';
+    }
+
+    // Only update if payload has any changes
+    if (Object.keys(payload).length > 0) {
+      await Article.update(payload, {
         where: {
           id: articleId,
-          userId
+          userId: userId
         }
-      }
-    );
+      });
+    }
 
-    // If clusterView is enabled, mark all articles in the same cluster as read
+    // Check if cluster view is enabled
     const clusterView = req.body?.clusterView === true || req.body?.clusterView === 'true';
 
+    // If clusterView is enabled and article has a clusterId, update all articles in the same cluster using the same payload
     if (clusterView && article.clusterId) {
-      console.log(`Cluster view enabled: marking all articles in cluster ${article.clusterId} as read`);
+      console.log(`Cluster view enabled: marking all articles in cluster ${article.clusterId} as seen`);
 
-      await Article.update(
-        {
-          status: 'read',
-          attentionBucket // propagate same bucket to cluster siblings
-        },
-        {
-          where: {
-            id: { [Op.ne]: articleId },
-            userId,
-            clusterId: article.clusterId
-          }
+      // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
+      await Article.update(payload, {
+        where: {
+          id: { [Op.ne]: articleId },
+          userId: userId,
+          clusterId: article.clusterId
         }
-      );
+      });
     }
 
     // Return updated article (bucket will be reloaded on next fetch)
-    return res.status(result.statusCode).json({
+    return res.status(200).json({
       ...article.toJSON(),
       attentionBucket
     });
@@ -546,7 +562,7 @@ export default {
   markOpened,
   markNotInterested,
   articleDetails,
-  articleMarkToRead,
+  articleMarkToSeen,
   articleMarkToUnread,
   articleMarkWithStar,
   articleMarkAllAsRead

@@ -247,6 +247,11 @@ export default (sequelize) => {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
+      },
+      firstSeen: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
       }
     },
     {
