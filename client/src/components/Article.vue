@@ -34,6 +34,7 @@
         </h5>
 
         <div class="feedname">
+            <BootstrapIcon v-if="isMobilePortrait && status === 'read'" icon="check-circle-fill" class="read-icon" />
             <BootstrapIcon
               v-if="isMobilePortrait && quality !== undefined"
               :icon="getQualityIcon(roundedQuality)"
@@ -248,6 +249,11 @@
   vertical-align: middle;
 }
 
+.read-icon {
+  color: #28a745;
+  margin-right: 4px;
+  vertical-align: middle;
+}
 
 .hot-icon {
   color: #F3A712;

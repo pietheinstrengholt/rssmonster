@@ -302,12 +302,29 @@ export default {
             selectedStatus: this.$store.data.getSelectedStatus
           }
         );
+        // Always reflect latest status (and related fields) in local articles array
+        this.updateArticleStatusLocal(response.data);
+
+        // Update counters when transitioning from unread view to read
         if (this.$store.data.getSelectedStatus === 'unread' && response.data.status === "read") {
           this.$store.data.increaseReadCount(response.data);
         }
-        //this.$store.data.increaseReadCount(response.data);
       } catch (error) {
         console.log("oops something went wrong", error);
+      }
+    },
+
+    // Update article in local array with new status and optional fields
+    updateArticleStatusLocal(updatedArticle) {
+      const idx = this.articles.findIndex(a => a.id === updatedArticle.id);
+      if (idx !== -1) {
+        const current = this.articles[idx];
+        this.articles[idx] = {
+          ...current,
+          status: updatedArticle.status ?? current.status,
+          firstSeen: updatedArticle.firstSeen ?? current.firstSeen,
+          attentionBucket: updatedArticle.attentionBucket ?? current.attentionBucket
+        };
       }
     },
 
