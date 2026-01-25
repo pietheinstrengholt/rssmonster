@@ -141,6 +141,7 @@ const processArticle = async (feed, entry) => {
     const hotlinkCount = await Hotlink.count({
       where: {
         userId: feed.userId,
+        feedId: { [Op.ne]: feed.id }, // Exclude same feed
         [Op.or]: [
           { url: articleUrl },
           { url: { [Op.like]: `${articleUrl}?%` } }

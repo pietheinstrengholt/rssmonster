@@ -5,11 +5,15 @@ export default (sequelize) => {
     'hotlinks',
     {
       userId: {
-        type: DataTypes.STRING,
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
+      feedId: {
+        type: DataTypes.INTEGER,
         allowNull: false
       },
       url: {
-        type: DataTypes.STRING,
+        type: DataTypes.TEXT('medium'),
         allowNull: false
       }
     },

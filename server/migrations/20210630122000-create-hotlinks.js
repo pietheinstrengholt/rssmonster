@@ -12,6 +12,10 @@ module.exports = {
             key: 'id'
           }
         },
+        feedId: {
+          type: Sequelize.INTEGER,
+          allowNull: false
+        },
         url: {
           type: Sequelize.TEXT('medium'),
           allowNull: false

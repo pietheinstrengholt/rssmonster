@@ -37,9 +37,13 @@ async function rebuildHotlinks() {
     }
   );
 
-  // Fetch all articles with URLs
+  // Fetch all articles with URLs published in the last two weeks
+  const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const articles = await Article.findAll({
-    attributes: ['id', 'url', 'userId'],
+    attributes: ['id', 'url', 'userId', 'feedId'],
+    where: {
+      published: { [Op.gte]: twoWeeksAgo }
+    },
     raw: true
   });
 
@@ -51,10 +55,11 @@ async function rebuildHotlinks() {
     // Normalize article URL
     const normalizedUrl = normalizeUrl(article.url);
 
-    // Count reverse links (exact match OR with query params)
+    // Count reverse links (exact match OR with query params), excluding same-feed articles
     const hotlinkCount = await Hotlink.count({
       where: {
         userId: article.userId,
+        feedId: { [Op.ne]: article.feedId }, // Exclude same feed
         [Op.or]: [
           { url: normalizedUrl },
           { url: { [Op.like]: `${normalizedUrl}?%` } }
