@@ -12,15 +12,18 @@ export const expressionPatterns = [
     { name: 'unread', regex: /^unread:(true|false)$/i },
     { name: 'read', regex: /^read:(true|false)$/i },
     { name: 'clicked', regex: /^clicked:(true|false)$/i },
+    { name: 'seen', regex: /^seen:(true|false)$/i },
     { name: 'cluster', regex: /^cluster:(true|false)$/i },
     { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
     { name: 'title', regex: /^title:(.+)$/i },
     { name: 'sort', regex: /^sort:(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i },    { name: 'limit', regex: /^limit:\s*(\d+)$/i },    { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'freshness', regex: /^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
+    { name: 'firstSeenAge', regex: /^firstSeen:\s*(\d+)([hd])$/i },
     { name: 'dateSpecific', regex: /^@(\d{4}-\d{2}-\d{2})$/ },
     { name: 'today', regex: /^@today$/i },
     { name: 'yesterday', regex: /^@yesterday$/i },
+    { name: 'lastweek', regex: /^@lastweek$/i },
     { name: 'daysAgo', regex: /^@"?(\d+)\s+days\s+ago"?$/i },
     { name: 'lastDay', regex: /^@"?last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"?$/i }
 ];
@@ -28,12 +31,12 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['star', 'unread', 'read', 'clicked', 'cluster', 'hot', 'tag', 'title', 'sort', 'limit', 'quality', 'freshness'];
+export const knownKeywords = ['star', 'unread', 'read', 'clicked', 'seen', 'cluster', 'hot', 'tag', 'title', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
 
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(star|unread|read|clicked|cluster|hot|tag|title|sort|quality|freshness)=/i;
+const wrongSyntaxPattern = /\b(star|unread|read|clicked|seen|cluster|hot|tag|title|sort|quality|freshness|firstSeen)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)

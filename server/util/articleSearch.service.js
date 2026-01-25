@@ -62,6 +62,7 @@ export const searchArticles = async ({
     let clickedFilter = null; // When set, filters by clickedAmount
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let seenFilter = null; // Seen filter from search (seen:true/false)
+    let firstSeenAgeFilter = null; // First seen age filter from search (firstSeen:24h, firstSeen:7d)
     let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
@@ -168,6 +169,7 @@ export const searchArticles = async ({
       const readMatch = cleaned.match(/^read:\s*(true|false)$/i); // read:true or read:false
       const clickedMatch = cleaned.match(/^clicked:\s*(true|false)$/i); // clicked:true or clicked:false
       const seenMatch = cleaned.match(/^seen:\s*(true|false)$/i); // seen:true or seen:false
+      const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i); // firstSeen:24h or firstSeen:7d
       const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
       const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, sort:QUALITY, or sort:ATTENTION
@@ -205,6 +207,11 @@ export const searchArticles = async ({
       } else if (seenMatch) {
         seenFilter = seenMatch[1].toLowerCase() === 'true';
         console.log(`\x1b[31mSeen filter applied via search token: ${seenFilter}\x1b[0m`);
+      } else if (firstSeenAgeMatch) {
+        const value = parseInt(firstSeenAgeMatch[1], 10);
+        const unit = firstSeenAgeMatch[2].toLowerCase();
+        firstSeenAgeFilter = { value, unit };
+        console.log(`\x1b[31mFirst seen age filter applied via search token: ${value}${unit}\x1b[0m`);
       } else if (tagMatch) {
         tagFilter = tagMatch[1].trim();
         console.log(`\x1b[31mTag filter applied via search token: ${tagFilter}\x1b[0m`);
@@ -439,6 +446,17 @@ export const searchArticles = async ({
     // Apply tag filter if present (restricts to specific article IDs)
     if (taggedArticleIds !== null && taggedArticleIds.length > 0) {
       baseWhere.id = taggedArticleIds;
+    }
+
+    // Apply firstSeen age filter if present (firstSeen IS NULL OR firstSeen >= now() - duration)
+    if (firstSeenAgeFilter) {
+      const { value, unit } = firstSeenAgeFilter;
+      const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
+      baseWhere[Op.or] = [
+        { firstSeen: { [Op.is]: null } },
+        { firstSeen: { [Op.gte]: Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`) } }
+      ];
+      console.log(`\x1b[31mFirst seen age filter applied: firstSeen IS NULL OR firstSeen >= NOW() - INTERVAL ${value} ${intervalUnit}\x1b[0m`);
     }
 
     /**
