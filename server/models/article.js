@@ -43,7 +43,7 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
-      HotInd: {
+      hotInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
