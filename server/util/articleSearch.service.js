@@ -1,7 +1,12 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, Setting } = db;
-import { Op } from 'sequelize';
+import { Op, fn, col, where } from 'sequelize';
 import { computeImportance } from './importanceScore.js';
+
+// Case-insensitive LIKE helper compatible with MySQL
+const ciLike = (column, value) => (
+  where(fn('LOWER', col(column)), { [Op.like]: `%${String(value).toLowerCase()}%` })
+);
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -290,8 +295,8 @@ export const searchArticles = async ({
       // Exact phrase match from quoted input
       console.log(`\x1b[31mUsing exact phrase match: "${quotedPhrase}"\x1b[0m`);
     } else if (remainingTokens.length > 0) {
-      // Unquoted search: create individual word patterns for OR matching
-      wordMatches = remainingTokens.map(token => ({ [Op.iLike]: `%${token}%` }));
+      // Unquoted search: track tokens for subsequent CI matching
+      wordMatches = remainingTokens;
       console.log(`\x1b[31mUsing word-by-word OR matching for: ${remainingTokens.join(", ")}\x1b[0m`);
     }
     // No remaining tokens or quoted phrase: match all
@@ -401,17 +406,17 @@ export const searchArticles = async ({
     // - If no title: filter: search both title OR content for all tokens
     // - Handle quoted vs unquoted searches appropriately
     if (titleFilter) {
-      // title:value specified - search title (exact match if quoted, otherwise iLike for case-insensitive)
-      baseWhere.title = titleQuoted 
-        ? { [Op.iLike]: `%${titleFilter}%` } // Use iLike for case-insensitive exact phrase
-        : { [Op.iLike]: `%${titleFilter}%` };
+      // title:value specified - apply CI match on title
+      const titleCond = ciLike('title', titleFilter);
+      baseWhere[Op.and] = [...(baseWhere[Op.and] || []), titleCond];
       // If there are remaining tokens or quoted phrase, also search content for them
       if (quotedPhrase) {
-        baseWhere.contentOriginal = { [Op.iLike]: `%${quotedPhrase}%` };
+        const contentCond = ciLike('contentOriginal', quotedPhrase);
+        baseWhere[Op.and] = [...(baseWhere[Op.and] || []), contentCond];
         console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"\x1b[0m`);
       } else if (remainingTokens.length > 0) {
         // OR on individual words in content (case-insensitive)
-        baseWhere[Op.or] = remainingTokens.map(token => ({ contentOriginal: { [Op.iLike]: `%${token}%` } }));
+        baseWhere[Op.or] = remainingTokens.map(token => ciLike('contentOriginal', token));
         console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}\x1b[0m`);
       } else {
         console.log(`\x1b[31mTitle-only search: "%${titleFilter}%"\x1b[0m`);
@@ -419,17 +424,17 @@ export const searchArticles = async ({
     } else if (quotedPhrase) {
       // Quoted phrase: search title OR content for exact phrase (case-insensitive)
       baseWhere[Op.or] = [
-        { title: { [Op.iLike]: `%${quotedPhrase}%` } },
-        { contentOriginal: { [Op.iLike]: `%${quotedPhrase}%` } }
+        ciLike('title', quotedPhrase),
+        ciLike('contentOriginal', quotedPhrase)
       ];
       console.log(`\x1b[31mQuoted phrase search (exact): "${quotedPhrase}"\x1b[0m`);
     } else if (wordMatches.length > 0) {
       // Unquoted search: each word must appear somewhere in title OR content (case-insensitive)
-      // Build: (title iLike %word1% OR content iLike %word1%) AND (title iLike %word2% OR content iLike %word2%) ...
+      // Build: (title LIKE %word1% OR content LIKE %word1%) AND (title LIKE %word2% OR content LIKE %word2%) ... with LOWER()
       const wordConditions = remainingTokens.map(token => ({
         [Op.or]: [
-          { title: { [Op.iLike]: `%${token}%` } },
-          { contentOriginal: { [Op.iLike]: `%${token}%` } }
+          ciLike('title', token),
+          ciLike('contentOriginal', token)
         ]
       }));
       baseWhere[Op.and] = wordConditions;
