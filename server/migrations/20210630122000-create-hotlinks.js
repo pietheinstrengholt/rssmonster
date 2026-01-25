@@ -30,10 +30,15 @@ module.exports = {
     // Indexes
     // ------------------------------------
 
-    // Primary performance index for hotlink rebuilds
-    await queryInterface.addIndex('hotlinks', ['userId', 'url'], {
-      name: 'hotlinks_userId_url_idx'
-    });
+    // MySQL requires a prefix length for TEXT columns
+    await queryInterface.addIndex(
+      'hotlinks',
+      ['userId', 'url'],
+      {
+        name: 'hotlinks_userId_url_idx',
+        length: [null, 255] // userId = full, url = prefix(255)
+      }
+    );
   },
 
   down: async (queryInterface) => {
