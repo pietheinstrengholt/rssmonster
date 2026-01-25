@@ -49,11 +49,11 @@
     <!-- Cluster View Dropdown -->
     <div v-if="$store.data.currentSelection.AIEnabled" class="dropdown">
       <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ $store.data.currentSelection.clusterView ? 'All articles' : 'Cluster Reading Mode' }}
+        {{ $store.data.currentSelection.clusterView ? 'Cluster Reading Mode' : 'All articles' }}
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: !$store.data.currentSelection.clusterView }" href="#" @click="toggleClusteredView">Cluster Reading Mode</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView }" href="#" @click="toggleClusteredView">All articles</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView }" href="#" @click="setClusterView(true)">Cluster Reading Mode</a>
+        <a class="dropdown-item" :class="{ active: !$store.data.currentSelection.clusterView }" href="#" @click="setClusterView(false)">All articles</a>
       </div>
     </div>
 
@@ -358,9 +358,12 @@ export default {
       this.showStatusMenu = false;
       this.showClusteredView = false;
     },
-    toggleClusteredView: function() {
-      const newValue = !this.$store.data.currentSelection.clusterView;
-      this.$store.data.setClusterView(newValue);
+    setClusterView: function(value) {
+      // Don't trigger if already at the selected value
+      if (this.$store.data.currentSelection.clusterView === value) {
+        return;
+      }
+      this.$store.data.setClusterView(value);
       this.showSortMenu = false;
       this.showViewModeMenu = false;
       this.showStatusMenu = false;
