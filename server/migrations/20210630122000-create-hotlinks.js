@@ -30,19 +30,19 @@ module.exports = {
     // Indexes
     // ------------------------------------
 
-    // MySQL requires a prefix length for TEXT columns
-    await queryInterface.addIndex(
-      'hotlinks',
-      ['userId', 'url'],
-      {
-        name: 'hotlinks_userId_url_idx',
-        length: [null, 255] // userId = full, url = prefix(255)
-      }
-    );
+    // Sequelize cannot reliably create TEXT prefix indexes on MySQL.
+    // Use raw SQL to ensure url prefix length is applied.
+    await queryInterface.sequelize.query(`
+      CREATE INDEX hotlinks_userId_url_idx
+      ON hotlinks (userId, url(255));
+    `);
   },
 
   down: async (queryInterface) => {
-    await queryInterface.removeIndex('hotlinks', 'hotlinks_userId_url_idx');
+    await queryInterface.sequelize.query(`
+      DROP INDEX hotlinks_userId_url_idx ON hotlinks;
+    `);
+
     await queryInterface.dropTable('hotlinks');
   }
 };
