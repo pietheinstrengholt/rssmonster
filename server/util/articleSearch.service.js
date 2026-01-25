@@ -291,7 +291,7 @@ export const searchArticles = async ({
       console.log(`\x1b[31mUsing exact phrase match: "${quotedPhrase}"\x1b[0m`);
     } else if (remainingTokens.length > 0) {
       // Unquoted search: create individual word patterns for OR matching
-      wordMatches = remainingTokens.map(token => ({ [Op.like]: `%${token}%` }));
+      wordMatches = remainingTokens.map(token => ({ [Op.iLike]: `%${token}%` }));
       console.log(`\x1b[31mUsing word-by-word OR matching for: ${remainingTokens.join(", ")}\x1b[0m`);
     }
     // No remaining tokens or quoted phrase: match all
@@ -401,35 +401,35 @@ export const searchArticles = async ({
     // - If no title: filter: search both title OR content for all tokens
     // - Handle quoted vs unquoted searches appropriately
     if (titleFilter) {
-      // title:value specified - search title (exact match if quoted, otherwise LIKE)
+      // title:value specified - search title (exact match if quoted, otherwise iLike for case-insensitive)
       baseWhere.title = titleQuoted 
-        ? { [Op.like]: `%${titleFilter}%` } // Still use LIKE for case-insensitive exact phrase
-        : { [Op.like]: `%${titleFilter}%` };
+        ? { [Op.iLike]: `%${titleFilter}%` } // Use iLike for case-insensitive exact phrase
+        : { [Op.iLike]: `%${titleFilter}%` };
       // If there are remaining tokens or quoted phrase, also search content for them
       if (quotedPhrase) {
-        baseWhere.contentOriginal = { [Op.like]: `%${quotedPhrase}%` };
+        baseWhere.contentOriginal = { [Op.iLike]: `%${quotedPhrase}%` };
         console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"\x1b[0m`);
       } else if (remainingTokens.length > 0) {
-        // OR on individual words in content
-        baseWhere[Op.or] = wordMatches.map(match => ({ contentOriginal: match }));
+        // OR on individual words in content (case-insensitive)
+        baseWhere[Op.or] = remainingTokens.map(token => ({ contentOriginal: { [Op.iLike]: `%${token}%` } }));
         console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}\x1b[0m`);
       } else {
         console.log(`\x1b[31mTitle-only search: "%${titleFilter}%"\x1b[0m`);
       }
     } else if (quotedPhrase) {
-      // Quoted phrase: search title OR content for exact phrase
+      // Quoted phrase: search title OR content for exact phrase (case-insensitive)
       baseWhere[Op.or] = [
-        { title: { [Op.like]: `%${quotedPhrase}%` } },
-        { contentOriginal: { [Op.like]: `%${quotedPhrase}%` } }
+        { title: { [Op.iLike]: `%${quotedPhrase}%` } },
+        { contentOriginal: { [Op.iLike]: `%${quotedPhrase}%` } }
       ];
       console.log(`\x1b[31mQuoted phrase search (exact): "${quotedPhrase}"\x1b[0m`);
     } else if (wordMatches.length > 0) {
-      // Unquoted search: each word must appear somewhere in title OR content
-      // Build: (title LIKE %word1% OR content LIKE %word1%) AND (title LIKE %word2% OR content LIKE %word2%) ...
-      const wordConditions = wordMatches.map(match => ({
+      // Unquoted search: each word must appear somewhere in title OR content (case-insensitive)
+      // Build: (title iLike %word1% OR content iLike %word1%) AND (title iLike %word2% OR content iLike %word2%) ...
+      const wordConditions = remainingTokens.map(token => ({
         [Op.or]: [
-          { title: match },
-          { contentOriginal: match }
+          { title: { [Op.iLike]: `%${token}%` } },
+          { contentOriginal: { [Op.iLike]: `%${token}%` } }
         ]
       }));
       baseWhere[Op.and] = wordConditions;
