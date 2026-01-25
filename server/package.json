@@ -41,6 +41,7 @@
     "express": "^5.2.1",
     "feedsmith": "^2.9.0",
     "franc-min": "^6.2.0",
+    "he": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.0.2",

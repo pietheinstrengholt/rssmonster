@@ -11,6 +11,7 @@ import embedArticle from './embedArticle.js';
 import saveArticle from './saveArticle.js';
 import assignArticleToCluster from '../../util/assignArticleToCluster.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
+import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
 
 /* ------------------------------------------------------------------
  * Article Processor
@@ -24,6 +25,11 @@ const processArticle = async (feed, entry) => {
 
     // Extract relevant fields from the entry
     const fields = extractEntryFields(entry);
+
+    // Normalize HTML entities
+    fields.title = decodeHtmlEntities(fields.title);
+    fields.description = decodeHtmlEntities(fields.description);
+    fields.content = decodeHtmlEntities(fields.content);
 
     // Skip processing if the article is older than the feed's crawlSince
     if (feed?.crawlSince && fields.published) {
