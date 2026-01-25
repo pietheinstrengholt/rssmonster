@@ -372,7 +372,7 @@ const attentionBucketFromSeconds = (visibleSeconds, contentStripped) => {
 };
 
 // Mark article as seen
-const articleMarkToSeen = async (req, res, _next) => {
+const articleMarkAsSeen = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -422,14 +422,10 @@ const articleMarkToSeen = async (req, res, _next) => {
       payload.status = 'read';
     }
 
-    // Only update if payload has any changes
+    // Only update if payload has any changes; return updated instance
+    let updatedArticle = article;
     if (Object.keys(payload).length > 0) {
-      await Article.update(payload, {
-        where: {
-          id: articleId,
-          userId: userId
-        }
-      });
+      updatedArticle = await article.update(payload);
     }
 
     // Check if cluster view is enabled
@@ -449,11 +445,8 @@ const articleMarkToSeen = async (req, res, _next) => {
       });
     }
 
-    // Return updated article (bucket will be reloaded on next fetch)
-    return res.status(200).json({
-      ...article.toJSON(),
-      attentionBucket
-    });
+    // Return updated article instance (reflects any changes)
+    return res.status(200).json(updatedArticle);
 
   } catch (err) {
     console.log(err);
@@ -562,7 +555,7 @@ export default {
   markOpened,
   markNotInterested,
   articleDetails,
-  articleMarkToSeen,
+  articleMarkAsSeen,
   articleMarkToUnread,
   articleMarkWithStar,
   articleMarkAllAsRead

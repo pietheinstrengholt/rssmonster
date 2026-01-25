@@ -294,7 +294,7 @@ export default {
       try {
         const response = await axios.post(
           import.meta.env.VITE_VUE_APP_HOSTNAME +
-            "/api/articles/marktoseen/" +
+            "/api/articles/markasseen/" +
             articleId,
           {
             clusterView: true,
@@ -302,8 +302,7 @@ export default {
             selectedStatus: this.$store.data.getSelectedStatus
           }
         );
-        //TODO: return from the backend if read count must be increased
-        if (this.$store.data.getSelectedStatus === 'unread') {
+        if (this.$store.data.getSelectedStatus === 'unread' && response.data.status === "read") {
           this.$store.data.increaseReadCount(response.data);
         }
         //this.$store.data.increaseReadCount(response.data);
