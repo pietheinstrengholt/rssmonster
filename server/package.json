@@ -19,7 +19,8 @@
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/crawl.js",
     "recluster": "node scripts/reclusterArticles.js",
-    "feedtrust": "node scripts/calculateFeedTrust.js"
+    "feedtrust": "node scripts/calculateFeedTrust.js",
+    "hotlinks": "node scripts/rebuildHotlinks.js"
   },
   "engines": {
     "node": ">=20.x"

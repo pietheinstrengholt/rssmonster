@@ -47,6 +47,11 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      hotlinks: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       media: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
