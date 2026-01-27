@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 const { Action, Hotlink } = db;
+import { Op } from 'sequelize';
 
 import extractEntryFields from './extractEntryFields.js';
 import findExistingArticle from './findExistingArticle.js';
