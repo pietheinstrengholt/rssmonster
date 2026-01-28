@@ -14,11 +14,11 @@ export const clearCache = async () => {
   });
 };
 
-export const set = async (url, userId) => {
-  await Hotlink.create({ url, userId });
+export const set = async (url, feedId, userId) => {
+  await Hotlink.create({ url, feedId, userId });
 };
 
-export const get = (url) => Hotlink.findOne({ where: { url } });
+export const get = (url, feedId, userId) => Hotlink.findOne({ where: { url, feedId, userId } });
 
 export const all = () => Hotlink.findAll();
 

@@ -51,7 +51,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
 
         // Update cache
         // (fire-and-forget; hotlinks are best-effort signals)
-        hotlink.set(cleanUrl, feed.userId).catch(console.error);
+        hotlink.set(cleanUrl, feed.id, feed.userId).catch(console.error);
       }
     });
 
