@@ -67,6 +67,10 @@ async function rebuildHotlinks() {
       }
     });
 
+    if (hotlinkCount > 0) {
+      console.log(`[HOTLINK] Article ${article.id} has ${hotlinkCount} hotlinks`);
+    }
+
     // Update article hotlink indicators
     await Article.update(
       {
