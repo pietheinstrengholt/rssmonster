@@ -14,6 +14,35 @@ import assignArticleToCluster from '../../util/assignArticleToCluster.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
 import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
 
+// Maximum length for normalized description
+const MAX_DESCRIPTION_LENGTH = 8000;
+
+/**
+ * Remove embedded base64 images which can explode payload size
+ */
+const stripBase64Images = (html) =>
+  typeof html === 'string'
+    ? html.replace(
+        /<img[^>]+src=["']data:image\/[^"']+["'][^>]*>/gi,
+        ''
+      )
+    : null;
+
+/**
+ * Normalize description into safe, bounded plain text
+ */
+const normalizeDescription = (html) => {
+  if (typeof html !== 'string') return null;
+
+  return stripBase64Images(html)
+    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
+    .replace(/<\/?[^>]+>/g, ' ')   // strip remaining HTML
+    .replace(/\s+/g, ' ')
+    .trim()
+    .slice(0, MAX_DESCRIPTION_LENGTH);
+};
+
 /* ------------------------------------------------------------------
  * Article Processor
  * ------------------------------------------------------------------ */
@@ -29,8 +58,12 @@ const processArticle = async (feed, entry) => {
 
     // Normalize HTML entities
     fields.title = decodeHtmlEntities(fields.title);
-    fields.description = decodeHtmlEntities(fields.description);
     fields.content = decodeHtmlEntities(fields.content);
+
+    // Description must be bounded + sanitized (feeds may contain base64 blobs)
+    fields.description = normalizeDescription(
+      decodeHtmlEntities(fields.description)
+    );
 
     // Skip processing if the article is older than the feed's crawlSince
     if (feed?.crawlSince && fields.published) {
@@ -149,6 +182,15 @@ const processArticle = async (feed, entry) => {
         ]
       }
     });
+
+    // Warn if description is abnormally large after normalization
+    if (fields.description?.length > 100000) {
+      console.warn(
+        '[ARTICLE] Abnormally large description after normalization',
+        fields.link,
+        fields.description.length
+      );
+    }
 
     // Create article with analysis results
     const article = await saveArticle(
