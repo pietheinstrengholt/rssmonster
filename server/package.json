@@ -18,9 +18,9 @@
     "debug": "nodemon --watch server --ext js,json --delay 100ms bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/crawl.js",
-    "recluster": "node scripts/reclusterArticles.js",
-    "feedtrust": "node scripts/calculateFeedTrust.js",
-    "hotlinks": "node scripts/rebuildHotlinks.js"
+    "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
+    "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
+    "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js"
   },
   "engines": {
     "node": ">=20.x"
