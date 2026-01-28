@@ -74,7 +74,10 @@ async function rebuildHotlinks() {
         hotlinks: hotlinkCount
       },
       {
-        where: { id: article.id }
+        where: { 
+          id: article.id,
+          userId: article.userId 
+        }
       }
     );
   }
