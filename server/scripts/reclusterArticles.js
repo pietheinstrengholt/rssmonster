@@ -16,7 +16,7 @@ import assignArticleToCluster from '../util/assignArticleToCluster.js';
  * FULL reclustering job (destructive, deterministic)
  * ------------------------------------------------------------------ */
 
-const BATCH_SIZE = 50;
+const BATCH_SIZE = 250;
 
 export async function fullReclusterArticles() {
   console.log('[CLUSTER-REBUILD] Starting FULL recluster');
