@@ -304,6 +304,7 @@ export default {
         );
         // Always reflect latest status (and related fields) in local articles array
         this.updateArticleStatusLocal(response.data);
+        console.log(response.data);
 
         // Update counters when transitioning from unread view to read
         if (this.$store.data.getSelectedStatus === 'unread' && response.data.status === "read") {

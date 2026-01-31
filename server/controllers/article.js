@@ -386,12 +386,20 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Fetch article and feed details (needed for updating the categories read and unread counts on the frontend)
     const article = await Article.findByPk(articleId, {
       where: {
-        userId: userId
+        userId
       },
-      include: [{
-        model: Feed,
-        required: true
-      }]
+      include: [
+        {
+          model: Feed,
+          required: true
+        },
+        {
+          model: ArticleCluster,
+          as: 'cluster',
+          required: false,
+          attributes: ['id', 'articleCount']
+        }
+      ]
     });
 
     // Validate article existence
@@ -428,6 +436,21 @@ const articleMarkAsSeen = async (req, res, _next) => {
       updatedArticle = await article.update(payload);
     }
 
+    // Prepare response object
+    const response = updatedArticle.toJSON();
+
+    // Only add clusterCount when:
+    // - unread → read transition
+    // - AND article actually has a cluster loaded
+    if (
+      selectedStatus === 'unread' &&
+      updatedArticle.clusterId &&
+      response.cluster &&
+      Number.isInteger(response.cluster.articleCount)
+    ) {
+      response.clusterCount = response.cluster.articleCount;
+    }
+
     // Check if cluster view is enabled
     const clusterView = req.body?.clusterView === true || req.body?.clusterView === 'true';
 
@@ -446,7 +469,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     }
 
     // Return updated article instance (reflects any changes)
-    return res.status(200).json(updatedArticle);
+    return res.status(200).json(response);
 
   } catch (err) {
     console.log(err);

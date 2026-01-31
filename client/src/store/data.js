@@ -115,25 +115,36 @@ export const useStore = defineStore('data', {
       }
     },
     increaseReadCount(article) {
-      //find the category and feed index
-      var categoryIndex = this.categories.findIndex(category => category.id === article.feed.categoryId);
-      var feedIndex = this.categories[categoryIndex].feeds.findIndex(feed => feed.id === article.feedId);
-      //increase the read count and decrease the unread count
-      //avoid having any negative numbers
-      if (this.categories[categoryIndex].unreadCount > 0) {
-        this.categories[categoryIndex].unreadCount = this.categories[categoryIndex].unreadCount - 1;
-        this.categories[categoryIndex].readCount = this.categories[categoryIndex].readCount + 1;
-      }
-      //avoid having any negative numbers
-      if (this.categories[categoryIndex].feeds[feedIndex].unreadCount > 0) {
-        this.categories[categoryIndex].feeds[feedIndex].unreadCount = this.categories[categoryIndex].feeds[feedIndex].unreadCount - 1;
-        this.categories[categoryIndex].feeds[feedIndex].readCount = this.categories[categoryIndex].feeds[feedIndex].readCount + 1;
-      }
-      //increase total counts
-      if (this.unreadCount > 0) {
-        this.readCount = this.readCount + 1;
-        this.unreadCount = this.unreadCount - 1;
-      }
+      const delta = 1 + (Number(article.clusterCount) || 0);
+
+      // find category and feed
+      const categoryIndex = this.categories.findIndex(
+        category => category.id === article.feed.categoryId
+      );
+      if (categoryIndex === -1) return;
+
+      const feedIndex = this.categories[categoryIndex].feeds.findIndex(
+        feed => feed.id === article.feedId
+      );
+      if (feedIndex === -1) return;
+
+      const category = this.categories[categoryIndex];
+      const feed = category.feeds[feedIndex];
+
+      // category counts
+      const catDelta = Math.min(delta, category.unreadCount);
+      category.unreadCount -= catDelta;
+      category.readCount += catDelta;
+
+      // feed counts
+      const feedDelta = Math.min(delta, feed.unreadCount);
+      feed.unreadCount -= feedDelta;
+      feed.readCount += feedDelta;
+
+      // global counts
+      const totalDelta = Math.min(delta, this.unreadCount);
+      this.unreadCount -= totalDelta;
+      this.readCount += totalDelta;
     },
     increaseRefreshCategories() {
       this.refreshCategories++;
