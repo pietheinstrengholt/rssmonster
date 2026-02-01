@@ -12,26 +12,26 @@ export const getOverview = async (req, res, _next) => {
   }
 
   try {
-    // Get user settings for score filters
-    const settings = await Setting.findOne({ 
-      where: { userId: userId },
-      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+    /* --------------------------------------------------
+     * Settings & base filter
+     * -------------------------------------------------- */
+    const settings = await Setting.findOne({
+      where: { userId },
+      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
+      raw: true
     });
 
-    // Use settings or default to 0
-    const minAdvertisementScore = settings?.minAdvertisementScore ?? 0;
-    const minSentimentScore = settings?.minSentimentScore ?? 0;
-    const minQualityScore = settings?.minQualityScore ?? 0;
-
-    // Merge all counts into a single SQL statement
     const baseWhere = {
-      userId: userId,
-      advertisementScore: { [Op.gte]: minAdvertisementScore },
-      sentimentScore: { [Op.gte]: minSentimentScore },
-      qualityScore: { [Op.gte]: minQualityScore }
+      userId,
+      advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
+      sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
+      qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
     };
 
-    const counts = await Article.findOne({
+    /* --------------------------------------------------
+     * Global counts
+     * -------------------------------------------------- */
+    const totals = await Article.findOne({
       where: baseWhere,
       attributes: [
         [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
@@ -43,29 +43,63 @@ export const getOverview = async (req, res, _next) => {
       raw: true
     });
 
-    // Parse counts safely
-    const unreadCount = parseInt(counts.unreadCount) || 0;
-    const readCount = parseInt(counts.readCount) || 0;
-    const starCount = parseInt(counts.starCount) || 0;
-    const clickedCount = parseInt(counts.clickedCount) || 0;
-    const hotCount = parseInt(counts.hotCount) || 0;
-    const totalCount = readCount + unreadCount;
+    const unreadCount  = Number(totals.unreadCount)  || 0;
+    const readCount    = Number(totals.readCount)    || 0;
+    const starCount    = Number(totals.starCount)    || 0;
+    const clickedCount = Number(totals.clickedCount) || 0;
+    const hotCount     = Number(totals.hotCount)     || 0;
 
-    // Fetch categories with nested feeds
-    const categories = await Category.findAll({
-      where: {
-        userId: userId
-      },
+    /* --------------------------------------------------
+     * Categories + feeds
+     * -------------------------------------------------- */
+    const categoriesRaw = await Category.findAll({
+      where: { userId },
       include: [{
-        userId: userId,
         model: Feed,
         required: false
       }],
-      order: ["categoryOrder", "name"]
+      order: ['categoryOrder', 'name']
     });
 
-    // Combine all grouped counts into a single SQL query
-    const countsGrouped = await Feed.findAll({
+    // flatten Sequelize instances
+    const categories = categoriesRaw.map(c => {
+      const category = c.get({ plain: true });
+
+      category.readCount = 0;
+      category.unreadCount = 0;
+      category.starCount = 0;
+      category.hotCount = 0;
+      category.clickedCount = 0;
+
+      category.feeds = (category.feeds || []).map(f => ({
+        ...f,
+        readCount: 0,
+        unreadCount: 0,
+        starCount: 0,
+        hotCount: 0,
+        clickedCount: 0
+      }));
+
+      return category;
+    });
+
+    /* --------------------------------------------------
+     * Index categories & feeds for O(1) lookup
+     * -------------------------------------------------- */
+    const categoryMap = {};
+    const feedMap = {};
+
+    categories.forEach(category => {
+      categoryMap[category.id] = category;
+      category.feeds.forEach(feed => {
+        feedMap[feed.id] = { feed, category };
+      });
+    });
+
+    /* --------------------------------------------------
+     * Grouped feed counts
+     * -------------------------------------------------- */
+    const grouped = await Feed.findAll({
       include: [{
         model: Article,
         attributes: [],
@@ -79,130 +113,51 @@ export const getOverview = async (req, res, _next) => {
         [Sequelize.literal("COUNT(CASE WHEN `articles`.`starInd` = 1 THEN 1 END)"), 'starCount'],
         [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
       ],
-      order: ['id'],
       group: ['feeds.categoryId', 'feeds.id'],
+      order: ['id'],
       raw: true
     });
 
-    // Convert countsGrouped to nested structure: category[categoryId].feed[feedId]
-    const countsNested = {};
-    countsGrouped.forEach(item => {
-      // Initialize category if it doesn't exist
-      if (!countsNested[item.categoryId]) {
-        countsNested[item.categoryId] = { feeds: {} };
-      }
-      
-      // Add feed data under category
-      countsNested[item.categoryId].feeds[item.feedId] = {
-        unreadCount: parseInt(item.unreadCount) || 0,
-        readCount: parseInt(item.readCount) || 0,
-        starCount: parseInt(item.starCount) || 0,
-        clickedCount: parseInt(item.clickedCount) || 0
-      };
+    /* --------------------------------------------------
+     * Merge counts into categories & feeds
+     * -------------------------------------------------- */
+    grouped.forEach(row => {
+      const feedEntry = feedMap[row.feedId];
+      if (!feedEntry) return;
+
+      const unread  = Number(row.unreadCount)  || 0;
+      const read    = Number(row.readCount)    || 0;
+      const star    = Number(row.starCount)    || 0;
+      const clicked = Number(row.clickedCount) || 0;
+
+      // feed
+      feedEntry.feed.unreadCount  = unread;
+      feedEntry.feed.readCount    = read;
+      feedEntry.feed.starCount    = star;
+      feedEntry.feed.clickedCount = clicked;
+
+      // category totals
+      feedEntry.category.unreadCount  += unread;
+      feedEntry.category.readCount    += read;
+      feedEntry.category.starCount    += star;
+      feedEntry.category.clickedCount += clicked;
     });
 
-    // Function to convert Sequelize instances to plain objects
-    const toPlain = response => {
-      const flattenDataValues = ({
-        dataValues
-      }) => {
-        const flattenedObject = {};
-        Object.keys(dataValues).forEach(key => {
-          const dataValue = dataValues[key];
-          if (
-            Array.isArray(dataValue) &&
-            dataValue[0] &&
-            dataValue[0].dataValues &&
-            typeof dataValue[0].dataValues === "object"
-          ) {
-            flattenedObject[key] = dataValues[key].map(flattenDataValues);
-          } else if (
-            dataValue &&
-            dataValue.dataValues &&
-            typeof dataValue.dataValues === "object"
-          ) {
-            flattenedObject[key] = flattenDataValues(dataValues[key]);
-          } else {
-            flattenedObject[key] = dataValues[key];
-          }
-        });
-        return flattenedObject;
-      };
-      return Array.isArray(response) ?
-        response.map(flattenDataValues) :
-        flattenDataValues(response);
-    };
-
-    //Sequelize raw: true or plain: true results into errors, so we will use the custom toPlain function here
-    //we need to manipulate the results, so it is required to transform these into plain Array's
-    const categoriesArray = toPlain(categories);
-
-    //give each category and feed in the categoriesArray a readCount, unreadCount and starCount
-    categoriesArray.forEach(category => {
-      category["readCount"] = 0;
-      category["unreadCount"] = 0;
-      category["starCount"] = 0;
-      category["hotCount"] = 0;
-      category["clickedCount"] = 0;
-      if (category["feeds"]) {
-        category["feeds"].forEach(feed => {
-          feed["readCount"] = 0;
-          feed["unreadCount"] = 0;
-          feed["starCount"] = 0;
-          feed["hotCount"] = 0;
-          feed["clickedCount"] = 0;
-        });
-      }
-    });
-
-    //Iterate over countsNested object to populate categoriesArray with counts
-    Object.keys(countsNested).forEach(categoryId => {
-      //find the index by comparing the categoryId against the category.id in the categoriesArray
-      const categoryIndex = categoriesArray.findIndex(
-        category => category.id === parseInt(categoryId)
-      );
-
-      if (categoryIndex === -1) return;
-
-      //also update the individual feeds inside every category
-      if (categoriesArray[categoryIndex]["feeds"]) {
-        Object.keys(countsNested[categoryId].feeds).forEach(feedId => {
-          //find the feed index
-          const feedIndex = categoriesArray[categoryIndex]["feeds"].findIndex(
-            feed => feed.id === parseInt(feedId)
-          );
-          
-          if (feedIndex === -1) return;
-          
-          const feedCounts = countsNested[categoryId].feeds[feedId];
-          
-          //increase the category counts
-          categoriesArray[categoryIndex]["unreadCount"] += feedCounts.unreadCount;
-          categoriesArray[categoryIndex]["readCount"] += feedCounts.readCount;
-          categoriesArray[categoryIndex]["starCount"] += feedCounts.starCount;
-          categoriesArray[categoryIndex]["clickedCount"] += feedCounts.clickedCount;
-          
-          //set the feed counts
-          categoriesArray[categoryIndex]["feeds"][feedIndex]["unreadCount"] = feedCounts.unreadCount;
-          categoriesArray[categoryIndex]["feeds"][feedIndex]["readCount"] = feedCounts.readCount;
-          categoriesArray[categoryIndex]["feeds"][feedIndex]["starCount"] = feedCounts.starCount;
-          categoriesArray[categoryIndex]["feeds"][feedIndex]["clickedCount"] = feedCounts.clickedCount;
-        });
-      }
-    });
-
-    // Return the final overview response
+    /* --------------------------------------------------
+     * Response
+     * -------------------------------------------------- */
     return res.status(200).json({
-      total: totalCount,
-      readCount: readCount,
-      unreadCount: unreadCount,
-      starCount: starCount,
-      hotCount: hotCount,
-      clickedCount: clickedCount,
-      categories: categoriesArray
+      total: unreadCount + readCount,
+      readCount,
+      unreadCount,
+      starCount,
+      hotCount,
+      clickedCount,
+      categories
     });
+
   } catch (err) {
-    console.log(err);
+    console.error(err);
     return res.status(500).json(err);
   }
 };
