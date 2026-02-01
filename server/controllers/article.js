@@ -426,8 +426,10 @@ const articleMarkAsSeen = async (req, res, _next) => {
     }
 
     // Mark article as read only when it was unread before
+    let shouldMarkRead = false;
     if (selectedStatus === 'unread') {
       payload.status = 'read';
+      shouldMarkRead = true;
     }
 
     // Only update if payload has any changes; return updated instance
@@ -459,7 +461,15 @@ const articleMarkAsSeen = async (req, res, _next) => {
       console.log(`Cluster view enabled: marking all articles in cluster ${article.clusterId} as seen`);
 
       // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
-      await Article.update(payload, {
+      // If status should be marked as read, ensure it is set for the cluster update as well
+      const clusterPayload = { ...payload };
+      if (shouldMarkRead) {
+        clusterPayload.status = 'read';
+      } else {
+        // Remove status if not updating
+        delete clusterPayload.status;
+      }
+      await Article.update(clusterPayload, {
         where: {
           id: { [Op.ne]: articleId },
           userId: userId,
