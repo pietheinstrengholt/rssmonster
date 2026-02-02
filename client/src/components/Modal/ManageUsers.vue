@@ -1,13 +1,14 @@
 <template>
+  <div>
+    <h5>Manage Users</h5>
     <div class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-            <div class="modal-header">
-                <h5 class="modal-title">Manage Users</h5>
-            </div>
-              <!-- This piece of code is for managing users users -->
-              <div class="modal-body">
-                <div v-if="userIdToDelete">
+      <div class="modal-dialog" role="document">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h5 class="modal-title">Manage Users</h5>
+          </div>
+          <div class="modal-body">
+            <div v-if="userIdToDelete">
                   <div class="form-group" id="manage-user">
                       <p class="font-bold text-lg mb-4" id="signin">Delete user: {{ user.username }}</p>
                       <p>Are you sure you want to delete this user?</p>
@@ -82,32 +83,33 @@
                   </table>
                   <p v-else>No users found.</p>
                 </div>
-
-              </div>
-            <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="$store.data.setShowModal('')">Close</button>
             </div>
-            </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
+          </div>
         </div>
+      </div>
     </div>
+    <button class="btn btn-secondary" @click="$emit('close')">Close</button>
+  </div>
 </template>
 
-<style>
+<style scoped>
 .modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.modal-dialog{
-    max-width: 90%;
-    width: 100%;
+.modal-dialog {
+  max-width: 90%;
+  width: 100%;
 }
 
 .btn {
@@ -139,6 +141,7 @@ import axios from 'axios';
 
 export default {
     name: 'ManageUsers',
+    emits: ['close'],
     created: function() {
         axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
         this.fetchUsers(); // Fetch users when the component is created

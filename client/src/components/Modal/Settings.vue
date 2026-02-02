@@ -17,11 +17,11 @@
         </div>
 
         <div class="modal-footer">
-          <button class="btn btn-secondary" @click="active = 'welcome'">Welcome</button>
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
           <button class="btn btn-secondary" @click="active = 'actions'">Actions</button>
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'scores'">Scores</button>
           <button class="btn btn-secondary" @click="active = 'feeds'">Feeds</button>
+          <button v-if="$store.auth.getRole === 'admin'" class="btn btn-secondary" @click="active = 'users'">Manage Users</button>
         </div>
 
       </div>
@@ -37,6 +37,7 @@ import SmartFoldersSettings from './SmartFoldersSettings.vue';
 import ActionsSettings from './ActionsSettings.vue';
 import ScoresSettings from './ScoresSettings.vue';
 import FeedsOverview from './FeedsOverview.vue';
+import ManageUsers from './ManageUsers.vue';
 
 export default {
   name: 'SettingsModal',
@@ -46,7 +47,8 @@ export default {
     SmartFoldersSettings,
     ActionsSettings,
     ScoresSettings,
-    FeedsOverview
+    FeedsOverview,
+    ManageUsers
   },
   data() {
     return { active: 'welcome' };
@@ -58,7 +60,8 @@ export default {
         smartfolders: 'SmartFoldersSettings',
         actions: 'ActionsSettings',
         scores: 'ScoresSettings',
-        feeds: 'FeedsOverview'
+        feeds: 'FeedsOverview',
+        users: 'ManageUsers'
       }[this.active];
     }
   },

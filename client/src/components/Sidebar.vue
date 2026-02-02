@@ -4,12 +4,6 @@
   </div>
   <div class="drag">
 
-    <div class="option" v-if="$store.auth.getRole === 'admin'" @click="$store.data.setShowModal('ManageUsers')" id="manage-users">
-      <span class="glyphicon">
-        <BootstrapIcon icon="people-fill" variant="light" />
-      </span>Manage users
-    </div>
-
     <div @click="refreshFeeds()" class="option" id="refresh">
       <span class="glyphicon">
         <BootstrapIcon icon="arrow-down-circle-fill" variant="light" />
