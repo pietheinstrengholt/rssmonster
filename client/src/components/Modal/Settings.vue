@@ -53,6 +53,12 @@ export default {
   data() {
     return { active: 'welcome' };
   },
+  mounted() {
+    document.body.classList.add('modal-open');
+  },
+  beforeUnmount() {
+    document.body.classList.remove('modal-open');
+  },
   computed: {
     activeComponent() {
       return {

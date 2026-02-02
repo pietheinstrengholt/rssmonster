@@ -11,6 +11,10 @@
     z-index: 1050;
 }
 
+body.modal-open {
+    overflow: hidden;
+}
+
 .modal-dialog {
     max-width: 90%;
     width: 100%;
