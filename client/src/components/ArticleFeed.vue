@@ -1,5 +1,5 @@
 <template>
-  <ArticleListView :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd">
+  <ArticleListView :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles">
   </ArticleListView>
 </template>
 
@@ -359,6 +359,39 @@ export default {
       if (idx !== -1) {
         this.articles[idx].clickedAmount = clickedAmount;
       }
+    },
+
+    insertClusterArticles({ articleId, clusterId, articles }) {
+      console.log(`Inserting ${articles.length} cluster articles after article ${articleId}`);
+      
+      // Find the index of the clicked article
+      const clickedIndex = this.articles.findIndex(a => a.id === articleId);
+      
+      if (clickedIndex === -1) {
+        console.error('Could not find clicked article in articles list');
+        return;
+      }
+
+      // Filter out articles that are already in the list to avoid duplicates
+      const newArticles = articles.filter(
+        article => !this.articles.some(a => a.id === article.id)
+      );
+
+      if (newArticles.length === 0) {
+        console.log('All cluster articles are already in the list');
+        return;
+      }
+
+      // Mark new articles as cluster articles
+      const markedArticles = newArticles.map(article => ({
+        ...article,
+        isClusterArticle: true
+      }));
+
+      // Insert cluster articles right after the clicked article
+      this.articles.splice(clickedIndex + 1, 0, ...markedArticles);
+      
+      console.log(`Successfully inserted ${markedArticles.length} cluster articles`);
     }
   }
 };

@@ -1,5 +1,5 @@
 <template>
-  <div class="block" :id="id">
+  <div class="block" :id="id" :class="{ 'cluster-article': isClusterArticle }">
     <div class="article" :class="{ starred: starInd == 1, hot: hotInd == 1 }" @click="articleTouched(id, $event)">
       <div class="maximal">
         <h5 class="heading">
@@ -58,8 +58,8 @@
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
-          <span v-if="cluster && (cluster.articleCount || 0) > 1" class="cluster">
-            + {{ cluster.articleCount }} similar articles
+          <span v-if="cluster && (cluster.articleCount || 0) > 1 && $store.data.currentSelection.clusterView" class="cluster" @click.stop="viewClusterArticles(cluster.id)">
+            + {{ cluster.articleCount - 1 }} similar article{{ cluster.articleCount - 1 === 1 ? '' : 's' }}
           </span>
         </div>
 
@@ -225,6 +225,14 @@
 
 .block {
   margin-bottom: 0px;
+}
+
+.block.cluster-article {
+  background-color: #f0f9f6;
+}
+
+.block.cluster-article .article {
+  background-color: #f0f9f6;
 }
 
 .block .article.hot {
@@ -426,6 +434,10 @@ span.feed_name a {
   color: #51556a;
 }
 
+span.cluster {
+  cursor: pointer;
+}
+
 .mobile-score-icon {
   font-size: 11px;
   margin-right: 3px;
@@ -601,6 +613,14 @@ span.feed_name a {
     border-color: #121212;
   }
 
+  .block.cluster-article {
+    background-color: #0d2f27;
+  }
+
+  .block.cluster-article .article {
+    background-color: #0d2f27;
+  }
+
   .block .article-tags .tag {
     background-color: #1e3a5f;
     color: #a8c5e8;
@@ -749,13 +769,13 @@ function timeDifference(current, previous) {
 }
 
 export default {
-  emits: ['update-star', 'update-clicked'],
+  emits: ['update-star', 'update-clicked', 'cluster-articles-loaded'],
   props: [
     'id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author',
     'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster', 'contentSummaryBullets'
+    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle'
   ],
   data() {
     return {
@@ -951,6 +971,23 @@ export default {
             console.log('Feed muted until:', mutedUntil);
           });
       }
+    },
+    viewClusterArticles(clusterId) {
+      console.log('Fetching articles for cluster:', clusterId);
+      axios
+        .get(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/clusters/${clusterId}/articles`)
+        .then(response => {
+          console.log('Cluster articles:', response.data);
+          // Emit event to parent with cluster articles and current article ID
+          this.$emit('cluster-articles-loaded', {
+            articleId: this.id,
+            clusterId: clusterId,
+            articles: response.data.articles || []
+          });
+        })
+        .catch(error => {
+          console.error('Error fetching cluster articles:', error);
+        });
     }
   }
 };

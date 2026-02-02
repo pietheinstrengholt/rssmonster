@@ -50,6 +50,7 @@ import rssRoutes from "./routes/rss.js";
 import tagRoutes from "./routes/tag.js";
 import smartFolderRoutes from "./routes/smartFolder.js";
 import greaderRoutes from "./routes/greader.js";
+import clusterRoutes from "./routes/cluster.js";
 
 // Controller
 import errorController from "./controllers/error.js";
@@ -105,6 +106,7 @@ app.use("/api/opml", opmlRoutes);
 app.use("/api/actions", actionRoutes);
 app.use("/api/tags", tagRoutes);
 app.use("/api/smartfolders", smartFolderRoutes);
+app.use("/api/clusters", clusterRoutes);
 app.use("/api/greader", greaderRoutes);
 app.use("/rss", rssRoutes);
 

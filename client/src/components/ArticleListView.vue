@@ -7,6 +7,7 @@
         :key="article.id"
         @update-star="forwardUpdateStar"
         @update-clicked="forwardUpdateClicked"
+        @cluster-articles-loaded="forwardClusterArticles"
       />
     </div>
     <div id="no-more" v-if="hasLoadedContent">
@@ -85,6 +86,9 @@ export default {
     },
     forwardUpdateClicked(payload) {
       this.$emit('update-clicked', payload);
+    },
+    forwardClusterArticles(payload) {
+      this.$emit('cluster-articles-loaded', payload);
     }
   }
 }
