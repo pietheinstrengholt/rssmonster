@@ -95,7 +95,7 @@ function generateClusterName(article) {
  * ------------------------------------------------------------------ */
 
 export async function assignArticleToCluster(articleId) {
-  const article = await Article.findByPk(articleId);
+  const article = await Article.scope('withVector').findByPk(articleId);
   if (!article || !article.vector) return;
 
   // Already clustered → skip
@@ -104,7 +104,7 @@ export async function assignArticleToCluster(articleId) {
   /* --------------------------------------------------------------
    * Fetch recent cluster representatives
    * -------------------------------------------------------------- */
-  const representatives = await Article.findAll({
+  const representatives = await Article.scope('withVector').findAll({
     where: {
       vector: { [Op.ne]: null },
       clusterId: { [Op.ne]: null },

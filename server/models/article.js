@@ -261,7 +261,15 @@ export default (sequelize) => {
     },
     {
       charset: 'utf8mb4',
-      collate: 'utf8mb4_unicode_ci'
+      collate: 'utf8mb4_unicode_ci',
+      defaultScope: {
+        attributes: { exclude: ['vector'] }
+      },
+      scopes: {
+        withVector: {
+          attributes: { exclude: [] }
+        }
+      }
     }
   );
 

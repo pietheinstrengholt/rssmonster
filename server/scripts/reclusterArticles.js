@@ -31,7 +31,7 @@ async function reclusterForUser(userId) {
   /* --------------------------------------------------------------
    * 1. Fetch user articles with vectors
    * -------------------------------------------------------------- */
-  const articles = await Article.findAll({
+  const articles = await Article.scope('withVector').findAll({
     where: {
       userId,
       vector: { [Op.ne]: null }
