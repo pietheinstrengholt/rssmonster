@@ -20,62 +20,59 @@ import assignArticleToCluster from '../util/assignArticleToCluster.js';
  * ------------------------------------------------------------------ */
 
 const BATCH_SIZE = 250;
+const RECLUSTER_DAYS = 7;
 
 /* ------------------------------------------------------------------
- * Per-user reclustering logic
+ * Per-user reclustering logic (windowed)
  * ------------------------------------------------------------------ */
 
 async function reclusterForUser(userId) {
   console.log(`[CLUSTER-REBUILD] Starting recluster for user ${userId}`);
 
+  const cutoffDate = new Date(
+    Date.now() - RECLUSTER_DAYS * 24 * 60 * 60 * 1000
+  );
+
   /* --------------------------------------------------------------
-   * 1. Fetch user articles with vectors
+   * 1. Fetch RECENT user articles with vectors
    * -------------------------------------------------------------- */
   const articles = await Article.scope('withVector').findAll({
     where: {
       userId,
-      vector: { [Op.ne]: null }
+      vector: { [Op.ne]: null },
+      published: { [Op.gte]: cutoffDate }
     },
     order: [['published', 'ASC']]
   });
 
   console.log(
-    `[CLUSTER-REBUILD] Found ${articles.length} articles for user ${userId}`
+    `[CLUSTER-REBUILD] Found ${articles.length} recent articles for user ${userId}`
   );
 
   if (articles.length === 0) {
     console.log(
-      `[CLUSTER-REBUILD] No embeddable articles for user ${userId}, skipping`
+      `[CLUSTER-REBUILD] No recent embeddable articles for user ${userId}, skipping`
     );
     return;
   }
 
   /* --------------------------------------------------------------
-   * 2. Clear clusterId for this user's articles
+   * 2. Detach RECENT articles only
    * -------------------------------------------------------------- */
   await Article.update(
     { clusterId: null },
     {
       where: {
         userId,
-        vector: { [Op.ne]: null }
+        vector: { [Op.ne]: null },
+        published: { [Op.gte]: cutoffDate }
       }
     }
   );
 
   /* --------------------------------------------------------------
-   * 3. Remove this user's clusters
-   * -------------------------------------------------------------- */
-  await ArticleCluster.destroy({
-    where: { userId }
-  });
-
-  console.log(
-    `[CLUSTER-REBUILD] Cleared existing clusters for user ${userId}`
-  );
-
-  /* --------------------------------------------------------------
-   * 4. Rebuild clusters deterministically
+   * 3. Rebuild clusters for recent articles
+   *    (can attach to older clusters)
    * -------------------------------------------------------------- */
   for (let i = 0; i < articles.length; i += BATCH_SIZE) {
     const batch = articles.slice(i, i + BATCH_SIZE);
@@ -93,17 +90,17 @@ async function reclusterForUser(userId) {
   }
 
   console.log(
-    `[CLUSTER-REBUILD] Finished reclustering for user ${userId}`
+    `[CLUSTER-REBUILD] Finished reclustering recent articles for user ${userId}`
   );
 
   /* --------------------------------------------------------------
-  * 5. Remove single-article clusters (no grouping value)
-  * -------------------------------------------------------------- */
-
+   * 4. Remove single-article clusters created INSIDE window
+   * -------------------------------------------------------------- */
   const singleClusters = await ArticleCluster.findAll({
     where: {
       userId,
-      articleCount: 1
+      articleCount: 1,
+      createdAt: { [Op.gte]: cutoffDate }
     },
     attributes: ['id']
   });
@@ -111,13 +108,14 @@ async function reclusterForUser(userId) {
   if (singleClusters.length > 0) {
     const clusterIds = singleClusters.map(c => c.id);
 
-    // Detach articles
+    // Detach recent articles
     await Article.update(
       { clusterId: null },
       {
         where: {
           userId,
-          clusterId: { [Op.in]: clusterIds }
+          clusterId: { [Op.in]: clusterIds },
+          published: { [Op.gte]: cutoffDate }
         }
       }
     );
@@ -131,7 +129,7 @@ async function reclusterForUser(userId) {
     });
 
     console.log(
-      `[CLUSTER-REBUILD] Removed ${clusterIds.length} single-article clusters for user ${userId}`
+      `[CLUSTER-REBUILD] Removed ${clusterIds.length} single-article recent clusters for user ${userId}`
     );
   }
 }
@@ -171,7 +169,6 @@ export async function fullReclusterArticles({ userId = null } = {}) {
         `[CLUSTER-REBUILD] Failed reclustering for user ${user.id}:`,
         err
       );
-      // continue with next user
     }
   }
 
