@@ -1,5 +1,5 @@
 <template>
-  <ArticleListView :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles">
+  <ArticleListView :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -392,6 +392,20 @@ export default {
       this.articles.splice(clickedIndex + 1, 0, ...markedArticles);
       
       console.log(`Successfully inserted ${markedArticles.length} cluster articles`);
+    },
+
+    removeArticle({ id }) {
+      console.log(`Removing article ${id} from view`);
+      
+      // Find and remove the article from the articles array
+      const index = this.articles.findIndex(a => a.id === id);
+      
+      if (index !== -1) {
+        this.articles.splice(index, 1);
+        console.log(`Successfully removed article ${id}`);
+      } else {
+        console.error('Could not find article to remove:', id);
+      }
     }
   }
 };

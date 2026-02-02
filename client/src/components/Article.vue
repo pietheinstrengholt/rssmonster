@@ -786,7 +786,7 @@ function timeDifference(current, previous) {
 }
 
 export default {
-  emits: ['update-star', 'update-clicked', 'cluster-articles-loaded'],
+  emits: ['update-star', 'update-clicked', 'cluster-articles-loaded', 'article-not-interested'],
   props: [
     'id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author',
     'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
@@ -971,8 +971,9 @@ export default {
       axios
         .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/marknotinterested/${this.id}`)
         .then(() => {
-          // TODO: Remove article from view or update UI
           console.log('Marked as not interested:', this.id);
+          // Emit event to parent to remove article from view
+          this.$emit('article-not-interested', { id: this.id });
         });
     },
     muteFeedSevenDays() {

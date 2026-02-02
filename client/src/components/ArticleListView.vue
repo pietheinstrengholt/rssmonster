@@ -8,6 +8,7 @@
         @update-star="forwardUpdateStar"
         @update-clicked="forwardUpdateClicked"
         @cluster-articles-loaded="forwardClusterArticles"
+        @article-not-interested="forwardArticleNotInterested"
       />
     </div>
     <div id="no-more" v-if="hasLoadedContent">
@@ -89,6 +90,9 @@ export default {
     },
     forwardClusterArticles(payload) {
       this.$emit('cluster-articles-loaded', payload);
+    },
+    forwardArticleNotInterested(payload) {
+      this.$emit('article-not-interested', payload);
     }
   }
 }
