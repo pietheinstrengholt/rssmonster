@@ -23,8 +23,8 @@ const run = async () => {
     // 1. Ensure DB connection
     await sequelize.authenticate();
 
-    // 2. Run crawl
-    const result = await crawlController.performCrawl();
+    // 2. Run crawl (wait for clustering to complete in CLI mode)
+    const result = await crawlController.performCrawl(null, { waitForCluster: true });
 
     console.log('\n=== Crawl Completed ===');
     console.log(`Total feeds: ${result.total}`);

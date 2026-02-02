@@ -83,6 +83,10 @@ Tag.belongsTo(Article, { foreignKey: 'articleId' });
 User.hasMany(SmartFolder, { foreignKey: 'userId', onDelete: 'CASCADE' });
 SmartFolder.belongsTo(User, { foreignKey: 'userId' });
 
+// User ↔ ArticleCluster
+User.hasMany(ArticleCluster, { foreignKey: 'userId', onDelete: 'CASCADE' });
+ArticleCluster.belongsTo(User, { foreignKey: 'userId' });
+
 // Article ↔ ArticleCluster
 Article.belongsTo(ArticleCluster, {
   foreignKey: 'clusterId',

@@ -11,7 +11,10 @@ module.exports = {
           allowNull: false,
           primaryKey: true
         },
-
+        userId: {
+          type: Sequelize.INTEGER,
+          allowNull: false
+        },
         // Representative article for this cluster
         representativeArticleId: {
           type: Sequelize.INTEGER,
@@ -23,7 +26,6 @@ module.exports = {
           onUpdate: 'CASCADE',
           onDelete: 'CASCADE'
         },
-
         // Human-readable cluster name
         name: {
           type: Sequelize.STRING(255),
@@ -39,7 +41,6 @@ module.exports = {
           allowNull: false,
           defaultValue: Sequelize.NOW
         },
-
         updatedAt: {
           type: Sequelize.DATE,
           allowNull: false,

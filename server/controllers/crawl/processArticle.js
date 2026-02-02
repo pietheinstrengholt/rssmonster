@@ -10,7 +10,6 @@ import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
 import embedArticle from './embedArticle.js';
 import saveArticle from './saveArticle.js';
-import assignArticleToCluster from '../../util/assignArticleToCluster.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
 import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
 
@@ -212,12 +211,6 @@ const processArticle = async (feed, entry) => {
       analysis,
       actionResult
     );
-
-    // Assign article to cluster
-    if (article?.id && article.vector) {
-      console.log(`[ARTICLE] Processing clustering for article ${article.id}`);
-      assignArticleToCluster(article.id).catch(console.error);
-    }
 
   } catch (err) {
     console.error('Error processing article:', err);

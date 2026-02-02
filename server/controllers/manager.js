@@ -17,9 +17,16 @@ export const getOverview = async (req, res, _next) => {
      * -------------------------------------------------- */
     const settings = await Setting.findOne({
       where: { userId },
-      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
+      attributes: [
+        'minAdvertisementScore',
+        'minSentimentScore',
+        'minQualityScore',
+        'clusterView'
+      ],
       raw: true
     });
+
+    const clusterView = settings?.clusterView === 1;
 
     const baseWhere = {
       userId,
@@ -27,6 +34,23 @@ export const getOverview = async (req, res, _next) => {
       sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
       qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
     };
+
+    if (clusterView) {
+      baseWhere[Op.or] = [
+        {
+          id: {
+            [Op.in]: Sequelize.literal(
+              `(SELECT representativeArticleId FROM article_clusters)`
+            )
+          }
+        },
+        {
+          clusterId: {
+            [Op.is]: null
+          }
+        }
+      ];
+    }
 
     /* --------------------------------------------------
      * Global counts

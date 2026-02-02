@@ -107,7 +107,7 @@
       </span>
     </div>
 
-    <div v-if="topTags.length" class="title-box">
+    <div v-if="$store.data.topTags.length" class="title-box">
       <p class="title">Top tags</p>
     </div>
     <div
@@ -459,13 +459,12 @@ export default {
       unreadCount: 0,
       readCount: 0,
       starCount: 0,
-      hotCount: 0,
-      topTags: []
+      hotCount: 0
     };
   },
   async created() {
     axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-    this.fetchTopTags();
+    this.$store.data.fetchTopTags();
     await this.$store.data.fetchSmartFolders();
   },
   components: {
@@ -558,14 +557,6 @@ export default {
         this.$store.data.setSmartFolder(smartFolder);
       }
     },
-    async fetchTopTags() {
-      try {
-        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/tags");
-        this.topTags = response.data.tags || [];
-      } catch (error) {
-        console.error("Error fetching top tags", error);
-      }
-    },
     updateSortOrder() {
       var orderList = new Array();
       for (let i = 0; i < this.$store.data.categories.length; i++) {
@@ -598,7 +589,7 @@ export default {
       return this.categoriesOrder;
     },
     topTagsDisplay() {
-      return this.topTags.slice(0, 5);
+      return this.$store.data.topTags.slice(0, 5);
     }
   }
 };

@@ -10,6 +10,10 @@ export default (sequelize) => {
         allowNull: false,
         primaryKey: true
       },
+      userId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
       representativeArticleId: {
         type: DataTypes.INTEGER,
         allowNull: false

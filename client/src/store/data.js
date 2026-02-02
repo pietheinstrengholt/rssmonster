@@ -29,17 +29,19 @@ export const useStore = defineStore('data', {
     refreshCategories: 0,
     chatAssistantOpen: false,
     mobileSearchOpen: false,
-    searchQuery: ''
+    searchQuery: '',
+    token: null,
+    topTags: []
   }),
   actions: {
     setCategories(categories) {
       this.categories = categories;
     },
     // Update store state based on overview payload
-    updateOverview(payload, { initial = false } = {}) {
+    updateOverview(payload, { initial = false, forceUpdate = false } = {}) {
       const { unreadCount, readCount, starCount, hotCount, clickedCount, categories } = payload;
       // update counts in store
-      if (initial) {
+      if (initial || forceUpdate) {
         this.setUnreadCount(unreadCount);
         this.setReadCount(readCount);
         this.setStarCount(starCount);
@@ -52,12 +54,17 @@ export const useStore = defineStore('data', {
         this.setUnreadsSinceLastUpdate(unreadCount - this.unreadCount);
       }
     },
-    async fetchOverview(initial, token) {
+    async fetchOverview(initial, token, { forceUpdate = false } = {}) {
+      console.log("Fetching overview data from server...");
+      // Store token for later use
+      if (token) {
+        this.token = token;
+      }
       // Fetch overview data from server
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview");
       // Update store with fetched data
-      this.updateOverview(response.data, { initial });
+      this.updateOverview(response.data, { initial, forceUpdate });
       return { response };
     },
     async fetchSmartFolders() {
@@ -66,6 +73,19 @@ export const useStore = defineStore('data', {
         this.smartFolders = response.data.smartFolders || [];
       } catch (error) {
         console.error("Error fetching smart folders", error);
+      }
+    },
+    async fetchTopTags() {
+      try {
+        const clusterView = this.currentSelection.clusterView;
+        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/tags", {
+          params: {
+            clusterView: clusterView
+          }
+        });
+        this.topTags = response.data.tags || [];
+      } catch (error) {
+        console.error("Error fetching top tags", error);
       }
     },
     setCurrentSelection(selection) {
@@ -226,6 +246,12 @@ export const useStore = defineStore('data', {
     },
     setClusterView(value) {
       this.currentSelection.clusterView = value;
+      // Trigger overview refresh when cluster view changes
+      if (this.token) {
+        this.fetchOverview(false, this.token, { forceUpdate: true }).catch(err => {
+          console.error('Error refreshing overview after cluster view change:', err);
+        });
+      }
     }
   },
   getters: {
@@ -256,6 +282,7 @@ export const useStore = defineStore('data', {
     getViewMode: (data) => data.currentSelection.viewMode,
     getClusterView: (data) => data.currentSelection.clusterView,
     getChatAssistantOpen: (data) => data.chatAssistantOpen,
+    getTopTags: (data) => data.topTags,
     getSelectedCategory: (state) => {
       const { categoryId } = state.currentSelection;
 

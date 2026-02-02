@@ -26,7 +26,7 @@ const { Article, ArticleCluster } = db;
  * -------------------------------------------------------------
  */
 
-const CLUSTER_SIM_THRESHOLD = 0.85; // Minimum similarity to assign to existing cluster
+const CLUSTER_SIM_THRESHOLD = 0.81; // Minimum similarity to assign to existing cluster
 const DEDUP_SIM_THRESHOLD = 0.93;   // Similarity threshold to mark as duplicate
 const LOOKBACK_DAYS = 7;            // Only consider articles published within the last N days
 const MAX_CANDIDATES = 200;         // Max number of cluster candidates to evaluate
@@ -108,7 +108,11 @@ export async function assignArticleToCluster(articleId) {
     where: {
       vector: { [Op.ne]: null },
       clusterId: { [Op.ne]: null },
-      language: article.language,
+      [Op.or]: [
+        { language: article.language },
+        { language: null },
+        { language: 'unknown' }
+      ],
       published: {
         [Op.gte]: new Date(Date.now() - LOOKBACK_DAYS * 24 * 3600 * 1000)
       }
@@ -135,6 +139,7 @@ export async function assignArticleToCluster(articleId) {
     const name = generateClusterName(article);
 
     const cluster = await ArticleCluster.create({
+      userId: article.userId,
       representativeArticleId: article.id,
       name,
       articleCount: 1

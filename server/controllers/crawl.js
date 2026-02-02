@@ -3,6 +3,7 @@ const { Feed } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
+import fullReclusterArticles from '../scripts/reclusterArticles.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -11,8 +12,8 @@ import processArticle from './crawl/processArticle.js';
 //set the maximum number of feeds to be processed at once
 const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
 
-// Timeout wrapper for feed processing (default 120 seconds)
-const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 120000;
+// Timeout wrapper for feed processing (default 300 seconds)
+const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 300000;
 
 // Controls whether feeds are processed in parallel (1) or sequentially (0, default)
 const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
@@ -94,7 +95,7 @@ const getFeeds = async (userId = null) => {
  * ------------------------------------------------------------------ */
 
 // Core crawl function with shared feed processing
-const performCrawl = async (userId = null) => {
+const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
   const feeds = await getFeeds(userId);
 
   let processedCount = 0;
@@ -221,12 +222,32 @@ const performCrawl = async (userId = null) => {
     }
   }
 
-  return {
+  const result = {
     total: feeds.length,
     processed: processedCount,
     errors: errorCount,
     timeouts: timeoutCount
   };
+
+  // Post-ingest reclustering
+  console.log('[CLUSTER] Starting post-ingest reclustering');
+  
+  if (waitForCluster) {
+    // CLI mode: wait for reclustering to complete
+    try {
+      await fullReclusterArticles({ userId });
+      console.log('[CLUSTER] Reclustering completed');
+    } catch (err) {
+      console.error('[CLUSTER] Reclustering failed:', err);
+    }
+  } else {
+    // HTTP mode: fire-and-forget
+    fullReclusterArticles({ userId }).catch(err => {
+      console.error('[CLUSTER] Reclustering failed:', err);
+    });
+  }
+
+  return result;
 };
 
 /* ------------------------------------------------------------------
@@ -239,9 +260,11 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
     performCrawl(userId)
-      .then(result => {
+      .then(async result => {
         resetRateLimitDelay();
-        console.log(`Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`);
+        console.log(
+          `Crawl completed: ${result.processed} feeds processed, ${result.errors} errors, ${result.timeouts} timeouts`
+        );
       })
       .catch(err => {
         resetRateLimitDelay();

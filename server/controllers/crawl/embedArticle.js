@@ -2,17 +2,27 @@ import OpenAI from "openai";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
 
-// Minimum text length to embed
-const MIN_TEXT_LENGTH = 200;
+/**
+ * Minimum text length to embed.
+ * Lowered to better support RSS summaries + headlines.
+ */
+const MIN_TEXT_LENGTH = 120;
 
-// OpenAI client
+/**
+ * OpenAI client
+ */
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
 const openai = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
+/* ------------------------------------------------------------------
+ * Text selection
+ * ------------------------------------------------------------------ */
+
 /**
- * Select text for embedding
+ * Select text for embedding.
+ * Combines title + stripped content or description.
  */
 function selectEmbeddingText({ title, contentStripped, description }) {
   const parts = [];
@@ -25,21 +35,32 @@ function selectEmbeddingText({ title, contentStripped, description }) {
   if (body) {
     parts.push(
       body
+        .replace(/https?:\/\/\S+/g, "") // remove URLs
         .replace(/\s+/g, " ")
-        .replace(/https?:\/\/\S+/g, "")
         .slice(0, 1500)
+        .trim()
     );
   }
 
   return parts.join("\n\n").trim();
 }
 
+/* ------------------------------------------------------------------
+ * Embedding
+ * ------------------------------------------------------------------ */
+
 /**
- * Generate embedding for article content
- * Returns null if embedding should be skipped
+ * Generate embedding for article content.
+ * Returns:
+ *   - { vector, embedding_model } on success
+ *   - null when embedding is intentionally skipped or fails
  */
 export async function embedArticle({ title, contentStripped, description }) {
-  if (!process.env.OPENAI_API_KEY) return null;
+  // Global kill-switch (e.g. missing key in worker process)
+  if (!hasApiKey) {
+    console.debug("[EMBED] skipped (no OPENAI_API_KEY)");
+    return null;
+  }
 
   const text = selectEmbeddingText({
     title,
@@ -48,6 +69,9 @@ export async function embedArticle({ title, contentStripped, description }) {
   });
 
   if (!text || text.length < MIN_TEXT_LENGTH) {
+    console.debug(
+      `[EMBED] skipped (len=${text?.length ?? 0}) title="${title?.slice(0, 60) ?? ''}"`
+    );
     return null;
   }
 
@@ -63,7 +87,7 @@ export async function embedArticle({ title, contentStripped, description }) {
     };
   } catch (err) {
     // Soft-fail: embeddings should never break ingestion
-    console.warn("Embedding failed:", err.message);
+    console.warn("[EMBED] failed:", err.message);
     return null;
   }
 }
