@@ -192,6 +192,23 @@
   height: auto !important;
 }
 
+.block .article-content figure {
+  margin: 0 !important;
+  padding: 0 !important;
+}
+
+.block .article-content figure video,
+.block .article-content video {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+.block .article-content figure.wp-block-video {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
 .block .article-content p {
   display: inline !important;
 }
