@@ -5,7 +5,12 @@
 
 <script>
 import ArticleListView from "./ArticleListView.vue";
-import axios from "axios";
+import {
+  fetchArticleIds,
+  fetchArticleDetails,
+  markArticleSeen,
+  markArticleOpened
+} from '../api/articles';
 
 export default {
   components: {
@@ -79,10 +84,7 @@ export default {
   methods: {
     async fetchArticleIds(data) {
       try {
-        const response = await axios.get(
-          import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles",
-          { params: data }
-        );
+        const response = await fetchArticleIds(data);
 
         await this.resetPool();
         this.container = response.data.itemIds;
@@ -191,18 +193,12 @@ export default {
 
       setTimeout(async () => {
         try {
-          const response = await axios.post(
-            import.meta.env.VITE_VUE_APP_HOSTNAME +
-              "/api/articles/details",
-            {
-              articleIds: this.container
-                .slice(
-                  this.distance,
-                  this.distance + this.fetchCount
-                )
-                .join(","),
-              sort: this.$store.data.getSelectedSort
-            }
+          const response = await fetchArticleDetails(
+            this.container.slice(
+              this.distance,
+              this.distance + this.fetchCount
+            ),
+            this.$store.data.getSelectedSort
           );
 
           this.hasLoadedContent = true;
@@ -280,16 +276,11 @@ export default {
 
     async markArticleSeen(articleId, visibleSeconds = 0) {
       try {
-        const response = await axios.post(
-          import.meta.env.VITE_VUE_APP_HOSTNAME +
-            "/api/articles/markasseen/" +
-            articleId,
-          {
-            clusterView: true,
-            visibleSeconds,
-            selectedStatus: this.$store.data.getSelectedStatus
-          }
-        );
+        const response = await markArticleSeen(articleId, {
+          clusterView: true,
+          visibleSeconds,
+          selectedStatus: this.$store.data.getSelectedStatus
+        });
         // Always reflect latest status (and related fields) in local articles array
         this.updateArticleStatusLocal(response.data);
         console.log(response.data);
@@ -320,12 +311,7 @@ export default {
     // track article opened event
     async opened(articleId) {
       try {
-        await axios.post(
-          import.meta.env.VITE_VUE_APP_HOSTNAME +
-            "/api/articles/markopened/" +
-            articleId,
-          {}
-        );
+        await markArticleOpened(articleId);
       } catch (error) {
         console.log("Error tracking article open", error);
       }
@@ -349,7 +335,7 @@ export default {
       }
     },
 
-    insertClusterArticles({ articleId, clusterId, articles }) {
+    insertClusterArticles({ articleId, articles }) {
       console.log(`Inserting ${articles.length} cluster articles after article ${articleId}`);
       
       // Find the index of the clicked article

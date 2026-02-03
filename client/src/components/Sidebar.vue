@@ -441,8 +441,10 @@ div.option {
 
 <script>
 import draggable from "vuedraggable";
-import axios from 'axios';
 import Cookies from 'js-cookie';
+import { markAllAsRead } from '../api/articles';
+import { triggerCrawl } from '../api/crawl';
+import { updateCategoryOrder } from '../api/manager';
 
 export default {
   emits: ['forceReload'],
@@ -457,7 +459,6 @@ export default {
     };
   },
   async created() {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
     this.$store.data.fetchTopTags();
     await this.$store.data.fetchSmartFolders();
   },
@@ -499,40 +500,29 @@ export default {
       this.$store.data.setSelectedFeedId("%");
     },
     markAsRead: async function(currentSelection) {
-      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markasread", currentSelection).then(
-        response => {
-          if (response.data) {
-            //refresh after one second
-            setTimeout(function() {
-              location.reload();
-            }, 1000);
-          }
-        },
-        response => {
-           
-          console.log("oops something went wrong", response);
-           
-        }
-      );
+      await markAllAsRead(currentSelection)
+      .then(() => {
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      })
+      .catch(error => {
+        console.log("oops something went wrong", error);
+      });
     },
     refreshFeeds: async function() {
       //show spinner
       this.refreshing = true;
-      await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/crawl", {}).then(
-        response => {
-          if (response.data) {
-            //refresh after one second
-            setTimeout(this.refresh, 2000);
-          }
-        },
-        response => {
+
+      await triggerCrawl()
+        .then(() => {
+          setTimeout(this.refresh, 2000);
+        })
+        .catch(error => {
           //remove spinner
           this.refreshing = false;
-           
-          console.log("oops something went wrong", response);
-           
-        }
-      );
+          console.log("oops something went wrong", error);
+        });
     },
     refresh() {
       //remove spinner
@@ -556,20 +546,14 @@ export default {
       for (let i = 0; i < this.$store.data.categories.length; i++) {
         orderList.push(this.$store.data.categories[i]["id"]);
       }
-      //make ajax request to change categories order
-      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/updateorder", { order: orderList }).then(
-        response => {
-          //get status & status text
-           
-          console.log(response.status);
-           
-        },
-        response => {
-           
-          console.log("oops something went wrong", response);
-           
-        }
-      );
+      //make api call to change categories order
+      updateCategoryOrder(orderList)
+      .then(response => {
+        console.log(response.status);
+      })
+      .catch(error => {
+        console.log("oops something went wrong", error);
+      });
     }
   },
   computed: {

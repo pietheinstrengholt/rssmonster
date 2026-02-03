@@ -56,6 +56,7 @@ import AppShell from './AppShell.vue';
 import AuthService from './services/AuthService.js';
 import Cookies from 'js-cookie';
 import axios from 'axios';
+import { setAuthToken } from './api/client';
 
 export default {
   components: {
@@ -80,28 +81,30 @@ export default {
   },
   methods: {
     async checkSession() {
-      try {
-        if (Cookies.get('token')) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${Cookies.get('token')}`;
-          // Validate the session by checking the user's role
-          await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/auth/validate")
-            .then(response => {
-              // If the session is valid, set the token and role in the store
-              this.$store.auth.setToken(Cookies.get('token'));
-              this.$store.auth.setRole(response.data.user.role);
-              this.isAuthenticated = true;
-            })
-            .catch(error => {
-              console.error("Session validation error:", error);
-              // If session is not valid, logout
-              this.logout();
-            });
-        } else {
-          this.isAuthenticated = false;
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
+      const token = Cookies.get('token');
+
+      if (!token) {
         this.isAuthenticated = false;
+        return;
+      }
+
+      try {
+        // TEMPORARILY set header for validation only
+        axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+
+        const response = await axios.post(
+          import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/auth/validate'
+        );
+
+        // Validation succeeded → now initialize API client
+        setAuthToken(token);
+
+        this.$store.auth.setToken(token);
+        this.$store.auth.setRole(response.data.user.role);
+        this.isAuthenticated = true;
+      } catch (error) {
+        console.error('Session validation error:', error);
+        this.logout();
       }
     },
     async login() {
@@ -110,23 +113,32 @@ export default {
           username: this.username,
           password: this.password
         };
+
         const response = await AuthService.login(credentials);
         this.message = response.message;
 
-        if (response) {
-          // Convert expiresInSeconds to days for cookie (default to 1 day if not provided)
-          const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
-          Cookies.set('token', response.token, { expires: expiresInDays });
-          this.$store.auth.setToken(response.token);
-          this.$store.auth.setRole(response.user.role);
-          this.isAuthenticated = true;
-          this.$store.auth.setAgenticFeaturesEnabled(response.agenticFeaturesEnabled || false);
-          // Clear form fields
-          this.username = '';
-          this.password = '';
-        }
+        if (!response?.token) return;
+
+        const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
+
+        Cookies.set('token', response.token, { expires: expiresInDays });
+
+        setAuthToken(response.token);
+
+        this.$store.auth.setToken(response.token);
+        this.$store.auth.setRole(response.user.role);
+        this.$store.auth.setAgenticFeaturesEnabled(
+          response.agenticFeaturesEnabled || false
+        );
+
+        this.isAuthenticated = true;
+
+        // clear form
+        this.username = '';
+        this.password = '';
       } catch (error) {
         console.error("Login error:", error);
+
         if (error.response?.data?.message) {
           this.message = error.response.data.message;
         } else {
@@ -159,12 +171,12 @@ export default {
       }
     },
     logout() {
-      // Clear the token and role from the store
+      setAuthToken(null); // 👈 CLEAR API CLIENT TOKEN
+
       this.$store.auth.setToken(null);
       this.$store.auth.setRole(null);
-      // Remove the token cookie
       Cookies.remove('token');
-      // Reset form and authentication state
+
       this.isAuthenticated = false;
       this.username = '';
       this.password = '';

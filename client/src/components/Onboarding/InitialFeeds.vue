@@ -40,15 +40,11 @@
 </style>
 
 <script>
-import axios from "axios";
+import { createCategory } from '../../api/categories';
+import { createFeed } from '../../api/feeds';
 
 export default {
   name: "InitialFeeds",
-
-  created() {
-    axios.defaults.headers.common["Authorization"] = `Bearer ${this.$store.auth.token}`;
-  },
-
   data() {
     return {
         feeds: [
@@ -169,16 +165,12 @@ export default {
       ];
 
       const existingNames = this.$store.data.categories.map(c => c.name);
-      const hostname = import.meta.env.VITE_VUE_APP_HOSTNAME;
 
       for (const name of requiredCategories) {
         if (existingNames.includes(name)) continue;
 
         try {
-          const result = await axios.post(
-            `${hostname}/api/categories`,
-            { name }
-          );
+          const result = await createCategory(name);
 
           const category = result.data;
 
@@ -196,7 +188,6 @@ export default {
     },
 
     async createFeedsFromSelectedFeeds() {
-      const hostname = import.meta.env.VITE_VUE_APP_HOSTNAME;
 
       for (const feed of this.feeds.filter(f => f.selected)) {
         const category = this.$store.data.categories.find(
@@ -210,14 +201,11 @@ export default {
         if (exists) continue;
 
         try {
-          const result = await axios.post(
-            `${hostname}/api/feeds`,
-            {
-              categoryId: category.id,
-              feedName: feed.title,
-              url: feed.url
-            }
-          );
+          const result = await createFeed({
+            categoryId: category.id,
+            feedName: feed.title,
+            url: feed.url
+          });
 
           const newFeed = result.data.feed ?? result.data;
 

@@ -54,9 +54,9 @@ export const useStore = defineStore('data', {
         this.setUnreadsSinceLastUpdate(unreadCount - this.unreadCount);
       }
     },
-    async fetchSettings(token) {
+    async fetchSettings() {
       // Fetch overview data from server
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
 
       // fetch the current selection from the server (only on initial load)
       try {
@@ -78,7 +78,7 @@ export const useStore = defineStore('data', {
 
       // fetch the current selection from the server (only on initial load)
       if (initial) {
-        await this.fetchSettings(token);
+        await this.fetchSettings();
       }
 
       // Fetch overview data from server
