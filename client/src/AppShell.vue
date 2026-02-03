@@ -369,7 +369,7 @@ export default {
             ref.fetchArticleIds(this.$store.data.currentSelection);
           }
         }
-      } catch (err) {
+      } catch {
         // Recovery failed → re-enter fatal error mode
         this.$store.data.setFatalError({
           type: 'offline',

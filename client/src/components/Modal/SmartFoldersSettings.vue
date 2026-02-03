@@ -209,7 +209,7 @@
 </style>
 
 <script>
-import { fetchSmartFolders, saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';
+import { saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';
 import { setAuthToken } from '../../api/client';
 import { validateSmartFolderQuery } from '../../services/queryValidation';
 
