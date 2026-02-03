@@ -241,7 +241,6 @@ export default {
     },
     completeOnboarding() {
       // Mark onboarding as complete and refresh overview
-      this.$store.data.markOnboarded();
       this.getOverview(true);
     },
     lookupFeedById(feedId) {
@@ -328,7 +327,7 @@ export default {
     },
     forceReload() {
       //set unreadsSinceLastUpdate count back to zero. This removes the notification from the Sidebar.
-      this.$store.data.unreadsSinceLastUpdate = 0;
+      this.$store.data.setUnreadsSinceLastUpdate?.(0);
       //refresh the overview with updated categories and feeds counts
       this.$store.data.fetchOverview({ initial: true }).catch(() => {});
       //invoke ref articleFeed child component function to reload content
