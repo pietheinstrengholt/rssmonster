@@ -37,11 +37,12 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { createCategory } from '../../api/categories';
+import { setAuthToken } from '../../api/client';
 export default {
     name: 'NewCategory',
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
     },
     data() {
         return {
@@ -50,14 +51,14 @@ export default {
         }
     },
     methods: {
-        saveCategory() {
+        async saveCategory() {
             // Logic to save the new category
             const categoryName = this.$el.querySelector('input').value;
             console.log('New category name:', categoryName);
             //save category when category name is set
             if (categoryName) {
-                axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories", { name: categoryName }).then(
-                result => {
+                try {
+                    const result = await createCategory(categoryName);
                     //create new local category in data object
                     this.category = result.data;
 
@@ -72,14 +73,10 @@ export default {
 
                     //close the modal
                     this.$store.data.setShowModal('');
-                },
-                response => {
-                     
-                    console.log("oops something went wrong", response);
-                     
+                } catch (error) {
+                    console.log("oops something went wrong", error);
                     this.$store.data.setShowModal('');
                 }
-                );
             }
         }
     }

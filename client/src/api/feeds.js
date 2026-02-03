@@ -7,6 +7,12 @@ export const fetchFeeds = () =>
   api.get('/feeds');
 
 /**
+ * Validate a feed URL
+ */
+export const validateFeed = (url, categoryId) =>
+  api.post('/feeds/validate', { url, categoryId });
+
+/**
  * Mute feed until a given ISO date
  */
 export const muteFeed = (feedId, mutedUntil) =>
@@ -15,8 +21,8 @@ export const muteFeed = (feedId, mutedUntil) =>
 /**
  * Create a new feed
  */
-export const createFeed = ({ categoryId, feedName, url }) =>
-  api.post('/feeds', { categoryId, feedName, url });
+export const createFeed = ({ categoryId, feedName, feedDesc, feedType, url, status, crawlSince }) =>
+  api.post('/feeds', { categoryId, feedName, feedDesc, feedType, url, status, crawlSince });
 
 /**
  * Delete a feed
