@@ -277,7 +277,6 @@ export const useStore = defineStore('data', {
     getSelectedSort: (data) => data.currentSelection.sort,
     getCategories: (data) => data.categories,
     getCurrentSelection: (data) => data.currentSelection,
-    getCategories: (data) => data.categories,
     getUnreadCount: (data) => data.unreadCount,
     getReadCount: (data) => data.readCount,
     getStarCount: (data) => data.starCount,
