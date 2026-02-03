@@ -25,6 +25,18 @@ export const createFeed = ({ categoryId, feedName, feedDesc, feedType, url, stat
   api.post('/feeds', { categoryId, feedName, feedDesc, feedType, url, status, crawlSince });
 
 /**
+ * Update a feed
+ */
+export const updateFeed = (feedId, feedData) =>
+  api.put(`/feeds/${feedId}`, feedData);
+
+/**
+ * Rediscover RSS feed using AI
+ */
+export const rediscoverRss = (feedId) =>
+  api.post(`/feeds/${feedId}/rediscover-rss`);
+
+/**
  * Delete a feed
  */
 export const deleteFeed = (feedId) =>

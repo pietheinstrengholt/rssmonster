@@ -165,7 +165,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { rediscoverRss, updateFeed } from '../../api/feeds';
+import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 
 export default {
@@ -180,8 +181,7 @@ export default {
   },
 
   created() {
-    axios.defaults.headers.common['Authorization'] =
-      `Bearer ${this.$store.auth.token}`;
+    setAuthToken(this.$store.auth.token);
 
     // Clone selected feed
     this.feed = JSON.parse(JSON.stringify(this.selectedFeed));
@@ -196,10 +196,7 @@ export default {
       this.rediscoveredRss = null;
 
       try {
-        const result = await axios.post(
-          `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/${this.feed.id}/rediscover-rss`
-        );
-
+        const result = await rediscoverRss(this.feed.id);
         this.rediscoveredRss = result.data;
 
         if (result.data.suggestedUrl) {
@@ -233,16 +230,13 @@ export default {
         helper.findIndexById(this.$store.data.categories, selectedCategoryId);
 
       try {
-        const result = await axios.put(
-          `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/${this.feed.id}`,
-          {
-            feedName: this.feed.feedName,
-            feedDesc: this.feed.feedDesc,
-            categoryId: selectedCategoryId,
-            url: this.feed.url,
-            status: this.feed.status
-          }
-        );
+        const result = await updateFeed(this.feed.id, {
+          feedName: this.feed.feedName,
+          feedDesc: this.feed.feedDesc,
+          categoryId: selectedCategoryId,
+          url: this.feed.url,
+          status: this.feed.status
+        });
 
         if (currentIndexFeed === -1 || currentIndexCategory === -1) {
           console.log('Store update failed');

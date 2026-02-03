@@ -209,7 +209,8 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { fetchSmartFolders, saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';
+import { setAuthToken } from '../../api/client';
 import { validateSmartFolderQuery } from '../../services/queryValidation';
 
 export default {
@@ -224,7 +225,7 @@ export default {
         };
     },
     created() {
-        axios.defaults.headers.common.Authorization = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
         this.fetchSmartFolders();
     },
     computed: {
@@ -248,9 +249,7 @@ export default {
             try {
                 this.smartFolderInsightsLoading = true;
                 this.smartFolderInsightsError = null;
-                const resp = await axios.get(
-                    import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders/insights"
-                );
+                const resp = await fetchSmartFolderInsights();
 
                 console.log('Smart Folder Insights response:', resp.data);
 
@@ -304,9 +303,7 @@ export default {
             try {
                 // Persist smart folders to the server
                 const filteredSmartFolders = this.smartFolders.filter(sf => sf && sf.name && sf.name.trim() !== '');
-                const resp = await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders", {
-                    smartFolders: filteredSmartFolders
-                });
+                const resp = await saveSmartFolders(filteredSmartFolders);
                 console.log('Smart folders saved:', resp.data);
                 
                 // Refresh smart folders from the server
