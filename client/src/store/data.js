@@ -205,7 +205,11 @@ export const useStore = defineStore('data', {
 
     setClusterView(value) {
       this.currentSelection.clusterView = Boolean(value);
-      this.fetchOverview({ forceUpdate: true }).catch(() => {});
+      this.fetchOverview({ forceUpdate: true }).catch(err => {
+        if (import.meta.env.DEV) {
+          console.warn('Cluster view refresh failed', err);
+        }
+      });
     },
 
     /* --------------------------------------------------
