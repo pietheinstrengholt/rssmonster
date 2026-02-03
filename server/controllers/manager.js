@@ -20,13 +20,12 @@ export const getOverview = async (req, res, _next) => {
       attributes: [
         'minAdvertisementScore',
         'minSentimentScore',
-        'minQualityScore',
-        'clusterView'
+        'minQualityScore'
       ],
       raw: true
     });
 
-    const clusterView = settings?.clusterView === 1;
+    const clusterView = String(req.query?.clusterView).toLowerCase() === 'true';
 
     const baseWhere = {
       userId,

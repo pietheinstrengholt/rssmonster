@@ -278,7 +278,7 @@ export default {
       }
     },
     async getOverview(initial) {
-      console.log("Fetching overview from server via store.");
+      console.log("Fetching settings and overview from server via store.");
       try {
         const { response, previousUnreadCount } = await this.$store.data.fetchOverview(initial, this.$store.auth.token);
         //set offlineStatus to false

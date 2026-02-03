@@ -70,18 +70,6 @@ export default {
 
   async created() {
     window.addEventListener("scroll", this.handleScroll);
-    axios.defaults.headers.common.Authorization =
-      `Bearer ${this.$store.auth.token}`;
-
-    // fetch the current selection from the server
-    try {
-      const response = await axios.get(
-        import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting"
-      );
-      this.$store.data.setCurrentSelection(response.data);
-    } catch (error) {
-      console.error("Error fetching settings:", error);
-    }
   },
 
   unmounted() {

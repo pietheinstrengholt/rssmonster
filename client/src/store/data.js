@@ -54,15 +54,39 @@ export const useStore = defineStore('data', {
         this.setUnreadsSinceLastUpdate(unreadCount - this.unreadCount);
       }
     },
+    async fetchSettings(token) {
+      // Fetch overview data from server
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+
+      // fetch the current selection from the server (only on initial load)
+      try {
+        const response = await axios.get(
+          import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting"
+        );
+        this.setCurrentSelection(response.data);
+      } catch (error) {
+        console.error("Error fetching settings:", error);
+      }
+    },
     async fetchOverview(initial, token, { forceUpdate = false } = {}) {
+
       console.log("Fetching overview data from server...");
       // Store token for later use
       if (token) {
         this.token = token;
       }
+
+      // fetch the current selection from the server (only on initial load)
+      if (initial) {
+        await this.fetchSettings(token);
+      }
+
       // Fetch overview data from server
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview");
+      const response = await axios.get(
+        import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview",
+        { params: { ...this.currentSelection } }
+      );
       // Update store with fetched data
       this.updateOverview(response.data, { initial, forceUpdate });
       return { response };
