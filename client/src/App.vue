@@ -73,12 +73,19 @@ export default {
     };
   },
   async created() {
-    // Check if the user has a valid session
+    window.addEventListener('auth:expired', this.handleAuthExpired);
+
     await this.checkSession();
-    // Mark loading as complete
     this.isLoading = false;
   },
+  beforeUnmount() {
+    window.removeEventListener('auth:expired', this.handleAuthExpired);
+  },
   methods: {
+    handleAuthExpired() {
+      console.warn('Session expired — logging out');
+      this.logout();
+    },
     async checkSession() {
       const token = Cookies.get('token');
 
@@ -176,13 +183,6 @@ export default {
       this.password_repeat = '';
       this.showSignup = false;
       this.message = '';
-    }
-  },
-  watch: {
-    '$store.auth.token'() {
-      if (!this.$store.auth.token) {
-        this.logout();
-      }
     }
   }
 };

@@ -441,6 +441,7 @@ div.option {
 
 <script>
 import draggable from "vuedraggable";
+import { setAuthToken } from '../api/client';
 import Cookies from 'js-cookie';
 import { markAllAsRead } from '../api/articles';
 import { triggerCrawl } from '../api/crawl';
@@ -467,11 +468,18 @@ export default {
   },
   methods: {
     logout() {
-      //remove token from store which triggers App.vue to show login
+      // 1. Clear API client auth header
+      setAuthToken(null);
+
+      // 2. Clear auth store (triggers App.vue to show login)
       this.$store.auth.setToken(null);
       this.$store.auth.setRole(null);
-      // Remove cookie to complete logout
+
+      // 3. Remove cookie
       Cookies.remove('token');
+
+      // 4. Add a page refresh
+      location.reload();
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);

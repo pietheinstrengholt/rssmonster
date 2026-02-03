@@ -6,15 +6,39 @@ const api = axios.create({
 });
 
 /**
- * Inject or clear Authorization header
- * Call this once when token changes
+ * Set or clear Authorization header
  */
-export const setAuthToken = token => {
+export const setAuthToken = (token) => {
   if (token) {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
   } else {
     delete api.defaults.headers.common.Authorization;
   }
 };
+
+/**
+ * Response interceptor:
+ * - Auto logout on 401
+ * - Ignore auth bootstrap endpoints
+ */
+api.interceptors.response.use(
+  response => response,
+  error => {
+    const status = error?.response?.status;
+    const url = error?.config?.url ?? '';
+
+    const isAuthEndpoint =
+      url.includes('/auth/login') ||
+      url.includes('/auth/register') ||
+      url.includes('/auth/validate');
+
+    if (status === 401 && !isAuthEndpoint) {
+      // Notify app that auth expired
+      window.dispatchEvent(new Event('auth:expired'));
+    }
+
+    return Promise.reject(error);
+  }
+);
 
 export default api;
