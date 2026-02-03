@@ -149,6 +149,7 @@ const processArticle = async (feed, entry) => {
       contentStripped,
       fields.title,
       fields.categories,
+      feed?.feedName || '',
       RATE_LIMIT_DELAY_MS
     );
 
@@ -192,7 +193,7 @@ const processArticle = async (feed, entry) => {
     }
 
     // Create article with analysis results
-    const article = await saveArticle(
+    await saveArticle(
       feed,
       {
         ...fields,

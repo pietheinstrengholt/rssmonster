@@ -23,10 +23,7 @@ const client = hasApiKey
 let openAIQueue = Promise.resolve();
 let rateLimitDelay = 0;
 
-// Helpers
-const clamp = (n, min, max) =>
-  Math.max(min, Math.min(max, Number.isFinite(n) ? n : min));
-
+// Default analysis result when no API key is present
 const defaultAnalysis = text => ({
   summary: text,
   contentSummaryBullets: [],
@@ -36,17 +33,58 @@ const defaultAnalysis = text => ({
   qualityScore: 70
 });
 
-async function analyzeArticleContent(contentStripped, title, categoryNames, RATE_LIMIT_DELAY_MS) {
+// Truncate content to fit within LLM token limits while preserving head and tail
+const truncateContentForLLM = (text, maxChars = 3500) => {
+  if (!text || text.length <= maxChars) return text;
+
+  const head = text.slice(0, 3000);
+  const tail = text.slice(-500);
+
+  return `${head}\n...\n${tail}`;
+};
+
+async function analyzeArticleContent(contentStripped, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
+  // Start with default analysis
   let analysis = defaultAnalysis(contentStripped);
+
+  // Skip analysis for very short content
+  if (!contentStripped || contentStripped.trim().length < 200) {
+    return analysis;
+  }
 
   // If no API key, skip analysis
   if (!hasApiKey) {
     return analysis;
   }
 
+  // Determine OpenAI model to use
   const model = process.env.OPENAI_MODEL_CRAWL || process.env.OPENAI_MODEL_NAME;
 
+  // If no model specified, skip analysis
   if (!model) return analysis;
+
+  // Skip analysis for very short content without categories
+  if (
+    typeof contentStripped === 'string' &&
+    contentStripped.length < 500 &&
+    (!Array.isArray(categoryNames) || categoryNames.length === 0)
+  ) {
+    return analysis;
+  }
+
+  // Helper to bucket scores to nearest 10
+  const bucketScore = n =>
+    [0,10,20,30,40,50,60,70,80,90,100]
+      .reduce((prev, curr) =>
+        Math.abs(curr - n) < Math.abs(prev - n) ? curr : prev
+      );
+
+  // Normalize category names
+  const normalizeTag = t =>
+    String(t)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 32);
 
   // Queue execution to respect rate limits
   await new Promise(resolve => {
@@ -73,18 +111,47 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
       "   - Each bullet must stand on its own",
       "",
       "3) Provide 3-5 SEO-friendly tags:",
-      "   - lowercase",
-      "   - no punctuation",
-      "   - single words or short phrases",
+      "   - EXACTLY one word per tag (no spaces)",
+      "   - lowercase only",
+      "   - no punctuation or symbols",
       "   - no duplicates",
       "",
-      "   TAG SELECTION RULES (IMPORTANT):",
-      "   - Article Categories are the PRIMARY signal for tag generation.",
-      "   - Prefer categories that clearly and accurately describe the topic.",
-      "   - Validate categories against the actual content:",
-      "       • If a category matches the article, use it (or a normalized variant).",
-      "       • If a category is vague, misleading, or irrelevant, discard it.",
-      "   - If categories are missing or unreliable, derive tags from the article content.",
+      "   TAG SPECIFICITY RULES (CRITICAL):",
+      "   - Tags MUST be specific and content-descriptive.",
+      "   - DO NOT use generic umbrella tags such as:",
+      "       • news",
+      "       • politics",
+      "       • economy",
+      "       • business",
+      "       • technology",
+      "       • finance",
+      "       • world",
+      "   - If a tag could apply to thousands of unrelated articles, it is TOO GENERIC and MUST be replaced.",
+      "",
+      "   SINGLE-WORD NORMALIZATION RULES:",
+      "   - Convert multi-word concepts into a single meaningful token.",
+      "   - Prefer semantic compression over generic abstraction.",
+      "   - Examples:",
+      "       • 'interest rate hike' → 'ratehike'",
+      "       • 'export controls' → 'exportcontrols'",
+      "       • 'artificial intelligence' → 'ai'",
+      "       • 'open ai' → 'openai'",
+      "       • 'european central bank' → 'ecb'",
+      "       • 'antitrust investigation' → 'antitrust'",
+      "",
+      "   TAG SELECTION PRIORITY (in order):",
+      "   1) Named entities (companies, organizations, institutions, products, laws)",
+      "   2) Specific events, policies, or mechanisms described in the article",
+      "   3) Narrow domain concepts with a clear qualifier",
+      "",
+      "   CATEGORY USAGE RULES:",
+      "   - Article Categories are ONLY a starting signal.",
+      "   - Use a category ONLY if it can be transformed into a specific single-word tag.",
+      "   - Discard categories that remain broad or vague after normalization.",
+      "",
+      "   DIVERSITY REQUIREMENT:",
+      "   - At least 2 tags must refer to concrete entities or mechanisms.",
+      "   - Avoid multiple tags that represent the same concept with minor wording changes.",
       "",
       "4) Score the article from 0-100 using the following definitions:",
       "",
@@ -133,11 +200,12 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
       "- Use EXACTLY these keys:",
       "  summary, contentSummaryBullets, tags, advertisementScore, sentimentScore, qualityScore",
       "",
+      `Feed Name: ${feedName || 'unknown'}`,
       `Article Title: ${title}`,
       `Article Categories: ${categoryNames.join(', ')}`,
       "Article Content:",
       "```",
-      contentStripped,
+      truncateContentForLLM(contentStripped),
       "```"
     ].join('\n');
 
@@ -148,7 +216,7 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
             { role: 'user', content: prompt }
           ],
           temperature: 0.2,
-          max_completion_tokens: 800
+          max_completion_tokens: 350 // ~500 words
         });
 
         const raw = response.choices?.[0]?.message?.content || '';
@@ -173,14 +241,11 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, RATE
                 .slice(0, 7)
             : [],
           tags: Array.isArray(parsed.tags)
-            ? parsed.tags
-                .filter(Boolean)
-                .map(t => String(t).toLowerCase())
-                .slice(0, 7)
+            ? [...new Set(parsed.tags.map(normalizeTag).filter(Boolean))].slice(0, 5)
             : [],
-          advertisementScore: clamp(parsed.advertisementScore, 0, 100),
-          sentimentScore: clamp(parsed.sentimentScore, 0, 100),
-          qualityScore: clamp(parsed.qualityScore, 0, 100)
+          advertisementScore: bucketScore(parsed.advertisementScore),
+          sentimentScore: bucketScore(parsed.sentimentScore),
+          qualityScore: bucketScore(parsed.qualityScore)
         };
 
         console.log(`[OpenAI LLM] Analysis completed for "${title}"`);
