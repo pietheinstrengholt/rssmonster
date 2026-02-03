@@ -330,7 +330,7 @@ export default {
       //set unreadsSinceLastUpdate count back to zero. This removes the notification from the Sidebar.
       this.$store.data.unreadsSinceLastUpdate = 0;
       //refresh the overview with updated categories and feeds counts
-      this.$store.data.fetchOverview(initial, this.$store.auth.token);
+      this.$store.data.fetchOverview({ initial: true }).catch(() => {});
       //invoke ref articleFeed child component function to reload content
       const ref = this.$refs.articleFeed;
       if (ref) {
