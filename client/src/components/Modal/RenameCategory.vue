@@ -12,7 +12,7 @@
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
+                <button type="button" class="btn btn-primary" @click="renameCategory" :disabled="isNameUnchanged">Rename category</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="$store.data.setShowModal('')">Close</button>
             </div>
             </div>
@@ -48,14 +48,21 @@ export default {
     data() {
         return {
             category: {},
+            originalName: '',
             index: -1
         }
     },
     created: function() {
         setAuthToken(this.$store.auth.token);
-        //clone the selected feed from the store
+        //clone the selected category from the store
         this.index = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
-        this.category = this.$store.data.categories[this.index];
+        this.category = JSON.parse(JSON.stringify(this.$store.data.categories[this.index]));
+        this.originalName = this.category.name;
+    },
+    computed: {
+        isNameUnchanged() {
+            return this.category.name === this.originalName;
+        }
     },
     methods: {
         async renameCategory() {
