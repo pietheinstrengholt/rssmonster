@@ -128,6 +128,8 @@ html, #app, body {
 </style>
 
 <script>
+// client/src/AppShell.vue
+
 //import idb-keyval
 import { get, set } from 'idb-keyval';
 
@@ -278,31 +280,35 @@ export default {
       }
     },
     async getOverview(initial) {
-      console.log("Fetching settings and overview from server via store.");
       try {
-        const { response, previousUnreadCount } = await this.$store.data.fetchOverview(initial, this.$store.auth.token);
-        //set offlineStatus to false
+        await this.$store.data.fetchOverview({ initial });
+
         this.offlineStatus = false;
         this.overviewLoaded = true;
 
-        // Set PWA badge using unread count safely
-        this.setBadge(response.data.unreadCount);
+        const {
+          unreadCount,
+          unreadsSinceLastUpdate,
+          currentSelection
+        } = this.$store.data;
 
-        //update local selection and notifications (kept in Main)
+        // Set PWA badge from store state
+        this.setBadge(unreadCount);
+
+        // Initial load: sync local selection
         if (initial === true) {
-          this.updateSelection(this.$store.data.currentSelection);
-        } else {
-          if (previousUnreadCount < response.data.unreadCount) {
-            this.showNotification(response.data.unreadCount - previousUnreadCount);
-          }
+          this.updateSelection(currentSelection);
+        } else if (unreadsSinceLastUpdate > 0) {
+          this.showNotification(unreadsSinceLastUpdate);
         }
       } catch (error) {
         console.error("There was an error!", error);
-        // Clear the background interval on authentication failure
+
         if (this.overviewIntervalId) {
           clearInterval(this.overviewIntervalId);
           this.overviewIntervalId = null;
         }
+
         this.$store.auth.setToken(null);
         this.offlineStatus = true;
         this.overviewLoaded = true;
@@ -324,7 +330,7 @@ export default {
       //set unreadsSinceLastUpdate count back to zero. This removes the notification from the Sidebar.
       this.$store.data.unreadsSinceLastUpdate = 0;
       //refresh the overview with updated categories and feeds counts
-      this.getOverview(true);
+      this.$store.data.fetchOverview(initial, this.$store.auth.token);
       //invoke ref articleFeed child component function to reload content
       const ref = this.$refs.articleFeed;
       if (ref) {

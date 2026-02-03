@@ -1,15 +1,15 @@
-import api, { setAuthToken } from './client';
+// client/src/api/manager.js
+import api from './client';
 
 /**
  * Fetch overview data with current selection
+ * Backend expects POST with body
  */
-export const fetchOverview = async (currentSelection, token) => {
-  setAuthToken(token);
-  return api.get(
-    import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview",
-    { params: { ...currentSelection } }
-  );
-};
+export const fetchOverview = (currentSelection) =>
+  api.post('/manager/overview', {
+    ...currentSelection,
+    clusterView: Boolean(currentSelection.clusterView)
+  });
 
 /**
  * Update category order
