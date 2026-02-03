@@ -137,13 +137,31 @@ export default {
         this.username = '';
         this.password = '';
       } catch (error) {
-        console.error("Login error:", error);
+        console.error('Login error:', error);
 
-        if (error.response?.data?.message) {
-          this.message = error.response.data.message;
-        } else {
-          this.message = 'Login failed. Please try again.';
+        // Backend unreachable / network error
+        if (!error.response) {
+          this.message =
+            'Cannot connect to RSSMonster. Please check if the server is running.';
+          return;
         }
+
+        // Auth error
+        if (error.response.status === 401) {
+          this.message = 'Incorrect username or password.';
+          return;
+        }
+
+        // Server-side error
+        if (error.response.status >= 500) {
+          this.message =
+            'The server encountered an error. Please try again later.';
+          return;
+        }
+
+        // Fallback
+        this.message = error.response?.data?.message ||
+          'Login failed. Please try again.';
       }
     },
     async register() {
