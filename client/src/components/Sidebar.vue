@@ -230,6 +230,8 @@
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 .drag {
   background-color: transparent;
   color: #fff;
@@ -339,15 +341,17 @@ div.option {
 }
 
 #monster {
-  background: url('../assets/images/monster.png') 14px 30px no-repeat;
-  background-size: 30px 30px;
+  background: url('../assets/images/monster.png') 14px 14px no-repeat;
+  background-size: 60px 60px;
   height: 90px;
 }
 
 #monster p {
-  padding: 30px 0px 0px 50px;
+  padding: 27px 0px 8px 78px;
   color: #111;
-  font-size: 20px;
+  font-size: 26px;
+  font-family: 'Bebas Neue', cursive;
+  font-weight: 400;
 }
 
 ::-webkit-scrollbar {
@@ -420,11 +424,6 @@ div.option {
   }
   p.title {
     color: #fff;
-  }
-  #monster {
-    background: url('../assets/images/monster-dark.png') 14px 30px no-repeat;
-    background-size: 30px 30px;
-    height: 90px;
   }
   #monster p {
     color: #fff;
