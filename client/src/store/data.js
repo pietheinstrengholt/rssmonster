@@ -3,9 +3,7 @@ import { defineStore } from 'pinia';
 import { fetchSettings as fetchSettingsAPI } from '../api/settings';
 import { fetchSmartFolders as fetchSmartFoldersAPI } from '../api/smartfolders';
 import { fetchTopTags as fetchTopTagsAPI } from '../api/tags';
-
-//TODO: remove after revising fetchOverview
-import axios from 'axios';
+import { fetchOverview as fetchOverviewAPI } from '../api/manager';
 
 export const useStore = defineStore('data', {
   state: () => ({
@@ -82,11 +80,7 @@ export const useStore = defineStore('data', {
       }
 
       // Fetch overview data from server
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      const response = await axios.get(
-        import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/overview",
-        { params: { ...this.currentSelection } }
-      );
+      const response = await fetchOverviewAPI(this.currentSelection, token);
       // Update store with fetched data
       this.updateOverview(response.data, { initial, forceUpdate });
       return { response };
