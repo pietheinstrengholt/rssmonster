@@ -118,7 +118,8 @@
 <style src="../../assets/css/settings.css"></style>
 
 <script>
-import axios from 'axios';
+import { fetchActions, saveActions } from '../../api/actions';
+import { setAuthToken } from '../../api/client';
 
 export default {
   emits: ['close', 'saved'],
@@ -128,13 +129,13 @@ export default {
     };
   },
   async created() {
-    axios.defaults.headers.common.Authorization = `Bearer ${this.$store.auth.token}`;
+    setAuthToken(this.$store.auth.token);
     this.fetchActions();
   },
   methods: {
     async fetchActions() {
         try {
-            const resp = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/actions");
+            const resp = await fetchActions();
             if (resp && resp.data && Array.isArray(resp.data.actions)) {
                 this.actions = resp.data.actions.map(a => ({
                     name: a.name || '',
@@ -159,16 +160,13 @@ export default {
     async save() {
         // Persist actions to the server
         const filteredActions = this.actions.filter(a => a && a.actionType && a.actionType.trim() !== '');
-        axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/actions", {
-            actions: filteredActions
-        })
-        .then(resp => {
+        try {
+            const resp = await saveActions(filteredActions);
             console.log('Actions saved:', resp.data);
-        })
-        .catch(err => {
+        } catch (err) {
             console.error('Error saving actions:', err);
             alert('Failed to save actions. Please try again.');
-        });
+        }
         this.$emit('saved');
         this.$emit('close');
     },

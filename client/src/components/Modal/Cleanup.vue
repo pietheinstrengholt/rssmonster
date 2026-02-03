@@ -38,28 +38,25 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { cleanupOldArticles } from '../../api/cleanup';
+import { setAuthToken } from '../../api/client';
 export default {
     name: 'Cleanup',
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
     },
     methods: {
-        cleanup() {
-            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/cleanup").then(
-                () => {
-                    //set the selection back to all and refresh the page
-                    this.$store.data.setSelectedCategoryId("%");
-                    this.$store.data.setSelectedFeedId("%");
-                    location.reload();
-                },
-                response => {
-                     
-                    console.log("oops something went wrong", response);
-                     
-                    this.$store.data.setShowModal('')
-                }
-            );
+        async cleanup() {
+            try {
+                await cleanupOldArticles();
+                //set the selection back to all and refresh the page
+                this.$store.data.setSelectedCategoryId("%");
+                this.$store.data.setSelectedFeedId("%");
+                location.reload();
+            } catch (error) {
+                console.log("oops something went wrong", error);
+                this.$store.data.setShowModal('');
+            }
         }
     }
 }

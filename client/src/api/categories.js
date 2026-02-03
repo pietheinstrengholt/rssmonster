@@ -5,3 +5,9 @@ import api from './client';
  */
 export const createCategory = (name) =>
   api.post('/categories', { name });
+
+/**
+ * Delete a category
+ */
+export const deleteCategory = (categoryId) =>
+  api.delete(`/categories/${categoryId}`);

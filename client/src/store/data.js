@@ -1,3 +1,4 @@
+// client/src/store/data.js
 import { defineStore } from 'pinia';
 import axios from 'axios';
 
