@@ -175,6 +175,7 @@ export default {
   data() {
     return {
       feed: {},
+      originalFeed: {}, // Store the original feed to track changes
       rediscovering: false,
       rediscoveredRss: null
     };
@@ -182,14 +183,40 @@ export default {
 
   created() {
     setAuthToken(this.$store.auth.token);
+  },
 
-    // Clone selected feed if it exists
-    if (this.selectedFeed) {
-      this.feed = JSON.parse(JSON.stringify(this.selectedFeed));
+  watch: {
+    '$store.data.categories': {
+      handler() {
+        this.initializeFeed();
+      },
+      deep: true,
+      immediate: true
+    },
+    '$store.data.currentSelection.feedId': {
+      handler() {
+        this.initializeFeed();
+      },
+      immediate: true
     }
   },
 
   methods: {
+    initializeFeed() {
+      const feedId = Number(this.$store.data.currentSelection.feedId);
+      
+      // Search through all categories to find the feed
+      for (const category of this.$store.data.categories) {
+        const feed = category.feeds?.find(f => f.id === feedId);
+        if (feed) {
+          this.feed = JSON.parse(JSON.stringify(feed));
+          this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
+          return;
+        }
+      }
+      console.log('Feed not found for feedId:', feedId);
+    },
+
     async rediscoverRss() {
       if (!this.$store.data.currentSelection.AIEnabled) {
         return false
@@ -219,7 +246,7 @@ export default {
 
     async updateFeed() {
       const selectedCategoryId = this.feed.categoryId;
-      const currentCategoryId = this.selectedFeed.categoryId;
+      const currentCategoryId = this.originalFeed.categoryId;
 
       const currentIndexCategory =
         helper.findIndexById(this.$store.data.categories, currentCategoryId);
@@ -271,22 +298,6 @@ export default {
         console.error('Update feed failed:', error);
         this.$store.data.setShowModal('');
       }
-    }
-  },
-  computed: {
-    selectedFeed() {
-      const category = this.selectedCategory;
-      if (!category || !category.feeds) return null;
-      return helper.findArrayById(
-        category.feeds,
-        this.$store.data.getSelectedFeedId
-      );
-    },
-    selectedCategory() {
-      return helper.findArrayById(
-        this.$store.data.categories,
-        this.$store.data.getSelectedCategoryId
-      );
     }
   }
 };
