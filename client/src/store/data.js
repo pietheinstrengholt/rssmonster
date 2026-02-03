@@ -1,5 +1,10 @@
 // client/src/store/data.js
 import { defineStore } from 'pinia';
+import { fetchSettings as fetchSettingsAPI } from '../api/settings';
+import { fetchSmartFolders as fetchSmartFoldersAPI } from '../api/smartfolders';
+import { fetchTopTags as fetchTopTagsAPI } from '../api/tags';
+
+//TODO: remove after revising fetchOverview
 import axios from 'axios';
 
 export const useStore = defineStore('data', {
@@ -56,14 +61,8 @@ export const useStore = defineStore('data', {
       }
     },
     async fetchSettings() {
-      // Fetch overview data from server
-      axios.defaults.headers.common['Authorization'] = `Bearer ${this.token}`;
-
-      // fetch the current selection from the server (only on initial load)
       try {
-        const response = await axios.get(
-          import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting"
-        );
+        const response = await fetchSettingsAPI();
         this.setCurrentSelection(response.data);
       } catch (error) {
         console.error("Error fetching settings:", error);
@@ -94,7 +93,7 @@ export const useStore = defineStore('data', {
     },
     async fetchSmartFolders() {
       try {
-        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/smartfolders");
+        const response = await fetchSmartFoldersAPI();
         this.smartFolders = response.data.smartFolders || [];
       } catch (error) {
         console.error("Error fetching smart folders", error);
@@ -103,11 +102,7 @@ export const useStore = defineStore('data', {
     async fetchTopTags() {
       try {
         const clusterView = this.currentSelection.clusterView;
-        const response = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/tags", {
-          params: {
-            clusterView: clusterView
-          }
-        });
+        const response = await fetchTopTagsAPI({ clusterView });
         this.topTags = response.data.tags || [];
       } catch (error) {
         console.error("Error fetching top tags", error);

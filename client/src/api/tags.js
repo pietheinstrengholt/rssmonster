@@ -1,4 +1,4 @@
 import api from './client';
 
-export const fetchTopTags = (clusterView) =>
-  api.get('/tags', { params: { clusterView } });
+export const fetchTopTags = (params) =>
+  api.get('/tags', { params });
