@@ -765,7 +765,14 @@ span.cluster {
 </style>
 
 <script>
-import axios from 'axios';
+import {
+  markWithStar,
+  markClicked,
+  markNotInterested
+} from '../api/articles';
+
+import { muteFeed } from '../api/feeds';
+import { fetchClusterArticles } from '../api/clusters';
 
 const NEUTRAL_SCORE = 70;
 
@@ -801,9 +808,6 @@ export default {
       isMobilePortrait: false,
       mediaQuery: null
     };
-  },
-  created() {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
   },
   mounted() {
     this.setupMediaQueryListener();
@@ -918,18 +922,21 @@ export default {
       const delta = isStarred ? -1 : 1;
       const newStarInd = isStarred ? 0 : 1;
 
-      axios
-        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markwithstar/${articleId}`, { update: updateType })
-        .then(response => {
-          const category = this.$store.data.categories.find(c => c.id === response.data.feed.categoryId);
-          if (category) {
-            category.starCount += delta;
-            const feed = category.feeds.find(f => f.id === response.data.feedId);
-            if (feed) feed.starCount += delta;
-          }
-          delta > 0 ? this.$store.data.increaseStarCount() : this.$store.data.decreaseStarCount();
-          this.$emit('update-star', { id: articleId, starInd: newStarInd });
-        });
+      markWithStar(articleId, updateType).then(response => {
+        const category = this.$store.data.categories.find(
+          c => c.id === response.data.feed.categoryId
+        );
+        if (category) {
+          category.starCount += delta;
+          const feed = category.feeds.find(f => f.id === response.data.feedId);
+          if (feed) feed.starCount += delta;
+        }
+        delta > 0
+          ? this.$store.data.increaseStarCount()
+          : this.$store.data.decreaseStarCount();
+
+        this.$emit('update-star', { id: articleId, starInd: newStarInd });
+      });
     },
     selectTag(tag) {
       if (this.$store.data.currentSelection) {
@@ -937,9 +944,10 @@ export default {
       }
     },
     articleClicked(articleId) {
-      axios
-        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markclicked/${articleId}`)
-        .finally(() => this.$emit('update-clicked', { id: articleId, clickedAmount: 1 }));
+      markClicked(articleId)
+      .finally(() =>
+        this.$emit('update-clicked', { id: articleId, clickedAmount: 1 })
+      );
     },
     isImageUrlInContent() {
       const content = this.contentOriginal || '';
@@ -952,60 +960,56 @@ export default {
       const updateType = this.starInd ? 'unmark' : 'mark';
       const newStarInd = this.starInd ? 0 : 1;
       
-      axios
-        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/markwithstar/${this.id}`, { update: updateType })
-        .then(response => {
-          const category = this.$store.data.categories.find(c => c.id === response.data.feed.categoryId);
-          if (category) {
-            const delta = newStarInd ? 1 : -1;
-            category.starCount += delta;
-            const feed = category.feeds.find(f => f.id === response.data.feedId);
-            if (feed) feed.starCount += delta;
-          }
-          newStarInd ? this.$store.data.increaseStarCount() : this.$store.data.decreaseStarCount();
-          this.$emit('update-star', { id: this.id, starInd: newStarInd });
-        });
+      markWithStar(this.id, updateType)
+      .then(response => {
+        const category = this.$store.data.categories.find(
+          c => c.id === response.data.feed.categoryId
+        );
+        if (category) {
+          const delta = newStarInd ? 1 : -1;
+          category.starCount += delta;
+          const feed = category.feeds.find(f => f.id === response.data.feedId);
+          if (feed) feed.starCount += delta;
+        }
+        newStarInd
+          ? this.$store.data.increaseStarCount()
+          : this.$store.data.decreaseStarCount();
+
+        this.$emit('update-star', { id: this.id, starInd: newStarInd });
+      });
     },
     markNotInterested() {
       // Mark article with negativeInd flag
-      axios
-        .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/articles/marknotinterested/${this.id}`)
-        .then(() => {
-          console.log('Marked as not interested:', this.id);
-          // Emit event to parent to remove article from view
-          this.$emit('article-not-interested', { id: this.id });
-        });
+      markNotInterested(this.id)
+      .then(() => {
+        console.log('Marked as not interested:', this.id);
+        this.$emit('article-not-interested', { id: this.id });
+      });
     },
     muteFeedSevenDays() {
       if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
         const mutedUntil = new Date();
         mutedUntil.setDate(mutedUntil.getDate() + 7);
         
-        axios
-          .post(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/mute/${this.feedId}`, { 
-            mutedUntil: mutedUntil.toISOString() 
-          })
-          .then(() => {
-            console.log('Feed muted until:', mutedUntil);
-          });
+        muteFeed(this.feedId, mutedUntil.toISOString())
+        .then(() => {
+          console.log('Feed muted until:', mutedUntil);
+        });
       }
     },
     viewClusterArticles(clusterId) {
       console.log('Fetching articles for cluster:', clusterId);
-      axios
-        .get(`${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/clusters/${clusterId}/articles`)
-        .then(response => {
-          console.log('Cluster articles:', response.data);
-          // Emit event to parent with cluster articles and current article ID
-          this.$emit('cluster-articles-loaded', {
-            articleId: this.id,
-            clusterId: clusterId,
-            articles: response.data.articles || []
-          });
-        })
-        .catch(error => {
-          console.error('Error fetching cluster articles:', error);
+      fetchClusterArticles(clusterId)
+      .then(response => {
+        this.$emit('cluster-articles-loaded', {
+          articleId: this.id,
+          clusterId,
+          articles: response.data.articles || []
         });
+      })
+      .catch(error => {
+        console.error('Error fetching cluster articles:', error);
+      });
     }
   }
 };

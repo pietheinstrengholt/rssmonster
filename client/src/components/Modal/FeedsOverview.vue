@@ -91,7 +91,7 @@
 <style src="../../assets/css/settings.css"></style>
 
 <script>
-import axios from 'axios';
+import { fetchFeeds } from '../../api/feeds';
 
 export default {
     emits: ['close', 'saved'],
@@ -123,7 +123,7 @@ export default {
             try {
                 this.feedsLoading = true;
                 this.feedsError = null;
-                const resp = await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds");
+                const resp = await fetchFeeds();
                 if (resp && resp.data && Array.isArray(resp.data.feeds)) {
                     this.feeds = resp.data.feeds;
                 } else {

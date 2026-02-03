@@ -12,7 +12,7 @@
                 <input class="form-control" type="text" placeholder="Enter new category name.." v-model="category.name">
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-primary" @click="renameCategory">Rename category</button>
+                <button type="button" class="btn btn-primary" @click="renameCategory" :disabled="isNameUnchanged">Rename category</button>
                 <button type="button" class="btn btn-secondary" data-dismiss="modal" @click="$store.data.setShowModal('')">Close</button>
             </div>
             </div>
@@ -40,44 +40,46 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { updateCategory } from '../../api/categories';
+import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 export default {
     name: 'DeleteCategory',
     data() {
         return {
             category: {},
+            originalName: '',
             index: -1
         }
     },
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
-        //clone the selected feed from the store
+        setAuthToken(this.$store.auth.token);
+        //clone the selected category from the store
         this.index = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
-        this.category = this.$store.data.categories[this.index];
+        this.category = JSON.parse(JSON.stringify(this.$store.data.categories[this.index]));
+        this.originalName = this.category.name;
+    },
+    computed: {
+        isNameUnchanged() {
+            return this.category.name === this.originalName;
+        }
     },
     methods: {
         async renameCategory() {
-            //rename category
-            axios
-                .put(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.currentSelection.categoryId, {
-                    name: this.category.name
-                })
-                .then(
-                result => {
-                    //update the store with the returned name of the category
-                    this.$store.data.categories[this.index].name = result.data.name;
+            try {
+                const result = await updateCategory(
+                    this.$store.data.currentSelection.categoryId,
+                    this.category.name
+                );
+                //update the store with the returned name of the category
+                this.$store.data.categories[this.index].name = result.data.name;
 
-                    //close the modal
-                    this.$store.data.setShowModal('');
-                },
-                response => {
-                     
-                    console.log("oops something went wrong", response);
-                     
-                    this.$store.data.setShowModal('');
-                }
-            );
+                //close the modal
+                this.$store.data.setShowModal('');
+            } catch (error) {
+                console.log("oops something went wrong", error);
+                this.$store.data.setShowModal('');
+            }
         }
     }
 }

@@ -230,6 +230,8 @@
 </template>
 
 <style scoped>
+@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
+
 .drag {
   background-color: transparent;
   color: #fff;
@@ -339,15 +341,17 @@ div.option {
 }
 
 #monster {
-  background: url('../assets/images/monster.png') 14px 30px no-repeat;
-  background-size: 30px 30px;
+  background: url('../assets/images/monster.png') 14px 14px no-repeat;
+  background-size: 60px 60px;
   height: 90px;
 }
 
 #monster p {
-  padding: 30px 0px 0px 50px;
+  padding: 27px 0px 8px 78px;
   color: #111;
-  font-size: 20px;
+  font-size: 26px;
+  font-family: 'Bebas Neue', cursive;
+  font-weight: 400;
 }
 
 ::-webkit-scrollbar {
@@ -421,11 +425,6 @@ div.option {
   p.title {
     color: #fff;
   }
-  #monster {
-    background: url('../assets/images/monster-dark.png') 14px 30px no-repeat;
-    background-size: 30px 30px;
-    height: 90px;
-  }
   #monster p {
     color: #fff;
   }
@@ -441,8 +440,11 @@ div.option {
 
 <script>
 import draggable from "vuedraggable";
-import axios from 'axios';
+import { setAuthToken } from '../api/client';
 import Cookies from 'js-cookie';
+import { markAllAsRead } from '../api/articles';
+import { triggerCrawl } from '../api/crawl';
+import { updateCategoryOrder } from '../api/manager';
 
 export default {
   emits: ['forceReload'],
@@ -457,7 +459,6 @@ export default {
     };
   },
   async created() {
-    axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
     this.$store.data.fetchTopTags();
     await this.$store.data.fetchSmartFolders();
   },
@@ -466,11 +467,18 @@ export default {
   },
   methods: {
     logout() {
-      //remove token from store which triggers App.vue to show login
+      // 1. Clear API client auth header
+      setAuthToken(null);
+
+      // 2. Clear auth store (triggers App.vue to show login)
       this.$store.auth.setToken(null);
       this.$store.auth.setRole(null);
-      // Remove cookie to complete logout
+
+      // 3. Remove cookie
       Cookies.remove('token');
+
+      // 4. Add a page refresh
+      location.reload();
     },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
@@ -499,40 +507,29 @@ export default {
       this.$store.data.setSelectedFeedId("%");
     },
     markAsRead: async function(currentSelection) {
-      await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/articles/markasread", currentSelection).then(
-        response => {
-          if (response.data) {
-            //refresh after one second
-            setTimeout(function() {
-              location.reload();
-            }, 1000);
-          }
-        },
-        response => {
-           
-          console.log("oops something went wrong", response);
-           
-        }
-      );
+      await markAllAsRead(currentSelection)
+      .then(() => {
+        setTimeout(() => {
+          location.reload();
+        }, 1000);
+      })
+      .catch(error => {
+        console.log("oops something went wrong", error);
+      });
     },
     refreshFeeds: async function() {
       //show spinner
       this.refreshing = true;
-      await axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/crawl", {}).then(
-        response => {
-          if (response.data) {
-            //refresh after one second
-            setTimeout(this.refresh, 2000);
-          }
-        },
-        response => {
+
+      await triggerCrawl()
+        .then(() => {
+          setTimeout(this.refresh, 2000);
+        })
+        .catch(error => {
           //remove spinner
           this.refreshing = false;
-           
-          console.log("oops something went wrong", response);
-           
-        }
-      );
+          console.log("oops something went wrong", error);
+        });
     },
     refresh() {
       //remove spinner
@@ -556,20 +553,14 @@ export default {
       for (let i = 0; i < this.$store.data.categories.length; i++) {
         orderList.push(this.$store.data.categories[i]["id"]);
       }
-      //make ajax request to change categories order
-      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/manager/updateorder", { order: orderList }).then(
-        response => {
-          //get status & status text
-           
-          console.log(response.status);
-           
-        },
-        response => {
-           
-          console.log("oops something went wrong", response);
-           
-        }
-      );
+      //make api call to change categories order
+      updateCategoryOrder(orderList)
+      .then(response => {
+        console.log(response.status);
+      })
+      .catch(error => {
+        console.log("oops something went wrong", error);
+      });
     }
   },
   computed: {

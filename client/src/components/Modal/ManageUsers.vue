@@ -137,13 +137,14 @@ select#role {
 </style>
 
 <script>
-import axios from 'axios';
+import { fetchUsers, updateUser, deleteUser } from '../../api/users';
+import { setAuthToken } from '../../api/client';
 
 export default {
     name: 'ManageUsers',
     emits: ['close'],
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
         this.fetchUsers(); // Fetch users when the component is created
     },
     data() {
@@ -156,15 +157,12 @@ export default {
     },
     methods: {
       async fetchUsers() {
-        await setTimeout(() => {
-          axios.get(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users')
-            .then(response => {
-              this.users = response.data.users; // Store the fetched users in the component's data
-            })
-            .catch(error => {
-              console.error("Error fetching users:", error);
-            });
-        }, 100);
+        try {
+          const response = await fetchUsers();
+          this.users = response.data.users;
+        } catch (error) {
+          console.error("Error fetching users:", error);
+        }
       },
       editUser(userId) {
         // Find the user by ID and set it to the user data property
@@ -197,38 +195,31 @@ export default {
             }
           }
 
-          await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users/' + this.user.id, {
+          await updateUser(this.user.id, {
             username: this.user.username,
             role: this.user.role,
             password: userPassword
-          }).then(_response => {
-            this.message = null; // Clear any previous messages
-            this.user = null; // Clear the user being edited, return to user list
-            this.fetchUsers(); // Refresh the user list
-          }).catch(error => {
-            console.error("Error updating user:", error);
-            this.message = "Error updating user";
           });
+          this.message = null;
+          this.user = null;
+          this.fetchUsers();
         } catch (error) {
-          console.error("Password validation error:", error);
-          this.message = error.message;
-          return;
+          console.error("Error updating user:", error);
+          this.message = error.message || "Error updating user";
         }
       },
-      deleteUser(userId) {
+      async deleteUser(userId) {
         // Logic to delete user
-        axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/users/' + userId)
-          .then(_response => {
-            this.fetchUsers(); // Refresh the user list after deletion
-            this.user = null;
-            this.userIdToDelete = null; // Clear the user ID to delete
-            this.message = "User deleted successfully"; // Set a success message
-          })
-          .catch(error => {
-            console.error("Error deleting user:", error);
-            this.message = "Error deleting user. " + error.response.data.message; // Set an error message
-          });
-
+        try {
+          await deleteUser(userId);
+          this.fetchUsers();
+          this.user = null;
+          this.userIdToDelete = null;
+          this.message = "User deleted successfully";
+        } catch (error) {
+          console.error("Error deleting user:", error);
+          this.message = "Error deleting user. " + (error.response?.data?.message || error.message);
+        }
       },
       showDeleteForm(userId) {
         // Find the user by ID and set it to the user data property

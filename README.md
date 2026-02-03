@@ -418,7 +418,7 @@ RSSMonster is built with the following frameworks and libraries:
 - **[Vue.js 3](https://vuejs.org/)** - Frontend framework
 - **[Bootstrap](https://getbootstrap.com/)** - UI framework
 - **[Sequelize](https://sequelize.org/)** - ORM for database management
-- **[feedsmith](https://github.com/ndaidong/feedsmith)** - RSS/Atom feed parsing
+- **[feedsmith](https://github.com/macieklamberski/feedsmith)** - RSS/Atom feed parsing
 
 ## License
 

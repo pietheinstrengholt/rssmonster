@@ -87,7 +87,7 @@
 <style src="../../assets/css/settings.css"></style>
 
 <script>
-import axios from 'axios';
+import { saveSettings } from '../../api/settings';
 
 export default {
   emits: ['close', 'saved', 'forceReload'],
@@ -114,38 +114,37 @@ export default {
   },
   methods: {
     async save() {
-      axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/setting", {
-          minAdvertisementScore: this.advertisementScore,
-          minSentimentScore: this.sentimentScore,
-          minQualityScore: this.qualityScore
-      })
-      .then(response => {
-          console.log('Settings saved successfully:', response.data);
-          // Update store currentSelection before closing
-          if (this.$store && this.$store.data) {
-              if (typeof this.$store.data.setMinAdvertisementScore === 'function') {
-                  this.$store.data.setMinAdvertisementScore(this.advertisementScore);
-              } else {
-                  this.$store.data.currentSelection.minAdvertisementScore = this.advertisementScore;
-              }
-              if (typeof this.$store.data.setMinSentimentScore === 'function') {
-                  this.$store.data.setMinSentimentScore(this.sentimentScore);
-              } else {
-                  this.$store.data.currentSelection.minSentimentScore = this.sentimentScore;
-              }
-              if (typeof this.$store.data.setMinQualityScore === 'function') {
-                  this.$store.data.setMinQualityScore(this.qualityScore);
-              } else {
-                  this.$store.data.currentSelection.minQualityScore = this.qualityScore;
-              }
-          }
-          this.$emit('forceReload');
-          this.$emit('close');
-      })
-      .catch(error => {
+      try {
+        const response = await saveSettings({
+            minAdvertisementScore: this.advertisementScore,
+            minSentimentScore: this.sentimentScore,
+            minQualityScore: this.qualityScore
+        });
+        console.log('Settings saved successfully:', response.data);
+        // Update store currentSelection before closing
+        if (this.$store && this.$store.data) {
+            if (typeof this.$store.data.setMinAdvertisementScore === 'function') {
+                this.$store.data.setMinAdvertisementScore(this.advertisementScore);
+            } else {
+                this.$store.data.currentSelection.minAdvertisementScore = this.advertisementScore;
+            }
+            if (typeof this.$store.data.setMinSentimentScore === 'function') {
+                this.$store.data.setMinSentimentScore(this.sentimentScore);
+            } else {
+                this.$store.data.currentSelection.minSentimentScore = this.sentimentScore;
+            }
+            if (typeof this.$store.data.setMinQualityScore === 'function') {
+                this.$store.data.setMinQualityScore(this.qualityScore);
+            } else {
+                this.$store.data.currentSelection.minQualityScore = this.qualityScore;
+            }
+        }
+        this.$emit('forceReload');
+        this.$emit('close');
+      } catch (error) {
           console.error('Error saving settings:', error);
           alert('Failed to save settings. Please try again.');
-      });
+      }
     }
   }
 };

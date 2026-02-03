@@ -37,20 +37,20 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { deleteFeed } from '../../api/feeds';
+import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 export default {
     name: 'DeleteFeed',
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
     },
     methods: {
         async deleteFeed() {
             console.log("Deleting feed with id: " + this.$store.data.currentSelection.feedId);
 
-            //delete category
-            await axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/" + this.$store.data.currentSelection.feedId).then(
-                () => {
+            try {
+                await deleteFeed(this.$store.data.currentSelection.feedId);
                 //find the index of both the category and feed
                 const indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
 
@@ -68,14 +68,10 @@ export default {
 
                 //close the modal
                 this.$store.data.setShowModal('');
-                },
-                response => {
-                     
-                    console.log("oops something went wrong", response);
-                     
-                    this.$store.data.setShowModal('');
-                }
-            );
+            } catch (error) {
+                console.log("oops something went wrong", error);
+                this.$store.data.setShowModal('');
+            }
         }
     }
 }

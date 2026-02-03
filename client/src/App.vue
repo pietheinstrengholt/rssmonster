@@ -53,9 +53,9 @@
 
 <script>
 import AppShell from './AppShell.vue';
-import AuthService from './services/AuthService.js';
 import Cookies from 'js-cookie';
-import axios from 'axios';
+import { setAuthToken } from './api/client';
+import * as authApi from './api/auth';
 
 export default {
   components: {
@@ -73,35 +73,38 @@ export default {
     };
   },
   async created() {
-    // Check if the user has a valid session
+    window.addEventListener('auth:expired', this.handleAuthExpired);
+
     await this.checkSession();
-    // Mark loading as complete
     this.isLoading = false;
   },
+  beforeUnmount() {
+    window.removeEventListener('auth:expired', this.handleAuthExpired);
+  },
   methods: {
+    handleAuthExpired() {
+      console.warn('Session expired — logging out');
+      this.logout();
+    },
     async checkSession() {
-      try {
-        if (Cookies.get('token')) {
-          axios.defaults.headers.common['Authorization'] = `Bearer ${Cookies.get('token')}`;
-          // Validate the session by checking the user's role
-          await axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/auth/validate")
-            .then(response => {
-              // If the session is valid, set the token and role in the store
-              this.$store.auth.setToken(Cookies.get('token'));
-              this.$store.auth.setRole(response.data.user.role);
-              this.isAuthenticated = true;
-            })
-            .catch(error => {
-              console.error("Session validation error:", error);
-              // If session is not valid, logout
-              this.logout();
-            });
-        } else {
-          this.isAuthenticated = false;
-        }
-      } catch (error) {
-        console.error("Session check error:", error);
+      const token = Cookies.get('token');
+
+      if (!token) {
         this.isAuthenticated = false;
+        return;
+      }
+
+      try {
+        const data = await authApi.validateSession(token);
+
+        authApi.applyAuthToken(token);
+
+        this.$store.auth.setToken(token);
+        this.$store.auth.setRole(data.user.role);
+        this.isAuthenticated = true;
+      } catch (error) {
+        console.error('Session validation error:', error);
+        this.logout();
       }
     },
     async login() {
@@ -110,28 +113,55 @@ export default {
           username: this.username,
           password: this.password
         };
-        const response = await AuthService.login(credentials);
+
+        const response = await authApi.login(credentials);
         this.message = response.message;
 
-        if (response) {
-          // Convert expiresInSeconds to days for cookie (default to 1 day if not provided)
-          const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
-          Cookies.set('token', response.token, { expires: expiresInDays });
-          this.$store.auth.setToken(response.token);
-          this.$store.auth.setRole(response.user.role);
-          this.isAuthenticated = true;
-          this.$store.auth.setAgenticFeaturesEnabled(response.agenticFeaturesEnabled || false);
-          // Clear form fields
-          this.username = '';
-          this.password = '';
-        }
+        if (!response?.token) return;
+
+        const expiresInDays = (response.expiresInSeconds || 86400) / 86400;
+
+        Cookies.set('token', response.token, { expires: expiresInDays });
+
+        setAuthToken(response.token);
+
+        this.$store.auth.setToken(response.token);
+        this.$store.auth.setRole(response.user.role);
+        this.$store.auth.setAgenticFeaturesEnabled(
+          response.agenticFeaturesEnabled || false
+        );
+
+        this.isAuthenticated = true;
+
+        // clear form
+        this.username = '';
+        this.password = '';
       } catch (error) {
-        console.error("Login error:", error);
-        if (error.response?.data?.message) {
-          this.message = error.response.data.message;
-        } else {
-          this.message = 'Login failed. Please try again.';
+        console.error('Login error:', error);
+
+        // Backend unreachable / network error
+        if (!error.response) {
+          this.message =
+            'Cannot connect to RSSMonster. Please check if the server is running.';
+          return;
         }
+
+        // Auth error
+        if (error.response.status === 401) {
+          this.message = 'Incorrect username or password.';
+          return;
+        }
+
+        // Server-side error
+        if (error.response.status >= 500) {
+          this.message =
+            'The server encountered an error. Please try again later.';
+          return;
+        }
+
+        // Fallback
+        this.message = error.response?.data?.message ||
+          'Login failed. Please try again.';
       }
     },
     async register() {
@@ -141,7 +171,7 @@ export default {
           password: this.password,
           password_repeat: this.password_repeat
         };
-        const response = await AuthService.signUp(credentials);
+        const response = await authApi.register(credentials);
         this.message = response.message;
         if (response.message === 'Registered!') {
           this.showSignup = false;
@@ -159,25 +189,18 @@ export default {
       }
     },
     logout() {
-      // Clear the token and role from the store
+      setAuthToken(null); // 👈 CLEAR API CLIENT TOKEN
+
       this.$store.auth.setToken(null);
       this.$store.auth.setRole(null);
-      // Remove the token cookie
       Cookies.remove('token');
-      // Reset form and authentication state
+
       this.isAuthenticated = false;
       this.username = '';
       this.password = '';
       this.password_repeat = '';
       this.showSignup = false;
       this.message = '';
-    }
-  },
-  watch: {
-    '$store.auth.token'() {
-      if (!this.$store.auth.token) {
-        this.logout();
-      }
     }
   }
 };
@@ -319,6 +342,9 @@ div.form-group.row {
 }
 
 @media (max-width: 600px) {
+  #form-box {
+    width: 90%;
+  }
   #login {
     padding-top: 10px;
   }

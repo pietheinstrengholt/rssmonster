@@ -25,7 +25,7 @@ export const getOverview = async (req, res, _next) => {
       raw: true
     });
 
-    const clusterView = String(req.query?.clusterView).toLowerCase() === 'true';
+    const clusterView = Boolean(req.body?.clusterView);
 
     const baseWhere = {
       userId,

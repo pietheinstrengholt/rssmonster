@@ -103,12 +103,13 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { validateFeed, createFeed } from '../../api/feeds';
+import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 export default {
     name: 'NewFeed',
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
     },
     data() {
         return {
@@ -122,35 +123,24 @@ export default {
         };
     },
     methods: {
-        checkWebsite: function() {
+        async checkWebsite() {
             //set ajaxRequest to true so the please wait shows up the screen
             this.ajaxRequest = true;
 
-            axios
-                .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds/validate", { url: this.url, categoryId:this.selectedCategory })
-                .then(
-                result => {
-                     
-                    console.log(result.status);
-                     
-                    this.error_msg = "";
-                    this.feed = result.data;
-                },
-                response => {
-                    this.error_msg = response.response.data.error_msg;
-                }
-                )
-                .catch(err => {
-                     
-                    console.log(err);
-                     
-                });
-
-            this.ajaxRequest = false;
+            try {
+                const result = await validateFeed(this.url, this.selectedCategory);
+                this.error_msg = "";
+                this.feed = result.data;
+            } catch (error) {
+                this.error_msg = error.response?.data?.error_msg || "Error validating feed";
+                console.log(error);
+            } finally {
+                this.ajaxRequest = false;
+            }
         },
-        newFeed: function() {
-            axios
-                .post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/feeds", {
+        async newFeed() {
+            try {
+                const result = await createFeed({
                     categoryId: this.selectedCategory,
                     feedName: this.feed.feedName,
                     feedDesc: this.feed.feedDesc,
@@ -158,39 +148,32 @@ export default {
                     url: this.feed.url,
                     status: 'active',
                     crawlSince: this.crawlSince
-                })
-                .then(
-                result => {
-                     
-                    console.log(result.status);
-                     
+                });
 
-                    //overwrite results with results from the database
-                    this.feed = result.data.feed;
+                console.log(result.status);
 
-                    //add missing count properties, since these are populated dynamically on an initial load
-                    this.feed.unreadCount = 0;
-                    this.feed.readCount = 0;
-                    this.feed.starCount = 0;
+                //overwrite results with results from the database
+                this.feed = result.data.feed;
 
-                    //find the index of the category
-                    var index = helper.findIndexById(this.$store.data.categories, this.selectedCategory);
+                //add missing count properties, since these are populated dynamically on an initial load
+                this.feed.unreadCount = 0;
+                this.feed.readCount = 0;
+                this.feed.starCount = 0;
 
-                    //push the new feed to the store
-                    this.$store.data.categories[index].feeds.push(this.feed);
-                },
-                response => {
-                     
-                    console.log("oops something went wrong", response);
-                     
-                }
-              );
+                //find the index of the category
+                var index = helper.findIndexById(this.$store.data.categories, this.selectedCategory);
 
-            //send event to refresh the categories. This triggers a re-fetch of the categories and updates the counts
-            this.$store.data.increaseRefreshCategories();
+                //push the new feed to the store
+                this.$store.data.categories[index].feeds.push(this.feed);
 
-            //close modal
-            this.$store.data.setShowModal('');
+                //send event to refresh the categories. This triggers a re-fetch of the categories and updates the counts
+                this.$store.data.increaseRefreshCategories();
+
+                //close modal
+                this.$store.data.setShowModal('');
+            } catch (error) {
+                console.log("oops something went wrong", error);
+            }
         }
     }
 }

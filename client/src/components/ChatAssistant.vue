@@ -151,7 +151,7 @@ div#inputArea {
 
 <script>
 import store from "../store";
-import axios from 'axios';
+import { sendChatMessages } from '../api/agent';
 
 export default {
     name: "app-assistant",
@@ -180,18 +180,13 @@ export default {
             //set loading state
             this.isLoading = true;
             //send messages to server
-            axios.post(import.meta.env.VITE_VUE_APP_HOSTNAME + "/agent", {
-                messages: this.messages
-            }
-            )
+            sendChatMessages(this.messages)
             .then(response => {
-                //handle server response
-                this.chatOutput = response.data.output;
-                //add assistant response to messages
-                this.messages.push({
-                    role: 'assistant',
-                    content: this.chatOutput
-                });
+              this.chatOutput = response.data.output;
+              this.messages.push({
+                role: 'assistant',
+                content: this.chatOutput
+              });
             })
             .catch(error => {
                 console.error('Error:', error);

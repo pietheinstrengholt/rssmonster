@@ -37,38 +37,34 @@
 </style>
 
 <script>
-import axios from 'axios';
+import { deleteCategory } from '../../api/categories';
+import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 export default {
     name: 'DeleteCategory',
     created: function() {
-        axios.defaults.headers.common['Authorization'] = `Bearer ${this.$store.auth.token}`;
+        setAuthToken(this.$store.auth.token);
     },
     methods: {
         async deleteCategory() {
-            //delete category
-            await axios.delete(import.meta.env.VITE_VUE_APP_HOSTNAME + "/api/categories/" + this.$store.data.currentSelection.categoryId).then(
-                () => {
-                    //remove the category from the store
-                                        this.$store.data.categories = helper.arrayRemove(
-                                            this.$store.data.categories,
-                                            helper.findArrayById(this.$store.data.categories, this.$store.data.currentSelection.categoryId)
-                                        );
+            try {
+                await deleteCategory(this.$store.data.currentSelection.categoryId);
+                //remove the category from the store
+                this.$store.data.categories = helper.arrayRemove(
+                    this.$store.data.categories,
+                    helper.findArrayById(this.$store.data.categories, this.$store.data.currentSelection.categoryId)
+                );
 
-                    //close the modal
-                    this.$store.data.setShowModal('');
-                    
-                    //set the selection back to all
-                    this.$store.data.setSelectedCategoryId("%");
-                    this.$store.data.setSelectedFeedId("%");
-                },
-                response => {
-                     
-                    console.log("oops something went wrong", response);
-                     
-                    this.$store.data.setShowModal('');
-                }
-            );
+                //close the modal
+                this.$store.data.setShowModal('');
+                
+                //set the selection back to all
+                this.$store.data.setSelectedCategoryId("%");
+                this.$store.data.setSelectedFeedId("%");
+            } catch (error) {
+                console.log("oops something went wrong", error);
+                this.$store.data.setShowModal('');
+            }
         }
     }
 }

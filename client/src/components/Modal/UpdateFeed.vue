@@ -13,7 +13,7 @@
 
         <div class="modal-body">
           <div class="alert alert-info mb-3">
-            <small>Update your feed settings below. Changes are saved immediately when you click the Update button. TEST</small>
+            <small>Update your feed settings below. Changes are saved immediately when you click the Update button.</small>
           </div>
           <form @submit.prevent>
             <!-- Feed name -->
@@ -165,7 +165,8 @@
 </template>
 
 <script>
-import axios from 'axios';
+import { rediscoverRss, updateFeed } from '../../api/feeds';
+import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 
 export default {
@@ -174,20 +175,48 @@ export default {
   data() {
     return {
       feed: {},
+      originalFeed: {}, // Store the original feed to track changes
       rediscovering: false,
       rediscoveredRss: null
     };
   },
 
   created() {
-    axios.defaults.headers.common['Authorization'] =
-      `Bearer ${this.$store.auth.token}`;
+    setAuthToken(this.$store.auth.token);
+  },
 
-    // Clone selected feed
-    this.feed = JSON.parse(JSON.stringify(this.selectedFeed));
+  watch: {
+    '$store.data.categories': {
+      handler() {
+        this.initializeFeed();
+      },
+      deep: true,
+      immediate: true
+    },
+    '$store.data.currentSelection.feedId': {
+      handler() {
+        this.initializeFeed();
+      },
+      immediate: true
+    }
   },
 
   methods: {
+    initializeFeed() {
+      const feedId = Number(this.$store.data.currentSelection.feedId);
+      
+      // Search through all categories to find the feed
+      for (const category of this.$store.data.categories) {
+        const feed = category.feeds?.find(f => f.id === feedId);
+        if (feed) {
+          this.feed = JSON.parse(JSON.stringify(feed));
+          this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
+          return;
+        }
+      }
+      console.log('Feed not found for feedId:', feedId);
+    },
+
     async rediscoverRss() {
       if (!this.$store.data.currentSelection.AIEnabled) {
         return false
@@ -196,10 +225,7 @@ export default {
       this.rediscoveredRss = null;
 
       try {
-        const result = await axios.post(
-          `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/${this.feed.id}/rediscover-rss`
-        );
-
+        const result = await rediscoverRss(this.feed.id);
         this.rediscoveredRss = result.data;
 
         if (result.data.suggestedUrl) {
@@ -220,7 +246,7 @@ export default {
 
     async updateFeed() {
       const selectedCategoryId = this.feed.categoryId;
-      const currentCategoryId = this.selectedFeed.categoryId;
+      const currentCategoryId = this.originalFeed.categoryId;
 
       const currentIndexCategory =
         helper.findIndexById(this.$store.data.categories, currentCategoryId);
@@ -233,16 +259,13 @@ export default {
         helper.findIndexById(this.$store.data.categories, selectedCategoryId);
 
       try {
-        const result = await axios.put(
-          `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/${this.feed.id}`,
-          {
-            feedName: this.feed.feedName,
-            feedDesc: this.feed.feedDesc,
-            categoryId: selectedCategoryId,
-            url: this.feed.url,
-            status: this.feed.status
-          }
-        );
+        const result = await updateFeed(this.feed.id, {
+          feedName: this.feed.feedName,
+          feedDesc: this.feed.feedDesc,
+          categoryId: selectedCategoryId,
+          url: this.feed.url,
+          status: this.feed.status
+        });
 
         if (currentIndexFeed === -1 || currentIndexCategory === -1) {
           console.log('Store update failed');
@@ -275,20 +298,6 @@ export default {
         console.error('Update feed failed:', error);
         this.$store.data.setShowModal('');
       }
-    }
-  },
-  computed: {
-    selectedFeed() {
-      return helper.findArrayById(
-        this.selectedCategory.feeds,
-        this.$store.data.getSelectedFeedId
-      );
-    },
-    selectedCategory() {
-      return helper.findArrayById(
-        this.$store.data.categories,
-        this.$store.data.getSelectedCategoryId
-      );
     }
   }
 };
