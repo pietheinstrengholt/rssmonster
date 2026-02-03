@@ -129,7 +129,9 @@ export const useStore = defineStore('data', {
     setSelectedCategoryId(categoryId) {
       Object.assign(this.currentSelection, {
         categoryId: String(categoryId),
-        tag: null
+        tag: null,
+        search: null,
+        smartFolderId: null
       });
 
       this.chatAssistantOpen = false;
@@ -138,7 +140,9 @@ export const useStore = defineStore('data', {
     setSelectedFeedId(feedId) {
       Object.assign(this.currentSelection, {
         feedId: String(feedId),
-        tag: null
+        tag: null,
+        search: null,
+        smartFolderId: null
       });
 
       this.chatAssistantOpen = false;
