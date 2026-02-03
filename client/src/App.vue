@@ -53,10 +53,9 @@
 
 <script>
 import AppShell from './AppShell.vue';
-import AuthService from './services/AuthService.js';
 import Cookies from 'js-cookie';
-import axios from 'axios';
 import { setAuthToken } from './api/client';
+import * as authApi from './api/auth';
 
 export default {
   components: {
@@ -89,18 +88,12 @@ export default {
       }
 
       try {
-        // TEMPORARILY set header for validation only
-        axios.defaults.headers.common.Authorization = `Bearer ${token}`;
+        const data = await authApi.validateSession(token);
 
-        const response = await axios.post(
-          import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/auth/validate'
-        );
-
-        // Validation succeeded → now initialize API client
-        setAuthToken(token);
+        authApi.applyAuthToken(token);
 
         this.$store.auth.setToken(token);
-        this.$store.auth.setRole(response.data.user.role);
+        this.$store.auth.setRole(data.user.role);
         this.isAuthenticated = true;
       } catch (error) {
         console.error('Session validation error:', error);
@@ -114,7 +107,7 @@ export default {
           password: this.password
         };
 
-        const response = await AuthService.login(credentials);
+        const response = await authApi.login(credentials);
         this.message = response.message;
 
         if (!response?.token) return;
@@ -153,7 +146,7 @@ export default {
           password: this.password,
           password_repeat: this.password_repeat
         };
-        const response = await AuthService.signUp(credentials);
+        const response = await authApi.register(credentials);
         this.message = response.message;
         if (response.message === 'Registered!') {
           this.showSignup = false;
