@@ -191,14 +191,17 @@ export const useStore = defineStore('data', {
      * Score / view toggles
      * -------------------------------------------------- */
 
-    setMinAdvertisementScore: v =>
-      (this.currentSelection.minAdvertisementScore = v),
+    setMinAdvertisementScore(v) {
+      this.currentSelection.minAdvertisementScore = v;
+    },
 
-    setMinSentimentScore: v =>
-      (this.currentSelection.minSentimentScore = v),
+    setMinSentimentScore(v) {
+      this.currentSelection.minSentimentScore = v;
+    },
 
-    setMinQualityScore: v =>
-      (this.currentSelection.minQualityScore = v),
+    setMinQualityScore(v) {
+      this.currentSelection.minQualityScore = v;
+    },
 
     setViewMode(value) {
       this.currentSelection.viewMode = value;
@@ -218,18 +221,33 @@ export const useStore = defineStore('data', {
      * Counters + UI flags
      * -------------------------------------------------- */
 
-    increaseStarCount: () => this.starCount++,
+    increaseStarCount() {
+      this.starCount++;
+    },
 
     decreaseStarCount() {
       if (this.starCount > 0) this.starCount--;
     },
 
-    increaseRefreshCategories: () => this.refreshCategories++,
+    increaseRefreshCategories() {
+      this.refreshCategories++;
+    },
 
-    setShowModal: v => (this.showModal = v),
-    setChatAssistantOpen: v => (this.chatAssistantOpen = v),
-    setMobileSearchOpen: v => (this.mobileSearchOpen = v),
-    setSearchQuery: q => (this.searchQuery = q),
+    setShowModal(v) {
+      this.showModal = v;
+    },
+
+    setChatAssistantOpen(v) {
+      this.chatAssistantOpen = v;
+    },
+
+    setMobileSearchOpen(v) {
+      this.mobileSearchOpen = v;
+    },
+
+    setSearchQuery(q) {
+      this.searchQuery = q;
+    },
 
     /* --------------------------------------------------
      * Article read handling

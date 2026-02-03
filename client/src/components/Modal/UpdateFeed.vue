@@ -13,7 +13,7 @@
 
         <div class="modal-body">
           <div class="alert alert-info mb-3">
-            <small>Update your feed settings below. Changes are saved immediately when you click the Update button. TEST</small>
+            <small>Update your feed settings below. Changes are saved immediately when you click the Update button.</small>
           </div>
           <form @submit.prevent>
             <!-- Feed name -->
@@ -183,8 +183,10 @@ export default {
   created() {
     setAuthToken(this.$store.auth.token);
 
-    // Clone selected feed
-    this.feed = JSON.parse(JSON.stringify(this.selectedFeed));
+    // Clone selected feed if it exists
+    if (this.selectedFeed) {
+      this.feed = JSON.parse(JSON.stringify(this.selectedFeed));
+    }
   },
 
   methods: {
@@ -273,8 +275,10 @@ export default {
   },
   computed: {
     selectedFeed() {
+      const category = this.selectedCategory;
+      if (!category || !category.feeds) return null;
       return helper.findArrayById(
-        this.selectedCategory.feeds,
+        category.feeds,
         this.$store.data.getSelectedFeedId
       );
     },
