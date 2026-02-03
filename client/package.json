@@ -31,6 +31,7 @@
     "@vitejs/plugin-vue": "^6.0.4",
     "@vue/compiler-sfc": "^3.5.27",
     "@vue/test-utils": "^2.4.6",
+    "baseline-browser-mapping": "^2.9.19",
     "eslint": "^9.39.2",
     "eslint-plugin-vue": "^10.7.0",
     "globals": "^17.3.0",

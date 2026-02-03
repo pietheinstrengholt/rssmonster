@@ -36,12 +36,12 @@ export const knownKeywords = ['star', 'unread', 'read', 'clicked', 'seen', 'clus
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(star|unread|read|clicked|seen|cluster|hot|tag|title|sort|quality|freshness|firstSeen)=/i;
+const wrongSyntaxPattern = /\b(star|unread|read|clicked|seen|cluster|hot|tag|title|sort|limit|quality|freshness|firstSeen)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)
  */
-const mergedTokenPattern = /(\d+\.?\d*|true|false)(star|unread|read|clicked|cluster|hot|tag|title|sort|quality|freshness|@)/i;
+const mergedTokenPattern = /(\d+\.?\d*|true|false)(star|unread|read|clicked|seen|cluster|hot|tag|title|sort|limit|quality|freshness|firstSeen|@)/i;
 
 /**
  * Calculate Levenshtein distance between two strings for typo detection.

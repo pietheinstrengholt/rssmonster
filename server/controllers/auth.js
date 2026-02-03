@@ -23,11 +23,16 @@ const register = async (req, res, _next) => {
       .update(`${username}:${password}`)
       .digest('hex');
     
+    // Check if this is the first user (will be admin)
+    const userCount = await User.count();
+    const role = userCount === 0 ? 'admin' : 'user';
+    
     // Create the new user
     await User.create({
       username,
       password: hashedPassword,
-      hash
+      hash,
+      role
     });
 
     return res.status(201).json({

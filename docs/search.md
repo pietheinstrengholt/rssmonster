@@ -21,7 +21,8 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 ---
 
 ## Filters & Tokens
-- Status: `unread:true|false`, `read:true|false`, `star:true|false`, `clicked:true|false`, `hot:true|false` (hot ignores feed filter when true).
+- Status: `unread:true|false`, `read:true|false`, `star:true|false`, `clicked:true|false`, `seen:true|false`, `hot:true|false` (hot ignores feed filter when true).
+- Age: `firstSeen:24h` or `firstSeen:7d` (filters articles by how long ago they were first seen).
 - Tags: `tag:my-tag` matches articles tagged for the current user.
 - Clusters: `cluster:true|false` returns only cluster representatives when true.
 - Quality & Freshness (virtual scores): `quality:>0.7`, `freshness:>=0.5` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
@@ -34,6 +35,7 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - Specific day (UTC): `@2025-12-14`
 - Rolling window: `@today` (last 24h)
 - Previous UTC day: `@yesterday`
+- Previous 7 days: `@lastweek`
 - Exact N days ago (UTC day): `@"3 days ago"`
 - Most recent weekday: `@"last Monday"`
 

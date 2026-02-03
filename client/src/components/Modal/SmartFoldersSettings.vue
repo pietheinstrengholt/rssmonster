@@ -24,10 +24,11 @@
                                 Use filter expressions to define what articles appear in each folder. You can combine multiple filters with spaces:
                             </p>
                             <ul class="mb-2 small">
-                                <li><strong>Status filters:</strong> <code>unread:true</code>, <code>read:false</code>, <code>star:true</code>, <code>clicked:true</code></li>
+                                <li><strong>Status filters:</strong> <code>unread:true</code>, <code>read:false</code>, <code>star:true</code>, <code>clicked:true</code>, <code>seen:false</code>, <code>firstSeen:24h</code></li>
                                 <li><strong>Content filters:</strong> <code>tag:ai</code>, <code>title:javascript</code>, <code>python</code></li>
-                                <li><strong>Quality filters:</strong> <code>quality:>0.6</code>, <code>freshness:>=0.5</code></li>
-                                <li><strong>Date filters:</strong> <code>@today</code>, <code>@yesterday</code>, <code>@"3 days ago"</code>, <code>@2025-12-14</code></li>
+                                <li><strong>Quality filters:</strong> <code>quality:>0.6</code>, <code>quality:<=0.8</code>, <code>freshness:>=0.5</code>, <code>freshness:<0.3</code></li>
+                                <li><strong>Date filters:</strong> <code>@today</code>, <code>@yesterday</code>, <code>@lastweek</code>, <code>@2025-12-14</code></li>
+                                <li><strong>Special filters:</strong> <code>cluster:true</code>, <code>hot:false</code>, <code>limit:100</code></li>
                                 <li><strong>Sorting:</strong> <code>sort:IMPORTANCE</code>, <code>sort:QUALITY</code>, <code>sort:ATTENTION</code>, <code>sort:DESC</code>, <code>sort:ASC</code></li>
                             </ul>
                             <p class="mb-2">
