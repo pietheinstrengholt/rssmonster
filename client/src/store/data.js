@@ -254,26 +254,38 @@ export const useStore = defineStore('data', {
      * -------------------------------------------------- */
 
     increaseReadCount(article) {
+      // Determine how many articles were marked as read (clusters)
       const delta = 1 + (Number(article.clusterCount) || 0);
 
+      // Find category and feed to update their counts
       const category = this.categories.find(
         c => c.id === article.feed.categoryId
       );
-      if (!category) return;
+      if (!category) {
+        console.warn('[increaseReadCount] Category not found for categoryId:', article.feed.categoryId);
+        return;
+      }
 
       const feed = category.feeds?.find(f => f.id === article.feedId);
-      if (!feed) return;
+      if (!feed) {
+        console.warn('[increaseReadCount] Feed not found for feedId:', article.feedId);
+        return;
+      }
 
+      // Update counts with safety checks
       const catDelta = Math.min(delta, category.unreadCount);
       const feedDelta = Math.min(delta, feed.unreadCount);
       const totalDelta = Math.min(delta, this.unreadCount);
 
+      // Apply updates
       category.unreadCount -= catDelta;
       category.readCount += catDelta;
 
+      // Update feed counts
       feed.unreadCount -= feedDelta;
       feed.readCount += feedDelta;
 
+      // Update global counts
       this.unreadCount -= totalDelta;
       this.readCount += totalDelta;
     },
