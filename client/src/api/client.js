@@ -27,6 +27,17 @@ api.interceptors.response.use(
     const status = error?.response?.status;
     const url = error?.config?.url ?? '';
 
+    // Network / backend offline
+    if (!error.response) {
+      window.dispatchEvent(new CustomEvent('app:error', {
+        detail: {
+          type: 'offline',
+          message: 'Backend unreachable'
+        }
+      }));
+    }
+
+    // Auth expired
     const isAuthEndpoint =
       url.includes('/auth/login') ||
       url.includes('/auth/register') ||

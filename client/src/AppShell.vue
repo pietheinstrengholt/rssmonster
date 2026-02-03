@@ -10,10 +10,13 @@
         <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
         <!-- Toolbar events -->
         <app-desktop-toolbar id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
-        <p class="offline" v-if="offlineStatus">Application is currently offline!</p>
+
+        <!-- Error handling -->
+        <app-error v-if="$store.data.fatalError" :type="$store.data.fatalError.type" @retry="forceReload"/>
+
         <!-- Add reference to home for calling child loadContent component function -->
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
-        <app-article-feed v-else-if="!offlineStatus && !$store.data.chatAssistantOpen" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
+        <app-article-feed v-else-if="!offlineStatus && !$store.data.chatAssistantOpen && !$store.data.fatalError" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
         <!-- Show chat assistant -->
         <app-chat-assistant v-if="$store.data.chatAssistantOpen"></app-chat-assistant>
       </div>
@@ -91,7 +94,7 @@ div.row {
   position: fixed;
 }
 
-p.offline {
+.app-error {
   margin-top: 50px;
   text-align: center;
 }
@@ -156,6 +159,9 @@ const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "man
 //import onboarding component
 const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/Onboarding/InitialFeeds.vue"));
 
+//import error component
+const Error = defineAsyncComponent(() =>  import(/* webpackChunkName: "error" */ "./components/AppError.vue"));
+
 export default {
   components: {
     appSidebar: Sidebar,
@@ -164,6 +170,7 @@ export default {
     appMobileToolbar: MobileToolbar,
     appMobileMenuOverlay: MobileMenuOverlay,
     appChatAssistant: ChatAssistant,
+    appError: Error,
     //import modals
     appNewCategory: NewCategory,
     appNewFeed: NewFeed,
@@ -187,6 +194,20 @@ export default {
     };
   },
   async created() {
+    // Global error handling
+    window.addEventListener('app:error', (e) => {
+      this.$store.data.setFatalError(e.detail);
+    });
+
+    // Handle auth expiration
+    window.addEventListener('auth:expired', () => {
+      this.$store.auth.setToken(null);
+      this.$store.data.setFatalError({
+        type: 'unauthorized',
+        message: 'Your session has expired'
+      });
+    });
+
     //fetch all category and feed information for an complete overview including total read and unread counts
     this.getOverview(true);
 
@@ -325,19 +346,35 @@ export default {
         }
       }
     },
-    forceReload() {
-      //set unreadsSinceLastUpdate count back to zero. This removes the notification from the Sidebar.
-      this.$store.data.setUnreadsSinceLastUpdate?.(0);
-      //refresh the overview with updated categories and feeds counts
-      this.$store.data.fetchOverview({ initial: true }).catch(() => {});
-      //invoke ref articleFeed child component function to reload content
-      const ref = this.$refs.articleFeed;
-      if (ref) {
-        if (Array.isArray(ref)) {
-          ref.forEach(r => r && typeof r.fetchArticleIds === 'function' && r.fetchArticleIds(this.$store.data.currentSelection));
-        } else if (typeof ref.fetchArticleIds === 'function') {
-          ref.fetchArticleIds(this.$store.data.currentSelection);
+    async forceReload() {
+      // Exit error mode immediately
+      this.$store.data.clearFatalError();
+      this.offlineStatus = false;
+
+      try {
+        // Refresh overview (this also fetches settings)
+        await this.$store.data.fetchOverview({ initial: true });
+
+        // Reload articles if feed exists
+        const ref = this.$refs.articleFeed;
+        if (ref) {
+          if (Array.isArray(ref)) {
+            ref.forEach(
+              r =>
+                r &&
+                typeof r.fetchArticleIds === 'function' &&
+                r.fetchArticleIds(this.$store.data.currentSelection)
+            );
+          } else if (typeof ref.fetchArticleIds === 'function') {
+            ref.fetchArticleIds(this.$store.data.currentSelection);
+          }
         }
+      } catch (err) {
+        // Recovery failed → re-enter fatal error mode
+        this.$store.data.setFatalError({
+          type: 'offline',
+          message: 'Backend unreachable'
+        });
       }
     },
     refreshFeeds() {

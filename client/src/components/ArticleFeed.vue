@@ -95,7 +95,7 @@ export default {
           this.hasLoadedContent = true;
         }
       } catch (error) {
-        console.error("Error fetching article IDs:", error);
+        console.warn('Article fetch failed', error?.message);
       }
     },
 

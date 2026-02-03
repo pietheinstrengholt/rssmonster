@@ -39,7 +39,9 @@ export const useStore = defineStore('data', {
     showModal: false,
     chatAssistantOpen: false,
     mobileSearchOpen: false,
-    searchQuery: ''
+    searchQuery: '',
+
+    fatalError: null
   }),
 
   actions: {
@@ -256,6 +258,17 @@ export const useStore = defineStore('data', {
 
       this.unreadCount -= totalDelta;
       this.readCount += totalDelta;
+    },
+
+    /* --------------------------------------------------
+     * Error handling
+     * -------------------------------------------------- */
+
+    setFatalError(error) {
+      this.fatalError = error;
+    },
+    clearFatalError() {
+      this.fatalError = null;
     }
   },
 
