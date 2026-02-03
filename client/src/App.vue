@@ -324,6 +324,9 @@ div.form-group.row {
 }
 
 @media (max-width: 600px) {
+  #form-box {
+    width: 90%;
+  }
   #login {
     padding-top: 10px;
   }
