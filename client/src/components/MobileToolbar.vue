@@ -148,7 +148,7 @@
 }
 
 #rssmonster.view-button {
-  background: url(../assets/images/monster-dark.png) 8px 10px no-repeat;
+  background: url(../assets/images/monster.png) 8px 10px no-repeat;
   background-size: 20px 20px;
   max-width: 36px;
   min-width: 36px;
