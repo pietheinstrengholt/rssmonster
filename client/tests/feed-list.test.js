@@ -3,10 +3,11 @@ import { mount } from '@vue/test-utils';
 import { nextTick } from 'vue';
 import FeedsOverview from '../src/components/Modal/FeedsOverview.vue';
 
-vi.mock('axios', () => ({
-  default: {
-    get: vi.fn().mockResolvedValue({ data: { feeds: [] } })
-  }
+// MOCK THE API MODULE, NOT AXIOS
+vi.mock('../src/api/feeds', () => ({
+  fetchFeeds: vi.fn().mockResolvedValue({
+    data: { feeds: [] }
+  })
 }));
 
 describe('FeedsOverview', () => {
