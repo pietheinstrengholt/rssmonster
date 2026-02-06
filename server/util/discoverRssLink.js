@@ -43,6 +43,22 @@ const getBlueskyRssCandidate = (url) => {
   }
 };
 
+const getMastodonRssCandidate = (url) => {
+  try {
+    const u = new URL(url);
+    if (!u.pathname.startsWith('/@')) return null;
+    if (u.pathname.endsWith('.rss')) return u.toString();
+
+    const trimmed = u.pathname.replace(/\/+$/, '');
+    u.pathname = `${trimmed}.rss`;
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+  } catch {
+    return null;
+  }
+};
+
 const registerDiscoveryError = async (feed, message) => {
   if (!feed) return;
 
@@ -151,7 +167,10 @@ export const discoverRssLink = async (url, feed) => {
     // Use the final redirected URL if available
     const responseUrl = initialResponse?.url || url;
 
-    const blueskyRssCandidate = getBlueskyRssCandidate(responseUrl) || getBlueskyRssCandidate(url);
+    const blueskyRssCandidate =
+      getBlueskyRssCandidate(responseUrl) || getBlueskyRssCandidate(url);
+    const mastodonRssCandidate =
+      getMastodonRssCandidate(responseUrl) || getMastodonRssCandidate(url);
 
     const htmlCandidates = [];
     if (initialResponse?.ok) {
@@ -217,6 +236,7 @@ export const discoverRssLink = async (url, feed) => {
       responseUrl,  // Try the redirected URL first
       url,          // Then the original URL
       blueskyRssCandidate,
+      mastodonRssCandidate,
       ...htmlCandidates,
       baseUrl,
       ...(baseUrl ? commonPaths.map(p => resolveLink(baseUrl, p)) : [])
