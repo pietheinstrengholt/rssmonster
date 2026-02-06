@@ -65,6 +65,14 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
       .replace(/\s+/g, ' ')
       .trim();
 
+    // If title is "Untitled", try to extract first sentence from content
+    if (entryTitle === 'Untitled' && text) {
+      const sentenceMatch = text.match(/^[^.!?:]*[.!?:]/);
+      if (sentenceMatch) {
+        entryTitle = sentenceMatch[0].trim();
+      }
+    }
+
     const contentHash = crypto
       .createHash('sha256')
       .update(text || '', 'utf8')
@@ -85,7 +93,8 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
       content: html,
       stripped: text,
       language: detectedLanguage,
-      contentHash: contentHash
+      contentHash: contentHash,
+      title: entryTitle
     };
   } catch (err) {
     console.error(
@@ -96,7 +105,8 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
       content: contentOriginal,
       stripped: contentOriginal,
       language: 'unknown',
-      contentHash: null
+      contentHash: null,
+      title: entryTitle
     };
   }
 }

@@ -111,6 +111,7 @@ const processArticle = async (feed, entry) => {
         contentStripped = htmlResult.stripped;
         contentLanguage = htmlResult.language;
         contentHash = htmlResult.contentHash;
+        fields.title = htmlResult.title || fields.title; // Prefer title extracted from content if available
       }
     }
 
