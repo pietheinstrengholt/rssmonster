@@ -258,8 +258,7 @@ export const useStore = defineStore('data', {
      * -------------------------------------------------- */
 
     increaseReadCount(article) {
-      // Determine how many articles were marked as read (clusters)
-      const delta = 1 + (Number(article.clusterCount) || 0);
+      const delta = this.currentSelection.clusterView ? 1 + (Number(article.clusterCount) || 0) : 1;
 
       // Find category and feed to update their counts
       const category = this.categories.find(
