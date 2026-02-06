@@ -33,12 +33,12 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.25.3",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "@openai/agents": "^0.4.5",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
-    "dotenv": "^17.2.3",
+    "dotenv": "^17.2.4",
     "express": "^5.2.1",
     "feedsmith": "^2.9.0",
     "franc-min": "^6.2.0",
@@ -48,7 +48,7 @@
     "multer": "^2.0.2",
     "mysql2": "^3.16.3",
     "node-cache": "^5.1.2",
-    "openai": "^6.17.0",
+    "openai": "^6.18.0",
     "sequelize": "^6.37.7",
     "sequelize-cli": "^6.6.5",
     "xml2js": "^0.6.2",
