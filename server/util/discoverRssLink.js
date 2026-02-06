@@ -26,6 +26,23 @@ const getBaseUrl = (url) => {
   }
 };
 
+const getBlueskyRssCandidate = (url) => {
+  try {
+    const u = new URL(url);
+    if (u.host !== 'bsky.app') return null;
+    if (!u.pathname.startsWith('/profile/')) return null;
+    if (u.pathname.endsWith('/rss')) return u.toString();
+
+    const trimmed = u.pathname.replace(/\/+$/, '');
+    u.pathname = `${trimmed}/rss`;
+    u.search = '';
+    u.hash = '';
+    return u.toString();
+  } catch {
+    return null;
+  }
+};
+
 const registerDiscoveryError = async (feed, message) => {
   if (!feed) return;
 
@@ -134,6 +151,8 @@ export const discoverRssLink = async (url, feed) => {
     // Use the final redirected URL if available
     const responseUrl = initialResponse?.url || url;
 
+    const blueskyRssCandidate = getBlueskyRssCandidate(responseUrl) || getBlueskyRssCandidate(url);
+
     const htmlCandidates = [];
     if (initialResponse?.ok) {
       const ct = initialResponse.headers.get('content-type') || '';
@@ -197,6 +216,7 @@ export const discoverRssLink = async (url, feed) => {
     const fallbackCandidates = unique([
       responseUrl,  // Try the redirected URL first
       url,          // Then the original URL
+      blueskyRssCandidate,
       ...htmlCandidates,
       baseUrl,
       ...(baseUrl ? commonPaths.map(p => resolveLink(baseUrl, p)) : [])
