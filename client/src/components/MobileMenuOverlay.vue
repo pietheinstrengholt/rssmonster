@@ -79,7 +79,7 @@ button.btn.btn-primary.content {
 
 .mobile-title {
   padding: 10px;
-  background-color: #31344B;
+  background-color: #3b4651;
   color: #FFF;
 }
 

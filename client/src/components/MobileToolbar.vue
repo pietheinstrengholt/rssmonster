@@ -1,15 +1,14 @@
 <template>
   <div class="navbar-container">
     <div id="mobile-toolbar">
-      <a
+      <button
         @click="emitClickEvent('mobile','mobile')"
         id="rssmonster"
-        class="view-button"
-        data-behavior="view_unread change_view_mode"
-        data-view-mode="view_unread"
-        data-remote="true"
+        class="view-button icon-button"
+        title="Settings"
       >
-      </a>
+        <BootstrapIcon icon="gear-fill" />
+      </button>
       <a
         id="search"
         class="view-button"
@@ -147,11 +146,24 @@
   color: #b4b6b8;
 }
 
-#rssmonster.view-button {
-  background: url(../assets/images/monster.png) 8px 10px no-repeat;
-  background-size: 20px 20px;
+#rssmonster.icon-button {
+  margin-top: 2px;
   max-width: 36px;
   min-width: 36px;
+  flex: 0;
+  border: none;
+  background: transparent;
+  color: #fff;
+  font-size: 18px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-color: #dcdee0;
+}
+
+#rssmonster.icon-button:hover {
+  color: #fff;
 }
 
 #search.view-button {
