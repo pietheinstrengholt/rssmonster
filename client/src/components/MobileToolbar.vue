@@ -48,7 +48,7 @@
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.smartFolderId === null }" href="#" 
-          @click="$store.data.setCurrentSmartFolderId(null, '')"
+          @click="$store.data.setSmartFolder(null)"
         >
           {{ 'No smart folder' }}
         </a>
@@ -58,7 +58,7 @@
           class="dropdown-item" 
           :class="{ active: $store.data.currentSelection.smartFolderId === folder.id }" 
           href="#" 
-          @click="$store.data.setCurrentSmartFolderId(folder.id, folder.query)"
+          @click="$store.data.setSmartFolder(folder)"
         >
           {{ folder.name }} {{ folder.ArticleCount }}
         </a>
