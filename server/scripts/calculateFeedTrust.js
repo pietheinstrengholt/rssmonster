@@ -110,7 +110,9 @@ export async function calculateFeedTrustForFeed(feedId) {
   if (!articles.length) {
     return {
       trust: feed.feedTrust ?? 0.5,
-      duplicationRate: 0
+      duplicationRate: 0,
+      feedAttentionAvg: 0,
+      feedAttentionSampleSize: 0
     };
   }
 
