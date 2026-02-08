@@ -136,16 +136,14 @@ export async function assignArticleToCluster(articleId, { force = false } = {}) 
    * -------------------------------------------------------------- */
   const clusters = await ArticleCluster.findAll({
     where: {
-      userId: article.userId,
-      createdAt: {
-        [Op.gte]: new Date(Date.now() - CLUSTER_ACTIVE_DAYS * 864e5)
-      }
+      userId: article.userId
     },
     include: [{
       model: Article,
       as: 'representative',
       required: true
     }],
+    order: [['id', 'ASC']], // determinism
     limit: MAX_CANDIDATES
   });
 
@@ -218,7 +216,8 @@ export async function assignArticleToCluster(articleId, { force = false } = {}) 
   if (
     article.vector &&
     bestRep?.vector &&
-    bestScore >= DEDUP_SIM_THRESHOLD
+    bestScore >= DEDUP_SIM_THRESHOLD &&
+    article.id !== bestRep.id
   ) {
     await article.update({ status: 'duplicate' });
   }
@@ -246,7 +245,8 @@ export async function assignArticleToCluster(articleId, { force = false } = {}) 
 
   if (!clusterArticles.length) return;
 
-  let bestNewRep = clusterArticles[0];
+  let bestNewRep = clusterArticles
+  .sort((a, b) => a.id - b.id)[0]; // determinism
   let bestRepScore = representativeScore(bestNewRep);
 
   for (const a of clusterArticles) {
