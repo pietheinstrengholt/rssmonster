@@ -127,8 +127,8 @@ export async function calculateFeedTrustForFeed(feedId) {
       feedIgnoreRatio: feed.feedIgnoreRatio ?? 0,
       feedAttentionSampleSize: feed.feedAttentionSampleSize ?? 0,
 
-      predictedAffinity: predicted?.predictedAffinity ?? 'medium',
-      predictedConfidence: predicted?.confidence ?? 0.3
+      predictedAffinity: predicted?.predictedAffinity ?? 'cold',
+      predictedConfidence: predicted?.confidence ?? 0.25
     };
   }
 

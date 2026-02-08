@@ -47,13 +47,13 @@ export function resolvePredictedAffinity({ article, feed }) {
    * ------------------------------------------------------------ */
 
   // Not enough behavioral data → safe default
-  if (feedAttentionSampleSize < 8) {
-    return {
-      predictedAffinity: 'medium',
-      confidence: 0.3,
-      source: 'feed'
-    };
-  }
+    if (feedAttentionSampleSize < 8) {
+        return {
+            predictedAffinity: 'cold',
+            confidence: 0.25,
+            source: 'feed'
+        };
+    }
 
   /* ------------------------------------------------------------
    * Decision tree (calibrated on real production data)
