@@ -19,6 +19,7 @@
 import { Op } from 'sequelize';
 import db from '../models/index.js';
 const { Feed, Article, ArticleCluster } = db;
+import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -327,15 +328,30 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedAttentionUpdatedAt: now
   });
 
+  /* ============================================================
+   * DEBUG: Predicted Reading Affinity (for new articles)
+   * ============================================================ */
+
+  const predicted = resolvePredictedAffinity({
+    article: {
+      attentionBucket: 0,
+      status: 'unread'
+    },
+    feed
+  });
+
   return {
     trust: newTrust,
     duplicationRate: feedDuplicationRate,
+
     feedAttentionAvg,
     feedDeepReadRatio,
     feedSkimRatio,
     feedIgnoreRatio,
     feedAttentionSampleSize: attentionSamples,
-    feedAttentionUpdatedAt: now
+
+    predictedAffinity: predicted?.predictedAffinity ?? 'unknown',
+    predictedConfidence: predicted?.confidence ?? 0
   };
 }
 
@@ -360,6 +376,8 @@ export async function calculateFeedTrustForAllFeeds() {
       console.log(
         `[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> ` +
         `trust=${result.trust.toFixed(3)} ` +
+        `affinity=${result.predictedAffinity} ` +
+        `conf=${result.predictedConfidence.toFixed(2)} ` +
         `att=${result.feedAttentionAvg.toFixed(2)} ` +
         `deep=${(result.feedDeepReadRatio * 100).toFixed(0)}% ` +
         `skim=${(result.feedSkimRatio * 100).toFixed(0)}% ` +
