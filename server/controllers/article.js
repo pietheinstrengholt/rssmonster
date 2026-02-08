@@ -317,12 +317,14 @@ const articleDetails = async (req, res, _next) => {
     for (const article of articles) {
       const feed = article.Feed;
 
+      if (!feed) continue;
+
       const prediction = resolvePredictedAffinity({
         article,
         feed
       });
 
-      if (prediction?.predictedAffinity) {
+      if (prediction && prediction.predictedAffinity) {
         article.setDataValue('presentation', {
           predictedAffinity: prediction.predictedAffinity,
           confidence: prediction.confidence,

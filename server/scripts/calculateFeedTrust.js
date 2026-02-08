@@ -112,6 +112,9 @@ export async function calculateFeedTrustForFeed(feedId) {
       trust: feed.feedTrust ?? 0.5,
       duplicationRate: 0,
       feedAttentionAvg: 0,
+      feedDeepReadRatio: 0,
+      feedSkimRatio: 0,
+      feedIgnoreRatio: 0,
       feedAttentionSampleSize: 0
     };
   }
