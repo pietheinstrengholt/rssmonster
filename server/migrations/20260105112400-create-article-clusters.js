@@ -36,6 +36,11 @@ module.exports = {
           allowNull: false,
           defaultValue: 1
         },
+        clusterStrength: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+          defaultValue: 0.0
+        },
         createdAt: {
           type: Sequelize.DATE,
           allowNull: false,

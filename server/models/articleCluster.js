@@ -1,3 +1,4 @@
+//models/articleCluster.js
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => {
@@ -26,6 +27,15 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 1
+      },
+      /**
+       * Cluster confidence strength (0.0 – 1.0)
+       * Derived, idempotent, improves over time.
+       */
+      clusterStrength: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0.0
       }
     },
     {

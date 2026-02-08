@@ -1,3 +1,4 @@
+// util/reclusterForUser.js
 /**
  * Recluster recent articles for a specific user
  *
@@ -19,6 +20,19 @@ const RECLUSTER_DAYS = 7;
 export async function reclusterForUser(userId) {
   console.log(`[CLUSTER-REBUILD] Starting recluster for user ${userId}`);
 
+  const hasClusters = await ArticleCluster.count({ where: { userId } });
+
+  if (!hasClusters) {
+    console.log(
+      `[CLUSTER-REBUILD] No existing clusters for user ${userId}, running FULL rebuild`
+    );
+
+    await Article.update(
+      { clusterId: null },
+      { where: { userId } }
+    );
+  }
+
   const cutoffDate = new Date(
     Date.now() - RECLUSTER_DAYS * 24 * 60 * 60 * 1000
   );
@@ -29,7 +43,6 @@ export async function reclusterForUser(userId) {
   const articles = await Article.scope('withVector').findAll({
     where: {
       userId,
-      vector: { [Op.ne]: null },
       published: { [Op.gte]: cutoffDate }
     },
     order: [['published', 'ASC']]
@@ -60,6 +73,18 @@ export async function reclusterForUser(userId) {
     }
   );
 
+  // Remove clusters that lost all articles
+  await ArticleCluster.destroy({
+    where: {
+      userId,
+      id: {
+        [Op.notIn]: db.sequelize.literal(`
+          (SELECT DISTINCT clusterId FROM articles WHERE clusterId IS NOT NULL)
+        `)
+      }
+    }
+  });
+
   /* --------------------------------------------------------------
    * 3. Rebuild clusters for recent articles
    *    (can attach to older clusters)
@@ -83,45 +108,17 @@ export async function reclusterForUser(userId) {
     `[CLUSTER-REBUILD] Finished reclustering recent articles for user ${userId}`
   );
 
-  /* --------------------------------------------------------------
-   * 4. Remove single-article clusters created INSIDE window
-   * -------------------------------------------------------------- */
-  const singleClusters = await ArticleCluster.findAll({
+  const DEAD_CLUSTER_DAYS = 30;
+
+  await ArticleCluster.destroy({
     where: {
       userId,
-      articleCount: 1,
-      createdAt: { [Op.gte]: cutoffDate }
-    },
-    attributes: ['id']
+      createdAt: {
+        [Op.lt]: new Date(Date.now() - DEAD_CLUSTER_DAYS * 864e5)
+      },
+      clusterStrength: { [Op.lt]: 0.3 }
+    }
   });
-
-  if (singleClusters.length > 0) {
-    const clusterIds = singleClusters.map(c => c.id);
-
-    // Detach recent articles
-    await Article.update(
-      { clusterId: null },
-      {
-        where: {
-          userId,
-          clusterId: { [Op.in]: clusterIds },
-          published: { [Op.gte]: cutoffDate }
-        }
-      }
-    );
-
-    // Remove clusters
-    await ArticleCluster.destroy({
-      where: {
-        userId,
-        id: { [Op.in]: clusterIds }
-      }
-    });
-
-    console.log(
-      `[CLUSTER-REBUILD] Removed ${clusterIds.length} single-article recent clusters for user ${userId}`
-    );
-  }
 }
 
 export default reclusterForUser;

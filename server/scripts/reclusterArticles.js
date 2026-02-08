@@ -1,3 +1,4 @@
+// scripts/reclusterArticles.js
 /**
  * Recluster Articles CLI runner
  *
@@ -13,8 +14,6 @@ import db from '../models/index.js';
 const { User } = db;
 
 import { reclusterForUser } from '../util/reclusterForUser.js';
-
-
 
 /* ------------------------------------------------------------------
  * FULL reclustering entrypoint

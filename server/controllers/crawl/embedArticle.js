@@ -1,3 +1,4 @@
+//controller/crawl/embedArticle.js
 import OpenAI from "openai";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
@@ -24,25 +25,32 @@ const openai = hasApiKey
  * Select text for embedding.
  * Combines title + stripped content or description.
  */
+function normalizeTitle(title = '') {
+  return title
+    .replace(/^(breaking|update|live):?\s*/i, '')
+    .replace(/\s+\|\s+.*$/, '')
+    .trim();
+}
+
 function selectEmbeddingText({ title, contentStripped, description }) {
   const parts = [];
 
   if (title) {
-    parts.push(title.trim());
+    parts.push(normalizeTitle(title));
   }
 
   const body = contentStripped || description;
   if (body) {
     parts.push(
       body
-        .replace(/https?:\/\/\S+/g, "") // remove URLs
-        .replace(/\s+/g, " ")
+        .replace(/https?:\/\/\S+/g, '')
+        .replace(/\s+/g, ' ')
         .slice(0, 1500)
         .trim()
     );
   }
 
-  return parts.join("\n\n").trim();
+  return parts.join('\n\n').trim();
 }
 
 /* ------------------------------------------------------------------
