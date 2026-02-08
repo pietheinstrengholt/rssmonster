@@ -108,15 +108,21 @@ export async function calculateFeedTrustForFeed(feedId) {
     ]
   });
 
+  const safe = (v) => (typeof v === 'number' && !Number.isNaN(v) ? v : 0);
+
   if (!articles.length) {
     return {
-      trust: feed.feedTrust ?? 0.5,
-      duplicationRate: 0,
-      feedAttentionAvg: 0,
-      feedDeepReadRatio: 0,
-      feedSkimRatio: 0,
-      feedIgnoreRatio: 0,
-      feedAttentionSampleSize: 0
+      trust: newTrust,
+      duplicationRate: feedDuplicationRate,
+
+      feedAttentionAvg: safe(feedAttentionAvg),
+      feedDeepReadRatio: safe(feedDeepReadRatio),
+      feedSkimRatio: safe(feedSkimRatio),
+      feedIgnoreRatio: safe(feedIgnoreRatio),
+      feedAttentionSampleSize: attentionSamples,
+
+      predictedAffinity: predicted?.predictedAffinity ?? 'medium',
+      predictedConfidence: safe(predicted?.confidence)
     };
   }
 
