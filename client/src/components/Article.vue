@@ -873,13 +873,13 @@ export default {
         case 'deep':   return 7;
         case 'medium': return 4;
         case 'skim':   return 1;
-        case 'ignore': return 0;
+        case 'cold':   return 3;
         default:       return 3;
       }
     },
     shouldShowImage() {
       if (!this.isUnread || !this.predictedAffinity) return true;
-      return this.predictedAffinity !== 'ignore';
+      return this.predictedAffinity !== 'cold';
     }
   },
   methods: {
