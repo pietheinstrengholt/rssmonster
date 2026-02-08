@@ -311,6 +311,7 @@ export async function calculateFeedTrustForFeed(feedId) {
    * UPDATE FEED
    * ============================================================ */
 
+  const now = new Date();
   await feed.update({
     feedTrust: clamp(newTrust),
     feedDuplicationRate,
@@ -320,14 +321,18 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedSkimRatio,
     feedIgnoreRatio,
     feedAttentionSampleSize: attentionSamples,
-    feedAttentionUpdatedAt: new Date()
+    feedAttentionUpdatedAt: now
   });
 
   return {
     trust: newTrust,
     duplicationRate: feedDuplicationRate,
     feedAttentionAvg,
-    feedAttentionSampleSize: attentionSamples
+    feedDeepReadRatio,
+    feedSkimRatio,
+    feedIgnoreRatio,
+    feedAttentionSampleSize: attentionSamples,
+    feedAttentionUpdatedAt: now
   };
 }
 
@@ -352,7 +357,11 @@ export async function calculateFeedTrustForAllFeeds() {
       console.log(
         `[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> ` +
         `trust=${result.trust.toFixed(3)} ` +
-        `att=${result.feedAttentionAvg.toFixed(2)}`
+        `att=${result.feedAttentionAvg.toFixed(2)} ` +
+        `deep=${(result.feedDeepReadRatio * 100).toFixed(0)}% ` +
+        `skim=${(result.feedSkimRatio * 100).toFixed(0)}% ` +
+        `ignore=${(result.feedIgnoreRatio * 100).toFixed(0)}% ` +
+        `samples=${result.feedAttentionSampleSize}`
       );
     } catch (err) {
       console.error(
