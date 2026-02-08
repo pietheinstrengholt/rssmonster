@@ -1,6 +1,6 @@
 <template>
   <div class="block" :id="id" :class="{ 'cluster-article': isClusterArticle }">
-    <div class="article" :class="{ starred: starInd == 1, hot: hotInd == 1 }" @click="articleTouched(id, $event)">
+    <div class="article" :class="[{ starred: starInd == 1, hot: hotInd == 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched(id, $event)">
       <div class="maximal">
         <h5 class="heading">
           <div class="heading-content">
@@ -124,8 +124,8 @@
         ></div>
         <div
           class="media-content enclosure"
-          v-if="imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)"
-        >
+          v-if="shouldShowImage && imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)"
+          >
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
@@ -155,7 +155,7 @@
       <!-- SUMMARY BULLETS VIEW -->
       <div v-if="$store.data.currentSelection.viewMode === 'summaryBullets'" class="article-content">
         <ul v-if="contentSummaryBullets && contentSummaryBullets.length > 0" class="summary-bullets">
-          <li v-for="(bullet, index) in contentSummaryBullets" :key="index">
+          <li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index">
             {{ bullet }}
           </li>
         </ul>
@@ -220,6 +220,18 @@
 </style>
 
 <style scoped>
+.article.affinity-muted {
+  opacity: 0.55;
+}
+
+.article.affinity-compact h5 a {
+  font-size: 17px;
+}
+
+.article.affinity-expanded h5 a {
+  font-size: 20px;
+}
+
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
   .block {
@@ -799,7 +811,7 @@ export default {
     'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle'
+    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle', 'presentation'
   ],
   data() {
     return {
@@ -846,6 +858,28 @@ export default {
           return value;
         }
       };
+    },
+    predictedAffinity() {
+      return this.presentation?.predictedAffinity || null;
+    },
+    isUnread() {
+      return this.status === 'unread';
+    },
+    // Bullet count for summaryBullets view
+    visibleBulletCount() {
+      if (!this.isUnread || !this.predictedAffinity) return Infinity;
+
+      switch (this.predictedAffinity) {
+        case 'deep':   return 7;
+        case 'medium': return 4;
+        case 'skim':   return 1;
+        case 'ignore': return 0;
+        default:       return 3;
+      }
+    },
+    shouldShowImage() {
+      if (!this.isUnread || !this.predictedAffinity) return true;
+      return this.predictedAffinity !== 'ignore';
     }
   },
   methods: {

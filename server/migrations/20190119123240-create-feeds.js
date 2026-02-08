@@ -76,6 +76,36 @@ module.exports = {
           allowNull: false,
           defaultValue: 0
         },
+        feedAttentionAvg: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+          defaultValue: 0
+        },
+        feedDeepReadRatio: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+          defaultValue: 0
+        },
+        feedSkimRatio: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+          defaultValue: 0
+        },
+        feedIgnoreRatio: {
+          type: Sequelize.FLOAT,
+          allowNull: false,
+          defaultValue: 0
+        },
+        feedAttentionSampleSize: {
+          type: Sequelize.INTEGER,
+          allowNull: false,
+          defaultValue: 0
+        },
+        feedAttentionUpdatedAt: {
+          type: Sequelize.DATE,
+          allowNull: true,
+          defaultValue: null
+        },
         crawlSince: {
           type: Sequelize.DATE,
           allowNull: true,

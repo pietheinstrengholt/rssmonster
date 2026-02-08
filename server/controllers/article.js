@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Article, Feed, Tag, ArticleCluster } = db;
 import { Op } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
+import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
 export const getArticles = async (req, res) => {
   try {
@@ -252,7 +253,9 @@ const articleDetails = async (req, res, _next) => {
     }
 
     const articlesArray = articleIds.split(",");
-    console.log(`\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`);
+    console.log(
+      `\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`
+    );
 
     // Determine ordering strategy:
     // - IMPORTANCE/QUALITY/ATTENTION: preserve articleIds order (already sorted by search service)
@@ -278,7 +281,7 @@ const articleDetails = async (req, res, _next) => {
           model: ArticleCluster,
           as: 'cluster',
           required: false
-        },
+        }
       ],
       order: orderClause,
       where: {
@@ -292,13 +295,42 @@ const articleDetails = async (req, res, _next) => {
         message: "No articles found"
       });
     }
-    
+
     // Preserve original ID order for IMPORTANCE/QUALITY/ATTENTION (search service already sorted)
     if (["IMPORTANCE", "QUALITY", "ATTENTION"].includes(sortUpper)) {
-      const idIndexMap = new Map(articlesArray.map((id, index) => [String(id), index]));
-      articles.sort((a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id)));
+      const idIndexMap = new Map(
+        articlesArray.map((id, index) => [String(id), index])
+      );
+      articles.sort(
+        (a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id))
+      );
     }
-    
+
+    /* ============================================================
+     * Predicted Reading Affinity (NEW)
+     * ============================================================
+     *
+     * Attach presentation hints for unread articles only.
+     * This is non-breaking and purely additive.
+     */
+
+    for (const article of articles) {
+      const feed = article.Feed;
+
+      const prediction = resolvePredictedAffinity({
+        article,
+        feed
+      });
+
+      if (prediction?.predictedAffinity) {
+        article.setDataValue('presentation', {
+          predictedAffinity: prediction.predictedAffinity,
+          confidence: prediction.confidence,
+          source: prediction.source
+        });
+      }
+    }
+
     return res.status(200).json(articles);
   } catch (err) {
     console.log(err);

@@ -55,6 +55,10 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'active'
       },
+
+      /**
+       * Feed quality & trust
+       */
       feedTrust: {
         type: DataTypes.FLOAT,
         allowNull: false,
@@ -64,6 +68,40 @@ export default (sequelize) => {
         type: DataTypes.FLOAT,
         allowNull: false,
         defaultValue: 0
+      },
+      /**
+       * Feed-level reading behavior statistics
+       * Used for predicting readingAffinity of new, unread articles
+       */
+      feedAttentionAvg: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      feedDeepReadRatio: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      feedSkimRatio: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      feedIgnoreRatio: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      feedAttentionSampleSize: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      feedAttentionUpdatedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
       },
       crawlSince: {
         type: DataTypes.DATE,
