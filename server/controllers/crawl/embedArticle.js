@@ -4,10 +4,11 @@ import OpenAI from "openai";
 const EMBEDDING_MODEL = "text-embedding-3-small";
 
 /**
- * Soft thresholds
+ * Length constraints
  */
-const MIN_BODY_LENGTH = 80;
-const MAX_BODY_LENGTH = 2000;
+const MIN_EVENT_LENGTH = 60;
+const MIN_TOPIC_LENGTH = 120;
+const MAX_TOPIC_LENGTH = 2200;
 
 /**
  * OpenAI client
@@ -18,7 +19,7 @@ const openai = hasApiKey
   : null;
 
 /* ------------------------------------------------------------------
- * Text normalization helpers
+ * Normalization helpers
  * ------------------------------------------------------------------ */
 
 function normalizeTitle(title = "") {
@@ -29,7 +30,11 @@ function normalizeTitle(title = "") {
     .trim();
 }
 
-function cleanBody(text = "") {
+function isLikelyHtml(text = "") {
+  return /<\/?(div|img|video|figure|span|a)[\s>]/i.test(text);
+}
+
+function cleanText(text = "") {
   return text
     .replace(/https?:\/\/\S+/g, "")
     .replace(/\b(read more|continue reading|sign up|subscribe|advertisement)\b/gi, "")
@@ -37,110 +42,89 @@ function cleanBody(text = "") {
     .trim();
 }
 
-/**
- * Extract the most content-dense part of the article.
- * Bias toward the first meaningful paragraph, not raw position.
- */
-function extractRepresentativeBody(text = "") {
-  const paragraphs = text
-    .split(/\n{2,}/)
-    .map(p => cleanBody(p))
-    .filter(p => p.length >= 40);
-
-  if (!paragraphs.length) return "";
-
-  // Prefer the first paragraph with enough substance
-  const primary = paragraphs.find(p => p.length >= MIN_BODY_LENGTH) || paragraphs[0];
-
-  const remainder = paragraphs
-    .filter(p => p !== primary)
-    .join(" ")
-    .slice(0, MAX_BODY_LENGTH - primary.length);
-
-  return `${primary} ${remainder}`.slice(0, MAX_BODY_LENGTH).trim();
-}
-
 /* ------------------------------------------------------------------
- * Embedding text construction
+ * Text extraction
  * ------------------------------------------------------------------ */
 
-function isLikelyHtml(text = "") {
-  return /<\/?(div|img|video|figure|span|a|p)[\s>]/i.test(text);
+function extractParagraphs(text = "") {
+  return text
+    .split(/\n{2,}/)
+    .map(p => cleanText(p))
+    .filter(p => p.length >= 40);
 }
 
-function chooseBodyText({ contentStripped, description }) {
+function extractEventText({ title, contentStripped }) {
+  const parts = [];
+
+  const t = normalizeTitle(title);
+  if (t) parts.push(t);
+
   if (contentStripped && !isLikelyHtml(contentStripped)) {
-    return contentStripped;
+    const paragraphs = extractParagraphs(contentStripped);
+    if (paragraphs.length) {
+      parts.push(paragraphs[0]); // first factual paragraph
+    }
   }
 
-  if (description && description.length > 60) {
-    return description;
-  }
-
-  return "";
+  return parts.join(" ").trim();
 }
 
-function buildEmbeddingText({ title, contentStripped, description }) {
-  const normalizedTitle = normalizeTitle(title);
-  const rawBody = chooseBodyText({ contentStripped, description });
-  const body = extractRepresentativeBody(rawBody);
+function extractTopicText({ contentStripped }) {
+  if (!contentStripped || isLikelyHtml(contentStripped)) return "";
 
-  const sections = [];
+  const paragraphs = extractParagraphs(contentStripped);
+  if (!paragraphs.length) return "";
 
-  if (normalizedTitle) {
-    sections.push(`Title:\n${normalizedTitle}`);
-  }
-
-  if (body) {
-    sections.push(`Content:\n${body}`);
-  }
-
-  return sections.join("\n\n").trim();
+  return paragraphs
+    .join(" ")
+    .slice(0, MAX_TOPIC_LENGTH)
+    .trim();
 }
 
 /* ------------------------------------------------------------------
  * Embedding
  * ------------------------------------------------------------------ */
 
+async function embed(text) {
+  const response = await openai.embeddings.create({
+    model: EMBEDDING_MODEL,
+    input: text
+  });
+
+  return response.data[0].embedding;
+}
+
 /**
- * Generate embedding for article content.
- * Returns:
- *   - { vector, embedding_model } on success
- *   - null when embedding is intentionally skipped or fails
+ * Generate event + topic embeddings.
  */
-export async function embedArticle({ title, contentStripped, description }) {
+export async function embedArticle({ title, contentStripped }) {
   if (!hasApiKey) {
     console.debug("[EMBED] skipped (no OPENAI_API_KEY)");
     return null;
   }
 
-  const text = buildEmbeddingText({
-    title,
-    contentStripped,
-    description
-  });
+  const eventText = extractEventText({ title, contentStripped });
+  const topicText = extractTopicText({ contentStripped });
 
-  // Require *some* real signal beyond just boilerplate titles
-  if (!text || text.length < 60) {
+  if (eventText.length < MIN_EVENT_LENGTH) {
     console.debug(
-      `[EMBED] skipped (len=${text?.length ?? 0}) title="${title?.slice(0, 60) ?? ""}"`
+      `[EMBED] skipped (event too short: ${eventText.length}) title="${title?.slice(0, 60) ?? ""}"`
     );
     return null;
   }
 
   try {
-    // Perform embedding with OpenAI API
-    const response = await openai.embeddings.create({
-      model: EMBEDDING_MODEL,
-      input: text
-    });
+    const [eventVector, topicVector] = await Promise.all([
+      embed(eventText),
+      topicText.length >= MIN_TOPIC_LENGTH ? embed(topicText) : Promise.resolve(null)
+    ]);
 
     return {
-      vector: response.data[0].embedding,
+      eventVector,
+      topicVector,
       embedding_model: EMBEDDING_MODEL
     };
   } catch (err) {
-    // Soft-fail: embeddings should never break ingestion
     console.warn("[EMBED] failed:", err.message);
     return null;
   }

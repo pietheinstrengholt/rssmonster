@@ -1,17 +1,35 @@
 // util/assignArticleToCluster.js
-import { Op } from 'sequelize';
+import crypto from 'crypto';
 import db from '../models/index.js';
+
 const { Article, ArticleCluster } = db;
 
 /* ------------------------------------------------------------------
  * Configuration
  * ------------------------------------------------------------------ */
 
-const CLUSTER_SIM_THRESHOLD = 0.81;     // Strong semantic match
-const SOFT_CLUSTER_THRESHOLD = 0.76;    // Title-only fallback
-const DEDUP_SIM_THRESHOLD = 0.93;       // Near-identical
-const MAX_CANDIDATES = 200;
-const CLUSTER_ACTIVE_DAYS = 14;
+/**
+ * -------------------------------------------------------------
+ * Semantic similarity interpretation (cosine similarity)
+ *
+ *  Similarity | Meaning
+ *  -----------|-----------------------------------------------
+ *   0.95+     | Almost identical text
+ *   0.90      | Same article, minor edits / syndication
+ *   0.85      | Same event, different source
+ *   0.78      | Related coverage (same story)
+ *   < 0.70    | Different events
+ *
+ *  Notes:
+ *  - Thresholds are empirical and model-dependent
+ *  - Event clustering must remain conservative
+ * -------------------------------------------------------------
+ */
+
+const EVENT_SIM_THRESHOLD = 0.88;
+const DEDUP_SIM_THRESHOLD = 0.93;
+const TOPIC_SIM_THRESHOLD = 0.65;
+const MAX_CANDIDATES = 300;
 
 /* ------------------------------------------------------------------
  * Vector math (HARDENED)
@@ -19,7 +37,7 @@ const CLUSTER_ACTIVE_DAYS = 14;
 
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
-  if (a.length === 0 || b.length === 0) return 0;
+  if (!a.length || !b.length) return 0;
   if (a.length !== b.length) return 0;
 
   let dot = 0;
@@ -38,46 +56,25 @@ function cosineSimilarity(a, b) {
 }
 
 /* ------------------------------------------------------------------
- * Title similarity (cheap, embedding-free)
+ * Topic key generation
  * ------------------------------------------------------------------ */
 
-function normalizeTitle(title = '') {
-  return title
-    .toLowerCase()
-    .replace(/^(breaking|update|live):?\s*/i, '')
-    .replace(/\s+\|\s+.*$/, '')
-    .replace(/[^\w\s]/g, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
+/**
+ * TopicKey is a stable hash of the topic embedding.
+ * It groups events into a broader story without merging them.
+ */
+function generateTopicKey(topicVector) {
+  if (!Array.isArray(topicVector)) return null;
 
-function titlesLookSimilar(a, b) {
-  if (!a || !b) return false;
+  const slice = topicVector.slice(0, 32);
+  const buffer = Buffer.from(
+    slice.map(v => Math.round(v * 1e6)).join(',')
+  );
 
-  const ta = new Set(normalizeTitle(a).split(' '));
-  const tb = new Set(normalizeTitle(b).split(' '));
-  if (!ta.size || !tb.size) return false;
-
-  let overlap = 0;
-  for (const w of ta) {
-    if (tb.has(w)) overlap++;
-  }
-
-  return overlap / Math.min(ta.size, tb.size) >= 0.6;
-}
-
-/* ------------------------------------------------------------------
- * Representative scoring (embedding-independent)
- * ------------------------------------------------------------------ */
-
-function representativeScore(article) {
-  const length =
-    (article.contentStripped || article.contentOriginal || '').length;
-
-  const ageHours =
-    (Date.now() - new Date(article.published).getTime()) / 36e5;
-
-  return Math.log(length + 1) - ageHours * 0.05;
+  return crypto
+    .createHash('sha1')
+    .update(buffer)
+    .digest('hex');
 }
 
 /* ------------------------------------------------------------------
@@ -100,199 +97,122 @@ function generateClusterName(article) {
 }
 
 /* ------------------------------------------------------------------
- * Cluster strength
- * ------------------------------------------------------------------ */
-
-function computeClusterStrength({
-  articleCount,
-  embeddedCount,
-  avgSimilarity
-}) {
-  const countScore = Math.min(articleCount / 5, 1);
-  const embeddingScore =
-    articleCount > 0 ? embeddedCount / articleCount : 0;
-  const similarityScore = avgSimilarity ?? 0;
-
-  return (
-    countScore * 0.4 +
-    embeddingScore * 0.3 +
-    similarityScore * 0.3
-  );
-}
-
-/* ------------------------------------------------------------------
  * Core clustering logic
  * ------------------------------------------------------------------ */
 
-export async function assignArticleToCluster(articleId, { force = false } = {}) {
+export async function assignArticleToCluster(articleId) {
   const article = await Article.scope('withVector').findByPk(articleId);
-  if (!article) return;
 
-  // Already clustered → skip
-  if (article.clusterId && !force) return;
+  if (!article || !article.eventVector) return;
 
   /* --------------------------------------------------------------
-   * Fetch cluster representatives (vector OPTIONAL)
+   * Fetch candidate event clusters
    * -------------------------------------------------------------- */
   const clusters = await ArticleCluster.findAll({
-    where: {
-      userId: article.userId
-    },
-    include: [{
-      model: Article,
-      as: 'representative',
-      required: true
-    }],
+    where: { userId: article.userId },
     order: [['id', 'ASC']], // determinism
     limit: MAX_CANDIDATES
   });
 
   let bestCluster = null;
-  let bestRep = null;
   let bestScore = 0;
 
   for (const cluster of clusters) {
-    const rep = cluster.representative;
-    if (!rep) continue;
+    if (!cluster.eventVector) continue;
 
-    let score = 0;
+    const sim = cosineSimilarity(
+      article.eventVector,
+      cluster.eventVector
+    );
 
-    // Tier 1: semantic similarity
-    if (article.vector && rep.vector) {
-      score = cosineSimilarity(article.vector, rep.vector);
-    }
-
-    // Tier 2: title fallback
-    if (score === 0 && titlesLookSimilar(article.title, rep.title)) {
-      score = SOFT_CLUSTER_THRESHOLD;
-    }
-
-    if (score > bestScore) {
-      bestScore = score;
+    if (sim > bestScore) {
+      bestScore = sim;
       bestCluster = cluster;
-      bestRep = rep;
     }
   }
 
-  const canStrongMatch =
-    article.vector &&
-    bestScore >= CLUSTER_SIM_THRESHOLD;
-
-  const canSoftMatch =
-    !article.vector &&
-    bestScore >= SOFT_CLUSTER_THRESHOLD;
-
   /* --------------------------------------------------------------
-   * Create new cluster
+   * Phase 1 — Same event
    * -------------------------------------------------------------- */
-  if (!bestCluster || !(canStrongMatch || canSoftMatch)) {
-    const name = generateClusterName(article);
+  if (bestCluster && bestScore >= EVENT_SIM_THRESHOLD) {
+    await article.update({ clusterId: bestCluster.id });
 
-    const cluster = await ArticleCluster.create({
-      userId: article.userId,
-      representativeArticleId: article.id,
-      name,
-      articleCount: 1,
-      clusterStrength: 0.2
+    if (bestScore >= DEDUP_SIM_THRESHOLD) {
+      await article.update({ status: 'duplicate' });
+    }
+
+    // Update event centroid (EMA)
+    const weight = 1 / (bestCluster.articleCount + 1);
+    const updatedEventVector = bestCluster.eventVector.map(
+      (v, i) =>
+        v * (1 - weight) + article.eventVector[i] * weight
+    );
+
+    await bestCluster.update({
+      eventVector: updatedEventVector,
+      articleCount: bestCluster.articleCount + 1
     });
 
-    await article.update({ clusterId: cluster.id });
-
     console.log(
-      `[CLUSTER] Article ${article.id} → NEW cluster ${cluster.id}` +
-      (name ? ` (${name})` : '')
+      `[CLUSTER] Article ${article.id} → EVENT cluster ${bestCluster.id} (sim=${bestScore.toFixed(3)})`
     );
 
     return;
   }
 
   /* --------------------------------------------------------------
-   * Assign to existing cluster
+   * Phase 2 — New event, inherit topicKey via topic similarity
    * -------------------------------------------------------------- */
-  await article.update({ clusterId: bestCluster.id });
 
-  const assignmentSimilarity = bestScore;
+  let topicKey = null;
 
-  if (
-    article.vector &&
-    bestRep?.vector &&
-    bestScore >= DEDUP_SIM_THRESHOLD &&
-    article.id !== bestRep.id
-  ) {
-    await article.update({ status: 'duplicate' });
-  }
+  if (article.topicVector) {
+    let bestTopicSim = 0;
+    let bestTopicKey = null;
 
-  console.log(
-    `[CLUSTER] Article ${article.id} → cluster ${bestCluster.id} (sim=${bestScore.toFixed(3)})`
-  );
+    for (const cluster of clusters) {
+      if (!cluster.topicVector || !cluster.topicKey) continue;
 
-  /* --------------------------------------------------------------
-   * Recompute articleCount (IDEMPOTENT)
-   * -------------------------------------------------------------- */
-  const articleCount = await Article.count({
-    where: { clusterId: bestCluster.id }
-  });
+      const sim = cosineSimilarity(
+        article.topicVector,
+        cluster.topicVector
+      );
 
-  /* --------------------------------------------------------------
-   * Re-evaluate representative (IGNORE duplicates)
-   * -------------------------------------------------------------- */
-  const clusterArticles = await Article.findAll({
-    where: {
-      clusterId: bestCluster.id,
-      status: { [Op.ne]: 'duplicate' }
+      if (sim > bestTopicSim) {
+        bestTopicSim = sim;
+        bestTopicKey = cluster.topicKey;
+      }
     }
-  });
 
-  if (!clusterArticles.length) return;
-
-  let bestNewRep = clusterArticles
-  .sort((a, b) => a.id - b.id)[0]; // determinism
-  let bestRepScore = representativeScore(bestNewRep);
-
-  for (const a of clusterArticles) {
-    const score = representativeScore(a);
-    if (score > bestRepScore) {
-      bestNewRep = a;
-      bestRepScore = score;
+    if (bestTopicSim >= TOPIC_SIM_THRESHOLD) {
+      topicKey = bestTopicKey;
+    } else {
+      topicKey = generateTopicKey(article.topicVector);
     }
   }
 
-  if (bestNewRep.id !== bestCluster.representativeArticleId) {
-    const newName = generateClusterName(bestNewRep);
-
-    await bestCluster.update({
-      representativeArticleId: bestNewRep.id,
-      name: bestCluster.name ?? newName
-    });
-
-    console.log(
-      `[CLUSTER] Cluster ${bestCluster.id} representative updated → article ${bestNewRep.id}`
-    );
-  }
-
   /* --------------------------------------------------------------
-   * Update cluster strength (IDEMPOTENT)
+   * Phase 3 — Create new event cluster
    * -------------------------------------------------------------- */
-  const allClusterArticles = await Article.findAll({
-    where: { clusterId: bestCluster.id },
-    attributes: ['id', 'vector']
+
+  const name = generateClusterName(article);
+
+  const newCluster = await ArticleCluster.create({
+    userId: article.userId,
+    representativeArticleId: article.id,
+    name,
+    articleCount: 1,
+    clusterStrength: 0.2,
+    topicKey,
+    eventVector: article.eventVector,
+    topicVector: article.topicVector ?? null
   });
 
-  const embeddedCount = allClusterArticles.filter(a => a.vector).length;
-
-  const strength = computeClusterStrength({
-    articleCount,
-    embeddedCount,
-    avgSimilarity: assignmentSimilarity
-  });
-
-  await bestCluster.update({
-    articleCount,
-    clusterStrength: strength
-  });
+  await article.update({ clusterId: newCluster.id });
 
   console.log(
-    `[CLUSTER] Cluster ${bestCluster.id} articleCount=${articleCount} strength=${strength.toFixed(2)}`
+    `[CLUSTER] Article ${article.id} → NEW EVENT cluster ${newCluster.id}` +
+    (topicKey ? ` (topic=${topicKey.slice(0, 8)})` : '')
   );
 }
 

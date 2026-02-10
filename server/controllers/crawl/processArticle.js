@@ -165,8 +165,7 @@ const processArticle = async (feed, entry) => {
     // Generate embedding (optional, soft-fail)
     const embedding = await embedArticle({
       title: fields.title,
-      contentStripped,
-      description: fields.description
+      contentStripped
     });
 
     // Search if the article link is a hotlink.
@@ -206,7 +205,8 @@ const processArticle = async (feed, entry) => {
         hotlinkInd: hotlinkCount > 0,
         hotlinkCount: hotlinkCount,
         language: contentLanguage,
-        vector: embedding?.vector || null,
+        eventVector: embedding?.eventVector || null,
+        topicVector: embedding?.topicVector || null,
         embedding_model: embedding?.embedding_model || null,
         published: fields.published
       },

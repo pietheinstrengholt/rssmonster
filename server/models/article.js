@@ -78,7 +78,11 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
-      vector: {
+      eventVector: {
+        type: DataTypes.JSON,
+        allowNull: true
+      },
+      topicVector: {
         type: DataTypes.JSON,
         allowNull: true
       },
@@ -263,7 +267,7 @@ export default (sequelize) => {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
       defaultScope: {
-        attributes: { exclude: ['vector'] }
+        attributes: { exclude: ['eventVector', 'topicVector'] }
       },
       scopes: {
         withVector: {

@@ -1,4 +1,4 @@
-//models/articleCluster.js
+// models/articleCluster.js
 import { DataTypes } from 'sequelize';
 
 export default (sequelize) => {
@@ -28,6 +28,7 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 1
       },
+
       /**
        * Cluster confidence strength (0.0 – 1.0)
        * Derived, idempotent, improves over time.
@@ -36,6 +37,21 @@ export default (sequelize) => {
         type: DataTypes.FLOAT,
         allowNull: false,
         defaultValue: 0.0
+      },
+      eventVector: {
+        type: DataTypes.JSON,
+        allowNull: true
+      },
+      topicVector: {
+        type: DataTypes.JSON,
+        allowNull: true
+      },
+      /**
+       * Stable topic hash (groups related events)
+       */
+      topicKey: {
+        type: DataTypes.STRING(64),
+        allowNull: true
       }
     },
     {

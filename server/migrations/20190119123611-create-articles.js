@@ -100,7 +100,11 @@ module.exports = {
         type: Sequelize.STRING(64),
         allowNull: true
       },
-      vector: {
+      eventVector: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
+      topicVector: {
         type: Sequelize.JSON,
         allowNull: true
       },
