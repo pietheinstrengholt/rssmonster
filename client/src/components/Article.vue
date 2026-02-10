@@ -165,6 +165,284 @@
   </div>
 </template>
 
+<script>
+import {
+  markWithStar,
+  markClicked,
+  markNotInterested
+} from '../api/articles';
+
+import { muteFeed } from '../api/feeds';
+import { fetchClusterArticles } from '../api/clusters';
+
+const NEUTRAL_SCORE = 70;
+
+function timeDifference(current, previous) {
+  const msPerMinute = 60 * 1000;
+  const msPerHour = msPerMinute * 60;
+  const msPerDay = msPerHour * 24;
+  const msPerMonth = msPerDay * 30;
+  const msPerYear = msPerDay * 365;
+  const elapsed = current - previous;
+
+  if (elapsed < msPerMinute) return Math.round(elapsed / 1000) + ' seconds ago';
+  if (elapsed < msPerHour) return Math.round(elapsed / msPerMinute) + ' minutes ago';
+  if (elapsed < msPerDay) return Math.round(elapsed / msPerHour) + ' hours ago';
+  if (elapsed < msPerMonth) return 'approximately ' + Math.round(elapsed / msPerDay) + ' days ago';
+  if (elapsed < msPerYear) return 'approximately ' + Math.round(elapsed / msPerMonth) + ' months ago';
+  return 'approximately ' + Math.round(elapsed / msPerYear) + ' years ago';
+}
+
+export default {
+  emits: ['update-star', 'update-clicked', 'cluster-articles-loaded', 'article-not-interested'],
+  props: [
+    'id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author',
+    'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
+    'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
+    'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
+    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle', 
+    'presentation', 'topicKey'
+  ],
+  data() {
+    return {
+      showMinimalContent: false,
+      NEUTRAL_SCORE,
+      isMobilePortrait: false,
+      mediaQuery: null
+    };
+  },
+  mounted() {
+    this.setupMediaQueryListener();
+  },
+  beforeUnmount() {
+    this.teardownMediaQueryListener();
+  },
+  beforeDestroy() {
+    this.teardownMediaQueryListener();
+  },
+  computed: {
+    roundedQuality() {
+      return Math.round((this.quality || 0) * 100);
+    },
+    formatDate() {
+      return value => {
+        if (!value) return '';
+        const result = timeDifference(Date.now(), new Date(value).getTime());
+        return result.charAt(0).toUpperCase() + result.slice(1);
+      };
+    },
+    stripHTML() {
+      return value =>
+        value
+          .replace(/<(.|\n)*?>/g, '')
+          .split(/\s+/)
+          .slice(0, 100)
+          .join(' ');
+    },
+    mainURL() {
+      return value => {
+        try {
+          const url = new URL(value);
+          return `${url.protocol}//${url.host}/`;
+        } catch {
+          return value;
+        }
+      };
+    },
+    predictedAffinity() {
+      return this.presentation?.predictedAffinity || null;
+    },
+    isUnread() {
+      return this.status === 'unread';
+    },
+    // Bullet count for summaryBullets view
+    visibleBulletCount() {
+      if (!this.isUnread || !this.predictedAffinity) return Infinity;
+
+      switch (this.predictedAffinity) {
+        case 'deep':   return 7;
+        case 'medium': return 4;
+        case 'skim':   return 1;
+        case 'cold':   return 3;
+        default:       return 3;
+      }
+    },
+    shouldShowImage() {
+      if (!this.isUnread || !this.predictedAffinity) return true;
+      return this.predictedAffinity !== 'cold';
+    }
+  },
+  methods: {
+    setupMediaQueryListener() {
+      if (typeof window === 'undefined' || !window.matchMedia) return;
+      this.mediaQuery = window.matchMedia('(max-width: 766px) and (orientation: portrait)');
+      this.isMobilePortrait = this.mediaQuery.matches;
+      if (this.mediaQuery.addEventListener) {
+        this.mediaQuery.addEventListener('change', this.handleMediaChange);
+      } else if (this.mediaQuery.addListener) {
+        this.mediaQuery.addListener(this.handleMediaChange);
+      }
+    },
+    teardownMediaQueryListener() {
+      if (this.mediaQuery) {
+        if (this.mediaQuery.removeEventListener) {
+          this.mediaQuery.removeEventListener('change', this.handleMediaChange);
+        } else if (this.mediaQuery.removeListener) {
+          this.mediaQuery.removeListener(this.handleMediaChange);
+        }
+        this.mediaQuery = null;
+      }
+    },
+    handleMediaChange(event) {
+      this.isMobilePortrait = event.matches;
+    },
+    closeMenuOnClickOutside(event) {
+      if (this.showArticleMenu && !event.target.closest('.menu-icon-wrapper')) {
+        this.showArticleMenu = false;
+      }
+    },
+    getQualityIcon(score) {
+      if (score >= 90) return 'patch-check-fill';
+      if (score >= 80) return 'patch-check-fill';
+      if (score >= 70) return 'exclamation-circle-fill';
+      if (score >= 60) return 'exclamation-triangle-fill';
+      return 'x-octagon-fill';
+    },
+    getQualityClass(score) {
+      if (score >= 90) return 'quality-excellent';
+      if (score >= 80) return 'quality-good';
+      if (score >= 70) return 'quality-okay';
+      if (score >= 60) return 'quality-weak';
+      return 'quality-poor';
+    },
+    getSentimentIcon(score) {
+      if (score > NEUTRAL_SCORE) return 'arrow-up-circle-fill';
+      if (score < NEUTRAL_SCORE) return 'arrow-down-circle-fill';
+      return 'dash-circle';
+    },
+    getSentimentClass(score) {
+      if (score >= 50) return 'sentiment-moderate';
+      if (score >= 30) return 'sentiment-poor';
+      return 'sentiment-very-poor';
+    },
+    scoreLabel(score) {
+      if (score >= 90) return 'Excellent';
+      if (score >= 80) return 'Good';
+      if (score >= 70) return 'Okay';
+      if (score >= 60) return 'Weak';
+      return 'Poor';
+    },
+    articleTouched(articleId, event) {
+      if (this.$store.data.currentSelection.viewMode === 'minimal') {
+        if (event.srcElement?.nodeName === 'A') return;
+        this.showMinimalContent = !this.showMinimalContent;
+      }
+    },
+    bookmark(articleId, event) {
+      if (event.srcElement.nodeName === 'A') return;
+
+      const isStarred = event.currentTarget.className.includes('starred');
+      const updateType = isStarred ? 'unmark' : 'mark';
+      const delta = isStarred ? -1 : 1;
+      const newStarInd = isStarred ? 0 : 1;
+
+      markWithStar(articleId, updateType).then(response => {
+        const category = this.$store.data.categories.find(
+          c => c.id === response.data.feed.categoryId
+        );
+        if (category) {
+          category.starCount += delta;
+          const feed = category.feeds.find(f => f.id === response.data.feedId);
+          if (feed) feed.starCount += delta;
+        }
+        delta > 0
+          ? this.$store.data.increaseStarCount()
+          : this.$store.data.decreaseStarCount();
+
+        this.$emit('update-star', { id: articleId, starInd: newStarInd });
+      });
+    },
+    selectTag(tag) {
+      if (this.$store.data.currentSelection) {
+        this.$store.data.currentSelection.tag = tag?.name || '';
+      }
+    },
+    articleClicked(articleId) {
+      markClicked(articleId)
+      .finally(() =>
+        this.$emit('update-clicked', { id: articleId, clickedAmount: 1 })
+      );
+    },
+    isImageUrlInContent() {
+      const content = this.contentOriginal || '';
+      const url = this.imageUrl || '';
+      const encodedUrl = url.replace(/&/g, '&amp;');
+      return content.includes(url) || content.includes(encodedUrl);
+    },
+    markAsFavorite() {
+      // Toggle star status
+      const updateType = this.starInd ? 'unmark' : 'mark';
+      const newStarInd = this.starInd ? 0 : 1;
+      
+      markWithStar(this.id, updateType)
+      .then(response => {
+        const category = this.$store.data.categories.find(
+          c => c.id === response.data.feed.categoryId
+        );
+        if (category) {
+          const delta = newStarInd ? 1 : -1;
+          category.starCount += delta;
+          const feed = category.feeds.find(f => f.id === response.data.feedId);
+          if (feed) feed.starCount += delta;
+        }
+        newStarInd
+          ? this.$store.data.increaseStarCount()
+          : this.$store.data.decreaseStarCount();
+
+        this.$emit('update-star', { id: this.id, starInd: newStarInd });
+      });
+    },
+    markNotInterested() {
+      // Mark article with negativeInd flag
+      markNotInterested(this.id)
+      .then(() => {
+        console.log('Marked as not interested:', this.id);
+        this.$emit('article-not-interested', { id: this.id });
+      });
+    },
+    muteFeedSevenDays() {
+      if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
+        const mutedUntil = new Date();
+        mutedUntil.setDate(mutedUntil.getDate() + 7);
+        
+        muteFeed(this.feedId, mutedUntil.toISOString())
+        .then(() => {
+          console.log('Feed muted until:', mutedUntil);
+        });
+      }
+    },
+    viewClusterArticles(clusterId) {
+      console.log('Fetching articles for cluster:', clusterId);
+      fetchClusterArticles(
+        clusterId,
+        this.$store.data.currentSelection.clusterView,
+        this.topicKey
+      )
+      .then(response => {
+        this.$emit('cluster-articles-loaded', {
+          articleId: this.id,
+          clusterId,
+          articles: response.data.articles || []
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching cluster articles:', error);
+      });
+    }
+  }
+};
+</script>
+
 <style>
 .block .article-body iframe {
   display: none;
@@ -775,276 +1053,3 @@ span.cluster {
   }
 }
 </style>
-
-<script>
-import {
-  markWithStar,
-  markClicked,
-  markNotInterested
-} from '../api/articles';
-
-import { muteFeed } from '../api/feeds';
-import { fetchClusterArticles } from '../api/clusters';
-
-const NEUTRAL_SCORE = 70;
-
-function timeDifference(current, previous) {
-  const msPerMinute = 60 * 1000;
-  const msPerHour = msPerMinute * 60;
-  const msPerDay = msPerHour * 24;
-  const msPerMonth = msPerDay * 30;
-  const msPerYear = msPerDay * 365;
-  const elapsed = current - previous;
-
-  if (elapsed < msPerMinute) return Math.round(elapsed / 1000) + ' seconds ago';
-  if (elapsed < msPerHour) return Math.round(elapsed / msPerMinute) + ' minutes ago';
-  if (elapsed < msPerDay) return Math.round(elapsed / msPerHour) + ' hours ago';
-  if (elapsed < msPerMonth) return 'approximately ' + Math.round(elapsed / msPerDay) + ' days ago';
-  if (elapsed < msPerYear) return 'approximately ' + Math.round(elapsed / msPerMonth) + ' months ago';
-  return 'approximately ' + Math.round(elapsed / msPerYear) + ' years ago';
-}
-
-export default {
-  emits: ['update-star', 'update-clicked', 'cluster-articles-loaded', 'article-not-interested'],
-  props: [
-    'id', 'url', 'title', 'published', 'feed', 'contentOriginal', 'author',
-    'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
-    'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
-    'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle', 'presentation'
-  ],
-  data() {
-    return {
-      showMinimalContent: false,
-      NEUTRAL_SCORE,
-      isMobilePortrait: false,
-      mediaQuery: null
-    };
-  },
-  mounted() {
-    this.setupMediaQueryListener();
-  },
-  beforeUnmount() {
-    this.teardownMediaQueryListener();
-  },
-  beforeDestroy() {
-    this.teardownMediaQueryListener();
-  },
-  computed: {
-    roundedQuality() {
-      return Math.round((this.quality || 0) * 100);
-    },
-    formatDate() {
-      return value => {
-        if (!value) return '';
-        const result = timeDifference(Date.now(), new Date(value).getTime());
-        return result.charAt(0).toUpperCase() + result.slice(1);
-      };
-    },
-    stripHTML() {
-      return value =>
-        value
-          .replace(/<(.|\n)*?>/g, '')
-          .split(/\s+/)
-          .slice(0, 100)
-          .join(' ');
-    },
-    mainURL() {
-      return value => {
-        try {
-          const url = new URL(value);
-          return `${url.protocol}//${url.host}/`;
-        } catch {
-          return value;
-        }
-      };
-    },
-    predictedAffinity() {
-      return this.presentation?.predictedAffinity || null;
-    },
-    isUnread() {
-      return this.status === 'unread';
-    },
-    // Bullet count for summaryBullets view
-    visibleBulletCount() {
-      if (!this.isUnread || !this.predictedAffinity) return Infinity;
-
-      switch (this.predictedAffinity) {
-        case 'deep':   return 7;
-        case 'medium': return 4;
-        case 'skim':   return 1;
-        case 'cold':   return 3;
-        default:       return 3;
-      }
-    },
-    shouldShowImage() {
-      if (!this.isUnread || !this.predictedAffinity) return true;
-      return this.predictedAffinity !== 'cold';
-    }
-  },
-  methods: {
-    setupMediaQueryListener() {
-      if (typeof window === 'undefined' || !window.matchMedia) return;
-      this.mediaQuery = window.matchMedia('(max-width: 766px) and (orientation: portrait)');
-      this.isMobilePortrait = this.mediaQuery.matches;
-      if (this.mediaQuery.addEventListener) {
-        this.mediaQuery.addEventListener('change', this.handleMediaChange);
-      } else if (this.mediaQuery.addListener) {
-        this.mediaQuery.addListener(this.handleMediaChange);
-      }
-    },
-    teardownMediaQueryListener() {
-      if (this.mediaQuery) {
-        if (this.mediaQuery.removeEventListener) {
-          this.mediaQuery.removeEventListener('change', this.handleMediaChange);
-        } else if (this.mediaQuery.removeListener) {
-          this.mediaQuery.removeListener(this.handleMediaChange);
-        }
-        this.mediaQuery = null;
-      }
-    },
-    handleMediaChange(event) {
-      this.isMobilePortrait = event.matches;
-    },
-    closeMenuOnClickOutside(event) {
-      if (this.showArticleMenu && !event.target.closest('.menu-icon-wrapper')) {
-        this.showArticleMenu = false;
-      }
-    },
-    getQualityIcon(score) {
-      if (score >= 90) return 'patch-check-fill';
-      if (score >= 80) return 'patch-check-fill';
-      if (score >= 70) return 'exclamation-circle-fill';
-      if (score >= 60) return 'exclamation-triangle-fill';
-      return 'x-octagon-fill';
-    },
-    getQualityClass(score) {
-      if (score >= 90) return 'quality-excellent';
-      if (score >= 80) return 'quality-good';
-      if (score >= 70) return 'quality-okay';
-      if (score >= 60) return 'quality-weak';
-      return 'quality-poor';
-    },
-    getSentimentIcon(score) {
-      if (score > NEUTRAL_SCORE) return 'arrow-up-circle-fill';
-      if (score < NEUTRAL_SCORE) return 'arrow-down-circle-fill';
-      return 'dash-circle';
-    },
-    getSentimentClass(score) {
-      if (score >= 50) return 'sentiment-moderate';
-      if (score >= 30) return 'sentiment-poor';
-      return 'sentiment-very-poor';
-    },
-    scoreLabel(score) {
-      if (score >= 90) return 'Excellent';
-      if (score >= 80) return 'Good';
-      if (score >= 70) return 'Okay';
-      if (score >= 60) return 'Weak';
-      return 'Poor';
-    },
-    articleTouched(articleId, event) {
-      if (this.$store.data.currentSelection.viewMode === 'minimal') {
-        if (event.srcElement?.nodeName === 'A') return;
-        this.showMinimalContent = !this.showMinimalContent;
-      }
-    },
-    bookmark(articleId, event) {
-      if (event.srcElement.nodeName === 'A') return;
-
-      const isStarred = event.currentTarget.className.includes('starred');
-      const updateType = isStarred ? 'unmark' : 'mark';
-      const delta = isStarred ? -1 : 1;
-      const newStarInd = isStarred ? 0 : 1;
-
-      markWithStar(articleId, updateType).then(response => {
-        const category = this.$store.data.categories.find(
-          c => c.id === response.data.feed.categoryId
-        );
-        if (category) {
-          category.starCount += delta;
-          const feed = category.feeds.find(f => f.id === response.data.feedId);
-          if (feed) feed.starCount += delta;
-        }
-        delta > 0
-          ? this.$store.data.increaseStarCount()
-          : this.$store.data.decreaseStarCount();
-
-        this.$emit('update-star', { id: articleId, starInd: newStarInd });
-      });
-    },
-    selectTag(tag) {
-      if (this.$store.data.currentSelection) {
-        this.$store.data.currentSelection.tag = tag?.name || '';
-      }
-    },
-    articleClicked(articleId) {
-      markClicked(articleId)
-      .finally(() =>
-        this.$emit('update-clicked', { id: articleId, clickedAmount: 1 })
-      );
-    },
-    isImageUrlInContent() {
-      const content = this.contentOriginal || '';
-      const url = this.imageUrl || '';
-      const encodedUrl = url.replace(/&/g, '&amp;');
-      return content.includes(url) || content.includes(encodedUrl);
-    },
-    markAsFavorite() {
-      // Toggle star status
-      const updateType = this.starInd ? 'unmark' : 'mark';
-      const newStarInd = this.starInd ? 0 : 1;
-      
-      markWithStar(this.id, updateType)
-      .then(response => {
-        const category = this.$store.data.categories.find(
-          c => c.id === response.data.feed.categoryId
-        );
-        if (category) {
-          const delta = newStarInd ? 1 : -1;
-          category.starCount += delta;
-          const feed = category.feeds.find(f => f.id === response.data.feedId);
-          if (feed) feed.starCount += delta;
-        }
-        newStarInd
-          ? this.$store.data.increaseStarCount()
-          : this.$store.data.decreaseStarCount();
-
-        this.$emit('update-star', { id: this.id, starInd: newStarInd });
-      });
-    },
-    markNotInterested() {
-      // Mark article with negativeInd flag
-      markNotInterested(this.id)
-      .then(() => {
-        console.log('Marked as not interested:', this.id);
-        this.$emit('article-not-interested', { id: this.id });
-      });
-    },
-    muteFeedSevenDays() {
-      if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
-        const mutedUntil = new Date();
-        mutedUntil.setDate(mutedUntil.getDate() + 7);
-        
-        muteFeed(this.feedId, mutedUntil.toISOString())
-        .then(() => {
-          console.log('Feed muted until:', mutedUntil);
-        });
-      }
-    },
-    viewClusterArticles(clusterId) {
-      console.log('Fetching articles for cluster:', clusterId);
-      fetchClusterArticles(clusterId)
-      .then(response => {
-        this.$emit('cluster-articles-loaded', {
-          articleId: this.id,
-          clusterId,
-          articles: response.data.articles || []
-        });
-      })
-      .catch(error => {
-        console.error('Error fetching cluster articles:', error);
-      });
-    }
-  }
-};
-</script>

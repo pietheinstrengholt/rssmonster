@@ -5,6 +5,8 @@ const getClusterArticles = async (req, res) => {
   try {
     const userId = req.userData.userId;
     const clusterId = req.params.clusterId;
+    const clusterView = req.query?.clusterView || 'all';
+    const requestedTopicKey = req.query?.topicKey || null;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
@@ -26,10 +28,23 @@ const getClusterArticles = async (req, res) => {
       return res.status(404).json({ error: 'Cluster not found' });
     }
 
-    // Fetch all articles in the cluster
+    let targetClusterIds = [clusterId];
+    const topicKey = requestedTopicKey || cluster.topicKey;
+    if (clusterView === 'topicGroup' && topicKey) {
+      const topicClusters = await ArticleCluster.findAll({
+        where: {
+          userId: userId,
+          topicKey: topicKey
+        },
+        attributes: ['id']
+      });
+      targetClusterIds = topicClusters.map(c => c.id);
+    }
+
+    // Fetch all articles in the cluster or topic group
     const articles = await Article.findAll({
       where: {
-        clusterId: clusterId,
+        clusterId: targetClusterIds,
         userId: userId
       },
       include: [

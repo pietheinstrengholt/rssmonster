@@ -252,6 +252,13 @@ export default (sequelize) => {
           return Math.max(0, Math.min(1, uniqueness));
         }
       },
+      topicKey: {
+        type: DataTypes.VIRTUAL(DataTypes.STRING),
+        get() {
+          const cluster = this.get('cluster');
+          return cluster?.topicKey ?? null;
+        }
+      },
       published: {
         type: DataTypes.DATE,
         allowNull: false,
