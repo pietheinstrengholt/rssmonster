@@ -30,75 +30,42 @@ const getClusterArticles = async (req, res) => {
       return res.status(404).json({ error: 'Cluster not found' });
     }
 
-    const topicKey = requestedTopicKey || cluster.topicKey;
-
-    let articles = [];
+    let targetClusterIds = [clusterId];
+    const topicKey = cluster.topicKey || requestedTopicKey;
     if (clusterView === 'topicGroup' && topicKey) {
       const topicClusters = await ArticleCluster.findAll({
         where: {
           userId: userId,
           topicKey: topicKey
         },
-        attributes: ['representativeArticleId', 'clusterStrength'],
-        order: [['clusterStrength', 'DESC']]
+        attributes: ['id']
       });
-
-      const representativeIds = topicClusters
-        .map(c => c.representativeArticleId)
-        .filter(id => Number.isFinite(id))
-        .filter(id => (articleId ? id !== articleId : true));
-
-      if (representativeIds.length) {
-        const idIndexMap = new Map(
-          representativeIds.map((id, index) => [Number(id), index])
-        );
-
-        articles = await Article.findAll({
-          where: {
-            id: representativeIds,
-            userId: userId
-          },
-          include: [
-            {
-              model: Feed,
-              required: true,
-              attributes: ['id', 'feedName', 'categoryId', 'url', 'favicon']
-            },
-            {
-              model: Tag,
-              required: false,
-              attributes: ['id', 'name']
-            }
-          ]
-        });
-
-        articles.sort(
-          (a, b) => idIndexMap.get(Number(a.id)) - idIndexMap.get(Number(b.id))
-        );
+      if (topicClusters.length) {
+        targetClusterIds = topicClusters.map(c => c.id);
       }
-    } else {
-      // Fetch all articles in the cluster
-      articles = await Article.findAll({
-        where: {
-          clusterId: clusterId,
-          userId: userId,
-          ...(articleId ? { id: { [Op.ne]: articleId } } : {})
-        },
-        include: [
-          {
-            model: Feed,
-            required: true,
-            attributes: ['id', 'feedName', 'categoryId', 'url', 'favicon']
-          },
-          {
-            model: Tag,
-            required: false,
-            attributes: ['id', 'name']
-          }
-        ],
-        order: [['published', 'DESC']]
-      });
     }
+
+    // Fetch all articles in the cluster or topic group
+    const articles = await Article.findAll({
+      where: {
+        clusterId: targetClusterIds,
+        userId: userId,
+        ...(articleId ? { id: { [Op.ne]: articleId } } : {})
+      },
+      include: [
+        {
+          model: Feed,
+          required: true,
+          attributes: ['id', 'feedName', 'categoryId', 'url', 'favicon']
+        },
+        {
+          model: Tag,
+          required: false,
+          attributes: ['id', 'name']
+        }
+      ],
+      order: [['published', 'DESC']]
+    });
 
     return res.status(200).json({
       cluster: cluster,
