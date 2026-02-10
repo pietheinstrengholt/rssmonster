@@ -64,7 +64,7 @@ export async function reclusterForUser(userId) {
    * -------------------------------------------------------------- */
 
   await Article.update(
-    { clusterId: null, status: 'unread' },
+    { clusterId: null },
     { where: { userId } }
   );
 
