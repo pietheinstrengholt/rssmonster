@@ -27,7 +27,6 @@ const { Article, ArticleCluster } = db;
  */
 
 const EVENT_SIM_THRESHOLD = 0.88;
-const DEDUP_SIM_THRESHOLD = 0.93;
 const TOPIC_SIM_THRESHOLD = 0.65;
 const MAX_CANDIDATES = 300;
 
@@ -142,10 +141,6 @@ export async function assignArticleToCluster(articleId) {
     }
 
     await article.update({ clusterId: bestCluster.id });
-
-    if (bestScore >= DEDUP_SIM_THRESHOLD) {
-      await article.update({ status: 'duplicate' });
-    }
 
     if (bestCluster.eventVector && article.eventVector) {
       const weight = 1 / (bestCluster.articleCount + 1);
