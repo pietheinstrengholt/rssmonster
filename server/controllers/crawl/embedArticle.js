@@ -1,13 +1,13 @@
-//controller/crawl/embedArticle.js
+// controller/crawl/embedArticle.js
 import OpenAI from "openai";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
 
 /**
- * Minimum text length to embed.
- * Lowered to better support RSS summaries + headlines.
+ * Soft thresholds
  */
-const MIN_TEXT_LENGTH = 120;
+const MIN_BODY_LENGTH = 80;
+const MAX_BODY_LENGTH = 2000;
 
 /**
  * OpenAI client
@@ -18,39 +18,84 @@ const openai = hasApiKey
   : null;
 
 /* ------------------------------------------------------------------
- * Text selection
+ * Text normalization helpers
  * ------------------------------------------------------------------ */
 
-/**
- * Select text for embedding.
- * Combines title + stripped content or description.
- */
-function normalizeTitle(title = '') {
+function normalizeTitle(title = "") {
   return title
-    .replace(/^(breaking|update|live):?\s*/i, '')
-    .replace(/\s+\|\s+.*$/, '')
+    .replace(/^(breaking|update|live|exclusive):?\s*/i, "")
+    .replace(/\s+\|\s+.*$/, "")
+    .replace(/\s+-\s+.*$/, "")
     .trim();
 }
 
-function selectEmbeddingText({ title, contentStripped, description }) {
-  const parts = [];
+function cleanBody(text = "") {
+  return text
+    .replace(/https?:\/\/\S+/g, "")
+    .replace(/\b(read more|continue reading|sign up|subscribe|advertisement)\b/gi, "")
+    .replace(/\s+/g, " ")
+    .trim();
+}
 
-  if (title) {
-    parts.push(normalizeTitle(title));
+/**
+ * Extract the most content-dense part of the article.
+ * Bias toward the first meaningful paragraph, not raw position.
+ */
+function extractRepresentativeBody(text = "") {
+  const paragraphs = text
+    .split(/\n{2,}/)
+    .map(p => cleanBody(p))
+    .filter(p => p.length >= 40);
+
+  if (!paragraphs.length) return "";
+
+  // Prefer the first paragraph with enough substance
+  const primary = paragraphs.find(p => p.length >= MIN_BODY_LENGTH) || paragraphs[0];
+
+  const remainder = paragraphs
+    .filter(p => p !== primary)
+    .join(" ")
+    .slice(0, MAX_BODY_LENGTH - primary.length);
+
+  return `${primary} ${remainder}`.slice(0, MAX_BODY_LENGTH).trim();
+}
+
+/* ------------------------------------------------------------------
+ * Embedding text construction
+ * ------------------------------------------------------------------ */
+
+function isLikelyHtml(text = "") {
+  return /<\/?(div|img|video|figure|span|a|p)[\s>]/i.test(text);
+}
+
+function chooseBodyText({ contentStripped, description }) {
+  if (contentStripped && !isLikelyHtml(contentStripped)) {
+    return contentStripped;
   }
 
-  const body = contentStripped || description;
+  if (description && description.length > 60) {
+    return description;
+  }
+
+  return "";
+}
+
+function buildEmbeddingText({ title, contentStripped, description }) {
+  const normalizedTitle = normalizeTitle(title);
+  const rawBody = chooseBodyText({ contentStripped, description });
+  const body = extractRepresentativeBody(rawBody);
+
+  const sections = [];
+
+  if (normalizedTitle) {
+    sections.push(`Title:\n${normalizedTitle}`);
+  }
+
   if (body) {
-    parts.push(
-      body
-        .replace(/https?:\/\/\S+/g, '')
-        .replace(/\s+/g, ' ')
-        .slice(0, 1500)
-        .trim()
-    );
+    sections.push(`Content:\n${body}`);
   }
 
-  return parts.join('\n\n').trim();
+  return sections.join("\n\n").trim();
 }
 
 /* ------------------------------------------------------------------
@@ -64,26 +109,27 @@ function selectEmbeddingText({ title, contentStripped, description }) {
  *   - null when embedding is intentionally skipped or fails
  */
 export async function embedArticle({ title, contentStripped, description }) {
-  // Global kill-switch (e.g. missing key in worker process)
   if (!hasApiKey) {
     console.debug("[EMBED] skipped (no OPENAI_API_KEY)");
     return null;
   }
 
-  const text = selectEmbeddingText({
+  const text = buildEmbeddingText({
     title,
     contentStripped,
     description
   });
 
-  if (!text || text.length < MIN_TEXT_LENGTH) {
+  // Require *some* real signal beyond just boilerplate titles
+  if (!text || text.length < 60) {
     console.debug(
-      `[EMBED] skipped (len=${text?.length ?? 0}) title="${title?.slice(0, 60) ?? ''}"`
+      `[EMBED] skipped (len=${text?.length ?? 0}) title="${title?.slice(0, 60) ?? ""}"`
     );
     return null;
   }
 
   try {
+    // Perform embedding with OpenAI API
     const response = await openai.embeddings.create({
       model: EMBEDDING_MODEL,
       input: text
