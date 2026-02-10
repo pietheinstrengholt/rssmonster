@@ -8,6 +8,7 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
+              <BootstrapIcon v-if="clusterCountTotal > 1" icon="megaphone-fill" class="cluster-icon" />
               <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
             </div>
             <div class="menu-icon-wrapper dropdown">
@@ -588,6 +589,12 @@ export default {
 }
 
 .hot-icon {
+  color: #F3A712;
+  margin-right: 4px;
+  vertical-align: middle;
+}
+
+.cluster-icon {
   color: #F3A712;
   margin-right: 4px;
   vertical-align: middle;
