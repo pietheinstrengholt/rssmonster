@@ -20,6 +20,17 @@ const defaultSelection = () => ({
   clusterView: 'all'
 });
 
+const extractClusterViewFromQuery = query => {
+  if (!query) return null;
+  const match = String(query).match(/(?:^|\s)cluster:(all|eventCluster|topicGroup)(?=\s|$)/i);
+  if (!match) return null;
+
+  const value = match[1].toLowerCase();
+  if (value === 'eventcluster') return 'eventCluster';
+  if (value === 'topicgroup') return 'topicGroup';
+  return 'all';
+};
+
 export const useStore = defineStore('data', {
   state: () => ({
     currentSelection: defaultSelection(),
@@ -145,9 +156,11 @@ export const useStore = defineStore('data', {
     },
 
     setSelectedSearch(search) {
+      const clusterView = extractClusterViewFromQuery(search);
       Object.assign(this.currentSelection, {
         search,
-        tag: null
+        tag: null,
+        ...(clusterView ? { clusterView } : {})
       });
 
       this.chatAssistantOpen = false;
@@ -171,6 +184,12 @@ export const useStore = defineStore('data', {
     },
 
     setSmartFolder(smartFolder) {
+      const search = smartFolder
+        ? smartFolder.query +
+          (smartFolder.limitCount ? ` limit:${smartFolder.limitCount}` : '')
+        : null;
+      const clusterView = extractClusterViewFromQuery(search);
+
       Object.assign(this.currentSelection, {
         categoryId: '%',
         feedId: '%',
@@ -178,10 +197,8 @@ export const useStore = defineStore('data', {
         sort: 'DESC',
         tag: null,
         smartFolderId: smartFolder?.id ?? null,
-        search: smartFolder
-          ? smartFolder.query +
-            (smartFolder.limitCount ? ` limit:${smartFolder.limitCount}` : '')
-          : null
+        search,
+        ...(clusterView ? { clusterView } : {})
       });
 
       this.chatAssistantOpen = false;
