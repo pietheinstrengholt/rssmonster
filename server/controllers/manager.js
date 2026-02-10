@@ -60,13 +60,21 @@ export const getOverview = async (req, res, _next) => {
               SELECT ac.representativeArticleId
               FROM article_clusters ac
               INNER JOIN (
-                SELECT topicKey, MAX(clusterStrength) AS maxStrength
+                SELECT userId, topicKey, MAX(clusterStrength) AS maxStrength
                 FROM article_clusters
                 WHERE topicKey IS NOT NULL
-                GROUP BY topicKey
+                GROUP BY userId, topicKey
               ) t
-                ON ac.topicKey = t.topicKey
+                ON ac.userId = t.userId
+                AND ac.topicKey = t.topicKey
               AND ac.clusterStrength = t.maxStrength
+              WHERE ac.id = (
+                SELECT MAX(ac2.id)
+                FROM article_clusters ac2
+                WHERE ac2.userId = ac.userId
+                  AND ac2.topicKey = ac.topicKey
+                  AND ac2.clusterStrength = ac.clusterStrength
+              )
             )`)
           }
         },
