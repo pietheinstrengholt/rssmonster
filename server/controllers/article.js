@@ -487,12 +487,9 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.clusterCount = response.cluster.articleCount;
     }
 
-    // Check if cluster view is enabled for eventCluster only
-    const clusterView = req.body?.clusterView === 'eventCluster';
-
-    // If clusterView is enabled and article has a clusterId, update all articles in the same cluster using the same payload
-    if (clusterView && article.clusterId) {
-      console.log(`Cluster view enabled: marking all articles in cluster ${article.clusterId} as seen`);
+    // If eventCluster is enabled and article has a clusterId, update all articles in the same cluster using the same payload
+    if (req.body?.clusterView === 'eventCluster' && article.clusterId) {
+      console.log(`eventCluster view enabled: marking all articles in cluster ${article.clusterId} as seen`);
 
       // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
       // If status should be marked as read, ensure it is set for the cluster update as well
@@ -510,6 +507,49 @@ const articleMarkAsSeen = async (req, res, _next) => {
           clusterId: article.clusterId
         }
       });
+    }
+
+    // Check if cluster view is enabled for topicGroup only
+    if (req.body?.clusterView === 'topicGroup' && article.clusterId) {
+      const cluster = await ArticleCluster.findOne({
+        where: {
+          id: article.clusterId,
+          userId: userId
+        },
+        attributes: ['id', 'topicKey']
+      });
+
+      if (!cluster?.topicKey) {
+        console.log(`topicGroup view enabled but no topicKey for cluster ${article.clusterId}`);
+      } else {
+        const topicClusters = await ArticleCluster.findAll({
+          where: {
+            userId: userId,
+            topicKey: cluster.topicKey
+          },
+          attributes: ['id']
+        });
+
+        const topicClusterIds = topicClusters.map(c => c.id);
+        if (topicClusterIds.length) {
+          console.log(`topicGroup view enabled: marking all articles in topic ${cluster.topicKey} as seen`);
+
+          const clusterPayload = { ...payload };
+          if (shouldMarkRead) {
+            clusterPayload.status = 'read';
+          } else {
+            delete clusterPayload.status;
+          }
+
+          await Article.update(clusterPayload, {
+            where: {
+              id: { [Op.ne]: articleId },
+              userId: userId,
+              clusterId: { [Op.in]: topicClusterIds }
+            }
+          });
+        }
+      }
     }
 
     // Return updated article instance (reflects any changes)
