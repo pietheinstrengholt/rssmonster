@@ -58,7 +58,7 @@
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
-          <span v-if="cluster && (cluster.articleCount || 0) > 1 && $store.data.currentSelection.clusterView" class="cluster" @click.stop="viewClusterArticles(cluster.id)">
+          <span v-if="cluster && (cluster.articleCount || 0) > 1 && $store.data.currentSelection.clusterView !== 'all'" class="cluster" @click.stop="viewClusterArticles(cluster.id)">
             + {{ cluster.articleCount - 1 }} similar article{{ cluster.articleCount - 1 === 1 ? '' : 's' }}
           </span>
         </div>

@@ -18,7 +18,7 @@ export const getSettings = async (req, res, _next) => {
     let minSentimentScore = 0;
     let minQualityScore = 0;
     let viewMode = "full";
-    let clusterView = false;
+    let clusterView = "all";
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
 
@@ -32,7 +32,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore = settings.minSentimentScore || 0;
       minQualityScore = settings.minQualityScore || 0;
       viewMode = settings.viewMode || 'full';
-      clusterView = settings.clusterView || false;
+      clusterView = settings.clusterView || 'all';
     }
 
     //return all query params
@@ -47,7 +47,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore: minSentimentScore,
       minQualityScore: minQualityScore,
       viewMode: viewMode,
-      clusterView: Boolean(clusterView),
+      clusterView: String(clusterView),
       AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
   } catch (err) {

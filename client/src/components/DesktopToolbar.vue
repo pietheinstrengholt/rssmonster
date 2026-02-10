@@ -49,11 +49,12 @@
     <!-- Cluster View Dropdown -->
     <div v-if="$store.data.currentSelection.AIEnabled" class="dropdown">
       <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ $store.data.currentSelection.clusterView ? 'Cluster Reading Mode' : 'All articles' }}
+        {{ formatClusterViewLabel($store.data.currentSelection.clusterView) }}
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView }" href="#" @click="setClusterView(true)">Cluster Reading Mode</a>
-        <a class="dropdown-item" :class="{ active: !$store.data.currentSelection.clusterView }" href="#" @click="setClusterView(false)">All articles</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'all' }" href="#" @click="setClusterView('all')">All articles</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'eventCluster' }" href="#" @click="setClusterView('eventCluster')">Cluster per event</a>
+        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'topicGroup' }" href="#" @click="setClusterView('topicGroup')">Cluster per topic</a>
       </div>
     </div>
 
@@ -411,6 +412,14 @@ export default {
   computed:{
     capitalize() {
       return (value)=> value.charAt(0).toUpperCase() + value.slice(1)
+    },
+    formatClusterViewLabel() {
+      return (value) => {
+        if (value === 'all') return 'All articles';
+        if (value === 'eventCluster') return 'Cluster per event';
+        if (value === 'topicGroup') return 'Cluster per topic';
+        return 'All articles';
+      };
     },
     isSearchQueryInvalid() {
       const query = this.$store.data.searchQuery || '';

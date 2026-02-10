@@ -66,12 +66,12 @@ module.exports = {
       viewMode: {
         type: Sequelize.STRING,
         allowNull: false,
-        defaultValue: 'full', // can be 'full', 'minimal', 'summarized'
+        defaultValue: 'full' // can be 'full', 'minimal', 'summarized'
       },
       clusterView: {
-        type: Sequelize.BOOLEAN,
+        type: Sequelize.STRING,
         allowNull: false,
-        defaultValue: false
+        defaultValue: 'all'
       },
       createdAt: {
         type: Sequelize.DATE

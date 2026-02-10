@@ -55,9 +55,9 @@ export default (sequelize) => {
         defaultValue: 'full'
       },
       clusterView: {
-        type: DataTypes.BOOLEAN,
+        type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: false
+        defaultValue: 'all'
       }
     },
     {

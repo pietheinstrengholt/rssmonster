@@ -8,7 +8,7 @@ import api from './client';
 export const fetchOverview = (currentSelection) =>
   api.post('/manager/overview', {
     ...currentSelection,
-    clusterView: Boolean(currentSelection.clusterView)
+    clusterView: String(currentSelection.clusterView)
   });
 
 /**

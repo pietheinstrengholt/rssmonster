@@ -25,7 +25,7 @@ export const getOverview = async (req, res, _next) => {
       raw: true
     });
 
-    const clusterView = Boolean(req.body?.clusterView);
+    const clusterView = String(req.body?.clusterView || 'all');
 
     const baseWhere = {
       userId,
@@ -34,7 +34,7 @@ export const getOverview = async (req, res, _next) => {
       qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
     };
 
-    if (clusterView) {
+    if (clusterView !== 'all') {
       baseWhere[Op.or] = [
         {
           id: {

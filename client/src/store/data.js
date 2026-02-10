@@ -17,7 +17,7 @@ const defaultSelection = () => ({
   minSentimentScore: 0,
   minQualityScore: 0,
   viewMode: 'full',
-  clusterView: false
+  clusterView: 'all'
 });
 
 export const useStore = defineStore('data', {
@@ -97,10 +97,6 @@ export const useStore = defineStore('data', {
       this.topTags = data.tags || [];
     },
 
-    /* --------------------------------------------------
-     * Selection handling
-     * -------------------------------------------------- */
-
     setCurrentSelection(selection = {}) {
       this.chatAssistantOpen = false;
 
@@ -111,8 +107,8 @@ export const useStore = defineStore('data', {
         ...selection,
         clusterView:
           selection.clusterView != null
-            ? Boolean(selection.clusterView)
-            : Boolean(prev.clusterView)
+            ? String(selection.clusterView)
+            : String(prev.clusterView)
       };
     },
 
@@ -213,7 +209,7 @@ export const useStore = defineStore('data', {
     },
 
     setClusterView(value) {
-      this.currentSelection.clusterView = Boolean(value);
+      this.currentSelection.clusterView = String(value);
       this.fetchOverview({ forceUpdate: true }).catch(err => {
         if (import.meta.env.DEV) {
           console.warn('Cluster view refresh failed', err);
@@ -258,7 +254,7 @@ export const useStore = defineStore('data', {
      * -------------------------------------------------- */
 
     increaseReadCount(article) {
-      const delta = this.currentSelection.clusterView ? (Number(article.clusterCount) || 1) : 1;
+      const delta = this.currentSelection.clusterView !== 'all' ? (Number(article.clusterCount) || 1) : 1;
 
       // Find category and feed to update their counts
       const category = this.categories.find(

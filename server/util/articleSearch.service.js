@@ -25,7 +25,7 @@ export const searchArticles = async ({
     sort = "DESC",
     viewMode = "full",
     tag = null,
-    clusterView = false,
+    clusterView = 'all',
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
     limitCount = null // Maximum number of results (used by smart folders)
@@ -579,11 +579,11 @@ export const searchArticles = async ({
 
     /**
      * Cluster view:
-     * When enabled, only return cluster representatives.
+     * When value is not 'all', only return cluster representatives.
      * This collapses related articles into one item per cluster.
      * Search token (cluster:true/false) overrides clusterView parameter.
      */
-    const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
+    const workingClusterView = clusterFilter !== null ? clusterFilter : (clusterView !== 'all');
     if (workingClusterView) {
       articleQuery.where[Op.or] = [
         {

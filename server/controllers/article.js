@@ -18,7 +18,7 @@ export const getArticles = async (req, res) => {
       sort: req.query.sort,
       tag: req.query.tag,
       viewMode: req.query.viewMode,
-      clusterView: req.query.clusterView === "true",
+      clusterView: req.query.clusterView || 'all',
       persistSettings: true
     });
 
@@ -487,8 +487,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.clusterCount = response.cluster.articleCount;
     }
 
-    // Check if cluster view is enabled
-    const clusterView = req.body?.clusterView === true || req.body?.clusterView === 'true';
+    // Check if cluster view is enabled (not 'all')
+    const clusterView = req.body?.clusterView && req.body?.clusterView !== 'all';
 
     // If clusterView is enabled and article has a clusterId, update all articles in the same cluster using the same payload
     if (clusterView && article.clusterId) {

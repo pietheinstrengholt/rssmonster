@@ -277,7 +277,7 @@ export default {
     async markArticleSeen(articleId, visibleSeconds = 0) {
       try {
         const response = await markArticleSeen(articleId, {
-          clusterView: true,
+          clusterView: this.$store.data.currentSelection.clusterView,
           visibleSeconds,
           selectedStatus: this.$store.data.currentSelection.status
         });
