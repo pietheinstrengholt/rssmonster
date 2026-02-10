@@ -1,6 +1,6 @@
-// util/reclusterForUser.js
+// controllers/cluster/reclusterForUser.js
 import crypto from 'crypto';
-import db from '../models/index.js';
+import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
 import assignArticleToCluster from './assignArticleToCluster.js';

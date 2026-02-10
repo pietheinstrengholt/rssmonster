@@ -1,6 +1,6 @@
-// util/assignArticleToCluster.js
+// controllers/cluster/assignArticleToCluster.js
 import crypto from 'crypto';
-import db from '../models/index.js';
+import db from '../../models/index.js';
 
 const { Article, ArticleCluster } = db;
 

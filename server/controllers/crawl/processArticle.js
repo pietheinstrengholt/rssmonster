@@ -8,7 +8,7 @@ import processMedia from './processMedia.js';
 import processHtmlContent from './processHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
-import embedArticle from './embedArticle.js';
+import embedArticle from '../cluster/embedArticle.js';
 import saveArticle from './saveArticle.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
 import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';

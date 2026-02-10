@@ -1,4 +1,4 @@
-// controller/crawl/embedArticle.js
+// controllers/cluster/embedArticle.js
 import OpenAI from "openai";
 
 const EMBEDDING_MODEL = "text-embedding-3-small";
