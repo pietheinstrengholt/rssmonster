@@ -280,7 +280,15 @@ const articleDetails = async (req, res, _next) => {
         {
           model: ArticleCluster,
           as: 'cluster',
-          required: false
+          required: false,
+          attributes: {
+            include: [[
+              Article.sequelize.literal(
+                'CASE WHEN `cluster`.`topicKey` IS NULL THEN (SELECT COUNT(*) FROM articles a WHERE a.clusterId = `cluster`.`id`) ELSE (SELECT COUNT(*) FROM articles a INNER JOIN article_clusters ac2 ON a.clusterId = ac2.id WHERE ac2.userId = `cluster`.`userId` AND ac2.topicKey = `cluster`.`topicKey`) END'
+              ),
+              'topicGroupCount'
+            ]]
+          }
         }
       ],
       order: orderClause,
@@ -496,18 +504,22 @@ const articleMarkAsSeen = async (req, res, _next) => {
         });
 
         if (cluster?.topicKey) {
-          const topicClusters = await ArticleCluster.findAll({
+          clusterCount = await Article.count({
             where: {
-              userId: userId,
-              topicKey: cluster.topicKey
+              userId: userId
             },
-            attributes: ['articleCount']
+            include: [
+              {
+                model: ArticleCluster,
+                as: 'cluster',
+                required: true,
+                attributes: [],
+                where: {
+                  topicKey: cluster.topicKey
+                }
+              }
+            ]
           });
-
-          clusterCount = topicClusters.reduce(
-            (sum, c) => sum + (Number(c.articleCount) || 0),
-            0
-          );
         }
       }
 

@@ -28,6 +28,14 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 1
       },
+      topicGroupCount: {
+        type: DataTypes.VIRTUAL(DataTypes.INTEGER),
+        get() {
+          const value = this.getDataValue('topicGroupCount');
+          if (value != null) return Number(value) || 0;
+          return Number(this.getDataValue('articleCount')) || 0;
+        }
+      },
 
       /**
        * Cluster confidence strength (0.0 – 1.0)

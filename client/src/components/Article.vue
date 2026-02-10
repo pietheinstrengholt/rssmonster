@@ -58,8 +58,8 @@
           <span class="feed_name">
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
-          <span v-if="cluster && (cluster.articleCount || 0) > 1 && $store.data.currentSelection.clusterView !== 'all'" class="cluster" @click.stop="viewClusterArticles(cluster.id)">
-            + {{ cluster.articleCount - 1 }} similar article{{ cluster.articleCount - 1 === 1 ? '' : 's' }}
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all'" class="cluster" @click.stop="viewClusterArticles(cluster.id)">
+            + {{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}
           </span>
         </div>
 
@@ -270,6 +270,13 @@ export default {
     shouldShowImage() {
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
+    },
+    clusterCountTotal() {
+      if (!this.cluster) return 0;
+      if (this.$store.data.currentSelection.clusterView === 'topicGroup') {
+        return Number(this.cluster.topicGroupCount || this.cluster.articleCount || 0);
+      }
+      return Number(this.cluster.articleCount || 0);
     }
   },
   methods: {
