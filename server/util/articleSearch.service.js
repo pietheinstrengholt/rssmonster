@@ -73,6 +73,7 @@ export const searchArticles = async ({
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
     let clusterFilter = null; // Cluster view filter captured from search (cluster:true/false)
+    let clusterCountFilter = null; // Cluster count filter captured from search (clustercount:N)
     let hotFilter = null; // Hot filter captured from search (hot:true/false)
     let limitFilter = null; // Result limit extracted from search (limit:50)
     let dateRange = null; // Date range object: { start: Date, end: Date }
@@ -185,6 +186,7 @@ export const searchArticles = async ({
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
       const lastWeekMatch = cleaned.match(/^@lastweek$/i); // @lastweek (previous 7 days)
       const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster|topicGroup)$/i); // cluster:all | cluster:eventCluster | cluster:topicGroup
+      const clusterCountMatch = cleaned.match(/^clustercount:\s*(\d+)$/i); // clustercount:2
       const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
       const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
       
@@ -194,6 +196,9 @@ export const searchArticles = async ({
       } else if (limitMatch) {
         limitFilter = parseInt(limitMatch[1], 10);
         console.log(`\x1b[31mLimit filter applied via search token: ${limitFilter}\x1b[0m`);
+      } else if (clusterCountMatch) {
+        clusterCountFilter = parseInt(clusterCountMatch[1], 10);
+        console.log(`\x1b[31mCluster count filter applied via search token: ${clusterCountFilter}\x1b[0m`);
       } else if (clusterMatch) {
         clusterFilter = clusterMatch[1];
         console.log(`\x1b[31mCluster filter applied via search token: ${clusterFilter}\x1b[0m`);
@@ -584,6 +589,21 @@ export const searchArticles = async ({
     * Search token (cluster:all/eventCluster/topicGroup) overrides clusterView parameter.
      */
     const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
+
+    if (Number.isFinite(clusterCountFilter)) {
+      const countLiteral = workingClusterView === 'topicGroup'
+        ? Article.sequelize.literal(
+            '(SELECT SUM(ac2.articleCount) FROM article_clusters ac2 WHERE ac2.userId = articles.userId AND ac2.topicKey = (SELECT ac3.topicKey FROM article_clusters ac3 WHERE ac3.id = articles.clusterId))'
+          )
+        : Article.sequelize.literal(
+            '(SELECT ac.articleCount FROM article_clusters ac WHERE ac.id = articles.clusterId)'
+          );
+
+      articleQuery.where[Op.and] = [
+        ...(articleQuery.where[Op.and] || []),
+        Article.sequelize.where(countLiteral, { [Op.gte]: clusterCountFilter })
+      ];
+    }
     if (workingClusterView === 'eventCluster') {
       articleQuery.where[Op.or] = [
         {
