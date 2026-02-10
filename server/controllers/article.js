@@ -487,8 +487,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.clusterCount = response.cluster.articleCount;
     }
 
-    // Check if cluster view is enabled (not 'all')
-    const clusterView = req.body?.clusterView && req.body?.clusterView !== 'all';
+    // Check if cluster view is enabled for eventCluster only
+    const clusterView = req.body?.clusterView === 'eventCluster';
 
     // If clusterView is enabled and article has a clusterId, update all articles in the same cluster using the same payload
     if (clusterView && article.clusterId) {
