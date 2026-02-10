@@ -336,6 +336,7 @@ export default {
     },
 
     insertClusterArticles({ articleId, articles }) {
+      console.log(articles);
       console.log(`Inserting ${articles.length} cluster articles after article ${articleId}`);
       
       // Find the index of the clicked article

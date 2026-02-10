@@ -32,7 +32,8 @@
             </div>
           </div>
         </h5>
-
+        <div v-if="cluster">topicGroupCount: {{ cluster.topicGroupCount }}</div>
+        <div v-if="cluster">articleCount: {{ cluster.articleCount }}</div>
         <div class="feedname">
             <BootstrapIcon v-if="isMobilePortrait && status === 'read'" icon="check-circle-fill" class="read-icon" />
             <BootstrapIcon
@@ -59,7 +60,17 @@
             <a target="_blank" :href="mainURL(feed.url)" v-text="author || feed.feedName"></a>
           </span>
           <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all'" class="cluster" @click.stop="viewClusterArticles(cluster.id)">
-            + {{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}
+            + {{
+              ($store.data.currentSelection.clusterView === 'topicGroup'
+                ? Number(cluster.topicGroupCount ?? cluster.articleCount ?? 0)
+                : Number(cluster.articleCount || 0)) - 1
+            }} similar article{{
+              ($store.data.currentSelection.clusterView === 'topicGroup'
+                ? Number(cluster.topicGroupCount ?? cluster.articleCount ?? 0)
+                : Number(cluster.articleCount || 0)) - 1 === 1
+                ? ''
+                : 's'
+            }}
           </span>
         </div>
 
@@ -274,7 +285,7 @@ export default {
     clusterCountTotal() {
       if (!this.cluster) return 0;
       if (this.$store.data.currentSelection.clusterView === 'topicGroup') {
-        return Number(this.cluster.topicGroupCount || this.cluster.articleCount || 0);
+        return Number(this.cluster.topicGroupCount ?? this.cluster.articleCount ?? 0);
       }
       return Number(this.cluster.articleCount || 0);
     }
@@ -433,7 +444,8 @@ export default {
       fetchClusterArticles(
         clusterId,
         this.$store.data.currentSelection.clusterView,
-        this.topicKey
+        this.topicKey,
+        this.id
       )
       .then(response => {
         this.$emit('cluster-articles-loaded', {
