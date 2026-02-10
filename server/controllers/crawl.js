@@ -164,8 +164,12 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
       }
 
       // Update feed metadata to use latest info from feed
-      // feedsmith: favicon/image is feedObject.feed.icon or feedObject.feed.logo or null
-      const faviconUrl = feedObject.feed?.icon || feedObject.feed?.logo || null;
+      // feedsmith: image info is often in feedObject.feed.image.url
+      const faviconUrl =
+        feedObject.feed?.icon ||
+        feedObject.feed?.logo ||
+        feedObject.feed?.image?.url ||
+        null;
 
       const updateData = {
         feedType: feedObject.format || null,
