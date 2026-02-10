@@ -13,7 +13,7 @@ export const expressionPatterns = [
     { name: 'read', regex: /^read:(true|false)$/i },
     { name: 'clicked', regex: /^clicked:(true|false)$/i },
     { name: 'seen', regex: /^seen:(true|false)$/i },
-    { name: 'cluster', regex: /^cluster:(true|false)$/i },
+    { name: 'cluster', regex: /^cluster:(all|eventCluster|topicGroup)$/i },
     { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
     { name: 'title', regex: /^title:(.+)$/i },

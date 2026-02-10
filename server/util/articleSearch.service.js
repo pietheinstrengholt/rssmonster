@@ -25,7 +25,7 @@ export const searchArticles = async ({
     sort = "DESC",
     viewMode = "full",
     tag = null,
-    clusterView = 'all',
+    clusterView = false,
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
     limitCount = null // Maximum number of results (used by smart folders)
@@ -184,7 +184,7 @@ export const searchArticles = async ({
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
       const lastWeekMatch = cleaned.match(/^@lastweek$/i); // @lastweek (previous 7 days)
-      const clusterMatch = cleaned.match(/^cluster:\s*(true|false)$/i); // cluster:true or cluster:false
+      const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster|topicGroup)$/i); // cluster:all | cluster:eventCluster | cluster:topicGroup
       const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
       const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
       
@@ -195,7 +195,7 @@ export const searchArticles = async ({
         limitFilter = parseInt(limitMatch[1], 10);
         console.log(`\x1b[31mLimit filter applied via search token: ${limitFilter}\x1b[0m`);
       } else if (clusterMatch) {
-        clusterFilter = clusterMatch[1].toLowerCase() === 'true';
+        clusterFilter = clusterMatch[1];
         console.log(`\x1b[31mCluster filter applied via search token: ${clusterFilter}\x1b[0m`);
       } else if (starMatch) {
         starFilter = starMatch[1].toLowerCase() === 'true';
@@ -579,12 +579,12 @@ export const searchArticles = async ({
 
     /**
      * Cluster view:
-     * When value is not 'all', only return cluster representatives.
+     * When enabled, only return cluster representatives.
      * This collapses related articles into one item per cluster.
-     * Search token (cluster:true/false) overrides clusterView parameter.
+    * Search token (cluster:all/eventCluster/topicGroup) overrides clusterView parameter.
      */
-    const workingClusterView = clusterFilter !== null ? clusterFilter : (clusterView !== 'all');
-    if (workingClusterView) {
+    const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
+    if (workingClusterView === 'eventCluster') {
       articleQuery.where[Op.or] = [
         {
           id: {
