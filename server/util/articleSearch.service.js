@@ -601,6 +601,34 @@ export const searchArticles = async ({
       ];
     }
 
+    if (workingClusterView === 'topicGroup') {
+      // One EVENT per TOPIC (strongest cluster per topicKey)
+      articleQuery.where[Op.or] = [
+        {
+          id: {
+            [Op.in]: Article.sequelize.literal(`(
+              SELECT ac.representativeArticleId
+              FROM article_clusters ac
+              INNER JOIN (
+                SELECT topicKey, MAX(clusterStrength) AS maxStrength
+                FROM article_clusters
+                WHERE topicKey IS NOT NULL
+                GROUP BY topicKey
+              ) t
+                ON ac.topicKey = t.topicKey
+              AND ac.clusterStrength = t.maxStrength
+            )`)
+          }
+        },
+        {
+          // Articles without cluster still pass through
+          clusterId: {
+            [Op.is]: null
+          }
+        }
+      ];
+    }
+
     // Fetch articles based on constructed query
     let articles = await Article.findAll(articleQuery);
     
