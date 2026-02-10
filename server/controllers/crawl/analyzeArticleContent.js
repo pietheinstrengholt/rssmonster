@@ -1,5 +1,4 @@
 // server/controllers/crawl/analyzeArticleContent.js
-
 import OpenAI from 'openai';
 
 /* ======================================================
@@ -46,6 +45,11 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
 async function analyzeArticleContent(contentStripped, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
   // Start with default analysis
   let analysis = defaultAnalysis(contentStripped);
+
+  // Skip analysis if environment variable is set
+  if (process.env.SKIP_OPENAI_ANALYSIS) {
+    return analysis;
+  }
 
   // Skip analysis for very short content
   if (!contentStripped || contentStripped.trim().length < 200) {
