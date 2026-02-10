@@ -484,7 +484,34 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.cluster &&
       Number.isInteger(response.cluster.articleCount)
     ) {
-      response.clusterCount = response.cluster.articleCount;
+      let clusterCount = response.cluster.articleCount;
+
+      if (req.body?.clusterView === 'topicGroup') {
+        const cluster = await ArticleCluster.findOne({
+          where: {
+            id: updatedArticle.clusterId,
+            userId: userId
+          },
+          attributes: ['topicKey']
+        });
+
+        if (cluster?.topicKey) {
+          const topicClusters = await ArticleCluster.findAll({
+            where: {
+              userId: userId,
+              topicKey: cluster.topicKey
+            },
+            attributes: ['articleCount']
+          });
+
+          clusterCount = topicClusters.reduce(
+            (sum, c) => sum + (Number(c.articleCount) || 0),
+            0
+          );
+        }
+      }
+
+      response.clusterCount = clusterCount;
     }
 
     // If eventCluster is enabled and article has a clusterId, update all articles in the same cluster using the same payload
