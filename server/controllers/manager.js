@@ -34,7 +34,7 @@ export const getOverview = async (req, res, _next) => {
       qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
     };
 
-    if (clusterView !== 'all') {
+    if (clusterView === 'eventCluster') {
       baseWhere[Op.or] = [
         {
           id: {
@@ -44,6 +44,34 @@ export const getOverview = async (req, res, _next) => {
           }
         },
         {
+          clusterId: {
+            [Op.is]: null
+          }
+        }
+      ];
+    }
+
+    if (clusterView === 'topicGroup') {
+      // One EVENT per TOPIC (strongest cluster per topicKey)
+      baseWhere[Op.or] = [
+        {
+          id: {
+            [Op.in]: Sequelize.literal(`(
+              SELECT ac.representativeArticleId
+              FROM article_clusters ac
+              INNER JOIN (
+                SELECT topicKey, MAX(clusterStrength) AS maxStrength
+                FROM article_clusters
+                WHERE topicKey IS NOT NULL
+                GROUP BY topicKey
+              ) t
+                ON ac.topicKey = t.topicKey
+              AND ac.clusterStrength = t.maxStrength
+            )`)
+          }
+        },
+        {
+          // Articles without cluster still pass through
           clusterId: {
             [Op.is]: null
           }
