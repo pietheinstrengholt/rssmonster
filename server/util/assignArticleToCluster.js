@@ -59,10 +59,6 @@ function cosineSimilarity(a, b) {
  * Topic key generation
  * ------------------------------------------------------------------ */
 
-/**
- * TopicKey is a stable hash of the topic embedding.
- * It groups events into a broader story without merging them.
- */
 function generateTopicKey(topicVector) {
   if (!Array.isArray(topicVector)) return null;
 
@@ -71,10 +67,7 @@ function generateTopicKey(topicVector) {
     slice.map(v => Math.round(v * 1e6)).join(',')
   );
 
-  return crypto
-    .createHash('sha1')
-    .update(buffer)
-    .digest('hex');
+  return crypto.createHash('sha1').update(buffer).digest('hex');
 }
 
 /* ------------------------------------------------------------------
@@ -97,7 +90,7 @@ function generateClusterName(article) {
 }
 
 /* ------------------------------------------------------------------
- * Core clustering logic
+ * Core clustering logic (GUARDED)
  * ------------------------------------------------------------------ */
 
 export async function assignArticleToCluster(articleId) {
@@ -106,11 +99,12 @@ export async function assignArticleToCluster(articleId) {
   if (!article || !article.eventVector) return;
 
   /* --------------------------------------------------------------
-   * Fetch candidate event clusters
+   * Fetch candidate clusters
    * -------------------------------------------------------------- */
+
   const clusters = await ArticleCluster.findAll({
     where: { userId: article.userId },
-    order: [['id', 'ASC']], // determinism
+    order: [['id', 'ASC']],
     limit: MAX_CANDIDATES
   });
 
@@ -132,36 +126,52 @@ export async function assignArticleToCluster(articleId) {
   }
 
   /* --------------------------------------------------------------
-   * Phase 1 — Same event
+   * Phase 1 — Same event (GUARDED)
    * -------------------------------------------------------------- */
+
   if (bestCluster && bestScore >= EVENT_SIM_THRESHOLD) {
+    const exists = await ArticleCluster.count({
+      where: { id: bestCluster.id }
+    });
+
+    if (!exists) {
+      console.warn(
+        `[CLUSTER] Skipped assignment: cluster ${bestCluster.id} no longer exists`
+      );
+      return;
+    }
+
     await article.update({ clusterId: bestCluster.id });
 
     if (bestScore >= DEDUP_SIM_THRESHOLD) {
       await article.update({ status: 'duplicate' });
     }
 
-    // Update event centroid (EMA)
-    const weight = 1 / (bestCluster.articleCount + 1);
-    const updatedEventVector = bestCluster.eventVector.map(
-      (v, i) =>
-        v * (1 - weight) + article.eventVector[i] * weight
-    );
+    if (bestCluster.eventVector && article.eventVector) {
+      const weight = 1 / (bestCluster.articleCount + 1);
+      const updatedEventVector = bestCluster.eventVector.map(
+        (v, i) =>
+          v * (1 - weight) + article.eventVector[i] * weight
+      );
 
-    await bestCluster.update({
-      eventVector: updatedEventVector,
-      articleCount: bestCluster.articleCount + 1
-    });
+      await bestCluster.update({
+        eventVector: updatedEventVector,
+        articleCount: bestCluster.articleCount + 1
+      });
+    } else {
+      await bestCluster.update({
+        articleCount: bestCluster.articleCount + 1
+      });
+    }
 
     console.log(
       `[CLUSTER] Article ${article.id} → EVENT cluster ${bestCluster.id} (sim=${bestScore.toFixed(3)})`
     );
-
     return;
   }
 
   /* --------------------------------------------------------------
-   * Phase 2 — New event, inherit topicKey via topic similarity
+   * Phase 2 — Topic inheritance
    * -------------------------------------------------------------- */
 
   let topicKey = null;
@@ -184,15 +194,14 @@ export async function assignArticleToCluster(articleId) {
       }
     }
 
-    if (bestTopicSim >= TOPIC_SIM_THRESHOLD) {
-      topicKey = bestTopicKey;
-    } else {
-      topicKey = generateTopicKey(article.topicVector);
-    }
+    topicKey =
+      bestTopicSim >= TOPIC_SIM_THRESHOLD
+        ? bestTopicKey
+        : generateTopicKey(article.topicVector);
   }
 
   /* --------------------------------------------------------------
-   * Phase 3 — Create new event cluster
+   * Phase 3 — Create new event cluster (GUARDED)
    * -------------------------------------------------------------- */
 
   const name = generateClusterName(article);
@@ -208,11 +217,29 @@ export async function assignArticleToCluster(articleId) {
     topicVector: article.topicVector ?? null
   });
 
+  if (!newCluster?.id) {
+    console.warn(
+      `[CLUSTER] Failed to create cluster for article ${article.id}`
+    );
+    return;
+  }
+
+  const stillExists = await ArticleCluster.count({
+    where: { id: newCluster.id }
+  });
+
+  if (!stillExists) {
+    console.warn(
+      `[CLUSTER] Cluster ${newCluster.id} disappeared before assignment`
+    );
+    return;
+  }
+
   await article.update({ clusterId: newCluster.id });
 
   console.log(
     `[CLUSTER] Article ${article.id} → NEW EVENT cluster ${newCluster.id}` +
-    (topicKey ? ` (topic=${topicKey.slice(0, 8)})` : '')
+      (topicKey ? ` (topic=${topicKey.slice(0, 8)})` : '')
   );
 }
 
