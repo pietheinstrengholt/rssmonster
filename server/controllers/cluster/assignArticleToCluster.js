@@ -98,12 +98,12 @@ export async function assignArticleToCluster(articleId) {
   if (!article || !article.eventVector) return;
 
   /* --------------------------------------------------------------
-   * Fetch candidate clusters
+   * Fetch candidate clusters (recent-first for incremental mode)
    * -------------------------------------------------------------- */
 
   const clusters = await ArticleCluster.findAll({
     where: { userId: article.userId },
-    order: [['id', 'ASC']],
+    order: [['updatedAt', 'DESC']],
     limit: MAX_CANDIDATES
   });
 
