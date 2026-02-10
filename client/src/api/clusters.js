@@ -8,12 +8,10 @@ export const fetchClusterArticles = (
   clusterView = 'all',
   topicKey = null,
   articleId = null
-) => {
-  console.log('fetchClusterArticles', { clusterId, clusterView, topicKey, articleId });
-  return api.post('/clusters/articles', {
+) =>
+  api.post('/clusters/articles', {
     clusterId,
     clusterView,
     topicKey,
     articleId
   });
-};

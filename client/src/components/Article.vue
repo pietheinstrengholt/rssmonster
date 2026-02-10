@@ -32,12 +32,10 @@
             </div>
           </div>
         </h5>
-        <div v-if="cluster">topicGroupCount: {{ cluster.topicGroupCount }}</div>
-        <div v-if="cluster">articleCount: {{ cluster.articleCount }}</div>
         <div class="feedname">
             <BootstrapIcon v-if="isMobilePortrait && status === 'read'" icon="check-circle-fill" class="read-icon" />
             <BootstrapIcon
-              v-if="isMobilePortrait && quality !== undefined"
+              v-if="isMobilePortrait && quality !== undefined && roundedQuality !== NEUTRAL_SCORE"
               :icon="getQualityIcon(roundedQuality)"
               :class="['mobile-score-icon', 'quality-icon', getQualityClass(roundedQuality)]"
               :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`"
