@@ -3,7 +3,7 @@ const { Feed } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
-import fullReclusterArticles from '../scripts/reclusterArticles.js';
+import { incrementalClusterForUser } from './cluster/reclusterForUser.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -233,21 +233,21 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
     timeouts: timeoutCount
   };
 
-  // Post-ingest reclustering
-  console.log('[CLUSTER] Starting post-ingest reclustering');
+  // Post-ingest incremental clustering (unclustered articles only)
+  console.log('[CLUSTER] Starting post-ingest incremental clustering');
   
   if (waitForCluster) {
-    // CLI mode: wait for reclustering to complete
+    // CLI mode: wait for clustering to complete
     try {
-      await fullReclusterArticles({ userId });
-      console.log('[CLUSTER] Reclustering completed');
+      await incrementalClusterForUser(userId);
+      console.log('[CLUSTER] Incremental clustering completed');
     } catch (err) {
-      console.error('[CLUSTER] Reclustering failed:', err);
+      console.error('[CLUSTER] Incremental clustering failed:', err);
     }
   } else {
     // HTTP mode: fire-and-forget
-    fullReclusterArticles({ userId }).catch(err => {
-      console.error('[CLUSTER] Reclustering failed:', err);
+    incrementalClusterForUser(userId).catch(err => {
+      console.error('[CLUSTER] Incremental clustering failed:', err);
     });
   }
 

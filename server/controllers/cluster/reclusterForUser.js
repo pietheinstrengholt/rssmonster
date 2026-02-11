@@ -58,110 +58,16 @@ function computeClusterStrength({
   ).toFixed(3));
 }
 
-/* ------------------------------------------------------------------
- * Incremental clustering for a single user (SLIDING WINDOW REPLAY)
- *
- * Strategy:
- *   1. Uncluster all articles within the recency window
- *   2. Delete clusters that become empty (all members were recent)
- *   3. Re-assign window articles against the FULL cluster set
- *      (older clusters act as stable anchors)
- *   4. Reconcile only the clusters that were touched
- *
- * This handles cascading: a single new article can shift a centroid,
- * pulling other recent articles into a different cluster.
- * ------------------------------------------------------------------ */
+/* ==================================================================
+ * SHARED: Assign articles & reconcile touched clusters
+ * ================================================================== */
 
-export async function reclusterForUser(userId) {
-  console.log(`[CLUSTER] Incremental clustering for user ${userId}`);
-
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
-
-  /* --------------------------------------------------------------
-   * 1. IDENTIFY ARTICLES IN THE RECENCY WINDOW
-   * -------------------------------------------------------------- */
-
-  const windowArticles = await Article.scope('withVector').findAll({
-    where: {
-      userId,
-      eventVector: { [Op.ne]: null },
-      topicVector: { [Op.ne]: null },
-      published: { [Op.gte]: cutoffDate }
-    },
-    order: [
-      ['published', 'ASC'],
-      ['id', 'ASC']
-    ]
-  });
-
-  if (!windowArticles.length) {
-    console.log(
-      '[CLUSTER] No vectorized articles in recency window — nothing to do'
-    );
-    return;
-  }
-
-  // Track which clusters had articles before we uncluster
-  const previousClusterIds = new Set(
-    windowArticles
-      .filter(a => a.clusterId != null)
-      .map(a => a.clusterId)
-  );
-
-  const windowArticleIds = windowArticles.map(a => a.id);
-
-  console.log(
-    `[CLUSTER] ${windowArticles.length} articles in ` +
-    `${RECENCY_WINDOW_DAYS}-day window ` +
-    `(${previousClusterIds.size} clusters affected)`
-  );
-
-  /* --------------------------------------------------------------
-   * 2. UNCLUSTER WINDOW ARTICLES
-   * -------------------------------------------------------------- */
-
-  await Article.update(
-    { clusterId: null },
-    { where: { id: { [Op.in]: windowArticleIds } } }
-  );
-
-  /* --------------------------------------------------------------
-   * 3. DELETE CLUSTERS THAT ARE NOW EMPTY
-   *    (all their articles were inside the window)
-   * -------------------------------------------------------------- */
-
-  let deletedCount = 0;
-
-  if (previousClusterIds.size) {
-    for (const cid of previousClusterIds) {
-      const remaining = await Article.count({
-        where: { clusterId: cid }
-      });
-
-      if (remaining === 0) {
-        await ArticleCluster.destroy({ where: { id: cid } });
-        deletedCount++;
-      }
-    }
-  }
-
-  if (deletedCount) {
-    console.log(
-      `[CLUSTER] Removed ${deletedCount} empty clusters`
-    );
-  }
-
-  /* --------------------------------------------------------------
-   * 4. RE-ASSIGN WINDOW ARTICLES AGAINST FULL CLUSTER SET
-   * -------------------------------------------------------------- */
-
+async function assignAndReconcile(userId, articles, label) {
   const touchedClusterIds = new Set();
 
-  for (const article of windowArticles) {
+  for (const article of articles) {
     await assignArticleToCluster(article.id);
 
-    // Reload to capture which cluster was assigned
     const updated = await Article.findByPk(article.id, {
       attributes: ['clusterId']
     });
@@ -172,20 +78,18 @@ export async function reclusterForUser(userId) {
   }
 
   if (!touchedClusterIds.size) {
-    console.log('[CLUSTER] No clusters were created or updated');
+    console.log(`[CLUSTER] ${label}: no clusters created or updated`);
     return;
   }
 
+  const touchedIds = [...touchedClusterIds];
+
   console.log(
-    `[CLUSTER] ${touchedClusterIds.size} clusters touched ` +
-    `(${windowArticles.length} articles assigned)`
+    `[CLUSTER] ${label}: ${touchedIds.length} clusters touched ` +
+    `(${articles.length} articles assigned)`
   );
 
-  /* --------------------------------------------------------------
-   * 5. RECONCILE TOUCHED CLUSTERS
-   * -------------------------------------------------------------- */
-
-  const touchedIds = [...touchedClusterIds];
+  /* --- Reconcile centroids & topic keys --- */
 
   const clusters = await ArticleCluster.findAll({
     where: { id: { [Op.in]: touchedIds } }
@@ -200,10 +104,6 @@ export async function reclusterForUser(userId) {
       await cluster.destroy();
       continue;
     }
-
-    /* ----------------------------------------------------------
-     * Event vector centroid
-     * ---------------------------------------------------------- */
 
     const embedded = clusterArticles.filter(
       a => Array.isArray(a.eventVector)
@@ -224,10 +124,6 @@ export async function reclusterForUser(userId) {
       }
     }
 
-    /* ----------------------------------------------------------
-     * Topic key (assigned once)
-     * ---------------------------------------------------------- */
-
     let topicKey = cluster.topicKey;
 
     if (!topicKey) {
@@ -239,10 +135,6 @@ export async function reclusterForUser(userId) {
         topicKey = generateTopicKey(withTopic.topicVector);
       }
     }
-
-    /* ----------------------------------------------------------
-     * Persist reconciliation
-     * ---------------------------------------------------------- */
 
     await cluster.update({
       articleCount: clusterArticles.length,
@@ -257,15 +149,11 @@ export async function reclusterForUser(userId) {
     );
   }
 
-  /* --------------------------------------------------------------
-   * 6. COMPUTE TOPIC SIZES FOR TOUCHED TOPIC KEYS
-   * -------------------------------------------------------------- */
+  /* --- Topic sizes & strength --- */
 
   const touchedTopicKeys = [
     ...new Set(
-      clusters
-        .filter(c => c.topicKey)
-        .map(c => c.topicKey)
+      clusters.filter(c => c.topicKey).map(c => c.topicKey)
     )
   ];
 
@@ -289,10 +177,6 @@ export async function reclusterForUser(userId) {
       topicRows.map(r => [r.topicKey, Number(r.eventCount)])
     );
   }
-
-  /* --------------------------------------------------------------
-   * 7. FINAL STRENGTH FOR TOUCHED CLUSTERS
-   * -------------------------------------------------------------- */
 
   const finalClusters = await ArticleCluster.findAll({
     where: { id: { [Op.in]: touchedIds } }
@@ -321,11 +205,141 @@ export async function reclusterForUser(userId) {
       clusterStrength: strength
     });
   }
+}
+
+/* ------------------------------------------------------------------
+ * INCREMENTAL: Append-only for post-crawl
+ *
+ * Only processes articles that have no cluster yet (newly fetched).
+ * Fast — no unclustering, no window scan.
+ * ------------------------------------------------------------------ */
+
+export async function incrementalClusterForUser(userId) {
+  console.log(`[CLUSTER] Incremental clustering for user ${userId}`);
+
+  const articles = await Article.scope('withVector').findAll({
+    where: {
+      userId,
+      eventVector: { [Op.ne]: null },
+      topicVector: { [Op.ne]: null },
+      clusterId: null
+    },
+    order: [
+      ['published', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  if (!articles.length) {
+    console.log(
+      '[CLUSTER] No unclustered articles — nothing to do'
+    );
+    return;
+  }
+
+  console.log(
+    `[CLUSTER] ${articles.length} unclustered articles to assign`
+  );
+
+  await assignAndReconcile(userId, articles, 'incremental');
+
+  console.log(
+    `[CLUSTER] Finished incremental pass for user ${userId}`
+  );
+}
+
+/* ------------------------------------------------------------------
+ * WINDOW REPLAY: Sliding-window recluster (CLI / scheduled)
+ *
+ * Strategy:
+ *   1. Uncluster all articles within the recency window
+ *   2. Delete clusters that become empty (all members were recent)
+ *   3. Re-assign window articles against the FULL cluster set
+ *      (older clusters act as stable anchors)
+ *   4. Reconcile only the clusters that were touched
+ *
+ * Handles cascading: a single new article can shift a centroid,
+ * pulling other recent articles into a different cluster.
+ * ------------------------------------------------------------------ */
+
+export async function reclusterForUser(userId) {
+  console.log(`[CLUSTER] Window replay clustering for user ${userId}`);
+
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
+
+  /* --- 1. Identify articles in the recency window --- */
+
+  const windowArticles = await Article.scope('withVector').findAll({
+    where: {
+      userId,
+      eventVector: { [Op.ne]: null },
+      topicVector: { [Op.ne]: null },
+      published: { [Op.gte]: cutoffDate }
+    },
+    order: [
+      ['published', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  if (!windowArticles.length) {
+    console.log(
+      '[CLUSTER] No vectorized articles in recency window — nothing to do'
+    );
+    return;
+  }
+
+  const previousClusterIds = new Set(
+    windowArticles
+      .filter(a => a.clusterId != null)
+      .map(a => a.clusterId)
+  );
+
+  const windowArticleIds = windowArticles.map(a => a.id);
+
+  console.log(
+    `[CLUSTER] ${windowArticles.length} articles in ` +
+    `${RECENCY_WINDOW_DAYS}-day window ` +
+    `(${previousClusterIds.size} clusters affected)`
+  );
+
+  /* --- 2. Uncluster window articles --- */
+
+  await Article.update(
+    { clusterId: null },
+    { where: { id: { [Op.in]: windowArticleIds } } }
+  );
+
+  /* --- 3. Delete clusters that are now empty --- */
+
+  let deletedCount = 0;
+
+  if (previousClusterIds.size) {
+    for (const cid of previousClusterIds) {
+      const remaining = await Article.count({
+        where: { clusterId: cid }
+      });
+
+      if (remaining === 0) {
+        await ArticleCluster.destroy({ where: { id: cid } });
+        deletedCount++;
+      }
+    }
+  }
+
+  if (deletedCount) {
+    console.log(`[CLUSTER] Removed ${deletedCount} empty clusters`);
+  }
+
+  /* --- 4. Re-assign window articles against full cluster set --- */
+
+  await assignAndReconcile(userId, windowArticles, 'replay');
 
   console.log(
     `[CLUSTER] Finished window replay for user ${userId}` +
     ` (window=${RECENCY_WINDOW_DAYS}d, articles=${windowArticles.length},` +
-    ` clusters=${touchedClusterIds.size}, pruned=${deletedCount})`
+    ` pruned=${deletedCount})`
   );
 }
 
