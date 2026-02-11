@@ -197,9 +197,12 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
     }
   };
 
+  const processedUserIds = new Set();
+
   const runFeedWithTimeout = async (feed) => {
     try {
       await withTimeout(processSingleFeed(feed), FEED_TIMEOUT_MS, feed.url);
+      if (feed.userId) processedUserIds.add(feed.userId);
     } catch (err) {
       const errMsg = err?.message || String(err) || 'Unknown error';
 
@@ -234,21 +237,34 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
   };
 
   // Post-ingest incremental clustering (unclustered articles only)
-  console.log('[CLUSTER] Starting post-ingest incremental clustering');
-  
-  if (waitForCluster) {
-    // CLI mode: wait for clustering to complete
-    try {
-      await incrementalClusterForUser(userId);
+  // Resolve actual userIds from processed feeds
+  const clusterUserIds = userId
+    ? [userId]
+    : [...processedUserIds];
+
+  if (clusterUserIds.length) {
+    console.log(
+      `[CLUSTER] Starting post-ingest incremental clustering for ${clusterUserIds.length} user(s)`
+    );
+
+    const clusterAll = async () => {
+      for (const uid of clusterUserIds) {
+        try {
+          await incrementalClusterForUser(uid);
+        } catch (err) {
+          console.error(`[CLUSTER] Incremental clustering failed for user ${uid}:`, err);
+        }
+      }
       console.log('[CLUSTER] Incremental clustering completed');
-    } catch (err) {
-      console.error('[CLUSTER] Incremental clustering failed:', err);
+    };
+
+    if (waitForCluster) {
+      await clusterAll();
+    } else {
+      clusterAll().catch(err => {
+        console.error('[CLUSTER] Incremental clustering failed:', err);
+      });
     }
-  } else {
-    // HTTP mode: fire-and-forget
-    incrementalClusterForUser(userId).catch(err => {
-      console.error('[CLUSTER] Incremental clustering failed:', err);
-    });
   }
 
   return result;
