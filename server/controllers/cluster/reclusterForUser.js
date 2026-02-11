@@ -217,12 +217,16 @@ async function assignAndReconcile(userId, articles, label) {
 export async function incrementalClusterForUser(userId) {
   console.log(`[CLUSTER] Incremental clustering for user ${userId}`);
 
+  const cutoffDate = new Date();
+  cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
+
   const articles = await Article.scope('withVector').findAll({
     where: {
       userId,
       eventVector: { [Op.ne]: null },
       topicVector: { [Op.ne]: null },
-      clusterId: null
+      clusterId: null,
+      published: { [Op.gte]: cutoffDate }
     },
     order: [
       ['published', 'ASC'],
