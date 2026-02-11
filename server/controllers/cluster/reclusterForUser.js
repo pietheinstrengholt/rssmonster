@@ -220,8 +220,10 @@ export async function incrementalClusterForUser(userId) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
 
+  // Only consider truly new articles that haven't been clustered yet
   const articles = await Article.scope('withVector').findAll({
     where: {
+      status: 'unread',
       userId,
       eventVector: { [Op.ne]: null },
       topicVector: { [Op.ne]: null },
