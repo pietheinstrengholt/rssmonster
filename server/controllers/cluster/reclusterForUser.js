@@ -11,7 +11,7 @@ const { Article, ArticleCluster } = db;
  * Configuration
  * ------------------------------------------------------------------ */
 
-const RECENCY_WINDOW_DAYS = 14;
+const RECENCY_WINDOW_DAYS = parseInt(process.env.RECENCY_WINDOW_DAYS) || 7;
 
 /* ------------------------------------------------------------------
  * Topic key generation (shared logic)
