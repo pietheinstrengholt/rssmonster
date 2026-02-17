@@ -3,7 +3,7 @@ import crypto from 'crypto';
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
-import assignArticleToCluster from './assignArticleToCluster.js';
+import { assignArticleToCluster, ClusterCache } from './assignArticleToCluster.js';
 
 const { Article, ArticleCluster } = db;
 
@@ -65,8 +65,11 @@ function computeClusterStrength({
 async function assignAndReconcile(userId, articles, label) {
   const touchedClusterIds = new Set();
 
+  // Load clusters ONCE for the entire batch (avoids N redundant DB loads)
+  const cache = await ClusterCache.forUser(userId);
+
   for (const article of articles) {
-    await assignArticleToCluster(article.id);
+    await assignArticleToCluster(article.id, cache);
 
     const updated = await Article.findByPk(article.id, {
       attributes: ['clusterId']

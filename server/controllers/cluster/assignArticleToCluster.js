@@ -89,23 +89,79 @@ function generateClusterName(article) {
 }
 
 /* ------------------------------------------------------------------
- * Core clustering logic (GUARDED)
+ * In-memory cluster cache for batch operations
+ *
+ * Avoids reloading up to 300 clusters (with large JSON vectors)
+ * for every single article. Load once, mutate in-memory, persist.
  * ------------------------------------------------------------------ */
 
-export async function assignArticleToCluster(articleId) {
+export class ClusterCache {
+  constructor(clusters = []) {
+    this._clusters = clusters;
+  }
+
+  /**
+   * Load candidate clusters for a user from DB (once per batch).
+   */
+  static async forUser(userId) {
+    const clusters = await ArticleCluster.findAll({
+      where: { userId },
+      order: [['updatedAt', 'DESC']],
+      limit: MAX_CANDIDATES
+    });
+
+    return new ClusterCache(clusters);
+  }
+
+  get clusters() {
+    return this._clusters;
+  }
+
+  /**
+   * Add a newly created cluster to the cache.
+   */
+  add(cluster) {
+    this._clusters.unshift(cluster);
+
+    if (this._clusters.length > MAX_CANDIDATES) {
+      this._clusters.pop();
+    }
+  }
+
+  /**
+   * Update an existing cluster's in-memory state.
+   */
+  updateInMemory(clusterId, updates) {
+    const cluster = this._clusters.find(c => c.id === clusterId);
+    if (cluster) {
+      Object.assign(cluster.dataValues, updates);
+    }
+  }
+}
+
+/* ------------------------------------------------------------------
+ * Core clustering logic
+ *
+ * Accepts an optional ClusterCache to avoid redundant DB loads.
+ * Falls back to loading from DB if no cache is provided.
+ * ------------------------------------------------------------------ */
+
+export async function assignArticleToCluster(articleId, cache = null) {
   const article = await Article.scope('withVector').findByPk(articleId);
 
   if (!article || !article.eventVector) return;
 
   /* --------------------------------------------------------------
-   * Fetch candidate clusters (recent-first for incremental mode)
+   * Fetch candidate clusters (use cache or load from DB)
    * -------------------------------------------------------------- */
 
-  const clusters = await ArticleCluster.findAll({
-    where: { userId: article.userId },
-    order: [['updatedAt', 'DESC']],
-    limit: MAX_CANDIDATES
-  });
+  const clusters = cache
+    ? cache.clusters
+    : (await ArticleCluster.findAll({
+        where: { userId: article.userId },
+        order: [['updatedAt', 'DESC']],
+        limit: MAX_CANDIDATES
+      }));
 
   let bestCluster = null;
   let bestScore = 0;
@@ -125,25 +181,16 @@ export async function assignArticleToCluster(articleId) {
   }
 
   /* --------------------------------------------------------------
-   * Phase 1 — Same event (GUARDED)
+   * Phase 1 — Same event
    * -------------------------------------------------------------- */
 
   if (bestCluster && bestScore >= EVENT_SIM_THRESHOLD) {
-    const exists = await ArticleCluster.count({
-      where: { id: bestCluster.id }
-    });
-
-    if (!exists) {
-      console.warn(
-        `[CLUSTER] Skipped assignment: cluster ${bestCluster.id} no longer exists`
-      );
-      return;
-    }
-
     await article.update({ clusterId: bestCluster.id });
 
+    const newCount = bestCluster.articleCount + 1;
+
     if (bestCluster.eventVector && article.eventVector) {
-      const weight = 1 / (bestCluster.articleCount + 1);
+      const weight = 1 / newCount;
       const updatedEventVector = bestCluster.eventVector.map(
         (v, i) =>
           v * (1 - weight) + article.eventVector[i] * weight
@@ -151,12 +198,26 @@ export async function assignArticleToCluster(articleId) {
 
       await bestCluster.update({
         eventVector: updatedEventVector,
-        articleCount: bestCluster.articleCount + 1
+        articleCount: newCount
       });
+
+      // Keep cache in sync
+      if (cache) {
+        cache.updateInMemory(bestCluster.id, {
+          eventVector: updatedEventVector,
+          articleCount: newCount
+        });
+      }
     } else {
       await bestCluster.update({
-        articleCount: bestCluster.articleCount + 1
+        articleCount: newCount
       });
+
+      if (cache) {
+        cache.updateInMemory(bestCluster.id, {
+          articleCount: newCount
+        });
+      }
     }
 
     console.log(
@@ -196,7 +257,7 @@ export async function assignArticleToCluster(articleId) {
   }
 
   /* --------------------------------------------------------------
-   * Phase 3 — Create new event cluster (GUARDED)
+   * Phase 3 — Create new event cluster
    * -------------------------------------------------------------- */
 
   const name = generateClusterName(article);
@@ -219,18 +280,12 @@ export async function assignArticleToCluster(articleId) {
     return;
   }
 
-  const stillExists = await ArticleCluster.count({
-    where: { id: newCluster.id }
-  });
-
-  if (!stillExists) {
-    console.warn(
-      `[CLUSTER] Cluster ${newCluster.id} disappeared before assignment`
-    );
-    return;
-  }
-
   await article.update({ clusterId: newCluster.id });
+
+  // Add to cache so subsequent articles can match against it
+  if (cache) {
+    cache.add(newCluster);
+  }
 
   console.log(
     `[CLUSTER] Article ${article.id} → NEW EVENT cluster ${newCluster.id}` +
