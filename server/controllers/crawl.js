@@ -12,8 +12,11 @@ import { incrementalClusterForUser } from './cluster/reclusterForUser.js';
 //set the maximum number of feeds to be processed at once
 const feedCount = parseInt(process.env.MAX_FEEDCOUNT) || 10;
 
-// Timeout wrapper for feed processing (default 300 seconds)
-const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 300000;
+// Timeout wrapper for feed processing (default 60 seconds)
+const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
+
+// Overall crawl deadline (default 10 minutes)
+const CRAWL_TIMEOUT_MS = parseInt(process.env.CRAWL_TIMEOUT_MS) || 10 * 60 * 1000;
 
 // Controls whether feeds are processed in parallel (1) or sequentially (0, default)
 const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
@@ -101,8 +104,11 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
   let processedCount = 0;
   let errorCount = 0;
   let timeoutCount = 0;
+  let crawlTimedOut = false;
 
-  console.log(`Starting crawl for ${feeds.length} feeds...`);
+  const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
+
+  console.log(`Starting crawl for ${feeds.length} feeds (timeout=${CRAWL_TIMEOUT_MS / 1000}s)...`);
 
   if (feeds.length === 0) {
     return {
@@ -221,10 +227,27 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
 
   if (runParallel) {
     console.log('[Parallel Mode] Processing feeds in parallel...');
-    await Promise.all(feeds.map(feed => runFeedWithTimeout(feed)));
+    const remaining = CRAWL_TIMEOUT_MS - (Date.now() - (crawlDeadline - CRAWL_TIMEOUT_MS));
+    const results = await Promise.race([
+      Promise.all(feeds.map(feed => runFeedWithTimeout(feed))),
+      new Promise(resolve =>
+        setTimeout(() => {
+          crawlTimedOut = true;
+          resolve('timeout');
+        }, Math.max(remaining, 0))
+      )
+    ]);
+    if (results === 'timeout') {
+      console.log(`[Crawl] Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s (parallel mode)`);
+    }
   } else {
     console.log('[Sequential Mode] Processing feeds sequentially...');
     for (const feed of feeds) {
+      if (Date.now() >= crawlDeadline) {
+        crawlTimedOut = true;
+        console.log(`[Crawl] Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s — skipping remaining ${feeds.length - processedCount - errorCount} feeds`);
+        break;
+      }
       await runFeedWithTimeout(feed);
     }
   }
@@ -233,7 +256,8 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
     total: feeds.length,
     processed: processedCount,
     errors: errorCount,
-    timeouts: timeoutCount
+    timeouts: timeoutCount,
+    crawlTimedOut
   };
 
   // Post-ingest incremental clustering (unclustered articles only)
