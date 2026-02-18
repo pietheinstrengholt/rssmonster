@@ -60,6 +60,14 @@ export default (sequelize) => {
       topicKey: {
         type: DataTypes.STRING(64),
         allowNull: true
+      },
+      sourceCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+      },
+      sourceDiversityScore: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0
       }
     },
     {

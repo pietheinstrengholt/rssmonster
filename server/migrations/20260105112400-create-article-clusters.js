@@ -46,7 +46,14 @@ module.exports = {
         allowNull: false,
         defaultValue: 0.0
       },
-
+      eventVector: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
+      topicVector: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
       /**
        * Topic signature
        * Same value = same STORY/TOPIC, but different events
@@ -55,13 +62,13 @@ module.exports = {
         type: Sequelize.CHAR(40),
         allowNull: true
       },
-      eventVector: {
-        type: Sequelize.JSON,
-        allowNull: true
+      sourceCount: {
+        type: Sequelize.INTEGER,
+        defaultValue: 0
       },
-      topicVector: {
-        type: Sequelize.JSON,
-        allowNull: true
+      sourceDiversityScore: {
+        type: Sequelize.FLOAT,
+        defaultValue: 0
       },
       createdAt: {
         type: Sequelize.DATE,

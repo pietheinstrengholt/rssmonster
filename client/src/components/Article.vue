@@ -71,6 +71,14 @@
                 : 's'
             }}
           </span>
+          <span
+            v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all' && cluster.sourceCount >= 2"
+            class="source-diversity-badge"
+            :title="`${cluster.sourceCount} unique sources`"
+          >
+            <BootstrapIcon icon="people-fill" class="source-diversity-icon" />
+            {{ cluster.sourceCount }} sources
+          </span>
         </div>
 
         <!-- TAGS + SCORES -->
@@ -769,6 +777,24 @@ span.cluster {
   cursor: pointer;
 }
 
+.source-diversity-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: 6px;
+  padding: 1px 6px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  background-color: #e8f5e9;
+  color: #2e7d32;
+  white-space: nowrap;
+}
+
+.source-diversity-icon {
+  font-size: 10px;
+}
+
 .mobile-score-icon {
   font-size: 11px;
   margin-right: 3px;
@@ -1070,6 +1096,11 @@ span.cluster {
 
   nav ul li {
     background: #000;
+  }
+
+  .source-diversity-badge {
+    background-color: #1f2e1f;
+    color: #81c784;
   }
 
   a:visited, a:active, a:link {

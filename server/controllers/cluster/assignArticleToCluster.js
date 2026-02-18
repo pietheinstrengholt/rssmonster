@@ -1,5 +1,6 @@
 // controllers/cluster/assignArticleToCluster.js
 import crypto from 'crypto';
+import { Op } from 'sequelize';
 import db from '../../models/index.js';
 
 const { Article, ArticleCluster } = db;
@@ -52,6 +53,34 @@ function cosineSimilarity(a, b) {
   if (!normA || !normB) return 0;
 
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
+/* ------------------------------------------------------------------
+ * Source diversity calculation
+ *
+ * Counts distinct feeds inside a cluster and derives a
+ * logarithmic diversity score.
+ *
+ * Why log?
+ * - 1 → 2 sources matters a lot
+ * - 20 → 21 barely matters
+ * ------------------------------------------------------------------ */
+
+async function updateSourceDiversity(clusterId, userId) {
+  const sourceCount = await Article.count({
+    where: { clusterId, userId },
+    distinct: true,
+    col: 'feedId'
+  });
+
+  const sourceDiversityScore = Math.log(sourceCount + 1);
+
+  await ArticleCluster.update(
+    { sourceCount, sourceDiversityScore },
+    { where: { id: clusterId } }
+  );
+
+  return { sourceCount, sourceDiversityScore };
 }
 
 /* ------------------------------------------------------------------
@@ -189,35 +218,37 @@ export async function assignArticleToCluster(articleId, cache = null) {
 
     const newCount = bestCluster.articleCount + 1;
 
+    let updatedEventVector = bestCluster.eventVector;
+
     if (bestCluster.eventVector && article.eventVector) {
       const weight = 1 / newCount;
-      const updatedEventVector = bestCluster.eventVector.map(
+      updatedEventVector = bestCluster.eventVector.map(
         (v, i) =>
           v * (1 - weight) + article.eventVector[i] * weight
       );
+    }
 
-      await bestCluster.update({
+    await bestCluster.update({
+      eventVector: updatedEventVector,
+      articleCount: newCount
+    });
+
+    /* --------------------------------------------------------------
+     * Update source diversity (distinct feed count)
+     * -------------------------------------------------------------- */
+
+    const diversity = await updateSourceDiversity(
+      bestCluster.id,
+      article.userId
+    );
+
+    // Keep cache in sync
+    if (cache) {
+      cache.updateInMemory(bestCluster.id, {
         eventVector: updatedEventVector,
-        articleCount: newCount
+        articleCount: newCount,
+        ...diversity
       });
-
-      // Keep cache in sync
-      if (cache) {
-        cache.updateInMemory(bestCluster.id, {
-          eventVector: updatedEventVector,
-          articleCount: newCount
-        });
-      }
-    } else {
-      await bestCluster.update({
-        articleCount: newCount
-      });
-
-      if (cache) {
-        cache.updateInMemory(bestCluster.id, {
-          articleCount: newCount
-        });
-      }
     }
 
     console.log(
@@ -270,7 +301,14 @@ export async function assignArticleToCluster(articleId, cache = null) {
     clusterStrength: 0.2,
     topicKey,
     eventVector: article.eventVector,
-    topicVector: article.topicVector ?? null
+    topicVector: article.topicVector ?? null,
+
+    /* ----------------------------------------------------------
+     * Initialize source diversity
+     * First article → 1 source
+     * ---------------------------------------------------------- */
+    sourceCount: 1,
+    sourceDiversityScore: Math.log(2)
   });
 
   if (!newCluster?.id) {
