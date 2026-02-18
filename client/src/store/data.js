@@ -271,8 +271,6 @@ export const useStore = defineStore('data', {
      * -------------------------------------------------- */
 
     increaseReadCount(article) {
-      const delta = this.currentSelection.clusterView !== 'all' ? (Number(article.clusterCount) || 1) : 1;
-
       // Find category and feed to update their counts
       const category = this.categories.find(
         c => c.id === article.feed.categoryId
@@ -288,22 +286,20 @@ export const useStore = defineStore('data', {
         return;
       }
 
-      // Update counts with safety checks
-      const catDelta = Math.min(delta, category.unreadCount);
-      const feedDelta = Math.min(delta, feed.unreadCount);
-      const totalDelta = Math.min(delta, this.unreadCount);
+      if (category.unreadCount > 0) {
+        category.unreadCount--;
+        category.readCount++;
+      }
 
-      // Apply updates
-      category.unreadCount -= catDelta;
-      category.readCount += catDelta;
+      if (feed.unreadCount > 0) {
+        feed.unreadCount--;
+        feed.readCount++;
+      }
 
-      // Update feed counts
-      feed.unreadCount -= feedDelta;
-      feed.readCount += feedDelta;
-
-      // Update global counts
-      this.unreadCount -= totalDelta;
-      this.readCount += totalDelta;
+      if (this.unreadCount > 0) {
+        this.unreadCount--;
+        this.readCount++;
+      }
     },
 
     /* --------------------------------------------------

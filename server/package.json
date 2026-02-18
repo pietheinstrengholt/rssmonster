@@ -34,7 +34,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.26.0",
-    "@openai/agents": "^0.4.11",
+    "@openai/agents": "^0.4.12",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
