@@ -1,6 +1,5 @@
 // controllers/cluster/assignArticleToCluster.js
 import crypto from 'crypto';
-import { Op } from 'sequelize';
 import db from '../../models/index.js';
 
 const { Article, ArticleCluster } = db;
