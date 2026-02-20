@@ -1,8 +1,8 @@
 /**
  * Compute the runtime importance score for an article.
  *
- * Combines time relevance, content quality, and coverage signal
- * into a single ranking signal.
+ * Combines time relevance, content quality, coverage signal,
+ * and source diversity into a single ranking signal.
  * Note: feedTrust is already included in article.quality (from the Article model virtual field).
  */
 export function computeImportance(article) {
@@ -23,10 +23,16 @@ export function computeImportance(article) {
   const coverageSize = Math.max(clusterSize, topicGroupSize);
   const coverage = Math.log2(coverageSize + 1) / (1 + Math.log2(coverageSize + 1));
 
+  // Source diversity: boosts articles confirmed by multiple unique publishers
+  // sourceDiversityScore = log(sourceCount + 1), stored on the cluster
+  // Normalized to 0–1 range: log(1+1)=0.69 → ~0.28, log(5+1)=1.79 → ~0.71, log(10+1)=2.40 → ~0.96
+  // Cap at log(12+1)≈2.56 to keep the range sensible
+  const rawDiversity = cluster?.sourceDiversityScore ?? 0;
+  const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
+
   // Weighted sum: balances all signals to produce importance score (0–1)
-  // Weights: quality (20%), freshness (50%), coverage (30%)
-  // Quality dominates since content is king; freshness ensures recency bias; coverage rewards broad reporting
-  const importance = 0.2 * quality + 0.5 * freshness + 0.3 * coverage;
+  // Weights: quality (20%), freshness (45%), coverage (20%), sourceDiversity (15%)
+  const importance = 0.2 * quality + 0.45 * freshness + 0.2 * coverage + 0.15 * sourceDiversity;
 
   return Math.max(0, Math.min(1, importance));
 }
