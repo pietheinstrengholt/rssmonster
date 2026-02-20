@@ -746,24 +746,14 @@ export const searchArticles = async ({
     if (!smartFolderSearch) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
       if (sortImportance) {
-        articles = articles
-          .map(article => {
-            const score = computeImportance(article);
-            const cluster = article.get('cluster');
-            if (cluster) {
-              console.log(
-                `[IMPORTANCE] id=${article.id} score=${score.toFixed(3)}` +
-                ` freshness=${(article.freshness ?? 0).toFixed(3)}` +
-                ` quality=${(article.quality ?? 0).toFixed(3)}` +
-                ` clusterSize=${cluster.articleCount ?? 1}` +
-                ` sourceCount=${cluster.sourceCount ?? 0}` +
-                ` diversity=${(cluster.sourceDiversityScore ?? 0).toFixed(3)}`
-              );
-            }
-            return { article, importance: score };
-          })
-          .sort((a, b) => b.importance - a.importance)
-          .map(item => item.article);
+        const scored = articles
+          .map(article => ({
+            article,
+            importance: computeImportance(article)
+          }))
+          .sort((a, b) => b.importance - a.importance);
+
+        articles = scored.map(item => item.article);
       } else if (sortQuality) {
         articles = articles
           .map(article => ({
