@@ -526,7 +526,7 @@ export const searchArticles = async ({
         {
           model: ArticleCluster,
           as: 'cluster',
-          attributes: ['id', 'articleCount', 'topicGroupCount', 'sourceDiversityScore', 'topicKey'],
+          attributes: ['id', 'articleCount', 'clusterStrength', 'sourceDiversityScore', 'sourceCount', 'topicKey'],
           required: false
         },
         {
@@ -747,10 +747,21 @@ export const searchArticles = async ({
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
       if (sortImportance) {
         articles = articles
-          .map(article => ({
-            article,
-            importance: computeImportance(article)
-          }))
+          .map(article => {
+            const score = computeImportance(article);
+            const cluster = article.get('cluster');
+            if (cluster) {
+              console.log(
+                `[IMPORTANCE] id=${article.id} score=${score.toFixed(3)}` +
+                ` freshness=${(article.freshness ?? 0).toFixed(3)}` +
+                ` quality=${(article.quality ?? 0).toFixed(3)}` +
+                ` clusterSize=${cluster.articleCount ?? 1}` +
+                ` sourceCount=${cluster.sourceCount ?? 0}` +
+                ` diversity=${(cluster.sourceDiversityScore ?? 0).toFixed(3)}`
+              );
+            }
+            return { article, importance: score };
+          })
           .sort((a, b) => b.importance - a.importance)
           .map(item => item.article);
       } else if (sortQuality) {

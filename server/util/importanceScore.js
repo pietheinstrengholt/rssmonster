@@ -19,9 +19,7 @@ export function computeImportance(article) {
   // This gives: standalone=0.5, 2 articles≈0.61, 4 articles≈0.70, 16 articles≈0.80
   const cluster = article.get('cluster');
   const clusterSize = cluster?.articleCount ?? 1;
-  const topicGroupSize = cluster?.topicGroupCount ?? 1;
-  const coverageSize = Math.max(clusterSize, topicGroupSize);
-  const coverage = Math.log2(coverageSize + 1) / (1 + Math.log2(coverageSize + 1));
+  const coverage = Math.log2(clusterSize + 1) / (1 + Math.log2(clusterSize + 1));
 
   // Source diversity: boosts articles confirmed by multiple unique publishers
   // sourceDiversityScore = log(sourceCount + 1), stored on the cluster
