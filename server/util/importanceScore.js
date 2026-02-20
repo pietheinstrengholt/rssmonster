@@ -29,8 +29,8 @@ export function computeImportance(article) {
   const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
 
   // Weighted sum: balances all signals to produce importance score (0–1)
-  // Weights: quality (20%), freshness (45%), coverage (20%), sourceDiversity (15%)
-  const importance = 0.2 * quality + 0.45 * freshness + 0.2 * coverage + 0.15 * sourceDiversity;
+  // Weights: quality (10%), freshness (40%), coverage (25%), sourceDiversity (25%)
+  const importance = 0.1 * quality + 0.40 * freshness + 0.25 * coverage + 0.25 * sourceDiversity;
 
   return Math.max(0, Math.min(1, importance));
 }
