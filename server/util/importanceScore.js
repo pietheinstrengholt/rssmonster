@@ -13,10 +13,10 @@ export function computeImportance(article) {
   // (includes feedTrust boost via the Article model's quality virtual field)
   const quality = article.quality ?? 0.7;
 
-  // Coverage signal: articles covered by more sources rank higher (inverted uniqueness)
-  // More sources reporting the same story = greater importance
+  // Coverage signal: articles in larger clusters rank higher (more redundant reporting)
+  // More articles covering the same event/topic = greater importance
   // Formula: coverage = log₂(size + 1) / (1 + log₂(size + 1))
-  // This gives: standalone=0.5, 2 sources≈0.61, 4 sources≈0.70, 16 sources≈0.80
+  // This gives: standalone=0.5, 2 articles≈0.61, 4 articles≈0.70, 16 articles≈0.80
   const cluster = article.get('cluster');
   const clusterSize = cluster?.articleCount ?? 1;
   const topicGroupSize = article.topicGroupCount ?? 1;
