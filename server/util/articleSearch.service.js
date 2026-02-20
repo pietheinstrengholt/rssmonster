@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Article, Feed, Tag, Setting } = db;
+const { Article, ArticleCluster, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
 import { computeImportance } from './importanceScore.js';
 
@@ -517,6 +517,25 @@ export const searchArticles = async ({
       attributes: queryAttributes,
       where: baseWhere
     };
+
+    // Include cluster + feed associations when sorting by importance
+    // so computeImportance can access cluster.articleCount, cluster.sourceDiversityScore,
+    // and Feed.feedTrust for the quality virtual field
+    if (sortImportance) {
+      articleQuery.include = [
+        {
+          model: ArticleCluster,
+          as: 'cluster',
+          attributes: ['id', 'articleCount', 'topicGroupCount', 'sourceDiversityScore', 'topicKey'],
+          required: false
+        },
+        {
+          model: Feed,
+          attributes: ['id', 'feedTrust'],
+          required: false
+        }
+      ];
+    }
 
     // Add order clause only for non-smart folder searches
     if (!smartFolderSearch) {
