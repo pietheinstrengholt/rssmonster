@@ -21,7 +21,7 @@ describe('Express smoke test', () => {
     }
 
     await sequelize.authenticate();
-  });
+  }, 30_000);
 
   afterAll(async () => {
     await sequelize.close();
