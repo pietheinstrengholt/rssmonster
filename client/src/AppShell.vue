@@ -433,8 +433,8 @@ export default {
   },
   computed: {
     showOnboarding() {
-      // Show onboarding if no categories exist
-      return this.overviewLoaded && (this.$store.data.categories.length === 0);
+      // Show onboarding only if overview loaded successfully (not offline) and no categories exist
+      return this.overviewLoaded && !this.offlineStatus && !this.$store.data.fatalError && (this.$store.data.categories.length === 0);
     }
   }
 };
