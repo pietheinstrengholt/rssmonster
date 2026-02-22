@@ -83,11 +83,11 @@
 
         <!-- TAGS + SCORES -->
         <div
-          v-if="tags && tags.length > 0 && $store.data.currentSelection.viewMode !== 'minimal'"
-          class="article-tags"
+          v-if="$store.data.currentSelection.viewMode !== 'minimal' && ((tags && tags.length > 0) || (quality !== undefined && roundedQuality !== NEUTRAL_SCORE) || (advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE) || (sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE) || (qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE))"
+          class="article-tags-scores"
         >
           <span
-            v-for="tag in tags"
+            v-for="tag in (tags || [])"
             :key="tag.id"
             class="tag"
             @click.stop="selectTag(tag)"
@@ -97,7 +97,7 @@
 
           <!-- Overall quality -->
           <span
-            v-if="quality !== undefined"
+            v-if="quality !== undefined && roundedQuality !== NEUTRAL_SCORE"
             class="score overall-score"
             :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`"
           >
@@ -693,15 +693,16 @@ export default {
   color: #51556a;
 }
 
-.block .article-tags {
+.block .article-tags-scores {
   margin-top: 5px;
   margin-bottom: 5px;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: 6px;
 }
 
-.block .article-tags .tag {
+.block .article-tags-scores .tag {
   display: inline-block;
   background-color: #e8f4f8;
   color: #2c5aa0;
@@ -709,43 +710,45 @@ export default {
   border-radius: 3px;
   font-size: 11px;
   font-weight: 500;
+  line-height: 1.4;
   white-space: nowrap;
 }
 
-.block .article-tags .score {
+.block .article-tags-scores .score {
   display: inline-block;
   padding: 3px 8px;
   border-radius: 3px;
   font-size: 11px;
   font-weight: 500;
+  line-height: 1.4;
   white-space: nowrap;
   background-color: #f5f5f5;
   color: #666;
 }
 
-.block .article-tags .overall-score {
+.block .article-tags-scores .overall-score {
   background-color: #ffebee;  /* Pale red */
   color: #c62828;             /* Darker red */
 }
 
-.block .article-tags .ad-score {
+.block .article-tags-scores .ad-score {
   background-color: #fff3e0;
   color: #e65100;
 }
 
-.block .article-tags .sentiment-score {
+.block .article-tags-scores .sentiment-score {
   background-color: #e8eaf6;
   color: #3f51b5;
 }
 
-.block .article-tags .quality-score {
+.block .article-tags-scores .quality-score {
   background-color: #e8f5e9;
   color: #2e7d32;
 }
 
 /* Hide tags and scores on mobile portrait mode */
 @media (max-width: 766px) and (orientation: portrait) {
-  .block .article-tags {
+  .block .article-tags-scores {
     display: none;
   }
 
@@ -978,17 +981,17 @@ span.cluster {
     background-color: #0d2f27;
   }
 
-  .block .article-tags .tag {
+  .block .article-tags-scores .tag {
     background-color: #1e3a5f;
     color: #a8c5e8;
   }
 
-  .block .article-tags .score {
+  .block .article-tags-scores .score {
     background-color: #2a2a2a;
     color: #ccc;
   }
 
- .block .article-tags .overall-score {
+ .block .article-tags-scores .overall-score {
     background-color: #2d1a1f;  /* Dark reddish-brown */
     color: #ef5350;             /* Bright red */
   }
@@ -1013,17 +1016,17 @@ span.cluster {
     color: #fff !important;
   }
 
-  .block .article-tags .ad-score {
+  .block .article-tags-scores .ad-score {
     background-color: #3d2a1f;
     color: #ffb74d;
   }
 
-  .block .article-tags .sentiment-score {
+  .block .article-tags-scores .sentiment-score {
     background-color: #1a1f3a;
     color: #9fa8da;
   }
 
-  .block .article-tags .quality-score {
+  .block .article-tags-scores .quality-score {
     background-color: #1f2e1f;
     color: #81c784;
   }

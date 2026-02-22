@@ -43,8 +43,26 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
 };
 
 async function analyzeArticleContent(contentStripped, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
+  // Normalize category names
+  const normalizeTag = t =>
+    String(t)
+      .toLowerCase()
+      .replace(/[^a-z0-9]/g, '')
+      .slice(0, 32);
+
+  // Check if feed provides categories to use as tags
+  const hasFeedCategories = Array.isArray(categoryNames) && categoryNames.length > 0;
+  const feedCategoryTags = hasFeedCategories
+    ? [...new Set(categoryNames.map(normalizeTag).filter(Boolean))].slice(0, 5)
+    : [];
+
   // Start with default analysis
   let analysis = defaultAnalysis(contentStripped);
+
+  // Apply feed category tags when available
+  if (hasFeedCategories) {
+    analysis.tags = feedCategoryTags;
+  }
 
   // Skip analysis if environment variable is set
   if (process.env.SKIP_OPENAI_ANALYSIS) {
@@ -67,11 +85,10 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
   // If no model specified, skip analysis
   if (!model) return analysis;
 
-  // Skip analysis for very short content without categories
+  // Skip OpenAI analysis for very short content (tags already set if categories exist)
   if (
     typeof contentStripped === 'string' &&
-    contentStripped.length < 500 &&
-    (!Array.isArray(categoryNames) || categoryNames.length === 0)
+    contentStripped.length < 500
   ) {
     return analysis;
   }
@@ -82,13 +99,6 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
       .reduce((prev, curr) =>
         Math.abs(curr - n) < Math.abs(prev - n) ? curr : prev
       );
-
-  // Normalize category names
-  const normalizeTag = t =>
-    String(t)
-      .toLowerCase()
-      .replace(/[^a-z0-9]/g, '')
-      .slice(0, 32);
 
   // Queue execution to respect rate limits
   await new Promise(resolve => {
@@ -244,9 +254,12 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
                 .map(b => b.trim())
                 .slice(0, 7)
             : [],
-          tags: Array.isArray(parsed.tags)
-            ? [...new Set(parsed.tags.map(normalizeTag).filter(Boolean))].slice(0, 5)
-            : [],
+          // Use feed categories as tags when available, otherwise use LLM-generated tags
+          tags: hasFeedCategories
+            ? feedCategoryTags
+            : (Array.isArray(parsed.tags)
+              ? [...new Set(parsed.tags.map(normalizeTag).filter(Boolean))].slice(0, 5)
+              : []),
           advertisementScore: bucketScore(parsed.advertisementScore),
           sentimentScore: bucketScore(parsed.sentimentScore),
           qualityScore: bucketScore(parsed.qualityScore)

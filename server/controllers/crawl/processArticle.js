@@ -53,6 +53,7 @@ const processArticle = async (feed, entry) => {
   try {
 
     // Extract relevant fields from the entry
+    console.log('Processing article:', entry);
     const fields = extractEntryFields(entry);
 
     // Normalize HTML entities
