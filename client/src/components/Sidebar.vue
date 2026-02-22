@@ -113,7 +113,7 @@
       <span class="glyphicon">
         <BootstrapIcon icon="tag-fill" variant="light" />
       </span>
-      <span class="title">{{ tag.name }}</span>
+      <span class="title">{{ tag.name.toLowerCase() }}</span>
       <span class="badge-unread">
         <span class="badge">{{ tag.count }}</span>
       </span>

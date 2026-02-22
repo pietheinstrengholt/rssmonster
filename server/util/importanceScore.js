@@ -28,9 +28,15 @@ export function computeImportance(article) {
   const rawDiversity = cluster?.sourceDiversityScore ?? 0;
   const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
 
+  // Rule-based tag boost: articles matched by user-defined tag rules are more relevant
+  const tags = article.Tags ?? [];
+  const hasRuleTag = tags.some(t => t.tagType === 'rule');
+  const ruleBoost = hasRuleTag ? 0.15 : 0;
+
   // Weighted sum: balances all signals to produce importance score (0–1)
   // Weights: quality (10%), freshness (40%), coverage (25%), sourceDiversity (25%)
-  const importance = 0.1 * quality + 0.40 * freshness + 0.25 * coverage + 0.25 * sourceDiversity;
+  // Plus a flat 0.15 boost for rule-tagged articles
+  const importance = 0.1 * quality + 0.40 * freshness + 0.25 * coverage + 0.25 * sourceDiversity + ruleBoost;
 
   return Math.max(0, Math.min(1, importance));
 }

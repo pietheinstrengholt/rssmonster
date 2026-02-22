@@ -29,6 +29,7 @@
                             <li><strong>Clicked:</strong> Sets the "read later" indicator.</li>
                             <li><strong>Mark as advertisement:</strong> Overrides the advertisement score to 100.</li>
                             <li><strong>Mark as low quality:</strong> Overrides the quality score to 100.</li>
+                            <li><strong>Assign tag:</strong> Adds a custom tag to the article.</li>
                         </ul>
                         <p class="mb-0">
                             <strong>Performance tip:</strong> Delete actions are processed <em>before</em> AI analysis, 
@@ -71,7 +72,19 @@
                                         <option value="clicked">Mark as clicked</option>
                                         <option value="advertisement">Mark as advertisement</option>
                                         <option value="badquality">Mark as low quality</option>
+                                        <option value="tag">Assign tag</option>
                                     </select>
+                                </div>
+
+                                <div v-if="action.actionType === 'tag'" class="form-group">
+                                    <label :for="'action-tag-' + index" class="small-label">Tag value</label>
+                                    <input 
+                                        :id="'action-tag-' + index"
+                                        v-model="action.tagValue" 
+                                        type="text" 
+                                        class="form-control" 
+                                        placeholder="e.g., important"
+                                    />
                                 </div>
                                 
                                 <div class="form-group form-group-full">
@@ -140,7 +153,8 @@ export default {
                 this.actions = resp.data.actions.map(a => ({
                     name: a.name || '',
                     actionType: a.actionType || '',
-                    regularExpression: a.regularExpression || ''
+                    regularExpression: a.regularExpression || '',
+                    tagValue: a.tagValue || ''
                 }));
             }
         } catch (err) {
@@ -151,7 +165,8 @@ export default {
         this.actions.push({
             name: '',
             actionType: '',
-            regularExpression: ''
+            regularExpression: '',
+            tagValue: ''
         });
     },
     removeAction(index) {

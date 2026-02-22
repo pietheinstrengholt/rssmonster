@@ -21,6 +21,10 @@ export default (sequelize) => {
       name: {
         type: DataTypes.STRING,
         allowNull: false
+      },
+      tagType: {
+        type: DataTypes.STRING,
+        allowNull: true
       }
     },
     {

@@ -8,6 +8,7 @@
    - bad quality
    - star
    - clicked
+   - tag (assign tag)
 ====================================================== */
 function applyActions(actions, contentStripped, title) {
   const result = {
@@ -16,7 +17,8 @@ function applyActions(actions, contentStripped, title) {
     status: 'unread',
     shouldDelete: false,
     advertisementScore: null,
-    qualityScore: null
+    qualityScore: null,
+    tags: []
   };
 
   for (const action of actions) {
@@ -62,6 +64,13 @@ function applyActions(actions, contentStripped, title) {
       // Clicked action: read-later indicator
       case 'clicked':
         result.clickedAmount = 1;
+        break;
+
+      // Tag action: assign a tag to the article
+      case 'tag':
+        if (action.tagValue) {
+          result.tags.push(action.tagValue);
+        }
         break;
     }
   }

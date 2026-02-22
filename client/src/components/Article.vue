@@ -89,10 +89,10 @@
           <span
             v-for="tag in (tags || [])"
             :key="tag.id"
-            class="tag"
+            :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]"
             @click.stop="selectTag(tag)"
           >
-            {{ tag.name }}
+            {{ tag.name.toLowerCase() }}
           </span>
 
           <!-- Overall quality -->
@@ -714,6 +714,11 @@ export default {
   white-space: nowrap;
 }
 
+.block .article-tags-scores .tag.tag-rule {
+  background-color: #f3e8ff;
+  color: #7c3aed;
+}
+
 .block .article-tags-scores .score {
   display: inline-block;
   padding: 3px 8px;
@@ -984,6 +989,11 @@ span.cluster {
   .block .article-tags-scores .tag {
     background-color: #1e3a5f;
     color: #a8c5e8;
+  }
+
+  .block .article-tags-scores .tag.tag-rule {
+    background-color: #3b1f5e;
+    color: #d4b5f0;
   }
 
   .block .article-tags-scores .score {

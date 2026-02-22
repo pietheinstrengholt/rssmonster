@@ -31,6 +31,10 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: false
       },
+      tagValue: {
+        type: Sequelize.STRING,
+        allowNull: true
+      },
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,

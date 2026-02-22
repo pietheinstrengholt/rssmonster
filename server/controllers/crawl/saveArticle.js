@@ -46,9 +46,26 @@ async function saveArticle(feed, data, analysis, actionResult) {
         Tag.create({
           articleId: article.id,
           userId: feed.userId,
-          name: tag
+          name: tag,
+          tagType: 'generated' // can be used later to differentiate between user-generated and system-generated tags
         }).catch(err =>
           console.error(`Error saving tag "${tag}":`, err.message)
+        )
+      )
+    );
+  }
+
+  // Save action-assigned tags with tagType 'rule'
+  if (actionResult.tags && actionResult.tags.length > 0) {
+    await Promise.all(
+      actionResult.tags.map(tag =>
+        Tag.create({
+          articleId: article.id,
+          userId: feed.userId,
+          name: tag,
+          tagType: 'rule'
+        }).catch(err =>
+          console.error(`Error saving action tag "${tag}":`, err.message)
         )
       )
     );

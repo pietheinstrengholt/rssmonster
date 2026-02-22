@@ -25,6 +25,10 @@ export default (sequelize) => {
       regularExpression: {
         type: DataTypes.TEXT,
         allowNull: false
+      },
+      tagValue: {
+        type: DataTypes.STRING,
+        allowNull: true
       }
     },
     {

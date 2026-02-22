@@ -50,7 +50,7 @@ const getArticle = async (req, res, _next) => {
         {
           model: Tag,
           required: false,
-          attributes: ['id', 'name']
+          attributes: ['id', 'name', 'tagType']
         }
       ]
     });
@@ -275,7 +275,7 @@ const articleDetails = async (req, res, _next) => {
         {
           model: Tag,
           required: false,
-          attributes: ['id', 'name']
+          attributes: ['id', 'name', 'tagType']
         },
         {
           model: ArticleCluster,

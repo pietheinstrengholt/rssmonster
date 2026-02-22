@@ -533,6 +533,11 @@ export const searchArticles = async ({
           model: Feed,
           attributes: ['id', 'feedTrust'],
           required: false
+        },
+        {
+          model: Tag,
+          attributes: ['id', 'tagType'],
+          required: false
         }
       ];
     }

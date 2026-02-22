@@ -35,7 +35,8 @@ const createAction = async (req, res, next) => {
         userId,
         name: a.name || '',
         actionType: a.actionType || '',
-        regularExpression: a.regularExpression || ''
+        regularExpression: a.regularExpression || '',
+        tagValue: a.tagValue || null
       }));
 
     // Insert new actions (bulk)
