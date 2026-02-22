@@ -44,6 +44,12 @@
                 <span v-if="ajaxRequest">Please Wait ...</span>
                 <br>
                 <span class="text-danger" v-if="error_msg">{{ error_msg }}</span>
+                <div v-if="isCloudflare" class="mt-2">
+                  <p class="text-muted small mb-2">You can still add this feed manually. The feed will be crawled, but may experience intermittent fetch failures due to bot protection.</p>
+                  <button type="button" class="btn btn-warning btn-sm" @click="forceAdd">
+                    <i class="bi bi-shield-exclamation"></i> Add feed anyway
+                  </button>
+                </div>
                 <div v-if="feed.feedName">
                   <div class="form-group row">
                     <label for="inputFeedName" class="col-sm-3 col-form-label">Feed name</label>
@@ -115,6 +121,8 @@ export default {
         return {
           ajaxRequest: false,
           error_msg: "",
+          isCloudflare: false,
+          cloudflareUrl: null,
           url: null,
           category: {},
           feed: {},
@@ -130,12 +138,58 @@ export default {
             try {
                 const result = await validateFeed(this.url, this.selectedCategory);
                 this.error_msg = "";
+                this.isCloudflare = false;
+                this.cloudflareUrl = null;
                 this.feed = result.data;
             } catch (error) {
-                this.error_msg = error.response?.data?.error_msg || "Error validating feed";
+                const data = error.response?.data;
+                if (data?.cloudflare) {
+                    this.isCloudflare = true;
+                    this.cloudflareUrl = data.feedUrl || this.url;
+                    this.error_msg = data.error_msg;
+                } else {
+                    this.isCloudflare = false;
+                    this.cloudflareUrl = null;
+                    this.error_msg = data?.error_msg || "Error validating feed";
+                }
                 console.log(error);
             } finally {
                 this.ajaxRequest = false;
+            }
+        },
+        async forceAdd() {
+            try {
+                const feedUrl = this.cloudflareUrl || this.url;
+                // Extract hostname as feed name
+                let feedName;
+                try {
+                    feedName = new URL(feedUrl).hostname;
+                } catch {
+                    feedName = feedUrl;
+                }
+
+                const result = await createFeed({
+                    categoryId: this.selectedCategory,
+                    feedName,
+                    feedDesc: null,
+                    feedType: 'rss',
+                    url: feedUrl,
+                    status: 'active',
+                    crawlSince: this.crawlSince
+                });
+
+                this.feed = result.data.feed;
+                this.feed.unreadCount = 0;
+                this.feed.readCount = 0;
+                this.feed.starCount = 0;
+
+                var index = helper.findIndexById(this.$store.data.categories, this.selectedCategory);
+                this.$store.data.categories[index].feeds.push(this.feed);
+                this.$store.data.increaseRefreshCategories();
+                this.$store.data.setShowModal('');
+            } catch (error) {
+                this.error_msg = error.response?.data?.error || "Error adding feed";
+                console.log(error);
             }
         },
         async newFeed() {

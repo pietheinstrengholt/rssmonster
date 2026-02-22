@@ -80,6 +80,20 @@ const registerDiscoveryError = async (feed, message) => {
   }
 };
 
+const isCloudflareChallenge = (response, body) => {
+  if (!response) return false;
+  const status = response.status;
+  const server = (response.headers?.get?.('server') || '').toLowerCase();
+  const isCloudflare = server.includes('cloudflare');
+  if (!isCloudflare) return false;
+  if (status === 403 || status === 503) return true;
+  if (body) {
+    const head = String(body).slice(0, 1000).toLowerCase();
+    if (head.includes('just a moment') || head.includes('attention required') || head.includes('cf-challenge')) return true;
+  }
+  return false;
+};
+
 const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
 
 const isLikelyFeedBody = (body = "") => {
@@ -162,6 +176,16 @@ export const discoverRssLink = async (url, feed) => {
     } catch (e) {
       // Still try fallbacks based on the URL we were given.
       console.log(`[Error] Initial fetch failed for ${url}: ${e.message}`);
+    }
+
+    // Detect Cloudflare bot protection early (check headers + status only, no body read)
+    if (initialResponse && !initialResponse.ok) {
+      const server = (initialResponse.headers?.get?.('server') || '').toLowerCase();
+      if (server.includes('cloudflare') && (initialResponse.status === 403 || initialResponse.status === 503)) {
+        console.log(`[Cloudflare] Bot protection detected for ${url} (status ${initialResponse.status})`);
+        await registerDiscoveryError(feed, 'Cloudflare bot protection detected');
+        return { cloudflare: true, url };
+      }
     }
 
     // Use the final redirected URL if available

@@ -147,7 +147,8 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
     try {
       //discover RssLink
       const discoveryInputUrl = feed.url;
-      const url = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
+      const discoveryResult = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
+      const url = typeof discoveryResult === 'string' ? discoveryResult : undefined;
 
       if (!url) {
         throw new Error('Unable to discover RSS/Atom URL');

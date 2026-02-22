@@ -225,8 +225,19 @@ const validateFeed = async (req, res, _next) => {
 
     const categoryId = req.body.categoryId;
 
-    const url = await discoverRssLink.discoverRssLink(req.body.url);
-    console.log("Discovered RSS URL: " + url);
+    const discoveryResult = await discoverRssLink.discoverRssLink(req.body.url);
+    console.log("Discovery result:", discoveryResult);
+
+    // Cloudflare bot protection detected — inform front end
+    if (discoveryResult && typeof discoveryResult === 'object' && discoveryResult.cloudflare) {
+      return res.status(403).json({
+        error_msg: 'This feed is protected by Cloudflare bot detection and cannot be validated automatically.',
+        cloudflare: true,
+        feedUrl: discoveryResult.url
+      });
+    }
+
+    const url = typeof discoveryResult === 'string' ? discoveryResult : undefined;
 
     if (typeof url === 'undefined') {
       return res.status(400).json({
