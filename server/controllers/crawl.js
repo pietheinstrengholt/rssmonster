@@ -148,7 +148,11 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
       //discover RssLink
       const discoveryInputUrl = feed.url;
       const discoveryResult = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
-      const url = typeof discoveryResult === 'string' ? discoveryResult : undefined;
+
+      // If Cloudflare blocks discovery, fall back to the original URL so the parser can try it directly
+      const url = typeof discoveryResult === 'string'
+        ? discoveryResult
+        : (discoveryResult?.cloudflare ? discoveryResult.url : undefined);
 
       if (!url) {
         throw new Error('Unable to discover RSS/Atom URL');
