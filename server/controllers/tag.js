@@ -14,9 +14,10 @@ const getTags = async (req, res) => {
       where: { userId },
       attributes: [
         "name",
+        "tagType",
         [Sequelize.fn("COUNT", Sequelize.col("id")), "count"]
       ],
-      group: ["name"],
+      group: ["name", "tagType"],
       order: [[Sequelize.fn("COUNT", Sequelize.col("id")), "DESC"], ["name", "ASC"]],
       limit: 10
     });
