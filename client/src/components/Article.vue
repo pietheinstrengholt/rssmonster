@@ -91,9 +91,16 @@
 
         <!-- TAGS + SCORES -->
         <div
-          v-if="$store.data.currentSelection.viewMode !== 'minimal' && ((tags && tags.length > 0) || (quality !== undefined && roundedQuality !== NEUTRAL_SCORE) || (advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE) || (sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE) || (qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE))"
+          v-if="$store.data.currentSelection.viewMode !== 'minimal' && (categoryName || (tags && tags.length > 0) || (quality !== undefined && roundedQuality !== NEUTRAL_SCORE) || (advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE) || (sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE) || (qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE))"
           class="article-tags-scores"
         >
+          <span
+            v-if="categoryName"
+            class="category-badge"
+            @click.stop="selectCategory"
+          >
+            {{ categoryName }}
+          </span>
           <span
             v-for="tag in (tags || [])"
             :key="tag.id"
@@ -251,6 +258,11 @@ export default {
     ruleTags() {
       return (this.tags || []).filter(t => t.tagType === 'rule');
     },
+    categoryName() {
+      if (!this.feed?.categoryId) return '';
+      const category = this.$store.data.categories.find(c => c.id === this.feed.categoryId);
+      return category?.name || '';
+    },
     roundedQuality() {
       return Math.round((this.quality || 0) * 100);
     },
@@ -402,6 +414,11 @@ export default {
     selectTag(tag) {
       if (this.$store.data.currentSelection) {
         this.$store.data.currentSelection.tag = tag?.name || '';
+      }
+    },
+    selectCategory() {
+      if (this.feed?.categoryId) {
+        this.$store.data.setSelectedCategoryId(this.feed.categoryId);
       }
     },
     articleClicked(articleId) {
@@ -714,6 +731,19 @@ export default {
   gap: 6px;
 }
 
+.block .article-tags-scores .category-badge {
+  display: inline-block;
+  background-color: #f0f0f0;
+  color: #555;
+  padding: 3px 8px;
+  border-radius: 3px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
 .block .article-tags-scores .tag {
   display: inline-block;
   background-color: #e8f4f8;
@@ -773,6 +803,10 @@ export default {
   }
 
   .block .article-tags-scores .tag {
+    display: none;
+  }
+
+  .block .article-tags-scores .category-badge {
     display: none;
   }
 
@@ -1032,6 +1066,11 @@ span.cluster {
   .block .article-tags-scores .tag {
     background-color: #1e3a5f;
     color: #a8c5e8;
+  }
+
+  .block .article-tags-scores .category-badge {
+    background-color: #3a3a3a;
+    color: #ccc;
   }
 
   .block .article-tags-scores .tag.tag-rule {
