@@ -79,6 +79,14 @@
             <BootstrapIcon icon="people-fill" class="source-diversity-icon" />
             {{ cluster.sourceCount }} sources
           </span>
+          <span
+            v-for="tag in ruleTags"
+            :key="'mobile-rule-' + tag.id"
+            class="tag tag-rule mobile-rule-tag"
+            @click.stop="selectTag(tag)"
+          >
+            {{ tag.name.toLowerCase() }}
+          </span>
         </div>
 
         <!-- TAGS + SCORES -->
@@ -202,13 +210,14 @@ function timeDifference(current, previous) {
   const msPerMonth = msPerDay * 30;
   const msPerYear = msPerDay * 365;
   const elapsed = current - previous;
+  const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
 
-  if (elapsed < msPerMinute) return Math.round(elapsed / 1000) + ' seconds ago';
-  if (elapsed < msPerHour) return Math.round(elapsed / msPerMinute) + ' minutes ago';
-  if (elapsed < msPerDay) return Math.round(elapsed / msPerHour) + ' hours ago';
-  if (elapsed < msPerMonth) return 'approximately ' + Math.round(elapsed / msPerDay) + ' days ago';
-  if (elapsed < msPerYear) return 'approximately ' + Math.round(elapsed / msPerMonth) + ' months ago';
-  return 'approximately ' + Math.round(elapsed / msPerYear) + ' years ago';
+  if (elapsed < msPerMinute) return plural(Math.round(elapsed / 1000), 'second');
+  if (elapsed < msPerHour) return plural(Math.round(elapsed / msPerMinute), 'minute');
+  if (elapsed < msPerDay) return plural(Math.round(elapsed / msPerHour), 'hour');
+  if (elapsed < msPerMonth) return plural(Math.round(elapsed / msPerDay), 'day');
+  if (elapsed < msPerYear) return plural(Math.round(elapsed / msPerMonth), 'month');
+  return plural(Math.round(elapsed / msPerYear), 'year');
 }
 
 export default {
@@ -239,6 +248,9 @@ export default {
     this.teardownMediaQueryListener();
   },
   computed: {
+    ruleTags() {
+      return (this.tags || []).filter(t => t.tagType === 'rule');
+    },
     roundedQuality() {
       return Math.round((this.quality || 0) * 100);
     },
@@ -751,9 +763,20 @@ export default {
   color: #2e7d32;
 }
 
-/* Hide tags and scores on mobile portrait mode */
+/* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
-  .block .article-tags-scores {
+  .block .feedname {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 2px;
+  }
+
+  .block .article-tags-scores .tag {
+    display: none;
+  }
+
+  .block .article-tags-scores .score {
     display: none;
   }
 
@@ -801,6 +824,26 @@ span.cluster {
 
 .source-diversity-icon {
   font-size: 10px;
+}
+
+/* Rule-based tags shown inline with feedname on mobile portrait only */
+.mobile-rule-tag {
+  display: none;
+}
+
+@media (max-width: 766px) and (orientation: portrait) {
+  .mobile-rule-tag {
+    display: inline-flex;
+    align-items: center;
+    margin-left: 6px;
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 11px;
+    font-weight: 600;
+    white-space: nowrap;
+    background-color: #f3e8ff;
+    color: #7c3aed;
+  }
 }
 
 .mobile-score-icon {
@@ -992,6 +1035,11 @@ span.cluster {
   }
 
   .block .article-tags-scores .tag.tag-rule {
+    background-color: #3b1f5e;
+    color: #d4b5f0;
+  }
+
+  .mobile-rule-tag {
     background-color: #3b1f5e;
     color: #d4b5f0;
   }
