@@ -153,7 +153,7 @@ export default {
             screenHeight -= el.offsetHeight;
 
             if (screenHeight > 0) {
-              this.addToPool(child.id);
+              this.addToPool(Number(child.id));
             }
 
             /* ---------- VISIBILITY / DWELL LOGIC ---------- */
