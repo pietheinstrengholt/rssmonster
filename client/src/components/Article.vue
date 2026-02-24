@@ -806,10 +806,6 @@ export default {
     display: none;
   }
 
-  .block .article-tags-scores .category-badge {
-    display: none;
-  }
-
   .block .article-tags-scores .score {
     display: none;
   }
