@@ -313,23 +313,21 @@ export const searchArticles = async ({
     // Sort: search token (sort:ASC/DESC/IMPORTANCE/QUALITY/ATTENTION) overrides query param
     // SortImportance flag set if sort is IMPORTANCE
     // Smart folder optimization: skip sort entirely (only counting articles)
-    let workingSort = smartFolderSearch ? "DESC" : (sortFilter !== null ? sortFilter : (sort || "DESC"));
+    let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
     let sortImportance = false;
     let sortQuality = false;
     let sortAttention = false;
 
-    if (!smartFolderSearch) {
-      // Normalize sort value when "IMPORTANCE" is specified
-      if (workingSort.toUpperCase() === "IMPORTANCE") {
-        workingSort = "DESC";
-        sortImportance = true;
-      } else if (workingSort.toUpperCase() === "QUALITY") {
-        workingSort = "DESC";
-        sortQuality = true;
-      } else if (workingSort.toUpperCase() === "ATTENTION") {
-        workingSort = "DESC";
-        sortAttention = true;
-      }
+    // Normalize sort value when virtual sort modes are specified
+    if (workingSort.toUpperCase() === "IMPORTANCE") {
+      workingSort = "DESC";
+      sortImportance = true;
+    } else if (workingSort.toUpperCase() === "QUALITY") {
+      workingSort = "DESC";
+      sortQuality = true;
+    } else if (workingSort.toUpperCase() === "ATTENTION") {
+      workingSort = "DESC";
+      sortAttention = true;
     }
     console.log(`\x1b[31mFinal sort value: "${workingSort}" (smartFolder: ${smartFolderSearch})\x1b[0m`);
 
@@ -482,9 +480,9 @@ export const searchArticles = async ({
     const queryAttributes = ["id"];
     
     // Determine what attributes we need based on filters and sort
-    const needsQuality = qualityFilter || (!smartFolderSearch && sortQuality);
-    const needsFreshness = freshnessFilter || (!smartFolderSearch && sortImportance);
-    const needsAttention = !smartFolderSearch && sortAttention;
+    const needsQuality = qualityFilter || sortQuality;
+    const needsFreshness = freshnessFilter || sortImportance;
+    const needsAttention = sortAttention;
     const needsPublished = !smartFolderSearch || needsFreshness;
     
     if (needsQuality) {
@@ -736,19 +734,19 @@ export const searchArticles = async ({
     }
     
     // If sorting by importance, compute importance scores and sort
-    if (!smartFolderSearch && sortImportance) {
+    if (sortImportance) {
       workingSort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
     }
-    if (!smartFolderSearch && sortQuality) {
+    if (sortQuality) {
       workingSort = "QUALITY";
     }
-    if (!smartFolderSearch && sortAttention) {
+    if (sortAttention) {
       workingSort = "ATTENTION";
     }
 
     // Move the sorting logic here to after all filtering is done
-    // Skip for smart folder searches (only counting articles)
-    if (!smartFolderSearch) {
+    // For smart folder searches, only apply in-memory sorting for virtual sort modes.
+    if (!smartFolderSearch || sortImportance || sortQuality || sortAttention) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
       if (sortImportance) {
         const scored = articles

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import { searchArticles } from '../util/articleSearch.service.js';
 
-const { sequelize, User, Category, Feed, Article, Tag, Setting } = db;
+const { sequelize, User, Category, Feed, Article, ArticleCluster, Tag, Setting } = db;
 
 describe('articleSearch.service', () => {
   let user;
@@ -351,6 +351,68 @@ describe('articleSearch.service', () => {
       const recentIdx = result.itemIds.indexOf(articles.recent.id);
       const oldIdx = result.itemIds.indexOf(articles.old.id);
       expect(oldIdx).toBeLessThan(recentIdx);
+    });
+
+    it('sorts by IMPORTANCE using loaded cluster attributes', async () => {
+      const now = new Date();
+      const lowCoverageArticle = await Article.create({
+        userId: user.id,
+        feedId: feed.id,
+        url: 'https://example.com/article-importance-low-coverage',
+        title: 'Local incident report',
+        description: 'Single-source local incident report',
+        contentOriginal: '<p>Single-source local incident report.</p>',
+        contentStripped: 'Single-source local incident report.',
+        status: 'unread',
+        published: now,
+        advertisementScore: 75,
+        sentimentScore: 75,
+        qualityScore: 75
+      });
+
+      const highCoverageArticle = await Article.create({
+        userId: user.id,
+        feedId: feed.id,
+        url: 'https://example.com/article-importance-high-coverage',
+        title: 'Major event covered widely',
+        description: 'Multi-source reporting of a major event',
+        contentOriginal: '<p>Multi-source reporting of a major event.</p>',
+        contentStripped: 'Multi-source reporting of a major event.',
+        status: 'unread',
+        published: now,
+        advertisementScore: 75,
+        sentimentScore: 75,
+        qualityScore: 75
+      });
+
+      const lowCluster = await ArticleCluster.create({
+        userId: user.id,
+        representativeArticleId: lowCoverageArticle.id,
+        articleCount: 2,
+        sourceCount: 1,
+        sourceDiversityScore: 0.69,
+        clusterStrength: 0.4
+      });
+
+      const highCluster = await ArticleCluster.create({
+        userId: user.id,
+        representativeArticleId: highCoverageArticle.id,
+        articleCount: 30,
+        sourceCount: 8,
+        sourceDiversityScore: 2.4,
+        clusterStrength: 0.9
+      });
+
+      await lowCoverageArticle.update({ clusterId: lowCluster.id });
+      await highCoverageArticle.update({ clusterId: highCluster.id });
+
+      const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'IMPORTANCE' });
+      const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
+      const highCoverageIdx = result.itemIds.indexOf(highCoverageArticle.id);
+
+      expect(highCoverageIdx).toBeGreaterThanOrEqual(0);
+      expect(lowCoverageIdx).toBeGreaterThanOrEqual(0);
+      expect(highCoverageIdx).toBeLessThan(lowCoverageIdx);
     });
   });
 
