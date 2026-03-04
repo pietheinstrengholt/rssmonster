@@ -354,65 +354,85 @@ describe('articleSearch.service', () => {
     });
 
     it('sorts by IMPORTANCE using loaded cluster attributes', async () => {
-      const now = new Date();
-      const lowCoverageArticle = await Article.create({
-        userId: user.id,
-        feedId: feed.id,
-        url: 'https://example.com/article-importance-low-coverage',
-        title: 'Local incident report',
-        description: 'Single-source local incident report',
-        contentOriginal: '<p>Single-source local incident report.</p>',
-        contentStripped: 'Single-source local incident report.',
-        status: 'unread',
-        published: now,
-        advertisementScore: 75,
-        sentimentScore: 75,
-        qualityScore: 75
-      });
+      let lowCoverageArticle;
+      let highCoverageArticle;
+      let lowCluster;
+      let highCluster;
 
-      const highCoverageArticle = await Article.create({
-        userId: user.id,
-        feedId: feed.id,
-        url: 'https://example.com/article-importance-high-coverage',
-        title: 'Major event covered widely',
-        description: 'Multi-source reporting of a major event',
-        contentOriginal: '<p>Multi-source reporting of a major event.</p>',
-        contentStripped: 'Multi-source reporting of a major event.',
-        status: 'unread',
-        published: now,
-        advertisementScore: 75,
-        sentimentScore: 75,
-        qualityScore: 75
-      });
+      try {
+        const now = new Date();
+        lowCoverageArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/article-importance-low-coverage',
+          title: 'Local incident report',
+          description: 'Single-source local incident report',
+          contentOriginal: '<p>Single-source local incident report.</p>',
+          contentStripped: 'Single-source local incident report.',
+          status: 'unread',
+          published: now,
+          advertisementScore: 75,
+          sentimentScore: 75,
+          qualityScore: 75
+        });
 
-      const lowCluster = await ArticleCluster.create({
-        userId: user.id,
-        representativeArticleId: lowCoverageArticle.id,
-        articleCount: 2,
-        sourceCount: 1,
-        sourceDiversityScore: 0.69,
-        clusterStrength: 0.4
-      });
+        highCoverageArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/article-importance-high-coverage',
+          title: 'Major event covered widely',
+          description: 'Multi-source reporting of a major event',
+          contentOriginal: '<p>Multi-source reporting of a major event.</p>',
+          contentStripped: 'Multi-source reporting of a major event.',
+          status: 'unread',
+          published: now,
+          advertisementScore: 75,
+          sentimentScore: 75,
+          qualityScore: 75
+        });
 
-      const highCluster = await ArticleCluster.create({
-        userId: user.id,
-        representativeArticleId: highCoverageArticle.id,
-        articleCount: 30,
-        sourceCount: 8,
-        sourceDiversityScore: 2.4,
-        clusterStrength: 0.9
-      });
+        lowCluster = await ArticleCluster.create({
+          userId: user.id,
+          representativeArticleId: lowCoverageArticle.id,
+          articleCount: 2,
+          sourceCount: 1,
+          sourceDiversityScore: 0.69,
+          clusterStrength: 0.4
+        });
 
-      await lowCoverageArticle.update({ clusterId: lowCluster.id });
-      await highCoverageArticle.update({ clusterId: highCluster.id });
+        highCluster = await ArticleCluster.create({
+          userId: user.id,
+          representativeArticleId: highCoverageArticle.id,
+          articleCount: 30,
+          sourceCount: 8,
+          sourceDiversityScore: 2.4,
+          clusterStrength: 0.9
+        });
 
-      const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'IMPORTANCE' });
-      const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
-      const highCoverageIdx = result.itemIds.indexOf(highCoverageArticle.id);
+        await lowCoverageArticle.update({ clusterId: lowCluster.id });
+        await highCoverageArticle.update({ clusterId: highCluster.id });
 
-      expect(highCoverageIdx).toBeGreaterThanOrEqual(0);
-      expect(lowCoverageIdx).toBeGreaterThanOrEqual(0);
-      expect(highCoverageIdx).toBeLessThan(lowCoverageIdx);
+        const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'IMPORTANCE' });
+        const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
+        const highCoverageIdx = result.itemIds.indexOf(highCoverageArticle.id);
+
+        expect(highCoverageIdx).toBeGreaterThanOrEqual(0);
+        expect(lowCoverageIdx).toBeGreaterThanOrEqual(0);
+        expect(highCoverageIdx).toBeLessThan(lowCoverageIdx);
+      } finally {
+        if (lowCluster) {
+          await ArticleCluster.destroy({ where: { id: lowCluster.id } });
+        }
+        if (highCluster) {
+          await ArticleCluster.destroy({ where: { id: highCluster.id } });
+        }
+        if (lowCoverageArticle) {
+          await Article.destroy({ where: { id: lowCoverageArticle.id } });
+        }
+        if (highCoverageArticle) {
+          await Article.destroy({ where: { id: highCoverageArticle.id } });
+        }
+      }
     });
   });
 
