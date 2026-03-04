@@ -244,7 +244,6 @@ const articleDetails = async (req, res, _next) => {
     }
 
     const articleIds = req.body.articleIds;
-    const sort = req.body.sort || "DESC";
 
     if (articleIds === undefined) {
       return res.status(400).json({
@@ -257,14 +256,9 @@ const articleDetails = async (req, res, _next) => {
       `\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`
     );
 
-    // Determine ordering strategy:
-    // - IMPORTANCE/QUALITY/ATTENTION: preserve articleIds order (already sorted by search service)
-    // - DESC/ASC: sort by published date
-    // - Default: DESC
-    const sortUpper = (sort || "").toUpperCase();
-    const orderClause = ["IMPORTANCE", "QUALITY", "ATTENTION"].includes(sortUpper)
-      ? [] // No database sorting - preserve ID array order from search service
-      : [["published", sort || "DESC"]];
+    // Always preserve incoming articleIds order.
+    // searchArticles is the single source of truth for ranking/sorting,
+    // including IMPORTANCE/QUALITY/ATTENTION and DESC/ASC modes.
 
     const articles = await Article.findAll({
       include: [
@@ -291,7 +285,6 @@ const articleDetails = async (req, res, _next) => {
           }
         }
       ],
-      order: orderClause,
       where: {
         userId: userId,
         id: articlesArray
@@ -304,15 +297,13 @@ const articleDetails = async (req, res, _next) => {
       });
     }
 
-    // Preserve original ID order for IMPORTANCE/QUALITY/ATTENTION (search service already sorted)
-    if (["IMPORTANCE", "QUALITY", "ATTENTION"].includes(sortUpper)) {
-      const idIndexMap = new Map(
-        articlesArray.map((id, index) => [String(id), index])
-      );
-      articles.sort(
-        (a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id))
-      );
-    }
+    // Preserve original ID order from search service for all sort modes.
+    const idIndexMap = new Map(
+      articlesArray.map((id, index) => [String(id), index])
+    );
+    articles.sort(
+      (a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id))
+    );
 
     /* ============================================================
      * Predicted Reading Affinity (NEW)
