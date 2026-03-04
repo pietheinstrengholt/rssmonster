@@ -1059,6 +1059,12 @@ span.cluster {
     background-color: #0d2f27;
   }
 
+  .block.cluster-article .article-content,
+  .block.cluster-article h5.heading,
+  .block.cluster-article .feedname {
+    background-color: #0d2f27;
+  }
+
   .block .article-tags-scores .tag {
     background-color: #1e3a5f;
     color: #a8c5e8;
