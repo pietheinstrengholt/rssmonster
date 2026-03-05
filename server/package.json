@@ -45,7 +45,7 @@
     "he": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
-    "multer": "^2.1.0",
+    "multer": "^2.1.1",
     "mysql2": "^3.18.2",
     "node-cache": "^5.1.2",
     "openai": "^6.25.0",
