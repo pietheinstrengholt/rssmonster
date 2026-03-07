@@ -80,20 +80,6 @@ const registerDiscoveryError = async (feed, message) => {
   }
 };
 
-const isCloudflareChallenge = (response, body) => {
-  if (!response) return false;
-  const status = response.status;
-  const server = (response.headers?.get?.('server') || '').toLowerCase();
-  const isCloudflare = server.includes('cloudflare');
-  if (!isCloudflare) return false;
-  if (status === 403 || status === 503) return true;
-  if (body) {
-    const head = String(body).slice(0, 1000).toLowerCase();
-    if (head.includes('just a moment') || head.includes('attention required') || head.includes('cf-challenge')) return true;
-  }
-  return false;
-};
-
 const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
 
 const isLikelyFeedBody = (body = "") => {
