@@ -126,7 +126,7 @@
       </div>
       <div v-bind:class="{ 'selected': $store.data.currentSelection.categoryId === '%' }" v-on:click="loadAll()" id="all" class="category-top">
         <span class="glyphicon">
-          <BootstrapIcon icon="star-fill" variant="light" />
+          <BootstrapIcon icon="collection-fill" variant="light" />
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
