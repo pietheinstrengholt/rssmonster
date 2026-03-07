@@ -272,6 +272,10 @@
   min-width: 13px;
 }
 
+div.category-feed span.glyphicon img {
+    margin-bottom: 2px;
+}
+
 .title {
   text-overflow: ellipsis;
   overflow: hidden;
