@@ -5,8 +5,8 @@ import { assignArticleToCluster } from '../controllers/cluster/assignArticleToCl
 
 const { sequelize, User, Category, Feed, Article, ArticleCluster } = db;
 
-const buildVector = (length = 32) =>
-  Array.from({ length }, (_, i) => ((i % 5) + 1) / 10);
+const buildVector = (length = 32, shift = 0) =>
+  Array.from({ length }, (_, i) => (((i + shift) % 5) + 1) / 10);
 
 describe('assignArticleToCluster', () => {
   let user;
@@ -53,8 +53,8 @@ describe('assignArticleToCluster', () => {
   });
 
   it('creates a new event cluster for first vectorized article', async () => {
-    const eventVector = buildVector();
-    const topicVector = buildVector();
+    const eventVector = buildVector(32, 0);
+    const topicVector = buildVector(32, 0);
 
     const article = await Article.create({
       userId: user.id,
@@ -82,8 +82,9 @@ describe('assignArticleToCluster', () => {
   });
 
   it('assigns a similar article to existing cluster and updates source diversity', async () => {
-    const eventVector = buildVector();
-    const topicVector = buildVector();
+    // Use a different vector family than the previous test to avoid matching older test clusters.
+    const eventVector = buildVector(32, 3);
+    const topicVector = buildVector(32, 3);
 
     const firstArticle = await Article.create({
       userId: user.id,

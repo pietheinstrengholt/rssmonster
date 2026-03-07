@@ -36,7 +36,7 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(rssUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl);
+    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 2);
   });
 
   it('discovers Bluesky profile RSS by appending /rss', async () => {
