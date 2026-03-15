@@ -143,6 +143,9 @@ export default {
           let screenHeight = Math.ceil(document.documentElement.scrollTop);
 
           for (const child of articlesEl.children) {
+            const articleId = Number(child.id);
+            if (!Number.isFinite(articleId)) continue;
+
             const el = document.getElementById(child.id);
             if (!el) continue;
 
@@ -153,33 +156,33 @@ export default {
             screenHeight -= el.offsetHeight;
 
             if (screenHeight > 0) {
-              this.addToPool(Number(child.id));
+              this.addToPool(articleId);
             }
 
             /* ---------- VISIBILITY / DWELL LOGIC ---------- */
             const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
 
-            const wasVisible = this.visibleMap.get(child.id) || false;
+            const wasVisible = this.visibleMap.get(articleId) || false;
 
             // article just entered viewport, call opened()
             if (isVisible && !wasVisible) {
-              this.opened(child.id);
-              this.visibleSince.set(child.id, now);
+              this.opened(articleId);
+              this.visibleSince.set(articleId, now);
             }
 
             // article just left viewport
             if (!isVisible && wasVisible) {
-              const start = this.visibleSince.get(child.id);
-              if (start) {
+              const start = this.visibleSince.get(articleId);
+              if (typeof start === 'number') {
                 // finalize dwell time
                 const elapsed = now - start;
-                const total = (this.visibleDuration.get(child.id) || 0) + elapsed;
-                this.visibleDuration.set(child.id, total);
-                this.visibleSince.delete(child.id);
+                const total = (this.visibleDuration.get(articleId) || 0) + elapsed;
+                this.visibleDuration.set(articleId, total);
+                this.visibleSince.delete(articleId);
               }
             }
 
-            this.visibleMap.set(child.id, isVisible);
+            this.visibleMap.set(articleId, isVisible);
           }
         }
       }
