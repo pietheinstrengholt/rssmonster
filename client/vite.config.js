@@ -54,7 +54,7 @@ export default defineConfig({
             theme_color: '#ffffff',
             icons: [
               {
-                src: '/img/icons/android-icon-192x192.png',
+                src: '/img/icons/web-app-manifest-192x192.png',
                 sizes: '192x192',
                 type: 'image/png'
               },
