@@ -1,7 +1,7 @@
 // client/src/store/data.js
 import { defineStore } from 'pinia';
 import { fetchSettings as fetchSettingsAPI } from '../api/settings';
-import { fetchSmartFolders as fetchSmartFoldersAPI } from '../api/smartfolders';
+import { fetchSmartFolders as fetchSmartFoldersAPI, fetchSmartFolderCounts as fetchSmartFolderCountsAPI } from '../api/smartfolders';
 import { fetchTopTags as fetchTopTagsAPI } from '../api/tags';
 import { fetchOverview as fetchOverviewAPI } from '../api/manager';
 
@@ -98,6 +98,13 @@ export const useStore = defineStore('data', {
     async fetchSmartFolders() {
       const { data } = await fetchSmartFoldersAPI();
       this.smartFolders = data.smartFolders || [];
+      fetchSmartFolderCountsAPI().then(({ data: countData }) => {
+        const map = new Map((countData.counts || []).map(c => [c.id, c.ArticleCount]));
+        this.smartFolders = this.smartFolders.map(sf => ({
+          ...sf,
+          ArticleCount: map.has(sf.id) ? map.get(sf.id) : sf.ArticleCount
+        }));
+      }).catch(() => {});
     },
 
     async fetchTopTags() {

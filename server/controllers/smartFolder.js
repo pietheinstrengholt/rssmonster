@@ -38,9 +38,65 @@ const getSmartFolders = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    const withCounts = req.query.withCounts !== 'false';
+
     const smartFolders = await SmartFolder.findAll({
       where: { userId },
       attributes: ['id', 'name', 'query', 'limitCount'],
+      order: [['name', 'ASC']]
+    });
+
+    if (withCounts) {
+      const userSettings = await Setting.findOne({
+        where: { userId },
+        attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+      });
+
+      const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
+      const minSentimentScore = userSettings?.minSentimentScore ?? 0;
+      const minQualityScore = userSettings?.minQualityScore ?? 0;
+
+      await mapWithConcurrency(
+        smartFolders,
+        SMART_FOLDER_COUNT_CONCURRENCY,
+        async folder => {
+          try {
+            const result = await searchArticles({
+              userId,
+              search: folder.query,
+              minAdvertisementScore,
+              minSentimentScore,
+              minQualityScore,
+              smartFolderSearch: true,
+              limitCount: folder.limitCount || 50
+            });
+            folder.dataValues.ArticleCount = result.itemIds.length;
+          } catch {
+            folder.dataValues.ArticleCount = 0;
+          }
+        }
+      );
+    }
+
+    res.status(200).json({ total: smartFolders.length, smartFolders });
+  } catch (err) {
+    next(err);
+  }
+};
+
+/* ---------------------------------------------------
+ * GET /api/smartfolders/counts
+ * --------------------------------------------------- */
+const getSmartFolderCounts = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const smartFolders = await SmartFolder.findAll({
+      where: { userId },
+      attributes: ['id', 'query', 'limitCount'],
       order: [['name', 'ASC']]
     });
 
@@ -53,7 +109,7 @@ const getSmartFolders = async (req, res, next) => {
     const minSentimentScore = userSettings?.minSentimentScore ?? 0;
     const minQualityScore = userSettings?.minQualityScore ?? 0;
 
-    await mapWithConcurrency(
+    const counts = await mapWithConcurrency(
       smartFolders,
       SMART_FOLDER_COUNT_CONCURRENCY,
       async folder => {
@@ -67,14 +123,14 @@ const getSmartFolders = async (req, res, next) => {
             smartFolderSearch: true,
             limitCount: folder.limitCount || 50
           });
-          folder.dataValues.ArticleCount = result.itemIds.length;
+          return { id: folder.id, ArticleCount: result.itemIds.length };
         } catch {
-          folder.dataValues.ArticleCount = 0;
+          return { id: folder.id, ArticleCount: 0 };
         }
       }
     );
 
-    res.status(200).json({ total: smartFolders.length, smartFolders });
+    res.status(200).json({ counts });
   } catch (err) {
     next(err);
   }
@@ -343,6 +399,7 @@ const getSmartFolderInsights = async (req, res, next) => {
  * --------------------------------------------------- */
 export default {
   getSmartFolders,
+  getSmartFolderCounts,
   postSmartFolder,
   collectSmartFolderSignals,
   getSmartFolderInsights
