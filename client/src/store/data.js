@@ -3,7 +3,7 @@ import { defineStore } from 'pinia';
 import { fetchSettings as fetchSettingsAPI } from '../api/settings';
 import { fetchSmartFolders as fetchSmartFoldersAPI, fetchSmartFolderCounts as fetchSmartFolderCountsAPI } from '../api/smartfolders';
 import { fetchTopTags as fetchTopTagsAPI } from '../api/tags';
-import { fetchOverview as fetchOverviewAPI } from '../api/manager';
+import { fetchOverview as fetchOverviewAPI, fetchOverviewLite as fetchOverviewLiteAPI, fetchOverviewCounts as fetchOverviewCountsAPI } from '../api/manager';
 
 const defaultSelection = () => ({
   status: 'unread',
@@ -70,6 +70,88 @@ export const useStore = defineStore('data', {
 
       const { data } = await fetchOverviewAPI(this.currentSelection);
       this.updateOverview(data, { initial, forceUpdate });
+    },
+
+    async fetchOverviewSplit({ initial = false, forceUpdate = false } = {}) {
+      if (initial) await this.fetchSettings();
+
+      // Fetch lightweight structure first (categories + feeds)
+      const { data: liteData } = await fetchOverviewLiteAPI();
+      this.updateOverviewStructure(liteData, { initial, forceUpdate });
+
+      // Fetch counts lazily in background (fire-and-forget)
+      fetchOverviewCountsAPI(this.currentSelection)
+        .then(({ data: countData }) => {
+          this.updateOverviewCounts(countData);
+        })
+        .catch(() => {}); // Silently ignore count fetch errors
+    },
+
+    updateOverviewStructure(
+      { categories },
+      { initial = false, forceUpdate = false } = {}
+    ) {
+      if (initial || forceUpdate) {
+        this.categories = categories;
+        this.chatAssistantOpen = false;
+        this.unreadsSinceLastUpdate = 0;
+        // Keep existing count values during initial load
+        // They'll be updated when counts arrive
+        return;
+      }
+    },
+
+    updateOverviewCounts({
+      unreadCount,
+      readCount,
+      starCount,
+      hotCount,
+      clickedCount,
+      feedCounts = []
+    }) {
+      // Update global counts
+      this.unreadCount = Number(unreadCount) || 0;
+      this.readCount = Number(readCount) || 0;
+      this.starCount = Number(starCount) || 0;
+      this.hotCount = Number(hotCount) || 0;
+      this.clickedCount = Number(clickedCount) || 0;
+
+      // Map feed counts by feedId for O(1) lookup
+      const feedCountMap = new Map();
+      (feedCounts || []).forEach(row => {
+        feedCountMap.set(Number(row.feedId), {
+          unreadCount: Number(row.unreadCount) || 0,
+          readCount: Number(row.readCount) || 0,
+          starCount: Number(row.starCount) || 0,
+          clickedCount: Number(row.clickedCount) || 0
+        });
+      });
+
+      // Update category and feed counts
+      for (const category of this.categories) {
+        category.unreadCount = 0;
+        category.readCount = 0;
+        category.starCount = 0;
+        category.clickedCount = 0;
+
+        for (const feed of category.feeds) {
+          const counts = feedCountMap.get(feed.id) || {
+            unreadCount: 0,
+            readCount: 0,
+            starCount: 0,
+            clickedCount: 0
+          };
+          feed.unreadCount = counts.unreadCount;
+          feed.readCount = counts.readCount;
+          feed.starCount = counts.starCount;
+          feed.clickedCount = counts.clickedCount;
+
+          category.unreadCount += counts.unreadCount;
+          category.readCount += counts.readCount;
+          category.starCount += counts.starCount;
+          category.clickedCount += counts.clickedCount;
+        }
+      }
     },
 
     updateOverview(

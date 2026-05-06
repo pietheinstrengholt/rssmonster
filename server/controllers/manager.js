@@ -4,6 +4,174 @@ const { Feed, Category, Article, Setting } = db;
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
 
+/* ====================================================
+ * Helper: Build categories + feeds structure with zero counts
+ * ==================================================== */
+const buildCategoriesStructure = (categoriesRaw) => {
+  return categoriesRaw.map(c => {
+    const category = c.get({ plain: true });
+    category.readCount = 0;
+    category.unreadCount = 0;
+    category.starCount = 0;
+    category.hotCount = 0;
+    category.clickedCount = 0;
+    category.feeds = (category.feeds || []).map(f => ({
+      ...f,
+      readCount: 0,
+      unreadCount: 0,
+      starCount: 0,
+      hotCount: 0,
+      clickedCount: 0
+    }));
+    return category;
+  });
+};
+
+/* ====================================================
+ * GET /api/manager/overview-lite
+ * Fast endpoint: categories + feeds structure (no counts)
+ * ==================================================== */
+export const getOverviewLite = async (req, res, _next) => {
+  const userId = req.userData.userId;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
+  try {
+    const categoriesRaw = await Category.findAll({
+      where: { userId },
+      include: [{ model: Feed, required: false }],
+      order: ['categoryOrder', 'name']
+    });
+
+    const categories = buildCategoriesStructure(categoriesRaw);
+
+    return res.status(200).json({
+      categories,
+      total: 0,
+      unreadCount: 0,
+      readCount: 0,
+      starCount: 0,
+      hotCount: 0,
+      clickedCount: 0
+    });
+  } catch (err) {
+    console.error('getOverviewLite error:', err);
+    return res.status(500).json(err);
+  }
+};
+
+/* ====================================================
+ * GET /api/manager/overview-counts
+ * Expensive counts endpoint (lazy background fetch)
+ * ==================================================== */
+export const getOverviewCounts = async (req, res, _next) => {
+  const userId = req.userData.userId;
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
+  try {
+    const settings = await Setting.findOne({
+      where: { userId },
+      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
+      raw: true
+    });
+
+    const clusterView = String(req.body?.clusterView || 'all');
+
+    const baseWhere = {
+      userId,
+      advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
+      sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
+      qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
+    };
+
+    if (clusterView === 'eventCluster') {
+      baseWhere[Op.or] = [
+        { id: { [Op.in]: Sequelize.literal(`(SELECT representativeArticleId FROM article_clusters)`) } },
+        { clusterId: { [Op.is]: null } }
+      ];
+    } else if (clusterView === 'topicGroup') {
+      baseWhere[Op.or] = [
+        {
+          id: {
+            [Op.in]: Sequelize.literal(`(
+              SELECT ac.representativeArticleId
+              FROM article_clusters ac
+              INNER JOIN (
+                SELECT userId, topicKey, MAX(clusterStrength) AS maxStrength
+                FROM article_clusters
+                WHERE topicKey IS NOT NULL
+                GROUP BY userId, topicKey
+              ) t
+                ON ac.userId = t.userId
+                AND ac.topicKey = t.topicKey
+              AND ac.clusterStrength = t.maxStrength
+              WHERE ac.id = (
+                SELECT MAX(ac2.id)
+                FROM article_clusters ac2
+                WHERE ac2.userId = ac.userId
+                  AND ac2.topicKey = ac.topicKey
+                  AND ac2.clusterStrength = ac.clusterStrength
+              )
+            )`)
+          }
+        },
+        { clusterId: { [Op.is]: null } }
+      ];
+    }
+
+    // Global counts
+    const totals = await Article.findOne({
+      where: baseWhere,
+      attributes: [
+        [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
+        [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
+        [Sequelize.literal("COUNT(CASE WHEN starInd = 1 THEN 1 END)"), 'starCount'],
+        [Sequelize.literal("SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)"), 'clickedCount'],
+        [Sequelize.literal("COUNT(CASE WHEN hotInd = 1 THEN 1 END)"), 'hotCount']
+      ],
+      raw: true
+    });
+
+    const unreadCount = Number(totals.unreadCount) || 0;
+    const readCount = Number(totals.readCount) || 0;
+    const starCount = Number(totals.starCount) || 0;
+    const clickedCount = Number(totals.clickedCount) || 0;
+    const hotCount = Number(totals.hotCount) || 0;
+
+    // Feed-level counts
+    const grouped = await Feed.findAll({
+      include: [{ model: Article, attributes: [], where: baseWhere }],
+      attributes: [
+        'categoryId',
+        ['id', 'feedId'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
+        [Sequelize.literal("COUNT(CASE WHEN `articles`.`starInd` = 1 THEN 1 END)"), 'starCount'],
+        [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
+      ],
+      group: ['feeds.categoryId', 'feeds.id'],
+      order: ['id'],
+      raw: true
+    });
+
+    return res.status(200).json({
+      total: unreadCount + readCount,
+      unreadCount,
+      readCount,
+      starCount,
+      hotCount,
+      clickedCount,
+      feedCounts: grouped
+    });
+  } catch (err) {
+    console.error('getOverviewCounts error:', err);
+    return res.status(500).json(err);
+  }
+};
+
 export const getOverview = async (req, res, _next) => {
   const userId = req.userData.userId;
 
@@ -317,6 +485,8 @@ export const feedChangeCategory = async (req, res, _next) => {
 
 export default {
   getOverview,
+  getOverviewLite,
+  getOverviewCounts,
   categoryUpdateOrder,
   feedChangeCategory
 }

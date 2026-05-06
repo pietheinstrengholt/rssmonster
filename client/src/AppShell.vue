@@ -301,7 +301,8 @@ export default {
     },
     async getOverview(initial) {
       try {
-        await this.$store.data.fetchOverview({ initial });
+        // Use split fetch: lite structure first, counts in background
+        await this.$store.data.fetchOverviewSplit({ initial });
 
         this.offlineStatus = false;
         this.overviewLoaded = true;
