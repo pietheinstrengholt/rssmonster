@@ -202,7 +202,7 @@ export default {
               this.distance,
               this.distance + this.fetchCount
             ),
-            this.$store.data.getSelectedSort
+            this.$store.data.currentSelection.sort
           );
 
           this.hasLoadedContent = true;

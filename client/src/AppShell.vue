@@ -16,7 +16,7 @@
 
         <!-- Add reference to home for calling child loadContent component function -->
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
-        <app-article-feed v-else-if="!offlineStatus && !$store.data.chatAssistantOpen && !$store.data.fatalError" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
+        <app-article-feed v-else-if="overviewLoaded && !offlineStatus && !$store.data.chatAssistantOpen && !$store.data.fatalError" ref="articleFeed" @forceReload="forceReload"></app-article-feed>
         <!-- Show chat assistant -->
         <app-chat-assistant v-if="$store.data.chatAssistantOpen"></app-chat-assistant>
       </div>
