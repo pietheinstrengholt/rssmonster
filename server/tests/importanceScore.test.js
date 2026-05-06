@@ -6,6 +6,7 @@ describe('computeImportance', () => {
     const standalone = {
       freshness: 0.5,
       quality: 0.7,
+      similarity: 0,
       get: (key) => {
         if (key === 'cluster') return { articleCount: 1, sourceDiversityScore: 0 };
         if (key === 'Tags') return [];
@@ -16,6 +17,7 @@ describe('computeImportance', () => {
     const highlyCorroborated = {
       freshness: 0.5,
       quality: 0.7,
+      similarity: 0,
       get: (key) => {
         if (key === 'cluster') return { articleCount: 32, sourceDiversityScore: 2.0 };
         if (key === 'Tags') return [];
@@ -30,6 +32,7 @@ describe('computeImportance', () => {
     const article = {
       freshness: 0.6,
       quality: 0.7,
+      similarity: 0,
       cluster: { articleCount: 20, sourceDiversityScore: 1.8 },
       Tags: []
     };
@@ -44,6 +47,7 @@ describe('computeImportance', () => {
     const sameSizeSingleSource = {
       freshness: 0.5,
       quality: 0.7,
+      similarity: 0,
       cluster: {
         articleCount: 24,
         sourceCount: 1,
@@ -55,6 +59,7 @@ describe('computeImportance', () => {
     const sameSizeMultiSource = {
       freshness: 0.5,
       quality: 0.7,
+      similarity: 0,
       cluster: {
         articleCount: 24,
         sourceCount: 8,
@@ -67,6 +72,38 @@ describe('computeImportance', () => {
     const multiSourceScore = computeImportance(sameSizeMultiSource);
 
     expect(multiSourceScore).toBeGreaterThan(singleSourceScore);
-    expect(multiSourceScore - singleSourceScore).toBeGreaterThan(0.2);
+    expect(multiSourceScore - singleSourceScore).toBeGreaterThan(0.1);
+  });
+
+  it('gives strong weight to similarity signal', () => {
+    const lowSimilarity = {
+      freshness: 0.5,
+      quality: 0.7,
+      similarity: 0,
+      cluster: {
+        articleCount: 8,
+        sourceCount: 4,
+        sourceDiversityScore: 1.6
+      },
+      Tags: []
+    };
+
+    const highSimilarity = {
+      freshness: 0.5,
+      quality: 0.7,
+      similarity: 1,
+      cluster: {
+        articleCount: 8,
+        sourceCount: 4,
+        sourceDiversityScore: 1.6
+      },
+      Tags: []
+    };
+
+    const lowSimilarityScore = computeImportance(lowSimilarity);
+    const highSimilarityScore = computeImportance(highSimilarity);
+
+    expect(highSimilarityScore).toBeGreaterThan(lowSimilarityScore);
+    expect(highSimilarityScore - lowSimilarityScore).toBeCloseTo(0.45, 5);
   });
 });

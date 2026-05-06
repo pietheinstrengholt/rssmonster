@@ -49,15 +49,23 @@ export function computeImportance(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
+  // Personalized relevance: cosine similarity between user interest vector and article vector.
+  // Falls back to 0 when user/vector context is unavailable.
+  const rawSimilarity = Number(article.similarity ?? article.get?.('similarity') ?? 0);
+  const similarity = Number.isFinite(rawSimilarity)
+    ? Math.max(0, Math.min(1, rawSimilarity))
+    : 0;
+
   // Weighted sum: balances all signals to produce importance score (0–1)
-  // Weights: quality (10%), freshness (15%), coverage (45%), crossSource (15%), corroboration (15%)
+  // Weights: similarity (45%), quality (10%), freshness (10%), coverage (20%), crossSource (10%), corroboration (5%)
   // Plus a flat 0.15 boost for rule-tagged articles
   const importance =
+    0.45 * similarity +
     0.10 * quality +
-    0.15 * freshness +
-    0.45 * coverage +
-    0.15 * crossSource +
-    0.15 * corroboration +
+    0.10 * freshness +
+    0.20 * coverage +
+    0.10 * crossSource +
+    0.05 * corroboration +
     ruleBoost;
 
   return Math.max(0, Math.min(1, importance));
