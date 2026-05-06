@@ -4,6 +4,7 @@ const mocked = vi.hoisted(() => ({
   smartFolderFindAll: vi.fn(),
   smartFolderDestroy: vi.fn(),
   smartFolderBulkCreate: vi.fn(),
+  settingFindOne: vi.fn(),
   searchArticles: vi.fn(),
   getSmartFolderRecommendations: vi.fn()
 }));
@@ -13,6 +14,9 @@ vi.mock('../models/index.js', () => ({
     Article: {},
     Feed: {},
     Tag: {},
+    Setting: {
+      findOne: mocked.settingFindOne
+    },
     SmartFolder: {
       findAll: mocked.smartFolderFindAll,
       destroy: mocked.smartFolderDestroy,
@@ -54,6 +58,11 @@ describe('smartFolder controller', () => {
       const folderB = { id: 2, name: 'Unread', query: 'unread:true', dataValues: {} };
 
       mocked.smartFolderFindAll.mockResolvedValue([folderA, folderB]);
+      mocked.settingFindOne.mockResolvedValue({
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0
+      });
       mocked.searchArticles.mockImplementation(async ({ search }) => {
         if (search === 'sort:IMPORTANCE') {
           return { itemIds: [11, 12, 13, 14] };
@@ -70,12 +79,16 @@ describe('smartFolder controller', () => {
 
       expect(mocked.smartFolderFindAll).toHaveBeenCalledWith({
         where: { userId: 42 },
+        attributes: ['id', 'name', 'query', 'limitCount'],
         order: [['name', 'ASC']]
       });
 
       expect(mocked.searchArticles).toHaveBeenCalledWith({
         userId: 42,
         search: 'sort:IMPORTANCE',
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0,
         smartFolderSearch: true,
         limitCount: 25
       });
@@ -83,6 +96,9 @@ describe('smartFolder controller', () => {
       expect(mocked.searchArticles).toHaveBeenCalledWith({
         userId: 42,
         search: 'unread:true',
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0,
         smartFolderSearch: true,
         limitCount: 50
       });
