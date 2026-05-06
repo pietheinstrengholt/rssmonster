@@ -22,7 +22,10 @@ export function getImportanceBreakdown(article) {
   // Normalize by log scale so growth stays bounded and robust for very large clusters.
   // This gives: standalone=0.00, 2 articles≈0.17, 4 articles≈0.33, 16 articles≈0.67, 64+ articles=1.00
   const cluster = article.get?.('cluster') ?? article.cluster;
-  const rawClusterSize = Number(cluster?.articleCount);
+  const rawClusterSize = Number(
+    article.topicArticleCount ??
+    cluster?.articleCount
+  );
   const clusterSize = Number.isFinite(rawClusterSize) && rawClusterSize > 0 ? rawClusterSize : 1;
   const MAX_COVERAGE_CLUSTER_SIZE = 64;
   const coverage = Math.min(
@@ -34,12 +37,19 @@ export function getImportanceBreakdown(article) {
   // sourceDiversityScore = log(sourceCount + 1), stored on the cluster
   // Normalized to 0–1 range: log(1+1)=0.69 → ~0.28, log(5+1)=1.79 → ~0.71, log(10+1)=2.40 → ~0.96
   // Cap at log(12+1)≈2.56 to keep the range sensible
-  const rawDiversity = Number(cluster?.sourceDiversityScore ?? 0);
+  const rawDiversity = Number(
+    article.topicSourceDiversityScore ??
+    cluster?.sourceDiversityScore ??
+    0
+  );
   const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
 
   // Source spread fallback when only sourceCount is available.
   // This specifically rewards corroboration across multiple distinct publishers.
-  const rawSourceCount = Number(cluster?.sourceCount);
+  const rawSourceCount = Number(
+    article.topicSourceCount ??
+    cluster?.sourceCount
+  );
   const sourceCount = Number.isFinite(rawSourceCount) && rawSourceCount > 0 ? rawSourceCount : 1;
   const sourceSpread = Math.min(Math.log2(sourceCount) / Math.log2(8), 1);
 

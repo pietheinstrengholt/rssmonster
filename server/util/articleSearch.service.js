@@ -28,6 +28,66 @@ async function loadUserInterestVector(userId) {
   );
 }
 
+async function attachTopicGroupMetrics(articles, userId) {
+  if (!Array.isArray(articles) || !articles.length) return;
+
+  const topicKeys = Array.from(
+    new Set(
+      articles
+        .map(article => {
+          const cluster = article.get?.('cluster') ?? article.cluster;
+          return cluster?.topicKey ?? null;
+        })
+        .filter(Boolean)
+    )
+  );
+
+  if (!topicKeys.length) return;
+
+  const rows = await ArticleCluster.findAll({
+    where: {
+      userId,
+      topicKey: { [Op.in]: topicKeys }
+    },
+    attributes: [
+      'topicKey',
+      [fn('SUM', col('articleCount')), 'topicArticleCount'],
+      [fn('SUM', col('sourceCount')), 'topicSourceCount']
+    ],
+    group: ['topicKey'],
+    raw: true
+  });
+
+  const byTopicKey = new Map(
+    rows.map(row => {
+      const topicArticleCount = Number(row.topicArticleCount) || 0;
+      const topicSourceCount = Number(row.topicSourceCount) || 0;
+
+      return [
+        row.topicKey,
+        {
+          topicArticleCount,
+          topicSourceCount,
+          topicSourceDiversityScore: Math.log(topicSourceCount + 1)
+        }
+      ];
+    })
+  );
+
+  for (const article of articles) {
+    const cluster = article.get?.('cluster') ?? article.cluster;
+    const topicKey = cluster?.topicKey;
+    if (!topicKey) continue;
+
+    const topicMetrics = byTopicKey.get(topicKey);
+    if (!topicMetrics) continue;
+
+    article.topicArticleCount = topicMetrics.topicArticleCount;
+    article.topicSourceCount = topicMetrics.topicSourceCount;
+    article.topicSourceDiversityScore = topicMetrics.topicSourceDiversityScore;
+  }
+}
+
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
   where(fn('LOWER', col(column)), { [Op.like]: `%${String(value).toLowerCase()}%` })
@@ -779,6 +839,10 @@ export const searchArticles = async ({
     if (!smartFolderSearch || sortImportance || sortQuality || sortAttention) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
       if (sortImportance) {
+        if (workingClusterView === 'topicGroup') {
+          await attachTopicGroupMetrics(articles, userId);
+        }
+
         const userInterestVector = await loadUserInterestVector(userId);
 
         if (!Array.isArray(userInterestVector)) {
