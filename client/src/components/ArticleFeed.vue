@@ -85,18 +85,27 @@ export default {
   methods: {
     async fetchArticleIds(data) {
       try {
+        // Show spinner immediately when selection changes
+        this.hasLoadedContent = false;
+        await this.resetPool();
+
         const response = await fetchArticleIds(data);
 
-        await this.resetPool();
         this.container = response.data.itemIds;
 
-        if (this.container.length > 0) {
+        if (response.data.firstPage && response.data.firstPage.length > 0) {
+          // Server already computed the first page — use it directly (saves one round trip)
+          this.distance += response.data.firstPage.length;
+          this.articles = response.data.firstPage;
+          this.hasLoadedContent = true;
+        } else if (this.container.length > 0) {
           this.getContent();
         } else {
           this.hasLoadedContent = true;
         }
       } catch (error) {
         console.warn('Article fetch failed', error?.message);
+        this.hasLoadedContent = true;
       }
     },
 
@@ -195,33 +204,30 @@ export default {
     async getContent() {
       if (this.container.length === 0) return;
 
-      setTimeout(async () => {
-        try {
-          const response = await fetchArticleDetails(
-            this.container.slice(
-              this.distance,
-              this.distance + this.fetchCount
-            ),
-            this.$store.data.currentSelection.sort
-          );
+      try {
+        const response = await fetchArticleDetails(
+          this.container.slice(
+            this.distance,
+            this.distance + this.fetchCount
+          ),
+          this.$store.data.currentSelection.sort
+        );
 
-          this.hasLoadedContent = true;
-
-          if (response.data.length) {
-            this.distance += this.fetchCount;
-            this.articles = this.articles.concat(response.data);
-          } else {
-            this.flushPool();
-          }
-        } catch (error) {
-          console.error(
-            "Error fetching article details:",
-            error
-          );
-        } finally {
-          this.isLoading = false;
+        if (response.data.length) {
+          this.distance += this.fetchCount;
+          this.articles = this.articles.concat(response.data);
+        } else {
+          this.flushPool();
         }
-      }, 10);
+      } catch (error) {
+        console.error(
+          "Error fetching article details:",
+          error
+        );
+      } finally {
+        this.hasLoadedContent = true;
+        this.isLoading = false;
+      }
     },
 
     addToPool(articleId) {

@@ -201,7 +201,6 @@ export const useStore = defineStore('data', {
         categoryId: '%',
         feedId: '%',
         status: 'unread',
-        sort: 'DESC',
         tag: null,
         smartFolderId: smartFolder?.id ?? null,
         search,

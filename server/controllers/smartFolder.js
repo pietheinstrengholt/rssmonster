@@ -38,7 +38,7 @@ const getSmartFolders = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const withCounts = req.query.withCounts !== 'false';
+    const withCounts = req.query?.withCounts !== 'false';
 
     const smartFolders = await SmartFolder.findAll({
       where: { userId },

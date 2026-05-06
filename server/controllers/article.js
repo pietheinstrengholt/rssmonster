@@ -1,13 +1,14 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, ArticleCluster } = db;
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
 export const getArticles = async (req, res) => {
   try {
+    const userId = req.userData.userId;
     const result = await searchArticles({
-      userId: req.userData.userId,
+      userId,
       search: req.query.search || "",
       categoryId: req.query.categoryId,
       feedId: req.query.feedId,
@@ -22,11 +23,77 @@ export const getArticles = async (req, res) => {
       persistSettings: true
     });
 
+    if (req.query.includeFirstPage === 'true' && result.itemIds.length > 0) {
+      const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
+      const firstPageIds = result.itemIds.slice(0, pageSize);
+      result.firstPage = await loadArticleDetails(userId, firstPageIds);
+    }
+
     res.status(200).json(result);
   } catch (err) {
     console.error("getArticles error:", err);
     res.status(500).json({ error: err.message });
   }
+};
+
+/* ---------------------------------------------------
+ * Shared helper: fetch + enrich article details by IDs
+ * Preserves incoming ID order. Attaches topicGroupCount
+ * via a single batch aggregation (no per-row subqueries).
+ * --------------------------------------------------- */
+const loadArticleDetails = async (userId, articlesArray) => {
+  const articles = await Article.findAll({
+    include: [
+      { model: Feed, required: true },
+      { model: Tag, required: false, attributes: ['id', 'name', 'tagType'] },
+      {
+        model: ArticleCluster,
+        as: 'cluster',
+        required: false,
+        attributes: ['id', 'articleCount', 'clusterStrength', 'sourceDiversityScore', 'sourceCount', 'topicKey', 'userId']
+      }
+    ],
+    where: { userId, id: articlesArray }
+  });
+
+  // Batch-compute topicGroupCount (replaces N+1 correlated subqueries)
+  const topicKeys = [...new Set(articles.map(a => a.cluster?.topicKey).filter(Boolean))];
+  if (topicKeys.length > 0) {
+    const topicRows = await ArticleCluster.findAll({
+      where: { userId, topicKey: { [Op.in]: topicKeys } },
+      attributes: ['topicKey', [fn('SUM', col('articleCount')), 'topicGroupCount']],
+      group: ['topicKey'],
+      raw: true
+    });
+    const topicCountMap = new Map(topicRows.map(r => [r.topicKey, Number(r.topicGroupCount) || 0]));
+    for (const article of articles) {
+      if (article.cluster) {
+        const count = article.cluster.topicKey
+          ? (topicCountMap.get(article.cluster.topicKey) ?? article.cluster.articleCount ?? 0)
+          : (article.cluster.articleCount ?? 0);
+        article.cluster.setDataValue('topicGroupCount', count);
+      }
+    }
+  }
+
+  // Preserve incoming ID order
+  const idIndexMap = new Map(articlesArray.map((id, i) => [String(id), i]));
+  articles.sort((a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id)));
+
+  // Attach predicted reading affinity
+  for (const article of articles) {
+    if (!article.Feed) continue;
+    const prediction = resolvePredictedAffinity({ article, feed: article.Feed });
+    if (prediction?.predictedAffinity) {
+      article.setDataValue('presentation', {
+        predictedAffinity: prediction.predictedAffinity,
+        confidence: prediction.confidence,
+        source: prediction.source
+      });
+    }
+  }
+
+  return articles;
 };
 
 // Get single article details by ID
@@ -246,95 +313,15 @@ const articleDetails = async (req, res, _next) => {
     const articleIds = req.body.articleIds;
 
     if (articleIds === undefined) {
-      return res.status(400).json({
-        message: "articleIds is not set"
-      });
+      return res.status(400).json({ message: "articleIds is not set" });
     }
 
     const articlesArray = articleIds.split(",");
-    console.log(
-      `\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`
-    );
-
-    // Always preserve incoming articleIds order.
-    // searchArticles is the single source of truth for ranking/sorting,
-    // including IMPORTANCE/QUALITY/ATTENTION and DESC/ASC modes.
-
-    const articles = await Article.findAll({
-      include: [
-        {
-          model: Feed,
-          required: true
-        },
-        {
-          model: Tag,
-          required: false,
-          attributes: ['id', 'name', 'tagType']
-        },
-        {
-          model: ArticleCluster,
-          as: 'cluster',
-          required: false,
-          attributes: {
-            include: [[
-              Article.sequelize.literal(
-                'CASE WHEN `cluster`.`topicKey` IS NULL THEN (SELECT COUNT(*) FROM articles a WHERE a.clusterId = `cluster`.`id`) ELSE (SELECT COUNT(*) FROM articles a INNER JOIN article_clusters ac2 ON a.clusterId = ac2.id WHERE ac2.userId = `cluster`.`userId` AND ac2.topicKey = `cluster`.`topicKey`) END'
-              ),
-              'topicGroupCount'
-            ]]
-          }
-        }
-      ],
-      where: {
-        userId: userId,
-        id: articlesArray
-      }
-    });
-
-    if (!articles) {
-      return res.status(404).json({
-        message: "No articles found"
-      });
-    }
-
-    // Preserve original ID order from search service for all sort modes.
-    const idIndexMap = new Map(
-      articlesArray.map((id, index) => [String(id), index])
-    );
-    articles.sort(
-      (a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id))
-    );
-
-    /* ============================================================
-     * Predicted Reading Affinity (NEW)
-     * ============================================================
-     *
-     * Attach presentation hints for unread articles only.
-     * This is non-breaking and purely additive.
-     */
-
-    for (const article of articles) {
-      const feed = article.Feed;
-
-      if (!feed) continue;
-
-      const prediction = resolvePredictedAffinity({
-        article,
-        feed
-      });
-
-      if (prediction && prediction.predictedAffinity) {
-        article.setDataValue('presentation', {
-          predictedAffinity: prediction.predictedAffinity,
-          confidence: prediction.confidence,
-          source: prediction.source
-        });
-      }
-    }
+    const articles = await loadArticleDetails(userId, articlesArray);
 
     return res.status(200).json(articles);
   } catch (err) {
-    console.log(err);
+    console.error("Error in articleDetails:", err);
     return res.status(500).json(err);
   }
 };

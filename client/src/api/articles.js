@@ -1,10 +1,12 @@
 import api from './client';
 
 /**
- * Fetch article IDs based on current selection
+ * Fetch article IDs based on current selection.
+ * Passes includeFirstPage=true so the server returns the first batch
+ * of article details in the same response, saving a round trip.
  */
 export const fetchArticleIds = params =>
-  api.get('/articles', { params });
+  api.get('/articles', { params: { ...params, includeFirstPage: true } });
 
 /**
  * Fetch article details by IDs
