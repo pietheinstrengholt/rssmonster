@@ -14,14 +14,14 @@ describe('Vector virtual attributes', () => {
     const starredArticles = Array.from({ length: 22 }, (_, index) => ({
       starInd: 1,
       updatedAt: new Date(Date.UTC(2026, 0, 1, 0, index)),
-      topicVector: [index, index * 2]
+      eventVector: [index, index * 2]
     }));
 
     const unstarredArticles = [
       {
         starInd: 0,
         updatedAt: new Date(Date.UTC(2026, 0, 1, 1, 0)),
-        topicVector: [999, 999]
+        eventVector: [999, 999]
       }
     ];
 
@@ -41,12 +41,12 @@ describe('Vector virtual attributes', () => {
       {
         starInd: 1,
         updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0)),
-        topicVector: [1, 0]
+        eventVector: [1, 0]
       },
       {
         starInd: 1,
         updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 1)),
-        topicVector: [1, 0]
+        eventVector: [1, 0]
       }
     ]);
 
@@ -55,7 +55,7 @@ describe('Vector virtual attributes', () => {
       feedId: 1,
       url: 'https://example.com/match',
       title: 'Match',
-      topicVector: [1, 0]
+      eventVector: [1, 0]
     });
     matchingArticle.setDataValue('user', user);
 
@@ -64,7 +64,7 @@ describe('Vector virtual attributes', () => {
       feedId: 1,
       url: 'https://example.com/orthogonal',
       title: 'Orthogonal',
-      topicVector: [0, 1]
+      eventVector: [0, 1]
     });
     orthogonalArticle.setDataValue('user', user);
 
@@ -78,7 +78,7 @@ describe('Vector virtual attributes', () => {
       feedId: 1,
       url: 'https://example.com/no-user',
       title: 'No user',
-      topicVector: [1, 0]
+      eventVector: [1, 0]
     });
 
     expect(article.similarity).toBe(0);

@@ -31,9 +31,8 @@ export function resolveArticleVector(articleLike) {
   if (!articleLike || typeof articleLike !== 'object') return null;
 
   const vector =
-    articleLike.topicVector ??
     articleLike.eventVector ??
-    articleLike.vector ??
+    articleLike.topicVector ??
     null;
 
   if (!Array.isArray(vector) || !vector.length) return null;

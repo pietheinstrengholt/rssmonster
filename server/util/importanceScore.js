@@ -6,6 +6,10 @@
  * Note: feedTrust is already included in article.quality (from the Article model virtual field).
  */
 export function computeImportance(article) {
+  return getImportanceBreakdown(article).importance;
+}
+
+export function getImportanceBreakdown(article) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
 
@@ -51,7 +55,13 @@ export function computeImportance(article) {
 
   // Personalized relevance: cosine similarity between user interest vector and article vector.
   // Falls back to 0 when user/vector context is unavailable.
-  const rawSimilarity = Number(article.similarity ?? article.get?.('similarity') ?? 0);
+  const rawSimilarity = Number(
+    article.similarityScore ??
+    article.getDataValue?.('similarity') ??
+    article.similarity ??
+    article.get?.('similarity') ??
+    0
+  );
   const similarity = Number.isFinite(rawSimilarity)
     ? Math.max(0, Math.min(1, rawSimilarity))
     : 0;
@@ -68,5 +78,14 @@ export function computeImportance(article) {
     0.05 * corroboration +
     ruleBoost;
 
-  return Math.max(0, Math.min(1, importance));
+  return {
+    similarity,
+    quality,
+    freshness,
+    coverage,
+    crossSource,
+    corroboration,
+    ruleBoost,
+    importance: Math.max(0, Math.min(1, importance))
+  };
 }

@@ -1,7 +1,32 @@
 import db from '../models/index.js';
 const { Article, ArticleCluster, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
-import { computeImportance } from './importanceScore.js';
+import { getImportanceBreakdown } from './importanceScore.js';
+import {
+  averageVectors,
+  cosineSimilarity,
+  resolveArticleVector
+} from './vectorMath.js';
+
+const MAX_INTEREST_ARTICLES = 20;
+
+async function loadUserInterestVector(userId) {
+  const interestArticles = await Article.scope('withVector').findAll({
+    where: {
+      userId,
+      starInd: 1
+    },
+    attributes: ['topicVector', 'eventVector'],
+    order: [['updatedAt', 'DESC']],
+    limit: MAX_INTEREST_ARTICLES
+  });
+
+  return averageVectors(
+    interestArticles
+      .map(resolveArticleVector)
+      .filter(Boolean)
+  );
+}
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
@@ -483,6 +508,7 @@ export const searchArticles = async ({
     const needsQuality = qualityFilter || sortQuality;
     const needsFreshness = freshnessFilter || sortImportance;
     const needsAttention = sortAttention;
+    const needsSimilarity = sortImportance;
     const needsPublished = !smartFolderSearch || needsFreshness;
     
     if (needsQuality) {
@@ -507,6 +533,10 @@ export const searchArticles = async ({
     if (needsAttention) {
       // AttentionScore virtual field needs these columns
       queryAttributes.push("attentionBucket", "openedCount", "clickedAmount");
+    }
+
+    if (needsSimilarity) {
+      queryAttributes.push('eventVector', 'topicVector');
     }
     
     console.log(`\x1b[36mQuery attributes: ${queryAttributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -749,12 +779,54 @@ export const searchArticles = async ({
     if (!smartFolderSearch || sortImportance || sortQuality || sortAttention) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
       if (sortImportance) {
+        const userInterestVector = await loadUserInterestVector(userId);
+
+        if (!Array.isArray(userInterestVector)) {
+          console.warn(
+            `\x1b[33mSimilarity validation: no user interest vector found for user ${userId} (need starred articles with vectors).\x1b[0m`
+          );
+        }
+
         const scored = articles
-          .map(article => ({
-            article,
-            importance: computeImportance(article)
-          }))
+          .map(article => {
+            const articleVector = resolveArticleVector(article);
+            const comparisonStatus = !Array.isArray(userInterestVector)
+              ? 'no-user-vector'
+              : !Array.isArray(articleVector)
+                ? 'no-article-vector'
+                : userInterestVector.length !== articleVector.length
+                  ? 'dim-mismatch'
+                  : 'ok';
+
+            const similarityScore = comparisonStatus === 'ok'
+              ? cosineSimilarity(userInterestVector, articleVector)
+              : 0;
+
+            article.similarityScore = similarityScore;
+            const breakdown = getImportanceBreakdown(article);
+
+            return {
+              article,
+              importance: breakdown.importance,
+              breakdown
+            };
+          })
           .sort((a, b) => b.importance - a.importance);
+
+        console.table(
+          scored.map(({ article, breakdown }) => ({
+            articleId: article.id,
+            similarity: Number(breakdown.similarity.toFixed(4)),
+            quality: Number(breakdown.quality.toFixed(4)),
+            freshness: Number(breakdown.freshness.toFixed(4)),
+            coverage: Number(breakdown.coverage.toFixed(4)),
+            crossSource: Number(breakdown.crossSource.toFixed(4)),
+            corroboration: Number(breakdown.corroboration.toFixed(4)),
+            corraboration: Number(breakdown.corroboration.toFixed(4)),
+            ruleBoost: Number(breakdown.ruleBoost.toFixed(4)),
+            importance: Number(breakdown.importance.toFixed(4))
+          }))
+        );
 
         articles = scored.map(item => item.article);
       } else if (sortQuality) {
