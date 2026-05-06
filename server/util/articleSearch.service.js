@@ -119,6 +119,18 @@ export const searchArticles = async ({
         throw new Error("Missing userId");
     }
 
+    // Per-request cache: avoid duplicate database queries for user interest vector
+    let cachedUserInterestVector = null;
+    let vectorCached = false;
+
+    const getCachedUserInterestVector = async () => {
+      if (!vectorCached) {
+        cachedUserInterestVector = await loadUserInterestVector(userId);
+        vectorCached = true;
+      }
+      return cachedUserInterestVector;
+    };
+
     /**
      * Smart folder optimization: skip settings fetch when score thresholds are explicit.
      * Fetch user settings to determine score thresholds if not explicitly provided.
@@ -843,7 +855,7 @@ export const searchArticles = async ({
           await attachTopicGroupMetrics(articles, userId);
         }
 
-        const userInterestVector = await loadUserInterestVector(userId);
+        const userInterestVector = await getCachedUserInterestVector();
 
         if (!Array.isArray(userInterestVector)) {
           console.warn(
@@ -876,21 +888,6 @@ export const searchArticles = async ({
             };
           })
           .sort((a, b) => b.importance - a.importance);
-
-        console.table(
-          scored.map(({ article, breakdown }) => ({
-            articleId: article.id,
-            similarity: Number(breakdown.similarity.toFixed(4)),
-            quality: Number(breakdown.quality.toFixed(4)),
-            freshness: Number(breakdown.freshness.toFixed(4)),
-            coverage: Number(breakdown.coverage.toFixed(4)),
-            crossSource: Number(breakdown.crossSource.toFixed(4)),
-            corroboration: Number(breakdown.corroboration.toFixed(4)),
-            corraboration: Number(breakdown.corroboration.toFixed(4)),
-            ruleBoost: Number(breakdown.ruleBoost.toFixed(4)),
-            importance: Number(breakdown.importance.toFixed(4))
-          }))
-        );
 
         articles = scored.map(item => item.article);
       } else if (sortQuality) {
