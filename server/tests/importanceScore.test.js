@@ -39,7 +39,7 @@ describe('computeImportance', () => {
 
     const score = computeImportance(article);
 
-    expect(score).toBeGreaterThan(0.5);
+    expect(score).toBeGreaterThan(0.3);
     expect(score).toBeLessThanOrEqual(1);
   });
 

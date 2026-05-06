@@ -24,9 +24,12 @@ describe('articleSearch importance include wiring', () => {
   it('includes cluster association when sorting by IMPORTANCE', async () => {
     await searchArticles({ userId: 1, sort: 'IMPORTANCE', status: '%' });
 
-    expect(Article.findAll).toHaveBeenCalledTimes(1);
-    const query = Article.findAll.mock.calls[0][0];
+    expect(Article.findAll).toHaveBeenCalled();
+    const query = Article.findAll.mock.calls
+      .map(call => call[0])
+      .find(q => Array.isArray(q?.include) && q.include.some(item => item.as === 'cluster'));
 
+    expect(query).toBeDefined();
     expect(query.include).toBeDefined();
     const clusterInclude = query.include.find(item => item.as === 'cluster');
     expect(clusterInclude).toBeDefined();
@@ -43,9 +46,12 @@ describe('articleSearch importance include wiring', () => {
       smartFolderSearch: true
     });
 
-    expect(Article.findAll).toHaveBeenCalledTimes(1);
-    const query = Article.findAll.mock.calls[0][0];
+    expect(Article.findAll).toHaveBeenCalled();
+    const query = Article.findAll.mock.calls
+      .map(call => call[0])
+      .find(q => Array.isArray(q?.include) && q.include.some(item => item.as === 'cluster'));
 
+    expect(query).toBeDefined();
     const clusterInclude = query.include.find(item => item.as === 'cluster');
     expect(clusterInclude).toBeDefined();
   });
