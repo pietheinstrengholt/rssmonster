@@ -20,7 +20,8 @@
     "crawl": "NODE_ENV=production node scripts/crawl.js",
     "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
-    "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js"
+    "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js",
+    "similarity-cache": "NODE_ENV=production node scripts/recalculateSimilarityCache.js"
   },
   "engines": {
     "node": ">=20.x"

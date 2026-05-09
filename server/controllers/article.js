@@ -3,6 +3,7 @@ const { Article, Feed, Tag, ArticleCluster } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
+import { refreshSimilarityCacheForUser } from '../util/similarityCache.js';
 
 export const getArticles = async (req, res) => {
   try {
@@ -639,7 +640,13 @@ const articleMarkWithStar = async (req, res, _next) => {
     const starInd = update === "mark" ? 1 : 0;
     article
       .update({ starInd }, { where: { userId: userId } })
-      .then(() => res.status(200).json(article))
+      .then(() => {
+        // Rebuild personalized similarity cache in background after interest signal changes.
+        refreshSimilarityCacheForUser(userId).catch(error => {
+          console.error('Error refreshing similarity cache:', error);
+        });
+        res.status(200).json(article);
+      })
       .catch(error => res.status(400).json(error));
   } catch (err) {
     console.log(err);

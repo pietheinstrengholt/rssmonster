@@ -2,31 +2,7 @@ import db from '../models/index.js';
 const { Article, ArticleCluster, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
 import { getImportanceBreakdown } from './importanceScore.js';
-import {
-  averageVectors,
-  cosineSimilarity,
-  resolveArticleVector
-} from './vectorMath.js';
-
-const MAX_INTEREST_ARTICLES = 20;
-
-async function loadUserInterestVector(userId) {
-  const interestArticles = await Article.scope('withVector').findAll({
-    where: {
-      userId,
-      starInd: 1
-    },
-    attributes: ['topicVector', 'eventVector'],
-    order: [['updatedAt', 'DESC']],
-    limit: MAX_INTEREST_ARTICLES
-  });
-
-  return averageVectors(
-    interestArticles
-      .map(resolveArticleVector)
-      .filter(Boolean)
-  );
-}
+import { refreshSimilarityCacheForUser } from './similarityCache.js';
 
 async function attachTopicGroupMetrics(articles, userId) {
   if (!Array.isArray(articles) || !articles.length) return;
@@ -118,18 +94,6 @@ export const searchArticles = async ({
     if (!userId) {
         throw new Error("Missing userId");
     }
-
-    // Per-request cache: avoid duplicate database queries for user interest vector
-    let cachedUserInterestVector = null;
-    let vectorCached = false;
-
-    const getCachedUserInterestVector = async () => {
-      if (!vectorCached) {
-        cachedUserInterestVector = await loadUserInterestVector(userId);
-        vectorCached = true;
-      }
-      return cachedUserInterestVector;
-    };
 
     /**
      * Smart folder optimization: skip settings fetch when score thresholds are explicit.
@@ -608,7 +572,7 @@ export const searchArticles = async ({
     }
 
     if (needsSimilarity) {
-      queryAttributes.push('eventVector', 'topicVector');
+      queryAttributes.push('similarityScore');
     }
     
     console.log(`\x1b[36mQuery attributes: ${queryAttributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -855,30 +819,22 @@ export const searchArticles = async ({
           await attachTopicGroupMetrics(articles, userId);
         }
 
-        const userInterestVector = await getCachedUserInterestVector();
+        const uncachedIds = articles
+          .filter(article => article.similarityScore === null || article.similarityScore === undefined)
+          .map(article => article.id);
 
-        if (!Array.isArray(userInterestVector)) {
-          console.warn(
-            `\x1b[33mSimilarity validation: no user interest vector found for user ${userId} (need starred articles with vectors).\x1b[0m`
-          );
+        if (uncachedIds.length > 0) {
+          const similarityMap = await refreshSimilarityCacheForUser(userId, { articleIds: uncachedIds });
+          for (const article of articles) {
+            const cached = similarityMap.get(article.id);
+            if (cached !== undefined) {
+              article.similarityScore = cached;
+            }
+          }
         }
 
         const scored = articles
           .map(article => {
-            const articleVector = resolveArticleVector(article);
-            const comparisonStatus = !Array.isArray(userInterestVector)
-              ? 'no-user-vector'
-              : !Array.isArray(articleVector)
-                ? 'no-article-vector'
-                : userInterestVector.length !== articleVector.length
-                  ? 'dim-mismatch'
-                  : 'ok';
-
-            const similarityScore = comparisonStatus === 'ok'
-              ? cosineSimilarity(userInterestVector, articleVector)
-              : 0;
-
-            article.similarityScore = similarityScore;
             const breakdown = getImportanceBreakdown(article);
 
             return {

@@ -6,7 +6,7 @@ describe('computeImportance', () => {
     const standalone = {
       freshness: 0.5,
       quality: 0.7,
-      similarity: 0,
+      similarityScore: 0,
       get: (key) => {
         if (key === 'cluster') return { articleCount: 1, sourceDiversityScore: 0 };
         if (key === 'Tags') return [];
@@ -17,7 +17,7 @@ describe('computeImportance', () => {
     const highlyCorroborated = {
       freshness: 0.5,
       quality: 0.7,
-      similarity: 0,
+      similarityScore: 0,
       get: (key) => {
         if (key === 'cluster') return { articleCount: 32, sourceDiversityScore: 2.0 };
         if (key === 'Tags') return [];
@@ -32,7 +32,7 @@ describe('computeImportance', () => {
     const article = {
       freshness: 0.6,
       quality: 0.7,
-      similarity: 0,
+      similarityScore: 0,
       cluster: { articleCount: 20, sourceDiversityScore: 1.8 },
       Tags: []
     };
@@ -47,7 +47,7 @@ describe('computeImportance', () => {
     const sameSizeSingleSource = {
       freshness: 0.5,
       quality: 0.7,
-      similarity: 0,
+      similarityScore: 0,
       cluster: {
         articleCount: 24,
         sourceCount: 1,
@@ -59,7 +59,7 @@ describe('computeImportance', () => {
     const sameSizeMultiSource = {
       freshness: 0.5,
       quality: 0.7,
-      similarity: 0,
+      similarityScore: 0,
       cluster: {
         articleCount: 24,
         sourceCount: 8,
@@ -79,7 +79,7 @@ describe('computeImportance', () => {
     const lowSimilarity = {
       freshness: 0.5,
       quality: 0.7,
-      similarity: 0,
+      similarityScore: 0,
       cluster: {
         articleCount: 8,
         sourceCount: 4,
@@ -91,7 +91,7 @@ describe('computeImportance', () => {
     const highSimilarity = {
       freshness: 0.5,
       quality: 0.7,
-      similarity: 1,
+      similarityScore: 1,
       cluster: {
         articleCount: 8,
         sourceCount: 4,

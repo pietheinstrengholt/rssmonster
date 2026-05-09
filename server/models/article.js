@@ -1,5 +1,4 @@
 import { DataTypes } from 'sequelize';
-import { cosineSimilarity, resolveArticleVector } from '../util/vectorMath.js';
 
 const TAU_HOURS = 48; // tune this globally
 
@@ -260,14 +259,18 @@ export default (sequelize) => {
           return cluster?.topicKey ?? null;
         }
       },
+      similarityScore: {
+        type: DataTypes.FLOAT,
+        allowNull: true,
+        defaultValue: null
+      },
       similarity: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
-          const user = this.get('user') ?? this.get('User');
-          const userVector = user?.interestVector;
-          const articleVector = resolveArticleVector(this);
-
-          return cosineSimilarity(userVector, articleVector);
+          const cached = Number(this.getDataValue('similarityScore'));
+          return Number.isFinite(cached)
+            ? Math.max(0, Math.min(1, cached))
+            : 0;
         }
       },
       published: {

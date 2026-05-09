@@ -30,55 +30,24 @@ describe('Vector virtual attributes', () => {
     expect(user.interestVector).toEqual([11.5, 23]);
   });
 
-  it('computes Article similarity using cosine similarity against user interestVector', () => {
-    const user = User.build({
-      username: 'similarity-user',
-      password: 'secret',
-      hash: 'hash'
-    });
-
-    user.setDataValue('articles', [
-      {
-        starInd: 1,
-        updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 0)),
-        eventVector: [1, 0]
-      },
-      {
-        starInd: 1,
-        updatedAt: new Date(Date.UTC(2026, 0, 1, 0, 1)),
-        eventVector: [1, 0]
-      }
-    ]);
-
-    const matchingArticle = Article.build({
+  it('returns cached similarityScore via Article similarity virtual', () => {
+    const article = Article.build({
       userId: 1,
       feedId: 1,
-      url: 'https://example.com/match',
-      title: 'Match',
-      eventVector: [1, 0]
+      url: 'https://example.com/cached-similarity',
+      title: 'Cached similarity',
+      similarityScore: 0.82
     });
-    matchingArticle.setDataValue('user', user);
 
-    const orthogonalArticle = Article.build({
-      userId: 1,
-      feedId: 1,
-      url: 'https://example.com/orthogonal',
-      title: 'Orthogonal',
-      eventVector: [0, 1]
-    });
-    orthogonalArticle.setDataValue('user', user);
-
-    expect(matchingArticle.similarity).toBe(1);
-    expect(orthogonalArticle.similarity).toBe(0);
+    expect(article.similarity).toBe(0.82);
   });
 
-  it('returns 0 similarity when user vector is unavailable', () => {
+  it('returns 0 similarity when cached score is unavailable', () => {
     const article = Article.build({
       userId: 1,
       feedId: 1,
       url: 'https://example.com/no-user',
-      title: 'No user',
-      eventVector: [1, 0]
+      title: 'No cached score'
     });
 
     expect(article.similarity).toBe(0);

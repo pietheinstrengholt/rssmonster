@@ -7,8 +7,7 @@ import { Op } from 'sequelize';
 /* ====================================================
  * Helper: Build categories + feeds structure with zero counts
  * ==================================================== */
-const buildCategoriesStructure = (categoriesRaw) => {
-  return categoriesRaw.map(c => {
+const buildCategoriesStructure = (categoriesRaw) => categoriesRaw.map(c => {
     const category = c.get({ plain: true });
     category.readCount = 0;
     category.unreadCount = 0;
@@ -25,7 +24,7 @@ const buildCategoriesStructure = (categoriesRaw) => {
     }));
     return category;
   });
-};
+;
 
 /* ====================================================
  * GET /api/manager/overview-lite

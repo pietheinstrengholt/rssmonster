@@ -63,13 +63,13 @@ export function getImportanceBreakdown(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
-  // Personalized relevance: cosine similarity between user interest vector and article vector.
-  // Falls back to 0 when user/vector context is unavailable.
+  // Personalized relevance: persisted similarity cache (precomputed cosine similarity).
+  // Falls back to 0 when cache is not available.
   const rawSimilarity = Number(
     article.similarityScore ??
-    article.getDataValue?.('similarity') ??
+    article.getDataValue?.('similarityScore') ??
     article.similarity ??
-    article.get?.('similarity') ??
+    article.get?.('similarityScore') ??
     0
   );
   const similarity = Number.isFinite(rawSimilarity)
