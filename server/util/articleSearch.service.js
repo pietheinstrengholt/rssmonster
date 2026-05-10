@@ -100,7 +100,7 @@ const fulltextSearch = (searchTerm) => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
- * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 export const searchArticles = async ({
     userId,
@@ -147,7 +147,7 @@ export const searchArticles = async ({
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.
      * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-     * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+    * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
      */
     const rawSearch = search.trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
@@ -157,7 +157,7 @@ export const searchArticles = async ({
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let seenFilter = null; // Seen filter from search (seen:true/false)
     let firstSeenAgeFilter = null; // First seen age filter from search (firstSeen:24h, firstSeen:7d)
-    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION)
+    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
@@ -267,7 +267,7 @@ export const searchArticles = async ({
       const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i); // firstSeen:24h or firstSeen:7d
       const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, sort:QUALITY, or sort:ATTENTION
+      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:RECOMMENDED, sort:IMPORTANCE (legacy), sort:QUALITY, or sort:ATTENTION
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
@@ -399,8 +399,8 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:ASC/DESC/IMPORTANCE/QUALITY/ATTENTION) overrides query param
-    // SortImportance flag set if sort is IMPORTANCE
+    // Sort: search token (sort:ASC/DESC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION) overrides query param
+    // sortImportance flag set if sort is RECOMMENDED or legacy IMPORTANCE
     // Smart folder optimization: skip sort entirely (only counting articles)
     let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
     let sortImportance = false;
@@ -408,7 +408,7 @@ export const searchArticles = async ({
     let sortAttention = false;
 
     // Normalize sort value when virtual sort modes are specified
-    if (workingSort.toUpperCase() === "IMPORTANCE") {
+    if (workingSort.toUpperCase() === "RECOMMENDED" || workingSort.toUpperCase() === "IMPORTANCE") {
       workingSort = "DESC";
       sortImportance = true;
     } else if (workingSort.toUpperCase() === "QUALITY") {
@@ -841,7 +841,7 @@ export const searchArticles = async ({
     
     // If sorting by importance, compute importance scores and sort
     if (sortImportance) {
-      workingSort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
+      workingSort = "RECOMMENDED"; // Reflect recommended sort in response, needed for later saving to Settings
     }
     if (sortQuality) {
       workingSort = "QUALITY";
