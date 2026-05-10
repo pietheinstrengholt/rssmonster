@@ -53,7 +53,7 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 
 ## How Ranking Scores Work (End User)
 
-- **Recommended**: Blends freshness (recent items count more), quality, and coverage. Coverage rises when more sources report the same story. Freshness is the largest factor, so the newest high-quality, widely-covered items surface first.
+- **Recommended**: Blends freshness (recent items count more), quality, coverage, and similarity to your interest islands. Coverage rises when more sources report the same story, while island similarity boosts content that matches the patterns you engage with most. Like TikTok or Instagram, the feed is personalized to promote articles that are more likely to fit your interests.
 - **Attention**: Reflects how people interact with an article. A quick skim gives a small boost; reads, deep reads, and highly engaged sessions boost more. Re-opens and outbound clicks add a modest extra lift. No interaction means no attention boost.
 - **Quality**: Evaluates the article’s tone, writing, and promotional-ness. Scores for sentiment, writing quality, and advertisement detection combine into a single 0–1 quality score. Trusted feeds amplify good quality; lower-trust feeds dampen it.
 
