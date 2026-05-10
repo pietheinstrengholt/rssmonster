@@ -874,9 +874,9 @@ export const searchArticles = async ({
         if (process.env.NODE_ENV === 'development') {
           const debugRows = ranked.slice(0, 60);
           console.table(
-              debugRows.map(({ article, profileLabel, affinityScore, freshness, quality, attention, coverage, score }) => ({
+            debugRows.map(({ article, profileLabel, affinityScore, freshness, quality, attention, coverage, score }) => ({
               articleId: article.id,
-              interestIsland: profileLabel || 'none',
+              interestIsland: profileLabel ? profileLabel.split(/\s+/).slice(0, 2).join(' ') : 'none',
               affinity: Number(affinityScore.toFixed(4)),
               freshness: Number(freshness.toFixed(4)),
               quality: Number(quality.toFixed(4)),
