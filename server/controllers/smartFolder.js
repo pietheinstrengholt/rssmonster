@@ -3,7 +3,8 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
 import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
-const { Article, Feed, Tag, SmartFolder, SmartFolderStats } = db;
+import { refreshSmartFolderStatsForUser } from '../util/smartFolderCache.js';
+const { Article, Feed, Tag, SmartFolder, SmartFolderStats, Setting } = db;
 
 /* ---------------------------------------------------
  * GET /api/smartfolders
@@ -34,6 +35,13 @@ const getSmartFolders = async (req, res, next) => {
       });
 
       const statsMap = new Map(statsRows.map(row => [row.smartFolderId, row.articleCount]));
+
+      // If cache is incomplete (e.g. first request after restart before warmup finishes),
+      // trigger a background refresh for this user so next request hits the cache
+      const missingIds = smartFolders.filter(f => !statsMap.has(f.id)).map(f => f.id);
+      if (missingIds.length > 0) {
+        setImmediate(() => refreshSmartFolderStatsForUser(userId).catch(() => {}));
+      }
 
       // Attach counts from cache, or default to 0 if missing
       for (const folder of smartFolders) {
@@ -74,7 +82,43 @@ const getSmartFolderCounts = async (req, res, next) => {
 
     const statsMap = new Map(statsRows.map(row => [row.smartFolderId, row.articleCount]));
 
-    // Return cached counts
+    // If cache is incomplete (e.g. first request after restart before warmup finishes),
+    // compute missing counts live and trigger a full background refresh
+    const missingFolders = smartFolders.filter(f => !statsMap.has(f.id));
+    if (missingFolders.length > 0) {
+      const userSettings = await Setting.findOne({
+        where: { userId },
+        attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
+        raw: true
+      });
+      const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
+      const minSentimentScore = userSettings?.minSentimentScore ?? 0;
+      const minQualityScore = userSettings?.minQualityScore ?? 0;
+
+      const { searchArticles } = await import('../util/articleSearch.service.js');
+      await Promise.all(missingFolders.map(async folder => {
+        try {
+          const result = await searchArticles({
+            userId,
+            search: folder.query,
+            minAdvertisementScore,
+            minSentimentScore,
+            minQualityScore,
+            smartFolderSearch: true,
+            limitCount: folder.limitCount || 50
+          });
+          const articleCount = result.itemIds ? result.itemIds.length : 0;
+          statsMap.set(folder.id, articleCount);
+        } catch {
+          statsMap.set(folder.id, 0);
+        }
+      }));
+
+      // Persist to cache in background
+      setImmediate(() => refreshSmartFolderStatsForUser(userId).catch(() => {}));
+    }
+
+    // Return counts (from cache or freshly computed)
     const counts = smartFolders.map(folder => ({
       id: folder.id,
       ArticleCount: statsMap.get(folder.id) ?? 0
