@@ -21,6 +21,9 @@ const CRAWL_TIMEOUT_MS = parseInt(process.env.CRAWL_TIMEOUT_MS) || 10 * 60 * 100
 // Controls whether feeds are processed in parallel (1) or sequentially (0, default)
 const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
 
+// Conditional HTTP requests (ETag / Last-Modified) can be disabled if feeds get stuck on 304.
+const CONDITIONAL_FEED_REQUESTS = process.env.FEED_CONDITIONAL_REQUESTS === 'true';
+
 // Rate limit delay tracking for OpenAI API
 let rateLimitDelay = 0;
 
@@ -158,11 +161,16 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
         throw new Error('Unable to discover RSS/Atom URL');
       }
 
-      // parse the feed using feedsmith with conditional request headers
-      const parseResult = await parseFeed.process(url, {
-        etag: feed.etag,
-        lastModified: feed.lastModified
-      });
+      // Parse the feed. Conditional requests are opt-in to avoid permanent 304 lock-in.
+      const parseResult = await parseFeed.process(
+        url,
+        CONDITIONAL_FEED_REQUESTS
+          ? {
+            etag: feed.etag,
+            lastModified: feed.lastModified
+          }
+          : {}
+      );
 
       // Handle 304 Not Modified: feed unchanged, skip article processing
       if (parseResult.status === 304) {
@@ -179,8 +187,14 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
         throw new Error('No valid feed data returned');
       }
 
-      // feedsmith: entries are in feedObject.feed.entries
-      const entries = parseResult.feed?.entries ?? parseResult.feed?.items ?? [];
+      // feedsmith commonly nests payload under `feed`; normalize both shapes.
+      const normalizedFeed = parseResult.feed?.feed || parseResult.feed;
+      const entries =
+        normalizedFeed?.entries ??
+        normalizedFeed?.items ??
+        parseResult.feed?.entries ??
+        parseResult.feed?.items ??
+        [];
 
       // Process each article entry. This will add newly discovered articles to the database
       for (const entry of entries) {
@@ -190,13 +204,16 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
       // Update feed metadata to use latest info from feed
       // feedsmith: image info is often in feedObject.feed.image.url
       const faviconUrl =
+        normalizedFeed?.icon ||
+        normalizedFeed?.logo ||
+        normalizedFeed?.image?.url ||
         parseResult.feed?.icon ||
         parseResult.feed?.logo ||
         parseResult.feed?.image?.url ||
         null;
 
       const updateData = {
-        feedType: parseResult.feed?.format || null,
+        feedType: normalizedFeed?.format || parseResult.feed?.format || null,
         favicon: faviconUrl,
         url: url,
         errorCount: 0,
