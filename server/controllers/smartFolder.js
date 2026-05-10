@@ -39,12 +39,38 @@ const getSmartFolders = async (req, res, next) => {
 
       // If cache is incomplete (e.g. first request after restart before warmup finishes),
       // trigger a background refresh for this user so next request hits the cache
-      const missingIds = smartFolders.filter(f => !statsMap.has(f.id)).map(f => f.id);
-      if (missingIds.length > 0) {
+      const missingFolders = smartFolders.filter(f => !statsMap.has(f.id));
+      if (missingFolders.length > 0) {
+        const userSettings = await Setting.findOne({
+          where: { userId },
+          attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
+          raw: true
+        });
+        const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
+        const minSentimentScore = userSettings?.minSentimentScore ?? 0;
+        const minQualityScore = userSettings?.minQualityScore ?? 0;
+
+        await Promise.all(missingFolders.map(async folder => {
+          try {
+            const result = await searchArticles({
+              userId,
+              search: folder.query,
+              minAdvertisementScore,
+              minSentimentScore,
+              minQualityScore,
+              smartFolderSearch: true,
+              limitCount: folder.limitCount || 50
+            });
+            statsMap.set(folder.id, result.itemIds ? result.itemIds.length : 0);
+          } catch {
+            statsMap.set(folder.id, 0);
+          }
+        }));
+
         setImmediate(() => refreshSmartFolderStatsForUser(userId).catch(() => {}));
       }
 
-      // Attach counts from cache, or default to 0 if missing
+      // Attach counts from cache or freshly computed live fallback
       for (const folder of smartFolders) {
         folder.dataValues.ArticleCount = statsMap.get(folder.id) ?? 0;
       }
