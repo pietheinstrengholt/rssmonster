@@ -58,7 +58,7 @@ export async function refreshSimilarityCacheForUser(userId, { articleIds = null,
 
   const articles = await Article.scope('withVector').findAll({
     where,
-    attributes: ['id', 'eventVector', 'topicVector', 'starInd']
+    attributes: ['id', 'eventVector']
   });
 
   const similarityRows = articles.map(article => {
