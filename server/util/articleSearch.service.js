@@ -1,6 +1,6 @@
 import db from '../models/index.js';
-const { Article, ArticleCluster, Feed, Tag, Setting } = db;
-import { Op, fn, col, where } from 'sequelize';
+const { Article, ArticleCluster, Feed, Tag, Setting, sequelize: dbSequelize } = db;
+import { Op, fn, col, where, literal } from 'sequelize';
 import { getImportanceBreakdown } from './importanceScore.js';
 import { refreshSimilarityCacheForUser } from './similarityCache.js';
 
@@ -91,12 +91,10 @@ const fulltextSearch = (searchTerm) => {
     return null;
   }
 
-  // Use FULLTEXT MATCH...AGAINST for fast search
-  // BOOLEAN mode allows for better control and faster execution
-  return where(
-    fn('MATCH', col('title'), col('description'), col('contentOriginal')),
-    fn('AGAINST', escapedTerm, 'IN BOOLEAN MODE')
-  );
+  // Use FULLTEXT MATCH...AGAINST for fast search via literal() to produce correct SQL
+  // Sequelize fn() generates `fn1 = fn2` which is invalid for MATCH...AGAINST
+  const escaped = dbSequelize.escape(escapedTerm);
+  return literal(`MATCH(\`title\`, \`description\`, \`contentOriginal\`) AGAINST(${escaped} IN BOOLEAN MODE)`);
 };
 
 /**

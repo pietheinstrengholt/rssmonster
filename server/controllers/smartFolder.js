@@ -4,6 +4,7 @@ import db from '../models/index.js';
 import { Op } from 'sequelize';
 import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
 import { refreshSmartFolderStatsForUser } from '../util/smartFolderCache.js';
+import { searchArticles } from '../util/articleSearch.service.js';
 const { Article, Feed, Tag, SmartFolder, SmartFolderStats, Setting } = db;
 
 /* ---------------------------------------------------
@@ -95,7 +96,6 @@ const getSmartFolderCounts = async (req, res, next) => {
       const minSentimentScore = userSettings?.minSentimentScore ?? 0;
       const minQualityScore = userSettings?.minQualityScore ?? 0;
 
-      const { searchArticles } = await import('../util/articleSearch.service.js');
       await Promise.all(missingFolders.map(async folder => {
         try {
           const result = await searchArticles({
