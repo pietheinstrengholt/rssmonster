@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Feed, Category, Article, Setting } = db;
+const { Feed, Category, Article, Setting, UserStats } = db;
 
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
@@ -62,7 +62,7 @@ export const getOverviewLite = async (req, res, _next) => {
 
 /* ====================================================
  * GET /api/manager/overview-counts
- * Expensive counts endpoint (lazy background fetch)
+ * Counts endpoint: uses cache for 'all' view, aggregates for filtered views
  * ==================================================== */
 export const getOverviewCounts = async (req, res, _next) => {
   const userId = req.userData.userId;
@@ -71,14 +71,92 @@ export const getOverviewCounts = async (req, res, _next) => {
   }
 
   try {
+    const clusterView = String(req.body?.clusterView || 'all');
+
     const settings = await Setting.findOne({
       where: { userId },
       attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore'],
       raw: true
     });
 
-    const clusterView = String(req.body?.clusterView || 'all');
+    // For 'all' clusterView with no quality filters: use cached stats (fast path)
+    const hasQualityFilters = 
+      (settings?.minAdvertisementScore && settings.minAdvertisementScore > 0) ||
+      (settings?.minSentimentScore && settings.minSentimentScore > 0) ||
+      (settings?.minQualityScore && settings.minQualityScore > 0);
 
+    if (clusterView === 'all' && !hasQualityFilters) {
+      // Fast path: use user_stats cache
+      let stats = await UserStats.findOne({
+        where: { userId },
+        attributes: ['totalCount', 'unreadCount', 'readCount', 'starCount', 'hotCount', 'clickedCount'],
+        raw: true
+      });
+
+      // Lazy initialization: if user_stats row doesn't exist, compute and insert it
+      if (!stats) {
+        const counts = await Article.findOne({
+          where: { userId },
+          attributes: [
+            [Sequelize.fn('COUNT', Sequelize.col('id')), 'totalCount'],
+            [Sequelize.literal(`SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END)`), 'unreadCount'],
+            [Sequelize.literal(`SUM(CASE WHEN status = 'read' THEN 1 ELSE 0 END)`), 'readCount'],
+            [Sequelize.literal(`SUM(CASE WHEN starInd = 1 THEN 1 ELSE 0 END)`), 'starCount'],
+            [Sequelize.literal(`SUM(CASE WHEN hotInd = 1 THEN 1 ELSE 0 END)`), 'hotCount'],
+            [Sequelize.literal(`SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)`), 'clickedCount']
+          ],
+          raw: true
+        });
+
+        stats = await UserStats.create({
+          userId,
+          totalCount: Number(counts?.totalCount) || 0,
+          unreadCount: Number(counts?.unreadCount) || 0,
+          readCount: Number(counts?.readCount) || 0,
+          starCount: Number(counts?.starCount) || 0,
+          hotCount: Number(counts?.hotCount) || 0,
+          clickedCount: Number(counts?.clickedCount) || 0
+        }, { raw: true });
+      }
+
+      if (stats) {
+        // Still need feed-level counts (not cached by user_stats)
+        const categoriesRaw = await Category.findAll({
+          where: { userId },
+          include: [{ model: Feed, required: false }],
+          order: ['categoryOrder', 'name']
+        });
+
+        const categories = categoriesRaw.map(c => {
+          const category = c.get({ plain: true });
+          category.readCount = 0;
+          category.unreadCount = 0;
+          category.starCount = 0;
+          category.clickedCount = 0;
+          category.feeds = (category.feeds || []).map(f => ({
+            ...f,
+            readCount: 0,
+            unreadCount: 0,
+            starCount: 0,
+            clickedCount: 0
+          }));
+          return category;
+        });
+
+        return res.status(200).json({
+          total: stats.totalCount,
+          unreadCount: stats.unreadCount,
+          readCount: stats.readCount,
+          starCount: stats.starCount,
+          hotCount: stats.hotCount,
+          clickedCount: stats.clickedCount,
+          categories,
+          feedCounts: []
+        });
+      }
+    }
+
+    // Slow path: compute counts for filtered views or quality filters
     const baseWhere = {
       userId,
       advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },

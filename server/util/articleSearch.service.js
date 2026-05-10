@@ -517,15 +517,15 @@ export const searchArticles = async ({
       baseWhere.id = taggedArticleIds;
     }
 
-    // Apply firstSeen age filter if present (firstSeen IS NULL OR firstSeen >= now() - duration)
+    // Apply firstSeen age filter if present (seenInd=0 OR firstSeen >= now() - duration)
     if (firstSeenAgeFilter) {
       const { value, unit } = firstSeenAgeFilter;
       const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
       baseWhere[Op.or] = [
-        { firstSeen: { [Op.is]: null } },
+        { seenInd: 0 },
         { firstSeen: { [Op.gte]: Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`) } }
       ];
-      console.log(`\x1b[31mFirst seen age filter applied: firstSeen IS NULL OR firstSeen >= NOW() - INTERVAL ${value} ${intervalUnit}\x1b[0m`);
+      console.log(`\x1b[31mFirst seen age filter applied: seenInd = 0 OR firstSeen >= NOW() - INTERVAL ${value} ${intervalUnit}\x1b[0m`);
     }
 
     /**
@@ -636,8 +636,8 @@ export const searchArticles = async ({
     }
 
     if (seenFilter !== null) {
-      // seen:true → only articles never seen before (firstSeen IS NULL)
-      articleQuery.where.firstSeen = seenFilter ? { [Op.is]: null } : { [Op.not]: null };
+      // seen:true → only articles never seen before; seen:false → only seen articles
+      articleQuery.where.seenInd = seenFilter ? 0 : 1;
     }
 
     if (hotFilter !== null) {

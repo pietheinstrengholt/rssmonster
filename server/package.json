@@ -21,7 +21,7 @@
     "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js",
-    "similarity-cache": "NODE_ENV=production node scripts/recalculateSimilarityCache.js"
+    "user-stats-repair": "NODE_ENV=production node scripts/backfillUserStats.js"
   },
   "engines": {
     "node": ">=20.x"

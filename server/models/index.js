@@ -27,6 +27,7 @@ const sequelize = new Sequelize(
 
 // ---- Import model factories ----
 import UserModel from './user.js';
+import UserStatsModel from './userStats.js';
 import CategoryModel from './category.js';
 import FeedModel from './feed.js';
 import ArticleModel from './article.js';
@@ -39,6 +40,7 @@ import HotlinkModel from './hotlink.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
+const UserStats = UserStatsModel(sequelize);
 const Category = CategoryModel(sequelize);
 const Feed = FeedModel(sequelize);
 const Article = ArticleModel(sequelize);
@@ -50,6 +52,10 @@ const ArticleCluster = ArticleClusterModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
 // ---- Associations ----
+
+// User ↔ UserStats
+User.hasOne(UserStats, { foreignKey: 'userId', onDelete: 'CASCADE' });
+UserStats.belongsTo(User, { foreignKey: 'userId' });
 
 // User ↔ Action
 User.hasMany(Action, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -109,6 +115,7 @@ export default {
   sequelize,
   Sequelize,
   User,
+  UserStats,
   Category,
   Feed,
   Article,

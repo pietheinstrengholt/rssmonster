@@ -26,6 +26,7 @@ import https from 'https';
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
 const { sequelize } = db;
+import { refreshSimilarityCacheForAllUsers } from './util/similarityCache.js';
 
 // Cache (dependency-injected)
 import hotlink from './controllers/hotlink.js';
@@ -118,6 +119,32 @@ app.use(errorController.get404);
 // --------------------
 const port = process.env.PORT || 3000;
 
+const warmSimilarityCacheOnStartup = () => {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  if (process.env.SIMILARITY_CACHE_ON_START === 'false') {
+    console.log('Skipping startup similarity cache refresh (SIMILARITY_CACHE_ON_START=false).');
+    return;
+  }
+
+  setImmediate(() => {
+    const startedAt = Date.now();
+    console.log('Startup similarity cache refresh started (mode=onlyStarred).');
+
+    refreshSimilarityCacheForAllUsers({ onlyStarred: true })
+      .then((userCount) => {
+        const durationMs = Date.now() - startedAt;
+        console.log(`Startup similarity cache refresh complete for ${userCount} users in ${durationMs}ms.`);
+      })
+      .catch((err) => {
+        const durationMs = Date.now() - startedAt;
+        console.error(`Startup similarity cache refresh failed after ${durationMs}ms:`, err);
+      });
+  });
+};
+
 const startServer = async () => {
   try {
     // DB
@@ -137,10 +164,12 @@ const startServer = async () => {
 
       https.createServer(options, app).listen(port, () => {
         console.log(`HTTPS server running on port ${port}`);
+        warmSimilarityCacheOnStartup();
       });
     } else {
       app.listen(port, () => {
         console.log(`HTTP server running on port ${port}`);
+        warmSimilarityCacheOnStartup();
       });
     }
   } catch (err) {

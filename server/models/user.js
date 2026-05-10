@@ -85,5 +85,27 @@ export default (sequelize) => {
     }
   );
 
+  // Initialize user_stats row when user is created
+  User.afterCreate(async (user) => {
+    try {
+      const UserStats = sequelize.models.UserStats;
+      if (UserStats) {
+        await UserStats.findOrCreate({
+          where: { userId: user.id },
+          defaults: {
+            totalCount: 0,
+            unreadCount: 0,
+            readCount: 0,
+            starCount: 0,
+            hotCount: 0,
+            clickedCount: 0
+          }
+        });
+      }
+    } catch (err) {
+      console.error(`Error initializing user_stats for user ${user.id}:`, err);
+    }
+  });
+
   return User;
 };

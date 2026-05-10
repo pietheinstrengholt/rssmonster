@@ -443,6 +443,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Only set firstSeen and attentionBucket if the article does not have firstSeen yet
     if (!article.firstSeen) {
       payload.firstSeen = new Date();
+      payload.seenInd = 1;
       payload.attentionBucket = attentionBucket;
     }
 
