@@ -112,6 +112,16 @@ export default (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null
+      },
+      etag: {
+        type: DataTypes.STRING(256),
+        allowNull: true,
+        defaultValue: null
+      },
+      lastModified: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        defaultValue: null
       }
     },
     {

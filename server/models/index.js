@@ -29,12 +29,15 @@ const sequelize = new Sequelize(
 import UserModel from './user.js';
 import UserStatsModel from './userStats.js';
 import CategoryModel from './category.js';
+import CategoryStatsModel from './categoryStats.js';
 import FeedModel from './feed.js';
+import FeedStatsModel from './feedStats.js';
 import ArticleModel from './article.js';
 import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
 import SmartFolderModel from './smartFolder.js';
+import SmartFolderStatsModel from './smartFolderStats.js';
 import ArticleClusterModel from './articleCluster.js';
 import HotlinkModel from './hotlink.js';
 
@@ -42,12 +45,15 @@ import HotlinkModel from './hotlink.js';
 const User = UserModel(sequelize);
 const UserStats = UserStatsModel(sequelize);
 const Category = CategoryModel(sequelize);
+const CategoryStats = CategoryStatsModel(sequelize);
 const Feed = FeedModel(sequelize);
+const FeedStats = FeedStatsModel(sequelize);
 const Article = ArticleModel(sequelize);
 const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
+const SmartFolderStats = SmartFolderStatsModel(sequelize);
 const ArticleCluster = ArticleClusterModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
@@ -77,9 +83,17 @@ Article.belongsTo(User, { foreignKey: 'userId' });
 Category.hasMany(Feed, { foreignKey: 'categoryId', onDelete: 'CASCADE' });
 Feed.belongsTo(Category, { foreignKey: 'categoryId' });
 
+// Category ↔ CategoryStats
+Category.hasOne(CategoryStats, { foreignKey: 'categoryId', onDelete: 'CASCADE' });
+CategoryStats.belongsTo(Category, { foreignKey: 'categoryId' });
+
 // Feed ↔ Article
 Feed.hasMany(Article, { foreignKey: 'feedId', onDelete: 'CASCADE' });
 Article.belongsTo(Feed, { foreignKey: 'feedId' });
+
+// Feed ↔ FeedStats
+Feed.hasOne(FeedStats, { foreignKey: 'feedId', onDelete: 'CASCADE' });
+FeedStats.belongsTo(Feed, { foreignKey: 'feedId' });
 
 // Article ↔ Tag
 Article.hasMany(Tag, { foreignKey: 'articleId', onDelete: 'CASCADE' });
@@ -88,6 +102,10 @@ Tag.belongsTo(Article, { foreignKey: 'articleId' });
 // User ↔ SmartFolder
 User.hasMany(SmartFolder, { foreignKey: 'userId', onDelete: 'CASCADE' });
 SmartFolder.belongsTo(User, { foreignKey: 'userId' });
+
+// SmartFolder ↔ SmartFolderStats
+SmartFolder.hasOne(SmartFolderStats, { foreignKey: 'smartFolderId', onDelete: 'CASCADE' });
+SmartFolderStats.belongsTo(SmartFolder, { foreignKey: 'smartFolderId' });
 
 // User ↔ ArticleCluster
 User.hasMany(ArticleCluster, { foreignKey: 'userId', onDelete: 'CASCADE' });
@@ -117,12 +135,15 @@ export default {
   User,
   UserStats,
   Category,
+  CategoryStats,
   Feed,
+  FeedStats,
   Article,
   Tag,
   Action,
   Setting,
   SmartFolder,
+  SmartFolderStats,
   ArticleCluster,
   Hotlink
 };

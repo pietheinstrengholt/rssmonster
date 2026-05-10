@@ -320,6 +320,20 @@ export default (sequelize) => {
       }, {
         fields: ['userId']
       });
+
+      // Invalidate smart folder stats for this user (async, non-blocking)
+      setImmediate(async () => {
+        try {
+          const { invalidateSmartFolderStatsForUser } = await import('../util/smartFolderCache.js');
+          const { invalidateFeedCategoryStatsForUser } = await import('../util/feedCategoryCache.js');
+          await Promise.all([
+            invalidateSmartFolderStatsForUser(article.userId),
+            invalidateFeedCategoryStatsForUser(article.userId)
+          ]);
+        } catch (err) {
+          console.error(`Error invalidating stats on article create:`, err);
+        }
+      });
     } catch (err) {
       console.error(`Error updating user_stats on article create for user ${article.userId}:`, err);
     }
@@ -360,6 +374,20 @@ export default (sequelize) => {
         starCount: Number(counts?.starCount) || 0,
         hotCount: Number(counts?.hotCount) || 0,
         clickedCount: Number(counts?.clickedCount) || 0
+      });
+
+      // Invalidate smart folder stats for this user (async, non-blocking)
+      setImmediate(async () => {
+        try {
+          const { invalidateSmartFolderStatsForUser } = await import('../util/smartFolderCache.js');
+          const { invalidateFeedCategoryStatsForUser } = await import('../util/feedCategoryCache.js');
+          await Promise.all([
+            invalidateSmartFolderStatsForUser(article.userId),
+            invalidateFeedCategoryStatsForUser(article.userId)
+          ]);
+        } catch (err) {
+          console.error(`Error invalidating stats on article update:`, err);
+        }
       });
     } catch (err) {
       console.error(`Error updating user_stats on article update for user ${article.userId}:`, err);

@@ -27,6 +27,8 @@ import https from 'https';
 import db from './models/index.js';
 const { sequelize } = db;
 import { refreshSimilarityCacheForAllUsers } from './util/similarityCache.js';
+import { refreshSmartFolderStatsForAllUsers } from './util/smartFolderCache.js';
+import { refreshFeedCategoryStatsForAllUsers } from './util/feedCategoryCache.js';
 
 // Cache (dependency-injected)
 import hotlink from './controllers/hotlink.js';
@@ -145,6 +147,58 @@ const warmSimilarityCacheOnStartup = () => {
   });
 };
 
+const warmSmartFolderStatsOnStartup = () => {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  if (process.env.SMART_FOLDER_CACHE_ON_START === 'false') {
+    console.log('Skipping startup smart folder stats refresh (SMART_FOLDER_CACHE_ON_START=false).');
+    return;
+  }
+
+  setImmediate(() => {
+    const startedAt = Date.now();
+    console.log('Startup smart folder stats refresh started.');
+
+    refreshSmartFolderStatsForAllUsers()
+      .then((userCount) => {
+        const durationMs = Date.now() - startedAt;
+        console.log(`Startup smart folder stats refresh complete for ${userCount} users in ${durationMs}ms.`);
+      })
+      .catch((err) => {
+        const durationMs = Date.now() - startedAt;
+        console.error(`Startup smart folder stats refresh failed after ${durationMs}ms:`, err);
+      });
+  });
+};
+
+const warmFeedCategoryStatsOnStartup = () => {
+  if (process.env.NODE_ENV === 'test') {
+    return;
+  }
+
+  if (process.env.FEED_CATEGORY_CACHE_ON_START === 'false') {
+    console.log('Skipping startup feed/category stats refresh (FEED_CATEGORY_CACHE_ON_START=false).');
+    return;
+  }
+
+  setImmediate(() => {
+    const startedAt = Date.now();
+    console.log('Startup feed/category stats refresh started.');
+
+    refreshFeedCategoryStatsForAllUsers()
+      .then((userCount) => {
+        const durationMs = Date.now() - startedAt;
+        console.log(`Startup feed/category stats refresh complete for ${userCount} users in ${durationMs}ms.`);
+      })
+      .catch((err) => {
+        const durationMs = Date.now() - startedAt;
+        console.error(`Startup feed/category stats refresh failed after ${durationMs}ms:`, err);
+      });
+  });
+};
+
 const startServer = async () => {
   try {
     // DB
@@ -165,11 +219,15 @@ const startServer = async () => {
       https.createServer(options, app).listen(port, () => {
         console.log(`HTTPS server running on port ${port}`);
         warmSimilarityCacheOnStartup();
+        warmSmartFolderStatsOnStartup();
+        warmFeedCategoryStatsOnStartup();
       });
     } else {
       app.listen(port, () => {
         console.log(`HTTP server running on port ${port}`);
         warmSimilarityCacheOnStartup();
+        warmSmartFolderStatsOnStartup();
+        warmFeedCategoryStatsOnStartup();
       });
     }
   } catch (err) {

@@ -1,7 +1,7 @@
 import { parseFeed } from 'feedsmith';
 import { fetchURL } from './fetchURL.js';
 
-export const process = async (feedUrl) => {
+export const process = async (feedUrl, { etag = null, lastModified = null } = {}) => {
   try {
     if (!feedUrl) {
       const err = new Error('Missing feed URL');
@@ -9,7 +9,19 @@ export const process = async (feedUrl) => {
       throw err;
     }
 
-    const response = await fetchURL(feedUrl);
+    const response = await fetchURL(feedUrl, 2, { etag, lastModified });
+
+    // Handle 304 Not Modified: feed has not changed
+    if (response.status === 304) {
+      return {
+        status: 304,
+        cached: true,
+        feed: null,
+        etag: response.headers.get('etag'),
+        lastModified: response.headers.get('last-modified')
+      };
+    }
+
     if (!response?.ok) {
       const status = response?.status;
       const err = new Error(`Feed fetch failed${status ? ` (HTTP ${status})` : ''}`);
@@ -25,8 +37,18 @@ export const process = async (feedUrl) => {
     }
 
     const feed = parseFeed(body);
-    return feed; // return object, NOT string
 
+    // Extract etag and last-modified from response headers
+    const etagValue = response.headers.get('etag');
+    const lastModifiedValue = response.headers.get('last-modified');
+
+    return {
+      status: response.status,
+      cached: false,
+      feed,
+      etag: etagValue,
+      lastModified: lastModifiedValue
+    };
   } catch (err) {
     // Suppress feedsmith stack trace
     if (err?.message === 'Unrecognized feed format') {

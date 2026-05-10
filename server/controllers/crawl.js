@@ -158,16 +158,29 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
         throw new Error('Unable to discover RSS/Atom URL');
       }
 
-      // parse the feed using feedsmith
-      const feedObject = await parseFeed.process(url);
+      // parse the feed using feedsmith with conditional request headers
+      const parseResult = await parseFeed.process(url, {
+        etag: feed.etag,
+        lastModified: feed.lastModified
+      });
+
+      // Handle 304 Not Modified: feed unchanged, skip article processing
+      if (parseResult.status === 304) {
+        console.log(`[Not Modified] Feed has not changed (304): ${feed.url}`);
+        await feed.update({
+          lastFetched: new Date()
+        });
+        processedCount++;
+        return;
+      }
 
       // Sanity check
-      if (!feedObject) {
+      if (!parseResult?.feed) {
         throw new Error('No valid feed data returned');
       }
 
       // feedsmith: entries are in feedObject.feed.entries
-      const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
+      const entries = parseResult.feed?.entries ?? parseResult.feed?.items ?? [];
 
       // Process each article entry. This will add newly discovered articles to the database
       for (const entry of entries) {
@@ -177,34 +190,39 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
       // Update feed metadata to use latest info from feed
       // feedsmith: image info is often in feedObject.feed.image.url
       const faviconUrl =
-        feedObject.feed?.icon ||
-        feedObject.feed?.logo ||
-        feedObject.feed?.image?.url ||
+        parseResult.feed?.icon ||
+        parseResult.feed?.logo ||
+        parseResult.feed?.image?.url ||
         null;
 
       const updateData = {
-        feedType: feedObject.format || null,
+        feedType: parseResult.feed?.format || null,
         favicon: faviconUrl,
         url: url,
         errorCount: 0,
         errorMessage: null,
         errorSince: null,
-        status: 'active'
+        status: 'active',
+        etag: parseResult.etag,
+        lastModified: parseResult.lastModified,
+        lastFetched: new Date()
       };
       await feed.update(updateData);
 
       processedCount++;
-      console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
+      console.log(`[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
     } catch (err) {
       const errMsg = err?.message || String(err) || 'Unknown error';
       console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
       await markError(feed, errMsg);
       errorCount++;
     } finally {
-      //update lastFetched
-      await feed.update({
-        lastFetched: new Date()
-      });
+      // Update lastFetched on both success and error
+      if (!feed.lastFetched || feed.lastFetched < Date.now() - 1000) {
+        await feed.update({
+          lastFetched: new Date()
+        });
+      }
     }
   };
 

@@ -70,6 +70,36 @@ const ciLike = (column, value) => (
 );
 
 /**
+ * FULLTEXT search helper for efficient content search
+ * Uses MySQL FULLTEXT index on (title, description, contentOriginal)
+ * Falls back to LIKE if FULLTEXT not available
+ */
+const fulltextSearch = (searchTerm) => {
+  if (!searchTerm || searchTerm.trim().length === 0) {
+    return null;
+  }
+
+  // Escape FULLTEXT special characters and prepare term
+  const escapedTerm = String(searchTerm)
+    .trim()
+    .replace(/[+\-<>()~*"\\]/g, ' ')
+    .split(/\s+/)
+    .filter(Boolean)
+    .join(' ');
+
+  if (!escapedTerm) {
+    return null;
+  }
+
+  // Use FULLTEXT MATCH...AGAINST for fast search
+  // BOOLEAN mode allows for better control and faster execution
+  return where(
+    fn('MATCH', col('title'), col('description'), col('contentOriginal')),
+    fn('AGAINST', escapedTerm, 'IN BOOLEAN MODE')
+  );
+};
+
+/**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
  * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
@@ -475,34 +505,46 @@ export const searchArticles = async ({
       baseWhere[Op.and] = [...(baseWhere[Op.and] || []), titleCond];
       // If there are remaining tokens or quoted phrase, also search content for them
       if (quotedPhrase) {
-        const contentCond = ciLike('contentOriginal', quotedPhrase);
+        const contentCond = fulltextSearch(quotedPhrase) || ciLike('contentOriginal', quotedPhrase);
         baseWhere[Op.and] = [...(baseWhere[Op.and] || []), contentCond];
-        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"\x1b[0m`);
+        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content phrase: "${quotedPhrase}"\x1b[0m`);
       } else if (remainingTokens.length > 0) {
-        // OR on individual words in content (case-insensitive)
-        baseWhere[Op.or] = remainingTokens.map(token => ciLike('contentOriginal', token));
-        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}\x1b[0m`);
+        // Use FULLTEXT for multi-word content search
+        const contentCond = fulltextSearch(remainingTokens.join(' ')) || {
+          [Op.or]: remainingTokens.map(token => ciLike('contentOriginal', token))
+        };
+        baseWhere[Op.and] = [...(baseWhere[Op.and] || []), contentCond];
+        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content word search: ${remainingTokens.join(", ")}\x1b[0m`);
       } else {
         console.log(`\x1b[31mTitle-only search: "%${titleFilter}%"\x1b[0m`);
       }
     } else if (quotedPhrase) {
-      // Quoted phrase: search title OR content for exact phrase (case-insensitive)
-      baseWhere[Op.or] = [
-        ciLike('title', quotedPhrase),
-        ciLike('contentOriginal', quotedPhrase)
-      ];
-      console.log(`\x1b[31mQuoted phrase search (exact): "${quotedPhrase}"\x1b[0m`);
+      // Quoted phrase: search title OR content using FULLTEXT for efficiency
+      const fulltextCond = fulltextSearch(quotedPhrase);
+      baseWhere[Op.or] = fulltextCond 
+        ? [fulltextCond]
+        : [
+            ciLike('title', quotedPhrase),
+            ciLike('contentOriginal', quotedPhrase)
+          ];
+      console.log(`\x1b[31mPhrase search: "${quotedPhrase}"\x1b[0m`);
     } else if (wordMatches.length > 0) {
-      // Unquoted search: each word must appear somewhere in title OR content (case-insensitive)
-      // Build: (title LIKE %word1% OR content LIKE %word1%) AND (title LIKE %word2% OR content LIKE %word2%) ... with LOWER()
-      const wordConditions = remainingTokens.map(token => ({
-        [Op.or]: [
-          ciLike('title', token),
-          ciLike('contentOriginal', token)
-        ]
-      }));
-      baseWhere[Op.and] = wordConditions;
-      console.log(`\x1b[31mWord-by-word AND search: ${remainingTokens.join(", ")}\x1b[0m`);
+      // Unquoted search: use FULLTEXT for efficient multi-word search
+      const fulltextCond = fulltextSearch(remainingTokens.join(' '));
+      if (fulltextCond) {
+        baseWhere[Op.and] = [...(baseWhere[Op.and] || []), fulltextCond];
+        console.log(`\x1b[31mFulltext search: ${remainingTokens.join(", ")}\x1b[0m`);
+      } else {
+        // Fallback to LIKE if FULLTEXT not available
+        const wordConditions = remainingTokens.map(token => ({
+          [Op.or]: [
+            ciLike('title', token),
+            ciLike('contentOriginal', token)
+          ]
+        }));
+        baseWhere[Op.and] = wordConditions;
+        console.log(`\x1b[31mWord-by-word AND search: ${remainingTokens.join(", ")}\x1b[0m`);
+      }
     }
     // Note: If no search terms at all (no titleFilter, quotedPhrase, or wordMatches), 
     // we don't add any text search filters - baseWhere will match all articles
@@ -844,6 +886,23 @@ export const searchArticles = async ({
             };
           })
           .sort((a, b) => b.importance - a.importance);
+
+        // Debug: Log scoring breakdown in development mode
+        if (process.env.NODE_ENV === 'development') {
+          console.table(
+            scored.map(({ article, breakdown }) => ({
+              articleId: article.id,
+              similarity: Number(breakdown.similarity.toFixed(4)),
+              quality: Number(breakdown.quality.toFixed(4)),
+              freshness: Number(breakdown.freshness.toFixed(4)),
+              coverage: Number(breakdown.coverage.toFixed(4)),
+              crossSource: Number(breakdown.crossSource.toFixed(4)),
+              corroboration: Number(breakdown.corroboration.toFixed(4)),
+              ruleBoost: Number(breakdown.ruleBoost.toFixed(4)),
+              importance: Number(breakdown.importance.toFixed(4))
+            }))
+          );
+        }
 
         articles = scored.map(item => item.article);
       } else if (sortQuality) {

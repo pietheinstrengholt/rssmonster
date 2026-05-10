@@ -1,32 +1,9 @@
 'use strict';
 
 import db from '../models/index.js';
-import { Op, fn, col, literal } from 'sequelize';
-import { searchArticles } from "../util/articleSearch.service.js";
+import { Op } from 'sequelize';
 import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
-const { Article, Feed, Tag, SmartFolder, Setting } = db;
-
-const SMART_FOLDER_COUNT_CONCURRENCY = 4;
-
-const mapWithConcurrency = async (items, limit, mapper) => {
-  if (!Array.isArray(items) || items.length === 0) return [];
-
-  const results = Array(items.length);
-  let index = 0;
-
-  const workers = Array.from(
-    { length: Math.min(Math.max(limit, 1), items.length) },
-    async () => {
-      while (index < items.length) {
-        const currentIndex = index++;
-        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
-      }
-    }
-  );
-
-  await Promise.all(workers);
-  return results;
-};
+const { Article, Feed, Tag, SmartFolder, SmartFolderStats } = db;
 
 /* ---------------------------------------------------
  * GET /api/smartfolders
@@ -47,35 +24,21 @@ const getSmartFolders = async (req, res, next) => {
     });
 
     if (withCounts) {
-      const userSettings = await Setting.findOne({
-        where: { userId },
-        attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+      // Fetch cached stats for all folders
+      const statsRows = await SmartFolderStats.findAll({
+        where: {
+          smartFolderId: { [Op.in]: smartFolders.map(f => f.id) }
+        },
+        attributes: ['smartFolderId', 'articleCount'],
+        raw: true
       });
 
-      const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
-      const minSentimentScore = userSettings?.minSentimentScore ?? 0;
-      const minQualityScore = userSettings?.minQualityScore ?? 0;
+      const statsMap = new Map(statsRows.map(row => [row.smartFolderId, row.articleCount]));
 
-      await mapWithConcurrency(
-        smartFolders,
-        SMART_FOLDER_COUNT_CONCURRENCY,
-        async folder => {
-          try {
-            const result = await searchArticles({
-              userId,
-              search: folder.query,
-              minAdvertisementScore,
-              minSentimentScore,
-              minQualityScore,
-              smartFolderSearch: true,
-              limitCount: folder.limitCount || 50
-            });
-            folder.dataValues.ArticleCount = result.itemIds.length;
-          } catch {
-            folder.dataValues.ArticleCount = 0;
-          }
-        }
-      );
+      // Attach counts from cache, or default to 0 if missing
+      for (const folder of smartFolders) {
+        folder.dataValues.ArticleCount = statsMap.get(folder.id) ?? 0;
+      }
     }
 
     res.status(200).json({ total: smartFolders.length, smartFolders });
@@ -100,35 +63,22 @@ const getSmartFolderCounts = async (req, res, next) => {
       order: [['name', 'ASC']]
     });
 
-    const userSettings = await Setting.findOne({
-      where: { userId },
-      attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+    // Fetch cached stats for all folders
+    const statsRows = await SmartFolderStats.findAll({
+      where: {
+        smartFolderId: { [Op.in]: smartFolders.map(f => f.id) }
+      },
+      attributes: ['smartFolderId', 'articleCount'],
+      raw: true
     });
 
-    const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
-    const minSentimentScore = userSettings?.minSentimentScore ?? 0;
-    const minQualityScore = userSettings?.minQualityScore ?? 0;
+    const statsMap = new Map(statsRows.map(row => [row.smartFolderId, row.articleCount]));
 
-    const counts = await mapWithConcurrency(
-      smartFolders,
-      SMART_FOLDER_COUNT_CONCURRENCY,
-      async folder => {
-        try {
-          const result = await searchArticles({
-            userId,
-            search: folder.query,
-            minAdvertisementScore,
-            minSentimentScore,
-            minQualityScore,
-            smartFolderSearch: true,
-            limitCount: folder.limitCount || 50
-          });
-          return { id: folder.id, ArticleCount: result.itemIds.length };
-        } catch {
-          return { id: folder.id, ArticleCount: 0 };
-        }
-      }
-    );
+    // Return cached counts
+    const counts = smartFolders.map(folder => ({
+      id: folder.id,
+      ArticleCount: statsMap.get(folder.id) ?? 0
+    }));
 
     res.status(200).json({ counts });
   } catch (err) {
