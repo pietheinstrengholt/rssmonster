@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Feed, FeedStats, Category, CategoryStats, Article, Sequelize } = db;
+const { Feed, FeedStats, Category, CategoryStats, Article } = db;
 import { Op, fn, col, literal } from 'sequelize';
 
 /**

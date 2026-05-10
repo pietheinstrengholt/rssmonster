@@ -4,9 +4,11 @@ const mocked = vi.hoisted(() => ({
   smartFolderFindAll: vi.fn(),
   smartFolderDestroy: vi.fn(),
   smartFolderBulkCreate: vi.fn(),
+  smartFolderStatsFindAll: vi.fn().mockResolvedValue([]),
   settingFindOne: vi.fn(),
   searchArticles: vi.fn(),
-  getSmartFolderRecommendations: vi.fn()
+  getSmartFolderRecommendations: vi.fn(),
+  refreshSmartFolderStatsForUser: vi.fn().mockResolvedValue(new Map())
 }));
 
 vi.mock('../models/index.js', () => ({
@@ -21,6 +23,9 @@ vi.mock('../models/index.js', () => ({
       findAll: mocked.smartFolderFindAll,
       destroy: mocked.smartFolderDestroy,
       bulkCreate: mocked.smartFolderBulkCreate
+    },
+    SmartFolderStats: {
+      findAll: mocked.smartFolderStatsFindAll
     }
   }
 }));
@@ -31,6 +36,12 @@ vi.mock('../util/articleSearch.service.js', () => ({
 
 vi.mock('../util/smartFolderLLM.js', () => ({
   getSmartFolderRecommendations: mocked.getSmartFolderRecommendations
+}));
+
+vi.mock('../util/smartFolderCache.js', () => ({
+  refreshSmartFolderStatsForUser: mocked.refreshSmartFolderStatsForUser,
+  refreshSmartFolderStatsForAllUsers: vi.fn().mockResolvedValue(0),
+  invalidateSmartFolderStatsForUser: vi.fn().mockResolvedValue(undefined)
 }));
 
 const { default: smartFolderController } = await import('../controllers/smartFolder.js');
