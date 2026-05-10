@@ -39,6 +39,8 @@ import SettingModel from './setting.js';
 import SmartFolderModel from './smartFolder.js';
 import SmartFolderStatsModel from './smartFolderStats.js';
 import ArticleClusterModel from './articleCluster.js';
+import UserClusterAffinityModel from './userClusterAffinity.js';
+import UserInterestProfileModel from './userInterestProfile.js';
 import HotlinkModel from './hotlink.js';
 
 // ---- Initialize models ----
@@ -55,6 +57,8 @@ const Setting = SettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
 const SmartFolderStats = SmartFolderStatsModel(sequelize);
 const ArticleCluster = ArticleClusterModel(sequelize);
+const UserClusterAffinity = UserClusterAffinityModel(sequelize);
+const UserInterestProfile = UserInterestProfileModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
 // ---- Associations ----
@@ -111,6 +115,16 @@ SmartFolderStats.belongsTo(SmartFolder, { foreignKey: 'smartFolderId' });
 User.hasMany(ArticleCluster, { foreignKey: 'userId', onDelete: 'CASCADE' });
 ArticleCluster.belongsTo(User, { foreignKey: 'userId' });
 
+// User ↔ Interest islands / cluster affinities
+User.hasMany(UserClusterAffinity, { foreignKey: 'userId', onDelete: 'CASCADE' });
+UserClusterAffinity.belongsTo(User, { foreignKey: 'userId' });
+
+User.hasMany(UserInterestProfile, { foreignKey: 'userId', onDelete: 'CASCADE' });
+UserInterestProfile.belongsTo(User, { foreignKey: 'userId' });
+
+ArticleCluster.hasMany(UserClusterAffinity, { foreignKey: 'clusterId', onDelete: 'CASCADE' });
+UserClusterAffinity.belongsTo(ArticleCluster, { foreignKey: 'clusterId' });
+
 // Article ↔ ArticleCluster
 Article.belongsTo(ArticleCluster, {
   foreignKey: 'clusterId',
@@ -145,5 +159,7 @@ export default {
   SmartFolder,
   SmartFolderStats,
   ArticleCluster,
+  UserClusterAffinity,
+  UserInterestProfile,
   Hotlink
 };

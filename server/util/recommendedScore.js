@@ -1,15 +1,15 @@
 /**
- * Compute the runtime importance score for an article.
+ * Compute the runtime recommended score for an article.
  *
  * Combines time relevance, content quality, coverage signal,
  * and source diversity into a single ranking signal.
  * Note: feedTrust is already included in article.quality (from the Article model virtual field).
  */
-export function computeImportance(article) {
-  return getImportanceBreakdown(article).importance;
+export function computeRecommended(article) {
+  return getRecommendedBreakdown(article).recommended;
 }
 
-export function getImportanceBreakdown(article) {
+export function getRecommendedBreakdown(article) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
 
@@ -76,10 +76,10 @@ export function getImportanceBreakdown(article) {
     ? Math.max(0, Math.min(1, rawSimilarity))
     : 0;
 
-  // Weighted sum: balances all signals to produce importance score (0–1)
+  // Weighted sum: balances all signals to produce recommended score (0–1)
   // Weights: similarity (45%), quality (10%), freshness (10%), coverage (20%), crossSource (10%), corroboration (5%)
   // Plus a flat 0.15 boost for rule-tagged articles
-  const importance =
+  const recommended =
     0.45 * similarity +
     0.10 * quality +
     0.10 * freshness +
@@ -96,6 +96,6 @@ export function getImportanceBreakdown(article) {
     crossSource,
     corroboration,
     ruleBoost,
-    importance: Math.max(0, Math.min(1, importance))
+    recommended: Math.max(0, Math.min(1, recommended))
   };
 }

@@ -1,8 +1,7 @@
 import db from '../models/index.js';
 const { Article, ArticleCluster, Feed, Tag, Setting, sequelize: dbSequelize } = db;
 import { Op, fn, col, where, literal } from 'sequelize';
-import { getImportanceBreakdown } from './importanceScore.js';
-import { refreshSimilarityCacheForUser } from './similarityCache.js';
+import { rankRecommendedArticles } from './interestIsland.service.js';
 
 async function attachTopicGroupMetrics(articles, userId) {
   if (!Array.isArray(articles) || !articles.length) return;
@@ -100,7 +99,7 @@ const fulltextSearch = (searchTerm) => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
- * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 export const searchArticles = async ({
     userId,
@@ -147,7 +146,7 @@ export const searchArticles = async ({
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.
      * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-    * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+    * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
      */
     const rawSearch = search.trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
@@ -157,7 +156,7 @@ export const searchArticles = async ({
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let seenFilter = null; // Seen filter from search (seen:true/false)
     let firstSeenAgeFilter = null; // First seen age filter from search (firstSeen:24h, firstSeen:7d)
-    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION)
+    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
@@ -267,7 +266,7 @@ export const searchArticles = async ({
       const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i); // firstSeen:24h or firstSeen:7d
       const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:RECOMMENDED, sort:IMPORTANCE (legacy), sort:QUALITY, or sort:ATTENTION
+      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:RECOMMENDED, sort:QUALITY, or sort:ATTENTION
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
@@ -399,18 +398,18 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:ASC/DESC/RECOMMENDED/IMPORTANCE/QUALITY/ATTENTION) overrides query param
-    // sortImportance flag set if sort is RECOMMENDED or legacy IMPORTANCE
+    // Sort: search token (sort:ASC/DESC/RECOMMENDED/QUALITY/ATTENTION) overrides query param
+    // sortRecommended flag set if sort is RECOMMENDED
     // Smart folder optimization: skip sort entirely (only counting articles)
     let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
-    let sortImportance = false;
+    let sortRecommended = false;
     let sortQuality = false;
     let sortAttention = false;
 
     // Normalize sort value when virtual sort modes are specified
-    if (workingSort.toUpperCase() === "RECOMMENDED" || workingSort.toUpperCase() === "IMPORTANCE") {
+    if (workingSort.toUpperCase() === "RECOMMENDED") {
       workingSort = "DESC";
-      sortImportance = true;
+      sortRecommended = true;
     } else if (workingSort.toUpperCase() === "QUALITY") {
       workingSort = "DESC";
       sortQuality = true;
@@ -574,17 +573,17 @@ export const searchArticles = async ({
      * Optimize attribute selection based on what's actually needed:
      * - Smart folders without filters: only id
      * - Smart folders with quality/freshness filters: id + score fields + published
-     * - Regular searches with importance sort: id + published + score fields
+    * - Regular searches with recommended sort: id + published + score fields
      * - Regular searches with quality sort: id + score fields
      * - Regular searches otherwise: id + published (for ordering)
      */
     const queryAttributes = ["id"];
     
     // Determine what attributes we need based on filters and sort
-    const needsQuality = qualityFilter || sortQuality;
-    const needsFreshness = freshnessFilter || sortImportance;
+    const needsQuality = qualityFilter || sortQuality || sortRecommended;
+    const needsFreshness = freshnessFilter || sortRecommended;
     const needsAttention = sortAttention;
-    const needsSimilarity = sortImportance;
+    const needsRecommended = sortRecommended;
     const needsPublished = !smartFolderSearch || needsFreshness;
     
     if (needsQuality) {
@@ -597,7 +596,7 @@ export const searchArticles = async ({
       if (!queryAttributes.includes("published")) {
         queryAttributes.push("published");
       }
-      // Also need quality scores for importance computation
+      // Also need quality scores for recommended ranking
       if (!queryAttributes.includes("qualityScore")) {
         queryAttributes.push("advertisementScore", "sentimentScore", "qualityScore");
       }
@@ -611,8 +610,8 @@ export const searchArticles = async ({
       queryAttributes.push("attentionBucket", "openedCount", "clickedAmount");
     }
 
-    if (needsSimilarity) {
-      queryAttributes.push('similarityScore');
+    if (needsRecommended) {
+      queryAttributes.push('clusterId');
     }
     
     console.log(`\x1b[36mQuery attributes: ${queryAttributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -622,25 +621,31 @@ export const searchArticles = async ({
       where: baseWhere
     };
 
-    // Include cluster + feed associations when sorting by importance
-    // so computeImportance can access cluster.articleCount, cluster.sourceDiversityScore,
-    // and Feed.feedTrust for the quality virtual field
-    if (sortImportance) {
+    const resolveRecommendedCandidateLimit = () => {
+      if (Number.isFinite(limitFilter) && limitFilter > 0) {
+        return Math.min(Math.max(limitFilter * 3, 120), 1200);
+      }
+
+      if (smartFolderSearch && Number.isFinite(limitCount) && limitCount > 0) {
+        return Math.min(Math.max(limitCount * 3, 120), 1200);
+      }
+
+      return 300;
+    };
+
+    // Include cluster + feed associations when sorting by recommended relevance
+    // so the profile matcher can access cluster vectors and Feed.feedTrust
+    if (sortRecommended) {
       articleQuery.include = [
         {
           model: ArticleCluster,
           as: 'cluster',
-          attributes: ['id', 'articleCount', 'clusterStrength', 'sourceDiversityScore', 'sourceCount', 'topicKey'],
+          attributes: ['id', 'articleCount', 'clusterStrength', 'sourceDiversityScore', 'sourceCount', 'topicKey', 'topicVector', 'eventVector'],
           required: false
         },
         {
           model: Feed,
           attributes: ['id', 'feedTrust'],
-          required: false
-        },
-        {
-          model: Tag,
-          attributes: ['id', 'tagType'],
           required: false
         }
       ];
@@ -649,6 +654,10 @@ export const searchArticles = async ({
     // Add order clause only for non-smart folder searches
     if (!smartFolderSearch) {
       articleQuery.order = [["published", workingSort]];
+    }
+
+    if (sortRecommended) {
+      articleQuery.limit = resolveRecommendedCandidateLimit();
     }
 
     /**
@@ -839,8 +848,8 @@ export const searchArticles = async ({
       console.log(`\x1b[31mApplied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${articles.length} articles remaining\x1b[0m`);
     }
     
-    // If sorting by importance, compute importance scores and sort
-    if (sortImportance) {
+    // If sorting by recommended relevance, keep response sort normalized
+    if (sortRecommended) {
       workingSort = "RECOMMENDED"; // Reflect recommended sort in response, needed for later saving to Settings
     }
     if (sortQuality) {
@@ -852,57 +861,33 @@ export const searchArticles = async ({
 
     // Move the sorting logic here to after all filtering is done
     // For smart folder searches, only apply in-memory sorting for virtual sort modes.
-    if (!smartFolderSearch || sortImportance || sortQuality || sortAttention) {
+    if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
-      if (sortImportance) {
+      if (sortRecommended) {
         if (workingClusterView === 'topicGroup') {
           await attachTopicGroupMetrics(articles, userId);
         }
 
-        const uncachedIds = articles
-          .filter(article => article.similarityScore === null || article.similarityScore === undefined)
-          .map(article => article.id);
+        const ranked = await rankRecommendedArticles({ userId, articles });
 
-        if (uncachedIds.length > 0) {
-          const similarityMap = await refreshSimilarityCacheForUser(userId, { articleIds: uncachedIds });
-          for (const article of articles) {
-            const cached = similarityMap.get(article.id);
-            if (cached !== undefined) {
-              article.similarityScore = cached;
-            }
-          }
-        }
-
-        const scored = articles
-          .map(article => {
-            const breakdown = getImportanceBreakdown(article);
-
-            return {
-              article,
-              importance: breakdown.importance,
-              breakdown
-            };
-          })
-          .sort((a, b) => b.importance - a.importance);
-
-        // Debug: Log scoring breakdown in development mode
+        // Debug: Log ranking breakdown in development mode
         if (process.env.NODE_ENV === 'development') {
+          const debugRows = ranked.slice(0, 60);
           console.table(
-            scored.map(({ article, breakdown }) => ({
+              debugRows.map(({ article, profileLabel, affinityScore, freshness, quality, attention, coverage, score }) => ({
               articleId: article.id,
-              similarity: Number(breakdown.similarity.toFixed(4)),
-              quality: Number(breakdown.quality.toFixed(4)),
-              freshness: Number(breakdown.freshness.toFixed(4)),
-              coverage: Number(breakdown.coverage.toFixed(4)),
-              crossSource: Number(breakdown.crossSource.toFixed(4)),
-              corroboration: Number(breakdown.corroboration.toFixed(4)),
-              ruleBoost: Number(breakdown.ruleBoost.toFixed(4)),
-              importance: Number(breakdown.importance.toFixed(4))
+              interestIsland: profileLabel || 'none',
+              affinity: Number(affinityScore.toFixed(4)),
+              freshness: Number(freshness.toFixed(4)),
+              quality: Number(quality.toFixed(4)),
+              attention: Number(attention.toFixed(4)),
+              coverage: Number(coverage.toFixed(4)),
+              recommended: Number(score.toFixed(4))
             }))
           );
         }
 
-        articles = scored.map(item => item.article);
+        articles = ranked.map(item => item.article);
       } else if (sortQuality) {
         articles = articles
           .map(article => ({
