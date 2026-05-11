@@ -648,7 +648,7 @@ export const searchArticles = async ({
         return Math.min(Math.max(limitCount * 3, 120), 1200);
       }
 
-      return 300;
+      return 1000;
     };
 
     // Include cluster + feed associations when sorting by recommended relevance

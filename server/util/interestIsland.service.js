@@ -6,45 +6,42 @@ import { Op, fn, col } from 'sequelize';
 const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db;
 
 /**
- * Interest island service
+ * Interest Island Service - Main Write Path
  *
  * Responsibilities:
  * 1) Convert user interaction events into weighted reinforcement deltas.
  * 2) Persist per-cluster affinity and per-user semantic interest profiles.
- * 3) Rank candidate articles for RECOMMENDED sort using island affinity + recommendedScore baseline.
+ * 3) Orchestrate profile promotion and dashboard queries.
  *
  * Data model split:
  * - UserClusterAffinity: fast reinforcement signal tied to cluster ids.
  * - UserInterestProfile: semantic "islands" (vector + weight) used at ranking time.
+ *
+ * Dependencies:
+ * - profileSelector.service.js: profile loading and matching
+ * - suppressionScorer.service.js: suppression signal management
+ * - rankingOrchestrator.service.js: ranking pipeline
  */
+
+import {
+  readCachedProfiles,
+  writeCachedProfiles,
+  invalidateCachedProfiles,
+  loadInterestProfiles,
+  scoreProfileMatch
+} from './profileSelector.service.js';
+import {
+  invalidateCachedSuppressionSignals,
+  loadSuppressionSignals
+} from './suppressionScorer.service.js';
+import { rankRecommendedArticles as orchRankRecommendedArticles } from './rankingOrchestrator.service.js';
 
 const AFFINITY_HALF_LIFE_HOURS = 168;
 const PROFILE_HALF_LIFE_HOURS = 336;
-// Keep ranking focused on a small active set for predictable latency.
-const DEFAULT_MAX_ACTIVE_PROFILES = 8;
-const ACTIVE_PROFILE_CANDIDATE_LIMIT = Math.max(
-  DEFAULT_MAX_ACTIVE_PROFILES,
-  Number(process.env.INTEREST_ISLAND_PROFILE_CANDIDATE_LIMIT) || (DEFAULT_MAX_ACTIVE_PROFILES * 8)
-);
-const PROFILE_MATCH_THRESHOLD = 0.72;
-// Ranking-only gate: require a minimum confidence before we attach an island match.
-// This prevents weak semantic overlap from labeling almost every article with an island.
-const RANKING_AFFINITY_THRESHOLD = 0.18;
-const SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD = -1.5;
-const SUPPRESSED_FEED_MIN_NEGATIVE_COUNT = 2;
-const SUPPRESSION_FEED_NEGATIVE_DECAY_WEIGHT = 0.15;
-const TOPIC_SUPPRESSION_WEIGHT = 0.7;
-const FEED_SUPPRESSION_WEIGHT = 0.3;
-const MAX_SUPPRESSION_PENALTY = 0.9;
-const MIN_ISLAND_ATTACH_RATIO = 0.10;
-const TARGET_ISLAND_ATTACH_RATIO = 0.15;
-const MAX_ISLAND_ATTACH_RATIO = 0.20;
 // Cluster affinity threshold for promotion to interest island.
 // ~5 clicks or 1 star + 2 clicks = enough evidence to carve out an island.
 const ISLAND_PROMOTION_THRESHOLD = 5;
-// Short-lived in-memory cache to avoid repeated profile reads on hot requests.
-const PROFILE_CACHE_TTL_MS = 30_000;
-const SUPPRESSION_CACHE_TTL_MS = 30_000;
+const PROFILE_MATCH_THRESHOLD = 0.72;
 
 // Interaction deltas used to reinforce (or penalize) interest islands.
 const INTERACTION_WEIGHTS = {
@@ -55,62 +52,7 @@ const INTERACTION_WEIGHTS = {
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
-// userId -> { profiles, expiresAt }
-const interestProfileCache = new Map();
-// userId -> { suppression, expiresAt }
-const suppressionSignalCache = new Map();
-
 const nowUtc = () => new Date();
-
-const nowMs = () => Date.now();
-
-const readCachedProfiles = (userId) => {
-  const cached = interestProfileCache.get(userId);
-  if (!cached) return null;
-
-  if (cached.expiresAt <= nowMs()) {
-    interestProfileCache.delete(userId);
-    return null;
-  }
-
-  return cached.profiles;
-};
-
-const writeCachedProfiles = (userId, profiles) => {
-  interestProfileCache.set(userId, {
-    profiles,
-    expiresAt: nowMs() + PROFILE_CACHE_TTL_MS
-  });
-};
-
-const invalidateCachedProfiles = (userId) => {
-  if (!userId) return;
-  interestProfileCache.delete(userId);
-};
-
-const readCachedSuppressionSignals = (userId) => {
-  const cached = suppressionSignalCache.get(userId);
-  if (!cached) return null;
-
-  if (cached.expiresAt <= nowMs()) {
-    suppressionSignalCache.delete(userId);
-    return null;
-  }
-
-  return cached.suppression;
-};
-
-const writeCachedSuppressionSignals = (userId, suppression) => {
-  suppressionSignalCache.set(userId, {
-    suppression,
-    expiresAt: nowMs() + SUPPRESSION_CACHE_TTL_MS
-  });
-};
-
-const invalidateCachedSuppressionSignals = (userId) => {
-  if (!userId) return;
-  suppressionSignalCache.delete(userId);
-};
 
 const hoursSince = (date) => {
   if (!date) return Infinity;
@@ -159,203 +101,6 @@ const resolveInterestTopicKey = (article) => {
   const cluster = article?.get?.('cluster') ?? article?.cluster;
   return cluster?.topicKey ?? null;
 };
-
-function selectDiverseProfiles(profiles, {
-  maxProfiles = DEFAULT_MAX_ACTIVE_PROFILES,
-  similarityThreshold = 0.88
-} = {}) {
-  if (!Array.isArray(profiles) || profiles.length === 0 || maxProfiles <= 0) {
-    return [];
-  }
-
-  const selectedProfiles = [];
-
-  for (const profile of profiles) {
-    const tooSimilar = selectedProfiles.some(existing => {
-      if (!Array.isArray(profile.vector) || !Array.isArray(existing.vector)) {
-        return false;
-      }
-
-      const similarity = cosineSimilarity(profile.vector, existing.vector);
-      return Number.isFinite(similarity) && similarity > similarityThreshold;
-    });
-
-    if (tooSimilar) {
-      continue;
-    }
-
-    selectedProfiles.push(profile);
-
-    if (selectedProfiles.length >= maxProfiles) {
-      break;
-    }
-  }
-
-  return selectedProfiles;
-}
-
-function resolveProfileSimilarityThreshold(maxProfiles) {
-  const profiles = Math.max(Number(maxProfiles) || 4, 1);
-
-  // More profiles -> stricter diversity requirement
-  // 4 profiles  -> 0.92
-  // 6 profiles  -> 0.88
-  // 8 profiles  -> 0.84
-  // 10 profiles -> 0.82
-  // 12 profiles -> 0.80
-  return Math.max(
-    0.80,
-    Math.min(
-      0.92,
-      0.92 - ((profiles - 4) * 0.015)
-    )
-  );
-}
-
-function resolveMaxActiveProfiles({
-  starCount = 0,
-  clickCount = 0
-} = {}) {
-  // Stars matter far more than clicks
-  const engagementScore =
-    starCount +
-    Math.min(clickCount / 10, 50);
-
-  return Math.max(
-    4,
-    Math.min(
-      12,
-      Math.round(4 + Math.log2(engagementScore + 1))
-    )
-  );
-}
-
-async function loadSuppressionSignals(userId) {
-  const cachedSuppression = readCachedSuppressionSignals(userId);
-  if (cachedSuppression) {
-    return cachedSuppression;
-  }
-
-  const [affinityRows, feedRows] = await Promise.all([
-    UserClusterAffinity.findAll({
-      where: {
-        userId,
-        affinity: { [Op.lte]: SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD }
-      },
-      order: [['affinity', 'ASC'], ['lastInteractionAt', 'DESC']]
-    }),
-    Article.findAll({
-      where: {
-        userId,
-        feedId: { [Op.ne]: null }
-      },
-      attributes: [
-        'feedId',
-        [fn('SUM', col('negativeInd')), 'negativeCount'],
-        [fn('SUM', col('starInd')), 'starCount'],
-        [fn('SUM', col('clickedAmount')), 'clickCount']
-      ],
-      group: ['feedId'],
-      raw: true
-    })
-  ]);
-
-  const clusterPenaltyById = new Map();
-  const topicPenaltyByKey = new Map();
-
-  for (const row of affinityRows) {
-    const decayedNegativeAffinity = Math.abs(Number(row.affinity) || 0) * decayMultiplier(row.lastInteractionAt, AFFINITY_HALF_LIFE_HOURS);
-    const penaltyStrength = clamp(1 - Math.exp(-decayedNegativeAffinity / 3), 0, 1);
-    if (!penaltyStrength) continue;
-
-    if (row.clusterId) {
-      const existingClusterPenalty = Number(clusterPenaltyById.get(row.clusterId)) || 0;
-      clusterPenaltyById.set(row.clusterId, Math.max(existingClusterPenalty, penaltyStrength));
-    }
-
-    if (row.topicKey) {
-      const existingTopicPenalty = Number(topicPenaltyByKey.get(row.topicKey)) || 0;
-      topicPenaltyByKey.set(row.topicKey, Math.max(existingTopicPenalty, penaltyStrength));
-    }
-  }
-
-  const feedPenaltyById = new Map();
-
-  for (const row of feedRows) {
-    const feedId = Number(row.feedId);
-    if (!Number.isFinite(feedId)) continue;
-
-    const negativeCount = Number(row.negativeCount) || 0;
-    if (negativeCount < SUPPRESSED_FEED_MIN_NEGATIVE_COUNT) continue;
-
-    const starCount = Number(row.starCount) || 0;
-    const clickCount = Number(row.clickCount) || 0;
-    const positiveOffset = starCount * 2 + Math.min(clickCount, 20) * SUPPRESSION_FEED_NEGATIVE_DECAY_WEIGHT;
-    const netNegative = negativeCount - positiveOffset;
-    if (netNegative <= 0) continue;
-
-    const penaltyStrength = clamp(1 - Math.exp(-netNegative / 4), 0, 1);
-    feedPenaltyById.set(feedId, penaltyStrength);
-  }
-
-  const suppression = {
-    clusterPenaltyById,
-    topicPenaltyByKey,
-    feedPenaltyById
-  };
-
-  writeCachedSuppressionSignals(userId, suppression);
-  return suppression;
-}
-
-function scoreSuppressionPenalty(article, suppressionSignals) {
-  const cluster = article?.get?.('cluster') ?? article?.cluster;
-  const clusterId = cluster?.id ?? article?.clusterId ?? null;
-  const topicKey = cluster?.topicKey ?? null;
-  const feedId = article?.feedId ?? null;
-
-  const clusterPenaltyById = Number(clusterId ? suppressionSignals?.clusterPenaltyById?.get(clusterId) : 0) || 0;
-  const clusterPenaltyByTopic = Number(topicKey ? suppressionSignals?.topicPenaltyByKey?.get(topicKey) : 0) || 0;
-  const topicPenalty = Math.max(clusterPenaltyById, clusterPenaltyByTopic);
-  const topicSource = clusterPenaltyById >= clusterPenaltyByTopic ? 'cluster' : 'topicKey';
-  const feedPenalty = Number(feedId ? suppressionSignals?.feedPenaltyById?.get(feedId) : 0) || 0;
-
-  const penalty = clamp(
-    topicPenalty * TOPIC_SUPPRESSION_WEIGHT +
-    feedPenalty * FEED_SUPPRESSION_WEIGHT,
-    0,
-    MAX_SUPPRESSION_PENALTY
-  );
-
-  const reasons = [];
-  const sources = [];
-
-  if (topicPenalty > 0) {
-    sources.push('topic');
-    reasons.push(topicSource === 'cluster'
-      ? `Suppressed by negative cluster affinity for cluster ${clusterId}`
-      : `Suppressed by negative topic affinity for topic ${topicKey}`);
-  }
-
-  if (feedPenalty > 0) {
-    sources.push('feed');
-    reasons.push(`Suppressed by negative feed interactions for feed ${feedId}`);
-  }
-
-  return {
-    penalty,
-    source: sources.length ? sources.join('+') : 'none',
-    reason: reasons.length ? reasons.join('; ') : 'No suppression signals',
-    components: {
-      topicPenalty,
-      topicSource,
-      clusterId,
-      topicKey,
-      feedPenalty,
-      feedId
-    }
-  };
-}
 
 const deriveInteractionDelta = (article, changedFields = []) => {
   const changes = new Set(Array.isArray(changedFields) ? changedFields : []);
@@ -496,98 +241,6 @@ async function promoteClusterAffinityToIsland({ userId, clusterId, affinity, sta
   const created = await UserInterestProfile.create(payload);
   invalidateCachedProfiles(userId);
   return created;
-}
-
-// Load top active profiles for a user (cached), then compute recency-adjusted weight.
-async function loadInterestProfiles(userId) {
-  // Read-through cache: DB only on miss/expiry.
-  const cachedProfiles = readCachedProfiles(userId);
-  if (cachedProfiles) {
-    return cachedProfiles.map(profile => ({
-      ...profile,
-      effectiveWeight: (Number(profile.weight) || 0) * decayMultiplier(profile.lastSeen, PROFILE_HALF_LIFE_HOURS)
-    }));
-  }
-
-  const [rows, engagementTotals] = await Promise.all([
-    UserInterestProfile.findAll({
-      where: { userId },
-      order: [['weight', 'DESC'], ['lastSeen', 'DESC']],
-      // Pull a wider candidate set, then diversify into active profiles.
-      limit: ACTIVE_PROFILE_CANDIDATE_LIMIT
-    }),
-    UserClusterAffinity.findOne({
-      where: { userId },
-      attributes: [
-        [fn('SUM', col('starCount')), 'starCount'],
-        [fn('SUM', col('clickCount')), 'clickCount']
-      ],
-      raw: true
-    })
-  ]);
-
-  const maxActiveProfiles = resolveMaxActiveProfiles({
-    starCount: Number(engagementTotals?.starCount) || 0,
-    clickCount: Number(engagementTotals?.clickCount) || 0
-  });
-  const profileSimilarityThreshold = resolveProfileSimilarityThreshold(maxActiveProfiles);
-
-  const candidateProfiles = rows.map(row => ({
-      id: row.id,
-      userId: row.userId,
-      label: row.label,
-      topicKey: row.topicKey,
-      vector: normalizeVector(row.vector),
-      weight: Number(row.weight) || 0,
-      interactionCount: Number(row.interactionCount) || 0,
-      starCount: Number(row.starCount) || 0,
-      clickCount: Number(row.clickCount) || 0,
-      lastSeen: row.lastSeen
-    }));
-
-  const profiles = selectDiverseProfiles(candidateProfiles, {
-    maxProfiles: maxActiveProfiles,
-    similarityThreshold: profileSimilarityThreshold
-  });
-
-  writeCachedProfiles(userId, profiles);
-
-  return profiles.map(profile => ({
-    ...profile,
-    effectiveWeight: (Number(profile.weight) || 0) * decayMultiplier(profile.lastSeen, PROFILE_HALF_LIFE_HOURS)
-  }));
-}
-
-// Find best matching profile for an article vector and optional topic key.
-function scoreProfileMatch(articleVector, topicKey, profiles) {
-  if (!Array.isArray(articleVector) || !profiles.length) {
-    return { affinityScore: 0, profileId: null, profileLabel: null };
-  }
-
-  let best = { affinityScore: 0, profileId: null, profileLabel: null, effectiveWeight: 0 };
-
-  for (const profile of profiles) {
-    if (!Array.isArray(profile.vector)) continue;
-
-    const similarity = cosineSimilarity(articleVector, profile.vector);
-    if (!Number.isFinite(similarity) || similarity <= 0) continue;
-
-    const topicBonus = topicKey && profile.topicKey && topicKey === profile.topicKey ? 0.08 : 0;
-    const profileStrength = 1 - Math.exp(-Math.max(profile.effectiveWeight, 0) / 3);
-    const affinityScore = clamp(similarity * profileStrength + topicBonus, 0, 1);
-
-    if (affinityScore > best.affinityScore) {
-      const profileLabel = profile.label || profile.topicKey || `island #${profile.id}`;
-      best = {
-        affinityScore,
-        profileId: profile.id,
-        profileLabel,
-        effectiveWeight: profile.effectiveWeight
-      };
-    }
-  }
-
-  return best;
 }
 
 // Reinforce nearest matching profile, or create a new profile if positive evidence is strong enough.
@@ -772,96 +425,10 @@ export async function applyRecommendationSteering({ article, action } = {}) {
   };
 }
 
-// Coverage rewards topic groups that have enough corroborating articles.
-function articleInterestVector(article) {
-  return resolveInterestVector(article);
-}
-
-function scoreArticleAgainstProfiles(article, profiles) {
-  const cluster = article.get?.('cluster') ?? article.cluster;
-  const vector = articleInterestVector(article);
-  const topicKey = cluster?.topicKey ?? null;
-  const match = scoreProfileMatch(vector, topicKey, profiles);
-
-  if (!match.profileId || Number(match.affinityScore) < RANKING_AFFINITY_THRESHOLD) {
-    return {
-      affinityScore: 0,
-      profileId: null,
-      profileLabel: null,
-      profileInteractionCount: 0,
-      profileStarCount: 0,
-      profileClickCount: 0
-    };
-  }
-
-  const matchedProfile = profiles.find(profile => profile.id === match.profileId);
-  return {
-    affinityScore: match.affinityScore,
-    profileId: match.profileId,
-    profileLabel: match.profileLabel,
-    profileInteractionCount: matchedProfile?.interactionCount || 0,
-    profileStarCount: matchedProfile?.starCount || 0,
-    profileClickCount: matchedProfile?.clickCount || 0
-  };
-}
-
-function constrainIslandAttachmentDensity(scoredArticles) {
-  if (!Array.isArray(scoredArticles) || scoredArticles.length === 0) {
-    return scoredArticles;
-  }
-
-  const matched = scoredArticles
-    .map((item, index) => ({ index, item }))
-    .filter(({ item }) => item.profileId && Number(item.affinityScore) >= RANKING_AFFINITY_THRESHOLD)
-    .sort((left, right) => Number(right.item.affinityScore) - Number(left.item.affinityScore));
-
-  const totalCount = scoredArticles.length;
-  const minAttach = Math.floor(totalCount * MIN_ISLAND_ATTACH_RATIO);
-  const targetAttach = Math.round(totalCount * TARGET_ISLAND_ATTACH_RATIO);
-  const maxAttach = Math.ceil(totalCount * MAX_ISLAND_ATTACH_RATIO);
-
-  let keepCount = Math.min(targetAttach, maxAttach);
-  if (matched.length < keepCount) {
-    keepCount = matched.length;
-  } else if (keepCount < minAttach && matched.length >= minAttach) {
-    keepCount = minAttach;
-  }
-
-  const keepIndexes = new Set(matched.slice(0, keepCount).map(({ index }) => index));
-
-  return scoredArticles.map((item, index) => {
-    if (keepIndexes.has(index)) {
-      return item;
-    }
-
-    const demotedScore = clamp(
-      (0.3 * item.recommendedBase) * item.freshnessFactor * (1 - (Number(item.suppressionPenalty) || 0)),
-      0,
-      1
-    );
-
-    return {
-      ...item,
-      profileId: null,
-      profileLabel: null,
-      profileInteractionCount: 0,
-      profileStarCount: 0,
-      profileClickCount: 0,
-      normalizedAffinity: 0,
-      affinityScore: 0,
-      score: demotedScore
-    };
-  });
-}
-
 /**
  * Main read path for RECOMMENDED sort.
  *
- * Flow:
- * - Load active user profiles.
- * - Score each candidate article against those profiles and recommended baseline.
- * - Sort descending by recommended score.
- * - Apply lightweight diversification.
+ * Delegates to rankingOrchestrator service for scoring and ranking logic.
  */
 export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
   if (!userId || !Array.isArray(articles) || articles.length === 0) {
@@ -871,51 +438,12 @@ export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
   const profiles = await loadInterestProfiles(userId);
   const suppressionSignals = await loadSuppressionSignals(userId);
 
-  const scoredArticles = articles.map(article => {
-    const cluster = article.get?.('cluster') ?? article.cluster;
-    const scoreParts = scoreArticleAgainstProfiles(article, profiles);
-
-    const affinityScore = scoreParts.affinityScore;
-    const recommendedBase = clamp(Number(computeRecommended(article) ?? 0), 0, 1);
-    const rawFreshness = Number(article?.freshness ?? 0.5);
-    const freshness = Number.isFinite(rawFreshness) ? clamp(rawFreshness, 0, 1) : 0.5;
-    const flooredFreshness = Math.max(0.05, freshness);
-    const normalizedAffinity = Math.pow(clamp(affinityScore, 0, 1), 1.4);
-    const freshnessFactor = 0.25 + flooredFreshness * 0.75;
-    const suppressionDebug = scoreSuppressionPenalty(article, suppressionSignals);
-    const suppressionPenalty = suppressionDebug.penalty;
-    const scoreBeforeSuppression = clamp(
-      (normalizedAffinity * 0.7 + recommendedBase * 0.3) * freshnessFactor,
-      0,
-      1
-    );
-    const score = clamp(scoreBeforeSuppression * (1 - suppressionPenalty), 0, 1);
-
-    return {
-      article,
-      profileId: scoreParts.profileId,
-      profileLabel: scoreParts.profileLabel,
-      profileInteractionCount: scoreParts.profileInteractionCount,
-      profileStarCount: scoreParts.profileStarCount,
-      profileClickCount: scoreParts.profileClickCount,
-      clusterId: cluster?.id ?? article.clusterId ?? null,
-      topicKey: cluster?.topicKey ?? null,
-      normalizedAffinity,
-      freshnessFactor,
-      suppressionPenalty,
-      suppressionSource: suppressionDebug.source,
-      suppressionReason: suppressionDebug.reason,
-      suppressionComponents: suppressionDebug.components,
-      affinityScore,
-      recommendedBase,
-      score
-    };
+  return orchRankRecommendedArticles({
+    userId,
+    articles,
+    profiles,
+    suppressionSignals
   });
-
-  const constrained = constrainIslandAttachmentDensity(scoredArticles);
-  constrained.sort((left, right) => right.score - left.score);
-
-  return constrained;
 }
 
 // Placeholder hook for future profile refresh orchestration.
