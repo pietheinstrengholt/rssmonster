@@ -64,14 +64,12 @@ export function getRecommendedBreakdown(article) {
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
   // Weighted sum: balances all signals to produce recommended score (0–1)
-  // Weights: quality (10%), freshness (10%), coverage (20%), crossSource (10%), corroboration (5%)
+  // Weights: coverage (35%), crossSource (25%), corroboration (40%)
   // Plus a flat 0.15 boost for rule-tagged articles
   const recommended =
-    0.10 * quality +
-    0.10 * freshness +
-    0.20 * coverage +
-    0.10 * crossSource +
-    0.05 * corroboration +
+    0.35 * coverage +
+    0.25 * crossSource +
+    0.40 * corroboration +
     ruleBoost;
 
   return {

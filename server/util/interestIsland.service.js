@@ -573,6 +573,12 @@ function constrainIslandAttachmentDensity(scoredArticles) {
       return item;
     }
 
+    const demotedScore = clamp(
+      (0.3 * item.recommendedBase) * item.freshnessFactor,
+      0,
+      1
+    );
+
     return {
       ...item,
       profileId: null,
@@ -580,8 +586,9 @@ function constrainIslandAttachmentDensity(scoredArticles) {
       profileInteractionCount: 0,
       profileStarCount: 0,
       profileClickCount: 0,
+      normalizedAffinity: 0,
       affinityScore: 0,
-      score: item.recommendedBase
+      score: demotedScore
     };
   });
 }
@@ -608,7 +615,15 @@ export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
 
     const affinityScore = scoreParts.affinityScore;
     const recommendedBase = clamp(Number(computeRecommended(article) ?? 0), 0, 1);
-    const score = clamp(recommendedBase + affinityScore, 0, 1);
+    const rawFreshness = Number(article?.freshness ?? 0.5);
+    const freshness = Number.isFinite(rawFreshness) ? clamp(rawFreshness, 0, 1) : 0.5;
+    const normalizedAffinity = Math.pow(clamp(affinityScore, 0, 1), 1.4);
+    const freshnessFactor = 0.25 + freshness * 0.75;
+    const score = clamp(
+      (normalizedAffinity * 0.7 + recommendedBase * 0.3) * freshnessFactor,
+      0,
+      1
+    );
 
     return {
       article,
@@ -619,6 +634,8 @@ export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
       profileClickCount: scoreParts.profileClickCount,
       clusterId: cluster?.id ?? article.clusterId ?? null,
       topicKey: cluster?.topicKey ?? null,
+      normalizedAffinity,
+      freshnessFactor,
       affinityScore,
       recommendedBase,
       score

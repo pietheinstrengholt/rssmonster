@@ -923,9 +923,9 @@ export const searchArticles = async ({
         // Debug: Log ranking breakdown in development mode
         if (process.env.NODE_ENV === 'development') {
           const debugRows = ranked;
-          console.log('[RECOMMENDED DEBUG] Active formula: finalScore = recommendedBase + affinityScore');
+          console.log('[RECOMMENDED DEBUG] Active formula: finalScore = ((affinityScore^1.4)*0.7 + recommendedBase*0.3) * (0.25 + freshness*0.75)');
           console.table(
-            debugRows.map(({ article, profileLabel, affinityScore, score }, index) => {
+            debugRows.map(({ article, profileLabel, affinityScore, normalizedAffinity, freshnessFactor, score }, index) => {
               const bd = getRecommendedBreakdown(article);
               return {
                 rank: index + 1,
@@ -933,12 +933,14 @@ export const searchArticles = async ({
                 island: profileLabel ? profileLabel.split(/\s+/).slice(0, 2).join(' ') : 'none',
                 quality: Number(bd.quality.toFixed(4)),
                 freshness: Number(bd.freshness.toFixed(4)),
+                freshnessFactor: Number((freshnessFactor ?? (0.25 + (bd.freshness ?? 0) * 0.75)).toFixed(4)),
                 coverage: Number(bd.coverage.toFixed(4)),
                 crossSource: Number(bd.crossSource.toFixed(4)),
                 corroboration: Number(bd.corroboration.toFixed(4)),
                 ruleBoost: Number(bd.ruleBoost.toFixed(4)),
                 recommended: Number(bd.recommended.toFixed(4)),
                 affinity: Number(affinityScore.toFixed(4)),
+                normalizedAffinity: Number((normalizedAffinity ?? 0).toFixed(4)),
                 final: Number(score.toFixed(4))
               };
             })
