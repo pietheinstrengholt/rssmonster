@@ -26,7 +26,11 @@
                     <div v-if="feedsLoading">Loading feeds…</div>
                     <div v-else-if="feedsError" class="text-danger">{{ feedsError }}</div>
                     <div v-else>
-                        <div v-if="feeds.length > 0" class="d-flex gap-3 mb-4">
+                        <div v-if="opmlStatus" class="alert alert-info mb-3">
+                            {{ opmlStatus }}
+                        </div>
+
+                        <div class="d-flex gap-3 mb-4">
                             <div class="settings-group flex-grow-1">
                                 <label>Export Feeds</label>
                                 <button type="button" class="btn btn-download w-100" @click="downloadOpml">
@@ -113,7 +117,8 @@ export default {
             smartFolderRecommendations: [],
             smartFolderInsightsLoading: false,
             smartFolderInsightsLoaded: false,
-            smartFolderInsightsError: null
+            smartFolderInsightsError: null,
+            opmlStatus: ''
         };
     },
     created() {
@@ -192,12 +197,21 @@ export default {
 
                     try {
                         this.feedsError = null;
-                        await importOpml(file);
+                        this.opmlStatus = '';
+                        const response = await importOpml(file);
+                        const summary = response?.data || {};
+
+                        this.opmlStatus = `Imported ${summary.feedsCreated || 0} feed${(summary.feedsCreated || 0) === 1 ? '' : 's'}, skipped ${summary.feedsSkipped || 0}, discovered ${summary.entriesDiscovered || 0}.`;
+
+                        if (Array.isArray(summary.errors) && summary.errors.length > 0) {
+                            this.feedsError = summary.errors.slice(0, 3).join(' | ');
+                        }
+
                         await this.fetchFeeds();
                         this.$emit('saved');
                     } catch (err) {
                         console.error('Failed to import OPML:', err);
-                        this.feedsError = 'Failed to import OPML file.';
+                        this.feedsError = err?.response?.data?.error || 'Failed to import OPML file.';
                     } finally {
                         if (this.$refs.opmlFileInput) {
                             this.$refs.opmlFileInput.value = '';
