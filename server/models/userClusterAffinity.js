@@ -32,6 +32,16 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      starCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
+      clickCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       lastInteractionAt: {
         type: DataTypes.DATE,
         allowNull: true,

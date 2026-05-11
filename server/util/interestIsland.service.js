@@ -1,5 +1,6 @@
 import db from '../models/index.js';
 import { cosineSimilarity, resolveArticleVector } from './vectorMath.js';
+import { computeRecommended } from './recommendedScore.js';
 
 const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db;
 
@@ -9,7 +10,7 @@ const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db
  * Responsibilities:
  * 1) Convert user interaction events into weighted reinforcement deltas.
  * 2) Persist per-cluster affinity and per-user semantic interest profiles.
- * 3) Rank candidate articles for RECOMMENDED sort using profile affinity + quality signals.
+ * 3) Rank candidate articles for RECOMMENDED sort using island affinity + recommendedScore baseline.
  *
  * Data model split:
  * - UserClusterAffinity: fast reinforcement signal tied to cluster ids.
@@ -21,6 +22,12 @@ const PROFILE_HALF_LIFE_HOURS = 336;
 // Keep ranking focused on a small active set for predictable latency.
 const MAX_ACTIVE_PROFILES = 8;
 const PROFILE_MATCH_THRESHOLD = 0.82;
+// Ranking-only gate: require a minimum confidence before we attach an island match.
+// This prevents weak semantic overlap from labeling almost every article with an island.
+const RANKING_AFFINITY_THRESHOLD = 0.18;
+const MIN_ISLAND_ATTACH_RATIO = 0.10;
+const TARGET_ISLAND_ATTACH_RATIO = 0.15;
+const MAX_ISLAND_ATTACH_RATIO = 0.20;
 // Cluster affinity threshold for promotion to interest island.
 // ~5 clicks or 1 star + 2 clicks = enough evidence to carve out an island.
 const ISLAND_PROMOTION_THRESHOLD = 5;
@@ -154,7 +161,7 @@ async function loadArticleForInterestUpdate(article) {
 }
 
 // Update one user<->cluster affinity row with temporal decay applied.
-async function upsertClusterAffinity({ userId, clusterId, topicKey, delta }) {
+async function upsertClusterAffinity({ userId, clusterId, topicKey, delta, isStar = false, isClick = false }) {
   if (!userId || !clusterId || !Number.isFinite(delta) || delta === 0) {
     return null;
   }
@@ -177,6 +184,8 @@ async function upsertClusterAffinity({ userId, clusterId, topicKey, delta }) {
     topicKey,
     affinity: Number(nextAffinity.toFixed(4)),
     interactionCount: (Number(current?.interactionCount) || 0) + 1,
+    starCount: (Number(current?.starCount) || 0) + (isStar ? 1 : 0),
+    clickCount: (Number(current?.clickCount) || 0) + (isClick ? 1 : 0),
     lastInteractionAt: nowUtc()
   };
 
@@ -190,7 +199,7 @@ async function upsertClusterAffinity({ userId, clusterId, topicKey, delta }) {
 
 // Promote cluster affinity to island if threshold is crossed.
 // Finds or creates an island for the given cluster when accumulated affinity is hot enough.
-async function promoteClusterAffinityToIsland({ userId, clusterId, affinity }) {
+async function promoteClusterAffinityToIsland({ userId, clusterId, affinity, starCount = 0, clickCount = 0 }) {
   if (!userId || !clusterId || !Number.isFinite(affinity) || affinity < ISLAND_PROMOTION_THRESHOLD) {
     return null;
   }
@@ -225,6 +234,8 @@ async function promoteClusterAffinityToIsland({ userId, clusterId, affinity }) {
     vector,
     weight: Number(affinity.toFixed(4)),
     interactionCount: (Number(existing?.interactionCount) || 0) + 1,
+    starCount: Math.max(Number(existing?.starCount) || 0, starCount),
+    clickCount: Math.max(Number(existing?.clickCount) || 0, clickCount),
     lastSeen: nowUtc()
   };
 
@@ -275,6 +286,8 @@ async function loadInterestProfiles(userId) {
       vector: normalizeVector(row.vector),
       weight: Number(row.weight) || 0,
       interactionCount: Number(row.interactionCount) || 0,
+      starCount: Number(row.starCount) || 0,
+      clickCount: Number(row.clickCount) || 0,
       lastSeen: row.lastSeen
     }));
 
@@ -319,7 +332,7 @@ function scoreProfileMatch(articleVector, topicKey, profiles) {
 }
 
 // Reinforce nearest matching profile, or create a new profile if positive evidence is strong enough.
-async function upsertInterestProfile({ userId, article, delta }) {
+async function upsertInterestProfile({ userId, article, delta, isStar = false, isClick = false }) {
   if (!userId || !article || !Number.isFinite(delta) || delta === 0) {
     return null;
   }
@@ -365,6 +378,8 @@ async function upsertInterestProfile({ userId, article, delta }) {
       vector: mergedVector,
       weight: Number(nextWeight.toFixed(4)),
       interactionCount: (Number(current.interactionCount) || 0) + 1,
+      starCount: (Number(current.starCount) || 0) + (isStar ? 1 : 0),
+      clickCount: (Number(current.clickCount) || 0) + (isClick ? 1 : 0),
       // Only refresh recency on positive signals. Negative interactions weaken
       // the island but should not keep it artificially fresh (avoiding hate-reading effects).
       lastSeen: delta > 0 ? nowUtc() : current.lastSeen
@@ -387,6 +402,8 @@ async function upsertInterestProfile({ userId, article, delta }) {
     vector: articleVector,
     weight: Number(delta.toFixed(4)),
     interactionCount: 1,
+    starCount: isStar ? 1 : 0,
+    clickCount: isClick ? 1 : 0,
     lastSeen: nowUtc()
   });
 
@@ -412,6 +429,10 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
     return null;
   }
 
+  const changes = new Set(Array.isArray(changedFields) ? changedFields : []);
+  const isStar = changes.has('starInd') && Number(loadedArticle.starInd) === 1;
+  const isClick = changes.has('clickedAmount') && Number(loadedArticle.clickedAmount) > 0;
+
   const cluster = loadedArticle.get?.('cluster') ?? loadedArticle.cluster;
   const clusterId = cluster?.id ?? loadedArticle.clusterId ?? null;
   if (!clusterId) {
@@ -425,7 +446,9 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
     userId: loadedArticle.userId,
     clusterId,
     topicKey,
-    delta
+    delta,
+    isStar,
+    isClick
   });
 
   // Check if cluster affinity crossed promotion threshold.
@@ -434,9 +457,13 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
     profileRow = await promoteClusterAffinityToIsland({
       userId: loadedArticle.userId,
       clusterId,
-      affinity: Number(affinityRow.affinity)
+      affinity: Number(affinityRow.affinity),
+      starCount: Number(affinityRow.starCount) || 0,
+      clickCount: Number(affinityRow.clickCount) || 0
     });
   }
+
+  await upsertInterestProfile({ userId: loadedArticle.userId, article: loadedArticle, delta, isStar, isClick });
 
   return {
     affinityRow,
@@ -484,21 +511,6 @@ export async function applyRecommendationSteering({ article, action } = {}) {
 }
 
 // Coverage rewards topic groups that have enough corroborating articles.
-function computeCoverageScore(article) {
-  const cluster = article.get?.('cluster') ?? article.cluster;
-  const count = Number(
-    article.topicArticleCount ??
-    cluster?.articleCount ??
-    0
-  );
-
-  if (!Number.isFinite(count) || count <= 1) {
-    return 0;
-  }
-
-  return clamp(Math.log2(count + 1) / Math.log2(64), 0, 1);
-}
-
 function articleInterestVector(article) {
   return resolveInterestVector(article);
 }
@@ -509,40 +521,68 @@ function scoreArticleAgainstProfiles(article, profiles) {
   const topicKey = cluster?.topicKey ?? null;
   const match = scoreProfileMatch(vector, topicKey, profiles);
 
+  if (!match.profileId || Number(match.affinityScore) < RANKING_AFFINITY_THRESHOLD) {
+    return {
+      affinityScore: 0,
+      profileId: null,
+      profileLabel: null,
+      profileInteractionCount: 0,
+      profileStarCount: 0,
+      profileClickCount: 0
+    };
+  }
+
+  const matchedProfile = profiles.find(profile => profile.id === match.profileId);
   return {
     affinityScore: match.affinityScore,
     profileId: match.profileId,
     profileLabel: match.profileLabel,
-    profileStrength: match.effectiveWeight,
-    profileInteractionCount: profiles.find(profile => profile.id === match.profileId)?.interactionCount || 0
+    profileInteractionCount: matchedProfile?.interactionCount || 0,
+    profileStarCount: matchedProfile?.starCount || 0,
+    profileClickCount: matchedProfile?.clickCount || 0
   };
 }
 
-// Simple diversity guardrail to avoid over-concentrating top results in one island/cluster/topic.
-function diversifyRecommendedArticles(scoredArticles) {
-  const selected = [];
-  const overflow = [];
-  const profileCounts = new Map();
-  const clusterCounts = new Map();
-  const topicCounts = new Map();
-
-  for (const item of scoredArticles) {
-    const profileCount = item.profileId ? (profileCounts.get(item.profileId) || 0) : 0;
-    const clusterCount = item.clusterId ? (clusterCounts.get(item.clusterId) || 0) : 0;
-    const topicCount = item.topicKey ? (topicCounts.get(item.topicKey) || 0) : 0;
-
-    if (profileCount >= 2 || clusterCount >= 1 || topicCount >= 2) {
-      overflow.push(item);
-      continue;
-    }
-
-    selected.push(item);
-    if (item.profileId) profileCounts.set(item.profileId, profileCount + 1);
-    if (item.clusterId) clusterCounts.set(item.clusterId, clusterCount + 1);
-    if (item.topicKey) topicCounts.set(item.topicKey, topicCount + 1);
+function constrainIslandAttachmentDensity(scoredArticles) {
+  if (!Array.isArray(scoredArticles) || scoredArticles.length === 0) {
+    return scoredArticles;
   }
 
-  return [...selected, ...overflow];
+  const matched = scoredArticles
+    .map((item, index) => ({ index, item }))
+    .filter(({ item }) => item.profileId && Number(item.affinityScore) >= RANKING_AFFINITY_THRESHOLD)
+    .sort((left, right) => Number(right.item.affinityScore) - Number(left.item.affinityScore));
+
+  const totalCount = scoredArticles.length;
+  const minAttach = Math.floor(totalCount * MIN_ISLAND_ATTACH_RATIO);
+  const targetAttach = Math.round(totalCount * TARGET_ISLAND_ATTACH_RATIO);
+  const maxAttach = Math.ceil(totalCount * MAX_ISLAND_ATTACH_RATIO);
+
+  let keepCount = Math.min(targetAttach, maxAttach);
+  if (matched.length < keepCount) {
+    keepCount = matched.length;
+  } else if (keepCount < minAttach && matched.length >= minAttach) {
+    keepCount = minAttach;
+  }
+
+  const keepIndexes = new Set(matched.slice(0, keepCount).map(({ index }) => index));
+
+  return scoredArticles.map((item, index) => {
+    if (keepIndexes.has(index)) {
+      return item;
+    }
+
+    return {
+      ...item,
+      profileId: null,
+      profileLabel: null,
+      profileInteractionCount: 0,
+      profileStarCount: 0,
+      profileClickCount: 0,
+      affinityScore: 0,
+      score: item.recommendedBase
+    };
+  });
 }
 
 /**
@@ -550,7 +590,7 @@ function diversifyRecommendedArticles(scoredArticles) {
  *
  * Flow:
  * - Load active user profiles.
- * - Score each candidate article against those profiles and secondary signals.
+ * - Score each candidate article against those profiles and recommended baseline.
  * - Sort descending by recommended score.
  * - Apply lightweight diversification.
  */
@@ -566,39 +606,28 @@ export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
     const scoreParts = scoreArticleAgainstProfiles(article, profiles);
 
     const affinityScore = scoreParts.affinityScore;
-    const freshness = clamp(Number(article.freshness ?? 0.5), 0, 1);
-    const quality = clamp(Number(article.quality ?? 0.7), 0, 1);
-    const attention = clamp(Number(article.attentionScore ?? 0), 0, 1);
-    const coverage = computeCoverageScore(article);
-
-    const score =
-      0.58 * affinityScore +
-      0.15 * freshness +
-      0.12 * quality +
-      0.10 * attention +
-      0.05 * coverage;
+    const recommendedBase = clamp(Number(computeRecommended(article) ?? 0), 0, 1);
+    const score = clamp(recommendedBase + affinityScore, 0, 1);
 
     return {
       article,
       profileId: scoreParts.profileId,
       profileLabel: scoreParts.profileLabel,
       profileInteractionCount: scoreParts.profileInteractionCount,
+      profileStarCount: scoreParts.profileStarCount,
+      profileClickCount: scoreParts.profileClickCount,
       clusterId: cluster?.id ?? article.clusterId ?? null,
       topicKey: cluster?.topicKey ?? null,
       affinityScore,
-      freshness,
-      quality,
-      attention,
-      coverage,
+      recommendedBase,
       score
     };
   });
 
-  scoredArticles.sort((left, right) => right.score - left.score);
+  const constrained = constrainIslandAttachmentDensity(scoredArticles);
+  constrained.sort((left, right) => right.score - left.score);
 
-  const diversified = diversifyRecommendedArticles(scoredArticles);
-
-  return diversified;
+  return constrained;
 }
 
 // Placeholder hook for future profile refresh orchestration.

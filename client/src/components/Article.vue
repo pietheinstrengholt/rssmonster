@@ -8,32 +8,15 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
-              <details v-if="matchedIsland" class="recommendation-explainer" @click.stop>
-                <summary
-                  class="recommendation-trigger"
-                  :title="recommendationTooltipText"
-                  :aria-label="recommendationTooltipText"
-                >
-                  <BootstrapIcon icon="arrow-up-circle-fill" class="recommendation-icon" />
-                </summary>
-                <div class="recommendation-panel" @click.stop>
-                  <div class="recommendation-panel-title">Recommended because</div>
-                  <div class="recommendation-panel-row">
-                    <BootstrapIcon icon="brain" class="recommendation-row-icon" />
-                    <span>{{ recommendationIslandLine }}</span>
-                  </div>
-                  <div v-if="recommendationSignals?.supportingInteractions" class="recommendation-panel-row">
-                    <BootstrapIcon icon="star-fill" class="recommendation-row-icon" />
-                    <span>Similar to {{ recommendationSignals.supportingInteractions }} supporting interactions</span>
-                  </div>
-                  <div v-if="recommendationSignals?.sourceCount" class="recommendation-panel-row">
-                    <BootstrapIcon icon="people-fill" class="recommendation-row-icon" />
-                    <span>Covered by {{ recommendationSignals.sourceCount }} sources</span>
-                  </div>
-                </div>
-              </details>
               <BootstrapIcon v-if="clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1)" icon="megaphone-fill" class="cluster-icon" />
-              <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
+              <a
+                target="_blank"
+                :href="url"
+                v-text="title"
+                :title="matchedIsland ? recommendationTooltipText : null"
+                :aria-label="matchedIsland ? recommendationTooltipText : null"
+                @click="articleClicked(id)"
+              ></a>
             </div>
             <div class="menu-icon-wrapper dropdown">
               <button 
@@ -372,22 +355,35 @@ export default {
       const label = this.matchedIsland?.label || 'matched island';
       return `${label} (${this.recommendationAffinityPercent}%)`;
     },
-    recommendationTooltipText() {
-      const lines = [
-        'Recommended because:',
-        this.recommendationIslandLine
+    islandColor() {
+      const label = this.matchedIsland?.label || '';
+      if (!label) return '#2b79c2';
+      const palette = [
+        '#2b79c2', '#d4563a', '#6a9e4f', '#9b5fc0', '#c98b2a',
+        '#2e9e8e', '#c2456a', '#5a7ec0', '#b07840', '#4e9e6a'
       ];
+      let hash = 0;
+      for (let i = 0; i < label.length; i++) hash = (hash * 31 + label.charCodeAt(i)) >>> 0;
+      return palette[hash % palette.length];
+    },
+    recommendationTooltipText() {
+      const label = this.matchedIsland?.label || 'matched interest';
+      const affinity = (this.matchedIsland?.affinityScore ?? 0).toFixed(2);
+      const lines = [`Recommended: ${label} (affinity ${affinity})`];
 
+      if (this.recommendationSignals?.starCount) {
+        lines.push(`${this.recommendationSignals.starCount} ${this.recommendationSignals.starCount === 1 ? 'star' : 'stars'}`);
+      }
 
-      if (this.recommendationSignals?.supportingInteractions) {
-        lines.push(`Similar to ${this.recommendationSignals.supportingInteractions} supporting interactions`);
+      if (this.recommendationSignals?.clickCount) {
+        lines.push(`${this.recommendationSignals.clickCount} ${this.recommendationSignals.clickCount === 1 ? 'click' : 'clicks'}`);
       }
 
       if (this.recommendationSignals?.sourceCount) {
-        lines.push(`Covered by ${this.recommendationSignals.sourceCount} sources`);
+        lines.push(`${this.recommendationSignals.sourceCount} ${this.recommendationSignals.sourceCount === 1 ? 'source' : 'sources'}`);
       }
 
-      return lines.join('\n');
+      return lines.join(' · ');
     }
   },
   methods: {
@@ -688,7 +684,6 @@ export default {
 
 .recommendation-icon {
   font-size: 0.85rem;
-  color: #2b79c2;
   opacity: 0.8;
   vertical-align: middle;
 }
@@ -737,6 +732,44 @@ export default {
   color: #6c757d;
 }
 
+.rec-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.rec-list {
+  margin: 0;
+  padding-left: 14px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.rec-list li {
+  list-style: disc;
+}
+
+.rec-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  padding: 2px 0;
+}
+
+.rec-score-label {
+  color: #555;
+}
+
+.rec-score-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
 .recommendation-action-item {
   display: flex;
   align-items: center;
@@ -773,7 +806,12 @@ export default {
   }
 
   .recommendation-panel-title,
-  .recommendation-row-icon {
+  .recommendation-row-icon,
+  .rec-section-label {
+    color: #adb5bd;
+  }
+
+  .rec-score-label {
     color: #adb5bd;
   }
 

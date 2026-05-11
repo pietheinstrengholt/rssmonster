@@ -1,10 +1,13 @@
 import db from '../models/index.js';
 import { recordInterestFromArticleUpdate } from '../util/interestIsland.service.js';
 
-const { Article, sequelize } = db;
+const { Article, UserClusterAffinity, UserInterestProfile, sequelize } = db;
 
 const run = async () => {
   try {
+    await UserClusterAffinity.destroy({ where: {} });
+    await UserInterestProfile.destroy({ where: {} });
+
     const users = await Article.findAll({
       attributes: [[Article.sequelize.fn('DISTINCT', Article.sequelize.col('userId')), 'userId']],
       raw: true
@@ -29,16 +32,29 @@ const run = async () => {
 
       let processed = 0;
       for (const article of articles) {
-        const changedFields = [];
+        const starInd = Number(article.starInd) === 1;
+        const clickedAmount = Math.max(0, Number(article.clickedAmount) || 0);
+        const negativeInd = Number(article.negativeInd) === 1;
 
-        if (Number(article.starInd) === 1) changedFields.push('starInd');
-        if (Number(article.clickedAmount) > 0) changedFields.push('clickedAmount');
-        if (Number(article.negativeInd) === 1) changedFields.push('negativeInd');
+        if (starInd) {
+          await recordInterestFromArticleUpdate(article, ['starInd']);
+          processed++;
+        }
 
-        if (!changedFields.length) continue;
+        if (clickedAmount > 0) {
+          const originalClickedAmount = Number(article.clickedAmount) || 0;
+          article.setDataValue('clickedAmount', 1);
+          for (let i = 0; i < clickedAmount; i++) {
+            await recordInterestFromArticleUpdate(article, ['clickedAmount']);
+            processed++;
+          }
+          article.setDataValue('clickedAmount', originalClickedAmount);
+        }
 
-        await recordInterestFromArticleUpdate(article, changedFields);
-        processed++;
+        if (negativeInd) {
+          await recordInterestFromArticleUpdate(article, ['negativeInd']);
+          processed++;
+        }
       }
 
       console.log(`User ${userId}: processed ${processed} interest-bearing articles`);

@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Article, ArticleCluster, Feed, Tag, Setting, sequelize: dbSequelize } = db;
 import { Op, fn, col, where, literal } from 'sequelize';
 import { rankRecommendedArticles } from './interestIsland.service.js';
+import { getRecommendedBreakdown } from './recommendedScore.js';
 
 /* ---- Per-user recommendation metadata cache (10-minute TTL) ---- */
 const RECOMMENDATION_META_TTL_MS = 10 * 60 * 1000;
@@ -890,7 +891,7 @@ export const searchArticles = async ({
 
         recommendationMetadata = new Map();
         ranked.forEach(item => {
-          const { article, profileId, profileLabel, profileInteractionCount, affinityScore, freshness, quality, attention, coverage, score } = item;
+          const { article, profileId, profileLabel, profileStarCount, profileClickCount, affinityScore, recommendedBase, score } = item;
 
           if (!article?.setDataValue) {
             return;
@@ -904,14 +905,12 @@ export const searchArticles = async ({
 
           const recommendationSignals = {
             affinityScore: Number(affinityScore.toFixed(4)),
-            freshness: Number(freshness.toFixed(4)),
-            quality: Number(quality.toFixed(4)),
-            attention: Number(attention.toFixed(4)),
-            coverage: Number(coverage.toFixed(4)),
+            recommendedBase: Number(recommendedBase.toFixed(4)),
             recommended: Number(score.toFixed(4)),
             sourceCount: Number(article?.cluster?.sourceCount ?? 0),
             clusterArticleCount: Number(article?.cluster?.articleCount ?? 0),
-            supportingInteractions: Number(profileInteractionCount || 0)
+            starCount: Number(profileStarCount || 0),
+            clickCount: Number(profileClickCount || 0)
           };
 
           article.setDataValue('matchedIsland', matchedIsland);
@@ -923,18 +922,27 @@ export const searchArticles = async ({
 
         // Debug: Log ranking breakdown in development mode
         if (process.env.NODE_ENV === 'development') {
-          const debugRows = ranked.slice(0, 60);
+          const debugRows = ranked;
+          console.log('[RECOMMENDED DEBUG] Active formula: finalScore = recommendedBase + affinityScore');
           console.table(
-            debugRows.map(({ article, profileLabel, affinityScore, freshness, quality, attention, coverage, score }) => ({
-              articleId: article.id,
-              interestIsland: profileLabel ? profileLabel.split(/\s+/).slice(0, 2).join(' ') : 'none',
-              affinity: Number(affinityScore.toFixed(4)),
-              freshness: Number(freshness.toFixed(4)),
-              quality: Number(quality.toFixed(4)),
-              attention: Number(attention.toFixed(4)),
-              coverage: Number(coverage.toFixed(4)),
-              recommended: Number(score.toFixed(4))
-            }))
+            debugRows.map(({ article, profileLabel, affinityScore, score }, index) => {
+              const bd = getRecommendedBreakdown(article);
+              return {
+                rank: index + 1,
+                articleId: article.id,
+                island: profileLabel ? profileLabel.split(/\s+/).slice(0, 2).join(' ') : 'none',
+                similarity: Number(bd.similarity.toFixed(4)),
+                quality: Number(bd.quality.toFixed(4)),
+                freshness: Number(bd.freshness.toFixed(4)),
+                coverage: Number(bd.coverage.toFixed(4)),
+                crossSource: Number(bd.crossSource.toFixed(4)),
+                corroboration: Number(bd.corroboration.toFixed(4)),
+                ruleBoost: Number(bd.ruleBoost.toFixed(4)),
+                recommended: Number(bd.recommended.toFixed(4)),
+                affinity: Number(affinityScore.toFixed(4)),
+                final: Number(score.toFixed(4))
+              };
+            })
           );
         }
 
