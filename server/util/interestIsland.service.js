@@ -21,14 +21,10 @@ const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db
 const AFFINITY_HALF_LIFE_HOURS = 168;
 const PROFILE_HALF_LIFE_HOURS = 336;
 // Keep ranking focused on a small active set for predictable latency.
-const MAX_ACTIVE_PROFILES = 8;
-const ACTIVE_PROFILE_DIVERSITY_SIMILARITY_THRESHOLD = Math.max(
-  0,
-  Math.min(Number(process.env.INTEREST_ISLAND_PROFILE_SIMILARITY_THRESHOLD) || 0.88, 0.999)
-);
+const DEFAULT_MAX_ACTIVE_PROFILES = 8;
 const ACTIVE_PROFILE_CANDIDATE_LIMIT = Math.max(
-  MAX_ACTIVE_PROFILES,
-  Number(process.env.INTEREST_ISLAND_PROFILE_CANDIDATE_LIMIT) || (MAX_ACTIVE_PROFILES * 8)
+  DEFAULT_MAX_ACTIVE_PROFILES,
+  Number(process.env.INTEREST_ISLAND_PROFILE_CANDIDATE_LIMIT) || (DEFAULT_MAX_ACTIVE_PROFILES * 8)
 );
 const PROFILE_MATCH_THRESHOLD = 0.72;
 // Ranking-only gate: require a minimum confidence before we attach an island match.
@@ -165,8 +161,8 @@ const resolveInterestTopicKey = (article) => {
 };
 
 function selectDiverseProfiles(profiles, {
-  maxProfiles = MAX_ACTIVE_PROFILES,
-  similarityThreshold = ACTIVE_PROFILE_DIVERSITY_SIMILARITY_THRESHOLD
+  maxProfiles = DEFAULT_MAX_ACTIVE_PROFILES,
+  similarityThreshold = 0.88
 } = {}) {
   if (!Array.isArray(profiles) || profiles.length === 0 || maxProfiles <= 0) {
     return [];
@@ -196,6 +192,42 @@ function selectDiverseProfiles(profiles, {
   }
 
   return selectedProfiles;
+}
+
+function resolveProfileSimilarityThreshold(maxProfiles) {
+  const profiles = Math.max(Number(maxProfiles) || 4, 1);
+
+  // More profiles -> stricter diversity requirement
+  // 4 profiles  -> 0.92
+  // 6 profiles  -> 0.88
+  // 8 profiles  -> 0.84
+  // 10 profiles -> 0.82
+  // 12 profiles -> 0.80
+  return Math.max(
+    0.80,
+    Math.min(
+      0.92,
+      0.92 - ((profiles - 4) * 0.015)
+    )
+  );
+}
+
+function resolveMaxActiveProfiles({
+  starCount = 0,
+  clickCount = 0
+} = {}) {
+  // Stars matter far more than clicks
+  const engagementScore =
+    starCount +
+    Math.min(clickCount / 10, 50);
+
+  return Math.max(
+    4,
+    Math.min(
+      12,
+      Math.round(4 + Math.log2(engagementScore + 1))
+    )
+  );
 }
 
 async function loadSuppressionSignals(userId) {
@@ -477,12 +509,28 @@ async function loadInterestProfiles(userId) {
     }));
   }
 
-  const rows = await UserInterestProfile.findAll({
-    where: { userId },
-    order: [['weight', 'DESC'], ['lastSeen', 'DESC']],
-    // Pull a wider candidate set, then diversify into active profiles.
-    limit: ACTIVE_PROFILE_CANDIDATE_LIMIT
+  const [rows, engagementTotals] = await Promise.all([
+    UserInterestProfile.findAll({
+      where: { userId },
+      order: [['weight', 'DESC'], ['lastSeen', 'DESC']],
+      // Pull a wider candidate set, then diversify into active profiles.
+      limit: ACTIVE_PROFILE_CANDIDATE_LIMIT
+    }),
+    UserClusterAffinity.findOne({
+      where: { userId },
+      attributes: [
+        [fn('SUM', col('starCount')), 'starCount'],
+        [fn('SUM', col('clickCount')), 'clickCount']
+      ],
+      raw: true
+    })
+  ]);
+
+  const maxActiveProfiles = resolveMaxActiveProfiles({
+    starCount: Number(engagementTotals?.starCount) || 0,
+    clickCount: Number(engagementTotals?.clickCount) || 0
   });
+  const profileSimilarityThreshold = resolveProfileSimilarityThreshold(maxActiveProfiles);
 
   const candidateProfiles = rows.map(row => ({
       id: row.id,
@@ -498,8 +546,8 @@ async function loadInterestProfiles(userId) {
     }));
 
   const profiles = selectDiverseProfiles(candidateProfiles, {
-    maxProfiles: MAX_ACTIVE_PROFILES,
-    similarityThreshold: ACTIVE_PROFILE_DIVERSITY_SIMILARITY_THRESHOLD
+    maxProfiles: maxActiveProfiles,
+    similarityThreshold: profileSimilarityThreshold
   });
 
   writeCachedProfiles(userId, profiles);
