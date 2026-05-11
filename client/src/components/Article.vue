@@ -52,6 +52,25 @@
                 </li>
                 <li><a class="dropdown-item" href="#" @click.prevent="markNotInterested">Not Interested</a></li>
                 <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header">Tune this recommendation</h6></li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="moreLikeThis">
+                    <BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />
+                    More like this
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="lessLikeThis">
+                    <BootstrapIcon icon="hand-thumbs-down-fill" class="recommendation-action-icon recommendation-negative-icon" />
+                    Less like this
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="ignoreTopic">
+                    <BootstrapIcon icon="slash-circle-fill" class="recommendation-action-icon recommendation-ignore-icon" />
+                    Ignore this topic
+                  </a>
+                </li>
                 <li><a class="dropdown-item" href="#" @click.prevent="muteFeedSevenDays">Mute Feed for 7 Days</a></li>
               </ul>
             </div>
@@ -226,7 +245,8 @@
 import {
   markWithStar,
   markClicked,
-  markNotInterested
+  markNotInterested,
+  steerRecommendation
 } from '../api/articles';
 
 import { muteFeed } from '../api/feeds';
@@ -513,6 +533,25 @@ export default {
         this.$emit('article-not-interested', { id: this.id });
       });
     },
+    tuneRecommendation(action) {
+      return steerRecommendation(this.id, action)
+        .then(() => {
+          console.log(`Recommendation tuned (${action}):`, this.id);
+        })
+        .catch(error => {
+          console.error('Error tuning recommendation:', error);
+        });
+    },
+    moreLikeThis() {
+      return this.tuneRecommendation('more');
+    },
+    lessLikeThis() {
+      return this.tuneRecommendation('less');
+    },
+    ignoreTopic() {
+      if (!confirm('Ignore this topic and reduce similar recommendations?')) return;
+      return this.tuneRecommendation('ignore');
+    },
     muteFeedSevenDays() {
       if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
         const mutedUntil = new Date();
@@ -698,6 +737,29 @@ export default {
   color: #6c757d;
 }
 
+.recommendation-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommendation-action-icon {
+  width: 1rem;
+  text-align: center;
+}
+
+.recommendation-positive-icon {
+  color: #2e7d32;
+}
+
+.recommendation-negative-icon {
+  color: #c62828;
+}
+
+.recommendation-ignore-icon {
+  color: #6c757d;
+}
+
 @media (prefers-color-scheme: dark) {
   .recommendation-explainer {
     color: #adb5bd;
@@ -712,6 +774,18 @@ export default {
 
   .recommendation-panel-title,
   .recommendation-row-icon {
+    color: #adb5bd;
+  }
+
+  .recommendation-positive-icon {
+    color: #81c784;
+  }
+
+  .recommendation-negative-icon {
+    color: #ef5350;
+  }
+
+  .recommendation-ignore-icon {
     color: #adb5bd;
   }
 }

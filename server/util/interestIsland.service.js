@@ -444,6 +444,45 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
   };
 }
 
+const RECOMMENDATION_STEERING_WEIGHTS = {
+  more: { cluster: 2, profile: 1.5 },
+  less: { cluster: -1.5, profile: -1.25 },
+  ignore: { cluster: -3, profile: -2.5 }
+};
+
+export async function applyRecommendationSteering({ article, action } = {}) {
+  const loadedArticle = await loadArticleForInterestUpdate(article);
+  if (!loadedArticle) return null;
+
+  const steering = RECOMMENDATION_STEERING_WEIGHTS[action];
+  if (!steering) return null;
+
+  const cluster = loadedArticle.get?.('cluster') ?? loadedArticle.cluster;
+  const clusterId = cluster?.id ?? loadedArticle.clusterId ?? null;
+  if (!clusterId) return null;
+
+  const topicKey = cluster?.topicKey ?? null;
+
+  const affinityRow = await upsertClusterAffinity({
+    userId: loadedArticle.userId,
+    clusterId,
+    topicKey,
+    delta: steering.cluster
+  });
+
+  const profileRow = await upsertInterestProfile({
+    userId: loadedArticle.userId,
+    article: loadedArticle,
+    delta: steering.profile
+  });
+
+  return {
+    affinityRow,
+    profileRow,
+    action
+  };
+}
+
 // Coverage rewards topic groups that have enough corroborating articles.
 function computeCoverageScore(article) {
   const cluster = article.get?.('cluster') ?? article.cluster;

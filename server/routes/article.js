@@ -11,6 +11,7 @@ router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRe
 router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
 router.post('/markopened/:articleId', userMiddleware.isLoggedIn, articleController.markOpened);
 router.post('/marknotinterested/:articleId', userMiddleware.isLoggedIn, articleController.markNotInterested);
+router.post('/steer/:articleId', userMiddleware.isLoggedIn, articleController.articleSteerRecommendation);
 router.post('/details', userMiddleware.isLoggedIn, articleController.articleDetails);
 router.post('/markasseen/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkAsSeen);
 router.post('/marktounread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToUnread);

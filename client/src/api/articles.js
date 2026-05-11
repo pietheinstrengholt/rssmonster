@@ -48,6 +48,12 @@ export const markNotInterested = (articleId) =>
   api.post(`/articles/marknotinterested/${articleId}`);
 
 /**
+ * Tune recommendation for an article
+ */
+export const steerRecommendation = (articleId, action) =>
+  api.post(`/articles/steer/${articleId}`, { action });
+
+/**
  * Mark all matching articles as read
  */
 export const markAllAsRead = (currentSelection) =>
