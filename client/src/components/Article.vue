@@ -157,8 +157,8 @@
         ></div>
         <div
           class="media-content enclosure"
-          v-if="shouldShowImage && imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)"
-          >
+          v-if="shouldShowImage && imageUrl && !isImageUrlInContent() && contentOriginal === '<html><head></head><body>null</body></html>'"
+        >
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
