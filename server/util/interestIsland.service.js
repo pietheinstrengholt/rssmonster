@@ -617,8 +617,9 @@ export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
     const recommendedBase = clamp(Number(computeRecommended(article) ?? 0), 0, 1);
     const rawFreshness = Number(article?.freshness ?? 0.5);
     const freshness = Number.isFinite(rawFreshness) ? clamp(rawFreshness, 0, 1) : 0.5;
+    const flooredFreshness = Math.max(0.05, freshness);
     const normalizedAffinity = Math.pow(clamp(affinityScore, 0, 1), 1.4);
-    const freshnessFactor = 0.25 + freshness * 0.75;
+    const freshnessFactor = 0.25 + flooredFreshness * 0.75;
     const score = clamp(
       (normalizedAffinity * 0.7 + recommendedBase * 0.3) * freshnessFactor,
       0,

@@ -55,7 +55,7 @@ export function getRecommendedBreakdown(article) {
 
   // Cross-source corroboration (strong signal): only high when both
   // cluster coverage and publisher diversity are high.
-  const crossSource = Math.max(sourceDiversity, sourceSpread);
+  const crossSource = 0.6 * sourceDiversity + 0.4 * sourceSpread;
   const corroboration = coverage * crossSource;
 
   // Rule-based tag boost: articles matched by user-defined tag rules are more relevant
