@@ -18,6 +18,7 @@
 
         <div class="modal-footer">
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
+          <button class="btn btn-secondary" @click="active = 'interestislands'">Interest Islands</button>
           <button class="btn btn-secondary" @click="active = 'actions'">Actions</button>
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'scores'">Scores</button>
           <button class="btn btn-secondary" @click="active = 'feeds'">Feeds</button>
@@ -36,6 +37,7 @@ import SettingsWelcome from './SettingsWelcome.vue';
 import SmartFoldersSettings from './SmartFoldersSettings.vue';
 import ActionsSettings from './ActionsSettings.vue';
 import ScoresSettings from './ScoresSettings.vue';
+import SettingsInterestIslands from './SettingsInterestIslands.vue';
 import FeedsOverview from './FeedsOverview.vue';
 import ManageUsers from './ManageUsers.vue';
 
@@ -47,6 +49,7 @@ export default {
     SmartFoldersSettings,
     ActionsSettings,
     ScoresSettings,
+    SettingsInterestIslands,
     FeedsOverview,
     ManageUsers
   },
@@ -64,6 +67,7 @@ export default {
       return {
         welcome: 'SettingsWelcome',
         smartfolders: 'SmartFoldersSettings',
+        interestislands: 'SettingsInterestIslands',
         actions: 'ActionsSettings',
         scores: 'ScoresSettings',
         feeds: 'FeedsOverview',

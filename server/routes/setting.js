@@ -6,6 +6,7 @@ export const router = express.Router();
 
 // GET /api/setting
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
+router.get('/interest-islands', userMiddleware.isLoggedIn, settingController.getInterestIslands);
 router.post('/', userMiddleware.isLoggedIn, settingController.setSettings);
 
 export default router;

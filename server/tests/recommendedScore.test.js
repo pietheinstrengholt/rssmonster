@@ -51,7 +51,7 @@ describe('computeRecommended', () => {
     expect(multiSourceScore).toBeGreaterThan(singleSourceScore);
   });
 
-  it('keeps similarity contributing when present', () => {
+  it('ignores similarityScore and keeps the recommendation baseline unchanged', () => {
     const lowSimilarity = {
       freshness: 0.5,
       quality: 0.5,
@@ -69,6 +69,6 @@ describe('computeRecommended', () => {
     const lowSimilarityScore = computeRecommended(lowSimilarity);
     const highSimilarityScore = computeRecommended(highSimilarity);
 
-    expect(highSimilarityScore).toBeGreaterThan(lowSimilarityScore);
+    expect(highSimilarityScore).toBe(lowSimilarityScore);
   });
 });

@@ -931,7 +931,6 @@ export const searchArticles = async ({
                 rank: index + 1,
                 articleId: article.id,
                 island: profileLabel ? profileLabel.split(/\s+/).slice(0, 2).join(' ') : 'none',
-                similarity: Number(bd.similarity.toFixed(4)),
                 quality: Number(bd.quality.toFixed(4)),
                 freshness: Number(bd.freshness.toFixed(4)),
                 coverage: Number(bd.coverage.toFixed(4)),

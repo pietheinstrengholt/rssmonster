@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 import { cosineSimilarity, resolveArticleVector } from './vectorMath.js';
 import { computeRecommended } from './recommendedScore.js';
+import { Op } from 'sequelize';
 
 const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db;
 
@@ -640,4 +641,137 @@ export async function refreshInterestProfilesForUser(userId) {
   });
 
   return rows.length;
+}
+
+export async function getInterestIslandDashboard(userId, { relatedArticleLimit = 5 } = {}) {
+  if (!userId) {
+    return {
+      islands: [],
+      totals: {
+        totalArticles: 0,
+        islandArticles: 0,
+        nonIslandArticles: 0,
+        islandCoveragePercent: 0,
+        nonIslandCoveragePercent: 0,
+        islandCount: 0
+      }
+    };
+  }
+
+  const profiles = await loadInterestProfiles(userId);
+  const uniqueTopicKeys = Array.from(new Set(profiles.map(profile => profile.topicKey).filter(Boolean)));
+  const totalArticles = await Article.count({ where: { userId } });
+
+  if (!profiles.length) {
+    return {
+      islands: [],
+      totals: {
+        totalArticles,
+        islandArticles: 0,
+        nonIslandArticles: totalArticles,
+        islandCoveragePercent: 0,
+        nonIslandCoveragePercent: totalArticles > 0 ? 100 : 0,
+        islandCount: 0
+      }
+    };
+  }
+
+  const profileSummaries = await Promise.all(
+    profiles.map(async (profile) => {
+      if (!profile.topicKey) {
+        return {
+          ...profile,
+          relatedArticleCount: 0,
+          relatedArticles: []
+        };
+      }
+
+      const relatedArticleCount = await Article.count({
+        where: { userId },
+        include: [
+          {
+            model: ArticleCluster,
+            as: 'cluster',
+            required: true,
+            attributes: [],
+            where: { topicKey: profile.topicKey }
+          }
+        ]
+      });
+
+      const relatedArticles = await Article.findAll({
+        where: { userId },
+        include: [
+          {
+            model: ArticleCluster,
+            as: 'cluster',
+            required: true,
+            attributes: ['id', 'name', 'topicKey', 'articleCount', 'sourceCount', 'clusterStrength', 'representativeArticleId'],
+            where: { topicKey: profile.topicKey }
+          },
+          {
+            model: db.Feed,
+            attributes: ['id', 'feedName', 'url'],
+            required: false
+          }
+        ],
+        attributes: ['id', 'title', 'published', 'url', 'starInd', 'clickedAmount', 'status', 'feedId', 'clusterId'],
+        order: [['published', 'DESC']],
+        limit: relatedArticleLimit
+      });
+
+      return {
+        ...profile,
+        relatedArticleCount,
+        relatedArticles: relatedArticles.map(article => ({
+          id: article.id,
+          title: article.title,
+          url: article.url,
+          published: article.published,
+          starInd: Number(article.starInd) || 0,
+          clickedAmount: Number(article.clickedAmount) || 0,
+          status: article.status,
+          feedName: article.feed?.feedName || null,
+          feedUrl: article.feed?.url || null,
+          cluster: {
+            id: article.cluster?.id || null,
+            name: article.cluster?.name || null,
+            topicKey: article.cluster?.topicKey || null,
+            articleCount: Number(article.cluster?.articleCount) || 0,
+            sourceCount: Number(article.cluster?.sourceCount) || 0,
+            clusterStrength: Number(article.cluster?.clusterStrength) || 0
+          }
+        }))
+      };
+    })
+  );
+
+  const islandArticles = uniqueTopicKeys.length
+    ? await Article.count({
+        where: { userId },
+        include: [
+          {
+            model: ArticleCluster,
+            as: 'cluster',
+            required: true,
+            attributes: [],
+            where: { topicKey: { [Op.in]: uniqueTopicKeys } }
+          }
+        ]
+      })
+    : 0;
+
+  const nonIslandArticles = Math.max(totalArticles - islandArticles, 0);
+
+  return {
+    islands: profileSummaries,
+    totals: {
+      totalArticles,
+      islandArticles,
+      nonIslandArticles,
+      islandCoveragePercent: totalArticles > 0 ? Number(((islandArticles / totalArticles) * 100).toFixed(2)) : 0,
+      nonIslandCoveragePercent: totalArticles > 0 ? Number(((nonIslandArticles / totalArticles) * 100).toFixed(2)) : 0,
+      islandCount: profiles.length
+    }
+  };
 }

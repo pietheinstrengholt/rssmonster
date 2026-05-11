@@ -63,24 +63,10 @@ export function getRecommendedBreakdown(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
-  // Personalized relevance: persisted similarity cache (precomputed cosine similarity).
-  // Falls back to 0 when cache is not available.
-  const rawSimilarity = Number(
-    article.similarityScore ??
-    article.getDataValue?.('similarityScore') ??
-    article.similarity ??
-    article.get?.('similarityScore') ??
-    0
-  );
-  const similarity = Number.isFinite(rawSimilarity)
-    ? Math.max(0, Math.min(1, rawSimilarity))
-    : 0;
-
   // Weighted sum: balances all signals to produce recommended score (0–1)
-  // Weights: similarity (45%), quality (10%), freshness (10%), coverage (20%), crossSource (10%), corroboration (5%)
+  // Weights: quality (10%), freshness (10%), coverage (20%), crossSource (10%), corroboration (5%)
   // Plus a flat 0.15 boost for rule-tagged articles
   const recommended =
-    0.45 * similarity +
     0.10 * quality +
     0.10 * freshness +
     0.20 * coverage +
@@ -89,7 +75,6 @@ export function getRecommendedBreakdown(article) {
     ruleBoost;
 
   return {
-    similarity,
     quality,
     freshness,
     coverage,
