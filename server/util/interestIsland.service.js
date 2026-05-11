@@ -21,7 +21,7 @@ const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db
 const AFFINITY_HALF_LIFE_HOURS = 168;
 const PROFILE_HALF_LIFE_HOURS = 336;
 // Keep ranking focused on a small active set for predictable latency.
-const MAX_ACTIVE_PROFILES = 5;
+const MAX_ACTIVE_PROFILES = 8;
 const ACTIVE_PROFILE_DIVERSITY_SIMILARITY_THRESHOLD = Math.max(
   0,
   Math.min(Number(process.env.INTEREST_ISLAND_PROFILE_SIMILARITY_THRESHOLD) || 0.88, 0.999)
