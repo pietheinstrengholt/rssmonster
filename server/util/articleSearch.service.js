@@ -891,7 +891,20 @@ export const searchArticles = async ({
 
         recommendationMetadata = new Map();
         ranked.forEach(item => {
-          const { article, profileId, profileLabel, profileStarCount, profileClickCount, affinityScore, recommendedBase, score } = item;
+          const {
+            article,
+            profileId,
+            profileLabel,
+            profileStarCount,
+            profileClickCount,
+            affinityScore,
+            recommendedBase,
+            score,
+            suppressionPenalty,
+            suppressionSource,
+            suppressionReason,
+            suppressionComponents
+          } = item;
 
           if (!article?.setDataValue) {
             return;
@@ -907,6 +920,10 @@ export const searchArticles = async ({
             affinityScore: Number(affinityScore.toFixed(4)),
             recommendedBase: Number(recommendedBase.toFixed(4)),
             recommended: Number(score.toFixed(4)),
+            suppressionPenalty: Number((suppressionPenalty || 0).toFixed(4)),
+            suppressionSource: suppressionSource || 'none',
+            suppressionReason: suppressionReason || 'No suppression signals',
+            suppressionComponents: suppressionComponents || null,
             sourceCount: Number(article?.cluster?.sourceCount ?? 0),
             clusterArticleCount: Number(article?.cluster?.articleCount ?? 0),
             starCount: Number(profileStarCount || 0),
@@ -925,7 +942,7 @@ export const searchArticles = async ({
           const debugRows = ranked;
           console.log('[RECOMMENDED DEBUG] Active formula: finalScore = ((affinityScore^1.4)*0.7 + recommendedBase*0.3) * (0.25 + max(0.05, freshness)*0.75)');
           console.table(
-            debugRows.map(({ article, profileLabel, affinityScore, normalizedAffinity, freshnessFactor, score }, index) => {
+            debugRows.map(({ article, profileLabel, affinityScore, normalizedAffinity, freshnessFactor, suppressionPenalty, suppressionSource, score }, index) => {
               const bd = getRecommendedBreakdown(article);
               return {
                 rank: index + 1,
@@ -940,6 +957,8 @@ export const searchArticles = async ({
                 recommended: Number(bd.recommended.toFixed(4)),
                 affinity: Number(affinityScore.toFixed(4)),
                 normalizedAffinity: Number((normalizedAffinity ?? 0).toFixed(4)),
+                suppressionPenalty: Number((suppressionPenalty ?? 0).toFixed(4)),
+                suppressionSource: suppressionSource || 'none',
                 final: Number(score.toFixed(4))
               };
             })

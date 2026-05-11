@@ -8,21 +8,28 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
-              <details v-if="matchedIsland && !(clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1))" class="recommendation-explainer" @click.stop>
+              <details v-if="(matchedIsland || isSuppressedRecommendation) && !(clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1))" class="recommendation-explainer" @click.stop>
                 <summary
                   class="recommendation-trigger"
                   :title="recommendationTooltipText"
                   :aria-label="recommendationTooltipText"
                 >
-                  <BootstrapIcon icon="award-fill" class="recommendation-icon" :style="{ color: islandColor }" />
+                  <BootstrapIcon
+                    :icon="isSuppressedRecommendation ? 'slash-circle-fill' : 'award-fill'"
+                    class="recommendation-icon"
+                    :class="{ 'suppressed-recommendation-icon': isSuppressedRecommendation }"
+                    :style="{ color: isSuppressedRecommendation ? suppressionColor : islandColor }"
+                  />
                 </summary>
                 <div class="recommendation-panel" @click.stop>
-                  <div class="recommendation-panel-title">Recommended because</div>
+                  <div class="recommendation-panel-title">Recommendation details</div>
 
-                  <div class="rec-section-label">Strong semantic match with your:</div>
-                  <ul class="rec-list">
-                    <li>{{ matchedIsland?.label || 'matched interest' }}</li>
-                  </ul>
+                  <template v-if="matchedIsland">
+                    <div class="rec-section-label">Strong semantic match with your:</div>
+                    <ul class="rec-list">
+                      <li>{{ matchedIsland?.label || 'matched interest' }}</li>
+                    </ul>
+                  </template>
 
                   <template v-if="recommendationSignals?.starCount || recommendationSignals?.clickCount || recommendationSignals?.sourceCount">
                     <div class="rec-section-label">Signals:</div>
@@ -36,6 +43,15 @@
                       <li v-if="recommendationSignals?.sourceCount">
                         {{ recommendationSignals.sourceCount }} {{ recommendationSignals.sourceCount === 1 ? 'source' : 'sources' }} covering this topic
                       </li>
+                    </ul>
+                  </template>
+
+                  <template v-if="isSuppressedRecommendation">
+                    <div class="rec-section-label suppression-section-label">Suppressed by your anti-interests:</div>
+                    <ul class="rec-list">
+                      <li>{{ suppressionSourceLabel }}</li>
+                      <li>{{ suppressionReasonText }}</li>
+                      <li>Penalty applied: {{ suppressionPenaltyPercent }}%</li>
                     </ul>
                   </template>
 
@@ -391,13 +407,40 @@ export default {
       const label = this.matchedIsland?.label || 'matched island';
       return `${label} (${this.recommendationAffinityPercent}%)`;
     },
+    isSuppressedRecommendation() {
+      return Number(this.recommendationSignals?.suppressionPenalty || 0) > 0;
+    },
+    suppressionPenaltyPercent() {
+      return Math.round(Number(this.recommendationSignals?.suppressionPenalty || 0) * 100);
+    },
+    suppressionSourceLabel() {
+      const source = this.recommendationSignals?.suppressionSource || 'none';
+      if (source === 'topic+feed') return 'Suppression source: topic and feed';
+      if (source === 'topic') return 'Suppression source: topic';
+      if (source === 'feed') return 'Suppression source: feed';
+      return 'Suppression source: none';
+    },
+    suppressionReasonText() {
+      return this.recommendationSignals?.suppressionReason || 'No suppression signals';
+    },
     islandColor() {
       return '#F3A712';
     },
+    suppressionColor() {
+      return '#C04B37';
+    },
     recommendationTooltipText() {
-      const label = this.matchedIsland?.label || 'matched interest';
-      const affinity = (this.matchedIsland?.affinityScore ?? 0).toFixed(2);
-      const lines = [`Recommended: ${label} (affinity ${affinity})`];
+      const lines = [];
+
+      if (this.matchedIsland) {
+        const label = this.matchedIsland?.label || 'matched interest';
+        const affinity = (this.matchedIsland?.affinityScore ?? 0).toFixed(2);
+        lines.push(`Recommended: ${label} (affinity ${affinity})`);
+      }
+
+      if (this.isSuppressedRecommendation) {
+        lines.push(`Suppressed: ${this.suppressionSourceLabel.replace('Suppression source: ', '')}`);
+      }
 
       if (this.recommendationSignals?.starCount) {
         lines.push(`${this.recommendationSignals.starCount} ${this.recommendationSignals.starCount === 1 ? 'star' : 'stars'}`);
@@ -409,6 +452,10 @@ export default {
 
       if (this.recommendationSignals?.sourceCount) {
         lines.push(`${this.recommendationSignals.sourceCount} ${this.recommendationSignals.sourceCount === 1 ? 'source' : 'sources'}`);
+      }
+
+      if (this.isSuppressedRecommendation) {
+        lines.push(`Penalty ${this.suppressionPenaltyPercent}%`);
       }
 
       return lines.join(' · ');
@@ -716,6 +763,10 @@ export default {
   vertical-align: middle;
 }
 
+.suppressed-recommendation-icon {
+  filter: saturate(0.9);
+}
+
 .recommendation-explainer:hover .recommendation-icon,
 .recommendation-explainer[open] .recommendation-icon {
   opacity: 1;
@@ -768,6 +819,10 @@ export default {
   color: #6c757d;
   margin-top: 10px;
   margin-bottom: 2px;
+}
+
+.suppression-section-label {
+  color: #b23b2a;
 }
 
 .rec-list {
@@ -837,6 +892,10 @@ export default {
   .recommendation-row-icon,
   .rec-section-label {
     color: #adb5bd;
+  }
+
+  .suppression-section-label {
+    color: #f18f7b;
   }
 
   .rec-score-label {
