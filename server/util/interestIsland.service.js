@@ -21,6 +21,9 @@ const PROFILE_HALF_LIFE_HOURS = 336;
 // Keep ranking focused on a small active set for predictable latency.
 const MAX_ACTIVE_PROFILES = 8;
 const PROFILE_MATCH_THRESHOLD = 0.82;
+// Cluster affinity threshold for promotion to interest island.
+// ~5 clicks or 1 star + 2 clicks = enough evidence to carve out an island.
+const ISLAND_PROMOTION_THRESHOLD = 5;
 // Short-lived in-memory cache to avoid repeated profile reads on hot requests.
 const PROFILE_CACHE_TTL_MS = 30_000;
 
@@ -185,6 +188,67 @@ async function upsertClusterAffinity({ userId, clusterId, topicKey, delta }) {
   return UserClusterAffinity.create(payload);
 }
 
+// Promote cluster affinity to island if threshold is crossed.
+// Finds or creates an island for the given cluster when accumulated affinity is hot enough.
+async function promoteClusterAffinityToIsland({ userId, clusterId, affinity }) {
+  if (!userId || !clusterId || !Number.isFinite(affinity) || affinity < ISLAND_PROMOTION_THRESHOLD) {
+    return null;
+  }
+
+  // Load cluster with vectors for island initialization.
+  const cluster = await ArticleCluster.findByPk(clusterId, {
+    attributes: ['id', 'name', 'topicKey', 'topicVector', 'eventVector', 'articleCount']
+  });
+
+  if (!cluster) {
+    return null;
+  }
+
+  const vector = normalizeVector(cluster.topicVector || cluster.eventVector);
+  if (!Array.isArray(vector)) {
+    return null;
+  }
+
+  // Check if an island already exists for this user + topicKey.
+  const existing = await UserInterestProfile.findOne({
+    where: {
+      userId,
+      topicKey: cluster.topicKey
+    }
+  });
+
+  const label = cluster.name?.slice(0, 120) || null;
+  const payload = {
+    userId,
+    label,
+    topicKey: cluster.topicKey,
+    vector,
+    weight: Number(affinity.toFixed(4)),
+    interactionCount: (Number(existing?.interactionCount) || 0) + 1,
+    lastSeen: nowUtc()
+  };
+
+  if (existing) {
+    // Update existing island with new affinity and blended vector.
+    const existingVector = normalizeVector(existing.vector);
+    const existingWeight = Math.max(Number(existing.weight) || 0, 0.0001);
+    const mergedVector = blendVectors(existingVector, vector, existingWeight, affinity);
+
+    await existing.update({
+      ...payload,
+      vector: mergedVector
+    });
+
+    invalidateCachedProfiles(userId);
+    return existing;
+  }
+
+  // Create new island.
+  const created = await UserInterestProfile.create(payload);
+  invalidateCachedProfiles(userId);
+  return created;
+}
+
 // Load top active profiles for a user (cached), then compute recency-adjusted weight.
 async function loadInterestProfiles(userId) {
   // Read-through cache: DB only on miss/expiry.
@@ -269,17 +333,31 @@ async function upsertInterestProfile({ userId, article, delta }) {
   const label = article?.cluster?.name || article?.title?.trim()?.slice(0, 120) || null;
   const profiles = await loadInterestProfiles(userId);
   const best = scoreProfileMatch(articleVector, topicKey, profiles);
-  const currentWeight = Math.max(best.effectiveWeight || 0, 0);
-  const nextWeight = Math.max(currentWeight + delta, 0);
 
-  // Reinforce an existing island when semantic similarity is strong enough.
+  // Reinforce or weaken an existing island when semantic similarity is strong enough.
   if (best.profileId && best.affinityScore >= PROFILE_MATCH_THRESHOLD) {
     const current = await UserInterestProfile.findByPk(best.profileId);
     if (!current) return null;
 
+    // Use stored (undecayed) weight for persistence, not the runtime effectiveWeight.
+    // This prevents decay from compounding into permanent storage.
+    const storedWeight = Math.max(Number(current.weight) || 0, 0);
+    const nextWeight = Math.max(storedWeight + delta, 0);
+
+    // Clean up dead islands: when weight drops below viability threshold, destroy the profile.
+    // This prevents accumulation of semantic corpses with zero influence on rankings.
+    if (nextWeight <= 0.05) {
+      await current.destroy();
+      invalidateCachedProfiles(userId);
+      return null;
+    }
+
     const existingVector = normalizeVector(current.vector);
-    const existingWeight = Math.max(Number(current.weight) || 0, 0.0001);
-    const mergedVector = blendVectors(existingVector, articleVector, existingWeight, Math.max(delta, 0.1));
+    // Only blend vectors on positive reinforcement. Negative signals weaken weight
+    // but do NOT reshape the island's semantic identity (avoid blending toward disliked content).
+    const mergedVector = delta > 0
+      ? blendVectors(existingVector, articleVector, storedWeight, Math.max(delta, 0.1))
+      : existingVector;
 
     await current.update({
       label: current.label || label,
@@ -287,7 +365,9 @@ async function upsertInterestProfile({ userId, article, delta }) {
       vector: mergedVector,
       weight: Number(nextWeight.toFixed(4)),
       interactionCount: (Number(current.interactionCount) || 0) + 1,
-      lastSeen: nowUtc()
+      // Only refresh recency on positive signals. Negative interactions weaken
+      // the island but should not keep it artificially fresh (avoiding hate-reading effects).
+      lastSeen: delta > 0 ? nowUtc() : current.lastSeen
     });
 
     invalidateCachedProfiles(userId);
@@ -319,9 +399,9 @@ async function upsertInterestProfile({ userId, article, delta }) {
  *
  * Flow:
  * - Ensure article + cluster/vector context is loaded.
- * - Convert changed fields into a weighted delta.
- * - Apply delta to cluster affinity.
- * - Optionally apply delta to profile islands for whitelisted fields.
+ * - Convert changed fields into a weighted delta (star: 3, click: 1, negative: -2).
+ * - Apply delta to cluster affinity (accumulates latent engagement).
+ * - If cluster affinity >= ISLAND_PROMOTION_THRESHOLD, promote to interest island.
  */
 export async function recordInterestFromArticleUpdate(article, changedFields = []) {
   const loadedArticle = await loadArticleForInterestUpdate(article);
@@ -340,24 +420,23 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
 
   const topicKey = cluster?.topicKey ?? null;
 
-  // Only these fields are allowed to shape profile-level islands.
-  const shouldPopulateProfile = changedFields.some(field => ['starInd', 'clickedAmount', 'negativeInd'].includes(field));
+  // Update cluster affinity regardless of signal type.
+  const affinityRow = await upsertClusterAffinity({
+    userId: loadedArticle.userId,
+    clusterId,
+    topicKey,
+    delta
+  });
 
-  const [affinityRow, profileRow] = await Promise.all([
-    upsertClusterAffinity({
+  // Check if cluster affinity crossed promotion threshold.
+  let profileRow = null;
+  if (affinityRow && Number(affinityRow.affinity) >= ISLAND_PROMOTION_THRESHOLD) {
+    profileRow = await promoteClusterAffinityToIsland({
       userId: loadedArticle.userId,
       clusterId,
-      topicKey,
-      delta
-    }),
-    shouldPopulateProfile
-      ? upsertInterestProfile({
-          userId: loadedArticle.userId,
-          article: loadedArticle,
-          delta
-        })
-      : Promise.resolve(null)
-  ]);
+      affinity: Number(affinityRow.affinity)
+    });
+  }
 
   return {
     affinityRow,
