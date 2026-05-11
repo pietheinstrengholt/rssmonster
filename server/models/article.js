@@ -277,6 +277,20 @@ export default (sequelize) => {
             : 0;
         }
       },
+      // Set by the RECOMMENDED ranking path via setDataValue(). Describes the matched interest island.
+      matchedIsland: {
+        type: DataTypes.VIRTUAL(DataTypes.JSON),
+        get() {
+          return this.getDataValue('matchedIsland') ?? null;
+        }
+      },
+      // Set by the RECOMMENDED ranking path via setDataValue(). Carries per-signal breakdown for the UI.
+      recommendationSignals: {
+        type: DataTypes.VIRTUAL(DataTypes.JSON),
+        get() {
+          return this.getDataValue('recommendationSignals') ?? null;
+        }
+      },
       published: {
         type: DataTypes.DATE,
         allowNull: false,

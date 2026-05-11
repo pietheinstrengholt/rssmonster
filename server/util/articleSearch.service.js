@@ -3,6 +3,23 @@ const { Article, ArticleCluster, Feed, Tag, Setting, sequelize: dbSequelize } = 
 import { Op, fn, col, where, literal } from 'sequelize';
 import { rankRecommendedArticles } from './interestIsland.service.js';
 
+/* ---- Per-user recommendation metadata cache (10-minute TTL) ---- */
+const RECOMMENDATION_META_TTL_MS = 10 * 60 * 1000;
+const recommendationMetaCache = new Map(); // userId → { meta: Map<articleId, metadata>, expiresAt }
+
+export const getRecommendationMeta = (userId, articleId) => {
+  const entry = recommendationMetaCache.get(userId);
+  if (!entry || Date.now() > entry.expiresAt) return null;
+  return entry.meta.get(articleId) ?? null;
+};
+
+const setRecommendationMetaForUser = (userId, metaMap) => {
+  recommendationMetaCache.set(userId, {
+    meta: metaMap,
+    expiresAt: Date.now() + RECOMMENDATION_META_TTL_MS
+  });
+};
+
 async function attachTopicGroupMetrics(articles, userId) {
   if (!Array.isArray(articles) || !articles.length) return;
 
@@ -861,6 +878,7 @@ export const searchArticles = async ({
 
     // Move the sorting logic here to after all filtering is done
     // For smart folder searches, only apply in-memory sorting for virtual sort modes.
+    let recommendationMetadata = null;
     if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
       if (sortRecommended) {
@@ -869,6 +887,39 @@ export const searchArticles = async ({
         }
 
         const ranked = await rankRecommendedArticles({ userId, articles });
+
+        recommendationMetadata = new Map();
+        ranked.forEach(item => {
+          const { article, profileId, profileLabel, profileInteractionCount, affinityScore, freshness, quality, attention, coverage, score } = item;
+
+          if (!article?.setDataValue) {
+            return;
+          }
+
+          const matchedIsland = profileId ? {
+            id: profileId,
+            label: profileLabel || null,
+            affinityScore: Number(affinityScore.toFixed(4))
+          } : null;
+
+          const recommendationSignals = {
+            affinityScore: Number(affinityScore.toFixed(4)),
+            freshness: Number(freshness.toFixed(4)),
+            quality: Number(quality.toFixed(4)),
+            attention: Number(attention.toFixed(4)),
+            coverage: Number(coverage.toFixed(4)),
+            recommended: Number(score.toFixed(4)),
+            sourceCount: Number(article?.cluster?.sourceCount ?? 0),
+            clusterArticleCount: Number(article?.cluster?.articleCount ?? 0),
+            supportingInteractions: Number(profileInteractionCount || 0)
+          };
+
+          article.setDataValue('matchedIsland', matchedIsland);
+          article.setDataValue('recommendationSignals', recommendationSignals);
+          recommendationMetadata.set(article.id, { matchedIsland, recommendationSignals });
+        });
+
+        setRecommendationMetaForUser(userId, recommendationMetadata);
 
         // Debug: Log ranking breakdown in development mode
         if (process.env.NODE_ENV === 'development') {
@@ -963,6 +1014,7 @@ export const searchArticles = async ({
             sort,
             date: dateToken
         },
-        itemIds
+        itemIds,
+        recommendationMetadata
     };
 };

@@ -474,7 +474,8 @@ function scoreArticleAgainstProfiles(article, profiles) {
     affinityScore: match.affinityScore,
     profileId: match.profileId,
     profileLabel: match.profileLabel,
-    profileStrength: match.effectiveWeight
+    profileStrength: match.effectiveWeight,
+    profileInteractionCount: profiles.find(profile => profile.id === match.profileId)?.interactionCount || 0
   };
 }
 
@@ -542,6 +543,7 @@ export async function rankRecommendedArticles({ userId, articles = [] } = {}) {
       article,
       profileId: scoreParts.profileId,
       profileLabel: scoreParts.profileLabel,
+      profileInteractionCount: scoreParts.profileInteractionCount,
       clusterId: cluster?.id ?? article.clusterId ?? null,
       topicKey: cluster?.topicKey ?? null,
       affinityScore,

@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, ArticleCluster } = db;
 import { Op, fn, col } from 'sequelize';
-import { searchArticles } from "../util/articleSearch.service.js";
+import { searchArticles, getRecommendationMeta } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
 export const getArticles = async (req, res) => {
@@ -27,6 +27,15 @@ export const getArticles = async (req, res) => {
       const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
       const firstPageIds = result.itemIds.slice(0, pageSize);
       result.firstPage = await loadArticleDetails(userId, firstPageIds);
+      if (result.recommendationMetadata) {
+        for (const article of result.firstPage) {
+          const meta = result.recommendationMetadata.get(article.id);
+          if (meta) {
+            article.setDataValue('matchedIsland', meta.matchedIsland);
+            article.setDataValue('recommendationSignals', meta.recommendationSignals);
+          }
+        }
+      }
     }
 
     res.status(200).json(result);
@@ -318,6 +327,14 @@ const articleDetails = async (req, res, _next) => {
 
     const articlesArray = articleIds.split(",");
     const articles = await loadArticleDetails(userId, articlesArray);
+
+    for (const article of articles) {
+      const meta = getRecommendationMeta(userId, article.id);
+      if (meta) {
+        article.setDataValue('matchedIsland', meta.matchedIsland);
+        article.setDataValue('recommendationSignals', meta.recommendationSignals);
+      }
+    }
 
     return res.status(200).json(articles);
   } catch (err) {

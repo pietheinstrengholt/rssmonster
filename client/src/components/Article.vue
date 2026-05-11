@@ -8,6 +8,30 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
+              <details v-if="matchedIsland" class="recommendation-explainer" @click.stop>
+                <summary
+                  class="recommendation-trigger"
+                  :title="recommendationTooltipText"
+                  :aria-label="recommendationTooltipText"
+                >
+                  <BootstrapIcon icon="arrow-up-circle-fill" class="recommendation-icon" />
+                </summary>
+                <div class="recommendation-panel" @click.stop>
+                  <div class="recommendation-panel-title">Recommended because</div>
+                  <div class="recommendation-panel-row">
+                    <BootstrapIcon icon="brain" class="recommendation-row-icon" />
+                    <span>{{ recommendationIslandLine }}</span>
+                  </div>
+                  <div v-if="recommendationSignals?.supportingInteractions" class="recommendation-panel-row">
+                    <BootstrapIcon icon="star-fill" class="recommendation-row-icon" />
+                    <span>Similar to {{ recommendationSignals.supportingInteractions }} supporting interactions</span>
+                  </div>
+                  <div v-if="recommendationSignals?.sourceCount" class="recommendation-panel-row">
+                    <BootstrapIcon icon="people-fill" class="recommendation-row-icon" />
+                    <span>Covered by {{ recommendationSignals.sourceCount }} sources</span>
+                  </div>
+                </div>
+              </details>
               <BootstrapIcon v-if="clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1)" icon="megaphone-fill" class="cluster-icon" />
               <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
             </div>
@@ -234,8 +258,8 @@ export default {
     'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle', 
-    'presentation', 'topicKey'
+    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle',
+    'presentation', 'topicKey', 'matchedIsland', 'recommendationSignals'
   ],
   data() {
     return {
@@ -320,6 +344,30 @@ export default {
         return Number(this.cluster.topicGroupCount ?? this.cluster.articleCount ?? 0);
       }
       return Number(this.cluster.articleCount || 0);
+    },
+    recommendationAffinityPercent() {
+      return Math.round(Number(this.matchedIsland?.affinityScore || this.recommendationSignals?.affinityScore || 0) * 100);
+    },
+    recommendationIslandLine() {
+      const label = this.matchedIsland?.label || 'matched island';
+      return `${label} (${this.recommendationAffinityPercent}%)`;
+    },
+    recommendationTooltipText() {
+      const lines = [
+        'Recommended because:',
+        this.recommendationIslandLine
+      ];
+
+
+      if (this.recommendationSignals?.supportingInteractions) {
+        lines.push(`Similar to ${this.recommendationSignals.supportingInteractions} supporting interactions`);
+      }
+
+      if (this.recommendationSignals?.sourceCount) {
+        lines.push(`Covered by ${this.recommendationSignals.sourceCount} sources`);
+      }
+
+      return lines.join('\n');
     }
   },
   methods: {
@@ -570,6 +618,102 @@ export default {
 
 .article.affinity-expanded h5 a {
   font-size: 20px;
+}
+
+.recommendation-explainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  color: #6c757d;
+}
+
+.recommendation-explainer[open] {
+  color: #2f6fdf;
+}
+
+.recommendation-trigger {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.recommendation-icon {
+  font-size: 0.85rem;
+  color: #2b79c2;
+  opacity: 0.8;
+  vertical-align: middle;
+}
+
+.recommendation-explainer:hover .recommendation-icon,
+.recommendation-explainer[open] .recommendation-icon {
+  opacity: 1;
+}
+
+.recommendation-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  max-width: 280px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.12);
+  color: #2c2c2c;
+}
+
+.recommendation-panel-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin-bottom: 6px;
+}
+
+.recommendation-panel-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.84rem;
+  line-height: 1.25;
+  margin-top: 6px;
+}
+
+.recommendation-row-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #6c757d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .recommendation-explainer {
+    color: #adb5bd;
+  }
+
+  .recommendation-panel {
+    background: rgba(18, 18, 18, 0.98);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    color: #f5f5f5;
+  }
+
+  .recommendation-panel-title,
+  .recommendation-row-icon {
+    color: #adb5bd;
+  }
 }
 
 /* Landscape phones and portrait tablets */
