@@ -8,13 +8,49 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
+              <details v-if="matchedIsland && !(clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1))" class="recommendation-explainer" @click.stop>
+                <summary
+                  class="recommendation-trigger"
+                  :title="recommendationTooltipText"
+                  :aria-label="recommendationTooltipText"
+                >
+                  <BootstrapIcon icon="award-fill" class="recommendation-icon" :style="{ color: islandColor }" />
+                </summary>
+                <div class="recommendation-panel" @click.stop>
+                  <div class="recommendation-panel-title">Recommended because</div>
+
+                  <div class="rec-section-label">Strong semantic match with your:</div>
+                  <ul class="rec-list">
+                    <li>{{ matchedIsland?.label || 'matched interest' }}</li>
+                  </ul>
+
+                  <template v-if="recommendationSignals?.starCount || recommendationSignals?.clickCount || recommendationSignals?.sourceCount">
+                    <div class="rec-section-label">Signals:</div>
+                    <ul class="rec-list">
+                      <li v-if="recommendationSignals?.starCount">
+                        {{ recommendationSignals.starCount }} {{ recommendationSignals.starCount === 1 ? 'star' : 'stars' }}
+                      </li>
+                      <li v-if="recommendationSignals?.clickCount">
+                        {{ recommendationSignals.clickCount }} related {{ recommendationSignals.clickCount === 1 ? 'click' : 'clicks' }}
+                      </li>
+                      <li v-if="recommendationSignals?.sourceCount">
+                        {{ recommendationSignals.sourceCount }} {{ recommendationSignals.sourceCount === 1 ? 'source' : 'sources' }} covering this topic
+                      </li>
+                    </ul>
+                  </template>
+
+                  <div class="rec-section-label">Recommendation score:</div>
+                  <div class="rec-score-row">
+                    <span class="rec-score-label">Affinity</span>
+                    <span class="rec-score-value">{{ (matchedIsland?.affinityScore ?? 0).toFixed(2) }}</span>
+                  </div>
+                </div>
+              </details>
               <BootstrapIcon v-if="clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1)" icon="megaphone-fill" class="cluster-icon" />
               <a
                 target="_blank"
                 :href="url"
                 v-text="title"
-                :title="matchedIsland ? recommendationTooltipText : null"
-                :aria-label="matchedIsland ? recommendationTooltipText : null"
                 @click="articleClicked(id)"
               ></a>
             </div>
@@ -356,15 +392,7 @@ export default {
       return `${label} (${this.recommendationAffinityPercent}%)`;
     },
     islandColor() {
-      const label = this.matchedIsland?.label || '';
-      if (!label) return '#2b79c2';
-      const palette = [
-        '#2b79c2', '#d4563a', '#6a9e4f', '#9b5fc0', '#c98b2a',
-        '#2e9e8e', '#c2456a', '#5a7ec0', '#b07840', '#4e9e6a'
-      ];
-      let hash = 0;
-      for (let i = 0; i < label.length; i++) hash = (hash * 31 + label.charCodeAt(i)) >>> 0;
-      return palette[hash % palette.length];
+      return '#F3A712';
     },
     recommendationTooltipText() {
       const label = this.matchedIsland?.label || 'matched interest';
