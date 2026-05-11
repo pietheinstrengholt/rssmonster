@@ -77,7 +77,7 @@
               </div>
               <div class="text-end">
                 <div class="small text-muted text-uppercase">Affinity</div>
-                <div class="fs-5 fw-semibold">{{ formatNumber(island.effectiveWeight) }}</div>
+                <div class="fs-5 fw-semibold">{{ formatNormalizedAffinity(island.effectiveWeight) }}</div>
               </div>
             </div>
 
@@ -165,9 +165,11 @@ export default {
         this.loading = false;
       }
     },
-    formatNumber(value) {
-      const num = Number(value);
-      return Number.isFinite(num) ? num.toFixed(2) : '0.00';
+    formatNormalizedAffinity(value) {
+      const weight = Number(value);
+      const safeWeight = Number.isFinite(weight) ? Math.max(weight, 0) : 0;
+      const normalized = 1 - Math.exp(-safeWeight / 3);
+      return normalized.toFixed(2);
     },
     formatPercent(value) {
       const num = Number(value);
