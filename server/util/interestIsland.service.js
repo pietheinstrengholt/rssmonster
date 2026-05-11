@@ -21,7 +21,7 @@ const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db
 const AFFINITY_HALF_LIFE_HOURS = 168;
 const PROFILE_HALF_LIFE_HOURS = 336;
 // Keep ranking focused on a small active set for predictable latency.
-const MAX_ACTIVE_PROFILES = 8;
+const MAX_ACTIVE_PROFILES = 5;
 const PROFILE_MATCH_THRESHOLD = 0.82;
 // Ranking-only gate: require a minimum confidence before we attach an island match.
 // This prevents weak semantic overlap from labeling almost every article with an island.
