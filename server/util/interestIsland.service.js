@@ -335,40 +335,42 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
 
   const cluster = loadedArticle.get?.('cluster') ?? loadedArticle.cluster;
   const clusterId = cluster?.id ?? loadedArticle.clusterId ?? null;
-  if (!clusterId) {
-    return null;
-  }
-
   const topicKey = cluster?.topicKey ?? null;
 
-  // Update cluster affinity regardless of signal type.
-  const affinityRow = await upsertClusterAffinity({
-    userId: loadedArticle.userId,
-    clusterId,
-    topicKey,
-    delta,
-    isStar,
-    isClick
-  });
+  // Update semantic profile even when clustering is unavailable.
+  const profileUpdateRow = await upsertInterestProfile({ userId: loadedArticle.userId, article: loadedArticle, delta, isStar, isClick });
 
-  // Check if cluster affinity crossed promotion threshold.
+  let affinityRow = null;
   let profileRow = null;
-  if (affinityRow && Number(affinityRow.affinity) >= ISLAND_PROMOTION_THRESHOLD) {
-    profileRow = await promoteClusterAffinityToIsland({
+
+  // Cluster affinity/promotion only applies when the article is attached to a cluster.
+  if (clusterId) {
+    affinityRow = await upsertClusterAffinity({
       userId: loadedArticle.userId,
       clusterId,
-      affinity: Number(affinityRow.affinity),
-      starCount: Number(affinityRow.starCount) || 0,
-      clickCount: Number(affinityRow.clickCount) || 0
+      topicKey,
+      delta,
+      isStar,
+      isClick
     });
+
+    // Check if cluster affinity crossed promotion threshold.
+    if (affinityRow && Number(affinityRow.affinity) >= ISLAND_PROMOTION_THRESHOLD) {
+      profileRow = await promoteClusterAffinityToIsland({
+        userId: loadedArticle.userId,
+        clusterId,
+        affinity: Number(affinityRow.affinity),
+        starCount: Number(affinityRow.starCount) || 0,
+        clickCount: Number(affinityRow.clickCount) || 0
+      });
+    }
   }
 
-  await upsertInterestProfile({ userId: loadedArticle.userId, article: loadedArticle, delta, isStar, isClick });
   invalidateCachedSuppressionSignals(loadedArticle.userId);
 
   return {
     affinityRow,
-    profileRow
+    profileRow: profileRow || profileUpdateRow
   };
 }
 

@@ -31,13 +31,27 @@ const run = async () => {
       });
 
       let processed = 0;
+      let applied = 0;
+      let skippedNoVector = 0;
+      let skippedNoCluster = 0;
       for (const article of articles) {
         const starInd = Number(article.starInd) === 1;
         const clickedAmount = Math.max(0, Number(article.clickedAmount) || 0);
         const negativeInd = Number(article.negativeInd) === 1;
 
         if (starInd) {
-          await recordInterestFromArticleUpdate(article, ['starInd']);
+          const outcome = await recordInterestFromArticleUpdate(article, ['starInd']);
+          if (outcome?.affinityRow || outcome?.profileRow) {
+            applied++;
+          } else if (!article.clusterId) {
+            const cluster = article.get?.('cluster') ?? article.cluster;
+            const hasVector = Boolean(cluster?.topicVector || cluster?.eventVector || article.topicVector || article.eventVector);
+            if (!hasVector) {
+              skippedNoVector++;
+            } else {
+              skippedNoCluster++;
+            }
+          }
           processed++;
         }
 
@@ -45,19 +59,41 @@ const run = async () => {
           const originalClickedAmount = Number(article.clickedAmount) || 0;
           article.setDataValue('clickedAmount', 1);
           for (let i = 0; i < clickedAmount; i++) {
-            await recordInterestFromArticleUpdate(article, ['clickedAmount']);
+            const outcome = await recordInterestFromArticleUpdate(article, ['clickedAmount']);
+            if (outcome?.affinityRow || outcome?.profileRow) {
+              applied++;
+            } else if (!article.clusterId) {
+              const cluster = article.get?.('cluster') ?? article.cluster;
+              const hasVector = Boolean(cluster?.topicVector || cluster?.eventVector || article.topicVector || article.eventVector);
+              if (!hasVector) {
+                skippedNoVector++;
+              } else {
+                skippedNoCluster++;
+              }
+            }
             processed++;
           }
           article.setDataValue('clickedAmount', originalClickedAmount);
         }
 
         if (negativeInd) {
-          await recordInterestFromArticleUpdate(article, ['negativeInd']);
+          const outcome = await recordInterestFromArticleUpdate(article, ['negativeInd']);
+          if (outcome?.affinityRow || outcome?.profileRow) {
+            applied++;
+          } else if (!article.clusterId) {
+            const cluster = article.get?.('cluster') ?? article.cluster;
+            const hasVector = Boolean(cluster?.topicVector || cluster?.eventVector || article.topicVector || article.eventVector);
+            if (!hasVector) {
+              skippedNoVector++;
+            } else {
+              skippedNoCluster++;
+            }
+          }
           processed++;
         }
       }
 
-      console.log(`User ${userId}: processed ${processed} interest-bearing articles`);
+      console.log(`User ${userId}: processed ${processed} interactions, applied ${applied}, skippedNoVector ${skippedNoVector}, skippedNoCluster ${skippedNoCluster}`);
     }
 
     console.log('Interest island rebuild complete.');
