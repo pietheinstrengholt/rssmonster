@@ -1,7 +1,40 @@
 import db from '../models/index.js';
-const { User, Setting, Article, Feed, Category, Hotlink } = db;
+const {
+  User,
+  Setting,
+  Article,
+  Feed,
+  Category,
+  Hotlink,
+  Action,
+  SmartFolder,
+  UserClusterAffinity,
+  UserInterestProfile,
+  ArticleCluster,
+  sequelize
+} = db;
 import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
+
+const isMissingTableError = (error) => (
+  error?.name === 'SequelizeDatabaseError' &&
+  (
+    error?.original?.code === 'ER_NO_SUCH_TABLE' ||
+    error?.parent?.code === 'ER_NO_SUCH_TABLE'
+  )
+);
+
+const destroyByUserIdSafe = async ({ model, userId, transaction, label }) => {
+  try {
+    await model.destroy({ where: { userId }, transaction });
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(`[deleteUser] Skipping ${label}: backing table does not exist`);
+      return;
+    }
+    throw error;
+  }
+};
 
 const getUsers = async (req, res, _next) => {
   try {
@@ -139,18 +172,24 @@ const deleteUser = async (req, res, _next) => {
       });
     }
 
-    //delete all settings
-    await Setting.destroy({ where: { userId: user.id } });
-    //delete all hotlinks
-    await Hotlink.destroy({ where: { userId: user.id } });
-    //delete all articles
-    await Article.destroy({ where: { userId: user.id } });
-    //delete all feeds
-    await Feed.destroy({ where: { userId: user.id } });
-    //delete all categories
-    await Category.destroy({ where: { userId: user.id } });
-    // Finally, delete the user
-    await user.destroy();
+    await sequelize.transaction(async (transaction) => {
+      // Delete direct user-linked rows first.
+      await destroyByUserIdSafe({ model: Setting, userId: user.id, transaction, label: 'settings' });
+      await destroyByUserIdSafe({ model: Hotlink, userId: user.id, transaction, label: 'hotlinks' });
+      await destroyByUserIdSafe({ model: Action, userId: user.id, transaction, label: 'actions' });
+      await destroyByUserIdSafe({ model: SmartFolder, userId: user.id, transaction, label: 'smart_folders' });
+      await destroyByUserIdSafe({ model: UserClusterAffinity, userId: user.id, transaction, label: 'user_cluster_affinities' });
+      await destroyByUserIdSafe({ model: UserInterestProfile, userId: user.id, transaction, label: 'user_interest_profiles' });
+
+      // Delete content hierarchy.
+      await destroyByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
+      await destroyByUserIdSafe({ model: ArticleCluster, userId: user.id, transaction, label: 'article_clusters' });
+      await destroyByUserIdSafe({ model: Feed, userId: user.id, transaction, label: 'feeds' });
+      await destroyByUserIdSafe({ model: Category, userId: user.id, transaction, label: 'categories' });
+
+      // Finally, delete the user.
+      await user.destroy({ transaction });
+    });
     
     return res.status(204).send();
   } catch (err) {
