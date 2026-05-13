@@ -8,22 +8,21 @@
  */
 
 import db from '../models/index.js';
-import { Op, fn, col } from 'sequelize';
+import { Op } from 'sequelize';
+import {
+  AFFINITY_HALF_LIFE_HOURS,
+  SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD,
+  SUPPRESSED_FEED_MIN_NEGATIVE_COUNT,
+  SUPPRESSION_FEED_NEGATIVE_DECAY_WEIGHT,
+  TOPIC_SUPPRESSION_WEIGHT,
+  FEED_SUPPRESSION_WEIGHT,
+  MAX_SUPPRESSION_PENALTY,
+  SUPPRESSION_CACHE_TTL_MS
+} from '../config/ranking.config.js';
 
 const { Article, UserClusterAffinity } = db;
 
-const AFFINITY_HALF_LIFE_HOURS = 168;
-const SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD = -1.5;
-const SUPPRESSED_FEED_MIN_NEGATIVE_COUNT = 2;
-const SUPPRESSION_FEED_NEGATIVE_DECAY_WEIGHT = 0.15;
-const TOPIC_SUPPRESSION_WEIGHT = 0.7;
-const FEED_SUPPRESSION_WEIGHT = 0.3;
-const MAX_SUPPRESSION_PENALTY = 0.9;
-const SUPPRESSION_CACHE_TTL_MS = 30_000;
-
-const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
-
-// userId -> { suppression, expiresAt }
+// Cached suppression signals: userId -> { suppression, expiresAt }
 const suppressionSignalCache = new Map();
 
 const nowMs = () => Date.now();

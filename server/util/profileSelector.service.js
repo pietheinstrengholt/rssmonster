@@ -10,18 +10,24 @@
 import db from '../models/index.js';
 import { cosineSimilarity } from './vectorMath.js';
 import { fn, col } from 'sequelize';
+import {
+  DEFAULT_MAX_ACTIVE_PROFILES,
+  PROFILE_HALF_LIFE_HOURS,
+  PROFILE_CACHE_TTL_MS,
+  PROFILE_SIMILARITY_THRESHOLD_BASE,
+  PROFILE_SIMILARITY_THRESHOLD_PER_PROFILE_DELTA,
+  MIN_ACTIVE_PROFILES,
+  MAX_ACTIVE_PROFILES,
+  ENGAGEMENT_CLICK_DIVISOR,
+  MAX_CLICK_WEIGHT,
+  PROFILE_STRENGTH_SCALE,
+  TOPIC_KEY_BONUS,
+  resolveActiveProfileCandidateLimit
+} from '../config/ranking.config.js';
 
 const { UserInterestProfile, UserClusterAffinity } = db;
 
-// Keep ranking focused on a small active set for predictable latency.
-const DEFAULT_MAX_ACTIVE_PROFILES = 8;
-const ACTIVE_PROFILE_CANDIDATE_LIMIT = Math.max(
-  DEFAULT_MAX_ACTIVE_PROFILES,
-  Number(process.env.INTEREST_ISLAND_PROFILE_CANDIDATE_LIMIT) || (DEFAULT_MAX_ACTIVE_PROFILES * 8)
-);
-const PROFILE_MATCH_THRESHOLD = 0.72;
-const PROFILE_HALF_LIFE_HOURS = 336;
-const PROFILE_CACHE_TTL_MS = 30_000;
+const ACTIVE_PROFILE_CANDIDATE_LIMIT = resolveActiveProfileCandidateLimit();
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
@@ -73,7 +79,7 @@ export const invalidateCachedProfiles = (userId) => {
 
 export function selectDiverseProfiles(profiles, {
   maxProfiles = DEFAULT_MAX_ACTIVE_PROFILES,
-  similarityThreshold = 0.88
+  similarityThreshold = PROFILE_SIMILARITY_THRESHOLD_BASE
 } = {}) {
   if (!Array.isArray(profiles) || profiles.length === 0 || maxProfiles <= 0) {
     return [];
@@ -109,16 +115,12 @@ export function resolveProfileSimilarityThreshold(maxProfiles) {
   const profiles = Math.max(Number(maxProfiles) || 4, 1);
 
   // More profiles -> stricter diversity requirement
-  // 4 profiles  -> 0.92
-  // 6 profiles  -> 0.88
-  // 8 profiles  -> 0.84
-  // 10 profiles -> 0.82
-  // 12 profiles -> 0.80
+  // Configured via PROFILE_SIMILARITY_THRESHOLD_BASE and PROFILE_SIMILARITY_THRESHOLD_PER_PROFILE_DELTA
   return Math.max(
     0.80,
     Math.min(
-      0.92,
-      0.92 - ((profiles - 4) * 0.015)
+      PROFILE_SIMILARITY_THRESHOLD_BASE,
+      PROFILE_SIMILARITY_THRESHOLD_BASE - ((profiles - 4) * PROFILE_SIMILARITY_THRESHOLD_PER_PROFILE_DELTA)
     )
   );
 }
@@ -130,13 +132,13 @@ export function resolveMaxActiveProfiles({
   // Stars matter far more than clicks
   const engagementScore =
     starCount +
-    Math.min(clickCount / 10, 50);
+    Math.min(clickCount / ENGAGEMENT_CLICK_DIVISOR, MAX_CLICK_WEIGHT);
 
   return Math.max(
-    4,
+    MIN_ACTIVE_PROFILES,
     Math.min(
-      12,
-      Math.round(4 + Math.log2(engagementScore + 1))
+      MAX_ACTIVE_PROFILES,
+      Math.round(MIN_ACTIVE_PROFILES + Math.log2(engagementScore + 1))
     )
   );
 }
@@ -213,8 +215,8 @@ export function scoreProfileMatch(articleVector, topicKey, profiles) {
     const similarity = cosineSimilarity(articleVector, profile.vector);
     if (!Number.isFinite(similarity) || similarity <= 0) continue;
 
-    const topicBonus = topicKey && profile.topicKey && topicKey === profile.topicKey ? 0.08 : 0;
-    const profileStrength = 1 - Math.exp(-Math.max(profile.effectiveWeight, 0) / 3);
+    const topicBonus = topicKey && profile.topicKey && topicKey === profile.topicKey ? TOPIC_KEY_BONUS : 0;
+    const profileStrength = 1 - Math.exp(-Math.max(profile.effectiveWeight, 0) / PROFILE_STRENGTH_SCALE);
     const affinityScore = clamp(similarity * profileStrength + topicBonus, 0, 1);
 
     if (affinityScore > best.affinityScore) {
@@ -230,5 +232,3 @@ export function scoreProfileMatch(articleVector, topicKey, profiles) {
 
   return best;
 }
-
-export const PROFILE_MATCH_THRESHOLD_EXPORT = PROFILE_MATCH_THRESHOLD;

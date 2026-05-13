@@ -1,7 +1,24 @@
 import db from '../models/index.js';
-import { cosineSimilarity, resolveArticleVector } from './vectorMath.js';
-import { computeRecommended } from './recommendedScore.js';
-import { Op, fn, col } from 'sequelize';
+import { resolveArticleVector } from './vectorMath.js';
+import { Op } from 'sequelize';
+import {
+  AFFINITY_HALF_LIFE_HOURS,
+  ISLAND_PROMOTION_THRESHOLD,
+  PROFILE_MATCH_THRESHOLD,
+  INTERACTION_WEIGHTS,
+  RECOMMENDATION_STEERING_WEIGHTS,
+  ISLAND_VIABILITY_THRESHOLD
+} from '../config/ranking.config.js';
+import {
+  invalidateCachedProfiles,
+  loadInterestProfiles,
+  scoreProfileMatch
+} from './profileSelector.service.js';
+import {
+  invalidateCachedSuppressionSignals,
+  loadSuppressionSignals
+} from './suppressionScorer.service.js';
+import { rankRecommendedArticles as orchRankRecommendedArticles } from './rankingOrchestrator.service.js';
 
 const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db;
 
@@ -22,32 +39,6 @@ const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db
  * - suppressionScorer.service.js: suppression signal management
  * - rankingOrchestrator.service.js: ranking pipeline
  */
-
-import {
-  invalidateCachedProfiles,
-  loadInterestProfiles,
-  scoreProfileMatch
-} from './profileSelector.service.js';
-import {
-  invalidateCachedSuppressionSignals,
-  loadSuppressionSignals
-} from './suppressionScorer.service.js';
-import { rankRecommendedArticles as orchRankRecommendedArticles } from './rankingOrchestrator.service.js';
-
-const AFFINITY_HALF_LIFE_HOURS = 168;
-// Cluster affinity threshold for promotion to interest island.
-// ~5 clicks or 1 star + 2 clicks = enough evidence to carve out an island.
-const ISLAND_PROMOTION_THRESHOLD = 5;
-const PROFILE_MATCH_THRESHOLD = 0.72;
-
-// Interaction deltas used to reinforce (or penalize) interest islands.
-const INTERACTION_WEIGHTS = {
-  star: 3,
-  click: 1,
-  negative: -2
-};
-
-const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
 const nowUtc = () => new Date();
 
@@ -268,7 +259,7 @@ async function upsertInterestProfile({ userId, article, delta, isStar = false, i
 
     // Clean up dead islands: when weight drops below viability threshold, destroy the profile.
     // This prevents accumulation of semantic corpses with zero influence on rankings.
-    if (nextWeight <= 0.05) {
+    if (nextWeight <= ISLAND_VIABILITY_THRESHOLD) {
       await current.destroy();
       invalidateCachedProfiles(userId);
       return null;
@@ -380,12 +371,6 @@ export async function recordInterestFromArticleUpdate(article, changedFields = [
     profileRow
   };
 }
-
-const RECOMMENDATION_STEERING_WEIGHTS = {
-  more: { cluster: 2, profile: 1.5 },
-  less: { cluster: -1.5, profile: -1.25 },
-  ignore: { cluster: -3, profile: -2.5 }
-};
 
 export async function applyRecommendationSteering({ article, action } = {}) {
   const loadedArticle = await loadArticleForInterestUpdate(article);

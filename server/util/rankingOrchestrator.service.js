@@ -10,11 +10,12 @@
 import { computeRecommended } from './recommendedScore.js';
 import { scoreProfileMatch } from './profileSelector.service.js';
 import { scoreSuppressionPenalty } from './suppressionScorer.service.js';
-
-const RANKING_AFFINITY_THRESHOLD = 0.18;
-const MIN_ISLAND_ATTACH_RATIO = 0.10;
-const TARGET_ISLAND_ATTACH_RATIO = 0.15;
-const MAX_ISLAND_ATTACH_RATIO = 0.20;
+import {
+  RANKING_AFFINITY_THRESHOLD,
+  MIN_ISLAND_ATTACH_RATIO,
+  TARGET_ISLAND_ATTACH_RATIO,
+  MAX_ISLAND_ATTACH_RATIO
+} from '../config/ranking.config.js';
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 

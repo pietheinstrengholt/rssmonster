@@ -5,6 +5,21 @@
  * and source diversity into a single ranking signal.
  * Note: feedTrust is already included in article.quality (from the Article model virtual field).
  */
+
+import {
+  COVERAGE_WEIGHT,
+  CROSS_SOURCE_WEIGHT,
+  CORROBORATION_WEIGHT,
+  RULE_TAG_BOOST,
+  MAX_COVERAGE_CLUSTER_SIZE,
+  MAX_SOURCE_DIVERSITY_SCORE,
+  MAX_SOURCE_SPREAD_LOG_BASE,
+  CROSS_SOURCE_DIVERSITY_COEFF,
+  CROSS_SOURCE_SPREAD_COEFF,
+  CORROBORATION_COVERAGE_COEFF,
+  CORROBORATION_CROSS_SOURCE_COEFF
+} from '../config/ranking.config.js';
+
 export function computeRecommended(article) {
   return getRecommendedBreakdown(article).recommended;
 }
@@ -27,7 +42,6 @@ export function getRecommendedBreakdown(article) {
     cluster?.articleCount
   );
   const clusterSize = Number.isFinite(rawClusterSize) && rawClusterSize > 0 ? rawClusterSize : 1;
-  const MAX_COVERAGE_CLUSTER_SIZE = 64;
   const coverage = Math.min(
     Math.log2(clusterSize) / Math.log2(MAX_COVERAGE_CLUSTER_SIZE),
     1
@@ -42,7 +56,7 @@ export function getRecommendedBreakdown(article) {
     cluster?.sourceDiversityScore ??
     0
   );
-  const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
+  const sourceDiversity = Math.min(rawDiversity / MAX_SOURCE_DIVERSITY_SCORE, 1);
 
   // Source spread fallback when only sourceCount is available.
   // This specifically rewards corroboration across multiple distinct publishers.
@@ -51,25 +65,24 @@ export function getRecommendedBreakdown(article) {
     cluster?.sourceCount
   );
   const sourceCount = Number.isFinite(rawSourceCount) && rawSourceCount > 0 ? rawSourceCount : 1;
-  const sourceSpread = Math.min(Math.log2(sourceCount) / Math.log2(8), 1);
+  const sourceSpread = Math.min(Math.log2(sourceCount) / Math.log2(MAX_SOURCE_SPREAD_LOG_BASE), 1);
 
   // Cross-source corroboration (strong signal): only high when both
   // cluster coverage and publisher diversity are high.
-  const crossSource = 0.6 * sourceDiversity + 0.4 * sourceSpread;
+  const crossSource = CROSS_SOURCE_DIVERSITY_COEFF * sourceDiversity + CROSS_SOURCE_SPREAD_COEFF * sourceSpread;
   const corroboration = coverage * crossSource;
 
   // Rule-based tag boost: articles matched by user-defined tag rules are more relevant
   const tags = article.Tags ?? article.get?.('Tags') ?? [];
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
-  const ruleBoost = hasRuleTag ? 0.15 : 0;
+  const ruleBoost = hasRuleTag ? RULE_TAG_BOOST : 0;
 
   // Weighted sum: balances all signals to produce recommended score (0–1)
-  // Weights: coverage (35%), crossSource (25%), corroboration (40%)
-  // Plus a flat 0.15 boost for rule-tagged articles
+  // Configured weights: coverage, crossSource, corroboration, plus rule boost
   const recommended =
-    0.35 * coverage +
-    0.25 * crossSource +
-    0.40 * corroboration +
+    COVERAGE_WEIGHT * coverage +
+    CROSS_SOURCE_WEIGHT * crossSource +
+    CORROBORATION_WEIGHT * corroboration +
     ruleBoost;
 
   return {
