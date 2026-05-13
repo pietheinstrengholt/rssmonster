@@ -93,8 +93,9 @@ export const getOverviewCounts = async (req, res, _next) => {
         raw: true
       });
 
-      // Lazy initialization: if user_stats row doesn't exist, compute and insert it
-      if (!stats) {
+      // Repair path: if cache is missing or stale-zero, recompute from articles table
+      const shouldRecomputeStats = !stats || Number(stats.totalCount) === 0;
+      if (shouldRecomputeStats) {
         const counts = await Article.findOne({
           where: { userId },
           attributes: [
@@ -108,7 +109,7 @@ export const getOverviewCounts = async (req, res, _next) => {
           raw: true
         });
 
-        stats = await UserStats.create({
+        const repairedStats = {
           userId,
           totalCount: Number(counts?.totalCount) || 0,
           unreadCount: Number(counts?.unreadCount) || 0,
@@ -116,7 +117,10 @@ export const getOverviewCounts = async (req, res, _next) => {
           starCount: Number(counts?.starCount) || 0,
           hotCount: Number(counts?.hotCount) || 0,
           clickedCount: Number(counts?.clickedCount) || 0
-        }, { raw: true });
+        };
+
+        await UserStats.upsert(repairedStats);
+        stats = repairedStats;
       }
 
       if (stats) {
@@ -143,6 +147,21 @@ export const getOverviewCounts = async (req, res, _next) => {
           return category;
         });
 
+        const grouped = await Feed.findAll({
+          include: [{ model: Article, attributes: [], where: { userId } }],
+          attributes: [
+            'categoryId',
+            ['id', 'feedId'],
+            [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
+            [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
+            [Sequelize.literal("COUNT(CASE WHEN `articles`.`starInd` = 1 THEN 1 END)"), 'starCount'],
+            [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
+          ],
+          group: ['feeds.categoryId', 'feeds.id'],
+          order: ['id'],
+          raw: true
+        });
+
         return res.status(200).json({
           total: stats.totalCount,
           unreadCount: stats.unreadCount,
@@ -151,7 +170,7 @@ export const getOverviewCounts = async (req, res, _next) => {
           hotCount: stats.hotCount,
           clickedCount: stats.clickedCount,
           categories,
-          feedCounts: []
+          feedCounts: grouped
         });
       }
     }

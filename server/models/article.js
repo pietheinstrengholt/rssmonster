@@ -325,23 +325,38 @@ export default (sequelize) => {
     }
   );
 
+  const recalculateUserStats = async (userId) => {
+    const UserStats = sequelize.models.UserStats;
+    if (!UserStats || !userId) return;
+
+    const counts = await Article.findOne({
+      where: { userId },
+      attributes: [
+        [sequelize.fn('COUNT', sequelize.col('id')), 'totalCount'],
+        [sequelize.literal(`SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END)`), 'unreadCount'],
+        [sequelize.literal(`SUM(CASE WHEN status = 'read' THEN 1 ELSE 0 END)`), 'readCount'],
+        [sequelize.literal(`SUM(CASE WHEN starInd = 1 THEN 1 ELSE 0 END)`), 'starCount'],
+        [sequelize.literal(`SUM(CASE WHEN hotInd = 1 THEN 1 ELSE 0 END)`), 'hotCount'],
+        [sequelize.literal(`SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)`), 'clickedCount']
+      ],
+      raw: true
+    });
+
+    await UserStats.upsert({
+      userId,
+      totalCount: Number(counts?.totalCount) || 0,
+      unreadCount: Number(counts?.unreadCount) || 0,
+      readCount: Number(counts?.readCount) || 0,
+      starCount: Number(counts?.starCount) || 0,
+      hotCount: Number(counts?.hotCount) || 0,
+      clickedCount: Number(counts?.clickedCount) || 0
+    });
+  };
+
   // Hook to update user_stats when article is created
   Article.afterCreate(async (article) => {
     try {
-      const UserStats = sequelize.models.UserStats;
-      if (!UserStats) return;
-
-      await UserStats.upsert({
-        userId: article.userId,
-        totalCount: sequelize.literal('totalCount + 1'),
-        unreadCount: sequelize.literal(`unreadCount + ${article.status === 'unread' ? 1 : 0}`),
-        readCount: sequelize.literal(`readCount + ${article.status === 'read' ? 1 : 0}`),
-        starCount: sequelize.literal(`starCount + ${article.starInd === 1 ? 1 : 0}`),
-        hotCount: sequelize.literal(`hotCount + ${article.hotInd === 1 ? 1 : 0}`),
-        clickedCount: sequelize.literal(`clickedCount + ${article.clickedAmount > 0 ? 1 : 0}`)
-      }, {
-        fields: ['userId']
-      });
+      await recalculateUserStats(article.userId);
 
       // Invalidate smart folder stats for this user (async, non-blocking)
       setImmediate(async () => {
@@ -385,30 +400,7 @@ export default (sequelize) => {
         });
       }
 
-      // Recalculate all counts for the user (safer than delta updates)
-      const { sequelize: seq } = sequelize;
-      const counts = await Article.findOne({
-        where: { userId: article.userId },
-        attributes: [
-          [seq.fn('COUNT', seq.col('id')), 'totalCount'],
-          [seq.literal(`SUM(CASE WHEN status = 'unread' THEN 1 ELSE 0 END)`), 'unreadCount'],
-          [seq.literal(`SUM(CASE WHEN status = 'read' THEN 1 ELSE 0 END)`), 'readCount'],
-          [seq.literal(`SUM(CASE WHEN starInd = 1 THEN 1 ELSE 0 END)`), 'starCount'],
-          [seq.literal(`SUM(CASE WHEN hotInd = 1 THEN 1 ELSE 0 END)`), 'hotCount'],
-          [seq.literal(`SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)`), 'clickedCount']
-        ],
-        raw: true
-      });
-
-      await UserStats.upsert({
-        userId: article.userId,
-        totalCount: Number(counts?.totalCount) || 0,
-        unreadCount: Number(counts?.unreadCount) || 0,
-        readCount: Number(counts?.readCount) || 0,
-        starCount: Number(counts?.starCount) || 0,
-        hotCount: Number(counts?.hotCount) || 0,
-        clickedCount: Number(counts?.clickedCount) || 0
-      });
+      await recalculateUserStats(article.userId);
 
       // Invalidate smart folder stats for this user (async, non-blocking)
       setImmediate(async () => {
