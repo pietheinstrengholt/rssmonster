@@ -20,6 +20,7 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 const { Feed, Article, ArticleCluster } = db;
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
+import { clamp } from '../util/vectorMath.js';
 
 /* ------------------------------------------------------------------
  * Configuration

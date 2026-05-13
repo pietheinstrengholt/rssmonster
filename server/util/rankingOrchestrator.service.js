@@ -10,14 +10,13 @@
 import { computeRecommended } from './recommendedScore.js';
 import { scoreProfileMatch } from './profileSelector.service.js';
 import { scoreSuppressionPenalty } from './suppressionScorer.service.js';
+import { clamp } from './vectorMath.js';
 import {
   RANKING_AFFINITY_THRESHOLD,
   MIN_ISLAND_ATTACH_RATIO,
   TARGET_ISLAND_ATTACH_RATIO,
   MAX_ISLAND_ATTACH_RATIO
 } from '../config/ranking.config.js';
-
-const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
 export function articleInterestVector(article) {
   // Extract semantic vector from article or cluster

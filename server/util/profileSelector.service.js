@@ -8,7 +8,7 @@
  */
 
 import db from '../models/index.js';
-import { cosineSimilarity } from './vectorMath.js';
+import { cosineSimilarity, clamp } from './vectorMath.js';
 import { fn, col } from 'sequelize';
 import {
   DEFAULT_MAX_ACTIVE_PROFILES,
@@ -28,8 +28,6 @@ import {
 const { UserInterestProfile, UserClusterAffinity } = db;
 
 const ACTIVE_PROFILE_CANDIDATE_LIMIT = resolveActiveProfileCandidateLimit();
-
-const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
 // userId -> { profiles, expiresAt }
 const interestProfileCache = new Map();

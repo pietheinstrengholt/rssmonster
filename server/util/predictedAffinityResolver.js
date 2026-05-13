@@ -10,8 +10,7 @@
  * - side-effect free
  */
 
-const clamp = (value, min = 0, max = 1) =>
-  Math.max(min, Math.min(max, value));
+import { clamp } from './vectorMath.js';
 
 /**
  * Resolve predicted reading affinity for a single article

@@ -2,6 +2,13 @@ function isNumeric(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
+export function clamp(value, min, max) {
+  if (!Number.isFinite(value) || !Number.isFinite(min) || !Number.isFinite(max)) {
+    return min;
+  }
+  return Math.max(min, Math.min(value, max));
+}
+
 export function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
   if (!a.length || !b.length) return 0;
