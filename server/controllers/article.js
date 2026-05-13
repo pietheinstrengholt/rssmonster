@@ -1,9 +1,8 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, ArticleCluster } = db;
 import { Op, fn, col } from 'sequelize';
-import { searchArticles } from "../util/articleSearch.service.js";
+import { searchArticles, getRecommendationMeta } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
-import { refreshSimilarityCacheForUser } from '../util/similarityCache.js';
 
 export const getArticles = async (req, res) => {
   try {
@@ -28,6 +27,15 @@ export const getArticles = async (req, res) => {
       const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
       const firstPageIds = result.itemIds.slice(0, pageSize);
       result.firstPage = await loadArticleDetails(userId, firstPageIds);
+      if (result.recommendationMetadata) {
+        for (const article of result.firstPage) {
+          const meta = result.recommendationMetadata.get(article.id);
+          if (meta) {
+            article.setDataValue('matchedIsland', meta.matchedIsland);
+            article.setDataValue('recommendationSignals', meta.recommendationSignals);
+          }
+        }
+      }
     }
 
     res.status(200).json(result);
@@ -302,6 +310,62 @@ const markNotInterested = async (req, res, _next) => {
   }
 };
 
+const articleSteerRecommendation = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = req.params.articleId;
+    const action = String(req.body?.action || '').trim().toLowerCase();
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!articleId) {
+      return res.status(400).json({ error: 'articleId is required' });
+    }
+
+    if (!['more', 'less', 'ignore'].includes(action)) {
+      return res.status(400).json({ error: 'action must be one of more, less, ignore' });
+    }
+
+    const article = await Article.findOne({
+      where: {
+        id: articleId,
+        userId: userId
+      },
+      include: [
+        {
+          model: Feed,
+          required: true
+        },
+        {
+          model: ArticleCluster,
+          as: 'cluster',
+          required: false,
+          attributes: ['id', 'name', 'topicKey', 'topicVector', 'eventVector', 'articleCount', 'sourceCount', 'sourceDiversityScore']
+        }
+      ]
+    });
+
+    if (!article) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const { applyRecommendationSteering } = await import('../util/interestIsland.service.js');
+    const result = await applyRecommendationSteering({ article, action });
+
+    return res.status(200).json({
+      message: 'Recommendation tuned',
+      articleId,
+      action,
+      tuned: Boolean(result)
+    });
+  } catch (err) {
+    console.error('Error in articleSteerRecommendation:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // Get multiple article details by IDs
 const articleDetails = async (req, res, _next) => {
   try {
@@ -319,6 +383,14 @@ const articleDetails = async (req, res, _next) => {
 
     const articlesArray = articleIds.split(",");
     const articles = await loadArticleDetails(userId, articlesArray);
+
+    for (const article of articles) {
+      const meta = getRecommendationMeta(userId, article.id);
+      if (meta) {
+        article.setDataValue('matchedIsland', meta.matchedIsland);
+        article.setDataValue('recommendationSignals', meta.recommendationSignals);
+      }
+    }
 
     return res.status(200).json(articles);
   } catch (err) {
@@ -642,10 +714,6 @@ const articleMarkWithStar = async (req, res, _next) => {
     article
       .update({ starInd }, { where: { userId: userId } })
       .then(() => {
-        // Rebuild personalized similarity cache in background after interest signal changes.
-        refreshSimilarityCacheForUser(userId).catch(error => {
-          console.error('Error refreshing similarity cache:', error);
-        });
         res.status(200).json(article);
       })
       .catch(error => res.status(400).json(error));
@@ -686,6 +754,7 @@ export default {
   markClicked,
   markOpened,
   markNotInterested,
+  articleSteerRecommendation,
   articleDetails,
   articleMarkAsSeen,
   articleMarkToUnread,

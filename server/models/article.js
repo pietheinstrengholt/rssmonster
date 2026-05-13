@@ -78,6 +78,10 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      dedupKey: {
+        type: DataTypes.STRING(64),
+        allowNull: true
+      },
       eventVector: {
         type: DataTypes.JSON,
         allowNull: true
@@ -238,7 +242,7 @@ export default (sequelize) => {
            * - 0.3–0.5 = part of a medium cluster (5–16 similar articles)
            * - <0.3 = part of a large cluster (17+ similar articles, very redundant)
            *
-           * Used in importance ranking to suppress redundant articles.
+           * Used in recommended ranking to suppress redundant articles.
            */
           const cluster = this.get('cluster');
 
@@ -259,11 +263,15 @@ export default (sequelize) => {
           return cluster?.topicKey ?? null;
         }
       },
+      // Cached similarity score used by the recommended ranking path.
+      // The virtual field below clamps the stored value into the 0-1 range.
       similarityScore: {
         type: DataTypes.FLOAT,
         allowNull: true,
         defaultValue: null
       },
+      // Virtual accessor for the cached similarity score.
+      // This keeps callers on the same 0-1 scale even if the stored value drifts.
       similarity: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
@@ -271,6 +279,20 @@ export default (sequelize) => {
           return Number.isFinite(cached)
             ? Math.max(0, Math.min(1, cached))
             : 0;
+        }
+      },
+      // Set by the RECOMMENDED ranking path via setDataValue(). Describes the matched interest island.
+      matchedIsland: {
+        type: DataTypes.VIRTUAL(DataTypes.JSON),
+        get() {
+          return this.getDataValue('matchedIsland') ?? null;
+        }
+      },
+      // Set by the RECOMMENDED ranking path via setDataValue(). Carries per-signal breakdown for the UI.
+      recommendationSignals: {
+        type: DataTypes.VIRTUAL(DataTypes.JSON),
+        get() {
+          return this.getDataValue('recommendationSignals') ?? null;
         }
       },
       published: {
@@ -345,10 +367,22 @@ export default (sequelize) => {
       const UserStats = sequelize.models.UserStats;
       if (!UserStats) return;
 
-      // Only trigger if status, starInd, or hotInd changed
+      // Only trigger for interaction-related changes
       const changed = article.changed();
-      if (!changed || (!changed.includes('status') && !changed.includes('starInd') && !changed.includes('hotInd') && !changed.includes('clickedAmount'))) {
+      if (!changed || (!changed.includes('status') && !changed.includes('starInd') && !changed.includes('hotInd') && !changed.includes('clickedAmount') && !changed.includes('openedCount') && !changed.includes('attentionBucket') && !changed.includes('negativeInd'))) {
         return;
+      }
+
+      const interestSignals = ['status', 'starInd', 'clickedAmount', 'openedCount', 'attentionBucket', 'negativeInd'];
+      if (changed.some(field => interestSignals.includes(field))) {
+        setImmediate(async () => {
+          try {
+            const { recordInterestFromArticleUpdate } = await import('../util/interestIsland.service.js');
+            await recordInterestFromArticleUpdate(article, changed);
+          } catch (err) {
+            console.error(`Error reinforcing interest islands on article update for user ${article.userId}:`, err);
+          }
+        });
       }
 
       // Recalculate all counts for the user (safer than delta updates)

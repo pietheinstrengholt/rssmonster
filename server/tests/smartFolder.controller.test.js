@@ -65,7 +65,7 @@ describe('smartFolder controller', () => {
 
   describe('getSmartFolders', () => {
     it('returns folders with ArticleCount resolved via searchArticles', async () => {
-      const folderA = { id: 1, name: 'Top Stories', query: 'sort:IMPORTANCE', limitCount: 25, dataValues: {} };
+      const folderA = { id: 1, name: 'Top Stories', query: 'sort:RECOMMENDED', limitCount: 25, dataValues: {} };
       const folderB = { id: 2, name: 'Unread', query: 'unread:true', dataValues: {} };
 
       mocked.smartFolderFindAll.mockResolvedValue([folderA, folderB]);
@@ -75,7 +75,7 @@ describe('smartFolder controller', () => {
         minQualityScore: 0
       });
       mocked.searchArticles.mockImplementation(async ({ search }) => {
-        if (search === 'sort:IMPORTANCE') {
+        if (search === 'sort:RECOMMENDED') {
           return { itemIds: [11, 12, 13, 14] };
         }
 
@@ -96,7 +96,7 @@ describe('smartFolder controller', () => {
 
       expect(mocked.searchArticles).toHaveBeenCalledWith({
         userId: 42,
-        search: 'sort:IMPORTANCE',
+        search: 'sort:RECOMMENDED',
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
@@ -147,7 +147,7 @@ describe('smartFolder controller', () => {
         userData: { userId: 42 },
         body: {
           smartFolders: [
-            { name: 'Top Stories', query: 'cluster:eventCluster sort:IMPORTANCE', limitCount: 30 },
+            { name: 'Top Stories', query: 'cluster:eventCluster sort:RECOMMENDED', limitCount: 30 },
             { query: 'unread:true' },
             { name: '', query: '' },
             null
@@ -165,7 +165,7 @@ describe('smartFolder controller', () => {
         {
           userId: 42,
           name: 'Top Stories',
-          query: 'cluster:eventCluster sort:IMPORTANCE',
+          query: 'cluster:eventCluster sort:RECOMMENDED',
           limitCount: 30
         },
         {
@@ -183,7 +183,7 @@ describe('smartFolder controller', () => {
           {
             userId: 42,
             name: 'Top Stories',
-            query: 'cluster:eventCluster sort:IMPORTANCE',
+            query: 'cluster:eventCluster sort:RECOMMENDED',
             limitCount: 30
           },
           {

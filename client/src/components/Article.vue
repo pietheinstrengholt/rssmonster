@@ -8,8 +8,67 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
+              <details v-if="(matchedIsland || isSuppressedRecommendation) && !(clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1))" class="recommendation-explainer" @click.stop>
+                <summary
+                  class="recommendation-trigger"
+                  :title="recommendationTooltipText"
+                  :aria-label="recommendationTooltipText"
+                >
+                  <BootstrapIcon
+                    :icon="isSuppressedRecommendation ? 'slash-circle-fill' : 'award-fill'"
+                    class="recommendation-icon"
+                    :class="{ 'suppressed-recommendation-icon': isSuppressedRecommendation }"
+                    :style="{ color: isSuppressedRecommendation ? suppressionColor : islandColor }"
+                  />
+                </summary>
+                <div class="recommendation-panel" @click.stop>
+                  <div class="recommendation-panel-title">Recommendation details</div>
+
+                  <template v-if="matchedIsland">
+                    <div class="rec-section-label">Strong semantic match with your:</div>
+                    <ul class="rec-list">
+                      <li>{{ matchedIsland?.label || 'matched interest' }}</li>
+                    </ul>
+                  </template>
+
+                  <template v-if="recommendationSignals?.starCount || recommendationSignals?.clickCount || recommendationSignals?.sourceCount">
+                    <div class="rec-section-label">Signals:</div>
+                    <ul class="rec-list">
+                      <li v-if="recommendationSignals?.starCount">
+                        {{ recommendationSignals.starCount }} {{ recommendationSignals.starCount === 1 ? 'star' : 'stars' }}
+                      </li>
+                      <li v-if="recommendationSignals?.clickCount">
+                        {{ recommendationSignals.clickCount }} related {{ recommendationSignals.clickCount === 1 ? 'click' : 'clicks' }}
+                      </li>
+                      <li v-if="recommendationSignals?.sourceCount">
+                        {{ recommendationSignals.sourceCount }} {{ recommendationSignals.sourceCount === 1 ? 'source' : 'sources' }} covering this topic
+                      </li>
+                    </ul>
+                  </template>
+
+                  <template v-if="isSuppressedRecommendation">
+                    <div class="rec-section-label suppression-section-label">Suppressed by your anti-interests:</div>
+                    <ul class="rec-list">
+                      <li>{{ suppressionSourceLabel }}</li>
+                      <li>{{ suppressionReasonText }}</li>
+                      <li>Penalty applied: {{ suppressionPenaltyPercent }}%</li>
+                    </ul>
+                  </template>
+
+                  <div class="rec-section-label">Recommendation score:</div>
+                  <div class="rec-score-row">
+                    <span class="rec-score-label">Affinity</span>
+                    <span class="rec-score-value">{{ (matchedIsland?.affinityScore ?? 0).toFixed(2) }}</span>
+                  </div>
+                </div>
+              </details>
               <BootstrapIcon v-if="clusterCountTotal > ($store.data.currentSelection.clusterView === 'topicGroup' ? 2 : 1)" icon="megaphone-fill" class="cluster-icon" />
-              <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
+              <a
+                target="_blank"
+                :href="url"
+                v-text="title"
+                @click="articleClicked(id)"
+              ></a>
             </div>
             <div class="menu-icon-wrapper dropdown">
               <button 
@@ -28,6 +87,25 @@
                 </li>
                 <li><a class="dropdown-item" href="#" @click.prevent="markNotInterested">Not Interested</a></li>
                 <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header">Tune this recommendation</h6></li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="moreLikeThis">
+                    <BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />
+                    More like this
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="lessLikeThis">
+                    <BootstrapIcon icon="hand-thumbs-down-fill" class="recommendation-action-icon recommendation-negative-icon" />
+                    Less like this
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="ignoreTopic">
+                    <BootstrapIcon icon="slash-circle-fill" class="recommendation-action-icon recommendation-ignore-icon" />
+                    Ignore this topic
+                  </a>
+                </li>
                 <li><a class="dropdown-item" href="#" @click.prevent="muteFeedSevenDays">Mute Feed for 7 Days</a></li>
               </ul>
             </div>
@@ -157,8 +235,8 @@
         ></div>
         <div
           class="media-content enclosure"
-          v-if="shouldShowImage && imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)"
-          >
+          v-if="shouldShowImage && imageUrl && !isImageUrlInContent() && contentOriginal === '<html><head></head><body>null</body></html>'"
+        >
           <img :src="imageUrl" alt="Image" />
         </div>
       </div>
@@ -202,7 +280,8 @@
 import {
   markWithStar,
   markClicked,
-  markNotInterested
+  markNotInterested,
+  steerRecommendation
 } from '../api/articles';
 
 import { muteFeed } from '../api/feeds';
@@ -234,8 +313,8 @@ export default {
     'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle', 
-    'presentation', 'topicKey'
+    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle',
+    'presentation', 'topicKey', 'matchedIsland', 'recommendationSignals'
   ],
   data() {
     return {
@@ -320,6 +399,66 @@ export default {
         return Number(this.cluster.topicGroupCount ?? this.cluster.articleCount ?? 0);
       }
       return Number(this.cluster.articleCount || 0);
+    },
+    recommendationAffinityPercent() {
+      return Math.round(Number(this.matchedIsland?.affinityScore || this.recommendationSignals?.affinityScore || 0) * 100);
+    },
+    recommendationIslandLine() {
+      const label = this.matchedIsland?.label || 'matched island';
+      return `${label} (${this.recommendationAffinityPercent}%)`;
+    },
+    isSuppressedRecommendation() {
+      return Number(this.recommendationSignals?.suppressionPenalty || 0) > 0;
+    },
+    suppressionPenaltyPercent() {
+      return Math.round(Number(this.recommendationSignals?.suppressionPenalty || 0) * 100);
+    },
+    suppressionSourceLabel() {
+      const source = this.recommendationSignals?.suppressionSource || 'none';
+      if (source === 'topic+feed') return 'Suppression source: topic and feed';
+      if (source === 'topic') return 'Suppression source: topic';
+      if (source === 'feed') return 'Suppression source: feed';
+      return 'Suppression source: none';
+    },
+    suppressionReasonText() {
+      return this.recommendationSignals?.suppressionReason || 'No suppression signals';
+    },
+    islandColor() {
+      return '#F3A712';
+    },
+    suppressionColor() {
+      return '#C04B37';
+    },
+    recommendationTooltipText() {
+      const lines = [];
+
+      if (this.matchedIsland) {
+        const label = this.matchedIsland?.label || 'matched interest';
+        const affinity = (this.matchedIsland?.affinityScore ?? 0).toFixed(2);
+        lines.push(`Recommended: ${label} (affinity ${affinity})`);
+      }
+
+      if (this.isSuppressedRecommendation) {
+        lines.push(`Suppressed: ${this.suppressionSourceLabel.replace('Suppression source: ', '')}`);
+      }
+
+      if (this.recommendationSignals?.starCount) {
+        lines.push(`${this.recommendationSignals.starCount} ${this.recommendationSignals.starCount === 1 ? 'star' : 'stars'}`);
+      }
+
+      if (this.recommendationSignals?.clickCount) {
+        lines.push(`${this.recommendationSignals.clickCount} ${this.recommendationSignals.clickCount === 1 ? 'click' : 'clicks'}`);
+      }
+
+      if (this.recommendationSignals?.sourceCount) {
+        lines.push(`${this.recommendationSignals.sourceCount} ${this.recommendationSignals.sourceCount === 1 ? 'source' : 'sources'}`);
+      }
+
+      if (this.isSuppressedRecommendation) {
+        lines.push(`Penalty ${this.suppressionPenaltyPercent}%`);
+      }
+
+      return lines.join(' · ');
     }
   },
   methods: {
@@ -465,6 +604,25 @@ export default {
         this.$emit('article-not-interested', { id: this.id });
       });
     },
+    tuneRecommendation(action) {
+      return steerRecommendation(this.id, action)
+        .then(() => {
+          console.log(`Recommendation tuned (${action}):`, this.id);
+        })
+        .catch(error => {
+          console.error('Error tuning recommendation:', error);
+        });
+    },
+    moreLikeThis() {
+      return this.tuneRecommendation('more');
+    },
+    lessLikeThis() {
+      return this.tuneRecommendation('less');
+    },
+    ignoreTopic() {
+      if (!confirm('Ignore this topic and reduce similar recommendations?')) return;
+      return this.tuneRecommendation('ignore');
+    },
     muteFeedSevenDays() {
       if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
         const mutedUntil = new Date();
@@ -570,6 +728,191 @@ export default {
 
 .article.affinity-expanded h5 a {
   font-size: 20px;
+}
+
+.recommendation-explainer {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin-right: 4px;
+  color: #6c757d;
+}
+
+.recommendation-explainer[open] {
+  color: #2f6fdf;
+}
+
+.recommendation-trigger {
+  list-style: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0;
+  margin: 0;
+}
+
+.recommendation-trigger::-webkit-details-marker {
+  display: none;
+}
+
+.recommendation-icon {
+  font-size: 0.85rem;
+  opacity: 0.8;
+  vertical-align: middle;
+}
+
+.suppressed-recommendation-icon {
+  filter: saturate(0.9);
+}
+
+.recommendation-explainer:hover .recommendation-icon,
+.recommendation-explainer[open] .recommendation-icon {
+  opacity: 1;
+}
+
+.recommendation-panel {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 6px);
+  left: 0;
+  min-width: 210px;
+  max-width: 280px;
+  padding: 10px 11px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.98);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 8px 26px rgba(0, 0, 0, 0.12);
+  color: #2c2c2c;
+}
+
+.recommendation-panel-title {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin-bottom: 6px;
+}
+
+.recommendation-panel-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 0.84rem;
+  line-height: 1.25;
+  margin-top: 6px;
+}
+
+.recommendation-row-icon {
+  flex: 0 0 auto;
+  margin-top: 2px;
+  color: #6c757d;
+}
+
+.rec-section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: #6c757d;
+  margin-top: 10px;
+  margin-bottom: 2px;
+}
+
+.suppression-section-label {
+  color: #b23b2a;
+}
+
+.rec-list {
+  margin: 0;
+  padding-left: 14px;
+  font-size: 0.84rem;
+  line-height: 1.5;
+}
+
+.rec-list li {
+  list-style: disc;
+}
+
+.rec-score-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 0.84rem;
+  padding: 2px 0;
+}
+
+.rec-score-label {
+  color: #555;
+}
+
+.rec-score-value {
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+}
+
+.recommendation-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommendation-action-icon {
+  width: 1rem;
+  text-align: center;
+}
+
+.recommendation-positive-icon {
+  color: #2e7d32;
+}
+
+.recommendation-negative-icon {
+  color: #c62828;
+}
+
+.recommendation-ignore-icon {
+  color: #6c757d;
+}
+
+@media (prefers-color-scheme: dark) {
+  .recommendation-explainer {
+    color: #adb5bd;
+  }
+
+  .recommendation-panel {
+    background: rgba(18, 18, 18, 0.98);
+    border-color: rgba(255, 255, 255, 0.12);
+    box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    color: #f5f5f5;
+  }
+
+  .recommendation-panel-title,
+  .recommendation-row-icon,
+  .rec-section-label {
+    color: #adb5bd;
+  }
+
+  .suppression-section-label {
+    color: #f18f7b;
+  }
+
+  .rec-score-label {
+    color: #adb5bd;
+  }
+
+  .recommendation-positive-icon {
+    color: #81c784;
+  }
+
+  .recommendation-negative-icon {
+    color: #ef5350;
+  }
+
+  .recommendation-ignore-icon {
+    color: #adb5bd;
+  }
 }
 
 /* Landscape phones and portrait tablets */

@@ -29,7 +29,7 @@ RSSMonster doesn't just collect articles—it reads them. It evaluates quality, 
 
 ### 🎯 **You See What Matters First**
 
-Instead of "newest first," RSSMonster ranks by **importance**. Breaking news from multiple trusted sources? Top of your list. Duplicate coverage? Clustered together and shown once. Promotional spam? Filtered out or ranked low automatically.
+Instead of "newest first," RSSMonster ranks by **recommended score**. Breaking news from multiple trusted sources? Top of your list. Duplicate coverage? Clustered together and shown once. Promotional spam? Filtered out or ranked low automatically.
 
 [Learn how scoring works →](scoring.md)
 
@@ -49,7 +49,7 @@ Each Smart Folder is a living query. New content flows in; irrelevant content st
 
 Ask for what you want, naturally:
 - `title:javascript @today quality:>0.7`
-- `unread:true cluster:true sort:IMPORTANCE`
+- `unread:true cluster:true sort:RECOMMENDED`
 - Or just: *"Show me tech articles from last week"*
 
 No complex syntax to memorize. RSSMonster speaks your language.
@@ -94,7 +94,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Getting Started](getting-started.md)** — Installation, setup, first steps
 - **[Core Concepts](concepts.md)** — How RSSMonster thinks about content
 - **[Smart Folders](smart-folders.md)** — Create powerful dynamic views
-- **[Scoring & Ranking](scoring.md)** — Importance, quality, and attention explained
+- **[Scoring & Ranking](scoring.md)** — Recommended, quality, and attention explained
 - **[Search Guide](search.md)** — Master search expressions
 - **[AI Assistant](ai-assistant.md)** — Natural language search and recommendations
 - **[API & Integrations](api.md)** — Fever API, Google Reader API, and more

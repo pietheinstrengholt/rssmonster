@@ -129,9 +129,9 @@ RSSMonster does not track behavior externally.
 
 ---
 
-## Importance
+## Recommended Ranking
 
-**Importance** is a runtime score that determines article ranking.
+**Recommended** is a runtime score that determines article ranking.
 
 It combines:
 - Freshness
@@ -139,7 +139,7 @@ It combines:
 - Uniqueness
 - Feed trust
 
-Importance answers:
+Recommended answers:
 > “How likely is this article worth my attention right now?”
 
 It is recalculated dynamically, not stored permanently.
@@ -158,7 +158,7 @@ They:
 Example:
 
 ```text
-@today unread:true cluster:true sort:IMPORTANCE
+@today unread:true cluster:true sort:RECOMMENDED
 ```
 
 Smart Folders allow you to define what matters — not just what arrived.

@@ -1,4 +1,6 @@
 import db from '../models/index.js';
+import { getInterestIslandDashboard } from '../util/interestIsland.service.js';
+
 const { Setting } = db;
 
 export const getSettings = async (req, res, _next) => {
@@ -9,20 +11,18 @@ export const getSettings = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    //set default values
-    let categoryId = "%";
-    let feedId = "%";
-    let status = "unread";
-    let sort = "DESC";
+    let categoryId = '%';
+    let feedId = '%';
+    let status = 'unread';
+    let sort = 'DESC';
     let minAdvertisementScore = 0;
     let minSentimentScore = 0;
     let minQualityScore = 0;
-    let viewMode = "full";
-    let clusterView = "all";
+    let viewMode = 'full';
+    let clusterView = 'all';
 
-    const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
+    const settings = await Setting.findOne({ where: { userId }, raw: true });
 
-    //use database values, if available
     if (settings) {
       categoryId = settings.categoryId;
       feedId = settings.feedId;
@@ -35,18 +35,17 @@ export const getSettings = async (req, res, _next) => {
       clusterView = settings.clusterView || 'all';
     }
 
-    //return all query params
     return res.status(200).json({
-      userId: userId,
-      categoryId: categoryId,
-      feedId: feedId,
-      sort: sort,
-      status: status,
+      userId,
+      categoryId,
+      feedId,
+      sort,
+      status,
       search: null,
-      minAdvertisementScore: minAdvertisementScore,
-      minSentimentScore: minSentimentScore,
-      minQualityScore: minQualityScore,
-      viewMode: viewMode,
+      minAdvertisementScore,
+      minSentimentScore,
+      minQualityScore,
+      viewMode,
       clusterView: String(clusterView),
       AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
@@ -63,12 +62,12 @@ export const setSettings = async (req, res, _next) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
+
     const { minAdvertisementScore, minSentimentScore, minQualityScore } = req.body;
 
-    // Validate score values (0-100)
     const validateScore = (score, name) => {
-      const numScore = parseInt(score);
-      if (isNaN(numScore) || numScore < 0 || numScore > 100) {
+      const numScore = parseInt(score, 10);
+      if (Number.isNaN(numScore) || numScore < 0 || numScore > 100) {
         throw new Error(`${name} must be between 0 and 100`);
       }
       return numScore;
@@ -80,20 +79,12 @@ export const setSettings = async (req, res, _next) => {
       minQualityScore: validateScore(minQualityScore, 'minQualityScore')
     };
 
-    // Find or create settings for user
-    const settings = await Setting.findOne({ where: { userId: userId } });
+    const settings = await Setting.findOne({ where: { userId } });
 
     if (settings) {
-      console.log("Updating existing settings for user:", userId);
-      console.log("Validated validatedScores:", validatedScores);
-      // Update existing settings
       await settings.update(validatedScores);
     } else {
-      // Create new settings
-      await Setting.create({
-        userId: userId,
-        ...validatedScores
-      });
+      await Setting.create({ userId, ...validatedScores });
     }
 
     return res.status(200).json({
@@ -107,7 +98,24 @@ export const setSettings = async (req, res, _next) => {
   }
 };
 
+export const getInterestIslands = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const dashboard = await getInterestIslandDashboard(userId);
+    return res.status(200).json(dashboard);
+  } catch (err) {
+    console.error('Error in getInterestIslands:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 export default {
   getSettings,
-  setSettings
-}
+  setSettings,
+  getInterestIslands
+};

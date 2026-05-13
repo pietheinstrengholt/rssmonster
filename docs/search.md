@@ -5,7 +5,7 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 ---
 
 ## Quick Examples
-- `javascript @today sort:IMPORTANCE` - fresh JavaScript stories ranked by importance
+- `javascript @today sort:RECOMMENDED` - fresh JavaScript stories ranked by recommended score
 - `title:"rust async" unread:true` - title contains the exact phrase, only unread
 - `tag:ai quality:>0.7 sort:QUALITY` - tagged items with high quality first
 - `hot:true limit:50` - hottest 50 items (ignores feed filter)
@@ -26,7 +26,7 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - Tags: `tag:my-tag` matches articles tagged for the current user.
 - Clusters: `cluster:true|false` returns only cluster representatives when true.
 - Quality & Freshness (virtual scores): `quality:>0.7`, `freshness:>=0.5` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
-- Sort: `sort:DESC|ASC|IMPORTANCE|QUALITY|ATTENTION`. IMPORTANCE/QUALITY/ATTENTION are computed in memory after fetching.
+- Sort: `sort:DESC|ASC|RECOMMENDED|QUALITY|ATTENTION`. RECOMMENDED/QUALITY/ATTENTION are computed in memory after fetching.
 - Limit: `limit:50` caps results (overrides defaults).
 
 ---

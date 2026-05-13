@@ -6,7 +6,7 @@ applyTo: '**'
 
 ## Repository Overview
 
-RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vue.js 3 frontend** and **Express backend using ESM modules**. The application provides advanced features including semantic article clustering, quality scoring, importance-based ranking, and AI-powered capabilities
+RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vue.js 3 frontend** and **Express backend using ESM modules**. The application provides advanced features including semantic article clustering, quality scoring, recommended ranking, and AI-powered capabilities
 
 **Tech Stack:**
 - **Backend:** Node.js 20+, Express 5.x (ESM only), Sequelize ORM, MySQL

@@ -1,16 +1,4 @@
 import { DataTypes } from 'sequelize';
-import { averageVectors, resolveArticleVector } from '../util/vectorMath.js';
-
-const MAX_INTEREST_ARTICLES = 20;
-
-function toTimestamp(value) {
-  if (!value) return 0;
-
-  const date = value instanceof Date ? value : new Date(value);
-  const time = date.getTime();
-
-  return Number.isFinite(time) ? time : 0;
-}
 
 export default (sequelize) => {
   const User = sequelize.define(
@@ -46,37 +34,6 @@ export default (sequelize) => {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
-      },
-      interestVector: {
-        type: DataTypes.VIRTUAL(DataTypes.JSON),
-        get() {
-          const relatedArticles =
-            this.get('articles') ??
-            this.get('Articles') ??
-            [];
-
-          if (!Array.isArray(relatedArticles) || !relatedArticles.length) {
-            return null;
-          }
-
-          const selectedVectors = relatedArticles
-            .filter(article => Number(article?.starInd) === 1)
-            .sort((a, b) => {
-              const leftTime = toTimestamp(
-                a?.updatedAt ?? a?.published ?? a?.createdAt
-              );
-              const rightTime = toTimestamp(
-                b?.updatedAt ?? b?.published ?? b?.createdAt
-              );
-
-              return rightTime - leftTime;
-            })
-            .slice(0, MAX_INTEREST_ARTICLES)
-            .map(resolveArticleVector)
-            .filter(Boolean);
-
-          return averageVectors(selectedVectors);
-        }
       }
     },
     {

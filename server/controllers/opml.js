@@ -2,6 +2,42 @@ import db from '../models/index.js';
 const { Feed, Category } = db;
 import { parseStringPromise } from 'xml2js';
 
+const toArray = (value) => {
+  if (!value) return [];
+  return Array.isArray(value) ? value : [value];
+};
+
+const outlineAttrs = (outline) => outline?.$ || {};
+
+const resolveCategoryName = (attrs, fallback = 'Uncategorized') =>
+  String(attrs?.text || attrs?.title || fallback).trim() || fallback;
+
+const collectOpmlFeedEntries = (outline, categoryName = 'Uncategorized', acc = []) => {
+  const attrs = outlineAttrs(outline);
+  const xmlUrl = String(attrs?.xmlUrl || '').trim();
+  const children = toArray(outline?.outline);
+
+  if (xmlUrl) {
+    acc.push({
+      categoryName,
+      attrs: {
+        ...attrs,
+        xmlUrl
+      }
+    });
+  }
+
+  // Folder/category nodes may be nested; recurse with the nearest category label.
+  if (children.length > 0) {
+    const nextCategoryName = xmlUrl ? categoryName : resolveCategoryName(attrs, categoryName);
+    for (const child of children) {
+      collectOpmlFeedEntries(child, nextCategoryName, acc);
+    }
+  }
+
+  return acc;
+};
+
 /**
  * Generate OPML content for a user's feeds
  * @param {number} userId - The user ID to generate OPML for
@@ -116,14 +152,16 @@ export const importOpml = async (req, res, _next) => {
       return res.status(400).json({ error: 'Invalid OPML format' });
     }
 
-    let outlines = result.opml.body.outline;
-    // Ensure outlines is always an array
-    if (!Array.isArray(outlines)) {
-      outlines = [outlines];
+    const outlines = toArray(result.opml.body.outline);
+    const feedEntries = outlines.flatMap(outline => collectOpmlFeedEntries(outline, 'Uncategorized', []));
+
+    if (!feedEntries.length) {
+      return res.status(400).json({ error: 'No feed entries (xmlUrl) found in OPML file' });
     }
 
     let categoriesCreated = 0;
     let feedsCreated = 0;
+    let feedsSkipped = 0;
     const errors = [];
 
     // Get the maximum categoryOrder to append new categories at the end
@@ -134,15 +172,27 @@ export const importOpml = async (req, res, _next) => {
     });
     let categoryOrder = maxOrderCategory ? maxOrderCategory.categoryOrder + 1 : 1;
 
-    // Process each outline (category)
-    for (const outline of outlines) {
+    const existingCategories = await Category.findAll({
+      where: { userId: userId },
+      attributes: ['id', 'name']
+    });
+    const categoryByName = new Map(
+      existingCategories.map(category => [category.name, category])
+    );
+
+    const existingFeeds = await Feed.findAll({
+      where: { userId: userId },
+      attributes: ['url']
+    });
+    const existingFeedUrls = new Set(existingFeeds.map(feed => String(feed.url || '').trim()).filter(Boolean));
+
+    // Process each discovered feed entry regardless of nesting style.
+    for (const entry of feedEntries) {
       try {
-        const categoryName = outline.$.text || outline.$.title || 'Uncategorized';
+        const categoryName = resolveCategoryName({ text: entry.categoryName }, 'Uncategorized');
 
         // Check if category already exists
-        let category = await Category.findOne({
-          where: { userId: userId, name: categoryName }
-        });
+        let category = categoryByName.get(categoryName);
 
         // Create category if it doesn't exist
         if (!category) {
@@ -152,53 +202,40 @@ export const importOpml = async (req, res, _next) => {
             categoryOrder: categoryOrder++
           });
           categoriesCreated++;
+          categoryByName.set(categoryName, category);
         }
 
-        // Process feeds within this category
-        if (outline.outline) {
-          let feeds = outline.outline;
-          // Ensure feeds is always an array
-          if (!Array.isArray(feeds)) {
-            feeds = [feeds];
-          }
+        const feedAttrs = entry.attrs || {};
+        const xmlUrl = String(feedAttrs.xmlUrl || '').trim();
 
-          for (const feedOutline of feeds) {
-            try {
-              const feedAttrs = feedOutline.$;
-              const xmlUrl = feedAttrs.xmlUrl;
-
-              // Skip if no xmlUrl (required for RSS feeds)
-              if (!xmlUrl) {
-                continue;
-              }
-
-              // Check if feed already exists for this user
-              const existingFeed = await Feed.findOne({
-                where: { userId: userId, url: xmlUrl }
-              });
-
-              if (!existingFeed) {
-                await Feed.create({
-                  userId: userId,
-                  categoryId: category.id,
-                  url: xmlUrl,
-                  feedName: feedAttrs.text || feedAttrs.title || xmlUrl,
-                  description: feedAttrs.description || null,
-                  link: feedAttrs.htmlUrl || null,
-                  favicon: null,
-                  errorCount: 0
-                });
-                feedsCreated++;
-              }
-            } catch (feedError) {
-              console.error('Error creating feed:', feedError);
-              errors.push(`Failed to create feed: ${feedError.message}`);
-            }
-          }
+        // Skip if no xmlUrl (required for RSS feeds)
+        if (!xmlUrl) {
+          feedsSkipped++;
+          continue;
         }
-      } catch (categoryError) {
-        console.error('Error processing category:', categoryError);
-        errors.push(`Failed to process category: ${categoryError.message}`);
+
+        // Skip if feed already exists for this user.
+        if (existingFeedUrls.has(xmlUrl)) {
+          feedsSkipped++;
+          continue;
+        }
+
+        await Feed.create({
+          userId: userId,
+          categoryId: category.id,
+          url: xmlUrl,
+          feedName: String(feedAttrs.text || feedAttrs.title || xmlUrl).trim(),
+          feedDesc: feedAttrs.description || null,
+          feedType: String(feedAttrs.type || 'rss').slice(0, 16),
+          favicon: null,
+          errorCount: 0
+        });
+
+        existingFeedUrls.add(xmlUrl);
+        feedsCreated++;
+      } catch (entryError) {
+        console.error('Error importing OPML entry:', entryError);
+        errors.push(`Failed to import feed entry: ${entryError.message}`);
       }
     }
 
@@ -206,6 +243,8 @@ export const importOpml = async (req, res, _next) => {
       message: 'OPML import completed',
       categoriesCreated,
       feedsCreated,
+      feedsSkipped,
+      entriesDiscovered: feedEntries.length,
       errors: errors.length > 0 ? errors : undefined
     });
   } catch (err) {

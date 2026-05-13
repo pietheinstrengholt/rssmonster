@@ -14,9 +14,9 @@ RSSMonster is not just another RSS reader — it is an **intelligent reading eng
 
 Where traditional RSS aggregators like Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
 
-RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and importance-based ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
+RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and recommended ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
 
-- *Top Stories Today* — importance-ranked, deduplicated coverage  
+- *Top Stories Today* — recommended-ranked, deduplicated coverage  
 - *Worth Your Time* — high-quality, original long-form content  
 - *Quick Scan* — summary-first daily overview  
 - *Low Noise Mode* — maximum signal, minimal volume  
@@ -31,13 +31,13 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 
 - **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap 5 for a fluid experience across all devices
 - **Google Reader-inspired UX**: Automatic mark-as-read on scroll and trending content identification
-- **Advanced Search Expressions**: Composable filters using field operators (`star:true`, `unread:false`, `read:true`, `clicked:true`, `seen:false`, `hot:true`, `cluster:eventCluster`, `cluster:topicGroup`, `clustercount:2`, `tag:tech`, `title:javascript`), article age filters (`firstSeen:24h`, `firstSeen:7d`), quality & freshness thresholds (`quality:>0.6`, `freshness:>=0.5`), sorting (`sort:ASC`, `sort:DESC`, `sort:IMPORTANCE`, `sort:QUALITY`, `sort:ATTENTION`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@lastweek`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:IMPORTANCE`
-- **Smart Folders**: Smart Folders allow you to create declarative, dynamic views of your content using composable search expressions. Examples: `@today unread:true clustercount:2 cluster:eventCluster sort:IMPORTANCE` (Top Stories Today), `unread:true quality:>0.7 clustercount:2 cluster:eventCluster sort:QUALITY` (Worth Your Time), `unread:true clustercount:3 cluster:topicGroup quality:>0.8 freshness:>=0.5 sort:IMPORTANCE` (Low Noise Mode).
+- **Advanced Search Expressions**: Composable filters using field operators (`star:true`, `unread:false`, `read:true`, `clicked:true`, `seen:false`, `hot:true`, `cluster:eventCluster`, `cluster:topicGroup`, `clustercount:2`, `tag:tech`, `title:javascript`), article age filters (`firstSeen:24h`, `firstSeen:7d`), quality & freshness thresholds (`quality:>0.6`, `freshness:>=0.5`), sorting (`sort:ASC`, `sort:DESC`, `sort:RECOMMENDED`, `sort:QUALITY`, `sort:ATTENTION`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@lastweek`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:RECOMMENDED`
+- **Smart Folders**: Smart Folders allow you to create declarative, dynamic views of your content using composable search expressions. Examples: `@today unread:true clustercount:2 cluster:eventCluster sort:RECOMMENDED` (Top Stories Today), `unread:true quality:>0.7 clustercount:2 cluster:eventCluster sort:QUALITY` (Worth Your Time), `unread:true clustercount:3 cluster:topicGroup quality:>0.8 freshness:>=0.5 sort:RECOMMENDED` (Low Noise Mode).
 - **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
 - **Semantic Deduplication & Clustering**: Similar articles are grouped into clusters to reduce noise from syndication and duplicate coverage. RSSMonster builds **event clusters** (articles about the same concrete event) and **topic groups** (related events under a broader storyline), so you can read at the level of detail you want.
 - **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content
 - **Feed Trust Scoring**: Sources earn a long-term trust score (0.0 to 1.0) based on content generation (articles per day), uniqueness, reading time, clicks, and starred items, improving ranking reliability over time. Run `npm run feedtrust` to calculate scores using originality (35%), quality (25%), engagement (20%), and consistency (20%)
-- **Importance-Based Ranking**: Articles are ranked using a transparent, runtime importance score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
+- **Recommended Ranking**: Articles are ranked using a transparent, runtime recommended score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
 - **RSS Feed Generation**: Create custom RSS feeds from your stored articles with flexible filtering by user, feed, category, starred status, and read/unread state. Perfect for sharing curated content or syncing with other applications (accessible via `/rss` endpoint with query parameters)
 - **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
 - **Drag & Drop Management**: Intuitive feed organization and categorization
@@ -47,11 +47,13 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 - **Google Reader API Compatible**: Works with apps like News+, FeedMe, Reeder, and Vienna RSS
 - **Automated Actions**: Define custom rules using regular expressions to automatically delete, star, mark as read, flag as advertisement, or mark articles as low quality
 - **Multi-user Support**: Separate accounts with personalized feeds and preferences
-- **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP)
+- **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP).
+- **Interest Islands Ranking**: Recommended ranking now uses multiple per-user semantic interest islands instead of a single user vector, with profile-aware affinity scoring and diversification.
+- **Signal-Driven Profile Learning**: Island population is now driven by explicit interaction signals (`starInd`, `clickedAmount`, `negativeInd`) with configurable weights.
 
 ## How Ranking Scores Work (End User)
 
-- **Importance**: Blends freshness (recent items count more), quality, and coverage. Coverage rises when more sources report the same story. Freshness is the largest factor, so the newest high-quality, widely-covered items surface first.
+- **Recommended**: Blends freshness (recent items count more), quality, coverage, and similarity to your interest islands. Coverage rises when more sources report the same story, while island similarity boosts content that matches the patterns you engage with most. Like TikTok or Instagram, the feed is personalized to promote articles that are more likely to fit your interests.
 - **Attention**: Reflects how people interact with an article. A quick skim gives a small boost; reads, deep reads, and highly engaged sessions boost more. Re-opens and outbound clicks add a modest extra lift. No interaction means no attention boost.
 - **Quality**: Evaluates the article’s tone, writing, and promotional-ness. Scores for sentiment, writing quality, and advertisement detection combine into a single 0–1 quality score. Trusted feeds amplify good quality; lower-trust feeds dampen it.
 

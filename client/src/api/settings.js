@@ -3,6 +3,9 @@ import api from './client';
 export const fetchSettings = () =>
   api.get('/setting');
 
+export const fetchInterestIslands = () =>
+  api.get('/setting/interest-islands');
+
 /**
  * Save settings
  */

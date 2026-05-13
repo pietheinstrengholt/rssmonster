@@ -6,7 +6,7 @@ title: FAQ
 ## What makes RSSMonster different from other RSS readers?
 
 RSSMonster is a **signal-driven RSS reader**.  
-Instead of showing articles purely in chronological order, it ranks them by **importance** using quality, uniqueness, freshness, and feed trust.
+Instead of showing articles purely in chronological order, it ranks them by **recommended score** using quality, uniqueness, freshness, and feed trust.
 
 Traditional readers answer:
 > “What’s new?”
