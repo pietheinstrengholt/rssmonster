@@ -78,6 +78,10 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      dedupKey: {
+        type: DataTypes.STRING(64),
+        allowNull: true
+      },
       eventVector: {
         type: DataTypes.JSON,
         allowNull: true

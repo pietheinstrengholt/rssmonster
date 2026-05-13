@@ -1,6 +1,7 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 const { Article } = db;
+import buildArticleDedupKey from '../../util/buildArticleDedupKey.js';
 
 /* ======================================================
    Find existing article
@@ -8,6 +9,8 @@ const { Article } = db;
    Prevents duplicates based on URL or title+feed+user
 ====================================================== */
 async function findExistingArticle(feed, title, link, contentHash) {
+  const dedupKey = buildArticleDedupKey(link);
+
   // 1. Strongest signal: content hash (search across ALL feeds for this user)
   if (contentHash) {
     const existing = await Article.findOne({
@@ -19,7 +22,18 @@ async function findExistingArticle(feed, title, link, contentHash) {
     if (existing) return existing;
   }
 
-  // 2. & 3. URL or title match (confined to current feed)
+  // 2. URL dedup key (search across ALL feeds for this user)
+  if (dedupKey) {
+    const existing = await Article.findOne({
+      where: {
+        userId: feed.userId,
+        dedupKey
+      }
+    });
+    if (existing) return existing;
+  }
+
+  // 3. & 4. Raw URL or title match (confined to current feed)
   const feedSpecificConditions = [];
 
   // Exact URL match (canonical duplicate)

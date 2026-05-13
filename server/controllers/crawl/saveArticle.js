@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 const { Article, Tag } = db;
+import buildArticleDedupKey from '../../util/buildArticleDedupKey.js';
 
 /* ======================================================
    Save article & tags to database
@@ -12,32 +13,45 @@ async function saveArticle(feed, data, analysis, actionResult) {
     throw new Error('Invalid feed: userId is missing. Cannot save article without valid userId.');
   }
 
-  const article = await Article.create({
-    userId: feed.userId,
-    feedId: feed.id,
-    status: actionResult.status,
-    starInd: actionResult.starInd,
-    clickedAmount: actionResult.clickedAmount,
-    hotInd: actionResult.hotInd,
-    url: data.link,
-    imageUrl: data.leadImage || null,
-    media: data.mediaFound,
-    title: data.title,
-    author: data.author,
-    description: data.description,
-    contentOriginal: data.contentOriginal, // use clean HTML content without scripts/styles from HTML processing
-    contentStripped: analysis.summary || data.contentStripped, // use summary from analysis if available
-    contentSummaryBullets: analysis.contentSummaryBullets,
-    contentHash: data.contentHash,
-    language: data.language,
-    eventVector: data.eventVector || null,
-    topicVector: data.topicVector || null,
-    embedding_model: data.embedding_model || null,
-    advertisementScore: analysis.advertisementScore,
-    sentimentScore: analysis.sentimentScore,
-    qualityScore: analysis.qualityScore,
-    published: data.published || new Date()
-  });
+  const dedupKey = buildArticleDedupKey(data.link);
+
+  let article;
+
+  try {
+    article = await Article.create({
+      userId: feed.userId,
+      feedId: feed.id,
+      status: actionResult.status,
+      starInd: actionResult.starInd,
+      clickedAmount: actionResult.clickedAmount,
+      hotInd: actionResult.hotInd,
+      url: data.link,
+      imageUrl: data.leadImage || null,
+      media: data.mediaFound,
+      title: data.title,
+      author: data.author,
+      description: data.description,
+      contentOriginal: data.contentOriginal, // use clean HTML content without scripts/styles from HTML processing
+      contentStripped: analysis.summary || data.contentStripped, // use summary from analysis if available
+      contentSummaryBullets: analysis.contentSummaryBullets,
+      contentHash: data.contentHash,
+      dedupKey,
+      language: data.language,
+      eventVector: data.eventVector || null,
+      topicVector: data.topicVector || null,
+      embedding_model: data.embedding_model || null,
+      advertisementScore: analysis.advertisementScore,
+      sentimentScore: analysis.sentimentScore,
+      qualityScore: analysis.qualityScore,
+      published: data.published || new Date()
+    });
+  } catch (err) {
+    if (err?.name === 'SequelizeUniqueConstraintError' && dedupKey) {
+      return null;
+    }
+
+    throw err;
+  }
 
   // Save tags to database if any were generated
   if (analysis.tags.length > 0) {
