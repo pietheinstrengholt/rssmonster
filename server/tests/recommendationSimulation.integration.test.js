@@ -13,6 +13,7 @@ import {
   createRepresentativeFeeds,
   createRepresentativeClustersAndArticles
 } from './helpers/representativeContentFixtures.js';
+import { SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD } from '../config/ranking.config.js';
 
 const { sequelize, User, Category, Feed, Article, ArticleCluster, UserInterestProfile, UserClusterAffinity } = db;
 
@@ -141,6 +142,37 @@ describe('recommendation simulation integration', () => {
 
     await applyRecommendationSteering({ article: steeringArticle, action: 'more' });
     await applyRecommendationSteering({ article: steeringArticle, action: 'ignore' });
+
+    // Ensure we have at least one deterministic suppression signal by steering
+    // a known cluster below the configured suppression affinity threshold.
+    const suppressionSeedArticle = await Article.scope('withVector').findOne({
+      where: {
+        userId: user.id,
+        clusterId: clusters.dutch.id
+      },
+      include: [
+        {
+          model: ArticleCluster,
+          as: 'cluster',
+          required: false,
+          attributes: ['id', 'name', 'topicKey', 'topicVector', 'eventVector', 'articleCount', 'sourceCount', 'sourceDiversityScore']
+        }
+      ],
+      order: [['published', 'DESC']]
+    });
+
+    expect(suppressionSeedArticle).toBeTruthy();
+
+    let suppressionAffinity = null;
+    for (let i = 0; i < 12; i++) {
+      const result = await applyRecommendationSteering({ article: suppressionSeedArticle, action: 'ignore' });
+      suppressionAffinity = Number(result?.affinityRow?.affinity);
+      if (Number.isFinite(suppressionAffinity) && suppressionAffinity <= SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD) {
+        break;
+      }
+    }
+
+    expect(Number(suppressionAffinity)).toBeLessThanOrEqual(SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD);
   }, 30000);
 
   afterAll(async () => {
