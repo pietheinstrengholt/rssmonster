@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
+import { createRepresentativeFeeds, DOMAIN_TOPICS } from './helpers/representativeContentFixtures.js';
 
 const { sequelize, User, Category, Feed } = db;
 
@@ -61,5 +62,23 @@ describe('Feed model', () => {
     expect(feed.errorMessage).toBeNull();
     expect(feed.errorSince).toBeNull();
     expect(feed.lastFetched).toBeNull();
+  });
+
+  it('creates many representative feeds deterministically', async () => {
+    const feeds = await createRepresentativeFeeds({
+      userId: user.id,
+      categoryId: category.id,
+      prefix: 'FEED-MODEL',
+      feedsPerDomain: 3,
+      seed: 20260513
+    });
+
+    expect(feeds.length).toBe(DOMAIN_TOPICS.length * 3);
+
+    const domainKeys = new Set(feeds.map(item => item.domainKey));
+    expect(domainKeys.size).toBe(DOMAIN_TOPICS.length);
+
+    const trusted = feeds.filter(item => Number(item.feed.feedTrust) >= 0.55);
+    expect(trusted.length).toBeGreaterThan(0);
   });
 });

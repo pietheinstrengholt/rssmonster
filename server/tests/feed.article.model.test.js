@@ -1,6 +1,11 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
+import {
+  createRepresentativeFeeds,
+  createRepresentativeClustersAndArticles,
+  DOMAIN_TOPICS
+} from './helpers/representativeContentFixtures.js';
 //import { resetDatabase } from './helpers/resetDb.js';
 
 const { sequelize, User, Category, Feed, Article } = db;
@@ -79,5 +84,34 @@ describe('Feed -> Article integration', () => {
     expect(article.quality).toBeGreaterThan(0);
     expect(article.attentionScore).toBe(0);
     expect(article.uniqueness).toBe(1.0);
+  });
+
+  it('creates many representative feeds and articles with stars/clicks', async () => {
+    const representativeFeeds = await createRepresentativeFeeds({
+      userId: user.id,
+      categoryId: category.id,
+      prefix: 'ARTICLE-MODEL',
+      feedsPerDomain: 2,
+      seed: 77
+    });
+
+    expect(representativeFeeds.length).toBe(DOMAIN_TOPICS.length * 2);
+
+    const summary = await createRepresentativeClustersAndArticles({
+      userId: user.id,
+      feeds: representativeFeeds,
+      prefix: 'ARTICLE-MODEL',
+      days: 10,
+      articlesPerFeedPerDay: 4,
+      clickRate: 0.5,
+      starRate: 0.22,
+      negativeRate: 0.1,
+      seed: 88
+    });
+
+    expect(summary.articleCount).toBeGreaterThan(200);
+    expect(summary.clusterCount).toBeGreaterThan(10);
+    expect(summary.starredCount).toBeGreaterThan(0);
+    expect(summary.clickedCount).toBeGreaterThan(0);
   });
 });
