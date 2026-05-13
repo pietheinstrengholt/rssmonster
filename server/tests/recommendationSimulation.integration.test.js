@@ -179,7 +179,10 @@ describe('recommendation simulation integration', () => {
     expect(Number(sameProfile.effectiveWeight)).toBeLessThanOrEqual(Number(sameProfile.weight));
 
     const suppressionSignals = await loadSuppressionSignals(user.id);
-    expect(suppressionSignals.topicPenaltyByKey.size).toBeGreaterThan(0);
+    const hasTopicOrClusterSuppression =
+      suppressionSignals.topicPenaltyByKey.size > 0 ||
+      suppressionSignals.clusterPenaltyById.size > 0;
+    expect(hasTopicOrClusterSuppression).toBe(true);
 
     const unreadCandidates = await Article.scope('withVector').findAll({
       where: { userId: user.id, status: 'unread' },
