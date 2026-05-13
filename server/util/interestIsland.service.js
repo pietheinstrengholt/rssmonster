@@ -24,8 +24,6 @@ const { Article, ArticleCluster, UserClusterAffinity, UserInterestProfile } = db
  */
 
 import {
-  readCachedProfiles,
-  writeCachedProfiles,
   invalidateCachedProfiles,
   loadInterestProfiles,
   scoreProfileMatch
@@ -37,7 +35,6 @@ import {
 import { rankRecommendedArticles as orchRankRecommendedArticles } from './rankingOrchestrator.service.js';
 
 const AFFINITY_HALF_LIFE_HOURS = 168;
-const PROFILE_HALF_LIFE_HOURS = 336;
 // Cluster affinity threshold for promotion to interest island.
 // ~5 clicks or 1 star + 2 clicks = enough evidence to carve out an island.
 const ISLAND_PROMOTION_THRESHOLD = 5;

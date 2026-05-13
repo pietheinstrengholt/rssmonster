@@ -47,7 +47,7 @@ const decayMultiplier = (date, halfLifeHours) => {
   return Math.pow(0.5, ageHours / halfLifeHours);
 };
 
-export const readCachedProfiles = (userId) => {
+const readCachedProfiles = (userId) => {
   const cached = interestProfileCache.get(userId);
   if (!cached) return null;
 
@@ -59,7 +59,7 @@ export const readCachedProfiles = (userId) => {
   return cached.profiles;
 };
 
-export const writeCachedProfiles = (userId, profiles) => {
+const writeCachedProfiles = (userId, profiles) => {
   interestProfileCache.set(userId, {
     profiles,
     expiresAt: nowMs() + PROFILE_CACHE_TTL_MS
