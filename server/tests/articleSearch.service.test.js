@@ -2,7 +2,6 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import { searchArticles } from '../util/articleSearch.service.js';
-import { resetDatabase } from './helpers/resetDb.js';
 
 const { sequelize, User, Category, Feed, Article, ArticleCluster, Tag, Setting } = db;
 
@@ -14,7 +13,6 @@ describe('articleSearch.service', () => {
 
   beforeAll(async () => {
     await sequelize.authenticate();
-    await resetDatabase();
 
     // ---- User ----
     const password = 'secret';

@@ -6,8 +6,7 @@ const { sequelize, User } = db;
 
 describe('User model', () => {
   beforeAll(async () => {
-    // Ensure clean state per file
-    await sequelize.sync();
+    await sequelize.authenticate();
   });
 
   afterAll(async () => {

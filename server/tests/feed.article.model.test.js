@@ -6,7 +6,6 @@ import {
   createRepresentativeClustersAndArticles,
   DOMAIN_TOPICS
 } from './helpers/representativeContentFixtures.js';
-//import { resetDatabase } from './helpers/resetDb.js';
 
 const { sequelize, User, Category, Feed, Article } = db;
 
@@ -17,7 +16,6 @@ describe('Feed -> Article integration', () => {
 
   beforeAll(async () => {
     await sequelize.authenticate();
-    //await resetDatabase(); // HARD RESET
 
     // ---- User ----
     const password = 'secret';

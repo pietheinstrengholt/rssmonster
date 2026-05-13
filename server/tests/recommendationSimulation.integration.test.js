@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 import {
   recordInterestFromArticleUpdate,
   applyRecommendationSteering,
@@ -28,7 +27,6 @@ describe('recommendation simulation integration', () => {
 
   beforeAll(async () => {
     await sequelize.authenticate();
-    await resetDatabase();
 
     user = await User.create({
       username: 'sim-integration-user',
