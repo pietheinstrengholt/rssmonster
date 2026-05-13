@@ -9,6 +9,11 @@ describe('articleSearch.service', () => {
   let user;
   let category;
   let feed;
+  let secondaryCategory;
+  let secondaryFeed;
+  let otherUser;
+  let otherUserCategory;
+  let otherUserFeed;
   const articles = {};
 
   beforeAll(async () => {
@@ -37,6 +42,19 @@ describe('articleSearch.service', () => {
       categoryId: category.id,
       feedName: 'Search Test Feed',
       url: 'https://example.com/search-test.xml'
+    });
+
+    secondaryCategory = await Category.create({
+      userId: user.id,
+      name: 'Search Test Secondary Category',
+      categoryOrder: 1
+    });
+
+    secondaryFeed = await Feed.create({
+      userId: user.id,
+      categoryId: secondaryCategory.id,
+      feedName: 'Search Test Secondary Feed',
+      url: 'https://example.com/search-test-secondary.xml'
     });
 
     // ---- Settings (default score thresholds) ----
@@ -134,6 +152,58 @@ describe('articleSearch.service', () => {
       qualityScore: 20
     });
 
+    articles.secondaryFeed = await Article.create({
+      userId: user.id,
+      feedId: secondaryFeed.id,
+      url: 'https://example.com/article-secondary-feed',
+      title: 'JavaScript Framework Deep Dive from Secondary Feed',
+      description: 'Secondary feed article for scoping tests.',
+      contentOriginal: '<p>Secondary feed JavaScript article used for scope filtering.</p>',
+      contentStripped: 'Secondary feed JavaScript article used for scope filtering.',
+      status: 'unread',
+      published: hoursAgo(2),
+      advertisementScore: 88,
+      sentimentScore: 79,
+      qualityScore: 84
+    });
+
+    const otherPassword = 'secret';
+    const otherHash = await bcrypt.hash(otherPassword, 10);
+    otherUser = await User.create({
+      username: 'searchtestuser-other',
+      password: otherPassword,
+      hash: otherHash,
+      role: 'user'
+    });
+
+    otherUserCategory = await Category.create({
+      userId: otherUser.id,
+      name: 'Other User Category',
+      categoryOrder: 0
+    });
+
+    otherUserFeed = await Feed.create({
+      userId: otherUser.id,
+      categoryId: otherUserCategory.id,
+      feedName: 'Other User Feed',
+      url: 'https://example.com/other-user-feed.xml'
+    });
+
+    articles.otherUserOverlap = await Article.create({
+      userId: otherUser.id,
+      feedId: otherUserFeed.id,
+      url: 'https://example.com/article-other-user-overlap',
+      title: 'Breaking: JavaScript Framework Released',
+      description: 'Same terms as primary user content for tenancy isolation testing.',
+      contentOriginal: '<p>This article should never leak into another user search results.</p>',
+      contentStripped: 'This article should never leak into another user search results.',
+      status: 'unread',
+      published: hoursAgo(1),
+      advertisementScore: 92,
+      sentimentScore: 85,
+      qualityScore: 88
+    });
+
     // ---- Tags ----
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'javascript' });
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'framework' });
@@ -174,6 +244,63 @@ describe('articleSearch.service', () => {
       const result = await searchArticles({ userId: user.id, status: 'star' });
       expect(result.itemIds).toContain(articles.starred.id);
       expect(result.itemIds.length).toBe(1);
+    });
+  });
+
+  // ============================
+  // Scope and tenancy boundaries
+  // ============================
+
+  describe('scope and tenancy boundaries', () => {
+    it('restricts results to the requested categoryId', async () => {
+      const primaryCategoryResult = await searchArticles({
+        userId: user.id,
+        categoryId: String(category.id),
+        status: '%'
+      });
+
+      expect(primaryCategoryResult.itemIds).toContain(articles.recent.id);
+      expect(primaryCategoryResult.itemIds).not.toContain(articles.secondaryFeed.id);
+
+      const secondaryCategoryResult = await searchArticles({
+        userId: user.id,
+        categoryId: String(secondaryCategory.id),
+        status: '%'
+      });
+
+      expect(secondaryCategoryResult.itemIds).toContain(articles.secondaryFeed.id);
+      expect(secondaryCategoryResult.itemIds).not.toContain(articles.recent.id);
+    });
+
+    it('restricts results to the requested feedId', async () => {
+      const primaryFeedResult = await searchArticles({
+        userId: user.id,
+        feedId: feed.id,
+        status: '%'
+      });
+
+      expect(primaryFeedResult.itemIds).toContain(articles.recent.id);
+      expect(primaryFeedResult.itemIds).not.toContain(articles.secondaryFeed.id);
+
+      const secondaryFeedResult = await searchArticles({
+        userId: user.id,
+        feedId: secondaryFeed.id,
+        status: '%'
+      });
+
+      expect(secondaryFeedResult.itemIds).toContain(articles.secondaryFeed.id);
+      expect(secondaryFeedResult.itemIds).not.toContain(articles.recent.id);
+    });
+
+    it('never leaks matching articles across users', async () => {
+      const result = await searchArticles({
+        userId: user.id,
+        search: 'JavaScript Framework Released',
+        status: '%'
+      });
+
+      expect(result.itemIds).toContain(articles.recent.id);
+      expect(result.itemIds).not.toContain(articles.otherUserOverlap.id);
     });
   });
 
