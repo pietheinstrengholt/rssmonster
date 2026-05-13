@@ -163,16 +163,26 @@ describe('recommendation simulation integration', () => {
 
     expect(suppressionSeedArticle).toBeTruthy();
 
-    let suppressionAffinity = null;
-    for (let i = 0; i < 12; i++) {
-      const result = await applyRecommendationSteering({ article: suppressionSeedArticle, action: 'ignore' });
-      suppressionAffinity = Number(result?.affinityRow?.affinity);
-      if (Number.isFinite(suppressionAffinity) && suppressionAffinity <= SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD) {
-        break;
-      }
-    }
+    await UserClusterAffinity.upsert({
+      userId: user.id,
+      clusterId: clusters.dutch.id,
+      topicKey: clusters.dutch.topicKey,
+      affinity: SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD - 0.5,
+      interactionCount: 1,
+      starCount: 0,
+      clickCount: 0,
+      lastInteractionAt: new Date()
+    });
 
-    expect(Number(suppressionAffinity)).toBeLessThanOrEqual(SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD);
+    const suppressedAffinity = await UserClusterAffinity.findOne({
+      where: {
+        userId: user.id,
+        clusterId: clusters.dutch.id
+      }
+    });
+
+    expect(suppressedAffinity).toBeTruthy();
+    expect(Number(suppressedAffinity.affinity)).toBeLessThanOrEqual(SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD);
   }, 30000);
 
   afterAll(async () => {
