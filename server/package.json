@@ -35,11 +35,11 @@
     "eslint": "^9.39.2",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.5"
+    "vitest": "^4.1.6"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@openai/agents": "^0.9.1",
+    "@openai/agents": "^0.11.4",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
@@ -53,7 +53,7 @@
     "multer": "^2.1.1",
     "mysql2": "^3.22.3",
     "node-cache": "^5.1.2",
-    "openai": "^6.36.0",
+    "openai": "^6.37.0",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "xml2js": "^0.6.2",
