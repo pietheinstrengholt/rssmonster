@@ -170,6 +170,35 @@ export const TOPIC_KEY_BONUS = 0.08;
  */
 export const ISLAND_VIABILITY_THRESHOLD = 0.05;
 
+/**
+ * Semantic similarity threshold for interest island merging.
+ *
+ * Background maintenance process consolidates near-duplicate islands
+ * (e.g., "Windows tweaks" + "PowerToys workflows" → "Windows customization").
+ *
+ * Only profiles with cosine similarity >= this threshold are merged.
+ * The higher-weight island survives and absorbs the lower-weight one.
+ *
+ * Why merging matters:
+ * - Users develop overlapping interests over time (organic semantic drift)
+ * - Without consolidation, recommendations become fragmented across near-duplicates
+ * - Merging reduces noise, improves ranking confidence, strengthens long-term personalization
+ *
+ * Why vector similarity:
+ * - Labels/names are unstable (user may retitle islands)
+ * - Keywords are subjective
+ * - Vector embeddings capture true semantic content across language variance
+ *
+ * - 0.85: Aggressive merging (fewer islands, broader topics)
+ * - 0.90: Moderate merging (default, well-tested balance)
+ * - 0.95: Conservative merging (only merge very similar islands)
+ *
+ * Can be overridden via PROFILE_MERGE_THRESHOLD env var.
+ *
+ * @type {number}
+ */
+export const PROFILE_MERGE_THRESHOLD = 0.90;
+
 // ============================================================================
 // 3) AFFINITY & DECAY
 // ============================================================================

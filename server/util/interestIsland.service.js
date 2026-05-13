@@ -54,7 +54,7 @@ const decayMultiplier = (date, halfLifeHours) => {
   return Math.pow(0.5, ageHours / halfLifeHours);
 };
 
-const blendVectors = (existingVector, incomingVector, existingWeight, incomingWeight) => {
+export const blendVectors = (existingVector, incomingVector, existingWeight, incomingWeight) => {
   if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) {
     return incomingVector;
   }
@@ -69,7 +69,7 @@ const blendVectors = (existingVector, incomingVector, existingWeight, incomingWe
   ));
 };
 
-const normalizeVector = (vector) => {
+export const normalizeVector = (vector) => {
   if (!Array.isArray(vector)) return null;
   return vector.map(value => Number(value) || 0);
 };

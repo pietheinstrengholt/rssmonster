@@ -24,7 +24,8 @@
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js",
     "cleanup-duplicates": "NODE_ENV=production node scripts/cleanupDuplicateArticles.js",
     "user-stats-repair": "NODE_ENV=production node scripts/backfillUserStats.js",
-    "interest-islands-rebuild": "NODE_ENV=production node scripts/rebuildInterestIslands.js"
+    "interest-islands-rebuild": "NODE_ENV=production node scripts/rebuildInterestIslands.js",
+    "merge-profiles": "NODE_ENV=production node scripts/mergeInterestProfiles.js"
   },
   "engines": {
     "node": ">=20.x"

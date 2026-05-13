@@ -8,7 +8,7 @@
  */
 
 import db from '../models/index.js';
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import {
   AFFINITY_HALF_LIFE_HOURS,
   SUPPRESSED_CLUSTER_AFFINITY_THRESHOLD,
