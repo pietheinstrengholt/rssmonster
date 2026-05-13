@@ -35,6 +35,7 @@ module.exports = {
   up: async (queryInterface, Sequelize) => {
     await addColumnIfMissing(queryInterface, Sequelize, 'userClusterAffinities', 'starCount', 'interactionCount');
     await addColumnIfMissing(queryInterface, Sequelize, 'userClusterAffinities', 'clickCount', 'starCount');
+
     await addColumnIfMissing(queryInterface, Sequelize, 'userInterestProfiles', 'starCount', 'interactionCount');
     await addColumnIfMissing(queryInterface, Sequelize, 'userInterestProfiles', 'clickCount', 'starCount');
   },
@@ -42,6 +43,7 @@ module.exports = {
   down: async (queryInterface) => {
     await removeColumnIfPresent(queryInterface, 'userClusterAffinities', 'starCount');
     await removeColumnIfPresent(queryInterface, 'userClusterAffinities', 'clickCount');
+
     await removeColumnIfPresent(queryInterface, 'userInterestProfiles', 'starCount');
     await removeColumnIfPresent(queryInterface, 'userInterestProfiles', 'clickCount');
   }
