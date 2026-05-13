@@ -96,6 +96,7 @@ RSSMonster works out of the box with sensible defaults, but every ranking decisi
 - **[Smart Folders](smart-folders.md)** — Create powerful dynamic views
 - **[Scoring & Ranking](scoring.md)** — Recommended, quality, and attention explained
 - **[Search Guide](search.md)** — Master search expressions
+- **[Interest Islands](interest-islands.md)** — Personalized profiles, semantic merging, and consolidation
 - **[AI Assistant](ai-assistant.md)** — Natural language search and recommendations
 - **[API & Integrations](api.md)** — Fever API, Google Reader API, and more
 - **[Automation](automation.md)** — Rules, actions, and advanced workflows
