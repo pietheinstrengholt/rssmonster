@@ -4,6 +4,7 @@ import db from '../models/index.js';
 import { searchArticles } from '../util/articleSearch.service.js';
 
 const { sequelize, User, Category, Feed, Article, ArticleCluster, Tag, Setting } = db;
+const DATE_TEST_DAYS_AGO = 3;
 
 describe('articleSearch.service', () => {
   let user;
@@ -74,6 +75,29 @@ describe('articleSearch.service', () => {
     // ---- Articles with diverse properties ----
     const now = new Date();
     const hoursAgo = (h) => new Date(now.getTime() - h * 60 * 60 * 1000);
+    const utcNow = new Date();
+    const utcTodayStartMs = Date.UTC(
+      utcNow.getUTCFullYear(),
+      utcNow.getUTCMonth(),
+      utcNow.getUTCDate(),
+      0,
+      0,
+      0,
+      0
+    );
+    const yesterdayUtcStart = new Date(utcTodayStartMs - 24 * 60 * 60 * 1000);
+    const yesterdayUtcEnd = new Date(utcTodayStartMs - 1);
+    const yesterdayUtcMinusOneMs = new Date(utcTodayStartMs - 24 * 60 * 60 * 1000 - 1);
+    const targetDaysAgoUtc = new Date(utcTodayStartMs - DATE_TEST_DAYS_AGO * 24 * 60 * 60 * 1000 + 12 * 60 * 60 * 1000);
+
+    const dayMap = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
+    const targetMonday = dayMap.monday;
+    const currentDay = utcNow.getUTCDay();
+    let daysBackToMonday = currentDay - targetMonday;
+    if (daysBackToMonday <= 0) {
+      daysBackToMonday += 7;
+    }
+    const lastMondayUtc = new Date(utcTodayStartMs - daysBackToMonday * 24 * 60 * 60 * 1000 + 9 * 60 * 60 * 1000);
 
     articles.recent = await Article.create({
       userId: user.id,
@@ -167,6 +191,81 @@ describe('articleSearch.service', () => {
       qualityScore: 84
     });
 
+    articles.yesterdayUtcStart = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: 'https://example.com/article-yesterday-utc-start',
+      title: 'UTC Yesterday Start Boundary',
+      description: 'Boundary article at UTC start of yesterday.',
+      contentOriginal: '<p>Boundary article at UTC start of yesterday.</p>',
+      contentStripped: 'Boundary article at UTC start of yesterday.',
+      status: 'unread',
+      published: yesterdayUtcStart,
+      advertisementScore: 83,
+      sentimentScore: 74,
+      qualityScore: 79
+    });
+
+    articles.yesterdayUtcEnd = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: 'https://example.com/article-yesterday-utc-end',
+      title: 'UTC Yesterday End Boundary',
+      description: 'Boundary article at UTC end of yesterday.',
+      contentOriginal: '<p>Boundary article at UTC end of yesterday.</p>',
+      contentStripped: 'Boundary article at UTC end of yesterday.',
+      status: 'unread',
+      published: yesterdayUtcEnd,
+      advertisementScore: 82,
+      sentimentScore: 73,
+      qualityScore: 78
+    });
+
+    articles.beforeYesterdayUtc = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: 'https://example.com/article-before-yesterday-utc',
+      title: 'UTC Before Yesterday Boundary',
+      description: 'Article one millisecond before UTC yesterday starts.',
+      contentOriginal: '<p>Article one millisecond before UTC yesterday starts.</p>',
+      contentStripped: 'Article one millisecond before UTC yesterday starts.',
+      status: 'unread',
+      published: yesterdayUtcMinusOneMs,
+      advertisementScore: 81,
+      sentimentScore: 72,
+      qualityScore: 77
+    });
+
+    articles.daysAgoTarget = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: 'https://example.com/article-days-ago-target',
+      title: `UTC ${DATE_TEST_DAYS_AGO} Days Ago Target`,
+      description: 'Article fixed to the UTC day targeted by N days ago parser.',
+      contentOriginal: '<p>Article fixed to the UTC day targeted by N days ago parser.</p>',
+      contentStripped: 'Article fixed to the UTC day targeted by N days ago parser.',
+      status: 'unread',
+      published: targetDaysAgoUtc,
+      advertisementScore: 84,
+      sentimentScore: 75,
+      qualityScore: 80
+    });
+
+    articles.lastMondayUtc = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: 'https://example.com/article-last-monday-utc',
+      title: 'UTC Last Monday Target',
+      description: 'Article fixed to the UTC day selected by last monday parser.',
+      contentOriginal: '<p>Article fixed to the UTC day selected by last monday parser.</p>',
+      contentStripped: 'Article fixed to the UTC day selected by last monday parser.',
+      status: 'unread',
+      published: lastMondayUtc,
+      advertisementScore: 85,
+      sentimentScore: 76,
+      qualityScore: 81
+    });
+
     const otherPassword = 'secret';
     const otherHash = await bcrypt.hash(otherPassword, 10);
     otherUser = await User.create({
@@ -237,7 +336,9 @@ describe('articleSearch.service', () => {
 
     it('returns all statuses when status is %', async () => {
       const result = await searchArticles({ userId: user.id, status: '%' });
-      expect(result.itemIds.length).toBe(5);
+      expect(result.itemIds).toContain(articles.recent.id);
+      expect(result.itemIds).toContain(articles.secondaryFeed.id);
+      expect(result.itemIds).not.toContain(articles.otherUserOverlap.id);
     });
 
     it('returns starred articles when status is star', async () => {
@@ -600,8 +701,42 @@ describe('articleSearch.service', () => {
 
     it('filters by @lastweek', async () => {
       const result = await searchArticles({ userId: user.id, search: '@lastweek', status: '%' });
-      // All articles are within 7 days
-      expect(result.itemIds.length).toBe(5);
+      expect(result.itemIds).toContain(articles.recent.id);
+      expect(result.itemIds).toContain(articles.secondaryFeed.id);
+      expect(result.itemIds).not.toContain(articles.otherUserOverlap.id);
+    });
+
+    it('filters @yesterday using UTC day boundaries', async () => {
+      const result = await searchArticles({ userId: user.id, search: '@yesterday', status: '%' });
+
+      expect(result.itemIds).toContain(articles.yesterdayUtcStart.id);
+      expect(result.itemIds).toContain(articles.yesterdayUtcEnd.id);
+      expect(result.itemIds).not.toContain(articles.beforeYesterdayUtc.id);
+      expect(result.query.date).toBe('yesterday');
+    });
+
+    it('filters @"N days ago" for exact UTC calendar day', async () => {
+      const result = await searchArticles({
+        userId: user.id,
+        search: `@"${DATE_TEST_DAYS_AGO} days ago"`,
+        status: '%'
+      });
+
+      expect(result.itemIds).toContain(articles.daysAgoTarget.id);
+      expect(result.itemIds).not.toContain(articles.yesterdayUtcStart.id);
+      expect(result.query.date).toBe(`${DATE_TEST_DAYS_AGO} days ago`);
+    });
+
+    it('filters @"last monday" using UTC weekday resolution', async () => {
+      const result = await searchArticles({
+        userId: user.id,
+        search: '@"last monday"',
+        status: '%'
+      });
+
+      expect(result.itemIds).toContain(articles.lastMondayUtc.id);
+      expect(result.itemIds).not.toContain(articles.yesterdayUtcStart.id);
+      expect(result.query.date).toBe('last monday');
     });
   });
 
