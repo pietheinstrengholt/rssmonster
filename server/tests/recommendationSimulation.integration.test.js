@@ -22,8 +22,8 @@ function domainFromTopicKey(topicKey) {
 
 describe('recommendation simulation integration', () => {
   let user;
-  let feeds = {};
-  let clusters = {};
+  const feeds = {};
+  const clusters = {};
 
   beforeAll(async () => {
     await sequelize.authenticate();

@@ -64,9 +64,6 @@ const DUPLICATION_CLUSTER_THRESHOLD = 2;
  * Helpers
  * ------------------------------------------------------------------ */
 
-const clamp = (value, min = 0, max = 1) =>
-  Math.max(min, Math.min(max, value));
-
 const attentionWeightFromBucket = (bucket) => {
   switch (bucket) {
     case 1: return 0.25;
