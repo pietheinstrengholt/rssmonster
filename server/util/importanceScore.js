@@ -17,7 +17,11 @@ export function computeImportance(article) {
   // More articles covering the same event/topic = greater importance.
   // Normalize by log scale so growth stays bounded and robust for very large clusters.
   // This gives: standalone=0.00, 2 articles≈0.17, 4 articles≈0.33, 16 articles≈0.67, 64+ articles=1.00
-  const cluster = article.get?.('cluster') ?? article.cluster;
+  const cluster =
+    article.get?.('event') ??
+    article.event ??
+    article.get?.('cluster') ??
+    article.cluster;
   const rawClusterSize = Number(cluster?.articleCount);
   const clusterSize = Number.isFinite(rawClusterSize) && rawClusterSize > 0 ? rawClusterSize : 1;
   const MAX_COVERAGE_CLUSTER_SIZE = 64;

@@ -3,7 +3,7 @@ import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import { searchArticles } from '../util/articleSearch.service.js';
 
-const { sequelize, User, Category, Feed, Article, ArticleCluster, Tag, Setting } = db;
+const { sequelize, User, Category, Feed, Article, Event, Tag, Setting } = db;
 
 describe('articleSearch.service', () => {
   let user;
@@ -391,26 +391,28 @@ describe('articleSearch.service', () => {
           qualityScore: 75
         });
 
-        lowCluster = await ArticleCluster.create({
+        lowCluster = await Event.create({
           userId: user.id,
           representativeArticleId: lowCoverageArticle.id,
+          topicId: null,
           articleCount: 2,
           sourceCount: 1,
           sourceDiversityScore: 0.69,
-          clusterStrength: 0.4
+          eventStrength: 0.4
         });
 
-        highCluster = await ArticleCluster.create({
+        highCluster = await Event.create({
           userId: user.id,
           representativeArticleId: highCoverageArticle.id,
+          topicId: null,
           articleCount: 30,
           sourceCount: 8,
           sourceDiversityScore: 2.4,
-          clusterStrength: 0.9
+          eventStrength: 0.9
         });
 
-        await lowCoverageArticle.update({ clusterId: lowCluster.id });
-        await highCoverageArticle.update({ clusterId: highCluster.id });
+        await lowCoverageArticle.update({ eventId: lowCluster.id });
+        await highCoverageArticle.update({ eventId: highCluster.id });
 
         const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'IMPORTANCE' });
         const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
@@ -421,10 +423,10 @@ describe('articleSearch.service', () => {
         expect(highCoverageIdx).toBeLessThan(lowCoverageIdx);
       } finally {
         if (lowCluster) {
-          await ArticleCluster.destroy({ where: { id: lowCluster.id } });
+          await Event.destroy({ where: { id: lowCluster.id } });
         }
         if (highCluster) {
-          await ArticleCluster.destroy({ where: { id: highCluster.id } });
+          await Event.destroy({ where: { id: highCluster.id } });
         }
         if (lowCoverageArticle) {
           await Article.destroy({ where: { id: lowCoverageArticle.id } });

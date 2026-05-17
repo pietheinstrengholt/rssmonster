@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Article, ArticleCluster, Feed, Tag, Setting } = db;
+const { Article, Event, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
 import { computeImportance } from './importanceScore.js';
 
@@ -522,9 +522,9 @@ export const searchArticles = async ({
     if (sortImportance) {
       articleQuery.include = [
         {
-          model: ArticleCluster,
+          model: Event,
           as: 'cluster',
-          attributes: ['id', 'articleCount', 'clusterStrength', 'sourceDiversityScore', 'sourceCount', 'topicKey'],
+          attributes: ['id', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
           required: false
         },
         {
@@ -615,10 +615,10 @@ export const searchArticles = async ({
     if (Number.isFinite(clusterCountFilter)) {
       const countLiteral = workingClusterView === 'topicGroup'
         ? Article.sequelize.literal(
-            '(SELECT SUM(ac2.articleCount) FROM article_clusters ac2 WHERE ac2.userId = articles.userId AND ac2.topicKey = (SELECT ac3.topicKey FROM article_clusters ac3 WHERE ac3.id = articles.clusterId))'
+            '(SELECT SUM(e2.articleCount) FROM events e2 WHERE e2.userId = articles.userId AND e2.topicId = (SELECT e3.topicId FROM events e3 WHERE e3.id = articles.eventId))'
           )
         : Article.sequelize.literal(
-            '(SELECT ac.articleCount FROM article_clusters ac WHERE ac.id = articles.clusterId)'
+            '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
           );
 
       articleQuery.where[Op.and] = [
@@ -631,12 +631,12 @@ export const searchArticles = async ({
         {
           id: {
             [Op.in]: Article.sequelize.literal(
-              `(SELECT representativeArticleId FROM article_clusters)`
+              `(SELECT representativeArticleId FROM events)`
             )
           }
         },
         {
-          clusterId: {
+          eventId: {
             [Op.is]: null
           }
         }
@@ -644,35 +644,35 @@ export const searchArticles = async ({
     }
 
     if (workingClusterView === 'topicGroup') {
-      // One EVENT per TOPIC (strongest cluster per topicKey)
+      // One EVENT per TOPIC (strongest event per topicId)
       articleQuery.where[Op.or] = [
         {
           id: {
             [Op.in]: Article.sequelize.literal(`(
-              SELECT ac.representativeArticleId
-              FROM article_clusters ac
+              SELECT e.representativeArticleId
+              FROM events e
               INNER JOIN (
-                SELECT userId, topicKey, MAX(clusterStrength) AS maxStrength
-                FROM article_clusters
-                WHERE topicKey IS NOT NULL
-                GROUP BY userId, topicKey
+                SELECT userId, topicId, MAX(eventStrength) AS maxStrength
+                FROM events
+                WHERE topicId IS NOT NULL
+                GROUP BY userId, topicId
               ) t
-                ON ac.userId = t.userId
-                AND ac.topicKey = t.topicKey
-              AND ac.clusterStrength = t.maxStrength
-              WHERE ac.id = (
-                SELECT MAX(ac2.id)
-                FROM article_clusters ac2
-                WHERE ac2.userId = ac.userId
-                  AND ac2.topicKey = ac.topicKey
-                  AND ac2.clusterStrength = ac.clusterStrength
+                ON e.userId = t.userId
+                AND e.topicId = t.topicId
+              AND e.eventStrength = t.maxStrength
+              WHERE e.id = (
+                SELECT MAX(e2.id)
+                FROM events e2
+                WHERE e2.userId = e.userId
+                  AND e2.topicId = e.topicId
+                  AND e2.eventStrength = e.eventStrength
               )
             )`)
           }
         },
         {
-          // Articles without cluster still pass through
-          clusterId: {
+          // Articles without event still pass through
+          eventId: {
             [Op.is]: null
           }
         }
@@ -819,9 +819,8 @@ export const searchArticles = async ({
         clusterView: clusterView
       };
 
-      // Enforce a single settings row per user: clear then insert fresh
-      await Setting.destroy({ where: { userId } });
-      await Setting.create(settingsPayload);
+      // Persist atomically to avoid race conditions across concurrent requests.
+      await Setting.upsert(settingsPayload);
     }
 
     return {

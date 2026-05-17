@@ -34,7 +34,8 @@ import TagModel from './tag.js';
 import ActionModel from './action.js';
 import SettingModel from './setting.js';
 import SmartFolderModel from './smartFolder.js';
-import ArticleClusterModel from './articleCluster.js';
+import TopicModel from './topic.js';
+import EventModel from './event.js';
 import HotlinkModel from './hotlink.js';
 
 // ---- Initialize models ----
@@ -46,7 +47,8 @@ const Tag = TagModel(sequelize);
 const Action = ActionModel(sequelize);
 const Setting = SettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
-const ArticleCluster = ArticleClusterModel(sequelize);
+const Topic = TopicModel(sequelize);
+const Event = EventModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
 // ---- Associations ----
@@ -83,26 +85,26 @@ Tag.belongsTo(Article, { foreignKey: 'articleId' });
 User.hasMany(SmartFolder, { foreignKey: 'userId', onDelete: 'CASCADE' });
 SmartFolder.belongsTo(User, { foreignKey: 'userId' });
 
-// User ↔ ArticleCluster
-User.hasMany(ArticleCluster, { foreignKey: 'userId', onDelete: 'CASCADE' });
-ArticleCluster.belongsTo(User, { foreignKey: 'userId' });
+// User ↔ Topic
+User.hasMany(Topic, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Topic.belongsTo(User, { foreignKey: 'userId' });
 
-// Article ↔ ArticleCluster
-Article.belongsTo(ArticleCluster, {
-  foreignKey: 'clusterId',
-  as: 'cluster'
-});
-ArticleCluster.hasMany(Article, {
-  foreignKey: 'clusterId',
-  as: 'articles'
-});
+// User ↔ Event
+User.hasMany(Event, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Event.belongsTo(User, { foreignKey: 'userId' });
 
-// Representative article for cluster
-ArticleCluster.belongsTo(Article, {
-  foreignKey: 'representativeArticleId',
-  as: 'representative',
-  constraints: false
-});
+// Topic ↔ Event
+Topic.hasMany(Event, { foreignKey: 'topicId', onDelete: 'SET NULL' });
+Event.belongsTo(Topic, { foreignKey: 'topicId' });
+
+// Event ↔ Article
+Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'articles' });
+Article.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
+Article.belongsTo(Event, { foreignKey: 'eventId', as: 'cluster' });
+
+// Topic ↔ Article
+Topic.hasMany(Article, { foreignKey: 'topicId', onDelete: 'SET NULL' });
+Article.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
 
 // ---- Export db ----
 export default {
@@ -116,6 +118,7 @@ export default {
   Action,
   Setting,
   SmartFolder,
-  ArticleCluster,
+  Topic,
+  Event,
   Hotlink
 };

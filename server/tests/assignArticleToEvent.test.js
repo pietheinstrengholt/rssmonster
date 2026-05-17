@@ -1,14 +1,14 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { assignArticleToCluster } from '../controllers/cluster/assignArticleToCluster.js';
+import { assignArticleToEvent } from '../services/events/assignArticleToEvent.js';
 
-const { sequelize, User, Category, Feed, Article, ArticleCluster } = db;
+const { sequelize, User, Category, Feed, Article, Event, Topic } = db;
 
 const buildVector = (length = 32, shift = 0) =>
   Array.from({ length }, (_, i) => (((i + shift) % 5) + 1) / 10);
 
-describe('assignArticleToCluster', () => {
+describe('assignArticleToEvent', () => {
   let user;
   let category;
   let feedA;
@@ -52,7 +52,7 @@ describe('assignArticleToCluster', () => {
     await sequelize.close();
   });
 
-  it('creates a new event cluster for first vectorized article', async () => {
+  it('creates a new event and topic for first vectorized article', async () => {
     const eventVector = buildVector(32, 0);
     const topicVector = buildVector(32, 0);
 
@@ -63,25 +63,26 @@ describe('assignArticleToCluster', () => {
       title: 'Cluster test: first article',
       description: 'First article for cluster creation test',
       contentOriginal: '<p>First article for cluster creation test</p>',
-      contentStripped: 'First article for cluster creation test',
-      eventVector,
-      topicVector
+      contentStripped: 'First article for cluster creation test'
     });
 
-    await assignArticleToCluster(article.id);
+    await assignArticleToEvent(article.id, null, { eventVector, topicVector });
 
     const assignedArticle = await Article.findByPk(article.id);
-    expect(assignedArticle.clusterId).toBeTruthy();
+    expect(assignedArticle.eventId).toBeTruthy();
+    expect(assignedArticle.topicId).toBeTruthy();
 
-    const cluster = await ArticleCluster.findByPk(assignedArticle.clusterId);
-    expect(cluster).toBeTruthy();
-    expect(cluster.representativeArticleId).toBe(article.id);
-    expect(cluster.articleCount).toBe(1);
-    expect(cluster.sourceCount).toBe(1);
-    expect(cluster.sourceDiversityScore).toBeCloseTo(Math.log(2), 5);
+    const event = await Event.findByPk(assignedArticle.eventId);
+    const topic = await Topic.findByPk(assignedArticle.topicId);
+    expect(event).toBeTruthy();
+    expect(topic).toBeTruthy();
+    expect(event.representativeArticleId).toBe(article.id);
+    expect(event.articleCount).toBe(1);
+    expect(event.sourceCount).toBe(1);
+    expect(event.sourceDiversityScore).toBeCloseTo(Math.log(2), 5);
   });
 
-  it('assigns a similar article to existing cluster and updates source diversity', async () => {
+  it('assigns a similar article to existing event and updates source diversity', async () => {
     // Use a different vector family than the previous test to avoid matching older test clusters.
     const eventVector = buildVector(32, 3);
     const topicVector = buildVector(32, 3);
@@ -93,15 +94,14 @@ describe('assignArticleToCluster', () => {
       title: 'Cluster test: seed article',
       description: 'Seed article for merge test',
       contentOriginal: '<p>Seed article for merge test</p>',
-      contentStripped: 'Seed article for merge test',
-      eventVector,
-      topicVector
+      contentStripped: 'Seed article for merge test'
     });
 
-    await assignArticleToCluster(firstArticle.id);
+    await assignArticleToEvent(firstArticle.id, null, { eventVector, topicVector });
 
     const seeded = await Article.findByPk(firstArticle.id);
-    expect(seeded.clusterId).toBeTruthy();
+    expect(seeded.eventId).toBeTruthy();
+    expect(seeded.topicId).toBeTruthy();
 
     const similarArticle = await Article.create({
       userId: user.id,
@@ -110,19 +110,18 @@ describe('assignArticleToCluster', () => {
       title: 'Cluster test: similar article',
       description: 'Similar article from another source',
       contentOriginal: '<p>Similar article from another source</p>',
-      contentStripped: 'Similar article from another source',
-      eventVector,
-      topicVector
+      contentStripped: 'Similar article from another source'
     });
 
-    await assignArticleToCluster(similarArticle.id);
+    await assignArticleToEvent(similarArticle.id, null, { eventVector, topicVector });
 
     const merged = await Article.findByPk(similarArticle.id);
-    expect(merged.clusterId).toBe(seeded.clusterId);
+    expect(merged.eventId).toBe(seeded.eventId);
+    expect(merged.topicId).toBe(seeded.topicId);
 
-    const cluster = await ArticleCluster.findByPk(seeded.clusterId);
-    expect(cluster.articleCount).toBe(2);
-    expect(cluster.sourceCount).toBe(2);
-    expect(cluster.sourceDiversityScore).toBeCloseTo(Math.log(3), 5);
+    const event = await Event.findByPk(seeded.eventId);
+    expect(event.articleCount).toBe(2);
+    expect(event.sourceCount).toBe(2);
+    expect(event.sourceDiversityScore).toBeCloseTo(Math.log(3), 5);
   });
 });

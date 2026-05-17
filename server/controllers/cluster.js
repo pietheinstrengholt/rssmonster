@@ -1,27 +1,27 @@
 import db from '../models/index.js';
-const { Article, ArticleCluster, Feed, Tag } = db;
+const { Article, Event, Feed, Tag } = db;
 import { Op } from 'sequelize';
 
 const getClusterArticles = async (req, res) => {
   try {
     const userId = req.userData.userId;
-    const clusterId = req.body?.clusterId;
+    const eventId = req.body?.clusterId;
     const clusterView = req.body?.clusterView || 'all';
-    const requestedTopicKey = req.body?.topicKey || null;
+    const requestedTopicId = Number(req.body?.topicId) || null;
     const articleId = Number(req.body?.articleId) || null;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    if (!clusterId) {
+    if (!eventId) {
       return res.status(400).json({ error: 'clusterId is required' });
     }
 
-    // Verify cluster exists and belongs to the user
-    const cluster = await ArticleCluster.findOne({
+    // Verify event exists and belongs to the user
+    const cluster = await Event.findOne({
       where: {
-        id: clusterId,
+        id: eventId,
         userId: userId
       }
     });
@@ -30,13 +30,13 @@ const getClusterArticles = async (req, res) => {
       return res.status(404).json({ error: 'Cluster not found' });
     }
 
-    let targetClusterIds = [clusterId];
-    const topicKey = cluster.topicKey || requestedTopicKey;
-    if (clusterView === 'topicGroup' && topicKey) {
-      const topicClusters = await ArticleCluster.findAll({
+    let targetClusterIds = [eventId];
+    const topicId = cluster.topicId || requestedTopicId;
+    if (clusterView === 'topicGroup' && topicId) {
+      const topicClusters = await Event.findAll({
         where: {
           userId: userId,
-          topicKey: topicKey
+          topicId: topicId
         },
         attributes: ['id']
       });
@@ -48,7 +48,7 @@ const getClusterArticles = async (req, res) => {
     // Fetch all articles in the cluster or topic group
     const articles = await Article.findAll({
       where: {
-        clusterId: targetClusterIds,
+        eventId: targetClusterIds,
         userId: userId,
         ...(articleId ? { id: { [Op.ne]: articleId } } : {})
       },

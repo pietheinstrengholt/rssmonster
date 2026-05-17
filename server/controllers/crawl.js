@@ -3,7 +3,7 @@ const { Feed } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
-import { incrementalClusterForUser } from './cluster/reclusterForUser.js';
+import { incrementalClusterForUser } from '../services/events/reclusterForUser.js';
 
 /* ------------------------------------------------------------------
  * Configuration

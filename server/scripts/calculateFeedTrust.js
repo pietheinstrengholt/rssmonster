@@ -18,7 +18,7 @@
 
 import { Op } from 'sequelize';
 import db from '../models/index.js';
-const { Feed, Article, ArticleCluster } = db;
+const { Feed, Article, Event } = db;
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
 /* ------------------------------------------------------------------
@@ -104,7 +104,7 @@ export async function calculateFeedTrustForFeed(feedId) {
       published: { [Op.gte]: since }
     },
     include: [
-      { model: ArticleCluster, as: 'cluster' }
+      { model: Event, as: 'cluster' }
     ]
   });
 

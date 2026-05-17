@@ -1,52 +1,38 @@
-// controllers/cluster/embedArticle.js
-import OpenAI from "openai";
+// services/vector/embedArticle.js
+import OpenAI from 'openai';
 
-const EMBEDDING_MODEL = "text-embedding-3-small";
+const EMBEDDING_MODEL = 'text-embedding-3-small';
 
-/**
- * Length constraints
- */
 const MIN_EVENT_LENGTH = 60;
 const MIN_TOPIC_LENGTH = 120;
 const MAX_TOPIC_LENGTH = 2200;
 
-/**
- * OpenAI client
- */
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
 const openai = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
-/* ------------------------------------------------------------------
- * Normalization helpers
- * ------------------------------------------------------------------ */
-
-function normalizeTitle(title = "") {
+function normalizeTitle(title = '') {
   return title
-    .replace(/^(breaking|update|live|exclusive):?\s*/i, "")
-    .replace(/\s+\|\s+.*$/, "")
-    .replace(/\s+-\s+.*$/, "")
+    .replace(/^(breaking|update|live|exclusive):?\s*/i, '')
+    .replace(/\s+\|\s+.*$/, '')
+    .replace(/\s+-\s+.*$/, '')
     .trim();
 }
 
-function isLikelyHtml(text = "") {
+function isLikelyHtml(text = '') {
   return /<\/?(div|img|video|figure|span|a)[\s>]/i.test(text);
 }
 
-function cleanText(text = "") {
+function cleanText(text = '') {
   return text
-    .replace(/https?:\/\/\S+/g, "")
-    .replace(/\b(read more|continue reading|sign up|subscribe|advertisement)\b/gi, "")
-    .replace(/\s+/g, " ")
+    .replace(/https?:\/\/\S+/g, '')
+    .replace(/\b(read more|continue reading|sign up|subscribe|advertisement)\b/gi, '')
+    .replace(/\s+/g, ' ')
     .trim();
 }
 
-/* ------------------------------------------------------------------
- * Text extraction
- * ------------------------------------------------------------------ */
-
-function extractParagraphs(text = "") {
+function extractParagraphs(text = '') {
   return text
     .split(/\n{2,}/)
     .map(p => cleanText(p))
@@ -62,28 +48,24 @@ function extractEventText({ title, contentStripped }) {
   if (contentStripped && !isLikelyHtml(contentStripped)) {
     const paragraphs = extractParagraphs(contentStripped);
     if (paragraphs.length) {
-      parts.push(paragraphs[0]); // first factual paragraph
+      parts.push(paragraphs[0]);
     }
   }
 
-  return parts.join(" ").trim();
+  return parts.join(' ').trim();
 }
 
 function extractTopicText({ contentStripped }) {
-  if (!contentStripped || isLikelyHtml(contentStripped)) return "";
+  if (!contentStripped || isLikelyHtml(contentStripped)) return '';
 
   const paragraphs = extractParagraphs(contentStripped);
-  if (!paragraphs.length) return "";
+  if (!paragraphs.length) return '';
 
   return paragraphs
-    .join(" ")
+    .join(' ')
     .slice(0, MAX_TOPIC_LENGTH)
     .trim();
 }
-
-/* ------------------------------------------------------------------
- * Embedding
- * ------------------------------------------------------------------ */
 
 async function embed(text) {
   const response = await openai.embeddings.create({
@@ -94,12 +76,9 @@ async function embed(text) {
   return response.data[0].embedding;
 }
 
-/**
- * Generate event + topic embeddings.
- */
 export async function embedArticle({ title, contentStripped }) {
   if (!hasApiKey) {
-    console.debug("[EMBED] skipped (no OPENAI_API_KEY)");
+    console.debug('[EMBED] skipped (no OPENAI_API_KEY)');
     return null;
   }
 
@@ -108,7 +87,7 @@ export async function embedArticle({ title, contentStripped }) {
 
   if (eventText.length < MIN_EVENT_LENGTH) {
     console.debug(
-      `[EMBED] skipped (event too short: ${eventText.length}) title="${title?.slice(0, 60) ?? ""}"`
+      `[EMBED] skipped (event too short: ${eventText.length}) title="${title?.slice(0, 60) ?? ''}"`
     );
     return null;
   }
@@ -125,7 +104,7 @@ export async function embedArticle({ title, contentStripped }) {
       embedding_model: EMBEDDING_MODEL
     };
   } catch (err) {
-    console.warn("[EMBED] failed:", err.message);
+    console.warn('[EMBED] failed:', err.message);
     return null;
   }
 }

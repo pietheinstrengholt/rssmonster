@@ -8,7 +8,6 @@ import processMedia from './processMedia.js';
 import processHtmlContent from './processHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
-import embedArticle from '../cluster/embedArticle.js';
 import saveArticle from './saveArticle.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
 import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
@@ -162,12 +161,6 @@ const processArticle = async (feed, entry) => {
       analysis.qualityScore = actionResult.qualityScore;
     }
 
-    // Generate embedding (optional, soft-fail)
-    const embedding = await embedArticle({
-      title: fields.title,
-      contentStripped
-    });
-
     // Search if the article link is a hotlink.
     // Hotness is determined by counting how often other articles link to this article URL.
     const articleUrl = normalizeUrl(fields.link);
@@ -205,9 +198,6 @@ const processArticle = async (feed, entry) => {
         hotlinkInd: hotlinkCount > 0,
         hotlinkCount: hotlinkCount,
         language: contentLanguage,
-        eventVector: embedding?.eventVector || null,
-        topicVector: embedding?.topicVector || null,
-        embedding_model: embedding?.embedding_model || null,
         published: fields.published
       },
       analysis,

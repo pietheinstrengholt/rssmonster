@@ -100,19 +100,15 @@ module.exports = {
         type: Sequelize.STRING(64),
         allowNull: true
       },
-      eventVector: {
-        type: Sequelize.JSON,
-        allowNull: true
-      },
-      topicVector: {
-        type: Sequelize.JSON,
-        allowNull: true
-      },
       embedding_model: {
         type: Sequelize.STRING(64),
         allowNull: true
       },
-      clusterId: {
+      eventId: {
+        type: Sequelize.INTEGER,
+        allowNull: true
+      },
+      topicId: {
         type: Sequelize.INTEGER,
         allowNull: true
       },
@@ -194,8 +190,12 @@ module.exports = {
       name: 'articles_contentHash_idx'
     });
 
-    await queryInterface.addIndex('articles', ['clusterId'], {
-      name: 'articles_clusterId_idx'
+    await queryInterface.addIndex('articles', ['eventId'], {
+      name: 'articles_eventId_idx'
+    });
+
+    await queryInterface.addIndex('articles', ['topicId'], {
+      name: 'articles_topicId_idx'
     });
   },
 
@@ -206,7 +206,8 @@ module.exports = {
     await queryInterface.removeIndex('articles', 'articles_userId_idx');
     await queryInterface.removeIndex('articles', 'articles_clickedAmount_idx');
     await queryInterface.removeIndex('articles', 'articles_contentHash_idx');
-    await queryInterface.removeIndex('articles', 'articles_clusterId_idx');
+    await queryInterface.removeIndex('articles', 'articles_eventId_idx');
+    await queryInterface.removeIndex('articles', 'articles_topicId_idx');
     await queryInterface.dropTable('articles');
   }
 };

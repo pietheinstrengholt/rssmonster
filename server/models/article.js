@@ -78,19 +78,15 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
-      eventVector: {
-        type: DataTypes.JSON,
-        allowNull: true
-      },
-      topicVector: {
-        type: DataTypes.JSON,
-        allowNull: true
-      },
       embedding_model: {
         type: DataTypes.STRING(64),
         allowNull: true
       },
-      clusterId: {
+      eventId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+      topicId: {
         type: DataTypes.INTEGER,
         allowNull: true
       },
@@ -240,7 +236,7 @@ export default (sequelize) => {
            *
            * Used in importance ranking to suppress redundant articles.
            */
-          const cluster = this.get('cluster');
+          const cluster = this.get('event') || this.get('cluster');
 
           if (!cluster || !cluster.articleCount || cluster.articleCount <= 1) {
             return 1.0;
@@ -255,6 +251,8 @@ export default (sequelize) => {
       topicKey: {
         type: DataTypes.VIRTUAL(DataTypes.STRING),
         get() {
+          const topic = this.get('topic');
+          if (topic?.topicKey) return topic.topicKey;
           const cluster = this.get('cluster');
           return cluster?.topicKey ?? null;
         }
@@ -273,14 +271,6 @@ export default (sequelize) => {
     {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
-      defaultScope: {
-        attributes: { exclude: ['eventVector', 'topicVector'] }
-      },
-      scopes: {
-        withVector: {
-          attributes: { exclude: [] }
-        }
-      }
     }
   );
 

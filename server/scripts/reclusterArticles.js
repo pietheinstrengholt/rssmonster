@@ -13,7 +13,7 @@
 import db from '../models/index.js';
 const { User } = db;
 
-import { reclusterForUser } from '../controllers/cluster/reclusterForUser.js';
+import { reclusterForUser } from '../services/events/reclusterForUser.js';
 
 /* ------------------------------------------------------------------
  * FULL reclustering entrypoint

@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Article, Feed, Tag, ArticleCluster } = db;
+const { Article, Feed, Tag, Event } = db;
 import { Op } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
@@ -272,13 +272,13 @@ const articleDetails = async (req, res, _next) => {
           attributes: ['id', 'name', 'tagType']
         },
         {
-          model: ArticleCluster,
+          model: Event,
           as: 'cluster',
           required: false,
           attributes: {
             include: [[
               Article.sequelize.literal(
-                'CASE WHEN `cluster`.`topicKey` IS NULL THEN (SELECT COUNT(*) FROM articles a WHERE a.clusterId = `cluster`.`id`) ELSE (SELECT COUNT(*) FROM articles a INNER JOIN article_clusters ac2 ON a.clusterId = ac2.id WHERE ac2.userId = `cluster`.`userId` AND ac2.topicKey = `cluster`.`topicKey`) END'
+                'CASE WHEN `cluster`.`topicId` IS NULL THEN (SELECT COUNT(*) FROM articles a WHERE a.eventId = `cluster`.`id`) ELSE (SELECT COUNT(*) FROM articles a INNER JOIN events e2 ON a.eventId = e2.id WHERE e2.userId = `cluster`.`userId` AND e2.topicId = `cluster`.`topicId`) END'
               ),
               'topicGroupCount'
             ]]
@@ -427,7 +427,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
           required: true
         },
         {
-          model: ArticleCluster,
+          model: Event,
           as: 'cluster',
           required: false,
           attributes: ['id', 'articleCount']
@@ -479,34 +479,34 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // - AND article actually has a cluster loaded
     if (
       selectedStatus === 'unread' &&
-      updatedArticle.clusterId &&
+      updatedArticle.eventId &&
       response.cluster &&
       Number.isInteger(response.cluster.articleCount)
     ) {
       let clusterCount = response.cluster.articleCount;
 
       if (req.body?.clusterView === 'topicGroup') {
-        const cluster = await ArticleCluster.findOne({
+        const cluster = await Event.findOne({
           where: {
-            id: updatedArticle.clusterId,
+            id: updatedArticle.eventId,
             userId: userId
           },
-          attributes: ['topicKey']
+          attributes: ['topicId']
         });
 
-        if (cluster?.topicKey) {
+        if (cluster?.topicId) {
           clusterCount = await Article.count({
             where: {
               userId: userId
             },
             include: [
               {
-                model: ArticleCluster,
+                model: Event,
                 as: 'cluster',
                 required: true,
                 attributes: [],
                 where: {
-                  topicKey: cluster.topicKey
+                  topicId: cluster.topicId
                 }
               }
             ]
@@ -517,9 +517,9 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.clusterCount = clusterCount;
     }
 
-    // If eventCluster is enabled and article has a clusterId, update all articles in the same cluster using the same payload
-    if (req.body?.clusterView === 'eventCluster' && article.clusterId) {
-      console.log(`eventCluster view enabled: marking all articles in cluster ${article.clusterId} as seen`);
+    // If eventCluster is enabled and article has an eventId, update all articles in the same event using the same payload
+    if (req.body?.clusterView === 'eventCluster' && article.eventId) {
+      console.log(`eventCluster view enabled: marking all articles in event ${article.eventId} as seen`);
 
       // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
       // If status should be marked as read, ensure it is set for the cluster update as well
@@ -534,35 +534,35 @@ const articleMarkAsSeen = async (req, res, _next) => {
         where: {
           id: { [Op.ne]: articleId },
           userId: userId,
-          clusterId: article.clusterId
+          eventId: article.eventId
         }
       });
     }
 
     // Check if cluster view is enabled for topicGroup only
-    if (req.body?.clusterView === 'topicGroup' && article.clusterId) {
-      const cluster = await ArticleCluster.findOne({
+    if (req.body?.clusterView === 'topicGroup' && article.eventId) {
+      const cluster = await Event.findOne({
         where: {
-          id: article.clusterId,
+          id: article.eventId,
           userId: userId
         },
-        attributes: ['id', 'topicKey']
+        attributes: ['id', 'topicId']
       });
 
-      if (!cluster?.topicKey) {
-        console.log(`topicGroup view enabled but no topicKey for cluster ${article.clusterId}`);
+      if (!cluster?.topicId) {
+        console.log(`topicGroup view enabled but no topicId for event ${article.eventId}`);
       } else {
-        const topicClusters = await ArticleCluster.findAll({
+        const topicClusters = await Event.findAll({
           where: {
             userId: userId,
-            topicKey: cluster.topicKey
+            topicId: cluster.topicId
           },
           attributes: ['id']
         });
 
         const topicClusterIds = topicClusters.map(c => c.id);
         if (topicClusterIds.length) {
-          console.log(`topicGroup view enabled: marking all articles in topic ${cluster.topicKey} as seen`);
+          console.log(`topicGroup view enabled: marking all articles in topic ${cluster.topicId} as seen`);
 
           const clusterPayload = { ...payload };
           if (shouldMarkRead) {
@@ -575,7 +575,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
             where: {
               id: { [Op.ne]: articleId },
               userId: userId,
-              clusterId: { [Op.in]: topicClusterIds }
+              eventId: { [Op.in]: topicClusterIds }
             }
           });
         }

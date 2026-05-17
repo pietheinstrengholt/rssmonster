@@ -153,9 +153,11 @@ module.exports = {
 
     await queryInterface.dropTable('feeds');
 
-    // Important: explicitly drop ENUM type (Postgres)
-    await queryInterface.sequelize.query(
-      'DROP TYPE IF EXISTS "enum_feeds_status";'
-    );
+    // Postgres requires explicit enum cleanup; MySQL does not support DROP TYPE.
+    if (queryInterface.sequelize.getDialect() === 'postgres') {
+      await queryInterface.sequelize.query(
+        'DROP TYPE IF EXISTS "enum_feeds_status";'
+      );
+    }
   }
 };

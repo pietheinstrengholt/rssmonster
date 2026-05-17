@@ -39,12 +39,12 @@ export const getOverview = async (req, res, _next) => {
         {
           id: {
             [Op.in]: Sequelize.literal(
-              `(SELECT representativeArticleId FROM article_clusters)`
+              `(SELECT representativeArticleId FROM events)`
             )
           }
         },
         {
-          clusterId: {
+          eventId: {
             [Op.is]: null
           }
         }
@@ -52,35 +52,35 @@ export const getOverview = async (req, res, _next) => {
     }
 
     if (clusterView === 'topicGroup') {
-      // One EVENT per TOPIC (strongest cluster per topicKey)
+      // One EVENT per TOPIC (strongest event per topicId)
       baseWhere[Op.or] = [
         {
           id: {
             [Op.in]: Sequelize.literal(`(
-              SELECT ac.representativeArticleId
-              FROM article_clusters ac
+              SELECT e.representativeArticleId
+              FROM events e
               INNER JOIN (
-                SELECT userId, topicKey, MAX(clusterStrength) AS maxStrength
-                FROM article_clusters
-                WHERE topicKey IS NOT NULL
-                GROUP BY userId, topicKey
+                SELECT userId, topicId, MAX(eventStrength) AS maxStrength
+                FROM events
+                WHERE topicId IS NOT NULL
+                GROUP BY userId, topicId
               ) t
-                ON ac.userId = t.userId
-                AND ac.topicKey = t.topicKey
-              AND ac.clusterStrength = t.maxStrength
-              WHERE ac.id = (
-                SELECT MAX(ac2.id)
-                FROM article_clusters ac2
-                WHERE ac2.userId = ac.userId
-                  AND ac2.topicKey = ac.topicKey
-                  AND ac2.clusterStrength = ac.clusterStrength
+                ON e.userId = t.userId
+                AND e.topicId = t.topicId
+              AND e.eventStrength = t.maxStrength
+              WHERE e.id = (
+                SELECT MAX(e2.id)
+                FROM events e2
+                WHERE e2.userId = e.userId
+                  AND e2.topicId = e.topicId
+                  AND e2.eventStrength = e.eventStrength
               )
             )`)
           }
         },
         {
-          // Articles without cluster still pass through
-          clusterId: {
+          // Articles without event still pass through
+          eventId: {
             [Op.is]: null
           }
         }

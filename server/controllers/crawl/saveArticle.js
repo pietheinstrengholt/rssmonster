@@ -30,8 +30,6 @@ async function saveArticle(feed, data, analysis, actionResult) {
     contentSummaryBullets: analysis.contentSummaryBullets,
     contentHash: data.contentHash,
     language: data.language,
-    eventVector: data.eventVector || null,
-    topicVector: data.topicVector || null,
     embedding_model: data.embedding_model || null,
     advertisementScore: analysis.advertisementScore,
     sentimentScore: analysis.sentimentScore,
