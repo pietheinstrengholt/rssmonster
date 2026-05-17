@@ -72,6 +72,21 @@ async function assignAndReconcile(userId, articles, label) {
     `(${articles.length} articles assigned)`
   );
 
+  // Sync article topicIds to their events' topicIds
+  const eventsWithTopics = await Event.findAll({
+    where: { id: { [Op.in]: touchedIds } },
+    attributes: ['id', 'topicId']
+  });
+
+  for (const event of eventsWithTopics) {
+    if (event.topicId != null) {
+      await Article.update(
+        { topicId: event.topicId },
+        { where: { eventId: event.id } }
+      );
+    }
+  }
+
   const events = await Event.findAll({
     where: { id: { [Op.in]: touchedIds } }
   });
@@ -180,6 +195,14 @@ async function assignAndReconcile(userId, articles, label) {
       articleCount,
       eventStrength: strength
     });
+
+    // Ensure article -> topic denormalized link matches event -> topic
+    if (event.topicId != null) {
+      await Article.update(
+        { topicId: event.topicId },
+        { where: { eventId: event.id, userId } }
+      );
+    }
   }
 
   if (touchedTopicIds.length) {
