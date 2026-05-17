@@ -47,17 +47,20 @@ function generateTopicName(article) {
   return name || 'Untitled Topic';
 }
 
-export async function assignEventToTopic({ article, articleTopicVector }) {
+export async function assignEventToTopic({ article, articleTopicVector, topicsCache = null }) {
   if (!articleTopicVector) return null;
 
   let bestTopicSim = 0;
   let bestTopic = null;
 
-  const topics = await Topic.findAll({
-    where: { userId: article.userId },
-    order: [['updatedAt', 'DESC']],
-    limit: MAX_CANDIDATES
-  });
+  // Use cached topics if provided; otherwise fetch
+  const topics = topicsCache
+    ? topicsCache
+    : await Topic.findAll({
+        where: { userId: article.userId },
+        order: [['updatedAt', 'DESC']],
+        limit: MAX_CANDIDATES
+      });
 
   for (const topic of topics) {
     if (!topic.topicVector) continue;

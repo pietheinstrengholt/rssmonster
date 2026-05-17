@@ -99,11 +99,6 @@ async function assignArticleToExistingEvent({
   cache,
   bestScore
 }) {
-  await article.update({
-    eventId: bestEvent.id,
-    topicId: bestEvent.topicId ?? null
-  });
-
   const newCount = bestEvent.articleCount + 1;
   let updatedEventVector = bestEvent.eventVector;
 
@@ -117,28 +112,33 @@ async function assignArticleToExistingEvent({
 
   const seenAt = article.published || new Date();
 
-  await bestEvent.update({
-    eventVector: updatedEventVector,
-    articleCount: newCount,
-    lastSeen: seenAt,
-    status: 'active'
-  });
+  // Parallelize database operations
+  const [, , diversity] = await Promise.all([
+    article.update({
+      eventId: bestEvent.id,
+      topicId: bestEvent.topicId ?? null
+    }),
+    bestEvent.update({
+      eventVector: updatedEventVector,
+      articleCount: newCount,
+      lastSeen: seenAt,
+      status: 'active'
+    }),
+    updateSourceDiversity(bestEvent.id, article.userId)
+  ]);
 
-  const diversity = await updateSourceDiversity(
-    bestEvent.id,
-    article.userId
-  );
-
+  // Topic updates in parallel if needed
   if (bestEvent.topicId) {
-    await Topic.increment('articleCount', {
-      by: 1,
-      where: { id: bestEvent.topicId }
-    });
-
-    await Topic.update(
-      { lastActivityAt: seenAt },
-      { where: { id: bestEvent.topicId } }
-    );
+    await Promise.all([
+      Topic.increment('articleCount', {
+        by: 1,
+        where: { id: bestEvent.topicId }
+      }),
+      Topic.update(
+        { lastActivityAt: seenAt },
+        { where: { id: bestEvent.topicId } }
+      )
+    ]);
   }
 
   if (cache) {
@@ -182,29 +182,34 @@ async function createAndAssignEvent({
     console.warn(
       `[EVENT] Failed to create event for article ${article.id}`
     );
-    return;
+    return null;
   }
 
-  await article.update({
-    eventId: newEvent.id,
-    topicId: assignedTopic?.id ?? null
-  });
+  // Parallelize article update and topic updates
+  const topicOps = assignedTopic?.id
+    ? Promise.all([
+        Topic.increment('articleCount', {
+          by: 1,
+          where: { id: assignedTopic.id }
+        }),
+        Topic.increment('eventCount', {
+          by: 1,
+          where: { id: assignedTopic.id }
+        }),
+        Topic.update(
+          { lastActivityAt: seenAt },
+          { where: { id: assignedTopic.id } }
+        )
+      ])
+    : Promise.resolve();
 
-  if (assignedTopic?.id) {
-    await Topic.increment('articleCount', {
-      by: 1,
-      where: { id: assignedTopic.id }
-    });
-    await Topic.increment('eventCount', {
-      by: 1,
-      where: { id: assignedTopic.id }
-    });
-
-    await Topic.update(
-      { lastActivityAt: seenAt },
-      { where: { id: assignedTopic.id } }
-    );
-  }
+  await Promise.all([
+    article.update({
+      eventId: newEvent.id,
+      topicId: assignedTopic?.id ?? null
+    }),
+    topicOps
+  ]);
 
   if (cache) {
     cache.add(newEvent);
@@ -214,14 +219,20 @@ async function createAndAssignEvent({
     `[EVENT] Article ${article.id} -> NEW EVENT ${newEvent.id}` +
       (assignedTopic?.topicKey ? ` (topic=${assignedTopic.topicKey.slice(0, 8)})` : '')
   );
+  
+  return newEvent.id;
 }
 
-export async function assignArticleToEvent(articleId, cache = null, vectors = null) {
-  const article = await Article.findByPk(articleId);
+export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null) {
+  // Accept article object directly to avoid redundant fetch, or fetch by ID
+  const article = typeof articleIdOrObj === 'object' 
+    ? articleIdOrObj 
+    : await Article.findByPk(articleIdOrObj);
+  
   const articleEventVector = vectors?.eventVector ?? null;
   const articleTopicVector = vectors?.topicVector ?? null;
 
-  if (!article || !articleEventVector) return;
+  if (!article || !articleEventVector) return null;
 
   const events = cache
     ? cache.events
@@ -256,20 +267,23 @@ export async function assignArticleToEvent(articleId, cache = null, vectors = nu
       cache,
       bestScore
     });
-    return;
+    return bestEvent.id;
   }
 
   const assignedTopic = await assignEventToTopic({
     article,
-    articleTopicVector
+    articleTopicVector,
+    topicsCache
   });
 
-  await createAndAssignEvent({
+  const newEventId = await createAndAssignEvent({
     article,
     articleEventVector,
     assignedTopic,
     cache
   });
+  
+  return newEventId;
 }
 
 export default assignArticleToEvent;
