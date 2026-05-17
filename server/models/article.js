@@ -87,6 +87,19 @@ export default (sequelize) => {
         allowNull: true
       },
       topicId: {
+        /**
+         * Denormalized topic link for convenience/performance.
+         * 
+         * Article participates in two distinct relationships:
+         * 1. Structural: Article -> Event -> Topic (primary grouping)
+         * 2. Denormalized: Article -> Topic (direct link for queries)
+         * 
+         * When an article is assigned to an event, topicId is set from event.topicId
+         * for efficient topic-level queries without JOIN traversal. This maintains
+         * consistency: article.topicId always equals article.event.topicId (if event exists).
+         * 
+         * See: services/events/assignArticleToEvent.js for assignment logic.
+         */
         type: DataTypes.INTEGER,
         allowNull: true
       },

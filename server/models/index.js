@@ -93,6 +93,24 @@ Topic.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(Event, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Event.belongsTo(User, { foreignKey: 'userId' });
 
+// ---- Semantic Clustering & Topic Grouping ----
+// 
+// Relationship structure:
+//   Article -> Event -> Topic (structural: primary grouping)
+//   Article -> Topic       (denormalized: for efficient querying)
+//
+// Assignment logic (services/events/assignArticleToEvent.js):
+//   1. Article vectors matched against Event vectors (>88% similarity)
+//   2. If match found: article assigned to existing event (reuses event.topicId)
+//   3. If no match: article resolves topic (by topic vector, >65% similarity or create)
+//   4. New event created with resolved/created topic
+//   5. Both article.topicId and event.topicId set to same topic for consistency
+//
+// Performance notes:
+//   - Article.topicId is denormalized for fast topic-level queries
+//   - Event.topicId is the structural grouping; deleting event does not cascade topic
+//   - Thresholds (0.88 event, 0.65 topic) configured in semanticConfig.js
+
 // Topic ↔ Event
 Topic.hasMany(Event, { foreignKey: 'topicId', onDelete: 'SET NULL' });
 Event.belongsTo(Topic, { foreignKey: 'topicId' });
@@ -102,7 +120,7 @@ Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'artic
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'cluster' });
 
-// Topic ↔ Article
+// Topic ↔ Article (denormalized for direct access)
 Topic.hasMany(Article, { foreignKey: 'topicId', onDelete: 'SET NULL' });
 Article.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
 
