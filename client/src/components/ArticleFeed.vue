@@ -345,26 +345,39 @@ export default {
       // Remove any previously inserted cluster articles for this parent first
       this.removeClusterArticles({ articleId });
 
-      // Find the index of the clicked article
+      // Build related list in server order, excluding the parent itself when present
+      const relatedArticles = articles.filter(article => article.id !== articleId);
+
+      if (relatedArticles.length === 0) {
+        console.log('No related cluster articles to insert');
+        return;
+      }
+
+      // Re-home existing related items to the parent location instead of dropping them
+      const articlesToInsert = relatedArticles.map((article) => {
+        const existingIndex = this.articles.findIndex(a => a.id === article.id);
+
+        if (existingIndex !== -1) {
+          const [existingArticle] = this.articles.splice(existingIndex, 1);
+          return {
+            ...existingArticle,
+            ...article
+          };
+        }
+
+        return article;
+      });
+
+      // Find the index of the clicked article after re-homing
       const clickedIndex = this.articles.findIndex(a => a.id === articleId);
-      
+
       if (clickedIndex === -1) {
         console.error('Could not find clicked article in articles list');
         return;
       }
 
-      // Filter out articles that are already in the list to avoid duplicates
-      const newArticles = articles.filter(
-        article => !this.articles.some(a => a.id === article.id)
-      );
-
-      if (newArticles.length === 0) {
-        console.log('All cluster articles are already in the list');
-        return;
-      }
-
-      // Mark new articles as cluster articles with a reference to the parent
-      const markedArticles = newArticles.map(article => ({
+      // Mark cluster children with parent reference
+      const markedArticles = articlesToInsert.map(article => ({
         ...article,
         isClusterArticle: true,
         clusterParentId: articleId
