@@ -118,138 +118,118 @@ export class EventCache {
   }
 }
 
-export async function assignArticleToEvent(articleId, cache = null, vectors = null) {
-  const article = await Article.findByPk(articleId);
-  const articleEventVector = vectors?.eventVector ?? null;
-  const articleTopicVector = vectors?.topicVector ?? null;
+async function resolveTopicAssignment(article, articleTopicVector) {
+  if (!articleTopicVector) return null;
 
-  if (!article || !articleEventVector) return;
+  let bestTopicSim = 0;
+  let bestTopic = null;
 
-  const events = cache
-    ? cache.events
-    : (await Event.findAll({
-        where: { userId: article.userId },
-        order: [['updatedAt', 'DESC']],
-        limit: MAX_CANDIDATES
-      }));
+  const topics = await Topic.findAll({
+    where: { userId: article.userId },
+    order: [['updatedAt', 'DESC']],
+    limit: MAX_CANDIDATES
+  });
 
-  let bestEvent = null;
-  let bestScore = 0;
-
-  for (const event of events) {
-    if (!event.eventVector) continue;
+  for (const topic of topics) {
+    if (!topic.topicVector) continue;
 
     const sim = cosineSimilarity(
-      articleEventVector,
-      event.eventVector
+      articleTopicVector,
+      topic.topicVector
     );
 
-    if (sim > bestScore) {
-      bestScore = sim;
-      bestEvent = event;
+    if (sim > bestTopicSim) {
+      bestTopicSim = sim;
+      bestTopic = topic;
     }
   }
 
-  if (bestEvent && bestScore >= EVENT_SIM_THRESHOLD) {
-    await article.update({
-      eventId: bestEvent.id,
-      topicId: bestEvent.topicId ?? null
+  if (bestTopic && bestTopicSim >= TOPIC_SIM_THRESHOLD) {
+    return bestTopic;
+  }
+
+  const topicKey = generateTopicKey(articleTopicVector);
+  const now = article.published || new Date();
+
+  return Topic.create({
+    userId: article.userId,
+    name: generateTopicName(article),
+    topicKey: topicKey || `topic-${article.userId}-${article.id}`,
+    topicVector: articleTopicVector,
+    articleCount: 0,
+    eventCount: 0,
+    lastActivityAt: now
+  });
+}
+
+async function assignArticleToExistingEvent({
+  article,
+  articleEventVector,
+  bestEvent,
+  cache,
+  bestScore
+}) {
+  await article.update({
+    eventId: bestEvent.id,
+    topicId: bestEvent.topicId ?? null
+  });
+
+  const newCount = bestEvent.articleCount + 1;
+  let updatedEventVector = bestEvent.eventVector;
+
+  if (bestEvent.eventVector && articleEventVector) {
+    const weight = 1 / newCount;
+    updatedEventVector = bestEvent.eventVector.map(
+      (v, i) =>
+        v * (1 - weight) + articleEventVector[i] * weight
+    );
+  }
+
+  const seenAt = article.published || new Date();
+
+  await bestEvent.update({
+    eventVector: updatedEventVector,
+    articleCount: newCount,
+    lastSeen: seenAt,
+    status: 'active'
+  });
+
+  const diversity = await updateSourceDiversity(
+    bestEvent.id,
+    article.userId
+  );
+
+  if (bestEvent.topicId) {
+    await Topic.increment('articleCount', {
+      by: 1,
+      where: { id: bestEvent.topicId }
     });
 
-    const newCount = bestEvent.articleCount + 1;
+    await Topic.update(
+      { lastActivityAt: seenAt },
+      { where: { id: bestEvent.topicId } }
+    );
+  }
 
-    let updatedEventVector = bestEvent.eventVector;
-
-    if (bestEvent.eventVector && articleEventVector) {
-      const weight = 1 / newCount;
-      updatedEventVector = bestEvent.eventVector.map(
-        (v, i) =>
-          v * (1 - weight) + articleEventVector[i] * weight
-      );
-    }
-
-    await bestEvent.update({
+  if (cache) {
+    cache.updateInMemory(bestEvent.id, {
       eventVector: updatedEventVector,
       articleCount: newCount,
-      lastSeen: article.published || new Date(),
-      status: 'active'
+      ...diversity
     });
-
-    const diversity = await updateSourceDiversity(
-      bestEvent.id,
-      article.userId
-    );
-
-    if (bestEvent.topicId) {
-      await Topic.increment('articleCount', {
-        by: 1,
-        where: { id: bestEvent.topicId }
-      });
-
-      await Topic.update(
-        { lastActivityAt: article.published || new Date() },
-        { where: { id: bestEvent.topicId } }
-      );
-    }
-
-    if (cache) {
-      cache.updateInMemory(bestEvent.id, {
-        eventVector: updatedEventVector,
-        articleCount: newCount,
-        ...diversity
-      });
-    }
-
-    console.log(
-      `[EVENT] Article ${article.id} -> EVENT ${bestEvent.id} (sim=${bestScore.toFixed(3)})`
-    );
-    return;
   }
 
-  let assignedTopic = null;
+  console.log(
+    `[EVENT] Article ${article.id} -> EVENT ${bestEvent.id} (sim=${bestScore.toFixed(3)})`
+  );
+}
 
-  if (articleTopicVector) {
-    let bestTopicSim = 0;
-    let bestTopic = null;
-
-    const topics = await Topic.findAll({
-      where: { userId: article.userId },
-      order: [['updatedAt', 'DESC']],
-      limit: MAX_CANDIDATES
-    });
-
-    for (const topic of topics) {
-      if (!topic.topicVector) continue;
-
-      const sim = cosineSimilarity(
-        articleTopicVector,
-        topic.topicVector
-      );
-
-      if (sim > bestTopicSim) {
-        bestTopicSim = sim;
-        bestTopic = topic;
-      }
-    }
-
-    if (bestTopic && bestTopicSim >= TOPIC_SIM_THRESHOLD) {
-      assignedTopic = bestTopic;
-    } else {
-      const topicKey = generateTopicKey(articleTopicVector);
-      const now = article.published || new Date();
-
-      assignedTopic = await Topic.create({
-        userId: article.userId,
-        name: generateTopicName(article),
-        topicKey: topicKey || `topic-${article.userId}-${article.id}`,
-        topicVector: articleTopicVector,
-        articleCount: 0,
-        eventCount: 0,
-        lastActivityAt: now
-      });
-    }
-  }
-
+async function createAndAssignEvent({
+  article,
+  articleEventVector,
+  assignedTopic,
+  cache
+}) {
   const name = generateEventName(article);
   const seenAt = article.published || new Date();
 
@@ -304,6 +284,59 @@ export async function assignArticleToEvent(articleId, cache = null, vectors = nu
     `[EVENT] Article ${article.id} -> NEW EVENT ${newEvent.id}` +
       (assignedTopic?.topicKey ? ` (topic=${assignedTopic.topicKey.slice(0, 8)})` : '')
   );
+}
+
+export async function assignArticleToEvent(articleId, cache = null, vectors = null) {
+  const article = await Article.findByPk(articleId);
+  const articleEventVector = vectors?.eventVector ?? null;
+  const articleTopicVector = vectors?.topicVector ?? null;
+
+  if (!article || !articleEventVector) return;
+
+  const events = cache
+    ? cache.events
+    : (await Event.findAll({
+        where: { userId: article.userId },
+        order: [['updatedAt', 'DESC']],
+        limit: MAX_CANDIDATES
+      }));
+
+  let bestEvent = null;
+  let bestScore = 0;
+
+  for (const event of events) {
+    if (!event.eventVector) continue;
+
+    const sim = cosineSimilarity(
+      articleEventVector,
+      event.eventVector
+    );
+
+    if (sim > bestScore) {
+      bestScore = sim;
+      bestEvent = event;
+    }
+  }
+
+  if (bestEvent && bestScore >= EVENT_SIM_THRESHOLD) {
+    await assignArticleToExistingEvent({
+      article,
+      articleEventVector,
+      bestEvent,
+      cache,
+      bestScore
+    });
+    return;
+  }
+
+  const assignedTopic = await resolveTopicAssignment(article, articleTopicVector);
+
+  await createAndAssignEvent({
+    article,
+    articleEventVector,
+    assignedTopic,
+    cache
+  });
 }
 
 export default assignArticleToEvent;
