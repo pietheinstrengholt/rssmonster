@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 const { Article, Event, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
-import { computeImportance } from './importanceScore.js';
+import { computeImportance, computeImportanceBreakdown } from './importanceScore.js';
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
@@ -757,6 +757,29 @@ export const searchArticles = async ({
           .sort((a, b) => b.importance - a.importance);
 
         articles = scored.map(item => item.article);
+
+        if (process.env.NODE_ENV === 'development') {
+          console.log('[IMPORTANCE DEBUG] Formula: 0.10*quality + 0.15*freshness + 0.45*coverage + 0.15*crossSource + 0.15*corroboration + ruleBoost');
+          console.table(
+            scored.slice(0, 50).map(({ article, importance }, index) => {
+              const bd = computeImportanceBreakdown(article);
+              return {
+                rank: index + 1,
+                articleId: article.id,
+                title: article.title?.slice(0, 40),
+                freshness: Number(bd.freshness.toFixed(4)),
+                quality: Number(bd.quality.toFixed(4)),
+                coverage: Number(bd.coverage.toFixed(4)),
+                crossSource: Number(bd.crossSource.toFixed(4)),
+                corroboration: Number(bd.corroboration.toFixed(4)),
+                ruleBoost: Number(bd.ruleBoost.toFixed(4)),
+                clusterSize: bd.clusterSize,
+                sourceCount: bd.sourceCount,
+                importance: Number(importance.toFixed(4))
+              };
+            })
+          );
+        }
       } else if (sortQuality) {
         articles = articles
           .map(article => ({

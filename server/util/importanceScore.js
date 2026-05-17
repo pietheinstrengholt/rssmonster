@@ -66,3 +66,60 @@ export function computeImportance(article) {
 
   return Math.max(0, Math.min(1, importance));
 }
+
+/**
+ * Return the per-signal breakdown used by computeImportance.
+ * Useful for debug logging to trace why an article ranked where it did.
+ */
+export function computeImportanceBreakdown(article) {
+  const freshness = article.freshness ?? 0.5;
+  const quality = article.quality ?? 0.7;
+
+  const cluster =
+    article.get?.('event') ??
+    article.event ??
+    article.get?.('cluster') ??
+    article.cluster;
+  const rawClusterSize = Number(cluster?.articleCount);
+  const clusterSize = Number.isFinite(rawClusterSize) && rawClusterSize > 0 ? rawClusterSize : 1;
+  const MAX_COVERAGE_CLUSTER_SIZE = 64;
+  const coverage = Math.min(
+    Math.log2(clusterSize) / Math.log2(MAX_COVERAGE_CLUSTER_SIZE),
+    1
+  );
+
+  const rawDiversity = Number(cluster?.sourceDiversityScore ?? 0);
+  const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
+
+  const rawSourceCount = Number(cluster?.sourceCount);
+  const sourceCount = Number.isFinite(rawSourceCount) && rawSourceCount > 0 ? rawSourceCount : 1;
+  const sourceSpread = Math.min(Math.log2(sourceCount) / Math.log2(8), 1);
+
+  const crossSource = Math.max(sourceDiversity, sourceSpread);
+  const corroboration = coverage * crossSource;
+
+  const tags = article.Tags ?? article.get?.('Tags') ?? [];
+  const hasRuleTag = tags.some(t => t.tagType === 'rule');
+  const ruleBoost = hasRuleTag ? 0.15 : 0;
+
+  const importance = Math.max(0, Math.min(1,
+    0.10 * quality +
+    0.15 * freshness +
+    0.45 * coverage +
+    0.15 * crossSource +
+    0.15 * corroboration +
+    ruleBoost
+  ));
+
+  return {
+    freshness,
+    quality,
+    coverage,
+    crossSource,
+    corroboration,
+    ruleBoost,
+    clusterSize,
+    sourceCount,
+    importance
+  };
+}
