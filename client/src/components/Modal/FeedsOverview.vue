@@ -26,10 +26,15 @@
                     <div v-if="feedsLoading">Loading feeds…</div>
                     <div v-else-if="feedsError" class="text-danger">{{ feedsError }}</div>
                     <div v-else>
-                        <div v-if="feeds.length > 0" class="d-flex gap-3 mb-4">
+                        <div class="d-flex gap-3 mb-4">
                             <div class="settings-group flex-grow-1">
                                 <label>Export Feeds</label>
-                                <button type="button" class="btn btn-download w-100" @click="downloadOpml">
+                                <button
+                                  type="button"
+                                  class="btn btn-download w-100"
+                                  :disabled="feeds.length === 0"
+                                  @click="downloadOpml"
+                                >
                                     <BootstrapIcon icon="download" />
                                     Download OPML
                                 </button>
@@ -43,6 +48,13 @@
                                     Upload OPML
                                 </button>
                             </div>
+                        </div>
+
+                        <div v-if="opmlMessage" class="alert alert-success mb-3">
+                            {{ opmlMessage }}
+                        </div>
+                        <div v-if="opmlError" class="alert alert-danger mb-3">
+                            {{ opmlError }}
                         </div>
 
                         <div v-if="feeds.length === 0">No feeds found.</div>
@@ -92,6 +104,7 @@
 
 <script>
 import { fetchFeeds } from '../../api/feeds';
+import { exportOpml, importOpml } from '../../api/opml';
 
 export default {
     emits: ['close', 'saved'],
@@ -109,6 +122,8 @@ export default {
             feeds: [],
             feedsLoading: false,
             feedsError: null,
+            opmlMessage: null,
+            opmlError: null,
             smartFolderRecommendations: [],
             smartFolderInsightsLoading: false,
             smartFolderInsightsLoaded: false,
@@ -147,6 +162,54 @@ export default {
             this.$store.data.setSelectedCategoryId(feed.categoryId ?? '%');
             this.$store.data.setSelectedFeedId(feed.id);
             this.$store.data.setShowModal('UpdateFeed');
+        },
+        async downloadOpml() {
+            this.opmlMessage = null;
+            this.opmlError = null;
+
+            try {
+                const response = await exportOpml();
+                const contentDisposition = response.headers?.['content-disposition'] || '';
+                const fileNameMatch = contentDisposition.match(/filename=\"?([^\";]+)\"?/i);
+                const filename = fileNameMatch?.[1] || `rssmonster-export-${Date.now()}.opml`;
+
+                const blob = new Blob([response.data], { type: 'text/xml' });
+                const downloadUrl = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = downloadUrl;
+                link.download = filename;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+                URL.revokeObjectURL(downloadUrl);
+            } catch (err) {
+                console.error('Failed to export OPML:', err);
+                this.opmlError = 'Failed to download OPML export.';
+            }
+        },
+        async handleFileSelect(event) {
+            this.opmlMessage = null;
+            this.opmlError = null;
+
+            const file = event?.target?.files?.[0];
+            if (!file) return;
+
+            try {
+                const response = await importOpml(file);
+                const categoriesCreated = Number(response?.data?.categoriesCreated || 0);
+                const feedsCreated = Number(response?.data?.feedsCreated || 0);
+                this.opmlMessage = `Import completed: ${categoriesCreated} categories and ${feedsCreated} feeds added.`;
+
+                await this.fetchFeeds();
+                this.$emit('saved');
+            } catch (err) {
+                console.error('Failed to import OPML:', err);
+                this.opmlError = err?.response?.data?.error || 'Failed to import OPML file.';
+            } finally {
+                if (event?.target) {
+                    event.target.value = '';
+                }
+            }
         }
     },
     computed: {
