@@ -1,12 +1,9 @@
 // services/events/assignArticleToEvent.js
-import crypto from 'crypto';
 import db from '../../models/index.js';
+import assignEventToTopic from './assignEventToTopic.js';
+import { EVENT_SIM_THRESHOLD, MAX_CANDIDATES } from './semanticConfig.js';
 
 const { Article, Event, Topic } = db;
-
-const EVENT_SIM_THRESHOLD = 0.88;
-const TOPIC_SIM_THRESHOLD = 0.65;
-const MAX_CANDIDATES = 300;
 
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
@@ -45,17 +42,6 @@ async function updateSourceDiversity(eventId, userId) {
   return { sourceCount, sourceDiversityScore };
 }
 
-function generateTopicKey(topicVector) {
-  if (!Array.isArray(topicVector)) return null;
-
-  const slice = topicVector.slice(0, 32);
-  const buffer = Buffer.from(
-    slice.map(v => Math.round(v * 1e6)).join(',')
-  );
-
-  return crypto.createHash('sha1').update(buffer).digest('hex');
-}
-
 function generateEventName(article) {
   if (!article?.title) return null;
 
@@ -69,18 +55,6 @@ function generateEventName(article) {
   }
 
   return name || null;
-}
-
-function generateTopicName(article) {
-  if (!article?.title) return 'Untitled Topic';
-
-  const name = article.title
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, 120)
-    .trim();
-
-  return name || 'Untitled Topic';
 }
 
 export class EventCache {
@@ -116,50 +90,6 @@ export class EventCache {
       Object.assign(event.dataValues, updates);
     }
   }
-}
-
-async function resolveTopicAssignment(article, articleTopicVector) {
-  if (!articleTopicVector) return null;
-
-  let bestTopicSim = 0;
-  let bestTopic = null;
-
-  const topics = await Topic.findAll({
-    where: { userId: article.userId },
-    order: [['updatedAt', 'DESC']],
-    limit: MAX_CANDIDATES
-  });
-
-  for (const topic of topics) {
-    if (!topic.topicVector) continue;
-
-    const sim = cosineSimilarity(
-      articleTopicVector,
-      topic.topicVector
-    );
-
-    if (sim > bestTopicSim) {
-      bestTopicSim = sim;
-      bestTopic = topic;
-    }
-  }
-
-  if (bestTopic && bestTopicSim >= TOPIC_SIM_THRESHOLD) {
-    return bestTopic;
-  }
-
-  const topicKey = generateTopicKey(articleTopicVector);
-  const now = article.published || new Date();
-
-  return Topic.create({
-    userId: article.userId,
-    name: generateTopicName(article),
-    topicKey: topicKey || `topic-${article.userId}-${article.id}`,
-    topicVector: articleTopicVector,
-    articleCount: 0,
-    eventCount: 0,
-    lastActivityAt: now
-  });
 }
 
 async function assignArticleToExistingEvent({
@@ -329,7 +259,10 @@ export async function assignArticleToEvent(articleId, cache = null, vectors = nu
     return;
   }
 
-  const assignedTopic = await resolveTopicAssignment(article, articleTopicVector);
+  const assignedTopic = await assignEventToTopic({
+    article,
+    articleTopicVector
+  });
 
   await createAndAssignEvent({
     article,

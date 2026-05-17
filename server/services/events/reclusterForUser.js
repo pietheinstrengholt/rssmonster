@@ -4,28 +4,33 @@ import { Op } from 'sequelize';
 
 import { assignArticleToEvent, EventCache } from './assignArticleToEvent.js';
 import embedArticle from '../vector/embedArticle.js';
+import {
+  RECENCY_WINDOW_DAYS,
+  EVENT_STRENGTH_CONFIG
+} from './semanticConfig.js';
 
 const { Article, Event, Topic } = db;
-
-const RECENCY_WINDOW_DAYS = parseInt(process.env.RECENCY_WINDOW_DAYS) || 7;
 
 function computeEventStrength({
   articleCount,
   topicEventCount
 }) {
-  const redundancyScore = Math.min(articleCount / 3, 1);
-
-  const topicScore = Math.min(
-    Math.log2((topicEventCount ?? 1) + 1) / 3,
+  const redundancyScore = Math.min(
+    articleCount / EVENT_STRENGTH_CONFIG.maxArticleRedundancyCount,
     1
   );
 
-  const cohesionScore = 0.85;
+  const topicScore = Math.min(
+    Math.log2((topicEventCount ?? 1) + 1) / EVENT_STRENGTH_CONFIG.maxTopicEventLogBase,
+    1
+  );
+
+  const cohesionScore = EVENT_STRENGTH_CONFIG.cohesionBaseline;
 
   return Number((
-    redundancyScore * 0.45 +
-    cohesionScore   * 0.35 +
-    topicScore      * 0.20
+    redundancyScore * EVENT_STRENGTH_CONFIG.weights.redundancy +
+    cohesionScore   * EVENT_STRENGTH_CONFIG.weights.cohesion +
+    topicScore      * EVENT_STRENGTH_CONFIG.weights.topic
   ).toFixed(3));
 }
 
