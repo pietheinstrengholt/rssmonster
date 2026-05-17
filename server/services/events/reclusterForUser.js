@@ -3,7 +3,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
 import { assignArticleToEvent, EventCache } from './assignArticleToEvent.js';
-import embedArticle from '../vector/embedArticle.js';
+import embedArticle from './embedArticle.js';
 import {
   RECENCY_WINDOW_DAYS,
   EVENT_STRENGTH_CONFIG,

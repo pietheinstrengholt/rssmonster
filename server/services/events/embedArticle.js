@@ -1,4 +1,4 @@
-// services/vector/embedArticle.js
+// services/events/embedArticle.js
 import OpenAI from 'openai';
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
