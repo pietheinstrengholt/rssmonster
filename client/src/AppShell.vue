@@ -301,25 +301,14 @@ export default {
     },
     async getOverview(initial) {
       try {
-        await this.$store.data.fetchOverview({ initial });
+        await this.$store.data.fetchOverviewSplit({ initial });
 
         this.offlineStatus = false;
         this.overviewLoaded = true;
 
-        const {
-          unreadCount,
-          unreadsSinceLastUpdate,
-          currentSelection
-        } = this.$store.data;
-
-        // Set PWA badge from store state
-        this.setBadge(unreadCount);
-
         // Initial load: sync local selection
         if (initial === true) {
-          this.updateSelection(currentSelection);
-        } else if (unreadsSinceLastUpdate > 0) {
-          this.showNotification(unreadsSinceLastUpdate);
+          this.updateSelection(this.$store.data.currentSelection);
         }
       } catch (error) {
         console.error("There was an error!", error);
@@ -353,7 +342,7 @@ export default {
 
       try {
         // Refresh overview (this also fetches settings)
-        await this.$store.data.fetchOverview({ initial: true });
+        await this.$store.data.fetchOverviewSplit({ initial: true });
 
         // Reload articles if feed exists
         const ref = this.$refs.articleFeed;
@@ -425,7 +414,14 @@ export default {
     },
     "$store.data.unreadsSinceLastUpdate": {
       handler: function(count) {
-        // Update PWA badge safely on unread delta changes
+        if (count > 0) {
+          this.showNotification(count);
+        }
+      },
+      deep: true
+    },
+    "$store.data.unreadCount": {
+      handler: function(count) {
         this.setBadge(count);
       },
       deep: true

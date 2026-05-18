@@ -3,7 +3,11 @@ import { defineStore } from 'pinia';
 import { fetchSettings as fetchSettingsAPI } from '../api/settings';
 import { fetchSmartFolders as fetchSmartFoldersAPI } from '../api/smartfolders';
 import { fetchTopTags as fetchTopTagsAPI } from '../api/tags';
-import { fetchOverview as fetchOverviewAPI } from '../api/manager';
+import {
+  fetchOverview as fetchOverviewAPI,
+  fetchOverviewLite as fetchOverviewLiteAPI,
+  fetchOverviewCounts as fetchOverviewCountsAPI
+} from '../api/manager';
 
 const defaultSelection = () => ({
   status: 'unread',
@@ -79,23 +83,77 @@ export const useStore = defineStore('data', {
       this.updateOverview(data, { initial, forceUpdate });
     },
 
+    async fetchOverviewSplit({ initial = false, forceUpdate = false } = {}) {
+      if (initial) await this.fetchSettings();
+
+      const { data } = await fetchOverviewLiteAPI();
+      this.updateOverviewStructure(data, { initial, forceUpdate });
+
+      void fetchOverviewCountsAPI(this.currentSelection)
+        .then(({ data: countsData }) => {
+          this.updateOverviewCounts(countsData, { initial, forceUpdate });
+        })
+        .catch(err => {
+          if (import.meta.env.DEV) {
+            console.warn('Overview counts refresh failed', err);
+          }
+        });
+    },
+
     updateOverview(
       { unreadCount, readCount, starCount, hotCount, clickedCount, categories },
       { initial = false, forceUpdate = false } = {}
     ) {
+      const previousUnreadCount = this.unreadCount;
+
+      this.unreadCount = unreadCount;
+      this.readCount = readCount;
+      this.starCount = starCount;
+      this.hotCount = hotCount;
+      this.clickedCount = clickedCount;
+      this.categories = categories;
+      this.chatAssistantOpen = false;
+
       if (initial || forceUpdate) {
-        this.unreadCount = unreadCount;
-        this.readCount = readCount;
-        this.starCount = starCount;
-        this.hotCount = hotCount;
-        this.clickedCount = clickedCount;
-        this.categories = categories;
-        this.chatAssistantOpen = false;
         this.unreadsSinceLastUpdate = 0;
         return;
       }
 
-      this.unreadsSinceLastUpdate = unreadCount - this.unreadCount;
+      this.unreadsSinceLastUpdate = unreadCount - previousUnreadCount;
+    },
+
+    updateOverviewStructure(
+      { categories },
+      { initial = false, forceUpdate = false } = {}
+    ) {
+      this.categories = categories;
+      this.chatAssistantOpen = false;
+
+      if (initial || forceUpdate) {
+        this.unreadsSinceLastUpdate = 0;
+      }
+    },
+
+    updateOverviewCounts(
+      { unreadCount, readCount, starCount, hotCount, clickedCount, categories },
+      { initial = false, forceUpdate = false } = {}
+    ) {
+      const previousUnreadCount = this.unreadCount;
+
+      this.unreadCount = unreadCount;
+      this.readCount = readCount;
+      this.starCount = starCount;
+      this.hotCount = hotCount;
+      this.clickedCount = clickedCount;
+      this.categories = categories;
+      this.chatAssistantOpen = false;
+
+      if (initial || forceUpdate) {
+        this.unreadsSinceLastUpdate = 0;
+        return;
+      }
+
+      this.unreadsSinceLastUpdate = unreadCount - previousUnreadCount;
     },
 
     /* --------------------------------------------------
@@ -234,7 +292,7 @@ export const useStore = defineStore('data', {
 
     setClusterView(value) {
       this.currentSelection.clusterView = normalizeClusterView(value);
-      this.fetchOverview({ forceUpdate: true }).catch(err => {
+      this.fetchOverviewSplit({ forceUpdate: true }).catch(err => {
         if (import.meta.env.DEV) {
           console.warn('Cluster view refresh failed', err);
         }

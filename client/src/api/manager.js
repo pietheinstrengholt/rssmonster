@@ -15,6 +15,23 @@ export const fetchOverview = (currentSelection) =>
   });
 
 /**
+ * Fetch overview structure only.
+ */
+export const fetchOverviewLite = () =>
+  api.get('/manager/overview-lite');
+
+/**
+ * Fetch overview counts for current selection.
+ */
+export const fetchOverviewCounts = (currentSelection) =>
+  api.post('/manager/overview-counts', {
+    ...currentSelection,
+    search: normalizeQuerySortAliasesForApi(currentSelection.search),
+    sort: normalizeSortValueForApi(currentSelection.sort),
+    clusterView: String(currentSelection.clusterView)
+  });
+
+/**
  * Update category order
  */
 export const updateCategoryOrder = (order) =>
