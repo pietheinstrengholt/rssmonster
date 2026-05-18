@@ -39,7 +39,6 @@
         <li><hr class="dropdown-divider"></li>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'all' }" href="#" @click="setClusterView('all')">All articles</a>
         <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'eventCluster' }" href="#" @click="setClusterView('eventCluster')">Cluster per event</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'topicGroup' }" href="#" @click="setClusterView('topicGroup')">Cluster per topic</a>
       </div>
     </div>
     <!-- Smart Folder Dropdown -->
@@ -316,11 +315,10 @@ export default {
       this.$store.data.setMobileSearchOpen(this.showSearch);
     },
     toggleClusteredView: function() {
-      // Cycle through cluster view modes: all → eventCluster → topicGroup → all
+      // Cycle through cluster view modes: all → eventCluster → all
       const current = this.$store.data.currentSelection.clusterView;
       let nextValue = 'all';
       if (current === 'all') nextValue = 'eventCluster';
-      else if (current === 'eventCluster') nextValue = 'topicGroup';
       this.$store.data.setClusterView(nextValue);
     },
     setClusterView: function(value) {

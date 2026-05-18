@@ -766,7 +766,6 @@ export const searchArticles = async ({
               return {
                 rank: index + 1,
                 articleId: article.id,
-                title: article.title?.slice(0, 40),
                 freshness: Number(bd.freshness.toFixed(4)),
                 quality: Number(bd.quality.toFixed(4)),
                 coverage: Number(bd.coverage.toFixed(4)),

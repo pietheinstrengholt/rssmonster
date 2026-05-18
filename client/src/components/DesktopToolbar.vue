@@ -54,7 +54,6 @@
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'all' }" href="#" @click="setClusterView('all')">All articles</a>
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'eventCluster' }" href="#" @click="setClusterView('eventCluster')">Cluster per event</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'topicGroup' }" href="#" @click="setClusterView('topicGroup')">Cluster per topic</a>
       </div>
     </div>
 
@@ -417,7 +416,6 @@ export default {
       return (value) => {
         if (value === 'all') return 'All articles';
         if (value === 'eventCluster') return 'Cluster per event';
-        if (value === 'topicGroup') return 'Cluster per topic';
         return 'All articles';
       };
     },

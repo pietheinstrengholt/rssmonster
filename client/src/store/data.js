@@ -20,6 +20,13 @@ const defaultSelection = () => ({
   clusterView: 'all'
 });
 
+const normalizeClusterView = value => {
+  const normalized = String(value ?? 'all');
+  if (normalized === 'topicGroup') return 'eventCluster';
+  if (normalized === 'eventCluster') return 'eventCluster';
+  return 'all';
+};
+
 const extractClusterViewFromQuery = query => {
   if (!query) return null;
   const match = String(query).match(/(?:^|\s)cluster:(all|eventCluster|topicGroup)(?=\s|$)/i);
@@ -27,7 +34,7 @@ const extractClusterViewFromQuery = query => {
 
   const value = match[1].toLowerCase();
   if (value === 'eventcluster') return 'eventCluster';
-  if (value === 'topicgroup') return 'topicGroup';
+  if (value === 'topicgroup') return 'eventCluster';
   return 'all';
 };
 
@@ -118,8 +125,8 @@ export const useStore = defineStore('data', {
         ...selection,
         clusterView:
           selection.clusterView != null
-            ? String(selection.clusterView)
-            : String(prev.clusterView)
+            ? normalizeClusterView(selection.clusterView)
+            : normalizeClusterView(prev.clusterView)
       };
     },
 
@@ -226,7 +233,7 @@ export const useStore = defineStore('data', {
     },
 
     setClusterView(value) {
-      this.currentSelection.clusterView = String(value);
+      this.currentSelection.clusterView = normalizeClusterView(value);
       this.fetchOverview({ forceUpdate: true }).catch(err => {
         if (import.meta.env.DEV) {
           console.warn('Cluster view refresh failed', err);
