@@ -17,7 +17,6 @@ const defaultSelection = () => ({
   categoryId: '%',
   feedId: '%',
   search: null,
-  sort: 'DESC',
   tag: null,
   smartFolderId: null,
   minAdvertisementScore: 0,

@@ -4,10 +4,56 @@ import { Op } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
+// Helper function to batch-load article details
+const loadArticleDetails = async (articlesArray, userId) => {
+  const articles = await Article.findAll({
+    where: { userId, id: articlesArray },
+    include: [
+      {
+        model: Feed,
+        required: true
+      },
+      {
+        model: Tag,
+        required: false,
+        attributes: ['id', 'name', 'tagType']
+      }
+    ]
+  });
+
+  // Compute topicGroupCount
+  const topicKeys = [...new Set(articles.map(a => a.cluster?.topicKey).filter(Boolean))];
+  if (topicKeys.length > 0) {
+    const topicRows = await ArticleCluster.findAll({
+      where: { userId, topicKey: { [Op.in]: topicKeys } },
+      attributes: ['topicKey', [fn('SUM', col('articleCount')), 'topicGroupCount']],
+      group: ['topicKey'],
+      raw: true
+    });
+    const topicCountMap = new Map(topicRows.map(r => [r.topicKey, Number(r.topicGroupCount) || 0]));
+
+    for (const article of articles) {
+      if (article.cluster) {
+        const count = article.cluster.topicKey
+          ? topicCountMap.get(article.cluster.topicKey) ?? article.cluster.articleCount ?? 0
+          : article.cluster.articleCount ?? 0;
+        article.cluster.setDataValue('topicGroupCount', count);
+      }
+    }
+  }
+
+  // Preserve incoming ID order
+  const idIndexMap = new Map(articlesArray.map((id, i) => [String(id), i]));
+  articles.sort((a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id)));
+
+  return articles;
+};
+
 export const getArticles = async (req, res) => {
   try {
+    const userId = req.userData.userId;
     const result = await searchArticles({
-      userId: req.userData.userId,
+      userId,
       search: req.query.search || "",
       categoryId: req.query.categoryId,
       feedId: req.query.feedId,
@@ -22,7 +68,8 @@ export const getArticles = async (req, res) => {
       persistSettings: true
     });
 
-    res.status(200).json(result);
+    const articles = await loadArticleDetails(result.itemIds, userId);
+    res.status(200).json({ ...result, articles });
   } catch (err) {
     console.error("getArticles error:", err);
     res.status(500).json({ error: err.message });

@@ -4,7 +4,7 @@ import api from './client';
  * Fetch article IDs based on current selection
  */
 export const fetchArticleIds = params =>
-  api.get('/articles', { params });
+  api.get('/articles', { params: { ...params, includeFirstPage: true } });
 
 /**
  * Fetch article details by IDs

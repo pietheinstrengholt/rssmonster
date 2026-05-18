@@ -85,12 +85,17 @@ export default {
   methods: {
     async fetchArticleIds(data) {
       try {
+        this.hasLoadedContent = false; // Show spinner immediately
         const response = await fetchArticleIds(data);
 
         await this.resetPool();
         this.container = response.data.itemIds;
 
-        if (this.container.length > 0) {
+        if (response.data.firstPage) {
+          this.distance += response.data.firstPage.length;
+          this.articles = response.data.firstPage;
+          this.hasLoadedContent = true;
+        } else if (this.container.length > 0) {
           this.getContent();
         } else {
           this.hasLoadedContent = true;
