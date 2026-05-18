@@ -5,7 +5,7 @@
     <div class="alert alert-info mb-3">
       <p class="mb-2">
         We’ll add a few high-quality feeds so you can explore
-        Smart Folders, importance ranking, and clustering.
+        Smart Folders, recommended ranking, and clustering.
       </p>
     </div>
 

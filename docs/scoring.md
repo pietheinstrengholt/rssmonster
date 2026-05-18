@@ -33,7 +33,7 @@ RSSMonster ranks every article using a few interpretable signals. Scores stay be
 - Behavior: rewards fresh, high-quality stories that multiple trusted sources cover; penalizes stale or low-quality items and de-emphasizes redundant duplicates.
 
 ## Sorting Options
-- `sort:IMPORTANCE` (default): uses the importance score above.
+- `sort:RECOMMENDED` (default): uses the recommended score above.
 - `sort:QUALITY`: orders by the computed quality signal.
 - `sort:ATTENTION`: highlights what you actually engaged with (attention score).
 - `sort:DESC|ASC`: chronological by published date.

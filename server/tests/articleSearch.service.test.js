@@ -353,7 +353,7 @@ describe('articleSearch.service', () => {
       expect(oldIdx).toBeLessThan(recentIdx);
     });
 
-    it('sorts by IMPORTANCE using loaded cluster attributes', async () => {
+    it('sorts by RECOMMENDED using loaded cluster attributes', async () => {
       let lowCoverageArticle;
       let highCoverageArticle;
       let lowCluster;
@@ -414,7 +414,7 @@ describe('articleSearch.service', () => {
         await lowCoverageArticle.update({ eventId: lowCluster.id });
         await highCoverageArticle.update({ eventId: highCluster.id });
 
-        const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'IMPORTANCE' });
+        const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'RECOMMENDED' });
         const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
         const highCoverageIdx = result.itemIds.indexOf(highCoverageArticle.id);
 

@@ -258,7 +258,7 @@ const articleDetails = async (req, res, _next) => {
 
     // Always preserve incoming articleIds order.
     // searchArticles is the single source of truth for ranking/sorting,
-    // including IMPORTANCE/QUALITY/ATTENTION and DESC/ASC modes.
+    // including RECOMMENDED/QUALITY/ATTENTION and DESC/ASC modes.
 
     const articles = await Article.findAll({
       include: [

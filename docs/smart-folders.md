@@ -16,7 +16,7 @@ They update automatically as new articles arrive.
 - Each Smart Folder stores a search expression (same syntax as the [Search Guide](search.md)).
 - Results refresh continuously as new items match the query.
 - Limit: each folder returns up to `limitCount` articles (default 50).
-- Sorting respects the query (`sort:IMPORTANCE`, `sort:QUALITY`, `sort:ATTENTION`, `sort:DESC|ASC`).
+- Sorting respects the query (`sort:RECOMMENDED`, `sort:QUALITY`, `sort:ATTENTION`, `sort:DESC|ASC`).
 
 ---
 
@@ -31,12 +31,12 @@ Use the same tokens as the search bar: status (`unread:true`, `star:true`), tags
 ---
 
 ## Recipes
-- Top stories today: `@today unread:true cluster:true sort:IMPORTANCE limit:100`
+- Top stories today: `@today unread:true cluster:true sort:RECOMMENDED limit:100`
 - High-quality long reads: `quality:>0.75 sort:QUALITY unread:true`
 - Engaged items: `sort:ATTENTION clicked:true limit:80`
 - Hot right now: `hot:true sort:ATTENTION`
-- Topic by tag: `tag:ai unread:true sort:IMPORTANCE`
-- Fresh and non-duplicate: `@yesterday cluster:true sort:IMPORTANCE`
+- Topic by tag: `tag:ai unread:true sort:RECOMMENDED`
+- Fresh and non-duplicate: `@yesterday cluster:true sort:RECOMMENDED`
 
 ---
 

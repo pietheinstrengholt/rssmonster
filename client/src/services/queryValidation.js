@@ -18,7 +18,7 @@ export const expressionPatterns = [
     { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
     { name: 'title', regex: /^title:(.+)$/i },
-    { name: 'sort', regex: /^sort:(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i },    { name: 'limit', regex: /^limit:\s*(\d+)$/i },    { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
+    { name: 'sort', regex: /^sort:(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i },    { name: 'limit', regex: /^limit:\s*(\d+)$/i },    { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'freshness', regex: /^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'firstSeenAge', regex: /^firstSeen:\s*(\d+)([hd])$/i },
     { name: 'dateSpecific', regex: /^@(\d{4}-\d{2}-\d{2})$/ },
@@ -33,6 +33,10 @@ export const expressionPatterns = [
  * Known keywords for filter expressions.
  */
 export const knownKeywords = ['star', 'unread', 'read', 'clicked', 'seen', 'cluster', 'clustercount', 'hot', 'tag', 'title', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
+
+export const normalizeSortValueForApi = sort => sort;
+
+export const normalizeQuerySortAliasesForApi = query => query;
 
 /**
  * Pattern to detect wrong syntax (using = instead of :)

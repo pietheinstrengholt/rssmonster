@@ -4,7 +4,7 @@ import { searchArticles } from '../util/articleSearch.service.js';
 
 const { Article, Feed, Setting, Tag } = db;
 
-describe('articleSearch importance include wiring', () => {
+describe('articleSearch recommended include wiring', () => {
   beforeEach(() => {
     vi.spyOn(Setting, 'findOne').mockResolvedValue({
       minAdvertisementScore: 0,
@@ -21,8 +21,8 @@ describe('articleSearch importance include wiring', () => {
     vi.restoreAllMocks();
   });
 
-  it('includes cluster association when sorting by IMPORTANCE', async () => {
-    await searchArticles({ userId: 1, sort: 'IMPORTANCE', status: '%' });
+  it('includes cluster association when sorting by RECOMMENDED', async () => {
+    await searchArticles({ userId: 1, sort: 'RECOMMENDED', status: '%' });
 
     expect(Article.findAll).toHaveBeenCalledTimes(1);
     const query = Article.findAll.mock.calls[0][0];
@@ -35,10 +35,10 @@ describe('articleSearch importance include wiring', () => {
     );
   });
 
-  it('includes cluster association in smartFolderSearch mode when sort:IMPORTANCE is requested', async () => {
+  it('includes cluster association in smartFolderSearch mode when sort:RECOMMENDED is requested', async () => {
     await searchArticles({
       userId: 1,
-      search: 'sort:IMPORTANCE',
+      search: 'sort:RECOMMENDED',
       status: '%',
       smartFolderSearch: true
     });

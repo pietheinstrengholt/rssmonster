@@ -29,7 +29,7 @@
                                 <li><strong>Quality filters:</strong> <code>quality:>0.6</code>, <code>quality:<=0.8</code>, <code>freshness:>=0.5</code>, <code>freshness:<0.3</code></li>
                                 <li><strong>Date filters:</strong> <code>@today</code>, <code>@yesterday</code>, <code>@lastweek</code>, <code>@2025-12-14</code></li>
                                 <li><strong>Special filters:</strong> <code>cluster:all</code>, <code>cluster:eventCluster</code>, <code>clustercount:>=3</code>, <code>hot:false</code>, <code>limit:100</code></li>
-                                <li><strong>Sorting:</strong> <code>sort:IMPORTANCE</code>, <code>sort:QUALITY</code>, <code>sort:ATTENTION</code>, <code>sort:DESC</code>, <code>sort:ASC</code></li>
+                                <li><strong>Sorting:</strong> <code>sort:RECOMMENDED</code>, <code>sort:QUALITY</code>, <code>sort:ATTENTION</code>, <code>sort:DESC</code>, <code>sort:ASC</code></li>
                             </ul>
                             <p class="mb-2">
                                 <strong>Example queries:</strong>
@@ -37,7 +37,7 @@
                             <ul class="mb-2 small">
                                 <li><code>tag:ai unread:true quality:>0.6</code> – Unread AI articles with high quality</li>
                                 <li><code>star:true @"last Monday"</code> – Starred articles from last Monday</li>
-                                <li><code>title:javascript @today sort:IMPORTANCE</code> – Today's JavaScript articles by importance</li>
+                                <li><code>title:javascript @today sort:RECOMMENDED</code> – Today's JavaScript articles by recommended score</li>
                                 <li><code>cluster:eventCluster clustercount:2 sort:ATTENTION</code> – Event clusters with 2+ articles by attention</li>
                             </ul>
                             <p class="mb-0">

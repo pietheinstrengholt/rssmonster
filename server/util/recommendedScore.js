@@ -1,11 +1,11 @@
 /**
- * Compute the runtime importance score for an article.
+ * Compute the runtime recommended score for an article.
  *
  * Combines time relevance, content quality, coverage signal,
  * and source diversity into a single ranking signal.
  * Note: feedTrust is already included in article.quality (from the Article model virtual field).
  */
-export function computeImportance(article) {
+export function computeRecommended(article) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
 
@@ -14,7 +14,7 @@ export function computeImportance(article) {
   const quality = article.quality ?? 0.7;
 
   // Coverage signal: articles in larger clusters rank higher (more corroborated reporting)
-  // More articles covering the same event/topic = greater importance.
+  // More articles covering the same event/topic = greater recommended weight.
   // Normalize by log scale so growth stays bounded and robust for very large clusters.
   // This gives: standalone=0.00, 2 articles≈0.17, 4 articles≈0.33, 16 articles≈0.67, 64+ articles=1.00
   const cluster =
@@ -53,10 +53,10 @@ export function computeImportance(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
-  // Weighted sum: balances all signals to produce importance score (0–1)
+  // Weighted sum: balances all signals to produce recommended score (0–1)
   // Weights: quality (10%), freshness (15%), coverage (45%), crossSource (15%), corroboration (15%)
   // Plus a flat 0.15 boost for rule-tagged articles
-  const importance =
+  const recommended =
     0.10 * quality +
     0.15 * freshness +
     0.45 * coverage +
@@ -64,14 +64,14 @@ export function computeImportance(article) {
     0.15 * corroboration +
     ruleBoost;
 
-  return Math.max(0, Math.min(1, importance));
+  return Math.max(0, Math.min(1, recommended));
 }
 
 /**
- * Return the per-signal breakdown used by computeImportance.
+ * Return the per-signal breakdown used by computeRecommended.
  * Useful for debug logging to trace why an article ranked where it did.
  */
-export function computeImportanceBreakdown(article) {
+export function computeRecommendedBreakdown(article) {
   const freshness = article.freshness ?? 0.5;
   const quality = article.quality ?? 0.7;
 
@@ -102,7 +102,7 @@ export function computeImportanceBreakdown(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
-  const importance = Math.max(0, Math.min(1,
+  const recommended = Math.max(0, Math.min(1,
     0.10 * quality +
     0.15 * freshness +
     0.45 * coverage +
@@ -120,6 +120,6 @@ export function computeImportanceBreakdown(article) {
     ruleBoost,
     clusterSize,
     sourceCount,
-    importance
+    recommended
   };
 }

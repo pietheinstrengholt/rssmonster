@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
-import { computeImportance } from '../util/importanceScore.js';
+import { computeRecommended } from '../util/recommendedScore.js';
 
-describe('computeImportance', () => {
+describe('computeRecommended', () => {
   it('ranks larger corroborated clusters higher with equal freshness/quality', () => {
     const standalone = {
       freshness: 0.5,
       quality: 0.7,
-      get: (key) => {
+      get: key => {
         if (key === 'cluster') return { articleCount: 1, sourceDiversityScore: 0 };
         if (key === 'Tags') return [];
         return undefined;
@@ -16,14 +16,14 @@ describe('computeImportance', () => {
     const highlyCorroborated = {
       freshness: 0.5,
       quality: 0.7,
-      get: (key) => {
+      get: key => {
         if (key === 'cluster') return { articleCount: 32, sourceDiversityScore: 2.0 };
         if (key === 'Tags') return [];
         return undefined;
       }
     };
 
-    expect(computeImportance(highlyCorroborated)).toBeGreaterThan(computeImportance(standalone));
+    expect(computeRecommended(highlyCorroborated)).toBeGreaterThan(computeRecommended(standalone));
   });
 
   it('reads cluster associations from plain object properties when get() is not present', () => {
@@ -34,7 +34,7 @@ describe('computeImportance', () => {
       Tags: []
     };
 
-    const score = computeImportance(article);
+    const score = computeRecommended(article);
 
     expect(score).toBeGreaterThan(0.5);
     expect(score).toBeLessThanOrEqual(1);
@@ -63,8 +63,8 @@ describe('computeImportance', () => {
       Tags: []
     };
 
-    const singleSourceScore = computeImportance(sameSizeSingleSource);
-    const multiSourceScore = computeImportance(sameSizeMultiSource);
+    const singleSourceScore = computeRecommended(sameSizeSingleSource);
+    const multiSourceScore = computeRecommended(sameSizeMultiSource);
 
     expect(multiSourceScore).toBeGreaterThan(singleSourceScore);
     expect(multiSourceScore - singleSourceScore).toBeGreaterThan(0.2);

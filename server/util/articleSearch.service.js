@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 const { Article, Event, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
-import { computeImportance, computeImportanceBreakdown } from './importanceScore.js';
+import { computeRecommended, computeRecommendedBreakdown } from './recommendedScore.js';
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
@@ -11,7 +11,7 @@ const ciLike = (column, value) => (
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
- * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 export const searchArticles = async ({
     userId,
@@ -58,7 +58,7 @@ export const searchArticles = async ({
      * Parse search query and extract field filters.
      * Field filters can override default query parameters and combine with text search.
      * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-     * tag:name, title:text, sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+    * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
      */
     const rawSearch = search.trim();
     let starFilter = null; // When set, overrides status parameter to filter by starInd
@@ -68,7 +68,7 @@ export const searchArticles = async ({
     let tagFilter = null; // Tag name extracted from search (tag:something)
     let seenFilter = null; // Seen filter from search (seen:true/false)
     let firstSeenAgeFilter = null; // First seen age filter from search (firstSeen:24h, firstSeen:7d)
-    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/IMPORTANCE/QUALITY/ATTENTION)
+    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION)
     let titleFilter = null; // Title-specific search (title:text) - searches title only
     let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
     let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
@@ -178,7 +178,7 @@ export const searchArticles = async ({
       const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i); // firstSeen:24h or firstSeen:7d
       const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|IMPORTANCE|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:IMPORTANCE, sort:QUALITY, or sort:ATTENTION
+      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:RECOMMENDED, sort:QUALITY, or sort:ATTENTION
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
       const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
@@ -310,18 +310,17 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:ASC/DESC/IMPORTANCE/QUALITY/ATTENTION) overrides query param
-    // SortImportance flag set if sort is IMPORTANCE
+    // Sort: search token (sort:ASC/DESC/RECOMMENDED/QUALITY/ATTENTION) overrides query param
     // Smart folder optimization: skip sort entirely (only counting articles)
     let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
-    let sortImportance = false;
+    let sortRecommended = false;
     let sortQuality = false;
     let sortAttention = false;
 
     // Normalize sort value when virtual sort modes are specified
-    if (workingSort.toUpperCase() === "IMPORTANCE") {
+    if (workingSort.toUpperCase() === "RECOMMENDED") {
       workingSort = "DESC";
-      sortImportance = true;
+      sortRecommended = true;
     } else if (workingSort.toUpperCase() === "QUALITY") {
       workingSort = "DESC";
       sortQuality = true;
@@ -473,7 +472,7 @@ export const searchArticles = async ({
      * Optimize attribute selection based on what's actually needed:
      * - Smart folders without filters: only id
      * - Smart folders with quality/freshness filters: id + score fields + published
-     * - Regular searches with importance sort: id + published + score fields
+    * - Regular searches with recommended sort: id + published + score fields
      * - Regular searches with quality sort: id + score fields
      * - Regular searches otherwise: id + published (for ordering)
      */
@@ -481,7 +480,7 @@ export const searchArticles = async ({
     
     // Determine what attributes we need based on filters and sort
     const needsQuality = qualityFilter || sortQuality;
-    const needsFreshness = freshnessFilter || sortImportance;
+    const needsFreshness = freshnessFilter || sortRecommended;
     const needsAttention = sortAttention;
     const needsPublished = !smartFolderSearch || needsFreshness;
     
@@ -495,7 +494,7 @@ export const searchArticles = async ({
       if (!queryAttributes.includes("published")) {
         queryAttributes.push("published");
       }
-      // Also need quality scores for importance computation
+      // Also need quality scores for recommended computation
       if (!queryAttributes.includes("qualityScore")) {
         queryAttributes.push("advertisementScore", "sentimentScore", "qualityScore");
       }
@@ -516,10 +515,10 @@ export const searchArticles = async ({
       where: baseWhere
     };
 
-    // Include cluster + feed associations when sorting by importance
-    // so computeImportance can access cluster.articleCount, cluster.sourceDiversityScore,
+    // Include cluster + feed associations when sorting by the recommended score
+    // so computeRecommended can access cluster.articleCount, cluster.sourceDiversityScore,
     // and Feed.feedTrust for the quality virtual field
-    if (sortImportance) {
+    if (sortRecommended) {
       articleQuery.include = [
         {
           model: Event,
@@ -733,9 +732,9 @@ export const searchArticles = async ({
       console.log(`\x1b[31mApplied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${articles.length} articles remaining\x1b[0m`);
     }
     
-    // If sorting by importance, compute importance scores and sort
-    if (sortImportance) {
-      workingSort = "IMPORTANCE"; // Reflect importance sort in response, needed for later saving to Settings
+    // If sorting by the recommended score, compute recommended scores and sort.
+    if (sortRecommended) {
+      workingSort = "RECOMMENDED";
     }
     if (sortQuality) {
       workingSort = "QUALITY";
@@ -746,23 +745,23 @@ export const searchArticles = async ({
 
     // Move the sorting logic here to after all filtering is done
     // For smart folder searches, only apply in-memory sorting for virtual sort modes.
-    if (!smartFolderSearch || sortImportance || sortQuality || sortAttention) {
+    if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention) {
       console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
-      if (sortImportance) {
+      if (sortRecommended) {
         const scored = articles
           .map(article => ({
             article,
-            importance: computeImportance(article)
+            recommended: computeRecommended(article)
           }))
-          .sort((a, b) => b.importance - a.importance);
+          .sort((a, b) => b.recommended - a.recommended);
 
         articles = scored.map(item => item.article);
 
         if (process.env.NODE_ENV === 'development') {
-          console.log('[IMPORTANCE DEBUG] Formula: 0.10*quality + 0.15*freshness + 0.45*coverage + 0.15*crossSource + 0.15*corroboration + ruleBoost');
+          console.log('[RECOMMENDED DEBUG] Formula: 0.10*quality + 0.15*freshness + 0.45*coverage + 0.15*crossSource + 0.15*corroboration + ruleBoost');
           console.table(
-            scored.slice(0, 50).map(({ article, importance }, index) => {
-              const bd = computeImportanceBreakdown(article);
+            scored.slice(0, 50).map(({ article, recommended }, index) => {
+              const bd = computeRecommendedBreakdown(article);
               return {
                 rank: index + 1,
                 articleId: article.id,
@@ -774,7 +773,7 @@ export const searchArticles = async ({
                 ruleBoost: Number(bd.ruleBoost.toFixed(4)),
                 clusterSize: bd.clusterSize,
                 sourceCount: bd.sourceCount,
-                importance: Number(importance.toFixed(4))
+                recommended: Number(recommended.toFixed(4))
               };
             })
           );
