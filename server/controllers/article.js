@@ -1,13 +1,12 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, Event } = db;
-import { Op } from 'sequelize';
+import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
 
 // Helper function to batch-load article details
-const loadArticleDetails = async (articlesArray, userId) => {
+const loadArticleDetails = async (userId, articlesArray) => {
   const articles = await Article.findAll({
-    where: { userId, id: articlesArray },
     include: [
       {
         model: Feed,
@@ -17,25 +16,32 @@ const loadArticleDetails = async (articlesArray, userId) => {
         model: Tag,
         required: false,
         attributes: ['id', 'name', 'tagType']
+      },
+      {
+        model: Event,
+        as: 'cluster',
+        required: false,
+        attributes: ['id', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId', 'userId']
       }
-    ]
+    ],
+    where: { userId, id: articlesArray }
   });
 
-  // Compute topicGroupCount
-  const topicKeys = [...new Set(articles.map(a => a.cluster?.topicKey).filter(Boolean))];
-  if (topicKeys.length > 0) {
-    const topicRows = await ArticleCluster.findAll({
-      where: { userId, topicKey: { [Op.in]: topicKeys } },
-      attributes: ['topicKey', [fn('SUM', col('articleCount')), 'topicGroupCount']],
-      group: ['topicKey'],
+  // Compute topicGroupCount in a single grouped query to avoid per-row subqueries.
+  const topicIds = [...new Set(articles.map(a => a.cluster?.topicId).filter(Boolean))];
+  if (topicIds.length > 0) {
+    const topicRows = await Event.findAll({
+      where: { userId, topicId: { [Op.in]: topicIds } },
+      attributes: ['topicId', [fn('SUM', col('articleCount')), 'topicGroupCount']],
+      group: ['topicId'],
       raw: true
     });
-    const topicCountMap = new Map(topicRows.map(r => [r.topicKey, Number(r.topicGroupCount) || 0]));
+    const topicCountMap = new Map(topicRows.map(r => [r.topicId, Number(r.topicGroupCount) || 0]));
 
     for (const article of articles) {
       if (article.cluster) {
-        const count = article.cluster.topicKey
-          ? topicCountMap.get(article.cluster.topicKey) ?? article.cluster.articleCount ?? 0
+        const count = article.cluster.topicId
+          ? topicCountMap.get(article.cluster.topicId) ?? article.cluster.articleCount ?? 0
           : article.cluster.articleCount ?? 0;
         article.cluster.setDataValue('topicGroupCount', count);
       }
@@ -68,8 +74,13 @@ export const getArticles = async (req, res) => {
       persistSettings: true
     });
 
-    const articles = await loadArticleDetails(result.itemIds, userId);
-    res.status(200).json({ ...result, articles });
+    if (req.query.includeFirstPage === 'true' && result.itemIds.length > 0) {
+      const pageSize = req.query.viewMode === 'minimal' ? 50 : 20;
+      const firstPageIds = result.itemIds.slice(0, pageSize);
+      result.firstPage = await loadArticleDetails(userId, firstPageIds);
+    }
+
+    res.status(200).json(result);
   } catch (err) {
     console.error("getArticles error:", err);
     res.status(500).json({ error: err.message });
@@ -299,58 +310,13 @@ const articleDetails = async (req, res, _next) => {
     }
 
     const articlesArray = articleIds.split(",");
-    console.log(
-      `\x1b[33mFetching details for ${articlesArray.length} articles for user ${userId}\x1b[0m`
-    );
-
-    // Always preserve incoming articleIds order.
-    // searchArticles is the single source of truth for ranking/sorting,
-    // including RECOMMENDED/QUALITY/ATTENTION and DESC/ASC modes.
-
-    const articles = await Article.findAll({
-      include: [
-        {
-          model: Feed,
-          required: true
-        },
-        {
-          model: Tag,
-          required: false,
-          attributes: ['id', 'name', 'tagType']
-        },
-        {
-          model: Event,
-          as: 'cluster',
-          required: false,
-          attributes: {
-            include: [[
-              Article.sequelize.literal(
-                'CASE WHEN `cluster`.`topicId` IS NULL THEN (SELECT COUNT(*) FROM articles a WHERE a.eventId = `cluster`.`id`) ELSE (SELECT COUNT(*) FROM articles a INNER JOIN events e2 ON a.eventId = e2.id WHERE e2.userId = `cluster`.`userId` AND e2.topicId = `cluster`.`topicId`) END'
-              ),
-              'topicGroupCount'
-            ]]
-          }
-        }
-      ],
-      where: {
-        userId: userId,
-        id: articlesArray
-      }
-    });
+    const articles = await loadArticleDetails(userId, articlesArray);
 
     if (!articles) {
       return res.status(404).json({
         message: "No articles found"
       });
     }
-
-    // Preserve original ID order from search service for all sort modes.
-    const idIndexMap = new Map(
-      articlesArray.map((id, index) => [String(id), index])
-    );
-    articles.sort(
-      (a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id))
-    );
 
     /* ============================================================
      * Predicted Reading Affinity (NEW)

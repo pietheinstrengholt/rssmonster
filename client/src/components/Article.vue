@@ -157,7 +157,7 @@
         ></div>
         <div
           class="media-content enclosure"
-          v-if="shouldShowImage && imageUrl && !isImageUrlInContent(contentOriginal, imageUrl)"
+          v-if="shouldShowImage && imageUrl && !hasArticleContent && !isImageUrlInContent(contentOriginal, imageUrl)"
           >
           <img :src="imageUrl" alt="Image" />
         </div>
@@ -313,6 +313,17 @@ export default {
     shouldShowImage() {
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
+    },
+    hasArticleContent() {
+      const content = this.contentOriginal;
+      if (!content || content === '<html><head></head><body>null</body></html>') return false;
+
+      const textOnly = String(content)
+        .replace(/<(.|\n)*?>/g, ' ')
+        .replace(/&nbsp;/gi, ' ')
+        .trim();
+
+      return textOnly.length > 0;
     },
     clusterCountTotal() {
       if (!this.cluster) return 0;
