@@ -2,7 +2,10 @@ import api from './client';
 import { normalizeQuerySortAliasesForApi } from '../services/queryValidation';
 
 export const fetchSmartFolders = () =>
-  api.get('/smartfolders');
+  api.get('/smartfolders?withCounts=false');
+
+export const fetchSmartFolderCounts = () =>
+  api.get('/smartfolders/counts');
 
 /**
  * Save smart folders

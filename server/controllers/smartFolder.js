@@ -6,6 +6,50 @@ import { searchArticles } from "../util/articleSearch.service.js";
 import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
 const { Article, Feed, Tag, SmartFolder } = db;
 
+const mapWithConcurrency = async (items, concurrency, mapper) => {
+  const results = new Array(items.length);
+  let nextIndex = 0;
+
+  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
+    while (nextIndex < items.length) {
+      const currentIndex = nextIndex;
+      nextIndex += 1;
+      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+    }
+  });
+
+  await Promise.all(workers);
+  return results;
+};
+
+const getSmartFolderCountsForUser = async userId => {
+  const smartFolders = await SmartFolder.findAll({
+    where: { userId },
+    order: [['name', 'ASC']]
+  });
+
+  return mapWithConcurrency(smartFolders, 4, async folder => {
+    try {
+      const result = await searchArticles({
+        userId,
+        search: folder.query,
+        smartFolderSearch: true,
+        limitCount: folder.limitCount || 50
+      });
+
+      return {
+        id: folder.id,
+        ArticleCount: result.itemIds.length
+      };
+    } catch {
+      return {
+        id: folder.id,
+        ArticleCount: 0
+      };
+    }
+  });
+};
+
 /* ---------------------------------------------------
  * GET /api/smartfolders
  * --------------------------------------------------- */
@@ -16,25 +60,36 @@ const getSmartFolders = async (req, res, next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    const withCounts = String(req.query?.withCounts ?? 'true').toLowerCase() !== 'false';
+
     const smartFolders = await SmartFolder.findAll({
       where: { userId },
       order: [['name', 'ASC']]
     });
 
-    for (const folder of smartFolders) {
-      try {
-        const result = await searchArticles({
-          userId,
-          search: folder.query,
-          smartFolderSearch: true,
-          limitCount: folder.limitCount || 50
-        });
-        folder.dataValues.ArticleCount = result.itemIds.length;
-      } catch {
-        folder.dataValues.ArticleCount = 0;
+    if (withCounts) {
+      const counts = await getSmartFolderCountsForUser(userId);
+      const countMap = new Map(counts.map(item => [item.id, item.ArticleCount]));
+
+      for (const folder of smartFolders) {
+        folder.dataValues.ArticleCount = countMap.get(folder.id) ?? 0;
       }
     }
 
+    res.status(200).json({ total: smartFolders.length, smartFolders });
+  } catch (err) {
+    next(err);
+  }
+};
+
+const getSmartFolderCounts = async (req, res, next) => {
+  try {
+    const userId = req.userData.userId;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const smartFolders = await getSmartFolderCountsForUser(userId);
     res.status(200).json({ total: smartFolders.length, smartFolders });
   } catch (err) {
     next(err);
@@ -320,6 +375,7 @@ const getSmartFolderInsights = async (req, res, next) => {
  * --------------------------------------------------- */
 export default {
   getSmartFolders,
+  getSmartFolderCounts,
   postSmartFolder,
   collectSmartFolderSignals,
   getSmartFolderInsights

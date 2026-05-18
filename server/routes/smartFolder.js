@@ -7,6 +7,9 @@ export const router = express.Router();
 // GET /api/smartfolders
 router.get("/", userMiddleware.isLoggedIn, smartFolderController.getSmartFolders);
 
+// GET /api/smartfolders/counts
+router.get('/counts', userMiddleware.isLoggedIn, smartFolderController.getSmartFolderCounts);
+
 // POST /api/smartfolders
 router.post('/', userMiddleware.isLoggedIn, smartFolderController.postSmartFolder);
 
