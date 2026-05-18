@@ -485,8 +485,10 @@ export default {
     };
   },
   async created() {
-    this.$store.data.fetchTopTags();
-    await this.$store.data.fetchSmartFolders();
+    Promise.allSettled([
+      this.$store.data.fetchTopTags(),
+      this.$store.data.fetchSmartFolders()
+    ]).catch(() => {});
   },
   components: {
     draggable

@@ -4,19 +4,25 @@ import db from '../models/index.js';
 import { Op, fn, col, literal } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
-const { Article, Feed, Tag, SmartFolder } = db;
+const { Article, Feed, Tag, SmartFolder, Setting } = db;
 
-const mapWithConcurrency = async (items, concurrency, mapper) => {
-  const results = new Array(items.length);
-  let nextIndex = 0;
+const SMART_FOLDER_COUNT_CONCURRENCY = 4;
 
-  const workers = Array.from({ length: Math.min(concurrency, items.length) }, async () => {
-    while (nextIndex < items.length) {
-      const currentIndex = nextIndex;
-      nextIndex += 1;
-      results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+const mapWithConcurrency = async (items, limit, mapper) => {
+  if (!Array.isArray(items) || items.length === 0) return [];
+
+  const results = Array(items.length);
+  let index = 0;
+
+  const workers = Array.from(
+    { length: Math.min(Math.max(limit, 1), items.length) },
+    async () => {
+      while (index < items.length) {
+        const currentIndex = index++;
+        results[currentIndex] = await mapper(items[currentIndex], currentIndex);
+      }
     }
-  });
+  );
 
   await Promise.all(workers);
   return results;
@@ -25,14 +31,27 @@ const mapWithConcurrency = async (items, concurrency, mapper) => {
 const getSmartFolderCountsForUser = async userId => {
   const smartFolders = await SmartFolder.findAll({
     where: { userId },
+    attributes: ['id', 'name', 'query', 'limitCount'],
     order: [['name', 'ASC']]
   });
 
-  return mapWithConcurrency(smartFolders, 4, async folder => {
+  const userSettings = await Setting.findOne({
+    where: { userId },
+    attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+  });
+
+  const minAdvertisementScore = userSettings?.minAdvertisementScore ?? 0;
+  const minSentimentScore = userSettings?.minSentimentScore ?? 0;
+  const minQualityScore = userSettings?.minQualityScore ?? 0;
+
+  return mapWithConcurrency(smartFolders, SMART_FOLDER_COUNT_CONCURRENCY, async folder => {
     try {
       const result = await searchArticles({
         userId,
         search: folder.query,
+        minAdvertisementScore,
+        minSentimentScore,
+        minQualityScore,
         smartFolderSearch: true,
         limitCount: folder.limitCount || 50
       });
@@ -64,6 +83,7 @@ const getSmartFolders = async (req, res, next) => {
 
     const smartFolders = await SmartFolder.findAll({
       where: { userId },
+      attributes: ['id', 'name', 'query', 'limitCount'],
       order: [['name', 'ASC']]
     });
 
@@ -141,34 +161,55 @@ const collectSmartFolderSignals = async (
 ) => {
   const since = new Date(Date.now() - days * 86400000);
 
-  /* -----------------------------------
-   * Aggregate article stats per feed
-   * ----------------------------------- */
-  const articleStats = await Article.findAll({
-    where: {
-      userId,
-      published: { [Op.gte]: since }
-    },
-    attributes: [
-      'feedId',
-      [fn('COUNT', col('id')), 'total'],
-      [fn('SUM', literal(`CASE WHEN status = 'unread' THEN 1 ELSE 0 END`)), 'unread'],
-      [fn('SUM', literal(`CASE WHEN status = 'read' THEN 1 ELSE 0 END`)), 'read'],
-      [fn('SUM', literal(`CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END`)), 'clicked'],
-      [fn('SUM', literal(`CASE WHEN starInd = 1 THEN 1 ELSE 0 END`)), 'starred']
-    ],
-    group: ['feedId'],
-    raw: true
-  });
-
-  /* -----------------------------------
-   * Fetch feeds
-   * ----------------------------------- */
-  const feeds = await Feed.findAll({
-    where: { userId },
-    attributes: ['id', 'feedName'],
-    raw: true
-  });
+  const [articleStats, feeds, tagStats, starredArticles, existingSmartFolders] = await Promise.all([
+    Article.findAll({
+      where: {
+        userId,
+        published: { [Op.gte]: since }
+      },
+      attributes: [
+        'feedId',
+        [fn('COUNT', col('id')), 'total'],
+        [fn('SUM', literal(`CASE WHEN status = 'unread' THEN 1 ELSE 0 END`)), 'unread'],
+        [fn('SUM', literal(`CASE WHEN status = 'read' THEN 1 ELSE 0 END`)), 'read'],
+        [fn('SUM', literal(`CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END`)), 'clicked'],
+        [fn('SUM', literal(`CASE WHEN starInd = 1 THEN 1 ELSE 0 END`)), 'starred']
+      ],
+      group: ['feedId'],
+      raw: true
+    }),
+    Feed.findAll({
+      where: { userId },
+      attributes: ['id', 'feedName'],
+      raw: true
+    }),
+    Tag.findAll({
+      where: { userId },
+      attributes: [
+        'name',
+        [fn('COUNT', col('name')), 'count']
+      ],
+      group: ['name'],
+      order: [[literal('count'), 'DESC']],
+      raw: true
+    }),
+    Article.findAll({
+      where: {
+        userId,
+        starInd: 1,
+        published: { [Op.gte]: since }
+      },
+      attributes: ['title', 'published', 'feedId'],
+      order: [['published', 'DESC']],
+      limit: maxStarredTitles,
+      raw: true
+    }),
+    SmartFolder.findAll({
+      where: { userId },
+      attributes: ['name', 'query'],
+      raw: true
+    })
+  ]);
 
   const feedMap = new Map();
   for (const feed of feeds) {
@@ -212,49 +253,11 @@ const collectSmartFolderSignals = async (
     engagement.starred += f.starred;
   }
 
-  /* -----------------------------------
-   * Tag stats (global)
-   * ----------------------------------- */
-  const tagStats = await Tag.findAll({
-    where: { userId },
-    attributes: [
-      'name',
-      [fn('COUNT', col('name')), 'count']
-    ],
-    group: ['name'],
-    order: [[literal('count'), 'DESC']],
-    raw: true
-  });
-
-  /* -----------------------------------
-  * Starred articles (high signal)
-  * ----------------------------------- */
-  const starredArticles = await Article.findAll({
-    where: {
-      userId,
-      starInd: 1,
-      published: { [Op.gte]: since }
-    },
-    attributes: ['title', 'published', 'feedId'],
-    order: [['published', 'DESC']],
-    limit: maxStarredTitles,
-    raw: true
-  });
-
   // Map feedId to feedName
   const feedNames = new Map();
   for (const feed of feeds) {
     feedNames.set(feed.id, feed.feedName);
   }
-
-  /* -----------------------------------
-   * Current Smart Folders (to avoid duplicates)
-   * ----------------------------------- */
-  const existingSmartFolders = await SmartFolder.findAll({
-    where: { userId },
-    attributes: ['name', 'query'],
-    raw: true
-  });
 
   return {
     window: { days },
