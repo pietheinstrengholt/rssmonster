@@ -2,12 +2,15 @@ import db from '../models/index.js';
 const { Article, Event, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
-import { parseDateToken, parseQuotedDatePattern } from './articleDateParser.service.js';
+import { resolveDateFilterToRange } from './articleDateParser.service.js';
+import { parseArticleQuery } from './articleQueryParser.service.js';
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
   where(fn('LOWER', col(column)), { [Op.like]: `%${String(value).toLowerCase()}%` })
 );
+
+const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -55,198 +58,39 @@ export const searchArticles = async ({
 
     console.log(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
 
-    /**
-     * Parse search query and extract field filters.
-     * Field filters can override default query parameters and combine with text search.
-     * Supported filters: star:true/false, unread:true/false, clicked:true/false,
-    * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, limit:N, @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
-     */
     const rawSearch = search.trim();
-    let starFilter = null; // When set, overrides status parameter to filter by starInd
-    let unreadFilter = null; // When set, overrides status parameter to filter by read/unread
-    let readFilter = null; // When set, overrides status parameter to filter by read/unread
-    let clickedFilter = null; // When set, filters by clickedAmount
-    let tagFilter = null; // Tag name extracted from search (tag:something)
-    let seenFilter = null; // Seen filter from search (seen:true/false)
-    let firstSeenAgeFilter = null; // First seen age filter from search (firstSeen:24h, firstSeen:7d)
-    let sortFilter = null; // Sort direction extracted from search (sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION)
-    let titleFilter = null; // Title-specific search (title:text) - searches title only
-    let qualityFilter = null; // Quality score filter captured from search (quality:>0.6)
-    let freshnessFilter = null; // Freshness filter captured from search (freshness:0.6)
-    let clusterFilter = null; // Cluster view filter captured from search (cluster:true/false)
-    let clusterCountFilter = null; // Cluster count filter captured from search (clustercount:N)
-    let hotFilter = null; // Hot filter captured from search (hot:true/false)
-    let limitFilter = null; // Result limit extracted from search (limit:50)
-    let dateRange = null; // Date range object: { start: Date, end: Date }
-    let dateToken = null; // Original date token to echo back in response
-    let titleQuoted = false; // Track if title search is quoted for exact matching
+    const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'DESC' });
+    const { filters = {}, sort: sortFilter = sort || 'DESC', limit: limitFilter = null, text = '' } = parsedQuery;
 
-    /**
-     * Pre-scan for patterns with spaces before tokenizing.
-     * These patterns can contain spaces, so we need to handle them separately.
-     * Supported patterns:
-     * - @"N days ago": @"2 days ago" searches for exactly N calendar days ago
-     * - @"last DayName": @"last Monday" searches for most recent occurrence of that day
-     * - title:"...": Exact phrase match in title only
-     * The quotes are optional for date patterns.
-     */
-    let workingSearch = rawSearch;
-    console.log(`\x1b[31mPre-scan search string for special patterns: "${rawSearch}"\x1b[0m`);
-    
-    // Pattern: title:"exact phrase"
-    const titleQuotedMatch = rawSearch.match(/title:"([^"]+)"/i);
-    if (titleQuotedMatch) {
-      titleFilter = titleQuotedMatch[1];
-      titleQuoted = true;
-      console.log(`\x1b[31mTitle exact match filter applied: "${titleFilter}"\x1b[0m`);
-      // Remove the matched segment so it doesn't get tokenized
-      workingSearch = workingSearch.replace(titleQuotedMatch[0], "").trim();
-    }
-    
-    const quotedDateParseResult = parseQuotedDatePattern({ rawSearch, workingSearch, dateRange });
-    if (quotedDateParseResult.dateRange) {
-      dateRange = quotedDateParseResult.dateRange;
-      workingSearch = quotedDateParseResult.workingSearch;
-      if (quotedDateParseResult.dateToken) {
-        dateToken = quotedDateParseResult.dateToken;
-      }
-      console.log(`\x1b[31mDate filter applied via search token: ${dateToken}\x1b[0m`);
+    const starFilter = typeof filters.star === 'boolean' ? filters.star : null;
+    const unreadFilter = typeof filters.unread === 'boolean' ? filters.unread : null;
+    const readFilter = typeof filters.read === 'boolean' ? filters.read : null;
+    const clickedFilter = typeof filters.clicked === 'boolean' ? filters.clicked : null;
+    const tagFilter = typeof filters.tag === 'string' ? filters.tag : null;
+    const seenFilter = typeof filters.seen === 'boolean' ? filters.seen : null;
+    const firstSeenAgeFilter = filters.firstSeenAge || null;
+    const titleFilter = typeof filters.title === 'string' ? filters.title : null;
+    const qualityFilter = filters.quality || null;
+    const freshnessFilter = filters.freshness || null;
+    const clusterFilter = filters.cluster || null;
+    const clusterCountFilter = Number.isFinite(filters.clusterCount) ? filters.clusterCount : null;
+    const hotFilter = typeof filters.hot === 'boolean' ? filters.hot : null;
+
+    let dateRange = null;
+    let dateToken = null;
+    const resolvedDateFilter = resolveDateFilterToRange(filters.date);
+    if (resolvedDateFilter) {
+      dateRange = resolvedDateFilter.dateRange;
+      dateToken = resolvedDateFilter.dateToken;
+      console.log(`\x1b[31mDate filter applied via parser: ${dateToken}\x1b[0m`);
     }
 
-    /**
-     * Tokenize the search string and extract field filters.
-     * Split on whitespace or commas to support various input styles.
-     * Examples: "star:true unread:true", "star:true, unread:true", "tag:tech @today"
-     * 
-     * Handle quoted phrases for exact matches:
-     * - "Control Flow" (with quotes) → exact phrase match
-     * - Control Flow (without quotes) → match both words individually
-     */
-    let quotedPhrase = null;
-    let workingSearchForTokens = workingSearch;
-    
-    // Extract quoted phrase if present (e.g., "Control Flow")
-    const quotedMatch = workingSearch.match(/"([^"]+)"/);
-    if (quotedMatch) {
-      quotedPhrase = quotedMatch[1]; // e.g., "Control Flow"
-      workingSearchForTokens = workingSearch.replace(quotedMatch[0], "").trim(); // Remove the quoted part
-    }
-    
-    const tokens = workingSearchForTokens === "" ? [] : workingSearchForTokens.split(/[\s,]+/).filter(Boolean);
-    const remainingTokens = []; // Non-filter tokens that will be used for text search
-
-    tokens.forEach(tok => {
-      // Clean trailing punctuation (allows: "star:true," or "tag:tech;")
-      const cleaned = tok.replace(/[.,;]+$/, "");
-      console.log(`\x1b[31mProcessing search token: "${cleaned}"\x1b[0m`);
-
-      // Match various field filter patterns
-      const starMatch = cleaned.match(/^star:\s*(true|false)$/i); // star:true or star:false
-      const unreadMatch = cleaned.match(/^unread:\s*(true|false)$/i); // unread:true or unread:false
-      const readMatch = cleaned.match(/^read:\s*(true|false)$/i); // read:true or read:false
-      const clickedMatch = cleaned.match(/^clicked:\s*(true|false)$/i); // clicked:true or clicked:false
-      const seenMatch = cleaned.match(/^seen:\s*(true|false)$/i); // seen:true or seen:false
-      const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i); // firstSeen:24h or firstSeen:7d
-      const tagMatch = cleaned.match(/^tag:\s*(.+)$/i); // tag:technology, tag:news, etc.
-      const titleMatch = cleaned.match(/^title:\s*(.+)$/i); // title:javascript, title:AI, etc.
-      const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:RECOMMENDED, sort:QUALITY, or sort:ATTENTION
-      const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
-      const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
-      const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster)$/i); // cluster:all | cluster:eventCluster
-      const clusterCountMatch = cleaned.match(/^clustercount:\s*(\d+)$/i); // clustercount:2
-      const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
-      const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
-      const parsedDateFilter = parseDateToken(cleaned);
-      
-      if (hotMatch) {
-        hotFilter = hotMatch[1].toLowerCase() === 'true';
-        console.log(`\x1b[31mHot filter applied via search token: ${hotFilter}\x1b[0m`);
-      } else if (limitMatch) {
-        limitFilter = parseInt(limitMatch[1], 10);
-        console.log(`\x1b[31mLimit filter applied via search token: ${limitFilter}\x1b[0m`);
-      } else if (clusterCountMatch) {
-        clusterCountFilter = parseInt(clusterCountMatch[1], 10);
-        console.log(`\x1b[31mCluster count filter applied via search token: ${clusterCountFilter}\x1b[0m`);
-      } else if (clusterMatch) {
-        clusterFilter = clusterMatch[1];
-        console.log(`\x1b[31mCluster filter applied via search token: ${clusterFilter}\x1b[0m`);
-      } else if (starMatch) {
-        starFilter = starMatch[1].toLowerCase() === 'true';
-        console.log(`\x1b[31mStar filter applied via search token: ${starFilter}\x1b[0m`);
-      } else if (unreadMatch) {
-        unreadFilter = unreadMatch[1].toLowerCase() === 'true';
-        console.log(`\x1b[31mUnread filter applied via search token: ${unreadFilter}\x1b[0m`);
-      } else if (readMatch) {
-        readFilter = readMatch[1].toLowerCase() === 'true';
-        console.log(`\x1b[31mRead filter applied via search token: ${readFilter}\x1b[0m`);
-      } else if (clickedMatch) {
-        clickedFilter = clickedMatch[1].toLowerCase() === 'true';
-        console.log(`\x1b[31mClicked filter applied via search token: ${clickedFilter}\x1b[0m`);
-      } else if (seenMatch) {
-        seenFilter = seenMatch[1].toLowerCase() === 'true';
-        console.log(`\x1b[31mSeen filter applied via search token: ${seenFilter}\x1b[0m`);
-      } else if (firstSeenAgeMatch) {
-        const value = parseInt(firstSeenAgeMatch[1], 10);
-        const unit = firstSeenAgeMatch[2].toLowerCase();
-        firstSeenAgeFilter = { value, unit };
-        console.log(`\x1b[31mFirst seen age filter applied via search token: ${value}${unit}\x1b[0m`);
-      } else if (tagMatch) {
-        tagFilter = tagMatch[1].trim();
-        console.log(`\x1b[31mTag filter applied via search token: ${tagFilter}\x1b[0m`);
-      } else if (titleMatch && !titleQuoted) {
-        // Only process unquoted title: patterns (quoted ones handled in pre-scan)
-        titleFilter = titleMatch[1].trim();
-        console.log(`\x1b[31mTitle filter applied via search token: ${titleFilter}\x1b[0m`);
-      } else if (sortMatch) {
-        sortFilter = sortMatch[1].toUpperCase();
-        console.log(`\x1b[31mSort filter applied via search token: ${sortFilter}\x1b[0m`);
-      } else if (qualityMatch) {
-        qualityFilter = {
-          operator: qualityMatch[1] || ">=", // Default: filter IN good articles and filter OUT poor articles.
-          value: parseFloat(qualityMatch[2])
-        };
-        console.log(`\x1b[31mQuality filter applied via search token: ${qualityMatch.slice(1).join(', ')}\x1b[0m`);
-      } else if (freshnessMatch) {
-        freshnessFilter = {
-          operator: freshnessMatch[1] || ">=",
-          value: parseFloat(freshnessMatch[2])
-        };
-        console.log(`\x1b[31mFreshness filter applied via search token: ${freshnessMatch.slice(1).join(', ')}\x1b[0m`);
-      } else if (parsedDateFilter) {
-        dateToken = parsedDateFilter.dateToken;
-        dateRange = parsedDateFilter.dateRange;
-        console.log(`\x1b[31mDate filter applied via search token: ${dateToken}\x1b[0m`);
-      } else {
-        // Not a recognized filter token, keep for text search
-        remainingTokens.push(cleaned);
-      }
-    });
-
-    /**
-     * Build LIKE search pattern from remaining (non-filter) tokens.
-     * If only field filters were provided (no text search), use wildcard to match all.
-     * Example: "javascript @today" → search for "javascript", filter by today
-     * Example: "@today sort:ASC" → no text search (wildcard), just filters
-     *
-     * Special case: if title: filter is present, it searches title separately
-     * Example: "title:meter" → search title for "meter"
-     * Example: "title:javascript ai" → title contains "javascript" AND content contains "ai"
-     * 
-     * Quote handling:
-     * - "Control Flow" (with quotes) → exact phrase match
-     * - Control Flow (without quotes) → match both words individually (OR logic)
-     */
-    let wordMatches = []; // For unquoted searches: individual word matches
-    
-    if (quotedPhrase) {
-      // Exact phrase match from quoted input
-      console.log(`\x1b[31mUsing exact phrase match: "${quotedPhrase}"\x1b[0m`);
-    } else if (remainingTokens.length > 0) {
-      // Unquoted search: track tokens for subsequent CI matching
-      wordMatches = remainingTokens;
-      console.log(`\x1b[31mUsing word-by-word OR matching for: ${remainingTokens.join(", ")}\x1b[0m`);
-    }
-    // No remaining tokens or quoted phrase: match all
+    const hasQuotedText = text
+      ? new RegExp(`(^|[\\s,])"${escapeRegExp(text)}"([\\s,]|$)`).test(rawSearch)
+      : false;
+    const quotedPhrase = hasQuotedText ? text : null;
+    const remainingTokens = !hasQuotedText && text ? text.split(/\s+/).filter(Boolean) : [];
+    const wordMatches = quotedPhrase ? [] : remainingTokens;
 
     /**
      * Determine final filter values.

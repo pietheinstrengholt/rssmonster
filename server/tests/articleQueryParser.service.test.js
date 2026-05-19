@@ -1,0 +1,65 @@
+import { describe, it, expect } from 'vitest';
+import { parseArticleQuery } from '../util/articleQueryParser.service.js';
+
+describe('articleQueryParser.service', () => {
+  it('parses mixed filters and quoted text', () => {
+    const result = parseArticleQuery({ search: 'star:true quality:>0.7 @today "AI agents"' });
+
+    expect(result).toEqual({
+      text: 'AI agents',
+      filters: {
+        star: true,
+        quality: {
+          operator: '>',
+          value: 0.7
+        },
+        date: {
+          type: 'today'
+        }
+      },
+      sort: 'DESC',
+      limit: null
+    });
+  });
+
+  it('parses days ago date expressions', () => {
+    const result = parseArticleQuery({ search: '@"2 days ago"' });
+
+    expect(result.filters.date).toEqual({
+      type: 'daysAgo',
+      value: 2
+    });
+    expect(result.text).toBe('');
+  });
+
+  it('parses last day date expressions', () => {
+    const result = parseArticleQuery({ search: '@"last monday"' });
+
+    expect(result.filters.date).toEqual({
+      type: 'lastDay',
+      value: 'monday'
+    });
+  });
+
+  it('keeps unquoted text as terms', () => {
+    const result = parseArticleQuery({ search: 'unread:true AI agents' });
+
+    expect(result.filters.unread).toBe(true);
+    expect(result.text).toBe('AI agents');
+  });
+
+  it('parses sort and limit', () => {
+    const result = parseArticleQuery({ search: 'sort:asc limit:50', defaultSort: 'DESC' });
+
+    expect(result.sort).toBe('ASC');
+    expect(result.limit).toBe(50);
+  });
+
+  it('supports title exact phrase filter', () => {
+    const result = parseArticleQuery({ search: 'title:"AI Safety" openai' });
+
+    expect(result.filters.title).toBe('AI Safety');
+    expect(result.filters.titleExact).toBe(true);
+    expect(result.text).toBe('openai');
+  });
+});

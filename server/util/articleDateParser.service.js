@@ -13,76 +13,12 @@ const buildUtcDayRange = (year, month, day) => ({
   end: new Date(Date.UTC(year, month, day, 23, 59, 59, 999))
 });
 
-/**
- * Parse date expressions that may include spaces and optional quotes.
- * Supported:
- * - @"N days ago"
- * - @"last monday"
- */
-export const parseQuotedDatePattern = ({ rawSearch, workingSearch, dateRange }) => {
-  let nextWorkingSearch = workingSearch;
-  let nextDateRange = dateRange;
-  let dateToken = null;
-
-  const daysAgoMatch = rawSearch.match(/@"?(\d+)\s+days\s+ago"?/i);
-  if (daysAgoMatch) {
-    const days = parseInt(daysAgoMatch[1], 10);
-    if (!Number.isNaN(days)) {
-      const today = new Date();
-      const targetYear = today.getUTCFullYear();
-      const targetMonth = today.getUTCMonth();
-      const targetDay = today.getUTCDate() - days;
-
-      nextDateRange = buildUtcDayRange(targetYear, targetMonth, targetDay);
-      dateToken = `${days} days ago`;
-      nextWorkingSearch = nextWorkingSearch.replace(daysAgoMatch[0], '').trim();
-    }
+export const resolveDateFilterToRange = dateFilter => {
+  if (!dateFilter || !dateFilter.type) {
+    return null;
   }
 
-  const lastDayMatch = rawSearch.match(/@"?last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"?/i);
-  if (lastDayMatch && !nextDateRange) {
-    const dayName = lastDayMatch[1].toLowerCase();
-    const targetDay = dayNameToUtcIndex[dayName];
-
-    const today = new Date();
-    const currentDay = today.getUTCDay();
-    let daysBack = currentDay - targetDay;
-    if (daysBack <= 0) {
-      daysBack += 7;
-    }
-
-    const targetDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - daysBack, 0, 0, 0, 0));
-    nextDateRange = buildUtcDayRange(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate());
-    dateToken = `last ${dayName}`;
-    nextWorkingSearch = nextWorkingSearch.replace(lastDayMatch[0], '').trim();
-  }
-
-  return { dateRange: nextDateRange, dateToken, workingSearch: nextWorkingSearch };
-};
-
-/**
- * Parse single-token date filters.
- * Supported:
- * - @today
- * - @yesterday
- * - @lastweek
- * - @YYYY-MM-DD
- */
-export const parseDateToken = token => {
-  const dateMatch = token.match(/^@(\d{4}-\d{2}-\d{2})$/);
-  if (dateMatch) {
-    const date = dateMatch[1];
-    return {
-      dateToken: date,
-      dateRange: {
-        start: new Date(`${date}T00:00:00.000Z`),
-        end: new Date(`${date}T23:59:59.999Z`)
-      }
-    };
-  }
-
-  const todayMatch = token.match(/^@today$/i);
-  if (todayMatch) {
+  if (dateFilter.type === 'today') {
     const now = new Date();
     return {
       dateToken: 'today',
@@ -93,8 +29,7 @@ export const parseDateToken = token => {
     };
   }
 
-  const yesterdayMatch = token.match(/^@yesterday$/i);
-  if (yesterdayMatch) {
+  if (dateFilter.type === 'yesterday') {
     const today = new Date();
     return {
       dateToken: 'yesterday',
@@ -102,8 +37,7 @@ export const parseDateToken = token => {
     };
   }
 
-  const lastWeekMatch = token.match(/^@lastweek$/i);
-  if (lastWeekMatch) {
+  if (dateFilter.type === 'lastweek') {
     const now = new Date();
     return {
       dateToken: 'lastweek',
@@ -111,6 +45,46 @@ export const parseDateToken = token => {
         start: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
         end: now
       }
+    };
+  }
+
+  if (dateFilter.type === 'date' && dateFilter.value) {
+    return {
+      dateToken: dateFilter.value,
+      dateRange: {
+        start: new Date(`${dateFilter.value}T00:00:00.000Z`),
+        end: new Date(`${dateFilter.value}T23:59:59.999Z`)
+      }
+    };
+  }
+
+  if (dateFilter.type === 'daysAgo' && Number.isInteger(dateFilter.value)) {
+    const today = new Date();
+    const target = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - dateFilter.value, 0, 0, 0, 0));
+    return {
+      dateToken: `${dateFilter.value} days ago`,
+      dateRange: buildUtcDayRange(target.getUTCFullYear(), target.getUTCMonth(), target.getUTCDate())
+    };
+  }
+
+  if (dateFilter.type === 'lastDay' && typeof dateFilter.value === 'string') {
+    const normalizedDay = dateFilter.value.toLowerCase();
+    const targetDay = dayNameToUtcIndex[normalizedDay];
+    if (targetDay === undefined) {
+      return null;
+    }
+
+    const today = new Date();
+    const currentDay = today.getUTCDay();
+    let daysBack = currentDay - targetDay;
+    if (daysBack <= 0) {
+      daysBack += 7;
+    }
+
+    const targetDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - daysBack, 0, 0, 0, 0));
+    return {
+      dateToken: `last ${normalizedDay}`,
+      dateRange: buildUtcDayRange(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate())
     };
   }
 
