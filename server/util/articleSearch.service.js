@@ -6,13 +6,12 @@ import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { parseArticleQuery } from './articleQueryParser.service.js';
 import { buildArticleSearchQuery, executeSearch } from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
+import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 
-// Case-insensitive LIKE helper compatible with MySQL
-const ciLike = (column, value) => (
-  where(fn('LOWER', col(column)), { [Op.like]: `%${String(value).toLowerCase()}%` })
-);
-
-const escapeRegExp = value => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+// Utility function to escape special characters in a string for use in a regular expression
+function escapeRegExp(string) {
+    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -94,7 +93,6 @@ export const searchArticles = async ({
       : false;
     const quotedPhrase = hasQuotedText ? text : null;
     const remainingTokens = !hasQuotedText && text ? text.split(/\s+/).filter(Boolean) : [];
-    const wordMatches = quotedPhrase ? [] : remainingTokens;
 
     /**
      * Determine final filter values.
@@ -171,46 +169,10 @@ export const searchArticles = async ({
     };
 
     // Text search logic:
-    // - If title: filter present: search title for that value, AND content for remaining tokens
-    // - If no title: filter: search both title OR content for all tokens
-    // - Handle quoted vs unquoted searches appropriately
-    if (titleFilter) {
-      // title:value specified - apply CI match on title
-      const titleCond = ciLike('title', titleFilter);
-      baseWhere[Op.and] = [...(baseWhere[Op.and] || []), titleCond];
-      // If there are remaining tokens or quoted phrase, also search content for them
-      if (quotedPhrase) {
-        const contentCond = ciLike('contentOriginal', quotedPhrase);
-        baseWhere[Op.and] = [...(baseWhere[Op.and] || []), contentCond];
-        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content exact phrase: "${quotedPhrase}"\x1b[0m`);
-      } else if (remainingTokens.length > 0) {
-        // OR on individual words in content (case-insensitive)
-        baseWhere[Op.or] = remainingTokens.map(token => ciLike('contentOriginal', token));
-        console.log(`\x1b[31mTitle search: "%${titleFilter}%", Content word-by-word OR: ${remainingTokens.join(", ")}\x1b[0m`);
-      } else {
-        console.log(`\x1b[31mTitle-only search: "%${titleFilter}%"\x1b[0m`);
-      }
-    } else if (quotedPhrase) {
-      // Quoted phrase: search title OR content for exact phrase (case-insensitive)
-      baseWhere[Op.or] = [
-        ciLike('title', quotedPhrase),
-        ciLike('contentOriginal', quotedPhrase)
-      ];
-      console.log(`\x1b[31mQuoted phrase search (exact): "${quotedPhrase}"\x1b[0m`);
-    } else if (wordMatches.length > 0) {
-      // Unquoted search: each word must appear somewhere in title OR content (case-insensitive)
-      // Build: (title LIKE %word1% OR content LIKE %word1%) AND (title LIKE %word2% OR content LIKE %word2%) ... with LOWER()
-      const wordConditions = remainingTokens.map(token => ({
-        [Op.or]: [
-          ciLike('title', token),
-          ciLike('contentOriginal', token)
-        ]
-      }));
-      baseWhere[Op.and] = wordConditions;
-      console.log(`\x1b[31mWord-by-word AND search: ${remainingTokens.join(", ")}\x1b[0m`);
-    }
-    // Note: If no search terms at all (no titleFilter, quotedPhrase, or wordMatches), 
-    // we don't add any text search filters - baseWhere will match all articles
+    Object.assign(
+      baseWhere,
+      buildTextSearchWhereClause({ titleFilter, quotedPhrase, remainingTokens })
+    );
 
     // Apply date range filter if present (supports all date patterns)
     if (dateRange) {
@@ -330,3 +292,10 @@ export const searchArticles = async ({
         itemIds
     };
 };
+
+// Ensure ciLike is properly exported
+const ciLike = (column, value) => (
+  where(fn('LOWER', col(column)), { [Op.like]: `%${String(value).toLowerCase()}%` })
+);
+
+export { ciLike };

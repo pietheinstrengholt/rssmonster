@@ -111,40 +111,13 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
   tokens.forEach(token => {
     const cleaned = token.replace(/[.,;]+$/, '');
 
-    const star = parseBooleanFilter(cleaned, 'star');
-    if (star !== null) {
-      filters.star = star;
-      return;
-    }
-
-    const unread = parseBooleanFilter(cleaned, 'unread');
-    if (unread !== null) {
-      filters.unread = unread;
-      return;
-    }
-
-    const read = parseBooleanFilter(cleaned, 'read');
-    if (read !== null) {
-      filters.read = read;
-      return;
-    }
-
-    const clicked = parseBooleanFilter(cleaned, 'clicked');
-    if (clicked !== null) {
-      filters.clicked = clicked;
-      return;
-    }
-
-    const seen = parseBooleanFilter(cleaned, 'seen');
-    if (seen !== null) {
-      filters.seen = seen;
-      return;
-    }
-
-    const hot = parseBooleanFilter(cleaned, 'hot');
-    if (hot !== null) {
-      filters.hot = hot;
-      return;
+    // Simplified boolean filter parsing
+    for (const key of ['star', 'unread', 'read', 'clicked', 'seen', 'hot']) {
+      const value = parseBooleanFilter(cleaned, key);
+      if (value !== null) {
+        filters[key] = value;
+        return;
+      }
     }
 
     const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i);
@@ -178,31 +151,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
 
     const qualityMatch = cleaned.match(/^quality:(.+)$/i);
     if (qualityMatch) {
-      const parsed = parseNumberOperatorFilter(qualityMatch[1]);
-      if (parsed) {
-        filters.quality = parsed;
-        return;
-      }
-    }
-
-    const freshnessMatch = cleaned.match(/^freshness:(.+)$/i);
-    if (freshnessMatch) {
-      const parsed = parseNumberOperatorFilter(freshnessMatch[1]);
-      if (parsed) {
-        filters.freshness = parsed;
-        return;
-      }
-    }
-
-    const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster)$/i);
-    if (clusterMatch) {
-      filters.cluster = clusterMatch[1];
-      return;
-    }
-
-    const clusterCountMatch = cleaned.match(/^clustercount:\s*(\d+)$/i);
-    if (clusterCountMatch) {
-      filters.clusterCount = parseInt(clusterCountMatch[1], 10);
+      filters.quality = parseNumberOperatorFilter(qualityMatch[1]);
       return;
     }
 
