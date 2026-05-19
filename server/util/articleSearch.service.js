@@ -1,9 +1,11 @@
 import db from '../models/index.js';
-const { Article, Event, Feed, Tag, Setting } = db;
+const { Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { parseArticleQuery } from './articleQueryParser.service.js';
+import { buildArticleSearchQuery, executeSearch } from './articleSearchExecutor.service.js';
+import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
@@ -126,27 +128,21 @@ export const searchArticles = async ({
      */
     let taggedArticleIds = null;
     if (workingTag) {
-      try {
-        // Find all tag rows for this user and tag name
-        const tagRows = await Tag.findAll({
-          where: { userId: userId, name: workingTag },
-          attributes: ["articleId"],
-        });
+      taggedArticleIds = await fetchTaggedArticleIds({ userId, tagName: workingTag });
+      console.log(`\x1b[31mFound ${taggedArticleIds.length} articles with tag "${workingTag}" for user ${userId}\x1b[0m`);
 
-        // Extract article IDs from tag rows
-        taggedArticleIds = tagRows.map(t => t.articleId);
-        console.log(`\x1b[31mFound ${taggedArticleIds.length} articles with tag "${workingTag}" for user ${userId}\x1b[0m`);
-
-        // If tag was provided but no articles found, return empty result
-        if (taggedArticleIds.length === 0) {
-          return res.status(200).json({
-            query: [{ userId: userId, tag: workingTag, sort: workingSort }],
-            itemIds: []
-          });
-        }
-      } catch (err) {
-        console.error(`\x1b[31mError fetching articles by tag:\x1b[0m`, err);
-        return res.status(500).json({ error: err.message });
+      // If tag was provided but no articles found, return empty result
+      if (taggedArticleIds.length === 0) {
+        return {
+          query: {
+            userId,
+            search,
+            tag: tagFilter,
+            sort,
+            date: dateToken
+          },
+          itemIds: []
+        };
       }
     }
 
@@ -155,25 +151,7 @@ export const searchArticles = async ({
      * If categoryId is "%" (all), get all feeds for the user.
      * Otherwise, get only feeds in the specified category.
      */
-    const feedQuery = categoryId === "%" 
-      ? { attributes: ["id"] }
-      : { 
-          attributes: ["id"],
-          where: { 
-            userId: userId,
-            categoryId: { [Op.like]: categoryId }
-          }
-        };
-    
-    const feeds = await Feed.findAll(feedQuery);
-
-    /**
-     * Final feed ID list to query.
-     * If specific feedId provided, use it; otherwise use all feeds from category query.
-     */
-    const feedIds = feedId !== "%" 
-      ? feedId 
-      : feeds.map(feed => feed.id);
+    const feedIds = await fetchFeedIds({ userId, categoryId, feedId });
 
     /**
      * Build base WHERE clause for article query.
@@ -241,190 +219,38 @@ export const searchArticles = async ({
       baseWhere.id = taggedArticleIds;
     }
 
-    // Apply firstSeen age filter if present (firstSeen IS NULL OR firstSeen >= now() - duration)
+    const articleQuery = buildArticleSearchQuery({
+      baseWhere,
+      smartFolderSearch,
+      sortRecommended,
+      sortQuality,
+      sortAttention,
+      workingSort,
+      qualityFilter,
+      freshnessFilter,
+      starFilter,
+      unreadFilter,
+      readFilter,
+      clickedFilter,
+      seenFilter,
+      hotFilter,
+      status,
+      rawSearch,
+      clusterFilter,
+      clusterView,
+      clusterCountFilter,
+      firstSeenAgeFilter
+    });
+
+    console.log(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
     if (firstSeenAgeFilter) {
       const { value, unit } = firstSeenAgeFilter;
       const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
-      baseWhere[Op.or] = [
-        { firstSeen: { [Op.is]: null } },
-        { firstSeen: { [Op.gte]: Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`) } }
-      ];
       console.log(`\x1b[31mFirst seen age filter applied: firstSeen IS NULL OR firstSeen >= NOW() - INTERVAL ${value} ${intervalUnit}\x1b[0m`);
     }
 
-    /**
-     * Build final article query.
-     * Start with base WHERE conditions, then apply field filters if present.
-     * Optimize attribute selection based on what's actually needed:
-     * - Smart folders without filters: only id
-     * - Smart folders with quality/freshness filters: id + score fields + published
-    * - Regular searches with recommended sort: id + published + score fields
-     * - Regular searches with quality sort: id + score fields
-     * - Regular searches otherwise: id + published (for ordering)
-     */
-    const queryAttributes = ["id"];
-    
-    // Determine what attributes we need based on filters and sort
-    const needsQuality = qualityFilter || sortQuality;
-    const needsFreshness = freshnessFilter || sortRecommended;
-    const needsAttention = sortAttention;
-    const needsPublished = !smartFolderSearch || needsFreshness;
-    
-    if (needsQuality) {
-      // Quality virtual field needs these score columns
-      queryAttributes.push("advertisementScore", "sentimentScore", "qualityScore");
-    }
-    
-    if (needsFreshness) {
-      // Freshness virtual field needs published date
-      if (!queryAttributes.includes("published")) {
-        queryAttributes.push("published");
-      }
-      // Also need quality scores for recommended computation
-      if (!queryAttributes.includes("qualityScore")) {
-        queryAttributes.push("advertisementScore", "sentimentScore", "qualityScore");
-      }
-    } else if (needsPublished && !queryAttributes.includes("published")) {
-      // Need published for ordering even if we don't compute freshness
-      queryAttributes.push("published");
-    }
-    
-    if (needsAttention) {
-      // AttentionScore virtual field needs these columns
-      queryAttributes.push("attentionBucket", "openedCount", "clickedAmount");
-    }
-    
-    console.log(`\x1b[36mQuery attributes: ${queryAttributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
-    
-    const articleQuery = {
-      attributes: queryAttributes,
-      where: baseWhere
-    };
-
-    // Include cluster + feed associations when sorting by the recommended score
-    // so computeRecommended can access cluster.articleCount, cluster.sourceDiversityScore,
-    // and Feed.feedTrust for the quality virtual field
-    if (sortRecommended) {
-      articleQuery.include = [
-        {
-          model: Event,
-          as: 'cluster',
-          attributes: ['id', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
-          required: false
-        },
-        {
-          model: Feed,
-          attributes: ['id', 'feedTrust'],
-          required: false
-        },
-        {
-          model: Tag,
-          attributes: ['id', 'tagType'],
-          required: false
-        }
-      ];
-    }
-
-    // Add SQL order only for direct DB sorts.
-    // Virtual sort modes are ordered in-memory in articleSort.service.
-    if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
-      articleQuery.order = [["published", workingSort]];
-    }
-
-    /**
-     * Field filters from search take precedence over status parameter.
-     * If any field filter is present, it overrides the default status-driven logic.
-     */
-    if (starFilter !== null) {
-      // star:true → only starred articles, star:false → only non-starred
-      articleQuery.where.starInd = starFilter ? 1 : 0;
-    }
-
-    if (unreadFilter !== null) {
-      // unread:true → only unread, unread:false → only read
-      articleQuery.where.status = unreadFilter ? "unread" : "read";
-    }
-
-    if (readFilter !== null) {
-      // read:true → only read, read:false → only unread
-      articleQuery.where.status = readFilter ? "read" : "unread";
-    }
-
-    if (clickedFilter !== null) {
-      // clicked:true → only clicked articles, clicked:false → only non-clicked
-      articleQuery.where.clickedAmount = clickedFilter ? { [Op.gt]: 0 } : 0;
-    }
-
-    if (seenFilter !== null) {
-      // seen:true → only articles never seen before (firstSeen IS NULL)
-      articleQuery.where.firstSeen = seenFilter ? { [Op.is]: null } : { [Op.not]: null };
-    }
-
-    if (hotFilter !== null) {
-      // hot:true → only hot articles, hot:false → only non-hot
-      articleQuery.where.hotInd = hotFilter ? 1 : 0;
-      if (hotFilter) {
-        delete articleQuery.where.feedId; // Hot articles ignore feedId
-      }
-    }
-
-    /**
-     * If no field filters are present, use traditional status-driven logic.
-     * Status can be: "unread", "read", "star", "hot", or "clicked".
-     * When rawSearch is set, default to "%" (all statuses) unless overridden by unread/read filters.
-     */
-    if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
-      // If there's a search query, default to "%" unless status is a special type (star, hot, clicked)
-      const effectiveStatus = rawSearch && !["star", "hot", "clicked"].includes(status) ? "%" : status;
-      
-      if (effectiveStatus === "star") {
-        articleQuery.where.starInd = 1;
-      } else if (effectiveStatus === "hot") {
-        delete articleQuery.where.feedId; // Hot articles ignore feedId
-        articleQuery.where.hotInd = 1;
-      } else if (effectiveStatus === "clicked") {
-        articleQuery.where.clickedAmount = { [Op.gt]: 0 };
-      } else if (effectiveStatus !== "%") {
-        articleQuery.where.status = effectiveStatus;
-      }
-      // If effectiveStatus === "%", don't add any status filter (search all statuses)
-    }
-
-    /**
-     * Cluster view:
-    * When enabled, only return cluster representatives.
-    * This collapses related articles into one item per cluster.
-    * Search token (cluster:all/eventCluster) overrides clusterView parameter.
-     */
-    const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
-    if (Number.isFinite(clusterCountFilter)) {
-      const countLiteral = Article.sequelize.literal(
-        '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
-      );
-      articleQuery.where[Op.and] = [
-        ...(articleQuery.where[Op.and] || []),
-        Article.sequelize.where(countLiteral, { [Op.gte]: clusterCountFilter })
-      ];
-    }
-    if (workingClusterView === 'eventCluster') {
-      articleQuery.where[Op.or] = [
-        {
-          id: {
-            [Op.in]: Article.sequelize.literal(
-              `(SELECT representativeArticleId FROM events)`
-            )
-          }
-        },
-        {
-          eventId: {
-            [Op.is]: null
-          }
-        }
-      ];
-    }
-
     // Fetch articles based on constructed query
-    let articles = await Article.findAll(articleQuery);
+    let articles = await executeSearch(articleQuery);
     
     console.log(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
