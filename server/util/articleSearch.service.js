@@ -107,17 +107,18 @@ export const searchArticles = async ({
     let sortQuality = false;
     let sortAttention = false;
 
-    // Normalize sort value when virtual sort modes are specified
-    if (workingSort.toUpperCase() === "RECOMMENDED") {
-      workingSort = "DESC";
-      sortRecommended = true;
-    } else if (workingSort.toUpperCase() === "QUALITY") {
-      workingSort = "DESC";
-      sortQuality = true;
-    } else if (workingSort.toUpperCase() === "ATTENTION") {
-      workingSort = "DESC";
-      sortAttention = true;
-    }
+    // Normalize sort mode once
+    const sortMode = workingSort.toUpperCase();
+
+    // Simplify sort flags
+    sortRecommended = sortMode === 'RECOMMENDED';
+    sortQuality = sortMode === 'QUALITY';
+    sortAttention = sortMode === 'ATTENTION';
+
+    // Adjust workingSort based on normalized sort mode
+    workingSort = ['RECOMMENDED', 'QUALITY', 'ATTENTION'].includes(sortMode)
+      ? 'DESC'
+      : sortMode;
     console.log(`\x1b[31mFinal sort value: "${workingSort}" (smartFolder: ${smartFolderSearch})\x1b[0m`);
 
     // Tag: search token (tag:name) overrides query param
