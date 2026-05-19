@@ -10,7 +10,17 @@ const loadArticleDetails = async (userId, articlesArray) => {
     include: [
       {
         model: Feed,
-        required: true
+        required: true,
+        attributes: [
+          'id',
+          'feedName',
+          'url',
+          'categoryId',
+          'feedAttentionAvg',
+          'feedDeepReadRatio',
+          'feedSkimRatio',
+          'feedAttentionSampleSize'
+        ]
       },
       {
         model: Tag,
@@ -21,7 +31,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
         model: Event,
         as: 'cluster',
         required: false,
-        attributes: ['id', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId', 'userId']
+        attributes: ['id', 'articleCount', 'sourceCount', 'topicId']
       }
     ],
     where: { userId, id: articlesArray }
@@ -103,7 +113,17 @@ const getArticle = async (req, res, _next) => {
       include: [
         {
           model: Feed,
-          required: true
+          required: true,
+          attributes: [
+            'id',
+            'feedName',
+            'url',
+            'categoryId',
+            'feedAttentionAvg',
+            'feedDeepReadRatio',
+            'feedSkimRatio',
+            'feedAttentionSampleSize'
+          ]
         },
         {
           model: Tag,
