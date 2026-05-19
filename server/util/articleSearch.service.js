@@ -1,7 +1,7 @@
 import db from '../models/index.js';
 const { Article, Event, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
-import { computeRecommended, computeRecommendedBreakdown } from './recommendedScore.js';
+import { sortArticles } from './articleSort.service.js';
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
@@ -539,8 +539,9 @@ export const searchArticles = async ({
       ];
     }
 
-    // Add order clause only for non-smart folder searches
-    if (!smartFolderSearch) {
+    // Add SQL order only for direct DB sorts.
+    // Virtual sort modes are ordered in-memory in articleSort.service.
+    if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
       articleQuery.order = [["published", workingSort]];
     }
 
@@ -641,55 +642,6 @@ export const searchArticles = async ({
     
     console.log(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
 
-    // Apply quality score filter if present (must be done in-memory since quality is a virtual field)
-    if (qualityFilter) {
-      const beforeQualityCount = articles.length;
-      articles = articles.filter(article => {
-        const articleQuality = article.quality;
-        const { operator, value } = qualityFilter;
-        
-        switch (operator) {
-          case '=':
-            return articleQuality === value;
-          case '>':
-            return articleQuality > value;
-          case '<':
-            return articleQuality < value;
-          case '>=':
-            return articleQuality >= value;
-          case '<=':
-            return articleQuality <= value;
-          default:
-            return true;
-        }
-      });
-      console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${beforeQualityCount} → ${articles.length} articles\x1b[0m`);
-    }
-
-    // Apply freshness score filter if present (must be done in-memory since freshness is a virtual field)
-    if (freshnessFilter) {
-      articles = articles.filter(article => {
-        const articleFreshness = article.freshness;
-        const { operator, value } = freshnessFilter;
-        
-        switch (operator) {
-          case '=':
-            return articleFreshness === value;
-          case '>':
-            return articleFreshness > value;
-          case '<':
-            return articleFreshness < value;
-          case '>=':
-            return articleFreshness >= value;
-          case '<=':
-            return articleFreshness <= value;
-          default:
-            return true;
-        }
-      });
-      console.log(`\x1b[31mApplied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${articles.length} articles remaining\x1b[0m`);
-    }
-    
     // If sorting by the recommended score, compute recommended scores and sort.
     if (sortRecommended) {
       workingSort = "RECOMMENDED";
@@ -701,59 +653,9 @@ export const searchArticles = async ({
       workingSort = "ATTENTION";
     }
 
-    // Move the sorting logic here to after all filtering is done
-    // For smart folder searches, only apply in-memory sorting for virtual sort modes.
-    if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention) {
-      console.log(`\x1b[33mSorting articles by ${workingSort}\x1b[0m`);
-      if (sortRecommended) {
-        const scored = articles
-          .map(article => ({
-            article,
-            recommended: computeRecommended(article)
-          }))
-          .sort((a, b) => b.recommended - a.recommended);
-
-        articles = scored.map(item => item.article);
-
-        if (process.env.NODE_ENV === 'development') {
-          console.log('[RECOMMENDED DEBUG] Formula: 0.10*quality + 0.15*freshness + 0.45*coverage + 0.15*crossSource + 0.15*corroboration + ruleBoost');
-          console.table(
-            scored.slice(0, 50).map(({ article, recommended }, index) => {
-              const bd = computeRecommendedBreakdown(article);
-              return {
-                rank: index + 1,
-                articleId: article.id,
-                freshness: Number(bd.freshness.toFixed(4)),
-                quality: Number(bd.quality.toFixed(4)),
-                coverage: Number(bd.coverage.toFixed(4)),
-                crossSource: Number(bd.crossSource.toFixed(4)),
-                corroboration: Number(bd.corroboration.toFixed(4)),
-                ruleBoost: Number(bd.ruleBoost.toFixed(4)),
-                clusterSize: bd.clusterSize,
-                sourceCount: bd.sourceCount,
-                recommended: Number(recommended.toFixed(4))
-              };
-            })
-          );
-        }
-      } else if (sortQuality) {
-        articles = articles
-          .map(article => ({
-            article,
-            quality: article.quality
-          }))
-          .sort((a, b) => b.quality - a.quality)
-          .map(item => item.article);
-      } else if (sortAttention) {
-        // Sort by virtual attentionScore (derives from bucket + opens/clicks)
-        articles = articles
-          .map(article => ({
-            article,
-            attention: article.attentionScore || 0
-          }))
-          .sort((a, b) => b.attention - a.attention)
-          .map(item => item.article);
-      }
+    // Delegate all in-memory sorting and filtering to sortArticles
+    if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention || qualityFilter || freshnessFilter) {
+      articles = sortArticles(articles, { sortRecommended, sortQuality, sortAttention, qualityFilter, freshnessFilter });
     } else {
       console.log(`\x1b[33mSkipping sort for smart folder search\x1b[0m`);
     }
