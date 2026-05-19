@@ -43,7 +43,7 @@ export function debugRecommendedScores(scored) {
       ? Number(((articlesWithEvents / totalArticles) * 100).toFixed(1))
       : 0;
 
-    console.log('[RECOMMENDED DEBUG] Formula: 0.10*quality + 0.15*freshness + 0.45*coverage + 0.15*crossSource + 0.15*corroboration + ruleBoost');
+    console.log('[RECOMMENDED DEBUG] Formula: 0.06*quality + 0.64*freshness + 0.16*coverage + 0.08*crossSource + 0.06*corroboration + ruleBoost');
     console.log(
       `[RECOMMENDED DEBUG] articles=${totalArticles} ` +
       `articlesWithEvents=${articlesWithEvents} ` +
