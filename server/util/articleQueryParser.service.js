@@ -177,6 +177,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
 
   return {
     text,
+    textMode,
     filters,
     sort,
     limit

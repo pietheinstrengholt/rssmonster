@@ -7,6 +7,7 @@ describe('articleQueryParser.service', () => {
 
     expect(result).toEqual({
       text: 'AI agents',
+      textMode: 'exact',
       filters: {
         star: true,
         quality: {
@@ -30,6 +31,7 @@ describe('articleQueryParser.service', () => {
       value: 2
     });
     expect(result.text).toBe('');
+    expect(result.textMode).toBe('none');
   });
 
   it('parses last day date expressions', () => {
@@ -46,6 +48,7 @@ describe('articleQueryParser.service', () => {
 
     expect(result.filters.unread).toBe(true);
     expect(result.text).toBe('AI agents');
+    expect(result.textMode).toBe('terms');
   });
 
   it('parses sort and limit', () => {

@@ -1,5 +1,5 @@
 import { Op } from 'sequelize';
-import { ciLike } from './articleSearch.service.js';
+import { ciLike } from './sequelize.utils.js';
 
 export const buildTextSearchWhereClause = ({ titleFilter, quotedPhrase, remainingTokens }) => {
   const baseWhere = {};

@@ -1,17 +1,12 @@
 import db from '../models/index.js';
 const { Setting } = db;
-import { Op, fn, col, where } from 'sequelize';
+import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { parseArticleQuery } from './articleQueryParser.service.js';
 import { buildArticleSearchQuery, executeSearch } from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
-
-// Utility function to escape special characters in a string for use in a regular expression
-function escapeRegExp(string) {
-    return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-}
 
 /**
  * Get all article IDs based on query parameters with advanced filtering.
@@ -61,7 +56,13 @@ export const searchArticles = async ({
 
     const rawSearch = search.trim();
     const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'DESC' });
-    const { filters = {}, sort: sortFilter = sort || 'DESC', limit: limitFilter = null, text = '' } = parsedQuery;
+    const {
+      filters = {},
+      sort: sortFilter = sort || 'DESC',
+      limit: limitFilter = null,
+      text = '',
+      textMode = 'none'
+    } = parsedQuery;
 
     const {
       star: starFilter = null,
@@ -88,11 +89,8 @@ export const searchArticles = async ({
       console.log(`\x1b[31mDate filter applied via parser: ${dateToken}\x1b[0m`);
     }
 
-    const hasQuotedText = text
-      ? new RegExp(`(^|[\\s,])"${escapeRegExp(text)}"([\\s,]|$)`).test(rawSearch)
-      : false;
-    const quotedPhrase = hasQuotedText ? text : null;
-    const remainingTokens = !hasQuotedText && text ? text.split(/\s+/).filter(Boolean) : [];
+    const quotedPhrase = textMode === 'exact' ? text : null;
+    const remainingTokens = textMode === 'terms' && text ? text.split(/\s+/).filter(Boolean) : [];
 
     /**
      * Determine final filter values.
@@ -292,10 +290,3 @@ export const searchArticles = async ({
         itemIds
     };
 };
-
-// Ensure ciLike is properly exported
-const ciLike = (column, value) => (
-  where(fn('LOWER', col(column)), { [Op.like]: `%${String(value).toLowerCase()}%` })
-);
-
-export { ciLike };
