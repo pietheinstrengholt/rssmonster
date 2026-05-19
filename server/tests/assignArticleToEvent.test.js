@@ -8,6 +8,9 @@ const { sequelize, User, Category, Feed, Article, Event, Topic } = db;
 const buildVector = (length = 32, shift = 0) =>
   Array.from({ length }, (_, i) => (((i + shift) % 5) + 1) / 10);
 
+const basisVector = (length = 32, index = 0) =>
+  Array.from({ length }, (_, i) => (i === index ? 1 : 0));
+
 describe('assignArticleToEvent', () => {
   let user;
   let category;
@@ -123,5 +126,59 @@ describe('assignArticleToEvent', () => {
     expect(event.articleCount).toBe(2);
     expect(event.sourceCount).toBe(2);
     expect(event.sourceDiversityScore).toBeCloseTo(Math.log(3), 5);
+  });
+
+  it('promotes a cross-topic candidate into the same event when semantic similarity is high', async () => {
+    const eventVector = buildVector(32, 1);
+    const firstTopicVector = basisVector(32, 0);
+    const secondTopicVector = basisVector(32, 1);
+
+    const firstArticle = await Article.create({
+      userId: user.id,
+      feedId: feedA.id,
+      url: `https://example.com/article-cross-topic-seed-${Date.now()}`,
+      title: 'GPT 6 launch preview shocks developers',
+      description: 'A preview article about the GPT 6 launch event',
+      contentOriginal: '<p>A preview article about the GPT 6 launch event</p>',
+      contentStripped: 'A preview article about the GPT 6 launch event'
+    });
+
+    await assignArticleToEvent(firstArticle.id, null, {
+      eventVector,
+      topicVector: firstTopicVector
+    });
+
+    const seeded = await Article.findByPk(firstArticle.id);
+    expect(seeded.eventId).toBeNull();
+    expect(seeded.topicId).toBeTruthy();
+
+    const initialTopicId = seeded.topicId;
+
+    const secondArticle = await Article.create({
+      userId: user.id,
+      feedId: feedB.id,
+      url: `https://example.com/article-cross-topic-match-${Date.now()}`,
+      title: 'GPT 6 launch briefing expands rollout details',
+      description: 'A follow up article describing the GPT 6 launch event',
+      contentOriginal: '<p>A follow up article describing the GPT 6 launch event</p>',
+      contentStripped: 'A follow up article describing the GPT 6 launch event'
+    });
+
+    await assignArticleToEvent(secondArticle.id, null, {
+      eventVector,
+      topicVector: secondTopicVector
+    });
+
+    const promoted = await Article.findByPk(secondArticle.id);
+    const updatedSeed = await Article.findByPk(firstArticle.id);
+
+    expect(promoted.eventId).toBeTruthy();
+    expect(updatedSeed.eventId).toBe(promoted.eventId);
+    expect(initialTopicId).not.toBe(promoted.topicId);
+
+    const event = await Event.findByPk(promoted.eventId);
+    expect(event).toBeTruthy();
+    expect(event.articleCount).toBe(2);
+    expect(event.sourceCount).toBe(2);
   });
 });

@@ -48,7 +48,7 @@ function extractEventText({ title, contentStripped }) {
   if (contentStripped && !isLikelyHtml(contentStripped)) {
     const paragraphs = extractParagraphs(contentStripped);
     if (paragraphs.length) {
-      parts.push(paragraphs[0]);
+      parts.push(paragraphs.slice(0, 2).join(' '));
     }
   }
 

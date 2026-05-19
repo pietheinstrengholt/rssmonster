@@ -1,8 +1,13 @@
 import crypto from 'crypto';
 import db from '../../models/index.js';
-import { MAX_CANDIDATES, TOPIC_SIM_THRESHOLD } from './semanticConfig.js';
+import {
+  MAX_CANDIDATES,
+  TOPIC_SIM_THRESHOLD,
+  TOPIC_VECTOR_ALPHA
+} from './semanticConfig.js';
 
 const { Topic } = db;
+const MAX_TOPIC_CANDIDATES = 3;
 
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
@@ -47,11 +52,21 @@ function generateTopicName(article) {
   return name || 'Untitled Topic';
 }
 
+function blendTopicVector(existingVector, incomingVector) {
+  if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
+  if (existingVector.length !== incomingVector.length) return incomingVector;
+
+  return existingVector.map(
+    (value, index) => value * (1 - TOPIC_VECTOR_ALPHA) + incomingVector[index] * TOPIC_VECTOR_ALPHA
+  );
+}
+
 export async function assignEventToTopic({ article, articleTopicVector, topicsCache = null }) {
   if (!articleTopicVector) return null;
 
   let bestTopicSim = 0;
   let bestTopic = null;
+  const matchedCandidates = [];
 
   // Use cached topics if provided; otherwise fetch
   const topics = topicsCache
@@ -74,16 +89,47 @@ export async function assignEventToTopic({ article, articleTopicVector, topicsCa
       bestTopicSim = sim;
       bestTopic = topic;
     }
+
+    if (sim >= TOPIC_SIM_THRESHOLD) {
+      matchedCandidates.push({ topic, sim });
+    }
   }
 
   if (bestTopic && bestTopicSim >= TOPIC_SIM_THRESHOLD) {
-    return bestTopic;
+    const now = article.published || new Date();
+    const blendedTopicVector = blendTopicVector(
+      bestTopic.topicVector,
+      articleTopicVector
+    );
+
+    const [updatedTopic] = await Promise.all([
+      bestTopic.update({
+        topicVector: blendedTopicVector,
+        lastActivityAt: now
+      }),
+      matchedCandidates
+        .sort((a, b) => b.sim - a.sim)
+        .slice(0, MAX_TOPIC_CANDIDATES)
+        .reduce((promise, candidate) => promise.then(() => {
+          if (candidate.topic.id === bestTopic.id) return Promise.resolve();
+          return candidate.topic.update({ lastActivityAt: now });
+        }), Promise.resolve())
+    ]);
+
+    if (topicsCache) {
+      const cacheIndex = topicsCache.findIndex(topic => topic.id === updatedTopic.id);
+      if (cacheIndex >= 0) {
+        topicsCache[cacheIndex] = updatedTopic;
+      }
+    }
+
+    return updatedTopic;
   }
 
   const topicKey = generateTopicKey(articleTopicVector);
   const now = article.published || new Date();
 
-  return Topic.create({
+  const createdTopic = await Topic.create({
     userId: article.userId,
     name: generateTopicName(article),
     topicKey: topicKey || `topic-${article.userId}-${article.id}`,
@@ -92,6 +138,15 @@ export async function assignEventToTopic({ article, articleTopicVector, topicsCa
     eventCount: 0,
     lastActivityAt: now
   });
+
+  if (topicsCache) {
+    topicsCache.unshift(createdTopic);
+    if (topicsCache.length > MAX_CANDIDATES) {
+      topicsCache.pop();
+    }
+  }
+
+  return createdTopic;
 }
 
 export default assignEventToTopic;

@@ -69,8 +69,8 @@ export default (sequelize) => {
         allowNull: true
       },
       status: {
-        type: DataTypes.ENUM('active', 'cooling', 'archived'),
-        defaultValue: 'active'
+        type: DataTypes.ENUM('emerging', 'active', 'cooling', 'archived'),
+        defaultValue: 'emerging'
       }
     },
     {

@@ -66,7 +66,7 @@ export const buildArticleSearchQuery = ({
       {
         model: Event,
         as: 'cluster',
-        attributes: ['id', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
+        attributes: ['id', 'name', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
         required: false
       },
       {

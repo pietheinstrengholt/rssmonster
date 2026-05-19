@@ -7,10 +7,65 @@ import embedArticle from './embedArticle.js';
 import {
   RECENCY_WINDOW_DAYS,
   EVENT_STRENGTH_CONFIG,
-  MAX_CANDIDATES
+  MAX_CANDIDATES,
+  EVENT_LIFECYCLE
 } from './semanticConfig.js';
 
 const { Article, Event, Topic } = db;
+
+function resolveEventStatus(articleCount, lastSeenAt) {
+  const now = Date.now();
+  const lastSeenTs = lastSeenAt ? new Date(lastSeenAt).getTime() : null;
+
+  if (!Number.isFinite(lastSeenTs)) return 'archived';
+
+  const ageHours = Math.max(0, (now - lastSeenTs) / (1000 * 60 * 60));
+
+  if (ageHours >= EVENT_LIFECYCLE.coolingHours) {
+    return 'archived';
+  }
+
+  if (ageHours > EVENT_LIFECYCLE.activeFreshHours) {
+    return 'cooling';
+  }
+
+  if (articleCount <= EVENT_LIFECYCLE.emergingArticleMax) {
+    return 'emerging';
+  }
+
+  return 'active';
+}
+
+function buildRecencyWeightedVector(eventArticles) {
+  const embedded = eventArticles.filter(a => Array.isArray(a.eventVector));
+  if (!embedded.length) return null;
+
+  const sorted = embedded
+    .slice()
+    .sort((a, b) => new Date(b.published || 0).getTime() - new Date(a.published || 0).getTime())
+    .slice(0, 24);
+
+  const newestTs = new Date(sorted[0].published || 0).getTime();
+  const dim = sorted[0].eventVector.length;
+
+  const weighted = Array(dim).fill(0);
+  let totalWeight = 0;
+
+  for (const article of sorted) {
+    const ts = new Date(article.published || 0).getTime();
+    const ageHours = Math.max(0, (newestTs - ts) / (1000 * 60 * 60));
+    const weight = Math.pow(0.5, ageHours / 12);
+
+    totalWeight += weight;
+    for (let i = 0; i < dim; i++) {
+      weighted[i] += article.eventVector[i] * weight;
+    }
+  }
+
+  if (!totalWeight) return sorted[0].eventVector;
+
+  return weighted.map(value => value / totalWeight);
+}
 
 function computeEventStrength({
   articleCount,
@@ -35,8 +90,43 @@ function computeEventStrength({
   ).toFixed(3));
 }
 
+async function summarizeArticleAssignments(articleIds) {
+  if (!articleIds.length) {
+    return {
+      totalArticles: 0,
+      assignedArticles: 0,
+      eventCount: 0,
+      assignedPct: 0
+    };
+  }
+
+  const assignedRows = await Article.findAll({
+    where: {
+      id: { [Op.in]: articleIds },
+      eventId: { [Op.ne]: null }
+    },
+    attributes: ['eventId'],
+    raw: true
+  });
+
+  const assignedArticles = assignedRows.length;
+  const eventCount = new Set(assignedRows.map(row => row.eventId)).size;
+  const assignedPct = Number(((assignedArticles / articleIds.length) * 100).toFixed(1));
+
+  return {
+    totalArticles: articleIds.length,
+    assignedArticles,
+    eventCount,
+    assignedPct
+  };
+}
+
 async function assignAndReconcile(userId, articles, label) {
   const touchedEventIds = new Set();
+  const runContext = {
+    records: [],
+    indexById: new Map()
+  };
 
   const cache = await EventCache.forUser(userId);
   
@@ -63,7 +153,7 @@ async function assignAndReconcile(userId, articles, label) {
     if (!vectors?.eventVector) continue;
 
     // Pass article object and topicsCache to avoid redundant fetch; eventId returned
-    const eventId = await assignArticleToEvent(articles[i], cache, vectors, topicsCache);
+    const eventId = await assignArticleToEvent(articles[i], cache, vectors, topicsCache, runContext);
 
     if (eventId) {
       touchedEventIds.add(eventId);
@@ -141,24 +231,7 @@ async function assignAndReconcile(userId, articles, label) {
       continue;
     }
 
-    const embedded = eventArticles.filter(
-      a => Array.isArray(a.eventVector)
-    );
-
-    let eventVector = null;
-
-    if (embedded.length) {
-      eventVector = embedded[0].eventVector;
-
-      if (embedded.length > 1) {
-        eventVector = eventVector.map((_, i) =>
-          embedded.reduce(
-            (sum, a) => sum + a.eventVector[i],
-            0
-          ) / embedded.length
-        );
-      }
-    }
+    const eventVector = buildRecencyWeightedVector(eventArticles);
 
     const timestamps = eventArticles
       .map(a => a.published)
@@ -168,13 +241,14 @@ async function assignAndReconcile(userId, articles, label) {
 
     const firstSeen = timestamps.length ? new Date(timestamps[0]) : null;
     const lastSeen = timestamps.length ? new Date(timestamps[timestamps.length - 1]) : null;
+    const status = resolveEventStatus(eventArticles.length, lastSeen);
 
     await event.update({
       articleCount: eventArticles.length,
       eventVector,
       firstSeen,
       lastSeen,
-      status: 'active'
+      status
     });
 
     console.log(
@@ -364,6 +438,16 @@ export async function reclusterForUser(userId) {
   }
 
   await assignAndReconcile(userId, windowArticles, 'replay');
+
+  const summary = await summarizeArticleAssignments(windowArticleIds);
+
+  console.log(
+    `[EVENT] User ${userId} replay summary: ` +
+    `articles=${summary.totalArticles} ` +
+    `articlesWithEvents=${summary.assignedArticles} ` +
+    `events=${summary.eventCount} ` +
+    `eventCoverage=${summary.assignedPct}%`
+  );
 
   console.log(
     `[EVENT] Finished window replay for user ${userId}` +
