@@ -22,7 +22,10 @@ export const fetchFeedIds = async ({ userId, categoryId, feedId }) => {
   }
 
   if (categoryId === '%') {
-    const feeds = await Feed.findAll({ attributes: ['id'] });
+    const feeds = await Feed.findAll({
+      attributes: ['id'],
+      where: { userId }
+    });
     return feeds.map(feed => feed.id);
   }
 
