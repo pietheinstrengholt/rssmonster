@@ -11,6 +11,8 @@ import {
 
 const { Topic } = db;
 const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
+const REPLAY_PRIMARY_HYSTERESIS = 0.01;
+const REPLAY_SECONDARY_HYSTERESIS = 0.02;
 
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
@@ -94,6 +96,12 @@ export async function assignEventToTopic({
   if (!articleTopicVector) return [];
 
   const shouldUpdateTopicVector = assignmentContext !== 'replay';
+  const primaryThreshold = assignmentContext === 'replay'
+    ? Math.min(PRIMARY_TOPIC_THRESHOLD + REPLAY_PRIMARY_HYSTERESIS, 0.999)
+    : PRIMARY_TOPIC_THRESHOLD;
+  const secondaryThreshold = assignmentContext === 'replay'
+    ? Math.min(SECONDARY_TOPIC_THRESHOLD + REPLAY_SECONDARY_HYSTERESIS, 0.999)
+    : SECONDARY_TOPIC_THRESHOLD;
 
   const matchedCandidates = [];
   let bestTopic = null;
@@ -121,7 +129,7 @@ export async function assignEventToTopic({
       bestTopic = topic;
     }
 
-    if (sim >= SECONDARY_TOPIC_THRESHOLD) {
+    if (sim >= secondaryThreshold) {
       matchedCandidates.push({ topic, sim });
     }
   }
@@ -129,11 +137,11 @@ export async function assignEventToTopic({
   if (matchedCandidates.length) {
     const now = article.published || new Date();
     const rankedCandidates = matchedCandidates
-      .sort((a, b) => b.sim - a.sim)
+      .sort((a, b) => (b.sim - a.sim) || (a.topic.id - b.topic.id))
       .slice(0, MAX_TOPIC_CANDIDATES);
 
     const primaryCandidate = rankedCandidates.find(candidate =>
-      candidate.sim >= PRIMARY_TOPIC_THRESHOLD
+      candidate.sim >= primaryThreshold
     ) ?? null;
 
     const updates = rankedCandidates.map(candidate => {
