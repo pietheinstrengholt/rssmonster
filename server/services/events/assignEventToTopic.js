@@ -85,8 +85,15 @@ function upsertTopicInCache(topicsCache, topic) {
   topicsCache.unshift(topic);
 }
 
-export async function assignEventToTopic({ article, articleTopicVector, topicsCache = null }) {
+export async function assignEventToTopic({
+  article,
+  articleTopicVector,
+  topicsCache = null,
+  assignmentContext = 'incremental'
+}) {
   if (!articleTopicVector) return [];
+
+  const shouldUpdateTopicVector = assignmentContext !== 'replay';
 
   const matchedCandidates = [];
   let bestTopic = null;
@@ -130,7 +137,7 @@ export async function assignEventToTopic({ article, articleTopicVector, topicsCa
     ) ?? null;
 
     const updates = rankedCandidates.map(candidate => {
-      if (primaryCandidate && candidate.topic.id === primaryCandidate.topic.id) {
+      if (primaryCandidate && candidate.topic.id === primaryCandidate.topic.id && shouldUpdateTopicVector) {
         const blendedTopicVector = blendTopicVector(
           candidate.topic.topicVector,
           articleTopicVector
@@ -166,17 +173,16 @@ export async function assignEventToTopic({ article, articleTopicVector, topicsCa
 
   // Reuse topic by identity before creating a new semantic region.
   if (bestTopic && bestTopicSim >= TOPIC_IDENTITY_THRESHOLD) {
-    const stableBlendAlpha = TOPIC_VECTOR_ALPHA * 0.25;
-    const blendedTopicVector = blendTopicVectorWithAlpha(
-      bestTopic.topicVector,
-      articleTopicVector,
-      stableBlendAlpha
-    );
-
-    const updatedTopic = await bestTopic.update({
-      topicVector: blendedTopicVector,
-      lastActivityAt: now
-    });
+    const updatedTopic = shouldUpdateTopicVector
+      ? await bestTopic.update({
+        topicVector: blendTopicVectorWithAlpha(
+          bestTopic.topicVector,
+          articleTopicVector,
+          TOPIC_VECTOR_ALPHA * 0.25
+        ),
+        lastActivityAt: now
+      })
+      : await bestTopic.update({ lastActivityAt: now });
 
     upsertTopicInCache(topicsCache, updatedTopic);
 

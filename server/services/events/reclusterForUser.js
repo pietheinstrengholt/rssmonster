@@ -203,7 +203,14 @@ async function assignAndReconcile(userId, articles, label) {
     const vectors = embedResults[i];
     if (!vectors?.eventVector) continue;
 
-    const eventId = await assignArticleToEvent(articles[i], cache, vectors, topicsCache, runContext);
+    const eventId = await assignArticleToEvent(
+      articles[i],
+      cache,
+      vectors,
+      topicsCache,
+      runContext,
+      { assignmentContext: label === 'replay' ? 'replay' : 'incremental' }
+    );
 
     if (eventId) {
       touchedEventIds.add(eventId);

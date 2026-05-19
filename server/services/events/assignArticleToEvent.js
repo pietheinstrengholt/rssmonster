@@ -749,7 +749,9 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
   };
 }
 
-export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null, runContext = null) {
+export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null, runContext = null, options = {}) {
+  const assignmentContext = options.assignmentContext || 'incremental';
+
   const article = typeof articleIdOrObj === 'object'
     ? articleIdOrObj
     : await Article.findByPk(articleIdOrObj);
@@ -764,7 +766,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       ? await assignEventToTopic({
         article,
         articleTopicVector,
-        topicsCache
+        topicsCache,
+        assignmentContext
       })
       : [];
 
@@ -875,7 +878,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     ? await assignEventToTopic({
       article,
       articleTopicVector,
-      topicsCache
+      topicsCache,
+      assignmentContext
     })
     : [];
 
