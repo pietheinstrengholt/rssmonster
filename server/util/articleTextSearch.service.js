@@ -1,32 +1,38 @@
 import { Op } from 'sequelize';
 import { ciLike } from './sequelize.utils.js';
 
+const appendAndCondition = (whereClause, condition) => {
+  whereClause[Op.and] ??= [];
+  whereClause[Op.and].push(condition);
+};
+
+const appendOrGroup = (whereClause, conditions) => {
+  appendAndCondition(whereClause, { [Op.or]: conditions });
+};
+
 export const buildTextSearchWhereClause = ({ titleFilter, quotedPhrase, remainingTokens }) => {
   const baseWhere = {};
 
   if (titleFilter) {
-    const titleCond = ciLike('title', titleFilter);
-    baseWhere[Op.and] = [...(baseWhere[Op.and] || []), titleCond];
+    appendAndCondition(baseWhere, ciLike('title', titleFilter));
 
     if (quotedPhrase) {
-      const contentCond = ciLike('contentOriginal', quotedPhrase);
-      baseWhere[Op.and] = [...(baseWhere[Op.and] || []), contentCond];
+      appendAndCondition(baseWhere, ciLike('contentOriginal', quotedPhrase));
     } else if (remainingTokens.length > 0) {
-      baseWhere[Op.or] = remainingTokens.map(token => ciLike('contentOriginal', token));
+      appendOrGroup(baseWhere, remainingTokens.map(token => ciLike('contentOriginal', token)));
     }
   } else if (quotedPhrase) {
-    baseWhere[Op.or] = [
+    appendOrGroup(baseWhere, [
       ciLike('title', quotedPhrase),
       ciLike('contentOriginal', quotedPhrase)
-    ];
+    ]);
   } else if (remainingTokens.length > 0) {
-    const wordConditions = remainingTokens.map(token => ({
-      [Op.or]: [
+    remainingTokens.forEach(token => {
+      appendOrGroup(baseWhere, [
         ciLike('title', token),
         ciLike('contentOriginal', token)
-      ]
-    }));
-    baseWhere[Op.and] = wordConditions;
+      ]);
+    });
   }
 
   return baseWhere;

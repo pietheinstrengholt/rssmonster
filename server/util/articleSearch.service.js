@@ -98,24 +98,14 @@ export const searchArticles = async ({
      */
     // Sort: search token (sort:ASC/DESC/RECOMMENDED/QUALITY/ATTENTION) overrides query param
     // Smart folder optimization: skip sort entirely (only counting articles)
-    let workingSort = sortFilter !== null ? sortFilter : (sort || "DESC");
-    let sortRecommended = false;
-    let sortQuality = false;
-    let sortAttention = false;
-
-    // Normalize sort mode once
-    const sortMode = workingSort.toUpperCase();
-
-    // Simplify sort flags
-    sortRecommended = sortMode === 'RECOMMENDED';
-    sortQuality = sortMode === 'QUALITY';
-    sortAttention = sortMode === 'ATTENTION';
-
-    // Adjust workingSort based on normalized sort mode
-    workingSort = ['RECOMMENDED', 'QUALITY', 'ATTENTION'].includes(sortMode)
+    const logicalSort = (sortFilter !== null ? sortFilter : (sort || 'DESC')).toUpperCase();
+    const sortRecommended = logicalSort === 'RECOMMENDED';
+    const sortQuality = logicalSort === 'QUALITY';
+    const sortAttention = logicalSort === 'ATTENTION';
+    const databaseSort = ['RECOMMENDED', 'QUALITY', 'ATTENTION'].includes(logicalSort)
       ? 'DESC'
-      : sortMode;
-    console.log(`\x1b[31mFinal sort value: "${workingSort}" (smartFolder: ${smartFolderSearch})\x1b[0m`);
+      : logicalSort;
+    console.log(`\x1b[31mFinal sort value: "${databaseSort}" (logical: ${logicalSort}, smartFolder: ${smartFolderSearch})\x1b[0m`);
 
     // Tag: search token (tag:name) overrides query param
     const workingTag = tagFilter !== null ? tagFilter : (tag || "").trim();
@@ -188,7 +178,7 @@ export const searchArticles = async ({
       sortRecommended,
       sortQuality,
       sortAttention,
-      workingSort,
+      workingSort: databaseSort,
       qualityFilter,
       freshnessFilter,
       starFilter,
@@ -216,17 +206,6 @@ export const searchArticles = async ({
     let articles = await executeSearch(articleQuery);
     
     console.log(`\x1b[33mFetched ${articles.length} articles from database (before in-memory filters)\x1b[0m`);
-
-    // If sorting by the recommended score, compute recommended scores and sort.
-    if (sortRecommended) {
-      workingSort = "RECOMMENDED";
-    }
-    if (sortQuality) {
-      workingSort = "QUALITY";
-    }
-    if (sortAttention) {
-      workingSort = "ATTENTION";
-    }
 
     // Delegate all in-memory sorting and filtering to sortArticles
     if (!smartFolderSearch || sortRecommended || sortQuality || sortAttention || qualityFilter || freshnessFilter) {
@@ -267,7 +246,7 @@ export const searchArticles = async ({
         categoryId: categoryId,
         feedId: feedId,
         status: status,
-        sort: workingSort,
+        sort: logicalSort,
         minAdvertisementScore: finalMinAdvertisementScore,
         minSentimentScore: finalMinSentimentScore,
         minQualityScore: finalMinQualityScore,
