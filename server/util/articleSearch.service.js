@@ -185,7 +185,7 @@ export const searchArticles = async ({
       const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
       const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
       const lastWeekMatch = cleaned.match(/^@lastweek$/i); // @lastweek (previous 7 days)
-      const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster|topicGroup)$/i); // cluster:all | cluster:eventCluster | cluster:topicGroup
+      const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster)$/i); // cluster:all | cluster:eventCluster
       const clusterCountMatch = cleaned.match(/^clustercount:\s*(\d+)$/i); // clustercount:2
       const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
       const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
@@ -605,21 +605,15 @@ export const searchArticles = async ({
 
     /**
      * Cluster view:
-     * When enabled, only return cluster representatives.
-     * This collapses related articles into one item per cluster.
-    * Search token (cluster:all/eventCluster/topicGroup) overrides clusterView parameter.
+    * When enabled, only return cluster representatives.
+    * This collapses related articles into one item per cluster.
+    * Search token (cluster:all/eventCluster) overrides clusterView parameter.
      */
     const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
-
     if (Number.isFinite(clusterCountFilter)) {
-      const countLiteral = workingClusterView === 'topicGroup'
-        ? Article.sequelize.literal(
-            '(SELECT SUM(e2.articleCount) FROM events e2 WHERE e2.userId = articles.userId AND e2.topicId = (SELECT e3.topicId FROM events e3 WHERE e3.id = articles.eventId))'
-          )
-        : Article.sequelize.literal(
-            '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
-          );
-
+      const countLiteral = Article.sequelize.literal(
+        '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
+      );
       articleQuery.where[Op.and] = [
         ...(articleQuery.where[Op.and] || []),
         Article.sequelize.where(countLiteral, { [Op.gte]: clusterCountFilter })
@@ -635,42 +629,6 @@ export const searchArticles = async ({
           }
         },
         {
-          eventId: {
-            [Op.is]: null
-          }
-        }
-      ];
-    }
-
-    if (workingClusterView === 'topicGroup') {
-      // One EVENT per TOPIC (strongest event per topicId)
-      articleQuery.where[Op.or] = [
-        {
-          id: {
-            [Op.in]: Article.sequelize.literal(`(
-              SELECT e.representativeArticleId
-              FROM events e
-              INNER JOIN (
-                SELECT userId, topicId, MAX(eventStrength) AS maxStrength
-                FROM events
-                WHERE topicId IS NOT NULL
-                GROUP BY userId, topicId
-              ) t
-                ON e.userId = t.userId
-                AND e.topicId = t.topicId
-              AND e.eventStrength = t.maxStrength
-              WHERE e.id = (
-                SELECT MAX(e2.id)
-                FROM events e2
-                WHERE e2.userId = e.userId
-                  AND e2.topicId = e.topicId
-                  AND e2.eventStrength = e.eventStrength
-              )
-            )`)
-          }
-        },
-        {
-          // Articles without event still pass through
           eventId: {
             [Op.is]: null
           }
