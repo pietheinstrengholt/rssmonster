@@ -3,6 +3,11 @@ import { Op } from 'sequelize';
 
 const { Article, Event, Feed, Tag } = db;
 
+const appendAndCondition = (whereClause, condition) => {
+  whereClause[Op.and] ??= [];
+  whereClause[Op.and].push(condition);
+};
+
 export const buildArticleSearchQuery = ({
   baseWhere,
   smartFolderSearch,
@@ -84,10 +89,12 @@ export const buildArticleSearchQuery = ({
   if (firstSeenAgeFilter) {
     const { value, unit } = firstSeenAgeFilter;
     const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
-    articleQuery.where[Op.or] = [
-      { firstSeen: { [Op.is]: null } },
-      { firstSeen: { [Op.gte]: Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`) } }
-    ];
+    appendAndCondition(articleQuery.where, {
+      [Op.or]: [
+        { firstSeen: { [Op.is]: null } },
+        { firstSeen: { [Op.gte]: Article.sequelize.literal(`NOW() - INTERVAL ${value} ${intervalUnit}`) } }
+      ]
+    });
   }
 
   if (starFilter !== null) {
@@ -137,25 +144,26 @@ export const buildArticleSearchQuery = ({
     const countLiteral = Article.sequelize.literal(
       '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
     );
-    articleQuery.where[Op.and] = [
-      ...(articleQuery.where[Op.and] || []),
+    appendAndCondition(articleQuery.where,
       Article.sequelize.where(countLiteral, { [Op.gte]: clusterCountFilter })
-    ];
+    );
   }
 
   if (workingClusterView === 'eventCluster') {
-    articleQuery.where[Op.or] = [
-      {
-        id: {
-          [Op.in]: Article.sequelize.literal('(SELECT representativeArticleId FROM events)')
+    appendAndCondition(articleQuery.where, {
+      [Op.or]: [
+        {
+          id: {
+            [Op.in]: Article.sequelize.literal('(SELECT representativeArticleId FROM events)')
+          }
+        },
+        {
+          eventId: {
+            [Op.is]: null
+          }
         }
-      },
-      {
-        eventId: {
-          [Op.is]: null
-        }
-      }
-    ];
+      ]
+    });
   }
 
   return articleQuery;

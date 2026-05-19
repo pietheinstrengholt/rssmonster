@@ -64,19 +64,21 @@ export const searchArticles = async ({
     const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'DESC' });
     const { filters = {}, sort: sortFilter = sort || 'DESC', limit: limitFilter = null, text = '' } = parsedQuery;
 
-    const starFilter = typeof filters.star === 'boolean' ? filters.star : null;
-    const unreadFilter = typeof filters.unread === 'boolean' ? filters.unread : null;
-    const readFilter = typeof filters.read === 'boolean' ? filters.read : null;
-    const clickedFilter = typeof filters.clicked === 'boolean' ? filters.clicked : null;
-    const tagFilter = typeof filters.tag === 'string' ? filters.tag : null;
-    const seenFilter = typeof filters.seen === 'boolean' ? filters.seen : null;
-    const firstSeenAgeFilter = filters.firstSeenAge || null;
-    const titleFilter = typeof filters.title === 'string' ? filters.title : null;
-    const qualityFilter = filters.quality || null;
-    const freshnessFilter = filters.freshness || null;
-    const clusterFilter = filters.cluster || null;
+    const {
+      star: starFilter = null,
+      unread: unreadFilter = null,
+      read: readFilter = null,
+      clicked: clickedFilter = null,
+      tag: tagFilter = null,
+      seen: seenFilter = null,
+      firstSeenAge: firstSeenAgeFilter = null,
+      title: titleFilter = null,
+      quality: qualityFilter = null,
+      freshness: freshnessFilter = null,
+      cluster: clusterFilter = null,
+      hot: hotFilter = null
+    } = filters;
     const clusterCountFilter = Number.isFinite(filters.clusterCount) ? filters.clusterCount : null;
-    const hotFilter = typeof filters.hot === 'boolean' ? filters.hot : null;
 
     let dateRange = null;
     let dateToken = null;
