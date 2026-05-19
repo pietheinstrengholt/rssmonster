@@ -7,11 +7,10 @@ import embedArticle from './embedArticle.js';
 import {
   RECENCY_WINDOW_DAYS,
   EVENT_STRENGTH_CONFIG,
-  MAX_CANDIDATES,
   EVENT_LIFECYCLE
 } from './semanticConfig.js';
 
-const { Article, Event, Topic } = db;
+const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
 
 function resolveEventStatus(articleCount, lastSeenAt) {
   const now = Date.now();
@@ -85,8 +84,8 @@ function computeEventStrength({
 
   return Number((
     redundancyScore * EVENT_STRENGTH_CONFIG.weights.redundancy +
-    cohesionScore   * EVENT_STRENGTH_CONFIG.weights.cohesion +
-    topicScore      * EVENT_STRENGTH_CONFIG.weights.topic
+    cohesionScore * EVENT_STRENGTH_CONFIG.weights.cohesion +
+    topicScore * EVENT_STRENGTH_CONFIG.weights.topic
   ).toFixed(3));
 }
 
@@ -121,23 +120,76 @@ async function summarizeArticleAssignments(articleIds) {
   };
 }
 
+async function recomputeTopicStatsForUser(userId, topicIds) {
+  if (!topicIds.length) return;
+
+  const uniqueTopicIds = [...new Set(topicIds.map(Number).filter(Boolean))];
+
+  await Promise.all(
+    uniqueTopicIds.map(async topicId => {
+      const [articleCount, eventCount, lastEventRow] = await Promise.all([
+        ArticleTopic.count({
+          where: { topicId },
+          include: [{
+            model: Article,
+            required: true,
+            attributes: [],
+            where: { userId }
+          }],
+          distinct: true,
+          col: 'articleId'
+        }),
+        EventTopic.count({
+          where: { topicId },
+          include: [{
+            model: Event,
+            required: true,
+            attributes: [],
+            where: { userId }
+          }],
+          distinct: true,
+          col: 'eventId'
+        }),
+        Event.findOne({
+          where: { userId },
+          include: [{
+            model: EventTopic,
+            required: true,
+            attributes: [],
+            where: { topicId }
+          }],
+          order: [['lastSeen', 'DESC']],
+          attributes: ['lastSeen']
+        })
+      ]);
+
+      await Topic.update(
+        {
+          articleCount,
+          eventCount,
+          lastActivityAt: lastEventRow?.lastSeen || null
+        },
+        { where: { id: topicId, userId } }
+      );
+    })
+  );
+}
+
 async function assignAndReconcile(userId, articles, label) {
   const touchedEventIds = new Set();
+  const touchedTopicIds = new Set();
   const runContext = {
     records: [],
     indexById: new Map()
   };
 
   const cache = await EventCache.forUser(userId);
-  
-  // Pre-fetch topics cache once to avoid N queries during topic assignment
+
   const topicsCache = await db.Topic.findAll({
     where: { userId },
-    order: [['updatedAt', 'DESC']],
-    limit: MAX_CANDIDATES
+    order: [['updatedAt', 'DESC']]
   });
 
-  // Batch embed all articles in parallel for speed
   const embedResults = await Promise.all(
     articles.map(article =>
       embedArticle({
@@ -147,12 +199,10 @@ async function assignAndReconcile(userId, articles, label) {
     )
   );
 
-  // Assign articles to events (sequential to prevent cache race conditions)
   for (let i = 0; i < articles.length; i++) {
     const vectors = embedResults[i];
     if (!vectors?.eventVector) continue;
 
-    // Pass article object and topicsCache to avoid redundant fetch; eventId returned
     const eventId = await assignArticleToEvent(articles[i], cache, vectors, topicsCache, runContext);
 
     if (eventId) {
@@ -162,7 +212,7 @@ async function assignAndReconcile(userId, articles, label) {
 
   if (!touchedEventIds.size) {
     console.log(`[EVENT] ${label}: no events created or updated`);
-    return;
+    return [];
   }
 
   const touchedIds = [...touchedEventIds];
@@ -172,49 +222,15 @@ async function assignAndReconcile(userId, articles, label) {
     `(${articles.length} articles assigned)`
   );
 
-  // Sync article topicIds to their events' topicIds in parallel
-  const eventsWithTopics = await Event.findAll({
-    where: { id: { [Op.in]: touchedIds } },
-    attributes: ['id', 'topicId']
-  });
-
-  // Group events by topicId and sync in single batch operations
-  const topicIdUpdates = {};
-  for (const event of eventsWithTopics) {
-    if (event.topicId != null) {
-      if (!topicIdUpdates[event.topicId]) {
-        topicIdUpdates[event.topicId] = [];
-      }
-      topicIdUpdates[event.topicId].push(event.id);
-    }
-  }
-
-  // Update all articles for each topicId in parallel
-  await Promise.all(
-    Object.entries(topicIdUpdates).map(([topicId, eventIds]) =>
-      Article.update(
-        { topicId: Number(topicId) },
-        { where: { eventId: { [Op.in]: eventIds } } }
-      )
-    )
-  );
-
   const events = await Event.findAll({
     where: { id: { [Op.in]: touchedIds } }
   });
 
-  // Batch fetch all articles for all touched events in a single query
   const allEventArticles = await Article.findAll({
     where: { eventId: { [Op.in]: touchedIds } },
-    attributes: [
-      'id',
-      'eventId',
-      'published',
-      'eventVector'
-    ]
+    attributes: ['id', 'eventId', 'published']
   });
 
-  // Group articles by eventId for efficient access
   const articlesByEventId = {};
   for (const article of allEventArticles) {
     if (!articlesByEventId[article.eventId]) {
@@ -231,7 +247,9 @@ async function assignAndReconcile(userId, articles, label) {
       continue;
     }
 
-    const eventVector = buildRecencyWeightedVector(eventArticles);
+    // Article-level event vectors may not be persisted in some environments.
+    // Keep the existing event vector when no per-article vectors are available.
+    const eventVector = buildRecencyWeightedVector(eventArticles) ?? event.eventVector ?? null;
 
     const timestamps = eventArticles
       .map(a => a.published)
@@ -257,38 +275,38 @@ async function assignAndReconcile(userId, articles, label) {
     );
   }
 
-  const touchedTopicIds = [
-    ...new Set(
-      events.filter(e => e.topicId != null).map(e => e.topicId)
-    )
-  ];
+  const primaryEventTopics = await EventTopic.findAll({
+    where: {
+      eventId: { [Op.in]: touchedIds },
+      primaryInd: true
+    },
+    attributes: ['eventId', 'topicId'],
+    raw: true
+  });
 
-  let topicSizeMap = {};
+  const topicIdByEventId = Object.fromEntries(
+    primaryEventTopics.map(row => [Number(row.eventId), Number(row.topicId)])
+  );
 
-  if (touchedTopicIds.length) {
-    const topicRows = await Event.findAll({
-      where: {
-        userId,
-        topicId: { [Op.in]: touchedTopicIds }
-      },
-      attributes: [
-        'topicId',
-        [db.sequelize.fn('COUNT', '*'), 'eventCount']
-      ],
-      group: ['topicId'],
-      raw: true
-    });
+  const topicRows = await EventTopic.findAll({
+    where: {
+      eventId: { [Op.in]: touchedIds },
+      primaryInd: true
+    },
+    attributes: [
+      'topicId',
+      [db.sequelize.fn('COUNT', '*'), 'eventCount']
+    ],
+    group: ['topicId'],
+    raw: true
+  });
 
-    topicSizeMap = Object.fromEntries(
-      topicRows.map(r => [Number(r.topicId), Number(r.eventCount)])
-    );
-  }
+  const topicSizeMap = Object.fromEntries(
+    topicRows.map(r => [Number(r.topicId), Number(r.eventCount)])
+  );
 
-  const finalEvents = events; // Reuse events already fetched
-
-  // Use already-fetched articles to compute counts and updates in parallel
   await Promise.all(
-    finalEvents.map(async event => {
+    events.map(async event => {
       const eventArticlesList = articlesByEventId[event.id] || [];
       const articleCount = eventArticlesList.length;
 
@@ -296,54 +314,48 @@ async function assignAndReconcile(userId, articles, label) {
         return event.destroy();
       }
 
-      const topicEventCount = topicSizeMap[event.topicId] ?? 1;
+      const eventPrimaryTopicId = topicIdByEventId[event.id] ?? null;
+      const topicEventCount = eventPrimaryTopicId ? (topicSizeMap[eventPrimaryTopicId] ?? 1) : 1;
 
       const strength = computeEventStrength({
         articleCount,
         topicEventCount
       });
 
-      // Update event and sync article topicIds in parallel
-      return Promise.all([
-        event.update({
-          articleCount,
-          eventStrength: strength
-        }),
-        event.topicId != null
-          ? Article.update(
-              { topicId: event.topicId },
-              { where: { eventId: event.id, userId } }
-            )
-          : Promise.resolve()
-      ]);
+      return event.update({
+        topicId: eventPrimaryTopicId,
+        articleCount,
+        eventStrength: strength
+      });
     })
   );
 
-  if (touchedTopicIds.length) {
-    // Batch topic updates in parallel
-    await Promise.all(
-      touchedTopicIds.map(async topicId => {
-        const [articleCount, eventCount, lastEvent] = await Promise.all([
-          Article.count({ where: { userId, topicId } }),
-          Event.count({ where: { userId, topicId } }),
-          Event.findOne({
-            where: { userId, topicId },
-            order: [['lastSeen', 'DESC']],
-            attributes: ['lastSeen']
-          })
-        ]);
+  const touchedEventTopicRows = await EventTopic.findAll({
+    where: { eventId: { [Op.in]: touchedIds } },
+    attributes: ['topicId'],
+    raw: true
+  });
 
-        return Topic.update(
-          {
-            articleCount,
-            eventCount,
-            lastActivityAt: lastEvent?.lastSeen || null
-          },
-          { where: { id: topicId } }
-        );
-      })
-    );
+  const touchedArticleIds = articles.map(article => article.id);
+  const touchedArticleTopicRows = touchedArticleIds.length
+    ? await ArticleTopic.findAll({
+      where: { articleId: { [Op.in]: touchedArticleIds } },
+      attributes: ['topicId'],
+      raw: true
+    })
+    : [];
+
+  for (const row of touchedEventTopicRows) {
+    if (row.topicId != null) touchedTopicIds.add(Number(row.topicId));
   }
+  for (const row of touchedArticleTopicRows) {
+    if (row.topicId != null) touchedTopicIds.add(Number(row.topicId));
+  }
+
+  const touchedTopicList = [...touchedTopicIds];
+  await recomputeTopicStatsForUser(userId, touchedTopicList);
+
+  return touchedTopicList;
 }
 
 export async function incrementalClusterForUser(userId) {
@@ -413,10 +425,41 @@ export async function reclusterForUser(userId) {
     `(${previousEventIds.size} events affected)`
   );
 
+  const previousArticleTopicRows = await ArticleTopic.findAll({
+    where: { articleId: { [Op.in]: windowArticleIds } },
+    attributes: ['topicId'],
+    raw: true
+  });
+
+  const previousEventTopicRows = previousEventIds.size
+    ? await EventTopic.findAll({
+      where: { eventId: { [Op.in]: [...previousEventIds] } },
+      attributes: ['topicId'],
+      raw: true
+    })
+    : [];
+
+  const staleTopicIds = [
+    ...new Set([
+      ...previousArticleTopicRows.map(row => Number(row.topicId)).filter(Boolean),
+      ...previousEventTopicRows.map(row => Number(row.topicId)).filter(Boolean)
+    ])
+  ];
+
   await Article.update(
     { eventId: null, topicId: null },
     { where: { id: { [Op.in]: windowArticleIds } } }
   );
+
+  await ArticleTopic.destroy({
+    where: { articleId: { [Op.in]: windowArticleIds } }
+  });
+
+  if (previousEventIds.size) {
+    await EventTopic.destroy({
+      where: { eventId: { [Op.in]: [...previousEventIds] } }
+    });
+  }
 
   let deletedCount = 0;
 
@@ -437,7 +480,8 @@ export async function reclusterForUser(userId) {
     console.log(`[EVENT] Removed ${deletedCount} empty events`);
   }
 
-  await assignAndReconcile(userId, windowArticles, 'replay');
+  const newTouchedTopicIds = await assignAndReconcile(userId, windowArticles, 'replay');
+  await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...newTouchedTopicIds])]);
 
   const summary = await summarizeArticleAssignments(windowArticleIds);
 

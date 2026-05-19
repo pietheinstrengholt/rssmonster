@@ -36,6 +36,8 @@ import SettingModel from './setting.js';
 import SmartFolderModel from './smartFolder.js';
 import TopicModel from './topic.js';
 import EventModel from './event.js';
+import ArticleTopicModel from './articleTopic.js';
+import EventTopicModel from './eventTopic.js';
 import HotlinkModel from './hotlink.js';
 
 // ---- Initialize models ----
@@ -49,6 +51,8 @@ const Setting = SettingModel(sequelize);
 const SmartFolder = SmartFolderModel(sequelize);
 const Topic = TopicModel(sequelize);
 const Event = EventModel(sequelize);
+const ArticleTopic = ArticleTopicModel(sequelize);
+const EventTopic = EventTopicModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
 // ---- Associations ----
@@ -94,35 +98,64 @@ User.hasMany(Event, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Event.belongsTo(User, { foreignKey: 'userId' });
 
 // ---- Semantic Clustering & Topic Grouping ----
-// 
+//
 // Relationship structure:
-//   Article -> Event -> Topic (structural: primary grouping)
-//   Article -> Topic       (denormalized: for efficient querying)
+//   Article <-> Topic via article_topics (ranked, confidence-scored, primary flag)
+//   Event   <-> Topic via event_topics   (ranked, confidence-scored, primary flag)
 //
-// Assignment logic (services/events/assignArticleToEvent.js):
-//   1. Article vectors matched against Event vectors (>88% similarity)
-//   2. If match found: article assigned to existing event (reuses event.topicId)
-//   3. If no match: article resolves topic (by topic vector, >65% similarity or create)
-//   4. New event created with resolved/created topic
-//   5. Both article.topicId and event.topicId set to same topic for consistency
-//
-// Performance notes:
-//   - Article.topicId is denormalized for fast topic-level queries
-//   - Event.topicId is the structural grouping; deleting event does not cascade topic
-//   - Thresholds (0.88 event, 0.65 topic) configured in semanticConfig.js
+// Denormalized primary topic links (Article.topicId / Event.topicId) are retained as
+// read-side optimizations while many-to-many joins remain the source of truth.
 
-// Topic ↔ Event
-Topic.hasMany(Event, { foreignKey: 'topicId', onDelete: 'SET NULL' });
-Event.belongsTo(Topic, { foreignKey: 'topicId' });
+// Topic ↔ Event (denormalized primary link)
+Topic.hasMany(Event, { foreignKey: 'topicId', as: 'primaryEvents', onDelete: 'SET NULL' });
+Event.belongsTo(Topic, { foreignKey: 'topicId', as: 'primaryTopic' });
 
 // Event ↔ Article
 Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'articles' });
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'cluster' });
 
-// Topic ↔ Article (denormalized for direct access)
-Topic.hasMany(Article, { foreignKey: 'topicId', onDelete: 'SET NULL' });
+// Topic ↔ Article (denormalized primary link)
+Topic.hasMany(Article, { foreignKey: 'topicId', as: 'primaryArticles', onDelete: 'SET NULL' });
 Article.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });
+
+// Article ↔ Topic (many-to-many semantic assignments)
+Article.belongsToMany(Topic, {
+  through: ArticleTopic,
+  foreignKey: 'articleId',
+  otherKey: 'topicId',
+  as: 'topics'
+});
+Topic.belongsToMany(Article, {
+  through: ArticleTopic,
+  foreignKey: 'topicId',
+  otherKey: 'articleId',
+  as: 'articles'
+});
+
+ArticleTopic.belongsTo(Article, { foreignKey: 'articleId' });
+Article.hasMany(ArticleTopic, { foreignKey: 'articleId', onDelete: 'CASCADE' });
+ArticleTopic.belongsTo(Topic, { foreignKey: 'topicId' });
+Topic.hasMany(ArticleTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
+
+// Event ↔ Topic (many-to-many semantic assignments)
+Event.belongsToMany(Topic, {
+  through: EventTopic,
+  foreignKey: 'eventId',
+  otherKey: 'topicId',
+  as: 'topics'
+});
+Topic.belongsToMany(Event, {
+  through: EventTopic,
+  foreignKey: 'topicId',
+  otherKey: 'eventId',
+  as: 'events'
+});
+
+EventTopic.belongsTo(Event, { foreignKey: 'eventId' });
+Event.hasMany(EventTopic, { foreignKey: 'eventId', onDelete: 'CASCADE' });
+EventTopic.belongsTo(Topic, { foreignKey: 'topicId' });
+Topic.hasMany(EventTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
 
 // ---- Export db ----
 export default {
@@ -138,5 +171,7 @@ export default {
   SmartFolder,
   Topic,
   Event,
+  ArticleTopic,
+  EventTopic,
   Hotlink
 };

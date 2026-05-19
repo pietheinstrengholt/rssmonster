@@ -7,6 +7,17 @@ export const SEMANTIC_GRANULARITY = {
   // Topics should be broader than events, so this is usually lower than eventSimilarityThreshold.
   topicSimilarityThreshold: Number.parseFloat(process.env.TOPIC_SIM_THRESHOLD || '0.72'),
 
+  // Topic assignment thresholds for ranked multi-topic membership.
+  topicAssignment: {
+    // Identity threshold is used to preserve/reuse topic memory.
+    // Keep this lower than secondary assignment threshold so replay can reattach
+    // to an existing semantic region without creating a new topic.
+    identityThreshold: Number.parseFloat(process.env.TOPIC_IDENTITY_THRESHOLD || '0.58'),
+    primaryThreshold: Number.parseFloat(process.env.PRIMARY_TOPIC_THRESHOLD || '0.82'),
+    secondaryThreshold: Number.parseFloat(process.env.SECONDARY_TOPIC_THRESHOLD || '0.68'),
+    maxTopicsPerArticle: Number.parseInt(process.env.MAX_TOPICS_PER_ARTICLE, 10) || 5
+  },
+
   // Max in-memory candidates scanned when searching events/topics.
   maxCandidates: 300,
 
@@ -74,6 +85,10 @@ export const SEMANTIC_GRANULARITY = {
 
 export const EVENT_SIM_THRESHOLD = SEMANTIC_GRANULARITY.eventSimilarityThreshold;
 export const TOPIC_SIM_THRESHOLD = SEMANTIC_GRANULARITY.topicSimilarityThreshold;
+export const TOPIC_IDENTITY_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.identityThreshold;
+export const PRIMARY_TOPIC_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.primaryThreshold;
+export const SECONDARY_TOPIC_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.secondaryThreshold;
+export const MAX_TOPICS_PER_ARTICLE = SEMANTIC_GRANULARITY.topicAssignment.maxTopicsPerArticle;
 export const MAX_CANDIDATES = SEMANTIC_GRANULARITY.maxCandidates;
 export const RECENCY_WINDOW_DAYS = SEMANTIC_GRANULARITY.recencyWindowDays;
 export const EVENT_MAX_GAP_HOURS = SEMANTIC_GRANULARITY.maxEventGapHours;

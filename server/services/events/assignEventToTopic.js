@@ -2,12 +2,15 @@ import crypto from 'crypto';
 import db from '../../models/index.js';
 import {
   MAX_CANDIDATES,
-  TOPIC_SIM_THRESHOLD,
-  TOPIC_VECTOR_ALPHA
+  TOPIC_VECTOR_ALPHA,
+  TOPIC_IDENTITY_THRESHOLD,
+  PRIMARY_TOPIC_THRESHOLD,
+  SECONDARY_TOPIC_THRESHOLD,
+  MAX_TOPICS_PER_ARTICLE
 } from './semanticConfig.js';
 
 const { Topic } = db;
-const MAX_TOPIC_CANDIDATES = 3;
+const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
 
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
@@ -61,12 +64,33 @@ function blendTopicVector(existingVector, incomingVector) {
   );
 }
 
-export async function assignEventToTopic({ article, articleTopicVector, topicsCache = null }) {
-  if (!articleTopicVector) return null;
+function blendTopicVectorWithAlpha(existingVector, incomingVector, alpha) {
+  if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
+  if (existingVector.length !== incomingVector.length) return incomingVector;
 
-  let bestTopicSim = 0;
-  let bestTopic = null;
+  return existingVector.map(
+    (value, index) => value * (1 - alpha) + incomingVector[index] * alpha
+  );
+}
+
+function upsertTopicInCache(topicsCache, topic) {
+  if (!topicsCache) return;
+
+  const existingIndex = topicsCache.findIndex(item => item.id === topic.id);
+  if (existingIndex >= 0) {
+    topicsCache[existingIndex] = topic;
+    return;
+  }
+
+  topicsCache.unshift(topic);
+}
+
+export async function assignEventToTopic({ article, articleTopicVector, topicsCache = null }) {
+  if (!articleTopicVector) return [];
+
   const matchedCandidates = [];
+  let bestTopic = null;
+  let bestTopicSim = 0;
 
   // Use cached topics if provided; otherwise fetch
   const topics = topicsCache
@@ -90,44 +114,114 @@ export async function assignEventToTopic({ article, articleTopicVector, topicsCa
       bestTopic = topic;
     }
 
-    if (sim >= TOPIC_SIM_THRESHOLD) {
+    if (sim >= SECONDARY_TOPIC_THRESHOLD) {
       matchedCandidates.push({ topic, sim });
     }
   }
 
-  if (bestTopic && bestTopicSim >= TOPIC_SIM_THRESHOLD) {
+  if (matchedCandidates.length) {
     const now = article.published || new Date();
-    const blendedTopicVector = blendTopicVector(
-      bestTopic.topicVector,
-      articleTopicVector
-    );
+    const rankedCandidates = matchedCandidates
+      .sort((a, b) => b.sim - a.sim)
+      .slice(0, MAX_TOPIC_CANDIDATES);
 
-    const [updatedTopic] = await Promise.all([
-      bestTopic.update({
-        topicVector: blendedTopicVector,
-        lastActivityAt: now
-      }),
-      matchedCandidates
-        .sort((a, b) => b.sim - a.sim)
-        .slice(0, MAX_TOPIC_CANDIDATES)
-        .reduce((promise, candidate) => promise.then(() => {
-          if (candidate.topic.id === bestTopic.id) return Promise.resolve();
-          return candidate.topic.update({ lastActivityAt: now });
-        }), Promise.resolve())
-    ]);
+    const primaryCandidate = rankedCandidates.find(candidate =>
+      candidate.sim >= PRIMARY_TOPIC_THRESHOLD
+    ) ?? null;
+
+    const updates = rankedCandidates.map(candidate => {
+      if (primaryCandidate && candidate.topic.id === primaryCandidate.topic.id) {
+        const blendedTopicVector = blendTopicVector(
+          candidate.topic.topicVector,
+          articleTopicVector
+        );
+
+        return candidate.topic.update({
+          topicVector: blendedTopicVector,
+          lastActivityAt: now
+        });
+      }
+
+      return candidate.topic.update({ lastActivityAt: now });
+    });
+
+    const updatedTopics = await Promise.all(updates);
 
     if (topicsCache) {
-      const cacheIndex = topicsCache.findIndex(topic => topic.id === updatedTopic.id);
-      if (cacheIndex >= 0) {
-        topicsCache[cacheIndex] = updatedTopic;
+      for (const updatedTopic of updatedTopics) {
+        upsertTopicInCache(topicsCache, updatedTopic);
       }
     }
 
-    return updatedTopic;
+    return rankedCandidates.map((candidate, index) => ({
+      topicId: candidate.topic.id,
+      confidence: Number(candidate.sim.toFixed(4)),
+      rank: index + 1,
+      primaryInd: Boolean(primaryCandidate && candidate.topic.id === primaryCandidate.topic.id)
+    }));
   }
 
   const topicKey = generateTopicKey(articleTopicVector);
   const now = article.published || new Date();
+
+  // Reuse topic by identity before creating a new semantic region.
+  if (bestTopic && bestTopicSim >= TOPIC_IDENTITY_THRESHOLD) {
+    const stableBlendAlpha = TOPIC_VECTOR_ALPHA * 0.25;
+    const blendedTopicVector = blendTopicVectorWithAlpha(
+      bestTopic.topicVector,
+      articleTopicVector,
+      stableBlendAlpha
+    );
+
+    const updatedTopic = await bestTopic.update({
+      topicVector: blendedTopicVector,
+      lastActivityAt: now
+    });
+
+    upsertTopicInCache(topicsCache, updatedTopic);
+
+    return [{
+      topicId: updatedTopic.id,
+      confidence: Number(bestTopicSim.toFixed(4)),
+      rank: 1,
+      primaryInd: true
+    }];
+  }
+
+  // Deterministic fallback: same vector signature should resolve to same topic.
+  if (topicKey) {
+    const cachedKeyMatch = topicsCache?.find(topic => topic.topicKey === topicKey) ?? null;
+    if (cachedKeyMatch) {
+      const updatedTopic = await cachedKeyMatch.update({ lastActivityAt: now });
+      upsertTopicInCache(topicsCache, updatedTopic);
+
+      return [{
+        topicId: updatedTopic.id,
+        confidence: 1,
+        rank: 1,
+        primaryInd: true
+      }];
+    }
+
+    const persistedKeyMatch = await Topic.findOne({
+      where: {
+        userId: article.userId,
+        topicKey
+      }
+    });
+
+    if (persistedKeyMatch) {
+      const updatedTopic = await persistedKeyMatch.update({ lastActivityAt: now });
+      upsertTopicInCache(topicsCache, updatedTopic);
+
+      return [{
+        topicId: updatedTopic.id,
+        confidence: 1,
+        rank: 1,
+        primaryInd: true
+      }];
+    }
+  }
 
   const createdTopic = await Topic.create({
     userId: article.userId,
@@ -139,14 +233,14 @@ export async function assignEventToTopic({ article, articleTopicVector, topicsCa
     lastActivityAt: now
   });
 
-  if (topicsCache) {
-    topicsCache.unshift(createdTopic);
-    if (topicsCache.length > MAX_CANDIDATES) {
-      topicsCache.pop();
-    }
-  }
+  upsertTopicInCache(topicsCache, createdTopic);
 
-  return createdTopic;
+  return [{
+    topicId: createdTopic.id,
+    confidence: 1,
+    rank: 1,
+    primaryInd: true
+  }];
 }
 
 export default assignEventToTopic;
