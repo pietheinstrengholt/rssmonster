@@ -108,16 +108,21 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
   const tokens = workingSearch === '' ? [] : workingSearch.split(/[\s,]+/).filter(Boolean);
   const remainingTokens = [];
 
-  tokens.forEach(token => {
+  for (const token of tokens) {
     const cleaned = token.replace(/[.,;]+$/, '');
 
     // Simplified boolean filter parsing
+    let matchedBooleanFilter = false;
     for (const key of ['star', 'unread', 'read', 'clicked', 'seen', 'hot']) {
       const value = parseBooleanFilter(cleaned, key);
       if (value !== null) {
         filters[key] = value;
-        return;
+        matchedBooleanFilter = true;
+        break;
       }
+    }
+    if (matchedBooleanFilter) {
+      continue;
     }
 
     const firstSeenAgeMatch = cleaned.match(/^firstSeen:\s*(\d+)([hd])$/i);
@@ -126,49 +131,49 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
         value: parseInt(firstSeenAgeMatch[1], 10),
         unit: firstSeenAgeMatch[2].toLowerCase()
       };
-      return;
+      continue;
     }
 
     const tagMatch = cleaned.match(/^tag:\s*(.+)$/i);
     if (tagMatch) {
       filters.tag = tagMatch[1].trim();
-      return;
+      continue;
     }
 
     if (!filters.title) {
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i);
       if (titleMatch) {
         filters.title = titleMatch[1].trim();
-        return;
+        continue;
       }
     }
 
     const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i);
     if (sortMatch) {
       sort = sortMatch[1].toUpperCase();
-      return;
+      continue;
     }
 
     const qualityMatch = cleaned.match(/^quality:(.+)$/i);
     if (qualityMatch) {
       filters.quality = parseNumberOperatorFilter(qualityMatch[1]);
-      return;
+      continue;
     }
 
     const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i);
     if (limitMatch) {
       limit = parseInt(limitMatch[1], 10);
-      return;
+      continue;
     }
 
     const parsedDate = parseDateToken(cleaned);
     if (parsedDate) {
       filters.date = parsedDate;
-      return;
+      continue;
     }
 
     remainingTokens.push(cleaned);
-  });
+  }
 
   if (textMode !== 'exact' && remainingTokens.length > 0) {
     text = remainingTokens.join(' ');

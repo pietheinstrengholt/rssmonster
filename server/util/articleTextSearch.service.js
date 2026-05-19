@@ -11,29 +11,29 @@ const appendOrGroup = (whereClause, conditions) => {
 };
 
 export const buildTextSearchWhereClause = ({ titleFilter, quotedPhrase, remainingTokens }) => {
-  const baseWhere = {};
+  const textWhereClause = {};
 
   if (titleFilter) {
-    appendAndCondition(baseWhere, ciLike('title', titleFilter));
+    appendAndCondition(textWhereClause, ciLike('title', titleFilter));
 
     if (quotedPhrase) {
-      appendAndCondition(baseWhere, ciLike('contentOriginal', quotedPhrase));
+      appendAndCondition(textWhereClause, ciLike('contentOriginal', quotedPhrase));
     } else if (remainingTokens.length > 0) {
-      appendOrGroup(baseWhere, remainingTokens.map(token => ciLike('contentOriginal', token)));
+      appendOrGroup(textWhereClause, remainingTokens.map(token => ciLike('contentOriginal', token)));
     }
   } else if (quotedPhrase) {
-    appendOrGroup(baseWhere, [
+    appendOrGroup(textWhereClause, [
       ciLike('title', quotedPhrase),
       ciLike('contentOriginal', quotedPhrase)
     ]);
   } else if (remainingTokens.length > 0) {
-    remainingTokens.forEach(token => {
-      appendOrGroup(baseWhere, [
+    for (const token of remainingTokens) {
+      appendOrGroup(textWhereClause, [
         ciLike('title', token),
         ciLike('contentOriginal', token)
       ]);
-    });
+    }
   }
 
-  return baseWhere;
+  return textWhereClause;
 };
