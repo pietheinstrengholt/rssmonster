@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Article, Event, Feed, Tag, Setting } = db;
 import { Op, fn, col, where } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
+import { parseDateToken, parseQuotedDatePattern } from './articleDateParser.service.js';
 
 // Case-insensitive LIKE helper compatible with MySQL
 const ciLike = (column, value) => (
@@ -102,44 +103,14 @@ export const searchArticles = async ({
       workingSearch = workingSearch.replace(titleQuotedMatch[0], "").trim();
     }
     
-    // Pattern: @"N days ago"
-    const daysAgoMatch = rawSearch.match(/@"?(\d+)\s+days\s+ago"?/i);
-    if (daysAgoMatch) {
-      const days = parseInt(daysAgoMatch[1], 10);
-      if (!Number.isNaN(days)) {
-        dateToken = `${days} days ago`;
-        // Calculate UTC day range for exactly N days ago (00:00:00 to 23:59:59)
-        const today = new Date();
-        const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days, 0, 0, 0, 0));
-        const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - days, 23, 59, 59, 999));
-        dateRange = { start, end };
-        console.log(`\x1b[31mDate filter applied via search token: ${dateToken} (exact UTC day)\x1b[0m`);
-        // Remove the matched segment so it doesn't pollute text search tokens
-        workingSearch = workingSearch.replace(daysAgoMatch[0], "").trim();
+    const quotedDateParseResult = parseQuotedDatePattern({ rawSearch, workingSearch, dateRange });
+    if (quotedDateParseResult.dateRange) {
+      dateRange = quotedDateParseResult.dateRange;
+      workingSearch = quotedDateParseResult.workingSearch;
+      if (quotedDateParseResult.dateToken) {
+        dateToken = quotedDateParseResult.dateToken;
       }
-    }
-    
-    // Pattern: @"last DayName" (e.g., @"last Monday")
-    const lastDayMatch = rawSearch.match(/@"?last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"?/i);
-    if (lastDayMatch && !dateRange) { // Only apply if no other date filter matched
-      const dayName = lastDayMatch[1].toLowerCase();
-      const dayMap = { sunday: 0, monday: 1, tuesday: 2, wednesday: 3, thursday: 4, friday: 5, saturday: 6 };
-      const targetDay = dayMap[dayName];
-      
-      dateToken = `last ${dayName}`;
-      // Calculate most recent occurrence of target day
-      const today = new Date();
-      const currentDay = today.getUTCDay();
-      let daysBack = currentDay - targetDay;
-      if (daysBack <= 0) daysBack += 7; // Go back to previous week if target day hasn't occurred this week
-      
-      const targetDate = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - daysBack, 0, 0, 0, 0));
-      const start = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 0, 0, 0, 0));
-      const end = new Date(Date.UTC(targetDate.getUTCFullYear(), targetDate.getUTCMonth(), targetDate.getUTCDate(), 23, 59, 59, 999));
-      dateRange = { start, end };
-      console.log(`\x1b[31mDate filter applied via search token: ${dateToken} (${start.toISOString().split('T')[0]})\x1b[0m`);
-      // Remove the matched segment so it doesn't pollute text search tokens
-      workingSearch = workingSearch.replace(lastDayMatch[0], "").trim();
+      console.log(`\x1b[31mDate filter applied via search token: ${dateToken}\x1b[0m`);
     }
 
     /**
@@ -181,14 +152,11 @@ export const searchArticles = async ({
       const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i); // sort:DESC, sort:ASC, sort:RECOMMENDED, sort:QUALITY, or sort:ATTENTION
       const qualityMatch = cleaned.match(/^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // quality:>0.6, quality:<0.6, quality:=0.5
       const freshnessMatch = cleaned.match(/^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i); // freshness:0.6, freshness:>0.6
-      const dateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/); // @2025-12-14
-      const todayMatch = cleaned.match(/^@today$/i); // @today (last 24 hours)
-      const yesterdayMatch = cleaned.match(/^@yesterday$/i); // @yesterday (previous UTC day)
-      const lastWeekMatch = cleaned.match(/^@lastweek$/i); // @lastweek (previous 7 days)
       const clusterMatch = cleaned.match(/^cluster:\s*(all|eventCluster)$/i); // cluster:all | cluster:eventCluster
       const clusterCountMatch = cleaned.match(/^clustercount:\s*(\d+)$/i); // clustercount:2
       const hotMatch = cleaned.match(/^hot:\s*(true|false)$/i); // hot:true or hot:false
       const limitMatch = cleaned.match(/^limit:\s*(\d+)$/i); // limit:50, limit:100, etc.
+      const parsedDateFilter = parseDateToken(cleaned);
       
       if (hotMatch) {
         hotFilter = hotMatch[1].toLowerCase() === 'true';
@@ -244,36 +212,10 @@ export const searchArticles = async ({
           value: parseFloat(freshnessMatch[2])
         };
         console.log(`\x1b[31mFreshness filter applied via search token: ${freshnessMatch.slice(1).join(', ')}\x1b[0m`);
-      } else if (dateMatch) {
-        // @YYYY-MM-DD: Specific calendar day in UTC
-        dateToken = dateMatch[1];
-        dateRange = {
-          start: new Date(`${dateMatch[1]}T00:00:00.000Z`),
-          end: new Date(`${dateMatch[1]}T23:59:59.999Z`)
-        };
+      } else if (parsedDateFilter) {
+        dateToken = parsedDateFilter.dateToken;
+        dateRange = parsedDateFilter.dateRange;
         console.log(`\x1b[31mDate filter applied via search token: ${dateToken}\x1b[0m`);
-      } else if (todayMatch) {
-        // @today: Rolling 24-hour window from now back
-        dateToken = "today";
-        const now = new Date();
-        const start = new Date(now.getTime() - 24 * 60 * 60 * 1000);
-        dateRange = { start, end: now };
-        console.log(`\x1b[31mDate filter applied via search token: today (last 24h)\x1b[0m`);
-      } else if (yesterdayMatch) {
-        // @yesterday: Previous UTC calendar day (00:00:00 to 23:59:59)
-        dateToken = "yesterday";
-        const today = new Date();
-        const start = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 0, 0, 0, 0));
-        const end = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1, 23, 59, 59, 999));
-        dateRange = { start, end };
-        console.log(`\x1b[31mDate filter applied via search token: yesterday (UTC day)\x1b[0m`);
-      } else if (lastWeekMatch) {
-        // @lastweek: Previous 7 days from now back
-        dateToken = "lastweek";
-        const now = new Date();
-        const start = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
-        dateRange = { start, end: now };
-        console.log(`\x1b[31mDate filter applied via search token: lastweek (previous 7 days)\x1b[0m`);
       } else {
         // Not a recognized filter token, keep for text search
         remainingTokens.push(cleaned);
