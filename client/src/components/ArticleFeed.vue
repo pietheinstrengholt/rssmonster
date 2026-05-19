@@ -85,10 +85,12 @@ export default {
   methods: {
     async fetchArticleIds(data) {
       try {
+        await this.resetPool();
         this.hasLoadedContent = false; // Show spinner immediately
+        this.isLoading = true;
+
         const response = await fetchArticleIds(data);
 
-        await this.resetPool();
         this.container = response.data.itemIds;
 
         if (response.data.firstPage) {
@@ -102,6 +104,9 @@ export default {
         }
       } catch (error) {
         console.warn('Article fetch failed', error?.message);
+        this.hasLoadedContent = true;
+      } finally {
+        this.isLoading = false;
       }
     },
 
