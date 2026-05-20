@@ -6,8 +6,6 @@
       what is growing, what it is connected to, and how much of your library is covered.
     </p>
 
-    <div class="mb-2 text-muted small">User: {{ userId || 'n/a' }}</div>
-
     <div v-if="loading" class="d-flex align-items-center gap-2 mb-3">
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       <span>Loading interest islands...</span>
