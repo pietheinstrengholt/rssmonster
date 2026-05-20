@@ -1,20 +1,20 @@
 export const SEMANTIC_GRANULARITY = {
   // Minimum cosine similarity for attaching an article to an existing event.
   // Higher value = stricter event matching (fewer merges, more fragmentation).
-  eventSimilarityThreshold: Number.parseFloat(process.env.EVENT_SIM_THRESHOLD || '0.86'),
+  eventSimilarityThreshold: Number.parseFloat(process.env.EVENT_SIM_THRESHOLD || '0.84'),
 
   // Minimum cosine similarity for attaching an article/event to an existing topic.
   // Topics should be broader than events, so this is usually lower than eventSimilarityThreshold.
-  topicSimilarityThreshold: Number.parseFloat(process.env.TOPIC_SIM_THRESHOLD || '0.72'),
+  topicSimilarityThreshold: Number.parseFloat(process.env.TOPIC_SIM_THRESHOLD || '0.64'),
 
   // Topic assignment thresholds for ranked multi-topic membership.
   topicAssignment: {
     // Identity threshold is used to preserve/reuse topic memory.
     // Keep this lower than secondary assignment threshold so replay can reattach
     // to an existing semantic region without creating a new topic.
-    identityThreshold: Number.parseFloat(process.env.TOPIC_IDENTITY_THRESHOLD || '0.58'),
-    primaryThreshold: Number.parseFloat(process.env.PRIMARY_TOPIC_THRESHOLD || '0.82'),
-    secondaryThreshold: Number.parseFloat(process.env.SECONDARY_TOPIC_THRESHOLD || '0.68'),
+    identityThreshold: Number.parseFloat(process.env.TOPIC_IDENTITY_THRESHOLD || '0.50'),
+    primaryThreshold: Number.parseFloat(process.env.PRIMARY_TOPIC_THRESHOLD || '0.76'),
+    secondaryThreshold: Number.parseFloat(process.env.SECONDARY_TOPIC_THRESHOLD || '0.62'),
     maxTopicsPerArticle: Number.parseInt(process.env.MAX_TOPICS_PER_ARTICLE, 10) || 5
   },
 
