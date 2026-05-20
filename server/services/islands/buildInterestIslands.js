@@ -6,7 +6,11 @@ const { User, Topic, Article, Island, IslandTopic, sequelize } = db;
 const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
 const DEFAULT_TOPIC_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_SIMILARITY_THRESHOLD || '0.88');
 const DEFAULT_TOPIC_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_CONFIDENCE_THRESHOLD || '0.10');
+const DEFAULT_ISLAND_MATCH_THRESHOLD = Number.parseFloat(process.env.ISLAND_PROFILE_MATCH_THRESHOLD || '0.78');
+const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_ALPHA || '0.35');
 const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '30');
+const DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD || '0.12');
+const DEFAULT_ARCHIVE_STALE_DAYS = Number.parseInt(process.env.ISLAND_ARCHIVE_STALE_DAYS, 10) || 45;
 
 const SIGNAL_WEIGHTS = {
   star: 4,
@@ -77,6 +81,19 @@ function weightedAverageVector(samples) {
   return normalizeVector(totals.map(value => value / totalWeight));
 }
 
+function blendIslandVector(existingVector, incomingVector, alpha = DEFAULT_ISLAND_VECTOR_ALPHA) {
+  if (!Array.isArray(existingVector)) return normalizeVector(incomingVector);
+  if (!Array.isArray(incomingVector)) return normalizeVector(existingVector);
+  if (existingVector.length !== incomingVector.length) return normalizeVector(incomingVector);
+
+  const clampedAlpha = clamp(alpha, 0, 1);
+  return normalizeVector(
+    existingVector.map(
+      (value, index) => value * (1 - clampedAlpha) + incomingVector[index] * clampedAlpha
+    )
+  );
+}
+
 function topicRecencyWeight(publishedAt) {
   if (!publishedAt) return 1;
 
@@ -96,6 +113,33 @@ function addPositiveSignals(target, source) {
   target.stars += source.stars;
   target.clicks += source.clicks;
   target.deepReads += source.deepReads;
+}
+
+function normalizePositiveSignals(source = {}) {
+  return {
+    stars: Number(source.stars || 0),
+    clicks: Number(source.clicks || 0),
+    deepReads: Number(source.deepReads || 0)
+  };
+}
+
+function mergePositiveSignals(existingSignals = {}, incomingSignals = {}) {
+  const merged = normalizePositiveSignals(existingSignals);
+  const incoming = normalizePositiveSignals(incomingSignals);
+
+  merged.stars += incoming.stars;
+  merged.clicks += incoming.clicks;
+  merged.deepReads += incoming.deepReads;
+
+  return merged;
+}
+
+function isStaleIsland(island) {
+  const updatedAt = island?.updatedAt ? new Date(island.updatedAt).getTime() : null;
+  if (!Number.isFinite(updatedAt)) return true;
+
+  const staleMs = DEFAULT_ARCHIVE_STALE_DAYS * 24 * 60 * 60 * 1000;
+  return (Date.now() - updatedAt) >= staleMs;
 }
 
 function computeArticleSignals(article) {
@@ -276,35 +320,135 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
     }))
     .filter(profile => profile.topics.length > 0);
 
-  await Island.destroy({
+  const existingIslands = await Island.findAll({
     where: { userId },
+    order: [['weight', 'DESC'], ['id', 'ASC']],
     transaction
   });
+
+  const matchedIslandIds = new Set();
 
   const createdIslands = [];
 
   for (const profile of persistableProfiles) {
+    let bestMatch = null;
+    let bestSimilarity = 0;
+
+    for (const island of existingIslands) {
+      if (matchedIslandIds.has(island.id)) continue;
+
+      const similarity = cosineSimilarity(profile.vector, island.islandVector);
+      if (similarity > bestSimilarity) {
+        bestSimilarity = similarity;
+        bestMatch = island;
+      }
+    }
+
+    const islandRows = profile.topics
+      .map(topic => {
+        const similarity = cosineSimilarity(profile.vector, topic.vector);
+        return {
+          topicId: topic.topicId,
+          similarity: Number(similarity.toFixed(4)),
+          confidence: Number(clamp(topic.strength * similarity, 0, 1).toFixed(4))
+        };
+      })
+      .filter(row => row.confidence >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD);
+
+    if (!islandRows.length) continue;
+
+    if (bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD) {
+      const updatedIsland = await bestMatch.update({
+        label: profile.label,
+        weight: profile.weight,
+        islandVector: blendIslandVector(bestMatch.islandVector, profile.vector),
+        positiveSignals: mergePositiveSignals(bestMatch.positiveSignals, profile.positiveSignals),
+        archivedInd: false,
+        archivedAt: null
+      }, { transaction });
+
+      matchedIslandIds.add(updatedIsland.id);
+
+      await IslandTopic.destroy({
+        where: { islandId: updatedIsland.id },
+        transaction
+      });
+
+      await IslandTopic.bulkCreate(
+        islandRows.map(row => ({
+          islandId: updatedIsland.id,
+          topicId: row.topicId,
+          similarity: row.similarity,
+          confidence: row.confidence
+        })),
+        { transaction }
+      );
+
+      createdIslands.push(updatedIsland);
+      continue;
+    }
+
     const island = await Island.create({
       label: profile.label,
       weight: profile.weight,
       userId,
       islandVector: profile.vector,
-      positiveSignals: profile.positiveSignals
+      positiveSignals: normalizePositiveSignals(profile.positiveSignals),
+      archivedInd: false,
+      archivedAt: null
     }, { transaction });
 
-    createdIslands.push(island);
-
     await IslandTopic.bulkCreate(
-      profile.topics
-        .map((topic, index) => ({
+      islandRows.map(row => ({
         islandId: island.id,
-        topicId: topic.topicId,
-        similarity: Number(cosineSimilarity(profile.vector, topic.vector).toFixed(4)),
-        confidence: Number(clamp(topic.strength * cosineSimilarity(profile.vector, topic.vector), 0, 1).toFixed(4))
-      }))
-        .filter(row => row.confidence >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD),
+        topicId: row.topicId,
+        similarity: row.similarity,
+        confidence: row.confidence
+      })),
       { transaction }
     );
+
+    createdIslands.push(island);
+  }
+
+  const inactiveIslands = existingIslands.filter(island => !matchedIslandIds.has(island.id));
+  const inactiveIds = inactiveIslands.map(island => island.id);
+
+  if (inactiveIds.length) {
+    const confidenceRows = await IslandTopic.findAll({
+      where: {
+        islandId: { [Op.in]: inactiveIds }
+      },
+      attributes: [
+        'islandId',
+        [sequelize.fn('AVG', sequelize.col('confidence')), 'avgConfidence']
+      ],
+      group: ['islandId'],
+      raw: true,
+      transaction
+    });
+
+    const avgConfidenceByIslandId = new Map(
+      confidenceRows.map(row => [Number(row.islandId), Number(row.avgConfidence || 0)])
+    );
+
+    const now = new Date();
+
+    for (const island of inactiveIslands) {
+      const noActivity = true;
+      const lowConfidence = (avgConfidenceByIslandId.get(Number(island.id)) || 0) < DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD;
+      const staleAge = isStaleIsland(island);
+
+      if (noActivity && lowConfidence && staleAge) {
+        await island.update(
+          {
+            archivedInd: true,
+            archivedAt: now
+          },
+          { transaction }
+        );
+      }
+    }
   }
 
   return createdIslands;

@@ -27,6 +27,15 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
+      archivedInd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      archivedAt: {
+        type: DataTypes.DATE,
+        allowNull: true
+      },
       positiveSignals: {
         type: DataTypes.JSON,
         allowNull: false,
@@ -40,7 +49,8 @@ export default (sequelize) => {
     {
       indexes: [
         { fields: ['userId'] },
-        { fields: ['userId', 'weight'] }
+        { fields: ['userId', 'weight'] },
+        { fields: ['userId', 'archivedInd'] }
       ],
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci'
