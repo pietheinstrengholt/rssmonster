@@ -116,6 +116,11 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 50
       },
+      interestScore: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
       // Attention bucket (0–4)
       // 0 = not read / passed
       // 1 = skimmed
