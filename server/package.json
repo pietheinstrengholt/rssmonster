@@ -20,6 +20,7 @@
     "crawl": "NODE_ENV=production node scripts/crawl.js",
     "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
+    "islands": "node scripts/buildInterestIslands.js",
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js"
   },
   "engines": {

@@ -38,6 +38,8 @@ import TopicModel from './topic.js';
 import EventModel from './event.js';
 import ArticleTopicModel from './articleTopic.js';
 import EventTopicModel from './eventTopic.js';
+import IslandModel from './island.js';
+import IslandTopicModel from './islandTopic.js';
 import HotlinkModel from './hotlink.js';
 
 // ---- Initialize models ----
@@ -53,6 +55,8 @@ const Topic = TopicModel(sequelize);
 const Event = EventModel(sequelize);
 const ArticleTopic = ArticleTopicModel(sequelize);
 const EventTopic = EventTopicModel(sequelize);
+const Island = IslandModel(sequelize);
+const IslandTopic = IslandTopicModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
 // ---- Associations ----
@@ -96,6 +100,10 @@ Topic.belongsTo(User, { foreignKey: 'userId' });
 // User ↔ Event
 User.hasMany(Event, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Event.belongsTo(User, { foreignKey: 'userId' });
+
+// User ↔ Island
+User.hasMany(Island, { foreignKey: 'userId', onDelete: 'CASCADE' });
+Island.belongsTo(User, { foreignKey: 'userId' });
 
 // ---- Semantic Clustering & Topic Grouping ----
 //
@@ -157,6 +165,25 @@ Event.hasMany(EventTopic, { foreignKey: 'eventId', onDelete: 'CASCADE' });
 EventTopic.belongsTo(Topic, { foreignKey: 'topicId' });
 Topic.hasMany(EventTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
 
+// Island ↔ Topic (many-to-many semantic interest assignments)
+Island.belongsToMany(Topic, {
+  through: IslandTopic,
+  foreignKey: 'islandId',
+  otherKey: 'topicId',
+  as: 'topics'
+});
+Topic.belongsToMany(Island, {
+  through: IslandTopic,
+  foreignKey: 'topicId',
+  otherKey: 'islandId',
+  as: 'islands'
+});
+
+IslandTopic.belongsTo(Island, { foreignKey: 'islandId' });
+Island.hasMany(IslandTopic, { foreignKey: 'islandId', onDelete: 'CASCADE' });
+IslandTopic.belongsTo(Topic, { foreignKey: 'topicId' });
+Topic.hasMany(IslandTopic, { foreignKey: 'topicId', onDelete: 'CASCADE' });
+
 // ---- Export db ----
 export default {
   sequelize,
@@ -173,5 +200,7 @@ export default {
   Event,
   ArticleTopic,
   EventTopic,
+  Island,
+  IslandTopic,
   Hotlink
 };
