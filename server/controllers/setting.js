@@ -107,7 +107,167 @@ export const setSettings = async (req, res, _next) => {
   }
 };
 
+export const getIslandsOverview = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const islandsRaw = await db.sequelize.query(
+      `
+      SELECT
+        i.id,
+        i.userId,
+        i.label,
+        i.weight,
+        i.archivedInd,
+        i.archivedAt,
+        i.updatedAt,
+        COALESCE(topicStats.topicCount, 0) AS topicCount,
+        COALESCE(articleStats.starredArticles, 0) AS starredArticles,
+        COALESCE(articleStats.clickedArticles, 0) AS clickedArticles,
+        COALESCE(articleStats.relatedArticleCount, 0) AS relatedArticleCount
+      FROM islands i
+      LEFT JOIN (
+        SELECT
+          it.islandId,
+          COUNT(DISTINCT it.topicId) AS topicCount
+        FROM island_topics it
+        INNER JOIN islands i2
+          ON i2.id = it.islandId
+         AND i2.userId = :userId
+        GROUP BY it.islandId
+      ) topicStats
+        ON topicStats.islandId = i.id
+      LEFT JOIN (
+        SELECT
+          it.islandId,
+          COUNT(DISTINCT CASE WHEN a.starInd = 1 THEN a.id END) AS starredArticles,
+          COUNT(DISTINCT CASE WHEN a.clickedAmount > 0 THEN a.id END) AS clickedArticles,
+          COUNT(DISTINCT a.id) AS relatedArticleCount
+        FROM island_topics it
+        INNER JOIN islands i3
+          ON i3.id = it.islandId
+         AND i3.userId = :userId
+        INNER JOIN article_topics atp
+          ON atp.topicId = it.topicId
+        INNER JOIN articles a
+          ON a.id = atp.articleId
+         AND a.userId = :userId
+        GROUP BY it.islandId
+      ) articleStats
+        ON articleStats.islandId = i.id
+      WHERE i.userId = :userId
+      ORDER BY i.archivedInd ASC, i.weight DESC, i.id DESC
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const islands = [];
+
+    for (const island of islandsRaw) {
+      const relatedArticles = await db.sequelize.query(
+        `
+        SELECT DISTINCT
+          a.id,
+          a.title,
+          a.url,
+          a.published,
+          a.starInd,
+          a.clickedAmount,
+          f.feedName
+        FROM island_topics it
+        INNER JOIN islands i
+          ON i.id = it.islandId
+         AND i.userId = :userId
+        INNER JOIN article_topics atp
+          ON atp.topicId = it.topicId
+        INNER JOIN articles a
+          ON a.id = atp.articleId
+         AND a.userId = :userId
+        LEFT JOIN feeds f
+          ON f.id = a.feedId
+         AND f.userId = :userId
+        WHERE it.islandId = :islandId
+        ORDER BY a.published DESC
+        LIMIT 3
+        `,
+        {
+          replacements: { userId, islandId: island.id },
+          type: db.Sequelize.QueryTypes.SELECT
+        }
+      );
+
+      const starCount = Number(island.starredArticles || 0);
+      const clickCount = Number(island.clickedArticles || 0);
+
+      islands.push({
+        ...island,
+        effectiveWeight: Number(island.weight || 0),
+        starCount,
+        clickCount,
+        interactionCount: starCount + clickCount,
+        relatedArticles
+      });
+    }
+
+    const [totalsRaw] = await db.sequelize.query(
+      `
+      SELECT
+        COALESCE(COUNT(DISTINCT CASE WHEN i.archivedInd = 0 THEN i.id END), 0) AS islandCount,
+        COALESCE(COUNT(DISTINCT CASE WHEN i.archivedInd = 0 THEN a.id END), 0) AS islandArticles,
+        COALESCE((SELECT COUNT(*) FROM articles a2 WHERE a2.userId = :userId), 0) AS totalArticles
+      FROM islands i
+      LEFT JOIN island_topics it
+        ON it.islandId = i.id
+      LEFT JOIN article_topics atp
+        ON atp.topicId = it.topicId
+      LEFT JOIN articles a
+        ON a.id = atp.articleId
+       AND a.userId = :userId
+      WHERE i.userId = :userId
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const islandCount = Number(totalsRaw?.islandCount || 0);
+    const islandArticles = Number(totalsRaw?.islandArticles || 0);
+    const totalArticles = Number(totalsRaw?.totalArticles || 0);
+    const nonIslandArticles = Math.max(0, totalArticles - islandArticles);
+    const islandCoveragePercent = totalArticles
+      ? Number(((islandArticles / totalArticles) * 100).toFixed(1))
+      : 0;
+    const nonIslandCoveragePercent = Number((100 - islandCoveragePercent).toFixed(1));
+
+    return res.status(200).json({
+      userId,
+      count: islands.length,
+      totals: {
+        islandCount,
+        islandArticles,
+        nonIslandArticles,
+        totalArticles,
+        islandCoveragePercent,
+        nonIslandCoveragePercent
+      },
+      islands
+    });
+  } catch (err) {
+    console.error('Error in getIslandsOverview:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 export default {
   getSettings,
-  setSettings
+  setSettings,
+  getIslandsOverview
 }

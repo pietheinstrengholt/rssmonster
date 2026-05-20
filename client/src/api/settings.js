@@ -8,3 +8,6 @@ export const fetchSettings = () =>
  */
 export const saveSettings = (settingsData) =>
   api.post('/setting', settingsData);
+
+export const fetchIslandsOverview = () =>
+  api.get('/setting/islands');

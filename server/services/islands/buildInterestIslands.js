@@ -159,6 +159,19 @@ function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
   return bestName || null;
 }
 
+function resolveTopicFallbackLabel(profile) {
+  const names = (profile?.topics || [])
+    .slice()
+    .sort((a, b) => (b.strength - a.strength) || (a.topicId - b.topicId))
+    .map(topic => topic.name)
+    .filter(Boolean);
+
+  if (!names.length) return null;
+  if (names.length === 1) return names[0].slice(0, 255);
+
+  return `${names[0]} / ${names[1]}`.slice(0, 255);
+}
+
 function computeArticleSignals(article) {
   const stars = article.starInd === 1 ? 1 : 0;
   const clicks = Math.min(article.clickedAmount || 0, 3);
@@ -358,7 +371,8 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
 
   for (const profile of persistableProfiles) {
     const taxonomyLabel = resolveTaxonomyDisplayName(profile.vector, taxonomyRows);
-    const resolvedLabel = taxonomyLabel || profile.label;
+    const topicFallbackLabel = resolveTopicFallbackLabel(profile);
+    const resolvedLabel = taxonomyLabel || topicFallbackLabel || profile.label || 'Interest Island';
 
     let bestMatch = null;
     let bestSimilarity = 0;
