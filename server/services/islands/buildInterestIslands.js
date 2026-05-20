@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 
-const { User, Topic, Article, Island, IslandTopic, sequelize } = db;
+const { User, Topic, Article, Island, IslandTopic, IslandTaxonomy, sequelize } = db;
 
 const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
 const DEFAULT_TOPIC_SIMILARITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_SIMILARITY_THRESHOLD || '0.88');
@@ -140,6 +140,23 @@ function isStaleIsland(island) {
 
   const staleMs = DEFAULT_ARCHIVE_STALE_DAYS * 24 * 60 * 60 * 1000;
   return (Date.now() - updatedAt) >= staleMs;
+}
+
+function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
+  if (!Array.isArray(vector) || !vector.length) return null;
+
+  let bestName = null;
+  let bestSimilarity = -1;
+
+  for (const row of taxonomyRows) {
+    const similarity = cosineSimilarity(vector, row.vector);
+    if (similarity > bestSimilarity) {
+      bestSimilarity = similarity;
+      bestName = row.displayName;
+    }
+  }
+
+  return bestName || null;
 }
 
 function computeArticleSignals(article) {
@@ -326,11 +343,23 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
     transaction
   });
 
+  const taxonomyRows = await IslandTaxonomy.findAll({
+    where: {
+      status: 'active',
+      vector: { [Op.ne]: null }
+    },
+    attributes: ['displayName', 'vector'],
+    transaction
+  });
+
   const matchedIslandIds = new Set();
 
   const createdIslands = [];
 
   for (const profile of persistableProfiles) {
+    const taxonomyLabel = resolveTaxonomyDisplayName(profile.vector, taxonomyRows);
+    const resolvedLabel = taxonomyLabel || profile.label;
+
     let bestMatch = null;
     let bestSimilarity = 0;
 
@@ -359,7 +388,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
 
     if (bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD) {
       const updatedIsland = await bestMatch.update({
-        label: profile.label,
+        label: resolvedLabel,
         weight: profile.weight,
         islandVector: blendIslandVector(bestMatch.islandVector, profile.vector),
         positiveSignals: mergePositiveSignals(bestMatch.positiveSignals, profile.positiveSignals),
@@ -389,7 +418,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
     }
 
     const island = await Island.create({
-      label: profile.label,
+      label: resolvedLabel,
       weight: profile.weight,
       userId,
       islandVector: profile.vector,

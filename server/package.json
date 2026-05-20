@@ -21,6 +21,9 @@
     "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
     "islands": "node scripts/buildInterestIslands.js",
+    "taxonomy:vectors": "node scripts/generateIslandTaxonomyVectors.js",
+    "seed:island-taxonomy": "./node_modules/.bin/sequelize db:seed --seed 20260520104500-island-taxonomy.js",
+    "seed:undo:island-taxonomy": "./node_modules/.bin/sequelize db:seed:undo --seed 20260520104500-island-taxonomy.js",
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js"
   },
   "engines": {

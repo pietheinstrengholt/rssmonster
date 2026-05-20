@@ -40,6 +40,7 @@ import ArticleTopicModel from './articleTopic.js';
 import EventTopicModel from './eventTopic.js';
 import IslandModel from './island.js';
 import IslandTopicModel from './islandTopic.js';
+import IslandTaxonomyModel from './islandTaxonomy.js';
 import HotlinkModel from './hotlink.js';
 
 // ---- Initialize models ----
@@ -57,6 +58,7 @@ const ArticleTopic = ArticleTopicModel(sequelize);
 const EventTopic = EventTopicModel(sequelize);
 const Island = IslandModel(sequelize);
 const IslandTopic = IslandTopicModel(sequelize);
+const IslandTaxonomy = IslandTaxonomyModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 
 // ---- Associations ----
@@ -202,5 +204,6 @@ export default {
   EventTopic,
   Island,
   IslandTopic,
+  IslandTaxonomy,
   Hotlink
 };
