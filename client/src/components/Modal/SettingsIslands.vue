@@ -111,6 +111,14 @@
                       <div class="text-muted small">
                         {{ article.feedName || 'Unknown feed' }} · {{ formatDate(article.published) }}
                       </div>
+                      <div class="mt-1">
+                        <span
+                          class="badge"
+                          :class="article.isPopulationSource ? 'text-bg-primary' : 'text-bg-warning'"
+                        >
+                          {{ article.isPopulationSource ? 'Population source' : 'New to island' }}
+                        </span>
+                      </div>
                     </div>
                     <div class="text-end small text-muted">
                       <div>{{ article.starInd === 1 ? 'Starred' : 'Not starred' }}</div>

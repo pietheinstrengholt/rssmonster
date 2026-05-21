@@ -122,6 +122,7 @@ export const getIslandsOverview = async (req, res, _next) => {
         i.userId,
         i.label,
         i.weight,
+        i.populationAudit,
         i.archivedInd,
         i.archivedAt,
         i.updatedAt,
@@ -171,6 +172,32 @@ export const getIslandsOverview = async (req, res, _next) => {
     const islands = [];
 
     for (const island of islandsRaw) {
+      const populationAudit = Array.isArray(island.populationAudit)
+        ? island.populationAudit
+        : (typeof island.populationAudit === 'string'
+          ? (() => {
+              try {
+                const parsed = JSON.parse(island.populationAudit);
+                return Array.isArray(parsed) ? parsed : [];
+              } catch {
+                return [];
+              }
+            })()
+          : []);
+
+      const populationSourceArticleIds = [...new Set(
+        populationAudit.flatMap(entry => {
+          const source = entry?.sourceArticles || {};
+          const starred = Array.isArray(source.starredArticleIds) ? source.starredArticleIds : [];
+          const clicked = Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : [];
+          return [...starred, ...clicked]
+            .map(Number)
+            .filter(Number.isFinite);
+        })
+      )];
+
+      const populationSourceSet = new Set(populationSourceArticleIds);
+
       const relatedArticles = await db.sequelize.query(
         `
         SELECT DISTINCT
@@ -208,11 +235,22 @@ export const getIslandsOverview = async (req, res, _next) => {
 
       islands.push({
         ...island,
+        populationAudit,
+        populationSourceArticleIds,
         effectiveWeight: Number(island.weight || 0),
         starCount,
         clickCount,
         interactionCount: starCount + clickCount,
-        relatedArticles
+        relatedArticles: relatedArticles.map(article => {
+          const articleId = Number(article.id);
+          const isPopulationSource = populationSourceSet.has(articleId);
+
+          return {
+            ...article,
+            isPopulationSource,
+            isNewArticle: !isPopulationSource
+          };
+        })
       });
     }
 

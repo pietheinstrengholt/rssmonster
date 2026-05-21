@@ -44,6 +44,11 @@ export default (sequelize) => {
           clicks: 0,
           deepReads: 0
         }
+      },
+      populationAudit: {
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: []
       }
     },
     {
