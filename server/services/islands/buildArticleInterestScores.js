@@ -24,7 +24,10 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
     INNER JOIN (
       SELECT
         atp.articleId,
-        MAX(i.weight) AS interestScore
+        CASE
+          WHEN ABS(MIN(i.weight)) > ABS(MAX(i.weight)) THEN MIN(i.weight)
+          ELSE MAX(i.weight)
+        END AS interestScore
       FROM article_topics atp
       INNER JOIN island_topics it
         ON it.topicId = atp.topicId

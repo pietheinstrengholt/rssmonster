@@ -26,6 +26,7 @@ const SIGNAL_WEIGHTS = {
 };
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+const topicMagnitude = (strength) => Math.max(0.0001, Math.abs(Number(strength || 0)));
 
 export function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
@@ -237,7 +238,7 @@ function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
 function resolveTopicFallbackLabel(profile) {
   const names = (profile?.topics || [])
     .slice()
-    .sort((a, b) => (b.strength - a.strength) || (a.topicId - b.topicId))
+    .sort((a, b) => (Math.abs(b.strength) - Math.abs(a.strength)) || (a.topicId - b.topicId))
     .map(topic => topic.name)
     .filter(Boolean);
 
@@ -293,7 +294,7 @@ function computeTopicProfile(topic) {
   rawScore += Math.min(topic.eventCount || 0, 12) * SIGNAL_WEIGHTS.eventCount;
 
   const denominator = Math.max(1, (topic.articleCount || evidenceCount || 1) * 6);
-  const strength = clamp(rawScore / denominator, 0, 1);
+  const strength = clamp(rawScore / denominator, -1, 1);
 
   return {
     topicId: topic.id,
@@ -308,7 +309,7 @@ function computeTopicProfile(topic) {
 function buildIslandLabel(topicProfiles) {
   const names = topicProfiles
     .slice()
-    .sort((a, b) => (b.strength - a.strength) || (a.topicId - b.topicId))
+    .sort((a, b) => (Math.abs(b.strength) - Math.abs(a.strength)) || (a.topicId - b.topicId))
     .map(topic => topic.name)
     .filter(Boolean);
 
@@ -322,9 +323,9 @@ function buildIslandWeight(topicProfiles) {
   if (!topicProfiles.length) return 0;
 
   const averageStrength = topicProfiles.reduce((sum, topic) => sum + topic.strength, 0) / topicProfiles.length;
-  const breadthBonus = Math.min(0.2, topicProfiles.length * 0.03);
+  const breadthBonus = Math.sign(averageStrength) * Math.min(0.2, topicProfiles.length * 0.03);
 
-  return Number(clamp(averageStrength + breadthBonus, 0, 1).toFixed(4));
+  return Number(clamp(averageStrength + breadthBonus, -1, 1).toFixed(4));
 }
 
 function buildIslandPositiveSignals(topicProfiles) {
@@ -341,7 +342,7 @@ function assignTopicsToIslandBuckets(topicProfiles, maxIslands = DEFAULT_MAX_ISL
   const sorted = topicProfiles
     .slice()
     .filter(topic => Array.isArray(topic.vector) && topic.vector.length)
-    .sort((a, b) => (b.strength - a.strength) || (a.topicId - b.topicId));
+    .sort((a, b) => (Math.abs(b.strength) - Math.abs(a.strength)) || (a.topicId - b.topicId));
 
   const buckets = [];
 
@@ -361,21 +362,21 @@ function assignTopicsToIslandBuckets(topicProfiles, maxIslands = DEFAULT_MAX_ISL
 
     if (shouldAttachToBucket) {
       bestBucket.topics.push(topic);
-      bestBucket.samples.push({ vector: topic.vector, weight: topic.strength || 0.0001 });
+      bestBucket.samples.push({ vector: topic.vector, weight: topicMagnitude(topic.strength) });
       bestBucket.vector = weightedAverageVector(bestBucket.samples) || bestBucket.vector;
       continue;
     }
 
     if (buckets.length >= maxIslands && bestBucket) {
       bestBucket.topics.push(topic);
-      bestBucket.samples.push({ vector: topic.vector, weight: topic.strength || 0.0001 });
+      bestBucket.samples.push({ vector: topic.vector, weight: topicMagnitude(topic.strength) });
       bestBucket.vector = weightedAverageVector(bestBucket.samples) || bestBucket.vector;
       continue;
     }
 
     buckets.push({
       topics: [topic],
-      samples: [{ vector: topic.vector, weight: topic.strength || 0.0001 }],
+      samples: [{ vector: topic.vector, weight: topicMagnitude(topic.strength) }],
       vector: normalizeVector(topic.vector)
     });
   }
@@ -421,7 +422,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
   const persistableProfiles = profiles
     .map(profile => ({
       ...profile,
-      topics: profile.topics.filter(topic => topic.strength >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD)
+      topics: profile.topics.filter(topic => Math.abs(topic.strength) >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD)
     }))
     .filter(profile => profile.topics.length > 0);
 
@@ -468,7 +469,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
         return {
           topicId: topic.topicId,
           similarity: Number(similarity.toFixed(4)),
-          confidence: Number(clamp(topic.strength * similarity, 0, 1).toFixed(4))
+          confidence: Number(clamp(Math.abs(topic.strength) * similarity, 0, 1).toFixed(4))
         };
       })
       .filter(row => row.confidence >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD);
