@@ -4,6 +4,7 @@ import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
 import { incrementalClusterForUser } from '../services/events/reclusterForUser.js';
+import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -282,6 +283,14 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
           await incrementalClusterForUser(uid);
         } catch (err) {
           console.error(`[CLUSTER] Incremental clustering failed for user ${uid}:`, err);
+          continue;
+        }
+
+        try {
+          // Recompute islands and persist per-article interest scores after clustering updates topic links.
+          await buildInterestIslandsForUser(uid);
+        } catch (err) {
+          console.error(`[ISLANDS] Interest island rebuild failed for user ${uid}:`, err);
         }
       }
       console.log('[CLUSTER] Incremental clustering completed');
