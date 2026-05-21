@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
+import buildArticleInterestScoresForUser from './buildArticleInterestScores.js';
 
 const { User, Topic, Article, Island, IslandTopic, IslandTaxonomy, sequelize } = db;
 
@@ -11,6 +12,8 @@ const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_
 const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '30');
 const DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD || '0.12');
 const DEFAULT_ARCHIVE_STALE_DAYS = Number.parseInt(process.env.ISLAND_ARCHIVE_STALE_DAYS, 10) || 45;
+const DEFAULT_AUDIT_MAX_RUNS = Number.parseInt(process.env.ISLAND_AUDIT_MAX_RUNS, 10) || 30;
+const DEFAULT_AUDIT_MAX_ARTICLE_IDS = Number.parseInt(process.env.ISLAND_AUDIT_MAX_ARTICLE_IDS, 10) || 300;
 
 const SIGNAL_WEIGHTS = {
   star: 4,
@@ -140,6 +143,78 @@ function isStaleIsland(island) {
 
   const staleMs = DEFAULT_ARCHIVE_STALE_DAYS * 24 * 60 * 60 * 1000;
   return (Date.now() - updatedAt) >= staleMs;
+}
+
+function appendPopulationAudit(existingAudit, entry) {
+  const previous = Array.isArray(existingAudit) ? existingAudit : [];
+  const next = [...previous, entry];
+
+  if (next.length <= DEFAULT_AUDIT_MAX_RUNS) return next;
+  return next.slice(next.length - DEFAULT_AUDIT_MAX_RUNS);
+}
+
+async function buildPopulationAuditEntry({ userId, topicIds, transaction }) {
+  if (!topicIds.length) {
+    return {
+      runAt: new Date().toISOString(),
+      topicIds: [],
+      metrics: {
+        relatedArticleCount: 0,
+        starredCount: 0,
+        clickedCount: 0
+      },
+      sourceArticles: {
+        starredArticleIds: [],
+        clickedArticleIds: []
+      }
+    };
+  }
+
+  const rows = await sequelize.query(
+    `
+    SELECT DISTINCT
+      a.id,
+      a.starInd,
+      a.clickedAmount
+    FROM article_topics atp
+    INNER JOIN articles a
+      ON a.id = atp.articleId
+     AND a.userId = :userId
+    WHERE atp.topicId IN (:topicIds)
+    `,
+    {
+      replacements: {
+        userId,
+        topicIds
+      },
+      type: db.Sequelize.QueryTypes.SELECT,
+      transaction
+    }
+  );
+
+  const starredArticleIds = rows
+    .filter(row => Number(row.starInd) === 1)
+    .map(row => Number(row.id))
+    .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
+
+  const clickedArticleIds = rows
+    .filter(row => Number(row.clickedAmount) > 0)
+    .map(row => Number(row.id))
+    .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
+
+  return {
+    runAt: new Date().toISOString(),
+    topicIds,
+    metrics: {
+      relatedArticleCount: rows.length,
+      starredCount: starredArticleIds.length,
+      clickedCount: clickedArticleIds.length
+    },
+    sourceArticles: {
+      starredArticleIds,
+      clickedArticleIds
+    }
+  };
 }
 
 function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
@@ -400,12 +475,20 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
 
     if (!islandRows.length) continue;
 
+    const topicIds = islandRows.map(row => Number(row.topicId));
+    const auditEntry = await buildPopulationAuditEntry({
+      userId,
+      topicIds,
+      transaction
+    });
+
     if (bestMatch && bestSimilarity >= DEFAULT_ISLAND_MATCH_THRESHOLD) {
       const updatedIsland = await bestMatch.update({
         label: resolvedLabel,
         weight: profile.weight,
         islandVector: blendIslandVector(bestMatch.islandVector, profile.vector),
         positiveSignals: mergePositiveSignals(bestMatch.positiveSignals, profile.positiveSignals),
+        populationAudit: appendPopulationAudit(bestMatch.populationAudit, auditEntry),
         archivedInd: false,
         archivedAt: null
       }, { transaction });
@@ -437,6 +520,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
       userId,
       islandVector: profile.vector,
       positiveSignals: normalizePositiveSignals(profile.positiveSignals),
+      populationAudit: appendPopulationAudit([], auditEntry),
       archivedInd: false,
       archivedAt: null
     }, { transaction });
@@ -500,9 +584,11 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
 export async function buildInterestIslandsForUser(userId, options = {}) {
   const profiles = await buildInterestIslandProfilesForUser(userId, options);
 
-  const createdIslands = await sequelize.transaction(async (transaction) =>
-    persistInterestIslandProfiles(userId, profiles, transaction)
-  );
+  const createdIslands = await sequelize.transaction(async (transaction) => {
+      const islands = await persistInterestIslandProfiles(userId, profiles, transaction);
+      await buildArticleInterestScoresForUser(userId, { transaction });
+      return islands;
+    });
 
   return {
     userId,
