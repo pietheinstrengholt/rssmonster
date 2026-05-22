@@ -9,10 +9,30 @@ import {
   MAX_TOPICS_PER_ARTICLE
 } from './semanticConfig.js';
 
-const { Topic } = db;
+const { Topic, Event } = db;
 const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
 const REPLAY_PRIMARY_HYSTERESIS = 0.01;
 const REPLAY_SECONDARY_HYSTERESIS = 0.02;
+const MIN_EVENTS_FOR_TOPIC_CREATION = Number.parseInt(process.env.TOPIC_MIN_EVENTS_FOR_CREATION || '2', 10);
+const TOPIC_VECTOR_DRIFT_ENABLED = ['1', 'true', 'yes'].includes(
+  String(process.env.TOPIC_VECTOR_DRIFT_ENABLED || 'false').toLowerCase()
+);
+const TOPIC_VECTOR_DRIFT_ALPHA = Number.parseFloat(process.env.TOPIC_VECTOR_DRIFT_ALPHA || '0.03');
+const TOPIC_VECTOR_DRIFT_MAX_SIMILARITY = Number.parseFloat(process.env.TOPIC_VECTOR_DRIFT_MAX_SIMILARITY || '0.92');
+const TOPIC_DEBUG = ['1', 'true', 'yes'].includes(
+  String(process.env.TOPIC_DEBUG || process.env.EVENT_DEBUG || '').toLowerCase()
+);
+
+function debugTopicGate(message, payload = null) {
+  if (!TOPIC_DEBUG) return;
+
+  if (payload == null) {
+    console.log(`[TOPIC DEBUG] ${message}`);
+    return;
+  }
+
+  console.log(`[TOPIC DEBUG] ${message}`, payload);
+}
 
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
@@ -45,10 +65,10 @@ function generateTopicKey(topicVector) {
   return crypto.createHash('sha1').update(buffer).digest('hex');
 }
 
-function generateTopicName(article) {
-  if (!article?.title) return 'Untitled Topic';
+function generateTopicName(semanticUnit) {
+  if (!semanticUnit?.title) return 'Untitled Topic';
 
-  const name = article.title
+  const name = semanticUnit.title
     .replace(/\s+/g, ' ')
     .trim()
     .slice(0, 120)
@@ -75,6 +95,60 @@ function blendTopicVectorWithAlpha(existingVector, incomingVector, alpha) {
   );
 }
 
+function averageVector(vectors = []) {
+  const usable = vectors.filter(vector => Array.isArray(vector) && vector.length);
+  if (!usable.length) return null;
+
+  const dimension = usable[0].length;
+  const filtered = usable.filter(vector => vector.length === dimension);
+  if (!filtered.length) return null;
+
+  const sum = Array(dimension).fill(0);
+  for (const vector of filtered) {
+    for (let i = 0; i < dimension; i++) {
+      sum[i] += vector[i];
+    }
+  }
+
+  return sum.map(value => value / filtered.length);
+}
+
+async function collectTopicSeedEvents(userId, eventTopicVector, currentEventId) {
+  const events = await Event.findAll({
+    where: {
+      userId,
+      topicId: null,
+      eventVector: { [db.Sequelize.Op.ne]: null }
+    },
+    attributes: ['id', 'eventVector', 'name', 'lastSeen', 'updatedAt'],
+    order: [['updatedAt', 'DESC']],
+    limit: MAX_CANDIDATES
+  });
+
+  const scored = events
+    .map(event => ({
+      event,
+      similarity: cosineSimilarity(eventTopicVector, event.eventVector)
+    }))
+    .filter(item => item.similarity >= TOPIC_IDENTITY_THRESHOLD)
+    .sort((a, b) => b.similarity - a.similarity);
+
+  if (currentEventId && !scored.some(item => Number(item.event.id) === Number(currentEventId))) {
+    const currentEvent = await Event.findByPk(currentEventId, {
+      attributes: ['id', 'eventVector', 'name', 'lastSeen', 'updatedAt']
+    });
+
+    if (currentEvent?.eventVector) {
+      scored.unshift({
+        event: currentEvent,
+        similarity: cosineSimilarity(eventTopicVector, currentEvent.eventVector)
+      });
+    }
+  }
+
+  return scored;
+}
+
 function upsertTopicInCache(topicsCache, topic) {
   if (!topicsCache) return;
 
@@ -87,15 +161,22 @@ function upsertTopicInCache(topicsCache, topic) {
   topicsCache.unshift(topic);
 }
 
-export async function assignEventToTopic({
-  article,
-  articleTopicVector,
+function shouldDriftTopicVector(similarity, assignmentContext) {
+  if (!TOPIC_VECTOR_DRIFT_ENABLED) return false;
+  if (assignmentContext === 'replay') return false;
+  if (!Number.isFinite(similarity)) return false;
+
+  return similarity <= TOPIC_VECTOR_DRIFT_MAX_SIMILARITY;
+}
+
+export async function assignSemanticUnitToTopic({
+  semanticUnit,
+  semanticVector,
   topicsCache = null,
   assignmentContext = 'incremental'
 }) {
-  if (!articleTopicVector) return [];
+  if (!semanticVector) return [];
 
-  const shouldUpdateTopicVector = assignmentContext !== 'replay';
   const primaryThreshold = assignmentContext === 'replay'
     ? Math.min(PRIMARY_TOPIC_THRESHOLD + REPLAY_PRIMARY_HYSTERESIS, 0.999)
     : PRIMARY_TOPIC_THRESHOLD;
@@ -111,7 +192,7 @@ export async function assignEventToTopic({
   const topics = topicsCache
     ? topicsCache
     : await Topic.findAll({
-        where: { userId: article.userId },
+        where: { userId: semanticUnit.userId },
         order: [['updatedAt', 'DESC']],
         limit: MAX_CANDIDATES
       });
@@ -120,7 +201,7 @@ export async function assignEventToTopic({
     if (!topic.topicVector) continue;
 
     const sim = cosineSimilarity(
-      articleTopicVector,
+      semanticVector,
       topic.topicVector
     );
 
@@ -135,7 +216,7 @@ export async function assignEventToTopic({
   }
 
   if (matchedCandidates.length) {
-    const now = article.published || new Date();
+    const now = semanticUnit.published || new Date();
     const rankedCandidates = matchedCandidates
       .sort((a, b) => (b.sim - a.sim) || (a.topic.id - b.topic.id))
       .slice(0, MAX_TOPIC_CANDIDATES);
@@ -145,14 +226,22 @@ export async function assignEventToTopic({
     ) ?? null;
 
     const updates = rankedCandidates.map(candidate => {
-      if (primaryCandidate && candidate.topic.id === primaryCandidate.topic.id && shouldUpdateTopicVector) {
+      const canDrift = shouldDriftTopicVector(candidate.sim, assignmentContext);
+
+      if (primaryCandidate && candidate.topic.id === primaryCandidate.topic.id && canDrift) {
         const blendedTopicVector = blendTopicVector(
           candidate.topic.topicVector,
-          articleTopicVector
+          semanticVector
+        );
+
+        const anchoredVector = blendTopicVectorWithAlpha(
+          candidate.topic.topicVector,
+          blendedTopicVector,
+          Math.max(0, Math.min(TOPIC_VECTOR_DRIFT_ALPHA, 1))
         );
 
         return candidate.topic.update({
-          topicVector: blendedTopicVector,
+          topicVector: anchoredVector,
           lastActivityAt: now
         });
       }
@@ -176,17 +265,19 @@ export async function assignEventToTopic({
     }));
   }
 
-  const topicKey = generateTopicKey(articleTopicVector);
-  const now = article.published || new Date();
+  const topicKey = generateTopicKey(semanticVector);
+  const now = semanticUnit.published || new Date();
+  const currentEventId = Number(semanticUnit.id) || null;
 
   // Reuse topic by identity before creating a new semantic region.
   if (bestTopic && bestTopicSim >= TOPIC_IDENTITY_THRESHOLD) {
-    const updatedTopic = shouldUpdateTopicVector
+    const canDrift = shouldDriftTopicVector(bestTopicSim, assignmentContext);
+    const updatedTopic = canDrift
       ? await bestTopic.update({
         topicVector: blendTopicVectorWithAlpha(
           bestTopic.topicVector,
-          articleTopicVector,
-          TOPIC_VECTOR_ALPHA * 0.25
+          semanticVector,
+          Math.max(0, Math.min(TOPIC_VECTOR_DRIFT_ALPHA, 1))
         ),
         lastActivityAt: now
       })
@@ -219,7 +310,7 @@ export async function assignEventToTopic({
 
     const persistedKeyMatch = await Topic.findOne({
       where: {
-        userId: article.userId,
+        userId: semanticUnit.userId,
         topicKey
       }
     });
@@ -237,11 +328,35 @@ export async function assignEventToTopic({
     }
   }
 
+  const topicSeedEvents = await collectTopicSeedEvents(semanticUnit.userId, semanticVector, currentEventId);
+  const topSeedSimilarity = Number((topicSeedEvents[0]?.similarity || 0).toFixed(4));
+
+  debugTopicGate('topic-creation-gate-evaluated', {
+    userId: semanticUnit.userId,
+    eventId: currentEventId,
+    seedCount: topicSeedEvents.length,
+    threshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+    topSimilarity: topSeedSimilarity
+  });
+
+  if (topicSeedEvents.length < MIN_EVENTS_FOR_TOPIC_CREATION) {
+    debugTopicGate('topic-creation-gate-blocked', {
+      userId: semanticUnit.userId,
+      eventId: currentEventId,
+      seedCount: topicSeedEvents.length,
+      threshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+      topSimilarity: topSeedSimilarity
+    });
+
+    return [];
+  }
+
+  const topicVector = averageVector(topicSeedEvents.map(item => item.event.eventVector)) || semanticVector;
   const createdTopic = await Topic.create({
-    userId: article.userId,
-    name: generateTopicName(article),
-    topicKey: topicKey || `topic-${article.userId}-${article.id}`,
-    topicVector: articleTopicVector,
+    userId: semanticUnit.userId,
+    name: generateTopicName(semanticUnit),
+    topicKey: topicKey || `topic-${semanticUnit.userId}-${semanticUnit.id}`,
+    topicVector,
     articleCount: 0,
     eventCount: 0,
     lastActivityAt: now
@@ -249,12 +364,35 @@ export async function assignEventToTopic({
 
   upsertTopicInCache(topicsCache, createdTopic);
 
+  debugTopicGate('topic-creation-gate-passed', {
+    userId: semanticUnit.userId,
+    eventId: currentEventId,
+    topicId: createdTopic.id,
+    seedCount: topicSeedEvents.length,
+    threshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+    topSimilarity: topSeedSimilarity
+  });
+
   return [{
     topicId: createdTopic.id,
-    confidence: 1,
+    confidence: Number((topicSeedEvents[0]?.similarity || 1).toFixed(4)),
     rank: 1,
     primaryInd: true
   }];
+}
+
+export async function assignEventToTopic({
+  article,
+  articleTopicVector,
+  topicsCache = null,
+  assignmentContext = 'incremental'
+}) {
+  return assignSemanticUnitToTopic({
+    semanticUnit: article,
+    semanticVector: articleTopicVector,
+    topicsCache,
+    assignmentContext
+  });
 }
 
 export default assignEventToTopic;

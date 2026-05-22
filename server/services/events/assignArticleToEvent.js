@@ -1,7 +1,7 @@
 // services/events/assignArticleToEvent.js
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
-import assignEventToTopic from './assignEventToTopic.js';
+import { assignSemanticUnitToTopic } from './assignEventToTopic.js';
 import {
   EVENT_SIM_THRESHOLD,
   MAX_CANDIDATES,
@@ -16,7 +16,7 @@ import {
   MAX_TOPICS_PER_ARTICLE
 } from './semanticConfig.js';
 
-const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
+const { Article, Event, ArticleTopic, EventTopic } = db;
 const DUPLICATE_HEADLINE_SIM = 0.92;
 const MIN_EVENT_ARTICLES = Number.parseInt(process.env.MIN_EVENT_ARTICLES || '2', 10);
 const MIN_EVENT_SOURCES = Number.parseInt(process.env.MIN_EVENT_SOURCES || '2', 10);
@@ -292,28 +292,52 @@ async function loadEventTopicAssignments(eventId) {
   return normalizeTopicAssignments(rows);
 }
 
-async function persistArticleTopicAssignments(article, topicAssignments) {
-  const normalizedAssignments = normalizeTopicAssignments(topicAssignments);
+async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
+  const normalizedAssignments = normalizeTopicAssignments(eventTopicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
 
-  await ArticleTopic.destroy({ where: { articleId: article.id } });
+  const eventArticles = await Article.findAll({
+    where: { eventId },
+    attributes: ['id'],
+    raw: true
+  });
+
+  const articleIds = eventArticles.map(article => Number(article.id)).filter(Boolean);
+  if (!articleIds.length) return 0;
+
+  await ArticleTopic.destroy({
+    where: {
+      articleId: { [Op.in]: articleIds }
+    }
+  });
 
   if (normalizedAssignments.length) {
-    await ArticleTopic.bulkCreate(
-      normalizedAssignments.map(assignment => ({
-        articleId: article.id,
-        topicId: assignment.topicId,
-        confidence: assignment.confidence,
-        rank: assignment.rank,
-        primaryInd: assignment.primaryInd
-      }))
-    );
+    const rows = [];
+    for (const articleId of articleIds) {
+      for (const assignment of normalizedAssignments) {
+        rows.push({
+          articleId,
+          topicId: assignment.topicId,
+          confidence: assignment.confidence,
+          rank: assignment.rank,
+          primaryInd: assignment.primaryInd
+        });
+      }
+    }
+
+    await ArticleTopic.bulkCreate(rows);
   }
 
-  await article.update({ topicId: primaryId });
-  article.topicId = primaryId;
+  await Article.update(
+    { topicId: primaryId },
+    {
+      where: {
+        id: { [Op.in]: articleIds }
+      }
+    }
+  );
 
-  return normalizedAssignments;
+  return articleIds.length;
 }
 
 async function persistEventTopicAssignments(event, topicAssignments) {
@@ -340,71 +364,25 @@ async function persistEventTopicAssignments(event, topicAssignments) {
   return normalizedAssignments;
 }
 
-function mergeTopicAssignments({ existingAssignments, incomingAssignments, existingArticleCount, newArticleCount }) {
-  const merged = new Map();
+async function deriveEventTopicAssignments({
+  event,
+  eventTopicVector,
+  topicsCache,
+  assignmentContext
+}) {
+  if (!Array.isArray(eventTopicVector) || !eventTopicVector.length) return [];
 
-  for (const assignment of existingAssignments) {
-    merged.set(assignment.topicId, {
-      topicId: assignment.topicId,
-      confidence: assignment.confidence * (existingArticleCount / newArticleCount),
-      primaryInd: assignment.primaryInd
-    });
-  }
-
-  for (const assignment of incomingAssignments) {
-    const current = merged.get(assignment.topicId);
-    const weightedIncoming = assignment.confidence * (1 / newArticleCount);
-
-    if (!current) {
-      merged.set(assignment.topicId, {
-        topicId: assignment.topicId,
-        confidence: weightedIncoming,
-        primaryInd: assignment.primaryInd
-      });
-      continue;
-    }
-
-    merged.set(assignment.topicId, {
-      topicId: assignment.topicId,
-      confidence: current.confidence + weightedIncoming,
-      primaryInd: current.primaryInd || assignment.primaryInd
-    });
-  }
-
-  return normalizeTopicAssignments([...merged.values()]);
-}
-
-async function buildEventTopicAssignmentsFromArticles(articleIds, fallbackAssignments = []) {
-  if (!articleIds.length) {
-    return normalizeTopicAssignments(fallbackAssignments);
-  }
-
-  const topicRows = await ArticleTopic.findAll({
-    where: { articleId: { [Op.in]: articleIds } },
-    raw: true
+  return assignSemanticUnitToTopic({
+    semanticUnit: {
+      id: event.id,
+      userId: event.userId,
+      title: event.name || `Event ${event.id}`,
+      published: event.lastSeen || event.updatedAt || new Date()
+    },
+    semanticVector: eventTopicVector,
+    topicsCache,
+    assignmentContext
   });
-
-  if (!topicRows.length) {
-    return normalizeTopicAssignments(fallbackAssignments);
-  }
-
-  const scoreByTopic = new Map();
-
-  for (const row of topicRows) {
-    const existing = scoreByTopic.get(row.topicId) || { topicId: row.topicId, score: 0, count: 0, hasPrimary: false };
-    existing.score += Number(row.confidence) * (row.primaryInd ? 1.15 : 1);
-    existing.count += 1;
-    existing.hasPrimary = existing.hasPrimary || Boolean(row.primaryInd);
-    scoreByTopic.set(row.topicId, existing);
-  }
-
-  return normalizeTopicAssignments(
-    [...scoreByTopic.values()].map(value => ({
-      topicId: value.topicId,
-      confidence: value.count ? value.score / value.count : 0,
-      primaryInd: value.hasPrimary
-    }))
-  );
 }
 
 export class EventCache {
@@ -445,11 +423,12 @@ export class EventCache {
 async function assignArticleToExistingEvent({
   article,
   articleEventVector,
-  articleTopicAssignments,
   bestEvent,
   cache,
   bestScore,
-  matchSignal
+  matchSignal,
+  topicsCache,
+  assignmentContext
 }) {
   const newCount = bestEvent.articleCount + 1;
   const updatedEventVector = blendEventVector(bestEvent.eventVector, articleEventVector);
@@ -457,42 +436,33 @@ async function assignArticleToExistingEvent({
   const seenAt = article.published || new Date();
   const status = resolveEventStatus(newCount, seenAt);
 
-  const existingEventTopics = await loadEventTopicAssignments(bestEvent.id);
-  const eventTopicAssignments = mergeTopicAssignments({
-    existingAssignments: existingEventTopics,
-    incomingAssignments: articleTopicAssignments,
-    existingArticleCount: Math.max(bestEvent.articleCount, 1),
-    newArticleCount: Math.max(newCount, 1)
-  });
-
-  const persistedEventTopics = await persistEventTopicAssignments(
-    bestEvent,
-    eventTopicAssignments.length ? eventTopicAssignments : articleTopicAssignments
-  );
-
-  const finalArticleTopics = await persistArticleTopicAssignments(
-    article,
-    articleTopicAssignments.length ? articleTopicAssignments : persistedEventTopics
-  );
-
-  const eventPrimaryTopicId = primaryTopicId(persistedEventTopics);
-  const articlePrimaryTopicId = primaryTopicId(finalArticleTopics) ?? eventPrimaryTopicId ?? null;
+  await article.update({ eventId: bestEvent.id });
 
   const [, diversity] = await Promise.all([
-    article.update({
-      eventId: bestEvent.id,
-      topicId: articlePrimaryTopicId
+    bestEvent.update({
+      eventVector: updatedEventVector,
+      articleCount: newCount,
+      lastSeen: seenAt,
+      status
     }),
     updateSourceDiversity(bestEvent.id, article.userId)
   ]);
 
-  await bestEvent.update({
-    topicId: eventPrimaryTopicId,
-    eventVector: updatedEventVector,
-    articleCount: newCount,
-    lastSeen: seenAt,
-    status
+  const eventTopicAssignments = await deriveEventTopicAssignments({
+    event: bestEvent,
+    eventTopicVector: updatedEventVector,
+    topicsCache,
+    assignmentContext
   });
+
+  const persistedEventTopics = await persistEventTopicAssignments(bestEvent, eventTopicAssignments);
+  const eventPrimaryTopicId = primaryTopicId(persistedEventTopics);
+
+  await syncEventTopicsToArticles(bestEvent.id, persistedEventTopics);
+
+  article.topicId = eventPrimaryTopicId;
+
+  bestEvent.topicId = eventPrimaryTopicId;
 
   if (cache) {
     cache.updateInMemory(bestEvent.id, {
@@ -512,8 +482,9 @@ async function assignArticleToExistingEvent({
 async function createAndAssignEvent({
   candidateArticles,
   article,
-  articleTopicAssignments,
-  cache
+  cache,
+  topicsCache,
+  assignmentContext
 }) {
   const eventArticles = [...candidateArticles, article];
   const vectors = eventArticles
@@ -541,15 +512,10 @@ async function createAndAssignEvent({
   const name = generateEventName(article);
 
   const eventArticleIds = eventArticles.map(item => item.id);
-  const aggregatedTopicAssignments = await buildEventTopicAssignmentsFromArticles(
-    eventArticleIds,
-    articleTopicAssignments
-  );
-  const primaryEventTopicId = primaryTopicId(aggregatedTopicAssignments);
 
   const newEvent = await Event.create({
     userId: article.userId,
-    topicId: primaryEventTopicId,
+    topicId: null,
     representativeArticleId: article.id,
     name,
     articleCount: eventArticles.length,
@@ -578,7 +544,19 @@ async function createAndAssignEvent({
     }
   );
 
-  await persistEventTopicAssignments(newEvent, aggregatedTopicAssignments);
+  const eventTopicAssignments = await deriveEventTopicAssignments({
+    event: newEvent,
+    eventTopicVector: centroid,
+    topicsCache,
+    assignmentContext
+  });
+
+  const persistedEventTopics = await persistEventTopicAssignments(newEvent, eventTopicAssignments);
+  const primaryEventTopicId = primaryTopicId(persistedEventTopics);
+
+  await syncEventTopicsToArticles(newEvent.id, persistedEventTopics);
+
+  newEvent.topicId = primaryEventTopicId;
 
   if (cache) {
     cache.add(newEvent);
@@ -592,24 +570,16 @@ async function createAndAssignEvent({
   return newEvent.id;
 }
 
-async function assignTopicOnly({ article, topicAssignments }) {
-  const persistedArticleTopics = await persistArticleTopicAssignments(article, topicAssignments);
+async function assignTopicOnly({ article }) {
+  await ArticleTopic.destroy({ where: { articleId: article.id } });
 
   await article.update({
     eventId: null,
-    topicId: primaryTopicId(persistedArticleTopics)
+    topicId: null
   });
 
   article.eventId = null;
-  article.topicId = primaryTopicId(persistedArticleTopics);
-
-  const topicIds = persistedArticleTopics.map(assignment => assignment.topicId);
-  if (topicIds.length) {
-    await Topic.update(
-      { lastActivityAt: article.published || new Date() },
-      { where: { id: { [Op.in]: topicIds } } }
-    );
-  }
+  article.topicId = null;
 }
 
 function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
@@ -757,21 +727,11 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     : await Article.findByPk(articleIdOrObj);
 
   const articleEventVector = vectors?.eventVector ?? null;
-  const articleTopicVector = vectors?.topicVector ?? null;
 
   if (!article) return null;
 
   if (!articleEventVector) {
-    const topicAssignments = articleTopicVector
-      ? await assignEventToTopic({
-        article,
-        articleTopicVector,
-        topicsCache,
-        assignmentContext
-      })
-      : [];
-
-    await assignTopicOnly({ article, topicAssignments });
+    await assignTopicOnly({ article });
 
     console.log(
       `[EVENT] Article ${article.id} kept topic-only (no event vector)`
@@ -783,8 +743,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       title: article.title,
       description: article.description,
       published: article.published,
-      topicId: primaryTopicId(topicAssignments),
-      topicAssignments,
+      topicId: null,
+      topicAssignments: [],
       eventId: null,
       eventVector: null
     });
@@ -874,24 +834,16 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     });
   }
 
-  const articleTopicAssignments = articleTopicVector
-    ? await assignEventToTopic({
-      article,
-      articleTopicVector,
-      topicsCache,
-      assignmentContext
-    })
-    : [];
-
   if (bestEvent && bestSignal) {
     await assignArticleToExistingEvent({
       article,
       articleEventVector,
-      articleTopicAssignments,
       bestEvent,
       cache,
       bestScore,
-      matchSignal: bestSignal
+      matchSignal: bestSignal,
+      topicsCache,
+      assignmentContext
     });
 
     const eventTopicAssignments = await loadEventTopicAssignments(bestEvent.id);
@@ -902,8 +854,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       title: article.title,
       description: article.description,
       published: article.published,
-      topicId: article.topicId ?? primaryTopicId(eventTopicAssignments),
-      topicAssignments: articleTopicAssignments,
+      topicId: primaryTopicId(eventTopicAssignments),
+      topicAssignments: eventTopicAssignments,
       eventId: bestEvent.id,
       eventVector: articleEventVector
     });
@@ -911,7 +863,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     return bestEvent.id;
   }
 
-  await persistArticleTopicAssignments(article, articleTopicAssignments);
+  await assignTopicOnly({ article });
 
   const candidateResult = runContext
     ? findCandidateArticlesFromContext({
@@ -933,7 +885,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
 
   if (EVENT_DEBUG) {
     debugEventLog(`article=${article.id} candidate-eval`, {
-      topicId: primaryTopicId(articleTopicAssignments),
+      topicId: null,
       totalCandidatePool: candidateResult.evaluatedSignals.length,
       acceptedCandidates: candidateArticles.length,
       corroboratedArticleCount,
@@ -964,7 +916,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     corroboratedArticleCount < MIN_EVENT_ARTICLES ||
     (REQUIRE_MULTI_SOURCE_FOR_EVENT && corroboratedSourceCount < MIN_EVENT_SOURCES)
   ) {
-    await assignTopicOnly({ article, topicAssignments: articleTopicAssignments });
+    await assignTopicOnly({ article });
 
     console.log(
       `[EVENT] Article ${article.id} kept topic-only (candidate articles=${corroboratedArticleCount}, sources=${corroboratedSourceCount}, requireMultiSource=${REQUIRE_MULTI_SOURCE_FOR_EVENT})`
@@ -976,8 +928,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       title: article.title,
       description: article.description,
       published: article.published,
-      topicId: primaryTopicId(articleTopicAssignments),
-      topicAssignments: articleTopicAssignments,
+      topicId: null,
+      topicAssignments: [],
       eventId: null,
       eventVector: articleEventVector
     });
@@ -988,8 +940,9 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   const newEventId = await createAndAssignEvent({
     candidateArticles,
     article,
-    articleTopicAssignments,
-    cache
+    cache,
+    topicsCache,
+    assignmentContext
   });
 
   const eventTopicAssignments = newEventId ? await loadEventTopicAssignments(newEventId) : [];
@@ -1008,8 +961,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     title: article.title,
     description: article.description,
     published: article.published,
-    topicId: primaryTopicId(articleTopicAssignments),
-    topicAssignments: articleTopicAssignments,
+    topicId: primaryTopicId(eventTopicAssignments),
+    topicAssignments: eventTopicAssignments,
     eventId: newEventId,
     eventVector: articleEventVector
   });
