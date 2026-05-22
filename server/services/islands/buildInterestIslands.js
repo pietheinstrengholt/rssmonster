@@ -129,7 +129,8 @@ function buildPositiveSignalsAccumulator() {
   return {
     stars: 0,
     clicks: 0,
-    deepReads: 0
+    deepReads: 0,
+    negatives: 0
   };
 }
 
@@ -137,13 +138,15 @@ function addPositiveSignals(target, source) {
   target.stars += source.stars;
   target.clicks += source.clicks;
   target.deepReads += source.deepReads;
+  target.negatives += source.negatives || 0;
 }
 
 function normalizePositiveSignals(source = {}) {
   return {
     stars: Number(source.stars || 0),
     clicks: Number(source.clicks || 0),
-    deepReads: Number(source.deepReads || 0)
+    deepReads: Number(source.deepReads || 0),
+    negatives: Number(source.negatives || 0)
   };
 }
 
@@ -371,7 +374,8 @@ function computeArticleSignals(article) {
     positiveSignals: {
       stars,
       clicks,
-      deepReads
+      deepReads,
+      negatives: negative
     }
   };
 }
@@ -700,6 +704,11 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
   const matchedIslandIds = new Set();
 
   const createdIslands = [];
+  let createdIslandCount = 0;
+  let updatedIslandCount = 0;
+  let updatedWithStarSignalCount = 0;
+  let updatedWithClickSignalCount = 0;
+  let updatedWithNegativeSignalCount = 0;
 
   for (const profile of persistableProfiles) {
     const taxonomyLabel = resolveTaxonomyDisplayName(profile.vector, taxonomyRows);
@@ -751,6 +760,17 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
       }, { transaction });
 
       matchedIslandIds.add(updatedIsland.id);
+      updatedIslandCount += 1;
+
+      if (Number(profile?.positiveSignals?.stars || 0) > 0) {
+        updatedWithStarSignalCount += 1;
+      }
+      if (Number(profile?.positiveSignals?.clicks || 0) > 0) {
+        updatedWithClickSignalCount += 1;
+      }
+      if (Number(profile?.positiveSignals?.negatives || 0) > 0) {
+        updatedWithNegativeSignalCount += 1;
+      }
 
       await evolveIslandTopicMemberships(updatedIsland.id, islandRows, transaction);
 
@@ -768,6 +788,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
       archivedInd: false,
       archivedAt: null
     }, { transaction });
+    createdIslandCount += 1;
 
     await IslandTopic.bulkCreate(
       islandRows.map(row => ({
@@ -820,6 +841,19 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
         );
       }
     }
+  }
+
+  if (ISLAND_DEBUG) {
+    debugIsland('island-persistence-summary', {
+      userId,
+      createdIslandCount,
+      updatedIslandCount,
+      updatedBySignals: {
+        stars: updatedWithStarSignalCount,
+        clicks: updatedWithClickSignalCount,
+        negativeInd: updatedWithNegativeSignalCount
+      }
+    });
   }
 
   return createdIslands;
