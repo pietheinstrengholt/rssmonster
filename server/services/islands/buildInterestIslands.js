@@ -586,14 +586,19 @@ export async function buildInterestIslandsForUser(userId, options = {}) {
   const profiles = await buildInterestIslandProfilesForUser(userId, options);
 
   const createdIslands = await sequelize.transaction(async (transaction) => {
-      const islands = await persistInterestIslandProfiles(userId, profiles, transaction);
-      await buildArticleInterestScoresForUser(userId, { transaction });
-      return islands;
-    });
+    const islands = await persistInterestIslandProfiles(userId, profiles, transaction);
+    const scoringResult = await buildArticleInterestScoresForUser(userId, { transaction });
+
+    return {
+      islands,
+      rescoredArticleCount: Number(scoringResult?.updatedCount || 0)
+    };
+  });
 
   return {
     userId,
-    islandCount: createdIslands.length,
+    islandCount: createdIslands.islands.length,
+    rescoredArticleCount: createdIslands.rescoredArticleCount,
     topicCount: profiles.reduce((sum, profile) => sum + profile.topics.length, 0),
     profiles
   };

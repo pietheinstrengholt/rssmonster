@@ -278,6 +278,8 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
     );
 
     const clusterAll = async () => {
+      const rescoringSummary = [];
+
       for (const uid of clusterUserIds) {
         try {
           await incrementalClusterForUser(uid);
@@ -288,11 +290,24 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
 
         try {
           // Recompute islands and persist per-article interest scores after clustering updates topic links.
-          await buildInterestIslandsForUser(uid);
+          const islandResult = await buildInterestIslandsForUser(uid);
+          rescoringSummary.push({
+            userId: uid,
+            rescoredArticleCount: Number(islandResult?.rescoredArticleCount || 0)
+          });
         } catch (err) {
           console.error(`[ISLANDS] Interest island rebuild failed for user ${uid}:`, err);
         }
       }
+
+      if (rescoringSummary.length) {
+        const summaryText = rescoringSummary
+          .map(item => `user=${item.userId}: rescored=${item.rescoredArticleCount}`)
+          .join(' | ');
+
+        console.log(`[ISLANDS] Post-crawl article rescoring summary: ${summaryText}`);
+      }
+
       console.log('[CLUSTER] Incremental clustering completed');
     };
 
