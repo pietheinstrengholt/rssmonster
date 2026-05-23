@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { assignArticleToEvent } from '../services/events/assignArticleToEvent.js';
+import { assignArticleToEvent } from '../services/articles/assignArticleToEvent.js';
 
 const { sequelize, User, Category, Feed, Article, Event, Topic } = db;
 

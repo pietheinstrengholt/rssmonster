@@ -23,7 +23,7 @@ export default (sequelize) => {
          * This is the primary structural relationship: Event -> Topic.
          * Articles reference topics denormally for direct access (Article.topicId).
          * 
-         * See: services/events/assignEventToTopic.js for topic resolution.
+         * See: services/topics/assignEventToTopic.js for topic resolution.
          */
         type: DataTypes.INTEGER,
         allowNull: true

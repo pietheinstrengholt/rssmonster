@@ -259,3 +259,64 @@ event clustering
 topic assignment
 island generation
 affinity calculations
+
+# Vector hierarchy
+Article Vector      = semantic content
+Event Vector        = current news story
+Topic Vector        = stable knowledge domain
+Interest Vector     = user preference profile
+
+## Article vectors
+Purpose: Represent the actual semantic meaning of a single article.
+
+Generated from:
+
+title
+summary
+extracted content
+entities
+keywords
+
+Important: Immutable after creation.
+
+## Event vectors
+Purpose: Represent the center of a cluster of similar articles.
+
+Usually:
+
+event.vector = centroid(article vectors)
+
+Important: Recomputed as articles are added.
+
+## Topic vectors
+
+This is the most important vector layer.
+
+Purpose: Represent a long-term semantic domain.
+
+How to build them
+
+Usually:
+
+topic.vector = weighted centroid(event vectors)
+
+Important: Slowly evolves over time. Should NOT fluctuate heavily.
+
+## Interest Island vectors
+
+This is effectively the user's semantic identity.
+
+Purpose: Represent a coherent cluster of user interests.
+
+Island vector =
+  70% topic affinities
+  20% event affinities
+  10% recent article interactions
+
+When using articles to influence the island vector, we should weight them by interaction type:
+
+clicked articles
+starred articles
+negatively interacted articles
+
+Important: Most dynamic vector in the system. Should evolve continuously.

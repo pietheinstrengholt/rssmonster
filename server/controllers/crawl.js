@@ -3,8 +3,7 @@ const { Feed } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
-import { incrementalClusterForUser } from '../services/events/reclusterForUser.js';
-import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+import { embedArticles } from '../services/articles/embedArticles.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -99,7 +98,15 @@ const getFeeds = async (userId = null) => {
  * ------------------------------------------------------------------ */
 
 // Core crawl function with shared feed processing
-const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
+const performCrawl = async (userId = null, options = {}) => {
+  const {
+    waitForEmbedding = false,
+    // Backward compatibility for older callers.
+    waitForCluster = false
+  } = options;
+
+  const shouldWaitForEmbedding = waitForEmbedding || waitForCluster;
+
   const feeds = await getFeeds(userId);
 
   let processedCount = 0;
@@ -266,56 +273,38 @@ const performCrawl = async (userId = null, { waitForCluster = false } = {}) => {
     crawlTimedOut
   };
 
-  // Post-ingest incremental clustering (unclustered articles only)
-  // Resolve actual userIds from processed feeds
-  const clusterUserIds = userId
+  // Post-ingest embedding: ensure article vectors are available for downstream pipelines
+  const embeddingUserIds = userId
     ? [userId]
     : [...processedUserIds];
 
-  if (clusterUserIds.length) {
+  if (embeddingUserIds.length) {
     console.log(
-      `[CLUSTER] Starting post-ingest incremental clustering for ${clusterUserIds.length} user(s)`
+      `[EMBED] Starting post-ingest embedding for ${embeddingUserIds.length} user(s)`
     );
 
-    const clusterAll = async () => {
-      const rescoringSummary = [];
-
-      for (const uid of clusterUserIds) {
+    const embedAll = async () => {
+      for (const uid of embeddingUserIds) {
         try {
-          await incrementalClusterForUser(uid);
+          const embedSummary = await embedArticles(uid);
+          console.log(
+            `[EMBED] user=${uid} scanned=${embedSummary.scannedCount} ` +
+            `reused=${embedSummary.reusedCount} embedded=${embedSummary.embeddedCount} ` +
+            `skipped=${embedSummary.skippedCount}`
+          );
         } catch (err) {
-          console.error(`[CLUSTER] Incremental clustering failed for user ${uid}:`, err);
-          continue;
-        }
-
-        try {
-          // Recompute islands and persist per-article interest scores after clustering updates topic links.
-          const islandResult = await buildInterestIslandsForUser(uid);
-          rescoringSummary.push({
-            userId: uid,
-            rescoredArticleCount: Number(islandResult?.rescoredArticleCount || 0)
-          });
-        } catch (err) {
-          console.error(`[ISLANDS] Interest island rebuild failed for user ${uid}:`, err);
+          console.error(`[EMBED] Article embedding failed for user ${uid}:`, err);
         }
       }
 
-      if (rescoringSummary.length) {
-        const summaryText = rescoringSummary
-          .map(item => `user=${item.userId}: rescored=${item.rescoredArticleCount}`)
-          .join(' | ');
-
-        console.log(`[ISLANDS] Post-crawl article rescoring summary: ${summaryText}`);
-      }
-
-      console.log('[CLUSTER] Incremental clustering completed');
+      console.log('[EMBED] Post-ingest embedding completed');
     };
 
-    if (waitForCluster) {
-      await clusterAll();
+    if (shouldWaitForEmbedding) {
+      await embedAll();
     } else {
-      clusterAll().catch(err => {
-        console.error('[CLUSTER] Incremental clustering failed:', err);
+      embedAll().catch(err => {
+        console.error('[EMBED] Post-ingest embedding failed:', err);
       });
     }
   }

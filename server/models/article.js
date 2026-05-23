@@ -82,6 +82,10 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      articleVector: {
+        type: DataTypes.JSON,
+        allowNull: true
+      },
       eventId: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -98,7 +102,7 @@ export default (sequelize) => {
          * for efficient topic-level queries without JOIN traversal. This maintains
          * consistency: article.topicId always equals article.event.topicId (if event exists).
          * 
-         * See: services/events/assignArticleToEvent.js for assignment logic.
+         * See: services/articles/assignArticleToEvent.js for assignment logic.
          */
         type: DataTypes.INTEGER,
         allowNull: true

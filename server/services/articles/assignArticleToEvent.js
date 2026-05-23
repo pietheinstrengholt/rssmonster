@@ -1,7 +1,9 @@
-// services/events/assignArticleToEvent.js
+// services/articles/assignArticleToEvent.js
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
-import { assignSemanticUnitToTopic } from './assignEventToTopic.js';
+import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
+import { createAndAssignEvent as createEventFromCandidates } from '../events/createEvents.js';
+import { assignArticleToExistingEvent as updateExistingEvent } from '../events/updateEvents.js';
 import {
   EVENT_SIM_THRESHOLD,
   MAX_CANDIDATES,
@@ -9,12 +11,10 @@ import {
   EVENT_RECENCY_HALF_LIFE_HOURS,
   EVENT_MIN_HEADLINE_SIM,
   EVENT_MIN_SHARED_ENTITY_OVERLAP,
-  EVENT_LIFECYCLE,
-  EVENT_VECTOR_ALPHA,
   PRIMARY_TOPIC_THRESHOLD,
   SECONDARY_TOPIC_THRESHOLD,
   MAX_TOPICS_PER_ARTICLE
-} from './semanticConfig.js';
+} from '../config/semanticConfig.js';
 
 const { Article, Event, ArticleTopic, EventTopic } = db;
 const DUPLICATE_HEADLINE_SIM = 0.92;
@@ -113,37 +113,6 @@ function recencyDecayMultiplier(lastSeenAt) {
   return Math.pow(0.5, ageHours / halfLife);
 }
 
-function resolveEventStatus(articleCount, lastSeenAt) {
-  const now = Date.now();
-  const lastSeenTs = toTimestamp(lastSeenAt);
-  if (!Number.isFinite(lastSeenTs)) return 'archived';
-
-  const ageHours = Math.max(0, (now - lastSeenTs) / (1000 * 60 * 60));
-
-  if (ageHours >= EVENT_LIFECYCLE.coolingHours) {
-    return 'archived';
-  }
-
-  if (ageHours > EVENT_LIFECYCLE.activeFreshHours) {
-    return 'cooling';
-  }
-
-  if (articleCount <= EVENT_LIFECYCLE.emergingArticleMax) {
-    return 'emerging';
-  }
-
-  return 'active';
-}
-
-function blendEventVector(existingVector, incomingVector) {
-  if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
-  if (existingVector.length !== incomingVector.length) return incomingVector;
-
-  return existingVector.map(
-    (value, index) => value * (1 - EVENT_VECTOR_ALPHA) + incomingVector[index] * EVENT_VECTOR_ALPHA
-  );
-}
-
 function buildMatchSignal({ article, event, articleEventVector }) {
   const semantic = cosineSimilarity(articleEventVector, event.eventVector);
   const headline = headlineSimilarity(article.title, event.name || '');
@@ -203,38 +172,6 @@ function debugEventLog(message, payload = null) {
   }
 
   console.log(`[EVENT DEBUG] ${message}`, payload);
-}
-
-async function updateSourceDiversity(eventId, userId) {
-  const sourceCount = await Article.count({
-    where: { eventId, userId },
-    distinct: true,
-    col: 'feedId'
-  });
-
-  const sourceDiversityScore = Math.log(sourceCount + 1);
-
-  await Event.update(
-    { sourceCount, sourceDiversityScore },
-    { where: { id: eventId } }
-  );
-
-  return { sourceCount, sourceDiversityScore };
-}
-
-function generateEventName(article) {
-  if (!article?.title) return null;
-
-  let name = article.title
-    .replace(/\s*[-\u2013\u2014|:]\s*[^-\u2013\u2014|:]+$/, '')
-    .replace(/\s+/g, ' ')
-    .trim();
-
-  if (name.length > 120) {
-    name = name.slice(0, 120).replace(/\s+\S*$/, '') + '...';
-  }
-
-  return name || null;
 }
 
 function normalizeTopicAssignments(assignments = []) {
@@ -420,154 +357,33 @@ export class EventCache {
   }
 }
 
-async function assignArticleToExistingEvent({
-  article,
-  articleEventVector,
-  bestEvent,
-  cache,
-  bestScore,
-  matchSignal,
-  topicsCache,
-  assignmentContext
-}) {
-  const newCount = bestEvent.articleCount + 1;
-  const updatedEventVector = blendEventVector(bestEvent.eventVector, articleEventVector);
-
-  const seenAt = article.published || new Date();
-  const status = resolveEventStatus(newCount, seenAt);
-
-  await article.update({ eventId: bestEvent.id });
-
-  const [, diversity] = await Promise.all([
-    bestEvent.update({
-      eventVector: updatedEventVector,
-      articleCount: newCount,
-      lastSeen: seenAt,
-      status
-    }),
-    updateSourceDiversity(bestEvent.id, article.userId)
-  ]);
-
-  const eventTopicAssignments = await deriveEventTopicAssignments({
-    event: bestEvent,
-    eventTopicVector: updatedEventVector,
-    topicsCache,
-    assignmentContext
-  });
-
-  const persistedEventTopics = await persistEventTopicAssignments(bestEvent, eventTopicAssignments);
-  const eventPrimaryTopicId = primaryTopicId(persistedEventTopics);
-
-  await syncEventTopicsToArticles(bestEvent.id, persistedEventTopics);
-
-  article.topicId = eventPrimaryTopicId;
-
-  bestEvent.topicId = eventPrimaryTopicId;
-
-  if (cache) {
-    cache.updateInMemory(bestEvent.id, {
-      topicId: eventPrimaryTopicId,
-      eventVector: updatedEventVector,
-      articleCount: newCount,
-      status,
-      ...diversity
-    });
-  }
-
-  console.log(
-    `[EVENT] Article ${article.id} -> EVENT ${bestEvent.id} (sim=${bestScore.toFixed(3)} headline=${matchSignal.headline.toFixed(2)} time=${matchSignal.temporal.toFixed(2)} entities=${matchSignal.overlap})`
-  );
-}
-
 async function createAndAssignEvent({
   candidateArticles,
   article,
   cache,
   topicsCache,
-  assignmentContext
+  assignmentContext,
+  skipTopicAssignment
 }) {
-  const eventArticles = [...candidateArticles, article];
-  const vectors = eventArticles
-    .map(item => item.eventVector)
-    .filter(vector => Array.isArray(vector));
+  return createEventFromCandidates({
+    candidateArticles,
+    article,
+    cache,
+    skipTopicAssignment,
+    assignTopicsForEvent: async ({ event, eventTopicVector }) => {
+      const eventTopicAssignments = await deriveEventTopicAssignments({
+        event,
+        eventTopicVector,
+        topicsCache,
+        assignmentContext
+      });
 
-  if (!vectors.length) {
-    return null;
-  }
+      const persistedEventTopics = await persistEventTopicAssignments(event, eventTopicAssignments);
+      await syncEventTopicsToArticles(event.id, persistedEventTopics);
 
-  const centroid = vectors[0].map((_, index) => (
-    vectors.reduce((sum, vector) => sum + vector[index], 0) / vectors.length
-  ));
-
-  const timestamps = eventArticles
-    .map(item => item.published)
-    .filter(Boolean)
-    .map(value => new Date(value).getTime())
-    .sort((a, b) => a - b);
-
-  const firstSeen = timestamps.length ? new Date(timestamps[0]) : article.published || new Date();
-  const lastSeen = timestamps.length ? new Date(timestamps[timestamps.length - 1]) : article.published || new Date();
-  const sourceCount = new Set(eventArticles.map(item => item.feedId)).size;
-  const sourceDiversityScore = Math.log(sourceCount + 1);
-  const name = generateEventName(article);
-
-  const eventArticleIds = eventArticles.map(item => item.id);
-
-  const newEvent = await Event.create({
-    userId: article.userId,
-    topicId: null,
-    representativeArticleId: article.id,
-    name,
-    articleCount: eventArticles.length,
-    eventStrength: 0.2,
-    eventVector: centroid,
-    firstSeen,
-    lastSeen,
-    status: resolveEventStatus(eventArticles.length, lastSeen),
-    sourceCount,
-    sourceDiversityScore
-  });
-
-  if (!newEvent?.id) {
-    console.warn(
-      `[EVENT] Failed to create event for article ${article.id}`
-    );
-    return null;
-  }
-
-  await Article.update(
-    { eventId: newEvent.id },
-    {
-      where: {
-        id: { [Op.in]: eventArticleIds }
-      }
+      return primaryTopicId(persistedEventTopics);
     }
-  );
-
-  const eventTopicAssignments = await deriveEventTopicAssignments({
-    event: newEvent,
-    eventTopicVector: centroid,
-    topicsCache,
-    assignmentContext
   });
-
-  const persistedEventTopics = await persistEventTopicAssignments(newEvent, eventTopicAssignments);
-  const primaryEventTopicId = primaryTopicId(persistedEventTopics);
-
-  await syncEventTopicsToArticles(newEvent.id, persistedEventTopics);
-
-  newEvent.topicId = primaryEventTopicId;
-
-  if (cache) {
-    cache.add(newEvent);
-  }
-
-  console.log(
-    `[EVENT] Promoted candidate -> EVENT ${newEvent.id} (articles=${eventArticles.length}, sources=${sourceCount})` +
-      (primaryEventTopicId ? ` (primaryTopic=${primaryEventTopicId})` : '')
-  );
-
-  return newEvent.id;
 }
 
 async function assignTopicOnly({ article }) {
@@ -582,8 +398,16 @@ async function assignTopicOnly({ article }) {
   article.topicId = null;
 }
 
+function resolveArticleVector(record) {
+  if (Array.isArray(record?.eventVector)) return record.eventVector;
+  if (Array.isArray(record?.articleVector)) return record.articleVector;
+  return null;
+}
+
 function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
-  if (!Array.isArray(candidate.eventVector)) {
+  const candidateVector = resolveArticleVector(candidate);
+
+  if (!Array.isArray(candidateVector)) {
     return {
       candidateId: candidate.id,
       semantic: 0,
@@ -597,7 +421,7 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
     };
   }
 
-  const semantic = cosineSimilarity(articleEventVector, candidate.eventVector);
+  const semantic = cosineSimilarity(articleEventVector, candidateVector);
   const meetsSemantic = semantic >= EVENT_SIM_THRESHOLD;
 
   const temporal = temporalProximityScore(article.published, candidate.published || candidate.updatedAt);
@@ -640,7 +464,7 @@ async function findCandidateArticles({ article, articleEventVector }) {
       id: { [Op.ne]: article.id },
       published: { [Op.gte]: cutoff }
     },
-    attributes: ['id', 'feedId', 'title', 'description', 'published', 'eventVector'],
+    attributes: ['id', 'feedId', 'title', 'description', 'published', 'articleVector'],
     order: [['published', 'DESC']],
     limit: MAX_CANDIDATES
   });
@@ -684,6 +508,13 @@ function upsertRunContextRecord(runContext, record) {
   };
 }
 
+function incrementRunStat(runContext, key, amount = 1) {
+  if (!runContext) return;
+
+  runContext.stats ??= {};
+  runContext.stats[key] = Number(runContext.stats[key] || 0) + amount;
+}
+
 function findCandidateArticlesFromContext({ article, articleEventVector, runContext }) {
   const cutoff = new Date((article.published || new Date()).getTime() - EVENT_MAX_GAP_HOURS * 60 * 60 * 1000);
   const cutoffTs = cutoff.getTime();
@@ -691,7 +522,7 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
   const candidatePool = (runContext?.records || []).filter(candidate => {
     if (candidate.id === article.id) return false;
     if (candidate.eventId != null) return false;
-    if (!Array.isArray(candidate.eventVector)) return false;
+    if (!Array.isArray(resolveArticleVector(candidate))) return false;
 
     const publishedTs = toTimestamp(candidate.published);
     if (!Number.isFinite(publishedTs)) return false;
@@ -721,6 +552,7 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
 
 export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null, runContext = null, options = {}) {
   const assignmentContext = options.assignmentContext || 'incremental';
+  const skipTopicAssignment = Boolean(options.skipTopicAssignment);
 
   const article = typeof articleIdOrObj === 'object'
     ? articleIdOrObj
@@ -732,10 +564,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
 
   if (!articleEventVector) {
     await assignTopicOnly({ article });
-
-    console.log(
-      `[EVENT] Article ${article.id} kept topic-only (no event vector)`
-    );
+    incrementRunStat(runContext, 'topicOnlyNoVectorCount');
 
     upsertRunContextRecord(runContext, {
       id: article.id,
@@ -835,18 +664,32 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
 
   if (bestEvent && bestSignal) {
-    await assignArticleToExistingEvent({
+    await updateExistingEvent({
       article,
       articleEventVector,
       bestEvent,
       cache,
       bestScore,
       matchSignal: bestSignal,
-      topicsCache,
-      assignmentContext
+      skipTopicAssignment,
+      assignTopicsForEvent: async ({ event, eventTopicVector }) => {
+        const eventTopicAssignments = await deriveEventTopicAssignments({
+          event,
+          eventTopicVector,
+          topicsCache,
+          assignmentContext
+        });
+
+        const persistedEventTopics = await persistEventTopicAssignments(event, eventTopicAssignments);
+        await syncEventTopicsToArticles(event.id, persistedEventTopics);
+
+        return primaryTopicId(persistedEventTopics);
+      }
     });
 
-    const eventTopicAssignments = await loadEventTopicAssignments(bestEvent.id);
+    const eventTopicAssignments = skipTopicAssignment
+      ? []
+      : await loadEventTopicAssignments(bestEvent.id);
 
     upsertRunContextRecord(runContext, {
       id: article.id,
@@ -859,6 +702,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       eventId: bestEvent.id,
       eventVector: articleEventVector
     });
+
+    incrementRunStat(runContext, 'linkedToExistingEventCount');
 
     return bestEvent.id;
   }
@@ -917,10 +762,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     (REQUIRE_MULTI_SOURCE_FOR_EVENT && corroboratedSourceCount < MIN_EVENT_SOURCES)
   ) {
     await assignTopicOnly({ article });
-
-    console.log(
-      `[EVENT] Article ${article.id} kept topic-only (candidate articles=${corroboratedArticleCount}, sources=${corroboratedSourceCount}, requireMultiSource=${REQUIRE_MULTI_SOURCE_FOR_EVENT})`
-    );
+    incrementRunStat(runContext, 'topicOnlyInsufficientCandidatesCount');
 
     upsertRunContextRecord(runContext, {
       id: article.id,
@@ -942,10 +784,17 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     article,
     cache,
     topicsCache,
-    assignmentContext
+    assignmentContext,
+    skipTopicAssignment
   });
 
-  const eventTopicAssignments = newEventId ? await loadEventTopicAssignments(newEventId) : [];
+  if (newEventId) {
+    incrementRunStat(runContext, 'newEventsCreatedCount');
+  }
+
+  const eventTopicAssignments = (newEventId && !skipTopicAssignment)
+    ? await loadEventTopicAssignments(newEventId)
+    : [];
 
   for (const candidate of candidateArticles) {
     upsertRunContextRecord(runContext, {

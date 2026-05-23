@@ -1,5 +1,16 @@
-// services/events/embedArticle.js
+// services/articles/embedArticle.js
 import OpenAI from 'openai';
+
+/**
+ * Core article embedding utility.
+ *
+ * Responsibilities:
+ * 1) Build embedding input text from article fields.
+ * 2) Request vectors from the embedding provider.
+ * 3) Optionally persist `articleVector` + `embedding_model` on the Article row.
+ *
+ * This is the single source of truth for article-vector creation and storage.
+ */
 
 const EMBEDDING_MODEL = 'text-embedding-3-small';
 
@@ -76,7 +87,34 @@ async function embed(text) {
   return response.data[0].embedding;
 }
 
-export async function embedArticle({ title, contentStripped }) {
+function hasArticleVector(article) {
+  return Array.isArray(article?.articleVector) && article.articleVector.length > 0;
+}
+
+function isArticleInstance(record) {
+  return Boolean(record && typeof record.update === 'function');
+}
+
+export async function embedArticle(articleOrInput, options = {}) {
+  // `persist=true` means this function owns writing vectors to the Article row.
+  const { persist = true } = options;
+  const article = isArticleInstance(articleOrInput) ? articleOrInput : null;
+
+  const title = article ? article.title : articleOrInput?.title;
+  const contentStripped = article
+    ? (article.contentStripped || article.description || '')
+    : (articleOrInput?.contentStripped || '');
+
+  if (article && hasArticleVector(article)) {
+    // Fast-path: skip provider call when vector already exists.
+    return {
+      eventVector: article.articleVector,
+      topicVector: null,
+      embedding_model: article.embedding_model || EMBEDDING_MODEL,
+      reused: true
+    };
+  }
+
   if (!hasApiKey) {
     console.debug('[EMBED] skipped (no OPENAI_API_KEY)');
     return null;
@@ -98,10 +136,22 @@ export async function embedArticle({ title, contentStripped }) {
       topicText.length >= MIN_TOPIC_LENGTH ? embed(topicText) : Promise.resolve(null)
     ]);
 
+    if (article && persist && eventVector) {
+      // Keep persistence logic centralized in this module.
+      await article.update({
+        articleVector: eventVector,
+        embedding_model: EMBEDDING_MODEL
+      });
+
+      article.articleVector = eventVector;
+      article.embedding_model = EMBEDDING_MODEL;
+    }
+
     return {
       eventVector,
       topicVector,
-      embedding_model: EMBEDDING_MODEL
+      embedding_model: EMBEDDING_MODEL,
+      reused: false
     };
   } catch (err) {
     console.warn('[EMBED] failed:', err.message);

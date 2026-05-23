@@ -2,13 +2,17 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
-import { assignArticleToEvent, EventCache } from './assignArticleToEvent.js';
-import embedArticle from './embedArticle.js';
+import { assignArticleToEvent, EventCache } from '../articles/assignArticleToEvent.js';
+import embedArticle from '../articles/embedArticle.js';
 import {
   RECENCY_WINDOW_DAYS,
   EVENT_STRENGTH_CONFIG,
-  EVENT_LIFECYCLE
-} from './semanticConfig.js';
+  EVENT_LIFECYCLE,
+  PRIMARY_TOPIC_THRESHOLD,
+  SECONDARY_TOPIC_THRESHOLD,
+  MAX_TOPICS_PER_ARTICLE
+} from '../config/semanticConfig.js';
+import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
 
 const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
 
@@ -36,7 +40,7 @@ function resolveEventStatus(articleCount, lastSeenAt) {
 }
 
 function buildRecencyWeightedVector(eventArticles) {
-  const embedded = eventArticles.filter(a => Array.isArray(a.eventVector));
+  const embedded = eventArticles.filter(a => Array.isArray(a.articleVector));
   if (!embedded.length) return null;
 
   const sorted = embedded
@@ -45,7 +49,7 @@ function buildRecencyWeightedVector(eventArticles) {
     .slice(0, 24);
 
   const newestTs = new Date(sorted[0].published || 0).getTime();
-  const dim = sorted[0].eventVector.length;
+  const dim = sorted[0].articleVector.length;
 
   const weighted = Array(dim).fill(0);
   let totalWeight = 0;
@@ -57,11 +61,11 @@ function buildRecencyWeightedVector(eventArticles) {
 
     totalWeight += weight;
     for (let i = 0; i < dim; i++) {
-      weighted[i] += article.eventVector[i] * weight;
+      weighted[i] += article.articleVector[i] * weight;
     }
   }
 
-  if (!totalWeight) return sorted[0].eventVector;
+  if (!totalWeight) return sorted[0].articleVector;
 
   return weighted.map(value => value / totalWeight);
 }
@@ -120,6 +124,10 @@ async function summarizeArticleAssignments(articleIds) {
   };
 }
 
+function hasStoredArticleVector(article) {
+  return Array.isArray(article?.articleVector) && article.articleVector.length > 0;
+}
+
 async function recomputeTopicStatsForUser(userId, topicIds) {
   if (!topicIds.length) return;
 
@@ -175,12 +183,184 @@ async function recomputeTopicStatsForUser(userId, topicIds) {
   );
 }
 
-async function assignAndReconcile(userId, articles, label) {
+function normalizeTopicAssignments(assignments = []) {
+  const byTopic = new Map();
+
+  for (const assignment of assignments) {
+    const topicId = Number(assignment?.topicId);
+    const confidence = Number(assignment?.confidence ?? 0);
+
+    if (!Number.isFinite(topicId) || topicId <= 0) continue;
+    if (!Number.isFinite(confidence) || confidence <= 0) continue;
+
+    const existing = byTopic.get(topicId);
+    if (!existing || confidence > existing.confidence) {
+      byTopic.set(topicId, {
+        topicId,
+        confidence,
+        primaryInd: Boolean(assignment?.primaryInd)
+      });
+    }
+  }
+
+  const ranked = [...byTopic.values()]
+    .sort((a, b) => b.confidence - a.confidence)
+    .slice(0, MAX_TOPICS_PER_ARTICLE);
+
+  const withThreshold = ranked.filter(topic => topic.confidence >= SECONDARY_TOPIC_THRESHOLD);
+  const finalList = withThreshold.length ? withThreshold : ranked.slice(0, 1);
+
+  const explicitPrimary = finalList.find(topic => topic.primaryInd) ?? null;
+  const thresholdPrimary = finalList.find(topic => topic.confidence >= PRIMARY_TOPIC_THRESHOLD) ?? null;
+  const primaryTopic = explicitPrimary && explicitPrimary.confidence >= PRIMARY_TOPIC_THRESHOLD
+    ? explicitPrimary
+    : thresholdPrimary;
+
+  return finalList.map((topic, index) => ({
+    topicId: topic.topicId,
+    confidence: Number(topic.confidence.toFixed(4)),
+    rank: index + 1,
+    primaryInd: Boolean(primaryTopic && primaryTopic.topicId === topic.topicId)
+  }));
+}
+
+function primaryTopicId(topicAssignments = []) {
+  return topicAssignments.find(topic => topic.primaryInd)?.topicId ?? null;
+}
+
+async function persistEventTopicAssignments(event, topicAssignments) {
+  const normalizedAssignments = normalizeTopicAssignments(topicAssignments);
+  const primaryId = primaryTopicId(normalizedAssignments);
+
+  await EventTopic.destroy({ where: { eventId: event.id } });
+
+  if (normalizedAssignments.length) {
+    await EventTopic.bulkCreate(
+      normalizedAssignments.map(assignment => ({
+        eventId: event.id,
+        topicId: assignment.topicId,
+        confidence: assignment.confidence,
+        rank: assignment.rank,
+        primaryInd: assignment.primaryInd
+      }))
+    );
+  }
+
+  await event.update({ topicId: primaryId });
+
+  return normalizedAssignments;
+}
+
+async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
+  const normalizedAssignments = normalizeTopicAssignments(eventTopicAssignments);
+  const primaryId = primaryTopicId(normalizedAssignments);
+
+  const eventArticles = await Article.findAll({
+    where: { eventId },
+    attributes: ['id'],
+    raw: true
+  });
+
+  const articleIds = eventArticles.map(article => Number(article.id)).filter(Boolean);
+  if (!articleIds.length) return 0;
+
+  await ArticleTopic.destroy({
+    where: {
+      articleId: { [Op.in]: articleIds }
+    }
+  });
+
+  if (normalizedAssignments.length) {
+    const rows = [];
+    for (const articleId of articleIds) {
+      for (const assignment of normalizedAssignments) {
+        rows.push({
+          articleId,
+          topicId: assignment.topicId,
+          confidence: assignment.confidence,
+          rank: assignment.rank,
+          primaryInd: assignment.primaryInd
+        });
+      }
+    }
+
+    await ArticleTopic.bulkCreate(rows);
+  }
+
+  await Article.update(
+    { topicId: primaryId },
+    {
+      where: {
+        id: { [Op.in]: articleIds }
+      }
+    }
+  );
+
+  return articleIds.length;
+}
+
+async function assignTopicsForEvents(userId, events, { assignmentContext = 'replay' } = {}) {
+  if (!events.length) {
+    return {
+      eventCount: 0,
+      touchedTopicIds: []
+    };
+  }
+
+  const topicsCache = await db.Topic.findAll({
+    where: { userId },
+    order: [['updatedAt', 'DESC']]
+  });
+
+  const touchedTopicIds = new Set();
+
+  for (const event of events) {
+    if (!Array.isArray(event.eventVector) || !event.eventVector.length) {
+      await EventTopic.destroy({ where: { eventId: event.id } });
+      await event.update({ topicId: null });
+      await syncEventTopicsToArticles(event.id, []);
+      continue;
+    }
+
+    const eventTopicAssignments = await assignSemanticUnitToTopic({
+      semanticUnit: {
+        id: event.id,
+        userId: event.userId,
+        title: event.name || `Event ${event.id}`,
+        published: event.lastSeen || event.updatedAt || new Date()
+      },
+      semanticVector: event.eventVector,
+      topicsCache,
+      assignmentContext
+    });
+
+    const persistedAssignments = await persistEventTopicAssignments(event, eventTopicAssignments);
+    await syncEventTopicsToArticles(event.id, persistedAssignments);
+
+    for (const assignment of persistedAssignments) {
+      touchedTopicIds.add(Number(assignment.topicId));
+    }
+  }
+
+  return {
+    eventCount: events.length,
+    touchedTopicIds: [...touchedTopicIds]
+  };
+}
+
+async function assignAndReconcile(userId, articles, label, options = {}) {
+  const { skipTopicAssignment = false } = options;
   const touchedEventIds = new Set();
   const touchedTopicIds = new Set();
   const runContext = {
     records: [],
-    indexById: new Map()
+    indexById: new Map(),
+    stats: {
+      newEventsCreatedCount: 0,
+      linkedToExistingEventCount: 0,
+      topicOnlyNoVectorCount: 0,
+      topicOnlyInsufficientCandidatesCount: 0
+    }
   };
 
   const cache = await EventCache.forUser(userId);
@@ -190,14 +370,37 @@ async function assignAndReconcile(userId, articles, label) {
     order: [['updatedAt', 'DESC']]
   });
 
+  let reusedEmbeddingCount = 0;
+  let generatedEmbeddingCount = 0;
+
   const embedResults = await Promise.all(
-    articles.map(article =>
-      embedArticle({
-        title: article.title,
-        contentStripped: article.contentStripped || article.description || ''
-      })
-    )
+    articles.map(async article => {
+      if (hasStoredArticleVector(article)) {
+        reusedEmbeddingCount++;
+
+        return {
+          eventVector: article.articleVector,
+          embedding_model: article.embedding_model || null
+        };
+      }
+
+      const vectors = await embedArticle(article, { persist: true });
+
+      if (!vectors?.eventVector) {
+        return vectors;
+      }
+
+      generatedEmbeddingCount++;
+
+      return vectors;
+    })
   );
+
+  if (reusedEmbeddingCount || generatedEmbeddingCount) {
+    console.log(
+      `[EVENT] ${label}: embeddings reused=${reusedEmbeddingCount} generated=${generatedEmbeddingCount}`
+    );
+  }
 
   for (let i = 0; i < articles.length; i++) {
     const vectors = embedResults[i];
@@ -209,13 +412,25 @@ async function assignAndReconcile(userId, articles, label) {
       vectors,
       topicsCache,
       runContext,
-      { assignmentContext: label === 'replay' ? 'replay' : 'incremental' }
+      {
+        assignmentContext: label === 'replay' ? 'replay' : 'incremental',
+        skipTopicAssignment
+      }
     );
 
     if (eventId) {
       touchedEventIds.add(eventId);
     }
   }
+
+  const assignmentSummary = [
+    `newEvents=${runContext.stats.newEventsCreatedCount}`,
+    `linkedToExisting=${runContext.stats.linkedToExistingEventCount}`,
+    `topicOnlyNoVector=${runContext.stats.topicOnlyNoVectorCount}`,
+    `topicOnlyInsufficient=${runContext.stats.topicOnlyInsufficientCandidatesCount}`
+  ].join(' ');
+
+  console.log(`[EVENT] ${label}: assignment summary ${assignmentSummary}`);
 
   if (!touchedEventIds.size) {
     console.log(`[EVENT] ${label}: no events created or updated`);
@@ -235,7 +450,7 @@ async function assignAndReconcile(userId, articles, label) {
 
   const allEventArticles = await Article.findAll({
     where: { eventId: { [Op.in]: touchedIds } },
-    attributes: ['id', 'eventId', 'published']
+    attributes: ['id', 'eventId', 'published', 'articleVector']
   });
 
   const articlesByEventId = {};
@@ -337,6 +552,10 @@ async function assignAndReconcile(userId, articles, label) {
     })
   );
 
+  if (skipTopicAssignment) {
+    return [];
+  }
+
   const touchedEventTopicRows = await EventTopic.findAll({
     where: { eventId: { [Op.in]: touchedIds } },
     attributes: ['topicId'],
@@ -365,7 +584,8 @@ async function assignAndReconcile(userId, articles, label) {
   return touchedTopicList;
 }
 
-export async function incrementalClusterForUser(userId) {
+export async function incrementalClusterForUser(userId, options = {}) {
+  const { skipTopicAssignment = false } = options;
   console.log(`[EVENT] Incremental clustering for user ${userId}`);
 
   const cutoffDate = new Date();
@@ -391,12 +611,15 @@ export async function incrementalClusterForUser(userId) {
 
   console.log(`[EVENT] ${articles.length} unclustered articles to assign`);
 
-  await assignAndReconcile(userId, articles, 'incremental');
+  await assignAndReconcile(userId, articles, 'incremental', {
+    skipTopicAssignment
+  });
 
   console.log(`[EVENT] Finished incremental pass for user ${userId}`);
 }
 
-export async function reclusterForUser(userId) {
+export async function reclusterForUser(userId, options = {}) {
+  const { skipTopicAssignment = false } = options;
   console.log(`[EVENT] Window replay clustering for user ${userId}`);
 
   const cutoffDate = new Date();
@@ -487,8 +710,13 @@ export async function reclusterForUser(userId) {
     console.log(`[EVENT] Removed ${deletedCount} empty events`);
   }
 
-  const newTouchedTopicIds = await assignAndReconcile(userId, windowArticles, 'replay');
-  await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...newTouchedTopicIds])]);
+  const newTouchedTopicIds = await assignAndReconcile(userId, windowArticles, 'replay', {
+    skipTopicAssignment
+  });
+
+  if (!skipTopicAssignment) {
+    await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...newTouchedTopicIds])]);
+  }
 
   const summary = await summarizeArticleAssignments(windowArticleIds);
 
@@ -504,6 +732,67 @@ export async function reclusterForUser(userId) {
     `[EVENT] Finished window replay for user ${userId}` +
     ` (window=${RECENCY_WINDOW_DAYS}d, articles=${windowArticles.length},` +
     ` pruned=${deletedCount})`
+  );
+}
+
+export async function rebuildTopicsForUser(userId, options = {}) {
+  const { assignmentContext = 'replay' } = options;
+
+  console.log(`[TOPIC] Rebuilding topics for user ${userId}`);
+
+  const userTopics = await Topic.findAll({
+    where: { userId },
+    attributes: ['id'],
+    raw: true
+  });
+  const existingTopicIds = userTopics.map(topic => Number(topic.id)).filter(Boolean);
+
+  const events = await Event.findAll({
+    where: { userId },
+    order: [
+      ['lastSeen', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  await EventTopic.destroy({
+    where: {
+      eventId: {
+        [Op.in]: events.map(event => event.id)
+      }
+    }
+  });
+
+  await Article.update(
+    { topicId: null },
+    { where: { userId } }
+  );
+
+  if (existingTopicIds.length) {
+    await ArticleTopic.destroy({
+      where: {
+        topicId: { [Op.in]: existingTopicIds }
+      }
+    });
+  }
+
+  await Event.update(
+    { topicId: null },
+    { where: { userId } }
+  );
+
+  const { eventCount, touchedTopicIds } = await assignTopicsForEvents(userId, events, {
+    assignmentContext
+  });
+
+  await recomputeTopicStatsForUser(
+    userId,
+    [...new Set([...existingTopicIds, ...touchedTopicIds])]
+  );
+
+  console.log(
+    `[TOPIC] Rebuild summary user=${userId} ` +
+    `events=${eventCount} topicsTouched=${touchedTopicIds.length}`
   );
 }
 
