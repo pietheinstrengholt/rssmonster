@@ -69,4 +69,29 @@ describe('computeRecommended', () => {
     expect(multiSourceScore).toBeGreaterThan(singleSourceScore);
     expect(multiSourceScore - singleSourceScore).toBeGreaterThan(0.2);
   });
+
+  it('prioritizes articles with stronger interest affinity', () => {
+    const baseArticle = {
+      freshness: 0.5,
+      quality: 0.7,
+      cluster: {
+        articleCount: 12,
+        sourceCount: 3,
+        sourceDiversityScore: 1.4
+      },
+      Tags: []
+    };
+
+    const lowInterestScore = computeRecommended({
+      ...baseArticle,
+      interestScore: -1
+    });
+    const highInterestScore = computeRecommended({
+      ...baseArticle,
+      interestScore: 1
+    });
+
+    expect(highInterestScore).toBeGreaterThan(lowInterestScore);
+    expect(highInterestScore - lowInterestScore).toBeCloseTo(0.15, 3);
+  });
 });

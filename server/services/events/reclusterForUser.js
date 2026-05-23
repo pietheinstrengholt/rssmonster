@@ -36,6 +36,9 @@ async function summarizeActiveEvents(userId) {
   const activeEventCount = events.length;
   const totalEventArticles = events.reduce((sum, event) => sum + Number(event.articleCount || 0), 0);
   const largestEventSize = events.reduce((max, event) => Math.max(max, Number(event.articleCount || 0)), 0);
+  const singleArticleEvents = events.filter(event => Number(event.articleCount || 0) === 1).length;
+  const twoArticleEvents = events.filter(event => Number(event.articleCount || 0) === 2).length;
+  const fivePlusArticleEvents = events.filter(event => Number(event.articleCount || 0) >= 5).length;
   const averageArticlesPerEvent = activeEventCount
     ? (totalEventArticles / activeEventCount).toFixed(1)
     : '0.0';
@@ -43,7 +46,10 @@ async function summarizeActiveEvents(userId) {
   return {
     activeEventCount,
     averageArticlesPerEvent,
-    largestEventSize
+    largestEventSize,
+    singleArticleEvents,
+    twoArticleEvents,
+    fivePlusArticleEvents
   };
 }
 
@@ -71,6 +77,10 @@ async function logEventProcessingSummary(userId, articles, runContext) {
   console.log('');
   console.log(eventSummaryLine('Average articles per event', activeEventSummary.averageArticlesPerEvent));
   console.log(eventSummaryLine('Largest event size', `${activeEventSummary.largestEventSize} articles`));
+  console.log('');
+  console.log(`[EVENT] events 1 Article=${activeEventSummary.singleArticleEvents}`);
+  console.log(`[EVENT] events 2 Articles=${activeEventSummary.twoArticleEvents}`);
+  console.log(`[EVENT] events with 5+ Articles=${activeEventSummary.fivePlusArticleEvents}`);
 }
 
 function resolveEventStatus(articleCount, lastSeenAt) {

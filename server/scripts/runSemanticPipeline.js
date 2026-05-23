@@ -48,7 +48,7 @@ const run = async () => {
       const embedSummary = await embedArticles(uid);
       console.log(
         `[PHASE 2/5] user=${uid} scanned=${embedSummary.scannedCount} ` +
-        `reused=${embedSummary.reusedCount} embedded=${embedSummary.embeddedCount} ` +
+        `embedded=${embedSummary.embeddedCount} ` +
         `skipped=${embedSummary.skippedCount}`
       );
     }
