@@ -44,16 +44,218 @@ RSSMonster is an intelligent RSS reader and aggregation engine built with a **Vu
 - **Naming:** camelCase for variables/functions, PascalCase for components/models
 - **Comments:** Minimal comments unless required for complex logic (match existing style)
 
-## Project Structure
+# Core Concepts
 
-### Root Directory Layout
+## Feed
 
-`/client/` (Vue.js frontend), `/server/` (Express backend), `/.github/workflows/` (CI/CD), `/.github/codeql/` (security config), `docker-compose.yml` (dev), `Dockerfile` (production build).
+A Feed represents an external RSS or Atom source.
 
-### Server Structure (`/server`)
+Examples:
+- Hacker News
+- TechCrunch
+- CNN
+- Reddit RSS feeds
 
-**Key directories:** `app.js` (main setup), `bootstrap.js` (entry point), `models/` (Sequelize factory pattern), `controllers/` (business logic), `routes/` (Express routes including `fever.js`, `greader.js`, `mcp.js`, `agent.js`), `migrations/` (sequential), `seeders/` (demo data), `scripts/` (`crawl.js`, `reclusterArticles.js`, `calculateFeedTrust.js`), `config/config.cjs` (database config).
+Purpose:
+- Source of incoming articles
+- Maintains crawl metadata and source identity
 
-### Client Structure (`/client`)
+Relationships:
+- A Feed has many Articles
 
-**Key directories:** `src/main.js` (Vue init), `src/App.vue` (root), `src/components/` (Desktop/, Mobile/, Modals/, Onboarding/), `src/services/` (Axios API client), `src/store/` (Pinia), `vite.config.js` (PWA, SCSS config).
+## Article
+
+An Article is the atomic content unit ingested from a feed.
+
+Examples:
+- A news post
+- Blog article
+- Podcast update
+- Research publication
+
+Purpose:
+- Consumable content for users
+- Stores embeddings and metadata
+- Connected to Events
+
+Important characteristics:
+- Articles are ephemeral
+- Articles should not be used as long-term semantic anchors
+- Each article has a vector embedding
+
+Relationships:
+- Belongs to a Feed
+- Belongs to an Event
+- Can receive user interactions
+- Can contribute to Interest Islands indirectly
+
+## Event
+
+An Event is a temporary cluster of semantically similar Articles.
+
+Examples:
+- "OpenAI releases GPT-6"
+- "Apple announces new iPhone"
+- "Databricks acquires company X"
+
+Purpose:
+- Deduplicate similar news coverage
+- Group multiple articles discussing the same real-world event
+- Reduce noise in recommendations
+
+Important characteristics:
+- Events are ephemeral and time-sensitive
+- Events may merge or expire
+- Events are generated through vector similarity clustering
+
+Relationships:
+- Contains many Articles
+- Belongs to one or more Topics
+
+## Topic
+
+A Topic is a stable semantic category that groups related Events.
+
+Examples:
+- Generative AI
+- Cloud Computing
+- Cybersecurity
+- European Politics
+- Formula 1
+
+Purpose:
+- Central semantic layer of the recommendation system
+- Long-lived representation of user interests
+- Stable recommendation anchor
+
+Important characteristics:
+- Topics are durable and stable
+- Topics outlive Events
+- Topics may be curated, ML-generated, or hybrid
+- Topics have embeddings
+
+Relationships:
+- Contains many Events
+- Connected to Interest Islands
+- Used for recommendation candidate generation
+
+## Interest Island
+
+An Interest Island is a coherent cluster of user interests.
+
+An individual user can have multiple Interest Islands.
+
+Examples:
+- AI + Databricks + LLMs
+- Geopolitics + China + Taiwan
+- Formula 1 + Ferrari + Racing
+
+Purpose:
+- Represent multiple dimensions of user interests
+- Avoid reducing a user to a single embedding
+- Drive personalized recommendations
+
+Important characteristics:
+- Interest Islands are dynamic
+- Generated from user behavior
+- Have embeddings
+- Connected primarily to Topics, not directly to Articles
+
+Relationships:
+- Belongs to a User
+- Connected to Topics
+- May temporarily connect to Events
+- Built from interaction signals
+
+# Recommendation Philosophy
+
+The system is topic-centric, not article-centric.
+
+The recommendation flow should be:
+
+Interest Island
+    ↓
+Nearest Topics
+    ↓
+Active Events
+    ↓
+Best Articles
+
+## User Interaction Signals
+
+Interest Islands are built from behavioral signals.
+
+Examples:
+
+clickInd (e.g. "Clicked" vs "Not clicked")
+starInd (e.g. "Starred" vs "Not starred")
+negativeInd (e.g. "Not interested")
+
+## Embedding Strategy
+
+Embeddings are fundamental to the architecture.
+
+Embeddings exist for:
+
+Articles
+Events
+Topics
+Interest Islands
+
+Recommendations are generated using vector similarity and precomputed relations.
+
+Heavy vector calculations should happen offline.
+
+# Architectural Principles
+1. Topics are the semantic backbone
+
+Topics are the primary long-term semantic entity.
+
+Events and Articles are transient.
+
+2. Events reduce duplication
+
+Multiple articles about the same news item should collapse into a single Event.
+
+3. Users have multiple interests
+
+Never model a user with a single embedding.
+
+Use multiple Interest Islands.
+
+4. Precompute relationships whenever possible
+
+Avoid runtime-heavy vector searches.
+
+Prefer cached and materialized relationships such as:
+
+island_topics
+topic_events
+event_articles
+
+# Data Model
+
+## Core Tables
+feeds
+articles
+events
+topics
+interest_islands
+users
+
+## Relation Tables
+article_events
+event_topics
+user_islands
+island_topics
+
+# Processing Pipeline
+Offline Processing
+
+Runs asynchronously:
+
+article embeddings
+event clustering
+topic assignment
+island generation
+affinity calculations
