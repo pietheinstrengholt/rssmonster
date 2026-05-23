@@ -1,13 +1,20 @@
 /**
  * Compute the runtime recommended score for an article.
  *
- * Combines time relevance, content quality, coverage signal,
+ * Combines time relevance, user interest, content quality, coverage signal,
  * and source diversity into a single ranking signal.
  * Note: feedTrust is already included in article.quality (from the Article model virtual field).
  */
 export function computeRecommended(article) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
+
+  // User interest signal: island/topic affinity stored on the article.
+  // Stored values can be negative, neutral, or positive; normalize -1..1 into 0..1.
+  const rawInterestScore = Number(article.interestScore ?? 0);
+  const interestScore = Number.isFinite(rawInterestScore)
+    ? Math.max(0, Math.min(1, (rawInterestScore + 1) / 2))
+    : 0.5;
 
   // Content signal: editorial > promotional, neutral tone preferred
   // (includes feedTrust boost via the Article model's quality virtual field)
@@ -54,11 +61,12 @@ export function computeRecommended(article) {
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
   // Weighted sum: balances all signals to produce recommended score (0–1)
-  // Weights: quality (6%), freshness (64%), coverage (16%), crossSource (8%), corroboration (6%)
+  // Weights: freshness (49%), interest (15%), quality (6%), coverage (16%), crossSource (8%), corroboration (6%)
   // Plus a flat 0.15 boost for rule-tagged articles
   const recommended =
     0.06 * quality +
-    0.64 * freshness +
+    0.49 * freshness +
+    0.15 * interestScore +
     0.16 * coverage +
     0.08 * crossSource +
     0.06 * corroboration +
@@ -73,6 +81,10 @@ export function computeRecommended(article) {
  */
 export function computeRecommendedBreakdown(article) {
   const freshness = article.freshness ?? 0.5;
+  const rawInterestScore = Number(article.interestScore ?? 0);
+  const interestScore = Number.isFinite(rawInterestScore)
+    ? Math.max(0, Math.min(1, (rawInterestScore + 1) / 2))
+    : 0.5;
   const quality = article.quality ?? 0.7;
 
   const cluster =
@@ -104,7 +116,8 @@ export function computeRecommendedBreakdown(article) {
 
   const recommended = Math.max(0, Math.min(1,
     0.06 * quality +
-    0.64 * freshness +
+    0.49 * freshness +
+    0.15 * interestScore +
     0.16 * coverage +
     0.08 * crossSource +
     0.06 * corroboration +
@@ -113,6 +126,7 @@ export function computeRecommendedBreakdown(article) {
 
   return {
     freshness,
+    interestScore,
     quality,
     coverage,
     crossSource,
