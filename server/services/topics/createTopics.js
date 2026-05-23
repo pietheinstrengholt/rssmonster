@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 import {
+  MIN_ARTICLES_FOR_TOPIC_CREATION,
   MIN_EVENTS_FOR_TOPIC_CREATION,
   collectTopicSeedEvents,
   averageVector,
@@ -20,26 +21,37 @@ export async function createTopic({
 }) {
   const topicSeedEvents = await collectTopicSeedEvents(semanticUnit.userId, semanticVector, currentEventId);
   const topSeedSimilarity = Number((topicSeedEvents[0]?.similarity || 0).toFixed(4));
+  const seedArticleCount = topicSeedEvents.reduce(
+    (sum, item) => sum + Math.max(0, Number(item.event.articleCount || 0)),
+    0
+  );
+  const hasEnoughEventEvidence = topicSeedEvents.length >= MIN_EVENTS_FOR_TOPIC_CREATION;
+  const hasEnoughArticleEvidence = seedArticleCount >= MIN_ARTICLES_FOR_TOPIC_CREATION;
 
   debugTopicGate('topic-creation-gate-evaluated', {
     userId: semanticUnit.userId,
     eventId: currentEventId,
     seedCount: topicSeedEvents.length,
-    threshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+    eventThreshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+    seedArticleCount,
+    articleThreshold: MIN_ARTICLES_FOR_TOPIC_CREATION,
     topSimilarity: topSeedSimilarity
   });
 
-  if (topicSeedEvents.length < MIN_EVENTS_FOR_TOPIC_CREATION) {
+  if (!hasEnoughEventEvidence && !hasEnoughArticleEvidence) {
     console.log(
       `[TOPIC] Creation gated: event=${currentEventId} user=${semanticUnit.userId}` +
       ` seeds=${topicSeedEvents.length}/${MIN_EVENTS_FOR_TOPIC_CREATION}` +
+      ` articles=${seedArticleCount}/${MIN_ARTICLES_FOR_TOPIC_CREATION}` +
       ` topSim=${topSeedSimilarity}`
     );
     debugTopicGate('topic-creation-gate-blocked', {
       userId: semanticUnit.userId,
       eventId: currentEventId,
       seedCount: topicSeedEvents.length,
-      threshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+      eventThreshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+      seedArticleCount,
+      articleThreshold: MIN_ARTICLES_FOR_TOPIC_CREATION,
       topSimilarity: topSeedSimilarity
     });
 
@@ -64,7 +76,9 @@ export async function createTopic({
     eventId: currentEventId,
     topicId: createdTopic.id,
     seedCount: topicSeedEvents.length,
-    threshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+    eventThreshold: MIN_EVENTS_FOR_TOPIC_CREATION,
+    seedArticleCount,
+    articleThreshold: MIN_ARTICLES_FOR_TOPIC_CREATION,
     topSimilarity: topSeedSimilarity
   });
 

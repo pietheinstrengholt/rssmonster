@@ -15,6 +15,63 @@ import {
 import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
 
 const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
+const ACTIVE_EVENT_STATUSES = ['emerging', 'active', 'cooling'];
+const EVENT_SUMMARY_LABEL_WIDTH = 31;
+
+function eventSummaryLine(label, value) {
+  const dots = '.'.repeat(Math.max(1, EVENT_SUMMARY_LABEL_WIDTH - label.length));
+  return `[EVENT] ${label}${dots} ${value}`;
+}
+
+async function summarizeActiveEvents(userId) {
+  const events = await Event.findAll({
+    where: {
+      userId,
+      status: { [Op.in]: ACTIVE_EVENT_STATUSES }
+    },
+    attributes: ['articleCount'],
+    raw: true
+  });
+
+  const activeEventCount = events.length;
+  const totalEventArticles = events.reduce((sum, event) => sum + Number(event.articleCount || 0), 0);
+  const largestEventSize = events.reduce((max, event) => Math.max(max, Number(event.articleCount || 0)), 0);
+  const averageArticlesPerEvent = activeEventCount
+    ? (totalEventArticles / activeEventCount).toFixed(1)
+    : '0.0';
+
+  return {
+    activeEventCount,
+    averageArticlesPerEvent,
+    largestEventSize
+  };
+}
+
+async function logEventProcessingSummary(userId, articles, runContext) {
+  const totalArticles = articles.length;
+  const linkedToExisting = Number(runContext.stats.linkedToExistingEventCount || 0);
+  const newEventsCreated = Number(runContext.stats.newEventsCreatedCount || 0);
+  const unassigned = Number(runContext.stats.topicOnlyNoVectorCount || 0) +
+    Number(runContext.stats.topicOnlyInsufficientCandidatesCount || 0) +
+    Number(runContext.stats.eventVectorSkippedCount || 0);
+  const reuseRatio = totalArticles ? ((linkedToExisting / totalArticles) * 100).toFixed(1) : '0.0';
+  const newEventRatio = totalArticles ? ((newEventsCreated / totalArticles) * 100).toFixed(1) : '0.0';
+  const activeEventSummary = await summarizeActiveEvents(userId);
+
+  console.log('');
+  console.log(eventSummaryLine('Unclustered articles', totalArticles));
+  console.log(eventSummaryLine('Active events', activeEventSummary.activeEventCount));
+  console.log('');
+  console.log(eventSummaryLine('Articles linked to events', linkedToExisting));
+  console.log(eventSummaryLine('New events created', newEventsCreated));
+  console.log(eventSummaryLine('Unassigned', unassigned));
+  console.log('');
+  console.log(eventSummaryLine('Event reuse ratio', `${reuseRatio}%`));
+  console.log(eventSummaryLine('New event ratio', `${newEventRatio}%`));
+  console.log('');
+  console.log(eventSummaryLine('Average articles per event', activeEventSummary.averageArticlesPerEvent));
+  console.log(eventSummaryLine('Largest event size', `${activeEventSummary.largestEventSize} articles`));
+}
 
 function resolveEventStatus(articleCount, lastSeenAt) {
   const now = Date.now();
@@ -374,7 +431,8 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
       newEventsCreatedCount: 0,
       linkedToExistingEventCount: 0,
       topicOnlyNoVectorCount: 0,
-      topicOnlyInsufficientCandidatesCount: 0
+      topicOnlyInsufficientCandidatesCount: 0,
+      eventVectorSkippedCount: 0
     }
   };
 
@@ -419,7 +477,10 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
 
   for (let i = 0; i < articles.length; i++) {
     const vectors = embedResults[i];
-    if (!vectors?.eventVector) continue;
+    if (!vectors?.eventVector) {
+      runContext.stats.eventVectorSkippedCount++;
+      continue;
+    }
 
     const eventId = await assignArticleToEvent(
       articles[i],
@@ -442,12 +503,14 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     `newEvents=${runContext.stats.newEventsCreatedCount}`,
     `linkedToExisting=${runContext.stats.linkedToExistingEventCount}`,
     `topicOnlyNoVector=${runContext.stats.topicOnlyNoVectorCount}`,
-    `topicOnlyInsufficient=${runContext.stats.topicOnlyInsufficientCandidatesCount}`
+    `topicOnlyInsufficient=${runContext.stats.topicOnlyInsufficientCandidatesCount}`,
+    `eventVectorSkipped=${runContext.stats.eventVectorSkippedCount}`
   ].join(' ');
 
   console.log(`[EVENT] ${label}: assignment summary ${assignmentSummary}`);
 
   if (!touchedEventIds.size) {
+    await logEventProcessingSummary(userId, articles, runContext);
     console.log(`[EVENT] ${label}: no events created or updated`);
     return [];
   }
@@ -566,6 +629,8 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
       });
     })
   );
+
+  await logEventProcessingSummary(userId, articles, runContext);
 
   if (skipTopicAssignment) {
     return [];

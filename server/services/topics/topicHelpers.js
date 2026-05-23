@@ -9,6 +9,7 @@ import {
 const { Event } = db;
 
 const MIN_EVENTS_FOR_TOPIC_CREATION = Number.parseInt(process.env.TOPIC_MIN_EVENTS_FOR_CREATION || '2', 10);
+const MIN_ARTICLES_FOR_TOPIC_CREATION = Number.parseInt(process.env.TOPIC_MIN_ARTICLES_FOR_CREATION || '3', 10);
 const TOPIC_VECTOR_DRIFT_ENABLED = ['1', 'true', 'yes'].includes(
   String(process.env.TOPIC_VECTOR_DRIFT_ENABLED || 'false').toLowerCase()
 );
@@ -20,6 +21,7 @@ const TOPIC_DEBUG = ['1', 'true', 'yes'].includes(
 
 export {
   MIN_EVENTS_FOR_TOPIC_CREATION,
+  MIN_ARTICLES_FOR_TOPIC_CREATION,
   TOPIC_VECTOR_DRIFT_ALPHA,
   TOPIC_IDENTITY_THRESHOLD
 };
@@ -121,7 +123,7 @@ export async function collectTopicSeedEvents(userId, eventTopicVector, currentEv
       topicId: null,
       eventVector: { [db.Sequelize.Op.ne]: null }
     },
-    attributes: ['id', 'eventVector', 'name', 'lastSeen', 'updatedAt'],
+    attributes: ['id', 'eventVector', 'name', 'articleCount', 'lastSeen', 'updatedAt'],
     order: [['updatedAt', 'DESC']],
     limit: MAX_CANDIDATES
   });
@@ -136,7 +138,7 @@ export async function collectTopicSeedEvents(userId, eventTopicVector, currentEv
 
   if (currentEventId && !scored.some(item => Number(item.event.id) === Number(currentEventId))) {
     const currentEvent = await Event.findByPk(currentEventId, {
-      attributes: ['id', 'eventVector', 'name', 'lastSeen', 'updatedAt']
+      attributes: ['id', 'eventVector', 'name', 'articleCount', 'lastSeen', 'updatedAt']
     });
 
     if (currentEvent?.eventVector) {
