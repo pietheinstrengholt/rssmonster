@@ -286,7 +286,7 @@ Usually:
 
 event.vector = centroid(article vectors)
 
-Important: Recomputed as articles are added.
+Important: Recomputed as articles are added. Articles SHOULD NOT always require an Event assignment. Articles MAY belong to: zero events, one event, multiple events (rare)
 
 ## Topic vectors
 
@@ -300,7 +300,9 @@ Usually:
 
 topic.vector = weighted centroid(event vectors)
 
-Important: Slowly evolves over time. Should NOT fluctuate heavily.
+Important: Slowly evolves over time. Should NOT fluctuate heavily. Do NOT force all events into topics.
+
+Some events are: too small, too transient, too ambiguous
 
 ## Interest Island vectors
 

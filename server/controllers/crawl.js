@@ -3,7 +3,6 @@ const { Feed } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
-import { embedArticles } from '../services/articles/embedArticles.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -98,15 +97,7 @@ const getFeeds = async (userId = null) => {
  * ------------------------------------------------------------------ */
 
 // Core crawl function with shared feed processing
-const performCrawl = async (userId = null, options = {}) => {
-  const {
-    waitForEmbedding = false,
-    // Backward compatibility for older callers.
-    waitForCluster = false
-  } = options;
-
-  const shouldWaitForEmbedding = waitForEmbedding || waitForCluster;
-
+const performCrawl = async (userId = null, _options = {}) => {
   const feeds = await getFeeds(userId);
 
   let processedCount = 0;
@@ -270,44 +261,9 @@ const performCrawl = async (userId = null, options = {}) => {
     processed: processedCount,
     errors: errorCount,
     timeouts: timeoutCount,
-    crawlTimedOut
+    crawlTimedOut,
+    processedUserIds: [...processedUserIds]
   };
-
-  // Post-ingest embedding: ensure article vectors are available for downstream pipelines
-  const embeddingUserIds = userId
-    ? [userId]
-    : [...processedUserIds];
-
-  if (embeddingUserIds.length) {
-    console.log(
-      `[EMBED] Starting post-ingest embedding for ${embeddingUserIds.length} user(s)`
-    );
-
-    const embedAll = async () => {
-      for (const uid of embeddingUserIds) {
-        try {
-          const embedSummary = await embedArticles(uid);
-          console.log(
-            `[EMBED] user=${uid} scanned=${embedSummary.scannedCount} ` +
-            `reused=${embedSummary.reusedCount} embedded=${embedSummary.embeddedCount} ` +
-            `skipped=${embedSummary.skippedCount}`
-          );
-        } catch (err) {
-          console.error(`[EMBED] Article embedding failed for user ${uid}:`, err);
-        }
-      }
-
-      console.log('[EMBED] Post-ingest embedding completed');
-    };
-
-    if (shouldWaitForEmbedding) {
-      await embedAll();
-    } else {
-      embedAll().catch(err => {
-        console.error('[EMBED] Post-ingest embedding failed:', err);
-      });
-    }
-  }
 
   return result;
 };

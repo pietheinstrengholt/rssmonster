@@ -303,7 +303,8 @@ async function assignTopicsForEvents(userId, events, { assignmentContext = 'repl
   if (!events.length) {
     return {
       eventCount: 0,
-      touchedTopicIds: []
+      touchedTopicIds: [],
+      stats: { eventsSkipped: 0, eventsMatched: 0, eventsUnmatched: 0, newTopicsCreated: 0 }
     };
   }
 
@@ -313,9 +314,14 @@ async function assignTopicsForEvents(userId, events, { assignmentContext = 'repl
   });
 
   const touchedTopicIds = new Set();
+  const initialTopicCount = topicsCache.length;
+  let eventsSkipped = 0;
+  let eventsMatched = 0;
+  let eventsUnmatched = 0;
 
   for (const event of events) {
     if (!Array.isArray(event.eventVector) || !event.eventVector.length) {
+      eventsSkipped++;
       await EventTopic.destroy({ where: { eventId: event.id } });
       await event.update({ topicId: null });
       await syncEventTopicsToArticles(event.id, []);
@@ -337,14 +343,23 @@ async function assignTopicsForEvents(userId, events, { assignmentContext = 'repl
     const persistedAssignments = await persistEventTopicAssignments(event, eventTopicAssignments);
     await syncEventTopicsToArticles(event.id, persistedAssignments);
 
+    if (persistedAssignments.length) {
+      eventsMatched++;
+    } else {
+      eventsUnmatched++;
+    }
+
     for (const assignment of persistedAssignments) {
       touchedTopicIds.add(Number(assignment.topicId));
     }
   }
 
+  const newTopicsCreated = topicsCache.length - initialTopicCount;
+
   return {
     eventCount: events.length,
-    touchedTopicIds: [...touchedTopicIds]
+    touchedTopicIds: [...touchedTopicIds],
+    stats: { eventsSkipped, eventsMatched, eventsUnmatched, newTopicsCreated }
   };
 }
 
@@ -781,7 +796,7 @@ export async function rebuildTopicsForUser(userId, options = {}) {
     { where: { userId } }
   );
 
-  const { eventCount, touchedTopicIds } = await assignTopicsForEvents(userId, events, {
+  const { eventCount, touchedTopicIds, stats } = await assignTopicsForEvents(userId, events, {
     assignmentContext
   });
 
@@ -790,10 +805,35 @@ export async function rebuildTopicsForUser(userId, options = {}) {
     [...new Set([...existingTopicIds, ...touchedTopicIds])]
   );
 
-  console.log(
-    `[TOPIC] Rebuild summary user=${userId} ` +
-    `events=${eventCount} topicsTouched=${touchedTopicIds.length}`
-  );
+  const allUserTopics = await Topic.findAll({
+    where: { userId },
+    attributes: ['id', 'eventCount'],
+    raw: true
+  });
+
+  const topicCount = allUserTopics.length;
+  const totalEventLinks = allUserTopics.reduce((sum, t) => sum + (t.eventCount || 0), 0);
+  const largestTopicSize = allUserTopics.reduce((max, t) => Math.max(max, t.eventCount || 0), 0);
+  const avgEventsPerTopic = topicCount ? (totalEventLinks / topicCount).toFixed(1) : '0';
+  const assignableEvents = eventCount - stats.eventsSkipped;
+  const reuseRatio = assignableEvents > 0
+    ? ((stats.eventsMatched / assignableEvents) * 100).toFixed(1)
+    : '0';
+  const creationRatio = assignableEvents > 0
+    ? ((stats.newTopicsCreated / assignableEvents) * 100).toFixed(1)
+    : '0';
+
+  console.log(`[TOPIC] === Topic Build Summary for user ${userId} ===`);
+  console.log(`[TOPIC] Active topics          ${topicCount}`);
+  console.log(`[TOPIC] Events processed       ${eventCount}`);
+  console.log(`[TOPIC] Events matched         ${stats.eventsMatched}`);
+  console.log(`[TOPIC] Events unmatched       ${stats.eventsUnmatched}`);
+  console.log(`[TOPIC] Events skipped         ${stats.eventsSkipped} (no vector)`);
+  console.log(`[TOPIC] New topics created     ${stats.newTopicsCreated}`);
+  console.log(`[TOPIC] Average events/topic   ${avgEventsPerTopic}`);
+  console.log(`[TOPIC] Largest topic size     ${largestTopicSize} events`);
+  console.log(`[TOPIC] Topic reuse ratio      ${reuseRatio}%`);
+  console.log(`[TOPIC] Topic creation ratio   ${creationRatio}%`);
 }
 
 export default reclusterForUser;

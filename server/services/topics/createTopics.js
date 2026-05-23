@@ -30,6 +30,11 @@ export async function createTopic({
   });
 
   if (topicSeedEvents.length < MIN_EVENTS_FOR_TOPIC_CREATION) {
+    console.log(
+      `[TOPIC] Creation gated: event=${currentEventId} user=${semanticUnit.userId}` +
+      ` seeds=${topicSeedEvents.length}/${MIN_EVENTS_FOR_TOPIC_CREATION}` +
+      ` topSim=${topSeedSimilarity}`
+    );
     debugTopicGate('topic-creation-gate-blocked', {
       userId: semanticUnit.userId,
       eventId: currentEventId,

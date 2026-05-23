@@ -17,7 +17,7 @@
     "start-server": "node bootstrap.js",
     "debug": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./util --watch-path=./config bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
-    "crawl": "NODE_ENV=production node scripts/crawl.js",
+    "crawl": "NODE_ENV=production node scripts/runSemanticPipeline.js",
     "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
     "build:events": "node scripts/buildEvents.js",
     "build:topics": "node scripts/buildTopics.js",
