@@ -61,15 +61,15 @@ export function computeRecommended(article) {
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
   // Weighted sum: balances all signals to produce recommended score (0–1)
-  // Weights: freshness (49%), interest (15%), quality (6%), coverage (16%), crossSource (8%), corroboration (6%)
+  // Weights: freshness (40%), interest (15%), quality (6%), coverage (15%), crossSource (12%), corroboration (12%)
   // Plus a flat 0.15 boost for rule-tagged articles
   const recommended =
     0.06 * quality +
-    0.49 * freshness +
+    0.40 * freshness +
     0.15 * interestScore +
-    0.16 * coverage +
-    0.08 * crossSource +
-    0.06 * corroboration +
+    0.15 * coverage +
+    0.12 * crossSource +
+    0.12 * corroboration +
     ruleBoost;
 
   return Math.max(0, Math.min(1, recommended));
@@ -116,11 +116,11 @@ export function computeRecommendedBreakdown(article) {
 
   const recommended = Math.max(0, Math.min(1,
     0.06 * quality +
-    0.49 * freshness +
+    0.40 * freshness +
     0.15 * interestScore +
-    0.16 * coverage +
-    0.08 * crossSource +
-    0.06 * corroboration +
+    0.15 * coverage +
+    0.12 * crossSource +
+    0.12 * corroboration +
     ruleBoost
   ));
 
