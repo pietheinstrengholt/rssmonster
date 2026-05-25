@@ -1,145 +1,182 @@
 # Agents.md — RSSMonster
 
-Concise guide for AI coding agents. For full docs see `README.md` and `.github/copilot-instructions.md`.
+This is the **operator manual** for AI agents working in this repository.
+It prioritizes correctness, low-risk changes, and consistency with existing code.
 
-## Architecture
+---
 
-Monorepo with two packages:
+## 1) Agent Contract (How to Work Here)
 
-| Package | Stack | Entry point |
-|---------|-------|-------------|
-| `client/` | Vue 3, Vite, Bootstrap 5, Pinia | `src/main.js` |
-| `server/` | Express 5, Sequelize, MySQL | `bootstrap.js` → `app.js` |
+When you make changes in RSSMonster, optimize for:
 
-Node.js 20+. Both packages use `"type": "module"` (ESM).
+1. **Correctness first** — behavior must remain valid in production and tests.
+2. **Small diffs** — prefer minimal, focused edits over broad rewrites.
+3. **Local consistency** — follow surrounding patterns before introducing new ones.
+4. **Verifiability** — run targeted checks for touched areas.
+5. **Clear handoff** — leave concise notes in commit/PR messages.
 
-## Quick Commands
+If a request conflicts with these principles, call out the risk and choose the safest compliant path.
 
-```bash
-# Server
-cd server
-npm install
-npm run db                # run Sequelize migrations
-npm start                 # node bootstrap.js
-npm run debug             # node --watch
-npm test                  # vitest run
-npm run lint              # eslint
+---
 
-# Client
-cd client
-npm install
-npm run dev               # vite dev server
-npm run build             # vite build
-npm test                  # vitest run
-npm run lint              # eslint
+## 2) Repo Reality (What You’re Working In)
 
-# Docker (full stack)
-docker-compose up
-```
+- Monorepo with:
+  - `server/`: Express 5 + Sequelize + MySQL
+  - `client/`: Vue 3 + Vite + Pinia + Bootstrap 5
+- Node.js 20+
+- ESM in app packages (`"type": "module"`)
 
-## Do / Don't
+Key entry points:
+- Server: `server/bootstrap.js` → `server/app.js`
+- Client: `client/src/main.js`
 
-### ESM
+---
 
-- **Do** use `import`/`export` everywhere. Server imports must include `.js` extension.
-- **Don't** use `require()`. Exception: migration files use CommonJS (`module.exports`).
+## 3) Change Strategy (Best-Practice Workflow)
 
-### Models
+Use this sequence for most tasks:
 
-- **Do** import via the two-line pattern:
+1. **Orient quickly**
+   - Read relevant module(s) and adjacent tests.
+   - Confirm the existing pattern you should imitate.
+2. **Plan a minimal patch**
+   - Change only what is required for the request.
+   - Avoid opportunistic refactors unless asked.
+3. **Implement with guardrails**
+   - Preserve public contracts unless the task is explicitly breaking-change work.
+4. **Validate proportionally**
+   - Run lint/tests closest to changed code first.
+5. **Summarize clearly**
+   - State what changed, why, and what was verified.
+
+---
+
+## 4) Non-Negotiable Technical Rules
+
+### 4.1 Modules and Imports
+- Use `import`/`export` (ESM) in application code.
+- In **server** local imports, include `.js` extension.
+- Do not introduce `require()` in app runtime files.
+- Migration files are the exception (CommonJS `module.exports`).
+
+### 4.2 Sequelize Model Access
+- Import models through `server/models/index.js` only:
   ```js
   import db from '../models/index.js';
   const { Article, Feed, Category } = db;
   ```
-- **Don't** import model files directly — they need Sequelize init from `index.js`.
+- Do not import model definition files directly.
 
-### Controllers
+### 4.3 Controllers and Auth
+- Wrap handlers in `try/catch`.
+- Log with actionable context, e.g. `console.error('Error in fnName:', err)`.
+- Verify `req.userData.userId`; return 401 when absent.
+- Prefer early-return validation.
 
-- **Do** wrap every handler in try/catch. Log with `console.error('Error in fnName:', err)`.
-- **Do** check `req.userData.userId` and return 401 if missing.
-- **Do** use early returns for validation.
-- **Don't** use `_next` unless forwarding errors.
+### 4.4 Routing
+- Keep route modules thin (middleware + controller wiring).
+- API routes are mounted under `/api/*` in `server/app.js`.
 
-### Routes
+### 4.5 Database Migrations
+- Add new migration files; do not edit old applied migrations.
+- Filename format: `YYYYMMDDHHMMSS-description.js`.
+- Use FK cascades where appropriate:
+  `onUpdate: 'CASCADE'`, `onDelete: 'CASCADE'`.
 
-- Routes are thin: wire `userMiddleware.isLoggedIn` + controller method.
-- Mounted at `/api/*` in `app.js` (except `/mcp`, `/agent`, `/rss`).
+### 4.6 Frontend Architecture
+- Use Vue 3 **Options API** in this repo.
+- Do not introduce `<script setup>` patterns.
+- Use Bootstrap 5 and Bootstrap Icons.
+- Add dark-mode styling support for new UI styles:
+  `@media (prefers-color-scheme: dark)`.
 
-### Migrations
+### 4.7 API and Store Layers
+- `client/src/api/`: named exports, concise functions, shared Axios client.
+- Let API errors bubble; avoid redundant per-method error wrappers.
+- `client/src/store/`: options-style Pinia stores; alias API imports with `API` suffix.
 
-- **Do** create new migration files (`YYYYMMDDHHMMSS-description.js`).
-- **Don't** modify existing migrations — they're tracked as already-run.
-- Use `onUpdate: 'CASCADE'`, `onDelete: 'CASCADE'` for foreign keys.
+---
 
-### Frontend
+## 5) Quality Gates (What to Run)
 
-- **Do** use Vue 3 Options API (`export default { data, methods, computed }`).
-- **Don't** use `<script setup>` — the codebase uses Options API consistently.
-- **Do** use Bootstrap 5 classes and Bootstrap Icons (`<BootstrapIcon icon="name" />`).
-- **Do** provide `@media (prefers-color-scheme: dark)` variants for new styles.
-- **Don't** introduce other CSS frameworks.
+Choose the smallest checks that prove your change is safe.
 
-### API Layer (`client/src/api/`)
+### Server changes
+```bash
+cd server
+npm run lint
+npm test
+```
 
-- Named exports only, single-expression arrows, no error handling (errors bubble up).
-- Shared Axios instance in `client.js` handles auth headers and 401 interception.
+### Client changes
+```bash
+cd client
+npm run lint
+npm test
+npm run build
+```
 
-### Pinia Stores (`client/src/store/`)
+### Full stack (when integration behavior is affected)
+```bash
+docker-compose up
+```
 
-- Options-style `defineStore`. Rename API imports with `API` suffix to avoid collisions.
+Testing notes:
+- Vitest is used in both packages.
+- Server tests use real DB behavior (not Sequelize model mocks).
+- `supertest` is the expected HTTP test approach.
+- `DISABLE_LISTENER` can suppress server listen side effects in tests.
 
-## Key File Paths
+---
 
-| Purpose | Path |
-|---------|------|
-| Server entry | `server/bootstrap.js` → `server/app.js` |
-| DB config | `server/config/config.cjs` |
-| Models | `server/models/` (factory pattern, associations in `index.js`) |
-| Controllers | `server/controllers/` |
-| Routes | `server/routes/` |
-| Migrations | `server/migrations/` |
-| Scripts | `server/scripts/crawl.js`, `reclusterArticles.js`, `calculateFeedTrust.js` |
-| Vue root | `client/src/App.vue` → `client/src/AppShell.vue` |
-| Components | `client/src/components/` (Desktop/, Mobile/, Modal/, Onboarding/) |
-| API services | `client/src/api/` |
-| Pinia stores | `client/src/store/` |
-| Global SCSS | `client/src/assets/scss/global.scss` |
-| Vite config | `client/vite.config.js` |
+## 6) High-Signal Pitfalls (Frequently Causes Regressions)
 
-## Testing
+- Reading a `fetch` response body twice without `response.clone()`.
+- Importing Sequelize models directly instead of via `models/index.js`.
+- Using Express 4 idioms incompatible with Express 5 behavior.
+- Forgetting `.js` extension in server local imports.
+- Modifying existing migrations instead of adding new ones.
+- Introducing frontend patterns inconsistent with existing Options API code.
 
-- **Framework:** Vitest for both packages
-- **Server tests** run against a real database (no Sequelize mocks). Use `supertest` for HTTP tests. `beforeAll` with `app.js` import needs 30s timeout.
-- **Client tests** use `jsdom` environment and `@vue/test-utils`.
-- Helpers: `server/tests/helpers/resetDb.js` does `sequelize.sync({ force: true })`.
+---
 
-## Naming Conventions
+## 7) Preferred Style Defaults
 
-| Entity | Style | Example |
-|--------|-------|---------|
-| Variables/functions | camelCase | `feedName`, `getArticles` |
-| Constants | UPPER_SNAKE | `CRAWL_TIMEOUT_MS` |
-| Vue components | PascalCase | `ArticleFeed` |
-| Component registration | kebab-prefix | `appArticleFeed` |
-| DB tables | plural lowercase | `articles`, `feeds` |
-| DB columns | camelCase | `feedId`, `starInd` |
-| API functions | verb + noun | `fetchFeeds`, `createFeed` |
-| Migrations | timestamp-desc | `20260101000000-create-things.js` |
-| Unused params | `_` prefix | `_next`, `_req` |
+- Naming:
+  - `camelCase`: vars/functions
+  - `PascalCase`: Vue components
+  - `UPPER_SNAKE_CASE`: constants
+- Keep functions cohesive and readable; prefer early returns.
+- Keep comments for non-obvious intent, invariants, or workarounds.
+- Follow lint rules rather than personal formatting preferences.
 
-## Code Style (ESLint)
+---
 
-- `prefer-const`, `arrow-body-style: 'as-needed'`, `object-curly-spacing: 'always'`
-- `no-console: off`, `no-unused-vars: warn` (args matching `^_` ignored)
-- Use `/* ---- Section ---- */` headers in long files
-- Minimal comments — only for non-obvious logic or workarounds
+## 8) File Map (Fast Navigation)
 
-## Common Pitfalls
+- Server
+  - App bootstrap: `server/bootstrap.js`, `server/app.js`
+  - Controllers: `server/controllers/`
+  - Routes: `server/routes/`
+  - Models: `server/models/`
+  - Migrations: `server/migrations/`
+  - Scripts: `server/scripts/`
+- Client
+  - Root app: `client/src/App.vue`, `client/src/AppShell.vue`
+  - Components: `client/src/components/`
+  - API services: `client/src/api/`
+  - Stores: `client/src/store/`
+  - Global styles: `client/src/assets/scss/global.scss`
 
-- **fetch body consumed twice:** Use `response.clone()` before any `.text()`/`.json()`.
-- **Cloudflare-protected feeds:** `discoverRssLink` may return `{ cloudflare: true, url }` instead of a string.
-- **Sequelize operators:** Import `{ Op } from 'sequelize'` explicitly.
-- **Express 5:** Some Express 4 patterns (route param callbacks) don't work.
-- **Quality scores:** `NEUTRAL_SCORE = 70`. Displayed quality is a weighted blend: `sentimentScore × 0.5 + qualityScore × 0.35 + advertisementScore × 0.15`.
-- **PWA:** Test changes to static assets/service worker in both install and update flows.
-- **`DISABLE_LISTENER` env var:** Suppresses HTTP listener in tests.
+---
+
+## 9) Definition of Done for Agent Changes
+
+A change is done when all are true:
+
+1. Requested behavior is implemented.
+2. Diff is minimal and consistent with local code patterns.
+3. Relevant lint/tests/build checks pass (or limitations are documented).
+4. No unrelated refactors are bundled.
+5. Commit and PR notes clearly explain scope and validation.
