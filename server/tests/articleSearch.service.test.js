@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import { searchArticles } from '../util/articleSearch.service.js';
@@ -139,10 +139,6 @@ describe('articleSearch.service', () => {
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'framework' });
     await Tag.create({ articleId: articles.starred.id, userId: user.id, name: 'rust' });
     await Tag.create({ articleId: articles.clicked.id, userId: user.id, name: 'docker' });
-  });
-
-  afterAll(async () => {
-    await sequelize.close();
   });
 
   // ============================

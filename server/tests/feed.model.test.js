@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 
@@ -29,11 +29,6 @@ describe('Feed model', () => {
       name: 'Test Category',
       categoryOrder: 0
     });
-  });
-
-  afterAll(async () => {
-    // Close DB connection to avoid hanging CI
-    await sequelize.close();
   });
 
   it('creates a feed with defaults', async () => {

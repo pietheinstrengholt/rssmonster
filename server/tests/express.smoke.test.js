@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import request from 'supertest';
 import db from '../models/index.js';
 
@@ -21,11 +21,7 @@ describe('Express smoke test', () => {
     }
 
     await sequelize.authenticate();
-  }, 30_000);
-
-  afterAll(async () => {
-    await sequelize.close();
-  });
+  }, 50_000);
 
   it('responds to health check', async () => {
     const res = await request(app).get('/api/health');

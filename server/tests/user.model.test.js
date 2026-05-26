@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect, beforeAll } from 'vitest';
 import bcrypt from "bcryptjs";
 import db from '../models/index.js';
 
@@ -6,12 +6,7 @@ const { sequelize, User } = db;
 
 describe('User model', () => {
   beforeAll(async () => {
-    // Ensure clean state per file
-    await sequelize.sync();
-  });
-
-  afterAll(async () => {
-    await sequelize.close();
+    await sequelize.authenticate();
   });
 
   it('creates a user', async () => {

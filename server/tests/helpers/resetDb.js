@@ -1,3 +1,4 @@
+import '../setup/database.js';
 import db from '../../models/index.js';
 
 export async function resetDatabase() {

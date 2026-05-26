@@ -12,6 +12,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "fixture:semantic-vectors": "node scripts/generateSemanticRegressionVectors.js",
+    "fixture:taxonomy-vectors": "node scripts/generateIslandTaxonomyVectorFixture.js",
     "lint": "eslint .",
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
