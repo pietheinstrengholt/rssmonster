@@ -19,7 +19,7 @@ RSSMonster ranks every article using a few interpretable signals. Scores stay be
 ## Attention
 - Buckets (primary signal): 0 passed, 1 skimmed, 2 read, 3 deep read, 4 highly engaged.
 - Base score by bucket: 0 -> 0.0, 1 -> 0.25, 2 -> 0.5, 3 -> 0.75, 4 -> 1.0.
-- Reinforcement: small log boosts for revisits and outbound clicks (each up to +0.15). Example boost term: $\min(\log_2(openedCount+1)/5, 0.15)$.
+- Reinforcement: small log boost for outbound clicks (up to +0.15). Example boost term: $\min(\log_2(clickedAmount+1)/5, 0.15)$.
 - Cap: final attention is clipped to 1.0.
 - Used by: attention sort.
 

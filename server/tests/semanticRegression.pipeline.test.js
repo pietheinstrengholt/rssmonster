@@ -539,7 +539,6 @@ describe('semantic regression fixture pipeline', () => {
         status: fixtureArticle.status,
         starInd: fixtureArticle.starInd,
         negativeInd: fixtureArticle.negativeInd,
-        openedCount: fixtureArticle.openedCount,
         clickedAmount: fixtureArticle.clickedAmount,
         url: `https://fixtures.rssmonster.test/semantic/${index + 1}`,
         title: titleFromContent(fixtureArticle.content, index),

@@ -237,44 +237,6 @@ const markClicked = async (req, res, _next) => {
   }
 };
 
-// Mark article as opened
-const markOpened = async (req, res, _next) => {
-  try {
-    const userId = req.userData.userId;
-    const articleId = req.params.articleId;
-
-    if (!userId) {
-      return res.status(401).json({ error: 'Unauthorized: missing userId' });
-    }
-
-    if (!articleId) {
-      return res.status(400).json({ error: "articleId is required" });
-    }
-
-    const article = await Article.findOne({
-      where: {
-        id: articleId,
-        userId: userId
-      }
-    });
-
-    if (!article) {
-      return res.status(404).json({ error: "Article not found" });
-    }
-
-    const currentOpened = article.openedCount || 0;
-    await article.update({ openedCount: currentOpened + 1 });
-
-    res.status(200).json({ 
-      message: "Article marked as opened",
-      articleId: articleId
-    });
-  } catch (err) {
-    console.error("Error in markOpened:", err);
-    return res.status(500).json({ error: err.message });
-  }
-};
-
 // Mark article as not interested
 const markNotInterested = async (req, res, _next) => {
   try {
@@ -722,7 +684,6 @@ export default {
   getArticle,
   markAsRead,
   markClicked,
-  markOpened,
   markNotInterested,
   articleDetails,
   articleMarkAsSeen,

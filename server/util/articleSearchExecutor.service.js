@@ -53,7 +53,7 @@ export const buildArticleSearchQuery = ({
   }
 
   if (needsAttention) {
-    queryAttributes.push('attentionBucket', 'openedCount', 'clickedAmount');
+    queryAttributes.push('attentionBucket', 'clickedAmount');
   }
 
   const articleQuery = {

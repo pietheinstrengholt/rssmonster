@@ -28,7 +28,6 @@ const SIGNAL_WEIGHTS = {
   star: 4,
   click: 1.5,
   deepRead: 3,
-  open: 0.35,
   negative: 4,
   topicAffinity: 2,
   eventCount: 0.25
@@ -354,15 +353,13 @@ function computeArticleSignals(article) {
   const stars = article.starInd === 1 ? 1 : 0;
   const clicks = Math.min(article.clickedAmount || 0, 3);
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
-  const opens = Math.min(article.openedCount || 0, 3);
   const negative = article.negativeInd === 1 ? 1 : 0;
   const recency = topicRecencyWeight(article.published);
 
   const positiveScore = (
     stars * SIGNAL_WEIGHTS.star +
     clicks * SIGNAL_WEIGHTS.click +
-    deepReads * SIGNAL_WEIGHTS.deepRead +
-    opens * SIGNAL_WEIGHTS.open
+    deepReads * SIGNAL_WEIGHTS.deepRead
   ) * recency;
 
   const negativeScore = negative * SIGNAL_WEIGHTS.negative;
@@ -651,7 +648,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       model: Article,
       as: 'articles',
       required: false,
-      attributes: ['id', 'starInd', 'clickedAmount', 'openedCount', 'attentionBucket', 'negativeInd', 'published'],
+      attributes: ['id', 'starInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'published'],
       through: { attributes: [] }
     }],
     order: [

@@ -22,12 +22,6 @@ export const markArticleSeen = (id, payload) =>
   api.post(`/articles/markasseen/${id}`, payload);
 
 /**
- * Track article opened
- */
-export const markArticleOpened = id =>
-  api.post(`/articles/markopened/${id}`);
-
-/**
  * Star / unstar article
  */
 export const markWithStar = (articleId, update) =>

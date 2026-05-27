@@ -8,8 +8,7 @@ import ArticleListView from "./ArticleListView.vue";
 import {
   fetchArticleIds,
   fetchArticleDetails,
-  markArticleSeen,
-  markArticleOpened
+  markArticleSeen
 } from '../api/articles';
 
 export default {
@@ -175,9 +174,7 @@ export default {
 
             const wasVisible = this.visibleMap.get(articleId) || false;
 
-            // article just entered viewport, call opened()
             if (isVisible && !wasVisible) {
-              this.opened(articleId);
               this.visibleSince.set(articleId, now);
             }
 
@@ -319,15 +316,6 @@ export default {
           firstSeen: updatedArticle.firstSeen ?? current.firstSeen,
           attentionBucket: updatedArticle.attentionBucket ?? current.attentionBucket
         };
-      }
-    },
-
-    // track article opened event
-    async opened(articleId) {
-      try {
-        await markArticleOpened(articleId);
-      } catch (error) {
-        console.log("Error tracking article open", error);
       }
     },
 

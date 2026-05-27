@@ -86,7 +86,6 @@ async function main() {
         'status',
         'starInd',
         'negativeInd',
-        'openedCount',
         'clickedAmount',
         'title',
         'description',
@@ -121,7 +120,6 @@ async function main() {
         status: article.status || 'unread',
         starInd: article.starInd || 0,
         negativeInd: article.negativeInd || 0,
-        openedCount: article.openedCount || 0,
         clickedAmount: article.clickedAmount || 0
       }))
       .filter(article => article.content && article.feedId)

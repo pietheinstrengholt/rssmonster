@@ -38,11 +38,6 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
-      openedCount: {
-        type: DataTypes.INTEGER,
-        allowNull: false,
-        defaultValue: 0
-      },
       hotInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0
@@ -144,7 +139,6 @@ export default (sequelize) => {
            *
            * Derived from:
            * - attentionBucket (primary signal)
-           * - openedCount (re-visits)
            * - clickedAmount (outbound engagement)
            *
            * Bucket semantics:
@@ -156,7 +150,6 @@ export default (sequelize) => {
            */
 
           const bucket = this.getDataValue('attentionBucket') ?? 0;
-          const openedCount = this.getDataValue('openedCount') ?? 0;
           const clickedAmount = this.getDataValue('clickedAmount') ?? 0;
 
           // Base score from bucket (dominant signal)
@@ -170,11 +163,10 @@ export default (sequelize) => {
           }
 
           // Logarithmic reinforcement (bounded, non-dominant)
-          const openBoost = Math.min(Math.log2(openedCount + 1) / 5, 0.15);
           const clickBoost = Math.min(Math.log2(clickedAmount + 1) / 5, 0.15);
 
           return Math.min(
-            Number((base + openBoost + clickBoost).toFixed(4)),
+            Number((base + clickBoost).toFixed(4)),
             1
           );
         }
