@@ -53,7 +53,8 @@ Note: Endpoints may require specific payload shapes; see controller code for det
 ---
 
 ## Status Codes
-- `200` success, `201` created, `204` no content for deletions/updates.
+- `200` success, including updates that return a response body (for example, category updates).
+- `201` created, `204` no content for deletions or updates that return no body.
 - `400` validation errors, `401` missing/invalid token, `403` forbidden, `404` not found.
 
 ---
