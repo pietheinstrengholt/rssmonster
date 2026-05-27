@@ -6,6 +6,10 @@ import {
   upsertTopicInCache
 } from './topicHelpers.js';
 
+// This service updates existing topics after semantic assignment matches.
+// It centralizes vector drift, activity timestamps, and in-memory cache refreshes.
+
+// This function updates all matched candidate topics and drifts the primary topic when allowed.
 export async function updateMatchedTopics({
   rankedCandidates,
   primaryCandidate,
@@ -47,6 +51,7 @@ export async function updateMatchedTopics({
   }
 }
 
+// This function updates one identity-matched topic and returns a primary assignment row.
 export async function updateIdentityTopic({
   bestTopic,
   bestTopicSim,
@@ -77,6 +82,7 @@ export async function updateIdentityTopic({
   };
 }
 
+// This function refreshes a topic matched by stable topic key and returns a primary assignment row.
 export async function updateTopicByKey({
   topic,
   now,

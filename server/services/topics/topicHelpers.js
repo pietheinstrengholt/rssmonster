@@ -8,6 +8,9 @@ import {
 
 const { Article, Event } = db;
 
+// This module contains shared topic math, gating, cache, and seed-evidence helpers.
+// Event-topic creation and matching use these helpers to keep topic behavior consistent.
+
 const MIN_EVENTS_FOR_TOPIC_CREATION = Number.parseInt(process.env.TOPIC_MIN_EVENTS_FOR_CREATION || '2', 10);
 const MIN_ARTICLES_FOR_TOPIC_CREATION = Number.parseInt(process.env.TOPIC_MIN_ARTICLES_FOR_CREATION || '3', 10);
 const MIN_STRONG_EVENT_ARTICLES = Number.parseInt(process.env.TOPIC_MIN_STRONG_EVENT_ARTICLES || '2', 10);
@@ -32,6 +35,7 @@ export {
   TOPIC_IDENTITY_THRESHOLD
 };
 
+// This function writes topic gate debug output when topic debugging is enabled.
 export function debugTopicGate(message, payload = null) {
   if (!TOPIC_DEBUG) return;
 
@@ -43,6 +47,7 @@ export function debugTopicGate(message, payload = null) {
   console.log(`[TOPIC DEBUG] ${message}`, payload);
 }
 
+// This function compares two vectors with cosine similarity.
 export function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
   if (!a.length || !b.length) return 0;
@@ -63,6 +68,7 @@ export function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+// This function creates a stable short hash key from the leading topic vector dimensions.
 export function generateTopicKey(topicVector) {
   if (!Array.isArray(topicVector)) return null;
 
@@ -74,6 +80,7 @@ export function generateTopicKey(topicVector) {
   return crypto.createHash('sha1').update(buffer).digest('hex');
 }
 
+// This function blends a topic vector with the configured default drift alpha.
 export function blendTopicVector(existingVector, incomingVector) {
   if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
   if (existingVector.length !== incomingVector.length) return incomingVector;
@@ -83,6 +90,7 @@ export function blendTopicVector(existingVector, incomingVector) {
   );
 }
 
+// This function blends two topic vectors with an explicit alpha.
 export function blendTopicVectorWithAlpha(existingVector, incomingVector, alpha) {
   if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
   if (existingVector.length !== incomingVector.length) return incomingVector;
@@ -92,6 +100,7 @@ export function blendTopicVectorWithAlpha(existingVector, incomingVector, alpha)
   );
 }
 
+// This function computes a plain average vector across same-dimension vectors.
 export function averageVector(vectors = []) {
   const usable = vectors.filter(vector => Array.isArray(vector) && vector.length);
   if (!usable.length) return null;
@@ -110,11 +119,13 @@ export function averageVector(vectors = []) {
   return sum.map(value => value / filtered.length);
 }
 
+// This function parses numeric evidence fields with a safe fallback.
 function asNumber(value, fallback = 0) {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+// This function normalizes identity text for topic gate entity checks.
 function normalizeIdentityText(value = '') {
   return String(value)
     .toLowerCase()
@@ -123,6 +134,7 @@ function normalizeIdentityText(value = '') {
     .trim();
 }
 
+// This function decides whether an event name is specific enough to create a topic.
 function hasMeaningfulEventName(name = '') {
   const normalized = normalizeIdentityText(name);
   if (!normalized) return false;
@@ -133,6 +145,7 @@ function hasMeaningfulEventName(name = '') {
   return tokens.length >= 2 || tokens.some(token => token.length >= 5);
 }
 
+// This function extracts normalized identity candidates from a topic name.
 function identityCandidatesFromTopicName(topicName = '') {
   const candidates = new Set();
   const normalizedName = normalizeIdentityText(topicName);
@@ -152,6 +165,7 @@ function identityCandidatesFromTopicName(topicName = '') {
     .sort((a, b) => b.length - a.length || a.localeCompare(b));
 }
 
+// This function checks whether a title contains a normalized identity candidate.
 function titleContainsCandidate(title, candidate) {
   const normalizedTitle = ` ${normalizeIdentityText(title)} `;
   const normalizedCandidate = ` ${normalizeIdentityText(candidate)} `;
@@ -159,6 +173,7 @@ function titleContainsCandidate(title, candidate) {
   return normalizedCandidate.trim() && normalizedTitle.includes(normalizedCandidate);
 }
 
+// This function checks whether repeated titles corroborate the same named entity.
 function hasRepeatedEntityEvidence({ topicName, titles = [] }) {
   const usableTitles = [...new Map(titles
     .map(title => [normalizeIdentityText(title), String(title || '')])
@@ -172,6 +187,7 @@ function hasRepeatedEntityEvidence({ topicName, titles = [] }) {
   );
 }
 
+// This function decides whether event evidence is strong enough to create a new topic.
 export function evaluateTopicCreationGate({
   semanticUnit = null,
   currentEvent = null,
@@ -224,6 +240,7 @@ export function evaluateTopicCreationGate({
   return { passed: false, reason: null };
 }
 
+// This function collects existing unassigned events that can seed a topic.
 export async function collectTopicSeedEvents(userId, eventTopicVector, currentEventId) {
   const events = await Event.findAll({
     where: {
@@ -280,6 +297,7 @@ export async function collectTopicSeedEvents(userId, eventTopicVector, currentEv
   return scored;
 }
 
+// This function loads a few article titles for repeated-entity gate checks.
 export async function collectEventArticleTitles(userId, eventId) {
   if (!eventId) return [];
 
@@ -294,6 +312,7 @@ export async function collectEventArticleTitles(userId, eventId) {
   return articles.map(article => article.title).filter(Boolean);
 }
 
+// This function inserts or replaces a topic in the in-memory topic cache.
 export function upsertTopicInCache(topicsCache, topic) {
   if (!topicsCache) return;
 
@@ -306,6 +325,7 @@ export function upsertTopicInCache(topicsCache, topic) {
   topicsCache.unshift(topic);
 }
 
+// This function decides whether a matched topic vector may drift toward new evidence.
 export function shouldDriftTopicVector(similarity, assignmentContext) {
   if (!TOPIC_VECTOR_DRIFT_ENABLED) return false;
   if (assignmentContext === 'replay') return false;

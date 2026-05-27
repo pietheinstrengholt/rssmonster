@@ -1,6 +1,9 @@
 const DEFAULT_TOPIC_NAME = 'Untitled Topic';
 const MAX_TOPIC_NAME_LENGTH = 90;
 
+// This service generates compact topic names from event names and article titles.
+// It favors repeated entities and keyword phrases while filtering generic news filler.
+
 const STOPWORDS = new Set([
   // Core English stopwords
   'a', 'about', 'above', 'across', 'after', 'again', 'against', 'all', 'almost',
@@ -139,6 +142,7 @@ const ENTITY_STOPWORDS = new Set([
   'The Verge'
 ]);
 
+// This function strips HTML, source suffixes, and excess whitespace from a source title.
 function cleanTitle(value = '') {
   return String(value)
     .replace(/<[^>]+>/g, ' ')
@@ -150,6 +154,7 @@ function cleanTitle(value = '') {
     .trim();
 }
 
+// This function normalizes spacing and enforces the maximum topic name length.
 function compactTopicName(value) {
   const compact = String(value || '')
     .replace(/\s+/g, ' ')
@@ -165,6 +170,7 @@ function compactTopicName(value) {
     .trim();
 }
 
+// This function trims punctuation and whitespace from a candidate label.
 function normalizeCandidate(value = '') {
   return String(value)
     .replace(/^[^a-zA-Z0-9]+|[^a-zA-Z0-9]+$/g, '')
@@ -172,10 +178,12 @@ function normalizeCandidate(value = '') {
     .trim();
 }
 
+// This function creates a lowercase map key for a candidate label.
 function candidateKey(value = '') {
   return normalizeCandidate(value).toLowerCase();
 }
 
+// This function adds or strengthens one candidate topic label.
 function addCandidate(candidates, value, weight, sourceIndex) {
   const label = normalizeCandidate(value);
   if (label.length < 3) return;
@@ -200,6 +208,7 @@ function addCandidate(candidates, value, weight, sourceIndex) {
   candidates.set(key, current);
 }
 
+// This function extracts capitalized entity-like phrases from a title.
 function extractEntities(title) {
   const entities = [];
   const matcher = /\b(?:[A-Z][a-zA-Z0-9]+|[A-Z]{2,})(?:\s+(?:[A-Z][a-zA-Z0-9]+|[A-Z]{2,}))*\b/g;
@@ -212,6 +221,7 @@ function extractEntities(title) {
   return entities;
 }
 
+// This function tokenizes title text while dropping filler words.
 function tokenize(title) {
   return title
     .toLowerCase()
@@ -221,6 +231,7 @@ function tokenize(title) {
     .filter(token => token.length > 2 && !STOPWORDS.has(token) && !EVENT_WORDS.has(token));
 }
 
+// This function converts a keyword phrase into title case without breaking acronyms.
 function titleCasePhrase(value = '') {
   return value
     .split(/\s+/)
@@ -231,6 +242,7 @@ function titleCasePhrase(value = '') {
     .join(' ');
 }
 
+// This function adds multi-word keyword phrases as lower-priority name candidates.
 function addKeywordPhrases(candidates, title, sourceIndex) {
   const tokens = tokenize(title);
   const maxSize = Math.min(4, tokens.length);
@@ -250,6 +262,7 @@ function addKeywordPhrases(candidates, title, sourceIndex) {
   }
 }
 
+// This function builds a safe topic name fallback from one title.
 function fallbackFromTitle(title) {
   const entities = extractEntities(title);
   if (entities.length) {
@@ -264,6 +277,7 @@ function fallbackFromTitle(title) {
   return DEFAULT_TOPIC_NAME;
 }
 
+// This function ranks candidates by source coverage, score, length, and label.
 function rankedCandidates(candidates, minimumSources) {
   return [...candidates.values()]
     .filter(candidate => candidate.sources.size >= minimumSources)
@@ -275,6 +289,7 @@ function rankedCandidates(candidates, minimumSources) {
     ));
 }
 
+// This function prevents selected topic name parts from repeating the same idea.
 function hasMeaningfulOverlap(candidateKeyValue, selectedKeys) {
   const candidateTokens = new Set(candidateKeyValue.split(/\s+/).filter(Boolean));
   if (!candidateTokens.size) return false;
@@ -294,6 +309,7 @@ function hasMeaningfulOverlap(candidateKeyValue, selectedKeys) {
   return false;
 }
 
+// This function generates a concise topic name from semantic unit and seed event titles.
 export function generateTopicName({ semanticUnit = null, seedEvents = [] } = {}) {
   const sourceTitles = [...new Set([
     ...seedEvents.map(seed => seed?.event?.name || seed?.name || seed?.title),
