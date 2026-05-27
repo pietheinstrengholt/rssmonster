@@ -4,6 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
+import bcrypt from 'bcryptjs';
 
 import db from '../models/index.js';
 import { reclusterForUser } from '../services/events/reclusterForUser.js';
@@ -29,6 +30,7 @@ const FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.json');
 const VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.vectors.json');
 const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'island-taxonomy.vectors.json');
 const FIXTURE_USERNAME = 'semantic-regression-user';
+const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_MIN_EVENTS = 10;
 const EXPECTED_MIN_TOPICS = 5;
 const EXPECTED_MIN_ISLANDS = 2;
@@ -501,10 +503,15 @@ describe('semantic regression fixture pipeline', () => {
       JSON.stringify(missingVectorArticles, null, 2)
     ).toHaveLength(0);
 
+    const passwordHash = await bcrypt.hash(FIXTURE_PASSWORD, 10);
+    const apiHash = crypto.createHash('md5')
+      .update(`${FIXTURE_USERNAME}:${FIXTURE_PASSWORD}`)
+      .digest('hex');
+
     const user = await User.create({
       username: FIXTURE_USERNAME,
-      password: 'rssmonster',
-      hash: 'rssmonster',
+      password: passwordHash,
+      hash: apiHash,
       role: 'user'
     });
 
