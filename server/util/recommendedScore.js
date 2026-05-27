@@ -60,16 +60,22 @@ export function computeRecommended(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
 
-  // Weighted sum: balances all signals to produce recommended score (0–1)
-  // Weights: freshness (40%), interest (15%), quality (6%), coverage (15%), crossSource (12%), corroboration (12%)
-  // Plus a flat 0.15 boost for rule-tagged articles
+  // Event boost: explicitly rewards meaningful multi-article events.
+  const eventBoost =
+    clusterSize >= 8 ? 0.10 :
+    clusterSize >= 4 ? 0.05 :
+    0;
+
+  // Weighted sum: emphasizes event importance while preserving freshness,
+  // personalization, quality, and rule-based relevance.
   const recommended =
-    0.06 * quality +
-    0.40 * freshness +
-    0.15 * interestScore +
-    0.15 * coverage +
-    0.12 * crossSource +
-    0.12 * corroboration +
+    0.22 * freshness +
+    0.12 * interestScore +
+    0.12 * quality +
+    0.24 * coverage +
+    0.15 * crossSource +
+    0.15 * corroboration +
+    eventBoost +
     ruleBoost;
 
   return Math.max(0, Math.min(1, recommended));
@@ -113,14 +119,19 @@ export function computeRecommendedBreakdown(article) {
   const tags = article.Tags ?? article.get?.('Tags') ?? [];
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
+  const eventBoost =
+    clusterSize >= 8 ? 0.10 :
+    clusterSize >= 4 ? 0.05 :
+    0;
 
   const recommended = Math.max(0, Math.min(1,
-    0.06 * quality +
-    0.40 * freshness +
-    0.15 * interestScore +
-    0.15 * coverage +
-    0.12 * crossSource +
-    0.12 * corroboration +
+    0.22 * freshness +
+    0.12 * interestScore +
+    0.12 * quality +
+    0.24 * coverage +
+    0.15 * crossSource +
+    0.15 * corroboration +
+    eventBoost +
     ruleBoost
   ));
 
@@ -131,6 +142,7 @@ export function computeRecommendedBreakdown(article) {
     coverage,
     crossSource,
     corroboration,
+    eventBoost,
     ruleBoost,
     clusterSize,
     sourceCount,

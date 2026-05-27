@@ -70,6 +70,34 @@ describe('computeRecommended', () => {
     expect(multiSourceScore - singleSourceScore).toBeGreaterThan(0.2);
   });
 
+  it('ranks a corroborated event above an isolated fresh singleton', () => {
+    const freshSingleton = {
+      freshness: 1,
+      quality: 0.7,
+      interestScore: 0,
+      cluster: {
+        articleCount: 1,
+        sourceCount: 1,
+        sourceDiversityScore: 0
+      },
+      Tags: []
+    };
+
+    const developingEvent = {
+      freshness: 0.55,
+      quality: 0.7,
+      interestScore: 0,
+      cluster: {
+        articleCount: 8,
+        sourceCount: 6,
+        sourceDiversityScore: 1.9
+      },
+      Tags: []
+    };
+
+    expect(computeRecommended(developingEvent)).toBeGreaterThan(computeRecommended(freshSingleton));
+  });
+
   it('prioritizes articles with stronger interest affinity', () => {
     const baseArticle = {
       freshness: 0.5,
@@ -92,6 +120,6 @@ describe('computeRecommended', () => {
     });
 
     expect(highInterestScore).toBeGreaterThan(lowInterestScore);
-    expect(highInterestScore - lowInterestScore).toBeCloseTo(0.15, 3);
+    expect(highInterestScore - lowInterestScore).toBeCloseTo(0.12, 3);
   });
 });

@@ -43,7 +43,7 @@ export function debugRecommendedScores(scored) {
       ? Number(((articlesWithEvents / totalArticles) * 100).toFixed(1))
       : 0;
 
-    console.log('[RECOMMENDED DEBUG] Formula: 0.06*quality + 0.64*freshness + 0.16*coverage + 0.08*crossSource + 0.06*corroboration + ruleBoost');
+    console.log('[RECOMMENDED DEBUG] Formula: 0.22*freshness + 0.12*interest + 0.12*quality + 0.24*coverage + 0.15*crossSource + 0.15*corroboration + eventBoost + ruleBoost');
     console.log(
       `[RECOMMENDED DEBUG] articles=${totalArticles} ` +
       `articlesWithEvents=${articlesWithEvents} ` +
@@ -62,6 +62,7 @@ export function debugRecommendedScores(scored) {
           coverage: Number(bd.coverage.toFixed(4)),
           crossSource: Number(bd.crossSource.toFixed(4)),
           corroboration: Number(bd.corroboration.toFixed(4)),
+          eventBoost: Number(bd.eventBoost.toFixed(4)),
           ruleBoost: Number(bd.ruleBoost.toFixed(4)),
           clusterSize: bd.clusterSize,
           sourceCount: bd.sourceCount,

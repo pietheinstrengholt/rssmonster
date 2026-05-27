@@ -48,8 +48,8 @@ const MAX_REPORTED_ARTICLES_PER_EVENT = 12;
 const MAX_REPORTED_ARTICLES_PER_ISLAND = 20;
 const MAX_REPORTED_FALLBACK_ARTICLES_PER_ISLAND = 8;
 const RECOMMENDED_DEBUG_FORMULA =
-  '0.06*quality + 0.40*freshness + 0.15*interest + 0.15*coverage + ' +
-  '0.12*crossSource + 0.12*corroboration + ruleBoost';
+  '0.22*freshness + 0.12*interest + 0.12*quality + 0.24*coverage + ' +
+  '0.15*crossSource + 0.15*corroboration + eventBoost + ruleBoost';
 
 let semanticRegressionUserId = null;
 
