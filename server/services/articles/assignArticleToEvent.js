@@ -314,6 +314,11 @@ async function deriveEventTopicAssignments({
       id: event.id,
       userId: event.userId,
       title: event.name || `Event ${event.id}`,
+      name: event.name,
+      articleCount: event.articleCount,
+      sourceCount: event.sourceCount,
+      eventStrength: event.eventStrength,
+      status: event.status,
       published: event.lastSeen || event.updatedAt || new Date()
     },
     semanticVector: eventTopicVector,

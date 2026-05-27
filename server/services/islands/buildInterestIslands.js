@@ -6,8 +6,13 @@ const { User, Topic, Article, Island, IslandTopic, IslandTaxonomy, sequelize } =
 
 const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
 const DEFAULT_TOPIC_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_AFFINITY_THRESHOLD || '0.12');
+const DEFAULT_ARTICLE_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_AFFINITY_THRESHOLD || '0.64');
 const DEFAULT_MAX_COMMUNITIES_PER_TOPIC = Number.parseInt(process.env.ISLAND_MAX_COMMUNITIES_PER_TOPIC, 10) || 2;
 const DEFAULT_TOPIC_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_CONFIDENCE_THRESHOLD || '0.10');
+const DEFAULT_ARTICLE_SIGNAL_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_SIGNAL_THRESHOLD || '0.05');
+const DEFAULT_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD = Number.parseFloat(
+  process.env.ISLAND_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD || '0.62'
+);
 const DEFAULT_ISLAND_MATCH_THRESHOLD = Number.parseFloat(process.env.ISLAND_PROFILE_MATCH_THRESHOLD || '0.78');
 const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_ALPHA || '0.35');
 const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '30');
@@ -35,6 +40,7 @@ const SIGNAL_WEIGHTS = {
 
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 const topicMagnitude = (strength) => Math.max(0.0001, Math.abs(Number(strength || 0)));
+const articleMagnitude = (score) => Math.max(0.0001, Math.abs(Number(score || 0)));
 
 function debugIsland(message, payload = null) {
   if (!ISLAND_DEBUG) return;
@@ -156,6 +162,7 @@ function mergePositiveSignals(existingSignals = {}, incomingSignals = {}) {
   merged.stars += incoming.stars;
   merged.clicks += incoming.clicks;
   merged.deepReads += incoming.deepReads;
+  merged.negatives += incoming.negatives;
 
   return merged;
 }
@@ -255,66 +262,108 @@ async function evolveIslandTopicMemberships(islandId, islandRows, transaction) {
   }
 }
 
-async function buildPopulationAuditEntry({ userId, topicIds, transaction }) {
-  if (!topicIds.length) {
+async function buildPopulationAuditEntry({ userId, topicIds = [], articleIds = [], transaction }) {
+  if (!topicIds.length && !articleIds.length) {
     return {
       runAt: new Date().toISOString(),
       topicIds: [],
+      articleIds: [],
       metrics: {
         relatedArticleCount: 0,
         starredCount: 0,
-        clickedCount: 0
+        clickedCount: 0,
+        negativeCount: 0
       },
       sourceArticles: {
         starredArticleIds: [],
-        clickedArticleIds: []
+        clickedArticleIds: [],
+        negativeArticleIds: [],
+        articles: []
       }
     };
   }
 
-  const rows = await sequelize.query(
-    `
-    SELECT DISTINCT
-      a.id,
-      a.starInd,
-      a.clickedAmount
-    FROM article_topics atp
-    INNER JOIN articles a
-      ON a.id = atp.articleId
-     AND a.userId = :userId
-    WHERE atp.topicId IN (:topicIds)
-    `,
-    {
-      replacements: {
+  const rows = articleIds.length
+    ? await Article.findAll({
+      where: {
         userId,
-        topicIds
+        id: { [Op.in]: articleIds }
       },
-      type: db.Sequelize.QueryTypes.SELECT,
+      attributes: ['id', 'title', 'starInd', 'clickedAmount', 'negativeInd'],
+      raw: true,
       transaction
-    }
-  );
+    })
+    : await sequelize.query(
+      `
+      SELECT DISTINCT
+        a.id,
+        a.title,
+        a.starInd,
+        a.clickedAmount,
+        a.negativeInd
+      FROM article_topics atp
+      INNER JOIN articles a
+        ON a.id = atp.articleId
+       AND a.userId = :userId
+      WHERE atp.topicId IN (:topicIds)
+      `,
+      {
+        replacements: {
+          userId,
+          topicIds
+        },
+        type: db.Sequelize.QueryTypes.SELECT,
+        transaction
+      }
+    );
 
-  const starredArticleIds = rows
-    .filter(row => Number(row.starInd) === 1)
+  const articleRows = rows
+    .map(row => ({
+      id: Number(row.id),
+      title: row.title,
+      starInd: Number(row.starInd || 0),
+      clickedAmount: Number(row.clickedAmount || 0),
+      negativeInd: Number(row.negativeInd || 0)
+    }))
+    .filter(row => Number.isFinite(row.id))
+    .sort((a, b) => (
+      b.starInd - a.starInd ||
+      b.clickedAmount - a.clickedAmount ||
+      b.negativeInd - a.negativeInd ||
+      a.id - b.id
+    ));
+
+  const starredRows = articleRows.filter(row => row.starInd === 1);
+  const clickedRows = articleRows.filter(row => row.clickedAmount > 0);
+  const negativeRows = articleRows.filter(row => row.negativeInd === 1);
+
+  const starredArticleIds = starredRows
     .map(row => Number(row.id))
     .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
 
-  const clickedArticleIds = rows
-    .filter(row => Number(row.clickedAmount) > 0)
+  const clickedArticleIds = clickedRows
+    .map(row => Number(row.id))
+    .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
+
+  const negativeArticleIds = negativeRows
     .map(row => Number(row.id))
     .slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS);
 
   return {
     runAt: new Date().toISOString(),
     topicIds,
+    articleIds: articleIds.slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS),
     metrics: {
-      relatedArticleCount: rows.length,
-      starredCount: starredArticleIds.length,
-      clickedCount: clickedArticleIds.length
+      relatedArticleCount: articleRows.length,
+      starredCount: starredRows.length,
+      clickedCount: clickedRows.length,
+      negativeCount: negativeRows.length
     },
     sourceArticles: {
       starredArticleIds,
-      clickedArticleIds
+      clickedArticleIds,
+      negativeArticleIds,
+      articles: articleRows.slice(0, DEFAULT_AUDIT_MAX_ARTICLE_IDS)
     }
   };
 }
@@ -375,6 +424,117 @@ function computeArticleSignals(article) {
       negatives: negative
     }
   };
+}
+
+function computeBehavioralArticleProfile(article) {
+  const articleSignals = computeArticleSignals(article);
+  const score = articleSignals.positiveScore - articleSignals.negativeScore;
+
+  return {
+    articleId: article.id,
+    title: article.title,
+    vector: Array.isArray(article.articleVector) ? article.articleVector : null,
+    score,
+    positiveSignals: articleSignals.positiveSignals,
+    published: article.published
+  };
+}
+
+function buildArticleIslandLabel(articleProfiles) {
+  const titles = articleProfiles
+    .slice()
+    .sort((a, b) => (Math.abs(b.score) - Math.abs(a.score)) || (a.articleId - b.articleId))
+    .map(article => article.title)
+    .filter(Boolean);
+
+  if (!titles.length) return 'Interest Island';
+  return titles[0].slice(0, 255);
+}
+
+function buildArticleIslandWeight(articleProfiles) {
+  if (!articleProfiles.length) return 0;
+
+  const averageScore = articleProfiles.reduce((sum, article) => sum + article.score, 0) / articleProfiles.length;
+  const denominator = Math.max(1, SIGNAL_WEIGHTS.star + SIGNAL_WEIGHTS.deepRead + SIGNAL_WEIGHTS.click);
+  const breadthBonus = Math.sign(averageScore) * Math.min(0.2, articleProfiles.length * 0.03);
+
+  return Number(clamp((averageScore / denominator) + breadthBonus, -1, 1).toFixed(4));
+}
+
+function buildArticleIslandPositiveSignals(articleProfiles) {
+  const signals = buildPositiveSignalsAccumulator();
+
+  for (const article of articleProfiles) {
+    addPositiveSignals(signals, article.positiveSignals);
+  }
+
+  return signals;
+}
+
+function addArticleToCommunity(community, article) {
+  if (community.articles.some(existing => existing.articleId === article.articleId)) return;
+
+  community.articles.push(article);
+
+  if (Array.isArray(article.vector) && article.vector.length) {
+    community.samples.push({ vector: article.vector, weight: articleMagnitude(article.score) });
+    community.vector = weightedAverageVector(community.samples) || community.vector;
+  }
+}
+
+function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER) {
+  const sorted = articleProfiles
+    .slice()
+    .sort((a, b) => (Math.abs(b.score) - Math.abs(a.score)) || (a.articleId - b.articleId));
+
+  const communities = [];
+
+  for (const article of sorted) {
+    if (!communities.length) {
+      communities.push({
+        articles: [article],
+        samples: [{ vector: article.vector, weight: articleMagnitude(article.score) }],
+        vector: normalizeVector(article.vector)
+      });
+      continue;
+    }
+
+    const rankedCommunities = communities
+      .map(community => ({
+        community,
+        affinity: cosineSimilarity(article.vector, community.vector)
+      }))
+      .sort((a, b) => b.affinity - a.affinity);
+
+    const best = rankedCommunities[0] || null;
+
+    if (best && best.affinity >= DEFAULT_ARTICLE_AFFINITY_THRESHOLD) {
+      addArticleToCommunity(best.community, article);
+      continue;
+    }
+
+    if (communities.length >= maxIslands && best) {
+      addArticleToCommunity(best.community, article);
+      continue;
+    }
+
+    communities.push({
+      articles: [article],
+      samples: [{ vector: article.vector, weight: articleMagnitude(article.score) }],
+      vector: normalizeVector(article.vector)
+    });
+  }
+
+  return communities
+    .map(bucket => ({
+      articles: bucket.articles,
+      topics: [],
+      vector: weightedAverageVector(bucket.samples) || bucket.vector,
+      weight: buildArticleIslandWeight(bucket.articles),
+      positiveSignals: buildArticleIslandPositiveSignals(bucket.articles),
+      label: buildArticleIslandLabel(bucket.articles)
+    }))
+    .sort((a, b) => (Math.abs(b.weight) - Math.abs(a.weight)) || (b.articles.length - a.articles.length));
 }
 
 function computeTopicProfile(topic) {
@@ -639,6 +799,65 @@ function buildBehavioralTopicCommunities(topicProfiles, maxIslands = DEFAULT_MAX
 export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   const maxIslands = options.maxIslands || DEFAULT_MAX_ISLANDS_PER_USER;
 
+  const articles = await Article.findAll({
+    where: {
+      userId,
+      articleVector: { [Op.ne]: null },
+      [Op.or]: [
+        { starInd: 1 },
+        { clickedAmount: { [Op.gt]: 0 } },
+        { attentionBucket: { [Op.gte]: 3 } },
+        { negativeInd: 1 }
+      ]
+    },
+    attributes: [
+      'id',
+      'title',
+      'articleVector',
+      'starInd',
+      'clickedAmount',
+      'attentionBucket',
+      'negativeInd',
+      'published'
+    ],
+    order: [
+      ['starInd', 'DESC'],
+      ['clickedAmount', 'DESC'],
+      ['attentionBucket', 'DESC'],
+      ['published', 'DESC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  const articleProfiles = articles
+    .map(computeBehavioralArticleProfile)
+    .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
+    .filter(profile => Math.abs(profile.score) >= DEFAULT_ARTICLE_SIGNAL_THRESHOLD);
+
+  const communities = buildBehavioralArticleCommunities(articleProfiles, maxIslands);
+
+  if (ISLAND_DEBUG) {
+    debugIsland('behavioral-article-community-formation', {
+      userId,
+      articleCount: articleProfiles.length,
+      maxIslands,
+      affinityThreshold: DEFAULT_ARTICLE_AFFINITY_THRESHOLD,
+      finalCommunities: communities.map((community, index) => ({
+        index: index + 1,
+        weight: Number(community.weight || 0),
+        label: community.label,
+        articleCount: community.articles.length,
+        articleIds: community.articles.map(article => article.articleId).slice(0, 12)
+      }))
+    });
+  }
+
+  return communities;
+}
+
+export async function buildTopicInterestIslandProfilesForUser(userId, options = {}) {
+  const maxIslands = options.maxIslands || DEFAULT_MAX_ISLANDS_PER_USER;
+
   const topics = await Topic.findAll({
     where: {
       userId,
@@ -682,9 +901,10 @@ async function persistInterestIslandProfiles(userId, profiles, transaction, opti
   const persistableProfiles = profiles
     .map(profile => ({
       ...profile,
-      topics: profile.topics.filter(topic => Math.abs(topic.strength) >= topicConfidenceThreshold)
+      topics: (profile.topics || []).filter(topic => Math.abs(topic.strength) >= topicConfidenceThreshold)
     }))
-    .filter(profile => profile.topics.length > 0);
+    .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
+    .filter(profile => profile.topics.length > 0 || (profile.articles || []).length > 0);
 
   const existingIslands = await Island.findAll({
     where: { userId },
@@ -739,12 +959,14 @@ async function persistInterestIslandProfiles(userId, profiles, transaction, opti
       })
       .filter(row => row.confidence >= topicConfidenceThreshold);
 
-    if (!islandRows.length) continue;
-
     const topicIds = islandRows.map(row => Number(row.topicId));
+    const articleIds = (profile.articles || [])
+      .map(article => Number(article.articleId))
+      .filter(Number.isFinite);
     const auditEntry = await buildPopulationAuditEntry({
       userId,
       topicIds,
+      articleIds,
       transaction
     });
 
@@ -772,7 +994,9 @@ async function persistInterestIslandProfiles(userId, profiles, transaction, opti
         updatedWithNegativeSignalCount += 1;
       }
 
-      await evolveIslandTopicMemberships(updatedIsland.id, islandRows, transaction);
+      if (islandRows.length) {
+        await evolveIslandTopicMemberships(updatedIsland.id, islandRows, transaction);
+      }
 
       createdIslands.push(updatedIsland);
       continue;
@@ -790,15 +1014,17 @@ async function persistInterestIslandProfiles(userId, profiles, transaction, opti
     }, { transaction });
     createdIslandCount += 1;
 
-    await IslandTopic.bulkCreate(
-      islandRows.map(row => ({
-        islandId: island.id,
-        topicId: row.topicId,
-        similarity: row.similarity,
-        confidence: row.confidence
-      })),
-      { transaction }
-    );
+    if (islandRows.length) {
+      await IslandTopic.bulkCreate(
+        islandRows.map(row => ({
+          islandId: island.id,
+          topicId: row.topicId,
+          similarity: row.similarity,
+          confidence: row.confidence
+        })),
+        { transaction }
+      );
+    }
 
     createdIslands.push(island);
   }
@@ -859,33 +1085,26 @@ async function persistInterestIslandProfiles(userId, profiles, transaction, opti
   return createdIslands;
 }
 
-export async function buildInterestIslandsForUser(userId, options = {}) {
+export async function buildInterestIslandsFromBehaviorForUser(userId, options = {}) {
   const profiles = await buildInterestIslandProfilesForUser(userId, options);
 
-  const createdIslands = await sequelize.transaction(async (transaction) => {
-    const islands = await persistInterestIslandProfiles(userId, profiles, transaction, options);
-    const scoringResult = await buildArticleInterestScoresForUser(userId, { transaction });
-
-    return {
-      islands,
-      rescoredArticleCount: Number(scoringResult?.updatedCount || 0)
-    };
-  });
+  const islands = await sequelize.transaction((transaction) =>
+    persistInterestIslandProfiles(userId, profiles, transaction, options)
+  );
 
   return {
     userId,
-    islandCount: createdIslands.islands.length,
-    rescoredArticleCount: createdIslands.rescoredArticleCount,
-    topicCount: profiles.reduce((sum, profile) => sum + profile.topics.length, 0),
+    islandCount: islands.length,
+    articleCount: profiles.reduce((sum, profile) => sum + (profile.articles || []).length, 0),
     profiles
   };
 }
 
-export async function buildInterestIslands(options = {}) {
+export async function buildInterestIslandsFromBehavior(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 
   if (userId) {
-    return buildInterestIslandsForUser(userId, { maxIslands });
+    return buildInterestIslandsFromBehaviorForUser(userId, { ...options, maxIslands });
   }
 
   const users = await User.findAll({
@@ -897,7 +1116,185 @@ export async function buildInterestIslands(options = {}) {
 
   for (const user of users) {
     try {
-      const result = await buildInterestIslandsForUser(user.id, { maxIslands });
+      const result = await buildInterestIslandsFromBehaviorForUser(user.id, { ...options, maxIslands });
+      results.push(result);
+    } catch (err) {
+      console.error(`[ISLANDS] Failed building interest islands for user ${user.id}:`, err);
+    }
+  }
+
+  return {
+    userCount: users.length,
+    results
+  };
+}
+
+export async function enrichInterestIslandsFromTopicsForUser(userId, options = {}) {
+  const topicConfidenceThreshold =
+    options.topicConfidenceThreshold ?? DEFAULT_TOPIC_CONFIDENCE_THRESHOLD;
+
+  return sequelize.transaction(async (transaction) => {
+    const [islands, topicProfiles, taxonomyRows] = await Promise.all([
+      Island.findAll({
+        where: { userId, archivedInd: false, islandVector: { [Op.ne]: null } },
+        order: [['weight', 'DESC'], ['id', 'ASC']],
+        transaction
+      }),
+      buildTopicInterestIslandProfilesForUser(userId, options),
+      IslandTaxonomy.findAll({
+        where: {
+          status: 'active',
+          vector: { [Op.ne]: null }
+        },
+        attributes: ['displayName', 'vector'],
+        transaction
+      })
+    ]);
+
+    let enrichedIslandCount = 0;
+    let islandTopicLinkCount = 0;
+
+    for (const island of islands) {
+      const candidateTopicRows = topicProfiles
+        .flatMap(profile => profile.topics || [])
+        .filter(topic => Array.isArray(topic.vector) && topic.vector.length)
+        .map(topic => {
+          const similarity = cosineSimilarity(island.islandVector, topic.vector);
+          const evidence = clamp(
+            Math.abs(Number(topic.strength || 0)) + Math.min(Number(topic.evidenceCount || 0), 5) * 0.04,
+            0.25,
+            1
+          );
+
+          return {
+            topicId: topic.topicId,
+            similarity: Number(similarity.toFixed(4)),
+            confidence: Number(clamp(similarity * evidence, 0, 1).toFixed(4))
+          };
+        })
+        .filter(row =>
+          row.similarity >= DEFAULT_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD &&
+          row.confidence >= topicConfidenceThreshold
+        );
+      const topicRowsById = new Map();
+
+      for (const row of candidateTopicRows) {
+        const topicId = Number(row.topicId);
+        const previous = topicRowsById.get(topicId);
+        if (!previous || row.confidence > previous.confidence) {
+          topicRowsById.set(topicId, row);
+        }
+      }
+
+      const topicRows = [...topicRowsById.values()];
+
+      if (!topicRows.length) continue;
+
+      await evolveIslandTopicMemberships(island.id, topicRows, transaction);
+
+      const matchedTopicIds = new Set(topicRows.map(row => Number(row.topicId)));
+      const matchedTopics = topicProfiles
+        .flatMap(profile => profile.topics || [])
+        .filter(topic => matchedTopicIds.has(Number(topic.topicId)));
+      const labelProfile = {
+        vector: island.islandVector,
+        topics: matchedTopics
+      };
+      const taxonomyLabel = resolveTaxonomyDisplayName(island.islandVector, taxonomyRows);
+      const topicFallbackLabel = resolveTopicFallbackLabel(labelProfile);
+      const resolvedLabel = taxonomyLabel || topicFallbackLabel || island.label;
+
+      await island.update(
+        {
+          label: resolvedLabel,
+          populationAudit: appendPopulationAudit(
+            island.populationAudit,
+            await buildPopulationAuditEntry({
+              userId,
+              topicIds: [...matchedTopicIds],
+              transaction
+            })
+          )
+        },
+        { transaction }
+      );
+
+      enrichedIslandCount += 1;
+      islandTopicLinkCount += topicRows.length;
+    }
+
+    return {
+      userId,
+      enrichedIslandCount,
+      islandTopicLinkCount
+    };
+  });
+}
+
+export async function enrichInterestIslandsFromTopics(options = {}) {
+  const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
+
+  if (userId) {
+    return enrichInterestIslandsFromTopicsForUser(userId, { ...options, maxIslands });
+  }
+
+  const users = await User.findAll({
+    attributes: ['id'],
+    order: [['id', 'ASC']]
+  });
+
+  const results = [];
+
+  for (const user of users) {
+    try {
+      const result = await enrichInterestIslandsFromTopicsForUser(user.id, { ...options, maxIslands });
+      results.push(result);
+    } catch (err) {
+      console.error(`[ISLANDS] Failed enriching interest islands for user ${user.id}:`, err);
+    }
+  }
+
+  return {
+    userCount: users.length,
+    results
+  };
+}
+
+export async function buildInterestIslandsForUser(userId, options = {}) {
+  const behaviorResult = await buildInterestIslandsFromBehaviorForUser(userId, options);
+  const enrichmentResult = await enrichInterestIslandsFromTopicsForUser(userId, options);
+  const scoringResult = await buildArticleInterestScoresForUser(userId);
+
+  return {
+    userId,
+    islandCount: behaviorResult.islandCount,
+    articleCount: behaviorResult.articleCount,
+    enrichedIslandCount: enrichmentResult.enrichedIslandCount,
+    islandTopicLinkCount: enrichmentResult.islandTopicLinkCount,
+    topicScoredCount: Number(scoringResult?.topicScoredCount || 0),
+    fallbackScoredCount: Number(scoringResult?.fallbackScoredCount || 0),
+    rescoredArticleCount: Number(scoringResult?.updatedCount || 0),
+    profiles: behaviorResult.profiles
+  };
+}
+
+export async function buildInterestIslands(options = {}) {
+  const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
+
+  if (userId) {
+    return buildInterestIslandsForUser(userId, { ...options, maxIslands });
+  }
+
+  const users = await User.findAll({
+    attributes: ['id'],
+    order: [['id', 'ASC']]
+  });
+
+  const results = [];
+
+  for (const user of users) {
+    try {
+      const result = await buildInterestIslandsForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
       console.error(`[ISLANDS] Failed building interest islands for user ${user.id}:`, err);

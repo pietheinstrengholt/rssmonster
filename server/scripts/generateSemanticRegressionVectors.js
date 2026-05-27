@@ -6,34 +6,54 @@ import { fileURLToPath } from 'node:url';
 import dotenv from 'dotenv';
 import OpenAI from 'openai';
 
+import {
+  EMBEDDING_MODEL,
+  buildArticleEventEmbeddingText,
+  isArticleEventEmbeddingTextUsable
+} from '../services/articles/embedArticle.js';
+
 dotenv.config({ quiet: true });
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression.json');
 const VECTOR_FIXTURE_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression.vectors.json');
-const EMBEDDING_MODEL = process.env.SEMANTIC_REGRESSION_EMBEDDING_MODEL || 'text-embedding-3-small';
 const BATCH_SIZE = Number.parseInt(process.env.SEMANTIC_REGRESSION_EMBED_BATCH_SIZE || '50', 10);
-const MAX_EMBEDDING_INPUT_CHARS = Number.parseInt(
-  process.env.SEMANTIC_REGRESSION_MAX_EMBED_CHARS || '20000',
-  10
-);
 
 function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
 
-function titleFromContent(content, articleIndex) {
-  const firstSentence = content.split('.').find(Boolean)?.trim() || `Semantic fixture article ${articleIndex + 1}`;
-  return firstSentence.slice(0, 180);
+function articleContent(article) {
+  return (
+    article.contentStripped ||
+    article.contentOriginal ||
+    article.content ||
+    article.title ||
+    ''
+  ).trim();
+}
+
+function articleTitle(article, articleIndex) {
+  const content = articleContent(article);
+  const firstSentence = content.split('.').find(Boolean)?.trim();
+
+  return article.title || firstSentence?.slice(0, 180) || `Semantic fixture article ${articleIndex + 1}`;
 }
 
 function buildEmbeddingInput(article, articleIndex) {
-  const input = [
-    titleFromContent(article.content, articleIndex),
-    article.content
-  ].join('\n\n');
+  return buildArticleEventEmbeddingText({
+    title: articleTitle(article, articleIndex),
+    description: article.description || '',
+    contentStripped: article.contentStripped || articleContent(article)
+  });
+}
 
-  return input.slice(0, MAX_EMBEDDING_INPUT_CHARS);
+function isExistingVectorReusable(existingVector) {
+  return (
+    Array.isArray(existingVector?.articleVector) &&
+    existingVector.articleVector.length > 0 &&
+    existingVector.embeddingModel === EMBEDDING_MODEL
+  );
 }
 
 async function loadFixture() {
@@ -67,32 +87,32 @@ async function main() {
       .slice(index, index + BATCH_SIZE)
       .map((article, offset) => {
         const articleIndex = index + offset;
-        const contentHash = hashContent(article.content);
+        const contentHash = hashContent(articleContent(article));
         const existingVector = existingVectors.get(contentHash);
+        const embeddingInput = buildEmbeddingInput(article, articleIndex);
 
         return {
           article,
           articleIndex,
           contentHash,
+          embeddingInput,
           existingVector
         };
       });
 
-    const missing = batch.filter(item =>
-      !Array.isArray(item.existingVector?.articleVector) ||
-      item.existingVector.articleVector.length === 0 ||
-      item.existingVector.embeddingModel !== EMBEDDING_MODEL
-    );
+    const missing = batch.filter(item => !isExistingVectorReusable(item.existingVector));
+    const embeddable = missing.filter(item => isArticleEventEmbeddingTextUsable(item.embeddingInput));
+    const skipped = missing.filter(item => !isArticleEventEmbeddingTextUsable(item.embeddingInput));
 
     const generatedByHash = new Map();
-    if (missing.length) {
+    if (embeddable.length) {
       const response = await openai.embeddings.create({
         model: EMBEDDING_MODEL,
-        input: missing.map(item => buildEmbeddingInput(item.article, item.articleIndex))
+        input: embeddable.map(item => item.embeddingInput)
       });
 
       response.data.forEach((result, resultIndex) => {
-        const item = missing[resultIndex];
+        const item = embeddable[resultIndex];
         generatedByHash.set(item.contentHash, {
           contentHash: item.contentHash,
           embeddingModel: EMBEDDING_MODEL,
@@ -108,6 +128,20 @@ async function main() {
           embeddingModel: item.existingVector.embeddingModel,
           articleVector: item.existingVector.articleVector
         }
+      );
+    }
+
+    for (const item of skipped) {
+      console.warn(
+        `[SEMANTIC FIXTURE] skipped article ${item.articleIndex + 1} ` +
+        `(event embedding text too short: ${item.embeddingInput.length})`
+      );
+    }
+
+    if (skipped.length) {
+      throw new Error(
+        'Semantic regression fixture contains articles that production embedding would skip. ' +
+        'Remove or enrich those articles before regenerating vectors.'
       );
     }
 

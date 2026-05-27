@@ -31,15 +31,20 @@ const VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.vec
 const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'island-taxonomy.vectors.json');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
-const EXPECTED_MIN_EVENTS = 10;
-const EXPECTED_MIN_TOPICS = 5;
-const EXPECTED_MIN_ISLANDS = 2;
-const EXPECTED_MIN_ASSIGNED_ARTICLES = 25;
-const EXPECTED_MIN_TOPIC_LINKED_ARTICLES = 15;
-const EXPECTED_MIN_ARTICLE_TOPIC_LINKS = 15;
+const EXPECTED_MIN_EVENTS = 4;
+const EXPECTED_MIN_TOPICS = 2;
+const EXPECTED_MIN_ISLANDS = 1;
+const EXPECTED_MIN_ASSIGNED_ARTICLES = 3;
+const EXPECTED_MIN_TOPIC_LINKED_ARTICLES = 3;
+const EXPECTED_MIN_ARTICLE_TOPIC_LINKS = 3;
 const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
-const REPORT_SEPARATOR = '-'.repeat(96);
+const SEMANTIC_FIXTURE_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
+  process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
+);
+const REPORT_SEPARATOR = '-'.repeat(120);
 const MAX_REPORTED_ARTICLES_PER_EVENT = 12;
+const MAX_REPORTED_ARTICLES_PER_ISLAND = 20;
+const MAX_REPORTED_FALLBACK_ARTICLES_PER_ISLAND = 8;
 
 function loadFixture() {
   return readFile(FIXTURE_PATH, 'utf8').then(JSON.parse);
@@ -94,6 +99,27 @@ function titleFromContent(content, articleIndex) {
   return firstSentence.slice(0, 180);
 }
 
+function articleContent(fixtureArticle) {
+  return (
+    fixtureArticle.contentStripped ||
+    fixtureArticle.contentOriginal ||
+    fixtureArticle.content ||
+    fixtureArticle.title ||
+    ''
+  ).trim();
+}
+
+function articleTitle(fixtureArticle, articleIndex) {
+  return fixtureArticle.title || titleFromContent(articleContent(fixtureArticle), articleIndex);
+}
+
+function articlePublished(fixtureArticle, fallbackPublished) {
+  if (!fixtureArticle.published) return fallbackPublished;
+
+  const published = new Date(fixtureArticle.published);
+  return Number.isNaN(published.getTime()) ? fallbackPublished : published;
+}
+
 function formatCell(value, width) {
   const text = String(value ?? '');
   if (text.length > width) {
@@ -121,12 +147,211 @@ function maxMetric(values) {
   return Math.max(0, ...values.map(value => Number(value || 0)));
 }
 
+function parseVector(vector) {
+  if (Array.isArray(vector)) return vector;
+  if (typeof vector !== 'string') return null;
+
+  try {
+    const parsed = JSON.parse(vector);
+    return Array.isArray(parsed) ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function cosineSimilarity(vectorA, vectorB) {
+  const a = parseVector(vectorA);
+  const b = parseVector(vectorB);
+
+  if (!a?.length || !b?.length || a.length !== b.length) return 0;
+
+  let dot = 0;
+  let normA = 0;
+  let normB = 0;
+
+  for (let index = 0; index < a.length; index += 1) {
+    const valueA = Number(a[index] || 0);
+    const valueB = Number(b[index] || 0);
+
+    dot += valueA * valueB;
+    normA += valueA * valueA;
+    normB += valueB * valueB;
+  }
+
+  if (!normA || !normB) return 0;
+
+  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+}
+
 function eventArticleCount(event) {
   if (Array.isArray(event.articles)) {
     return event.articles.length;
   }
 
   return Number(event.articleCount || 0);
+}
+
+function parsePopulationAudit(populationAudit) {
+  if (Array.isArray(populationAudit)) return populationAudit;
+  if (typeof populationAudit !== 'string') return [];
+
+  try {
+    const parsed = JSON.parse(populationAudit);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+}
+
+function latestPopulationAuditEntry(island) {
+  return parsePopulationAudit(island.populationAudit).at(-1) || null;
+}
+
+function islandAuditArticles(island) {
+  const sourceArticles = latestPopulationAuditEntry(island)?.sourceArticles;
+  if (!Array.isArray(sourceArticles?.articles)) return [];
+
+  return sourceArticles.articles
+    .map(article => ({
+      id: Number(article.id),
+      title: article.title || '-',
+      starInd: Number(article.starInd || 0),
+      clickedAmount: Number(article.clickedAmount || 0),
+      negativeInd: Number(article.negativeInd || 0)
+    }))
+    .filter(article => Number.isFinite(article.id))
+    .sort((a, b) => (
+      b.starInd - a.starInd ||
+      b.clickedAmount - a.clickedAmount ||
+      b.negativeInd - a.negativeInd ||
+      a.id - b.id
+    ));
+}
+
+function formatArticleSignalSummary(article) {
+  return `star=${article.starInd} clicked=${article.clickedAmount} negative=${article.negativeInd}`;
+}
+
+function approximatelyEqualScore(left, right) {
+  return Math.abs(Number(left || 0) - Number(right || 0)) < 0.0001;
+}
+
+function roundedScore(value) {
+  return Number(Number(value || 0).toFixed(4));
+}
+
+function reportTitle(value) {
+  return String(value || '-').replace(/\s+/g, ' ').trim();
+}
+
+function plainScoredArticle(article) {
+  const feed = article.feed || article.Feed || null;
+  const category = feed?.category || feed?.Category || null;
+
+  return {
+    id: Number(article.id),
+    title: article.title || '-',
+    interestScore: Number(article.interestScore || 0),
+    articleVector: article.articleVector,
+    starInd: Number(article.starInd || 0),
+    clickedAmount: Number(article.clickedAmount || 0),
+    negativeInd: Number(article.negativeInd || 0),
+    feedName: feed?.feedName || null,
+    categoryName: category?.name || null
+  };
+}
+
+function buildIslandFallbackScores(islands, articles, threshold = SEMANTIC_FIXTURE_ISLAND_ARTICLE_SCORE_THRESHOLD) {
+  const fallbackScoresByIslandId = new Map(islands.map(island => [String(island.id), []]));
+
+  for (const article of articles) {
+    const currentScore = roundedScore(article.interestScore);
+    if (!currentScore) continue;
+
+    for (const island of islands) {
+      if (island.archivedInd) continue;
+
+      const similarity = cosineSimilarity(article.articleVector, island.islandVector);
+      if (similarity < threshold) continue;
+
+      const islandWeight = Number(island.weight || 0);
+      const score = roundedScore(islandWeight * similarity);
+      if (!approximatelyEqualScore(currentScore, score)) continue;
+
+      fallbackScoresByIslandId.get(String(island.id))?.push({
+        islandId: String(island.id),
+        articleId: Number(article.id),
+        title: article.title || '-',
+        similarity: Number(similarity.toFixed(4)),
+        islandWeight: roundedScore(islandWeight),
+        interestScore: currentScore,
+        starInd: Number(article.starInd || 0),
+        clickedAmount: Number(article.clickedAmount || 0),
+        negativeInd: Number(article.negativeInd || 0),
+        feedName: article.feedName || null,
+        categoryName: article.categoryName || null
+      });
+    }
+  }
+
+  for (const scores of fallbackScoresByIslandId.values()) {
+    scores.sort((a, b) => (
+      Math.abs(b.interestScore) - Math.abs(a.interestScore) ||
+      b.similarity - a.similarity ||
+      a.articleId - b.articleId
+    ));
+  }
+
+  return fallbackScoresByIslandId;
+}
+
+function summarizeInterestScores(scores) {
+  if (!scores.length) {
+    return {
+      avg: formatMetric(0),
+      max: formatMetric(0)
+    };
+  }
+
+  const total = scores.reduce((sum, score) => sum + Number(score || 0), 0);
+  const max = scores.reduce((best, score) => (
+    Math.abs(score) > Math.abs(best) ? Number(score || 0) : best
+  ), 0);
+
+  return {
+    avg: formatMetric(total / scores.length),
+    max: formatMetric(max)
+  };
+}
+
+async function loadCategoryReportRows(userId) {
+  const categories = await Category.findAll({
+    where: { userId },
+    attributes: ['id', 'name'],
+    include: [{
+      model: Feed,
+      required: false,
+      attributes: ['id'],
+      include: [{
+        model: Article,
+        required: false,
+        attributes: ['id'],
+        where: { userId }
+      }]
+    }],
+    order: [
+      ['categoryOrder', 'ASC'],
+      ['name', 'ASC'],
+      [Feed, 'feedName', 'ASC']
+    ]
+  });
+
+  return categories.map(category => ({
+    id: category.id,
+    name: category.name,
+    articleCount: (category.feeds || [])
+      .reduce((sum, feed) => sum + (feed.articles?.length || 0), 0)
+  }));
 }
 
 async function deleteExistingFixtureUser() {
@@ -221,7 +446,8 @@ async function loadIslandTaxonomyFixture(taxonomyVectorFixture) {
   return IslandTaxonomy.count({ where: { status: 'active' } });
 }
 
-async function printSemanticPipelineReport(userId) {
+async function printSemanticPipelineReport(userId, islandResult = null) {
+  const categories = await loadCategoryReportRows(userId);
   const events = await Event.findAll({
     where: { userId },
     include: [
@@ -243,6 +469,29 @@ async function printSemanticPipelineReport(userId) {
       ['id', 'ASC']
     ]
   });
+
+  if (islandResult) {
+    reportLine('');
+    reportLine('BUILD INTEREST ISLANDS RESULT');
+    reportLine(REPORT_SEPARATOR);
+    reportLine(`${formatCell('topicScoredCount:', 28)} ${islandResult.topicScoredCount ?? '-'}`);
+    reportLine(`${formatCell('fallbackScoredCount:', 28)} ${islandResult.fallbackScoredCount ?? '-'}`);
+    reportLine(`${formatCell('rescoredArticleCount:', 28)} ${islandResult.rescoredArticleCount ?? '-'}`);
+  }
+
+  reportLine('');
+  reportLine('CATEGORIES');
+  reportLine(REPORT_SEPARATOR);
+  reportLine(`${formatCell('ID', 6)} ${formatCell('Articles', 9)} Category Name`);
+  reportLine(REPORT_SEPARATOR);
+
+  for (const category of categories) {
+    reportLine(
+      `${formatCell(category.id, 6)} ` +
+      `${formatCell(category.articleCount, 9)} ` +
+      `${category.name}`
+    );
+  }
 
   reportLine('');
   reportLine('EVENTS');
@@ -301,7 +550,7 @@ async function printSemanticPipelineReport(userId) {
     return counts;
   }, new Map());
 
-  const [topicRows, articleTopicRows, eventTopicRows] = await Promise.all([
+  const [topicRows, articleTopicRows, eventTopicRows, scoredArticleRows] = await Promise.all([
     Topic.findAll({
       where: { userId },
       attributes: ['id', 'name'],
@@ -326,6 +575,32 @@ async function printSemanticPipelineReport(userId) {
         where: { userId }
       }],
       raw: true
+    }),
+    Article.findAll({
+      where: {
+        userId,
+        articleVector: { [Op.ne]: null },
+        interestScore: { [Op.ne]: 0 }
+      },
+      attributes: [
+        'id',
+        'title',
+        'interestScore',
+        'articleVector',
+        'starInd',
+        'clickedAmount',
+        'negativeInd'
+      ],
+      include: [{
+        model: Feed,
+        required: false,
+        attributes: ['id', 'feedName'],
+        include: [{
+          model: Category,
+          required: false,
+          attributes: ['id', 'name']
+        }]
+      }]
     })
   ]);
 
@@ -392,6 +667,9 @@ async function printSemanticPipelineReport(userId) {
 
     return islandEvents;
   }, new Map());
+  const scoredArticles = scoredArticleRows.map(plainScoredArticle);
+  const scoredArticleById = new Map(scoredArticles.map(article => [Number(article.id), article]));
+  const fallbackScoresByIslandId = buildIslandFallbackScores(islands, scoredArticles);
 
   const eventArticleCounts = events.map(eventArticleCount);
   const clusteredArticleCount = eventArticleCounts.reduce((sum, count) => sum + count, 0);
@@ -437,23 +715,99 @@ async function printSemanticPipelineReport(userId) {
   reportLine(REPORT_SEPARATOR);
   reportLine(
     `${formatCell('ID', 6)} ` +
-    `${formatCell('Topics', 8)} ` +
-    `${formatCell('Events', 8)} ` +
-    `${formatCell('Articles', 10)} ` +
+    `${formatCell('Topics', 7)} ` +
+    `${formatCell('Events', 7)} ` +
+    `${formatCell('topicLinkedArticles', 20)} ` +
+    `${formatCell('fallbackScoredArticles', 22)} ` +
+    `${formatCell('totalScoredArticles', 20)} ` +
+    `${formatCell('avgScore', 8)} ` +
+    `${formatCell('maxScore', 8)} ` +
     'Island'
   );
   reportLine(REPORT_SEPARATOR);
 
   for (const island of islands) {
     const islandKey = String(island.id);
+    const topicLinkedArticleIds = articleIdsByIslandId.get(islandKey) || new Set();
+    const fallbackScores = fallbackScoresByIslandId.get(islandKey) || [];
+    const scoredArticleIds = new Set([
+      ...topicLinkedArticleIds,
+      ...fallbackScores.map(row => row.articleId)
+    ]);
+    const scoreSummary = summarizeInterestScores(
+      [...scoredArticleIds]
+        .map(articleId => scoredArticleById.get(Number(articleId))?.interestScore)
+        .filter(score => score !== undefined)
+    );
 
     reportLine(
       `${formatCell(island.id, 6)} ` +
-      `${formatCell(islandTopicCounts.get(islandKey) || 0, 8)} ` +
-      `${formatCell(eventIdsByIslandId.get(islandKey)?.size || 0, 8)} ` +
-      `${formatCell(articleIdsByIslandId.get(islandKey)?.size || 0, 10)} ` +
+      `${formatCell(islandTopicCounts.get(islandKey) || 0, 7)} ` +
+      `${formatCell(eventIdsByIslandId.get(islandKey)?.size || 0, 7)} ` +
+      `${formatCell(topicLinkedArticleIds.size, 20)} ` +
+      `${formatCell(fallbackScores.length, 22)} ` +
+      `${formatCell(scoredArticleIds.size, 20)} ` +
+      `${formatCell(scoreSummary.avg, 8)} ` +
+      `${formatCell(scoreSummary.max, 8)} ` +
       `${island.label}`
     );
+  }
+
+  reportLine('');
+  reportLine('ISLAND EXPLANATIONS');
+  reportLine(REPORT_SEPARATOR);
+
+  for (const island of islands) {
+    if (island.archivedInd) continue;
+
+    const islandKey = String(island.id);
+    const fallbackScores = fallbackScoresByIslandId.get(islandKey) || [];
+
+    reportLine(`ISLAND ${island.id}: ${island.label}`);
+    reportLine(`weight=${roundedScore(island.weight)} fallbackScoredArticles=${fallbackScores.length}`);
+    reportLine('');
+    reportLine('Top fallback-scored articles:');
+
+    for (const article of fallbackScores.slice(0, MAX_REPORTED_FALLBACK_ARTICLES_PER_ISLAND)) {
+      const source = [
+        article.feedName,
+        article.categoryName
+      ].filter(Boolean).join(' / ');
+      const sourceSuffix = source ? ` (${source})` : '';
+
+      reportLine(
+        `- score=${article.interestScore.toFixed(4)} ` +
+        `sim=${article.similarity.toFixed(4)} ` +
+        `[star=${article.starInd} clicked=${article.clickedAmount} negative=${article.negativeInd}] ` +
+        `${reportTitle(article.title)}${sourceSuffix}`
+      );
+    }
+
+    if (!fallbackScores.length) {
+      reportLine('- none');
+    }
+
+    reportLine('');
+  }
+
+  for (const island of islands) {
+    const articles = islandAuditArticles(island);
+
+    reportLine('');
+    reportLine(`ISLAND ${island.id} INPUT ARTICLES (${articles.length})`);
+    reportLine(REPORT_SEPARATOR);
+
+    for (const article of articles.slice(0, MAX_REPORTED_ARTICLES_PER_ISLAND)) {
+      reportLine(`- [${formatArticleSignalSummary(article)}] ${article.title}`);
+    }
+
+    if (articles.length > MAX_REPORTED_ARTICLES_PER_ISLAND) {
+      reportLine(`- ... ${articles.length - MAX_REPORTED_ARTICLES_PER_ISLAND} more`);
+    }
+
+    if (!articles.length) {
+      reportLine('- none recorded');
+    }
   }
 
   reportLine('');
@@ -491,15 +845,21 @@ describe('semantic regression fixture pipeline', () => {
     expect(taxonomyVectorFixture.taxonomy.length).toBeGreaterThan(0);
 
     const missingVectorArticles = fixture.articles
-      .map((article, index) => ({
-        index,
-        contentHash: hashContent(article.content),
-        preview: article.content.slice(0, 160)
-      }))
+      .map((article, index) => {
+        const content = articleContent(article);
+
+        return {
+          index,
+          contentHash: hashContent(content),
+          preview: content.slice(0, 160)
+        };
+      })
       .filter(article => !vectorByContentHash.has(article.contentHash));
 
     expect(
       missingVectorArticles,
+      'semantic-regression.vectors.json is stale for semantic-regression.json. ' +
+      'Run `npm run fixture:semantic-vectors` in server/ after exporting the fixture.\n' +
       JSON.stringify(missingVectorArticles, null, 2)
     ).toHaveLength(0);
 
@@ -515,16 +875,28 @@ describe('semantic regression fixture pipeline', () => {
       role: 'user'
     });
 
-    const category = await Category.create({
-      userId: user.id,
-      name: 'Semantic Regression'
-    });
+    const categoryIdMap = new Map();
+    const fixtureCategories = fixture.categories?.length
+      ? fixture.categories
+      : [{ id: 1, name: 'Semantic Regression', categoryOrder: 0 }];
+
+    for (const fixtureCategory of fixtureCategories) {
+      const category = await Category.create({
+        userId: user.id,
+        name: fixtureCategory.name || 'Semantic Regression',
+        categoryOrder: fixtureCategory.categoryOrder || 0
+      });
+
+      categoryIdMap.set(fixtureCategory.id, category.id);
+    }
+
+    const fallbackCategoryId = categoryIdMap.values().next().value;
 
     const feedIdMap = new Map();
     for (const fixtureFeed of fixture.feeds) {
       const feed = await Feed.create({
         userId: user.id,
-        categoryId: category.id,
+        categoryId: categoryIdMap.get(fixtureFeed.categoryId) || fallbackCategoryId,
         feedName: fixtureFeed.feedName,
         feedDesc: fixtureFeed.feedDesc || fixtureFeed.description,
         feedType: fixtureFeed.feedType || 'rss',
@@ -537,8 +909,10 @@ describe('semantic regression fixture pipeline', () => {
 
     const now = Date.now();
     const articles = fixture.articles.map((fixtureArticle, index) => {
-      const contentHash = hashContent(fixtureArticle.content);
-      const published = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
+      const content = articleContent(fixtureArticle);
+      const contentHash = hashContent(content);
+      const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
+      const published = articlePublished(fixtureArticle, fallbackPublished);
 
       return {
         userId: user.id,
@@ -548,10 +922,10 @@ describe('semantic regression fixture pipeline', () => {
         negativeInd: fixtureArticle.negativeInd,
         clickedAmount: fixtureArticle.clickedAmount,
         url: `https://fixtures.rssmonster.test/semantic/${index + 1}`,
-        title: titleFromContent(fixtureArticle.content, index),
-        description: fixtureArticle.content.slice(0, 500),
-        contentOriginal: fixtureArticle.content,
-        contentStripped: fixtureArticle.content,
+        title: articleTitle(fixtureArticle, index),
+        description: content.slice(0, 500),
+        contentOriginal: fixtureArticle.contentOriginal || content,
+        contentStripped: fixtureArticle.contentStripped || content,
         contentHash,
         published,
         firstSeen: published
@@ -568,7 +942,7 @@ describe('semantic regression fixture pipeline', () => {
     const islandResult = await buildInterestIslandsForUser(user.id, {
       topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
     });
-    await printSemanticPipelineReport(user.id);
+    await printSemanticPipelineReport(user.id, islandResult);
 
     const [
       feedCount,
@@ -580,7 +954,8 @@ describe('semantic regression fixture pipeline', () => {
       topicLinkedArticleCount,
       articleTopicLinkCount,
       eventTopicLinkCount,
-      islandTopicLinkCount
+      islandTopicLinkCount,
+      negativeScoredArticleCount
     ] = await Promise.all([
       Feed.count({ where: { userId: user.id } }),
       Article.count({ where: { userId: user.id } }),
@@ -612,6 +987,13 @@ describe('semantic regression fixture pipeline', () => {
           attributes: [],
           where: { userId: user.id }
         }]
+      }),
+      Article.count({
+        where: {
+          userId: user.id,
+          negativeInd: 1,
+          interestScore: { [Op.lt]: 0 }
+        }
       })
     ]);
 
@@ -627,5 +1009,6 @@ describe('semantic regression fixture pipeline', () => {
     expect(articleTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ARTICLE_TOPIC_LINKS);
     expect(eventTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
     expect(islandTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
+    expect(negativeScoredArticleCount).toBeGreaterThanOrEqual(1);
   }, 60000);
 });

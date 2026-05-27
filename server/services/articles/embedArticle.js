@@ -12,7 +12,7 @@ import OpenAI from 'openai';
  * This is the single source of truth for article-vector creation and storage.
  */
 
-const EMBEDDING_MODEL = 'text-embedding-3-small';
+export const EMBEDDING_MODEL = 'text-embedding-3-small';
 
 const MIN_EVENT_LENGTH = 60;
 const MIN_TOPIC_LENGTH = 120;
@@ -78,6 +78,17 @@ function extractTopicText({ contentStripped }) {
     .trim();
 }
 
+export function buildArticleEventEmbeddingText(articleOrInput = {}) {
+  const title = articleOrInput?.title;
+  const contentStripped = articleOrInput?.contentStripped || articleOrInput?.description || '';
+
+  return extractEventText({ title, contentStripped });
+}
+
+export function isArticleEventEmbeddingTextUsable(text = '') {
+  return String(text || '').length >= MIN_EVENT_LENGTH;
+}
+
 async function embed(text) {
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
@@ -120,7 +131,7 @@ export async function embedArticle(articleOrInput, options = {}) {
     return null;
   }
 
-  const eventText = extractEventText({ title, contentStripped });
+  const eventText = buildArticleEventEmbeddingText({ title, contentStripped });
   const topicText = extractTopicText({ contentStripped });
 
   if (eventText.length < MIN_EVENT_LENGTH) {

@@ -148,7 +148,7 @@ Testing notes:
   - `PascalCase`: Vue components
   - `UPPER_SNAKE_CASE`: constants
 - Keep functions cohesive and readable; prefer early returns.
-- Keep comments for non-obvious intent, invariants, or workarounds.
+- Comment each function with a brief sentence what this is about. For example // This function handles user login. Complex logic should have inline comments.
 - Follow lint rules rather than personal formatting preferences.
 
 ---

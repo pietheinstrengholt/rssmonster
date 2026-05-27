@@ -118,7 +118,7 @@ app.use(errorController.get404);
 // --------------------
 const port = process.env.PORT || 3000;
 
-const startServer = async () => {
+export const startServer = async () => {
   try {
     // DB
     await sequelize.authenticate();
@@ -149,8 +149,6 @@ const startServer = async () => {
   }
 };
 
-await startServer();
-
 // --------------------
 // Process-level safety
 // --------------------
@@ -171,10 +169,20 @@ process.on('unhandledRejection', (reason, promise) => {
 // --------------------
 const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
 
-setInterval(() => {
-  hotlink.clearCache().catch(err => {
-    console.error('Error clearing hotlink cache:', err);
-  });
-}, CACHE_REFRESH_INTERVAL);
+let cacheRefreshInterval;
+
+export const startCacheRefresh = () => {
+  if (cacheRefreshInterval) {
+    return cacheRefreshInterval;
+  }
+
+  cacheRefreshInterval = setInterval(() => {
+    hotlink.clearCache().catch(err => {
+      console.error('Error clearing hotlink cache:', err);
+    });
+  }, CACHE_REFRESH_INTERVAL);
+
+  return cacheRefreshInterval;
+};
 
 export default app;

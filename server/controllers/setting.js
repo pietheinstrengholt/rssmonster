@@ -190,7 +190,9 @@ export const getIslandsOverview = async (req, res, _next) => {
           const source = entry?.sourceArticles || {};
           const starred = Array.isArray(source.starredArticleIds) ? source.starredArticleIds : [];
           const clicked = Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : [];
-          return [...starred, ...clicked]
+          const negative = Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : [];
+          const articles = Array.isArray(source.articles) ? source.articles.map(article => article.id) : [];
+          return [...starred, ...clicked, ...negative, ...articles]
             .map(Number)
             .filter(Number.isFinite);
         })

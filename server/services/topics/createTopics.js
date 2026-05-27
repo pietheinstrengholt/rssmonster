@@ -3,11 +3,13 @@ import {
   MIN_ARTICLES_FOR_TOPIC_CREATION,
   MIN_EVENTS_FOR_TOPIC_CREATION,
   collectTopicSeedEvents,
+  collectEventArticleTitles,
   averageVector,
-  generateTopicName,
+  evaluateTopicCreationGate,
   debugTopicGate,
   upsertTopicInCache
 } from './topicHelpers.js';
+import { generateTopicName } from './topicName.service.js';
 
 const { Topic } = db;
 
@@ -25,8 +27,23 @@ export async function createTopic({
     (sum, item) => sum + Math.max(0, Number(item.event.articleCount || 0)),
     0
   );
-  const hasEnoughEventEvidence = topicSeedEvents.length >= MIN_EVENTS_FOR_TOPIC_CREATION;
-  const hasEnoughArticleEvidence = seedArticleCount >= MIN_ARTICLES_FOR_TOPIC_CREATION;
+  const currentEvent = topicSeedEvents.find(
+    item => Number(item.event.id) === Number(currentEventId)
+  )?.event ?? semanticUnit;
+  const topicName = generateTopicName({ semanticUnit, seedEvents: topicSeedEvents });
+  const currentArticleCount = Number(currentEvent?.articleCount || 0);
+  const currentEventArticleTitles = currentArticleCount === 2
+    ? await collectEventArticleTitles(semanticUnit.userId, currentEventId)
+    : [];
+  const creationGate = evaluateTopicCreationGate({
+    semanticUnit,
+    currentEvent,
+    topicSeedEvents,
+    seedArticleCount,
+    topSeedSimilarity,
+    topicName,
+    currentEventArticleTitles
+  });
 
   debugTopicGate('topic-creation-gate-evaluated', {
     userId: semanticUnit.userId,
@@ -35,10 +52,14 @@ export async function createTopic({
     eventThreshold: MIN_EVENTS_FOR_TOPIC_CREATION,
     seedArticleCount,
     articleThreshold: MIN_ARTICLES_FOR_TOPIC_CREATION,
-    topSimilarity: topSeedSimilarity
+    topSimilarity: topSeedSimilarity,
+    currentArticleCount,
+    sourceCount: currentEvent?.sourceCount ?? null,
+    eventStrength: currentEvent?.eventStrength ?? null,
+    status: currentEvent?.status ?? null
   });
 
-  if (!hasEnoughEventEvidence && !hasEnoughArticleEvidence) {
+  if (!creationGate.passed) {
     console.log(
       `[TOPIC] Creation gated: event=${currentEventId} user=${semanticUnit.userId}` +
       ` seeds=${topicSeedEvents.length}/${MIN_EVENTS_FOR_TOPIC_CREATION}` +
@@ -52,7 +73,11 @@ export async function createTopic({
       eventThreshold: MIN_EVENTS_FOR_TOPIC_CREATION,
       seedArticleCount,
       articleThreshold: MIN_ARTICLES_FOR_TOPIC_CREATION,
-      topSimilarity: topSeedSimilarity
+      topSimilarity: topSeedSimilarity,
+      currentArticleCount,
+      sourceCount: currentEvent?.sourceCount ?? null,
+      eventStrength: currentEvent?.eventStrength ?? null,
+      status: currentEvent?.status ?? null
     });
 
     return [];
@@ -61,7 +86,7 @@ export async function createTopic({
   const topicVector = averageVector(topicSeedEvents.map(item => item.event.eventVector)) || semanticVector;
   const createdTopic = await Topic.create({
     userId: semanticUnit.userId,
-    name: generateTopicName(semanticUnit),
+    name: topicName,
     topicKey: topicKey || `topic-${semanticUnit.userId}-${semanticUnit.id}`,
     topicVector,
     articleCount: 0,
@@ -71,7 +96,7 @@ export async function createTopic({
 
   upsertTopicInCache(topicsCache, createdTopic);
 
-  debugTopicGate('topic-creation-gate-passed', {
+  debugTopicGate(`topic-creation-gate-passed: ${creationGate.reason}`, {
     userId: semanticUnit.userId,
     eventId: currentEventId,
     topicId: createdTopic.id,
@@ -79,7 +104,12 @@ export async function createTopic({
     eventThreshold: MIN_EVENTS_FOR_TOPIC_CREATION,
     seedArticleCount,
     articleThreshold: MIN_ARTICLES_FOR_TOPIC_CREATION,
-    topSimilarity: topSeedSimilarity
+    topSimilarity: topSeedSimilarity,
+    currentArticleCount,
+    sourceCount: currentEvent?.sourceCount ?? null,
+    eventStrength: currentEvent?.eventStrength ?? null,
+    status: currentEvent?.status ?? null,
+    gate: creationGate.reason
   });
 
   return [{

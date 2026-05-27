@@ -5,8 +5,12 @@ import { fileURLToPath } from 'node:url';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
+import {
+  buildArticleEventEmbeddingText,
+  isArticleEventEmbeddingTextUsable
+} from '../services/articles/embedArticle.js';
 
-const { sequelize, Feed, Article } = db;
+const { sequelize, Category, Feed, Article } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const DEFAULT_OUTPUT_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression.json');
@@ -42,6 +46,27 @@ function articleContent(article) {
   ).trim();
 }
 
+function articlePublished(article) {
+  if (!article.published) return null;
+
+  const published = new Date(article.published);
+  if (Number.isNaN(published.getTime())) return null;
+
+  return published.toISOString();
+}
+
+function isExportableArticle(article) {
+  if (!articleContent(article)) return false;
+
+  const eventText = buildArticleEventEmbeddingText({
+    title: article.title || '',
+    description: article.description || '',
+    contentStripped: article.contentStripped || articleContent(article)
+  });
+
+  return isArticleEventEmbeddingTextUsable(eventText);
+}
+
 function isExportableFeed(feed) {
   return (
     !feed.url.startsWith(FIXTURE_FEED_URL_PREFIX) &&
@@ -59,7 +84,7 @@ async function main() {
 
   const feeds = await Feed.findAll({
     where: userFilter,
-    attributes: ['id', 'feedName', 'feedDesc', 'feedType', 'url', 'status'],
+    attributes: ['id', 'categoryId', 'feedName', 'feedDesc', 'feedType', 'url', 'status'],
     order: [
       ['feedName', 'ASC'],
       ['id', 'ASC']
@@ -70,6 +95,34 @@ async function main() {
     feeds
       .filter(isExportableFeed)
       .map((feed, index) => [feed.id, index + 1])
+  );
+
+  const categoryIds = [
+    ...new Set(
+      feeds
+        .filter(feed => feedIdMap.has(feed.id))
+        .map(feed => Number(feed.categoryId))
+        .filter(Number.isInteger)
+    )
+  ];
+
+  const categories = categoryIds.length
+    ? await Category.findAll({
+      where: {
+        ...userFilter,
+        id: { [Op.in]: categoryIds }
+      },
+      attributes: ['id', 'name', 'categoryOrder'],
+      order: [
+        ['categoryOrder', 'ASC'],
+        ['name', 'ASC'],
+        ['id', 'ASC']
+      ]
+    })
+    : [];
+
+  const categoryIdMap = new Map(
+    categories.map((category, index) => [category.id, index + 1])
   );
 
   const articleWhere = {
@@ -102,35 +155,47 @@ async function main() {
     : [];
 
   const fixture = {
+    categories: categories.map(category => ({
+      id: categoryIdMap.get(category.id),
+      name: category.name,
+      categoryOrder: category.categoryOrder || 0
+    })),
     feeds: feeds
       .filter(feed => feedIdMap.has(feed.id))
       .map(feed => ({
-      id: feedIdMap.get(feed.id),
-      feedName: feed.feedName,
-      description: feed.feedDesc || '',
-      feedDesc: feed.feedDesc || '',
-      feedType: feed.feedType || 'rss',
-      url: feed.url,
-      status: feed.status || 'active'
-    })),
+        id: feedIdMap.get(feed.id),
+        categoryId: categoryIdMap.get(feed.categoryId) || null,
+        feedName: feed.feedName,
+        description: feed.feedDesc || '',
+        feedDesc: feed.feedDesc || '',
+        feedType: feed.feedType || 'rss',
+        url: feed.url,
+        status: feed.status || 'active'
+      })),
     articles: articles
+      .filter(isExportableArticle)
       .map(article => ({
-        content: articleContent(article),
+        title: article.title || '',
+        contentOriginal: article.contentOriginal || '',
+        contentStripped: article.contentStripped || articleContent(article),
+        published: articlePublished(article),
         feedId: feedIdMap.get(article.feedId),
         status: article.status || 'unread',
         starInd: article.starInd || 0,
         negativeInd: article.negativeInd || 0,
         clickedAmount: article.clickedAmount || 0
       }))
-      .filter(article => article.content && article.feedId)
+      .filter(article => article.feedId)
   };
 
   await writeFile(outputPath, `${JSON.stringify(fixture, null, 2)}\n`, 'utf8');
 
   console.log(
-    `[SEMANTIC FIXTURE] wrote ${fixture.feeds.length} feeds and ` +
+    `[SEMANTIC FIXTURE] wrote ${fixture.categories.length} categories, ` +
+    `${fixture.feeds.length} feeds and ` +
     `${fixture.articles.length} articles to ${outputPath}`
   );
+  console.log('[SEMANTIC FIXTURE] regenerate vectors with `npm run fixture:semantic-vectors` before running semantic regression tests.');
 }
 
 main()
