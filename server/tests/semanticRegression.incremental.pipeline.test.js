@@ -9,6 +9,7 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 import { incrementalClusterForUser, reclusterForUser } from '../services/events/reclusterForUser.js';
 import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
 const {
   sequelize,
@@ -22,7 +23,8 @@ const {
   EventTopic,
   Island,
   IslandTopic,
-  IslandTaxonomy
+  IslandTaxonomy,
+  Tag
 } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -35,6 +37,9 @@ const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 77;
 const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
+const RECOMMENDED_DEBUG_FORMULA =
+  '0.06*quality + 0.40*freshness + 0.15*interest + 0.15*coverage + ' +
+  '0.12*crossSource + 0.12*corroboration + ruleBoost';
 
 let semanticRegressionUserId = null;
 
@@ -278,6 +283,94 @@ async function loadIslandTaxonomyFixture(taxonomyVectorFixture) {
   return IslandTaxonomy.count({ where: { status: 'active' } });
 }
 
+// This function formats recommended-score rows for incremental article debugging.
+function recommendedDebugRows(articles) {
+  return articles
+    .map(article => {
+      article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
+
+      return {
+        article,
+        recommended: computeRecommended(article)
+      };
+    })
+    .sort((a, b) => (
+      b.recommended - a.recommended ||
+      Number(a.article.id) - Number(b.article.id)
+    ))
+    .map(({ article, recommended }) => {
+      const breakdown = computeRecommendedBreakdown(article);
+      const event = article.get?.('event') ?? article.event ?? null;
+
+      return {
+        articleId: article.id,
+        eventId: article.eventId,
+        eventName: event?.name || null,
+        freshness: Number(breakdown.freshness.toFixed(4)),
+        interestScore: Number(Number(article.interestScore || 0).toFixed(4)),
+        interest: Number(breakdown.interestScore.toFixed(4)),
+        quality: Number(breakdown.quality.toFixed(4)),
+        coverage: Number(breakdown.coverage.toFixed(4)),
+        crossSource: Number(breakdown.crossSource.toFixed(4)),
+        corroboration: Number(breakdown.corroboration.toFixed(4)),
+        clusterSize: breakdown.clusterSize,
+        sourceCount: breakdown.sourceCount,
+        recommended: Number(recommended.toFixed(4)),
+        title: article.title
+      };
+    });
+}
+
+// This function prints recommended-score debug rows for the 77 incremental articles.
+async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
+  const articles = await Article.findAll({
+    where: {
+      userId,
+      id: { [Op.in]: incrementalArticleIds }
+    },
+    include: [
+      {
+        model: Event,
+        as: 'event',
+        attributes: ['id', 'name', 'articleCount', 'sourceDiversityScore', 'sourceCount'],
+        required: false
+      },
+      {
+        model: Feed,
+        attributes: ['id', 'feedTrust'],
+        required: false
+      },
+      {
+        model: Tag,
+        attributes: ['id', 'tagType'],
+        required: false
+      }
+    ],
+    order: [['id', 'ASC']]
+  });
+
+  const eventIds = articles
+    .map(article => article.eventId)
+    .filter(eventId => eventId != null);
+  const articlesWithEvents = eventIds.length;
+  const distinctEvents = new Set(eventIds).size;
+  const eventCoveragePct = articles.length
+    ? Number(((articlesWithEvents / articles.length) * 100).toFixed(1))
+    : 0;
+  const rows = recommendedDebugRows(articles);
+
+  console.log(`[SEMANTIC INCREMENTAL RECOMMENDED DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
+  console.log(
+    `[SEMANTIC INCREMENTAL RECOMMENDED DEBUG] articles=${articles.length} ` +
+    `articlesWithEvents=${articlesWithEvents} ` +
+    `events=${distinctEvents} ` +
+    `eventCoverage=${eventCoveragePct}%`
+  );
+  console.table(rows);
+
+  return rows;
+}
+
 // This function prints compact debug data for the incremental pipeline assertions.
 async function printIncrementalDebugReport({
   userId,
@@ -414,8 +507,29 @@ describe('semantic regression incremental pipeline', () => {
     await sequelize.authenticate();
 
     const user = await findOrCreateRegressionUser();
+    const taxonomyVectorFixture = await loadVectorFixture(
+      TAXONOMY_VECTOR_FIXTURE_PATH,
+      'Run `npm run fixture:taxonomy-vectors` in server/ before this test.'
+    );
+
     semanticRegressionUserId = user.id;
     await ensureBaselineContent(user.id);
+
+    const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
+    const baselineIslandResult = await buildInterestIslandsForUser(user.id, {
+      topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
+    });
+
+    console.log('[SEMANTIC INCREMENTAL DEBUG] baseline full pipeline result');
+    console.table([{
+      taxonomyCount,
+      islandCount: baselineIslandResult.islandCount,
+      enrichedIslandCount: baselineIslandResult.enrichedIslandCount,
+      islandTopicLinkCount: baselineIslandResult.islandTopicLinkCount,
+      topicScoredCount: baselineIslandResult.topicScoredCount,
+      fallbackScoredCount: baselineIslandResult.fallbackScoredCount,
+      rescoredArticleCount: baselineIslandResult.rescoredArticleCount
+    }]);
   });
 
   it('loads unread incremental fixture content without replaying existing clusters', async () => {
@@ -564,6 +678,7 @@ describe('semantic regression incremental pipeline', () => {
       taxonomyCount,
       islandResult
     });
+    const recommendedRows = await printIncrementalRecommendedDebug(userId, incrementalArticleIds);
 
     expect(taxonomyCount).toBeGreaterThan(0);
     expect(finalArticleCount).toBe(baselineArticleCount + insertedCount);
@@ -584,5 +699,7 @@ describe('semantic regression incremental pipeline', () => {
     expect(scoredIncrementalArticleCount).toBeGreaterThan(0);
     expect(linkedIncrementalArticleTopicCount).toBeGreaterThan(0);
     expect(linkedIncrementalEventTopicCount).toBeGreaterThan(0);
+    expect(recommendedRows).toHaveLength(EXPECTED_INCREMENTAL_ARTICLE_COUNT);
+    expect(recommendedRows[0].recommended).toBeGreaterThanOrEqual(recommendedRows.at(-1).recommended);
   }, 60000);
 });
