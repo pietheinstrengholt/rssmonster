@@ -41,29 +41,29 @@
     "eslint": "^9.39.2",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.4"
+    "vitest": "^4.1.7"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@openai/agents": "^0.8.3",
+    "@openai/agents": "^0.11.5",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "feedsmith": "^2.9.2",
+    "feedsmith": "^2.9.4",
     "franc-min": "^6.2.0",
     "he": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.10.1",
     "multer": "^2.1.1",
-    "mysql2": "^3.22.1",
+    "mysql2": "^3.22.4",
     "node-cache": "^5.1.2",
-    "openai": "^6.34.0",
+    "openai": "^6.39.0",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
     "xml2js": "^0.6.2",
-    "zod": "^4.3.6"
+    "zod": "^4.4.3"
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"
