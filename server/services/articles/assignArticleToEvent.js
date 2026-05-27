@@ -1,4 +1,6 @@
 // services/articles/assignArticleToEvent.js
+// This service assigns one article to an existing event, creates a new event, or leaves it eventless.
+// It maintains event-owned topic links while preserving behavioral topic evidence owned by ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
@@ -33,6 +35,7 @@ const STOPWORDS = new Set([
   'that', 'the', 'their', 'this', 'to', 'was', 'were', 'will', 'with'
 ]);
 
+// This function normalizes a headline into lowercase searchable tokens.
 function normalizeHeadline(title = '') {
   return title
     .toLowerCase()
@@ -41,6 +44,7 @@ function normalizeHeadline(title = '') {
     .trim();
 }
 
+// This function builds a meaningful token set while removing small words and stopwords.
 function tokenSet(text = '') {
   return new Set(
     normalizeHeadline(text)
@@ -50,6 +54,7 @@ function tokenSet(text = '') {
   );
 }
 
+// This function estimates lexical overlap between two headlines.
 function headlineSimilarity(titleA = '', titleB = '') {
   const a = tokenSet(titleA);
   const b = tokenSet(titleB);
@@ -66,12 +71,14 @@ function headlineSimilarity(titleA = '', titleB = '') {
   return intersection / union;
 }
 
+// This function extracts lightweight entity hints from title and description text.
 function extractEntitySet(article = {}) {
   const text = `${article.title || ''} ${article.description || ''}`;
   const matches = text.match(/\b([A-Z][a-z]{2,}|[A-Z]{2,})\b/g) || [];
   return new Set(matches.map(value => value.toLowerCase()));
 }
 
+// This function counts shared entity hints between two extracted entity sets.
 function entityOverlapCount(a = new Set(), b = new Set()) {
   if (!a.size || !b.size) return 0;
   let overlap = 0;
@@ -81,17 +88,20 @@ function entityOverlapCount(a = new Set(), b = new Set()) {
   return overlap;
 }
 
+// This function converts a date-like value into a finite timestamp when possible.
 function toTimestamp(value) {
   if (!value) return null;
   const ts = new Date(value).getTime();
   return Number.isFinite(ts) ? ts : null;
 }
 
+// This function computes the absolute distance between two timestamps in hours.
 function hoursBetween(tsA, tsB) {
   if (!Number.isFinite(tsA) || !Number.isFinite(tsB)) return Number.POSITIVE_INFINITY;
   return Math.abs(tsA - tsB) / (1000 * 60 * 60);
 }
 
+// This function scores whether an article and event are close enough in time to be related.
 function temporalProximityScore(articlePublishedAt, eventLastSeenAt) {
   const articleTs = toTimestamp(articlePublishedAt);
   const eventTs = toTimestamp(eventLastSeenAt);
@@ -103,6 +113,7 @@ function temporalProximityScore(articlePublishedAt, eventLastSeenAt) {
   return 1 - diffHours / EVENT_MAX_GAP_HOURS;
 }
 
+// This function gradually discounts older events during candidate matching.
 function recencyDecayMultiplier(lastSeenAt) {
   const now = Date.now();
   const lastSeenTs = toTimestamp(lastSeenAt);
@@ -113,6 +124,7 @@ function recencyDecayMultiplier(lastSeenAt) {
   return Math.pow(0.5, ageHours / halfLife);
 }
 
+// This function combines semantic, headline, temporal, and entity evidence for article-event matching.
 function buildMatchSignal({ article, event, articleEventVector }) {
   const semantic = cosineSimilarity(articleEventVector, event.eventVector);
   const headline = headlineSimilarity(article.title, event.name || '');
@@ -143,6 +155,7 @@ function buildMatchSignal({ article, event, articleEventVector }) {
   };
 }
 
+// This function compares two embedding vectors with cosine similarity.
 function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
   if (!a.length || !b.length) return 0;
@@ -163,6 +176,7 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+// This function writes debug output only when event debug logging is enabled.
 function debugEventLog(message, payload = null) {
   if (!EVENT_DEBUG) return;
 
@@ -174,6 +188,7 @@ function debugEventLog(message, payload = null) {
   console.log(`[EVENT DEBUG] ${message}`, payload);
 }
 
+// This function deduplicates and ranks topic assignments before they are persisted.
 function normalizeTopicAssignments(assignments = []) {
   const byTopic = new Map();
 
@@ -215,10 +230,12 @@ function normalizeTopicAssignments(assignments = []) {
   }));
 }
 
+// This function returns the primary topic id from normalized topic assignments.
 function primaryTopicId(topicAssignments = []) {
   return topicAssignments.find(topic => topic.primaryInd)?.topicId ?? null;
 }
 
+// This function loads topic assignments already stored for an event.
 async function loadEventTopicAssignments(eventId) {
   const rows = await EventTopic.findAll({
     where: { eventId },
@@ -229,6 +246,8 @@ async function loadEventTopicAssignments(eventId) {
   return normalizeTopicAssignments(rows);
 }
 
+// This function mirrors event topic assignments to each article in the event.
+// It only replaces event-owned ArticleTopic rows so behavioral evidence is preserved.
 async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
   const normalizedAssignments = normalizeTopicAssignments(eventTopicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
@@ -244,7 +263,12 @@ async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
 
   await ArticleTopic.destroy({
     where: {
-      articleId: { [Op.in]: articleIds }
+      articleId: { [Op.in]: articleIds },
+      topicId: {
+        [Op.in]: db.Sequelize.literal(
+          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
+        )
+      }
     }
   });
 
@@ -277,6 +301,7 @@ async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
   return articleIds.length;
 }
 
+// This function replaces the EventTopic rows for one event and updates the event primary topic.
 async function persistEventTopicAssignments(event, topicAssignments) {
   const normalizedAssignments = normalizeTopicAssignments(topicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
@@ -301,6 +326,7 @@ async function persistEventTopicAssignments(event, topicAssignments) {
   return normalizedAssignments;
 }
 
+// This function derives event topic assignments from an event vector and the event topic cache.
 async function deriveEventTopicAssignments({
   event,
   eventTopicVector,
@@ -327,11 +353,13 @@ async function deriveEventTopicAssignments({
   });
 }
 
+// This cache keeps a bounded set of candidate events in memory during one assignment pass.
 export class EventCache {
   constructor(events = []) {
     this._events = events;
   }
 
+  // This function loads the newest candidate events for a user.
   static async forUser(userId) {
     const events = await Event.findAll({
       where: { userId },
@@ -342,10 +370,12 @@ export class EventCache {
     return new EventCache(events);
   }
 
+  // This getter exposes the current in-memory event list.
   get events() {
     return this._events;
   }
 
+  // This function adds a newly-created event to the front of the cache.
   add(event) {
     this._events.unshift(event);
 
@@ -354,6 +384,7 @@ export class EventCache {
     }
   }
 
+  // This function patches cached event fields after assignment updates.
   updateInMemory(eventId, updates) {
     const event = this._events.find(e => e.id === eventId);
     if (event) {
@@ -362,6 +393,7 @@ export class EventCache {
   }
 }
 
+// This function creates a new event from corroborating candidate articles and syncs event topics.
 async function createAndAssignEvent({
   candidateArticles,
   article,
@@ -391,24 +423,48 @@ async function createAndAssignEvent({
   });
 }
 
+// This function removes event ownership from an article without deleting behavioral topic evidence.
 async function assignTopicOnly({ article }) {
-  await ArticleTopic.destroy({ where: { articleId: article.id } });
+  const eventOwnedTopicId = article.topicId
+    ? await db.Topic.findOne({
+      where: {
+        id: article.topicId,
+        topicType: { [Op.in]: ['event', 'hybrid'] }
+      },
+      attributes: ['id']
+    })
+    : null;
+
+  await ArticleTopic.destroy({
+    where: {
+      articleId: article.id,
+      topicId: {
+        [Op.in]: db.Sequelize.literal(
+          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
+        )
+      }
+    }
+  });
+
+  const nextTopicId = eventOwnedTopicId ? null : article.topicId;
 
   await article.update({
     eventId: null,
-    topicId: null
+    topicId: nextTopicId
   });
 
   article.eventId = null;
-  article.topicId = null;
+  article.topicId = nextTopicId;
 }
 
+// This function resolves the best available vector from an article or run-context record.
 function resolveArticleVector(record) {
   if (Array.isArray(record?.eventVector)) return record.eventVector;
   if (Array.isArray(record?.articleVector)) return record.articleVector;
   return null;
 }
 
+// This function scores whether a candidate article can corroborate a new event.
 function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
   const candidateVector = resolveArticleVector(candidate);
 
@@ -459,6 +515,7 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
   };
 }
 
+// This function finds persisted unassigned articles that can corroborate the current article.
 async function findCandidateArticles({ article, articleEventVector }) {
   const cutoff = new Date((article.published || new Date()).getTime() - EVENT_MAX_GAP_HOURS * 60 * 60 * 1000);
 
@@ -494,6 +551,7 @@ async function findCandidateArticles({ article, articleEventVector }) {
   };
 }
 
+// This function inserts or updates one article record in the current run context.
 function upsertRunContextRecord(runContext, record) {
   if (!runContext) return;
 
@@ -513,6 +571,7 @@ function upsertRunContextRecord(runContext, record) {
   };
 }
 
+// This function increments one numeric counter on the current run context.
 function incrementRunStat(runContext, key, amount = 1) {
   if (!runContext) return;
 
@@ -520,6 +579,7 @@ function incrementRunStat(runContext, key, amount = 1) {
   runContext.stats[key] = Number(runContext.stats[key] || 0) + amount;
 }
 
+// This function finds corroborating candidates from articles already seen in the current run.
 function findCandidateArticlesFromContext({ article, articleEventVector, runContext }) {
   const cutoff = new Date((article.published || new Date()).getTime() - EVENT_MAX_GAP_HOURS * 60 * 60 * 1000);
   const cutoffTs = cutoff.getTime();
@@ -555,6 +615,8 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
   };
 }
 
+// This function assigns one article to an event, creates a new event, or leaves it eventless.
+// It also keeps event-topic denormalization in sync unless topic assignment is explicitly skipped.
 export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null, runContext = null, options = {}) {
   const assignmentContext = options.assignmentContext || 'incremental';
   const skipTopicAssignment = Boolean(options.skipTopicAssignment);

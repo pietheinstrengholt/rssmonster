@@ -2,6 +2,9 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import buildArticleInterestScoresForUser from './buildArticleInterestScores.js';
 
+// This service builds and enriches "interest islands" from user behavior and topic history.
+// Islands represent durable preference areas that can later score articles and group topics.
+
 const { User, Topic, Article, Island, IslandTopic, IslandTaxonomy, sequelize } = db;
 
 const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
@@ -38,10 +41,14 @@ const SIGNAL_WEIGHTS = {
   eventCount: 0.25
 };
 
+// These helpers keep scores bounded and avoid zero weights in weighted averages.
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
+// This helper converts topic strength into a safe positive sample weight.
 const topicMagnitude = (strength) => Math.max(0.0001, Math.abs(Number(strength || 0)));
+// This helper converts article score into a safe positive sample weight.
 const articleMagnitude = (score) => Math.max(0.0001, Math.abs(Number(score || 0)));
 
+// This function writes island debug output when island debugging is enabled.
 function debugIsland(message, payload = null) {
   if (!ISLAND_DEBUG) return;
 
@@ -53,6 +60,7 @@ function debugIsland(message, payload = null) {
   console.log(`[ISLAND DEBUG] ${message}`, payload);
 }
 
+// This function compares two vectors with cosine similarity.
 export function cosineSimilarity(a, b) {
   if (!Array.isArray(a) || !Array.isArray(b)) return 0;
   if (!a.length || !b.length || a.length !== b.length) return 0;
@@ -72,6 +80,7 @@ export function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+// This function normalizes vectors so centroid comparisons stay scale-independent.
 function normalizeVector(vector) {
   if (!Array.isArray(vector) || !vector.length) return null;
 
@@ -86,6 +95,7 @@ function normalizeVector(vector) {
   return vector.map(value => value / scale);
 }
 
+// This function builds a normalized weighted centroid from vector samples.
 function weightedAverageVector(samples) {
   const usable = samples.filter(sample => Array.isArray(sample.vector) && sample.vector.length);
   if (!usable.length) return null;
@@ -110,6 +120,7 @@ function weightedAverageVector(samples) {
   return normalizeVector(totals.map(value => value / totalWeight));
 }
 
+// This function blends an existing island vector with new evidence.
 function blendIslandVector(existingVector, incomingVector, alpha = DEFAULT_ISLAND_VECTOR_ALPHA) {
   if (!Array.isArray(existingVector)) return normalizeVector(incomingVector);
   if (!Array.isArray(incomingVector)) return normalizeVector(existingVector);
@@ -123,6 +134,7 @@ function blendIslandVector(existingVector, incomingVector, alpha = DEFAULT_ISLAN
   );
 }
 
+// This function returns a recency multiplier for behavioral signals.
 function topicRecencyWeight(publishedAt) {
   if (!publishedAt) return 1;
 
@@ -130,6 +142,7 @@ function topicRecencyWeight(publishedAt) {
   return Math.exp(-ageDays / DEFAULT_RECENCY_HALF_LIFE_DAYS);
 }
 
+// This function creates an empty positive-signal counter object.
 function buildPositiveSignalsAccumulator() {
   return {
     stars: 0,
@@ -139,6 +152,7 @@ function buildPositiveSignalsAccumulator() {
   };
 }
 
+// This function adds one positive-signal counter into another.
 function addPositiveSignals(target, source) {
   target.stars += source.stars;
   target.clicks += source.clicks;
@@ -146,6 +160,7 @@ function addPositiveSignals(target, source) {
   target.negatives += source.negatives || 0;
 }
 
+// This function converts stored signal JSON into numeric counters.
 function normalizePositiveSignals(source = {}) {
   return {
     stars: Number(source.stars || 0),
@@ -155,6 +170,7 @@ function normalizePositiveSignals(source = {}) {
   };
 }
 
+// This function merges existing and incoming positive-signal counters.
 function mergePositiveSignals(existingSignals = {}, incomingSignals = {}) {
   const merged = normalizePositiveSignals(existingSignals);
   const incoming = normalizePositiveSignals(incomingSignals);
@@ -167,6 +183,7 @@ function mergePositiveSignals(existingSignals = {}, incomingSignals = {}) {
   return merged;
 }
 
+// This function decides whether an island has gone stale enough for archival handling.
 function isStaleIsland(island) {
   const updatedAt = island?.updatedAt ? new Date(island.updatedAt).getTime() : null;
   if (!Number.isFinite(updatedAt)) return true;
@@ -175,6 +192,7 @@ function isStaleIsland(island) {
   return (Date.now() - updatedAt) >= staleMs;
 }
 
+// This function appends one bounded population-audit entry to an island's history.
 function appendPopulationAudit(existingAudit, entry) {
   const previous = Array.isArray(existingAudit) ? existingAudit : [];
   const next = [...previous, entry];
@@ -183,6 +201,7 @@ function appendPopulationAudit(existingAudit, entry) {
   return next.slice(next.length - DEFAULT_AUDIT_MAX_RUNS);
 }
 
+// This function evolves IslandTopic memberships with blending, decay, and cleanup.
 async function evolveIslandTopicMemberships(islandId, islandRows, transaction) {
   const existingRows = await IslandTopic.findAll({
     where: { islandId },
@@ -262,6 +281,7 @@ async function evolveIslandTopicMemberships(islandId, islandRows, transaction) {
   }
 }
 
+// This function builds a compact audit entry describing which articles populated an island.
 async function buildPopulationAuditEntry({ userId, topicIds = [], articleIds = [], transaction }) {
   if (!topicIds.length && !articleIds.length) {
     return {
@@ -368,6 +388,7 @@ async function buildPopulationAuditEntry({ userId, topicIds = [], articleIds = [
   };
 }
 
+// This function picks the nearest active taxonomy display name for an island vector.
 function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
   if (!Array.isArray(vector) || !vector.length) return null;
 
@@ -385,6 +406,7 @@ function resolveTaxonomyDisplayName(vector, taxonomyRows = []) {
   return bestName || null;
 }
 
+// This function derives a fallback island label from the strongest topic names.
 function resolveTopicFallbackLabel(profile) {
   const names = (profile?.topics || [])
     .slice()
@@ -398,6 +420,7 @@ function resolveTopicFallbackLabel(profile) {
   return `${names[0]} / ${names[1]}`.slice(0, 255);
 }
 
+// This function converts article behavior fields into weighted positive and negative signals.
 function computeArticleSignals(article) {
   const stars = article.starInd === 1 ? 1 : 0;
   const clicks = Math.min(article.clickedAmount || 0, 3);
@@ -426,6 +449,7 @@ function computeArticleSignals(article) {
   };
 }
 
+// This function converts an engaged article into a profile for article-based island clustering.
 function computeBehavioralArticleProfile(article) {
   const articleSignals = computeArticleSignals(article);
   const score = articleSignals.positiveScore - articleSignals.negativeScore;
@@ -440,6 +464,7 @@ function computeBehavioralArticleProfile(article) {
   };
 }
 
+// This function selects a readable label for an article-based island.
 function buildArticleIslandLabel(articleProfiles) {
   const titles = articleProfiles
     .slice()
@@ -451,6 +476,7 @@ function buildArticleIslandLabel(articleProfiles) {
   return titles[0].slice(0, 255);
 }
 
+// This function computes an island weight from average behavioral article scores.
 function buildArticleIslandWeight(articleProfiles) {
   if (!articleProfiles.length) return 0;
 
@@ -461,6 +487,7 @@ function buildArticleIslandWeight(articleProfiles) {
   return Number(clamp((averageScore / denominator) + breadthBonus, -1, 1).toFixed(4));
 }
 
+// This function totals positive signal counters across article profiles.
 function buildArticleIslandPositiveSignals(articleProfiles) {
   const signals = buildPositiveSignalsAccumulator();
 
@@ -471,6 +498,7 @@ function buildArticleIslandPositiveSignals(articleProfiles) {
   return signals;
 }
 
+// This function adds an article profile to a community and refreshes its centroid.
 function addArticleToCommunity(community, article) {
   if (community.articles.some(existing => existing.articleId === article.articleId)) return;
 
@@ -482,6 +510,7 @@ function addArticleToCommunity(community, article) {
   }
 }
 
+// This function clusters engaged article profiles into candidate interest islands.
 function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER) {
   const sorted = articleProfiles
     .slice()
@@ -537,6 +566,7 @@ function buildBehavioralArticleCommunities(articleProfiles, maxIslands = DEFAULT
     .sort((a, b) => (Math.abs(b.weight) - Math.abs(a.weight)) || (b.articles.length - a.articles.length));
 }
 
+// This function converts a topic and its article behavior into an island clustering profile.
 function computeTopicProfile(topic) {
   const articles = topic.articles || [];
   const positiveSignals = buildPositiveSignalsAccumulator();
@@ -590,6 +620,7 @@ function computeTopicProfile(topic) {
   };
 }
 
+// This function selects a readable label for a topic-based island.
 function buildIslandLabel(topicProfiles) {
   const names = topicProfiles
     .slice()
@@ -603,6 +634,7 @@ function buildIslandLabel(topicProfiles) {
   return `${names[0]} / ${names[1]}`.slice(0, 255);
 }
 
+// This function computes island weight from topic strengths plus a breadth bonus.
 function buildIslandWeight(topicProfiles) {
   if (!topicProfiles.length) return 0;
 
@@ -612,6 +644,7 @@ function buildIslandWeight(topicProfiles) {
   return Number(clamp(averageStrength + breadthBonus, -1, 1).toFixed(4));
 }
 
+// This function totals positive signal counters across topic profiles.
 function buildIslandPositiveSignals(topicProfiles) {
   const signals = buildPositiveSignalsAccumulator();
 
@@ -622,6 +655,7 @@ function buildIslandPositiveSignals(topicProfiles) {
   return signals;
 }
 
+// This function compares two weighted engagement maps with weighted Jaccard similarity.
 function weightedJaccardSimilarity(scoresA, scoresB) {
   if (!(scoresA instanceof Map) || !(scoresB instanceof Map)) return 0;
   if (!scoresA.size || !scoresB.size) return 0;
@@ -644,6 +678,7 @@ function weightedJaccardSimilarity(scoresA, scoresB) {
   return clamp(intersection / union, 0, 1);
 }
 
+// This function scores topic affinity from shared article engagement and temporal behavior.
 function behavioralAffinityScore(topicA, topicB) {
   const articleOverlapAffinity = weightedJaccardSimilarity(
     topicA?.engagementByArticleId,
@@ -665,6 +700,7 @@ function behavioralAffinityScore(topicA, topicB) {
   );
 }
 
+// This function computes a topic's average behavioral affinity with one community.
 function averageAffinityWithCommunity(topic, communityTopics) {
   if (!communityTopics.length) return 0;
 
@@ -676,6 +712,7 @@ function averageAffinityWithCommunity(topic, communityTopics) {
   return sum / communityTopics.length;
 }
 
+// This function adds a topic profile to a community and refreshes its centroid.
 function addTopicToCommunity(community, topic) {
   if (community.topics.some(existing => existing.topicId === topic.topicId)) return;
 
@@ -687,6 +724,7 @@ function addTopicToCommunity(community, topic) {
   }
 }
 
+// This function prepares debug output showing the strongest topic affinity pairs.
 function topBehavioralAffinityPairs(topicProfiles, limit = 8) {
   const pairs = [];
 
@@ -711,6 +749,7 @@ function topBehavioralAffinityPairs(topicProfiles, limit = 8) {
     .slice(0, Math.max(0, limit));
 }
 
+// This function summarizes island communities for debug logging.
 function summarizeIslandCommunities(communities) {
   return communities.map((community, index) => ({
     index: index + 1,
@@ -727,6 +766,7 @@ function summarizeIslandCommunities(communities) {
   }));
 }
 
+// This function clusters topic profiles into behaviorally related island communities.
 function buildBehavioralTopicCommunities(topicProfiles, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER) {
   const sorted = topicProfiles
     .slice()
@@ -796,6 +836,7 @@ function buildBehavioralTopicCommunities(topicProfiles, maxIslands = DEFAULT_MAX
     .sort((a, b) => (b.weight - a.weight) || (b.topics.length - a.topics.length));
 }
 
+// This function builds article-based island profiles from direct user behavior.
 export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   const maxIslands = options.maxIslands || DEFAULT_MAX_ISLANDS_PER_USER;
 
@@ -855,6 +896,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   return communities;
 }
 
+// This function builds topic-based island profiles from topics and their engaged articles.
 export async function buildTopicInterestIslandProfilesForUser(userId, options = {}) {
   const maxIslands = options.maxIslands || DEFAULT_MAX_ISLANDS_PER_USER;
 
@@ -894,6 +936,7 @@ export async function buildTopicInterestIslandProfilesForUser(userId, options = 
   return communities;
 }
 
+// This function creates, updates, archives, and links islands from computed profiles.
 async function persistInterestIslandProfiles(userId, profiles, transaction, options = {}) {
   const topicConfidenceThreshold =
     options.topicConfidenceThreshold ?? DEFAULT_TOPIC_CONFIDENCE_THRESHOLD;
@@ -1085,6 +1128,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction, opti
   return createdIslands;
 }
 
+// This function builds and persists behavior-derived islands for one user.
 export async function buildInterestIslandsFromBehaviorForUser(userId, options = {}) {
   const profiles = await buildInterestIslandProfilesForUser(userId, options);
 
@@ -1100,6 +1144,7 @@ export async function buildInterestIslandsFromBehaviorForUser(userId, options = 
   };
 }
 
+// This function builds behavior-derived islands for one user or every user.
 export async function buildInterestIslandsFromBehavior(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 
@@ -1129,6 +1174,7 @@ export async function buildInterestIslandsFromBehavior(options = {}) {
   };
 }
 
+// This function enriches existing islands with topic memberships based on vector similarity.
 export async function enrichInterestIslandsFromTopicsForUser(userId, options = {}) {
   const topicConfidenceThreshold =
     options.topicConfidenceThreshold ?? DEFAULT_TOPIC_CONFIDENCE_THRESHOLD;
@@ -1231,6 +1277,7 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
   });
 }
 
+// This function enriches islands from topics for one user or every user.
 export async function enrichInterestIslandsFromTopics(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 
@@ -1260,6 +1307,7 @@ export async function enrichInterestIslandsFromTopics(options = {}) {
   };
 }
 
+// This function runs the full island pipeline for one user and refreshes article interest scores.
 export async function buildInterestIslandsForUser(userId, options = {}) {
   const behaviorResult = await buildInterestIslandsFromBehaviorForUser(userId, options);
   const enrichmentResult = await enrichInterestIslandsFromTopicsForUser(userId, options);
@@ -1278,6 +1326,7 @@ export async function buildInterestIslandsForUser(userId, options = {}) {
   };
 }
 
+// This function runs the full island pipeline for one user or every user.
 export async function buildInterestIslands(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 

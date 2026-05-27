@@ -8,7 +8,8 @@
               <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="clicked-icon" />
               <BootstrapIcon v-if="starInd == 1" icon="heart-fill" class="star-icon" />
               <BootstrapIcon v-if="hotInd == 1" icon="fire" class="hot-icon" />
-              <BootstrapIcon v-if="isEventClusterView && clusterCountTotal > 1" icon="megaphone-fill" class="cluster-icon" />
+              <BootstrapIcon v-if="hasInterestScore" icon="award-fill" class="recommendation-icon" />
+              <BootstrapIcon v-else-if="isEventClusterView && clusterCountTotal > 1" icon="megaphone-fill" class="cluster-icon" />
               <a target="_blank" :href="url" v-text="title" @click="articleClicked(id)"></a>
             </div>
             <div class="menu-icon-wrapper dropdown">
@@ -234,7 +235,7 @@ export default {
     'hotInd', 'status', 'starInd', 'clickedAmount', 'imageUrl', 'media',
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
-    'quality', 'cluster', 'contentSummaryBullets', 'isClusterArticle', 
+    'quality', 'interestScore', 'cluster', 'contentSummaryBullets', 'isClusterArticle',
     'presentation', 'topicKey'
   ],
   data() {
@@ -334,6 +335,10 @@ export default {
     },
     isEventClusterView() {
       return this.$store.data.currentSelection.clusterView === 'eventCluster';
+    },
+    hasInterestScore() {
+      const score = Number(this.interestScore);
+      return Number.isFinite(score) && score !== 0;
     }
   },
   methods: {
@@ -655,6 +660,14 @@ export default {
 .cluster-icon {
   color: #F3A712;
   margin-right: 4px;
+  vertical-align: middle;
+}
+
+.recommendation-icon {
+  color: #F3A712;
+  font-size: 0.85rem;
+  margin-right: 4px;
+  opacity: 0.8;
   vertical-align: middle;
 }
 

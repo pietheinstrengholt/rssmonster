@@ -30,11 +30,24 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
+      topicType: {
+        type: DataTypes.ENUM('event', 'behavioral', 'hybrid'),
+        allowNull: false,
+        defaultValue: 'event'
+      },
       affinityScore: {
         type: DataTypes.FLOAT,
         defaultValue: 0
       },
+      evidenceScore: {
+        type: DataTypes.FLOAT,
+        defaultValue: 0
+      },
       articleCount: {
+        type: DataTypes.INTEGER,
+        defaultValue: 0
+      },
+      behavioralArticleCount: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
@@ -49,11 +62,16 @@ export default (sequelize) => {
       lastActivityAt: {
         type: DataTypes.DATE,
         allowNull: true
+      },
+      lastBehaviorAt: {
+        type: DataTypes.DATE,
+        allowNull: true
       }
     },
     {
       indexes: [
         { fields: ['userId'] },
+        { fields: ['userId', 'topicType'] },
         { fields: ['topicKey'] },
         { fields: ['affinityScore'] }
       ],

@@ -1,16 +1,20 @@
 // services/events/createEvents.js
+// This service creates a new event from a set of corroborating articles.
+// It initializes event vectors, source diversity, lifecycle status, and optional topic assignment.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
 
 const { Article, Event } = db;
 
+// This function converts date-like values into timestamps for lifecycle calculations.
 function toTimestamp(value) {
   if (!value) return null;
   const ts = new Date(value).getTime();
   return Number.isFinite(ts) ? ts : null;
 }
 
+// This function chooses the event lifecycle status from event size and freshness.
 function resolveEventStatus(articleCount, lastSeenAt) {
   const now = Date.now();
   const lastSeenTs = toTimestamp(lastSeenAt);
@@ -33,6 +37,7 @@ function resolveEventStatus(articleCount, lastSeenAt) {
   return 'active';
 }
 
+// This function estimates the starting strength for a newly-created event.
 function computeInitialEventStrength(articleCount) {
   const redundancyScore = Math.min(
     articleCount / EVENT_STRENGTH_CONFIG.maxArticleRedundancyCount,
@@ -51,6 +56,7 @@ function computeInitialEventStrength(articleCount) {
   ).toFixed(3));
 }
 
+// This function derives a readable event name from the representative article title.
 function generateEventName(article) {
   if (!article?.title) return null;
 
@@ -66,12 +72,14 @@ function generateEventName(article) {
   return name || null;
 }
 
+// This function resolves the vector field used when building a new event centroid.
 function resolveArticleVector(record) {
   if (Array.isArray(record?.eventVector)) return record.eventVector;
   if (Array.isArray(record?.articleVector)) return record.articleVector;
   return null;
 }
 
+// This function creates an event, assigns all member articles, and optionally links event topics.
 export async function createAndAssignEvent({
   candidateArticles,
   article,

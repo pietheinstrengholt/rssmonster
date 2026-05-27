@@ -1,5 +1,8 @@
 import db from '../../models/index.js';
 
+// This service refreshes article interest scores from island memberships.
+// It uses topic-to-island links first, then falls back to article-vector similarity when needed.
+
 const {
   sequelize,
   Article,
@@ -12,6 +15,7 @@ const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
 );
 
+// This function accepts JSON vectors from Sequelize or raw SQL and returns an array when valid.
 function parseVector(vector) {
   if (Array.isArray(vector)) return vector;
   if (typeof vector !== 'string') return null;
@@ -24,6 +28,7 @@ function parseVector(vector) {
   }
 }
 
+// This function compares two article/island vectors with cosine similarity.
 function cosineSimilarity(vectorA, vectorB) {
   const a = parseVector(vectorA);
   const b = parseVector(vectorB);
@@ -48,6 +53,7 @@ function cosineSimilarity(vectorA, vectorB) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+// This function finds the strongest island-derived score for one article vector.
 function strongestIslandScore(articleVector, islands, threshold) {
   let strongestScore = null;
 
@@ -64,6 +70,7 @@ function strongestIslandScore(articleVector, islands, threshold) {
   return strongestScore;
 }
 
+// This function normalizes dialect-specific update metadata into an affected row count.
 function updatedRowCount(result, metadata) {
   const rowCountSource = metadata || result;
 
@@ -83,6 +90,7 @@ function updatedRowCount(result, metadata) {
   return Number(rowCountSource || 0);
 }
 
+// This function scores articles by direct vector similarity when topic links do not produce a stronger score.
 async function applyVectorFallbackScores(userId, options = {}) {
   const { transaction } = options;
   const threshold = options.threshold ?? DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD;
@@ -129,6 +137,8 @@ async function applyVectorFallbackScores(userId, options = {}) {
   return fallbackScoredCount;
 }
 
+// This function rebuilds all article interest scores for one user.
+// It first applies topic/island memberships, then fills stronger vector fallback scores.
 export async function buildArticleInterestScoresForUser(userId, options = {}) {
   const { transaction } = options;
 

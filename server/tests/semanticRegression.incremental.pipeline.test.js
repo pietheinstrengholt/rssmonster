@@ -494,8 +494,7 @@ async function printIncrementalDebugReport({
     eventArticles: article.event?.articleCount || 0,
     eventStrength: Number(Number(article.event?.eventStrength || 0).toFixed(4)),
     eventSources: article.event?.sourceCount || 0,
-    eventStatus: article.event?.status || null,
-    title: article.title
+    eventStatus: article.event?.status || null
   })));
 
   console.log('[SEMANTIC INCREMENTAL DEBUG] islands');

@@ -23,6 +23,7 @@ const openai = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
+// This function strips common news prefixes and source suffixes from titles.
 function normalizeTitle(title = '') {
   return title
     .replace(/^(breaking|update|live|exclusive):?\s*/i, '')
@@ -31,10 +32,12 @@ function normalizeTitle(title = '') {
     .trim();
 }
 
+// This function detects content that still looks like raw HTML.
 function isLikelyHtml(text = '') {
   return /<\/?(div|img|video|figure|span|a)[\s>]/i.test(text);
 }
 
+// This function removes URLs, boilerplate calls to action, and excess whitespace.
 function cleanText(text = '') {
   return text
     .replace(/https?:\/\/\S+/g, '')
@@ -43,6 +46,7 @@ function cleanText(text = '') {
     .trim();
 }
 
+// This function extracts usable plain-text paragraphs from article body text.
 function extractParagraphs(text = '') {
   return text
     .split(/\n{2,}/)
@@ -50,6 +54,7 @@ function extractParagraphs(text = '') {
     .filter(p => p.length >= 40);
 }
 
+// This function builds concise event-oriented text from title and early content.
 function extractEventText({ title, contentStripped }) {
   const parts = [];
 
@@ -66,6 +71,7 @@ function extractEventText({ title, contentStripped }) {
   return parts.join(' ').trim();
 }
 
+// This function builds longer topic-oriented text from article body content.
 function extractTopicText({ contentStripped }) {
   if (!contentStripped || isLikelyHtml(contentStripped)) return '';
 
@@ -78,6 +84,7 @@ function extractTopicText({ contentStripped }) {
     .trim();
 }
 
+// This function exposes the event embedding text builder for tests and callers.
 export function buildArticleEventEmbeddingText(articleOrInput = {}) {
   const title = articleOrInput?.title;
   const contentStripped = articleOrInput?.contentStripped || articleOrInput?.description || '';
@@ -85,10 +92,12 @@ export function buildArticleEventEmbeddingText(articleOrInput = {}) {
   return extractEventText({ title, contentStripped });
 }
 
+// This function checks whether event embedding input is long enough to be useful.
 export function isArticleEventEmbeddingTextUsable(text = '') {
   return String(text || '').length >= MIN_EVENT_LENGTH;
 }
 
+// This function sends text to the embedding provider and returns the vector.
 async function embed(text) {
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
@@ -98,14 +107,18 @@ async function embed(text) {
   return response.data[0].embedding;
 }
 
+// This function checks whether an article already has a stored vector.
 function hasArticleVector(article) {
   return Array.isArray(article?.articleVector) && article.articleVector.length > 0;
 }
 
+// This function detects Sequelize article instances that can persist updates.
 function isArticleInstance(record) {
   return Boolean(record && typeof record.update === 'function');
 }
 
+// This function embeds one article or input object and optionally persists the event vector.
+// It returns both event and topic vectors when enough text is available.
 export async function embedArticle(articleOrInput, options = {}) {
   // `persist=true` means this function owns writing vectors to the Article row.
   const { persist = true } = options;

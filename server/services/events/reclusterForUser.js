@@ -1,4 +1,6 @@
 // services/events/reclusterForUser.js
+// This service rebuilds semantic event clusters for a user and keeps event-topic links in sync.
+// It treats Article.topicId as event-owned denormalization, so behavioral topic evidence stays in ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
@@ -15,14 +17,17 @@ import {
 import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
 
 const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
+const EVENT_TOPIC_TYPES = ['event', 'hybrid'];
 const ACTIVE_EVENT_STATUSES = ['emerging', 'active', 'cooling'];
 const EVENT_SUMMARY_LABEL_WIDTH = 31;
 
+// This function formats one aligned line in the event processing summary.
 function eventSummaryLine(label, value) {
   const dots = '.'.repeat(Math.max(1, EVENT_SUMMARY_LABEL_WIDTH - label.length));
   return `[EVENT] ${label}${dots} ${value}`;
 }
 
+// This function summarizes currently active events for the user after clustering work.
 async function summarizeActiveEvents(userId) {
   const events = await Event.findAll({
     where: {
@@ -53,6 +58,7 @@ async function summarizeActiveEvents(userId) {
   };
 }
 
+// This function logs a compact run summary for incremental event assignment.
 async function logEventProcessingSummary(userId, articles, runContext) {
   const totalArticles = articles.length;
   const linkedToExisting = Number(runContext.stats.linkedToExistingEventCount || 0);
@@ -83,6 +89,7 @@ async function logEventProcessingSummary(userId, articles, runContext) {
   console.log(`[EVENT] events with 5+ Articles=${activeEventSummary.fivePlusArticleEvents}`);
 }
 
+// This function maps event age and size into the lifecycle status used by event queries.
 function resolveEventStatus(articleCount, lastSeenAt) {
   const now = Date.now();
   const lastSeenTs = lastSeenAt ? new Date(lastSeenAt).getTime() : null;
@@ -106,6 +113,7 @@ function resolveEventStatus(articleCount, lastSeenAt) {
   return 'active';
 }
 
+// This function builds an event vector from recent article vectors, weighting newer articles more heavily.
 function buildRecencyWeightedVector(eventArticles) {
   const embedded = eventArticles.filter(a => Array.isArray(a.articleVector));
   if (!embedded.length) return null;
@@ -137,6 +145,7 @@ function buildRecencyWeightedVector(eventArticles) {
   return weighted.map(value => value / totalWeight);
 }
 
+// This function estimates event strength from article redundancy, cohesion, and topic history.
 function computeEventStrength({
   articleCount,
   topicEventCount
@@ -160,6 +169,7 @@ function computeEventStrength({
   ).toFixed(3));
 }
 
+// This function counts how many replayed articles ended up assigned to events.
 async function summarizeArticleAssignments(articleIds) {
   if (!articleIds.length) {
     return {
@@ -191,10 +201,12 @@ async function summarizeArticleAssignments(articleIds) {
   };
 }
 
+// This function checks whether an article already has a usable stored embedding vector.
 function hasStoredArticleVector(article) {
   return Array.isArray(article?.articleVector) && article.articleVector.length > 0;
 }
 
+// This function recomputes denormalized topic counts for event and hybrid topics after assignment changes.
 async function recomputeTopicStatsForUser(userId, topicIds) {
   if (!topicIds.length) return;
 
@@ -250,6 +262,7 @@ async function recomputeTopicStatsForUser(userId, topicIds) {
   );
 }
 
+// This function deduplicates, ranks, and thresholds topic assignments before persistence.
 function normalizeTopicAssignments(assignments = []) {
   const byTopic = new Map();
 
@@ -291,10 +304,12 @@ function normalizeTopicAssignments(assignments = []) {
   }));
 }
 
+// This function returns the primary topic id from normalized topic assignments.
 function primaryTopicId(topicAssignments = []) {
   return topicAssignments.find(topic => topic.primaryInd)?.topicId ?? null;
 }
 
+// This function replaces the EventTopic rows for one event and updates the event primary topic.
 async function persistEventTopicAssignments(event, topicAssignments) {
   const normalizedAssignments = normalizeTopicAssignments(topicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
@@ -318,6 +333,8 @@ async function persistEventTopicAssignments(event, topicAssignments) {
   return normalizedAssignments;
 }
 
+// This function mirrors event topic assignments to each article in the event.
+// It only replaces event-owned ArticleTopic rows so behavioral evidence is preserved.
 async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
   const normalizedAssignments = normalizeTopicAssignments(eventTopicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
@@ -333,7 +350,12 @@ async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
 
   await ArticleTopic.destroy({
     where: {
-      articleId: { [Op.in]: articleIds }
+      articleId: { [Op.in]: articleIds },
+      topicId: {
+        [Op.in]: db.Sequelize.literal(
+          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
+        )
+      }
     }
   });
 
@@ -366,6 +388,7 @@ async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
   return articleIds.length;
 }
 
+// This function assigns topics to a set of existing events during replay or rebuild.
 async function assignTopicsForEvents(userId, events, { assignmentContext = 'replay' } = {}) {
   if (!events.length) {
     return {
@@ -376,7 +399,10 @@ async function assignTopicsForEvents(userId, events, { assignmentContext = 'repl
   }
 
   const topicsCache = await db.Topic.findAll({
-    where: { userId },
+    where: {
+      userId,
+      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
+    },
     order: [['updatedAt', 'DESC']]
   });
 
@@ -435,6 +461,7 @@ async function assignTopicsForEvents(userId, events, { assignmentContext = 'repl
   };
 }
 
+// This function embeds, assigns, reconciles, and summarizes article-to-event clustering for one pass.
 async function assignAndReconcile(userId, articles, label, options = {}) {
   const { skipTopicAssignment = false } = options;
   const touchedEventIds = new Set();
@@ -454,7 +481,10 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   const cache = await EventCache.forUser(userId);
 
   const topicsCache = await db.Topic.findAll({
-    where: { userId },
+    where: {
+      userId,
+      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
+    },
     order: [['updatedAt', 'DESC']]
   });
 
@@ -706,6 +736,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   return [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])];
 }
 
+// This function assigns recent unread articles that do not yet belong to an event.
 export async function incrementalClusterForUser(userId, options = {}) {
   const { skipTopicAssignment = false } = options;
   console.log(`[EVENT] Incremental clustering for user ${userId}`);
@@ -740,6 +771,7 @@ export async function incrementalClusterForUser(userId, options = {}) {
   console.log(`[EVENT] Finished incremental pass for user ${userId}`);
 }
 
+// This function replays the recent article window and rebuilds affected events and event topics.
 export async function reclusterForUser(userId, options = {}) {
   const { skipTopicAssignment = false } = options;
   console.log(`[EVENT] Window replay clustering for user ${userId}`);
@@ -778,7 +810,14 @@ export async function reclusterForUser(userId, options = {}) {
   );
 
   const previousArticleTopicRows = await ArticleTopic.findAll({
-    where: { articleId: { [Op.in]: windowArticleIds } },
+    where: {
+      articleId: { [Op.in]: windowArticleIds },
+      topicId: {
+        [Op.in]: db.Sequelize.literal(
+          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
+        )
+      }
+    },
     attributes: ['topicId'],
     raw: true
   });
@@ -799,12 +838,33 @@ export async function reclusterForUser(userId, options = {}) {
   ];
 
   await Article.update(
-    { eventId: null, topicId: null },
+    { eventId: null },
     { where: { id: { [Op.in]: windowArticleIds } } }
   );
 
+  await Article.update(
+    { topicId: null },
+    {
+      where: {
+        id: { [Op.in]: windowArticleIds },
+        topicId: {
+          [Op.in]: db.Sequelize.literal(
+            `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
+          )
+        }
+      }
+    }
+  );
+
   await ArticleTopic.destroy({
-    where: { articleId: { [Op.in]: windowArticleIds } }
+    where: {
+      articleId: { [Op.in]: windowArticleIds },
+      topicId: {
+        [Op.in]: db.Sequelize.literal(
+          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
+        )
+      }
+    }
   });
 
   if (previousEventIds.size) {
@@ -857,13 +917,18 @@ export async function reclusterForUser(userId, options = {}) {
   );
 }
 
+// This function rebuilds only event and hybrid topic assignments for a user.
+// Behavioral topics are left intact because they are maintained by buildBehavioralTopics.js.
 export async function rebuildTopicsForUser(userId, options = {}) {
   const { assignmentContext = 'replay' } = options;
 
   console.log(`[TOPIC] Rebuilding topics for user ${userId}`);
 
   const userTopics = await Topic.findAll({
-    where: { userId },
+    where: {
+      userId,
+      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
+    },
     attributes: ['id'],
     raw: true
   });
@@ -885,12 +950,17 @@ export async function rebuildTopicsForUser(userId, options = {}) {
     }
   });
 
-  await Article.update(
-    { topicId: null },
-    { where: { userId } }
-  );
-
   if (existingTopicIds.length) {
+    await Article.update(
+      { topicId: null },
+      {
+        where: {
+          userId,
+          topicId: { [Op.in]: existingTopicIds }
+        }
+      }
+    );
+
     await ArticleTopic.destroy({
       where: {
         topicId: { [Op.in]: existingTopicIds }
@@ -913,7 +983,10 @@ export async function rebuildTopicsForUser(userId, options = {}) {
   );
 
   const allUserTopics = await Topic.findAll({
-    where: { userId },
+    where: {
+      userId,
+      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
+    },
     attributes: ['id', 'eventCount'],
     raw: true
   });

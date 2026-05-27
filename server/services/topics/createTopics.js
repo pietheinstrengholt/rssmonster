@@ -13,6 +13,9 @@ import { generateTopicName } from './topicName.service.js';
 
 const { Topic } = db;
 
+// This service creates event topics after validating that an event has enough corroborating evidence.
+// Behavioral topics are created in buildBehavioralTopics.js and do not use these event-topic gates.
+
 export async function createTopic({
   semanticUnit,
   semanticVector,
@@ -21,6 +24,8 @@ export async function createTopic({
   currentEventId,
   topicsCache
 }) {
+  // This function creates a new event topic when seed events and article evidence pass the topic gate.
+  // It chooses a name, stores the averaged topic vector, and returns the primary assignment shape.
   const topicSeedEvents = await collectTopicSeedEvents(semanticUnit.userId, semanticVector, currentEventId);
   const topSeedSimilarity = Number((topicSeedEvents[0]?.similarity || 0).toFixed(4));
   const seedArticleCount = topicSeedEvents.reduce(
@@ -88,6 +93,7 @@ export async function createTopic({
     userId: semanticUnit.userId,
     name: topicName,
     topicKey: topicKey || `topic-${semanticUnit.userId}-${semanticUnit.id}`,
+    topicType: 'event',
     topicVector,
     articleCount: 0,
     eventCount: 0,

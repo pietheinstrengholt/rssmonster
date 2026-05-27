@@ -14,6 +14,8 @@ RSSMonster is not just another RSS reader — it is an **intelligent reading eng
 
 Where traditional RSS aggregators like Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
 
+At its core, RSSMonster treats your feeds as a stream of signals rather than a pile of unread items. New articles are enriched with quality, freshness, originality, trust, attention, and semantic relationship metadata. That extra context lets the application answer better questions: *is this worth reading now?*, *is this just syndicated copy?*, *which sources are covering the same event?*, and *which broader storyline does this belong to?*
+
 RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and importance-based ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
 
 - *Top Stories Today* — importance-ranked, deduplicated coverage  
@@ -21,7 +23,7 @@ RSSMonster combines advanced search expressions, semantic clustering, quality an
 - *Quick Scan* — summary-first daily overview  
 - *Low Noise Mode* — maximum signal, minimal volume  
 
-Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable.
+Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable. The result is a reader that can behave like a quick daily briefing, a research inbox, a low-noise monitoring tool, or a classic feed reader depending on the view you choose.
 
 ![Screenshot](docs/assets/screenshot01.png)
 
@@ -34,7 +36,11 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 - **Advanced Search Expressions**: Composable filters using field operators (`star:true`, `unread:false`, `read:true`, `clicked:true`, `seen:false`, `hot:true`, `cluster:eventCluster`, `cluster:topicGroup`, `clustercount:2`, `tag:tech`, `title:javascript`), article age filters (`firstSeen:24h`, `firstSeen:7d`), quality & freshness thresholds (`quality:>0.6`, `freshness:>=0.5`), sorting (`sort:ASC`, `sort:DESC`, `sort:RECOMMENDED`, `sort:QUALITY`, `sort:ATTENTION`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@lastweek`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:RECOMMENDED`
 - **Smart Folders**: Smart Folders allow you to create declarative, dynamic views of your content using composable search expressions. Examples: `@today unread:true clustercount:2 cluster:eventCluster sort:RECOMMENDED` (Top Stories Today), `unread:true quality:>0.7 clustercount:2 cluster:eventCluster sort:QUALITY` (Worth Your Time), `unread:true clustercount:3 cluster:topicGroup quality:>0.8 freshness:>=0.5 sort:RECOMMENDED` (Low Noise Mode).
 - **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
-- **Semantic Deduplication & Clustering**: Similar articles are grouped into clusters to reduce noise from syndication and duplicate coverage. RSSMonster builds **event clusters** (articles about the same concrete event) and **topic groups** (related events under a broader storyline), so you can read at the level of detail you want.
+- **Semantic Deduplication & Clustering**: RSSMonster groups related coverage so repeated syndication, copied press releases, and duplicate reporting do not overwhelm your reading flow. The architecture distinguishes between two semantic layers:
+  - **Event clusters** group articles about the same concrete event, announcement, incident, release, or development. They are designed for deduplication and coverage comparison: one story can represent many articles while still preserving the individual sources behind it.
+  - **Topic groups** connect related event clusters under a broader storyline, such as an ongoing product launch cycle, regulatory debate, market trend, security campaign, or political issue. They help you zoom out from individual updates and follow the larger narrative over time.
+  - This layered approach lets Smart Folders operate at different levels of detail. A low-noise view can show only representative clusters with strong coverage, while a research-oriented view can open the full set of articles, sources, and related topic context behind a story.
+  - Clustering metadata is exposed through search expressions such as `cluster:eventCluster`, `cluster:topicGroup`, and `clustercount:2`, so semantic organization remains transparent and user-controllable instead of being hidden behind a fixed recommendation feed.
 - **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content
 - **Feed Trust Scoring**: Sources earn a long-term trust score (0.0 to 1.0) based on content generation (articles per day), uniqueness, reading time, clicks, and starred items, improving ranking reliability over time. Run `npm run feedtrust` to calculate scores using originality (35%), quality (25%), engagement (20%), and consistency (20%)
 - **Importance-Based Ranking**: Articles are ranked using a transparent, runtime importance score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
@@ -48,6 +54,22 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 - **Automated Actions**: Define custom rules using regular expressions to automatically delete, star, mark as read, flag as advertisement, or mark articles as low quality
 - **Multi-user Support**: Separate accounts with personalized feeds and preferences
 - **AI-Powered Assistant**: Natural language search and feed management via Model Context Protocol (MCP)
+
+## Semantic Architecture
+
+RSSMonster's newer architecture adds a semantic layer between feed crawling and the article list. Rather than storing articles as isolated feed entries, the system enriches them with vectors, scores, cluster membership, topic membership, and engagement signals. Those derived signals are then used by search expressions, Smart Folders, ranking, and the UI.
+
+The semantic pipeline works in stages:
+
+1. **Article enrichment**: crawled articles are normalized, summarized where applicable, scored for quality, and embedded into vectors that capture meaning beyond exact keyword overlap.
+2. **Event clustering**: each article is compared with recent candidate events using semantic similarity, headline overlap, named-entity overlap, and time proximity. Strong matches update an existing event; otherwise RSSMonster can create a new event cluster.
+3. **Topic grouping**: events are assigned to broader topics using ranked membership. An event can have a primary topic while still retaining secondary topic relationships, which keeps broad storylines stable without forcing every article into a single rigid category.
+4. **Signal aggregation**: event size, source diversity, topic density, freshness, quality, uniqueness, trust, and engagement are aggregated into ranking signals. This allows larger corroborated stories to surface without letting repetitive coverage drown out more original work.
+5. **Declarative retrieval**: Smart Folders and searches consume those signals through visible query operators such as `cluster:eventCluster`, `cluster:topicGroup`, `clustercount:2`, `quality:>0.7`, and `sort:RECOMMENDED`.
+
+This design keeps the intelligence of the reader inspectable. RSSMonster does not only decide what to show; it exposes the dimensions behind that decision so you can build views for different reading modes. A morning scan might prefer fresh event clusters with multiple sources, while deeper research might expand the full cluster, inspect related topic groups, and compare how different feeds covered the same story.
+
+Batch reclustering is available through `npm run recluster`. It rebuilds semantic assignments over the configured content window, refreshes event and topic statistics, and helps repair cluster quality after large imports, threshold changes, or embedding updates.
 
 ## How Ranking Scores Work (End User)
 

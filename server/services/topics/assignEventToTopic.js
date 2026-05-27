@@ -18,6 +18,10 @@ import {
 import { createTopic } from './createTopics.js';
 
 const { Topic } = db;
+
+// This service assigns event-shaped semantic units to event or hybrid topics.
+// Pure behavioral topics are excluded here so preference clusters do not steal event ownership.
+
 const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
 const REPLAY_PRIMARY_HYSTERESIS = 0.01;
 const REPLAY_SECONDARY_HYSTERESIS = 0.02;
@@ -28,6 +32,8 @@ export async function assignSemanticUnitToTopic({
   topicsCache = null,
   assignmentContext = 'incremental'
 }) {
+  // This function finds matching event/hybrid topics for a semantic vector, or creates a gated event topic.
+  // It updates matched topic activity and returns ranked assignments for EventTopic and ArticleTopic rows.
   if (!semanticVector) return [];
 
   const primaryThreshold = assignmentContext === 'replay'
@@ -42,9 +48,12 @@ export async function assignSemanticUnitToTopic({
   let bestTopicSim = 0;
 
   const topics = topicsCache
-    ? topicsCache
+    ? topicsCache.filter(topic => topic.topicType !== 'behavioral')
     : await Topic.findAll({
-      where: { userId: semanticUnit.userId },
+      where: {
+        userId: semanticUnit.userId,
+        topicType: { [db.Sequelize.Op.in]: ['event', 'hybrid'] }
+      },
       order: [['updatedAt', 'DESC']],
       limit: MAX_CANDIDATES
     });
@@ -122,7 +131,8 @@ export async function assignSemanticUnitToTopic({
     const persistedKeyMatch = await Topic.findOne({
       where: {
         userId: semanticUnit.userId,
-        topicKey
+        topicKey,
+        topicType: { [db.Sequelize.Op.in]: ['event', 'hybrid'] }
       }
     });
 
@@ -151,6 +161,7 @@ export async function assignEventToTopic({
   topicsCache = null,
   assignmentContext = 'incremental'
 }) {
+  // This function adapts article-style event assignment calls to the generic semantic unit assignment flow.
   return assignSemanticUnitToTopic({
     semanticUnit: article,
     semanticVector: articleTopicVector,
