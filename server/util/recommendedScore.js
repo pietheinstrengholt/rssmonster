@@ -125,12 +125,12 @@ export function computeRecommendedBreakdown(article) {
     0;
 
   const recommended = Math.max(0, Math.min(1,
-    0.22 * freshness +
-    0.12 * interestScore +
-    0.12 * quality +
-    0.24 * coverage +
-    0.15 * crossSource +
-    0.15 * corroboration +
+    0.20 * freshness +
+    0.22 * interestScore +
+    0.10 * quality +
+    0.22 * coverage +
+    0.13 * crossSource +
+    0.13 * corroboration +
     eventBoost +
     ruleBoost
   ));
