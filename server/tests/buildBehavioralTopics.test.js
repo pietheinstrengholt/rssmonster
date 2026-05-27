@@ -5,7 +5,7 @@ import { resetDatabase } from './helpers/resetDb.js';
 import { rebuildTopicsForUser } from '../services/events/reclusterForUser.js';
 import { buildBehavioralTopicsForUser } from '../services/topics/buildBehavioralTopics.js';
 
-const { Article, ArticleTopic, Category, EventTopic, Feed, Topic, User } = db;
+const { Article, ArticleTopic, Category, Event, EventTopic, Feed, Topic, User } = db;
 
 // This function creates the minimal user/feed graph needed by article fixtures.
 async function createUserGraph() {
@@ -102,7 +102,7 @@ describe('buildBehavioralTopicsForUser', () => {
     expect(articlesWithEvents).toBe(0);
   });
 
-  it('does not clear behavioral article.topicId values during event topic rebuilds', async () => {
+  it('preserves behavioral article-topic links during event topic rebuilds', async () => {
     const { user, feeds } = await createUserGraph();
 
     const articles = await Article.bulkCreate([
@@ -123,10 +123,99 @@ describe('buildBehavioralTopicsForUser', () => {
       }
     });
 
-    await articles[0].update({ topicId: topic.id });
+    const eventTopic = await Topic.create({
+      userId: user.id,
+      name: 'Event topic',
+      topicKey: `event-topic-${user.id}`,
+      topicType: 'event',
+      topicVector: [0.08, 0.91, 0.02],
+      eventCount: 1,
+      articleCount: articles.length,
+      lastActivityAt: new Date('2026-05-23T10:00:00.000Z')
+    });
+
+    const event = await Event.create({
+      userId: user.id,
+      topicId: eventTopic.id,
+      representativeArticleId: articles[0].id,
+      name: 'Seed event',
+      articleCount: articles.length,
+      sourceCount: 2,
+      eventStrength: 0.9,
+      eventVector: [0.08, 0.91, 0.02],
+      firstSeen: new Date('2026-05-21T10:00:00.000Z'),
+      lastSeen: new Date('2026-05-23T10:00:00.000Z'),
+      status: 'active'
+    });
+
+    const articleIds = articles.map(article => article.id);
+
+    await Article.update(
+      {
+        eventId: event.id,
+        topicId: eventTopic.id
+      },
+      {
+        where: {
+          id: { [db.Sequelize.Op.in]: articleIds }
+        }
+      }
+    );
+
+    await EventTopic.create({
+      eventId: event.id,
+      topicId: eventTopic.id,
+      confidence: 1,
+      rank: 1,
+      primaryInd: true
+    });
+
+    await ArticleTopic.bulkCreate(articleIds.map(articleId => ({
+      articleId,
+      topicId: eventTopic.id,
+      confidence: 1,
+      rank: 1,
+      primaryInd: true
+    })));
+
+    const behavioralLinksBefore = await ArticleTopic.count({
+      where: {
+        articleId: { [db.Sequelize.Op.in]: articleIds },
+        topicId: topic.id
+      }
+    });
+
+    expect(behavioralLinksBefore).toBe(3);
+
     await rebuildTopicsForUser(user.id);
 
-    const reloadedArticle = await Article.findByPk(articles[0].id);
-    expect(reloadedArticle.topicId).toBe(topic.id);
+    const [
+      behavioralLinksAfter,
+      eventTopicLinksAfter,
+      eventArticleLinksAfter
+    ] = await Promise.all([
+      ArticleTopic.count({
+        where: {
+          articleId: { [db.Sequelize.Op.in]: articleIds },
+          topicId: topic.id
+        }
+      }),
+      EventTopic.count({
+        where: {
+          eventId: event.id,
+          topicId: eventTopic.id
+        }
+      }),
+      ArticleTopic.count({
+        where: {
+          articleId: { [db.Sequelize.Op.in]: articleIds },
+          topicId: eventTopic.id
+        }
+      })
+    ]);
+
+    expect(behavioralLinksAfter).toBe(3);
+    expect(eventTopicLinksAfter).toBe(1);
+    expect(eventArticleLinksAfter).toBe(3);
   });
 });

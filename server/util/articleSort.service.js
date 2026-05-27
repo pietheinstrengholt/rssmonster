@@ -1,6 +1,6 @@
 // articleSort.service.js
 // Handles all in-memory sorting and filtering for articles
-import { computeRecommended, computeRecommendedBreakdown } from './recommendedScore.js';
+import { computeRecommended } from './recommendedScore.js';
 import { debugRecommendedScores } from './articleDebug.service.js';
 
 const compareValues = (left, operator, right) => {

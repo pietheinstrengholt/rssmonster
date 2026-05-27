@@ -359,6 +359,10 @@ async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
     ? Number(((articlesWithEvents / articles.length) * 100).toFixed(1))
     : 0;
   const rows = recommendedDebugRows(articles);
+  const tableRows = rows.map(row => ({ ...row }));
+  tableRows.forEach(row => {
+    delete row.title;
+  });
 
   console.log(`[SEMANTIC INCREMENTAL RECOMMENDED DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
   console.log(
@@ -367,7 +371,7 @@ async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
     `events=${distinctEvents} ` +
     `eventCoverage=${eventCoveragePct}%`
   );
-  console.table(rows);
+  console.table(tableRows);
 
   return rows;
 }

@@ -1,8 +1,7 @@
-import { beforeAll, beforeEach, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 
 const { Category, Feed, User, sequelize } = db;
 
@@ -53,10 +52,6 @@ describe('category ownership authorization', () => {
 
     await sequelize.authenticate();
   }, 50_000);
-
-  beforeEach(async () => {
-    await resetDatabase();
-  });
 
   it('GET category by ID rejects foreign-user category', async () => {
     const owner = await createUser('category-owner');
