@@ -4,3 +4,4 @@
 !.elasticbeanstalk/*.cfg.yml
 !.elasticbeanstalk/*.global.yml
 mysql-data
+server/tests/fixtures/*vectors.json
