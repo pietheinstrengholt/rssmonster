@@ -9,6 +9,7 @@ import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import { reclusterForUser } from '../services/events/reclusterForUser.js';
 import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
 const {
   sequelize,
@@ -22,7 +23,8 @@ const {
   EventTopic,
   Island,
   IslandTopic,
-  IslandTaxonomy
+  IslandTaxonomy,
+  Tag
 } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
@@ -45,6 +47,11 @@ const REPORT_SEPARATOR = '-'.repeat(120);
 const MAX_REPORTED_ARTICLES_PER_EVENT = 12;
 const MAX_REPORTED_ARTICLES_PER_ISLAND = 20;
 const MAX_REPORTED_FALLBACK_ARTICLES_PER_ISLAND = 8;
+const RECOMMENDED_DEBUG_FORMULA =
+  '0.06*quality + 0.40*freshness + 0.15*interest + 0.15*coverage + ' +
+  '0.12*crossSource + 0.12*corroboration + ruleBoost';
+
+let semanticRegressionUserId = null;
 
 function loadFixture() {
   return readFile(FIXTURE_PATH, 'utf8').then(JSON.parse);
@@ -244,6 +251,17 @@ function reportTitle(value) {
   return String(value || '-').replace(/\s+/g, ' ').trim();
 }
 
+function compactEventName(name) {
+  if (!name || typeof name !== 'string') return '';
+
+  return name
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ');
+}
+
 function plainScoredArticle(article) {
   const feed = article.feed || article.Feed || null;
   const category = feed?.category || feed?.Category || null;
@@ -259,6 +277,87 @@ function plainScoredArticle(article) {
     feedName: feed?.feedName || null,
     categoryName: category?.name || null
   };
+}
+
+function recommendedDebugRows(articles) {
+  return articles
+    .map(article => {
+      article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
+
+      return {
+        article,
+        recommended: computeRecommended(article)
+      };
+    })
+    .sort((a, b) => (
+      b.recommended - a.recommended ||
+      Number(a.article.id) - Number(b.article.id)
+    ))
+    .map(({ article, recommended }) => {
+      const breakdown = computeRecommendedBreakdown(article);
+      const event = article.get?.('event') ?? article.event ?? null;
+
+      return {
+        articleId: article.id,
+        eventName: compactEventName(event?.name),
+        freshness: Number(breakdown.freshness.toFixed(4)),
+        interestScore: Number(Number(article.interestScore || 0).toFixed(4)),
+        interest: Number(breakdown.interestScore.toFixed(4)),
+        coverage: Number(breakdown.coverage.toFixed(4)),
+        crossSource: Number(breakdown.crossSource.toFixed(4)),
+        corroboration: Number(breakdown.corroboration.toFixed(4)),
+        clusterSize: breakdown.clusterSize,
+        sourceCount: breakdown.sourceCount,
+        recommended: Number(recommended.toFixed(4))
+      };
+    });
+}
+
+async function printRecommendedRegressionTable(userId) {
+  const articles = await Article.findAll({
+    where: { userId },
+    include: [
+      {
+        model: Event,
+        as: 'event',
+        attributes: ['id', 'name', 'articleCount', 'sourceDiversityScore', 'sourceCount'],
+        required: false
+      },
+      {
+        model: Feed,
+        attributes: ['id', 'feedTrust'],
+        required: false
+      },
+      {
+        model: Tag,
+        attributes: ['id', 'tagType'],
+        required: false
+      }
+    ],
+    order: [['id', 'ASC']]
+  });
+
+  const eventIds = articles
+    .map(article => article.eventId)
+    .filter(eventId => eventId != null);
+  const articlesWithEvents = eventIds.length;
+  const distinctEvents = new Set(eventIds).size;
+  const eventCoveragePct = articles.length
+    ? Number(((articlesWithEvents / articles.length) * 100).toFixed(1))
+    : 0;
+  const rows = recommendedDebugRows(articles);
+
+  console.log(`Fetched ${articles.length} articles from database (before in-memory filters)`);
+  console.log(`[RECOMMENDED DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
+  console.log(
+    `[RECOMMENDED DEBUG] articles=${articles.length} ` +
+    `articlesWithEvents=${articlesWithEvents} ` +
+    `events=${distinctEvents} ` +
+    `eventCoverage=${eventCoveragePct}%`
+  );
+  console.table(rows);
+
+  return rows;
 }
 
 function buildIslandFallbackScores(islands, articles, threshold = SEMANTIC_FIXTURE_ISLAND_ARTICLE_SCORE_THRESHOLD) {
@@ -874,6 +973,7 @@ describe('semantic regression fixture pipeline', () => {
       hash: apiHash,
       role: 'user'
     });
+    semanticRegressionUserId = user.id;
 
     const categoryIdMap = new Map();
     const fixtureCategories = fixture.categories?.length
@@ -1010,5 +1110,20 @@ describe('semantic regression fixture pipeline', () => {
     expect(eventTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
     expect(islandTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
     expect(negativeScoredArticleCount).toBeGreaterThanOrEqual(1);
+  }, 60000);
+
+  it('prints recommended-score ranking for the semantic fixture articles', async () => {
+    const userId = semanticRegressionUserId ?? (await User.findOne({
+      where: { username: FIXTURE_USERNAME },
+      attributes: ['id'],
+      raw: true
+    }))?.id;
+
+    expect(userId, 'semantic regression fixture user should be created by the pipeline test').toBeTruthy();
+
+    const rows = await printRecommendedRegressionTable(userId);
+
+    expect(rows.length).toBeGreaterThan(0);
+    expect(rows[0].recommended).toBeGreaterThanOrEqual(rows.at(-1).recommended);
   }, 60000);
 });
