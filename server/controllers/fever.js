@@ -115,7 +115,7 @@ export const postFever = async (req, res, _next) => {
                 feedIds.push(feed.id);
               });
 
-              //create a feedgroup object holding the category id and feeds (comma seperated)
+              //create a feedgroup object holding the category id and feeds (comma separated)
               const feedGroupObject = {
                 group_id: category.id,
                 feed_ids: feedIds.join(",")

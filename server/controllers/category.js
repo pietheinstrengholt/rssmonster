@@ -35,8 +35,11 @@ const getCategory = async (req, res, _next) => {
 
     const { categoryId } = req.params;
 
-    const category = await Category.findByPk(categoryId, {
-      where: { userId },
+    const category = await Category.findOne({
+      where: {
+        id: categoryId,
+        userId
+      },
       include: [{
         model: Feed,
         required: true
@@ -89,7 +92,12 @@ const updateCategory = async (req, res, _next) => {
     const { categoryId } = req.params;
     const { name, categoryOrder } = req.body;
 
-    const category = await Category.findByPk(categoryId);
+    const category = await Category.findOne({
+      where: {
+        id: categoryId,
+        userId
+      }
+    });
 
     if (!category) {
       return res.status(404).json({
@@ -100,8 +108,6 @@ const updateCategory = async (req, res, _next) => {
     await category.update({
       name,
       categoryOrder
-    }, {
-      where: { userId }
     });
 
     return res.status(200).json(category);
@@ -121,8 +127,11 @@ const deleteCategory = async (req, res, _next) => {
 
     const { categoryId } = req.params;
 
-    const category = await Category.findByPk(categoryId, {
-      where: { userId }
+    const category = await Category.findOne({
+      where: {
+        id: categoryId,
+        userId
+      }
     });
 
     if (!category) {
