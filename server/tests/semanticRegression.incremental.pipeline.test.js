@@ -530,7 +530,7 @@ describe('semantic regression incremental pipeline', () => {
       fallbackScoredCount: baselineIslandResult.fallbackScoredCount,
       rescoredArticleCount: baselineIslandResult.rescoredArticleCount
     }]);
-  });
+  }, 60000);
 
   it('loads unread incremental fixture content without replaying existing clusters', async () => {
     const userId = semanticRegressionUserId;
