@@ -37,6 +37,7 @@ const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 77;
 const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
+const MIN_STRONG_EVENT_STRENGTH = 0.35;
 const RECOMMENDED_DEBUG_FORMULA =
   '0.06*quality + 0.40*freshness + 0.15*interest + 0.15*coverage + ' +
   '0.12*crossSource + 0.12*corroboration + ruleBoost';
@@ -434,7 +435,7 @@ async function printIncrementalDebugReport({
         model: Event,
         as: 'event',
         required: false,
-        attributes: ['id', 'name', 'articleCount']
+        attributes: ['id', 'name', 'articleCount', 'sourceCount', 'eventStrength', 'status']
       }],
       attributes: ['id', 'title', 'eventId', 'topicId', 'interestScore'],
       order: [
@@ -491,6 +492,9 @@ async function printIncrementalDebugReport({
     topicId: article.topicId,
     interestScore: Number(Number(article.interestScore || 0).toFixed(4)),
     eventArticles: article.event?.articleCount || 0,
+    eventStrength: Number(Number(article.event?.eventStrength || 0).toFixed(4)),
+    eventSources: article.event?.sourceCount || 0,
+    eventStatus: article.event?.status || null,
     title: article.title
   })));
 
@@ -665,6 +669,25 @@ describe('semantic regression incremental pipeline', () => {
         raw: true
       })
     ]);
+    const incrementalEventIds = [
+      ...new Set(
+        await Article.findAll({
+          where: {
+            id: { [Op.in]: incrementalArticleIds },
+            eventId: { [Op.ne]: null }
+          },
+          attributes: ['eventId'],
+          raw: true
+        }).then(rows => rows.map(row => Number(row.eventId)).filter(Boolean))
+      )
+    ];
+    const incrementalEvents = await Event.findAll({
+      where: {
+        id: { [Op.in]: incrementalEventIds }
+      },
+      attributes: ['id', 'articleCount', 'sourceCount', 'eventStrength', 'status'],
+      raw: true
+    });
 
     await printIncrementalDebugReport({
       userId,
@@ -696,6 +719,15 @@ describe('semantic regression incremental pipeline', () => {
     }
 
     expect(assignedIncrementalArticleCount).toBeGreaterThan(0);
+    expect(incrementalEvents.length).toBeGreaterThan(0);
+
+    for (const event of incrementalEvents) {
+      expect(Number(event.articleCount || 0)).toBeGreaterThan(0);
+      expect(Number(event.sourceCount || 0)).toBeGreaterThan(0);
+      expect(event.status).toBeTruthy();
+      expect(Number(event.eventStrength || 0)).toBeGreaterThanOrEqual(MIN_STRONG_EVENT_STRENGTH);
+    }
+
     expect(scoredIncrementalArticleCount).toBeGreaterThan(0);
     expect(linkedIncrementalArticleTopicCount).toBeGreaterThan(0);
     expect(linkedIncrementalEventTopicCount).toBeGreaterThan(0);

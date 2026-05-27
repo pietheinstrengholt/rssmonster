@@ -505,7 +505,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
       runContext,
       {
         assignmentContext: label === 'replay' ? 'replay' : 'incremental',
-        skipTopicAssignment
+        skipTopicAssignment: true
       }
     );
 
@@ -538,12 +538,16 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   );
 
   const events = await Event.findAll({
-    where: { id: { [Op.in]: touchedIds } }
+    where: { id: { [Op.in]: touchedIds } },
+    order: [
+      ['lastSeen', 'ASC'],
+      ['id', 'ASC']
+    ]
   });
 
   const allEventArticles = await Article.findAll({
     where: { eventId: { [Op.in]: touchedIds } },
-    attributes: ['id', 'eventId', 'published', 'articleVector']
+    attributes: ['id', 'eventId', 'feedId', 'published', 'articleVector']
   });
 
   const articlesByEventId = {};
@@ -575,20 +579,52 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     const firstSeen = timestamps.length ? new Date(timestamps[0]) : null;
     const lastSeen = timestamps.length ? new Date(timestamps[timestamps.length - 1]) : null;
     const status = resolveEventStatus(eventArticles.length, lastSeen);
+    const sourceCount = new Set(
+      eventArticles
+        .map(article => article.feedId)
+        .filter(feedId => feedId != null)
+    ).size;
+    const sourceDiversityScore = Math.log(sourceCount + 1);
+    const strength = computeEventStrength({
+      articleCount: eventArticles.length,
+      topicEventCount: 1
+    });
 
     await event.update({
       articleCount: eventArticles.length,
       eventVector,
       firstSeen,
       lastSeen,
-      status
+      status,
+      sourceCount,
+      sourceDiversityScore,
+      eventStrength: strength
     });
 
     console.log(
       `[EVENT] Reconciled event ${event.id}` +
-      ` articles=${eventArticles.length}`
+      ` articles=${eventArticles.length}` +
+      ` sources=${sourceCount}` +
+      ` strength=${strength}`
     );
   }
+
+  await logEventProcessingSummary(userId, articles, runContext);
+
+  if (skipTopicAssignment) {
+    return [];
+  }
+
+  const reconciledEvents = await Event.findAll({
+    where: { id: { [Op.in]: touchedIds } },
+    order: [
+      ['lastSeen', 'ASC'],
+      ['id', 'ASC']
+    ]
+  });
+  const topicAssignmentResult = await assignTopicsForEvents(userId, reconciledEvents, {
+    assignmentContext: label === 'replay' ? 'replay' : 'incremental'
+  });
 
   const primaryEventTopics = await EventTopic.findAll({
     where: {
@@ -598,40 +634,35 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     attributes: ['eventId', 'topicId'],
     raw: true
   });
-
   const topicIdByEventId = Object.fromEntries(
     primaryEventTopics.map(row => [Number(row.eventId), Number(row.topicId)])
   );
-
-  const topicRows = await EventTopic.findAll({
-    where: {
-      eventId: { [Op.in]: touchedIds },
-      primaryInd: true
-    },
-    attributes: [
-      'topicId',
-      [db.sequelize.fn('COUNT', '*'), 'eventCount']
-    ],
-    group: ['topicId'],
-    raw: true
-  });
-
+  const primaryTopicIds = [
+    ...new Set(primaryEventTopics.map(row => Number(row.topicId)).filter(Boolean))
+  ];
+  const topicRows = primaryTopicIds.length
+    ? await EventTopic.findAll({
+      where: {
+        topicId: { [Op.in]: primaryTopicIds },
+        primaryInd: true
+      },
+      attributes: [
+        'topicId',
+        [db.sequelize.fn('COUNT', '*'), 'eventCount']
+      ],
+      group: ['topicId'],
+      raw: true
+    })
+    : [];
   const topicSizeMap = Object.fromEntries(
-    topicRows.map(r => [Number(r.topicId), Number(r.eventCount)])
+    topicRows.map(row => [Number(row.topicId), Number(row.eventCount)])
   );
 
   await Promise.all(
-    events.map(async event => {
-      const eventArticlesList = articlesByEventId[event.id] || [];
-      const articleCount = eventArticlesList.length;
-
-      if (articleCount === 0) {
-        return event.destroy();
-      }
-
+    reconciledEvents.map(event => {
+      const articleCount = articlesByEventId[event.id]?.length || Number(event.articleCount || 0);
       const eventPrimaryTopicId = topicIdByEventId[event.id] ?? null;
       const topicEventCount = eventPrimaryTopicId ? (topicSizeMap[eventPrimaryTopicId] ?? 1) : 1;
-
       const strength = computeEventStrength({
         articleCount,
         topicEventCount
@@ -639,17 +670,10 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
 
       return event.update({
         topicId: eventPrimaryTopicId,
-        articleCount,
         eventStrength: strength
       });
     })
   );
-
-  await logEventProcessingSummary(userId, articles, runContext);
-
-  if (skipTopicAssignment) {
-    return [];
-  }
 
   const touchedEventTopicRows = await EventTopic.findAll({
     where: { eventId: { [Op.in]: touchedIds } },
@@ -674,9 +698,12 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   }
 
   const touchedTopicList = [...touchedTopicIds];
-  await recomputeTopicStatsForUser(userId, touchedTopicList);
+  await recomputeTopicStatsForUser(
+    userId,
+    [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])]
+  );
 
-  return touchedTopicList;
+  return [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])];
 }
 
 export async function incrementalClusterForUser(userId, options = {}) {

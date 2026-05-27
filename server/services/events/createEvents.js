@@ -1,7 +1,7 @@
 // services/events/createEvents.js
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
-import { EVENT_LIFECYCLE } from '../config/semanticConfig.js';
+import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
 
 const { Article, Event } = db;
 
@@ -31,6 +31,24 @@ function resolveEventStatus(articleCount, lastSeenAt) {
   }
 
   return 'active';
+}
+
+function computeInitialEventStrength(articleCount) {
+  const redundancyScore = Math.min(
+    articleCount / EVENT_STRENGTH_CONFIG.maxArticleRedundancyCount,
+    1
+  );
+  const topicScore = Math.min(
+    Math.log2(2) / EVENT_STRENGTH_CONFIG.maxTopicEventLogBase,
+    1
+  );
+  const cohesionScore = EVENT_STRENGTH_CONFIG.cohesionBaseline;
+
+  return Number((
+    redundancyScore * EVENT_STRENGTH_CONFIG.weights.redundancy +
+    cohesionScore * EVENT_STRENGTH_CONFIG.weights.cohesion +
+    topicScore * EVENT_STRENGTH_CONFIG.weights.topic
+  ).toFixed(3));
 }
 
 function generateEventName(article) {
@@ -85,6 +103,7 @@ export async function createAndAssignEvent({
   const sourceCount = new Set(eventArticles.map(item => item.feedId)).size;
   const sourceDiversityScore = Math.log(sourceCount + 1);
   const name = generateEventName(article);
+  const eventStrength = computeInitialEventStrength(eventArticles.length);
 
   const eventArticleIds = eventArticles.map(item => item.id);
 
@@ -94,7 +113,7 @@ export async function createAndAssignEvent({
     representativeArticleId: article.id,
     name,
     articleCount: eventArticles.length,
-    eventStrength: 0.2,
+    eventStrength,
     eventVector: centroid,
     firstSeen,
     lastSeen,
