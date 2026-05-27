@@ -172,7 +172,9 @@ process.on('unhandledRejection', (reason, promise) => {
 const CACHE_REFRESH_INTERVAL = 5 * 60 * 1000;
 
 setInterval(() => {
-  hotlink.clearCache();
+  hotlink.clearCache().catch(err => {
+    console.error('Error clearing hotlink cache:', err);
+  });
 }, CACHE_REFRESH_INTERVAL);
 
 export default app;
