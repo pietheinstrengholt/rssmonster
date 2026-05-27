@@ -13,6 +13,10 @@ const FIXTURE_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regres
 const VECTOR_FIXTURE_PATH = join(__dirname, '..', 'tests', 'fixtures', 'semantic-regression.vectors.json');
 const EMBEDDING_MODEL = process.env.SEMANTIC_REGRESSION_EMBEDDING_MODEL || 'text-embedding-3-small';
 const BATCH_SIZE = Number.parseInt(process.env.SEMANTIC_REGRESSION_EMBED_BATCH_SIZE || '50', 10);
+const MAX_EMBEDDING_INPUT_CHARS = Number.parseInt(
+  process.env.SEMANTIC_REGRESSION_MAX_EMBED_CHARS || '20000',
+  10
+);
 
 function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
@@ -24,10 +28,12 @@ function titleFromContent(content, articleIndex) {
 }
 
 function buildEmbeddingInput(article, articleIndex) {
-  return [
+  const input = [
     titleFromContent(article.content, articleIndex),
     article.content
   ].join('\n\n');
+
+  return input.slice(0, MAX_EMBEDDING_INPUT_CHARS);
 }
 
 async function loadFixture() {

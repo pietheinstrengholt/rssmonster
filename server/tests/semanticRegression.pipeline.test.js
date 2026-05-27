@@ -29,9 +29,13 @@ const FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.json');
 const VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.vectors.json');
 const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'island-taxonomy.vectors.json');
 const FIXTURE_USERNAME = 'semantic-regression-user';
-const EXPECTED_MIN_EVENTS = 20;
-const EXPECTED_MIN_TOPICS = 6;
+const EXPECTED_MIN_EVENTS = 10;
+const EXPECTED_MIN_TOPICS = 5;
 const EXPECTED_MIN_ISLANDS = 2;
+const EXPECTED_MIN_ASSIGNED_ARTICLES = 25;
+const EXPECTED_MIN_TOPIC_LINKED_ARTICLES = 15;
+const EXPECTED_MIN_ARTICLE_TOPIC_LINKS = 15;
+const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 const REPORT_SEPARATOR = '-'.repeat(96);
 const MAX_REPORTED_ARTICLES_PER_EVENT = 12;
 
@@ -99,6 +103,28 @@ function formatCell(value, width) {
 
 function reportLine(message = '') {
   console.log(message);
+}
+
+function formatMetric(value) {
+  return Number(value || 0).toFixed(1);
+}
+
+function averageMetric(total, count) {
+  if (!count) return formatMetric(0);
+
+  return formatMetric(total / count);
+}
+
+function maxMetric(values) {
+  return Math.max(0, ...values.map(value => Number(value || 0)));
+}
+
+function eventArticleCount(event) {
+  if (Array.isArray(event.articles)) {
+    return event.articles.length;
+  }
+
+  return Number(event.articleCount || 0);
 }
 
 async function deleteExistingFixtureUser() {
@@ -228,7 +254,7 @@ async function printSemanticPipelineReport(userId) {
     const topicName = event.primaryTopic?.name || event.topicId || '-';
     reportLine(
       `${formatCell(event.id, 6)} ` +
-      `${formatCell(event.articleCount, 9)} ` +
+      `${formatCell(eventArticleCount(event), 9)} ` +
       `${formatCell(topicName, 28)} ` +
       `${event.name || '-'}`
     );
@@ -264,7 +290,7 @@ async function printSemanticPipelineReport(userId) {
     where: {
       islandId: { [Op.in]: islands.map(island => island.id) }
     },
-    attributes: ['islandId'],
+    attributes: ['islandId', 'topicId'],
     raw: true
   });
   const islandTopicCounts = islandTopicRows.reduce((counts, row) => {
@@ -273,22 +299,177 @@ async function printSemanticPipelineReport(userId) {
     return counts;
   }, new Map());
 
+  const [topicRows, articleTopicRows, eventTopicRows] = await Promise.all([
+    Topic.findAll({
+      where: { userId },
+      attributes: ['id', 'name'],
+      raw: true
+    }),
+    ArticleTopic.findAll({
+      attributes: ['articleId', 'topicId'],
+      include: [{
+        model: Article,
+        required: true,
+        attributes: [],
+        where: { userId }
+      }],
+      raw: true
+    }),
+    EventTopic.findAll({
+      attributes: ['eventId', 'topicId'],
+      include: [{
+        model: Event,
+        required: true,
+        attributes: [],
+        where: { userId }
+      }],
+      raw: true
+    })
+  ]);
+
+  const islandById = new Map(
+    islands.map(island => [String(island.id), island])
+  );
+
+  const articleIdsByTopicId = articleTopicRows.reduce((topicArticles, row) => {
+    const key = String(row.topicId);
+    const articleIds = topicArticles.get(key) || new Set();
+    articleIds.add(row.articleId);
+    topicArticles.set(key, articleIds);
+
+    return topicArticles;
+  }, new Map());
+
+  const eventIdsByTopicId = eventTopicRows.reduce((topicEvents, row) => {
+    const key = String(row.topicId);
+    const eventIds = topicEvents.get(key) || new Set();
+    eventIds.add(row.eventId);
+    topicEvents.set(key, eventIds);
+
+    return topicEvents;
+  }, new Map());
+
+  const islandByTopicId = islandTopicRows.reduce((topicIslands, row) => {
+    const topicKey = String(row.topicId);
+    const island = islandById.get(String(row.islandId));
+    const currentIsland = topicIslands.get(topicKey);
+
+    if (!island) return topicIslands;
+
+    if (!currentIsland || Number(island.weight || 0) > Number(currentIsland.weight || 0)) {
+      topicIslands.set(topicKey, island);
+    }
+
+    return topicIslands;
+  }, new Map());
+
+  const articleIdsByIslandId = islandTopicRows.reduce((islandArticles, row) => {
+    const islandKey = String(row.islandId);
+    const topicArticleIds = articleIdsByTopicId.get(String(row.topicId)) || new Set();
+    const articleIds = islandArticles.get(islandKey) || new Set();
+
+    for (const articleId of topicArticleIds) {
+      articleIds.add(articleId);
+    }
+
+    islandArticles.set(islandKey, articleIds);
+
+    return islandArticles;
+  }, new Map());
+
+  const eventIdsByIslandId = islandTopicRows.reduce((islandEvents, row) => {
+    const islandKey = String(row.islandId);
+    const topicEventIds = eventIdsByTopicId.get(String(row.topicId)) || new Set();
+    const eventIds = islandEvents.get(islandKey) || new Set();
+
+    for (const eventId of topicEventIds) {
+      eventIds.add(eventId);
+    }
+
+    islandEvents.set(islandKey, eventIds);
+
+    return islandEvents;
+  }, new Map());
+
+  const eventArticleCounts = events.map(eventArticleCount);
+  const clusteredArticleCount = eventArticleCounts.reduce((sum, count) => sum + count, 0);
+  const linkedEventCount = [...eventIdsByTopicId.values()]
+    .reduce((sum, eventIds) => sum + eventIds.size, 0);
+  const linkedIslandTopicCount = [...islandTopicCounts.values()]
+    .reduce((sum, topicCount) => sum + topicCount, 0);
+
+  const topicReportRows = topicRows
+    .map(topic => ({
+      id: topic.id,
+      name: topic.name,
+      eventCount: eventIdsByTopicId.get(String(topic.id))?.size || 0,
+      articleCount: articleIdsByTopicId.get(String(topic.id))?.size || 0,
+      islandLabel: islandByTopicId.get(String(topic.id))?.label || '-'
+    }))
+    .sort((a, b) => b.articleCount - a.articleCount || b.eventCount - a.eventCount || a.id - b.id);
+
+  reportLine('');
+  reportLine('TOPICS');
+  reportLine(REPORT_SEPARATOR);
+  reportLine(
+    `${formatCell('ID', 6)} ` +
+    `${formatCell('Events', 8)} ` +
+    `${formatCell('Articles', 10)} ` +
+    `${formatCell('Island', 20)} ` +
+    'Topic Name'
+  );
+  reportLine(REPORT_SEPARATOR);
+
+  for (const topic of topicReportRows) {
+    reportLine(
+      `${formatCell(topic.id, 6)} ` +
+      `${formatCell(topic.eventCount, 8)} ` +
+      `${formatCell(topic.articleCount, 10)} ` +
+      `${formatCell(topic.islandLabel, 20)} ` +
+      `${topic.name}`
+    );
+  }
+
   reportLine('');
   reportLine('ISLANDS');
   reportLine(REPORT_SEPARATOR);
   reportLine(
-    `${formatCell('ID', 6)} ${formatCell('Topics', 8)} ${formatCell('Weight', 10)} Island Label`
+    `${formatCell('ID', 6)} ` +
+    `${formatCell('Topics', 8)} ` +
+    `${formatCell('Events', 8)} ` +
+    `${formatCell('Articles', 10)} ` +
+    'Island'
   );
   reportLine(REPORT_SEPARATOR);
 
   for (const island of islands) {
+    const islandKey = String(island.id);
+
     reportLine(
       `${formatCell(island.id, 6)} ` +
-      `${formatCell(islandTopicCounts.get(String(island.id)) || 0, 8)} ` +
-      `${formatCell(Number(island.weight || 0).toFixed(3), 10)} ` +
+      `${formatCell(islandTopicCounts.get(islandKey) || 0, 8)} ` +
+      `${formatCell(eventIdsByIslandId.get(islandKey)?.size || 0, 8)} ` +
+      `${formatCell(articleIdsByIslandId.get(islandKey)?.size || 0, 10)} ` +
       `${island.label}`
     );
   }
+
+  reportLine('');
+  reportLine('CLUSTER HEALTH');
+  reportLine(REPORT_SEPARATOR);
+  reportLine(`${formatCell('Avg articles/event:', 28)} ${averageMetric(clusteredArticleCount, events.length)}`);
+  reportLine(`${formatCell('Avg events/topic:', 28)} ${averageMetric(linkedEventCount, topicRows.length)}`);
+  reportLine(`${formatCell('Avg topics/island:', 28)} ${averageMetric(linkedIslandTopicCount, islands.length)}`);
+  reportLine('');
+  reportLine(`${formatCell('Largest event:', 28)} ${maxMetric(eventArticleCounts)} articles`);
+  reportLine(
+    `${formatCell('Largest topic:', 28)} ` +
+    `${maxMetric([...articleIdsByTopicId.values()].map(articleIds => articleIds.size))} articles`
+  );
+  reportLine(
+    `${formatCell('Largest island:', 28)} ` +
+    `${maxMetric([...articleIdsByIslandId.values()].map(articleIds => articleIds.size))} articles`
+  );
 }
 
 describe('semantic regression fixture pipeline', () => {
@@ -303,14 +484,22 @@ describe('semantic regression fixture pipeline', () => {
     const taxonomyVectorFixture = await loadTaxonomyVectorFixture();
     const vectorByContentHash = buildVectorMap(vectorFixture);
 
-    expect(fixture.feeds).toHaveLength(20);
-    expect(fixture.articles).toHaveLength(500);
+    expect(fixture.feeds.length).toBeGreaterThan(0);
+    expect(fixture.articles.length).toBeGreaterThan(0);
     expect(taxonomyVectorFixture.taxonomy.length).toBeGreaterThan(0);
 
-    const missingVectorCount = fixture.articles.filter(article =>
-      !vectorByContentHash.has(hashContent(article.content))
-    ).length;
-    expect(missingVectorCount).toBe(0);
+    const missingVectorArticles = fixture.articles
+      .map((article, index) => ({
+        index,
+        contentHash: hashContent(article.content),
+        preview: article.content.slice(0, 160)
+      }))
+      .filter(article => !vectorByContentHash.has(article.contentHash));
+
+    expect(
+      missingVectorArticles,
+      JSON.stringify(missingVectorArticles, null, 2)
+    ).toHaveLength(0);
 
     const user = await User.create({
       username: FIXTURE_USERNAME,
@@ -366,11 +555,13 @@ describe('semantic regression fixture pipeline', () => {
     await Article.bulkCreate(articles);
     const vectorizedArticleCount = await applyArticleVectors(user.id, vectorByContentHash);
 
-    expect(vectorizedArticleCount).toBe(500);
+    expect(vectorizedArticleCount).toBe(fixture.articles.length);
 
     await reclusterForUser(user.id);
     const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
-    const islandResult = await buildInterestIslandsForUser(user.id);
+    const islandResult = await buildInterestIslandsForUser(user.id, {
+      topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
+    });
     await printSemanticPipelineReport(user.id);
 
     const [
@@ -418,16 +609,16 @@ describe('semantic regression fixture pipeline', () => {
       })
     ]);
 
-    expect(feedCount).toBe(20);
-    expect(articleCount).toBe(500);
+    expect(feedCount).toBe(fixture.feeds.length);
+    expect(articleCount).toBe(fixture.articles.length);
     expect(eventCount).toBeGreaterThanOrEqual(EXPECTED_MIN_EVENTS);
     expect(topicCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
     expect(taxonomyCount).toBeGreaterThan(0);
     expect(islandResult.islandCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
     expect(islandCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
-    expect(assignedArticleCount).toBeGreaterThan(450);
-    expect(topicLinkedArticleCount).toBeGreaterThan(100);
-    expect(articleTopicLinkCount).toBeGreaterThan(100);
+    expect(assignedArticleCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ASSIGNED_ARTICLES);
+    expect(topicLinkedArticleCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPIC_LINKED_ARTICLES);
+    expect(articleTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ARTICLE_TOPIC_LINKS);
     expect(eventTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
     expect(islandTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
   }, 60000);

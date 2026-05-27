@@ -678,11 +678,14 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   return communities;
 }
 
-async function persistInterestIslandProfiles(userId, profiles, transaction) {
+async function persistInterestIslandProfiles(userId, profiles, transaction, options = {}) {
+  const topicConfidenceThreshold =
+    options.topicConfidenceThreshold ?? DEFAULT_TOPIC_CONFIDENCE_THRESHOLD;
+
   const persistableProfiles = profiles
     .map(profile => ({
       ...profile,
-      topics: profile.topics.filter(topic => Math.abs(topic.strength) >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD)
+      topics: profile.topics.filter(topic => Math.abs(topic.strength) >= topicConfidenceThreshold)
     }))
     .filter(profile => profile.topics.length > 0);
 
@@ -737,7 +740,7 @@ async function persistInterestIslandProfiles(userId, profiles, transaction) {
           confidence: Number(clamp(Math.abs(topic.strength) * similarity, 0, 1).toFixed(4))
         };
       })
-      .filter(row => row.confidence >= DEFAULT_TOPIC_CONFIDENCE_THRESHOLD);
+      .filter(row => row.confidence >= topicConfidenceThreshold);
 
     if (!islandRows.length) continue;
 
@@ -863,7 +866,7 @@ export async function buildInterestIslandsForUser(userId, options = {}) {
   const profiles = await buildInterestIslandProfilesForUser(userId, options);
 
   const createdIslands = await sequelize.transaction(async (transaction) => {
-    const islands = await persistInterestIslandProfiles(userId, profiles, transaction);
+    const islands = await persistInterestIslandProfiles(userId, profiles, transaction, options);
     const scoringResult = await buildArticleInterestScoresForUser(userId, { transaction });
 
     return {

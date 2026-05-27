@@ -12,6 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
+    "fixture:semantic-export": "node scripts/exportSemanticRegressionFixture.js",
     "fixture:semantic-vectors": "node scripts/generateSemanticRegressionVectors.js",
     "fixture:taxonomy-vectors": "node scripts/generateIslandTaxonomyVectorFixture.js",
     "lint": "eslint .",
