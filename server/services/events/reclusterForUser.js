@@ -326,15 +326,31 @@ export async function reclusterForUser(userId, options = {}) {
   const previousEventIds = new Set(
     windowArticles
       .filter(a => a.eventId != null)
-      .map(a => a.eventId)
+      .map(a => Number(a.eventId))
+      .filter(Number.isFinite)
   );
 
   const windowArticleIds = windowArticles.map(a => a.id);
+  const previousEventIdList = [...previousEventIds];
+  const ownedPreviousEventRows = previousEventIdList.length
+    ? await Event.findAll({
+      where: {
+        id: { [Op.in]: previousEventIdList },
+        userId
+      },
+      attributes: ['id'],
+      raw: true
+    })
+    : [];
+  const ownedPreviousEventIds = new Set(
+    ownedPreviousEventRows.map(event => Number(event.id)).filter(Number.isFinite)
+  );
+  const ownedPreviousEventIdList = [...ownedPreviousEventIds];
 
   console.log(
     `[EVENT] ${windowArticles.length} articles in ` +
     `${RECENCY_WINDOW_DAYS}-day window ` +
-    `(${previousEventIds.size} events affected)`
+    `(${ownedPreviousEventIds.size}/${previousEventIds.size} events affected)`
   );
 
   const previousArticleTopicRows = await ArticleTopic.findAll({
@@ -350,9 +366,9 @@ export async function reclusterForUser(userId, options = {}) {
     raw: true
   });
 
-  const previousEventTopicRows = previousEventIds.size
+  const previousEventTopicRows = ownedPreviousEventIds.size
     ? await EventTopic.findAll({
-      where: { eventId: { [Op.in]: [...previousEventIds] } },
+      where: { eventId: { [Op.in]: ownedPreviousEventIdList } },
       attributes: ['topicId'],
       raw: true
     })
@@ -395,22 +411,22 @@ export async function reclusterForUser(userId, options = {}) {
     }
   });
 
-  if (previousEventIds.size) {
+  if (ownedPreviousEventIds.size) {
     await EventTopic.destroy({
-      where: { eventId: { [Op.in]: [...previousEventIds] } }
+      where: { eventId: { [Op.in]: ownedPreviousEventIdList } }
     });
   }
 
   let deletedCount = 0;
 
-  if (previousEventIds.size) {
-    for (const eventId of previousEventIds) {
+  if (ownedPreviousEventIds.size) {
+    for (const eventId of ownedPreviousEventIds) {
       const remaining = await Article.count({
-        where: { eventId }
+        where: { eventId, userId }
       });
 
       if (remaining === 0) {
-        await Event.destroy({ where: { id: eventId } });
+        await Event.destroy({ where: { id: eventId, userId } });
         deletedCount++;
       }
     }

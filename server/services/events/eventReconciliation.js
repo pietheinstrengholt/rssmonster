@@ -90,12 +90,13 @@ export function computeEventStrength({
 
 // This function recomputes denormalized event fields for events touched during assignment.
 export async function reconcileTouchedEvents(userId, touchedEventIds) {
-  void userId;
-
   const touchedIds = [...touchedEventIds];
 
   const events = await Event.findAll({
-    where: { id: { [Op.in]: touchedIds } },
+    where: {
+      id: { [Op.in]: touchedIds },
+      userId
+    },
     order: [
       ['lastSeen', 'ASC'],
       ['id', 'ASC']
@@ -103,7 +104,10 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
   });
 
   const allEventArticles = await Article.findAll({
-    where: { eventId: { [Op.in]: touchedIds } },
+    where: {
+      eventId: { [Op.in]: touchedIds },
+      userId
+    },
     attributes: ['id', 'eventId', 'feedId', 'published', 'articleVector']
   });
 
