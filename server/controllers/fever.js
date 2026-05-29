@@ -1,6 +1,5 @@
 import db from '../models/index.js';
-const { Feed, Category, Article, User } = db;
-import hotlink from '../controllers/hotlink.js';
+const { Feed, Category, Article, User, Hotlink } = db;
 import { Op } from 'sequelize';
 
 //use Fever API
@@ -258,19 +257,29 @@ export const postFever = async (req, res, _next) => {
         if ("links" in req.query) {
           // Support optional offset, range, page parameters (defaults: offset=0, range=7, page=1)
           // These parameters are reserved for future pagination implementation
-          
-          //select all items with hot links
+
+          const hotlinks = await Hotlink.findAll({
+            attributes: ['url'],
+            where: {
+              userId: loggedInUser.id
+            }
+          });
+          const hotlinkUrls = [...new Set(hotlinks.map(row => row.url).filter(Boolean))];
+
           const whereClause = {
-            url: hotlink.all(),
+            url: {
+              [Op.in]: hotlinkUrls
+            },
             userId: loggedInUser.id
           };
-          
+
           if (req.query.since_id) {
             whereClause.id = { [Op.gt]: req.query.since_id };
           }
-          
+
           const articles = await Article.findAll({
-            where: whereClause
+            where: whereClause,
+            order: [['id', 'ASC']]
           });
 
           const item_ids = [];
