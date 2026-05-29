@@ -40,12 +40,10 @@ export const generateOpml = async (userId) => {
     if (category.feeds && category.feeds.length > 0) {
       category.feeds.forEach(feed => {
         opml += `      <outline type="rss" text="${escapeXml(feed.feedName)}" title="${escapeXml(feed.feedName)}" xmlUrl="${escapeXml(feed.url)}"`;
-        if (feed.description) {
-          opml += ` description="${escapeXml(feed.description)}"`;
+        if (feed.feedDesc) {
+          opml += ` description="${escapeXml(feed.feedDesc)}"`;
         }
-        if (feed.link) {
-          opml += ` htmlUrl="${escapeXml(feed.link)}"`;
-        }
+        opml += ` htmlUrl="${escapeXml(feed.url)}"`;
         opml += ` />\n`;
       });
     }
@@ -183,8 +181,7 @@ export const importOpml = async (req, res, _next) => {
                   categoryId: category.id,
                   url: xmlUrl,
                   feedName: feedAttrs.text || feedAttrs.title || xmlUrl,
-                  description: feedAttrs.description || null,
-                  link: feedAttrs.htmlUrl || null,
+                  feedDesc: feedAttrs.description || null,
                   favicon: null,
                   errorCount: 0
                 });
