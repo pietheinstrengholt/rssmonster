@@ -209,6 +209,52 @@ async function upsertArticleTopicRows(topic, community, transaction) {
   return rows.length;
 }
 
+// This function removes stale article-topic evidence for pure behavioral topics.
+async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transaction) {
+  const behavioralTopics = await Topic.findAll({
+    where: {
+      userId,
+      topicType: 'behavioral'
+    },
+    attributes: ['id'],
+    raw: true,
+    transaction
+  });
+
+  const behavioralTopicIds = behavioralTopics
+    .map(topic => Number(topic.id))
+    .filter(Number.isFinite);
+
+  if (!behavioralTopicIds.length) return 0;
+
+  const activeKeys = new Set(
+    activeRows.map(row => `${Number(row.topicId)}:${Number(row.articleId)}`)
+  );
+
+  const existingRows = await ArticleTopic.findAll({
+    where: {
+      topicId: { [Op.in]: behavioralTopicIds }
+    },
+    attributes: ['id', 'articleId', 'topicId'],
+    raw: true,
+    transaction
+  });
+
+  const staleRowIds = existingRows
+    .filter(row => !activeKeys.has(`${Number(row.topicId)}:${Number(row.articleId)}`))
+    .map(row => Number(row.id))
+    .filter(Number.isFinite);
+
+  if (!staleRowIds.length) return 0;
+
+  return ArticleTopic.destroy({
+    where: {
+      id: { [Op.in]: staleRowIds }
+    },
+    transaction
+  });
+}
+
 // This function builds behavioral topics for one user's engaged articles.
 export async function buildBehavioralTopicsForUser(userId, options = {}) {
   const communitySimilarityThreshold =
@@ -259,9 +305,14 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
     .filter(hasBehavioralBreadth);
 
   if (!communities.length) {
+    const staleArticleTopicLinkCount = await db.sequelize.transaction(transaction =>
+      cleanupStaleBehavioralArticleTopicRows(userId, [], transaction)
+    );
+
     return {
       topicCount: 0,
       articleTopicLinkCount: 0,
+      staleArticleTopicLinkCount,
       communitiesConsidered: profiles.length ? buildBehavioralCommunities(profiles, communitySimilarityThreshold).length : 0
     };
   }
@@ -277,7 +328,9 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
 
   let topicCount = 0;
   let articleTopicLinkCount = 0;
+  let staleArticleTopicLinkCount = 0;
   const touchedTopicIds = [];
+  const activeArticleTopicRows = [];
 
   await db.sequelize.transaction(async transaction => {
     for (const community of communities) {
@@ -297,13 +350,24 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
 
       articleTopicLinkCount += await upsertArticleTopicRows(topic, community, transaction);
       touchedTopicIds.push(Number(topic.id));
+      activeArticleTopicRows.push(...community.articles.map(article => ({
+        articleId: article.articleId,
+        topicId: topic.id
+      })));
       topicCount++;
     }
+
+    staleArticleTopicLinkCount = await cleanupStaleBehavioralArticleTopicRows(
+      userId,
+      activeArticleTopicRows,
+      transaction
+    );
   });
 
   return {
     topicCount,
     articleTopicLinkCount,
+    staleArticleTopicLinkCount,
     touchedTopicIds,
     communitiesConsidered: communities.length
   };

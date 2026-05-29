@@ -102,6 +102,67 @@ describe('buildBehavioralTopicsForUser', () => {
     expect(articlesWithEvents).toBe(0);
   });
 
+  it('removes stale behavioral article-topic links when articles no longer qualify', async () => {
+    const { user, feeds } = await createUserGraph();
+
+    const articles = await Article.bulkCreate([
+      articlePayload(user.id, feeds[0].id, 1, { starInd: 1 }),
+      articlePayload(user.id, feeds[1].id, 2, { clickedAmount: 2 }),
+      articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
+    ]);
+
+    await buildBehavioralTopicsForUser(user.id, {
+      engagementThreshold: 6,
+      communitySimilarityThreshold: 0.5
+    });
+
+    const topic = await Topic.findOne({
+      where: {
+        userId: user.id,
+        topicType: 'behavioral'
+      }
+    });
+
+    const articleIds = articles.map(article => article.id);
+    const linkCountBefore = await ArticleTopic.count({
+      where: {
+        articleId: { [db.Sequelize.Op.in]: articleIds },
+        topicId: topic.id
+      }
+    });
+
+    expect(linkCountBefore).toBe(3);
+
+    await Article.update(
+      {
+        starInd: 0,
+        clickedAmount: 0,
+        attentionBucket: 0
+      },
+      {
+        where: {
+          id: { [db.Sequelize.Op.in]: articleIds }
+        }
+      }
+    );
+
+    const result = await buildBehavioralTopicsForUser(user.id, {
+      engagementThreshold: 6,
+      communitySimilarityThreshold: 0.5
+    });
+
+    const linkCountAfter = await ArticleTopic.count({
+      where: {
+        articleId: { [db.Sequelize.Op.in]: articleIds },
+        topicId: topic.id
+      }
+    });
+
+    expect(result.topicCount).toBe(0);
+    expect(result.staleArticleTopicLinkCount).toBe(3);
+    expect(linkCountAfter).toBe(0);
+  });
+
   it('preserves behavioral article-topic links during event topic rebuilds', async () => {
     const { user, feeds } = await createUserGraph();
 

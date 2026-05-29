@@ -5,6 +5,11 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
 import { createAndAssignEvent as createEventFromCandidates } from '../events/createEvents.js';
+import { syncEventTopicsToArticles } from '../events/eventArticleTopicSync.js';
+import {
+  normalizeTopicAssignments,
+  primaryTopicId
+} from '../events/eventTopicAssignment.js';
 import { assignArticleToExistingEvent as updateExistingEvent } from '../events/updateEvents.js';
 import {
   EVENT_SIM_THRESHOLD,
@@ -12,10 +17,7 @@ import {
   EVENT_MAX_GAP_HOURS,
   EVENT_RECENCY_HALF_LIFE_HOURS,
   EVENT_MIN_HEADLINE_SIM,
-  EVENT_MIN_SHARED_ENTITY_OVERLAP,
-  PRIMARY_TOPIC_THRESHOLD,
-  SECONDARY_TOPIC_THRESHOLD,
-  MAX_TOPICS_PER_ARTICLE
+  EVENT_MIN_SHARED_ENTITY_OVERLAP
 } from '../config/semanticConfig.js';
 
 const { Article, Event, ArticleTopic, EventTopic } = db;
@@ -188,53 +190,6 @@ function debugEventLog(message, payload = null) {
   console.log(`[EVENT DEBUG] ${message}`, payload);
 }
 
-// This function deduplicates and ranks topic assignments before they are persisted.
-function normalizeTopicAssignments(assignments = []) {
-  const byTopic = new Map();
-
-  for (const assignment of assignments) {
-    const topicId = Number(assignment?.topicId);
-    const confidence = Number(assignment?.confidence ?? 0);
-
-    if (!Number.isFinite(topicId) || topicId <= 0) continue;
-    if (!Number.isFinite(confidence) || confidence <= 0) continue;
-
-    const existing = byTopic.get(topicId);
-    if (!existing || confidence > existing.confidence) {
-      byTopic.set(topicId, {
-        topicId,
-        confidence,
-        primaryInd: Boolean(assignment?.primaryInd)
-      });
-    }
-  }
-
-  const ranked = [...byTopic.values()]
-    .sort((a, b) => b.confidence - a.confidence)
-    .slice(0, MAX_TOPICS_PER_ARTICLE);
-
-  const withThreshold = ranked.filter(topic => topic.confidence >= SECONDARY_TOPIC_THRESHOLD);
-  const finalList = withThreshold.length ? withThreshold : ranked.slice(0, 1);
-
-  const explicitPrimary = finalList.find(topic => topic.primaryInd) ?? null;
-  const thresholdPrimary = finalList.find(topic => topic.confidence >= PRIMARY_TOPIC_THRESHOLD) ?? null;
-  const primaryTopic = explicitPrimary && explicitPrimary.confidence >= PRIMARY_TOPIC_THRESHOLD
-    ? explicitPrimary
-    : thresholdPrimary;
-
-  return finalList.map((topic, index) => ({
-    topicId: topic.topicId,
-    confidence: Number(topic.confidence.toFixed(4)),
-    rank: index + 1,
-    primaryInd: Boolean(primaryTopic && primaryTopic.topicId === topic.topicId)
-  }));
-}
-
-// This function returns the primary topic id from normalized topic assignments.
-function primaryTopicId(topicAssignments = []) {
-  return topicAssignments.find(topic => topic.primaryInd)?.topicId ?? null;
-}
-
 // This function loads topic assignments already stored for an event.
 async function loadEventTopicAssignments(eventId) {
   const rows = await EventTopic.findAll({
@@ -244,61 +199,6 @@ async function loadEventTopicAssignments(eventId) {
   });
 
   return normalizeTopicAssignments(rows);
-}
-
-// This function mirrors event topic assignments to each article in the event.
-// It only replaces event-owned ArticleTopic rows so behavioral evidence is preserved.
-async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
-  const normalizedAssignments = normalizeTopicAssignments(eventTopicAssignments);
-  const primaryId = primaryTopicId(normalizedAssignments);
-
-  const eventArticles = await Article.findAll({
-    where: { eventId },
-    attributes: ['id'],
-    raw: true
-  });
-
-  const articleIds = eventArticles.map(article => Number(article.id)).filter(Boolean);
-  if (!articleIds.length) return 0;
-
-  await ArticleTopic.destroy({
-    where: {
-      articleId: { [Op.in]: articleIds },
-      topicId: {
-        [Op.in]: db.Sequelize.literal(
-          `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
-        )
-      }
-    }
-  });
-
-  if (normalizedAssignments.length) {
-    const rows = [];
-    for (const articleId of articleIds) {
-      for (const assignment of normalizedAssignments) {
-        rows.push({
-          articleId,
-          topicId: assignment.topicId,
-          confidence: assignment.confidence,
-          rank: assignment.rank,
-          primaryInd: assignment.primaryInd
-        });
-      }
-    }
-
-    await ArticleTopic.bulkCreate(rows);
-  }
-
-  await Article.update(
-    { topicId: primaryId },
-    {
-      where: {
-        id: { [Op.in]: articleIds }
-      }
-    }
-  );
-
-  return articleIds.length;
 }
 
 // This function replaces the EventTopic rows for one event and updates the event primary topic.

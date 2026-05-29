@@ -15,6 +15,7 @@ const { Op } = Sequelize;
 const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
 );
+const SCORABLE_ARTICLE_STATUS = 'unread';
 
 // This function compares two article/island vectors with cosine similarity.
 function cosineSimilarity(vectorA, vectorB) {
@@ -80,6 +81,7 @@ async function applyVectorFallbackScores(userId, options = {}) {
   const articles = await Article.findAll({
     where: {
       userId,
+      status: SCORABLE_ARTICLE_STATUS,
       articleVector: { [Op.ne]: null }
     },
     attributes: ['id', 'interestScore', 'articleVector'],
@@ -118,9 +120,10 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
     UPDATE articles
     SET interestScore = 0
     WHERE userId = :userId
+      AND status = :status
     `,
     {
-      replacements: { userId },
+      replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
       type: db.Sequelize.QueryTypes.UPDATE,
       transaction
     }
@@ -146,14 +149,16 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
       INNER JOIN articles src
         ON src.id = atp.articleId
        AND src.userId = :userId
+       AND src.status = :status
       GROUP BY atp.articleId
     ) scored
       ON scored.articleId = a.id
     SET a.interestScore = scored.interestScore
     WHERE a.userId = :userId
+      AND a.status = :status
     `,
     {
-      replacements: { userId },
+      replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
       type: db.Sequelize.QueryTypes.UPDATE,
       transaction
     }
