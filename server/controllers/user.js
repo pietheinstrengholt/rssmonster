@@ -1,7 +1,79 @@
 import db from '../models/index.js';
-const { User, Setting, Article, Feed, Category, Hotlink } = db;
+const {
+  User,
+  Setting,
+  Article,
+  Feed,
+  Category,
+  Hotlink,
+  Action,
+  SmartFolder,
+  Topic,
+  Event,
+  ArticleTopic,
+  EventTopic,
+  Island,
+  IslandTopic,
+  sequelize,
+  Sequelize
+} = db;
 import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
+
+const { Op } = Sequelize;
+
+const isMissingTableError = (error) => (
+  error?.name === 'SequelizeDatabaseError' &&
+  (
+    error?.original?.code === 'ER_NO_SUCH_TABLE' ||
+    error?.parent?.code === 'ER_NO_SUCH_TABLE'
+  )
+);
+
+const destroySafe = async ({ model, where, transaction, label }) => {
+  if (!model) {
+    console.warn(`[deleteUser] Skipping ${label}: model is not registered`);
+    return;
+  }
+
+  try {
+    await model.destroy({ where, transaction });
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(`[deleteUser] Skipping ${label}: backing table does not exist`);
+      return;
+    }
+    throw error;
+  }
+};
+
+const destroyByUserIdSafe = async ({ model, userId, transaction, label }) => {
+  await destroySafe({ model, where: { userId }, transaction, label });
+};
+
+const findIdsByUserIdSafe = async ({ model, userId, transaction, label }) => {
+  if (!model) {
+    console.warn(`[deleteUser] Skipping ${label}: model is not registered`);
+    return [];
+  }
+
+  try {
+    const rows = await model.findAll({
+      where: { userId },
+      attributes: ['id'],
+      raw: true,
+      transaction
+    });
+
+    return rows.map(row => row.id);
+  } catch (error) {
+    if (isMissingTableError(error)) {
+      console.warn(`[deleteUser] Skipping ${label}: backing table does not exist`);
+      return [];
+    }
+    throw error;
+  }
+};
 
 const getUsers = async (req, res, _next) => {
   try {
@@ -139,18 +211,75 @@ const deleteUser = async (req, res, _next) => {
       });
     }
 
-    //delete all settings
-    await Setting.destroy({ where: { userId: user.id } });
-    //delete all hotlinks
-    await Hotlink.destroy({ where: { userId: user.id } });
-    //delete all articles
-    await Article.destroy({ where: { userId: user.id } });
-    //delete all feeds
-    await Feed.destroy({ where: { userId: user.id } });
-    //delete all categories
-    await Category.destroy({ where: { userId: user.id } });
-    // Finally, delete the user
-    await user.destroy();
+    await sequelize.transaction(async (transaction) => {
+      const articleIds = await findIdsByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
+      const eventIds = await findIdsByUserIdSafe({ model: Event, userId: user.id, transaction, label: 'events' });
+      const topicIds = await findIdsByUserIdSafe({ model: Topic, userId: user.id, transaction, label: 'topics' });
+      const islandIds = await findIdsByUserIdSafe({ model: Island, userId: user.id, transaction, label: 'islands' });
+
+      if (articleIds.length > 0) {
+        await destroySafe({
+          model: ArticleTopic,
+          where: { articleId: { [Op.in]: articleIds } },
+          transaction,
+          label: 'article_topics'
+        });
+      }
+
+      if (eventIds.length > 0) {
+        await destroySafe({
+          model: EventTopic,
+          where: { eventId: { [Op.in]: eventIds } },
+          transaction,
+          label: 'event_topics'
+        });
+      }
+
+      if (topicIds.length > 0) {
+        await destroySafe({
+          model: ArticleTopic,
+          where: { topicId: { [Op.in]: topicIds } },
+          transaction,
+          label: 'article_topics'
+        });
+        await destroySafe({
+          model: EventTopic,
+          where: { topicId: { [Op.in]: topicIds } },
+          transaction,
+          label: 'event_topics'
+        });
+        await destroySafe({
+          model: IslandTopic,
+          where: { topicId: { [Op.in]: topicIds } },
+          transaction,
+          label: 'island_topics'
+        });
+      }
+
+      if (islandIds.length > 0) {
+        await destroySafe({
+          model: IslandTopic,
+          where: { islandId: { [Op.in]: islandIds } },
+          transaction,
+          label: 'island_topics'
+        });
+      }
+
+      // Delete direct user-linked rows before deleting the user.
+      await destroyByUserIdSafe({ model: Setting, userId: user.id, transaction, label: 'settings' });
+      await destroyByUserIdSafe({ model: Hotlink, userId: user.id, transaction, label: 'hotlinks' });
+      await destroyByUserIdSafe({ model: Action, userId: user.id, transaction, label: 'actions' });
+      await destroyByUserIdSafe({ model: SmartFolder, userId: user.id, transaction, label: 'smart_folders' });
+      await destroyByUserIdSafe({ model: Article, userId: user.id, transaction, label: 'articles' });
+      await destroyByUserIdSafe({ model: Event, userId: user.id, transaction, label: 'events' });
+      await destroyByUserIdSafe({ model: Topic, userId: user.id, transaction, label: 'topics' });
+      await destroyByUserIdSafe({ model: Island, userId: user.id, transaction, label: 'islands' });
+      await destroyByUserIdSafe({ model: Feed, userId: user.id, transaction, label: 'feeds' });
+      await destroyByUserIdSafe({ model: Category, userId: user.id, transaction, label: 'categories' });
+
+      // Finally, delete the user.
+      await user.destroy({ transaction });
+    });
     
     return res.status(204).send();
   } catch (err) {
