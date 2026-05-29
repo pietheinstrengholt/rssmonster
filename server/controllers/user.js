@@ -111,9 +111,18 @@ const getUsers = async (req, res, _next) => {
 
 const getUser = async (req, res, _next) => {
   try {
+    const loggedInUserId = req.userData.userId;
+
+    if (!loggedInUserId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const loggedInUser = await User.findOne({
+      where: { id: loggedInUserId }
+    });
 
     // Check if the user has the 'admin' role
-    if (req.userData.role !== 'admin') {
+    if (loggedInUser?.role !== 'admin') {
       return res.status(403).json({
         message: "Access denied. Only admins can view all users."
       });
