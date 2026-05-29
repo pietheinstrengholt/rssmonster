@@ -15,7 +15,7 @@ jobs:
         image: mysql:8.0
         env:
           MYSQL_ROOT_PASSWORD: root
-          MYSQL_DATABASE: rssmonster_test
+          MYSQL_DATABASE: rssmonstertest
           MYSQL_USER: rssmonster
           MYSQL_PASSWORD: rssmonster
         ports:
@@ -52,14 +52,14 @@ jobs:
 
       - name: Hard reset database
         run: |
-          mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE IF EXISTS rssmonster_test;"
-          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE rssmonster_test;"
+          mysql -h 127.0.0.1 -u root -proot -e "DROP DATABASE IF EXISTS rssmonstertest;"
+          mysql -h 127.0.0.1 -u root -proot -e "CREATE DATABASE rssmonstertest;"
 
       - name: Run migrations
         working-directory: server
         env:
           NODE_ENV: test
-          DB_DATABASE: rssmonster_test
+          DB_DATABASE: rssmonstertest
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
@@ -71,7 +71,7 @@ jobs:
         working-directory: server
         env:
           NODE_ENV: test
-          DB_DATABASE: rssmonster_test
+          DB_DATABASE: rssmonstertest
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
@@ -81,7 +81,7 @@ jobs:
         working-directory: server
         env:
           NODE_ENV: test
-          DB_DATABASE: rssmonster_test
+          DB_DATABASE: rssmonstertest
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
