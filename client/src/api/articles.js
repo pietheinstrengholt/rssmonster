@@ -19,7 +19,10 @@ export const fetchArticleDetails = (articleIds, sort) =>
  * Mark article as seen
  */
 export const markArticleSeen = (id, payload) =>
-  api.post(`/articles/markasseen/${id}`, payload);
+  api.post(`/articles/markasseen/${id}`, payload, {
+    suppressGlobalError: true,
+    timeout: 30000
+  });
 
 /**
  * Star / unstar article
