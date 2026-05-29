@@ -28,22 +28,27 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true
       },
+      // Representative article for the event/cluster, used for display and summarization. Nullable because an event may be created before a representative article is assigned.
       representativeArticleId: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Human-readable name/title for the event/cluster, used in the UI. Nullable because it may be generated after creation.
       name: {
         type: DataTypes.STRING(255),
         allowNull: true
       },
+      // TODO: check whether this is being used anywhere or can be removed
       summary: {
         type: DataTypes.TEXT,
         allowNull: true
       },
+      // Denormalized counts and scores for efficient querying and sorting
       articleCount: {
         type: DataTypes.INTEGER,
         defaultValue: 1
       },
+      // Count of unique source feeds contributing to the event, used for source diversity and strength calculations
       sourceCount: {
         type: DataTypes.INTEGER,
         defaultValue: 0
@@ -60,10 +65,12 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
+      // TODO: this can be removed if not being used in processing logic.
       firstSeen: {
         type: DataTypes.DATE,
         allowNull: true
       },
+      // TODO: this can be removed if not being used in processing logic.
       lastSeen: {
         type: DataTypes.DATE,
         allowNull: true

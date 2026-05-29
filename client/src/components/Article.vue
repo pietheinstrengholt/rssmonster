@@ -256,7 +256,7 @@ export default {
     'contentStripped', 'language', 'createdAt', 'updatedAt', 'feedId',
     'tags', 'advertisementScore', 'sentimentScore', 'qualityScore',
     'quality', 'interestScore', 'cluster', 'contentSummaryBullets', 'isClusterArticle',
-    'presentation', 'topicKey'
+    'presentation'
   ],
   data() {
     return {
@@ -537,7 +537,6 @@ export default {
       fetchClusterArticles(
         clusterId,
         this.$store.data.currentSelection.clusterView,
-        this.topicKey,
         this.id
       )
       .then(response => {

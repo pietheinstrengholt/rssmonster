@@ -6,12 +6,10 @@ import api from './client';
 export const fetchClusterArticles = (
   clusterId,
   clusterView = 'all',
-  topicKey = null,
   articleId = null
 ) =>
   api.post('/clusters/articles', {
     clusterId,
     clusterView,
-    topicKey,
     articleId
   });

@@ -66,10 +66,14 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: false
       },
+      // Original author string from feed (not normalized or linked to an Author model, just stored for reference)
       author: DataTypes.TEXT,
       description: DataTypes.TEXT,
+      // Full original content (HTML or text) from the feed, used for processing and vectorization but not sent to client
       contentOriginal: DataTypes.TEXT('medium'),
+      // Stripped content with HTML removed, used for summarization and topic modeling
       contentStripped: DataTypes.TEXT,
+      // AI-generated summary bullets (array of strings), stored as JSON
       contentSummaryBullets: {
         type: DataTypes.JSON,
         allowNull: true
@@ -78,14 +82,17 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      // Embedding vector for semantic search and topic modeling, stored as JSON array of floats
       embedding_model: {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      // The actual embedding vector, stored as JSON array of floats. Nullable because not all articles may have embeddings (e.g. if processing failed or is pending).
       articleVector: {
         type: DataTypes.JSON,
         allowNull: true
       },
+      // Denormalized event/cluster link for convenience/performance. Nullable because articles may exist before being assigned to a cluster.
       eventId: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -276,11 +283,13 @@ export default (sequelize) => {
           return cluster?.topicKey ?? null;
         }
       },
+      // Timestamp when the article was published (from feed data, used for freshness and sorting)
       published: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
       },
+      // Timestamp when the article was first seen on the screen (used for freshness tracking and UI purposes)
       firstSeen: {
         type: DataTypes.DATE,
         allowNull: true,
