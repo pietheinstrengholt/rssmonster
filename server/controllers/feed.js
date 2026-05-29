@@ -1,9 +1,16 @@
 import db from '../models/index.js';
-const { Feed, Article } = db;
+const { Feed, Article, Category } = db;
 
 import discoverRssLink from "../util/discoverRssLink.js";
 import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';
 import parseFeed from "../util/parser.js";
+
+const findOwnedCategory = (categoryId, userId) => Category.findOne({
+  where: {
+    id: categoryId,
+    userId
+  }
+});
 
 const getFeeds = async (req, res, _next) => {
   try {
@@ -78,8 +85,9 @@ const getFeed = async (req, res, _next) => {
     }
 
     const feedId = req.params.feedId;
-    const feed = await Feed.findByPk(feedId, {
+    const feed = await Feed.findOne({
       where: {
+        id: feedId,
         userId: userId
       }
     });
@@ -102,19 +110,26 @@ const updateFeed = async (req, res, _next) => {
     }
 
     const feedId = req.params.feedId;
-    const feed = await Feed.findByPk(feedId, {
+    const feed = await Feed.findOne({
       where: {
+        id: feedId,
         userId: userId
       }
     });
     if (!feed) {
       return res.status(404).json({ message: 'Feed not found' });
     }
+
+    const category = await findOwnedCategory(req.body.categoryId, userId);
+    if (!category) {
+      return res.status(400).json({ error: 'Category not found' });
+    }
+
     await feed.update({
       userId: userId,
       feedName: req.body.feedName,
       feedDesc: req.body.feedDesc,
-      categoryId: req.body.categoryId,
+      categoryId: category.id,
       url: req.body.url,
       favicon: req.body.favicon,
       status: req.body.status,
@@ -167,10 +182,14 @@ const newFeed = async (req, res, _next) => {
     };
 
     const crawlSince = toCrawlSinceDate(req.body.crawlSince);
+    const category = await findOwnedCategory(req.body.categoryId, userId);
+    if (!category) {
+      return res.status(400).json({ error: 'Category not found' });
+    }
 
     const feed = await Feed.create({
       userId: req.userData.userId,
-      categoryId: req.body.categoryId,
+      categoryId: category.id,
       feedName: req.body.feedName,
       feedDesc: req.body.feedDesc,
       feedType: req.body.feedType,
@@ -195,8 +214,9 @@ const deleteFeed = async (req, res, _next) => {
     }
 
     const feedId = req.params.feedId;
-    const feed = await Feed.findByPk(feedId, {
+    const feed = await Feed.findOne({
       where: {
+        id: feedId,
         userId: userId
       }
     });
@@ -327,8 +347,8 @@ const rediscoverFeedRss = async (req, res) => {
 
     const feedId = req.params.feedId;
 
-    const feed = await Feed.findByPk(feedId, {
-      where: { userId }
+    const feed = await Feed.findOne({
+      where: { id: feedId, userId }
     });
 
     if (!feed) {

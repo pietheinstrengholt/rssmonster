@@ -108,8 +108,11 @@ const getArticle = async (req, res, _next) => {
     
     const articleId = req.params.articleId;
     
-    const article = await Article.findByPk(articleId, {
-      where: { userId: userId },
+    const article = await Article.findOne({
+      where: {
+        id: articleId,
+        userId: userId
+      },
       include: [
         {
           model: Feed,
@@ -453,8 +456,9 @@ const articleMarkAsSeen = async (req, res, _next) => {
     }
 
     // Fetch article and feed details (needed for updating the categories read and unread counts on the frontend)
-    const article = await Article.findByPk(articleId, {
+    const article = await Article.findOne({
       where: {
+        id: articleId,
         userId
       },
       include: [
