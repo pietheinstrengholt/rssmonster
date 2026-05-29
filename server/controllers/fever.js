@@ -22,13 +22,14 @@ export const getFever = async (req, res, _next) => {
 export const postFever = async (req, res, _next) => {
   try {
     const arr = responseBase();
+    const apiKey = req.body?.api_key || req.query.api_key;
 
     //check if api_key is provided, clients implement the api_key in different ways
-    if ("api_key" in req.query || req.body?.api_key) {
-      console.log("api_key found in query");
+    if (apiKey) {
+      console.log("api_key found");
       const loggedInUser = await User.findOne({
           where: {
-            hash: req.query.api_key || req.body?.api_key
+            hash: apiKey
           }
         });
       if (!loggedInUser?.id) {
@@ -76,7 +77,7 @@ export const postFever = async (req, res, _next) => {
                 favicon_id: feed.id, // Using feed id as favicon_id
                 title: feed.feedName,
                 url: feed.url, // RSS feed URL
-                site_url: feed.link, // Website URL
+                site_url: feed.url,
                 is_spark: 0,
                 last_updated_on_time: Math.floor(feed.updatedAt / 1000)
               };
@@ -172,7 +173,11 @@ export const postFever = async (req, res, _next) => {
         //return articles with optional filtering
         if ("items" in req.query) {
           //add total number of articles to arr
-          const total_articles = await Article.count();
+          const total_articles = await Article.count({
+            where: {
+              userId: loggedInUser.id
+            }
+          });
           arr['total_items'] = total_articles;
 
           //create empty items array where all articles will be pushed to
@@ -188,7 +193,9 @@ export const postFever = async (req, res, _next) => {
               where: {
                 id: arrayIds,
                 userId: loggedInUser.id
-              }
+              },
+              order: [['id', 'ASC']],
+              limit: 50
             });
             //request 50 additional items using the highest id of locally cached items
           } else if (req.query.since_id) {
@@ -200,6 +207,7 @@ export const postFever = async (req, res, _next) => {
                 },
                 userId: loggedInUser.id
               },
+              order: [['id', 'ASC']],
               limit: 50
             });
             //request 50 previous items using the lowest id of locally cached items
@@ -212,6 +220,7 @@ export const postFever = async (req, res, _next) => {
                 },
                 userId: loggedInUser.id
               },
+              order: [['id', 'DESC']],
               limit: 50
             });
             //if no argument is given provide total_items and up to 50 items
@@ -230,8 +239,8 @@ export const postFever = async (req, res, _next) => {
               id: article.id,
               feed_id: parseInt(article.feedId),
               title: article.title,
-              author: '',
-              html: article.content,
+              author: article.author || '',
+              html: article.contentOriginal || article.contentStripped || article.description || '',
               url: article.url,
               is_saved: parseInt(article.starInd),
               is_read: (article.status === 'read' ? 1 : 0),
@@ -314,17 +323,15 @@ export const postFever = async (req, res, _next) => {
           arr['favicons'] = favicons;
         }
 
-        //set before argument, which needs to be a JavaScript Data Object for Sequelize
-        let timestamp;
-        if ("before" in req.query) {
-          timestamp = Date.parse(req.body.before * 1000);
-        } else {
-          //Fever uses the Unix timestamp, so multiplied by 1000 so that the argument is in milliseconds, not seconds.
-          timestamp = Date.now();
-        }
+        const mark = req.body?.mark || req.query.mark;
+        const markAs = req.body?.as || req.query.as;
+        const markId = req.body?.id ?? req.query.id;
+        const before = req.body?.before ?? req.query.before;
+        const timestamp = feverUnixTimestampToDate(before);
+        const unreadRecentlyRead = req.body?.unread_recently_read || req.query.unread_recently_read;
 
         //unread recently read items
-        if ("unread_recently_read" in req.query && req.query.unread_recently_read === '1') {
+        if (unreadRecentlyRead === '1') {
           // Mark recently read items as unread (within last 24 hours)
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           await Article.update(
@@ -340,24 +347,28 @@ export const postFever = async (req, res, _next) => {
         }
 
         //check if mark argument is provided, which means that articles need to be updated
-        if ("mark" in req.query) {
+        if (mark) {
+          const update = genUpdate(markAs);
+
+          if (!update) {
+            return res.status(200).json(arr);
+          }
+
           //update per article item
-          if (req.body.mark === "item" && req.body.id) {
-            const update = genUpdate(req.body.as);
+          if (mark === "item" && markId !== undefined) {
             await Article.update(update, {
               where: {
-                id: req.body.id,
+                id: markId,
                 userId: loggedInUser.id
               }
             });
           }
 
           //update per feed
-          if (req.body.mark === "feed" && req.body.id) {
-            const update = genUpdate(req.body.as);
+          if (mark === "feed" && markId !== undefined) {
             await Article.update(update, {
               where: {
-                feedId: req.body.id,
+                feedId: markId,
                 published: {
                   [Op.lte]: timestamp
                 },
@@ -367,9 +378,7 @@ export const postFever = async (req, res, _next) => {
           }
 
           //per group, a group should be specified with an id not equal to zero
-          if (req.body.mark === "group" && req.body.id !== undefined) {
-            const update = genUpdate(req.body.as);
-
+          if (mark === "group" && markId !== undefined) {
             const where = {
               published: {
                 [Op.lte]: timestamp
@@ -379,14 +388,32 @@ export const postFever = async (req, res, _next) => {
 
             // id === '0' means all items (Kindling super group)
             // id === '-1' means Sparks super group (feeds with is_spark = 1)
-            if (req.body.id !== '0' && req.body.id !== '-1') {
-              where['feedId'] = Number(req.body.id);
+            if (String(markId) === '-1') {
+              return res.status(200).json(arr);
+            }
+
+            if (String(markId) !== '0') {
+              const categoryFeeds = await Feed.findAll({
+                attributes: ['id'],
+                where: {
+                  categoryId: markId,
+                  userId: loggedInUser.id
+                }
+              });
+              const feedIds = categoryFeeds.map(feed => feed.id);
+
+              if (feedIds.length === 0) {
+                return res.status(200).json(arr);
+              }
+
+              where['feedId'] = {
+                [Op.in]: feedIds
+              };
             }
             // Note: is_spark filtering would need to be added when that feature is implemented
 
             await Article.update(update, {
-              where,
-              userId: loggedInUser.id
+              where
             });
           }
         }
@@ -438,6 +465,16 @@ function genUpdate(req_body_as) {
         starInd: 0
       };
   }
+}
+
+function feverUnixTimestampToDate(value) {
+  const seconds = Number(value);
+
+  if (!Number.isFinite(seconds) || seconds <= 0) {
+    return new Date();
+  }
+
+  return new Date(seconds * 1000);
 }
 
 export default {
