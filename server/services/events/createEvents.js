@@ -5,6 +5,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
 import { averageVector } from '../vectors/index.js';
+import { eventDateFromArticle, eventWindowFromArticles } from './articleEventTime.js';
 
 const { Article, Event } = db;
 
@@ -99,14 +100,9 @@ export async function createAndAssignEvent({
 
   const centroid = averageVector(vectors);
 
-  const timestamps = eventArticles
-    .map(item => item.published)
-    .filter(Boolean)
-    .map(value => new Date(value).getTime())
-    .sort((a, b) => a - b);
-
-  const firstSeen = timestamps.length ? new Date(timestamps[0]) : article.published || new Date();
-  const lastSeen = timestamps.length ? new Date(timestamps[timestamps.length - 1]) : article.published || new Date();
+  const eventWindow = eventWindowFromArticles(eventArticles);
+  const firstSeen = eventWindow.firstSeen ?? eventDateFromArticle(article);
+  const lastSeen = eventWindow.lastSeen ?? eventDateFromArticle(article);
   const sourceCount = new Set(eventArticles.map(item => item.feedId)).size;
   const sourceDiversityScore = Math.log(sourceCount + 1);
   const name = generateEventName(article);

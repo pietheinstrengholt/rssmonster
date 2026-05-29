@@ -4,6 +4,7 @@
 import db from '../../models/index.js';
 import { EVENT_LIFECYCLE, EVENT_VECTOR_ALPHA } from '../config/semanticConfig.js';
 import { blendVector } from '../vectors/index.js';
+import { eventDateFromArticle, eventTimestamp } from './articleEventTime.js';
 
 const { Article, Event } = db;
 
@@ -74,8 +75,16 @@ export async function assignArticleToExistingEvent({
   const newCount = bestEvent.articleCount + 1;
   const updatedEventVector = blendEventVector(bestEvent.eventVector, articleEventVector);
 
-  const seenAt = article.published || new Date();
-  const status = resolveEventStatus(newCount, seenAt);
+  const seenAt = eventDateFromArticle(article);
+  const currentFirstSeenTs = eventTimestamp(bestEvent.firstSeen);
+  const seenAtTs = eventTimestamp(seenAt);
+  const firstSeen = Number.isFinite(currentFirstSeenTs) && currentFirstSeenTs <= seenAtTs
+    ? bestEvent.firstSeen
+    : seenAt;
+  const lastSeen = Number.isFinite(eventTimestamp(bestEvent.lastSeen)) && eventTimestamp(bestEvent.lastSeen) >= seenAtTs
+    ? bestEvent.lastSeen
+    : seenAt;
+  const status = resolveEventStatus(newCount, lastSeen);
 
   await article.update({ eventId: bestEvent.id });
 
@@ -83,7 +92,8 @@ export async function assignArticleToExistingEvent({
     bestEvent.update({
       eventVector: updatedEventVector,
       articleCount: newCount,
-      lastSeen: seenAt,
+      firstSeen,
+      lastSeen,
       status
     }),
     updateSourceDiversity(bestEvent.id, article.userId)
@@ -106,6 +116,8 @@ export async function assignArticleToExistingEvent({
       topicId: eventPrimaryTopicId,
       eventVector: updatedEventVector,
       articleCount: newCount,
+      firstSeen,
+      lastSeen,
       status,
       ...diversity
     });

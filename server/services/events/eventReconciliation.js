@@ -5,6 +5,10 @@ import {
   EVENT_LIFECYCLE,
   EVENT_STRENGTH_CONFIG
 } from '../config/semanticConfig.js';
+import {
+  articleEventTimestamp,
+  eventWindowFromArticles
+} from './articleEventTime.js';
 
 const { Article, Event } = db;
 
@@ -39,17 +43,17 @@ export function buildRecencyWeightedVector(eventArticles) {
 
   const sorted = embedded
     .slice()
-    .sort((a, b) => new Date(b.published || 0).getTime() - new Date(a.published || 0).getTime())
+    .sort((a, b) => (articleEventTimestamp(b) || 0) - (articleEventTimestamp(a) || 0))
     .slice(0, 24);
 
-  const newestTs = new Date(sorted[0].published || 0).getTime();
+  const newestTs = articleEventTimestamp(sorted[0]) || 0;
   const dim = sorted[0].articleVector.length;
 
   const weighted = Array(dim).fill(0);
   let totalWeight = 0;
 
   for (const article of sorted) {
-    const ts = new Date(article.published || 0).getTime();
+    const ts = articleEventTimestamp(article) || 0;
     const ageHours = Math.max(0, (newestTs - ts) / (1000 * 60 * 60));
     const weight = Math.pow(0.5, ageHours / 12);
 
@@ -108,7 +112,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
       eventId: { [Op.in]: touchedIds },
       userId
     },
-    attributes: ['id', 'eventId', 'feedId', 'published', 'articleVector']
+    attributes: ['id', 'eventId', 'feedId', 'published', 'createdAt', 'articleVector']
   });
 
   const articlesByEventId = {};
@@ -131,14 +135,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
     // Keep the existing event vector when no per-article vectors are available.
     const eventVector = buildRecencyWeightedVector(eventArticles) ?? event.eventVector ?? null;
 
-    const timestamps = eventArticles
-      .map(a => a.published)
-      .filter(Boolean)
-      .map(d => new Date(d).getTime())
-      .sort((a, b) => a - b);
-
-    const firstSeen = timestamps.length ? new Date(timestamps[0]) : null;
-    const lastSeen = timestamps.length ? new Date(timestamps[timestamps.length - 1]) : null;
+    const { firstSeen, lastSeen } = eventWindowFromArticles(eventArticles);
     const status = resolveEventStatus(eventArticles.length, lastSeen);
     const sourceCount = new Set(
       eventArticles

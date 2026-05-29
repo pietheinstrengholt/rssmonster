@@ -102,4 +102,60 @@ describe('reclusterForUser', () => {
     expect(persistedForeignEvent).toBeTruthy();
     expect(persistedForeignEventTopicCount).toBe(1);
   });
+
+  it('splits otherwise similar articles into separate events when their event-time window exceeds 24 hours', async () => {
+    const { user, feed } = await createUserGraph('windowed');
+    const feedTwo = await Feed.create({
+      userId: user.id,
+      categoryId: feed.categoryId,
+      feedName: 'windowed second feed',
+      url: `https://example.com/windowed-second-${user.id}.xml`
+    });
+
+    const base = new Date('2026-05-28T08:00:00.000Z');
+    const minutesFromBase = minutes => new Date(base.getTime() + minutes * 60 * 1000);
+    const sharedVector = [1, 0, 0];
+
+    await Article.bulkCreate([
+      articlePayload(user, feed, 1, {
+        title: 'Acme merger talks advance',
+        url: `https://example.com/${user.id}/acme-1`,
+        published: minutesFromBase(0),
+        articleVector: sharedVector
+      }),
+      articlePayload(user, feedTwo, 2, {
+        title: 'Acme merger talks advance again',
+        url: `https://example.com/${user.id}/acme-2`,
+        published: minutesFromBase(20),
+        articleVector: sharedVector
+      }),
+      articlePayload(user, feed, 3, {
+        title: 'Acme merger talks advance after delay',
+        url: `https://example.com/${user.id}/acme-3`,
+        published: minutesFromBase(25 * 60),
+        articleVector: sharedVector
+      }),
+      articlePayload(user, feedTwo, 4, {
+        title: 'Acme merger talks advance after delay again',
+        url: `https://example.com/${user.id}/acme-4`,
+        published: minutesFromBase(25 * 60 + 20),
+        articleVector: sharedVector
+      })
+    ]);
+
+    await reclusterForUser(user.id, { skipTopicAssignment: true });
+
+    const events = await Event.findAll({
+      where: { userId: user.id },
+      order: [['firstSeen', 'ASC']]
+    });
+    const articleCounts = events.map(event => event.articleCount);
+    const eventSpansInHours = events.map(event =>
+      (new Date(event.lastSeen).getTime() - new Date(event.firstSeen).getTime()) / (60 * 60 * 1000)
+    );
+
+    expect(events).toHaveLength(2);
+    expect(articleCounts).toEqual([2, 2]);
+    expect(eventSpansInHours.every(span => span <= 24)).toBe(true);
+  });
 });

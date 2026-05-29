@@ -19,6 +19,13 @@ import {
   EVENT_MIN_HEADLINE_SIM,
   EVENT_MIN_SHARED_ENTITY_OVERLAP
 } from '../config/semanticConfig.js';
+import {
+  HOUR_MS,
+  articleEventTimestamp,
+  articleWindowScore,
+  eventTimestamp,
+  eventWindowScore
+} from '../events/articleEventTime.js';
 
 const { Article, Event, ArticleTopic, EventTopic } = db;
 const DUPLICATE_HEADLINE_SIM = 0.92;
@@ -90,38 +97,13 @@ function entityOverlapCount(a = new Set(), b = new Set()) {
   return overlap;
 }
 
-// This function converts a date-like value into a finite timestamp when possible.
-function toTimestamp(value) {
-  if (!value) return null;
-  const ts = new Date(value).getTime();
-  return Number.isFinite(ts) ? ts : null;
-}
-
-// This function computes the absolute distance between two timestamps in hours.
-function hoursBetween(tsA, tsB) {
-  if (!Number.isFinite(tsA) || !Number.isFinite(tsB)) return Number.POSITIVE_INFINITY;
-  return Math.abs(tsA - tsB) / (1000 * 60 * 60);
-}
-
-// This function scores whether an article and event are close enough in time to be related.
-function temporalProximityScore(articlePublishedAt, eventLastSeenAt) {
-  const articleTs = toTimestamp(articlePublishedAt);
-  const eventTs = toTimestamp(eventLastSeenAt);
-  const diffHours = hoursBetween(articleTs, eventTs);
-
-  if (!Number.isFinite(diffHours)) return 0;
-  if (diffHours > EVENT_MAX_GAP_HOURS) return 0;
-
-  return 1 - diffHours / EVENT_MAX_GAP_HOURS;
-}
-
 // This function gradually discounts older events during candidate matching.
 function recencyDecayMultiplier(lastSeenAt) {
   const now = Date.now();
-  const lastSeenTs = toTimestamp(lastSeenAt);
+  const lastSeenTs = eventTimestamp(lastSeenAt);
   if (!Number.isFinite(lastSeenTs)) return 0.2;
 
-  const ageHours = Math.max(0, (now - lastSeenTs) / (1000 * 60 * 60));
+  const ageHours = Math.max(0, (now - lastSeenTs) / HOUR_MS);
   const halfLife = Math.max(EVENT_RECENCY_HALF_LIFE_HOURS, 1);
   return Math.pow(0.5, ageHours / halfLife);
 }
@@ -130,7 +112,7 @@ function recencyDecayMultiplier(lastSeenAt) {
 function buildMatchSignal({ article, event, articleEventVector }) {
   const semantic = cosineSimilarity(articleEventVector, event.eventVector);
   const headline = headlineSimilarity(article.title, event.name || '');
-  const temporal = temporalProximityScore(article.published, event.lastSeen || event.updatedAt);
+  const temporal = eventWindowScore(article, event);
 
   const overlap = entityOverlapCount(
     extractEntitySet(article),
@@ -385,7 +367,7 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
   const semantic = cosineSimilarity(articleEventVector, candidateVector);
   const meetsSemantic = semantic >= EVENT_SIM_THRESHOLD;
 
-  const temporal = temporalProximityScore(article.published, candidate.published || candidate.updatedAt);
+  const temporal = articleWindowScore(article, candidate);
   const meetsTemporal = temporal > 0;
 
   const headline = headlineSimilarity(article.title, candidate.title || '');
@@ -417,16 +399,21 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
 
 // This function finds persisted unassigned articles that can corroborate the current article.
 async function findCandidateArticles({ article, articleEventVector }) {
-  const cutoff = new Date((article.published || new Date()).getTime() - EVENT_MAX_GAP_HOURS * 60 * 60 * 1000);
+  const articleTs = articleEventTimestamp(article) ?? Date.now();
+  const cutoff = new Date(articleTs - EVENT_MAX_GAP_HOURS * HOUR_MS);
+  const upperBound = new Date(articleTs + EVENT_MAX_GAP_HOURS * HOUR_MS);
 
   const candidates = await Article.findAll({
     where: {
       userId: article.userId,
       eventId: null,
       id: { [Op.ne]: article.id },
-      published: { [Op.gte]: cutoff }
+      published: {
+        [Op.gte]: cutoff,
+        [Op.lte]: upperBound
+      }
     },
-    attributes: ['id', 'feedId', 'title', 'description', 'published', 'articleVector'],
+    attributes: ['id', 'feedId', 'title', 'description', 'published', 'createdAt', 'articleVector'],
     order: [['published', 'DESC']],
     limit: MAX_CANDIDATES
   });
@@ -481,18 +468,18 @@ function incrementRunStat(runContext, key, amount = 1) {
 
 // This function finds corroborating candidates from articles already seen in the current run.
 function findCandidateArticlesFromContext({ article, articleEventVector, runContext }) {
-  const cutoff = new Date((article.published || new Date()).getTime() - EVENT_MAX_GAP_HOURS * 60 * 60 * 1000);
-  const cutoffTs = cutoff.getTime();
+  const articleTs = articleEventTimestamp(article) ?? Date.now();
+  const maxGapMs = EVENT_MAX_GAP_HOURS * HOUR_MS;
 
   const candidatePool = (runContext?.records || []).filter(candidate => {
     if (candidate.id === article.id) return false;
     if (candidate.eventId != null) return false;
     if (!Array.isArray(resolveArticleVector(candidate))) return false;
 
-    const publishedTs = toTimestamp(candidate.published);
-    if (!Number.isFinite(publishedTs)) return false;
+    const candidateTs = articleEventTimestamp(candidate);
+    if (!Number.isFinite(candidateTs)) return false;
 
-    return publishedTs >= cutoffTs;
+    return Math.abs(articleTs - candidateTs) <= maxGapMs;
   });
 
   const evaluatedSignals = candidatePool.map(candidate => evaluateCandidateSignal({
@@ -539,6 +526,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       title: article.title,
       description: article.description,
       published: article.published,
+      createdAt: article.createdAt,
       topicId: null,
       topicAssignments: [],
       eventId: null,
@@ -664,6 +652,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       title: article.title,
       description: article.description,
       published: article.published,
+      createdAt: article.createdAt,
       topicId: primaryTopicId(eventTopicAssignments),
       topicAssignments: eventTopicAssignments,
       eventId: bestEvent.id,
@@ -737,6 +726,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       title: article.title,
       description: article.description,
       published: article.published,
+      createdAt: article.createdAt,
       topicId: null,
       topicAssignments: [],
       eventId: null,
@@ -777,6 +767,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     title: article.title,
     description: article.description,
     published: article.published,
+    createdAt: article.createdAt,
     topicId: primaryTopicId(eventTopicAssignments),
     topicAssignments: eventTopicAssignments,
     eventId: newEventId,
