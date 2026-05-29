@@ -148,9 +148,6 @@ export async function embedArticle(articleOrInput, options = {}) {
   const topicText = extractTopicText({ contentStripped });
 
   if (eventText.length < MIN_EVENT_LENGTH) {
-    console.debug(
-      `[EMBED] skipped (event too short: ${eventText.length}) title="${title?.slice(0, 60) ?? ''}"`
-    );
     return null;
   }
 
