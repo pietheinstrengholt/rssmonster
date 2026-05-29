@@ -53,6 +53,47 @@ const createFixture = async () => {
   return { user, linkedArticle, unlinkedArticle };
 };
 
+const createFaviconFixture = async () => {
+  const user = await User.create({
+    username: `fever-favicon-${Date.now()}`,
+    password: 'password',
+    hash: `fever-favicon-api-key-${Date.now()}`,
+    role: 'user'
+  });
+  const otherUser = await User.create({
+    username: `fever-other-${Date.now()}`,
+    password: 'password',
+    hash: `fever-other-api-key-${Date.now()}`,
+    role: 'user'
+  });
+  const category = await Category.create({
+    userId: user.id,
+    name: 'Fever Favicons',
+    categoryOrder: 0
+  });
+  const otherCategory = await Category.create({
+    userId: otherUser.id,
+    name: 'Other Favicons',
+    categoryOrder: 0
+  });
+  const feed = await Feed.create({
+    userId: user.id,
+    categoryId: category.id,
+    feedName: 'Owned Feed',
+    url: 'https://example.com/owned.xml',
+    favicon: 'data:image/png;base64,owned'
+  });
+  const otherFeed = await Feed.create({
+    userId: otherUser.id,
+    categoryId: otherCategory.id,
+    feedName: 'Other Feed',
+    url: 'https://example.com/other.xml',
+    favicon: 'data:image/png;base64,other'
+  });
+
+  return { user, feed, otherFeed };
+};
+
 describe('Fever API compatibility', () => {
   beforeAll(async () => {
     process.env.NODE_ENV = 'test';
@@ -75,5 +116,18 @@ describe('Fever API compatibility', () => {
     expect(res.body.auth).toBe(1);
     expect(res.body.links.map(link => link.id)).toContain(linkedArticle.id);
     expect(res.body.links.map(link => link.id)).not.toContain(unlinkedArticle.id);
+  });
+
+  it('returns favicons only for feeds owned by the authenticated user', async () => {
+    const { user, feed, otherFeed } = await createFaviconFixture();
+
+    const res = await request(app)
+      .post('/api/fever')
+      .query({ api_key: user.hash, favicons: '' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.auth).toBe(1);
+    expect(res.body.favicons.map(favicon => favicon.id)).toContain(feed.id);
+    expect(res.body.favicons.map(favicon => favicon.id)).not.toContain(otherFeed.id);
   });
 });

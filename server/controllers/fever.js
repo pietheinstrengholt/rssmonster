@@ -317,6 +317,9 @@ export const postFever = async (req, res, _next) => {
         if ("favicons" in req.query) {
           const favicons = [];
           const feeds = await Feed.findAll({
+            where: {
+              userId: loggedInUser.id
+            },
             order: [['feedName', 'ASC']]
           });
           if (feeds) {
