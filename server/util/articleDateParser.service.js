@@ -1,3 +1,5 @@
+// Converts parsed article date filters into concrete UTC date ranges.
+// This keeps search query parsing separate from the time-window calculations used by article lookup.
 const dayNameToUtcIndex = {
   sunday: 0,
   monday: 1,
@@ -8,11 +10,13 @@ const dayNameToUtcIndex = {
   saturday: 6
 };
 
+// Builds an inclusive UTC range for a single calendar day.
 const buildUtcDayRange = (year, month, day) => ({
   start: new Date(Date.UTC(year, month, day, 0, 0, 0, 0)),
   end: new Date(Date.UTC(year, month, day, 23, 59, 59, 999))
 });
 
+// Resolves supported date filter tokens into the range object expected by Sequelize queries.
 export const resolveDateFilterToRange = dateFilter => {
   if (!dateFilter || !dateFilter.type) {
     return null;

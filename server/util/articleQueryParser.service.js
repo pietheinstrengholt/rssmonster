@@ -1,11 +1,15 @@
+// Parses article search strings into structured filters, text search terms, sort order, and limits.
+// It understands RSS Monster's compact query language so the search service can build database predicates.
 const DATE_DAY_PATTERN = /@"?last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"?/i;
 const DATE_DAYS_AGO_PATTERN = /@"?(\d+)\s+days\s+ago"?/i;
 
+// Parses a boolean field token such as unread:true or hot:false.
 const parseBooleanFilter = (token, key) => {
   const match = token.match(new RegExp(`^${key}:\\s*(true|false)$`, 'i'));
   return match ? match[1].toLowerCase() === 'true' : null;
 };
 
+// Parses numeric filters that may include comparison operators.
 const parseNumberOperatorFilter = token => {
   const match = token.match(/^(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i);
   if (!match) {
@@ -18,6 +22,7 @@ const parseNumberOperatorFilter = token => {
   };
 };
 
+// Parses simple date tokens such as @today, @yesterday, @lastweek, or @YYYY-MM-DD.
 const parseDateToken = token => {
   const normalizedToken = token.toLowerCase();
 
@@ -44,6 +49,7 @@ const parseDateToken = token => {
   return null;
 };
 
+// Extracts quoted natural-language date patterns while preserving the remaining search text.
 const parseQuotedDatePattern = search => {
   const daysAgoMatch = search.match(DATE_DAYS_AGO_PATTERN);
   if (daysAgoMatch) {
@@ -76,6 +82,7 @@ const parseQuotedDatePattern = search => {
   };
 };
 
+// Converts a raw article search expression into normalized search text, filters, sorting, and limit data.
 export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) => {
   const rawSearch = String(search).trim();
   const filters = {};

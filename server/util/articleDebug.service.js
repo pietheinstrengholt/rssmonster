@@ -1,5 +1,8 @@
+// Provides development-only diagnostics for recommended article rankings.
+// The helpers compact event metadata and log score components without affecting production behavior.
 import { computeRecommendedBreakdown } from './recommendedScore.js';
 
+// Normalizes long event names for compact debug-table output.
 function compactEventName(name) {
   if (!name || typeof name !== 'string') return '';
 
@@ -11,6 +14,7 @@ function compactEventName(name) {
     .join(' ');
 }
 
+// Reads the associated event or cluster name from either Sequelize getters or plain properties.
 function resolveEventName(article) {
   const cluster =
     article?.get?.('cluster') ??
@@ -21,6 +25,7 @@ function resolveEventName(article) {
   return cluster?.name || '';
 }
 
+// Reads the associated event or cluster id from either Sequelize getters or plain properties.
 function resolveEventId(article) {
   const cluster =
     article?.get?.('cluster') ??
@@ -31,6 +36,7 @@ function resolveEventId(article) {
   return cluster?.id ?? article?.eventId ?? null;
 }
 
+// Logs recommended-score inputs and output for a scored article list in development mode.
 export function debugRecommendedScores(scored) {
   if (process.env.NODE_ENV === 'development') {
     const totalArticles = scored.length;

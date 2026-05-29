@@ -1,14 +1,17 @@
+// Discovers valid RSS or Atom feed URLs from website URLs, social profile URLs, or fallback feed paths.
+// It validates candidates by content type and feed parsing, and can persist successful discoveries on feed models.
 import { load } from 'cheerio';
 import { parseFeed } from 'feedsmith';
 import { fetchURL as fetchURLInternal } from './fetchURL.js';
 import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
 
-//function to validate if url is valid url
+// Checks whether a string looks like an absolute HTTP(S) URL.
 const isURL = (str) => {
   var regex = /(http|https):\/\/(\w+:{0,1}\w*)?(\S+)(:[0-9]+)?(\/|\/([\w#:.?+=&%!\-\/]))?/;
   return regex.test(str);
 }
 
+// Resolves a possibly relative href against a base URL.
 const resolveLink = (base, href) => {
   try {
     return new URL(href, base).toString();
@@ -17,6 +20,7 @@ const resolveLink = (base, href) => {
   }
 };
 
+// Extracts the origin portion of a URL for fallback feed-path probing.
 const getBaseUrl = (url) => {
   try {
     const u = new URL(url);
@@ -26,6 +30,7 @@ const getBaseUrl = (url) => {
   }
 };
 
+// Builds the canonical Bluesky RSS URL for supported profile URLs.
 const getBlueskyRssCandidate = (url) => {
   try {
     const u = new URL(url);
@@ -43,6 +48,7 @@ const getBlueskyRssCandidate = (url) => {
   }
 };
 
+// Builds the canonical Mastodon RSS URL for supported profile URLs.
 const getMastodonRssCandidate = (url) => {
   try {
     const u = new URL(url);
@@ -59,6 +65,7 @@ const getMastodonRssCandidate = (url) => {
   }
 };
 
+// Records a discovery failure on the feed without letting discovery errors escape.
 const registerDiscoveryError = async (feed, message) => {
   if (!feed) return;
 
@@ -80,8 +87,10 @@ const registerDiscoveryError = async (feed, message) => {
   }
 };
 
+// Checks whether a response content type is likely to contain feed XML.
 const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
 
+// Checks whether a response body starts with recognizable feed XML markers.
 const isLikelyFeedBody = (body = "") => {
   const head = String(body).trim().slice(0, 500).toLowerCase();
   return (
@@ -91,6 +100,7 @@ const isLikelyFeedBody = (body = "") => {
   );
 };
 
+// Verifies feed validity by asking feedsmith to parse the response body.
 const canParseFeed = (body) => {
   try {
     parseFeed(String(body));
@@ -100,11 +110,13 @@ const canParseFeed = (body) => {
   }
 };
 
+// Combines cheap feed markers and parser validation into a single feed-body check.
 const isValidFeedBody = (body) => {
   if (!body) return false;
   return isLikelyFeedBody(body) || canParseFeed(body);
 };
 
+// Persists a newly discovered feed URL when it differs from the current one.
 const persistDiscoveredUrl = async (feed, discoveredUrl) => {
   if (!feed) return;
   if (!discoveredUrl) return;
@@ -117,6 +129,7 @@ const persistDiscoveredUrl = async (feed, discoveredUrl) => {
   }
 };
 
+// Removes duplicate candidate URLs while preserving discovery order.
 const unique = (arr) => {
   const seen = new Set();
   const out = [];
@@ -129,10 +142,12 @@ const unique = (arr) => {
   return out;
 };
 
+// Re-exports centralized URL fetching for callers that import it from this module.
 export const fetchURL = async (url, retries = 2) =>
   // Backwards-compatible export: throw on failure so callers can handle
   fetchURLInternal(url, retries);
 
+// Attempts RSS discovery from direct feeds, HTML link tags, social URL conventions, and common fallback paths.
 export const discoverRssLink = async (url, feed) => {
   try {
     if (!isURL(url)) {

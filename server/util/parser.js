@@ -1,6 +1,9 @@
+// Fetches and parses RSS/Atom feed documents into feedsmith feed objects.
+// It normalizes common fetch and parse failures into cleaner application error codes.
 import { parseFeed } from 'feedsmith';
 import { fetchURL } from './fetchURL.js';
 
+// Downloads a feed URL, validates the response, and returns the parsed feed object.
 export const process = async (feedUrl) => {
   try {
     if (!feedUrl) {

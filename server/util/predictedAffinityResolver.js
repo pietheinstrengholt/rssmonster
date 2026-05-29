@@ -1,21 +1,11 @@
-/**
- * Predicted Reading Affinity Resolver
- *
- * Predicts how a user is likely to read a NEW / UNREAD article
- * based on historical feed-level attention statistics.
- *
- * This resolver is:
- * - deterministic
- * - explainable
- * - side-effect free
- */
+// Predicts how a user is likely to read a new unread article from feed-level attention history.
+// The resolver is deterministic, explainable, and side-effect free.
 
+// Clamps a numeric score into the expected confidence range.
 const clamp = (value, min = 0, max = 1) =>
   Math.max(min, Math.min(max, value));
 
-/**
- * Resolve predicted reading affinity for a single article
- */
+// Resolves predicted reading affinity for a single article/feed pair.
 export function resolvePredictedAffinity({ article, feed }) {
   // Safety checks
   if (!article || !feed) {

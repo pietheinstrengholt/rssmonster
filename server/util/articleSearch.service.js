@@ -1,3 +1,5 @@
+// Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
+// The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../models/index.js';
 const { Setting } = db;
 import { Op } from 'sequelize';
@@ -13,6 +15,7 @@ import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
  * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
+// Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
 export const searchArticles = async ({
     userId,
     search = "",

@@ -1,6 +1,5 @@
-// util/rediscoverRssUrl.js
-
-// Rediscover RSS URL using OpenAI
+// Uses OpenAI to suggest a replacement RSS or Atom URL when an existing feed stops working.
+// The response is expected to be strict JSON with a URL, confidence score, and user-facing reason.
 import OpenAI from 'openai';
 
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -8,6 +7,7 @@ const client = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
+// Asks the LLM for the most likely replacement feed URL for a broken feed.
 export async function rediscoverRssUrl({
   feedName,
   websiteUrl,

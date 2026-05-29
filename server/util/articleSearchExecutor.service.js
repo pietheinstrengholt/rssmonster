@@ -1,13 +1,17 @@
+// Builds and executes Sequelize article search queries from normalized filters.
+// It keeps database predicate construction separate from higher-level search orchestration.
 import db from '../models/index.js';
 import { Op } from 'sequelize';
 
 const { Article, Event, Feed, Tag } = db;
 
+// Appends a condition to a Sequelize Op.and array, creating the array when needed.
 const appendAndCondition = (whereClause, condition) => {
   whereClause[Op.and] ??= [];
   whereClause[Op.and].push(condition);
 };
 
+// Converts normalized search options into a Sequelize findAll query descriptor.
 export const buildArticleSearchQuery = ({
   baseWhere,
   smartFolderSearch,
@@ -169,6 +173,7 @@ export const buildArticleSearchQuery = ({
   return articleQuery;
 };
 
+// Executes the prepared article query against the Article model.
 export const executeSearch = async ({ where, include, attributes, order }) => Article.findAll({
   where,
   include,

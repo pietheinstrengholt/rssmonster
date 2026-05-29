@@ -1,8 +1,11 @@
+// Contains small data-access helpers used by the article search pipeline.
+// These helpers isolate tag and feed id lookups from the search service orchestration.
 import db from '../models/index.js';
 import { Op } from 'sequelize';
 
 const { Feed, Tag } = db;
 
+// Finds article ids for a user's exact tag name.
 export const fetchTaggedArticleIds = async ({ userId, tagName }) => {
   if (!tagName) {
     return null;
@@ -16,6 +19,7 @@ export const fetchTaggedArticleIds = async ({ userId, tagName }) => {
   return tagRows.map(row => row.articleId);
 };
 
+// Resolves the feed ids that should be included for a feed or category filter.
 export const fetchFeedIds = async ({ userId, categoryId, feedId }) => {
   if (feedId !== '%') {
     return feedId;

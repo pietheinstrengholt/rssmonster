@@ -1,9 +1,10 @@
-// util/fetchURL.js
-// Centralized fetch with timeout + retry logic.
-// Uses native fetch (Node.js 18+)
+// Centralized URL fetching with timeout, retry logic, redirects, and RSS-friendly request headers.
+// Uses native fetch from Node.js 18+ so feed discovery and parsing share consistent network behavior.
 
+// Waits for a retry backoff interval.
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
+// Detects transient network errors that are worth retrying.
 const isRetryableFetchError = err => {
   const msg = err?.message || '';
   return (
@@ -15,7 +16,9 @@ const isRetryableFetchError = err => {
   );
 };
 
+// Fetches a URL with a hard timeout and a small retry budget for transient failures.
 export const fetchURL = async (url, retries = 2) => {
+  // Performs one fetch attempt and recursively retries retryable failures.
   const attemptFetch = async attempt => {
     const controller = new AbortController();
     // Set a hard timeout of 5 seconds for the entire fetch operation

@@ -1,10 +1,7 @@
-/**
- * Compute the runtime recommended score for an article.
- *
- * Combines time relevance, user interest, content quality, coverage signal,
- * and source diversity into a single ranking signal.
- * Note: feedTrust is already included in article.quality (from the Article model virtual field).
- */
+// Computes recommendation ranking scores from article freshness, user interest, quality, event coverage, and source diversity.
+// Feed trust is already included in article.quality through the Article model virtual field.
+
+// Computes the bounded runtime recommended score for an article.
 export function computeRecommended(article) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
@@ -81,10 +78,7 @@ export function computeRecommended(article) {
   return Math.max(0, Math.min(1, recommended));
 }
 
-/**
- * Return the per-signal breakdown used by computeRecommended.
- * Useful for debug logging to trace why an article ranked where it did.
- */
+// Returns the per-signal breakdown used to explain a recommended score.
 export function computeRecommendedBreakdown(article) {
   const freshness = article.freshness ?? 0.5;
   const rawInterestScore = Number(article.interestScore ?? 0);

@@ -1,8 +1,9 @@
-// articleSort.service.js
-// Handles all in-memory sorting and filtering for articles
+// Handles all in-memory sorting and score-based filtering for articles.
+// This module complements database search when ranking requires runtime virtual fields or joined metadata.
 import { computeRecommended } from './recommendedScore.js';
 import { debugRecommendedScores } from './articleDebug.service.js';
 
+// Applies a numeric comparison operator to a score value.
 const compareValues = (left, operator, right) => {
   switch (operator) {
     case '=': return left === right;
@@ -14,7 +15,7 @@ const compareValues = (left, operator, right) => {
   }
 };
 
-// Extracted sorting logic to a reusable function
+// Sorts articles descending by a provided scoring function.
 const sortByScore = (articles, scorer) =>
   articles
     .map(article => ({
@@ -24,6 +25,7 @@ const sortByScore = (articles, scorer) =>
     .sort((a, b) => b.score - a.score)
     .map(({ article }) => article);
 
+// Applies runtime filters and optional score-based ordering to a list of article models.
 export function sortArticles(articles, { sortRecommended, sortQuality, sortAttention, qualityFilter, freshnessFilter }) {
   // Apply quality score filter if present
   if (qualityFilter) {

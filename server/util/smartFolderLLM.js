@@ -1,4 +1,5 @@
-// util/smartFolderLLM.util.js
+// Uses OpenAI to generate personalized smart-folder suggestions from user insight summaries.
+// It sanitizes model output into strict JSON before returning suggestions to callers.
 import OpenAI from 'openai';
 
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -6,9 +7,7 @@ const client = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
-/**
- * Attempt to safely extract JSON from an LLM response.
- */
+// Safely extracts JSON from raw LLM output, including fenced or prose-wrapped responses.
 function safeJsonParse(raw) {
   if (!raw || typeof raw !== 'string') return null;
 
@@ -36,6 +35,7 @@ function safeJsonParse(raw) {
   }
 }
 
+// Requests personalized smart-folder recommendations from the LLM.
 export async function getSmartFolderRecommendations({ insights }) {
   if (!client) {
     throw new Error('OpenAI API key not configured');
