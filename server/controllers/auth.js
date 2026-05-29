@@ -3,6 +3,7 @@ const { User } = db;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
 import crypto from 'node:crypto';
+import { getJwtSecret } from '../config/auth.js';
 
 const register = async (req, res, _next) => {
   try {        
@@ -77,7 +78,7 @@ const login = async (req, res, _next) => {
         username: user.username,
         userId: user.id,
       },
-      process.env.JWT_SECRET || 'SECRETKEY',
+      getJwtSecret(),
       {
         expiresIn: expiresInSeconds
       }

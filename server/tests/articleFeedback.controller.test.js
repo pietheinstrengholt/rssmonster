@@ -2,6 +2,7 @@ import { beforeAll, describe, expect, it } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../models/index.js';
+import { getJwtSecret } from '../config/auth.js';
 
 const { Article, Category, Feed, User, sequelize } = db;
 
@@ -21,7 +22,7 @@ const authHeaderFor = user => {
       username: user.username,
       userId: user.id
     },
-    'SECRETKEY'
+    getJwtSecret()
   );
 
   return `Bearer ${token}`;

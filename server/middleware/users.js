@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { getJwtSecret } from '../config/auth.js';
 
 const validateRegister = (req, res, next) => {
   // username min length 3
@@ -34,7 +35,7 @@ const isLoggedIn = (req, res, next) => {
     try {
       const authHeader = req.headers.authorization;
       const token = authHeader.split(' ')[1];
-      const decoded = jwt.verify(token, 'SECRETKEY');
+      const decoded = jwt.verify(token, getJwtSecret());
       req.userData = decoded;
       next();
     } catch {
