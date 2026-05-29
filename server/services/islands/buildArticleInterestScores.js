@@ -1,4 +1,5 @@
 import db from '../../models/index.js';
+import { cosineSimilarity as sharedCosineSimilarity } from '../vectors/index.js';
 
 // This service refreshes article interest scores from island memberships.
 // It uses topic-to-island links first, then falls back to article-vector similarity when needed.
@@ -15,42 +16,12 @@ const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
 );
 
-// This function accepts JSON vectors from Sequelize or raw SQL and returns an array when valid.
-function parseVector(vector) {
-  if (Array.isArray(vector)) return vector;
-  if (typeof vector !== 'string') return null;
-
-  try {
-    const parsed = JSON.parse(vector);
-    return Array.isArray(parsed) ? parsed : null;
-  } catch {
-    return null;
-  }
-}
-
 // This function compares two article/island vectors with cosine similarity.
 function cosineSimilarity(vectorA, vectorB) {
-  const a = parseVector(vectorA);
-  const b = parseVector(vectorB);
-
-  if (!a?.length || !b?.length || a.length !== b.length) return 0;
-
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let index = 0; index < a.length; index += 1) {
-    const valueA = Number(a[index] || 0);
-    const valueB = Number(b[index] || 0);
-
-    dot += valueA * valueB;
-    normA += valueA * valueA;
-    normB += valueB * valueB;
-  }
-
-  if (!normA || !normB) return 0;
-
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
+  return sharedCosineSimilarity(vectorA, vectorB, {
+    parseStrings: true,
+    coerceNumbers: true
+  });
 }
 
 // This function finds the strongest island-derived score for one article vector.

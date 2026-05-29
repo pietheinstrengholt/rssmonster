@@ -1,3 +1,10 @@
+import {
+  blendVector,
+  cosineSimilarity as sharedCosineSimilarity,
+  normalizeVector as sharedNormalizeVector,
+  weightedAverageVector as sharedWeightedAverageVector
+} from '../vectors/index.js';
+
 export const DEFAULT_MAX_ISLANDS_PER_USER = Number.parseInt(process.env.MAX_INTEREST_ISLANDS, 10) || 10;
 export const DEFAULT_TOPIC_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_TOPIC_AFFINITY_THRESHOLD || '0.12');
 export const DEFAULT_ARTICLE_AFFINITY_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARTICLE_AFFINITY_THRESHOLD || '0.64');
@@ -24,6 +31,7 @@ export const ISLAND_DEBUG = ['1', 'true', 'yes'].includes(
 );
 
 export const SIGNAL_WEIGHTS = {
+  positive: 4,
   star: 4,
   click: 1.5,
   deepRead: 3,
@@ -51,65 +59,9 @@ export function debugIsland(message, payload = null) {
   console.log(`[ISLAND DEBUG] ${message}`, payload);
 }
 
-// This function compares two vectors with cosine similarity.
-export function cosineSimilarity(a, b) {
-  if (!Array.isArray(a) || !Array.isArray(b)) return 0;
-  if (!a.length || !b.length || a.length !== b.length) return 0;
-
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-
-  if (!normA || !normB) return 0;
-
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
-
-// This function normalizes vectors so centroid comparisons stay scale-independent.
-export function normalizeVector(vector) {
-  if (!Array.isArray(vector) || !vector.length) return null;
-
-  let norm = 0;
-  for (const value of vector) {
-    norm += value * value;
-  }
-
-  if (!norm) return vector.map(() => 0);
-
-  const scale = Math.sqrt(norm);
-  return vector.map(value => value / scale);
-}
-
-// This function builds a normalized weighted centroid from vector samples.
-export function weightedAverageVector(samples) {
-  const usable = samples.filter(sample => Array.isArray(sample.vector) && sample.vector.length);
-  if (!usable.length) return null;
-
-  const dimension = usable[0].vector.length;
-  const totals = Array(dimension).fill(0);
-  let totalWeight = 0;
-
-  for (const sample of usable) {
-    if (sample.vector.length !== dimension) continue;
-
-    const weight = Math.max(0.0001, sample.weight || 0);
-    totalWeight += weight;
-
-    for (let i = 0; i < dimension; i++) {
-      totals[i] += sample.vector[i] * weight;
-    }
-  }
-
-  if (!totalWeight) return null;
-
-  return normalizeVector(totals.map(value => value / totalWeight));
-}
+export const cosineSimilarity = sharedCosineSimilarity;
+export const normalizeVector = sharedNormalizeVector;
+export const weightedAverageVector = sharedWeightedAverageVector;
 
 // This function blends an existing island vector with new evidence.
 export function blendIslandVector(existingVector, incomingVector, alpha = DEFAULT_ISLAND_VECTOR_ALPHA) {
@@ -117,12 +69,7 @@ export function blendIslandVector(existingVector, incomingVector, alpha = DEFAUL
   if (!Array.isArray(incomingVector)) return normalizeVector(existingVector);
   if (existingVector.length !== incomingVector.length) return normalizeVector(incomingVector);
 
-  const clampedAlpha = clamp(alpha, 0, 1);
-  return normalizeVector(
-    existingVector.map(
-      (value, index) => value * (1 - clampedAlpha) + incomingVector[index] * clampedAlpha
-    )
-  );
+  return normalizeVector(blendVector(existingVector, incomingVector, alpha));
 }
 
 // This function returns a recency multiplier for behavioral signals.
@@ -136,6 +83,7 @@ export function topicRecencyWeight(publishedAt) {
 // This function creates an empty positive-signal counter object.
 export function buildPositiveSignalsAccumulator() {
   return {
+    positives: 0,
     stars: 0,
     clicks: 0,
     deepReads: 0,
@@ -145,6 +93,7 @@ export function buildPositiveSignalsAccumulator() {
 
 // This function adds one positive-signal counter into another.
 export function addPositiveSignals(target, source) {
+  target.positives += source.positives || 0;
   target.stars += source.stars;
   target.clicks += source.clicks;
   target.deepReads += source.deepReads;
@@ -154,6 +103,7 @@ export function addPositiveSignals(target, source) {
 // This function converts stored signal JSON into numeric counters.
 export function normalizePositiveSignals(source = {}) {
   return {
+    positives: Number(source.positives || 0),
     stars: Number(source.stars || 0),
     clicks: Number(source.clicks || 0),
     deepReads: Number(source.deepReads || 0),
@@ -166,6 +116,7 @@ export function mergePositiveSignals(existingSignals = {}, incomingSignals = {})
   const merged = normalizePositiveSignals(existingSignals);
   const incoming = normalizePositiveSignals(incomingSignals);
 
+  merged.positives += incoming.positives;
   merged.stars += incoming.stars;
   merged.clicks += incoming.clicks;
   merged.deepReads += incoming.deepReads;

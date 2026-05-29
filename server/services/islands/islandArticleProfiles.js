@@ -21,6 +21,7 @@ const { Article } = db;
 
 // This function converts article behavior fields into weighted positive and negative signals.
 export function computeArticleSignals(article) {
+  const positives = article.positiveInd === 1 ? 1 : 0;
   const stars = article.starInd === 1 ? 1 : 0;
   const clicks = Math.min(article.clickedAmount || 0, 3);
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
@@ -28,6 +29,7 @@ export function computeArticleSignals(article) {
   const recency = topicRecencyWeight(article.published);
 
   const positiveScore = (
+    positives * SIGNAL_WEIGHTS.positive +
     stars * SIGNAL_WEIGHTS.star +
     clicks * SIGNAL_WEIGHTS.click +
     deepReads * SIGNAL_WEIGHTS.deepRead
@@ -40,6 +42,7 @@ export function computeArticleSignals(article) {
     negativeScore,
     engagementScore: Math.max(0, positiveScore),
     positiveSignals: {
+      positives,
       stars,
       clicks,
       deepReads,
@@ -174,6 +177,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       userId,
       articleVector: { [Op.ne]: null },
       [Op.or]: [
+        { positiveInd: 1 },
         { starInd: 1 },
         { clickedAmount: { [Op.gt]: 0 } },
         { attentionBucket: { [Op.gte]: 3 } },
@@ -184,6 +188,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       'id',
       'title',
       'articleVector',
+      'positiveInd',
       'starInd',
       'clickedAmount',
       'attentionBucket',
@@ -191,6 +196,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       'published'
     ],
     order: [
+      ['positiveInd', 'DESC'],
       ['starInd', 'DESC'],
       ['clickedAmount', 'DESC'],
       ['attentionBucket', 'DESC'],

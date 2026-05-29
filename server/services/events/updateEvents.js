@@ -3,6 +3,7 @@
 // It blends event vectors, refreshes lifecycle/source stats, and keeps event topic links in sync.
 import db from '../../models/index.js';
 import { EVENT_LIFECYCLE, EVENT_VECTOR_ALPHA } from '../config/semanticConfig.js';
+import { blendVector } from '../vectors/index.js';
 
 const { Article, Event } = db;
 
@@ -38,12 +39,7 @@ function resolveEventStatus(articleCount, lastSeenAt) {
 
 // This function blends a new article vector into the existing event vector.
 function blendEventVector(existingVector, incomingVector) {
-  if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
-  if (existingVector.length !== incomingVector.length) return incomingVector;
-
-  return existingVector.map(
-    (value, index) => value * (1 - EVENT_VECTOR_ALPHA) + incomingVector[index] * EVENT_VECTOR_ALPHA
-  );
+  return blendVector(existingVector, incomingVector, EVENT_VECTOR_ALPHA);
 }
 
 // This function recalculates source diversity after an article joins an event.

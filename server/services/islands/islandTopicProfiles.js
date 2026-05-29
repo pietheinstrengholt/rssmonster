@@ -303,7 +303,7 @@ export async function buildTopicInterestIslandProfilesForUser(userId, options = 
       model: Article,
       as: 'articles',
       required: false,
-      attributes: ['id', 'starInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'published'],
+      attributes: ['id', 'positiveInd', 'starInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'published'],
       through: { attributes: [] }
     }],
     order: [

@@ -4,6 +4,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
+import { averageVector } from '../vectors/index.js';
 
 const { Article, Event } = db;
 
@@ -96,9 +97,7 @@ export async function createAndAssignEvent({
     return null;
   }
 
-  const centroid = vectors[0].map((_, index) => (
-    vectors.reduce((sum, vector) => sum + vector[index], 0) / vectors.length
-  ));
+  const centroid = averageVector(vectors);
 
   const timestamps = eventArticles
     .map(item => item.published)

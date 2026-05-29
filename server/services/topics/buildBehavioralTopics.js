@@ -5,6 +5,10 @@ import {
   cosineSimilarity,
   generateTopicKey
 } from './topicHelpers.js';
+import {
+  normalizeVector,
+  weightedAverageVector
+} from '../vectors/index.js';
 
 const { Article, ArticleTopic, Topic } = db;
 
@@ -33,41 +37,6 @@ const MIN_ARTICLES_PER_BEHAVIORAL_TOPIC = 3;
 
 // This helper keeps derived scores and blend weights inside a known numeric range.
 const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
-
-// This function normalizes vectors for stable cosine comparisons.
-function normalizeVector(vector) {
-  if (!Array.isArray(vector) || !vector.length) return null;
-
-  const norm = Math.sqrt(vector.reduce((sum, value) => sum + value * value, 0));
-  if (!norm) return vector.map(() => 0);
-
-  return vector.map(value => value / norm);
-}
-
-// This function builds a weighted centroid from article vectors.
-function weightedAverageVector(samples) {
-  const usable = samples.filter(sample => Array.isArray(sample.vector) && sample.vector.length);
-  if (!usable.length) return null;
-
-  const dimension = usable[0].vector.length;
-  const totals = Array(dimension).fill(0);
-  let totalWeight = 0;
-
-  for (const sample of usable) {
-    if (sample.vector.length !== dimension) continue;
-
-    const weight = Math.max(0.0001, Number(sample.weight || 0));
-    totalWeight += weight;
-
-    for (let index = 0; index < dimension; index++) {
-      totals[index] += sample.vector[index] * weight;
-    }
-  }
-
-  if (!totalWeight) return null;
-
-  return normalizeVector(totals.map(value => value / totalWeight));
-}
 
 // This function scores positive behavioral evidence for an article.
 function engagementScore(article) {

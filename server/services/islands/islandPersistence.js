@@ -53,6 +53,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   const createdIslands = [];
   let createdIslandCount = 0;
   let updatedIslandCount = 0;
+  let updatedWithPositiveSignalCount = 0;
   let updatedWithStarSignalCount = 0;
   let updatedWithClickSignalCount = 0;
   let updatedWithNegativeSignalCount = 0;
@@ -113,6 +114,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
 
       if (Number(profile?.positiveSignals?.stars || 0) > 0) {
         updatedWithStarSignalCount += 1;
+      }
+      if (Number(profile?.positiveSignals?.positives || 0) > 0) {
+        updatedWithPositiveSignalCount += 1;
       }
       if (Number(profile?.positiveSignals?.clicks || 0) > 0) {
         updatedWithClickSignalCount += 1;
@@ -202,6 +206,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       createdIslandCount,
       updatedIslandCount,
       updatedBySignals: {
+        positives: updatedWithPositiveSignalCount,
         stars: updatedWithStarSignalCount,
         clicks: updatedWithClickSignalCount,
         negativeInd: updatedWithNegativeSignalCount

@@ -5,6 +5,11 @@ import {
   TOPIC_VECTOR_ALPHA,
   TOPIC_IDENTITY_THRESHOLD
 } from '../config/semanticConfig.js';
+import {
+  averageVector,
+  blendVector,
+  cosineSimilarity
+} from '../vectors/index.js';
 
 const { Article, Event } = db;
 
@@ -47,26 +52,7 @@ export function debugTopicGate(message, payload = null) {
   console.log(`[TOPIC DEBUG] ${message}`, payload);
 }
 
-// This function compares two vectors with cosine similarity.
-export function cosineSimilarity(a, b) {
-  if (!Array.isArray(a) || !Array.isArray(b)) return 0;
-  if (!a.length || !b.length) return 0;
-  if (a.length !== b.length) return 0;
-
-  let dot = 0;
-  let normA = 0;
-  let normB = 0;
-
-  for (let i = 0; i < a.length; i++) {
-    dot += a[i] * b[i];
-    normA += a[i] * a[i];
-    normB += b[i] * b[i];
-  }
-
-  if (!normA || !normB) return 0;
-
-  return dot / (Math.sqrt(normA) * Math.sqrt(normB));
-}
+export { averageVector, cosineSimilarity };
 
 // This function creates a stable short hash key from the leading topic vector dimensions.
 export function generateTopicKey(topicVector) {
@@ -82,41 +68,12 @@ export function generateTopicKey(topicVector) {
 
 // This function blends a topic vector with the configured default drift alpha.
 export function blendTopicVector(existingVector, incomingVector) {
-  if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
-  if (existingVector.length !== incomingVector.length) return incomingVector;
-
-  return existingVector.map(
-    (value, index) => value * (1 - TOPIC_VECTOR_ALPHA) + incomingVector[index] * TOPIC_VECTOR_ALPHA
-  );
+  return blendVector(existingVector, incomingVector, TOPIC_VECTOR_ALPHA);
 }
 
 // This function blends two topic vectors with an explicit alpha.
 export function blendTopicVectorWithAlpha(existingVector, incomingVector, alpha) {
-  if (!Array.isArray(existingVector) || !Array.isArray(incomingVector)) return incomingVector;
-  if (existingVector.length !== incomingVector.length) return incomingVector;
-
-  return existingVector.map(
-    (value, index) => value * (1 - alpha) + incomingVector[index] * alpha
-  );
-}
-
-// This function computes a plain average vector across same-dimension vectors.
-export function averageVector(vectors = []) {
-  const usable = vectors.filter(vector => Array.isArray(vector) && vector.length);
-  if (!usable.length) return null;
-
-  const dimension = usable[0].length;
-  const filtered = usable.filter(vector => vector.length === dimension);
-  if (!filtered.length) return null;
-
-  const sum = Array(dimension).fill(0);
-  for (const vector of filtered) {
-    for (let i = 0; i < dimension; i++) {
-      sum[i] += vector[i];
-    }
-  }
-
-  return sum.map(value => value / filtered.length);
+  return blendVector(existingVector, incomingVector, alpha);
 }
 
 // This function parses numeric evidence fields with a safe fallback.
