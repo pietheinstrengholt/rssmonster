@@ -9,7 +9,6 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - `title:"rust async" unread:true` - title contains the exact phrase, only unread
 - `tag:ai quality:>0.7 sort:QUALITY` - tagged items with high quality first
 - `hot:true limit:50` - hottest 50 items (ignores feed filter)
-- `cluster:true @yesterday` - one representative per cluster from yesterday
 
 ---
 
@@ -24,8 +23,7 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - Status: `unread:true|false`, `read:true|false`, `star:true|false`, `clicked:true|false`, `seen:true|false`, `hot:true|false` (hot ignores feed filter when true).
 - Age: `firstSeen:24h` or `firstSeen:7d` (filters articles by how long ago they were first seen).
 - Tags: `tag:my-tag` matches articles tagged for the current user.
-- Clusters: `cluster:true|false` returns only cluster representatives when true.
-- Quality & Freshness (virtual scores): `quality:>0.7`, `freshness:>=0.5` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
+- Quality: `quality:>0.7` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
 - Sort: `sort:DESC|ASC|RECOMMENDED|QUALITY|ATTENTION`. RECOMMENDED/QUALITY/ATTENTION are computed in memory after fetching.
 - Limit: `limit:50` caps results (overrides defaults).
 
@@ -46,7 +44,7 @@ Date filters replace the normal published-date window; they are inclusive of the
 ## Defaults & Limits
 - If you provide search text, RSSMonster searches **all statuses** unless you add a status token. Without search text it defaults to unread.
 - When any search expression is used and no `limit` is provided, results are capped at 500 after sorting. Smart folders may apply their own limits.
-- Quality/freshness filters run after fetching, so they can reduce results even when the limit is higher.
+- Quality filters run after fetching, so they can reduce results even when the limit is higher.
 
 ---
 

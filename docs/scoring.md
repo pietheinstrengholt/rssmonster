@@ -7,7 +7,7 @@ RSSMonster ranks every article using a few interpretable signals. Scores stay be
 ## Freshness
 - Formula: $freshness = e^{-ageHours/48}$ (time constant of 48h).
 - Intuition: today >0.7, yesterday ~0.3-0.7, older pieces decay toward 0.1 and below.
-- Used by: importance ranking and freshness filters.
+- Used by: importance ranking.
 
 ## Quality
 - Inputs (0-100 each): `sentimentScore` (50%), `qualityScore` (35%), `advertisementScore` (15%).
@@ -41,5 +41,5 @@ RSSMonster ranks every article using a few interpretable signals. Scores stay be
 ---
 
 ## How Filters Interact
-- Quality/freshness filters are applied after fetching (they are virtual), so they can reduce result counts even if limits are higher.
+- Quality filters are applied after fetching, so they can reduce result counts even if limits are higher.
 - Importance/quality/attention sorts are computed in memory, but the signals themselves are fully deterministic and explained above.

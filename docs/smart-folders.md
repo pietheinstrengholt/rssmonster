@@ -26,24 +26,23 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
-Use the same tokens as the search bar: status (`unread:true`, `star:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality/freshness (`quality:>0.7`), cluster view (`cluster:true`), and sorts.
+Use the same tokens as the search bar: status (`unread:true`, `star:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), hot items (`hot:true`), and sorts.
 
 ---
 
 ## Recipes
-- Top stories today: `@today unread:true cluster:true sort:RECOMMENDED limit:100`
+- Top stories today: `@today unread:true sort:RECOMMENDED limit:100`
 - High-quality long reads: `quality:>0.75 sort:QUALITY unread:true`
 - Engaged items: `sort:ATTENTION clicked:true limit:80`
 - Hot right now: `hot:true sort:ATTENTION`
 - Topic by tag: `tag:ai unread:true sort:RECOMMENDED`
-- Fresh and non-duplicate: `@yesterday cluster:true sort:RECOMMENDED`
+- Yesterday's highlights: `@yesterday unread:true sort:RECOMMENDED`
 
 ---
 
 ## Tips
-- Add `cluster:true` to collapse duplicate coverage into one representative per story.
 - Combine status with time to keep the list focused: `unread:true @today`.
-- Use `quality:>=0.7` or `freshness:>=0.5` to filter after fetch; they can shrink the result set even if the limit is higher.
+- Use `quality:>=0.7` to filter after fetch; it can shrink the result set even if the limit is higher.
 - If you omit status but include text, all statuses are searched; add `unread:true` or `read:true` if you want to constrain.
 
 ---

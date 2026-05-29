@@ -49,7 +49,7 @@ Each Smart Folder is a living query. New content flows in; irrelevant content st
 
 Ask for what you want, naturally:
 - `title:javascript @today quality:>0.7`
-- `unread:true cluster:true sort:RECOMMENDED`
+- `unread:true sort:RECOMMENDED`
 - Or just: *"Show me tech articles from last week"*
 
 No complex syntax to memorize. RSSMonster speaks your language.

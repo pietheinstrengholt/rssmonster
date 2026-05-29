@@ -158,7 +158,7 @@ They:
 Example:
 
 ```text
-@today unread:true cluster:true sort:RECOMMENDED
+@today unread:true sort:RECOMMENDED
 ```
 
 Smart Folders allow you to define what matters — not just what arrived.
