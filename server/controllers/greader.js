@@ -70,6 +70,250 @@ const unauthorized = (res) => res.status(401).type('text/plain').send('Unauthori
 
 const notImplemented = (res) => res.status(501).type('text/plain').send('Not implemented');
 
+const LABEL_PREFIX = 'user/-/label/';
+const READING_LIST_STREAM = 'user/-/state/com.google/reading-list';
+const READ_STREAM = 'user/-/state/com.google/read';
+const STARRED_STREAM = 'user/-/state/com.google/starred';
+const FALLBACK_CATEGORY_NAME = 'Uncategorized';
+
+const safeDecodeURIComponent = (value = '') => {
+  try {
+    return decodeURIComponent(value);
+  } catch {
+    return value;
+  }
+};
+
+const encodeLabelName = (name = '') => encodeURIComponent(name);
+
+const decodeLabelStream = (streamId = '') => {
+  if (!streamId.startsWith(LABEL_PREFIX)) {
+    return null;
+  }
+  return safeDecodeURIComponent(streamId.substring(LABEL_PREFIX.length));
+};
+
+const normalizeStreamPath = (streamPath) => {
+  if (Array.isArray(streamPath)) {
+    return streamPath.join('/');
+  }
+  return streamPath || '';
+};
+
+const stripFeedPrefix = (streamId = '') => {
+  const value = String(streamId);
+  return value.startsWith('feed/') ? value.substring(5) : value;
+};
+
+const decodeFeedRef = (streamId = '') => safeDecodeURIComponent(stripFeedPrefix(streamId));
+
+const isIntegerString = (value) => /^\d+$/.test(String(value));
+
+const findFeedByStreamId = async (streamId, userId) => {
+  const feedRef = decodeFeedRef(streamId);
+  if (!feedRef) {
+    return null;
+  }
+
+  const where = isIntegerString(feedRef)
+    ? { id: Number(feedRef), userId }
+    : { url: feedRef, userId };
+
+  return Feed.findOne({ where });
+};
+
+const findOrCreateCategoryByName = async (name, userId) => {
+  const categoryName = safeDecodeURIComponent(name || FALLBACK_CATEGORY_NAME);
+  const [category] = await Category.findOrCreate({
+    where: { name: categoryName, userId },
+    defaults: { name: categoryName, userId }
+  });
+  return category;
+};
+
+const getFallbackCategory = async (userId, excludeCategoryId = null) => {
+  const existing = await Category.findOne({
+    where: {
+      userId,
+      ...(excludeCategoryId ? { id: { [Op.ne]: excludeCategoryId } } : {})
+    },
+    order: [['categoryOrder', 'ASC'], ['name', 'ASC']]
+  });
+
+  if (existing) {
+    return existing;
+  }
+
+  return Category.create({
+    name: FALLBACK_CATEGORY_NAME,
+    userId,
+    categoryOrder: 0
+  });
+};
+
+const getArticleContent = (article) =>
+  article.contentOriginal ||
+  article.contentStripped ||
+  article.description ||
+  '';
+
+const getArticleReaderTime = (article) =>
+  article.firstSeen || article.createdAt || article.published || new Date(0);
+
+const toUsecString = (date) => String(new Date(date).getTime() * 1000);
+
+const toItemId = (id) => `tag:google.com,2005:reader/item/${Number(id).toString(16).padStart(16, '0')}`;
+
+const parseItemId = (id) => {
+  if (typeof id === 'string' && !id.match(/^\d+$/)) {
+    return parseInt(id.replace('tag:google.com,2005:reader/item/', ''), 16);
+  }
+  return parseInt(id);
+};
+
+const parseReaderTimestamp = (value) => {
+  const parsed = Number(value);
+  if (!Number.isFinite(parsed) || parsed <= 0) {
+    return null;
+  }
+
+  // Google Reader mutation timestamps are usually microseconds. Accept seconds
+  // and milliseconds too; several clients are loose here.
+  if (parsed > 1e14) return new Date(parsed / 1000);
+  if (parsed > 1e11) return new Date(parsed);
+  return new Date(parsed * 1000);
+};
+
+const createContinuation = (article) =>
+  `${new Date(article.published).getTime()}:${article.id}`;
+
+const applyContinuationFilter = (where, continuation, order) => {
+  if (!continuation) {
+    return;
+  }
+
+  const [publishedMsRaw, idRaw] = String(continuation).split(':');
+  const publishedMs = Number(publishedMsRaw);
+  const id = Number(idRaw);
+
+  if (Number.isFinite(publishedMs) && Number.isFinite(id)) {
+    const published = new Date(publishedMs);
+    where[Op.or] = order === 'o'
+      ? [
+          { published: { [Op.gt]: published } },
+          { published, id: { [Op.gt]: id } }
+        ]
+      : [
+          { published: { [Op.lt]: published } },
+          { published, id: { [Op.lt]: id } }
+        ];
+    return;
+  }
+
+  const legacyId = Number(continuation);
+  if (Number.isFinite(legacyId)) {
+    where.id = order === 'o'
+      ? { [Op.gt]: legacyId }
+      : { [Op.lt]: legacyId };
+  }
+};
+
+const serializeArticle = (article) => {
+  const feed = article.feed;
+  const category = feed?.category;
+  const categories = [
+    READING_LIST_STREAM,
+    ...(article.status === 'read' ? [READ_STREAM] : []),
+    ...(article.starInd === 1 ? [STARRED_STREAM] : []),
+    ...(category?.name ? [`${LABEL_PREFIX}${encodeLabelName(category.name)}`] : [])
+  ];
+
+  return {
+    id: toItemId(article.id),
+    crawlTimeMsec: String(getArticleReaderTime(article).getTime()),
+    timestampUsec: toUsecString(article.published),
+    published: Math.floor(new Date(article.published).getTime() / 1000),
+    title: article.title || '',
+    summary: {
+      content: getArticleContent(article)
+    },
+    alternate: [{
+      href: article.url || '',
+      type: 'text/html'
+    }],
+    categories,
+    origin: {
+      streamId: `feed/${article.feedId}`,
+      title: feed?.feedName || '',
+      htmlUrl: feed?.url || ''
+    },
+    author: article.author || ''
+  };
+};
+
+const applyStreamFilter = async (where, streamId, userId) => {
+  const normalized = normalizeStreamPath(streamId);
+
+  if (!normalized || normalized === 'reading-list' || normalized === READING_LIST_STREAM) {
+    return READING_LIST_STREAM;
+  }
+
+  if (normalized.startsWith('feed/')) {
+    const feed = await findFeedByStreamId(normalized, userId);
+    if (feed) {
+      where.feedId = feed.id;
+    } else {
+      where.feedId = { [Op.in]: [] };
+    }
+    return `feed/${decodeFeedRef(normalized)}`;
+  }
+
+  if (normalized === STARRED_STREAM) {
+    where.starInd = 1;
+    return STARRED_STREAM;
+  }
+
+  if (normalized === READ_STREAM) {
+    where.status = 'read';
+    return READ_STREAM;
+  }
+
+  const categoryName = decodeLabelStream(normalized);
+  if (categoryName !== null) {
+    const category = await Category.findOne({
+      where: { name: categoryName, userId },
+      include: [{ model: Feed, attributes: ['id'] }]
+    });
+    where.feedId = category?.feeds?.length
+      ? { [Op.in]: category.feeds.map(f => f.id) }
+      : { [Op.in]: [] };
+    return `${LABEL_PREFIX}${encodeLabelName(categoryName)}`;
+  }
+
+  return READING_LIST_STREAM;
+};
+
+const applyTargetFilter = (where, target, include = true) => {
+  if (!target) {
+    return;
+  }
+
+  if (target === READ_STREAM) {
+    where.status = include ? 'read' : 'unread';
+  } else if (target === STARRED_STREAM) {
+    where.starInd = include ? 1 : { [Op.ne]: 1 };
+  }
+};
+
+const articleInclude = [{
+  model: Feed,
+  attributes: ['id', 'feedName', 'url', 'categoryId'],
+  include: [{
+    model: Category,
+    attributes: ['id', 'name']
+  }]
+}];
+
 /**
  * POST /api/greader/accounts/ClientLogin
  * Client login - returns SID, LSID, and Auth tokens
@@ -177,7 +421,7 @@ export const getTagList = async (req, res) => {
     
     for (const cat of categories) {
       tags.push({
-        id: `user/-/label/${cat.name}`,
+        id: `${LABEL_PREFIX}${encodeLabelName(cat.name)}`,
         type: 'folder'
       });
     }
@@ -223,11 +467,11 @@ export const getSubscriptionList = async (req, res) => {
             id: `feed/${feed.id}`,
             title: feed.feedName || feed.url,
             categories: [{
-              id: `user/-/label/${cat.name}`,
+              id: `${LABEL_PREFIX}${encodeLabelName(cat.name)}`,
               label: cat.name
             }],
             url: feed.url,
-            htmlUrl: feed.link || feed.url,
+            htmlUrl: feed.url,
             iconUrl: feed.favicon || ''
           });
         }
@@ -256,6 +500,7 @@ export const editSubscription = async (req, res) => {
     const action = req.body.ac || req.query.ac;
     const title = req.body.t || req.query.t;
     const addCategory = req.body.a || req.query.a;
+    const removeCategory = req.body.r || req.query.r;
     
     if (!streamId || !action) {
       return badRequest(res, 'Missing required parameters');
@@ -264,24 +509,13 @@ export const editSubscription = async (req, res) => {
     switch (action) {
       case 'subscribe': {
         // Extract URL from feed/URL format
-        let feedUrl = streamId;
-        if (feedUrl.startsWith('feed/')) {
-          feedUrl = feedUrl.substring(5);
-        }
+        const feedUrl = decodeFeedRef(streamId);
         
         // Find or create category
         let categoryId = null;
-        if (addCategory && addCategory.startsWith('user/-/label/')) {
-          const categoryName = addCategory.substring(13);
-          let category = await Category.findOne({
-            where: { name: categoryName, userId: user.id }
-          });
-          if (!category) {
-            category = await Category.create({
-              name: categoryName,
-              userId: user.id
-            });
-          }
+        if (addCategory && addCategory.startsWith(LABEL_PREFIX)) {
+          const categoryName = decodeLabelStream(addCategory);
+          const category = await findOrCreateCategoryByName(categoryName, user.id);
           categoryId = category.id;
         } else {
           // Use first category as default
@@ -317,36 +551,16 @@ export const editSubscription = async (req, res) => {
       }
       
       case 'unsubscribe': {
-        // Extract feed ID
-        let feedId = streamId;
-        if (feedId.startsWith('feed/')) {
-          feedId = feedId.substring(5);
-        }
-        
-        if (isNaN(parseInt(feedId))) {
-          // It's a URL, find by URL
-          await Feed.destroy({
-            where: { url: feedId, userId: user.id }
-          });
-        } else {
-          await Feed.destroy({
-            where: { id: parseInt(feedId), userId: user.id }
-          });
+        const feed = await findFeedByStreamId(streamId, user.id);
+        if (feed) {
+          await feed.destroy();
         }
         
         return res.type('text/plain').send('OK');
       }
       
       case 'edit': {
-        // Extract feed ID
-        let feedId = streamId;
-        if (feedId.startsWith('feed/')) {
-          feedId = feedId.substring(5);
-        }
-        
-        const feed = await Feed.findOne({
-          where: { id: parseInt(feedId), userId: user.id }
-        });
+        const feed = await findFeedByStreamId(streamId, user.id);
         
         if (!feed) {
           return badRequest(res, 'Feed not found');
@@ -358,18 +572,13 @@ export const editSubscription = async (req, res) => {
         }
         
         // Move to new category if provided
-        if (addCategory && addCategory.startsWith('user/-/label/')) {
-          const categoryName = addCategory.substring(13);
-          let category = await Category.findOne({
-            where: { name: categoryName, userId: user.id }
-          });
-          if (!category) {
-            category = await Category.create({
-              name: categoryName,
-              userId: user.id
-            });
-          }
+        if (addCategory && addCategory.startsWith(LABEL_PREFIX)) {
+          const categoryName = decodeLabelStream(addCategory);
+          const category = await findOrCreateCategoryByName(categoryName, user.id);
           feed.categoryId = category.id;
+        } else if (removeCategory && removeCategory.startsWith(LABEL_PREFIX)) {
+          const fallbackCategory = await getFallbackCategory(user.id, feed.categoryId);
+          feed.categoryId = fallbackCategory.id;
         }
         
         await feed.save();
@@ -401,9 +610,7 @@ export const quickAddSubscription = async (req, res) => {
       return badRequest(res, 'Missing quickadd parameter');
     }
     
-    if (feedUrl.startsWith('feed/')) {
-      feedUrl = feedUrl.substring(5);
-    }
+    feedUrl = decodeFeedRef(feedUrl);
     
     // Get first category as default
     const defaultCat = await Category.findOne({
@@ -424,7 +631,8 @@ export const quickAddSubscription = async (req, res) => {
       return res.json({
         query: feedUrl,
         numResults: 1,
-        streamId: `feed/${existingFeed.id}`
+        streamId: `feed/${existingFeed.id}`,
+        streamUrl: `feed/${encodeURIComponent(existingFeed.url)}`
       });
     }
     
@@ -439,7 +647,8 @@ export const quickAddSubscription = async (req, res) => {
     res.json({
       query: feedUrl,
       numResults: 1,
-      streamId: `feed/${newFeed.id}`
+      streamId: `feed/${newFeed.id}`,
+      streamUrl: `feed/${encodeURIComponent(newFeed.url)}`
     });
   } catch (err) {
     console.error('Error in quickAddSubscription:', err);
@@ -494,11 +703,11 @@ export const getUnreadCount = async (req, res) => {
           // Get newest item timestamp
           const newestArticle = await Article.findOne({
             where: { feedId: feed.id, userId: user.id },
-            order: [['published', 'DESC']],
-            attributes: ['published']
+            order: [['createdAt', 'DESC']],
+            attributes: ['createdAt', 'firstSeen', 'published']
           });
           
-          const lastUpdate = newestArticle ? newestArticle.published.getTime() * 1000 : 0;
+          const lastUpdate = newestArticle ? getArticleReaderTime(newestArticle).getTime() * 1000 : 0;
           
           unreadcounts.push({
             id: `feed/${feed.id}`,
@@ -514,7 +723,7 @@ export const getUnreadCount = async (req, res) => {
       }
       
       unreadcounts.push({
-        id: `user/-/label/${cat.name}`,
+        id: `${LABEL_PREFIX}${encodeLabelName(cat.name)}`,
         count: catUnreadCount,
         newestItemTimestampUsec: String(catLastUpdate)
       });
@@ -554,109 +763,45 @@ export const getStreamContents = async (req, res) => {
     }
     
     // Parse stream ID from path (supports both named param and legacy)
-    const streamPath = req.params.streamPath || req.params[0] || '';
+    const streamPath = normalizeStreamPath(req.params.streamPath || req.params[0] || '');
     const excludeTarget = req.query.xt || '';
     const filterTarget = req.query.it || '';
     const count = parseInt(req.query.n) || 20;
     const order = req.query.r || 'd'; // d = descending, o = ascending
-    const startTime = parseInt(req.query.ot) || 0;
-    const stopTime = parseInt(req.query.nt) || 0;
+    const startTime = parseReaderTimestamp(req.query.ot);
+    const stopTime = parseReaderTimestamp(req.query.nt);
     const continuation = req.query.c || '';
     
     // Build query conditions
     const where = { userId: user.id };
-    let streamId = 'reading-list';
-    
-    // Parse stream path
-    if (streamPath.startsWith('feed/')) {
-      const feedId = streamPath.substring(5);
-      if (!isNaN(parseInt(feedId))) {
-        where.feedId = parseInt(feedId);
-        streamId = streamPath;
-      }
-    } else if (streamPath.startsWith('user/-/label/') || streamPath.startsWith('user/-/state/com.google/')) {
-      if (streamPath.includes('/label/')) {
-        const categoryName = streamPath.split('/label/')[1];
-        const category = await Category.findOne({
-          where: { name: decodeURIComponent(categoryName), userId: user.id },
-          include: [{ model: Feed, attributes: ['id'] }]
-        });
-        if (category && category.feeds) {
-          where.feedId = { [Op.in]: category.feeds.map(f => f.id) };
-        }
-        streamId = streamPath;
-      } else if (streamPath.includes('/starred')) {
-        where.starInd = 1;
-        streamId = 'user/-/state/com.google/starred';
-      }
-    } else if (streamPath === 'reading-list' || streamPath === '') {
-      // All articles - no additional filter
-      streamId = 'user/-/state/com.google/reading-list';
-    }
-    
-    // Exclude read articles if requested
-    if (excludeTarget === 'user/-/state/com.google/read') {
-      where.status = 'unread';
-    }
-    
-    // Filter by read articles if requested
-    if (filterTarget === 'user/-/state/com.google/read') {
-      where.status = 'read';
-    }
+    const streamId = await applyStreamFilter(where, streamPath, user.id);
+    applyTargetFilter(where, excludeTarget, false);
+    applyTargetFilter(where, filterTarget, true);
     
     // Time range filters
-    if (startTime > 0) {
-      where.published = { ...where.published, [Op.gte]: new Date(startTime * 1000) };
+    if (startTime) {
+      where.createdAt = { ...where.createdAt, [Op.gte]: startTime };
     }
-    if (stopTime > 0) {
-      where.published = { ...where.published, [Op.lte]: new Date(stopTime * 1000) };
+    if (stopTime) {
+      where.createdAt = { ...where.createdAt, [Op.lte]: stopTime };
     }
     
     // Continuation (pagination)
-    if (continuation && !isNaN(parseInt(continuation))) {
-      if (order === 'o') {
-        where.id = { [Op.gt]: parseInt(continuation) };
-      } else {
-        where.id = { [Op.lt]: parseInt(continuation) };
-      }
-    }
+    applyContinuationFilter(where, continuation, order);
     
     const articles = await Article.findAll({
       where,
-      include: [{
-        model: Feed,
-        attributes: ['id', 'feedName', 'url']
-      }],
-      order: [['published', order === 'o' ? 'ASC' : 'DESC']],
+      include: articleInclude,
+      order: [
+        ['published', order === 'o' ? 'ASC' : 'DESC'],
+        ['id', order === 'o' ? 'ASC' : 'DESC']
+      ],
       limit: count + 1 // Fetch one extra to check for continuation
     });
     
     const hasMore = articles.length > count;
-    const items = articles.slice(0, count).map(article => ({
-      id: `tag:google.com,2005:reader/item/${article.id.toString(16).padStart(16, '0')}`,
-      crawlTimeMsec: String(article.createdAt.getTime()),
-      timestampUsec: String(article.published.getTime() * 1000),
-      published: Math.floor(article.published.getTime() / 1000),
-      title: article.title || '',
-      summary: {
-        content: article.content || ''
-      },
-      alternate: [{
-        href: article.url || '',
-        type: 'text/html'
-      }],
-      categories: [
-        'user/-/state/com.google/reading-list',
-        ...(article.status === 'read' ? ['user/-/state/com.google/read'] : []),
-        ...(article.starInd === 1 ? ['user/-/state/com.google/starred'] : [])
-      ],
-      origin: {
-        streamId: `feed/${article.feedId}`,
-        title: article.feed?.feedName || '',
-        htmlUrl: article.feed?.url || ''
-      },
-      author: article.author || ''
-    }));
+    const pageArticles = articles.slice(0, count);
+    const items = pageArticles.map(serializeArticle);
     
     const response = {
       id: streamId,
@@ -664,8 +809,8 @@ export const getStreamContents = async (req, res) => {
       items
     };
     
-    if (hasMore && articles.length > 0) {
-      response.continuation = String(articles[count - 1].id);
+    if (hasMore && pageArticles.length > 0) {
+      response.continuation = createContinuation(pageArticles[pageArticles.length - 1]);
     }
     
     res.json(response);
@@ -688,71 +833,49 @@ export const getStreamItemIds = async (req, res) => {
     
     const streamId = req.query.s || '';
     const excludeTarget = req.query.xt || '';
+    const filterTarget = req.query.it || '';
     const count = parseInt(req.query.n) || 20;
     const order = req.query.r || 'd';
-    const startTime = parseInt(req.query.ot) || 0;
-    const stopTime = parseInt(req.query.nt) || 0;
+    const startTime = parseReaderTimestamp(req.query.ot);
+    const stopTime = parseReaderTimestamp(req.query.nt);
     const continuation = req.query.c || '';
     
     const where = { userId: user.id };
-    
-    // Parse stream ID
-    if (streamId.startsWith('feed/')) {
-      const feedId = streamId.substring(5);
-      if (!isNaN(parseInt(feedId))) {
-        where.feedId = parseInt(feedId);
-      }
-    } else if (streamId === 'user/-/state/com.google/starred') {
-      where.starInd = 1;
-    } else if (streamId.startsWith('user/-/label/')) {
-      const categoryName = streamId.substring(13);
-      const category = await Category.findOne({
-        where: { name: decodeURIComponent(categoryName), userId: user.id },
-        include: [{ model: Feed, attributes: ['id'] }]
-      });
-      if (category && category.feeds) {
-        where.feedId = { [Op.in]: category.feeds.map(f => f.id) };
-      }
-    }
-    
-    // Exclude read articles if requested
-    if (excludeTarget === 'user/-/state/com.google/read') {
-      where.status = 'unread';
-    }
+    await applyStreamFilter(where, streamId, user.id);
+    applyTargetFilter(where, excludeTarget, false);
+    applyTargetFilter(where, filterTarget, true);
     
     // Time range filters
-    if (startTime > 0) {
-      where.published = { ...where.published, [Op.gte]: new Date(startTime * 1000) };
+    if (startTime) {
+      where.createdAt = { ...where.createdAt, [Op.gte]: startTime };
     }
-    if (stopTime > 0) {
-      where.published = { ...where.published, [Op.lte]: new Date(stopTime * 1000) };
+    if (stopTime) {
+      where.createdAt = { ...where.createdAt, [Op.lte]: stopTime };
     }
     
     // Continuation
-    if (continuation && !isNaN(parseInt(continuation))) {
-      if (order === 'o') {
-        where.id = { [Op.gt]: parseInt(continuation) };
-      } else {
-        where.id = { [Op.lt]: parseInt(continuation) };
-      }
-    }
+    applyContinuationFilter(where, continuation, order);
     
     const articles = await Article.findAll({
       where,
-      attributes: ['id'],
-      order: [['published', order === 'o' ? 'ASC' : 'DESC']],
+      attributes: ['id', 'published'],
+      order: [
+        ['published', order === 'o' ? 'ASC' : 'DESC'],
+        ['id', order === 'o' ? 'ASC' : 'DESC']
+      ],
       limit: count + 1
     });
     
     const hasMore = articles.length > count;
-    const itemRefs = articles.slice(0, count).map(article => ({
+    const pageArticles = articles.slice(0, count);
+    const itemRefs = pageArticles.map(article => ({
       id: String(article.id)
     }));
     
     const response = { itemRefs };
     
-    if (hasMore && articles.length > 0) {
-      response.continuation = String(articles[count - 1].id);
+    if (hasMore && pageArticles.length > 0) {
+      response.continuation = createContinuation(pageArticles[pageArticles.length - 1]);
     }
     
     res.json(response);
@@ -779,16 +902,7 @@ export const getStreamItemContents = async (req, res) => {
       itemIds = [itemIds];
     }
     
-    // Convert hex IDs to decimal if needed
-    const numericIds = itemIds.map(id => {
-      if (typeof id === 'string' && !id.match(/^\d+$/)) {
-        // Strip tag:google.com,2005:reader/item/ prefix if present
-        id = id.replace('tag:google.com,2005:reader/item/', '');
-        // Convert from hex
-        return parseInt(id, 16);
-      }
-      return parseInt(id);
-    }).filter(id => !isNaN(id));
+    const numericIds = itemIds.map(parseItemId).filter(id => !isNaN(id));
     
     if (numericIds.length === 0) {
       return res.json({ items: [] });
@@ -799,37 +913,12 @@ export const getStreamItemContents = async (req, res) => {
         id: { [Op.in]: numericIds },
         userId: user.id
       },
-      include: [{
-        model: Feed,
-        attributes: ['id', 'feedName', 'url']
-      }]
+      include: articleInclude
     });
     
-    const items = articles.map(article => ({
-      id: `tag:google.com,2005:reader/item/${article.id.toString(16).padStart(16, '0')}`,
-      crawlTimeMsec: String(article.createdAt.getTime()),
-      timestampUsec: String(article.published.getTime() * 1000),
-      published: Math.floor(article.published.getTime() / 1000),
-      title: article.title || '',
-      summary: {
-        content: article.content || ''
-      },
-      alternate: [{
-        href: article.url || '',
-        type: 'text/html'
-      }],
-      categories: [
-        'user/-/state/com.google/reading-list',
-        ...(article.status === 'read' ? ['user/-/state/com.google/read'] : []),
-        ...(article.starInd === 1 ? ['user/-/state/com.google/starred'] : [])
-      ],
-      origin: {
-        streamId: `feed/${article.feedId}`,
-        title: article.feed?.feedName || '',
-        htmlUrl: article.feed?.url || ''
-      },
-      author: article.author || ''
-    }));
+    const idIndexMap = new Map(numericIds.map((id, index) => [String(id), index]));
+    articles.sort((a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id)));
+    const items = articles.map(serializeArticle);
     
     res.json({
       id: 'user/-/state/com.google/reading-list',
@@ -854,25 +943,18 @@ export const editTag = async (req, res) => {
     }
     
     // Get item IDs
-    let itemIds = req.body.i || [];
+    let itemIds = req.body.i || req.query.i || [];
     if (!Array.isArray(itemIds)) {
       itemIds = [itemIds];
     }
     
     // Get tags to add/remove
-    let addTags = req.body.a || [];
-    let removeTags = req.body.r || [];
+    let addTags = req.body.a || req.query.a || [];
+    let removeTags = req.body.r || req.query.r || [];
     if (!Array.isArray(addTags)) addTags = [addTags];
     if (!Array.isArray(removeTags)) removeTags = [removeTags];
     
-    // Convert hex IDs to decimal
-    const numericIds = itemIds.map(id => {
-      if (typeof id === 'string' && !id.match(/^\d+$/)) {
-        id = id.replace('tag:google.com,2005:reader/item/', '');
-        return parseInt(id, 16);
-      }
-      return parseInt(id);
-    }).filter(id => !isNaN(id));
+    const numericIds = itemIds.map(parseItemId).filter(id => !isNaN(id));
     
     if (numericIds.length === 0) {
       return res.type('text/plain').send('OK');
@@ -926,34 +1008,13 @@ export const markAllAsRead = async (req, res) => {
       return unauthorized(res);
     }
     
-    const streamId = req.body.s || '';
-    const timestamp = req.body.ts || '0';
+    const streamId = req.body.s || req.query.s || READING_LIST_STREAM;
+    const timestamp = req.body.ts || req.query.ts || '0';
     
-    // Convert timestamp from nanoseconds to Date
-    const olderThan = timestamp !== '0' 
-      ? new Date(parseInt(timestamp) / 1000) 
-      : new Date();
+    const olderThan = parseReaderTimestamp(timestamp) || new Date();
     
     const where = { userId: user.id, published: { [Op.lte]: olderThan } };
-    
-    if (streamId.startsWith('feed/')) {
-      const feedId = parseInt(streamId.substring(5));
-      if (!isNaN(feedId)) {
-        where.feedId = feedId;
-      }
-    } else if (streamId.startsWith('user/-/label/')) {
-      const categoryName = streamId.substring(13);
-      const category = await Category.findOne({
-        where: { name: decodeURIComponent(categoryName), userId: user.id },
-        include: [{ model: Feed, attributes: ['id'] }]
-      });
-      if (category && category.feeds) {
-        where.feedId = { [Op.in]: category.feeds.map(f => f.id) };
-      }
-    } else if (streamId === 'user/-/state/com.google/starred') {
-      where.starInd = 1;
-    }
-    // For reading-list, mark all user's articles as read (no additional filter)
+    await applyStreamFilter(where, streamId, user.id);
     
     await Article.update(
       { status: 'read' },
@@ -978,18 +1039,18 @@ export const renameTag = async (req, res) => {
       return unauthorized(res);
     }
     
-    const source = req.body.s || '';
-    const dest = req.body.dest || '';
+    const source = req.body.s || req.query.s || '';
+    const dest = req.body.dest || req.query.dest || '';
     
-    if (!source.startsWith('user/-/label/') || !dest.startsWith('user/-/label/')) {
+    if (!source.startsWith(LABEL_PREFIX) || !dest.startsWith(LABEL_PREFIX)) {
       return badRequest(res, 'Invalid tag format');
     }
     
-    const sourceName = source.substring(13);
-    const destName = dest.substring(13);
+    const sourceName = decodeLabelStream(source);
+    const destName = decodeLabelStream(dest);
     
     const category = await Category.findOne({
-      where: { name: decodeURIComponent(sourceName), userId: user.id }
+      where: { name: sourceName, userId: user.id }
     });
     
     if (!category) {
@@ -1017,17 +1078,27 @@ export const disableTag = async (req, res) => {
       return unauthorized(res);
     }
     
-    const source = req.body.s || '';
+    const source = req.body.s || req.query.s || '';
     
-    if (!source.startsWith('user/-/label/')) {
+    if (!source.startsWith(LABEL_PREFIX)) {
       return badRequest(res, 'Invalid tag format');
     }
     
-    const sourceName = source.substring(13);
-    
-    await Category.destroy({
-      where: { name: decodeURIComponent(sourceName), userId: user.id }
+    const sourceName = decodeLabelStream(source);
+    const category = await Category.findOne({
+      where: { name: sourceName, userId: user.id }
     });
+
+    if (category) {
+      const fallbackCategory = await getFallbackCategory(user.id, category.id);
+
+      await Feed.update(
+        { categoryId: fallbackCategory.id },
+        { where: { categoryId: category.id, userId: user.id } }
+      );
+
+      await category.destroy();
+    }
     
     res.type('text/plain').send('OK');
   } catch (err) {
