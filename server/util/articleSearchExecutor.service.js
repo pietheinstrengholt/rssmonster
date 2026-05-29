@@ -118,7 +118,7 @@ export const buildArticleSearchQuery = ({
   }
 
   if (seenFilter !== null) {
-    articleQuery.where.firstSeen = seenFilter ? { [Op.is]: null } : { [Op.not]: null };
+    articleQuery.where.firstSeen = seenFilter ? { [Op.not]: null } : { [Op.is]: null };
   }
 
   if (hotFilter !== null) {

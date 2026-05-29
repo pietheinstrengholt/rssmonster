@@ -66,6 +66,7 @@ describe('articleSearch.service', () => {
       contentOriginal: '<p>A new JavaScript framework has been released today with exciting features.</p>',
       contentStripped: 'A new JavaScript framework has been released today with exciting features.',
       status: 'unread',
+      firstSeen: hoursAgo(0.5),
       published: hoursAgo(1),
       advertisementScore: 90,
       sentimentScore: 80,
@@ -97,6 +98,7 @@ describe('articleSearch.service', () => {
       contentStripped: 'Rust provides memory safety without garbage collection through its ownership system.',
       status: 'read',
       starInd: 1,
+      firstSeen: hoursAgo(23),
       published: hoursAgo(24),
       advertisementScore: 95,
       sentimentScore: 90,
@@ -233,6 +235,18 @@ describe('articleSearch.service', () => {
       const result = await searchArticles({ userId: user.id, search: 'clicked:true' });
       expect(result.itemIds).toContain(articles.clicked.id);
       expect(result.itemIds).not.toContain(articles.recent.id);
+    });
+
+    it('filters by seen:true and seen:false', async () => {
+      const seenResult = await searchArticles({ userId: user.id, search: 'seen:true', status: '%' });
+      expect(seenResult.itemIds).toContain(articles.recent.id);
+      expect(seenResult.itemIds).toContain(articles.starred.id);
+      expect(seenResult.itemIds).not.toContain(articles.old.id);
+
+      const unseenResult = await searchArticles({ userId: user.id, search: 'seen:false', status: '%' });
+      expect(unseenResult.itemIds).toContain(articles.old.id);
+      expect(unseenResult.itemIds).not.toContain(articles.recent.id);
+      expect(unseenResult.itemIds).not.toContain(articles.starred.id);
     });
 
     it('combines multiple field filters', async () => {
