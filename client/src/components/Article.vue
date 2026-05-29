@@ -29,6 +29,25 @@
                 </li>
                 <li><a class="dropdown-item" href="#" @click.prevent="markNotInterested">Not Interested</a></li>
                 <li><hr class="dropdown-divider" /></li>
+                <li><h6 class="dropdown-header">Tune this recommendation</h6></li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="moreLikeThis">
+                    <BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />
+                    More like this
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="lessLikeThis">
+                    <BootstrapIcon icon="hand-thumbs-down-fill" class="recommendation-action-icon recommendation-negative-icon" />
+                    Less like this
+                  </a>
+                </li>
+                <li>
+                  <a class="dropdown-item recommendation-action-item" href="#" @click.prevent="ignoreTopic">
+                    <BootstrapIcon icon="slash-circle-fill" class="recommendation-action-icon recommendation-ignore-icon" />
+                    Ignore this topic
+                  </a>
+                </li>
                 <li><a class="dropdown-item" href="#" @click.prevent="muteFeedSevenDays">Mute Feed for 7 Days</a></li>
               </ul>
             </div>
@@ -203,7 +222,8 @@
 import {
   markWithStar,
   markClicked,
-  markNotInterested
+  markNotInterested,
+  markMoreLikeThis
 } from '../api/articles';
 
 import { muteFeed } from '../api/feeds';
@@ -484,6 +504,18 @@ export default {
         this.$emit('article-not-interested', { id: this.id });
       });
     },
+    moreLikeThis() {
+      markMoreLikeThis(this.id)
+      .then(() => {
+        console.log('Marked as more like this:', this.id);
+      });
+    },
+    lessLikeThis() {
+      this.markNotInterested();
+    },
+    ignoreTopic() {
+      this.markNotInterested();
+    },
     muteFeedSevenDays() {
       if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
         const mutedUntil = new Date();
@@ -589,6 +621,26 @@ export default {
 
 .article.affinity-expanded h5 a {
   font-size: 20px;
+}
+
+.recommendation-action-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.recommendation-action-icon {
+  width: 14px;
+  flex: 0 0 auto;
+}
+
+.recommendation-positive-icon {
+  color: #198754;
+}
+
+.recommendation-negative-icon,
+.recommendation-ignore-icon {
+  color: #dc3545;
 }
 
 /* Landscape phones and portrait tablets */

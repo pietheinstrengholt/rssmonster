@@ -10,6 +10,7 @@ router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticl
 router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);
 router.post('/markclicked/:articleId', userMiddleware.isLoggedIn, articleController.markClicked);
 router.post('/marknotinterested/:articleId', userMiddleware.isLoggedIn, articleController.markNotInterested);
+router.post('/markmorelikethis/:articleId', userMiddleware.isLoggedIn, articleController.markMoreLikeThis);
 router.post('/details', userMiddleware.isLoggedIn, articleController.articleDetails);
 router.post('/markasseen/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkAsSeen);
 router.post('/marktounread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToUnread);

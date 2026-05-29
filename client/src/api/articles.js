@@ -40,6 +40,12 @@ export const markNotInterested = (articleId) =>
   api.post(`/articles/marknotinterested/${articleId}`);
 
 /**
+ * Mark article as a positive recommendation signal
+ */
+export const markMoreLikeThis = (articleId) =>
+  api.post(`/articles/markmorelikethis/${articleId}`);
+
+/**
  * Mark all matching articles as read
  */
 export const markAllAsRead = (currentSelection) =>
