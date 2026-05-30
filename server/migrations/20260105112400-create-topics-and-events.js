@@ -146,11 +146,6 @@ module.exports = {
         allowNull: true
       },
 
-      summary: {
-        type: Sequelize.TEXT,
-        allowNull: true
-      },
-
       articleCount: {
         type: Sequelize.INTEGER,
         defaultValue: 1

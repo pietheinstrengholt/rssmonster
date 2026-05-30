@@ -60,10 +60,10 @@ export function debugRecommendedScores(scored) {
       scored.slice(0, 250).map(({ article, recommended }, index) => {
         const bd = computeRecommendedBreakdown(article);
         return {
-          rank: index + 1,
           articleId: article.id,
           eventName: compactEventName(resolveEventName(article)),
           freshness: Number(bd.freshness.toFixed(4)),
+          interest: Number(bd.interestScore.toFixed(4)),
           quality: Number(bd.quality.toFixed(4)),
           coverage: Number(bd.coverage.toFixed(4)),
           crossSource: Number(bd.crossSource.toFixed(4)),

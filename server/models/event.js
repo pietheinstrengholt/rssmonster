@@ -38,11 +38,6 @@ export default (sequelize) => {
         type: DataTypes.STRING(255),
         allowNull: true
       },
-      // TODO: check whether this is being used anywhere or can be removed
-      summary: {
-        type: DataTypes.TEXT,
-        allowNull: true
-      },
       // Denormalized counts and scores for efficient querying and sorting
       articleCount: {
         type: DataTypes.INTEGER,
@@ -65,13 +60,13 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
-      // TODO: this can be removed if not being used in processing logic.
-      firstSeen: {
+      // Event clustering window start, derived from member article event times.
+      eventWindowStartAt: {
         type: DataTypes.DATE,
         allowNull: true
       },
-      // TODO: this can be removed if not being used in processing logic.
-      lastSeen: {
+      // Event clustering window end, used for lifecycle status, recency scoring, and topic activity.
+      eventWindowEndAt: {
         type: DataTypes.DATE,
         allowNull: true
       },
