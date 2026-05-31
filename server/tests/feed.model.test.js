@@ -4,6 +4,8 @@ import db from '../models/index.js';
 
 const { sequelize, User, Category, Feed } = db;
 
+const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+
 describe('Feed model', () => {
   let user;
   let category;
@@ -15,11 +17,12 @@ describe('Feed model', () => {
     // ---- Create user ----
     const password = 'secret';
     const hash = await bcrypt.hash(password, 10);
+    const username = uniqueName('feedtestuser');
 
     user = await User.create({
-      username: 'feedtestuser',
+      username,
       password,
-      hash,
+      hash: `${username}-${hash}`,
       role: 'user'
     });
 

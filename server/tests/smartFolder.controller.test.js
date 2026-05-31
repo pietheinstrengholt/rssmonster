@@ -65,7 +65,7 @@ describe('smartFolder controller', () => {
       });
       mocked.searchArticles.mockImplementation(async ({ search }) => {
         if (search === 'sort:RECOMMENDED') {
-          return { itemIds: [11, 12, 13, 14] };
+          return { articleCount: 4 };
         }
 
         throw new Error('search failed');
@@ -90,7 +90,8 @@ describe('smartFolder controller', () => {
         minSentimentScore: 0,
         minQualityScore: 0,
         smartFolderSearch: true,
-        limitCount: 25
+        limitCount: 25,
+        countOnly: true
       });
 
       expect(mocked.searchArticles).toHaveBeenCalledWith({
@@ -100,7 +101,8 @@ describe('smartFolder controller', () => {
         minSentimentScore: 0,
         minQualityScore: 0,
         smartFolderSearch: true,
-        limitCount: 50
+        limitCount: 50,
+        countOnly: true
       });
 
       expect(folderA.dataValues.ArticleCount).toBe(4);

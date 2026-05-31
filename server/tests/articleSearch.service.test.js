@@ -467,6 +467,18 @@ describe('articleSearch.service', () => {
       });
       expect(result.itemIds.length).toBe(3);
     });
+
+    it('caps countOnly smart folder results with limitCount', async () => {
+      const result = await searchArticles({
+        userId: user.id,
+        status: '%',
+        smartFolderSearch: true,
+        limitCount: 3,
+        countOnly: true
+      });
+      expect(result.articleCount).toBe(3);
+      expect(result).not.toHaveProperty('itemIds');
+    });
   });
 
   // ============================
@@ -516,6 +528,24 @@ describe('articleSearch.service', () => {
     it('echoes back date token in response', async () => {
       const result = await searchArticles({ userId: user.id, search: '@today', status: '%' });
       expect(result.query.date).toBe('today');
+    });
+
+    it('returns articleCount without itemIds for countOnly queries', async () => {
+      const result = await searchArticles({ userId: user.id, status: '%', countOnly: true });
+      expect(result).toHaveProperty('query');
+      expect(result.articleCount).toBe(5);
+      expect(result).not.toHaveProperty('itemIds');
+    });
+
+    it('returns zero for countOnly tag queries without matches', async () => {
+      const result = await searchArticles({
+        userId: user.id,
+        search: 'tag:missing',
+        status: '%',
+        countOnly: true
+      });
+      expect(result.articleCount).toBe(0);
+      expect(result).not.toHaveProperty('itemIds');
     });
   });
 });
