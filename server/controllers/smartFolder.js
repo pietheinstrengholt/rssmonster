@@ -53,12 +53,13 @@ const getSmartFolderCountsForUser = async userId => {
         minSentimentScore,
         minQualityScore,
         smartFolderSearch: true,
-        limitCount: folder.limitCount || 50
+        limitCount: folder.limitCount || 50,
+        countOnly: true
       });
 
       return {
         id: folder.id,
-        ArticleCount: result.itemIds.length
+        ArticleCount: result.articleCount
       };
     } catch {
       return {
