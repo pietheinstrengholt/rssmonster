@@ -34,7 +34,7 @@ import './services/registerServiceWorker.js'
 
 import { BootstrapIcon } from '@dvuckovic/vue3-bootstrap-icons'
 import { injectBootstrapIcons } from '@dvuckovic/vue3-bootstrap-icons/utils'
-import BootstrapIcons from 'bootstrap-icons/bootstrap-icons.svg?raw'
+import BootstrapIcons from 'virtual:bootstrap-icons-sprite'
 import '@dvuckovic/vue3-bootstrap-icons/dist/style.css'
 injectBootstrapIcons(BootstrapIcons)
 
