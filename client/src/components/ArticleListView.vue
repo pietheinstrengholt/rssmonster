@@ -12,6 +12,7 @@
         @article-not-interested="forwardArticleNotInterested"
       />
     </div>
+    <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
     <div id="no-more" v-if="hasLoadedContent">
       <p v-if="container.length == 0" id="no-results">No posts found!</p>
       <p v-if="currentSelection != 'unread' && container.length != 0 && remainingItems < fetchCount">You reached the bottom!</p>
@@ -146,6 +147,11 @@ div.infinite-loading-container {
 #no-more p {
   margin: 0px;
   vertical-align: middle;
+}
+
+.article-load-sentinel {
+  height: 1px;
+  width: 100%;
 }
 
 @media (prefers-color-scheme: dark) {

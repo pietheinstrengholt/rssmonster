@@ -33,6 +33,9 @@ export default {
       // scroll variables for comparing the scroll positions
       prevScroll: 0,
       scrollDirection: "down",
+      visibilityObserver: null,
+      loadMoreObserver: null,
+      observedArticleElements: new Map(),
 
       hasLoadedContent: false,
       isFlushed: false,
@@ -73,12 +76,14 @@ export default {
     }
   },
 
-  async created() {
+  mounted() {
     window.addEventListener("scroll", this.handleScroll);
+    this.setupObservers();
   },
 
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
+    this.teardownObservers();
   },
 
   methods: {
@@ -96,10 +101,15 @@ export default {
           this.distance += response.data.firstPage.length;
           this.articles = response.data.firstPage;
           this.hasLoadedContent = true;
+          this.$nextTick(() => {
+            this.observeArticles();
+            this.observeLoadMoreSentinel();
+          });
         } else if (this.container.length > 0) {
           this.getContent();
         } else {
           this.hasLoadedContent = true;
+          this.$nextTick(() => this.observeLoadMoreSentinel());
         }
       } catch (error) {
         console.warn('Article fetch failed', error?.message);
@@ -126,77 +136,123 @@ export default {
         mobileToolbar?.classList.remove("hide");
       }
 
-      if (direction === "down") {
-        if (curScroll > 200) mobileToolbar?.classList.add("hide");
-
-        const mainContainer = document.getElementById("main-container");
-        if (
-          mainContainer &&
-          window.innerHeight +
-            Math.ceil(document.documentElement.scrollTop) +
-            150 >=
-            mainContainer.offsetHeight
-        ) {
-          if (!(this.container.length < this.distance)) {
-            if (!this.isLoading) {
-              this.isLoading = true;
-              this.getContent();
-            }
-          } else {
-            this.flushPool();
-          }
-        }
-
-        const articlesEl = document.getElementById("articles");
-
-        if (articlesEl) {
-          let screenHeight = Math.ceil(document.documentElement.scrollTop);
-
-          for (const child of articlesEl.children) {
-            const articleId = Number(child.id);
-            if (!Number.isFinite(articleId)) continue;
-
-            const el = document.getElementById(child.id);
-            if (!el) continue;
-
-            const rect = el.getBoundingClientRect();
-            const now = performance.now();
-
-            /* ---------- PASS LOGIC (authoritative) ---------- */
-            screenHeight -= el.offsetHeight;
-
-            if (screenHeight > 0) {
-              this.addToPool(articleId);
-            }
-
-            /* ---------- VISIBILITY / DWELL LOGIC ---------- */
-            const isVisible = rect.top < window.innerHeight && rect.bottom > 0;
-
-            const wasVisible = this.visibleMap.get(articleId) || false;
-
-            if (isVisible && !wasVisible) {
-              this.visibleSince.set(articleId, now);
-            }
-
-            // article just left viewport
-            if (!isVisible && wasVisible) {
-              const start = this.visibleSince.get(articleId);
-              if (typeof start === 'number') {
-                // finalize dwell time
-                const elapsed = now - start;
-                const total = (this.visibleDuration.get(articleId) || 0) + elapsed;
-                this.visibleDuration.set(articleId, total);
-                this.visibleSince.delete(articleId);
-              }
-            }
-
-            this.visibleMap.set(articleId, isVisible);
-          }
-        }
+      if (direction === "down" && curScroll > 200) {
+        mobileToolbar?.classList.add("hide");
       }
 
       this.prevScroll = curScroll;
       this.scrollDirection = direction;
+    },
+
+    setupObservers() {
+      if (!('IntersectionObserver' in window)) return;
+
+      this.visibilityObserver = new IntersectionObserver(
+        this.handleArticleIntersections,
+        { threshold: 0 }
+      );
+      this.loadMoreObserver = new IntersectionObserver(
+        this.handleLoadMoreIntersections,
+        {
+          root: null,
+          rootMargin: '300px 0px',
+          threshold: 0
+        }
+      );
+
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
+    },
+
+    teardownObservers() {
+      this.visibilityObserver?.disconnect();
+      this.loadMoreObserver?.disconnect();
+      this.observedArticleElements.clear();
+    },
+
+    observeArticles() {
+      if (!this.visibilityObserver) return;
+
+      const activeIds = new Set(this.articles.map(article => String(article.id)));
+
+      for (const [articleId, element] of this.observedArticleElements.entries()) {
+        if (!activeIds.has(articleId)) {
+          this.visibilityObserver.unobserve(element);
+          this.observedArticleElements.delete(articleId);
+          this.visibleMap.delete(Number(articleId));
+          this.visibleSince.delete(Number(articleId));
+        }
+      }
+
+      for (const article of this.articles) {
+        const articleId = String(article.id);
+        if (this.observedArticleElements.has(articleId)) continue;
+
+        const element = document.getElementById(articleId);
+        if (!element) continue;
+
+        this.visibilityObserver.observe(element);
+        this.observedArticleElements.set(articleId, element);
+      }
+    },
+
+    observeLoadMoreSentinel() {
+      if (!this.loadMoreObserver) return;
+
+      const sentinel = document.getElementById('article-load-sentinel');
+      if (sentinel) {
+        this.loadMoreObserver.disconnect();
+        this.loadMoreObserver.observe(sentinel);
+      }
+    },
+
+    handleArticleIntersections(entries) {
+      for (const entry of entries) {
+        const articleId = Number(entry.target.id);
+        if (!Number.isFinite(articleId)) continue;
+
+        if (entry.isIntersecting) {
+          if (!this.visibleMap.get(articleId)) {
+            this.visibleSince.set(articleId, performance.now());
+          }
+          this.visibleMap.set(articleId, true);
+          continue;
+        }
+
+        if (this.visibleMap.get(articleId)) {
+          this.finalizeVisibleDuration(articleId);
+        }
+
+        this.visibleMap.set(articleId, false);
+
+        if (entry.boundingClientRect.bottom <= 0) {
+          this.addToPool(articleId);
+        }
+      }
+    },
+
+    handleLoadMoreIntersections(entries) {
+      if (!entries.some(entry => entry.isIntersecting)) return;
+      if (this.isLoading || !this.hasLoadedContent) return;
+
+      if (this.distance < this.container.length) {
+        this.isLoading = true;
+        this.getContent();
+      } else {
+        this.flushPool();
+      }
+    },
+
+    finalizeVisibleDuration(articleId) {
+      const start = this.visibleSince.get(articleId);
+      if (typeof start !== 'number') return;
+
+      const elapsed = performance.now() - start;
+      const total = (this.visibleDuration.get(articleId) || 0) + elapsed;
+      this.visibleDuration.set(articleId, total);
+      this.visibleSince.delete(articleId);
     },
 
     async getContent() {
@@ -217,6 +273,10 @@ export default {
           if (response.data.length) {
             this.distance += this.fetchCount;
             this.articles = this.articles.concat(response.data);
+            this.$nextTick(() => {
+              this.observeArticles();
+              this.observeLoadMoreSentinel();
+            });
           } else {
             this.flushPool();
           }
@@ -234,15 +294,9 @@ export default {
     addToPool(articleId) {
       if (this.pool.includes(articleId)) return;
 
-      const now = performance.now();
-
       // FINALIZE VISIBILITY IF ARTICLE IS STILL VISIBLE
       if (this.visibleSince.has(articleId)) {
-        const start = this.visibleSince.get(articleId);
-        const elapsed = now - start;
-        const total = (this.visibleDuration.get(articleId) || 0) + elapsed;
-        this.visibleDuration.set(articleId, total);
-        this.visibleSince.delete(articleId);
+        this.finalizeVisibleDuration(articleId);
       }
 
       this.pool.push(articleId);
@@ -274,12 +328,17 @@ export default {
     },
 
     async resetPool() {
+      for (const element of this.observedArticleElements.values()) {
+        this.visibilityObserver?.unobserve(element);
+      }
+
       this.articles = [];
       this.container = [];
       this.pool = [];
       this.distance = 0;
       this.isFlushed = false;
 
+      this.observedArticleElements.clear();
       this.visibleMap.clear();
       this.visibleSince.clear();
       this.visibleDuration.clear();
