@@ -72,8 +72,8 @@ describe('reclusterForUser', () => {
       sourceCount: 1,
       eventStrength: 0.7,
       eventVector: [0, 1, 0],
-      firstSeen: new Date('2026-05-21T10:00:00.000Z'),
-      lastSeen: new Date('2026-05-21T10:00:00.000Z'),
+      eventWindowStartAt: new Date('2026-05-21T10:00:00.000Z'),
+      eventWindowEndAt: new Date('2026-05-21T10:00:00.000Z'),
       status: 'active'
     });
     await EventTopic.create({
@@ -147,11 +147,11 @@ describe('reclusterForUser', () => {
 
     const events = await Event.findAll({
       where: { userId: user.id },
-      order: [['firstSeen', 'ASC']]
+      order: [['eventWindowStartAt', 'ASC']]
     });
     const articleCounts = events.map(event => event.articleCount);
     const eventSpansInHours = events.map(event =>
-      (new Date(event.lastSeen).getTime() - new Date(event.firstSeen).getTime()) / (60 * 60 * 1000)
+      (new Date(event.eventWindowEndAt).getTime() - new Date(event.eventWindowStartAt).getTime()) / (60 * 60 * 1000)
     );
 
     expect(events).toHaveLength(2);

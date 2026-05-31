@@ -52,8 +52,8 @@ async function createEvent(user, representativeArticle, overrides = {}) {
     sourceCount: 1,
     eventStrength: 0.4,
     eventVector: [0, 1, 0],
-    firstSeen: new Date('2026-05-20T10:00:00.000Z'),
-    lastSeen: new Date('2026-05-20T10:00:00.000Z'),
+    eventWindowStartAt: new Date('2026-05-20T10:00:00.000Z'),
+    eventWindowEndAt: new Date('2026-05-20T10:00:00.000Z'),
     status: 'active',
     ...overrides
   });

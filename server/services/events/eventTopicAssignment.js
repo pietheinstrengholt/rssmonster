@@ -127,7 +127,7 @@ export async function assignTopicsForEvents(userId, events, { assignmentContext 
         sourceCount: event.sourceCount,
         eventStrength: event.eventStrength,
         status: event.status,
-        published: event.lastSeen || event.updatedAt || new Date()
+        published: event.eventWindowEndAt || event.updatedAt || new Date()
       },
       semanticVector: event.eventVector,
       topicsCache,

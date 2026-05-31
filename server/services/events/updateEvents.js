@@ -76,15 +76,15 @@ export async function assignArticleToExistingEvent({
   const updatedEventVector = blendEventVector(bestEvent.eventVector, articleEventVector);
 
   const seenAt = eventDateFromArticle(article);
-  const currentFirstSeenTs = eventTimestamp(bestEvent.firstSeen);
+  const currentWindowStartTs = eventTimestamp(bestEvent.eventWindowStartAt);
   const seenAtTs = eventTimestamp(seenAt);
-  const firstSeen = Number.isFinite(currentFirstSeenTs) && currentFirstSeenTs <= seenAtTs
-    ? bestEvent.firstSeen
+  const eventWindowStartAt = Number.isFinite(currentWindowStartTs) && currentWindowStartTs <= seenAtTs
+    ? bestEvent.eventWindowStartAt
     : seenAt;
-  const lastSeen = Number.isFinite(eventTimestamp(bestEvent.lastSeen)) && eventTimestamp(bestEvent.lastSeen) >= seenAtTs
-    ? bestEvent.lastSeen
+  const eventWindowEndAt = Number.isFinite(eventTimestamp(bestEvent.eventWindowEndAt)) && eventTimestamp(bestEvent.eventWindowEndAt) >= seenAtTs
+    ? bestEvent.eventWindowEndAt
     : seenAt;
-  const status = resolveEventStatus(newCount, lastSeen);
+  const status = resolveEventStatus(newCount, eventWindowEndAt);
 
   await article.update({ eventId: bestEvent.id });
 
@@ -92,8 +92,8 @@ export async function assignArticleToExistingEvent({
     bestEvent.update({
       eventVector: updatedEventVector,
       articleCount: newCount,
-      firstSeen,
-      lastSeen,
+      eventWindowStartAt,
+      eventWindowEndAt,
       status
     }),
     updateSourceDiversity(bestEvent.id, article.userId)
@@ -116,8 +116,8 @@ export async function assignArticleToExistingEvent({
       topicId: eventPrimaryTopicId,
       eventVector: updatedEventVector,
       articleCount: newCount,
-      firstSeen,
-      lastSeen,
+      eventWindowStartAt,
+      eventWindowEndAt,
       status,
       ...diversity
     });

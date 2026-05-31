@@ -101,8 +101,8 @@ export async function createAndAssignEvent({
   const centroid = averageVector(vectors);
 
   const eventWindow = eventWindowFromArticles(eventArticles);
-  const firstSeen = eventWindow.firstSeen ?? eventDateFromArticle(article);
-  const lastSeen = eventWindow.lastSeen ?? eventDateFromArticle(article);
+  const eventWindowStartAt = eventWindow.eventWindowStartAt ?? eventDateFromArticle(article);
+  const eventWindowEndAt = eventWindow.eventWindowEndAt ?? eventDateFromArticle(article);
   const sourceCount = new Set(eventArticles.map(item => item.feedId)).size;
   const sourceDiversityScore = Math.log(sourceCount + 1);
   const name = generateEventName(article);
@@ -118,9 +118,9 @@ export async function createAndAssignEvent({
     articleCount: eventArticles.length,
     eventStrength,
     eventVector: centroid,
-    firstSeen,
-    lastSeen,
-    status: resolveEventStatus(eventArticles.length, lastSeen),
+    eventWindowStartAt,
+    eventWindowEndAt,
+    status: resolveEventStatus(eventArticles.length, eventWindowEndAt),
     sourceCount,
     sourceDiversityScore
   });

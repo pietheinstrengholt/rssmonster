@@ -102,7 +102,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
       userId
     },
     order: [
-      ['lastSeen', 'ASC'],
+      ['eventWindowEndAt', 'ASC'],
       ['id', 'ASC']
     ]
   });
@@ -135,8 +135,8 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
     // Keep the existing event vector when no per-article vectors are available.
     const eventVector = buildRecencyWeightedVector(eventArticles) ?? event.eventVector ?? null;
 
-    const { firstSeen, lastSeen } = eventWindowFromArticles(eventArticles);
-    const status = resolveEventStatus(eventArticles.length, lastSeen);
+    const { eventWindowStartAt, eventWindowEndAt } = eventWindowFromArticles(eventArticles);
+    const status = resolveEventStatus(eventArticles.length, eventWindowEndAt);
     const sourceCount = new Set(
       eventArticles
         .map(article => article.feedId)
@@ -151,8 +151,8 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
     await event.update({
       articleCount: eventArticles.length,
       eventVector,
-      firstSeen,
-      lastSeen,
+      eventWindowStartAt,
+      eventWindowEndAt,
       status,
       sourceCount,
       sourceDiversityScore,

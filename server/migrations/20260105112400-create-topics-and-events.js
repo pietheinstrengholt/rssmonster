@@ -171,12 +171,12 @@ module.exports = {
         allowNull: true
       },
 
-      firstSeen: {
+      eventWindowStartAt: {
         type: Sequelize.DATE,
         allowNull: true
       },
 
-      lastSeen: {
+      eventWindowEndAt: {
         type: Sequelize.DATE,
         allowNull: true
       },

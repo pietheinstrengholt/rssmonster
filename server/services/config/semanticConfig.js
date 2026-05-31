@@ -43,10 +43,10 @@ export const SEMANTIC_GRANULARITY = {
     // Event with <= this many articles is considered emerging while still fresh.
     emergingArticleMax: Number.parseInt(process.env.EVENT_EMERGING_ARTICLE_MAX, 10) || 2,
 
-    // If lastSeen is older than this, event leaves active and becomes cooling.
+    // If eventWindowEndAt is older than this, event leaves active and becomes cooling.
     activeFreshHours: Number.parseInt(process.env.EVENT_ACTIVE_FRESH_HOURS, 10) || 24,
 
-    // If lastSeen is older than this, event is archived.
+    // If eventWindowEndAt is older than this, event is archived.
     coolingHours: Number.parseInt(process.env.EVENT_COOLING_HOURS, 10) || 96
   },
 

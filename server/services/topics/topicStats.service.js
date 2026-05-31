@@ -41,8 +41,8 @@ export async function recomputeTopicStatsForUser(userId, topicIds) {
             attributes: [],
             where: { topicId }
           }],
-          order: [['lastSeen', 'DESC']],
-          attributes: ['lastSeen']
+          order: [['eventWindowEndAt', 'DESC']],
+          attributes: ['eventWindowEndAt']
         })
       ]);
 
@@ -50,7 +50,7 @@ export async function recomputeTopicStatsForUser(userId, topicIds) {
         {
           articleCount,
           eventCount,
-          lastActivityAt: lastEventRow?.lastSeen || null
+          lastActivityAt: lastEventRow?.eventWindowEndAt || null
         },
         { where: { id: topicId, userId } }
       );

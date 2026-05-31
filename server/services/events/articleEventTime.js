@@ -34,15 +34,15 @@ export function eventWindowFromArticles(articles = []) {
     .sort((a, b) => a - b);
 
   return {
-    firstSeen: timestamps.length ? new Date(timestamps[0]) : null,
-    lastSeen: timestamps.length ? new Date(timestamps[timestamps.length - 1]) : null
+    eventWindowStartAt: timestamps.length ? new Date(timestamps[0]) : null,
+    eventWindowEndAt: timestamps.length ? new Date(timestamps[timestamps.length - 1]) : null
   };
 }
 
 export function eventWindowScore(article, event, maxGapHours = EVENT_MAX_GAP_HOURS) {
   const articleTs = articleEventTimestamp(article);
-  const startTs = eventTimestamp(event?.firstSeen ?? event?.lastSeen ?? event?.updatedAt);
-  const endTs = eventTimestamp(event?.lastSeen ?? event?.firstSeen ?? event?.updatedAt);
+  const startTs = eventTimestamp(event?.eventWindowStartAt ?? event?.eventWindowEndAt ?? event?.updatedAt);
+  const endTs = eventTimestamp(event?.eventWindowEndAt ?? event?.eventWindowStartAt ?? event?.updatedAt);
 
   if (!Number.isFinite(articleTs) || !Number.isFinite(startTs) || !Number.isFinite(endTs)) {
     return 0;
@@ -71,4 +71,3 @@ export function articleWindowScore(article, candidate, maxGapHours = EVENT_MAX_G
 
   return 1 - diffHours / maxGapHours;
 }
-

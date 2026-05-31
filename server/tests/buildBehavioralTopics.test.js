@@ -204,8 +204,8 @@ describe('buildBehavioralTopicsForUser', () => {
       sourceCount: 2,
       eventStrength: 0.9,
       eventVector: [0.08, 0.91, 0.02],
-      firstSeen: new Date('2026-05-21T10:00:00.000Z'),
-      lastSeen: new Date('2026-05-23T10:00:00.000Z'),
+      eventWindowStartAt: new Date('2026-05-21T10:00:00.000Z'),
+      eventWindowEndAt: new Date('2026-05-23T10:00:00.000Z'),
       status: 'active'
     });
 

@@ -124,7 +124,7 @@ function buildMatchSignal({ article, event, articleEventVector }) {
     Boolean(event.representativeArticleId) &&
     headline >= DUPLICATE_HEADLINE_SIM;
 
-  const recencyDecay = recencyDecayMultiplier(event.lastSeen || event.updatedAt);
+  const recencyDecay = recencyDecayMultiplier(event.eventWindowEndAt || event.updatedAt);
   const composite =
     (semantic * 0.75 + headline * 0.15 + temporal * 0.1) * recencyDecay +
     (overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ? 0.03 : 0);
@@ -227,7 +227,7 @@ async function deriveEventTopicAssignments({
       sourceCount: event.sourceCount,
       eventStrength: event.eventStrength,
       status: event.status,
-      published: event.lastSeen || event.updatedAt || new Date()
+      published: event.eventWindowEndAt || event.updatedAt || new Date()
     },
     semanticVector: eventTopicVector,
     topicsCache,

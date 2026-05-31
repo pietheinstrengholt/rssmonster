@@ -213,7 +213,7 @@ export async function collectTopicSeedEvents(userId, eventTopicVector, currentEv
       'sourceCount',
       'eventStrength',
       'status',
-      'lastSeen',
+      'eventWindowEndAt',
       'updatedAt'
     ],
     order: [['updatedAt', 'DESC'], ['id', 'ASC']],
@@ -238,7 +238,7 @@ export async function collectTopicSeedEvents(userId, eventTopicVector, currentEv
         'sourceCount',
         'eventStrength',
         'status',
-        'lastSeen',
+        'eventWindowEndAt',
         'updatedAt'
       ]
     });

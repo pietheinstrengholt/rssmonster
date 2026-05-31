@@ -111,7 +111,7 @@ This module performs event matching with multiple signals:
 
 - **Semantic similarity** (`cosine(articleVector, eventVector)`) is dominant.
 - **Headline token overlap** (Jaccard-like similarity).
-- **Temporal proximity** (`published` vs `event.lastSeen`) capped by max gap.
+- **Temporal proximity** (`published` vs `event.eventWindowEndAt`) capped by max gap.
 - **Named entity overlap** heuristic from title/description capitalization patterns.
 - **Recency decay** multiplier that downweights stale events.
 
@@ -127,7 +127,7 @@ It also normalizes/synchronizes topic assignments between event-level membership
 
 When a new event is needed:
 - Computes centroid vector from candidate articles.
-- Derives `firstSeen`, `lastSeen`, source diversity, representative article, event name.
+- Derives `eventWindowStartAt`, `eventWindowEndAt`, source diversity, representative article, event name.
 - Creates `events` row with initial status + baseline strength.
 - Bulk-updates involved articles to new `eventId`.
 - Optionally runs topic assignment for the event and sets primary `topicId`.
@@ -136,7 +136,7 @@ When a new event is needed:
 
 For existing events:
 - Blends event vector with `EVENT_VECTOR_ALPHA`.
-- Increments `articleCount`, updates `lastSeen`, recomputes lifecycle status.
+- Increments `articleCount`, updates `eventWindowEndAt`, recomputes lifecycle status.
 - Recomputes source diversity.
 - Optionally reassigns topic memberships for the evolved event.
 

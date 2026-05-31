@@ -176,7 +176,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   const reconciledEvents = await Event.findAll({
     where: { id: { [Op.in]: touchedIds } },
     order: [
-      ['lastSeen', 'ASC'],
+      ['eventWindowEndAt', 'ASC'],
       ['id', 'ASC']
     ]
   });
@@ -481,7 +481,7 @@ export async function rebuildTopicsForUser(userId, options = {}) {
   const events = await Event.findAll({
     where: { userId },
     order: [
-      ['lastSeen', 'ASC'],
+      ['eventWindowEndAt', 'ASC'],
       ['id', 'ASC']
     ]
   });
