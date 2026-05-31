@@ -6,7 +6,7 @@ import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
 import { parseArticleQuery } from './articleQueryParser.service.js';
-import { buildArticleSearchQuery, executeSearch } from './articleSearchExecutor.service.js';
+import { buildArticleSearchQuery, executeSearch, executeSearchCount } from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 
@@ -31,7 +31,8 @@ export const searchArticles = async ({
     clusterView = false,
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
-    limitCount = null // Maximum number of results (used by smart folders)
+    limitCount = null, // Maximum number of results (used by smart folders)
+    countOnly = false // Return only the matching count without materializing ids when possible
 }) => {
     if (!userId) {
         throw new Error("Missing userId");
@@ -125,16 +126,19 @@ export const searchArticles = async ({
 
       // If tag was provided but no articles found, return empty result
       if (taggedArticleIds.length === 0) {
-        return {
+        const emptyResult = {
           query: {
             userId,
             search,
             tag: tagFilter,
             sort,
             date: dateToken
-          },
-          itemIds: []
+          }
         };
+
+        return countOnly
+          ? { ...emptyResult, articleCount: 0 }
+          : { ...emptyResult, itemIds: [] };
       }
     }
 
@@ -205,6 +209,31 @@ export const searchArticles = async ({
       console.log(`\x1b[31mFirst seen age filter applied: firstSeen IS NULL OR firstSeen >= NOW() - INTERVAL ${value} ${intervalUnit}\x1b[0m`);
     }
 
+    const queryMetadata = {
+        userId,
+        search,
+        tag: tagFilter,
+        sort,
+        date: dateToken
+    };
+    const runtimeFiltersRequired = Boolean(qualityFilter || freshnessFilter);
+    const resultLimit = limitFilter || (smartFolderSearch ? limitCount : null);
+
+    if (countOnly && !runtimeFiltersRequired) {
+      let articleCount = await executeSearchCount(articleQuery);
+      if (resultLimit && articleCount > resultLimit) {
+        articleCount = resultLimit;
+        console.log(`\x1b[31mCapped count result to ${resultLimit} articles\x1b[0m`);
+      }
+
+      console.log(`\x1b[31mCounted ${articleCount} articles matching query for user ${userId}\x1b[0m`);
+
+      return {
+        query: queryMetadata,
+        articleCount
+      };
+    }
+
     // Fetch articles based on constructed query
     let articles = await executeSearch(articleQuery);
     
@@ -240,6 +269,13 @@ export const searchArticles = async ({
     
     console.log(`\x1b[31mFound ${itemIds.length} articles matching query for user ${userId}\x1b[0m`);
 
+    if (countOnly) {
+      return {
+        query: queryMetadata,
+        articleCount: itemIds.length
+      };
+    }
+
     if (persistSettings) {
       // Update user settings (skip when tag-based query is used)
       // Note: tag is not persisted in settings currently
@@ -262,13 +298,7 @@ export const searchArticles = async ({
     }
 
     return {
-        query: {
-            userId,
-            search,
-            tag: tagFilter,
-            sort,
-            date: dateToken
-        },
+        query: queryMetadata,
         itemIds
     };
 };

@@ -180,3 +180,8 @@ export const executeSearch = async ({ where, include, attributes, order }) => Ar
   attributes,
   order
 });
+
+// Counts articles for a prepared query without materializing matching ids.
+export const executeSearchCount = async ({ where }) => Article.count({
+  where
+});
