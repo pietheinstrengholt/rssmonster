@@ -158,4 +158,44 @@ describe('reclusterForUser', () => {
     expect(articleCounts).toEqual([2, 2]);
     expect(eventSpansInHours.every(span => span <= 24)).toBe(true);
   });
+
+  it('clusters near-duplicate headlines with corroborating but sub-threshold vectors', async () => {
+    const { user, feed } = await createUserGraph('duplicates');
+    const feedTwo = await Feed.create({
+      userId: user.id,
+      categoryId: feed.categoryId,
+      feedName: 'duplicates second feed',
+      url: `https://example.com/duplicates-second-${user.id}.xml`
+    });
+
+    await Article.bulkCreate([
+      articlePayload(user, feed, 1, {
+        title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
+        url: `https://example.com/${user.id}/pinball-1`,
+        published: new Date('2026-05-28T10:00:00.000Z'),
+        articleVector: [1, 0, 0]
+      }),
+      articlePayload(user, feedTwo, 2, {
+        title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
+        url: `https://example.com/${user.id}/pinball-2`,
+        published: new Date('2026-05-28T11:00:00.000Z'),
+        articleVector: [0.79, 0.613, 0]
+      })
+    ]);
+
+    await reclusterForUser(user.id, { skipTopicAssignment: true });
+
+    const events = await Event.findAll({
+      where: { userId: user.id },
+      include: [{
+        model: Article,
+        as: 'articles',
+        attributes: ['id']
+      }]
+    });
+
+    expect(events).toHaveLength(1);
+    expect(events[0].articleCount).toBe(2);
+    expect(events[0].articles).toHaveLength(2);
+  });
 });

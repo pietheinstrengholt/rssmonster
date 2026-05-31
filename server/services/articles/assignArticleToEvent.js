@@ -29,6 +29,7 @@ import {
 
 const { Article, Event, ArticleTopic, EventTopic } = db;
 const DUPLICATE_HEADLINE_SIM = 0.92;
+const DUPLICATE_HEADLINE_MIN_SEMANTIC = 0.75;
 const MIN_EVENT_ARTICLES = Number.parseInt(process.env.MIN_EVENT_ARTICLES || '2', 10);
 const MIN_EVENT_SOURCES = Number.parseInt(process.env.MIN_EVENT_SOURCES || '2', 10);
 const REQUIRE_MULTI_SOURCE_FOR_EVENT = ['1', 'true', 'yes'].includes(
@@ -120,9 +121,8 @@ function buildMatchSignal({ article, event, articleEventVector }) {
   );
 
   const nearDuplicate =
-    Boolean(article.contentHash) &&
-    Boolean(event.representativeArticleId) &&
-    headline >= DUPLICATE_HEADLINE_SIM;
+    headline >= DUPLICATE_HEADLINE_SIM &&
+    semantic >= DUPLICATE_HEADLINE_MIN_SEMANTIC;
 
   const recencyDecay = recencyDecayMultiplier(event.eventWindowEndAt || event.updatedAt);
   const composite =
@@ -381,8 +381,14 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
     overlap >= EVENT_MIN_SHARED_ENTITY_OVERLAP ||
     semantic >= Math.max(EVENT_SIM_THRESHOLD, DUPLICATE_HEADLINE_SIM)
   );
+  const nearDuplicate =
+    headline >= DUPLICATE_HEADLINE_SIM &&
+    semantic >= DUPLICATE_HEADLINE_MIN_SEMANTIC;
 
-  const accepted = meetsSemantic && meetsTemporal && meetsAuxiliary;
+  const accepted = meetsTemporal && (
+    (meetsSemantic && meetsAuxiliary) ||
+    nearDuplicate
+  );
 
   return {
     candidateId: candidate.id,
@@ -393,6 +399,7 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
     meetsSemantic,
     meetsTemporal,
     meetsAuxiliary,
+    nearDuplicate,
     accepted
   };
 }
@@ -559,6 +566,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     });
 
     const satisfiesStrictSemantic = signal.semantic >= EVENT_SIM_THRESHOLD;
+    const satisfiesNearDuplicate = signal.nearDuplicate;
     const satisfiesAuxiliarySignal =
       signal.temporal > 0 &&
       (
@@ -567,7 +575,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         signal.nearDuplicate
       );
 
-    if (!satisfiesStrictSemantic || !satisfiesAuxiliarySignal) {
+    if ((!satisfiesStrictSemantic && !satisfiesNearDuplicate) || !satisfiesAuxiliarySignal) {
       if (EVENT_DEBUG) {
         matchDiagnostics.push({
           eventId: event.id,
@@ -576,6 +584,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
           temporal: Number(signal.temporal.toFixed(4)),
           overlap: signal.overlap,
           meetsSemantic: satisfiesStrictSemantic,
+          nearDuplicate: satisfiesNearDuplicate,
           meetsAuxiliary: satisfiesAuxiliarySignal,
           accepted: false
         });
@@ -591,7 +600,8 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         temporal: Number(signal.temporal.toFixed(4)),
         overlap: signal.overlap,
         composite: Number(signal.composite.toFixed(4)),
-        meetsSemantic: true,
+        meetsSemantic: satisfiesStrictSemantic,
+        nearDuplicate: satisfiesNearDuplicate,
         meetsAuxiliary: true,
         accepted: true
       });
@@ -705,6 +715,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
           temporal: Number(signal.temporal.toFixed(4)),
           headline: Number(signal.headline.toFixed(4)),
           overlap: signal.overlap,
+          nearDuplicate: signal.nearDuplicate,
           accepted: signal.accepted,
           meetsSemantic: signal.meetsSemantic,
           meetsTemporal: signal.meetsTemporal,
