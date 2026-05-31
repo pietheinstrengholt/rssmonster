@@ -14,6 +14,10 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      categoryId: {
+        type: DataTypes.INTEGER,
+        allowNull: false
+      },
       feedName: {
         type: DataTypes.STRING,
         allowNull: false
@@ -115,6 +119,14 @@ export default (sequelize) => {
       }
     },
     {
+      indexes: [
+        { fields: ['userId'] },
+        { fields: ['categoryId'] },
+        {
+          unique: true,
+          fields: ['userId', 'url']
+        }
+      ],
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci'
     }
