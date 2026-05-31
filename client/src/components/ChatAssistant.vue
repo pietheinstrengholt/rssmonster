@@ -79,6 +79,7 @@ div#inputArea {
   display: block;
   width: 100% !important;
   height: auto !important;
+  margin-bottom: 10px !important;
 }
 
 .block .article-content p {

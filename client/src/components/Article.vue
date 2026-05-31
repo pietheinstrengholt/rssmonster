@@ -580,10 +580,11 @@ export default {
   display: block;
   max-width: 100% !important;
   height: auto !important;
+  margin-bottom: 10px !important;
 }
 
 .block .article-content figure {
-  margin: 0 !important;
+  margin: 0 0 10px !important;
   padding: 0 !important;
 }
 
