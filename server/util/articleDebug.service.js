@@ -57,7 +57,7 @@ export function debugRecommendedScores(scored) {
       `eventCoverage=${eventCoveragePct}%`
     );
     console.table(
-      scored.slice(0, 250).map(({ article, recommended }, index) => {
+      scored.slice(0, 250).map(({ article, recommended }) => {
         const bd = computeRecommendedBreakdown(article);
         return {
           articleId: article.id,
