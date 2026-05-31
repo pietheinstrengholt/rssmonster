@@ -4,6 +4,27 @@
    Handles media feeds (e.g. YouTube, podcast enclosures)
    and extracts lead image + preview HTML
 ====================================================== */
+function escapeHtml(value = '') {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function isSafeMediaUrl(value = '') {
+  const trimmed = String(value).trim();
+  if (!trimmed) return false;
+
+  try {
+    const parsed = new URL(trimmed);
+    return ['http:', 'https:'].includes(parsed.protocol);
+  } catch {
+    return false;
+  }
+}
+
 function processMedia(entry) {
   let leadImage = null;
   let content = '';
@@ -19,12 +40,12 @@ function processMedia(entry) {
     typeof e.type === 'string' && e.type.startsWith('image/')
   );
 
-  if (imageEnclosure?.url) {
+  if (imageEnclosure?.url && isSafeMediaUrl(imageEnclosure.url)) {
     leadImage = imageEnclosure.url;
 
     content += `
       <div class="media-content enclosure">
-        <img src="${imageEnclosure.url}" alt="${entry.title || 'Image'}" style="max-width:100%;height:auto;">
+        <img src="${escapeHtml(imageEnclosure.url)}" alt="${escapeHtml(entry.title || 'Image')}">
       </div>
     `;
   }
@@ -55,16 +76,18 @@ function processMedia(entry) {
       // If no enclosure image exists, use media image
       if (!leadImage) {
         leadImage =
-          mediaItems.find(m => m.image)?.image || null;
+          mediaItems.find(m => isSafeMediaUrl(m.image))?.image || null;
       }
 
       const media = mediaItems[0];
+      const safeImage = isSafeMediaUrl(media.image) ? media.image : null;
+      const safeUrl = isSafeMediaUrl(media.url) ? media.url : null;
 
       content += `
         <div class="media-content media">
-          ${media.image ? `<img src="${media.image}" alt="${media.title || 'Media'}" style="max-width:100%;height:auto;">` : ''}
-          ${media.title ? `<h5>${media.title}</h5>` : ''}
-          ${media.url ? `<p><a href="${media.url}" target="_blank">View Media</a></p>` : ''}
+          ${safeImage ? `<img src="${escapeHtml(safeImage)}" alt="${escapeHtml(media.title || 'Media')}">` : ''}
+          ${media.title ? `<h5>${escapeHtml(media.title)}</h5>` : ''}
+          ${safeUrl ? `<p><a href="${escapeHtml(safeUrl)}" target="_blank" rel="noopener noreferrer">View Media</a></p>` : ''}
         </div>
       `;
     }
