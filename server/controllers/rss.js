@@ -34,14 +34,15 @@ const buildRssXml = (articles, meta) => {
   return builder.buildObject(rssObject);
 };
 
-// GET /rss?userId=123&feedId=456&limit=50&starred=true&unread=true
+// GET /rss?feedId=456&limit=50&starred=true&unread=true
 // Generates an RSS feed from stored articles
 const generateRss = async (req, res, next) => {
   try {
-    const { userId, feedId, categoryId, limit = 50, starred, unread } = req.query;
+    const { feedId, categoryId, limit = 50, starred, unread } = req.query;
+    const userId = req.userData?.userId;
 
     if (!userId) {
-      return res.status(400).json({ message: 'userId is required' });
+      return res.status(401).json({ message: 'Authentication is required' });
     }
 
     const maxLimit = 200;
