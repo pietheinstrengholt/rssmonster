@@ -140,6 +140,27 @@ function reportLine(message = '') {
   console.log(message);
 }
 
+function printDebugTable(rows, columns) {
+  const widths = columns.map(column => {
+    const values = rows.map(row => String(row[column] ?? ''));
+    return Math.max(column.length, ...values.map(value => value.length));
+  });
+
+  const separator = `+${widths.map(width => '-'.repeat(width + 2)).join('+')}+`;
+  const formatRow = values =>
+    `| ${values.map((value, index) => formatCell(value, widths[index])).join(' | ')} |`;
+
+  reportLine(separator);
+  reportLine(formatRow(columns));
+  reportLine(separator);
+
+  for (const row of rows) {
+    reportLine(formatRow(columns.map(column => row[column])));
+  }
+
+  reportLine(separator);
+}
+
 function formatMetric(value) {
   return Number(value || 0).toFixed(1);
 }
@@ -262,6 +283,18 @@ function compactEventName(name) {
     .join(' ');
 }
 
+// This function shortens island names for compact debug tables.
+function compactIslandName(name) {
+  if (!name || typeof name !== 'string') return '';
+
+  return name
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ');
+}
+
 function plainScoredArticle(article) {
   const feed = article.feed || article.Feed || null;
   const category = feed?.category || feed?.Category || null;
@@ -279,7 +312,7 @@ function plainScoredArticle(article) {
   };
 }
 
-function recommendedDebugRows(articles) {
+function recommendedDebugRows(articles, islandByTopicId) {
   return articles
     .map(article => {
       article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
@@ -296,10 +329,12 @@ function recommendedDebugRows(articles) {
     .map(({ article, recommended }) => {
       const breakdown = computeRecommendedBreakdown(article);
       const event = article.get?.('event') ?? article.event ?? null;
+      const islandName = compactIslandName(islandByTopicId.get(String(article.topicId))?.label);
 
       return {
         articleId: article.id,
         eventName: compactEventName(event?.name),
+        islandName,
         freshness: Number(breakdown.freshness.toFixed(4)),
         interestScore: Number(Number(article.interestScore || 0).toFixed(4)),
         coverage: Number(breakdown.coverage.toFixed(4)),
@@ -344,7 +379,38 @@ async function printRecommendedRegressionTable(userId) {
   const eventCoveragePct = articles.length
     ? Number(((articlesWithEvents / articles.length) * 100).toFixed(1))
     : 0;
-  const rows = recommendedDebugRows(articles);
+
+  const islands = await Island.findAll({
+    where: { userId },
+    order: [
+      ['weight', 'DESC'],
+      ['id', 'ASC']
+    ]
+  });
+
+  const islandTopicRows = await IslandTopic.findAll({
+    where: {
+      islandId: { [Op.in]: islands.map(island => island.id) }
+    },
+    attributes: ['islandId', 'topicId'],
+    raw: true
+  });
+  const islandById = new Map(islands.map(island => [String(island.id), island]));
+  const islandByTopicId = islandTopicRows.reduce((topicIslands, row) => {
+    const topicKey = String(row.topicId);
+    const island = islandById.get(String(row.islandId));
+    const currentIsland = topicIslands.get(topicKey);
+
+    if (!island) return topicIslands;
+
+    if (!currentIsland || Number(island.weight || 0) > Number(currentIsland.weight || 0)) {
+      topicIslands.set(topicKey, island);
+    }
+
+    return topicIslands;
+  }, new Map());
+
+  const rows = recommendedDebugRows(articles, islandByTopicId);
 
   console.log(`Fetched ${articles.length} articles from database (before in-memory filters)`);
   console.log(`[RECOMMENDED DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
@@ -354,7 +420,19 @@ async function printRecommendedRegressionTable(userId) {
     `events=${distinctEvents} ` +
     `eventCoverage=${eventCoveragePct}%`
   );
-  console.table(rows);
+  printDebugTable(rows, [
+    'articleId',
+    'eventName',
+    'islandName',
+    'freshness',
+    'interestScore',
+    'coverage',
+    'crossSource',
+    'corroboration',
+    'clusterSize',
+    'sourceCount',
+    'recommended'
+  ]);
 
   return rows;
 }
@@ -642,6 +720,21 @@ async function printSemanticPipelineReport(userId, islandResult = null) {
     attributes: ['islandId', 'topicId'],
     raw: true
   });
+  const islandById = new Map(islands.map(island => [String(island.id), island]));
+  const islandByTopicId = islandTopicRows.reduce((topicIslands, row) => {
+    const topicKey = String(row.topicId);
+    const island = islandById.get(String(row.islandId));
+    const currentIsland = topicIslands.get(topicKey);
+
+    if (!island) return topicIslands;
+
+    if (!currentIsland || Number(island.weight || 0) > Number(currentIsland.weight || 0)) {
+      topicIslands.set(topicKey, island);
+    }
+
+    return topicIslands;
+  }, new Map());
+
   const islandTopicCounts = islandTopicRows.reduce((counts, row) => {
     const key = String(row.islandId);
     counts.set(key, (counts.get(key) || 0) + 1);
@@ -702,10 +795,6 @@ async function printSemanticPipelineReport(userId, islandResult = null) {
     })
   ]);
 
-  const islandById = new Map(
-    islands.map(island => [String(island.id), island])
-  );
-
   const articleIdsByTopicId = articleTopicRows.reduce((topicArticles, row) => {
     const key = String(row.topicId);
     const articleIds = topicArticles.get(key) || new Set();
@@ -722,20 +811,6 @@ async function printSemanticPipelineReport(userId, islandResult = null) {
     topicEvents.set(key, eventIds);
 
     return topicEvents;
-  }, new Map());
-
-  const islandByTopicId = islandTopicRows.reduce((topicIslands, row) => {
-    const topicKey = String(row.topicId);
-    const island = islandById.get(String(row.islandId));
-    const currentIsland = topicIslands.get(topicKey);
-
-    if (!island) return topicIslands;
-
-    if (!currentIsland || Number(island.weight || 0) > Number(currentIsland.weight || 0)) {
-      topicIslands.set(topicKey, island);
-    }
-
-    return topicIslands;
   }, new Map());
 
   const articleIdsByIslandId = islandTopicRows.reduce((islandArticles, row) => {

@@ -112,6 +112,50 @@ function articlePublished(fixtureArticle, fallbackPublished) {
   return Number.isNaN(published.getTime()) ? fallbackPublished : published;
 }
 
+// This function shortens island names for compact debug tables.
+function compactIslandName(name) {
+  if (!name || typeof name !== 'string') return '';
+
+  return name
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ');
+}
+
+// This function prints a compact table without the default console row index.
+function printDebugTable(rows, columns) {
+  const widths = columns.map(column => {
+    const values = rows.map(row => String(row[column] ?? ''));
+    return Math.max(column.length, ...values.map(value => value.length));
+  });
+
+  const separator = `+${widths.map(width => '-'.repeat(width + 2)).join('+')}+`;
+  const formatRow = values =>
+    `| ${values.map((value, index) => String(value ?? '').padEnd(widths[index], ' ')).join(' | ')} |`;
+
+  console.log(separator);
+  console.log(formatRow(columns));
+  console.log(separator);
+  for (const row of rows) {
+    console.log(formatRow(columns.map(column => row[column])));
+  }
+  console.log(separator);
+}
+
+// This function shortens event names for compact debug tables.
+function compactEventName(name) {
+  if (!name || typeof name !== 'string') return '';
+
+  return name
+    .toLowerCase()
+    .trim()
+    .split(/\s+/)
+    .slice(0, 2)
+    .join(' ');
+}
+
 // This function creates the regression user when the baseline test has not already done so.
 async function findOrCreateRegressionUser() {
   const existingUser = await User.findOne({ where: { username: FIXTURE_USERNAME } });
@@ -285,7 +329,7 @@ async function loadIslandTaxonomyFixture(taxonomyVectorFixture) {
 }
 
 // This function formats recommended-score rows for incremental article debugging.
-function recommendedDebugRows(articles) {
+function recommendedDebugRows(articles, islandByTopicId) {
   return articles
     .map(article => {
       article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
@@ -302,21 +346,20 @@ function recommendedDebugRows(articles) {
     .map(({ article, recommended }) => {
       const breakdown = computeRecommendedBreakdown(article);
       const event = article.get?.('event') ?? article.event ?? null;
+      const islandName = compactIslandName(islandByTopicId.get(String(article.topicId))?.label);
 
       return {
         articleId: article.id,
-        eventId: article.eventId,
-        eventName: event?.name || null,
+        eventName: compactEventName(event?.name),
+        islandName,
         freshness: Number(breakdown.freshness.toFixed(4)),
         interestScore: Number(Number(article.interestScore || 0).toFixed(4)),
-        quality: Number(breakdown.quality.toFixed(4)),
         coverage: Number(breakdown.coverage.toFixed(4)),
         crossSource: Number(breakdown.crossSource.toFixed(4)),
         corroboration: Number(breakdown.corroboration.toFixed(4)),
         clusterSize: breakdown.clusterSize,
         sourceCount: breakdown.sourceCount,
-        recommended: Number(recommended.toFixed(4)),
-        title: article.title
+        recommended: Number(recommended.toFixed(4))
       };
     });
 }
@@ -357,11 +400,33 @@ async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
   const eventCoveragePct = articles.length
     ? Number(((articlesWithEvents / articles.length) * 100).toFixed(1))
     : 0;
-  const rows = recommendedDebugRows(articles);
-  const tableRows = rows.map(row => ({ ...row }));
-  tableRows.forEach(row => {
-    delete row.title;
+  const islands = await Island.findAll({
+    where: { userId },
+    attributes: ['id', 'label', 'weight'],
+    raw: true
   });
+  const islandTopicRows = await IslandTopic.findAll({
+    where: {
+      islandId: { [Op.in]: islands.map(island => island.id) }
+    },
+    attributes: ['islandId', 'topicId'],
+    raw: true
+  });
+  const islandById = new Map(islands.map(island => [String(island.id), island]));
+  const islandByTopicId = islandTopicRows.reduce((topicIslands, row) => {
+    const topicKey = String(row.topicId);
+    const island = islandById.get(String(row.islandId));
+    const currentIsland = topicIslands.get(topicKey);
+
+    if (!island) return topicIslands;
+
+    if (!currentIsland || Number(island.weight || 0) > Number(currentIsland.weight || 0)) {
+      topicIslands.set(topicKey, island);
+    }
+
+    return topicIslands;
+  }, new Map());
+  const rows = recommendedDebugRows(articles, islandByTopicId);
 
   console.log(`[SEMANTIC INCREMENTAL RECOMMENDED DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
   console.log(
@@ -370,7 +435,19 @@ async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
     `events=${distinctEvents} ` +
     `eventCoverage=${eventCoveragePct}%`
   );
-  console.table(tableRows);
+  printDebugTable(rows, [
+    'articleId',
+    'eventName',
+    'islandName',
+    'freshness',
+    'interestScore',
+    'coverage',
+    'crossSource',
+    'corroboration',
+    'clusterSize',
+    'sourceCount',
+    'recommended'
+  ]);
 
   return rows;
 }

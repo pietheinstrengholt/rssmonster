@@ -64,7 +64,6 @@ export function debugRecommendedScores(scored) {
           eventName: compactEventName(resolveEventName(article)),
           freshness: Number(bd.freshness.toFixed(4)),
           interest: Number(bd.interestScore.toFixed(4)),
-          quality: Number(bd.quality.toFixed(4)),
           coverage: Number(bd.coverage.toFixed(4)),
           crossSource: Number(bd.crossSource.toFixed(4)),
           corroboration: Number(bd.corroboration.toFixed(4)),
