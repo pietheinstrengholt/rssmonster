@@ -7,12 +7,18 @@ import { getJwtSecret } from '../config/auth.js';
 const { Category, Feed, User, sequelize } = db;
 
 let app;
+let userSequence = 0;
 
-const createUser = username => User.create({
-  username,
-  password: 'hashed-password',
-  hash: `${username}-hash`
-});
+const createUser = username => {
+  userSequence += 1;
+  const uniqueUsername = `${username}-${userSequence}`;
+
+  return User.create({
+    username: uniqueUsername,
+    password: 'hashed-password',
+    hash: `${uniqueUsername}-hash`
+  });
+};
 
 const authHeaderFor = user => {
   const token = jwt.sign(
@@ -84,7 +90,7 @@ describe('category ownership authorization', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'Category not found' });
-    expect(category.name).toBe('category-owner category');
+    expect(category.name).toBe(`${owner.username} category`);
     expect(category.categoryOrder).toBe(1);
   });
 
