@@ -7,11 +7,12 @@ export function computeRecommended(article) {
   const freshness = article.freshness ?? 0.5;
 
   // User interest signal: island/topic affinity stored on the article.
-  // Stored values can be negative, neutral, or positive; normalize -1..1 into 0..1.
+  // Stored values are in [0, 1] (island weight × cosine similarity, always non-negative).
+  // 0 means no island match; use directly without normalization.
   const rawInterestScore = Number(article.interestScore ?? 0);
   const interestScore = Number.isFinite(rawInterestScore)
-    ? Math.max(0, Math.min(1, (rawInterestScore + 1) / 2))
-    : 0.5;
+    ? Math.max(0, Math.min(1, rawInterestScore))
+    : 0;
 
   // Content signal: editorial > promotional, neutral tone preferred
   // (includes feedTrust boost via the Article model's quality virtual field)
@@ -83,8 +84,8 @@ export function computeRecommendedBreakdown(article) {
   const freshness = article.freshness ?? 0.5;
   const rawInterestScore = Number(article.interestScore ?? 0);
   const interestScore = Number.isFinite(rawInterestScore)
-    ? Math.max(0, Math.min(1, (rawInterestScore + 1) / 2))
-    : 0.5;
+    ? Math.max(0, Math.min(1, rawInterestScore))
+    : 0;
   const quality = article.quality ?? 0.7;
 
   const cluster =

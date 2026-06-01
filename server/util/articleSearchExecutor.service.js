@@ -39,6 +39,7 @@ export const buildArticleSearchQuery = ({
   const needsQuality = qualityFilter || sortQuality;
   const needsFreshness = freshnessFilter || sortRecommended;
   const needsAttention = sortAttention;
+  const needsInterestScore = sortRecommended;
   const needsPublished = !smartFolderSearch || needsFreshness;
 
   if (needsQuality) {
@@ -58,6 +59,10 @@ export const buildArticleSearchQuery = ({
 
   if (needsAttention) {
     queryAttributes.push('attentionBucket', 'clickedAmount');
+  }
+
+  if (needsInterestScore) {
+    queryAttributes.push('interestScore');
   }
 
   const articleQuery = {
