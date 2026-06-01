@@ -1,18 +1,30 @@
 // Computes recommendation ranking scores from article freshness, user interest, quality, event coverage, and source diversity.
 // Feed trust is already included in article.quality through the Article model virtual field.
 
+const RECOMMENDED_WEIGHTS = {
+  freshness: 0.20,
+  interest: 0.22,
+  quality: 0.10,
+  coverage: 0.22,
+  crossSource: 0.13,
+  corroboration: 0.13
+};
+
+function normalizeInterestScore(rawInterestScore) {
+  if (!Number.isFinite(rawInterestScore)) return 0;
+  // Keep signed interest so negative values apply an explicit ranking penalty.
+  return Math.max(-1, Math.min(1, rawInterestScore));
+}
+
 // Computes the bounded runtime recommended score for an article.
 export function computeRecommended(article) {
   // Time decay: newer articles score higher
   const freshness = article.freshness ?? 0.5;
 
-  // User interest signal: island/topic affinity stored on the article.
-  // Stored values are in [0, 1] (island weight × cosine similarity, always non-negative).
-  // 0 means no island match; use directly without normalization.
+  // User interest signal: signed affinity stored on the article.
+  // Positive values boost ranking; negative values explicitly penalize it.
   const rawInterestScore = Number(article.interestScore ?? 0);
-  const interestScore = Number.isFinite(rawInterestScore)
-    ? Math.max(0, Math.min(1, rawInterestScore))
-    : 0;
+  const interestScore = normalizeInterestScore(rawInterestScore);
 
   // Content signal: editorial > promotional, neutral tone preferred
   // (includes feedTrust boost via the Article model's quality virtual field)
@@ -67,12 +79,12 @@ export function computeRecommended(article) {
   // Weighted sum: emphasizes event importance while preserving freshness,
   // personalization, quality, and rule-based relevance.
   const recommended =
-    0.22 * freshness +
-    0.12 * interestScore +
-    0.12 * quality +
-    0.24 * coverage +
-    0.15 * crossSource +
-    0.15 * corroboration +
+    RECOMMENDED_WEIGHTS.freshness * freshness +
+    RECOMMENDED_WEIGHTS.interest * interestScore +
+    RECOMMENDED_WEIGHTS.quality * quality +
+    RECOMMENDED_WEIGHTS.coverage * coverage +
+    RECOMMENDED_WEIGHTS.crossSource * crossSource +
+    RECOMMENDED_WEIGHTS.corroboration * corroboration +
     eventBoost +
     ruleBoost;
 
@@ -83,9 +95,7 @@ export function computeRecommended(article) {
 export function computeRecommendedBreakdown(article) {
   const freshness = article.freshness ?? 0.5;
   const rawInterestScore = Number(article.interestScore ?? 0);
-  const interestScore = Number.isFinite(rawInterestScore)
-    ? Math.max(0, Math.min(1, rawInterestScore))
-    : 0;
+  const interestScore = normalizeInterestScore(rawInterestScore);
   const quality = article.quality ?? 0.7;
 
   const cluster =
@@ -120,12 +130,12 @@ export function computeRecommendedBreakdown(article) {
     0;
 
   const recommended = Math.max(0, Math.min(1,
-    0.20 * freshness +
-    0.22 * interestScore +
-    0.10 * quality +
-    0.22 * coverage +
-    0.13 * crossSource +
-    0.13 * corroboration +
+    RECOMMENDED_WEIGHTS.freshness * freshness +
+    RECOMMENDED_WEIGHTS.interest * interestScore +
+    RECOMMENDED_WEIGHTS.quality * quality +
+    RECOMMENDED_WEIGHTS.coverage * coverage +
+    RECOMMENDED_WEIGHTS.crossSource * crossSource +
+    RECOMMENDED_WEIGHTS.corroboration * corroboration +
     eventBoost +
     ruleBoost
   ));

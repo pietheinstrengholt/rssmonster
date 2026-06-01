@@ -309,7 +309,6 @@ function recommendedDebugRows(articles) {
         eventName: event?.name || null,
         freshness: Number(breakdown.freshness.toFixed(4)),
         interestScore: Number(Number(article.interestScore || 0).toFixed(4)),
-        interest: Number(breakdown.interestScore.toFixed(4)),
         quality: Number(breakdown.quality.toFixed(4)),
         coverage: Number(breakdown.coverage.toFixed(4)),
         crossSource: Number(breakdown.crossSource.toFixed(4)),

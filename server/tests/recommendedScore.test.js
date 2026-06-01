@@ -114,12 +114,17 @@ describe('computeRecommended', () => {
       ...baseArticle,
       interestScore: -1
     });
+    const neutralInterestScore = computeRecommended({
+      ...baseArticle,
+      interestScore: 0
+    });
     const highInterestScore = computeRecommended({
       ...baseArticle,
       interestScore: 1
     });
 
     expect(highInterestScore).toBeGreaterThan(lowInterestScore);
-    expect(highInterestScore - lowInterestScore).toBeCloseTo(0.12, 3);
+    expect(neutralInterestScore).toBeGreaterThan(lowInterestScore);
+    expect(highInterestScore - lowInterestScore).toBeCloseTo(0.44, 3);
   });
 });
