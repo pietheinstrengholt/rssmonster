@@ -146,19 +146,11 @@ function printDebugTable(rows, columns) {
     return Math.max(column.length, ...values.map(value => value.length));
   });
 
-  const separator = `+${widths.map(width => '-'.repeat(width + 2)).join('+')}+`;
-  const formatRow = values =>
-    `| ${values.map((value, index) => formatCell(value, widths[index])).join(' | ')} |`;
-
-  reportLine(separator);
-  reportLine(formatRow(columns));
-  reportLine(separator);
+  reportLine(columns.map((column, index) => formatCell(column, widths[index])).join('  '));
 
   for (const row of rows) {
-    reportLine(formatRow(columns.map(column => row[column])));
+    reportLine(columns.map((column, index) => formatCell(row[column], widths[index])).join('  '));
   }
-
-  reportLine(separator);
 }
 
 function formatMetric(value) {

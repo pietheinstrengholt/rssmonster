@@ -9,6 +9,7 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 import { incrementalClusterForUser, reclusterForUser } from '../services/events/reclusterForUser.js';
 import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+import { cosineSimilarity as sharedCosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
 const {
@@ -38,6 +39,9 @@ const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 77;
 const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 const MIN_STRONG_EVENT_STRENGTH = 0.35;
+const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
+  process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
+);
 const RECOMMENDED_DEBUG_FORMULA =
   '0.20*freshness + 0.22*interest + 0.10*quality + 0.22*coverage + ' +
   '0.13*crossSource + 0.13*corroboration + eventBoost + ruleBoost';
@@ -154,6 +158,14 @@ function compactEventName(name) {
     .split(/\s+/)
     .slice(0, 2)
     .join(' ');
+}
+
+// This function compares article and island vectors with parsing enabled for JSON-backed vectors.
+function cosineSimilarity(vectorA, vectorB) {
+  return sharedCosineSimilarity(vectorA, vectorB, {
+    parseStrings: true,
+    coerceNumbers: true
+  });
 }
 
 // This function creates the regression user when the baseline test has not already done so.
@@ -329,7 +341,7 @@ async function loadIslandTaxonomyFixture(taxonomyVectorFixture) {
 }
 
 // This function formats recommended-score rows for incremental article debugging.
-function recommendedDebugRows(articles, islandByTopicId) {
+function recommendedDebugRows(articles, islandByTopicId, islands) {
   return articles
     .map(article => {
       article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
@@ -346,7 +358,28 @@ function recommendedDebugRows(articles, islandByTopicId) {
     .map(({ article, recommended }) => {
       const breakdown = computeRecommendedBreakdown(article);
       const event = article.get?.('event') ?? article.event ?? null;
-      const islandName = compactIslandName(islandByTopicId.get(String(article.topicId))?.label);
+      let islandName = compactIslandName(islandByTopicId.get(String(article.topicId))?.label);
+
+      if (!islandName) {
+        const interestScore = Number(article.interestScore || 0);
+        if (interestScore !== 0 && article.articleVector) {
+          let strongestIsland = null;
+          let strongestScore = null;
+
+          for (const island of islands) {
+            const similarity = cosineSimilarity(article.articleVector, island.islandVector);
+            if (similarity < DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD) continue;
+
+            const score = Number(island.weight || 0) * similarity;
+            if (strongestScore === null || Math.abs(score) > Math.abs(strongestScore)) {
+              strongestScore = score;
+              strongestIsland = island;
+            }
+          }
+
+          islandName = compactIslandName(strongestIsland?.label);
+        }
+      }
 
       return {
         articleId: article.id,
@@ -402,7 +435,7 @@ async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
     : 0;
   const islands = await Island.findAll({
     where: { userId },
-    attributes: ['id', 'label', 'weight'],
+    attributes: ['id', 'label', 'weight', 'islandVector'],
     raw: true
   });
   const islandTopicRows = await IslandTopic.findAll({
@@ -426,7 +459,7 @@ async function printIncrementalRecommendedDebug(userId, incrementalArticleIds) {
 
     return topicIslands;
   }, new Map());
-  const rows = recommendedDebugRows(articles, islandByTopicId);
+  const rows = recommendedDebugRows(articles, islandByTopicId, islands);
 
   console.log(`[SEMANTIC INCREMENTAL RECOMMENDED DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
   console.log(
