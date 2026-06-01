@@ -1,4 +1,5 @@
 'use strict';
+
 module.exports = {
   up: async (queryInterface, Sequelize) => {
     await queryInterface.createTable('articles', {
@@ -14,7 +15,9 @@ module.exports = {
         references: {
           model: 'users',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       feedId: {
         type: Sequelize.INTEGER,
@@ -22,7 +25,9 @@ module.exports = {
         references: {
           model: 'feeds',
           key: 'id'
-        }
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'CASCADE'
       },
       status: {
         type: Sequelize.STRING,
@@ -39,12 +44,12 @@ module.exports = {
         allowNull: false,
         defaultValue: 0
       },
-      clickedAmount: {
+      positiveInd: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
-      openedCount: {
+      clickedAmount: {
         type: Sequelize.INTEGER,
         allowNull: false,
         defaultValue: 0
@@ -65,11 +70,11 @@ module.exports = {
         defaultValue: false
       },
       url: {
-        type: Sequelize.TEXT('medium'),
+        type: Sequelize.STRING(1024),
         allowNull: false
       },
       imageUrl: {
-        type: Sequelize.TEXT,
+        type: Sequelize.STRING(1024),
         allowNull: true
       },
       title: {
@@ -104,13 +109,23 @@ module.exports = {
         type: Sequelize.STRING(64),
         allowNull: true
       },
+      articleVector: {
+        type: Sequelize.JSON,
+        allowNull: true
+      },
       eventId: {
         type: Sequelize.INTEGER,
         allowNull: true
       },
       topicId: {
         type: Sequelize.INTEGER,
-        allowNull: true
+        allowNull: true,
+        references: {
+          model: 'topics',
+          key: 'id'
+        },
+        onUpdate: 'CASCADE',
+        onDelete: 'SET NULL'
       },
       language: {
         type: Sequelize.TEXT('tiny'),
@@ -119,17 +134,22 @@ module.exports = {
       advertisementScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 70
+        defaultValue: 0
       },
       sentimentScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 70
+        defaultValue: 50
       },
       qualityScore: {
         type: Sequelize.INTEGER,
         allowNull: false,
-        defaultValue: 70
+        defaultValue: 50
+      },
+      interestScore: {
+        type: Sequelize.FLOAT,
+        allowNull: false,
+        defaultValue: 0
       },
       attentionBucket: {
         type: Sequelize.TINYINT,
@@ -144,7 +164,7 @@ module.exports = {
       firstSeen: {
         type: Sequelize.DATE,
         allowNull: true,
-        defaultValue: Sequelize.NOW
+        defaultValue: null
       },
       createdAt: {
         type: Sequelize.DATE,
@@ -156,58 +176,82 @@ module.exports = {
         allowNull: false,
         defaultValue: Sequelize.NOW
       }
-    },
-    {
+    }, {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci'
-    }
-  );
+    });
 
-    // ------------------------------------
-    // Indexes
-    // ------------------------------------
     await queryInterface.addIndex('articles', ['feedId'], {
       name: 'articles_feedId_idx'
     });
-
     await queryInterface.addIndex('articles', ['userId'], {
       name: 'articles_userId_idx'
     });
-
+    await queryInterface.addIndex('articles', ['userId', 'published'], {
+      name: 'articles_userId_published_idx'
+    });
     await queryInterface.addIndex('articles', ['status'], {
       name: 'articles_status_idx'
     });
-
     await queryInterface.addIndex('articles', ['starInd'], {
       name: 'articles_starInd_idx'
     });
-
     await queryInterface.addIndex('articles', ['clickedAmount'], {
       name: 'articles_clickedAmount_idx'
     });
-
     await queryInterface.addIndex('articles', ['contentHash'], {
       name: 'articles_contentHash_idx'
     });
-
     await queryInterface.addIndex('articles', ['eventId'], {
       name: 'articles_eventId_idx'
     });
-
     await queryInterface.addIndex('articles', ['topicId'], {
       name: 'articles_topicId_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'eventId', 'published'], {
+      name: 'articles_userId_eventId_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'topicId', 'published'], {
+      name: 'articles_userId_topicId_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'status', 'published'], {
+      name: 'articles_userId_status_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'feedId', 'status', 'published'], {
+      name: 'articles_userId_feedId_status_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'feedId', 'published'], {
+      name: 'articles_userId_feedId_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'starInd', 'published'], {
+      name: 'articles_userId_starInd_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'status', 'feedId', 'published'], {
+      name: 'articles_userId_status_feedId_published_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'feedId', 'status', 'advertisementScore'], {
+      name: 'articles_userId_feedId_status_advertisementScore_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'feedId', 'status', 'sentimentScore'], {
+      name: 'articles_userId_feedId_status_sentimentScore_idx'
+    });
+    await queryInterface.addIndex('articles', ['userId', 'feedId', 'status', 'qualityScore'], {
+      name: 'articles_userId_feedId_status_qualityScore_idx'
+    });
+    await queryInterface.addConstraint('articles', {
+      fields: ['feedId', 'userId'],
+      type: 'foreign key',
+      name: 'articles_feedId_userId_fkey',
+      references: {
+        table: 'feeds',
+        fields: ['id', 'userId']
+      },
+      onUpdate: 'CASCADE',
+      onDelete: 'CASCADE'
     });
   },
 
   down: async (queryInterface) => {
-    await queryInterface.removeIndex('articles', 'articles_feedId_idx');
-    await queryInterface.removeIndex('articles', 'articles_status_idx');
-    await queryInterface.removeIndex('articles', 'articles_starInd_idx');
-    await queryInterface.removeIndex('articles', 'articles_userId_idx');
-    await queryInterface.removeIndex('articles', 'articles_clickedAmount_idx');
-    await queryInterface.removeIndex('articles', 'articles_contentHash_idx');
-    await queryInterface.removeIndex('articles', 'articles_eventId_idx');
-    await queryInterface.removeIndex('articles', 'articles_topicId_idx');
     await queryInterface.dropTable('articles');
   }
 };

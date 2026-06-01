@@ -6,6 +6,7 @@ module.exports = {
       id: {
         type: Sequelize.INTEGER,
         autoIncrement: true,
+        allowNull: false,
         primaryKey: true
       },
       userId: {
@@ -15,6 +16,7 @@ module.exports = {
           model: 'users',
           key: 'id'
         },
+        onUpdate: 'CASCADE',
         onDelete: 'CASCADE'
       },
       name: {
@@ -33,16 +35,24 @@ module.exports = {
       createdAt: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.NOW
       },
       updatedAt: {
         type: Sequelize.DATE,
         allowNull: false,
-        defaultValue: Sequelize.fn('NOW')
+        defaultValue: Sequelize.NOW
       }
+    }, {
+      charset: 'utf8mb4',
+      collate: 'utf8mb4_unicode_ci'
     });
 
-    await queryInterface.addIndex('smartFolders', ['userId']);
+    await queryInterface.addIndex('smartFolders', ['userId'], {
+      name: 'smartFolders_userId_idx'
+    });
+    await queryInterface.addIndex('smartFolders', ['userId', 'name'], {
+      name: 'smartFolders_userId_name_idx'
+    });
   },
 
   down: async (queryInterface) => {

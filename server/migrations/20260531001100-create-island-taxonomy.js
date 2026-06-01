@@ -58,11 +58,9 @@ module.exports = {
       unique: true,
       name: 'island_taxonomy_identity_unique'
     });
-
     await queryInterface.addIndex('island_taxonomy', ['categoryName'], {
       name: 'island_taxonomy_category_idx'
     });
-
     await queryInterface.addIndex('island_taxonomy', ['status'], {
       name: 'island_taxonomy_status_idx'
     });
