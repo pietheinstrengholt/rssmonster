@@ -262,3 +262,23 @@ Net effect: semantic topic membership + behavioral islands become a single per-a
 - If embeddings are unavailable, event/topic assignment can be partially skipped, reducing clustering quality.
 - Multi-source and evidence gates protect against over-fragmented/low-confidence events/topics.
 - The architecture is incremental-first but includes replay/recluster paths to recover consistency.
+
+## 11) Regression test fixtures
+
+The semantic regression test suites rely on generated vector fixtures. Before running the full regression coverage, generate the fixtures from the server directory:
+
+```bash
+cd server
+npm run fixture:semantic-vectors
+npm run fixture:semantic-incremental-vectors
+npm run fixture:taxonomy-vectors
+```
+
+After those files exist, you can run the regression suites directly:
+
+```bash
+cd server
+npx vitest run tests/semanticRegression.pipeline.test.js tests/semanticRegression.incremental.pipeline.test.js
+```
+
+If any of the `*.vectors.json` files are missing, both suites now skip instead of failing during fixture loading.
