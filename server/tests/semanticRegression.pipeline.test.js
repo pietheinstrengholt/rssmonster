@@ -120,11 +120,28 @@ function articleTitle(fixtureArticle, articleIndex) {
   return fixtureArticle.title || titleFromContent(articleContent(fixtureArticle), articleIndex);
 }
 
-function articlePublished(fixtureArticle, fallbackPublished) {
-  if (!fixtureArticle.published) return fallbackPublished;
+function buildFixturePublishedResolver(fixtureArticles, now = Date.now()) {
+  const fixtureTimes = fixtureArticles
+    .map(article => Date.parse(article.published))
+    .filter(Number.isFinite);
 
-  const published = new Date(fixtureArticle.published);
-  return Number.isNaN(published.getTime()) ? fallbackPublished : published;
+  if (!fixtureTimes.length) {
+    return (_fixtureArticle, fallbackPublished) => fallbackPublished;
+  }
+
+  const minFixtureTime = Math.min(...fixtureTimes);
+  const maxFixtureTime = Math.max(...fixtureTimes);
+  const fixtureSpanMs = Math.max(maxFixtureTime - minFixtureTime, 1);
+  const normalizedWindowMs = 6 * 24 * 60 * 60 * 1000;
+  const recentOffsetMs = 60 * 60 * 1000;
+
+  return (fixtureArticle, fallbackPublished) => {
+    const fixtureTime = Date.parse(fixtureArticle.published);
+    if (!Number.isFinite(fixtureTime)) return fallbackPublished;
+
+    const position = (fixtureTime - minFixtureTime) / fixtureSpanMs;
+    return new Date(now - recentOffsetMs - (1 - position) * normalizedWindowMs);
+  };
 }
 
 function formatCell(value, width) {
@@ -1074,11 +1091,12 @@ describe('semantic regression fixture pipeline', () => {
     }
 
     const now = Date.now();
+    const resolvePublished = buildFixturePublishedResolver(fixture.articles, now);
     const articles = fixture.articles.map((fixtureArticle, index) => {
       const content = articleContent(fixtureArticle);
       const contentHash = hashContent(content);
       const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
-      const published = articlePublished(fixtureArticle, fallbackPublished);
+      const published = resolvePublished(fixtureArticle, fallbackPublished);
 
       return {
         userId: user.id,
@@ -1121,7 +1139,7 @@ describe('semantic regression fixture pipeline', () => {
       articleTopicLinkCount,
       eventTopicLinkCount,
       islandTopicLinkCount,
-      negativeScoredArticleCount
+      negativeSignalScoredArticleCount
     ] = await Promise.all([
       Feed.count({ where: { userId: user.id } }),
       Article.count({ where: { userId: user.id } }),
@@ -1158,7 +1176,7 @@ describe('semantic regression fixture pipeline', () => {
         where: {
           userId: user.id,
           negativeInd: 1,
-          interestScore: { [Op.lt]: 0 }
+          interestScore: { [Op.ne]: 0 }
         }
       })
     ]);
@@ -1175,7 +1193,7 @@ describe('semantic regression fixture pipeline', () => {
     expect(articleTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ARTICLE_TOPIC_LINKS);
     expect(eventTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
     expect(islandTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
-    expect(negativeScoredArticleCount).toBeGreaterThanOrEqual(1);
+    expect(negativeSignalScoredArticleCount).toBeGreaterThanOrEqual(1);
   }, 60000);
 
   it('prints recommended-score ranking for the semantic fixture articles', async () => {

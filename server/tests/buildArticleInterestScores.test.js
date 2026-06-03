@@ -4,10 +4,13 @@ import { resetDatabase } from './helpers/resetDb.js';
 import { buildArticleInterestScoresForUser } from '../services/islands/buildArticleInterestScores.js';
 
 const { Article, ArticleTopic, Category, Feed, Island, IslandTopic, Topic, User } = db;
+let userSequence = 0;
 
 async function createUserGraph() {
+  userSequence += 1;
+
   const user = await User.create({
-    username: `interest-scores-${Date.now()}`,
+    username: `interest-scores-${Date.now()}-${userSequence}`,
     password: 'secret',
     hash: 'secret',
     role: 'user'

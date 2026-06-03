@@ -109,11 +109,28 @@ function articleTitle(fixtureArticle, articleIndex) {
 }
 
 // This function parses fixture dates with a deterministic fallback.
-function articlePublished(fixtureArticle, fallbackPublished) {
-  if (!fixtureArticle.published) return fallbackPublished;
+function buildFixturePublishedResolver(fixtureArticles, now = Date.now()) {
+  const fixtureTimes = fixtureArticles
+    .map(article => Date.parse(article.published))
+    .filter(Number.isFinite);
 
-  const published = new Date(fixtureArticle.published);
-  return Number.isNaN(published.getTime()) ? fallbackPublished : published;
+  if (!fixtureTimes.length) {
+    return (_fixtureArticle, fallbackPublished) => fallbackPublished;
+  }
+
+  const minFixtureTime = Math.min(...fixtureTimes);
+  const maxFixtureTime = Math.max(...fixtureTimes);
+  const fixtureSpanMs = Math.max(maxFixtureTime - minFixtureTime, 1);
+  const normalizedWindowMs = 6 * 24 * 60 * 60 * 1000;
+  const recentOffsetMs = 60 * 60 * 1000;
+
+  return (fixtureArticle, fallbackPublished) => {
+    const fixtureTime = Date.parse(fixtureArticle.published);
+    if (!Number.isFinite(fixtureTime)) return fallbackPublished;
+
+    const position = (fixtureTime - minFixtureTime) / fixtureSpanMs;
+    return new Date(now - recentOffsetMs - (1 - position) * normalizedWindowMs);
+  };
 }
 
 // This function shortens island names for compact debug tables.
@@ -241,6 +258,7 @@ async function insertMissingFixtureArticles(userId, fixture, vectorByContentHash
   const categoryIdMap = await ensureFixtureCategories(userId, fixture.categories);
   const feedIdMap = await ensureFixtureFeeds(userId, fixture.feeds, categoryIdMap);
   const now = Date.now();
+  const resolvePublished = buildFixturePublishedResolver(fixture.articles, now);
   let insertedCount = 0;
 
   for (const [index, fixtureArticle] of fixture.articles.entries()) {
@@ -262,7 +280,7 @@ async function insertMissingFixtureArticles(userId, fixture, vectorByContentHash
     }
 
     const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
-    const published = articlePublished(fixtureArticle, fallbackPublished);
+    const published = resolvePublished(fixtureArticle, fallbackPublished);
 
     await Article.create({
       userId,
