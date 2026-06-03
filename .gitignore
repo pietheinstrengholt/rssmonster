@@ -5,3 +5,7 @@
 !.elasticbeanstalk/*.global.yml
 mysql-data
 server/tests/fixtures/*vectors.json
+client/cert/
+server/cert/
+logs/
+package-lock.json
