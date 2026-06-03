@@ -104,6 +104,20 @@ async function main() {
     const embeddable = missing.filter(item => isArticleEventEmbeddingTextUsable(item.embeddingInput));
     const skipped = missing.filter(item => !isArticleEventEmbeddingTextUsable(item.embeddingInput));
 
+    for (const item of skipped) {
+      console.warn(
+        `[SEMANTIC FIXTURE] skipped article ${item.articleIndex + 1} ` +
+        `(event embedding text too short: ${item.embeddingInput.length})`
+      );
+    }
+
+    if (skipped.length) {
+      throw new Error(
+        'Semantic regression fixture contains articles that production embedding would skip. ' +
+        'Remove or enrich those articles before regenerating vectors.'
+      );
+    }
+
     const generatedByHash = new Map();
     if (embeddable.length) {
       const response = await openai.embeddings.create({
@@ -128,20 +142,6 @@ async function main() {
           embeddingModel: item.existingVector.embeddingModel,
           articleVector: item.existingVector.articleVector
         }
-      );
-    }
-
-    for (const item of skipped) {
-      console.warn(
-        `[SEMANTIC FIXTURE] skipped article ${item.articleIndex + 1} ` +
-        `(event embedding text too short: ${item.embeddingInput.length})`
-      );
-    }
-
-    if (skipped.length) {
-      throw new Error(
-        'Semantic regression fixture contains articles that production embedding would skip. ' +
-        'Remove or enrich those articles before regenerating vectors.'
       );
     }
 
