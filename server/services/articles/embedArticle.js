@@ -17,6 +17,7 @@ export const EMBEDDING_MODEL = 'text-embedding-3-small';
 const MIN_EVENT_LENGTH = 60;
 const MIN_TOPIC_LENGTH = 120;
 const MAX_TOPIC_LENGTH = 2200;
+const MAX_EMBEDDING_INPUT_TOKENS = 192;
 
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
 const openai = hasApiKey
@@ -84,6 +85,18 @@ function extractTopicText({ contentStripped }) {
     .trim();
 }
 
+// This function estimates token count with a conservative whitespace heuristic.
+function estimateTokenCount(text = '') {
+  const normalized = String(text || '').trim();
+  if (!normalized) return 0;
+  return normalized.split(/\s+/).length;
+}
+
+// This function enforces a max token budget before calling the embedding API.
+function isWithinEmbeddingTokenLimit(text = '') {
+  return estimateTokenCount(text) <= MAX_EMBEDDING_INPUT_TOKENS;
+}
+
 // This function exposes the event embedding text builder for tests and callers.
 export function buildArticleEventEmbeddingText(articleOrInput = {}) {
   const title = articleOrInput?.title;
@@ -99,6 +112,10 @@ export function isArticleEventEmbeddingTextUsable(text = '') {
 
 // This function sends text to the embedding provider and returns the vector.
 async function embed(text) {
+  if (!isWithinEmbeddingTokenLimit(text)) {
+    return null;
+  }
+
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
     input: text
@@ -151,10 +168,20 @@ export async function embedArticle(articleOrInput, options = {}) {
     return null;
   }
 
+  if (!isWithinEmbeddingTokenLimit(eventText)) {
+    console.debug(
+      `[EMBED] skipped (event text exceeds ${MAX_EMBEDDING_INPUT_TOKENS} token estimate)`
+    );
+    return null;
+  }
+
   try {
     const [eventVector, topicVector] = await Promise.all([
       embed(eventText),
-      topicText.length >= MIN_TOPIC_LENGTH ? embed(topicText) : Promise.resolve(null)
+      topicText.length >= MIN_TOPIC_LENGTH
+      && isWithinEmbeddingTokenLimit(topicText)
+        ? embed(topicText)
+        : Promise.resolve(null)
     ]);
 
     if (article && persist && eventVector) {
