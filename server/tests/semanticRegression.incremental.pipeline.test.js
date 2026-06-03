@@ -67,6 +67,25 @@ async function loadVectorFixture(path, remediation) {
   }
 }
 
+// This function checks whether the semantic regression vector fixtures are available.
+async function hasVectorFixtures(paths) {
+  for (const path of paths) {
+    try {
+      await readFile(path, 'utf8');
+    } catch (err) {
+      if (err.code === 'ENOENT') return false;
+      throw err;
+    }
+  }
+
+  return true;
+}
+const semanticRegressionDescribe = (await hasVectorFixtures([
+  BASELINE_VECTOR_FIXTURE_PATH,
+  INCREMENTAL_VECTOR_FIXTURE_PATH,
+  TAXONOMY_VECTOR_FIXTURE_PATH
+])) ? describe : describe.skip;
+
 // This function hashes article content using the same stable key as the vector fixtures.
 function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
@@ -637,7 +656,7 @@ async function printIncrementalDebugReport({
   })));
 }
 
-describe('semantic regression incremental pipeline', () => {
+semanticRegressionDescribe('semantic regression incremental pipeline', () => {
   beforeAll(async () => {
     await sequelize.authenticate();
 

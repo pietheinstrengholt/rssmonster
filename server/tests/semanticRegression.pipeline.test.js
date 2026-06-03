@@ -85,6 +85,24 @@ async function loadTaxonomyVectorFixture() {
   }
 }
 
+// This function checks whether the semantic regression vector fixtures are available.
+async function hasVectorFixtures(paths) {
+  for (const path of paths) {
+    try {
+      await readFile(path, 'utf8');
+    } catch (err) {
+      if (err.code === 'ENOENT') return false;
+      throw err;
+    }
+  }
+
+  return true;
+}
+const semanticRegressionDescribe = (await hasVectorFixtures([
+  VECTOR_FIXTURE_PATH,
+  TAXONOMY_VECTOR_FIXTURE_PATH
+])) ? describe : describe.skip;
+
 function hashContent(content) {
   return crypto.createHash('sha256').update(content).digest('hex');
 }
@@ -1010,7 +1028,7 @@ async function printSemanticPipelineReport(userId, islandResult = null) {
   );
 }
 
-describe('semantic regression fixture pipeline', () => {
+semanticRegressionDescribe('semantic regression fixture pipeline', () => {
   beforeAll(async () => {
     await sequelize.authenticate();
     await deleteExistingFixtureUser();
