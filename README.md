@@ -144,7 +144,23 @@ cd server
 ./node_modules/.bin/sequelize db:seed:all
 ```
 
-### 5. Optional: Set Up Feed Crawler
+### 5. Required: Build and Seed Island Taxonomy Vectors
+
+After installation (and after each deployment to a new environment), generate taxonomy vectors and seed them into the database:
+
+```bash
+cd server
+npm run taxonomy:vectors
+npm run seed:island-taxonomy
+```
+
+**Important:** `npm run taxonomy:vectors` requires a valid OpenAI API key in `server/.env`:
+
+```env
+OPENAI_API_KEY=your-openai-api-key-here
+```
+
+### 6. Optional: Set Up Feed Crawler
 
 You can crawl feeds in two ways:
 
@@ -167,7 +183,7 @@ Add a cron job to crawl feeds every 5 minutes by calling the API endpoint:
 
 Note: The API endpoint runs the crawl asynchronously in the background and returns immediately without output.
 
-### 6. Recommended: Rebuild Article Clusters
+### 7. Recommended: Rebuild Article Clusters
 
 If you have semantic search enabled and need to rebuild article clusters from scratch:
 
@@ -189,7 +205,7 @@ This command will:
 
 **Note:** This is a destructive operation that rebuilds all clusters. It requires articles to have embedding vectors already generated.
 
-### 7. Recommended: Calculate Feed Trust Scores
+### 8. Recommended: Calculate Feed Trust Scores
 
 Feed trust scores help identify high-quality sources based on originality, article quality, and user engagement:
 
@@ -291,7 +307,17 @@ The client will typically run on `http://localhost:5173` and the server on `http
    mv client/dist server/
    ```
 
-4. **Start the Server**
+4. **Generate and Seed Taxonomy Vectors (Required in New Environments)**
+
+  ```bash
+  cd server
+  npm run taxonomy:vectors
+  npm run seed:island-taxonomy
+  ```
+
+  Make sure `OPENAI_API_KEY` is set in `server/.env` before running `npm run taxonomy:vectors`.
+
+5. **Start the Server**
    ```bash
    cd server
    npm run start
