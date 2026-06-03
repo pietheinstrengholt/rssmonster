@@ -60,7 +60,7 @@ function articlePayload(userId, feedId, index, overrides = {}) {
 describe('buildBehavioralTopicsForUser', () => {
   beforeEach(async () => {
     await resetDatabase();
-  });
+  }, 30000);
 
   it('creates behavioral topics without requiring event linkage', async () => {
     const { user, feeds } = await createUserGraph();
