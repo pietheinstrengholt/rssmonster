@@ -138,7 +138,7 @@ function isArticleInstance(record) {
 // It returns both event and topic vectors when enough text is available.
 export async function embedArticle(articleOrInput, options = {}) {
   // `persist=true` means this function owns writing vectors to the Article row.
-  const { persist = true } = options;
+  const { allowShortEventText = false, persist = true } = options;
   const article = isArticleInstance(articleOrInput) ? articleOrInput : null;
 
   const title = article ? article.title : articleOrInput?.title;
@@ -164,7 +164,7 @@ export async function embedArticle(articleOrInput, options = {}) {
   const eventText = buildArticleEventEmbeddingText({ title, contentStripped });
   const topicText = extractTopicText({ contentStripped });
 
-  if (eventText.length < MIN_EVENT_LENGTH) {
+  if (!eventText || (!allowShortEventText && eventText.length < MIN_EVENT_LENGTH)) {
     return null;
   }
 

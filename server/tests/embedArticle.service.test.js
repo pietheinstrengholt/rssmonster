@@ -52,4 +52,23 @@ describe('embedArticle token limit guard', () => {
     expect(result.eventVector).toEqual([0.1, 0.2, 0.3]);
     expect(embeddingsCreate).toHaveBeenCalledTimes(1);
   });
+
+  it('can embed short event input when explicitly allowed', async () => {
+    const { embedArticle } = await import('../services/articles/embedArticle.js');
+
+    embeddingsCreate.mockResolvedValue({
+      data: [{ embedding: [0.4, 0.5, 0.6] }]
+    });
+
+    const result = await embedArticle(
+      {
+        title: 'Short starred article',
+        contentStripped: ''
+      },
+      { allowShortEventText: true }
+    );
+
+    expect(result.eventVector).toEqual([0.4, 0.5, 0.6]);
+    expect(embeddingsCreate).toHaveBeenCalledTimes(1);
+  });
 });

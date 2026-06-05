@@ -16,7 +16,8 @@ export const DEFAULT_TOPIC_ENRICHMENT_SIMILARITY_THRESHOLD = Number.parseFloat(
 );
 export const DEFAULT_ISLAND_MATCH_THRESHOLD = Number.parseFloat(process.env.ISLAND_PROFILE_MATCH_THRESHOLD || '0.78');
 export const DEFAULT_ISLAND_VECTOR_ALPHA = Number.parseFloat(process.env.ISLAND_VECTOR_ALPHA || '0.35');
-export const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '30');
+export const DEFAULT_RECENCY_HALF_LIFE_DAYS = Number.parseFloat(process.env.ISLAND_RECENCY_HALF_LIFE_DAYS || '1460');
+export const DEFAULT_RECENCY_MIN_WEIGHT = Number.parseFloat(process.env.ISLAND_RECENCY_MIN_WEIGHT || '0.2');
 export const DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD = Number.parseFloat(process.env.ISLAND_ARCHIVE_CONFIDENCE_THRESHOLD || '0.12');
 export const DEFAULT_ARCHIVE_STALE_DAYS = Number.parseInt(process.env.ISLAND_ARCHIVE_STALE_DAYS, 10) || 45;
 export const DEFAULT_AUDIT_MAX_RUNS = Number.parseInt(process.env.ISLAND_AUDIT_MAX_RUNS, 10) || 30;
@@ -77,7 +78,17 @@ export function topicRecencyWeight(publishedAt) {
   if (!publishedAt) return 1;
 
   const ageDays = Math.max(0, (Date.now() - new Date(publishedAt).getTime()) / (1000 * 60 * 60 * 24));
-  return Math.exp(-ageDays / DEFAULT_RECENCY_HALF_LIFE_DAYS);
+  const halfLifeDays = Number.isFinite(DEFAULT_RECENCY_HALF_LIFE_DAYS) && DEFAULT_RECENCY_HALF_LIFE_DAYS > 0
+    ? DEFAULT_RECENCY_HALF_LIFE_DAYS
+    : 1460;
+  const minWeight = clamp(
+    Number.isFinite(DEFAULT_RECENCY_MIN_WEIGHT) ? DEFAULT_RECENCY_MIN_WEIGHT : 0.2,
+    0,
+    1
+  );
+  const decayWeight = Math.exp(-ageDays / halfLifeDays);
+
+  return clamp(Math.max(minWeight, decayWeight), 0, 1);
 }
 
 // This function creates an empty positive-signal counter object.
