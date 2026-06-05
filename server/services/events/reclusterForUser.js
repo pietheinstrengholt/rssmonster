@@ -272,13 +272,26 @@ export async function incrementalClusterForUser(userId, options = {}) {
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
 
+  const latestEvent = await Event.findOne({
+    where: { userId },
+    attributes: ['updatedAt'],
+    order: [['updatedAt', 'DESC']]
+  });
+  const eventHighWaterAt = latestEvent?.updatedAt ?? null;
+
+  const articleWhere = {
+    status: 'unread',
+    userId,
+    eventId: null,
+    published: { [Op.gte]: cutoffDate }
+  };
+
+  if (eventHighWaterAt) {
+    articleWhere.createdAt = { [Op.gt]: eventHighWaterAt };
+  }
+
   const articles = await Article.findAll({
-    where: {
-      status: 'unread',
-      userId,
-      eventId: null,
-      published: { [Op.gte]: cutoffDate }
-    },
+    where: articleWhere,
     order: [
       ['published', 'ASC'],
       ['id', 'ASC']

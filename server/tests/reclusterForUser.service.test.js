@@ -44,6 +44,11 @@ function articlePayload(user, feed, index, overrides = {}) {
   };
 }
 
+// This function returns a stable recent date inside the replay window.
+function recentDateWithOffset(offsetMs = 0) {
+  return new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + offsetMs);
+}
+
 describe('reclusterForUser', () => {
   beforeEach(async () => {
     await resetDatabase();
@@ -112,7 +117,7 @@ describe('reclusterForUser', () => {
       url: `https://example.com/windowed-second-${user.id}.xml`
     });
 
-    const base = new Date('2026-05-28T08:00:00.000Z');
+    const base = recentDateWithOffset();
     const minutesFromBase = minutes => new Date(base.getTime() + minutes * 60 * 1000);
     const sharedVector = [1, 0, 0];
 
@@ -172,13 +177,13 @@ describe('reclusterForUser', () => {
       articlePayload(user, feed, 1, {
         title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
         url: `https://example.com/${user.id}/pinball-1`,
-        published: new Date('2026-05-28T10:00:00.000Z'),
+        published: recentDateWithOffset(),
         articleVector: [1, 0, 0]
       }),
       articlePayload(user, feedTwo, 2, {
         title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
         url: `https://example.com/${user.id}/pinball-2`,
-        published: new Date('2026-05-28T11:00:00.000Z'),
+        published: recentDateWithOffset(60 * 60 * 1000),
         articleVector: [0.79, 0.613, 0]
       })
     ]);
