@@ -22,6 +22,28 @@ import { recomputeTopicStatsForUser } from '../topics/topicStats.service.js';
 
 const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
 
+// This function clears article event references that point outside the owning user's events.
+async function clearForeignEventReferencesForUser(userId) {
+  const [affectedCount] = await Article.update(
+    { eventId: null },
+    {
+      where: {
+        userId,
+        eventId: {
+          [Op.ne]: null,
+          [Op.notIn]: db.Sequelize.literal(
+            `(SELECT id FROM events WHERE userId = ${db.sequelize.escape(userId)})`
+          )
+        }
+      }
+    }
+  );
+
+  if (affectedCount) {
+    console.log(`[EVENT] Cleared ${affectedCount} foreign event references for user ${userId}`);
+  }
+}
+
 // This function counts how many replayed articles ended up assigned to events.
 async function summarizeArticleAssignments(articleIds) {
   if (!articleIds.length) {
@@ -316,6 +338,8 @@ export async function incrementalClusterForUser(userId, options = {}) {
 export async function reclusterForUser(userId, options = {}) {
   const { skipTopicAssignment = false } = options;
   console.log(`[EVENT] Window replay clustering for user ${userId}`);
+
+  await clearForeignEventReferencesForUser(userId);
 
   const cutoffDate = new Date();
   cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
