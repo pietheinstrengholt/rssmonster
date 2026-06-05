@@ -144,6 +144,17 @@ cd server
 ./node_modules/.bin/sequelize db:seed:all
 ```
 
+### Recommended MySQL Configuration for Larger Article Volumes
+
+When processing or querying large numbers of articles, it is recommended to tune MySQL sort memory to reduce sort-related bottlenecks.
+
+Add the following to your MySQL configuration (for example in `my.cnf`):
+
+```ini
+[mysqld]
+sort_buffer_size = 4M
+```
+
 ### 5. Required: Build and Seed Island Taxonomy Vectors
 
 After installation (and after each deployment to a new environment), generate taxonomy vectors and seed them into the database:
