@@ -40,7 +40,7 @@
   },
   "license": "MIT",
   "devDependencies": {
-    "eslint": "^9.39.2",
+    "eslint": "^10.4.1",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
     "vitest": "^4.1.8"
