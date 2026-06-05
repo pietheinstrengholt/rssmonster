@@ -1,6 +1,11 @@
 import db from '../models/index.js';
 const { Island, Setting } = db;
 
+// This function formats a ratio as a one-decimal percentage number.
+const percentage = (part, total) => total
+  ? Number(((part / total) * 100).toFixed(1))
+  : 0;
+
 export const getSettings = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
@@ -338,8 +343,325 @@ export const getIslandsOverview = async (req, res, _next) => {
   }
 };
 
+export const getTopicsOverview = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const [totalsRaw] = await db.sequelize.query(
+      `
+      SELECT
+        COALESCE((SELECT COUNT(*) FROM articles a WHERE a.userId = :userId), 0) AS totalArticles,
+        COALESCE((SELECT COUNT(*) FROM articles a WHERE a.userId = :userId AND a.eventId IS NULL), 0) AS unclusteredArticles,
+        COALESCE((
+          SELECT COUNT(DISTINCT a.id)
+          FROM articles a
+          INNER JOIN events e
+            ON e.id = a.eventId
+           AND e.userId = :userId
+          WHERE a.userId = :userId
+        ), 0) AS eventLinkedArticles,
+        COALESCE((SELECT COUNT(*) FROM events e WHERE e.userId = :userId), 0) AS eventCount,
+        COALESCE((
+          SELECT COUNT(*)
+          FROM events e
+          WHERE e.userId = :userId
+            AND e.status <> 'archived'
+        ), 0) AS activeEventCount,
+        COALESCE((SELECT AVG(e.articleCount) FROM events e WHERE e.userId = :userId), 0) AS averageArticlesPerEvent,
+        COALESCE((SELECT MAX(e.articleCount) FROM events e WHERE e.userId = :userId), 0) AS largestEventSize,
+        COALESCE((SELECT COUNT(*) FROM topics t WHERE t.userId = :userId), 0) AS topicCount,
+        COALESCE((
+          SELECT COUNT(DISTINCT e.id)
+          FROM events e
+          WHERE e.userId = :userId
+            AND (
+              e.topicId IS NOT NULL
+              OR EXISTS (
+                SELECT 1
+                FROM event_topics et
+                INNER JOIN topics t
+                  ON t.id = et.topicId
+                 AND t.userId = :userId
+                WHERE et.eventId = e.id
+              )
+            )
+        ), 0) AS eventsLinkedToTopics,
+        COALESCE((
+          SELECT COUNT(DISTINCT t.id)
+          FROM topics t
+          WHERE t.userId = :userId
+            AND (
+              EXISTS (
+                SELECT 1
+                FROM events e
+                WHERE e.topicId = t.id
+                  AND e.userId = :userId
+              )
+              OR EXISTS (
+                SELECT 1
+                FROM event_topics et
+                INNER JOIN events e
+                  ON e.id = et.eventId
+                 AND e.userId = :userId
+                WHERE et.topicId = t.id
+              )
+            )
+        ), 0) AS topicsWithEvents,
+        COALESCE((
+          SELECT COUNT(DISTINCT a.id)
+          FROM articles a
+          WHERE a.userId = :userId
+            AND (
+              a.topicId IS NOT NULL
+              OR EXISTS (
+                SELECT 1
+                FROM article_topics atp
+                INNER JOIN topics t
+                  ON t.id = atp.topicId
+                 AND t.userId = :userId
+                WHERE atp.articleId = a.id
+              )
+            )
+        ), 0) AS articlesLinkedToTopics
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const eventSizeBuckets = await db.sequelize.query(
+      `
+      SELECT
+        CASE
+          WHEN e.articleCount >= 5 THEN '5+'
+          ELSE CAST(e.articleCount AS CHAR)
+        END AS bucket,
+        COUNT(*) AS count
+      FROM events e
+      WHERE e.userId = :userId
+      GROUP BY bucket
+      ORDER BY MIN(e.articleCount)
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const eventStatuses = await db.sequelize.query(
+      `
+      SELECT e.status, COUNT(*) AS count
+      FROM events e
+      WHERE e.userId = :userId
+      GROUP BY e.status
+      ORDER BY e.status
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const topicTypes = await db.sequelize.query(
+      `
+      SELECT t.topicType, COUNT(*) AS count
+      FROM topics t
+      WHERE t.userId = :userId
+      GROUP BY t.topicType
+      ORDER BY t.topicType
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const events = await db.sequelize.query(
+      `
+      SELECT
+        e.id,
+        e.name,
+        e.status,
+        e.articleCount,
+        e.sourceCount,
+        e.eventStrength,
+        e.eventWindowStartAt,
+        e.eventWindowEndAt,
+        e.updatedAt,
+        COALESCE((
+          SELECT COUNT(*)
+          FROM articles a
+          WHERE a.userId = :userId
+            AND a.eventId = e.id
+        ), 0) AS actualArticleCount,
+        (
+          COALESCE((
+            SELECT COUNT(DISTINCT et.topicId)
+            FROM event_topics et
+            INNER JOIN topics t
+              ON t.id = et.topicId
+             AND t.userId = :userId
+            WHERE et.eventId = e.id
+          ), 0)
+          +
+          CASE
+            WHEN e.topicId IS NOT NULL
+             AND NOT EXISTS (
+               SELECT 1
+               FROM event_topics et2
+               WHERE et2.eventId = e.id
+                 AND et2.topicId = e.topicId
+             )
+            THEN 1
+            ELSE 0
+          END
+        ) AS topicCount
+      FROM events e
+      WHERE e.userId = :userId
+      ORDER BY
+        CASE WHEN e.status = 'archived' THEN 1 ELSE 0 END,
+        e.articleCount DESC,
+        e.updatedAt DESC
+      LIMIT 25
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const topics = await db.sequelize.query(
+      `
+      SELECT
+        t.id,
+        t.name,
+        t.topicType,
+        t.affinityScore,
+        t.evidenceScore,
+        t.articleCount,
+        t.behavioralArticleCount,
+        t.eventCount,
+        t.starredCount,
+        t.lastActivityAt,
+        COALESCE((
+          SELECT COUNT(DISTINCT e.id)
+          FROM events e
+          WHERE e.userId = :userId
+            AND (
+              e.topicId = t.id
+              OR EXISTS (
+                SELECT 1
+                FROM event_topics et
+                WHERE et.eventId = e.id
+                  AND et.topicId = t.id
+              )
+            )
+        ), 0) AS linkedEventCount,
+        COALESCE((
+          SELECT COUNT(DISTINCT a.id)
+          FROM articles a
+          WHERE a.userId = :userId
+            AND (
+              a.topicId = t.id
+              OR EXISTS (
+                SELECT 1
+                FROM article_topics atp
+                WHERE atp.articleId = a.id
+                  AND atp.topicId = t.id
+              )
+            )
+        ), 0) AS linkedArticleCount
+      FROM topics t
+      WHERE t.userId = :userId
+      ORDER BY
+        t.lastActivityAt DESC,
+        t.eventCount DESC,
+        t.articleCount DESC,
+        t.id DESC
+      LIMIT 25
+      `,
+      {
+        replacements: { userId },
+        type: db.Sequelize.QueryTypes.SELECT
+      }
+    );
+
+    const totalArticles = Number(totalsRaw?.totalArticles || 0);
+    const eventLinkedArticles = Number(totalsRaw?.eventLinkedArticles || 0);
+    const eventCount = Number(totalsRaw?.eventCount || 0);
+    const eventsLinkedToTopics = Number(totalsRaw?.eventsLinkedToTopics || 0);
+    const articlesLinkedToTopics = Number(totalsRaw?.articlesLinkedToTopics || 0);
+    const topicCount = Number(totalsRaw?.topicCount || 0);
+
+    return res.status(200).json({
+      userId,
+      totals: {
+        totalArticles,
+        unclusteredArticles: Number(totalsRaw?.unclusteredArticles || 0),
+        eventLinkedArticles,
+        unassignedArticles: Math.max(0, totalArticles - eventLinkedArticles),
+        eventCount,
+        activeEventCount: Number(totalsRaw?.activeEventCount || 0),
+        eventReuseRatio: percentage(eventLinkedArticles, totalArticles),
+        newEventRatio: percentage(eventCount, totalArticles),
+        averageArticlesPerEvent: Number(Number(totalsRaw?.averageArticlesPerEvent || 0).toFixed(1)),
+        largestEventSize: Number(totalsRaw?.largestEventSize || 0),
+        topicCount,
+        eventsLinkedToTopics,
+        topicsWithEvents: Number(totalsRaw?.topicsWithEvents || 0),
+        eventsWithoutTopics: Math.max(0, eventCount - eventsLinkedToTopics),
+        articlesLinkedToTopics,
+        topicCoveragePercent: percentage(articlesLinkedToTopics, totalArticles),
+        averageEventsPerTopic: topicCount
+          ? Number((eventsLinkedToTopics / topicCount).toFixed(1))
+          : 0
+      },
+      eventSizeBuckets: eventSizeBuckets.map(row => ({
+        bucket: row.bucket,
+        count: Number(row.count || 0)
+      })),
+      eventStatuses: eventStatuses.map(row => ({
+        status: row.status,
+        count: Number(row.count || 0)
+      })),
+      topicTypes: topicTypes.map(row => ({
+        topicType: row.topicType,
+        count: Number(row.count || 0)
+      })),
+      events: events.map(event => ({
+        ...event,
+        articleCount: Number(event.articleCount || 0),
+        sourceCount: Number(event.sourceCount || 0),
+        eventStrength: Number(event.eventStrength || 0),
+        actualArticleCount: Number(event.actualArticleCount || 0),
+        topicCount: Number(event.topicCount || 0)
+      })),
+      topics: topics.map(topic => ({
+        ...topic,
+        affinityScore: Number(topic.affinityScore || 0),
+        evidenceScore: Number(topic.evidenceScore || 0),
+        articleCount: Number(topic.articleCount || 0),
+        behavioralArticleCount: Number(topic.behavioralArticleCount || 0),
+        eventCount: Number(topic.eventCount || 0),
+        starredCount: Number(topic.starredCount || 0),
+        linkedEventCount: Number(topic.linkedEventCount || 0),
+        linkedArticleCount: Number(topic.linkedArticleCount || 0)
+      }))
+    });
+  } catch (err) {
+    console.error('Error in getTopicsOverview:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 export default {
   getSettings,
   setSettings,
-  getIslandsOverview
+  getIslandsOverview,
+  getTopicsOverview
 }

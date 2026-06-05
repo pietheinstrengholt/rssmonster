@@ -20,6 +20,7 @@
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
           <button class="btn btn-secondary" @click="active = 'actions'">Actions</button>
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'scores'">Scores</button>
+          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'topics'">Topics</button>
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'islands'">Islands</button>
           <button class="btn btn-secondary" @click="active = 'feeds'">Feeds</button>
           <button v-if="$store.auth.getRole === 'admin'" class="btn btn-secondary" @click="active = 'users'">Manage Users</button>
@@ -38,6 +39,7 @@ import SmartFoldersSettings from './SmartFoldersSettings.vue';
 import ActionsSettings from './ActionsSettings.vue';
 import ScoresSettings from './ScoresSettings.vue';
 import SettingsIslands from './SettingsIslands.vue';
+import SettingsTopics from './SettingsTopics.vue';
 import FeedsOverview from './FeedsOverview.vue';
 import ManageUsers from './ManageUsers.vue';
 
@@ -50,6 +52,7 @@ export default {
     ActionsSettings,
     ScoresSettings,
     SettingsIslands,
+    SettingsTopics,
     FeedsOverview,
     ManageUsers
   },
@@ -69,6 +72,7 @@ export default {
         smartfolders: 'SmartFoldersSettings',
         actions: 'ActionsSettings',
         scores: 'ScoresSettings',
+        topics: 'SettingsTopics',
         islands: 'SettingsIslands',
         feeds: 'FeedsOverview',
         users: 'ManageUsers'

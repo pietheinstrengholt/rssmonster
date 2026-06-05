@@ -64,6 +64,14 @@ export const cosineSimilarity = sharedCosineSimilarity;
 export const normalizeVector = sharedNormalizeVector;
 export const weightedAverageVector = sharedWeightedAverageVector;
 
+// This function orders island rows by strongest weight first with stable ID tie-breaking.
+export function sortIslandsByWeight(islands = []) {
+  return islands.sort((a, b) =>
+    (Number(b.weight || 0) - Number(a.weight || 0)) ||
+    (Number(a.id || 0) - Number(b.id || 0))
+  );
+}
+
 // This function blends an existing island vector with new evidence.
 export function blendIslandVector(existingVector, incomingVector, alpha = DEFAULT_ISLAND_VECTOR_ALPHA) {
   if (!Array.isArray(existingVector)) return normalizeVector(incomingVector);

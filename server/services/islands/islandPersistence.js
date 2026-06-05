@@ -15,7 +15,8 @@ import {
   mergePositiveSignals,
   normalizePositiveSignals,
   resolveTaxonomyDisplayName,
-  resolveTopicFallbackLabel
+  resolveTopicFallbackLabel,
+  sortIslandsByWeight
 } from './islandVectorUtils.js';
 
 const { Island, IslandTopic, IslandTaxonomy, sequelize } = db;
@@ -33,11 +34,10 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
     .filter(profile => profile.topics.length > 0 || (profile.articles || []).length > 0);
 
-  const existingIslands = await Island.findAll({
+  const existingIslands = sortIslandsByWeight(await Island.findAll({
     where: { userId },
-    order: [['weight', 'DESC'], ['id', 'ASC']],
     transaction
-  });
+  }));
 
   const taxonomyRows = await IslandTaxonomy.findAll({
     where: {

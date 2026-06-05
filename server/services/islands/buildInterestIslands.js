@@ -13,7 +13,8 @@ import {
   clamp,
   cosineSimilarity,
   resolveTaxonomyDisplayName,
-  resolveTopicFallbackLabel
+  resolveTopicFallbackLabel,
+  sortIslandsByWeight
 } from './islandVectorUtils.js';
 
 // This service builds and enriches "interest islands" from user behavior and topic history.
@@ -77,10 +78,9 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
     options.topicConfidenceThreshold ?? DEFAULT_TOPIC_CONFIDENCE_THRESHOLD;
 
   return sequelize.transaction(async (transaction) => {
-    const [islands, topicProfiles, taxonomyRows] = await Promise.all([
+    const [islandRows, topicProfiles, taxonomyRows] = await Promise.all([
       Island.findAll({
         where: { userId, archivedInd: false, islandVector: { [Op.ne]: null } },
-        order: [['weight', 'DESC'], ['id', 'ASC']],
         transaction
       }),
       buildTopicInterestIslandProfilesForUser(userId, options),
@@ -93,6 +93,7 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
         transaction
       })
     ]);
+    const islands = sortIslandsByWeight(islandRows);
 
     let enrichedIslandCount = 0;
     let islandTopicLinkCount = 0;

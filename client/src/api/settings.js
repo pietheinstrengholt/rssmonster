@@ -11,3 +11,6 @@ export const saveSettings = (settingsData) =>
 
 export const fetchIslandsOverview = () =>
   api.get('/setting/islands');
+
+export const fetchTopicsOverview = () =>
+  api.get('/setting/topics');
