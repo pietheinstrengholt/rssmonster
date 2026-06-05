@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 import { reconcileTouchedEvents } from '../services/events/eventReconciliation.js';
 
 const { Article, Category, Event, Feed, User } = db;
@@ -60,10 +59,6 @@ async function createEvent(user, representativeArticle, overrides = {}) {
 }
 
 describe('reconcileTouchedEvents', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
-
   it('scopes touched events and event articles to the requested user', async () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');

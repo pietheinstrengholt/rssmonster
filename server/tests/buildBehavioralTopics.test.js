@@ -1,17 +1,19 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 import { rebuildTopicsForUser } from '../services/events/reclusterForUser.js';
 import { buildBehavioralTopicsForUser } from '../services/topics/buildBehavioralTopics.js';
 
 const { Article, ArticleTopic, Category, Event, EventTopic, Feed, Topic, User } = db;
+let userSequence = 0;
 
 // This function creates the minimal user/feed graph needed by article fixtures.
 async function createUserGraph() {
+  userSequence += 1;
+
   const hash = await bcrypt.hash('secret', 4);
   const user = await User.create({
-    username: `behavioral-${Date.now()}`,
+    username: `behavioral-${Date.now()}-${userSequence}`,
     password: 'secret',
     hash,
     role: 'user'
@@ -58,10 +60,6 @@ function articlePayload(userId, feedId, index, overrides = {}) {
 }
 
 describe('buildBehavioralTopicsForUser', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  }, 30000);
-
   it('creates behavioral topics without requiring event linkage', async () => {
     const { user, feeds } = await createUserGraph();
 

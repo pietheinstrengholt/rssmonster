@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 import { buildTopicInterestIslandProfilesForUser } from '../services/islands/islandTopicProfiles.js';
 
 const { Article, ArticleTopic, Category, Feed, Topic, User } = db;
@@ -44,10 +43,6 @@ function articlePayload(user, feed, index, overrides = {}) {
 }
 
 describe('buildTopicInterestIslandProfilesForUser', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
-
   it('ignores foreign article behavior attached through stale article-topic rows', async () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');

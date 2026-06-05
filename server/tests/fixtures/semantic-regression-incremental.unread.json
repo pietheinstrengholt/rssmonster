@@ -1,0 +1,40 @@
+{
+  "categories": [
+    {
+      "id": 1,
+      "sourceId": 5,
+      "name": "Gaming",
+      "categoryOrder": 4
+    }
+  ],
+  "feeds": [
+    {
+      "id": 1,
+      "sourceId": 23,
+      "categoryId": 1,
+      "feedName": "IGN All",
+      "description": "The latest IGN news, reviews and videos about video games, movies, TV, tech and comics",
+      "feedDesc": "The latest IGN news, reviews and videos about video games, movies, TV, tech and comics",
+      "feedType": "rss",
+      "url": "https://feeds.feedburner.com/ign/all",
+      "status": "active"
+    }
+  ],
+  "articles": [
+    {
+      "sourceId": 1,
+      "feedId": 1,
+      "status": "unread",
+      "starInd": 1,
+      "negativeInd": 0,
+      "clickedAmount": 2,
+      "url": "https://www.ign.com/articles/take-two-forces-gta-5-multiplayer-platform-rage-mp-to-shut-down-and-migrate-to-fivem",
+      "title": "Take-Two Forces GTA 5 Multiplayer Platform Rage:MP to Shut Down and Migrate to FiveM",
+      "description": "Take-Two requested Rage:MP shutdown and migration to FiveM, citing FiveM as the only authorized GTA V multiplayer modding platform.",
+      "contentOriginal": "<html><head></head><body><p>Take-Two Interactive, parent company of Rockstar Games, has requested that GTA V modding platform Rage:MP begin a shutdown and migrate servers to FiveM.</p><p>The platform operators said FiveM is now the only authorized GTAV multiplayer modding platform under Rockstar policy.</p><p>Server operators were asked to wind down operations and move communities before the announced cutoff date.</p></body></html>",
+      "contentStripped": "Take-Two Interactive, parent company of Rockstar Games, has requested that GTA V modding platform Rage:MP begin a shutdown and migrate servers to FiveM. The platform operators said FiveM is now the only authorized GTAV multiplayer modding platform under Rockstar policy. Server operators were asked to wind down operations and move communities before the announced cutoff date.",
+      "published": "2026-05-27T08:28:02.000Z",
+      "firstSeen": null
+    }
+  ]
+}

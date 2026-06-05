@@ -15,6 +15,7 @@
     "fixture:semantic-export": "node scripts/exportSemanticRegressionFixture.js",
     "fixture:semantic-vectors": "node scripts/generateSemanticRegressionVectors.js",
     "fixture:semantic-incremental-vectors": "node scripts/generateSemanticRegressionIncrementalVectors.js",
+    "fixture:semantic-incremental-unread-vectors": "node scripts/generateSemanticRegressionIncrementalUnreadVectors.js",
     "fixture:taxonomy-vectors": "node scripts/generateIslandTaxonomyVectorFixture.js",
     "lint": "eslint .",
     "start": "node bootstrap.js",

@@ -1,7 +1,6 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 import { reclusterForUser } from '../services/events/reclusterForUser.js';
 
 const { Article, Category, Event, EventTopic, Feed, Topic, User } = db;
@@ -50,10 +49,6 @@ function recentDateWithOffset(offsetMs = 0) {
 }
 
 describe('reclusterForUser', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
-
   it('does not clear or delete foreign events referenced by stale article data', async () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');

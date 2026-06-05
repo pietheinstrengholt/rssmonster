@@ -3,6 +3,7 @@ import { BaseSequencer } from 'vitest/node';
 
 const SEMANTIC_BASELINE_TEST = '/tests/semanticRegression.pipeline.test.js';
 const SEMANTIC_INCREMENTAL_TEST = '/tests/semanticRegression.incremental.pipeline.test.js';
+const SEMANTIC_INCREMENTAL_UNREAD_TEST = '/tests/semanticRegression.incremental.unread.pipeline.test.js';
 const RECLUSTER_FOR_USER_TEST = '/tests/reclusterForUser.service.test.js';
 
 // This class keeps Vitest's default sequencing while pinning dependent semantic tests.
@@ -18,7 +19,8 @@ class RssMonsterSequencer extends BaseSequencer {
       if (this.isTestFile(file, SEMANTIC_BASELINE_TEST)) return 0;
       if (this.isTestFile(file, SEMANTIC_INCREMENTAL_TEST)) return 1;
       if (this.isTestFile(file, RECLUSTER_FOR_USER_TEST)) return 2;
-      return 3;
+      if (this.isTestFile(file, SEMANTIC_INCREMENTAL_UNREAD_TEST)) return 3;
+      return 4;
     };
 
     return files

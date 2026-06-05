@@ -1,18 +1,17 @@
-import { beforeEach, describe, expect, it } from 'vitest';
+import { describe, expect, it } from 'vitest';
+import { randomUUID } from 'node:crypto';
 import db from '../models/index.js';
-import { resetDatabase } from './helpers/resetDb.js';
 import { buildArticleInterestScoresForUser } from '../services/islands/buildArticleInterestScores.js';
 
 const { Article, ArticleTopic, Category, Feed, Island, IslandTopic, Topic, User } = db;
-let userSequence = 0;
 
 async function createUserGraph() {
-  userSequence += 1;
+  const suffix = randomUUID();
 
   const user = await User.create({
-    username: `interest-scores-${Date.now()}-${userSequence}`,
+    username: `interest-scores-${suffix}`,
     password: 'secret',
-    hash: 'secret',
+    hash: `interest-scores-${suffix}`,
     role: 'user'
   });
 
@@ -26,18 +25,18 @@ async function createUserGraph() {
     userId: user.id,
     categoryId: category.id,
     feedName: 'Feed',
-    url: 'https://example.com/feed.xml'
+    url: `https://example.com/interest-scores/${suffix}/feed.xml`
   });
 
   return { user, feed };
 }
 
-function articlePayload(userId, feedId, index, overrides = {}) {
+function articlePayload(userId, feedId, index, suffix, overrides = {}) {
   return {
     userId,
     feedId,
     title: `Interest score article ${index}`,
-    url: `https://example.com/interest/${index}`,
+    url: `https://example.com/interest/${suffix}/${index}`,
     articleVector: [1, 0, 0],
     interestScore: 0.7,
     status: 'unread',
@@ -46,16 +45,13 @@ function articlePayload(userId, feedId, index, overrides = {}) {
 }
 
 describe('buildArticleInterestScoresForUser', () => {
-  beforeEach(async () => {
-    await resetDatabase();
-  });
-
   it('clears stale island scores for unread articles when no current island matches', async () => {
     const { user, feed } = await createUserGraph();
-    const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, {
+    const suffix = randomUUID();
+    const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
       interestScore: 0.8
     }));
-    const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, {
+    const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
       status: 'read',
       interestScore: 0.9
     }));
@@ -71,10 +67,11 @@ describe('buildArticleInterestScoresForUser', () => {
 
   it('rescoring from topic islands only updates unread articles', async () => {
     const { user, feed } = await createUserGraph();
+    const suffix = randomUUID();
     const topic = await Topic.create({
       userId: user.id,
       name: 'Topic',
-      topicKey: 'topic',
+      topicKey: `topic-${suffix}`,
       topicVector: [1, 0, 0]
     });
     const island = await Island.create({
@@ -84,11 +81,11 @@ describe('buildArticleInterestScoresForUser', () => {
       islandVector: [1, 0, 0],
       archivedInd: false
     });
-    const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, {
+    const unreadArticle = await Article.create(articlePayload(user.id, feed.id, 1, suffix, {
       topicId: topic.id,
       interestScore: 0.8
     }));
-    const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, {
+    const readArticle = await Article.create(articlePayload(user.id, feed.id, 2, suffix, {
       topicId: topic.id,
       status: 'read',
       interestScore: 0.9
