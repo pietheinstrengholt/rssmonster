@@ -9,3 +9,4 @@ server/cert/
 logs/
 package-lock.json
 server/tests/fixtures/*vectors.json
+node_modules/
