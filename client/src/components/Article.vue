@@ -231,13 +231,14 @@ import { fetchClusterArticles } from '../api/clusters';
 
 const NEUTRAL_SCORE = 70;
 
+// This function formats elapsed time for article publication dates.
 function timeDifference(current, previous) {
   const msPerMinute = 60 * 1000;
   const msPerHour = msPerMinute * 60;
   const msPerDay = msPerHour * 24;
   const msPerMonth = msPerDay * 30;
   const msPerYear = msPerDay * 365;
-  const elapsed = current - previous;
+  const elapsed = Math.abs(current - previous);
   const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
 
   if (elapsed < msPerMinute) return plural(Math.round(elapsed / 1000), 'second');
@@ -291,7 +292,9 @@ export default {
     formatDate() {
       return value => {
         if (!value) return '';
-        const result = timeDifference(Date.now(), new Date(value).getTime());
+        const publishedAt = new Date(value).getTime();
+        if (Number.isNaN(publishedAt)) return '';
+        const result = timeDifference(Date.now(), publishedAt);
         return result.charAt(0).toUpperCase() + result.slice(1);
       };
     },
