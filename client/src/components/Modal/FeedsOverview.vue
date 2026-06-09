@@ -67,6 +67,8 @@
                                         <th>Status</th>
                                         <th>Articles</th>
                                         <th>Per Day</th>
+                                        <th>Clustered</th>
+                                        <th>Coverage</th>
                                         <th>Trust</th>
                                         <th>Duplication</th>
                                         <th>Edit</th>
@@ -79,6 +81,8 @@
                                         <td>{{ feed.status }}</td>
                                         <td>{{ feed.articleCount || 0}}</td>
                                         <td>{{ feed.articlesPerDay || 0}}</td>
+                                        <td>{{ feed.clusteredArticleCount || 0 }}</td>
+                                        <td>{{ formatCoverage(feed.clusterCoveragePct) }}</td>
                                         <td>{{ formatScore(feed.feedTrust) }}</td>
                                         <td>{{ formatScore(feed.feedDuplicationRate) }}</td>
                                         <td>
@@ -220,6 +224,14 @@ export default {
                 if (Number.isNaN(num)) return '-';
                 const pct = num * 100;
                 return `${pct.toFixed(0)}%`;
+            };
+        },
+        formatCoverage() {
+            return (value) => {
+                if (value === null || value === undefined) return '-';
+                const num = Number(value);
+                if (Number.isNaN(num)) return '-';
+                return `${num.toFixed(1)}%`;
             };
         }
     }

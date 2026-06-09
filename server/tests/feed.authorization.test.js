@@ -4,7 +4,7 @@ import request from 'supertest';
 import db from '../models/index.js';
 import { getJwtSecret } from '../config/auth.js';
 
-const { Article, Category, Feed, User, sequelize } = db;
+const { Article, Category, Event, Feed, User, sequelize } = db;
 
 let app;
 
@@ -70,6 +70,45 @@ describe('feed ownership authorization', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ message: 'Feed not found' });
+  });
+
+  it('GET feeds includes clustered article coverage metrics', async () => {
+    const owner = await createUser(uniqueName('feed-owner'));
+    const { feed } = await createFeedFor(owner);
+
+    const articles = await Promise.all([0, 1, 2, 3].map(index => Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/coverage-${index}`,
+      title: `${owner.username} coverage article ${index}`,
+      published: new Date('2026-06-01T10:00:00Z')
+    })));
+
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: articles[0].id,
+      name: `${owner.username} event`,
+      articleCount: 3
+    });
+
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: articles.slice(0, 3).map(article => article.id) } }
+    );
+
+    const res = await request(app)
+      .get('/api/feeds')
+      .set('Authorization', authHeaderFor(owner));
+
+    const feedResponse = res.body.feeds.find(item => item.id === feed.id);
+
+    expect(res.status).toBe(200);
+    expect(feedResponse).toMatchObject({
+      articleCount: 4,
+      clusteredArticleCount: 3,
+      clusterCoveragePct: 75
+    });
   });
 
   it('PUT feed by ID rejects foreign-user feed', async () => {
