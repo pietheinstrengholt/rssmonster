@@ -60,7 +60,7 @@
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.1.1",
-    "mysql2": "^3.22.4",
+    "mysql2": "^3.22.5",
     "node-cache": "^5.1.2",
     "openai": "^6.42.0",
     "sequelize": "^6.37.8",
