@@ -24,6 +24,7 @@
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/runSemanticPipeline.js",
     "recluster": "NODE_ENV=production node scripts/reclusterArticles.js",
+    "recluster:retrospective": "NODE_ENV=production node scripts/retrospectiveClusterArticles.js",
     "build:events": "node scripts/buildEvents.js",
     "build:topics": "node scripts/buildTopics.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",

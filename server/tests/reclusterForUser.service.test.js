@@ -1,7 +1,10 @@
 import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { reclusterForUser } from '../services/events/reclusterForUser.js';
+import {
+  reclusterForUser,
+  retrospectiveClusterForUser
+} from '../services/events/reclusterForUser.js';
 
 const { Article, Category, Event, EventTopic, Feed, Topic, User } = db;
 
@@ -194,6 +197,58 @@ describe('reclusterForUser', () => {
       }]
     });
 
+    expect(events).toHaveLength(1);
+    expect(events[0].articleCount).toBe(2);
+    expect(events[0].articles).toHaveLength(2);
+  });
+
+  it('retrospectively clusters vectorized articles outside the replay window', async () => {
+    const { user, feed } = await createUserGraph('retrospective');
+    const feedTwo = await Feed.create({
+      userId: user.id,
+      categoryId: feed.categoryId,
+      feedName: 'retrospective second feed',
+      url: `https://example.com/retrospective-second-${user.id}.xml`
+    });
+    const oldPublishedAt = new Date('2026-05-01T10:00:00.000Z');
+    const sharedVector = [1, 0, 0];
+
+    await Article.bulkCreate([
+      articlePayload(user, feed, 1, {
+        title: 'Historic Acme acquisition closes',
+        url: `https://example.com/${user.id}/historic-acme-1`,
+        published: oldPublishedAt,
+        articleVector: sharedVector
+      }),
+      articlePayload(user, feedTwo, 2, {
+        title: 'Historic Acme acquisition closes',
+        url: `https://example.com/${user.id}/historic-acme-2`,
+        published: new Date(oldPublishedAt.getTime() + 60 * 60 * 1000),
+        articleVector: sharedVector
+      })
+    ]);
+
+    await reclusterForUser(user.id, { skipTopicAssignment: true });
+
+    const recentReplayEventCount = await Event.count({
+      where: { userId: user.id }
+    });
+
+    await retrospectiveClusterForUser(user.id, {
+      skipTopicAssignment: true,
+      batchSize: 250
+    });
+
+    const events = await Event.findAll({
+      where: { userId: user.id },
+      include: [{
+        model: Article,
+        as: 'articles',
+        attributes: ['id']
+      }]
+    });
+
+    expect(recentReplayEventCount).toBe(0);
     expect(events).toHaveLength(1);
     expect(events[0].articleCount).toBe(2);
     expect(events[0].articles).toHaveLength(2);

@@ -83,7 +83,10 @@ function hasStoredArticleVector(article) {
 
 // This function embeds, assigns, reconciles, and summarizes article-to-event clustering for one pass.
 async function assignAndReconcile(userId, articles, label, options = {}) {
-  const { skipTopicAssignment = false } = options;
+  const {
+    skipTopicAssignment = false,
+    useTemporalEventCandidates = false
+  } = options;
   const touchedEventIds = new Set();
   const touchedTopicIds = new Set();
   const runContext = {
@@ -98,7 +101,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     }
   };
 
-  const cache = await EventCache.forUser(userId);
+  const cache = useTemporalEventCandidates ? null : await EventCache.forUser(userId);
 
   const topicsCache = await db.Topic.findAll({
     where: {
@@ -147,9 +150,13 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
       continue;
     }
 
+    const eventCache = useTemporalEventCandidates
+      ? await EventCache.forArticle(articles[i])
+      : cache;
+
     const eventId = await assignArticleToEvent(
       articles[i],
-      cache,
+      eventCache,
       vectors,
       topicsCache,
       runContext,
@@ -495,6 +502,63 @@ export async function reclusterForUser(userId, options = {}) {
     `[EVENT] Finished window replay for user ${userId}` +
     ` (window=${RECENCY_WINDOW_DAYS}d, articles=${windowArticles.length},` +
     ` pruned=${deletedCount})`
+  );
+}
+
+// This function replays all vectorized articles for a user without the recency window.
+export async function retrospectiveClusterForUser(userId, options = {}) {
+  const {
+    skipTopicAssignment = false,
+    batchSize = 250
+  } = options;
+
+  console.log(`[EVENT] Retrospective clustering for user ${userId}`);
+
+  await clearForeignEventReferencesForUser(userId);
+
+  let lastId = 0;
+  let totalProcessed = 0;
+  let touchedTopicIds = [];
+
+  while (true) {
+    const articles = await Article.findAll({
+      where: {
+        userId,
+        id: { [Op.gt]: lastId },
+        articleVector: { [Op.ne]: null }
+      },
+      order: [['id', 'ASC']],
+      limit: batchSize
+    });
+
+    if (!articles.length) {
+      break;
+    }
+
+    const batchTouchedTopicIds = await assignAndReconcile(
+      userId,
+      articles,
+      'replay',
+      {
+        skipTopicAssignment,
+        useTemporalEventCandidates: true
+      }
+    );
+
+    touchedTopicIds = [...new Set([...touchedTopicIds, ...batchTouchedTopicIds])];
+    totalProcessed += articles.length;
+    lastId = articles[articles.length - 1].id;
+
+    console.log(`[EVENT] Retrospective processed=${totalProcessed}, lastId=${lastId}`);
+  }
+
+  if (!skipTopicAssignment && touchedTopicIds.length) {
+    await recomputeTopicStatsForUser(userId, touchedTopicIds);
+  }
+
+  console.log(
+    `[EVENT] Finished retrospective clustering for user ${userId}, ` +
+    `articles=${totalProcessed}`
   );
 }
 

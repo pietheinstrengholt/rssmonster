@@ -252,6 +252,25 @@ export class EventCache {
     return new EventCache(events);
   }
 
+  // This function loads candidate events that overlap an article's event-time window.
+  static async forArticle(article) {
+    const articleTs = articleEventTimestamp(article) ?? Date.now();
+    const cutoff = new Date(articleTs - EVENT_MAX_GAP_HOURS * HOUR_MS);
+    const upperBound = new Date(articleTs + EVENT_MAX_GAP_HOURS * HOUR_MS);
+
+    const events = await Event.findAll({
+      where: {
+        userId: article.userId,
+        eventWindowStartAt: { [Op.lte]: upperBound },
+        eventWindowEndAt: { [Op.gte]: cutoff }
+      },
+      order: [['eventWindowEndAt', 'DESC']],
+      limit: MAX_CANDIDATES
+    });
+
+    return new EventCache(events);
+  }
+
   // This getter exposes the current in-memory event list.
   get events() {
     return this._events;
