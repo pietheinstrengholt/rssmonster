@@ -147,13 +147,22 @@
 
         <div class="modal-footer">
           <button
+            class="btn btn-danger"
+            :disabled="deleting"
+            @click="deleteFeed"
+          >
+            {{ deleting ? 'Deleting…' : 'Delete feed' }}
+          </button>
+          <button
             class="btn btn-primary"
+            :disabled="deleting"
             @click="updateFeed"
           >
             Update feed
           </button>
           <button
             class="btn btn-secondary"
+            :disabled="deleting"
             @click="$store.data.setShowModal('')"
           >
             Close
@@ -165,7 +174,7 @@
 </template>
 
 <script>
-import { rediscoverRss, updateFeed } from '../../api/feeds';
+import { deleteFeed as deleteFeedAPI, rediscoverRss, updateFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
 
@@ -177,7 +186,8 @@ export default {
       feed: {},
       originalFeed: {}, // Store the original feed to track changes
       rediscovering: false,
-      rediscoveredRss: null
+      rediscoveredRss: null,
+      deleting: false
     };
   },
 
@@ -202,6 +212,7 @@ export default {
   },
 
   methods: {
+    // This function initializes the editable feed from the store.
     initializeFeed() {
       const feedId = Number(this.$store.data.currentSelection.feedId);
       
@@ -217,6 +228,7 @@ export default {
       console.log('Feed not found for feedId:', feedId);
     },
 
+    // This function rediscover RSS feed URL when the selected feed has errors.
     async rediscoverRss() {
       if (!this.$store.data.currentSelection.AIEnabled) {
         return false
@@ -244,6 +256,59 @@ export default {
       }
     },
 
+    // This function removes a deleted feed from local store state.
+    removeFeedFromStore(feedId) {
+      for (const category of this.$store.data.categories) {
+        const feedIndex = helper.findIndexById(category.feeds || [], feedId);
+
+        if (feedIndex === -1) {
+          continue;
+        }
+
+        const [deletedFeed] = category.feeds.splice(feedIndex, 1);
+        const unreadCount = deletedFeed?.unreadCount || 0;
+        const readCount = deletedFeed?.readCount || 0;
+        const starCount = deletedFeed?.starCount || 0;
+
+        category.unreadCount = Math.max((category.unreadCount || 0) - unreadCount, 0);
+        category.readCount = Math.max((category.readCount || 0) - readCount, 0);
+        category.starCount = Math.max((category.starCount || 0) - starCount, 0);
+
+        this.$store.data.unreadCount = Math.max((this.$store.data.unreadCount || 0) - unreadCount, 0);
+        this.$store.data.readCount = Math.max((this.$store.data.readCount || 0) - readCount, 0);
+        this.$store.data.starCount = Math.max((this.$store.data.starCount || 0) - starCount, 0);
+
+        return true;
+      }
+
+      return false;
+    },
+
+    // This function deletes the selected feed and clears selection state.
+    async deleteFeed() {
+      if (!this.feed.id || this.deleting) {
+        return;
+      }
+
+      if (!window.confirm(`Delete "${this.feed.feedName}" and all related articles?`)) {
+        return;
+      }
+
+      this.deleting = true;
+
+      try {
+        await deleteFeedAPI(this.feed.id);
+        this.removeFeedFromStore(this.feed.id);
+        this.$store.data.setSelectedFeedId('%');
+        this.$store.data.setShowModal('');
+      } catch (error) {
+        console.error('Delete feed failed:', error);
+      } finally {
+        this.deleting = false;
+      }
+    },
+
+    // This function updates the feed and syncs category changes in the store.
     async updateFeed() {
       const selectedCategoryId = this.feed.categoryId;
       const currentCategoryId = this.originalFeed.categoryId;
