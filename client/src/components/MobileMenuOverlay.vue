@@ -1,6 +1,14 @@
 <template>
   <div id="mobile-container" v-if="mobile" class="overlay">
-    <h5 class="mobile-title">Options</h5>
+    <div class="mobile-title">
+      <h5 class="mobile-title-text">Options</h5>
+      <button
+        type="button"
+        class="mobile-close-button"
+        aria-label="Close mobile menu"
+        @click="emitClickEvent('mobile', null)"
+      ></button>
+    </div>
     <div class="overlay-content" id="mobile">
       <p class="content-header">Select which category you want to display</p>
       <ul class="categories">
@@ -78,9 +86,45 @@ button.btn.btn-primary.content {
 }
 
 .mobile-title {
-  padding: 10px;
+  align-items: center;
   background-color: #3b4651;
   color: #FFF;
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+}
+
+.mobile-title-text {
+  margin: 0;
+}
+
+.mobile-close-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  display: inline-flex;
+  height: 32px;
+  justify-content: center;
+  padding: 0;
+  position: relative;
+  width: 32px;
+}
+
+.mobile-close-button::before,
+.mobile-close-button::after {
+  background-color: #FFF;
+  content: "";
+  height: 18px;
+  position: absolute;
+  width: 2px;
+}
+
+.mobile-close-button::before {
+  transform: rotate(45deg);
+}
+
+.mobile-close-button::after {
+  transform: rotate(-45deg);
 }
 
 .overlay-content {
