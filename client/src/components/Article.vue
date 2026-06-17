@@ -54,7 +54,6 @@
           </div>
         </h5>
         <div class="feedname">
-            <BootstrapIcon v-if="isMobilePortrait && status === 'read'" icon="check-circle-fill" class="read-icon" />
             <BootstrapIcon
               v-if="isMobilePortrait && quality !== undefined && roundedQuality !== NEUTRAL_SCORE"
               :icon="getQualityIcon(roundedQuality)"
