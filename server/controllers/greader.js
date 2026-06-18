@@ -673,68 +673,81 @@ export const getUnreadCount = async (req, res) => {
     }
     
     const unreadcounts = [];
-    let totalUnreads = 0;
     let totalLastUpdate = 0;
+    const categoryCounts = new Map();
     
     const categories = await Category.findAll({
       where: { userId: user.id },
-      include: [{
-        model: Feed,
-        required: false
-      }],
       order: [['categoryOrder', 'ASC'], ['name', 'ASC']]
     });
+
+    categories.forEach(category => {
+      categoryCounts.set(category.id, {
+        id: `${LABEL_PREFIX}${encodeLabelName(category.name)}`,
+        count: 0,
+        newestItemTimestampUsec: 0
+      });
+    });
+
+    const feeds = await Feed.findAll({
+      where: { userId: user.id },
+      order: [['feedName', 'ASC'], ['id', 'ASC']]
+    });
     
-    for (const cat of categories) {
-      let catUnreadCount = 0;
-      let catLastUpdate = 0;
-      
-      if (cat.feeds) {
-        for (const feed of cat.feeds) {
-          // Count unread articles for this feed
-          const unreadCount = await Article.count({
-            where: {
-              feedId: feed.id,
-              status: 'unread',
-              userId: user.id
-            }
-          });
-          
-          // Get newest item timestamp
-          const newestArticle = await Article.findOne({
-            where: { feedId: feed.id, userId: user.id },
-            order: [['createdAt', 'DESC']],
-            attributes: ['createdAt', 'firstSeen', 'published']
-          });
-          
-          const lastUpdate = newestArticle ? getArticleReaderTime(newestArticle).getTime() * 1000 : 0;
-          
-          unreadcounts.push({
-            id: `feed/${feed.id}`,
-            count: unreadCount,
-            newestItemTimestampUsec: String(lastUpdate)
-          });
-          
-          catUnreadCount += unreadCount;
-          if (lastUpdate > catLastUpdate) {
-            catLastUpdate = lastUpdate;
-          }
+    for (const feed of feeds) {
+      // Count unread articles for this feed.
+      const unreadCount = await Article.count({
+        where: {
+          feedId: feed.id,
+          status: 'unread',
+          userId: user.id
         }
-      }
-      
-      unreadcounts.push({
-        id: `${LABEL_PREFIX}${encodeLabelName(cat.name)}`,
-        count: catUnreadCount,
-        newestItemTimestampUsec: String(catLastUpdate)
       });
       
-      totalUnreads += catUnreadCount;
-      if (catLastUpdate > totalLastUpdate) {
-        totalLastUpdate = catLastUpdate;
+      // Get newest item timestamp.
+      const newestArticle = await Article.findOne({
+        where: { feedId: feed.id, userId: user.id },
+        order: [['createdAt', 'DESC']],
+        attributes: ['createdAt', 'firstSeen', 'published']
+      });
+      
+      const lastUpdate = newestArticle ? getArticleReaderTime(newestArticle).getTime() * 1000 : 0;
+      
+      unreadcounts.push({
+        id: `feed/${feed.id}`,
+        count: unreadCount,
+        newestItemTimestampUsec: String(lastUpdate)
+      });
+
+      const categoryCount = categoryCounts.get(feed.categoryId);
+      if (categoryCount) {
+        categoryCount.count += unreadCount;
+        if (lastUpdate > categoryCount.newestItemTimestampUsec) {
+          categoryCount.newestItemTimestampUsec = lastUpdate;
+        }
+      }
+
+      if (lastUpdate > totalLastUpdate) {
+        totalLastUpdate = lastUpdate;
       }
     }
+
+    categoryCounts.forEach(categoryCount => {
+      unreadcounts.push({
+        id: categoryCount.id,
+        count: categoryCount.count,
+        newestItemTimestampUsec: String(categoryCount.newestItemTimestampUsec)
+      });
+    });
+
+    const totalUnreads = await Article.count({
+      where: {
+        status: 'unread',
+        userId: user.id
+      }
+    });
     
-    // Add reading-list total
+    // Add reading-list total.
     unreadcounts.push({
       id: 'user/-/state/com.google/reading-list',
       count: totalUnreads,
@@ -750,6 +763,7 @@ export const getUnreadCount = async (req, res) => {
     return res.status(500).json({ error: err.message });
   }
 };
+
 
 /**
  * GET /api/greader/reader/api/0/stream/contents/*

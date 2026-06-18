@@ -86,6 +86,53 @@ describe('Google Reader API compatibility', () => {
     expect(res.body.items[0].categories).toContain('user/-/label/Tech%20%2F%20News');
   });
 
+  it('reports reading-list unread count from all unread articles for the user', async () => {
+    const { user, feed, article } = await createFixture();
+    await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      status: 'unread',
+      starInd: 0,
+      url: 'https://example.com/second',
+      title: 'Second Article',
+      published: new Date('2026-05-02T10:00:00Z'),
+      firstSeen: new Date('2026-05-02T10:05:00Z')
+    });
+
+    const otherUser = await createUser(`greader-other-${Date.now()}`);
+    const otherCategory = await Category.create({ userId: otherUser.id, name: 'Other' });
+    const otherFeed = await Feed.create({
+      userId: otherUser.id,
+      categoryId: otherCategory.id,
+      feedName: 'Other Feed',
+      url: 'https://other.example.com/rss.xml'
+    });
+    await Article.create({
+      userId: otherUser.id,
+      feedId: otherFeed.id,
+      status: 'unread',
+      url: 'https://other.example.com/article',
+      title: 'Other Article',
+      published: new Date('2026-05-03T10:00:00Z')
+    });
+
+    const res = await request(app)
+      .get('/api/greader/reader/api/0/unread-count')
+      .query({ output: 'json' })
+      .set('Authorization', greaderAuthHeaderFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.max).toBe(2);
+    expect(res.body.unreadcounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: 'user/-/state/com.google/reading-list', count: 2 }),
+      expect.objectContaining({ id: `feed/${feed.id}`, count: 2 }),
+      expect.objectContaining({ id: 'user/-/label/Tech%20%2F%20News', count: 2 })
+    ]));
+
+    await article.reload();
+    expect(article.status).toBe('unread');
+  });
+
   it('preserves feeds and articles when disabling a category', async () => {
     const { user, category, fallbackCategory, feed, article } = await createFixture();
 
