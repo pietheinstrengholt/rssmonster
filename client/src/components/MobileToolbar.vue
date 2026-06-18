@@ -245,14 +245,28 @@
     background: #3a3a3a;
   }
 
-  .toolbar-dropdown {
-    color: #fff;
+  .toolbar-dropdown,
+  .toolbar-dropdown:hover,
+  .toolbar-dropdown:focus,
+  .toolbar-dropdown:active,
+  .toolbar-dropdown.show,
+  .show > .toolbar-dropdown.dropdown-toggle {
+    color: #fff !important;
   }
 
   .view-button {
     color: #fff;
     background: #3a3a3a;
     border-color: #000;
+  }
+
+  #rssmonster.icon-button,
+  #rssmonster.icon-button:hover {
+    color: #fff;
+  }
+
+  #search.view-button::before {
+    filter: brightness(0) invert(1);
   }
 
   .search-dialog {
