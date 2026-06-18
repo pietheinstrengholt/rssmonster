@@ -498,11 +498,19 @@ const articleMarkAsSeen = async (req, res, _next) => {
       payload.attentionBucket = attentionBucket;
     }
 
-    // Mark article as read only when it was unread before
+    // Mark article as read only when it was unread before.
     let shouldMarkRead = false;
+    const readArticles = [];
     if (selectedStatus === 'unread') {
       payload.status = 'read';
       shouldMarkRead = true;
+      if (article.status === 'unread') {
+        readArticles.push({
+          id: Number(article.id),
+          feedId: article.feedId,
+          feed: article.feed
+        });
+      }
     }
 
     // Only update if payload has any changes; return updated instance
@@ -570,12 +578,36 @@ const articleMarkAsSeen = async (req, res, _next) => {
         // Remove status if not updating
         delete clusterPayload.status;
       }
+      const clusterWhere = {
+        id: { [Op.ne]: articleId },
+        userId: userId,
+        eventId: article.eventId
+      };
+
+      if (shouldMarkRead) {
+        const unreadClusterArticles = await Article.findAll({
+          where: {
+            ...clusterWhere,
+            status: 'unread'
+          },
+          attributes: ['id', 'feedId'],
+          include: [{
+            model: Feed,
+            required: true,
+            attributes: ['id', 'categoryId']
+          }]
+        });
+        readArticles.push(
+          ...unreadClusterArticles.map(clusterArticle => ({
+            id: Number(clusterArticle.id),
+            feedId: clusterArticle.feedId,
+            feed: clusterArticle.feed
+          }))
+        );
+      }
+
       await Article.update(clusterPayload, {
-        where: {
-          id: { [Op.ne]: articleId },
-          userId: userId,
-          eventId: article.eventId
-        }
+        where: clusterWhere
       });
     }
 
@@ -611,15 +643,48 @@ const articleMarkAsSeen = async (req, res, _next) => {
             delete clusterPayload.status;
           }
 
+          const topicWhere = {
+            id: { [Op.ne]: articleId },
+            userId: userId,
+            eventId: { [Op.in]: topicClusterIds }
+          };
+
+          if (shouldMarkRead) {
+            const unreadTopicArticles = await Article.findAll({
+              where: {
+                ...topicWhere,
+                status: 'unread'
+              },
+              attributes: ['id', 'feedId'],
+              include: [{
+                model: Feed,
+                required: true,
+                attributes: ['id', 'categoryId']
+              }]
+            });
+            readArticles.push(
+              ...unreadTopicArticles.map(topicArticle => ({
+                id: Number(topicArticle.id),
+                feedId: topicArticle.feedId,
+                feed: topicArticle.feed
+              }))
+            );
+          }
+
           await Article.update(clusterPayload, {
-            where: {
-              id: { [Op.ne]: articleId },
-              userId: userId,
-              eventId: { [Op.in]: topicClusterIds }
-            }
+            where: topicWhere
           });
         }
       }
+    }
+
+    if (shouldMarkRead) {
+      const dedupedReadArticles = new Map();
+      for (const readArticle of readArticles) {
+        dedupedReadArticles.set(readArticle.id, readArticle);
+      }
+      response.readArticles = [...dedupedReadArticles.values()];
+      response.readArticleIds = response.readArticles.map(readArticle => readArticle.id);
     }
 
     // Return updated article instance (reflects any changes)

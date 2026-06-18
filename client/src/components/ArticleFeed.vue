@@ -352,12 +352,22 @@ export default {
           selectedStatus: this.$store.data.currentSelection.status
         });
         
-        // Always reflect latest status (and related fields) in local articles array
+        // Always reflect latest status (and related fields) in local articles array.
         this.updateArticleStatusLocal(response.data);
 
-        // Update counters when transitioning from unread view to read
-        if (this.$store.data.currentSelection.status === 'unread' && response.data.status === "read") {
-          this.$store.data.increaseReadCount(response.data);
+        const readArticles = response.data.readArticles?.length
+          ? response.data.readArticles
+          : (response.data.status === "read" ? [response.data] : []);
+
+        for (const readArticle of readArticles) {
+          this.updateArticleStatusLocal({ id: readArticle.id, status: 'read' });
+        }
+
+        // Update counters when transitioning from unread view to read.
+        if (this.$store.data.currentSelection.status === 'unread') {
+          for (const readArticle of readArticles) {
+            this.$store.data.increaseReadCount(readArticle);
+          }
         }
       } catch (error) {
         console.log("oops something went wrong", error);

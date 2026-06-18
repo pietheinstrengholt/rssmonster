@@ -4,7 +4,7 @@ import request from 'supertest';
 import db from '../models/index.js';
 import { getJwtSecret } from '../config/auth.js';
 
-const { Article, Category, Feed, User, sequelize } = db;
+const { Article, Category, Event, Feed, User, sequelize } = db;
 
 let app;
 
@@ -99,5 +99,48 @@ describe('article ownership authorization', () => {
     expect(article.status).toBe('unread');
     expect(article.firstSeen).toBeNull();
     expect(article.attentionBucket).toBe(0);
+  });
+
+  it('mark-as-seen marks related event cluster articles as read', async () => {
+    const owner = await createUser(uniqueName('article-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const relatedArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/related-article`,
+      title: `${owner.username} related article`,
+      contentOriginal: '<p>Related body</p>',
+      contentStripped: 'Related body',
+      published: new Date('2026-05-01T11:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: article.id,
+      name: `${owner.username} event`,
+      articleCount: 2
+    });
+
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [article.id, relatedArticle.id] } }
+    );
+
+    const res = await request(app)
+      .post(`/api/articles/markasseen/${article.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        selectedStatus: 'unread',
+        clusterView: 'eventCluster',
+        visibleSeconds: 120
+      });
+
+    await article.reload();
+    await relatedArticle.reload();
+
+    expect(res.status).toBe(200);
+    expect(article.status).toBe('read');
+    expect(relatedArticle.status).toBe('read');
+    expect(res.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
   });
 });
