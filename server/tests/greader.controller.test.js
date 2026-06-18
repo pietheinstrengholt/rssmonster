@@ -82,8 +82,32 @@ describe('Google Reader API compatibility', () => {
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
     expect(res.body.items[0].summary.content).toBe('<p>Current article body</p>');
-    expect(res.body.items[0].origin.streamId).toBe(`feed/${feed.id}`);
+    expect(res.body.items[0].origin.streamId).toBe(`feed/${encodeURIComponent(feed.url)}`);
     expect(res.body.items[0].categories).toContain('user/-/label/Tech%20%2F%20News');
+  });
+
+  it('uses the same feed stream IDs for subscriptions and unread counts', async () => {
+    const { user, feed } = await createFixture();
+
+    const subscriptionRes = await request(app)
+      .get('/api/greader/reader/api/0/subscription/list')
+      .query({ output: 'json' })
+      .set('Authorization', greaderAuthHeaderFor(user));
+    const unreadRes = await request(app)
+      .get('/api/greader/reader/api/0/unread-count')
+      .query({ output: 'json' })
+      .set('Authorization', greaderAuthHeaderFor(user));
+
+    const streamId = `feed/${encodeURIComponent(feed.url)}`;
+
+    expect(subscriptionRes.status).toBe(200);
+    expect(unreadRes.status).toBe(200);
+    expect(subscriptionRes.body.subscriptions).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: streamId })
+    ]));
+    expect(unreadRes.body.unreadcounts).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: streamId, count: 1 })
+    ]));
   });
 
   it('reports reading-list unread count from all unread articles for the user', async () => {
@@ -125,7 +149,7 @@ describe('Google Reader API compatibility', () => {
     expect(res.body.max).toBe(2);
     expect(res.body.unreadcounts).toEqual(expect.arrayContaining([
       expect.objectContaining({ id: 'user/-/state/com.google/reading-list', count: 2 }),
-      expect.objectContaining({ id: `feed/${feed.id}`, count: 2 }),
+      expect.objectContaining({ id: `feed/${encodeURIComponent(feed.url)}`, count: 2 }),
       expect.objectContaining({ id: 'user/-/label/Tech%20%2F%20News', count: 2 })
     ]));
 

@@ -106,6 +106,7 @@ const stripFeedPrefix = (streamId = '') => {
 };
 
 const decodeFeedRef = (streamId = '') => safeDecodeURIComponent(stripFeedPrefix(streamId));
+const feedStreamId = (feed) => `feed/${encodeURIComponent(feed.url)}`;
 
 const isIntegerString = (value) => /^\d+$/.test(String(value));
 
@@ -243,7 +244,7 @@ const serializeArticle = (article) => {
     }],
     categories,
     origin: {
-      streamId: `feed/${article.feedId}`,
+      streamId: feed ? feedStreamId(feed) : `feed/${article.feedId}`,
       title: feed?.feedName || '',
       htmlUrl: feed?.url || ''
     },
@@ -265,7 +266,7 @@ const applyStreamFilter = async (where, streamId, userId) => {
     } else {
       where.feedId = { [Op.in]: [] };
     }
-    return `feed/${decodeFeedRef(normalized)}`;
+    return feed ? feedStreamId(feed) : `feed/${encodeURIComponent(decodeFeedRef(normalized))}`;
   }
 
   if (normalized === STARRED_STREAM) {
@@ -449,33 +450,30 @@ export const getSubscriptionList = async (req, res) => {
       return notImplemented(res);
     }
     
-    const categories = await Category.findAll({
+    const feeds = await Feed.findAll({
       where: { userId: user.id },
       include: [{
-        model: Feed,
+        model: Category,
         required: false
       }],
-      order: [['categoryOrder', 'ASC'], ['name', 'ASC']]
+      order: [['feedName', 'ASC'], ['id', 'ASC']]
     });
     
     const subscriptions = [];
     
-    for (const cat of categories) {
-      if (cat.feeds) {
-        for (const feed of cat.feeds) {
-          subscriptions.push({
-            id: `feed/${feed.id}`,
-            title: feed.feedName || feed.url,
-            categories: [{
-              id: `${LABEL_PREFIX}${encodeLabelName(cat.name)}`,
-              label: cat.name
-            }],
-            url: feed.url,
-            htmlUrl: feed.url,
-            iconUrl: feed.favicon || ''
-          });
-        }
-      }
+    for (const feed of feeds) {
+      const category = feed.category;
+      subscriptions.push({
+        id: feedStreamId(feed),
+        title: feed.feedName || feed.url,
+        categories: category ? [{
+          id: `${LABEL_PREFIX}${encodeLabelName(category.name)}`,
+          label: category.name
+        }] : [],
+        url: feed.url,
+        htmlUrl: feed.url,
+        iconUrl: feed.favicon || ''
+      });
     }
     
     res.json({ subscriptions });
@@ -631,8 +629,8 @@ export const quickAddSubscription = async (req, res) => {
       return res.json({
         query: feedUrl,
         numResults: 1,
-        streamId: `feed/${existingFeed.id}`,
-        streamUrl: `feed/${encodeURIComponent(existingFeed.url)}`
+        streamId: feedStreamId(existingFeed),
+        streamUrl: feedStreamId(existingFeed)
       });
     }
     
@@ -647,8 +645,8 @@ export const quickAddSubscription = async (req, res) => {
     res.json({
       query: feedUrl,
       numResults: 1,
-      streamId: `feed/${newFeed.id}`,
-      streamUrl: `feed/${encodeURIComponent(newFeed.url)}`
+      streamId: feedStreamId(newFeed),
+      streamUrl: feedStreamId(newFeed)
     });
   } catch (err) {
     console.error('Error in quickAddSubscription:', err);
@@ -714,7 +712,7 @@ export const getUnreadCount = async (req, res) => {
       const lastUpdate = newestArticle ? getArticleReaderTime(newestArticle).getTime() * 1000 : 0;
       
       unreadcounts.push({
-        id: `feed/${feed.id}`,
+        id: feedStreamId(feed),
         count: unreadCount,
         newestItemTimestampUsec: String(lastUpdate)
       });
