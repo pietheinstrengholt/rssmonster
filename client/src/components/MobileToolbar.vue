@@ -44,7 +44,7 @@
     <!-- Smart Folder Dropdown -->
     <div class="dropdown top-menu-dropdown middle">
       <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ 'Smart Folders' }}
+        {{ 'Smart folders' }}
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
         <a class="dropdown-item" :class="{ active: $store.data.currentSelection.smartFolderId === null }" href="#" 
@@ -110,16 +110,16 @@
 
 #mobile-toolbar {
   width: 100%;
-  background-color: #3b4651;
+  background-color: #f7f6f7;
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
   height: 41px;
   border-bottom: 1px solid transparent;
-  border-color: #dcdee0;
+  border-color: #e5e7eb;
   position: fixed;
-  color: #fff;
+  color: #111827;
   visibility: visible;
   opacity: 1;
   transition: visibility 0s linear 0s, opacity 150ms;
@@ -128,7 +128,7 @@
 
 <style scoped>
 #mobile-toolbar a {
-  font-size: 12px;
+  font-size: 14px;
   cursor: pointer;
 }
 
@@ -143,7 +143,7 @@
   text-transform: uppercase;
   font-weight: bold;
   user-select: none;
-  color: #b4b6b8;
+  color: #6b7280;
 }
 
 #rssmonster.icon-button {
@@ -153,28 +153,43 @@
   flex: 0;
   border: none;
   background: transparent;
-  color: #fff;
+  color: #6b7280;
   font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-color: #dcdee0;
+  border-color: #e5e7eb;
 }
 
 #rssmonster.icon-button:hover {
-  color: #fff;
+  color: #111827;
 }
 
 #search.view-button {
   max-width: 36px;
   min-width: 36px;
   flex: 0;
-  background: url(../assets/images/magnifying-glass.png) 10px 13px no-repeat;
+  position: relative;
+  background: none;
+  border-left: 1px solid #e5e7eb;
+}
+
+#search.view-button::before {
+  content: "";
+  position: absolute;
+  top: 13px;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  background: url(../assets/images/magnifying-glass.png) center no-repeat;
   background-size: 16px 16px;
-  filter: brightness(0) invert(1);
-  border-left: 1px solid transparent;
-  border-color: #dcdee0;
+  filter: brightness(0) saturate(100%) invert(43%) sepia(11%) saturate(594%) hue-rotate(176deg) brightness(94%) contrast(89%);
+  pointer-events: none;
+}
+
+#search.view-button .fa-search {
+  display: none;
 }
 
 .search-dialog {
@@ -203,27 +218,26 @@
 .toolbar-dropdown {
   background-color: transparent !important;
   border: none !important;
-  color: #b4b6b8;
+  color: #4b5563;
   padding: 0 12px;
-  font-weight: bold;
-  font-size: 12px;
-  text-transform: uppercase;
+  font-weight: 500;
+  font-size: 14px;
   cursor: pointer;
   margin-top: 12px;
 }
 
 .toolbar-dropdown:hover {
-  color: #fff;
+  color: #4b5563;
 }
 
 .toolbar-dropdown:focus {
   box-shadow: none !important;
-  color: #fff;
+  color: #4b5563;
 }
 
 .top-menu-dropdown {
   border-left: 1px solid transparent;
-  border-color: #dcdee0;
+  border-color: #e5e7eb;
 }
 
 @media (prefers-color-scheme: dark) {

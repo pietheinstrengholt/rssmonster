@@ -1,3 +1,22 @@
 @import "bootswatch/dist/flatly/variables";
 @import "bootstrap/scss/bootstrap";
 @import "bootswatch/dist/flatly/bootswatch";
+
+:root {
+  --font-family:
+    -apple-system,
+    BlinkMacSystemFont,
+    "Segoe UI",
+    Roboto,
+    Helvetica,
+    Arial,
+    sans-serif;
+}
+
+body,
+button,
+input,
+select,
+textarea {
+  font-family: var(--font-family);
+}

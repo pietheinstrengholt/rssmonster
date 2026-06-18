@@ -230,8 +230,6 @@
 </template>
 
 <style scoped>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-
 .drag {
   background-color: transparent;
   color: #fff;
@@ -376,7 +374,6 @@ div.option {
   padding: 27px 0px 8px 78px;
   color: #111;
   font-size: 26px;
-  font-family: 'Bebas Neue', cursive;
   font-weight: 400;
 }
 

@@ -729,6 +729,7 @@ export default {
   padding-top: 2px;
   padding-left: 5px;
   padding-right: 5px;
+  font-family: var(--font-family);
   border-color: #e0e0e0;
   background-color: #FBFBFB;
   width: 100%;
@@ -736,10 +737,18 @@ export default {
 
 .block .article-content {
   color: #1b1f23;
+  font-family: var(--font-family);
   font-size: 14px;
+  line-height: 1.45;
   margin-bottom: 5px;
   margin-top: 1px;
   margin-left: 0px;
+  padding-bottom: 3px;
+}
+
+.block .article-body {
+  font-family: var(--font-family);
+  line-height: 1.45;
 }
 
 .block .article h5 a {
@@ -754,6 +763,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   gap: 8px;
 }
 
@@ -805,6 +815,7 @@ export default {
   font-size: 12px;
   padding-top: 1px;
   padding-left: 0px;
+  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-weight: bold;
   margin-bottom: 2px;
   color: #51556a;
@@ -1073,6 +1084,7 @@ span.cluster {
 
 .summary-bullets li {
   color: #1b1f23;
+  font-family: var(--font-family);
   font-size: 14px;
   margin-bottom: 6px;
   line-height: 1.5;

@@ -211,8 +211,6 @@ export default {
 </style>
 
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap');
-
 #monster {
   background: url('./assets/images/monster.png') 14px 30px no-repeat;
   background-size: 60px 60px;
@@ -223,7 +221,6 @@ export default {
   padding: 44px 0px 30px 80px;
   color: #111;
   font-size: 26px;
-  font-family: 'Bebas Neue', cursive;
   font-weight: 400;
 }
 
