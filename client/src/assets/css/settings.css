@@ -308,13 +308,13 @@ body.modal-open {
 
 @media (prefers-color-scheme: dark) {
     .modal-content {
-        background: var(--bg-modal-dark);
+        background: var(--bg-modal);
         color: var(--text-inverted);
     }
 
     .modal-header,
     .modal-footer {
-        border-color: var(--border-dark);
+        border-color: var(--border-color);
     }
     .settings-group label {
         color: var(--text-inverted);
@@ -325,7 +325,7 @@ body.modal-open {
     }
 
     .text-muted {
-        color: var(--text-muted-dark) !important;
+        color: var(--text-muted) !important;
     }
 
     .btn-close {
@@ -333,82 +333,82 @@ body.modal-open {
     }
 
     .form-select {
-        background-color: var(--bg-control-dark);
+        background-color: var(--bg-control);
         color: var(--text-inverted);
-        border-color: var(--border-control-dark);
+        border-color: var(--border-subtle);
     }
 
     .form-select:focus {
-        border-color: var(--border-focus-dark);
-        box-shadow: var(--shadow-focus-dark);
+        border-color: var(--border-focus);
+        box-shadow: var(--shadow-focus-primary);
     }
 
     .action-row {
-        background-color: var(--bg-control-dark);
-        border-color: var(--border-control-dark);
+        background-color: var(--bg-control);
+        border-color: var(--border-subtle);
     }
 
     .small-label {
-        color: var(--text-label-dark);
+        color: var(--text-label);
     }
 
     .form-control {
-        background-color: var(--bg-control-dark);
+        background-color: var(--bg-control);
         color: var(--text-inverted);
-        border-color: var(--border-control-dark);
+        border-color: var(--border-subtle);
     }
 
     .form-control:focus {
-        border-color: var(--border-focus-dark);
-        box-shadow: var(--shadow-focus-dark);
+        border-color: var(--border-focus);
+        box-shadow: var(--shadow-focus-primary);
     }
 
     .input-invalid {
-        background-color: var(--bg-danger-dark);
-        color: var(--text-danger-dark);
-        border-color: var(--border-danger-dark);
+        background-color: var(--bg-danger-subtle);
+        color: var(--text-danger);
+        border-color: var(--border-danger-subtle);
     }
 
     .input-invalid::placeholder {
-        color: var(--text-danger-dark);
+        color: var(--text-danger);
     }
 
     .feeds-table th {
-        background-color: var(--bg-table-header-dark);
+        background-color: var(--bg-table-header);
     }
 
     .feeds-table td {
-        background-color: var(--bg-modal-dark);
+        background-color: var(--bg-modal);
     }
 
     .row-error {
-        background-color: var(--bg-danger-dark) !important;
-        color: var(--text-danger-dark) !important;
+        background-color: var(--bg-danger-subtle) !important;
+        color: var(--text-danger) !important;
     }
 
     .row-error td {
-        background-color: var(--bg-danger-dark) !important;
-        color: var(--text-danger-dark) !important;
+        background-color: var(--bg-danger-subtle) !important;
+        color: var(--text-danger) !important;
     }
 
     .row-disabled {
-        background-color: var(--bg-control-dark) !important;
-        color: var(--text-muted-dark) !important;
+        background-color: var(--bg-control) !important;
+        color: var(--text-muted) !important;
     }
 
     .row-disabled td {
-        background-color: var(--bg-control-dark) !important;
-        color: var(--text-muted-dark) !important;
+        background-color: var(--bg-control) !important;
+        color: var(--text-muted) !important;
     }
 
     .alert-info {
-        background-color: var(--bg-info-dark);
-        border-color: var(--border-info-dark);
-        color: var(--text-info-dark);
+        background-color: var(--bg-info-subtle);
+        border-color: var(--border-info);
+        color: var(--text-info);
     }
 
     .alert-info code {
-        background-color: var(--bg-info-code-dark);
-        color: var(--text-info-code-dark);
+        background-color: var(--bg-info-code);
+        color: var(--text-info-code);
     }
 }

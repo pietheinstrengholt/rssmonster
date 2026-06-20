@@ -124,21 +124,21 @@ const buttonClasses = computed(() => [props.variant]);
 
 @media (prefers-color-scheme: dark) {
   .option {
-    background-color: var(--bg-option-dark);
+    background-color: var(--bg-option);
   }
 
   .refresh,
   .addnew {
-    background-color: var(--bg-option-dark);
+    background-color: var(--bg-option);
   }
 
   .mark-as-read {
-    background-color: var(--bg-selected-dark);
+    background-color: var(--bg-selected);
   }
 
   .sidebar-option {
     color: var(--text-inverted);
-    background-color: var(--bg-sidebar-option-dark);
+    background-color: var(--bg-sidebar);
   }
 
   .sidebar-option :deep(svg) {

@@ -242,7 +242,7 @@
   .status-toolbar,
   .dropdownmenu .item {
     color: var(--text-inverted);
-    background: var(--bg-control-dark);
+    background: var(--bg-control);
     border-color: var(--component-color-000);
     border-bottom: 1px solid var(--text-inverted);
   }
@@ -252,16 +252,16 @@
   }
 
   .dropdown-menu {
-    background-color: var(--bg-modal-dark);
-    border-color: var(--border-dark);
+    background-color: var(--bg-modal);
+    border-color: var(--border-color);
   }
 
   .dropdown-item {
-    color: var(--text-label-dark);
+    color: var(--text-label);
   }
 
   .dropdown-item:hover {
-    background-color: var(--bg-control-dark);
+    background-color: var(--bg-control);
     color: var(--text-inverted);
   }
 
@@ -295,25 +295,25 @@
   .search-wrap input {
     background-color: var(--component-color-1e1e1e);
     color: var(--text-inverted);
-    border-color: var(--bg-table-header-dark);
-    background: var(--bg-control-dark);
+    border-color: var(--bg-table-header);
+    background: var(--bg-control);
   }
 
   .search-wrap input::placeholder {
-    color: var(--text-muted-dark);
+    color: var(--text-muted);
   }
 
   .search-wrap.invalid {
-    background-color: var(--bg-danger-dark);
+    background-color: var(--bg-danger-subtle);
   }
 
   .search-wrap.invalid input.input-invalid {
-    color: var(--text-danger-dark);
-    border-color: var(--border-danger-dark);
+    color: var(--text-danger);
+    border-color: var(--border-danger-subtle);
   }
 
   .search-wrap.invalid input.input-invalid::placeholder {
-    color: var(--text-danger-dark);
+    color: var(--text-danger);
   }
 }
 </style>

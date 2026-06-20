@@ -131,7 +131,7 @@ function getFeedCount(feed) {
 
 @media (prefers-color-scheme: dark) {
   .category-main {
-    background-color: var(--bg-option-dark);
+    background-color: var(--bg-option);
   }
 }
 </style>

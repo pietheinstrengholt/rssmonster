@@ -246,7 +246,7 @@
 
 @media (prefers-color-scheme: dark) {
   #mobile-toolbar {
-    background: var(--bg-control-dark);
+    background: var(--bg-control);
   }
 
   .toolbar-dropdown,
@@ -260,7 +260,7 @@
 
   .view-button {
     color: var(--text-inverted);
-    background: var(--bg-control-dark);
+    background: var(--bg-control);
     border-color: var(--component-color-000);
   }
 
@@ -275,7 +275,7 @@
 
   .search-dialog {
     background-color: var(--component-color-1e1e1e);
-    border-bottom-color: var(--bg-table-header-dark);
+    border-bottom-color: var(--bg-table-header);
   }
 
   .search-input {
@@ -283,20 +283,20 @@
   }
 
   .search-input::placeholder {
-    color: var(--text-muted-dark);
+    color: var(--text-muted);
   }
 
   .dropdown-menu {
-    background-color: var(--bg-modal-dark);
-    border-color: var(--border-dark);
+    background-color: var(--bg-modal);
+    border-color: var(--border-color);
   }
 
   .dropdown-item {
-    color: var(--text-label-dark);
+    color: var(--text-label);
   }
 
   .dropdown-item:hover {
-    background-color: var(--bg-control-dark);
+    background-color: var(--bg-control);
     color: var(--text-inverted);
   }
 

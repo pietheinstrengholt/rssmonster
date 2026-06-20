@@ -138,7 +138,7 @@ const rowClasses = computed(() => [
 
 @media (prefers-color-scheme: dark) {
   .category-top {
-    background-color: var(--bg-option-dark);
+    background-color: var(--bg-option);
   }
 
   .refresh-alert {

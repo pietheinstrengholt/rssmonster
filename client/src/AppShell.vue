@@ -81,7 +81,7 @@
 
   @media (prefers-color-scheme: dark) {
     #sidebar {
-      background-color: var(--bg-sidebar-dark);
+      background-color: var(--bg-sidebar);
     }
   }
 }
@@ -109,11 +109,11 @@ html, #app, body {
 
 @media (prefers-color-scheme: dark) {
   html, #app {
-    background-color: var(--bg-app-dark);
+    background-color: var(--bg-page);
   }
 
   #home {
-    background: var(--bg-bounce-dark);
+    background: var(--bg-bounce);
   }
 
   img {
@@ -121,11 +121,11 @@ html, #app, body {
   }
 
   body svg.icon path {
-    fill: var(--text-icon-dark);
+    fill: var(--text-icon);
   }
 
   a:visited, a:active, a:link {
-    color: var(--color-link-dark);
+    color: var(--color-link);
   }
 }
 </style>
@@ -245,7 +245,7 @@ export default {
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       //This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
       const darkThemeColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg-bounce-dark')
+        .getPropertyValue('--bg-bounce')
         .trim();
       document.body.style.background = darkThemeColor;
       document.querySelector('meta[name="theme-color"]').setAttribute('content', darkThemeColor);

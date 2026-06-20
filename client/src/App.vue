@@ -297,48 +297,48 @@ div.form-group.row {
   }
 
   #login {
-    background: var(--bg-login-dark);
-    border-color: var(--border-dark);
+    background: var(--bg-login);
+    border-color: var(--border-color);
   }
 
   .form-outline .form-label {
-    background-color: var(--bg-login-dark);
-    color: var(--text-label-dark);
+    background-color: var(--bg-login);
+    color: var(--text-label);
   }
 
   .form-control {
-    background-color: var(--bg-input-dark);
+    background-color: var(--bg-input);
     color: var(--text-inverted);
-    border-color: var(--border-control-dark);
+    border-color: var(--border-subtle);
   }
 
   .form-control:focus {
-    background-color: var(--bg-input-dark);
+    background-color: var(--bg-input);
     color: var(--text-inverted);
-    border-color: var(--color-primary-dark);
-    box-shadow: var(--shadow-focus-dark);
+    border-color: var(--border-focus);
+    box-shadow: var(--shadow-focus-primary);
   }
 
   .form-control::placeholder {
-    color: var(--text-placeholder-dark);
+    color: var(--text-placeholder);
   }
 
   .btn-primary {
-    background-color: var(--color-primary-dark);
-    border-color: var(--color-primary-dark);
+    background-color: var(--color-primary);
+    border-color: var(--color-primary);
   }
 
   .btn-primary:hover {
-    background-color: var(--color-primary-dark-hover);
-    border-color: var(--color-primary-dark-hover);
+    background-color: var(--color-primary-hover);
+    border-color: var(--color-primary-hover);
   }
 
   a {
-    color: var(--color-primary-dark);
+    color: var(--color-primary);
   }
 
   a:hover {
-    color: var(--color-primary-dark-hover);
+    color: var(--color-primary-hover);
   }
 }
 

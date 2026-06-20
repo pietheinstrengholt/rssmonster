@@ -75,7 +75,7 @@ const feedClasses = computed(() => ({
 }
 
 .category-feed.selected.disabled {
-  background-color: var(--bg-selected-dark);
+  background-color: var(--bg-selected);
 }
 
 .category-feed.disabled .title {
@@ -124,7 +124,7 @@ const feedClasses = computed(() => ({
 
 @media (prefers-color-scheme: dark) {
   .category-feed {
-    background-color: var(--bg-option-dark);
+    background-color: var(--bg-option);
   }
 
   .category-feed.disabled {
