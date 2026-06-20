@@ -67,7 +67,7 @@ const feedClasses = computed(() => ({
 
 .category-feed.error,
 .category-feed.selected.error {
-  background-color: var(--color-error);
+  background-color: var(--color-success);
 }
 
 .category-feed.disabled {

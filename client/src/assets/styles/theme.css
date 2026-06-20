@@ -5,14 +5,10 @@
   --color-secondary-hover: #5A6268;
   --color-selected: #40424B;
   --color-danger: #C73E4D;
-  --color-error: #BF7C74;
+  --color-danger-hover: #C82333;
   --color-disabled: #B0B0B0;
-  --color-success: #28A745;
-  --color-success-hover: #218838;
-  --color-upload: #007BFF;
-  --color-upload-hover: #0056B3;
-  --color-remove: #DC3545;
-  --color-remove-hover: #C82333;
+  --color-success: #2E8B57;
+  --color-success-hover: #267349;
 
   --bg-primary: #FFFFFF;
   --bg-secondary: #F3F4F6;
@@ -29,7 +25,7 @@
   --bg-control: #FFFFFF;
   --bg-login: #FFFFFF;
   --bg-input: #FFFFFF;
-  --bg-page: #D6D6D6;
+  --bg-page: #F3F4F6;
   --bg-bounce: #FFFFFF;
 
   --text-primary: #111827;

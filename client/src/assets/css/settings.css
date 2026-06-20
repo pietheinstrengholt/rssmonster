@@ -133,7 +133,7 @@ body.modal-open {
 }
 
 .btn-upload {
-    background-color: var(--color-upload);
+    background-color: var(--color-primary);
     color: var(--text-inverted);
     display: flex;
     align-items: center;
@@ -141,7 +141,7 @@ body.modal-open {
 }
 
 .btn-upload:hover {
-    background-color: var(--color-upload-hover);
+    background-color: var(--color-primary-hover);
 }
 
 .action-row {
@@ -201,7 +201,7 @@ body.modal-open {
 }
 
 .btn-remove {
-    background-color: var(--color-remove);
+    background-color: var(--color-danger);
     color: var(--text-inverted);
     padding: 6px 10px;
     height: fit-content;
@@ -210,7 +210,7 @@ body.modal-open {
 }
 
 .btn-remove:hover {
-    background-color: var(--color-remove-hover);
+    background-color: var(--color-danger-hover);
 }
 
 .btn-add {

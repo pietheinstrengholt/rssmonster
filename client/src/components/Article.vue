@@ -430,7 +430,7 @@ export default {
 
 .recommendation-negative-icon,
 .recommendation-ignore-icon {
-  color: var(--color-remove);
+  color: var(--color-danger);
 }
 
 /* Landscape phones and portrait tablets */

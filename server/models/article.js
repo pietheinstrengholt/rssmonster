@@ -1,6 +1,14 @@
 import { DataTypes } from 'sequelize';
+import { createHash } from 'node:crypto';
 
 const TAU_HOURS = 48; // tune this globally
+
+// This function derives the stable database identity for an article URL.
+const populateUrlHash = article => {
+  if (article.url && !article.urlHash) {
+    article.urlHash = createHash('sha256').update(article.url).digest('hex');
+  }
+};
 
 export default (sequelize) => {
   const Article = sequelize.define(
@@ -59,6 +67,10 @@ export default (sequelize) => {
       },
       url: {
         type: DataTypes.STRING(1024),
+        allowNull: false
+      },
+      urlHash: {
+        type: DataTypes.STRING(64),
         allowNull: false
       },
       imageUrl: DataTypes.STRING(1024),
@@ -299,6 +311,10 @@ export default (sequelize) => {
     {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
+      hooks: {
+        beforeValidate: populateUrlHash,
+        beforeBulkCreate: articles => articles.forEach(populateUrlHash)
+      }
     }
   );
 
