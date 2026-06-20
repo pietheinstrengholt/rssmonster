@@ -3,6 +3,7 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 import axios from 'axios'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
+import './assets/styles/theme.css'
 
 // Add axios response interceptor to catch HTML responses (API errors)
 axios.interceptors.response.use(

@@ -81,7 +81,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -97,14 +97,14 @@
     width: 20%;
     float: left;
     text-align: center;
-    border-right: 1px solid black;
-    border-color: #dcdee0;
+    border-right: 1px solid var(--border-strong);
+    border-color: var(--border-input);
 }
 
 .text-danger {
     margin-top: 40px;
     margin-bottom: 20px;
-    color: red;
+    color: var(--text-error);
 }
 </style>
 

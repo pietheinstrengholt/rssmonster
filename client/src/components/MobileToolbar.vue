@@ -110,16 +110,16 @@
 
 #mobile-toolbar {
   width: 100%;
-  background-color: #3f424a;
+  background-color: var(--component-color-3f424a);
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
   height: 40px;
   border-bottom: 1px solid transparent;
-  border-color: #e5e7eb;
+  border-color: var(--component-color-e5e7eb);
   position: fixed;
-  color: #111827;
+  color: var(--text-primary);
   visibility: visible;
   opacity: 1;
   transition: visibility 0s linear 0s, opacity 150ms;
@@ -143,7 +143,7 @@
   text-transform: uppercase;
   font-weight: bold;
   user-select: none;
-  color: #6b7280;
+  color: var(--component-color-6b7280);
 }
 
 #rssmonster.icon-button {
@@ -153,17 +153,17 @@
   flex: 0;
   border: none;
   background: transparent;
-  color: #fff;
+  color: var(--text-inverted);
   font-size: 18px;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
-  border-color: #e5e7eb;
+  border-color: var(--component-color-e5e7eb);
 }
 
 #rssmonster.icon-button:hover {
-  color: #fff;
+  color: var(--text-inverted);
 }
 
 #search.view-button {
@@ -172,7 +172,7 @@
   flex: 0;
   position: relative;
   background: none;
-  border-left: 1px solid #e5e7eb;
+  border-left: 1px solid var(--component-color-e5e7eb);
 }
 
 #search.view-button::before {
@@ -198,8 +198,8 @@
   left: 0;
   right: 0;
   width: 100%;
-  background-color: #fff;
-  border-bottom: 1px solid #dcdee0;
+  background-color: var(--text-inverted);
+  border-bottom: 1px solid var(--border-input);
   display: flex;
   align-items: center;
   padding: 8px 0;
@@ -218,7 +218,7 @@
 .toolbar-dropdown {
   background-color: transparent !important;
   border: none !important;
-  color: #fff;
+  color: var(--text-inverted);
   padding: 0 12px;
   font-weight: 500;
   font-size: 14px;
@@ -227,26 +227,26 @@
 }
 
 .toolbar-dropdown:hover {
-  color: #fff;
+  color: var(--text-inverted);
 }
 
 .toolbar-dropdown:focus {
   box-shadow: none !important;
-  color: #fff;
+  color: var(--text-inverted);
 }
 
 .dropdown-item.active {
-  background-color: #3f424a;
+  background-color: var(--component-color-3f424a);
 }
 
 .top-menu-dropdown {
   border-left: 1px solid transparent;
-  border-color: #e5e7eb;
+  border-color: var(--component-color-e5e7eb);
 }
 
 @media (prefers-color-scheme: dark) {
   #mobile-toolbar {
-    background: #3a3a3a;
+    background: var(--bg-control-dark);
   }
 
   .toolbar-dropdown,
@@ -255,18 +255,18 @@
   .toolbar-dropdown:active,
   .toolbar-dropdown.show,
   .show > .toolbar-dropdown.dropdown-toggle {
-    color: #fff !important;
+    color: var(--text-inverted) !important;
   }
 
   .view-button {
-    color: #fff;
-    background: #3a3a3a;
-    border-color: #000;
+    color: var(--text-inverted);
+    background: var(--bg-control-dark);
+    border-color: var(--component-color-000);
   }
 
   #rssmonster.icon-button,
   #rssmonster.icon-button:hover {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   #search.view-button::before {
@@ -274,35 +274,35 @@
   }
 
   .search-dialog {
-    background-color: #1e1e1e;
-    border-bottom-color: #333;
+    background-color: var(--component-color-1e1e1e);
+    border-bottom-color: var(--bg-table-header-dark);
   }
 
   .search-input {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   .search-input::placeholder {
-    color: #999;
+    color: var(--text-muted-dark);
   }
 
   .dropdown-menu {
-    background-color: #2a2a2a;
-    border-color: #444;
+    background-color: var(--bg-modal-dark);
+    border-color: var(--border-dark);
   }
 
   .dropdown-item {
-    color: #ccc;
+    color: var(--text-label-dark);
   }
 
   .dropdown-item:hover {
-    background-color: #3a3a3a;
-    color: #fff;
+    background-color: var(--bg-control-dark);
+    color: var(--text-inverted);
   }
 
   .dropdown-item.active {
-    background-color: #3f424a;
-    color: #fff;
+    background-color: var(--component-color-3f424a);
+    color: var(--text-inverted);
   }
 }
 </style>

@@ -4,7 +4,7 @@
     left: 0;
     right: 0;
     bottom: 0;
-    background: rgba(0, 0, 0, 0.5);
+    background: var(--overlay-backdrop);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -23,9 +23,9 @@ body.modal-open {
 }
 
 .modal-content {
-    background: #fff;
+    background: var(--bg-primary);
     border-radius: 4px;
-    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    box-shadow: var(--shadow-modal);
     max-height: 100%;
     display: flex;
     flex-direction: column;
@@ -33,7 +33,7 @@ body.modal-open {
 
 .modal-header {
     padding: 15px;
-    border-bottom: 1px solid #e0e0e0;
+    border-bottom: 1px solid var(--border-subtle);
 }
 
 .modal-title {
@@ -73,22 +73,22 @@ body.modal-open {
 .form-select {
     width: 100%;
     padding: 8px 12px;
-    border: 1px solid #dcdee0;
+    border: 1px solid var(--border-input);
     border-radius: 4px;
     font-size: 14px;
-    background-color: #fff;
+    background-color: var(--bg-primary);
     cursor: pointer;
 }
 
 .form-select:focus {
     outline: none;
-    border-color: #0368e2;
-    box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus-primary);
 }
 
 .modal-footer {
     padding: 15px;
-    border-top: 1px solid #e0e0e0;
+    border-top: 1px solid var(--border-subtle);
     display: flex;
     justify-content: flex-end;
     gap: 10px;
@@ -103,53 +103,53 @@ body.modal-open {
 }
 
 .btn-primary {
-    background-color: #0368e2;
-    color: #fff;
+    background-color: var(--color-primary);
+    color: var(--text-inverted);
 }
 
 .btn-primary:hover {
-    background-color: #244a85;
+    background-color: var(--color-primary-hover);
 }
 
 .btn-secondary {
-    background-color: #636674;
-    color: #fff;
+    background-color: var(--color-secondary);
+    color: var(--text-inverted);
 }
 
 .btn-secondary:hover {
-    background-color: #5a6268;
+    background-color: var(--color-secondary-hover);
 }
 
 .btn-download {
-    background-color: #28a745;
-    color: #fff;
+    background-color: var(--color-success);
+    color: var(--text-inverted);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .btn-download:hover {
-    background-color: #218838;
+    background-color: var(--color-success-hover);
 }
 
 .btn-upload {
-    background-color: #007bff;
-    color: #fff;
+    background-color: var(--color-upload);
+    color: var(--text-inverted);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .btn-upload:hover {
-    background-color: #0056b3;
+    background-color: var(--color-upload-hover);
 }
 
 .action-row {
     margin-bottom: 15px;
     padding: 12px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    background-color: #f8f9fa;
+    background-color: var(--bg-surface-muted);
 }
 
 .action-fields {
@@ -172,37 +172,37 @@ body.modal-open {
     font-size: 12px;
     font-weight: 500;
     margin-bottom: 4px;
-    color: #555;
+    color: var(--text-muted);
 }
 
 .form-control {
     width: 100%;
     padding: 6px 10px;
-    border: 1px solid #dcdee0;
+    border: 1px solid var(--border-input);
     border-radius: 4px;
     font-size: 14px;
-    background-color: #fff;
+    background-color: var(--bg-primary);
 }
 
 .form-control:focus {
     outline: none;
-    border-color: #0368e2;
-    box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1);
+    border-color: var(--color-primary);
+    box-shadow: var(--shadow-focus-primary);
 }
 
 .input-invalid {
-    background-color: #fdecea;
-    color: #b71c1c;
-    border-color: #f5c6cb;
+    background-color: var(--bg-danger-subtle);
+    color: var(--text-danger);
+    border-color: var(--border-danger-subtle);
 }
 
 .input-invalid::placeholder {
-    color: #d32f2f;
+    color: var(--text-danger-placeholder);
 }
 
 .btn-remove {
-    background-color: #dc3545;
-    color: #fff;
+    background-color: var(--color-remove);
+    color: var(--text-inverted);
     padding: 6px 10px;
     height: fit-content;
     align-self: end;
@@ -210,33 +210,33 @@ body.modal-open {
 }
 
 .btn-remove:hover {
-    background-color: #c82333;
+    background-color: var(--color-remove-hover);
 }
 
 .btn-add {
-    background-color: #28a745;
-    color: #fff;
+    background-color: var(--color-success);
+    color: var(--text-inverted);
     display: flex;
     align-items: center;
     gap: 8px;
 }
 
 .btn-add:hover {
-    background-color: #218838;
+    background-color: var(--color-success-hover);
 }
 
 /* Alert box styles */
 .alert-info {
-    background-color: #d1ecf1;
-    border: 1px solid #bee5eb;
+    background-color: var(--bg-info-subtle);
+    border: 1px solid var(--border-info);
     border-radius: 4px;
     padding: 15px;
-    color: #0c5460;
+    color: var(--text-info);
 }
 
 .alert-info code {
-    background-color: #bee5eb;
-    color: #004085;
+    background-color: var(--border-info);
+    color: var(--text-info-code);
     padding: 2px 6px;
     border-radius: 3px;
     font-family: 'Courier New', Courier, monospace;
@@ -267,37 +267,37 @@ body.modal-open {
 .feeds-table th,
 .feeds-table td {
     padding: 8px;
-    border: 1px solid #e0e0e0;
+    border: 1px solid var(--border-subtle);
     vertical-align: top;
 }
 
 .feeds-table th {
-    background-color: #f5f5f5;
+    background-color: var(--bg-table-header);
     font-weight: 600;
 }
 
 .feeds-table td {
-    background-color: #fff;
+    background-color: var(--bg-primary);
 }
 
 .row-error {
-    background-color: #fdecea !important;
-    color: #b71c1c !important;
+    background-color: var(--bg-danger-subtle) !important;
+    color: var(--text-danger) !important;
 }
 
 .row-error td {
-    background-color: #fdecea !important;
-    color: #b71c1c !important;
+    background-color: var(--bg-danger-subtle) !important;
+    color: var(--text-danger) !important;
 }
 
 .row-disabled {
-    background-color: #e0e0e0 !important;
-    color: #616161 !important;
+    background-color: var(--border-subtle) !important;
+    color: var(--text-disabled-strong) !important;
 }
 
 .row-disabled td {
-    background-color: #e0e0e0 !important;
-    color: #616161 !important;
+    background-color: var(--border-subtle) !important;
+    color: var(--text-disabled-strong) !important;
 }
 
 @media (max-height: 600px) {
@@ -308,24 +308,24 @@ body.modal-open {
 
 @media (prefers-color-scheme: dark) {
     .modal-content {
-        background: #2a2a2a;
-        color: #fff;
+        background: var(--bg-modal-dark);
+        color: var(--text-inverted);
     }
 
     .modal-header,
     .modal-footer {
-        border-color: #444;
+        border-color: var(--border-dark);
     }
     .settings-group label {
-        color: #fff;
+        color: var(--text-inverted);
     }
 
     p {
-        color: #fff;
+        color: var(--text-inverted);
     }
 
     .text-muted {
-        color: #999 !important;
+        color: var(--text-muted-dark) !important;
     }
 
     .btn-close {
@@ -333,82 +333,82 @@ body.modal-open {
     }
 
     .form-select {
-        background-color: #3a3a3a;
-        color: #fff;
-        border-color: #555;
+        background-color: var(--bg-control-dark);
+        color: var(--text-inverted);
+        border-color: var(--border-control-dark);
     }
 
     .form-select:focus {
-        border-color: #4a7fc7;
-        box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
+        border-color: var(--border-focus-dark);
+        box-shadow: var(--shadow-focus-dark);
     }
 
     .action-row {
-        background-color: #3a3a3a;
-        border-color: #555;
+        background-color: var(--bg-control-dark);
+        border-color: var(--border-control-dark);
     }
 
     .small-label {
-        color: #ccc;
+        color: var(--text-label-dark);
     }
 
     .form-control {
-        background-color: #3a3a3a;
-        color: #fff;
-        border-color: #555;
+        background-color: var(--bg-control-dark);
+        color: var(--text-inverted);
+        border-color: var(--border-control-dark);
     }
 
     .form-control:focus {
-        border-color: #4a7fc7;
-        box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
+        border-color: var(--border-focus-dark);
+        box-shadow: var(--shadow-focus-dark);
     }
 
     .input-invalid {
-        background-color: #4a1f1f;
-        color: #ffbaba;
-        border-color: #d77;
+        background-color: var(--bg-danger-dark);
+        color: var(--text-danger-dark);
+        border-color: var(--border-danger-dark);
     }
 
     .input-invalid::placeholder {
-        color: #ffbaba;
+        color: var(--text-danger-dark);
     }
 
     .feeds-table th {
-        background-color: #333;
+        background-color: var(--bg-table-header-dark);
     }
 
     .feeds-table td {
-        background-color: #2a2a2a;
+        background-color: var(--bg-modal-dark);
     }
 
     .row-error {
-        background-color: #4a1f1f !important;
-        color: #ffbaba !important;
+        background-color: var(--bg-danger-dark) !important;
+        color: var(--text-danger-dark) !important;
     }
 
     .row-error td {
-        background-color: #4a1f1f !important;
-        color: #ffbaba !important;
+        background-color: var(--bg-danger-dark) !important;
+        color: var(--text-danger-dark) !important;
     }
 
     .row-disabled {
-        background-color: #3a3a3a !important;
-        color: #999 !important;
+        background-color: var(--bg-control-dark) !important;
+        color: var(--text-muted-dark) !important;
     }
 
     .row-disabled td {
-        background-color: #3a3a3a !important;
-        color: #999 !important;
+        background-color: var(--bg-control-dark) !important;
+        color: var(--text-muted-dark) !important;
     }
 
     .alert-info {
-        background-color: #1a4d5c;
-        border-color: #145a6d;
-        color: #b8e7f5;
+        background-color: var(--bg-info-dark);
+        border-color: var(--border-info-dark);
+        color: var(--text-info-dark);
     }
 
     .alert-info code {
-        background-color: #0d3d4d;
-        color: #7dd3fc;
+        background-color: var(--bg-info-code-dark);
+        color: var(--text-info-code-dark);
     }
 }

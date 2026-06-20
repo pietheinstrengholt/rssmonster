@@ -81,14 +81,14 @@ button.btn.btn-primary.content {
   z-index: 9999;
   left: 0;
   top: 0;
-  background-color: white;
+  background-color: var(--bg-primary);
   overflow-x: hidden;
 }
 
 .mobile-title {
   align-items: center;
-  background-color: #3b4651;
-  color: #FFF;
+  background-color: var(--component-color-3b4651);
+  color: var(--text-inverted);
   display: flex;
   justify-content: space-between;
   padding: 10px;
@@ -112,7 +112,7 @@ button.btn.btn-primary.content {
 
 .mobile-close-button::before,
 .mobile-close-button::after {
-  background-color: #FFF;
+  background-color: var(--text-inverted);
   content: "";
   height: 18px;
   position: absolute;
@@ -143,7 +143,7 @@ button.btn.btn-primary.content {
 }
 
 span.close {
-  color: #FFF;
+  color: var(--text-inverted);
   opacity: none;
 }
 
@@ -155,15 +155,15 @@ span.close {
 }
 
 .overlay-content li.category {
-  background-color: #9f9f9f;
+  background-color: var(--component-color-9f9f9f);
   border-radius: 4px;
-  color: #fff;
+  color: var(--text-inverted);
   padding: 0px;
   margin-bottom: 6px;
 }
 
 div.close span {
-  color: white;
+  color: var(--text-inverted);
 }
 
 p.content-header {
@@ -172,7 +172,7 @@ p.content-header {
 }
 
 .overlay-content li.category.selected {
-  background-color: #3b4651;
+  background-color: var(--component-color-3b4651);
 }
 
 .btn-primary.content {
@@ -185,19 +185,19 @@ p.content-header {
 
 @media (prefers-color-scheme: dark) {
   .overlay {
-    background-color: #121212;
+    background-color: var(--component-color-121212);
   }
 
   p.content-header {
-    color: white;
+    color: var(--text-inverted);
   }
 
   .overlay-content li.category {
-      background-color: #323232;
+      background-color: var(--component-color-323232);
   }
 
   .overlay-content li.category.selected {
-      background-color: #606060;
+      background-color: var(--component-color-606060);
   }
 }
 </style>

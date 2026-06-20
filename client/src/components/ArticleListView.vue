@@ -122,11 +122,11 @@ export default {
 
 @media (prefers-color-scheme: dark) {
   #articles {
-    color: #fff;
-    background: #121212;
-    border-color: #121212;
-    border-bottom-color: #fff;
-    background-color: #121212;
+    color: var(--text-inverted);
+    background: var(--component-color-121212);
+    border-color: var(--component-color-121212);
+    border-bottom-color: var(--text-inverted);
+    background-color: var(--component-color-121212);
   }
 }
 </style>
@@ -156,15 +156,15 @@ div.infinite-loading-container {
 
 @media (prefers-color-scheme: dark) {
   div.infinite-loading-container {
-    color: #fff;
-    background: #121212;
-    border-color: #121212;
-    border-bottom-color: #fff;
-    background-color: #121212;
+    color: var(--text-inverted);
+    background: var(--component-color-121212);
+    border-color: var(--component-color-121212);
+    border-bottom-color: var(--text-inverted);
+    background-color: var(--component-color-121212);
   }
 
   #no-more p {
-    color: white;
+    color: var(--text-inverted);
   }
 }
 </style>

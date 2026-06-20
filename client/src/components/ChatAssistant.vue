@@ -50,14 +50,14 @@ div#inputArea {
 }
 
 .user-message {
-  background-color: #e0f7fa;
+  background-color: var(--component-color-e0f7fa);
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
 }
 
 .assistant-message {
-  background-color: #f1f8e9;
+  background-color: var(--component-color-f1f8e9);
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
@@ -67,7 +67,7 @@ div#inputArea {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
-  color: #666;
+  color: var(--component-color-666);
 }
 
 /* Override css that comes from other websites */
@@ -92,7 +92,7 @@ div#inputArea {
 }
 
 .block .article-content {
-  color: #1b1f23;
+  color: var(--component-color-1b1f23);
   font-size: 14px;
   margin-bottom: 5px;
   margin-top: 1px;
@@ -100,7 +100,7 @@ div#inputArea {
 }
 
 .block .article h5 a {
-  color: #51556a;
+  color: var(--component-color-51556a);
   font-weight: 600;
   font-size: 19px;
   text-decoration: none;
@@ -123,29 +123,29 @@ div#inputArea {
 
 @media (prefers-color-scheme: dark) {
   div#inputArea {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   .form-label {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   h5 {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   .user-message {
-    background-color: #1a4d4f;
-    color: #fff;
+    background-color: var(--component-color-1a4d4f);
+    color: var(--text-inverted);
   }
 
   .assistant-message {
-    background-color: #3a4a2a;
-    color: #fff;
+    background-color: var(--component-color-3a4a2a);
+    color: var(--text-inverted);
   }
 
   .loading-spinner {
-    color: #aaa;
+    color: var(--component-color-aaa);
   }
 }
 </style>

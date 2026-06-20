@@ -81,7 +81,7 @@
 
   @media (prefers-color-scheme: dark) {
     #sidebar {
-      background-color: #2c2c2c;
+      background-color: var(--bg-sidebar-dark);
     }
   }
 }
@@ -109,11 +109,11 @@ html, #app, body {
 
 @media (prefers-color-scheme: dark) {
   html, #app {
-    background-color: #121212;
+    background-color: var(--bg-app-dark);
   }
 
   #home {
-    background: black;
+    background: var(--bg-bounce-dark);
   }
 
   img {
@@ -121,11 +121,11 @@ html, #app, body {
   }
 
   body svg.icon path {
-    fill: #efefef;
+    fill: var(--text-icon-dark);
   }
 
   a:visited, a:active, a:link {
-    color: #18bc9c;
+    color: var(--color-link-dark);
   }
 }
 </style>
@@ -244,12 +244,18 @@ export default {
     //default body background color to black for dark mode.
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
       //This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
-      document.body.style.background="#000000";
-      document.querySelector('meta[name="theme-color"]').setAttribute('content',  '#000000');
+      const darkThemeColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--bg-bounce-dark')
+        .trim();
+      document.body.style.background = darkThemeColor;
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', darkThemeColor);
     }
     //default body background color to blue for light mode.
     if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      document.querySelector('meta[name="theme-color"]').setAttribute('content',  '#31344b');
+      const lightThemeColor = getComputedStyle(document.documentElement)
+        .getPropertyValue('--theme-color-light')
+        .trim();
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', lightThemeColor);
     }
     //add metadata properties to document
     document.title = "RSSMonster";

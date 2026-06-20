@@ -101,7 +101,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--overlay-backdrop);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -128,7 +128,7 @@
 .text-danger {
     margin-top: 40px;
     margin-bottom: 20px;
-    color: red;
+    color: var(--text-error);
 }
 
 select#role {

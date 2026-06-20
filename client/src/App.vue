@@ -289,56 +289,56 @@ div.form-group.row {
 
 @media (prefers-color-scheme: dark) {
   #form-box {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   #monster p {
-    color: #fff;
+    color: var(--text-inverted);
   }
 
   #login {
-    background: #2a2a2a;
-    border-color: #444;
+    background: var(--bg-login-dark);
+    border-color: var(--border-dark);
   }
 
   .form-outline .form-label {
-    background-color: #2a2a2a;
-    color: #aaa;
+    background-color: var(--bg-login-dark);
+    color: var(--text-label-dark);
   }
 
   .form-control {
-    background-color: #1a1a1a;
-    color: #fff;
-    border-color: #555;
+    background-color: var(--bg-input-dark);
+    color: var(--text-inverted);
+    border-color: var(--border-control-dark);
   }
 
   .form-control:focus {
-    background-color: #1a1a1a;
-    color: #fff;
-    border-color: #4a7fc7;
-    box-shadow: 0 0 0 2px rgba(74, 127, 199, 0.2);
+    background-color: var(--bg-input-dark);
+    color: var(--text-inverted);
+    border-color: var(--color-primary-dark);
+    box-shadow: var(--shadow-focus-dark);
   }
 
   .form-control::placeholder {
-    color: #888;
+    color: var(--text-placeholder-dark);
   }
 
   .btn-primary {
-    background-color: #4a7fc7;
-    border-color: #4a7fc7;
+    background-color: var(--color-primary-dark);
+    border-color: var(--color-primary-dark);
   }
 
   .btn-primary:hover {
-    background-color: #3a6fb7;
-    border-color: #3a6fb7;
+    background-color: var(--color-primary-dark-hover);
+    border-color: var(--color-primary-dark-hover);
   }
 
   a {
-    color: #4a7fc7;
+    color: var(--color-primary-dark);
   }
 
   a:hover {
-    color: #3a6fb7;
+    color: var(--color-primary-dark-hover);
   }
 }
 

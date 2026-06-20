@@ -55,49 +55,19 @@
         <span class="badge">{{ $store.data.unreadsSinceLastUpdate }}</span>
       </span>
     </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'unread' && $store.data.currentSelection.smartFolderId === null }" v-on:click="loadType('unread')" id="unread" class="category-top">
+    <div
+      v-for="filter in statusFilters"
+      :id="filter.status"
+      :key="filter.status"
+      class="category-top"
+      :class="{ selected: $store.data.currentSelection.status === filter.status && $store.data.currentSelection.smartFolderId === null }"
+      @click="loadType(filter.status)">
       <span class="glyphicon">
-        <BootstrapIcon icon="record-circle-fill" class="icon-unread" />
+        <BootstrapIcon :icon="filter.icon" :class="filter.iconClass" />
       </span>
-      <span class="title">Unread</span>
+      <span class="title">{{ filter.label }}</span>
       <span class="badge-unread">
-        <span class="badge">{{ $store.data.unreadCount }}</span>
-      </span>
-    </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'star' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('star')" id="star" class="category-top">
-      <span class="glyphicon">
-        <BootstrapIcon icon="heart-fill" class="icon-star" />
-      </span>
-      <span class="title">Favorites</span>
-      <span class="badge-unread">
-        <span class="badge">{{ $store.data.starCount }}</span>
-      </span>
-    </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'hot' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('hot')" id="hot" class="category-top">
-      <span class="glyphicon">
-        <BootstrapIcon icon="fire" class="icon-hot" />
-      </span>
-      <span class="title">Hot</span>
-      <span class="badge-unread">
-        <span class="badge">{{ $store.data.hotCount }}</span>
-      </span>
-    </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'clicked' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('clicked')" id="clicked" class="category-top">
-      <span class="glyphicon">
-        <BootstrapIcon icon="bookmark-fill" class="icon-clicked" />
-      </span>
-      <span class="title">Clicked</span>
-      <span class="badge-unread">
-        <span class="badge">{{ $store.data.clickedCount }}</span>
-      </span>
-    </div>
-    <div v-bind:class="{ 'selected': $store.data.currentSelection.status === 'read' && $store.data.currentSelection.smartFolderId === null  }" v-on:click="loadType('read')" id="read" class="category-top">
-      <span class="glyphicon">
-        <BootstrapIcon icon="check-circle-fill" class="icon-read" />
-      </span>
-      <span class="title">Read</span>
-      <span class="badge-unread">
-        <span class="badge">{{ $store.data.readCount }}</span>
+        <span class="badge">{{ getStatusCount(filter.status) }}</span>
       </span>
     </div>
 
@@ -130,18 +100,14 @@
         </span>
         <span class="title">Load all categories</span>
         <span class="badge-unread">
-          <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ $store.data.unreadCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ $store.data.readCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ $store.data.starCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'hot'" class="badge white">{{ $store.data.hotCount }}</span>
-          <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ $store.data.clickedCount }}</span>
+          <span class="badge white">{{ getStatusCount($store.data.currentSelection.status) }}</span>
         </span>
       </div>
 
       <div class="title-box">
         <p class="title">Categories</p>
       </div>
-      <draggable v-model="this.$store.data.categories" item-key="id" @end="updateSortOrder">
+      <draggable v-model="$store.data.categories" item-key="id" @end="updateSortOrder">
         <template #item="{element}">
           <div v-bind:class="{ 'selected': ($store.data.currentSelection.categoryId == element.id) && ($store.data.currentSelection.feedId === '%') }" v-bind:id="element.id" class="category-main" v-on:click="loadCategory(element)">
           <div class="category-sub">
@@ -150,14 +116,7 @@
             </span>
             <span class="title">{{element.name}}</span>
             <span class="badge-unread">
-              <span
-                v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ element.unreadCount }}</span>
-              <span
-                v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ element.readCount }}</span>
-              <span
-                v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ element.starCount }}</span>
-              <span
-                v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ element.clickedCount }}</span>
+              <span v-if="getItemStatusCount(element) !== null" class="badge white">{{ getItemStatusCount(element) }}</span>
             </span>
           </div>
           <div v-if="element.feeds">
@@ -170,10 +129,7 @@
                   </span>
                   <span class="title">{{feed.feedName}}</span>
                   <span class="badge-unread">
-                  <span v-if="$store.data.currentSelection.status === 'unread'" class="badge white">{{ feed.unreadCount }}</span>
-                  <span v-if="$store.data.currentSelection.status === 'read'" class="badge white">{{ feed.readCount }}</span>
-                  <span v-if="$store.data.currentSelection.status === 'star'" class="badge white">{{ feed.starCount }}</span>
-                  <span v-if="$store.data.currentSelection.status === 'clicked'" class="badge white">{{ feed.clickedCount }}</span>
+                  <span v-if="getItemStatusCount(feed) !== null" class="badge white">{{ getItemStatusCount(feed) }}</span>
                   </span>
                 </div>
               </div>
@@ -186,41 +142,41 @@
       <div class="sidebar-options">
         <div id="add" class="sidebar-option" @click="$store.data.setShowModal('NewCategory')">
           <div>
-            <BootstrapIcon icon="plus-circle-fill" color="3b4651" />
+            <BootstrapIcon icon="plus-circle-fill" color="currentColor" />
             <div class="text">Add</div>
           </div>
         </div>
         <div v-if="($store.data.currentSelection.categoryId === '%') && ($store.data.currentSelection.feedId == '%')">
           <div id="cleanup" class="sidebar-option" @click="$store.data.setShowModal('Cleanup')">
-            <BootstrapIcon icon="eraser-fill" color="3b4651" />
+            <BootstrapIcon icon="eraser-fill" color="currentColor" />
             <div class="text">Cleanup</div>
           </div>
           <div @click="logout()" id="logout" class="sidebar-option">
-            <BootstrapIcon icon="box-arrow-right" color="3b4651" />
+            <BootstrapIcon icon="box-arrow-right" color="currentColor" />
             <div class="text">Logout</div>
           </div>
         </div>
-        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="$store.data.setShowModal('DeleteCategory')" id="delete" class="sidebar-option">
+        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId == '%')" @click="$store.data.setShowModal('DeleteCategory')" class="sidebar-option delete">
           <div>
-            <BootstrapIcon icon="trash3-fill" color="3b4651" />
+            <BootstrapIcon icon="trash3-fill" color="currentColor" />
             <div class="text">Delete</div>
           </div>
         </div>
-        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="$store.data.setShowModal('RenameCategory')" id="rename" class="sidebar-option">
+        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId === '%')" @click="$store.data.setShowModal('RenameCategory')" class="sidebar-option rename">
           <div>
-            <BootstrapIcon icon="pencil-fill" color="3b4651" />
+            <BootstrapIcon icon="pencil-fill" color="currentColor" />
             <div class="text">Edit</div>
           </div>
         </div>
-        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="$store.data.setShowModal('DeleteFeed')" id="delete" class="sidebar-option">
+        <div v-if="($store.data.currentSelection.categoryId !== '%') && ($store.data.currentSelection.feedId !== '%')" @click="$store.data.setShowModal('DeleteFeed')" class="sidebar-option delete">
           <div>
-            <BootstrapIcon icon="trash3-fill" color="3b4651" />
+            <BootstrapIcon icon="trash3-fill" color="currentColor" />
             <div class="text">Delete</div>
           </div>
         </div>
-        <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('UpdateFeed')" id="rename" class="sidebar-option">
+        <div v-if="($store.data.currentSelection.categoryId != '%') && ($store.data.currentSelection.feedId != '%')" @click="$store.data.setShowModal('UpdateFeed')" class="sidebar-option rename">
           <div>
-            <BootstrapIcon icon="pencil-fill" color="3b4651" />
+            <BootstrapIcon icon="pencil-fill" color="currentColor" />
             <div class="text">Edit</div>
           </div>
         </div>
@@ -232,7 +188,7 @@
 <style scoped>
 .drag {
   background-color: transparent;
-  color: #fff;
+  color: var(--text-inverted);
 }
 
 .dragArea {
@@ -247,19 +203,18 @@
 
 #refresh.option, 
 #addnew.option,
-#manage-users.option,
-#mark-as-read {
-  background-color: #0368E2;
+#manage-users.option {
+  background-color: var(--color-primary);
   width: 170px;
 }
 
 #mark-as-read {
-  background-color: #40424b;
+  background-color: var(--color-selected);
 }
 
 .badge.white {
   float: right;
-  color: #fff;
+  color: var(--text-inverted);
   background-color: transparent;
   margin-top: 3px;
 }
@@ -299,49 +254,46 @@ div.category-feed span.glyphicon img {
 }
 
 #unreadsSinceLastUpdate.category-top {
-	background-color: #C73E4D;
-}
-
-.tag-item {
-  background-color: #636674;
+	background-color: var(--color-danger);
 }
 
 .category-feed,
 .category-top,
-.category-main {
-  background-color: #636674;
+.category-main,
+.tag-item {
+  background-color: var(--color-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .category-top.selected,
 .category-main.selected,
 .category-feed.selected {
-  background-color: #40424b;
-  box-shadow: 0 2px 8px rgba(59, 70, 81, 0.35);
+  background-color: var(--color-selected);
+  box-shadow: var(--shadow-selected);
 }
 
 .category-top.selected .glyphicon,
 .category-main.selected .glyphicon {
-  color: #fff;
+  color: var(--text-inverted);
 }
 
 /* Status icon colors */
-.icon-unread { color: #fff; }
-.icon-star { color: #e74c3c; }
-.icon-hot { color: #ff8c00; }
-.icon-clicked { color: #f0ad4e; }
-.icon-read { color: #5cb85c; }
+.icon-unread { color: var(--icon-unread); }
+.icon-star { color: var(--icon-star); }
+.icon-hot { color: var(--icon-hot); }
+.icon-clicked { color: var(--icon-clicked); }
+.icon-read { color: var(--icon-read); }
 
 .selected .icon-unread,
 .selected .icon-star,
 .selected .icon-hot,
 .selected .icon-clicked,
 .selected .icon-read {
-  color: #fff;
+  color: var(--text-inverted);
 }
 
 p.title {
-  color: #111;
+  color: var(--text-primary);
   margin-left: 14px;
   margin-top: 10px;
   margin-bottom: 5px;
@@ -350,7 +302,7 @@ p.title {
 div.option {
   margin-left: 12px;
   padding: 6px;
-  color: #fff;
+  color: var(--text-inverted);
   border-radius: 4px;
   text-indent: 4px;
   margin-bottom: 20px;
@@ -372,7 +324,7 @@ div.option {
 
 #monster p {
   padding: 27px 0px 8px 78px;
-  color: #111;
+  color: var(--text-primary);
   font-size: 26px;
   font-weight: 400;
 }
@@ -383,11 +335,11 @@ div.option {
 }
 
 ::-webkit-scrollbar-track {
-  background: rgba(0, 0, 0, 0.1);
+  background: var(--scrollbar-track);
 }
 
 ::-webkit-scrollbar-thumb {
-  background: rgba(0, 0, 0, 0.5);
+  background: var(--scrollbar-thumb);
 }
 
 .sidebar-options {
@@ -400,7 +352,7 @@ div.option {
 .sidebar-option {
   margin-left: 8%;
   height: 44px;
-  color: #111;
+  color: var(--text-primary);
   border-radius: 4px;
   width: 42px;
   float: left;
@@ -414,54 +366,51 @@ div.option {
 
 .category-feed.error,
 .category-feed.selected.error {
-  background-color: #bf7c74;
+  background-color: var(--color-error);
 }
 
 .category-feed.disabled {
-  background-color: #b0b0b0;
+  background-color: var(--color-disabled);
 }
 
 .category-feed.disabled .title {
-  color: #d3d3d3;
+  color: var(--text-disabled);
 }
 
 .category-feed.selected.disabled {
-  background-color: #606060;
+  background-color: var(--bg-selected-dark);
 }
 
 .category-feed.selected.disabled .title {
-  color: #b0b0b0;
+  color: var(--color-disabled);
 }
 
 @media (prefers-color-scheme: dark) {
-  .sidebar-option {
-    background-color: #464646;
-  }
-
   .option {
-    background-color: #535353;
+    background-color: var(--bg-option-dark);
   }
 
   #mark-as-read {
-    background-color: #606060;
+    background-color: var(--bg-selected-dark);
   }
   p.title {
-    color: #fff;
+    color: var(--text-inverted);
   }
   #monster p {
-    color: #fff;
+    color: var(--text-inverted);
   }
   .sidebar-option {
-    color: #fff;
-    background-color: #2c2c2c;
+    color: var(--text-inverted);
+    background-color: var(--bg-sidebar-option-dark);
   }
   .sidebar-options svg {
-    fill: #fff;
+    fill: var(--text-inverted);
   }
 }
 </style>
 
-<script>
+<script setup>
+import { computed, getCurrentInstance, onBeforeMount, ref } from 'vue';
 import draggable from "vuedraggable";
 import { setAuthToken } from '../api/client';
 import Cookies from 'js-cookie';
@@ -469,138 +418,125 @@ import { markAllAsRead } from '../api/articles';
 import { triggerCrawl } from '../api/crawl';
 import { updateCategoryOrder } from '../api/manager';
 
-export default {
-  emits: ['forceReload'],
-  data() {
-    return {
-      categoriesOrder: [],
-      refreshing: false,
-      unreadCount: 0,
-      readCount: 0,
-      starCount: 0,
-      hotCount: 0
-    };
-  },
-  async created() {
-    Promise.allSettled([
-      this.$store.data.fetchTopTags(),
-      this.$store.data.fetchSmartFolders()
-    ]).catch(() => {});
-  },
-  components: {
-    draggable
-  },
-  methods: {
-    logout() {
-      // 1. Clear API client auth header
-      setAuthToken(null);
+const emit = defineEmits(['forceReload']);
+const instance = getCurrentInstance();
+let store;
+const refreshing = ref(false);
+const statusFilters = [
+  { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
+  { status: 'star', label: 'Favorites', icon: 'heart-fill', iconClass: 'icon-star' },
+  { status: 'hot', label: 'Hot', icon: 'fire', iconClass: 'icon-hot' },
+  { status: 'clicked', label: 'Clicked', icon: 'bookmark-fill', iconClass: 'icon-clicked' },
+  { status: 'read', label: 'Read', icon: 'check-circle-fill', iconClass: 'icon-read' }
+];
 
-      // 2. Clear auth store (triggers App.vue to show login)
-      this.$store.auth.setToken(null);
-      this.$store.auth.setRole(null);
+const orderList = computed(() => store.data.categories.map(category => category.id));
+const topTagsDisplay = computed(() => store.data.topTags.slice(0, 5));
 
-      // 3. Remove cookie
-      Cookies.remove('token');
+onBeforeMount(() => {
+  store = instance.proxy.$store;
+  Promise.allSettled([
+    store.data.fetchTopTags(),
+    store.data.fetchSmartFolders()
+  ]).catch(() => {});
+});
 
-      // 4. Add a page refresh
-      location.reload();
-    },
-    emitClickEvent(eventType, value) {
-      this.$emit(eventType, value);
-    },
-    loadType: function(status) {
-      console.log("%cLoading type:", "color: red;", status);
-      //if user selects current selection or clicks refresh, then do a forceReload by emitting an event to parent
-      if (status == "refresh") {
-        this.$store.data.setSmartFolder(null);
-        this.$emit('forceReload');
-      } else if (status !== this.$store.data.getSelectedStatus) {
-        this.$store.data.setSelectedStatus(status);
-      } else if (status === this.$store.data.getSelectedStatus && this.$store.data.currentSelection.smartFolderId !== null) {
-        this.$store.data.setSelectedStatus(status);
-      }
-    },
-    loadCategory: function(category) {
-      this.$store.data.setSelectedCategoryId(category.id);
-      this.$store.data.setSelectedFeedId("%");
-    },
-    loadFeed: function(feed) {
-      this.$store.data.setSelectedFeedId(feed.id);
-    },
-    loadAll: function() {
-      this.$store.data.setSelectedCategoryId("%");
-      this.$store.data.setSelectedFeedId("%");
-    },
-    markAsRead: async function(currentSelection) {
-      await markAllAsRead(currentSelection)
-      .then(() => {
-        setTimeout(() => {
-          location.reload();
-        }, 1000);
-      })
-      .catch(error => {
-        console.log("oops something went wrong", error);
-      });
-    },
-    refreshFeeds: async function() {
-      //show spinner
-      this.refreshing = true;
+// This function returns the count for a selected article status.
+function getStatusCount(status) {
+  return store.data[`${status}Count`];
+}
 
-      await triggerCrawl()
-        .then(() => {
-          setTimeout(this.refresh, 2000);
-        })
-        .catch(error => {
-          //remove spinner
-          this.refreshing = false;
-          console.log("oops something went wrong", error);
-        });
-    },
-    refresh() {
-      //remove spinner
-      this.refreshing = false;
-    },
-    selectTag(tagName) {
-      if (this.$store.data.currentSelection.tag === tagName) {
-        //tag is already selected, so deselect
-        this.$store.data.setTag('');
-      } else {
-        this.$store.data.setTag(tagName);
-      }
-    },
-    selectSmartFolder(smartFolder) {
-      if (this.$store.data.currentSelection.smartFolderId !== smartFolder.id) {
-        this.$store.data.setSmartFolder(smartFolder);
-      }
-    },
-    updateSortOrder() {
-      var orderList = new Array();
-      for (let i = 0; i < this.$store.data.categories.length; i++) {
-        orderList.push(this.$store.data.categories[i]["id"]);
-      }
-      //make api call to change categories order
-      updateCategoryOrder(orderList)
-      .then(response => {
-        console.log(response.status);
-      })
-      .catch(error => {
-        console.log("oops something went wrong", error);
-      });
-    }
-  },
-  computed: {
-    orderList() {
-      var orderList = new Array();
-      this.$store.data.categories.forEach(function(category) {
-        orderList.push(category.id);
-      });
-       
-      this.categoriesOrder = orderList;
-      return this.categoriesOrder;
-    },
-    topTagsDisplay() {
-      return this.$store.data.topTags.slice(0, 5);
-    }
+// This function returns an item's count for the selected article status.
+function getItemStatusCount(item) {
+  const status = store.data.currentSelection.status;
+  const count = item[`${status}Count`];
+  return count === undefined ? null : count;
+}
+
+// This function clears the current authentication session.
+function logout() {
+  setAuthToken(null);
+  store.auth.setToken(null);
+  store.auth.setRole(null);
+  Cookies.remove('token');
+  location.reload();
+}
+
+// This function changes the selected article status.
+function loadType(status) {
+  console.log('%cLoading type:', 'color: red;', status);
+  if (status === 'refresh') {
+    store.data.setSmartFolder(null);
+    emit('forceReload');
+  } else if (status !== store.data.getSelectedStatus) {
+    store.data.setSelectedStatus(status);
+  } else if (store.data.currentSelection.smartFolderId !== null) {
+    store.data.setSelectedStatus(status);
   }
-};
+}
+
+// This function selects a category and clears the selected feed.
+function loadCategory(category) {
+  store.data.setSelectedCategoryId(category.id);
+  store.data.setSelectedFeedId('%');
+}
+
+// This function selects a feed.
+function loadFeed(feed) {
+  store.data.setSelectedFeedId(feed.id);
+}
+
+// This function selects all categories and feeds.
+function loadAll() {
+  store.data.setSelectedCategoryId('%');
+  store.data.setSelectedFeedId('%');
+}
+
+// This function marks articles in the current selection as read.
+async function markAsRead(currentSelection) {
+  try {
+    await markAllAsRead(currentSelection);
+    setTimeout(() => location.reload(), 1000);
+  } catch (error) {
+    console.log('oops something went wrong', error);
+  }
+}
+
+// This function starts a feed refresh and displays its progress.
+async function refreshFeeds() {
+  refreshing.value = true;
+  try {
+    await triggerCrawl();
+    setTimeout(refresh, 2000);
+  } catch (error) {
+    refreshing.value = false;
+    console.log('oops something went wrong', error);
+  }
+}
+
+// This function stops the refresh progress indicator.
+function refresh() {
+  refreshing.value = false;
+}
+
+// This function toggles a tag selection.
+function selectTag(tagName) {
+  store.data.setTag(store.data.currentSelection.tag === tagName ? '' : tagName);
+}
+
+// This function selects a smart folder.
+function selectSmartFolder(smartFolder) {
+  if (store.data.currentSelection.smartFolderId !== smartFolder.id) {
+    store.data.setSmartFolder(smartFolder);
+  }
+}
+
+// This function saves the current category order.
+function updateSortOrder() {
+  updateCategoryOrder(orderList.value)
+    .then(response => console.log(response.status))
+    .catch(error => console.log('oops something went wrong', error));
+}
+
+defineExpose({ updateSortOrder });
 </script>
