@@ -112,7 +112,7 @@ This creates the database schema and adds a default admin user.
 ```bash
 # Terminal 1: Start the server
 cd server
-npm run debug
+npm run dev
 
 # Terminal 2: Start the client
 cd client

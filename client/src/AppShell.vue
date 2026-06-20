@@ -74,7 +74,7 @@
 
   #sidebar {
     height: 100%;
-    background-color: #e3e3e3;
+    background-color: #F3F4F6;
     overflow-y: auto;
     overflow-x: hidden;
   }

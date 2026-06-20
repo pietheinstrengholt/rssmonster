@@ -82,7 +82,7 @@ body.modal-open {
 
 .form-select:focus {
     outline: none;
-    border-color: #2c5aa0;
+    border-color: #0368e2;
     box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1);
 }
 
@@ -103,7 +103,7 @@ body.modal-open {
 }
 
 .btn-primary {
-    background-color: #2c5aa0;
+    background-color: #0368e2;
     color: #fff;
 }
 
@@ -112,7 +112,7 @@ body.modal-open {
 }
 
 .btn-secondary {
-    background-color: #6c757d;
+    background-color: #636674;
     color: #fff;
 }
 
@@ -186,7 +186,7 @@ body.modal-open {
 
 .form-control:focus {
     outline: none;
-    border-color: #2c5aa0;
+    border-color: #0368e2;
     box-shadow: 0 0 0 2px rgba(44, 90, 160, 0.1);
 }
 

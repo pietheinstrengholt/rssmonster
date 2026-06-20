@@ -127,6 +127,10 @@
   color: #fff;
 }
 
+.dropdown-item.active {
+  background-color: #3f424a;
+}
+
 .settings-icon {
   display: flex;
   align-items: center;
@@ -262,7 +266,7 @@
   }
 
   .dropdown-item.active {
-    background-color: #4a7fc7;
+    background-color: #3f424a;
     color: #fff;
   }
 

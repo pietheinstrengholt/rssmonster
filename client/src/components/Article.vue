@@ -846,7 +846,7 @@ export default {
 .block .article-tags-scores .tag {
   display: inline-block;
   background-color: #e8f4f8;
-  color: #2c5aa0;
+  color: #0368e2;
   padding: 3px 8px;
   border-radius: 3px;
   font-size: 11px;

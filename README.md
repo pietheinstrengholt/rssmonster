@@ -281,11 +281,13 @@ cd client
 npm run dev
 ```
 
-**Server (with debugging):**
+**Server (with hot reload):**
 ```bash
 cd server
-npm run debug
+npm run dev
 ```
+
+To attach a debugger, start the server with `npm run debug`; Node exposes its inspector on port 9229.
 
 The client will typically run on `http://localhost:5173` and the server on `http://localhost:3000`.
 

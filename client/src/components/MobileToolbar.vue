@@ -110,12 +110,12 @@
 
 #mobile-toolbar {
   width: 100%;
-  background-color: #f7f6f7;
+  background-color: #3f424a;
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
-  height: 41px;
+  height: 40px;
   border-bottom: 1px solid transparent;
   border-color: #e5e7eb;
   position: fixed;
@@ -153,7 +153,7 @@
   flex: 0;
   border: none;
   background: transparent;
-  color: #6b7280;
+  color: #fff;
   font-size: 18px;
   cursor: pointer;
   display: flex;
@@ -163,7 +163,7 @@
 }
 
 #rssmonster.icon-button:hover {
-  color: #111827;
+  color: #fff;
 }
 
 #search.view-button {
@@ -184,7 +184,7 @@
   height: 16px;
   background: url(../assets/images/magnifying-glass.png) center no-repeat;
   background-size: 16px 16px;
-  filter: brightness(0) saturate(100%) invert(43%) sepia(11%) saturate(594%) hue-rotate(176deg) brightness(94%) contrast(89%);
+  filter: brightness(0) invert(1);
   pointer-events: none;
 }
 
@@ -218,21 +218,25 @@
 .toolbar-dropdown {
   background-color: transparent !important;
   border: none !important;
-  color: #4b5563;
+  color: #fff;
   padding: 0 12px;
   font-weight: 500;
   font-size: 14px;
   cursor: pointer;
-  margin-top: 12px;
+  margin-top: 10px;
 }
 
 .toolbar-dropdown:hover {
-  color: #4b5563;
+  color: #fff;
 }
 
 .toolbar-dropdown:focus {
   box-shadow: none !important;
-  color: #4b5563;
+  color: #fff;
+}
+
+.dropdown-item.active {
+  background-color: #3f424a;
 }
 
 .top-menu-dropdown {
@@ -297,7 +301,7 @@
   }
 
   .dropdown-item.active {
-    background-color: #4a7fc7;
+    background-color: #3f424a;
     color: #fff;
   }
 }

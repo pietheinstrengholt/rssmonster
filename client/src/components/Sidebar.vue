@@ -249,12 +249,12 @@
 #addnew.option,
 #manage-users.option,
 #mark-as-read {
-  background-color: #2b79c2;
+  background-color: #0368E2;
   width: 170px;
 }
 
 #mark-as-read {
-  background-color: #3b4651;
+  background-color: #40424b;
 }
 
 .badge.white {
@@ -299,20 +299,24 @@ div.category-feed span.glyphicon img {
 }
 
 #unreadsSinceLastUpdate.category-top {
-	background-color: #DB2B39;
+	background-color: #C73E4D;
+}
+
+.tag-item {
+  background-color: #636674;
 }
 
 .category-feed,
 .category-top,
 .category-main {
-  background-color: #6d7a86;
+  background-color: #636674;
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .category-top.selected,
 .category-main.selected,
 .category-feed.selected {
-  background-color: #3b4651;
+  background-color: #40424b;
   box-shadow: 0 2px 8px rgba(59, 70, 81, 0.35);
 }
 
@@ -334,10 +338,6 @@ div.category-feed span.glyphicon img {
 .selected .icon-clicked,
 .selected .icon-read {
   color: #fff;
-}
-
-.tag-item {
-  background-color: #5e6b76;
 }
 
 p.title {
