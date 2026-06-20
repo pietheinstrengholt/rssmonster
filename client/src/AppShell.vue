@@ -147,17 +147,17 @@ const MobileMenuOverlay = defineAsyncComponent(() =>  import(/* webpackChunkName
 const ChatAssistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "chatassistant" */ "./components/ChatAssistant.vue"));
 
 //import modals
-const NewCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "newcategory" */ "./components/Modal/NewCategory.vue"));
-const NewFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "newfeed" */ "./components/Modal/NewFeed.vue"));
-const DeleteCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletecategory" */ "./components/Modal/DeleteCategory.vue"));
-const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletefeed" */ "./components/Modal/DeleteFeed.vue"));
-const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/Modal/RenameCategory.vue"));
-const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/Modal/UpdateFeed.vue"));
-const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/Modal/Cleanup.vue"));
-const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/Modal/ManageUsers.vue"));
+const NewCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "newcategory" */ "./components/model/NewCategory.vue"));
+const NewFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "newfeed" */ "./components/model/NewFeed.vue"));
+const DeleteCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletecategory" */ "./components/model/DeleteCategory.vue"));
+const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletefeed" */ "./components/model/DeleteFeed.vue"));
+const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/model/RenameCategory.vue"));
+const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/model/UpdateFeed.vue"));
+const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/model/Cleanup.vue"));
+const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/ManageUsers.vue"));
 
 //import onboarding component
-const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/Onboarding/InitialFeeds.vue"));
+const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/onboarding/InitialFeeds.vue"));
 
 //import error component
 const Error = defineAsyncComponent(() =>  import(/* webpackChunkName: "error" */ "./components/AppError.vue"));

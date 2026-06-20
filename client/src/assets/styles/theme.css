@@ -156,5 +156,11 @@
   --icon-star: #C73E4D;
   --icon-hot: #D97706;
   --icon-clicked: #D97706;
-  --icon-read: #2E8B57;
+  --icon-read: #81C784;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --icon-read: #81C784;
+  }
 }

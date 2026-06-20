@@ -319,7 +319,7 @@
 </style>
 
 <script>
-import Settings from './Modal/Settings.vue';
+import Settings from './model/Settings.vue';
 import { validateSearchQuery } from '../services/queryValidation.js';
 
 export default {
