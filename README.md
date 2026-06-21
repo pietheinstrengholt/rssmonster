@@ -25,9 +25,7 @@ RSSMonster combines advanced search expressions, semantic clustering, quality an
 
 Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable. The result is a reader that can behave like a quick daily briefing, a research inbox, a low-noise monitoring tool, or a classic feed reader depending on the view you choose.
 
-![Screenshot](docs/assets/screenshot01.png)
-
-![Screenshot](docs/assets/screenshot03.png)
+![Screenshot](docs/assets/screenshot04.png)
 
 ## Key Features
 
