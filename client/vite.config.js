@@ -108,7 +108,7 @@ export default defineConfig({
           injectRegister: 'auto',
           workbox: {
             sourcemap: false,
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,json,vue,txt,woff2}'],
+            globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,vue,txt,woff2}'],
             cleanupOutdatedCaches: false,
             // Don't try to cache external images (CORS issues)
             runtimeCaching: [
@@ -131,25 +131,8 @@ export default defineConfig({
               }
             ]
           },
-          includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'masked-icon.svg'],
-          manifest: {
-            name: 'RSSMonster',
-            short_name: 'RSSMonster',
-            description: 'RSSMonster is an easy to use web-based RSS aggregator, created as an alternative for Google Reader.',
-            theme_color: '#ffffff',
-            icons: [
-              {
-                src: '/img/icons/web-app-manifest-192x192.png',
-                sizes: '192x192',
-                type: 'image/png'
-              },
-              {
-                src: '/img/icons/apple-icon-180x180.png',
-                sizes: '180x180',
-                type: 'image/png'
-              }
-            ]
-          }
+          // Favicons generates the manifest and all of its icon assets.
+          manifest: false
         }
       )
     ],

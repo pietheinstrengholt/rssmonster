@@ -9,7 +9,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "lint": "eslint .",
-    "build": "vite build",
+    "generate:favicons": "node scripts/generate-favicons.js",
+    "build": "npm run generate:favicons && vite build",
     "preview": "vite preview --port 8080"
   },
   "engines": {
@@ -35,6 +36,7 @@
     "baseline-browser-mapping": "^2.10.38",
     "eslint": "^10.5.0",
     "eslint-plugin-vue": "^10.9.2",
+    "favicons": "^7.3.0",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "sass": "=1.101.0",

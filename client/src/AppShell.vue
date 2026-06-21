@@ -335,7 +335,7 @@ export default {
           navigator.serviceWorker.ready // returns a Promise, the active SW registration
             .then(swreg => swreg.showNotification('New articles', {
               body: input + ' new articles arrived',
-              icon: '/img/icons/web-app-manifest-192x192.png',
+              icon: '/img/icons/android-chrome-192x192.png',
               vibrate: [300, 200, 300]
           }))
         }
