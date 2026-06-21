@@ -960,7 +960,7 @@ span.cluster {
 
   .block .article-tags-scores .category-badge {
     background-color: var(--bg-control);
-    color: var(--text-label);
+    color: var(--text-secondary);
   }
 
   .block .article-tags-scores .tag.tag-rule {
@@ -975,7 +975,7 @@ span.cluster {
 
   .block .article-tags-scores .score {
     background-color: var(--bg-modal);
-    color: var(--text-label);
+    color: var(--text-secondary);
   }
 
  .block .article-tags-scores .overall-score {
@@ -1021,7 +1021,7 @@ span.cluster {
   .inline-mobile-tags .tag,
   .inline-mobile-tags .score {
     background-color: var(--bg-modal);
-    color: var(--text-label);
+    color: var(--text-secondary);
   }
 
   .inline-mobile-tags .overall-score {

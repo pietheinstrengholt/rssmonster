@@ -349,7 +349,7 @@ body.modal-open {
     }
 
     .small-label {
-        color: var(--text-label);
+        color: var(--text-secondary);
     }
 
     .form-control {

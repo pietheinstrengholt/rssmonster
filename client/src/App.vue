@@ -297,13 +297,13 @@ div.form-group.row {
   }
 
   #login {
-    background: var(--bg-login);
+    background: var(--bg-modal);
     border-color: var(--border-color);
   }
 
   .form-outline .form-label {
-    background-color: var(--bg-login);
-    color: var(--text-label);
+    background-color: var(--bg-modal);
+    color: var(--text-secondary);
   }
 
   .form-control {

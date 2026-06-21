@@ -257,7 +257,7 @@
   }
 
   .dropdown-item {
-    color: var(--text-label);
+    color: var(--text-secondary);
   }
 
   .dropdown-item:hover {

@@ -81,7 +81,7 @@
 
   @media (prefers-color-scheme: dark) {
     #sidebar {
-      background-color: var(--bg-sidebar);
+      background-color: var(--bg-secondary);
     }
   }
 }

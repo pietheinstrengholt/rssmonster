@@ -20,10 +20,8 @@
   --bg-info-code: #E8F4F8;
   --bg-selected: #ECEFF3;
   --bg-option: #F3F4F6;
-  --bg-sidebar: #F3F4F6;
   --bg-modal: #FFFFFF;
   --bg-control: #FFFFFF;
-  --bg-login: #FFFFFF;
   --bg-input: #FFFFFF;
   --bg-page: #F3F4F6;
   --bg-bounce: #FFFFFF;
@@ -39,7 +37,6 @@
   --text-disabled-strong: #616161;
   --text-info: #0C5460;
   --text-info-code: #004085;
-  --text-label: #636674;
   --text-placeholder: #6B7280;
   --text-icon: #111827;
 
@@ -175,10 +172,8 @@
     --bg-info-code: #0D3D4D;
     --bg-selected: #606060;
     --bg-option: #535353;
-    --bg-sidebar: #2C2C2C;
     --bg-modal: #2A2A2A;
     --bg-control: #3A3A3A;
-    --bg-login: #2A2A2A;
     --bg-input: #1A1A1A;
     --bg-page: #121212;
     --bg-bounce: #000000;
@@ -191,7 +186,6 @@
     --text-danger: #FFBABA;
     --text-info: #B8E7F5;
     --text-info-code: #7DD3FC;
-    --text-label: #CCCCCC;
     --text-placeholder: #888888;
     --text-icon: #EFEFEF;
 

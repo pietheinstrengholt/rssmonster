@@ -141,7 +141,7 @@ const buttonClasses = computed(() => [props.variant]);
 
   .sidebar-option {
     color: var(--text-inverted);
-    background-color: var(--bg-sidebar);
+    background-color: var(--bg-secondary);
   }
 
   .sidebar-option :deep(svg) {
