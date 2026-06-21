@@ -29,7 +29,7 @@
   --text-secondary: #636674;
   --text-inverted: #FFFFFF;
   --text-disabled: #D3D3D3;
-  --text-muted: #555555;
+  --text-muted: #6B7280;
   --text-danger: #B71C1C;
   --text-error: #FF0000;
   --text-danger-placeholder: #D32F2F;
@@ -144,7 +144,7 @@
   --sidebar-mark-as-read-background-dark: #606060;
 
   /* Mobile menu */
-  --mobile-menu-category-background: #9F9F9F;
+  --mobile-menu-category-background: #7F8798;
   --mobile-menu-selected-background: #3B4651;
   --mobile-menu-category-background-dark: #323232;
   --mobile-menu-selected-background-dark: #606060;
