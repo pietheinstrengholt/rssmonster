@@ -5,7 +5,7 @@
 
   <div class="drag">
     <SidebarActionButton
-      icon="arrow-down-circle-fill"
+      icon="arrow-clockwise"
       label="Refresh feeds"
       variant="option refresh"
       :loading="refreshing"
@@ -31,14 +31,14 @@
     </div>
 
     <SidebarActionButton
-      icon="plus-square-fill"
+      icon="plus-square"
       label="Add new feed"
       variant="option addnew"
       @select="$store.data.setShowModal('NewFeed')"
     />
 
     <SidebarActionButton
-      icon="check-square-fill"
+      icon="check2-square"
       label="Mark as read"
       variant="option mark-as-read"
       :loading="markingAsRead"
@@ -53,7 +53,7 @@
     <SidebarNavItem
       v-for="smartFolder in $store.data.smartFolders"
       :key="smartFolder.id"
-      icon="tag-fill"
+      icon="tag"
       :title="smartFolder.name"
       :count="smartFolder.ArticleCount"
       :selected="$store.data.currentSelection.smartFolderId === smartFolder.id"
@@ -92,7 +92,7 @@
     <SidebarNavItem
       v-for="tag in topTagsDisplay"
       :key="tag.name"
-      icon="tag-fill"
+      icon="tag"
       :title="`${tag.name.toLowerCase()}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
       :count="tag.count"
       :selected="$store.data.currentSelection.tag === tag.name"
@@ -192,7 +192,7 @@
 <style scoped>
 .drag {
   background-color: transparent;
-  color: var(--text-inverted);
+  color: #4B5563;
 }
 
 #monster {
@@ -203,9 +203,9 @@
 
 #monster p {
   padding: 27px 0px 8px 78px;
-  color: var(--text-primary);
+  color: #1F2937;
   font-size: 26px;
-  font-weight: 400;
+  font-weight: 600;
 }
 
 ::-webkit-scrollbar {
@@ -225,7 +225,10 @@
   margin-top: 10px;
   margin-bottom: 20px;
   height: 40px;
-  width: 105%;
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  gap: 16px;
 }
 
 .refresh-progress-panel {

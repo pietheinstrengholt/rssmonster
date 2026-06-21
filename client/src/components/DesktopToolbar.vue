@@ -249,6 +249,10 @@
     color: var(--text-inverted);
   }
 
+  .toolbar-dropdown-value {
+    color: var(--text-inverted);
+  }
+
   .dropdown-menu .item {
     border-bottom: 1px solid var(--text-inverted);
     border-right: 1px solid var(--text-inverted);

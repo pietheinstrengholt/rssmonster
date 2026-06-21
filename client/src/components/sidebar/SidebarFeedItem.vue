@@ -7,17 +7,18 @@
   >
     <span class="glyphicon">
       <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16" alt="" />
-      <BootstrapIcon v-else icon="rss-fill" variant="light" />
+      <BootstrapIcon v-else icon="rss-fill" color="currentColor" />
     </span>
     <span class="title">{{ feed.feedName }}</span>
     <span v-if="count !== null && count !== undefined" class="badge-unread">
-      <span class="badge white">{{ count }}</span>
+      <span class="badge white">{{ formattedCount }}</span>
     </span>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { formatCount } from './formatCount.js';
 
 const props = defineProps({
   feed: {
@@ -46,44 +47,52 @@ const feedClasses = computed(() => ({
   disabled: props.feed.status === 'disabled',
   last: props.last
 }));
+
+const formattedCount = computed(() => formatCount(props.count));
 </script>
 
 <style scoped>
 .category-feed {
   padding: 4px 4px 4px 12px;
   cursor: pointer;
-  background-color: var(--color-secondary);
+  color: #4B5563;
+  background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
 .category-feed.selected {
-  background-color: var(--color-selected);
-  box-shadow: var(--shadow-selected);
+  color: #2A71E7;
+  background-color: #EBF2FE;
+  box-shadow: none;
 }
 
-.category-feed.error,
+.category-feed.error {
+  background-color: var(--bg-secondary);
+}
+
 .category-feed.selected.error {
-  background-color: var(--color-danger);
+  background-color: #EBF2FE;
 }
 
 .category-feed.disabled {
-  background-color: var(--color-disabled);
+  background-color: var(--bg-secondary);
 }
 
 .category-feed.selected.disabled {
-  background-color: var(--bg-selected);
+  color: #2A71E7;
+  background-color: #EBF2FE;
 }
 
 .category-feed.disabled .title {
-  color: var(--text-disabled);
-}
-
-.category-feed.selected.disabled .title {
-  color: var(--color-disabled);
+  color: inherit;
 }
 
 .category-feed.last {
   border-radius: 0px 0px 4px 4px;
+}
+
+.category-feed.selected {
+  border-radius: 4px;
 }
 
 .glyphicon {
@@ -107,9 +116,18 @@ const feedClasses = computed(() => ({
   margin-top: -25px;
 }
 
+.badge {
+  color: #4B5563;
+  font-weight: 500;
+}
+
+.category-feed.selected .badge {
+  color: #2A71E7;
+}
+
 .badge.white {
   float: right;
-  color: var(--text-inverted);
+  color: inherit;
   background-color: transparent;
   margin-top: 3px;
 }
@@ -124,7 +142,7 @@ const feedClasses = computed(() => ({
   }
 
   .category-feed.disabled {
-    background-color: var(--color-disabled);
+    background-color: var(--bg-option);
   }
 }
 </style>

@@ -44,8 +44,9 @@ const buttonClasses = computed(() => [props.variant]);
 .sidebar-option {
   margin-left: 12px;
   padding: 6px;
-  color: var(--text-inverted);
-  border-radius: 4px;
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
+  border-radius: 8px;
   text-indent: 4px;
   margin-bottom: 20px;
   cursor: pointer;
@@ -55,8 +56,15 @@ const buttonClasses = computed(() => [props.variant]);
 }
 
 .option {
-  background-color: var(--color-primary);
-  width: 170px;
+  box-sizing: border-box;
+  width: calc(100% - 24px);
+  height: 36px;
+  margin-bottom: 8px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  display: flex;
+  align-items: center;
+  font-weight: 500;
 }
 
 .option > div {
@@ -74,16 +82,36 @@ const buttonClasses = computed(() => [props.variant]);
 }
 
 .refresh,
+.addnew { width: calc(100% - 24px); }
+
+.refresh {
+  color: #FFFFFF;
+  background-color: #2563EB;
+}
+
+.refresh:hover {
+  background-color: #1D4ED8;
+}
+
 .addnew {
-  background-color: var(--color-primary);
-  width: 170px;
+  color: #0E6522;
+  background-color: #FFFFFF;
+  border-color: #E7EAF0;
+}
+
+.mark-as-read {
+  color: #374151;
+  background-color: #FFFFFF;
+  border-color: #E7EAF0;
 }
 
 .sidebar-option {
-  margin-left: 8%;
+  margin-left: 0;
   height: 44px;
-  color: var(--text-primary);
-  width: 42px;
+  color: #4B5563;
+  font-weight: 500;
+  box-sizing: border-box;
+  width: 72px;
   float: left;
   text-align: center;
   display: flex;
@@ -97,10 +125,6 @@ const buttonClasses = computed(() => [props.variant]);
   align-items: center;
   line-height: 1;
   transform: translateY(2px);
-}
-
-.mark-as-read {
-  background-color: var(--color-selected);
 }
 
 .option .glyphicon,
@@ -119,26 +143,10 @@ const buttonClasses = computed(() => [props.variant]);
 
 .sidebar-option.delete,
 .sidebar-option.rename {
-  color: var(--text-primary);
+  color: #4B5563;
 }
 
 @media (prefers-color-scheme: dark) {
-  .option {
-    background-color: var(--color-primary);
-  }
-
-  .refresh {
-    background-color: var(--sidebar-action-primary-background-dark);
-  }
-
-  .addnew {
-    background-color: var(--sidebar-action-primary-background-dark);
-  }
-
-  .mark-as-read {
-    background-color: var(--sidebar-mark-as-read-background-dark);
-  }
-
   .sidebar-option {
     color: var(--text-inverted);
     background-color: var(--bg-secondary);

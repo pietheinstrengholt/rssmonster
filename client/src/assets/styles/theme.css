@@ -140,6 +140,12 @@
   --mobile-toolbar-title: #6B7280;
 
   /* Sidebar action buttons */
+  --sidebar-action-refresh-background: #E5F0FC;
+  --sidebar-action-refresh-text: #1C4E80;
+  --sidebar-action-add-background: #E6F4EA;
+  --sidebar-action-add-text: #216E39;
+  --sidebar-action-mark-as-read-background: #EEF0F3;
+  --sidebar-action-mark-as-read-text: #3F4652;
   --sidebar-action-primary-background-dark: #1E3A5F;
   --sidebar-mark-as-read-background-dark: #606060;
 
@@ -194,6 +200,13 @@
     --color-primary: #4A7FC7;
     --color-primary-hover: #3A6FB7;
     --color-link: #18BC9C;
+
+    --sidebar-action-refresh-background: #1E3A5F;
+    --sidebar-action-refresh-text: #DDEBFF;
+    --sidebar-action-add-background: #1F4A32;
+    --sidebar-action-add-text: #D5F5DF;
+    --sidebar-action-mark-as-read-background: #3A3E47;
+    --sidebar-action-mark-as-read-text: #E8EAED;
 
     --shadow-focus-primary: 0 0 0 2px rgba(74, 127, 199, 0.2);
     --icon-read: #81C784;
