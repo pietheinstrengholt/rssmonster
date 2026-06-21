@@ -1,6 +1,6 @@
 <template>
   <div id="main-container">
-    <div id="articles" :style="articlesStyle">
+    <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
       <Article
         v-for="article in articles"
         v-bind="article"
@@ -81,18 +81,17 @@ export default {
     }
   },
   computed: {
+    // Returns whether the mobile search dialog is currently open.
+    mobileSearchOpen() {
+      return this.$store.data.mobileSearchOpen;
+    },
+    // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
       return this.$store.data.unreadsSinceLastUpdate;
-    },
-    articlesStyle() {
-      // Only apply extra padding in portrait mode (max-width: 766px)
-      if (this.$store.data.mobileSearchOpen && window.innerWidth < 767) {
-        return { paddingTop: '98px' }; // 38px default + 60px for search dialog
-      }
-      return {};
     }
   },
   methods: {
+    // Requests that the parent marks the remaining unread articles as read.
     flushPool() {
       this.$emit('flush-pool');
     }
@@ -115,6 +114,16 @@ export default {
   overflow-y: hidden;
   right: 0;
   left: 0;
+}
+
+#articles.mobile-search-open {
+  padding-top: 98px;
+}
+
+@media (min-width: 767px) {
+  #articles.mobile-search-open {
+    padding-top: 38px;
+  }
 }
 
 .clickable {
