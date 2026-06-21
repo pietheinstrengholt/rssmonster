@@ -1,11 +1,11 @@
 :root {
   --color-primary: #0368E2;
-  --color-primary-hover: #244A85;
+  --color-primary-hover: #0257BE;
   --color-secondary: #636674;
   --color-secondary-hover: #5A6268;
   --color-selected: #40424B;
   --color-danger: #C73E4D;
-  --color-danger-hover: #C82333;
+  --color-danger-hover: #A9323F;
   --color-disabled: #B0B0B0;
   --color-success: #2E8B57;
   --color-success-hover: #267349;
@@ -14,7 +14,7 @@
   --bg-secondary: #F3F4F6;
   --bg-hover: #ECEFF3;
   --bg-surface-muted: #F8F9FA;
-  --bg-table-header: #F5F5F5;
+  --bg-subtle: #F5F5F5;
   --bg-danger-subtle: #FDECEA;
   --bg-info-subtle: #D1ECF1;
   --bg-info-code: #E8F4F8;
@@ -23,7 +23,6 @@
   --bg-modal: #FFFFFF;
   --bg-control: #FFFFFF;
   --bg-input: #FFFFFF;
-  --bg-page: #F3F4F6;
   --bg-bounce: #FFFFFF;
 
   --text-primary: #111827;
@@ -46,7 +45,7 @@
   --border-input: #DCDEE0;
   --border-danger-subtle: #F5C6CB;
   --border-info: #BEE5EB;
-  --border-focus: #0368E2;
+  --border-focus: var(--color-primary);
 
   --shadow-selected: 0 2px 8px rgba(64, 66, 75, 0.35);
   --shadow-modal: 0 4px 6px rgba(0, 0, 0, 0.1);
@@ -55,7 +54,7 @@
 
   --scrollbar-track: rgba(0, 0, 0, 0.1);
   --scrollbar-thumb: rgba(0, 0, 0, 0.5);
-  --color-link: #0368E2;
+  --color-link: var(--color-primary);
   --theme-color-light: #31344B;
 
   /* Component-specific colors */
@@ -73,7 +72,7 @@
   --article-starred-background: #FFFAFA;
   --article-highlight-border: #FFC7C7;
   --article-cluster-background: #F0F9F6;
-  --article-shadow: gray;
+  --shadow-article: 0 2px 4px rgba(0, 0, 0, 0.08);
 
   /* Article icons and recommendation indicators */
   --recommendation-positive-icon: #198754;
@@ -83,13 +82,11 @@
 
   /* Article tags and category badges */
   --article-category-badge-background: #F0F0F0;
-  --article-category-badge-text: #555555;
   --article-tag-background: #E8F4F8;
   --article-rule-tag-background: #F3E8FF;
   --article-rule-tag-text: #7C3AED;
 
   /* Article score badges */
-  --article-score-background: #F5F5F5;
   --article-score-text: #666666;
   --article-overall-score-background: #FFEBEE;
   --article-overall-score-text: #C62828;
@@ -143,8 +140,7 @@
   --mobile-toolbar-title: #6B7280;
 
   /* Sidebar action buttons */
-  --sidebar-refresh-background-dark: #1E3A5F;
-  --sidebar-add-background-dark: #1E3A5F;
+  --sidebar-action-primary-background-dark: #1E3A5F;
   --sidebar-mark-as-read-background-dark: #606060;
 
   /* Mobile menu */
@@ -166,7 +162,7 @@
     --bg-secondary: #2C2C2C;
     --bg-hover: #3A3A3A;
     --bg-surface-muted: #2A2A2A;
-    --bg-table-header: #333333;
+    --bg-subtle: #333333;
     --bg-danger-subtle: #4A1F1F;
     --bg-info-subtle: #1A4D5C;
     --bg-info-code: #0D3D4D;
@@ -175,7 +171,6 @@
     --bg-modal: #2A2A2A;
     --bg-control: #3A3A3A;
     --bg-input: #1A1A1A;
-    --bg-page: #121212;
     --bg-bounce: #000000;
 
     --text-primary: #FFFFFF;

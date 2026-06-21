@@ -621,7 +621,7 @@ export default {
 .block .article-tags-scores .category-badge {
   display: inline-block;
   background-color: var(--article-category-badge-background);
-  color: var(--article-category-badge-text);
+  color: var(--text-muted);
   padding: 3px 8px;
   border-radius: 3px;
   font-size: 11px;
@@ -656,7 +656,7 @@ export default {
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
-  background-color: var(--article-score-background);
+  background-color: var(--bg-subtle);
   color: var(--article-score-text);
 }
 
@@ -832,7 +832,7 @@ span.cluster {
 
 .inline-mobile-tags .tag,
 .inline-mobile-tags .score {
-  background-color: var(--article-score-background);
+  background-color: var(--bg-subtle);
   color: var(--article-score-text);
   padding: 2px 6px;
   border-radius: 3px;
@@ -886,7 +886,7 @@ span.cluster {
 
 @media (prefers-color-scheme: light) {
   .block {
-  box-shadow: 0 4px 2px -2px var(--article-shadow);
+  box-shadow: var(--shadow-article);
 }
 }
 

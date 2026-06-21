@@ -128,11 +128,11 @@ const buttonClasses = computed(() => [props.variant]);
   }
 
   .refresh {
-    background-color: var(--sidebar-refresh-background-dark);
+    background-color: var(--sidebar-action-primary-background-dark);
   }
 
   .addnew {
-    background-color: var(--sidebar-add-background-dark);
+    background-color: var(--sidebar-action-primary-background-dark);
   }
 
   .mark-as-read {

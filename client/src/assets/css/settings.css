@@ -272,7 +272,7 @@ body.modal-open {
 }
 
 .feeds-table th {
-    background-color: var(--bg-table-header);
+    background-color: var(--bg-subtle);
     font-weight: 600;
 }
 
@@ -374,7 +374,7 @@ body.modal-open {
     }
 
     .feeds-table th {
-        background-color: var(--bg-table-header);
+        background-color: var(--bg-subtle);
     }
 
     .feeds-table td {

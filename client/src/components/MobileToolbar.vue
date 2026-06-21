@@ -275,7 +275,7 @@
 
   .search-dialog {
     background-color: var(--toolbar-search-background-dark);
-    border-bottom-color: var(--bg-table-header);
+    border-bottom-color: var(--bg-subtle);
   }
 
   .search-input {

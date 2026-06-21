@@ -296,7 +296,7 @@
   .search-wrap input {
     background-color: var(--toolbar-search-background-dark);
     color: var(--text-inverted);
-    border-color: var(--bg-table-header);
+    border-color: var(--bg-subtle);
     background: var(--bg-control);
   }
 

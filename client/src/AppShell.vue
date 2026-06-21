@@ -109,7 +109,7 @@ html, #app, body {
 
 @media (prefers-color-scheme: dark) {
   html, #app {
-    background-color: var(--bg-page);
+    background-color: var(--bg-primary);
   }
 
   #home {
