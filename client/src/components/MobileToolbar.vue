@@ -110,14 +110,14 @@
 
 #mobile-toolbar {
   width: 100%;
-  background-color: var(--component-color-3f424a);
+  background-color: var(--toolbar-active-background);
   display: -webkit-box;
   display: -webkit-flex;
   display: -ms-flexbox;
   display: flex;
   height: 40px;
   border-bottom: 1px solid transparent;
-  border-color: var(--component-color-e5e7eb);
+  border-color: var(--mobile-toolbar-border);
   position: fixed;
   color: var(--text-primary);
   visibility: visible;
@@ -143,7 +143,7 @@
   text-transform: uppercase;
   font-weight: bold;
   user-select: none;
-  color: var(--component-color-6b7280);
+  color: var(--mobile-toolbar-title);
 }
 
 #rssmonster.icon-button {
@@ -159,7 +159,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border-color: var(--component-color-e5e7eb);
+  border-color: var(--mobile-toolbar-border);
 }
 
 #rssmonster.icon-button:hover {
@@ -172,7 +172,7 @@
   flex: 0;
   position: relative;
   background: none;
-  border-left: 1px solid var(--component-color-e5e7eb);
+  border-left: 1px solid var(--mobile-toolbar-border);
 }
 
 #search.view-button::before {
@@ -236,12 +236,12 @@
 }
 
 .dropdown-item.active {
-  background-color: var(--component-color-3f424a);
+  background-color: var(--toolbar-active-background);
 }
 
 .top-menu-dropdown {
   border-left: 1px solid transparent;
-  border-color: var(--component-color-e5e7eb);
+  border-color: var(--mobile-toolbar-border);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -261,7 +261,7 @@
   .view-button {
     color: var(--text-inverted);
     background: var(--bg-control);
-    border-color: var(--component-color-000);
+    border-color: var(--dark-contrast);
   }
 
   #rssmonster.icon-button,
@@ -274,7 +274,7 @@
   }
 
   .search-dialog {
-    background-color: var(--component-color-1e1e1e);
+    background-color: var(--toolbar-search-background-dark);
     border-bottom-color: var(--bg-table-header);
   }
 
@@ -301,7 +301,7 @@
   }
 
   .dropdown-item.active {
-    background-color: var(--component-color-3f424a);
+    background-color: var(--toolbar-active-background);
     color: var(--text-inverted);
   }
 }

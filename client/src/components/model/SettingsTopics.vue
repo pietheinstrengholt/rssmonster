@@ -191,13 +191,31 @@
     </div>
 
     <div class="d-flex justify-content-end gap-2">
-      <button type="button" class="btn btn-outline-primary" @click="reload" :disabled="loading">Refresh</button>
+      <button type="button" class="btn btn-secondary" @click="reload" :disabled="loading">Refresh</button>
       <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
     </div>
   </div>
 </template>
 
 <style src="../../assets/css/settings.css"></style>
+
+<style scoped>
+@media (prefers-color-scheme: dark) {
+  .card {
+    --bs-card-bg: var(--bg-modal);
+    --bs-card-border-color: var(--border-color);
+    --bs-card-color: var(--text-inverted);
+  }
+
+  .list-group {
+    --bs-list-group-bg: var(--bg-modal);
+    --bs-list-group-color: var(--text-inverted);
+    --bs-list-group-border-color: var(--border-color);
+    --bs-list-group-action-hover-bg: var(--bg-control);
+    --bs-list-group-action-hover-color: var(--text-inverted);
+  }
+}
+</style>
 
 <script>
 import { fetchTopicsOverview } from '../../api/settings';

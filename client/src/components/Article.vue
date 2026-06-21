@@ -425,7 +425,7 @@ export default {
 }
 
 .recommendation-positive-icon {
-  color: var(--component-color-198754);
+  color: var(--recommendation-positive-icon);
 }
 
 .recommendation-negative-icon,
@@ -458,31 +458,31 @@ export default {
 }
 
 .block.cluster-article {
-  background-color: var(--component-color-f0f9f6);
+  background-color: var(--article-cluster-background);
 }
 
 .block.cluster-article .article {
-  background-color: var(--component-color-f0f9f6);
+  background-color: var(--article-cluster-background);
 }
 
 .block .article.hot {
-  background-color: var(--component-color-fffff4);
-  border-color: var(--component-color-ffc7c7);
+  background-color: var(--article-hot-background);
+  border-color: var(--article-highlight-border);
 }
 
 .block .article.starred {
-  background-color: var(--component-color-fffafa);
-  border-color: var(--component-color-ffc7c7);
+  background-color: var(--article-starred-background);
+  border-color: var(--article-highlight-border);
 }
 
 .star-icon {
-  color: var(--component-color-db2b39);
+  color: var(--article-star-icon);
   margin-right: 4px;
   vertical-align: middle;
 }
 
 .clicked-icon {
-  color: var(--component-color-2b79c2);
+  color: var(--article-clicked-icon);
   margin-right: 4px;
   vertical-align: middle;
 }
@@ -494,19 +494,19 @@ export default {
 }
 
 .hot-icon {
-  color: var(--component-color-f3a712);
+  color: var(--article-hot-icon);
   margin-right: 4px;
   vertical-align: middle;
 }
 
 .cluster-icon {
-  color: var(--component-color-f3a712);
+  color: var(--article-hot-icon);
   margin-right: 4px;
   vertical-align: middle;
 }
 
 .recommendation-icon {
-  color: var(--component-color-f3a712);
+  color: var(--article-hot-icon);
   font-size: 0.85rem;
   margin-right: 4px;
   opacity: 0.8;
@@ -519,12 +519,12 @@ export default {
   padding-right: 5px;
   font-family: var(--font-family);
   border-color: var(--border-subtle);
-  background-color: var(--component-color-fbfbfb);
+  background-color: var(--article-background);
   width: 100%;
 }
 
 .block .article-content {
-  color: var(--component-color-1b1f23);
+  color: var(--article-content-text);
   font-family: var(--font-family);
   font-size: 14px;
   line-height: 1.45;
@@ -540,7 +540,7 @@ export default {
 }
 
 .block .article h5 a {
-  color: var(--component-color-51556a);
+  color: var(--article-heading-text);
   font-weight: 600;
   font-size: 19px;
   text-decoration: none;
@@ -574,7 +574,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--component-color-51556a);
+  color: var(--article-heading-text);
   opacity: 0.7;
   transition: opacity 0.2s;
 }
@@ -606,7 +606,7 @@ export default {
   font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
   font-weight: bold;
   margin-bottom: 2px;
-  color: var(--component-color-51556a);
+  color: var(--article-heading-text);
 }
 
 .block .article-tags-scores {
@@ -620,8 +620,8 @@ export default {
 
 .block .article-tags-scores .category-badge {
   display: inline-block;
-  background-color: var(--component-color-f0f0f0);
-  color: var(--component-color-555);
+  background-color: var(--article-category-badge-background);
+  color: var(--article-category-badge-text);
   padding: 3px 8px;
   border-radius: 3px;
   font-size: 11px;
@@ -633,7 +633,7 @@ export default {
 
 .block .article-tags-scores .tag {
   display: inline-block;
-  background-color: var(--component-color-e8f4f8);
+  background-color: var(--article-tag-background);
   color: var(--color-primary);
   padding: 3px 8px;
   border-radius: 3px;
@@ -644,8 +644,8 @@ export default {
 }
 
 .block .article-tags-scores .tag.tag-rule {
-  background-color: var(--component-color-f3e8ff);
-  color: var(--component-color-7c3aed);
+  background-color: var(--article-rule-tag-background);
+  color: var(--article-rule-tag-text);
 }
 
 .block .article-tags-scores .score {
@@ -656,28 +656,28 @@ export default {
   font-weight: 500;
   line-height: 1.4;
   white-space: nowrap;
-  background-color: var(--component-color-f5f5f5);
-  color: var(--component-color-666);
+  background-color: var(--article-score-background);
+  color: var(--article-score-text);
 }
 
 .block .article-tags-scores .overall-score {
-  background-color: var(--component-color-ffebee);  /* Pale red */
-  color: var(--component-color-c62828);             /* Darker red */
+  background-color: var(--article-overall-score-background);  /* Pale red */
+  color: var(--article-overall-score-text);             /* Darker red */
 }
 
 .block .article-tags-scores .ad-score {
-  background-color: var(--component-color-fff3e0);
-  color: var(--component-color-e65100);
+  background-color: var(--article-ad-score-background);
+  color: var(--article-ad-score-text);
 }
 
 .block .article-tags-scores .sentiment-score {
-  background-color: var(--component-color-e8eaf6);
-  color: var(--component-color-3f51b5);
+  background-color: var(--article-sentiment-score-background);
+  color: var(--article-sentiment-score-text);
 }
 
 .block .article-tags-scores .quality-score {
-  background-color: var(--component-color-e8f5e9);
-  color: var(--component-color-2e7d32);
+  background-color: var(--article-quality-background);
+  color: var(--article-quality-positive);
 }
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
@@ -703,7 +703,7 @@ export default {
 }
 
 .block.active {
-  background-color: var(--component-color-ffffe5);
+  background-color: var(--article-active-background);
 }
 
 .break {
@@ -718,7 +718,7 @@ export default {
 }
 
 span.feed_name a {
-  color: var(--component-color-51556a);
+  color: var(--article-heading-text);
 }
 
 span.cluster {
@@ -734,8 +734,8 @@ span.cluster {
   border-radius: 3px;
   font-size: 11px;
   font-weight: 600;
-  background-color: var(--component-color-e8f5e9);
-  color: var(--component-color-2e7d32);
+  background-color: var(--article-quality-background);
+  color: var(--article-quality-positive);
   white-space: nowrap;
 }
 
@@ -758,8 +758,8 @@ span.cluster {
     font-size: 11px;
     font-weight: 600;
     white-space: nowrap;
-    background-color: var(--component-color-f3e8ff);
-    color: var(--component-color-7c3aed);
+    background-color: var(--article-rule-tag-background);
+    color: var(--article-rule-tag-text);
   }
 }
 
@@ -770,44 +770,44 @@ span.cluster {
 }
 
 .mobile-score-icon.quality-excellent {
-  color: var(--component-color-2e7d32);
+  color: var(--article-quality-positive);
   margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-good {
-  color: var(--component-color-43a047);
+  color: var(--article-quality-good);
   margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-okay {
-  color: var(--component-color-fbc02d);
+  color: var(--article-quality-okay);
   margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-weak {
-  color: var(--component-color-f57c00);
+  color: var(--article-quality-weak);
   margin-bottom: 2px;
 }
 
 .mobile-score-icon.quality-poor {
-  color: var(--component-color-c62828);
+  color: var(--article-overall-score-text);
   margin-bottom: 2px;
 }
 
 .mobile-score-icon.ad-icon {
-  color: var(--component-color-e65100);
+  color: var(--article-ad-score-text);
 }
 
 .mobile-score-icon.sentiment-icon {
-  color: var(--component-color-3f51b5);
+  color: var(--article-sentiment-score-text);
 }
 
 .mobile-score-icon.sentiment-moderate {
-  color: var(--component-color-d4a017);
+  color: var(--article-sentiment-moderate);
 }
 
 .mobile-score-icon.sentiment-poor {
-  color: var(--component-color-ff6f00);
+  color: var(--article-sentiment-poor-dark);
 }
 
 .mobile-score-icon.sentiment-very-poor {
@@ -832,30 +832,30 @@ span.cluster {
 
 .inline-mobile-tags .tag,
 .inline-mobile-tags .score {
-  background-color: var(--component-color-f5f5f5);
-  color: var(--component-color-666);
+  background-color: var(--article-score-background);
+  color: var(--article-score-text);
   padding: 2px 6px;
   border-radius: 3px;
 }
 
 .inline-mobile-tags .overall-score {
-  background-color: var(--component-color-ffebee);
-  color: var(--component-color-c62828);
+  background-color: var(--article-overall-score-background);
+  color: var(--article-overall-score-text);
 }
 
 .inline-mobile-tags .ad-score {
-  background-color: var(--component-color-fff3e0);
-  color: var(--component-color-e65100);
+  background-color: var(--article-ad-score-background);
+  color: var(--article-ad-score-text);
 }
 
 .inline-mobile-tags .sentiment-score {
-  background-color: var(--component-color-e8eaf6);
-  color: var(--component-color-3f51b5);
+  background-color: var(--article-sentiment-score-background);
+  color: var(--article-sentiment-score-text);
 }
 
 .inline-mobile-tags .quality-score {
-  background-color: var(--component-color-e8f5e9);
-  color: var(--component-color-2e7d32);
+  background-color: var(--article-quality-background);
+  color: var(--article-quality-positive);
 }
 
 .media-content.enclosure img {
@@ -871,7 +871,7 @@ span.cluster {
 }
 
 .summary-bullets li {
-  color: var(--component-color-1b1f23);
+  color: var(--article-content-text);
   font-family: var(--font-family);
   font-size: 14px;
   margin-bottom: 6px;
@@ -886,17 +886,17 @@ span.cluster {
 
 @media (prefers-color-scheme: light) {
   .block {
-  box-shadow: 0 4px 2px -2px var(--component-color-gray);
+  box-shadow: 0 4px 2px -2px var(--article-shadow);
 }
 }
 
 @media (prefers-color-scheme: dark) {
   .block, .block .article, .article-content, h5.heading, .block .feedname {
     color: var(--text-inverted);
-    background: var(--component-color-121212);
-    border-color: var(--component-color-121212);
+    background: var(--dark-page-surface);
+    border-color: var(--dark-page-surface);
     border-bottom-color: var(--text-inverted);
-    background-color: var(--component-color-121212);
+    background-color: var(--dark-page-surface);
   }
 
   .block a, .block .article h5 a, .block .article-content, .block span.feed_name a {
@@ -904,14 +904,14 @@ span.cluster {
   }
 
   .block {
-    border-bottom-color: var(--component-color-121212);
-    background: var(--component-color-424242);
+    border-bottom-color: var(--dark-page-surface);
+    background: var(--article-surface-dark);
   }
 
   /* Landscape phones and portrait tablets */
   @media (max-width: 766px) {
     .block {
-      background: var(--component-color-424242);
+      background: var(--article-surface-dark);
     }
   }
 
@@ -924,38 +924,38 @@ span.cluster {
   }
 
   .block .article {
-    border-bottom-color: var(--component-color-000);
+    border-bottom-color: var(--dark-contrast);
     border-width: 0px;
     border-radius: 0px;
   }
 
   .block .article.hot {
-    background-color: var(--component-color-121212);
-    border-color: var(--component-color-121212);
+    background-color: var(--dark-page-surface);
+    border-color: var(--dark-page-surface);
   }
 
   .block .article.starred {
-    background-color: var(--component-color-121212);
-    border-color: var(--component-color-121212);
+    background-color: var(--dark-page-surface);
+    border-color: var(--dark-page-surface);
   }
 
   .block.cluster-article {
-    background-color: var(--component-color-0d2f27);
+    background-color: var(--article-cluster-background-dark);
   }
 
   .block.cluster-article .article {
-    background-color: var(--component-color-0d2f27);
+    background-color: var(--article-cluster-background-dark);
   }
 
   .block.cluster-article .article-content,
   .block.cluster-article h5.heading,
   .block.cluster-article .feedname {
-    background-color: var(--component-color-0d2f27);
+    background-color: var(--article-cluster-background-dark);
   }
 
   .block .article-tags-scores .tag {
-    background-color: var(--component-color-1e3a5f);
-    color: var(--component-color-a8c5e8);
+    background-color: var(--article-tag-background-dark);
+    color: var(--article-tag-text-dark);
   }
 
   .block .article-tags-scores .category-badge {
@@ -964,13 +964,13 @@ span.cluster {
   }
 
   .block .article-tags-scores .tag.tag-rule {
-    background-color: var(--component-color-3b1f5e);
-    color: var(--component-color-d4b5f0);
+    background-color: var(--article-rule-tag-background-dark);
+    color: var(--article-rule-tag-text-dark);
   }
 
   .mobile-rule-tag {
-    background-color: var(--component-color-3b1f5e);
-    color: var(--component-color-d4b5f0);
+    background-color: var(--article-rule-tag-background-dark);
+    color: var(--article-rule-tag-text-dark);
   }
 
   .block .article-tags-scores .score {
@@ -979,8 +979,8 @@ span.cluster {
   }
 
  .block .article-tags-scores .overall-score {
-    background-color: var(--component-color-2d1a1f);  /* Dark reddish-brown */
-    color: var(--component-color-ef5350);             /* Bright red */
+    background-color: var(--article-overall-score-background-dark);  /* Dark reddish-brown */
+    color: var(--article-quality-poor-dark);             /* Bright red */
   }
 
   .block .dropdown .btn {
@@ -989,7 +989,7 @@ span.cluster {
   }
 
   .block .dropdown-menu {
-    background-color: var(--component-color-1f1f1f);
+    background-color: var(--article-dropdown-background-dark);
     border-color: var(--bg-modal);
   }
 
@@ -1004,18 +1004,18 @@ span.cluster {
   }
 
   .block .article-tags-scores .ad-score {
-    background-color: var(--component-color-3d2a1f);
-    color: var(--component-color-ffb74d);
+    background-color: var(--article-ad-score-background-dark);
+    color: var(--article-ad-score-text-dark);
   }
 
   .block .article-tags-scores .sentiment-score {
-    background-color: var(--component-color-1a1f3a);
-    color: var(--component-color-9fa8da);
+    background-color: var(--article-sentiment-background-dark);
+    color: var(--article-sentiment-score-text-dark);
   }
 
   .block .article-tags-scores .quality-score {
-    background-color: var(--component-color-1f2e1f);
-    color: var(--component-color-81c784);
+    background-color: var(--article-quality-background-dark);
+    color: var(--article-quality-excellent);
   }
 
   .inline-mobile-tags .tag,
@@ -1025,76 +1025,76 @@ span.cluster {
   }
 
   .inline-mobile-tags .overall-score {
-    background-color: var(--component-color-2d1a1f);
-    color: var(--component-color-ef5350);
+    background-color: var(--article-overall-score-background-dark);
+    color: var(--article-quality-poor-dark);
   }
 
   .inline-mobile-tags .ad-score {
-    background-color: var(--component-color-3d2a1f);
-    color: var(--component-color-ffb74d);
+    background-color: var(--article-ad-score-background-dark);
+    color: var(--article-ad-score-text-dark);
   }
 
   .inline-mobile-tags .sentiment-score {
-    background-color: var(--component-color-1a1f3a);
-    color: var(--component-color-9fa8da);
+    background-color: var(--article-sentiment-background-dark);
+    color: var(--article-sentiment-score-text-dark);
   }
 
   .inline-mobile-tags .quality-score {
-    background-color: var(--component-color-1f2e1f);
-    color: var(--component-color-81c784);
+    background-color: var(--article-quality-background-dark);
+    color: var(--article-quality-excellent);
   }
 
   .mobile-score-icon.quality-excellent {
-    color: var(--component-color-81c784);
+    color: var(--article-quality-excellent);
   }
 
   .mobile-score-icon.quality-good {
-    color: var(--component-color-66bb6a);
+    color: var(--article-quality-good-dark);
   }
 
   .mobile-score-icon.quality-okay {
-    color: var(--component-color-fdd835);
+    color: var(--article-quality-okay-dark);
   }
 
   .mobile-score-icon.quality-weak {
-    color: var(--component-color-ffb74d);
+    color: var(--article-ad-score-text-dark);
   }
 
   .mobile-score-icon.quality-poor {
-    color: var(--component-color-ef5350);
+    color: var(--article-quality-poor-dark);
   }
 
   .mobile-score-icon.ad-icon {
-    color: var(--component-color-ffb74d);
+    color: var(--article-ad-score-text-dark);
   }
 
   .mobile-score-icon.sentiment-icon {
-    color: var(--component-color-9fa8da);
+    color: var(--article-sentiment-score-text-dark);
   }
 
   .mobile-score-icon.sentiment-moderate {
-    color: var(--component-color-f9a825);
+    color: var(--article-sentiment-moderate-dark);
   }
 
   .mobile-score-icon.sentiment-poor {
-    color: var(--component-color-ffb74d);
+    color: var(--article-ad-score-text-dark);
   }
 
   .mobile-score-icon.sentiment-very-poor {
-    color: var(--component-color-ef5350);
+    color: var(--article-quality-poor-dark);
   }
 
   nav ul li {
-    background: var(--component-color-000);
+    background: var(--dark-contrast);
   }
 
   .source-diversity-badge {
-    background-color: var(--component-color-1f2e1f);
-    color: var(--component-color-81c784);
+    background-color: var(--article-quality-background-dark);
+    color: var(--article-quality-excellent);
   }
 
   a:visited, a:active, a:link {
-    color: var(--component-color-18bc9c);
+    color: var(--article-link-dark);
   }
 }
 </style>

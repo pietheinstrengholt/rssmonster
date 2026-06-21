@@ -61,77 +61,100 @@
   --color-link: #0368E2;
   --theme-color-light: #31344B;
 
-  /* Shared component palette */
-  --component-color-000: #000000;
-  --component-color-0d2f27: #0D2F27;
-  --component-color-111: #111111;
-  --component-color-121212: #121212;
-  --component-color-18bc9c: #18BC9C;
-  --component-color-198754: #198754;
-  --component-color-1a1f3a: #1A1F3A;
-  --component-color-1a4d4f: #1A4D4F;
-  --component-color-1b1f23: #1B1F23;
-  --component-color-1e1e1e: #1E1E1E;
-  --component-color-1e3a5f: #1E3A5F;
-  --component-color-1f1f1f: #1F1F1F;
-  --component-color-1f2e1f: #1F2E1F;
-  --component-color-2b79c2: #2B79C2;
-  --component-color-2d1a1f: #2D1A1F;
-  --component-color-2e7d32: #2E7D32;
-  --component-color-323232: #323232;
-  --component-color-3a4a2a: #3A4A2A;
-  --component-color-3b1f5e: #3B1F5E;
-  --component-color-3b4651: #3B4651;
-  --component-color-3d2a1f: #3D2A1F;
-  --component-color-3f424a: #3F424A;
-  --component-color-3f51b5: #3F51B5;
-  --component-color-424242: #424242;
-  --component-color-43a047: #43A047;
-  --component-color-4a4a4a: #4A4A4A;
-  --component-color-51556a: #51556A;
-  --component-color-555: #555555;
-  --component-color-606060: #606060;
-  --component-color-666: #666666;
-  --component-color-66bb6a: #66BB6A;
-  --component-color-6b7280: #6B7280;
-  --component-color-7c3aed: #7C3AED;
-  --component-color-81c784: #81C784;
-  --component-color-9f9f9f: #9F9F9F;
-  --component-color-9fa8da: #9FA8DA;
-  --component-color-a8c5e8: #A8C5E8;
-  --component-color-aaa: #AAAAAA;
-  --component-color-c62828: #C62828;
-  --component-color-d4a017: #D4A017;
-  --component-color-d4b5f0: #D4B5F0;
-  --component-color-db2b39: #DB2B39;
-  --component-color-e0f7fa: #E0F7FA;
-  --component-color-e5e7eb: #E5E7EB;
-  --component-color-e65100: #E65100;
-  --component-color-e8eaf6: #E8EAF6;
-  --component-color-e8f4f8: #E8F4F8;
-  --component-color-e8f5e9: #E8F5E9;
-  --component-color-ef5350: #EF5350;
-  --component-color-eff1f3: #EFF1F3;
-  --component-color-f0f0f0: #F0F0F0;
-  --component-color-f0f9f6: #F0F9F6;
-  --component-color-f1f8e9: #F1F8E9;
-  --component-color-f3a712: #F3A712;
-  --component-color-f3e8ff: #F3E8FF;
-  --component-color-f57c00: #F57C00;
-  --component-color-f5f5f5: #F5F5F5;
-  --component-color-f9a825: #F9A825;
-  --component-color-fbc02d: #FBC02D;
-  --component-color-fbfbfb: #FBFBFB;
-  --component-color-fdd835: #FDD835;
-  --component-color-ff6f00: #FF6F00;
-  --component-color-ffb74d: #FFB74D;
-  --component-color-ffc7c7: #FFC7C7;
-  --component-color-ffebee: #FFEBEE;
-  --component-color-fff3e0: #FFF3E0;
-  --component-color-fffafa: #FFFAFA;
-  --component-color-ffffe5: #FFFFE5;
-  --component-color-fffff4: #FFFFF4;
-  --component-color-gray: gray;
+  /* Component-specific colors */
+
+  /* Shared dark-mode foundations */
+  --dark-contrast: #000000;
+  --dark-page-surface: #121212;
+
+  /* Article surfaces and content */
+  --article-background: #FBFBFB;
+  --article-content-text: #1B1F23;
+  --article-heading-text: #51556A;
+  --article-active-background: #FFFFE5;
+  --article-hot-background: #FFFFF4;
+  --article-starred-background: #FFFAFA;
+  --article-highlight-border: #FFC7C7;
+  --article-cluster-background: #F0F9F6;
+  --article-shadow: gray;
+
+  /* Article icons and recommendation indicators */
+  --recommendation-positive-icon: #198754;
+  --article-clicked-icon: #2B79C2;
+  --article-star-icon: #DB2B39;
+  --article-hot-icon: #F3A712;
+
+  /* Article tags and category badges */
+  --article-category-badge-background: #F0F0F0;
+  --article-category-badge-text: #555555;
+  --article-tag-background: #E8F4F8;
+  --article-rule-tag-background: #F3E8FF;
+  --article-rule-tag-text: #7C3AED;
+
+  /* Article score badges */
+  --article-score-background: #F5F5F5;
+  --article-score-text: #666666;
+  --article-overall-score-background: #FFEBEE;
+  --article-overall-score-text: #C62828;
+  --article-ad-score-background: #FFF3E0;
+  --article-ad-score-text: #E65100;
+  --article-sentiment-score-background: #E8EAF6;
+  --article-sentiment-score-text: #3F51B5;
+  --article-sentiment-moderate: #D4A017;
+  --article-quality-background: #E8F5E9;
+  --article-quality-positive: #2E7D32;
+  --article-quality-good: #43A047;
+  --article-quality-excellent: #81C784;
+  --article-quality-okay: #FBC02D;
+  --article-quality-weak: #F57C00;
+
+  /* Article dark-mode colors */
+  --article-surface-dark: #424242;
+  --article-cluster-background-dark: #0D2F27;
+  --article-link-dark: #18BC9C;
+  --article-dropdown-background-dark: #1F1F1F;
+  --article-tag-background-dark: #1E3A5F;
+  --article-tag-text-dark: #A8C5E8;
+  --article-rule-tag-background-dark: #3B1F5E;
+  --article-rule-tag-text-dark: #D4B5F0;
+  --article-overall-score-background-dark: #2D1A1F;
+  --article-ad-score-background-dark: #3D2A1F;
+  --article-ad-score-text-dark: #FFB74D;
+  --article-sentiment-background-dark: #1A1F3A;
+  --article-sentiment-score-text-dark: #9FA8DA;
+  --article-sentiment-moderate-dark: #F9A825;
+  --article-sentiment-poor-dark: #FF6F00;
+  --article-quality-background-dark: #1F2E1F;
+  --article-quality-good-dark: #66BB6A;
+  --article-quality-okay-dark: #FDD835;
+  --article-quality-poor-dark: #EF5350;
+
+  /* Chat assistant */
+  --chat-user-message-background: #E0F7FA;
+  --chat-assistant-message-background: #F1F8E9;
+  --chat-user-message-background-dark: #1A4D4F;
+  --chat-assistant-message-background-dark: #3A4A2A;
+  --chat-loading-spinner: #AAAAAA;
+
+  /* Desktop and mobile toolbars */
+  --toolbar-text: #111111;
+  --toolbar-active-background: #3F424A;
+  --toolbar-search-background-dark: #1E1E1E;
+  --toolbar-settings-hover-background-dark: #4A4A4A;
+  --desktop-toolbar-background: #EFF1F3;
+  --mobile-toolbar-border: #E5E7EB;
+  --mobile-toolbar-title: #6B7280;
+
+  /* Sidebar action buttons */
+  --sidebar-refresh-background-dark: #1E3A5F;
+  --sidebar-add-background-dark: #1E3A5F;
+  --sidebar-mark-as-read-background-dark: #606060;
+
+  /* Mobile menu */
+  --mobile-menu-category-background: #9F9F9F;
+  --mobile-menu-selected-background: #3B4651;
+  --mobile-menu-category-background-dark: #323232;
+  --mobile-menu-selected-background-dark: #606060;
 
   --icon-unread: #FFFFFF;
   --icon-star: #C73E4D;

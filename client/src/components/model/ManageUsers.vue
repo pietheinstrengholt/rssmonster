@@ -134,6 +134,16 @@
 select#role {
     margin-left: 20px;
 }
+
+@media (prefers-color-scheme: dark) {
+  .table {
+    --bs-table-color: var(--text-inverted);
+    --bs-table-bg: var(--bg-modal);
+    --bs-table-border-color: var(--border-color);
+    --bs-table-striped-color: var(--text-inverted);
+    --bs-table-striped-bg: var(--bg-control);
+  }
+}
 </style>
 
 <script>

@@ -87,7 +87,7 @@ button.btn.btn-primary.content {
 
 .mobile-title {
   align-items: center;
-  background-color: var(--component-color-3b4651);
+  background-color: var(--mobile-menu-selected-background);
   color: var(--text-inverted);
   display: flex;
   justify-content: space-between;
@@ -155,7 +155,7 @@ span.close {
 }
 
 .overlay-content li.category {
-  background-color: var(--component-color-9f9f9f);
+  background-color: var(--mobile-menu-category-background);
   border-radius: 4px;
   color: var(--text-inverted);
   padding: 0px;
@@ -172,7 +172,7 @@ p.content-header {
 }
 
 .overlay-content li.category.selected {
-  background-color: var(--component-color-3b4651);
+  background-color: var(--mobile-menu-selected-background);
 }
 
 .btn-primary.content {
@@ -185,7 +185,7 @@ p.content-header {
 
 @media (prefers-color-scheme: dark) {
   .overlay {
-    background-color: var(--component-color-121212);
+    background-color: var(--dark-page-surface);
   }
 
   p.content-header {
@@ -193,11 +193,11 @@ p.content-header {
   }
 
   .overlay-content li.category {
-      background-color: var(--component-color-323232);
+      background-color: var(--mobile-menu-category-background-dark);
   }
 
   .overlay-content li.category.selected {
-      background-color: var(--component-color-606060);
+      background-color: var(--mobile-menu-selected-background-dark);
   }
 }
 </style>

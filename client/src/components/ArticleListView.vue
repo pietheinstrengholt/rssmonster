@@ -123,10 +123,10 @@ export default {
 @media (prefers-color-scheme: dark) {
   #articles {
     color: var(--text-inverted);
-    background: var(--component-color-121212);
-    border-color: var(--component-color-121212);
+    background: var(--dark-page-surface);
+    border-color: var(--dark-page-surface);
     border-bottom-color: var(--text-inverted);
-    background-color: var(--component-color-121212);
+    background-color: var(--dark-page-surface);
   }
 }
 </style>
@@ -157,10 +157,10 @@ div.infinite-loading-container {
 @media (prefers-color-scheme: dark) {
   div.infinite-loading-container {
     color: var(--text-inverted);
-    background: var(--component-color-121212);
-    border-color: var(--component-color-121212);
+    background: var(--dark-page-surface);
+    border-color: var(--dark-page-surface);
     border-bottom-color: var(--text-inverted);
-    background-color: var(--component-color-121212);
+    background-color: var(--dark-page-surface);
   }
 
   #no-more p {

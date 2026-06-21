@@ -231,7 +231,12 @@ import SidebarSectionTitle from './sidebar/SidebarSectionTitle.vue';
 
 const emit = defineEmits(['forceReload']);
 const instance = getCurrentInstance();
-const store = instance.proxy.$store;
+// This proxy resolves the global store when it is used, after Vue has installed it.
+const store = new Proxy({}, {
+  get(_, property) {
+    return instance.proxy.$store?.[property];
+  }
+});
 const refreshing = ref(false);
 
 const statusFilters = [

@@ -87,7 +87,7 @@
   border-color: var(--border-input);
   width: 100%;
   overflow: visible;
-  background-color: var(--component-color-eff1f3);
+  background-color: var(--desktop-toolbar-background);
   position: fixed;
   margin-left: -15px;
   display: flex;
@@ -118,7 +118,7 @@
 }
 
 .dropdown-item {
-  color: var(--component-color-111);
+  color: var(--toolbar-text);
   font-size: 14px;
 }
 
@@ -128,7 +128,7 @@
 }
 
 .dropdown-item.active {
-  background-color: var(--component-color-3f424a);
+  background-color: var(--toolbar-active-background);
 }
 
 .settings-icon {
@@ -139,7 +139,7 @@
   height: 40px;
   flex-shrink: 0;
   cursor: pointer;
-  color: var(--component-color-111);
+  color: var(--toolbar-text);
   border-right: 1px solid var(--border-subtle);
 }
 
@@ -158,7 +158,7 @@
   margin-left: 10px;
   text-align: center;
   cursor: pointer;
-  color: var(--component-color-111);
+  color: var(--toolbar-text);
   height: 40px;
   flex-shrink: 0;
 }
@@ -206,7 +206,7 @@
 .search-wrap input {
   width: 100%;
   height: 40px;
-  background-color: var(--component-color-eff1f3);
+  background-color: var(--desktop-toolbar-background);
   font-size: 14px;
   border: none;
 }
@@ -243,7 +243,7 @@
   .dropdownmenu .item {
     color: var(--text-inverted);
     background: var(--bg-control);
-    border-color: var(--component-color-000);
+    border-color: var(--dark-contrast);
     border-bottom: 1px solid var(--text-inverted);
   }
 
@@ -266,7 +266,7 @@
   }
 
   .dropdown-item.active {
-    background-color: var(--component-color-3f424a);
+    background-color: var(--toolbar-active-background);
     color: var(--text-inverted);
   }
 
@@ -275,7 +275,7 @@
   }
 
   .settings-icon:hover {
-    background-color: var(--component-color-4a4a4a);
+    background-color: var(--toolbar-settings-hover-background-dark);
   }
 
   .dropdown-item {
@@ -290,10 +290,11 @@
 
   .search-wrap {
     border-left: 1px solid var(--text-inverted);
+    border-bottom: 1px solid var(--text-inverted);
   }
 
   .search-wrap input {
-    background-color: var(--component-color-1e1e1e);
+    background-color: var(--toolbar-search-background-dark);
     color: var(--text-inverted);
     border-color: var(--bg-table-header);
     background: var(--bg-control);

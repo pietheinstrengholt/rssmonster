@@ -50,14 +50,14 @@ div#inputArea {
 }
 
 .user-message {
-  background-color: var(--component-color-e0f7fa);
+  background-color: var(--chat-user-message-background);
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
 }
 
 .assistant-message {
-  background-color: var(--component-color-f1f8e9);
+  background-color: var(--chat-assistant-message-background);
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
@@ -67,7 +67,7 @@ div#inputArea {
   display: flex;
   align-items: center;
   margin-bottom: 20px;
-  color: var(--component-color-666);
+  color: var(--article-score-text);
 }
 
 /* Override css that comes from other websites */
@@ -92,7 +92,7 @@ div#inputArea {
 }
 
 .block .article-content {
-  color: var(--component-color-1b1f23);
+  color: var(--article-content-text);
   font-size: 14px;
   margin-bottom: 5px;
   margin-top: 1px;
@@ -100,7 +100,7 @@ div#inputArea {
 }
 
 .block .article h5 a {
-  color: var(--component-color-51556a);
+  color: var(--article-heading-text);
   font-weight: 600;
   font-size: 19px;
   text-decoration: none;
@@ -135,17 +135,17 @@ div#inputArea {
   }
 
   .user-message {
-    background-color: var(--component-color-1a4d4f);
+    background-color: var(--chat-user-message-background-dark);
     color: var(--text-inverted);
   }
 
   .assistant-message {
-    background-color: var(--component-color-3a4a2a);
+    background-color: var(--chat-assistant-message-background-dark);
     color: var(--text-inverted);
   }
 
   .loading-spinner {
-    color: var(--component-color-aaa);
+    color: var(--chat-loading-spinner);
   }
 }
 </style>
