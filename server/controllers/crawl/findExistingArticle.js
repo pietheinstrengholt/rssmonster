@@ -11,6 +11,8 @@ async function findExistingArticle(feed, title, link, contentHash) {
   // 1. Strongest signal: content hash (search across ALL feeds for this user)
   if (contentHash) {
     const existing = await Article.findOne({
+      attributes: ['id'],
+      raw: true,
       where: {
         userId: feed.userId,
         contentHash

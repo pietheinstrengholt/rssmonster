@@ -97,19 +97,60 @@ const getFeeds = async (userId = null) => {
  * ------------------------------------------------------------------ */
 
 // Core crawl function with shared feed processing
-const performCrawl = async (userId = null, _options = {}) => {
+const performCrawl = async (userId = null, options = {}) => {
+  const emitProgress = (event) => {
+    if (typeof options.onProgress !== 'function') {
+      return;
+    }
+
+    try {
+      options.onProgress(event);
+    } catch (err) {
+      console.error('Error in onProgress callback:', err);
+    }
+  };
+
   const feeds = await getFeeds(userId);
 
   let processedCount = 0;
   let errorCount = 0;
   let timeoutCount = 0;
   let crawlTimedOut = false;
+  let totalNewArticles = 0;
+  let totalUpdatedArticles = 0;
 
   const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
 
   console.log(`Starting crawl for ${feeds.length} feeds (timeout=${CRAWL_TIMEOUT_MS / 1000}s)...`);
 
+  emitProgress({
+    type: 'refresh_started',
+    feedId: null,
+    feedName: null,
+    currentFeed: 0,
+    totalFeeds: feeds.length,
+    newArticles: 0,
+    updatedArticles: 0,
+    errors: 0,
+    timeouts: 0,
+    processedFeeds: 0
+  });
+
   if (feeds.length === 0) {
+    emitProgress({
+      type: 'done',
+      event: 'refresh_completed',
+      feedId: null,
+      feedName: null,
+      currentFeed: 0,
+      totalFeeds: 0,
+      newArticles: 0,
+      updatedArticles: 0,
+      errors: 0,
+      timeouts: 0,
+      processedFeeds: 0,
+      crawlTimedOut: false
+    });
     return {
       total: 0,
       processed: 0,
@@ -142,8 +183,24 @@ const performCrawl = async (userId = null, _options = {}) => {
     await feed.update(updateData);
   };
 
-  const processSingleFeed = async (feed) => {
+  const processSingleFeed = async (feed, currentFeed) => {
+    let feedNewArticles = 0;
+    let feedUpdatedArticles = 0;
+
     try {
+      emitProgress({
+        type: 'feed_started',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount,
+        processedFeeds: processedCount
+      });
+
       //discover RssLink
       const discoveryInputUrl = feed.url;
       const discoveryResult = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
@@ -168,10 +225,44 @@ const performCrawl = async (userId = null, _options = {}) => {
       // feedsmith: entries are in feedObject.feed.entries
       const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
 
+      emitProgress({
+        type: 'feed_parsed',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        entries: entries.length,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount,
+        processedFeeds: processedCount
+      });
+
       // Process each article entry. This will add newly discovered articles to the database
       for (const entry of entries) {
-        await processArticle(feed, entry);
+        const articleResult = await processArticle(feed, entry);
+        feedNewArticles += articleResult?.newArticles || 0;
+        feedUpdatedArticles += articleResult?.updatedArticles || 0;
       }
+
+      totalNewArticles += feedNewArticles;
+      totalUpdatedArticles += feedUpdatedArticles;
+
+      emitProgress({
+        type: 'articles_inserted_updated',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        feedNewArticles,
+        feedUpdatedArticles,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount,
+        processedFeeds: processedCount
+      });
 
       // Update feed metadata to use latest info from feed
       // feedsmith: image info is often in feedObject.feed.image.url
@@ -194,11 +285,55 @@ const performCrawl = async (userId = null, _options = {}) => {
 
       processedCount++;
       console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
+
+      emitProgress({
+        type: 'feed_completed',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        feedNewArticles,
+        feedUpdatedArticles,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount,
+        processedFeeds: processedCount
+      });
     } catch (err) {
       const errMsg = err?.message || String(err) || 'Unknown error';
       console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
       await markError(feed, errMsg);
       errorCount++;
+
+      emitProgress({
+        type: 'feed_error',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount,
+        processedFeeds: processedCount,
+        message: errMsg
+      });
+
+      emitProgress({
+        type: 'feed_completed',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        feedNewArticles,
+        feedUpdatedArticles,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount,
+        processedFeeds: processedCount
+      });
     } finally {
       //update lastFetched
       await feed.update({
@@ -209,23 +344,61 @@ const performCrawl = async (userId = null, _options = {}) => {
 
   const processedUserIds = new Set();
 
-  const runFeedWithTimeout = async (feed) => {
+  const runFeedWithTimeout = async (feed, currentFeed) => {
+    let status = 'success';
+    let message = null;
+
     try {
-      await withTimeout(processSingleFeed(feed), FEED_TIMEOUT_MS, feed.url);
+      await withTimeout(processSingleFeed(feed, currentFeed), FEED_TIMEOUT_MS, feed.url);
       if (feed.userId) processedUserIds.add(feed.userId);
     } catch (err) {
       const errMsg = err?.message || String(err) || 'Unknown error';
 
       if (errMsg.includes('timed out')) {
         console.log(`Timeout processing feed: ${feed.url} - skipping to next feed`);
+        status = 'timeout';
+        message = errMsg;
         timeoutCount++;
         await markError(feed, errMsg);
+
+        emitProgress({
+          type: 'feed_error',
+          feedId: feed.id,
+          feedName: feed.feedName,
+          currentFeed,
+          totalFeeds: feeds.length,
+          newArticles: totalNewArticles,
+          updatedArticles: totalUpdatedArticles,
+          errors: errorCount + 1,
+          timeouts: timeoutCount,
+          processedFeeds: processedCount,
+          message: errMsg
+        });
       } else {
         console.log(`Failed to process feed: ${feed.url} - ${errMsg}`);
+        status = 'error';
+        message = errMsg;
         await markError(feed, errMsg);
       }
 
       errorCount++;
+    } finally {
+      emitProgress({
+        type: 'progress',
+        event: 'feed_status',
+        feedId: feed.id,
+        feedName: feed.feedName,
+        currentFeed,
+        totalFeeds: feeds.length,
+        feedUrl: feed.url,
+        status,
+        message,
+        processedFeeds: processedCount,
+        newArticles: totalNewArticles,
+        updatedArticles: totalUpdatedArticles,
+        errors: errorCount,
+        timeouts: timeoutCount
+      });
     }
   };
 
@@ -233,7 +406,7 @@ const performCrawl = async (userId = null, _options = {}) => {
     console.log('[Parallel Mode] Processing feeds in parallel...');
     const remaining = CRAWL_TIMEOUT_MS - (Date.now() - (crawlDeadline - CRAWL_TIMEOUT_MS));
     const results = await Promise.race([
-      Promise.all(feeds.map(feed => runFeedWithTimeout(feed))),
+      Promise.all(feeds.map((feed, index) => runFeedWithTimeout(feed, index + 1))),
       new Promise(resolve =>
         setTimeout(() => {
           crawlTimedOut = true;
@@ -246,13 +419,14 @@ const performCrawl = async (userId = null, _options = {}) => {
     }
   } else {
     console.log('[Sequential Mode] Processing feeds sequentially...');
-    for (const feed of feeds) {
+    for (let index = 0; index < feeds.length; index++) {
+      const feed = feeds[index];
       if (Date.now() >= crawlDeadline) {
         crawlTimedOut = true;
         console.log(`[Crawl] Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s — skipping remaining ${feeds.length - processedCount - errorCount} feeds`);
         break;
       }
-      await runFeedWithTimeout(feed);
+      await runFeedWithTimeout(feed, index + 1);
     }
   }
 
@@ -264,6 +438,21 @@ const performCrawl = async (userId = null, _options = {}) => {
     crawlTimedOut,
     processedUserIds: [...processedUserIds]
   };
+
+  emitProgress({
+    type: 'done',
+    event: 'refresh_completed',
+    feedId: null,
+    feedName: null,
+    currentFeed: result.total,
+    totalFeeds: result.total,
+    processedFeeds: result.processed,
+    newArticles: totalNewArticles,
+    updatedArticles: totalUpdatedArticles,
+    errors: result.errors,
+    timeouts: result.timeouts,
+    crawlTimedOut: result.crawlTimedOut
+  });
 
   return result;
 };

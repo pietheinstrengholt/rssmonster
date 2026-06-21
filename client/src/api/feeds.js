@@ -41,3 +41,21 @@ export const rediscoverRss = (feedId) =>
  */
 export const deleteFeed = (feedId) =>
   api.delete(`/feeds/${feedId}`);
+
+/**
+ * Start a feed refresh job
+ */
+export const startFeedRefresh = () =>
+  api.post('/feeds/refresh');
+
+/**
+ * Open SSE stream for a refresh job
+ */
+export const openFeedRefreshEvents = (jobId, token) => {
+  const base = `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/refresh/${jobId}/events`;
+  const url = token
+    ? `${base}?token=${encodeURIComponent(token)}`
+    : base;
+
+  return new EventSource(url);
+};

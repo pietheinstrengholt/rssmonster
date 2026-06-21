@@ -26,9 +26,17 @@ api.interceptors.response.use(
   error => {
     const status = error?.response?.status;
     const url = error?.config?.url ?? '';
+    const isTimeoutError = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '');
+    const isCanceledRequest = error?.code === 'ERR_CANCELED';
 
     // Network / backend offline (skip for requests handled locally)
-    if (!error.response && !url.includes('/agent') && !error?.config?.suppressGlobalError) {
+    if (
+      !error.response &&
+      !isTimeoutError &&
+      !isCanceledRequest &&
+      !url.includes('/agent') &&
+      !error?.config?.suppressGlobalError
+    ) {
       window.dispatchEvent(new CustomEvent('app:error', {
         detail: {
           type: 'offline',

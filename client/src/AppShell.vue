@@ -317,6 +317,14 @@ export default {
           this.updateSelection(this.$store.data.currentSelection);
         }
       } catch (error) {
+        const isTimeoutError = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '');
+
+        if (isTimeoutError) {
+          console.warn('Overview request timed out, keeping current online state.', error?.message || error);
+          this.overviewLoaded = true;
+          return;
+        }
+
         console.error("There was an error!", error);
 
         if (this.overviewIntervalId) {

@@ -12,6 +12,24 @@
       @select="refreshFeeds"
     />
 
+    <div v-if="refreshProgress.visible" class="refresh-progress-panel">
+      <div class="refresh-progress-header">
+        <strong>Live refresh</strong>
+        <span>{{ refreshProgress.currentFeedLabel }}</span>
+      </div>
+      <div class="refresh-progress-bar">
+        <div class="refresh-progress-fill" :style="{ width: `${refreshProgress.progressPercent}%` }"></div>
+      </div>
+      <div class="refresh-progress-stats">
+        <span>Processed: {{ refreshProgress.processedFeeds }}/{{ refreshProgress.totalFeeds }}</span>
+        <span>New: {{ refreshProgress.newArticles }}</span>
+        <span>Errors: {{ refreshProgress.errors }}</span>
+      </div>
+      <ul class="refresh-progress-logs">
+        <li v-for="(line, index) in refreshProgress.logs" :key="`${line}-${index}`">{{ line }}</li>
+      </ul>
+    </div>
+
     <SidebarActionButton
       icon="plus-square-fill"
       label="Add new feed"
@@ -210,6 +228,59 @@
   width: 105%;
 }
 
+.refresh-progress-panel {
+  margin: 0px 12px 20px;
+  padding: 10px;
+  border-radius: 8px;
+  background: var(--bg-secondary);
+  border: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.refresh-progress-header {
+  display: flex;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 12px;
+  margin-bottom: 8px;
+}
+
+.refresh-progress-bar {
+  width: 100%;
+  height: 6px;
+  border-radius: 999px;
+  background: var(--scrollbar-track);
+  overflow: hidden;
+}
+
+.refresh-progress-fill {
+  height: 100%;
+  background: var(--button-main);
+  transition: width 0.25s ease;
+}
+
+.refresh-progress-stats {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  font-size: 11px;
+  margin-top: 8px;
+}
+
+.refresh-progress-logs {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  max-height: 120px;
+  overflow-y: auto;
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.refresh-progress-logs li {
+  margin-bottom: 4px;
+}
+
 @media (prefers-color-scheme: dark) {
   #monster p {
     color: var(--text-inverted);
@@ -218,12 +289,13 @@
 </style>
 
 <script setup>
-import { computed, getCurrentInstance, onBeforeMount, ref } from 'vue';
+import { computed, getCurrentInstance, onBeforeMount, onBeforeUnmount, reactive, ref } from 'vue';
 import draggable from 'vuedraggable';
 import Cookies from 'js-cookie';
 import { setAuthToken } from '../api/client';
 import { markAllAsRead } from '../api/articles';
 import { triggerCrawl } from '../api/crawl';
+import { openFeedRefreshEvents, startFeedRefresh } from '../api/feeds';
 import { updateCategoryOrder } from '../api/manager';
 import SidebarActionButton from './sidebar/SidebarActionButton.vue';
 import SidebarCategoryGroup from './sidebar/SidebarCategoryGroup.vue';
@@ -240,6 +312,17 @@ const store = new Proxy({}, {
 });
 const refreshing = ref(false);
 const markingAsRead = ref(false);
+const refreshEventSource = ref(null);
+const refreshProgress = reactive({
+  visible: false,
+  currentFeedLabel: 'Waiting to start...',
+  progressPercent: 0,
+  totalFeeds: 0,
+  processedFeeds: 0,
+  newArticles: 0,
+  errors: 0,
+  logs: []
+});
 
 const statusFilters = [
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
@@ -257,6 +340,10 @@ onBeforeMount(() => {
     store.data.fetchTopTags(),
     store.data.fetchSmartFolders()
   ]).catch(() => {});
+});
+
+onBeforeUnmount(() => {
+  closeRefreshEventSource();
 });
 
 // This function returns the count for a selected article status.
@@ -327,20 +414,179 @@ async function markAsRead(currentSelection) {
 
 // This function starts a feed refresh and displays its progress.
 async function refreshFeeds() {
+  if (refreshing.value) return;
+
   refreshing.value = true;
 
+  resetRefreshProgress();
+  refreshProgress.visible = true;
+  appendRefreshLog('Starting refresh...');
+
   try {
-    await triggerCrawl();
-    setTimeout(refresh, 2000);
+    const response = await startFeedRefresh();
+    const jobId = response?.data?.jobId;
+
+    if (!jobId) {
+      throw new Error('Missing refresh job id');
+    }
+
+    openRefreshEventStream(jobId);
   } catch (error) {
-    refreshing.value = false;
-    console.log('oops something went wrong', error);
+    appendRefreshLog('Live refresh unavailable. Falling back to standard refresh.');
+    await fallbackRefresh(error);
   }
 }
 
 // This function stops the refresh progress indicator.
 function refresh() {
   refreshing.value = false;
+}
+
+function resetRefreshProgress() {
+  refreshProgress.currentFeedLabel = 'Waiting to start...';
+  refreshProgress.progressPercent = 0;
+  refreshProgress.totalFeeds = 0;
+  refreshProgress.processedFeeds = 0;
+  refreshProgress.newArticles = 0;
+  refreshProgress.errors = 0;
+  refreshProgress.logs = [];
+}
+
+function appendRefreshLog(message) {
+  const timestamp = new Date().toLocaleTimeString();
+  refreshProgress.logs.unshift(`${timestamp} - ${message}`);
+  refreshProgress.logs = refreshProgress.logs.slice(0, 8);
+}
+
+function updateProgressFromEvent(payload) {
+  if (!payload || typeof payload !== 'object') return;
+
+  const totalFeeds = Number(payload.totalFeeds || 0);
+  const processedFeeds = Number(payload.processedFeeds || payload.currentFeed || 0);
+
+  refreshProgress.totalFeeds = totalFeeds;
+  refreshProgress.processedFeeds = processedFeeds;
+  refreshProgress.newArticles = Number(payload.newArticles || 0);
+  refreshProgress.errors = Number(payload.errors || 0);
+
+  if (payload.feedName) {
+    const currentFeed = Number(payload.currentFeed || processedFeeds || 0);
+    refreshProgress.currentFeedLabel = `${payload.feedName} (${currentFeed}/${totalFeeds || '?'})`;
+  } else if (totalFeeds > 0) {
+    refreshProgress.currentFeedLabel = `${processedFeeds}/${totalFeeds} feeds`;
+  }
+
+  if (totalFeeds > 0) {
+    refreshProgress.progressPercent = Math.min(100, Math.round((processedFeeds / totalFeeds) * 100));
+  }
+}
+
+function openRefreshEventStream(jobId) {
+  closeRefreshEventSource();
+
+  const token = store.auth?.getToken || Cookies.get('token') || null;
+  const eventSource = openFeedRefreshEvents(jobId, token);
+  refreshEventSource.value = eventSource;
+
+  const handleEvent = (event) => {
+    try {
+      const payload = JSON.parse(event.data || '{}');
+      updateProgressFromEvent(payload);
+
+      switch (event.type) {
+        case 'refresh_started':
+          appendRefreshLog(`Refresh started for ${payload.totalFeeds || 0} feeds.`);
+          break;
+        case 'feed_started':
+          appendRefreshLog(`Started: ${payload.feedName || payload.feedId}`);
+          break;
+        case 'feed_parsed':
+          appendRefreshLog(`Parsed ${payload.entries || 0} entries from ${payload.feedName || payload.feedId}.`);
+          break;
+        case 'articles_inserted_updated':
+          appendRefreshLog(`Articles for ${payload.feedName || payload.feedId}: +${payload.feedNewArticles || 0} new, ${payload.feedUpdatedArticles || 0} updated.`);
+          break;
+        case 'feed_error':
+          appendRefreshLog(`Error in ${payload.feedName || payload.feedId}: ${payload.message || 'unknown error'}`);
+          break;
+        case 'feed_completed':
+          appendRefreshLog(`Completed: ${payload.feedName || payload.feedId}`);
+          break;
+        case 'done':
+          appendRefreshLog('Refresh completed.');
+          finishRefreshStream(true);
+          break;
+        case 'error':
+          appendRefreshLog(payload.message || 'Refresh failed.');
+          finishRefreshStream(false);
+          break;
+        default:
+          break;
+      }
+    } catch (error) {
+      appendRefreshLog('Received invalid progress payload.');
+      console.log('Invalid SSE payload', error);
+    }
+  };
+
+  eventSource.onopen = () => {
+    appendRefreshLog('Live connection established.');
+  };
+
+  eventSource.onerror = () => {
+    appendRefreshLog('Live updates disconnected.');
+    // Do not trigger legacy crawl here because the job is already running.
+    finishRefreshStream(false);
+  };
+
+  eventSource.onmessage = handleEvent;
+  [
+    'refresh_started',
+    'feed_started',
+    'feed_parsed',
+    'articles_inserted_updated',
+    'feed_error',
+    'feed_completed',
+    'done',
+    'error',
+    'progress'
+  ].forEach(type => {
+    eventSource.addEventListener(type, handleEvent);
+  });
+}
+
+async function fallbackRefresh(error) {
+  try {
+    await triggerCrawl();
+    setTimeout(() => {
+      appendRefreshLog('Standard refresh completed.');
+      refresh();
+      refreshProgress.visible = false;
+    }, 2000);
+  } catch (fallbackError) {
+    refreshing.value = false;
+    refreshProgress.visible = false;
+    console.log('oops something went wrong', fallbackError || error);
+  }
+}
+
+function finishRefreshStream(success) {
+  closeRefreshEventSource();
+
+  setTimeout(() => {
+    refreshing.value = false;
+    refreshProgress.visible = false;
+    if (success) {
+      emit('forceReload');
+    }
+  }, 500);
+}
+
+function closeRefreshEventSource() {
+  if (refreshEventSource.value) {
+    refreshEventSource.value.close();
+    refreshEventSource.value = null;
+  }
 }
 
 // This function toggles a tag selection.

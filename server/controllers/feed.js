@@ -4,6 +4,10 @@ const { Feed, Article, Category } = db;
 import discoverRssLink from "../util/discoverRssLink.js";
 import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';
 import parseFeed from "../util/parser.js";
+import jwt from 'jsonwebtoken';
+import { getJwtSecret } from '../config/auth.js';
+import crawlController from './crawl.js';
+import crawlJobManager from '../util/crawlJobManager.js';
 
 const findOwnedCategory = (categoryId, userId) => Category.findOne({
   where: {
@@ -435,6 +439,103 @@ const muteFeed = async (req, res, _next) => {
   }
 };
 
+const startRefresh = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const jobId = crawlJobManager.createJob(userId);
+    crawlJobManager.publishEvent(jobId, {
+      type: 'progress',
+      stage: 'queued',
+      message: 'Refresh job queued'
+    });
+
+    crawlController.performCrawl(userId, {
+      onProgress: (event) => {
+        crawlJobManager.publishEvent(jobId, event);
+      }
+    })
+      .catch((err) => {
+        console.error('Error in startRefresh async crawl:', err);
+        crawlJobManager.publishEvent(jobId, {
+          type: 'error',
+          message: err?.message || 'Unknown refresh error'
+        });
+      });
+
+    return res.status(200).json({ jobId });
+  } catch (err) {
+    console.error('Error in startRefresh:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+const streamRefreshEvents = async (req, res) => {
+  try {
+    let userId = req.userData?.userId || null;
+
+    // EventSource cannot set Authorization headers, so allow token in query for this SSE endpoint.
+    if (!userId && req.query?.token) {
+      try {
+        const decoded = jwt.verify(req.query.token, getJwtSecret());
+        userId = decoded?.userId || null;
+      } catch {
+        userId = null;
+      }
+    }
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const { jobId } = req.params;
+    const job = crawlJobManager.getJob(jobId);
+
+    if (!job) {
+      return res.status(404).json({ error: 'Refresh job not found' });
+    }
+
+    if (job.userId && job.userId !== userId) {
+      return res.status(404).json({ error: 'Refresh job not found' });
+    }
+
+    res.setHeader('Content-Type', 'text/event-stream');
+    res.setHeader('Cache-Control', 'no-cache, no-transform');
+    res.setHeader('Connection', 'keep-alive');
+    res.setHeader('X-Accel-Buffering', 'no');
+
+    if (typeof res.flushHeaders === 'function') {
+      res.flushHeaders();
+    }
+
+    res.write(': connected\n\n');
+
+    const heartbeatId = setInterval(() => {
+      res.write(': heartbeat\n\n');
+    }, 15_000);
+
+    req.on('close', () => {
+      clearInterval(heartbeatId);
+      crawlJobManager.unsubscribe(jobId, res);
+    });
+
+    const subscribed = crawlJobManager.subscribe(jobId, req, res);
+    if (!subscribed) {
+      clearInterval(heartbeatId);
+    }
+  } catch (err) {
+    console.error('Error in streamRefreshEvents:', err);
+    if (!res.headersSent) {
+      return res.status(500).json({ error: err.message });
+    }
+    return res.end();
+  }
+};
+
 export default {
   getFeeds,
   getFeed,
@@ -443,5 +544,7 @@ export default {
   deleteFeed,
   validateFeed,
   rediscoverFeedRss,
-  muteFeed
+  muteFeed,
+  startRefresh,
+  streamRefreshEvents
 }

@@ -48,6 +48,12 @@ const normalizeDescription = (html) => {
 // Delay in milliseconds when rate limited by OpenAI API
 const RATE_LIMIT_DELAY_MS = 3000; // 3 seconds delay when rate limited
 
+const emptyArticleResult = {
+  newArticles: 0,
+  updatedArticles: 0,
+  errors: 0
+};
+
 const processArticle = async (feed, entry) => {
   try {
 
@@ -69,13 +75,13 @@ const processArticle = async (feed, entry) => {
       const sinceDate = new Date(feed.crawlSince);
       if (!isNaN(publishedDate.getTime()) && !isNaN(sinceDate.getTime())) {
         if (publishedDate < sinceDate) {
-          return; // Too old, respect crawlSince threshold
+          return emptyArticleResult; // Too old, respect crawlSince threshold
         }
       }
     }
 
     // Don't process empty post URLs
-    if (!fields.link) return;
+    if (!fields.link) return emptyArticleResult;
 
     let contentOriginal = null;
     let contentStripped = null;
@@ -121,10 +127,17 @@ const processArticle = async (feed, entry) => {
       fields.link,
       contentHash
     );
-    if (existing) return; // Duplicate found, skip processing
+    if (existing) {
+      // Existing entry means the feed already contains this article, count as updated for progress reporting.
+      return {
+        newArticles: 0,
+        updatedArticles: 1,
+        errors: 0
+      };
+    }
 
     // Add article only if content was found
-    if (!contentOriginal) return;
+    if (!contentOriginal) return emptyArticleResult;
 
     // Retrieve actions for applying rules to the article
     // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
@@ -141,7 +154,7 @@ const processArticle = async (feed, entry) => {
     );
 
     // Skip article creation if delete action matched
-    if (actionResult.shouldDelete) return;
+    if (actionResult.shouldDelete) return emptyArticleResult;
 
     // Analyze content once (summary + tags + scores)
     // Done AFTER delete check to avoid wasting API calls
@@ -186,7 +199,7 @@ const processArticle = async (feed, entry) => {
     }
 
     // Create article with analysis results
-    await saveArticle(
+    const savedArticle = await saveArticle(
       feed,
       {
         ...fields,
@@ -204,8 +217,28 @@ const processArticle = async (feed, entry) => {
       actionResult
     );
 
+    if (!savedArticle) {
+      // A concurrent crawler inserted this URL first; treat as updated for progress counters.
+      return {
+        newArticles: 0,
+        updatedArticles: 1,
+        errors: 0
+      };
+    }
+
+    return {
+      newArticles: 1,
+      updatedArticles: 0,
+      errors: 0
+    };
+
   } catch (err) {
     console.error('Error processing article:', err);
+    return {
+      newArticles: 0,
+      updatedArticles: 0,
+      errors: 1
+    };
   }
 };
 
