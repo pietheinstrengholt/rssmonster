@@ -6,21 +6,11 @@
     <!-- Article filter dropdowns -->
     <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown">
       <button class="dropdown-toggle toolbar-dropdown" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ dropdown.label }}
+        <span class="toolbar-dropdown-label">{{ dropdown.label }}:</span>
+        <span class="toolbar-dropdown-value">{{ dropdown.selectedLabel }}</span>
       </button>
       <div class="dropdown-menu" :aria-labelledby="dropdown.id">
         <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
-      </div>
-    </div>
-
-    <!-- Cluster View Dropdown -->
-    <div v-if="isAIEnabled" class="dropdown">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ formatClusterViewLabel(currentSelection.clusterView) }}
-      </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'all' }" @click="setClusterView('all')">All articles</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
       </div>
     </div>
 
@@ -71,6 +61,16 @@
   height: 40px;
   line-height: 20px;
   font-size: 14px;
+}
+
+.toolbar-dropdown-label {
+  color: var(--text-muted);
+}
+
+.toolbar-dropdown-value {
+  margin-left: 4px;
+  color: var(--toolbar-text);
+  font-weight: 500;
 }
 
 .toolbar-dropdown:focus,
@@ -320,6 +320,10 @@ export default {
         { value: 'RECOMMENDED', label: 'Recommended', requiresAI: true },
         { value: 'QUALITY', label: 'Quality', requiresAI: true },
         { value: 'ATTENTION', label: 'Attention', requiresAI: true }
+      ],
+      groupingOptions: [
+        { value: 'all', label: 'None' },
+        { value: 'eventCluster', label: 'Events' }
       ]
     };
   },
@@ -371,6 +375,8 @@ export default {
         this.viewModeClicked(value);
       } else if (type === 'sort') {
         this.sortClicked(value);
+      } else if (type === 'grouping') {
+        this.setClusterView(value);
       }
     },
     // This function opens the settings modal.
@@ -421,42 +427,51 @@ export default {
       // This function filters out AI-only options when AI is unavailable.
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
       const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
+      const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.clusterView);
 
-      return [
+      const dropdowns = [
         {
           id: 'statusDropdown',
           type: 'status',
-          label: this.capitalize(this.selectedStatus),
+          label: 'Status',
+          selectedLabel: this.capitalize(this.selectedStatus),
           selectedValue: this.selectedStatus,
           options: this.statusOptions
         },
         {
           id: 'viewModeDropdown',
           type: 'viewMode',
-          label: this.capitalize(this.selectedViewMode),
+          label: 'View',
+          selectedLabel: this.capitalize(this.selectedViewMode),
           selectedValue: this.selectedViewMode,
           options: visibleOptions(this.viewModeOptions)
         },
         {
           id: 'sortDropdown',
           type: 'sort',
-          label: selectedSortOption ? selectedSortOption.label : '',
+          label: 'Sort',
+          selectedLabel: selectedSortOption ? selectedSortOption.label : '',
           selectedValue: this.selectedSort,
           options: visibleOptions(this.sortOptions)
         }
       ];
+
+      if (this.isAIEnabled) {
+        dropdowns.push({
+          id: 'groupingDropdown',
+          type: 'grouping',
+          label: 'Grouping',
+          selectedLabel: selectedGroupingOption ? selectedGroupingOption.label : 'None',
+          selectedValue: this.currentSelection.clusterView,
+          options: this.groupingOptions
+        });
+      }
+
+      return dropdowns;
     },
     // This function capitalizes a dropdown value for display.
     capitalize() {
       return (value)=> value.charAt(0).toUpperCase() + value.slice(1)
-    },
-    // This function translates a cluster view value into its display label.
-    formatClusterViewLabel() {
-      return (value) => {
-        if (value === 'all') return 'All articles';
-        if (value === 'eventCluster') return 'Cluster per event';
-        return 'All articles';
-      };
     },
     // This function reports whether the current search query is invalid.
     isSearchQueryInvalid() {
