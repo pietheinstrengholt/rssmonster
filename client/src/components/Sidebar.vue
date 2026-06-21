@@ -23,6 +23,7 @@
       icon="check-square-fill"
       label="Mark as read"
       variant="option mark-as-read"
+      :loading="markingAsRead"
       @select="markAsRead($store.data.currentSelection)"
     />
 
@@ -238,6 +239,7 @@ const store = new Proxy({}, {
   }
 });
 const refreshing = ref(false);
+const markingAsRead = ref(false);
 
 const statusFilters = [
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
@@ -311,10 +313,14 @@ function loadAll() {
 
 // This function marks articles in the current selection as read.
 async function markAsRead(currentSelection) {
+  markingAsRead.value = true;
+
   try {
     await markAllAsRead(currentSelection);
-    setTimeout(() => location.reload(), 1000);
+    emit('forceReload');
+    markingAsRead.value = false;
   } catch (error) {
+    markingAsRead.value = false;
     console.log('oops something went wrong', error);
   }
 }
