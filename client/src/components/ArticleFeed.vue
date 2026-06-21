@@ -258,7 +258,6 @@ export default {
       if (this.isLoading || !this.hasLoadedContent) return;
 
       if (this.distance < this.container.length) {
-        this.isLoading = true;
         this.getContent();
       } else {
         this.flushPool();
