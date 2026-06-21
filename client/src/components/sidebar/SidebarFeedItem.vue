@@ -51,10 +51,6 @@ const feedClasses = computed(() => ({
 <style scoped>
 .category-feed {
   padding: 4px 4px 4px 12px;
-  margin-left: 12px;
-  margin-right: 12px;
-  margin-top: 4px;
-  border-radius: 4px;
   cursor: pointer;
   background-color: var(--color-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
@@ -67,7 +63,7 @@ const feedClasses = computed(() => ({
 
 .category-feed.error,
 .category-feed.selected.error {
-  background-color: var(--color-success);
+  background-color: var(--color-danger);
 }
 
 .category-feed.disabled {

@@ -14,7 +14,7 @@
         <span v-if="count !== null" class="badge white">{{ count }}</span>
       </span>
     </div>
-    <div v-if="category.feeds && isSelectedCategory">
+    <div v-if="category.feeds && isExpanded">
       <div class="category-feeds">
         <SidebarFeedItem
           v-for="(feed, index) in category.feeds"
@@ -60,6 +60,7 @@ const props = defineProps({
 const emit = defineEmits(['select-category', 'select-feed']);
 
 const isSelectedCategory = computed(() => props.selectedCategoryId == props.category.id && props.selectedFeedId === '%');
+const isExpanded = computed(() => props.selectedCategoryId == props.category.id);
 
 function getFeedCount(feed) {
   const value = props.countResolver(feed);
