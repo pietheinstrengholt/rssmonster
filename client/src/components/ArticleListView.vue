@@ -16,7 +16,7 @@
     <div id="no-more" v-if="hasLoadedContent">
       <p v-if="container.length === 0" id="no-results">No posts found!</p>
       <p v-if="currentSelection !== 'unread' && container.length !== 0 && remainingItems < fetchCount">You reached the bottom!</p>
-      <p v-if="currentSelection == 'unread' && container.length != 0 && isFlushed === false && distance > container.length" v-on:click="flushPool()">You reached the bottom! <br>Click here to mark all remaining items as read!</p>
+      <button v-if="currentSelection === 'unread' && container.length !== 0 && isFlushed === false && distance >= container.length" id="mark-all-read" type="button" class="mark-all-read" @click="flushPool">Click to mark all articles as read.</button>
       <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate === 0">All items are marked as read.</p>
       <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0" class="clickable" v-on:click="this.$emit('forceReload')">{{ unreadsSinceLastUpdate }} new unread {{ unreadsSinceLastUpdate === 1 ? 'article' : 'articles' }} available! <br>Click here to refresh!</p>
     </div>
@@ -127,6 +127,16 @@ export default {
 }
 
 .clickable {
+  cursor: pointer;
+}
+
+.mark-all-read {
+  padding: 0;
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  text-decoration: underline;
   cursor: pointer;
 }
 

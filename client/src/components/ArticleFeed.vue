@@ -8,6 +8,7 @@ import ArticleListView from "./ArticleListView.vue";
 import {
   fetchArticleIds,
   fetchArticleDetails,
+  markAllAsRead,
   markArticleSeen
 } from '../api/articles';
 
@@ -252,15 +253,13 @@ export default {
       }
     },
 
-    // Loads more content or flushes unread articles at the list boundary.
+    // Loads the next article page when the list boundary is reached.
     handleLoadMoreIntersections(entries) {
       if (!entries.some(entry => entry.isIntersecting)) return;
       if (this.isLoading || !this.hasLoadedContent) return;
 
       if (this.distance < this.container.length) {
         this.getContent();
-      } else {
-        this.flushPool();
       }
     },
 
@@ -292,7 +291,7 @@ export default {
         this.hasLoadedContent = true;
 
         if (!response.data.length) {
-          this.flushPool();
+          this.distance = this.container.length;
           return;
         }
 
@@ -331,21 +330,18 @@ export default {
       }
     },
 
-    // Marks every remaining article as seen when the feed is exhausted.
+    // Marks all unread articles in the current selection as read.
     async flushPool() {
-      if (this.container.length && !this.isFlushed) {
-        if (this.$store.data.currentSelection.viewMode !== "minimal") {
-          for (const id of this.container) {
-            if (!this.pool.has(id)) {
-              const ms = this.visibleDuration.get(id) || 0;
-              const visibleSeconds = Math.round(ms / 1000);
-              console.log("[FLUSH MARK SEEN]", id, `visibleSeconds=${visibleSeconds}`);
-              await this.markArticleSeen(id, visibleSeconds);
-            }
-          }
-        }
+      if (!this.container.length || this.isFlushed) return;
+
+      try {
+        await markAllAsRead(this.$store.data.currentSelection);
+        this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
+        this.isFlushed = true;
+        await this.$store.data.fetchOverviewSplit({ forceUpdate: true });
+      } catch (error) {
+        console.error('Error marking all articles as read:', error);
       }
-      this.isFlushed = true;
     },
 
     // Resets article, visibility, and observer state for a new selection.
