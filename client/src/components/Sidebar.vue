@@ -425,9 +425,14 @@ async function refreshFeeds() {
   try {
     const response = await startFeedRefresh();
     const jobId = response?.data?.jobId;
+    const reused = Boolean(response?.data?.reused);
 
     if (!jobId) {
       throw new Error('Missing refresh job id');
+    }
+
+    if (reused) {
+      appendRefreshLog('Resuming live updates for an already running refresh job.');
     }
 
     openRefreshEventStream(jobId);
@@ -539,7 +544,6 @@ function openRefreshEventStream(jobId) {
     finishRefreshStream(false);
   };
 
-  eventSource.onmessage = handleEvent;
   [
     'refresh_started',
     'feed_started',

@@ -188,6 +188,8 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
       domain = entryLink;
     }
 
+    const hotlinkUrls = [];
+
     // Fetch all URLs referenced to other websites
     $('a[href]').each((_, el) => {
       const href = $(el).attr('href');
@@ -200,11 +202,13 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
         // Remove query string parameters (everything after ?)
         const cleanUrl = normalizeUrl(href);
 
-        // Update cache
-        // (fire-and-forget; hotlinks are best-effort signals)
-        hotlink.set(cleanUrl, feed.id, feed.userId).catch(console.error);
+        hotlinkUrls.push(cleanUrl);
       }
     });
+
+    // Update cache once per article. Hotlinks are best-effort signals, so do not
+    // block article processing on this write.
+    hotlink.setMany(hotlinkUrls, feed.id, feed.userId).catch(console.error);
 
     // Serialize cleaned HTML
     const html = $.html();

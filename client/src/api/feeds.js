@@ -52,10 +52,14 @@ export const startFeedRefresh = () =>
  * Open SSE stream for a refresh job
  */
 export const openFeedRefreshEvents = (jobId, token) => {
+  if (typeof window === 'undefined' || typeof window.EventSource === 'undefined') {
+    throw new Error('EventSource is not supported in this browser');
+  }
+
   const base = `${import.meta.env.VITE_VUE_APP_HOSTNAME}/api/feeds/refresh/${jobId}/events`;
   const url = token
     ? `${base}?token=${encodeURIComponent(token)}`
     : base;
 
-  return new EventSource(url);
+  return new window.EventSource(url);
 };

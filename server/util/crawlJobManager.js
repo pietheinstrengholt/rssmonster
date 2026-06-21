@@ -11,6 +11,9 @@ import { randomUUID } from 'crypto';
 // How long (ms) a completed/errored job is kept before being garbage-collected.
 const JOB_TTL_MS = parseInt(process.env.CRAWL_JOB_TTL_MS) || 60_000;
 
+// Safety cap for jobs that never reach a terminal state (e.g., unexpected crashes).
+const JOB_MAX_AGE_MS = parseInt(process.env.CRAWL_JOB_MAX_AGE_MS) || 30 * 60_000;
+
 // Maximum number of buffered events per job. Prevents unbounded memory use
 // when a very large feed list is crawled. Oldest events are dropped first.
 const MAX_BUFFERED_EVENTS = 500;
@@ -29,6 +32,7 @@ const MAX_BUFFERED_EVENTS = 500;
 //   createdAt   – Date
 //   completedAt – Date | null
 //   _gcTimer    – NodeJS.Timeout (GC handle, kept so tests can clear it)
+//   _maxAgeTimer – NodeJS.Timeout (hard safety cleanup timer)
 const jobs = new Map();
 
 const toSseMessage = (event) => {
@@ -43,6 +47,19 @@ const toSseMessage = (event) => {
 // This function creates a new job entry and returns its UUID.
 function createJob(userId = null) {
   const id = randomUUID();
+
+  const maxAgeTimer = setTimeout(() => {
+    const job = jobs.get(id);
+    if (!job) return;
+
+    // Close any lingering subscribers before dropping stale job state.
+    for (const res of job.subscribers) {
+      try { res.end(); } catch { /* ignore */ }
+    }
+    job.subscribers.clear();
+    jobs.delete(id);
+  }, JOB_MAX_AGE_MS);
+
   jobs.set(id, {
     id,
     userId,
@@ -51,7 +68,8 @@ function createJob(userId = null) {
     subscribers: new Set(),
     createdAt: new Date(),
     completedAt: null,
-    _gcTimer: null
+    _gcTimer: null,
+    _maxAgeTimer: maxAgeTimer
   });
   return id;
 }
@@ -74,7 +92,8 @@ function publishEvent(jobId, event) {
     try {
       res.write(payload);
     } catch {
-      // Client already disconnected; subscriber cleanup is handled on req close
+      // Remove broken subscriber references immediately to avoid repeated write failures.
+      job.subscribers.delete(res);
     }
   }
 
@@ -89,7 +108,14 @@ function publishEvent(jobId, event) {
     }
     job.subscribers.clear();
 
-    job._gcTimer = setTimeout(() => jobs.delete(jobId), JOB_TTL_MS);
+    job._gcTimer = setTimeout(() => {
+      const staleJob = jobs.get(jobId);
+      if (!staleJob) return;
+      if (staleJob._maxAgeTimer) {
+        clearTimeout(staleJob._maxAgeTimer);
+      }
+      jobs.delete(jobId);
+    }, JOB_TTL_MS);
   } else if (job.status === 'pending') {
     job.status = 'running';
   }
@@ -157,6 +183,24 @@ function getJob(jobId) {
   };
 }
 
+// This function returns an active (pending/running) job for a user, if any.
+function getActiveJobForUser(userId) {
+  if (!userId) return null;
+
+  for (const job of jobs.values()) {
+    if (job.userId === userId && (job.status === 'pending' || job.status === 'running')) {
+      return {
+        id: job.id,
+        userId: job.userId,
+        status: job.status,
+        createdAt: job.createdAt
+      };
+    }
+  }
+
+  return null;
+}
+
 // This function returns the count of currently tracked jobs (useful for health checks).
 function jobCount() {
   return jobs.size;
@@ -168,5 +212,6 @@ export default {
   subscribe,
   unsubscribe,
   getJob,
+  getActiveJobForUser,
   jobCount
 };

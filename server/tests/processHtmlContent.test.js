@@ -1,10 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { beforeEach, describe, it, expect, vi } from 'vitest';
 
-const hotlinkSet = vi.fn(() => Promise.resolve());
+const hotlinkSetMany = vi.fn(() => Promise.resolve());
 
 vi.mock('../controllers/hotlink.js', () => ({
   default: {
-    set: hotlinkSet
+    setMany: hotlinkSetMany
   }
 }));
 
@@ -18,6 +18,10 @@ const feed = {
 };
 
 describe('crawl content sanitization', () => {
+  beforeEach(() => {
+    hotlinkSetMany.mockClear();
+  });
+
   it('strips executable tags, event attributes, unsafe URLs, and hostile embeds before storage', () => {
     const result = processHtmlContent(
       `
@@ -41,6 +45,23 @@ describe('crawl content sanitization', () => {
     expect(result.content).toContain('https://news.example/story');
     expect(result.content).toContain('rel="noopener noreferrer"');
     expect(result.content).not.toMatch(/onerror|onclick|javascript:|<iframe|<script|<svg|style=/i);
+  });
+
+  it('stores outbound links with one batch per article', () => {
+    processHtmlContent(
+      '<a href="https://first.example/article">First</a><a href="https://second.example/article?source=rss">Second</a>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Hotlink batch test'
+    );
+
+    expect(hotlinkSetMany).toHaveBeenCalledTimes(1);
+    expect(hotlinkSetMany).toHaveBeenCalledWith(
+      ['https://first.example/article', 'https://second.example/article'],
+      feed.id,
+      feed.userId
+    );
   });
 
   it('escapes and filters media-only feed content before storage', () => {

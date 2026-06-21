@@ -447,6 +447,11 @@ const startRefresh = async (req, res) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    const activeJob = crawlJobManager.getActiveJobForUser(userId);
+    if (activeJob) {
+      return res.status(200).json({ jobId: activeJob.id, reused: true });
+    }
+
     const jobId = crawlJobManager.createJob(userId);
     crawlJobManager.publishEvent(jobId, {
       type: 'progress',
@@ -514,18 +519,30 @@ const streamRefreshEvents = async (req, res) => {
 
     res.write(': connected\n\n');
 
+    let closed = false;
+    const cleanup = () => {
+      if (closed) return;
+      closed = true;
+      clearInterval(heartbeatId);
+      crawlJobManager.unsubscribe(jobId, res);
+    };
+
     const heartbeatId = setInterval(() => {
-      res.write(': heartbeat\n\n');
+      try {
+        res.write(': heartbeat\n\n');
+      } catch {
+        cleanup();
+        try { res.end(); } catch { /* ignore */ }
+      }
     }, 15_000);
 
     req.on('close', () => {
-      clearInterval(heartbeatId);
-      crawlJobManager.unsubscribe(jobId, res);
+      cleanup();
     });
 
     const subscribed = crawlJobManager.subscribe(jobId, req, res);
     if (!subscribed) {
-      clearInterval(heartbeatId);
+      cleanup();
     }
   } catch (err) {
     console.error('Error in streamRefreshEvents:', err);

@@ -30,6 +30,13 @@ export const set = async (url, feedId, userId) => {
   await Hotlink.create({ url, feedId, userId });
 };
 
+// This function stores a batch of outbound links in one database query.
+export const setMany = async (urls, feedId, userId) => {
+  if (!urls.length) return;
+
+  await Hotlink.bulkCreate(urls.map(url => ({ url, feedId, userId })));
+};
+
 export const get = (url, feedId, userId) => Hotlink.findOne({ where: { url, feedId, userId } });
 
 export const all = () => Hotlink.findAll();
@@ -37,6 +44,7 @@ export const all = () => Hotlink.findAll();
 export default {
   clearCache,
   set,
+  setMany,
   get,
   all
 };
