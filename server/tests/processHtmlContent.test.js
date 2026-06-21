@@ -64,6 +64,23 @@ describe('crawl content sanitization', () => {
     );
   });
 
+  it('uses a safe fast path for plain text without parsing HTML', () => {
+    const result = processHtmlContent(
+      '2 < 3 & 4.',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Untitled'
+    );
+
+    expect(result.content).toBe('2 &lt; 3 &amp; 4.');
+    expect(result.stripped).toBe('2 < 3 & 4.');
+    expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/);
+    expect(result.language).toBe('unknown');
+    expect(result.title).toBe('2 < 3 & 4.');
+    expect(hotlinkSetMany).not.toHaveBeenCalled();
+  });
+
   it('escapes and filters media-only feed content before storage', () => {
     const result = processMedia({
       title: 'Media "title" <img src=x onerror=alert(1)>',

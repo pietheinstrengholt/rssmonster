@@ -54,7 +54,14 @@ const emptyArticleResult = {
   errors: 0
 };
 
-const processArticle = async (feed, entry) => {
+const processArticle = async (
+  feed,
+  entry,
+  preloadedActions = null,
+  duplicateCache = null,
+  hotlinkCountCache = null,
+  hotlinkBatcher = null
+) => {
   try {
 
     // Extract relevant fields from the entry
@@ -109,7 +116,8 @@ const processArticle = async (feed, entry) => {
         fields.description,
         fields.link,
         feed,
-        fields.title
+        fields.title,
+        hotlinkBatcher
       );
       if (htmlResult) {
         contentOriginal = htmlResult.content;
@@ -121,12 +129,9 @@ const processArticle = async (feed, entry) => {
     }
 
     // Try to find any existing article with the same link or title
-    const existing = await findExistingArticle(
-      feed,
-      fields.title,
-      fields.link,
-      contentHash
-    );
+    const existing = duplicateCache
+      ? duplicateCache.find(fields.title, fields.link, contentHash)
+      : await findExistingArticle(feed, fields.title, fields.link, contentHash);
     if (existing) {
       // Existing entry means the feed already contains this article, count as updated for progress reporting.
       return {
@@ -141,7 +146,7 @@ const processArticle = async (feed, entry) => {
 
     // Retrieve actions for applying rules to the article
     // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
-    const actions = await Action.findAll({
+    const actions = preloadedActions ?? await Action.findAll({
       where: { userId: feed.userId }
     });
 
@@ -178,16 +183,18 @@ const processArticle = async (feed, entry) => {
     // Hotness is determined by counting how often other articles link to this article URL.
     const articleUrl = normalizeUrl(fields.link);
 
-    const hotlinkCount = await Hotlink.count({
-      where: {
-        userId: feed.userId,
-        feedId: { [Op.ne]: feed.id }, // Exclude same feed
-        [Op.or]: [
-          { url: articleUrl },
-          { url: { [Op.like]: `${articleUrl}?%` } }
-        ]
-      }
-    });
+    const hotlinkCount = hotlinkCountCache
+      ? hotlinkCountCache.count(articleUrl, feed.id)
+      : await Hotlink.count({
+        where: {
+          userId: feed.userId,
+          feedId: { [Op.ne]: feed.id }, // Exclude same feed
+          [Op.or]: [
+            { url: articleUrl },
+            { url: { [Op.like]: `${articleUrl}?%` } }
+          ]
+        }
+      });
 
     // Warn if description is abnormally large after normalization
     if (fields.description?.length > 100000) {
@@ -225,6 +232,8 @@ const processArticle = async (feed, entry) => {
         errors: 0
       };
     }
+
+    duplicateCache?.add(savedArticle);
 
     return {
       newArticles: 1,

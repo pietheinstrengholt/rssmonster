@@ -2,7 +2,11 @@ import { load } from 'cheerio';
 import language from '../../util/language.js';
 import hotlink from '../../controllers/hotlink.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
+import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
 import crypto from 'crypto';
+
+const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;
+const MIN_LANGUAGE_TEXT_LENGTH = 20;
 
 const DROP_TAGS = new Set([
   'script',
@@ -123,6 +127,33 @@ function stripHtml(value = '') {
     .trim();
 }
 
+// This function identifies text that cannot contain an HTML element.
+function isPlainText(value) {
+  return typeof value === 'string' && !HTML_TAG_PATTERN.test(value);
+}
+
+// This function normalizes plain text for safe storage and duplicate detection.
+function normalizePlainText(value) {
+  return decodeHtmlEntities(value)
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// This function escapes plain text for clients that render article content as HTML.
+function escapePlainText(value) {
+  return value
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// This function avoids language detection for text too short to identify reliably.
+function shouldDetectPlainTextLanguage(text) {
+  return text.length >= MIN_LANGUAGE_TEXT_LENGTH && /\p{L}/u.test(text);
+}
+
 function sanitizeHtml($) {
   $(Array.from(DROP_TAGS).join(',')).remove();
 
@@ -165,13 +196,48 @@ function sanitizeHtml($) {
    - Detects language
    - Computes content hash for duplication checks
 ====================================================== */
-function processHtmlContent(content, description, entryLink, feed, entryTitle) {
+function processHtmlContent(content, description, entryLink, feed, entryTitle, hotlinkBatcher = null) {
   let contentOriginal;
 
   try {
     // Use content if available, otherwise fall back to description
     contentOriginal = content || description;
     if (!contentOriginal) return null;
+
+    if (isPlainText(contentOriginal)) {
+      const text = normalizePlainText(contentOriginal);
+      const contentHash = crypto
+        .createHash('sha256')
+        .update(text || '', 'utf8')
+        .digest('hex');
+
+      if (entryTitle === 'Untitled' && text) {
+        const sentenceMatch = text.match(/^[^.!?:]*[.!?:]/);
+        if (sentenceMatch) {
+          entryTitle = sentenceMatch[0].trim();
+        }
+      }
+
+      let detectedLanguage = 'unknown';
+      if (shouldDetectPlainTextLanguage(text)) {
+        try {
+          detectedLanguage = language.get(text);
+        } catch (err) {
+          console.error(
+            `[${feed.feedName}] Error detecting language for article "${entryTitle}":`,
+            err.message
+          );
+        }
+      }
+
+      return {
+        content: escapePlainText(text),
+        stripped: text,
+        language: detectedLanguage,
+        contentHash,
+        title: entryTitle
+      };
+    }
 
     // Parse HTML content into a mutable DOM
     const $ = load(contentOriginal);
@@ -206,9 +272,13 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle) {
       }
     });
 
-    // Update cache once per article. Hotlinks are best-effort signals, so do not
-    // block article processing on this write.
-    hotlink.setMany(hotlinkUrls, feed.id, feed.userId).catch(console.error);
+    // Queue hotlinks for the feed batch when available; retain per-article writes
+    // for callers that do not provide a batcher.
+    if (hotlinkBatcher) {
+      hotlinkBatcher.add(hotlinkUrls);
+    } else {
+      hotlink.setMany(hotlinkUrls, feed.id, feed.userId).catch(console.error);
+    }
 
     // Serialize cleaned HTML
     const html = $.html();

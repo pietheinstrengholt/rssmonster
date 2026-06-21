@@ -1,8 +1,11 @@
 import db from '../models/index.js';
-const { Feed } = db;
+const { Action, Article, Feed, Hotlink } = db;
 import discoverRssLink from '../util/discoverRssLink.js';
 import parseFeed from '../util/parser.js';
 import processArticle from './crawl/processArticle.js';
+import createArticleDuplicateCache from './crawl/articleDuplicateCache.js';
+import createHotlinkCountCache from './crawl/hotlinkCountCache.js';
+import createHotlinkBatcher from './crawl/hotlinkBatcher.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -92,6 +95,97 @@ const getFeeds = async (userId = null) => {
   }
 };
 
+// This function loads each crawl user's actions once for the selected feed batch.
+const getActionsByUserId = async (feeds) => {
+  const userIds = [...new Set(feeds.map(feed => feed.userId).filter(Boolean))];
+  const actionsByUserId = new Map(userIds.map(id => [id, []]));
+
+  if (userIds.length === 0) {
+    return actionsByUserId;
+  }
+
+  const actions = await Action.findAll({
+    where: {
+      userId: { [db.Sequelize.Op.in]: userIds }
+    }
+  });
+
+  for (const action of actions) {
+    actionsByUserId.get(action.userId)?.push(action);
+  }
+
+  return actionsByUserId;
+};
+
+// This function preloads duplicate indexes for every feed in the crawl batch.
+const getDuplicateCachesByFeedId = async (feeds) => {
+  const feedIds = feeds.map(feed => feed.id);
+  const userIds = [...new Set(feeds.map(feed => feed.userId).filter(Boolean))];
+  const cachesByFeedId = new Map();
+
+  if (feedIds.length === 0) {
+    return cachesByFeedId;
+  }
+
+  const [feedArticleLists, userContentHashArticles] = await Promise.all([
+    Promise.all(feeds.map(feed => Article.findAll({
+      attributes: ['id', 'url', 'title', 'contentHash'],
+      where: { feedId: feed.id },
+      raw: true
+    }))),
+    userIds.length > 0
+      ? Article.findAll({
+        attributes: ['id', 'userId', 'contentHash'],
+        where: {
+          userId: { [db.Sequelize.Op.in]: userIds },
+          contentHash: { [db.Sequelize.Op.not]: null }
+        },
+        raw: true
+      })
+      : []
+  ]);
+
+  const contentHashIdsByUserId = new Map(userIds.map(id => [id, new Map()]));
+
+  for (const article of userContentHashArticles) {
+    contentHashIdsByUserId.get(article.userId)?.set(article.contentHash, article.id);
+  }
+
+  for (const [index, feed] of feeds.entries()) {
+    cachesByFeedId.set(
+      feed.id,
+      createArticleDuplicateCache(
+        feedArticleLists[index],
+        contentHashIdsByUserId.get(feed.userId)
+      )
+    );
+  }
+
+  return cachesByFeedId;
+};
+
+// This function preloads hotlink counts for every user in the crawl batch.
+const getHotlinkCountCachesByUserId = async (feeds) => {
+  const userIds = [...new Set(feeds.map(feed => feed.userId).filter(Boolean))];
+  const cachesByUserId = new Map(userIds.map(id => [id, createHotlinkCountCache()]));
+
+  if (userIds.length === 0) {
+    return cachesByUserId;
+  }
+
+  const hotlinks = await Hotlink.findAll({
+    attributes: ['userId', 'feedId', 'url'],
+    where: { userId: { [db.Sequelize.Op.in]: userIds } },
+    raw: true
+  });
+
+  for (const hotlink of hotlinks) {
+    cachesByUserId.get(hotlink.userId)?.add(hotlink);
+  }
+
+  return cachesByUserId;
+};
+
 /* ------------------------------------------------------------------
  * Core crawl logic
  * ------------------------------------------------------------------ */
@@ -111,6 +205,9 @@ const performCrawl = async (userId = null, options = {}) => {
   };
 
   const feeds = await getFeeds(userId);
+  const actionsByUserId = await getActionsByUserId(feeds);
+  const duplicateCachesByFeedId = await getDuplicateCachesByFeedId(feeds);
+  const hotlinkCountCachesByUserId = await getHotlinkCountCachesByUserId(feeds);
 
   let processedCount = 0;
   let errorCount = 0;
@@ -240,10 +337,25 @@ const performCrawl = async (userId = null, options = {}) => {
       });
 
       // Process each article entry. This will add newly discovered articles to the database
-      for (const entry of entries) {
-        const articleResult = await processArticle(feed, entry);
-        feedNewArticles += articleResult?.newArticles || 0;
-        feedUpdatedArticles += articleResult?.updatedArticles || 0;
+      const preloadedActions = actionsByUserId.get(feed.userId) || [];
+      const duplicateCache = duplicateCachesByFeedId.get(feed.id);
+      const hotlinkCountCache = hotlinkCountCachesByUserId.get(feed.userId);
+      const hotlinkBatcher = createHotlinkBatcher(feed);
+      try {
+        for (const entry of entries) {
+          const articleResult = await processArticle(
+            feed,
+            entry,
+            preloadedActions,
+            duplicateCache,
+            hotlinkCountCache,
+            hotlinkBatcher
+          );
+          feedNewArticles += articleResult?.newArticles || 0;
+          feedUpdatedArticles += articleResult?.updatedArticles || 0;
+        }
+      } finally {
+        await hotlinkBatcher.flush();
       }
 
       totalNewArticles += feedNewArticles;
