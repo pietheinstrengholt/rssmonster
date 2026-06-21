@@ -21,70 +21,70 @@
       </a>
     <!-- Read Mode Dropdown -->
     <div class="dropdown top-menu-dropdown first">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ capitalize($store.data.currentSelection.status) }} {{ getStatusCount() }}
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ capitalize(currentStatus) }} {{ getStatusCount() }}
       </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'unread' }" href="#" @click="statusClicked('unread')">Unread {{ $store.data.unreadCount }}</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'star' }" href="#" @click="statusClicked('star')">Star {{ $store.data.starCount }}</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'hot' }" href="#" @click="statusClicked('hot')">Hot {{ $store.data.hotCount }}</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'clicked' }" href="#" @click="statusClicked('clicked')">Clicked {{ $store.data.clickedCount }}</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'read' }" href="#" @click="statusClicked('read')">Read {{ $store.data.readCount }}</a>
+      <div class="dropdown-menu" aria-labelledby="readModeDropdown">
+        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'unread' }" @click="statusClicked('unread')">Unread {{ $store.data.unreadCount }}</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'star' }" @click="statusClicked('star')">Star {{ $store.data.starCount }}</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'hot' }" @click="statusClicked('hot')">Hot {{ $store.data.hotCount }}</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'clicked' }" @click="statusClicked('clicked')">Clicked {{ $store.data.clickedCount }}</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'read' }" @click="statusClicked('read')">Read {{ $store.data.readCount }}</button>
         <li><hr class="dropdown-divider"></li>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">Oldest</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">Newest</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'RECOMMENDED' }" href="#" @click="sortClicked('RECOMMENDED')">Recommended</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'QUALITY' }" href="#" @click="sortClicked('QUALITY')">Quality</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ATTENTION' }" href="#" @click="sortClicked('ATTENTION')">Attention</a>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'ASC' }" @click="sortClicked('ASC')">Oldest</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'DESC' }" @click="sortClicked('DESC')">Newest</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'RECOMMENDED' }" @click="sortClicked('RECOMMENDED')">Recommended</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'QUALITY' }" @click="sortClicked('QUALITY')">Quality</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'ATTENTION' }" @click="sortClicked('ATTENTION')">Attention</button>
         <li><hr class="dropdown-divider"></li>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'all' }" href="#" @click="setClusterView('all')">All articles</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'eventCluster' }" href="#" @click="setClusterView('eventCluster')">Cluster per event</a>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'all' }" @click="setClusterView('all')">All articles</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
       </div>
     </div>
     <!-- Smart Folder Dropdown -->
     <div class="dropdown top-menu-dropdown middle">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="smartFoldersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ 'Smart folders' }}
       </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.smartFolderId === null }" href="#" 
+      <div class="dropdown-menu" aria-labelledby="smartFoldersDropdown">
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.smartFolderId === null }"
           @click="$store.data.setSmartFolder(null)"
         >
           {{ 'No smart folder' }}
-        </a>
-        <a 
-          v-for="folder in $store.data.smartFolders" 
-          :key="folder.id" 
-          class="dropdown-item" 
-          :class="{ active: $store.data.currentSelection.smartFolderId === folder.id }" 
-          href="#" 
+        </button>
+        <button
+          v-for="folder in smartFolders"
+          :key="folder.id"
+          class="dropdown-item"
+          :class="{ active: currentSelection.smartFolderId === folder.id }"
+          type="button"
           @click="$store.data.setSmartFolder(folder)"
         >
           {{ folder.name }} {{ folder.ArticleCount }}
-        </a>
+        </button>
       </div>
     </div>
     <!-- Categories Dropdown -->
     <div class="dropdown top-menu-dropdown last">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ 'Categories' }}
       </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.categoryId === '%' }" href="#" 
+      <div class="dropdown-menu" aria-labelledby="categoriesDropdown">
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.categoryId === '%' }"
           @click="$store.data.setSelectedCategoryId('%')"
         >
           {{ 'All categories' }}
-        </a>
-        <a 
-          v-for="category in $store.data.categories" 
-          :key="category.id" 
-          class="dropdown-item" 
-          :class="{ active: Number($store.data.currentSelection.categoryId) === category.id }" 
-          href="#" 
+        </button>
+        <button
+          v-for="category in categories"
+          :key="category.id"
+          class="dropdown-item"
+          :class="{ active: Number(currentSelection.categoryId) === category.id }"
+          type="button"
           @click="$store.data.setSelectedCategoryId(category.id)"
         >
           {{ category.name }} {{ getCategoryCount(category) }}
-        </a>
+        </button>
       </div>
     </div>
     </div>
@@ -308,6 +308,16 @@
 </style>
 
 <script>
+const MOBILE_LANDSCAPE_WIDTH = 767;
+
+const statusCountMap = {
+  unread: 'unreadCount',
+  star: 'starCount',
+  hot: 'hotCount',
+  clicked: 'clickedCount',
+  read: 'readCount'
+};
+
 export default {
   emits: ['mobile', 'forceReload'],
   data() {
@@ -322,20 +332,12 @@ export default {
     window.removeEventListener('resize', this.handleResize);
   },
   methods: {
-    loadType: function(status) {
-      //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.getSelectedStatus) {
-        this.$emit('forceReload');
-      } else {
-        this.$store.data.setSelectedStatus(status);
-      }
-    },
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
     },
     handleResize() {
-      // Close search when switching from portrait to landscape (width >= 767)
-      if (this.showSearch && window.innerWidth >= 767) {
+      // Close search when switching from portrait to landscape
+      if (this.showSearch && window.innerWidth >= MOBILE_LANDSCAPE_WIDTH) {
         this.toggleSearch();
       }
     },
@@ -345,13 +347,6 @@ export default {
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.$store.data.setMobileSearchOpen(this.showSearch);
-    },
-    toggleClusteredView: function() {
-      // Cycle through cluster view modes: all → eventCluster → all
-      const current = this.$store.data.currentSelection.clusterView;
-      let nextValue = 'all';
-      if (current === 'all') nextValue = 'eventCluster';
-      this.$store.data.setClusterView(nextValue);
     },
     setClusterView: function(value) {
       // Don't trigger if already at the selected value
@@ -371,54 +366,35 @@ export default {
     },
     statusClicked: function(status) {
       //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.getSelectedStatus) {
+      if (status === this.$store.data.getSelectedStatus) {
         this.$emit('forceReload');
       } else {
         this.$store.data.setSelectedStatus(status);
       }
     },
     getStatusCount() {
-      const status = this.$store.data.currentSelection.status;
-      switch(status) {
-        case 'unread':
-          return this.$store.data.unreadCount;
-        case 'star':
-          return this.$store.data.starCount;
-        case 'hot':
-          return this.$store.data.hotCount;
-        case 'clicked':
-          return this.$store.data.clickedCount;
-        case 'read':
-          return this.$store.data.readCount;
-        default:
-          return 0;
-      }
-    },
-    getSmartFolderName() {
-      const smartFolderId = this.$store.data.currentSelection.smartFolderId;
-      if (!smartFolderId) return null;
-      const folder = this.$store.data.smartFolders.find(f => f.id === smartFolderId);
-      return folder ? folder.name : null;
+      return this.$store.data[statusCountMap[this.currentStatus]] ?? 0;
     },
     getCategoryCount(category) {
-      const status = this.$store.data.currentSelection.status;
-      switch(status) {
-        case 'unread':
-          return category.unreadCount || 0;
-        case 'star':
-          return category.starCount || 0;
-        case 'hot':
-          return category.hotCount || 0;
-        case 'clicked':
-          return category.clickedCount || 0;
-        case 'read':
-          return category.readCount || 0;
-        default:
-          return 0;
-      }
+      return category[statusCountMap[this.currentStatus]] ?? 0;
     }
   },
   computed: {
+    currentSelection() {
+      return this.$store.data.currentSelection;
+    },
+    smartFolders() {
+      return this.$store.data.smartFolders;
+    },
+    categories() {
+      return this.$store.data.categories;
+    },
+    currentStatus() {
+      return this.currentSelection.status;
+    },
+    isAIEnabled() {
+      return this.currentSelection.AIEnabled;
+    },
     capitalize() {
       return function(s) {
         if (typeof s !== 'string') return '';
