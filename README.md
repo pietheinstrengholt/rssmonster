@@ -14,6 +14,8 @@ RSSMonster is not just another RSS reader — it is an **intelligent reading eng
 
 Where traditional RSS aggregators like Feedly and Inoreader primarily deliver **chronological lists of articles**, RSSMonster takes a fundamentally different approach: it **understands, evaluates, and prioritizes content** on your behalf — transparently and under your control.
 
+![Screenshot](docs/assets/screenshot04.png)
+
 At its core, RSSMonster treats your feeds as a stream of signals rather than a pile of unread items. New articles are enriched with quality, freshness, originality, trust, attention, and semantic relationship metadata. That extra context lets the application answer better questions: *is this worth reading now?*, *is this just syndicated copy?*, *which sources are covering the same event?*, and *which broader storyline does this belong to?*
 
 RSSMonster combines advanced search expressions, semantic clustering, quality analysis, and importance-based ranking into a system where **views are declarative, not hard-coded**. Instead of fixed tabs and opaque algorithms, you define *what matters* using composable queries that power dynamic **Smart Folders** such as:
@@ -24,8 +26,6 @@ RSSMonster combines advanced search expressions, semantic clustering, quality an
 - *Low Noise Mode* — maximum signal, minimal volume  
 
 Every ranking decision is explainable. Every view is customizable. Every signal — freshness, quality, originality, trust — is visible and adjustable. The result is a reader that can behave like a quick daily briefing, a research inbox, a low-noise monitoring tool, or a classic feed reader depending on the view you choose.
-
-![Screenshot](docs/assets/screenshot04.png)
 
 ## Key Features
 
