@@ -3,61 +3,28 @@
     <div class="settings-icon" @click="settingsClicked" title="Settings">
       <BootstrapIcon icon="gear-fill" size="20" />
     </div>
-    <!-- Read Mode Dropdown -->
-    <div class="dropdown">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ capitalize($store.data.currentSelection.status) }}
+    <!-- Article filter dropdowns -->
+    <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown">
+      <button class="dropdown-toggle toolbar-dropdown" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
+        {{ dropdown.label }}
       </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'unread' }" href="#" @click="statusClicked('unread')">Unread</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'star' }" href="#" @click="statusClicked('star')">Star</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'hot' }" href="#" @click="statusClicked('hot')">Hot</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'clicked' }" href="#" @click="statusClicked('clicked')">Clicked</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.status === 'read' }" href="#" @click="statusClicked('read')">Read</a>
-      </div>
-    </div>
-    <!-- View Mode Dropdown -->
-    <div class="dropdown">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ capitalize($store.data.currentSelection.viewMode) }}
-      </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'full' }" href="#" @click="viewModeClicked('full')">Full</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'summarized' }" href="#" @click="viewModeClicked('summarized')">Summarized</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'summaryBullets' }" href="#" @click="viewModeClicked('summaryBullets')">Summary Bullets</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.viewMode === 'minimal' }" href="#" @click="viewModeClicked('minimal')">Minimal</a>
-      </div>
-    </div>
-    <!-- Sort Mode Dropdown -->
-    <div class="dropdown">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        <span v-if="$store.data.currentSelection.sort === 'ASC'">Oldest</span>
-        <span v-else-if="$store.data.currentSelection.sort === 'DESC'">Newest</span>
-        <span v-else-if="$store.data.currentSelection.sort === 'RECOMMENDED'">Recommended</span>
-        <span v-else-if="$store.data.currentSelection.sort === 'QUALITY'">Quality</span>
-        <span v-else-if="$store.data.currentSelection.sort === 'ATTENTION'">Attention</span>
-      </button>
-      <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ASC' }" href="#" @click="sortClicked('ASC')">Oldest</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'DESC' }" href="#" @click="sortClicked('DESC')">Newest</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'RECOMMENDED' }" href="#" @click="sortClicked('RECOMMENDED')">Recommended</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'QUALITY' }" href="#" @click="sortClicked('QUALITY')">Quality</a>
-        <a v-if="$store.data.currentSelection.AIEnabled" class="dropdown-item" :class="{ active: $store.data.currentSelection.sort === 'ATTENTION' }" href="#" @click="sortClicked('ATTENTION')">Attention</a>
+      <div class="dropdown-menu" :aria-labelledby="dropdown.id">
+        <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
       </div>
     </div>
 
     <!-- Cluster View Dropdown -->
-    <div v-if="$store.data.currentSelection.AIEnabled" class="dropdown">
+    <div v-if="isAIEnabled" class="dropdown">
       <button class="dropdown-toggle toolbar-dropdown" type="button" id="dropdownMenuButton" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ formatClusterViewLabel($store.data.currentSelection.clusterView) }}
+        {{ formatClusterViewLabel(currentSelection.clusterView) }}
       </button>
       <div class="dropdown-menu" aria-labelledby="dropdownMenuButton">
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'all' }" href="#" @click="setClusterView('all')">All articles</a>
-        <a class="dropdown-item" :class="{ active: $store.data.currentSelection.clusterView === 'eventCluster' }" href="#" @click="setClusterView('eventCluster')">Cluster per event</a>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'all' }" @click="setClusterView('all')">All articles</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
       </div>
     </div>
 
-    <div v-if="$store.data.currentSelection.AIEnabled" class="status-toolbar" @click="chatAssistant">
+    <div v-if="isAIEnabled" class="status-toolbar" @click="chatAssistant">
       <div id="chat-icon">
           <BootstrapIcon icon="robot" size="20" />
       </div>
@@ -69,7 +36,7 @@
       <input
         type="text"
         v-model="$store.data.searchQuery"
-        @keyup="emitSearchEvent()"
+        @input="debounceSearchEvent"
         placeholder="Search for words or tag:name, title:text, etc."
         autocomplete="off"
         :class="{ 'input-invalid': isSearchQueryInvalid }"
@@ -323,20 +290,48 @@
 import Settings from './model/Settings.vue';
 import { validateSearchQuery } from '../services/queryValidation.js';
 
+const SEARCH_DEBOUNCE_DELAY = 300;
+
 export default {
   components: {
     Settings
   },
+  // This function initializes the toolbar's local state and dropdown options.
   data() {
     return {
-      showStatusMenu: false,
-      showViewModeMenu: false,
-      showSortMenu: false,
       showSettingsModal: false,
-      showClusteredView: false
+      searchDebounceTimer: null,
+      statusOptions: [
+        { value: 'unread', label: 'Unread' },
+        { value: 'star', label: 'Star' },
+        { value: 'hot', label: 'Hot' },
+        { value: 'clicked', label: 'Clicked' },
+        { value: 'read', label: 'Read' }
+      ],
+      viewModeOptions: [
+        { value: 'full', label: 'Full' },
+        { value: 'summarized', label: 'Summarized' },
+        { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },
+        { value: 'minimal', label: 'Minimal' }
+      ],
+      sortOptions: [
+        { value: 'ASC', label: 'Oldest' },
+        { value: 'DESC', label: 'Newest' },
+        { value: 'RECOMMENDED', label: 'Recommended', requiresAI: true },
+        { value: 'QUALITY', label: 'Quality', requiresAI: true },
+        { value: 'ATTENTION', label: 'Attention', requiresAI: true }
+      ]
     };
   },
   methods: {
+    // This function delays search updates until typing pauses.
+    debounceSearchEvent: function() {
+      clearTimeout(this.searchDebounceTimer);
+      this.searchDebounceTimer = setTimeout(() => {
+        this.emitSearchEvent();
+      }, SEARCH_DEBOUNCE_DELAY);
+    },
+    // This function updates the selected search query when it is valid.
     emitSearchEvent: function() {
       if (!(this.$store.data.searchQuery === undefined || this.$store.data.searchQuery === null)) {
         const { valid } = validateSearchQuery(this.$store.data.searchQuery);
@@ -345,78 +340,117 @@ export default {
         }
       }
     },
-    toggleShowStatus: function() {
-      this.showStatusMenu = !this.showStatusMenu;
-      this.showSortMenu = false;
-      this.showViewModeMenu = false;
-      this.showClusteredView = false;
-    },
-    toggleShowViewMode: function() {
-      this.showViewModeMenu = !this.showViewModeMenu;
-      this.showSortMenu = false;
-      this.showStatusMenu = false;
-      this.showClusteredView = false;
-    },
-    toggleShowSort: function() {
-      this.showSortMenu = !this.showSortMenu;
-      this.showViewModeMenu = false;
-      this.showStatusMenu = false;
-      this.showClusteredView = false;
-    },
+    // This function changes the cluster view only when the value differs.
     setClusterView: function(value) {
-      // Don't trigger if already at the selected value
       if (this.$store.data.currentSelection.clusterView === value) {
         return;
       }
       this.$store.data.setClusterView(value);
-      this.showSortMenu = false;
-      this.showViewModeMenu = false;
-      this.showStatusMenu = false;
     },
+    // This function updates the selected article status or reloads the current one.
     statusClicked: function(status) {
-      //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status == this.$store.data.getSelectedStatus) {
+      if (status === this.$store.data.getSelectedStatus) {
         this.$emit('forceReload');
       } else {
         this.$store.data.setSelectedStatus(status);
       }
-      this.toggleShowStatus();
     },
+    // This function updates the active article view mode.
     viewModeClicked: function(filter) {
-      this.$store.data.setViewMode(filter)
-      this.toggleShowViewMode();
+      this.$store.data.setViewMode(filter);
     },
+    // This function updates the active article sort order.
     sortClicked: function(sort) {
       this.$store.data.setSelectedSort(sort);
-      this.toggleShowSort();
     },
+    // This function routes a configured dropdown option to its matching handler.
+    dropdownOptionClicked: function(type, value) {
+      if (type === 'status') {
+        this.statusClicked(value);
+      } else if (type === 'viewMode') {
+        this.viewModeClicked(value);
+      } else if (type === 'sort') {
+        this.sortClicked(value);
+      }
+    },
+    // This function opens the settings modal.
     settingsClicked: function() {
       this.showSettingsModal = true;
-      this.showStatusMenu = false;
-      this.showViewModeMenu = false;
-      this.showSortMenu = false;
     },
+    // This function closes the settings modal.
     closeSettingsModal: function() {
-      this.showStatusMenu = false;
-      this.showViewModeMenu = false;
-      this.showSortMenu = false;
       this.showSettingsModal = false;
     },
+    // This function asks the parent to reload the current content.
     handleForceReload: function() {
       this.$emit('forceReload');
     },
+    // This function toggles the chat assistant and clears the search field.
     chatAssistant: function() {
-      this.showStatusMenu = false;
-      this.showViewModeMenu = false;
-      this.showSortMenu = false;
       this.$store.data.searchQuery = null;
       this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
     }
   },
+  // This function clears a pending search update before the component is removed.
+  beforeUnmount() {
+    clearTimeout(this.searchDebounceTimer);
+  },
   computed:{
+    // This function returns the currently active article selection from the store.
+    currentSelection() {
+      return this.$store.data.currentSelection;
+    },
+    // This function reports whether AI-powered toolbar options are available.
+    isAIEnabled() {
+      return this.currentSelection.AIEnabled;
+    },
+    // This function returns the selected article status.
+    selectedStatus() {
+      return this.currentSelection.status;
+    },
+    // This function returns the selected article view mode.
+    selectedViewMode() {
+      return this.currentSelection.viewMode;
+    },
+    // This function returns the selected article sort order.
+    selectedSort() {
+      return this.currentSelection.sort;
+    },
+    // This function builds the configured status, view, and sort dropdowns.
+    toolbarDropdowns() {
+      // This function filters out AI-only options when AI is unavailable.
+      const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
+      const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
+
+      return [
+        {
+          id: 'statusDropdown',
+          type: 'status',
+          label: this.capitalize(this.selectedStatus),
+          selectedValue: this.selectedStatus,
+          options: this.statusOptions
+        },
+        {
+          id: 'viewModeDropdown',
+          type: 'viewMode',
+          label: this.capitalize(this.selectedViewMode),
+          selectedValue: this.selectedViewMode,
+          options: visibleOptions(this.viewModeOptions)
+        },
+        {
+          id: 'sortDropdown',
+          type: 'sort',
+          label: selectedSortOption ? selectedSortOption.label : '',
+          selectedValue: this.selectedSort,
+          options: visibleOptions(this.sortOptions)
+        }
+      ];
+    },
+    // This function capitalizes a dropdown value for display.
     capitalize() {
       return (value)=> value.charAt(0).toUpperCase() + value.slice(1)
     },
+    // This function translates a cluster view value into its display label.
     formatClusterViewLabel() {
       return (value) => {
         if (value === 'all') return 'All articles';
@@ -424,11 +458,13 @@ export default {
         return 'All articles';
       };
     },
+    // This function reports whether the current search query is invalid.
     isSearchQueryInvalid() {
       const query = this.$store.data.searchQuery || '';
       const { valid } = validateSearchQuery(query);
       return !valid;
     },
+    // This function returns the validation message for the current search query.
     searchQueryError() {
       const query = this.$store.data.searchQuery || '';
       const { error } = validateSearchQuery(query);
