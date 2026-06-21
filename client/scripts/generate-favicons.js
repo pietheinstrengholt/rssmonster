@@ -6,6 +6,7 @@ import { fileURLToPath } from 'node:url';
 
 const clientDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const source = path.join(clientDir, 'src/assets/images/monster.png');
+const publicDir = path.join(clientDir, 'public');
 const outputDir = path.join(clientDir, 'public/img/icons');
 
 const configuration = {
@@ -47,9 +48,15 @@ await Promise.all([
   ...response.images.map((image) =>
     fs.writeFile(path.join(outputDir, image.name), image.contents)
   ),
-  ...response.files.map((file) =>
-    fs.writeFile(path.join(outputDir, file.name), file.contents)
-  ),
+  ...response.files.flatMap((file) => {
+    const fileNames = file.name === 'manifest.webmanifest'
+      ? [file.name, 'site.webmanifest']
+      : [file.name];
+
+    return fileNames.map((fileName) =>
+      fs.writeFile(path.join(publicDir, fileName), file.contents)
+    );
+  }),
 ]);
 
 console.log('Favicons generated.');

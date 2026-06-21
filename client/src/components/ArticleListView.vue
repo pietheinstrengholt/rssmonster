@@ -39,7 +39,7 @@ export default {
       required: true
     },
     pool: {
-      type: Array,
+      type: Set,
       required: true
     },
     container: {

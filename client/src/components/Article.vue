@@ -1,5 +1,5 @@
 <template>
-  <div class="block" :id="id" :class="{ 'cluster-article': isClusterArticle }">
+  <div class="block" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }">
     <div class="article" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
       <div class="maximal">
         <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />

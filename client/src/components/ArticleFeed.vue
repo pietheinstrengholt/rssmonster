@@ -16,6 +16,7 @@ export default {
     ArticleListView
   },
 
+  // Initializes article feed state and observer bookkeeping.
   data() {
     return {
       // distance is used to keep track of the current position in the container
@@ -28,7 +29,7 @@ export default {
       container: [],
 
       // is used to keep track of which articles are already flagged as passed
-      pool: [],
+      pool: new Set(),
 
       // scroll variables for comparing the scroll positions
       prevScroll: 0,
@@ -40,6 +41,7 @@ export default {
       hasLoadedContent: false,
       isFlushed: false,
       isLoading: false,
+      activeRequestId: 0,
 
       // tracks previous visibility state per article
       visibleMap: new Map(),
@@ -55,7 +57,7 @@ export default {
   computed: {
     // calculate the remaining items in the container
     remainingItems() {
-      return this.container.length - this.pool.length;
+      return this.container.length - this.pool.size;
     },
 
     // adjust fetchCount based on viewMode
@@ -68,6 +70,7 @@ export default {
 
   watch: {
     "$store.data.currentSelection": {
+      // Reloads articles when the active selection changes.
       handler(data) {
         this.fetchArticleIds(data);
       },
@@ -76,24 +79,30 @@ export default {
     }
   },
 
+  // Starts scroll handling and article observers after mounting.
   mounted() {
     window.addEventListener("scroll", this.handleScroll);
     this.setupObservers();
   },
 
+  // Removes scroll handling and disconnects observers before unmounting.
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
     this.teardownObservers();
   },
 
   methods: {
+    // Fetches article IDs and initializes the current selection's content.
     async fetchArticleIds(data) {
+      const requestId = ++this.activeRequestId;
+
       try {
         await this.resetPool();
         this.hasLoadedContent = false; // Show spinner immediately
         this.isLoading = true;
 
         const response = await fetchArticleIds(data);
+        if (requestId !== this.activeRequestId) return;
 
         this.container = response.data.itemIds;
 
@@ -112,13 +121,18 @@ export default {
           this.$nextTick(() => this.observeLoadMoreSentinel());
         }
       } catch (error) {
+        if (requestId !== this.activeRequestId) return;
+
         console.warn('Article fetch failed', error?.message);
         this.hasLoadedContent = true;
       } finally {
-        this.isLoading = false;
+        if (requestId === this.activeRequestId) {
+          this.isLoading = false;
+        }
       }
     },
 
+    // Shows or hides the mobile toolbar based on scroll direction.
     handleScroll() {
       const mobileToolbar = document.getElementById("mobile-toolbar");
       const curScroll =
@@ -144,6 +158,7 @@ export default {
       this.scrollDirection = direction;
     },
 
+    // Creates observers for article visibility and incremental loading.
     setupObservers() {
       if (!('IntersectionObserver' in window)) return;
 
@@ -166,12 +181,14 @@ export default {
       });
     },
 
+    // Disconnects observers and clears their tracked article elements.
     teardownObservers() {
       this.visibilityObserver?.disconnect();
       this.loadMoreObserver?.disconnect();
       this.observedArticleElements.clear();
     },
 
+    // Observes rendered articles and removes observers for stale elements.
     observeArticles() {
       if (!this.visibilityObserver) return;
 
@@ -190,7 +207,7 @@ export default {
         const articleId = String(article.id);
         if (this.observedArticleElements.has(articleId)) continue;
 
-        const element = document.getElementById(articleId);
+        const element = document.getElementById(`article-${article.id}`);
         if (!element) continue;
 
         this.visibilityObserver.observe(element);
@@ -198,6 +215,7 @@ export default {
       }
     },
 
+    // Observes the sentinel that triggers loading the next article page.
     observeLoadMoreSentinel() {
       if (!this.loadMoreObserver) return;
 
@@ -208,9 +226,10 @@ export default {
       }
     },
 
+    // Tracks article visibility and marks articles passed above the viewport.
     handleArticleIntersections(entries) {
       for (const entry of entries) {
-        const articleId = Number(entry.target.id);
+        const articleId = Number(entry.target.id.replace('article-', ''));
         if (!Number.isFinite(articleId)) continue;
 
         if (entry.isIntersecting) {
@@ -233,6 +252,7 @@ export default {
       }
     },
 
+    // Loads more content or flushes unread articles at the list boundary.
     handleLoadMoreIntersections(entries) {
       if (!entries.some(entry => entry.isIntersecting)) return;
       if (this.isLoading || !this.hasLoadedContent) return;
@@ -245,6 +265,7 @@ export default {
       }
     },
 
+    // Adds an article's current visible interval to its accumulated duration.
     finalizeVisibleDuration(articleId) {
       const start = this.visibleSince.get(articleId);
       if (typeof start !== 'number') return;
@@ -255,51 +276,51 @@ export default {
       this.visibleSince.delete(articleId);
     },
 
+    // Fetches and appends details for the next page of article IDs.
     async getContent() {
-      if (this.container.length === 0) return;
+      if (!this.container.length || this.isLoading) return;
 
-      setTimeout(async () => {
-        try {
-          const response = await fetchArticleDetails(
-            this.container.slice(
-              this.distance,
-              this.distance + this.fetchCount
-            ),
-            this.$store.data.getSelectedSort
-          );
+      this.isLoading = true;
 
-          this.hasLoadedContent = true;
+      try {
+        const ids = this.container.slice(this.distance, this.distance + this.fetchCount);
 
-          if (response.data.length) {
-            this.distance += this.fetchCount;
-            this.articles = this.articles.concat(response.data);
-            this.$nextTick(() => {
-              this.observeArticles();
-              this.observeLoadMoreSentinel();
-            });
-          } else {
-            this.flushPool();
-          }
-        } catch (error) {
-          console.error(
-            "Error fetching article details:",
-            error
-          );
-        } finally {
-          this.isLoading = false;
+        const response = await fetchArticleDetails(
+          ids,
+          this.$store.data.getSelectedSort
+        );
+
+        this.hasLoadedContent = true;
+
+        if (!response.data.length) {
+          this.flushPool();
+          return;
         }
-      }, 10);
+
+        this.distance += response.data.length;
+        this.articles = [...this.articles, ...response.data];
+
+        this.$nextTick(() => {
+          this.observeArticles();
+          this.observeLoadMoreSentinel();
+        });
+      } catch (error) {
+        console.error("Error fetching article details:", error);
+      } finally {
+        this.isLoading = false;
+      }
     },
 
+    // Records a passed article and marks it seen outside minimal view.
     addToPool(articleId) {
-      if (this.pool.includes(articleId)) return;
+      if (this.pool.has(articleId)) return;
 
       // FINALIZE VISIBILITY IF ARTICLE IS STILL VISIBLE
       if (this.visibleSince.has(articleId)) {
         this.finalizeVisibleDuration(articleId);
       }
 
-      this.pool.push(articleId);
+      this.pool.add(articleId);
 
       const ms = this.visibleDuration.get(articleId) || 0;
       const visibleSeconds = Math.round(ms / 1000);
@@ -311,11 +332,12 @@ export default {
       }
     },
 
+    // Marks every remaining article as seen when the feed is exhausted.
     async flushPool() {
       if (this.container.length && !this.isFlushed) {
         if (this.$store.data.currentSelection.viewMode !== "minimal") {
           for (const id of this.container) {
-            if (!this.pool.includes(id)) {
+            if (!this.pool.has(id)) {
               const ms = this.visibleDuration.get(id) || 0;
               const visibleSeconds = Math.round(ms / 1000);
               console.log("[FLUSH MARK SEEN]", id, `visibleSeconds=${visibleSeconds}`);
@@ -327,6 +349,7 @@ export default {
       this.isFlushed = true;
     },
 
+    // Resets article, visibility, and observer state for a new selection.
     async resetPool() {
       for (const element of this.observedArticleElements.values()) {
         this.visibilityObserver?.unobserve(element);
@@ -334,7 +357,7 @@ export default {
 
       this.articles = [];
       this.container = [];
-      this.pool = [];
+      this.pool = new Set();
       this.distance = 0;
       this.isFlushed = false;
 
@@ -344,6 +367,7 @@ export default {
       this.visibleDuration.clear();
     },
 
+    // Persists an article's seen status and updates local read state.
     async markArticleSeen(articleId, visibleSeconds = 0) {
       try {
         const response = await markArticleSeen(articleId, {
@@ -374,7 +398,7 @@ export default {
       }
     },
 
-    // Update article in local array with new status and optional fields
+    // Updates an article's local status and optional returned fields.
     updateArticleStatusLocal(updatedArticle) {
       const idx = this.articles.findIndex(a => a.id === updatedArticle.id);
       if (idx !== -1) {
@@ -388,10 +412,12 @@ export default {
       }
     },
 
+    // Requests a full feed reload from the parent component.
     forceReload() {
       this.$emit("forceReload");
     },
 
+    // Updates an article's local star indicator.
     updateStarInd({ id, starInd }) {
       const idx = this.articles.findIndex(a => a.id === id);
       if (idx !== -1) {
@@ -399,6 +425,7 @@ export default {
       }
     },
 
+    // Updates an article's local click count.
     updateClickedInd({ id, clickedAmount }) {
       const idx = this.articles.findIndex(a => a.id === id);
       if (idx !== -1) {
@@ -406,6 +433,7 @@ export default {
       }
     },
 
+    // Inserts related cluster articles directly after their parent article.
     insertClusterArticles({ articleId, articles }) {
       console.log(`Inserting ${articles.length} cluster articles after article ${articleId}`);
       
@@ -456,6 +484,7 @@ export default {
       console.log(`Successfully inserted ${markedArticles.length} cluster articles`);
     },
 
+    // Removes cluster articles currently inserted for a parent article.
     removeClusterArticles({ articleId }) {
       const before = this.articles.length;
       this.articles = this.articles.filter(a => a.clusterParentId !== articleId);
@@ -465,6 +494,7 @@ export default {
       }
     },
 
+    // Removes an article from the currently rendered feed.
     removeArticle({ id }) {
       console.log(`Removing article ${id} from view`);
       
