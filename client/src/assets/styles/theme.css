@@ -135,7 +135,7 @@
   --toolbar-active-background: #3F424A;
   --toolbar-search-background-dark: #1E1E1E;
   --toolbar-settings-hover-background-dark: #4A4A4A;
-  --desktop-toolbar-background: #EFF1F3;
+  --desktop-toolbar-background: #FEFEFE;
   --mobile-toolbar-border: #E5E7EB;
   --mobile-toolbar-title: #6B7280;
 
@@ -162,8 +162,7 @@
   --icon-read: #81C784;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
+:root[data-theme="dark"] {
     --bg-primary: #121212;
     --bg-secondary: #2C2C2C;
     --bg-hover: #3A3A3A;
@@ -210,5 +209,6 @@
 
     --shadow-focus-primary: 0 0 0 2px rgba(74, 127, 199, 0.2);
     --icon-read: #81C784;
+    --desktop-toolbar-background: var(--bg-control);
+    --toolbar-text: #FFFFFF;
   }
-}

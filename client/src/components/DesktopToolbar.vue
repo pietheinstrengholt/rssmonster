@@ -17,25 +17,32 @@
         {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
       </span>
     </button>
-    <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid }">
+    <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid, 'compact-search-open': isCompactSearchOpen }">
       <span class="search-icon" aria-hidden="true">
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
         </svg>
       </span>
       <input
+        ref="searchInput"
         type="text"
         v-model="$store.data.searchQuery"
         @input="debounceSearchEvent"
+        @keydown.esc="closeCompactSearch"
         placeholder="Search for words or tag:name, title:text, etc."
         autocomplete="off"
         :class="{ 'input-invalid': isSearchQueryInvalid }"
         :title="searchQueryError"
       />
     </div>
-    <div class="theme-icon" title="Toggle light and dark mode">
+    <button type="button" class="search-button" title="Search" @click="toggleCompactSearch">
+      <svg viewBox="0 0 16 16" aria-hidden="true">
+        <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
+      </svg>
+    </button>
+    <button type="button" class="theme-icon" title="Toggle light and dark mode" @click="toggleTheme">
       <BootstrapIcon icon="brightness-high" size="20" />
-    </div>
+    </button>
     <div class="settings-icon" @click="settingsClicked" title="Settings">
       <BootstrapIcon icon="gear-fill" size="20" />
     </div>
@@ -58,6 +65,7 @@
   display: flex;
   align-items: center;
   min-width: 0;
+  padding-left: clamp(16px, 2vw, 28px);
   z-index: 1000;
 }
 
@@ -72,6 +80,10 @@
   line-height: 20px;
   font-size: 14px;
 
+}
+
+.toolbar > .dropdown {
+  margin-right: clamp(6px, 1.5vw, 32px);
 }
 
 .toolbar-dropdown-label {
@@ -103,27 +115,32 @@
 }
 
 .dropdown-item.active {
-  background-color: var(--toolbar-active-background);
+  color: #2A71E7;
+  background-color: #EBF2FE;
+  border-radius: 4px;
 }
 
 .settings-icon,
 .theme-icon {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   justify-content: center;
   position: fixed;
-  top: 4px;
-  right: 0;
-  width: 40px;
-  height: 40px;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-input);
+  border-radius: 999px;
   flex-shrink: 0;
   cursor: pointer;
   color: var(--toolbar-text);
-  background-color: var(--desktop-toolbar-background);
+  background-color: #FEFEFE;
+  font-size: 20px;
 }
 
 .theme-icon {
-  right: 40px;
+  right: 64px;
 }
 
 .settings-icon:hover,
@@ -132,7 +149,7 @@
 }
 
 .settings-icon svg {
-  margin-top: 3px;
+  margin-top: 0;
   width: 20px;
   height: 20px;
 }
@@ -142,12 +159,13 @@
   padding: 0 18px;
   border: 1px solid #E5E7EB;
   border-radius: 8px;
-  background: #FFFFFF;
+  background: var(--bg-input);
   font-weight: 600;
   display: flex;
   align-items: center;
   gap: 8px;
-  margin-left: 10px;
+  margin-left: 0;
+  margin-right: clamp(16px, 2.5vw, 28px);
   cursor: pointer;
   color: var(--toolbar-text);
   font-size: 14px;
@@ -159,19 +177,18 @@
 }
 
 .search-wrap {
-  flex-basis: 0;
-  flex-grow: 1;
+  flex: 0 1 clamp(320px, 40vw, 620px);
   min-width: 0;
   box-sizing: border-box;
   display: flex;
   align-items: center;
   gap: 8px;
   height: 34px;
-  margin: 0 104px 0 32px;
+  margin: 0 112px 0 auto;
   padding: 0 12px;
   background-color: var(--bg-input);
   border: 1px solid #E5E7EB;
-  border-radius: 10px;
+  border-radius: 8px;
 }
 
 .search-icon {
@@ -227,6 +244,10 @@
   color: var(--text-danger-placeholder);
 }
 
+.search-button {
+  display: none;
+}
+
 @media (min-width: 768px) {
   .toolbar {
     left: calc(25% - 15px);
@@ -236,6 +257,83 @@
 @media (min-width: 1120px) {
   .toolbar {
     left: 265px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .search-wrap {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1120px) {
+  .search-wrap {
+    margin-right: 128px;
+  }
+
+  .settings-icon,
+  .theme-icon {
+    z-index: 1;
+    box-shadow: 0 0 0 8px #FEFEFE;
+  }
+}
+
+@media (max-width: 1199px) {
+  .search-wrap {
+    display: none;
+  }
+
+  .search-wrap.compact-search-open {
+    display: flex;
+    position: fixed;
+    top: 10px;
+    right: 164px;
+    width: min(420px, calc(100vw - 320px));
+    margin: 0;
+    z-index: 2;
+  }
+
+  .search-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 10px;
+    right: 120px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: var(--toolbar-text);
+  background-color: var(--desktop-toolbar-background);
+    border: 1px solid #E5E7EB;
+    border-radius: 999px;
+    z-index: 1;
+  }
+
+  .search-button svg {
+    width: 16px;
+    height: 16px;
+    fill: currentColor;
+  }
+}
+
+@media (max-width: 1149px) {
+  .chat-button {
+    position: fixed;
+    top: 10px;
+    right: 176px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin-right: 0;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 20px;
+    z-index: 1;
+  }
+
+  .chat-button span {
+    display: none;
   }
 }
 
@@ -281,11 +379,27 @@
   .theme-icon {
     color: var(--text-inverted);
     background-color: var(--bg-control);
+    border-color: var(--border-color);
   }
 
   .settings-icon:hover,
   .theme-icon:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
+  }
+
+  @media (max-width: 1120px) {
+    .settings-icon,
+    .theme-icon {
+      box-shadow: 0 0 0 8px var(--bg-control);
+    }
+  }
+
+  @media (max-width: 1199px) {
+    .search-button {
+      color: var(--text-inverted);
+      background-color: var(--bg-control);
+      border-color: var(--border-color);
+    }
   }
 
   .dropdown-item {
@@ -334,6 +448,7 @@
 <script>
 import Settings from './model/Settings.vue';
 import { validateSearchQuery } from '../services/queryValidation.js';
+import { applyTheme, getPreferredTheme } from '../services/theme.js';
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -345,6 +460,7 @@ export default {
   data() {
     return {
       showSettingsModal: false,
+      isCompactSearchOpen: false,
       searchDebounceTimer: null,
       statusOptions: [
         { value: 'unread', label: 'Unread' },
@@ -373,6 +489,19 @@ export default {
     };
   },
   methods: {
+    // This function toggles the compact search field and focuses it when opening.
+    toggleCompactSearch: function() {
+      if (this.isCompactSearchOpen) {
+        this.closeCompactSearch();
+        return;
+      }
+      this.isCompactSearchOpen = true;
+      this.$nextTick(() => this.$refs.searchInput.focus());
+    },
+    // This function closes the compact search field.
+    closeCompactSearch: function() {
+      this.isCompactSearchOpen = false;
+    },
     // This function delays search updates until typing pauses.
     debounceSearchEvent: function() {
       clearTimeout(this.searchDebounceTimer);
@@ -427,6 +556,10 @@ export default {
     // This function opens the settings modal.
     settingsClicked: function() {
       this.showSettingsModal = true;
+    },
+    // This function toggles the saved application color theme.
+    toggleTheme: function() {
+      applyTheme(getPreferredTheme() === 'dark' ? 'light' : 'dark');
     },
     // This function closes the settings modal.
     closeSettingsModal: function() {

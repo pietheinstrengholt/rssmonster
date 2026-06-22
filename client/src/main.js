@@ -4,6 +4,9 @@ import { createPinia } from 'pinia'
 import axios from 'axios'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
 import './assets/styles/theme.css'
+import { applyTheme, getPreferredTheme } from './services/theme.js'
+
+applyTheme(getPreferredTheme())
 
 // Add axios response interceptor to catch HTML responses (API errors)
 axios.interceptors.response.use(

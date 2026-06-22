@@ -80,7 +80,8 @@
   #sidebar {
     height: 100%;
     font-weight: 500;
-    background-color: #F9FAFB;
+    background-color: var(--bg-surface-muted);
+    border-right: 1px solid #EFF2F6;
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
@@ -146,7 +147,7 @@ div.row {
 }
 
 html, #app {
-  background-color: #d6d6d6;
+  background-color: var(--bg-primary);
 }
 
 html, #app, body {
@@ -181,6 +182,7 @@ html, #app, body {
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
+import { applyTheme, getPreferredTheme } from './services/theme.js';
 
 import ArticleFeed from "./components/ArticleFeed.vue";
 
@@ -288,22 +290,7 @@ export default {
       }, 300 * 1000);
     }
 
-    //default body background color to black for dark mode.
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      //This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
-      const darkThemeColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg-bounce')
-        .trim();
-      document.body.style.background = darkThemeColor;
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', darkThemeColor);
-    }
-    //default body background color to blue for light mode.
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      const lightThemeColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--theme-color-light')
-        .trim();
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', lightThemeColor);
-    }
+    applyTheme(getPreferredTheme());
     //add metadata properties to document
     document.title = "RSSMonster";
     document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
