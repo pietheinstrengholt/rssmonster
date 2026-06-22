@@ -47,7 +47,8 @@ const bootstrapIconNames = [
   'trash-fill',
   'trash3-fill',
   'upload',
-  'x-octagon-fill'
+  'x-octagon-fill',
+  'brightness-high'
 ]
 
 const bootstrapIconsSprite = () => {

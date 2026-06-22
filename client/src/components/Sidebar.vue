@@ -208,19 +208,6 @@
   font-weight: 600;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-
-::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-}
-
 .sidebar-options {
   margin-top: 10px;
   margin-bottom: 20px;

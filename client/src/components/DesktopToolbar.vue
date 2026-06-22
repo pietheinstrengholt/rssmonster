@@ -1,8 +1,5 @@
 <template>
   <div class="toolbar">
-    <div class="settings-icon" @click="settingsClicked" title="Settings">
-      <BootstrapIcon icon="gear-fill" size="20" />
-    </div>
     <!-- Article filter dropdowns -->
     <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown">
       <button class="dropdown-toggle toolbar-dropdown" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
@@ -23,6 +20,11 @@
       </p>
     </div>
     <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid }">
+      <span class="search-icon" aria-hidden="true">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
+        </svg>
+      </span>
       <input
         type="text"
         v-model="$store.data.searchQuery"
@@ -33,22 +35,31 @@
         :title="searchQueryError"
       />
     </div>
+    <div class="theme-icon" title="Toggle light and dark mode">
+      <BootstrapIcon icon="brightness-high" size="20" />
+    </div>
+    <div class="settings-icon" @click="settingsClicked" title="Settings">
+      <BootstrapIcon icon="gear-fill" size="20" />
+    </div>
     <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
   </div>
 </template>
 
 <style scoped>
 .toolbar {
-  height: 40px;
+  height: 48px;
+  box-sizing: border-box;
   border-bottom: 1px solid transparent;
   border-color: var(--border-input);
-  width: 100%;
+  left: 0;
+  right: 0;
   overflow: visible;
   background-color: var(--desktop-toolbar-background);
   position: fixed;
-  margin-left: -15px;
+  margin-left: 0;
   display: flex;
   align-items: center;
+  min-width: 0;
   z-index: 1000;
 }
 
@@ -56,6 +67,7 @@
   background: transparent;
   border: none;
   color: inherit;
+  font-weight: 500;
   box-shadow: none;
   padding: 6px 10px;
   height: 40px;
@@ -80,13 +92,10 @@
   box-shadow: none;
 }
 
-.dropdown, .status-toolbar {
-  border-left: 1px solid var(--border-subtle);
-}
-
 .dropdown-item {
   color: var(--toolbar-text);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .dropdown-item.active,
@@ -98,19 +107,28 @@
   background-color: var(--toolbar-active-background);
 }
 
-.settings-icon {
+.settings-icon,
+.theme-icon {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: fixed;
+  top: 4px;
+  right: 0;
   width: 40px;
   height: 40px;
   flex-shrink: 0;
   cursor: pointer;
   color: var(--toolbar-text);
-  border-right: 1px solid var(--border-subtle);
+  background-color: var(--desktop-toolbar-background);
 }
 
-.settings-icon:hover {
+.theme-icon {
+  right: 40px;
+}
+
+.settings-icon:hover,
+.theme-icon:hover {
   background-color: var(--border-input);
 }
 
@@ -121,11 +139,11 @@
 }
 
 .status-toolbar {
-  border-right: 1px solid var(--border-subtle);
   margin-left: 10px;
   text-align: center;
   cursor: pointer;
   color: var(--toolbar-text);
+  font-weight: 500;
   height: 40px;
   flex-shrink: 0;
 }
@@ -136,10 +154,6 @@
   margin-right: 12px;
   margin-top: 5px;
   height: 20px;
-}
-
-.search-wrap {
-  border-bottom: 1px solid var(--border-subtle);
 }
 
 .status-toolbar #status {
@@ -164,18 +178,46 @@
 }
 
 .search-wrap {
+  flex-basis: 0;
   flex-grow: 1;
+  min-width: 0;
+  box-sizing: border-box;
   display: flex;
   align-items: center;
-  padding-left: 6px;
+  gap: 8px;
+  height: 34px;
+  margin: 0 104px 0 32px;
+  padding: 0 12px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 10px;
+}
+
+.search-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.search-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: currentColor;
 }
 
 .search-wrap input {
   width: 100%;
-  height: 40px;
-  background-color: var(--desktop-toolbar-background);
+  min-width: 0;
+  height: 100%;
+  color: #9CA3AF;
+  background-color: transparent;
   font-size: 14px;
+  font-weight: 500;
   border: none;
+}
+
+.search-wrap input::placeholder {
+  color: var(--text-muted);
 }
 
 .search-wrap input:focus {
@@ -202,6 +244,12 @@
 
 .search-wrap input.input-invalid::placeholder {
   color: var(--text-danger-placeholder);
+}
+
+@media (min-width: 768px) {
+  .toolbar {
+    left: calc(25% - 15px);
+  }
 }
 
 @media (prefers-color-scheme: dark) {
@@ -237,11 +285,14 @@
     color: var(--text-inverted);
   }
 
-  .settings-icon {
+  .settings-icon,
+  .theme-icon {
     color: var(--text-inverted);
+    background-color: var(--bg-control);
   }
 
-  .settings-icon:hover {
+  .settings-icon:hover,
+  .theme-icon:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
   }
 
@@ -260,15 +311,13 @@
   }
 
   .search-wrap {
-    border-left: 1px solid var(--text-inverted);
-    border-bottom: 1px solid var(--text-inverted);
+    background-color: var(--toolbar-search-background-dark);
+    border-color: var(--border-input);
   }
 
   .search-wrap input {
-    background-color: var(--toolbar-search-background-dark);
     color: var(--text-inverted);
-    border-color: var(--bg-subtle);
-    background: var(--bg-control);
+    background: transparent;
   }
 
   .search-wrap input::placeholder {

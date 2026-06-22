@@ -1,7 +1,12 @@
 <template>
   <div id="app">
     <div class="row">
-      <div id="sidebar" class="col-md-3 col-sm-0">
+      <div
+        id="sidebar"
+        ref="sidebarScrollRef"
+        class="col-md-3 col-sm-0"
+        @scroll="handleSidebarScroll"
+      >
         <!-- Sidebar events -->
         <app-sidebar ref="sidebar" @forceReload="forceReload"></app-sidebar>
       </div>
@@ -78,11 +83,37 @@
     background-color: #F9FAFB;
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  #sidebar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  #sidebar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #sidebar::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+  }
+
+  #sidebar.is-scrolling {
+    scrollbar-color: var(--sidebar-scrollbar-thumb) transparent;
+  }
+
+  #sidebar.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: var(--sidebar-scrollbar-thumb);
   }
 
   @media (prefers-color-scheme: dark) {
     #sidebar {
       background-color: var(--bg-secondary);
+      --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.45);
     }
   }
 }
@@ -93,6 +124,7 @@ div.row {
 
 #sidebar {
   position: fixed;
+  --sidebar-scrollbar-thumb: rgba(0, 0, 0, 0.45);
 }
 
 .app-error {
@@ -191,7 +223,8 @@ export default {
       notificationStatus: null,
       offlineStatus: false,
       overviewIntervalId: null,
-      overviewLoaded: false
+      overviewLoaded: false,
+      sidebarScrollTimeout: null
     };
   },
   async created() {
@@ -263,7 +296,28 @@ export default {
     document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
+  beforeUnmount() {
+    if (this.sidebarScrollTimeout) {
+      clearTimeout(this.sidebarScrollTimeout);
+    }
+  },
   methods: {
+    handleSidebarScroll() {
+      const sidebar = this.$refs.sidebarScrollRef;
+
+      if (!sidebar) return;
+
+      sidebar.classList.add('is-scrolling');
+
+      if (this.sidebarScrollTimeout) {
+        clearTimeout(this.sidebarScrollTimeout);
+      }
+
+      this.sidebarScrollTimeout = setTimeout(() => {
+        sidebar.classList.remove('is-scrolling');
+        this.sidebarScrollTimeout = null;
+      }, 1000);
+    },
     mobileClick(value) {
       this.mobile = value;
     },
