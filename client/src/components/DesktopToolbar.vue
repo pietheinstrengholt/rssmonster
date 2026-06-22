@@ -286,11 +286,12 @@
   .search-wrap.compact-search-open {
     display: flex;
     position: fixed;
-    top: 10px;
-    right: 164px;
+    top: 64px;
+    right: 120px;
     width: min(420px, calc(100vw - 320px));
     margin: 0;
-    z-index: 2;
+    box-shadow: var(--shadow-modal);
+    z-index: 1001;
   }
 
   .search-button {
