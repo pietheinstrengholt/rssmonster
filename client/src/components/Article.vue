@@ -1,10 +1,12 @@
 <template>
-  <div class="block" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }">
+  <div class="block" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }" v-bind="filteredAttrs">
     <div class="article" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
       <div class="maximal">
         <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
-        <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
-        <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+        <div class="meta-row">
+          <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
+          <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+        </div>
       </div>
       <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
     </div>
@@ -47,6 +49,7 @@ function timeDifference(current, previous) {
 }
 
 export default {
+  inheritAttrs: false,
   components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent },
   emits: ['update-star', 'update-clicked', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
   props: {
@@ -95,6 +98,13 @@ export default {
     this.teardownMediaQueryListener();
   },
   computed: {
+    // Removes oversized embedding attributes from the root element.
+    filteredAttrs() {
+      const attrs = { ...this.$attrs };
+      delete attrs.articlevector;
+      delete attrs.articleVector;
+      return attrs;
+    },
     // Returns tags that were assigned by rules.
     ruleTags() {
       return (this.tags || []).filter(t => t.tagType === 'rule');
@@ -471,20 +481,25 @@ export default {
 }
 
 .block .article.starred {
-  background-color: var(--article-starred-background);
+  background-color: var(--desktop-toolbar-background);
   border-color: var(--article-highlight-border);
+}
+
+.article-kind-icon {
+  position: absolute;
+  left: 18px;
+  top: 24px;
+  width: 20px;
+  height: 20px;
+  color: #F59E0B;
 }
 
 .star-icon {
   color: var(--article-star-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .clicked-icon {
   color: var(--article-clicked-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .read-icon {
@@ -495,39 +510,41 @@ export default {
 
 .hot-icon {
   color: var(--article-hot-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .cluster-icon {
   color: var(--article-hot-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .recommendation-icon {
   color: var(--article-hot-icon);
   font-size: 0.85rem;
-  margin-right: 4px;
   opacity: 0.8;
-  vertical-align: middle;
 }
 
 .block .article {
-  padding-top: 2px;
-  padding-left: 5px;
-  padding-right: 5px;
+  padding: 18px 48px 26px 48px;
+  position: relative;
   font-family: var(--font-family);
-  border-color: var(--border-subtle);
-  background-color: var(--article-background);
+  margin-top: 0;
+  background-color: var(--desktop-toolbar-background);
   width: 100%;
 }
 
+
+.block .meta-row {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 10px;
+}
 .block .article-content {
-  color: var(--article-content-text);
-  font-family: var(--font-family);
-  font-size: 14px;
-  line-height: 1.45;
+  color: #111827;
+  margin-top: 0;
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 400;
   margin-bottom: 5px;
   margin-top: 1px;
   margin-left: 0px;
@@ -536,13 +553,19 @@ export default {
 
 .block .article-body {
   font-family: var(--font-family);
-  line-height: 1.45;
+  color: #111827;
+  font-size: 15px;
+  line-height: 1.65;
+  font-weight: 400;
 }
 
 .block .article h5 a {
-  color: var(--article-heading-text);
-  font-weight: 600;
-  font-size: 19px;
+  margin: 0;
+  color: #111827;
+  font-size: 20px;
+  line-height: 1.28;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   text-decoration: none;
   border-bottom: none;
 }
@@ -598,15 +621,14 @@ export default {
   color: var(--text-inverted) !important;
 }
 
-.block .feedname {
-  margin-top: -8px;
-  font-size: 12px;
-  padding-top: 1px;
-  padding-left: 0px;
-  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: bold;
-  margin-bottom: 2px;
-  color: var(--article-heading-text);
+.block .article-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  margin-top: 10px;
+  color: #64748B;
+  font-size: 14px;
+  line-height: 1.3;
 }
 
 .block .article-tags-scores {
@@ -682,11 +704,11 @@ export default {
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
-  .block .feedname {
+  .block .article-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
   }
 
   .block .article-tags-scores .tag {
@@ -717,6 +739,10 @@ export default {
   height: auto !important;
 }
 
+span.feed_name {
+  margin-left: 2px;
+}
+
 span.feed_name a {
   color: var(--article-heading-text);
 }
@@ -743,7 +769,7 @@ span.cluster {
   font-size: 10px;
 }
 
-/* Rule-based tags shown inline with feedname on mobile portrait only */
+/* Rule-based tags shown inline with article-meta on mobile portrait only */
 .mobile-rule-tag {
   display: none;
 }
@@ -891,7 +917,7 @@ span.cluster {
 }
 
 @media (prefers-color-scheme: dark) {
-  .block, .block .article, .article-content, h5.heading, .block .feedname {
+  .block, .block .article, .article-content, h5.heading, .block .article-meta {
     color: var(--text-inverted);
     background: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
@@ -949,7 +975,7 @@ span.cluster {
 
   .block.cluster-article .article-content,
   .block.cluster-article h5.heading,
-  .block.cluster-article .feedname {
+  .block.cluster-article .article-meta {
     background-color: var(--article-cluster-background-dark);
   }
 

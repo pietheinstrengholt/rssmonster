@@ -1,5 +1,5 @@
 <template>
-  <div class="feedname">
+  <div class="article-meta">
     <BootstrapIcon v-if="isMobilePortrait && quality !== undefined && roundedQuality !== neutralScore" :icon="getQualityIcon(roundedQuality)" :class="['mobile-score-icon', 'quality-icon', getQualityClass(roundedQuality)]" :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`" />
     <BootstrapIcon v-if="isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" />
     <BootstrapIcon v-if="isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" />
