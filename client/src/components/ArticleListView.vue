@@ -109,7 +109,7 @@ export default {
 }
 
 #articles {
-  padding-top: 42px;
+  padding-top: 52px;
   overflow-x: hidden;
   overflow-y: hidden;
   right: 0;

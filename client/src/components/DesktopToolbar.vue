@@ -11,14 +11,12 @@
       </div>
     </div>
 
-    <div v-if="isAIEnabled" class="status-toolbar" @click="chatAssistant">
-      <div id="chat-icon">
-          <BootstrapIcon icon="robot" size="20" />
-      </div>
-      <p id="chat-text">
+    <button v-if="isAIEnabled" type="button" class="chat-button" @click="chatAssistant">
+      <BootstrapIcon icon="chat-dots" />
+      <span>
         {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
-      </p>
-    </div>
+      </span>
+    </button>
     <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid }">
       <span class="search-icon" aria-hidden="true">
         <svg viewBox="0 0 16 16" aria-hidden="true">
@@ -47,7 +45,7 @@
 
 <style scoped>
 .toolbar {
-  height: 48px;
+  height: 56px;
   box-sizing: border-box;
   border-bottom: 1px solid transparent;
   border-color: var(--border-input);
@@ -73,6 +71,7 @@
   height: 40px;
   line-height: 20px;
   font-size: 14px;
+
 }
 
 .toolbar-dropdown-label {
@@ -138,43 +137,25 @@
   height: 20px;
 }
 
-.status-toolbar {
+.chat-button {
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid #E5E7EB;
+  border-radius: 8px;
+  background: #FFFFFF;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
   margin-left: 10px;
-  text-align: center;
   cursor: pointer;
   color: var(--toolbar-text);
-  font-weight: 500;
-  height: 40px;
+  font-size: 14px;
   flex-shrink: 0;
 }
 
-.status-toolbar p {
-  padding: 5px;
-  font-size: 14px;
-  margin-right: 12px;
-  margin-top: 5px;
-  height: 20px;
-}
-
-.status-toolbar #status {
-  width: 50px;
-}
-
-#chat-icon {
-  float:left;
-  width: 20px;
-  height: 20px;
-  margin-top: 7px;
-  margin-left: 5px;
-}
-
-#chat-text {
-  float:left;
-  margin: 0;
-  padding: 4px;
-  font-size: 14px;
-  margin-top: 6px;
-  margin-right: 6px;
+.chat-button:hover {
+  background-color: var(--bg-hover);
 }
 
 .search-wrap {
@@ -189,7 +170,7 @@
   margin: 0 104px 0 32px;
   padding: 0 12px;
   background-color: var(--bg-input);
-  border: 1px solid var(--border-input);
+  border: 1px solid #E5E7EB;
   border-radius: 10px;
 }
 
@@ -252,9 +233,14 @@
   }
 }
 
+@media (min-width: 1120px) {
+  .toolbar {
+    left: 265px;
+  }
+}
+
 @media (prefers-color-scheme: dark) {
   .toolbar,
-  .status-toolbar,
   .dropdownmenu .item {
     color: var(--text-inverted);
     background: var(--bg-control);
@@ -262,8 +248,14 @@
     border-bottom: 1px solid var(--text-inverted);
   }
 
-  .dropdown, .status-toolbar {
+  .dropdown {
     border-left: 1px solid var(--text-inverted);
+  }
+
+  .chat-button {
+    color: var(--text-inverted);
+    background: var(--bg-control);
+    border-color: var(--border-color);
   }
 
   .dropdown-menu {

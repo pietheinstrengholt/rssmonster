@@ -118,6 +118,19 @@
   }
 }
 
+@media (min-width: 768px) {
+  #sidebar {
+    max-width: 280px;
+  }
+}
+
+@media (min-width: 1120px) {
+  #home {
+    width: calc(100% - 280px);
+    margin-left: 280px;
+  }
+}
+
 div.row {
   margin-right: 0px;
 }
