@@ -549,7 +549,7 @@ export default {
 }
 .block .article-content {
   color: #111827;
-  margin-top: 6px;
+  padding-top: 6px;
   font-size: 14px;
   line-height: 1.65;
   font-weight: 400;
@@ -598,6 +598,10 @@ export default {
   align-items: center;
   flex: 1;
   min-width: 0;
+}
+
+.heading-left svg {
+  margin-bottom: 0 !important;
 }
 
 .block .dropdown {
