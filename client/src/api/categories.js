@@ -3,8 +3,8 @@ import api from './client';
 /**
  * Create a new category
  */
-export const createCategory = (name) =>
-  api.post('/categories', { name });
+export const createCategory = (name, iconName) =>
+  api.post('/categories', { name, iconName });
 
 /**
  * Update a category

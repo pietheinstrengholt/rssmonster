@@ -213,13 +213,11 @@
 }
 
 .sidebar-management-actions {
-  margin-top: 10px;
-  margin-bottom: 20px;
-  height: 40px;
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  gap: 16px;
+  margin: 10px 12px 20px;
+  width: calc(100% - 24px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
 
 .sidebar-refresh-progress-panel {

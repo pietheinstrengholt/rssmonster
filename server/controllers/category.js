@@ -65,12 +65,13 @@ const addCategory = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const { name, categoryOrder } = req.body;
+    const { name, categoryOrder, iconName } = req.body;
 
     const category = await Category.create({
       userId,
       name,
-      categoryOrder
+      categoryOrder,
+      iconName
     });
 
     return res.status(201).json(category);

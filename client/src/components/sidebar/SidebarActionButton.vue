@@ -74,6 +74,8 @@ const buttonClasses = computed(() => [props.variant]);
 
 .sidebar-button .sidebar-item-title {
   margin-left: 5px;
+  margin-top: 2px;
+  margin-bottom: 4px;
 }
 
 .spinner {
@@ -105,13 +107,13 @@ const buttonClasses = computed(() => [props.variant]);
 }
 
 .sidebar-management-button {
-  margin-left: 0;
-  height: 44px;
+  width: 100%;
+  height: 40px;
+  margin: 0;
+  padding: 4px;
   color: var(--text-primary);
   font-weight: 500;
   box-sizing: border-box;
-  width: 72px;
-  float: left;
   text-align: center;
   display: flex;
   align-items: center;
