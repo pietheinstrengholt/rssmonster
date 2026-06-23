@@ -6,7 +6,7 @@
   <div class="sidebar-scroll">
     <div class="sidebar-primary-actions">
       <SidebarActionButton
-        icon="arrow-clockwise"
+        icon="arrow-repeat"
         label="Refresh feeds"
         variant="sidebar-button sidebar-button-refresh"
         :loading="refreshing"
@@ -32,14 +32,14 @@
       </div>
 
       <SidebarActionButton
-        icon="plus-square"
+        icon="plus-square-fill"
         label="Add new feed"
         variant="sidebar-button sidebar-button-add-feed"
         @select="$store.data.setShowModal('NewFeed')"
       />
 
       <SidebarActionButton
-        icon="check2-square"
+        icon="check-square-fill"
         label="Mark as read"
         variant="sidebar-button sidebar-button-mark-read"
         :loading="markingAsRead"

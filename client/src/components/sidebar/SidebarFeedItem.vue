@@ -114,6 +114,7 @@ const formattedCount = computed(() => formatCount(props.count));
 .sidebar-count-wrapper {
   margin-left: auto;
   padding-left: 8px;
+  padding-right: 4px;
   flex: 0 0 auto;
 }
 

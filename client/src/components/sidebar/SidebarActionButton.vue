@@ -6,7 +6,7 @@
       </span>
       <div class="sidebar-item-title">{{ label }}</div>
       <span v-if="loading" class="spinner">
-        <BootstrapIcon icon="arrow-repeat" color="currentColor" animation="spin" />
+        <BootstrapIcon icon="arrow-clockwise" color="currentColor" animation="spin" />
       </span>
     </div>
   </div>

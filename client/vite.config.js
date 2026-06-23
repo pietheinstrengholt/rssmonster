@@ -16,7 +16,6 @@ const bootstrapIconNames = [
   'bookmark-fill',
   'box-arrow-right',
   'check-circle-fill',
-  'check2-square',
   'check-square-fill',
   'collection-fill',
   'download',
