@@ -225,13 +225,6 @@
   background-color: var(--toolbar-active-background);
 }
 
-@media (max-width: 1120px) {
-  :global(:root[data-theme='dark'] .toolbar-settings-button),
-  :global(:root[data-theme='dark'] .toolbar-theme-button) {
-    box-shadow: 0 0 0 8px var(--bg-control);
-  }
-}
-
 .toolbar-settings-button:hover,
 .toolbar-theme-button:hover {
   background-color: var(--border-input);
@@ -360,7 +353,6 @@
   .toolbar-settings-button,
   .toolbar-theme-button {
     z-index: 1;
-    box-shadow: 0 0 0 8px #FEFEFE;
   }
 }
 
@@ -474,13 +466,6 @@
     background-color: var(--toolbar-settings-hover-background-dark);
   }
 
-  @media (max-width: 1120px) {
-    .toolbar-settings-button,
-    .toolbar-theme-button {
-      box-shadow: 0 0 0 8px var(--bg-control);
-    }
-  }
-
   @media (max-width: 1199px) {
     .toolbar-search-button {
       color: var(--text-inverted);
@@ -529,6 +514,19 @@
   .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid::placeholder {
     color: var(--text-danger);
   }
+}
+
+/* Keep explicit light-mode controls light when the device prefers dark mode. */
+:global(:root[data-theme='light'] .toolbar-settings-button),
+:global(:root[data-theme='light'] .toolbar-theme-button) {
+  color: var(--toolbar-text);
+  background-color: #FEFEFE;
+  border-color: var(--border-input);
+}
+
+:global(:root[data-theme='light'] .toolbar-settings-button:hover),
+:global(:root[data-theme='light'] .toolbar-theme-button:hover) {
+  background-color: var(--border-input);
 }
 </style>
 
