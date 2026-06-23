@@ -1,10 +1,10 @@
 <template>
   <div :class="buttonClasses" @click="emit('select')">
     <div>
-      <span class="glyphicon">
+      <span class="sidebar-icon">
         <BootstrapIcon :icon="icon" color="currentColor" />
       </span>
-      <div class="text">{{ label }}</div>
+      <div class="sidebar-item-title">{{ label }}</div>
       <span v-if="loading" class="spinner">
         <BootstrapIcon icon="arrow-repeat" color="currentColor" animation="spin" />
       </span>
@@ -26,7 +26,7 @@ const props = defineProps({
   },
   variant: {
     type: [String, Array, Object],
-    default: 'sidebar-option'
+    default: 'sidebar-management-button'
   },
   loading: {
     type: Boolean,
@@ -40,8 +40,8 @@ const buttonClasses = computed(() => [props.variant]);
 </script>
 
 <style scoped>
-.option,
-.sidebar-option {
+.sidebar-button,
+.sidebar-management-button {
   margin-left: 12px;
   padding: 6px;
   color: var(--text-primary);
@@ -55,7 +55,7 @@ const buttonClasses = computed(() => [props.variant]);
   overflow: hidden;
 }
 
-.option {
+.sidebar-button {
   box-sizing: border-box;
   width: calc(100% - 24px);
   height: 36px;
@@ -67,12 +67,12 @@ const buttonClasses = computed(() => [props.variant]);
   font-weight: 500;
 }
 
-.option > div {
+.sidebar-button > div {
   display: flex;
   align-items: center;
 }
 
-.option .text {
+.sidebar-button .sidebar-item-title {
   margin-left: 5px;
 }
 
@@ -81,31 +81,31 @@ const buttonClasses = computed(() => [props.variant]);
   margin-top: -2px;
 }
 
-.refresh,
-.addnew { width: calc(100% - 24px); }
+.sidebar-button-refresh,
+.sidebar-button-add-feed { width: calc(100% - 24px); }
 
-.refresh {
+.sidebar-button-refresh {
   color: #FFFFFF;
   background-color: #2563EB;
 }
 
-.refresh:hover {
+.sidebar-button-refresh:hover {
   background-color: #1D4ED8;
 }
 
-.addnew {
+.sidebar-button-add-feed {
   color: #0E6522;
   background-color: #FFFFFF;
   border-color: #E7EAF0;
 }
 
-.mark-as-read {
+.sidebar-button-mark-read {
   color: #374151;
   background-color: #FFFFFF;
   border-color: #E7EAF0;
 }
 
-.sidebar-option {
+.sidebar-management-button {
   margin-left: 0;
   height: 44px;
   color: var(--text-primary);
@@ -119,7 +119,7 @@ const buttonClasses = computed(() => [props.variant]);
   justify-content: center;
 }
 
-.sidebar-option > div {
+.sidebar-management-button > div {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -127,52 +127,52 @@ const buttonClasses = computed(() => [props.variant]);
   transform: translateY(2px);
 }
 
-.option .glyphicon,
-.sidebar-option .glyphicon {
+.sidebar-button .sidebar-icon,
+.sidebar-management-button .sidebar-icon {
   float: left;
   min-width: 13px;
 }
 
-.option .glyphicon {
+.sidebar-button .sidebar-icon {
   margin-top: -2px;
 }
 
-.sidebar-option .text {
+.sidebar-management-button .sidebar-item-title {
   font-size: 13px;
 }
 
-.sidebar-option.delete,
-.sidebar-option.rename {
+.sidebar-management-button.delete,
+.sidebar-management-button.rename {
   color: var(--text-primary);
 }
 
 @media (prefers-color-scheme: dark) {
-  .sidebar-option {
+  .sidebar-management-button {
     color: var(--text-inverted);
     background-color: var(--bg-secondary);
   }
 
-  .sidebar-option :deep(svg) {
+  .sidebar-management-button :deep(svg) {
     fill: var(--text-inverted);
   }
 }
 
-:global(:root[data-theme='dark'] .option.refresh) {
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-refresh) {
   color: var(--sidebar-action-refresh-text) !important;
   background-color: var(--sidebar-action-refresh-background) !important;
 }
 
-:global(:root[data-theme='dark'] .option.refresh:hover) {
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-refresh:hover) {
   background-color: var(--color-primary-hover) !important;
 }
 
-:global(:root[data-theme='dark'] .option.addnew) {
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-add-feed) {
   color: var(--sidebar-action-add-text) !important;
   background-color: var(--sidebar-action-add-background) !important;
   border-color: var(--border-color) !important;
 }
 
-:global(:root[data-theme='dark'] .option.mark-as-read) {
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-mark-read) {
   color: var(--sidebar-action-mark-as-read-text) !important;
   background-color: var(--sidebar-action-mark-as-read-background) !important;
   border-color: var(--border-color) !important;

@@ -3,12 +3,12 @@
     :class="rowClasses"
     @click="emit('select')"
   >
-    <span class="glyphicon">
+    <span class="sidebar-icon">
       <BootstrapIcon :icon="icon" :class="iconClass" color="currentColor" />
     </span>
-    <span class="title">{{ title }}</span>
-    <span v-if="count !== null && count !== undefined" class="badge-unread">
-      <span class="badge" :class="badgeClass">{{ formattedCount }}</span>
+    <span class="sidebar-item-title">{{ title }}</span>
+    <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
+      <span class="sidebar-count" :class="badgeClass">{{ formattedCount }}</span>
     </span>
   </div>
 </template>
@@ -51,7 +51,7 @@ const props = defineProps({
 const emit = defineEmits(['select']);
 
 const rowClasses = computed(() => [
-  'category-top',
+  'sidebar-item',
   props.rowClass,
   { selected: props.selected }
 ]);
@@ -60,7 +60,7 @@ const formattedCount = computed(() => formatCount(props.count));
 </script>
 
 <style scoped>
-.category-top {
+.sidebar-item {
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
@@ -72,55 +72,68 @@ const formattedCount = computed(() => formatCount(props.count));
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.category-top.selected {
+.sidebar-item.selected {
   color: #2A71E7;
   background-color: #EBF2FE;
   box-shadow: none;
 }
 
-.glyphicon {
+.sidebar-item.sidebar-refresh-alert {
+  color: #991B1B;
+  background-color: #FEF2F2;
+}
+
+.sidebar-item.sidebar-refresh-alert:hover {
+  background-color: #FEE2E2;
+}
+
+.sidebar-refresh-alert .sidebar-count {
+  color: inherit;
+}
+
+.sidebar-icon {
   float: left;
   margin-right: 5px;
   min-width: 13px;
 }
 
 /* This adjusts the All feeds status icons without changing tag or smart-folder rows. */
-.status-item .glyphicon {
+.sidebar-status-item .sidebar-icon {
   margin-top: -1px;
 }
 
-.status-item .title {
+.sidebar-status-item .sidebar-item-title {
   color: var(--text-primary);
 }
 
-.status-item .badge-unread {
+.sidebar-status-item .sidebar-count-wrapper {
   transform: translateY(-1px);
 }
 
-.badge-unread {
+.sidebar-count-wrapper {
   float: right;
   position: absolute;
   right: 28px;
   margin-top: -25px;
 }
 
-.badge {
+.sidebar-count {
   color: var(--text-primary);
   font-weight: 500;
 }
 
-.category-top.selected .badge {
+.sidebar-item.selected .sidebar-count {
   color: #2A71E7;
 }
 
-.badge.white {
+.sidebar-count.sidebar-count-white {
   float: right;
   color: inherit;
   background-color: transparent;
   margin-top: 3px;
 }
 
-.title {
+.sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -137,85 +150,103 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 @media (prefers-color-scheme: dark) {
-  .category-top {
+  .sidebar-item {
     background-color: var(--bg-option);
   }
 
-  .category-top.selected {
+  .sidebar-item.selected {
     color: var(--text-inverted);
     background-color: var(--bg-hover);
   }
 
-  .category-top.selected .badge,
+  .sidebar-item.selected .sidebar-count,
   .selected .icon-star,
   .selected .icon-hot {
     color: var(--text-inverted);
   }
+
+  .sidebar-item.sidebar-refresh-alert {
+    color: #FECACA;
+    background-color: #2B1B1E;
+  }
+
+  .sidebar-item.sidebar-refresh-alert:hover {
+    background-color: #3A2328;
+  }
 }
 
-:global(:root[data-theme='dark']) .category-top {
+:global(:root[data-theme='dark']) .sidebar-item {
   background-color: var(--bg-option);
 }
 
-:global(:root[data-theme='dark'] .category-top.tag-item.selected) {
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert) {
+  color: #FECACA;
+  background-color: #2B1B1E;
+}
+
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert:hover) {
+  background-color: #3A2328;
+}
+
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected) {
   color: var(--text-inverted) !important;
   background-color: var(--bg-hover) !important;
 }
 
-:global(:root[data-theme='dark'] .category-top.tag-item.selected .badge) {
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected .sidebar-count) {
   color: var(--text-inverted) !important;
 }
 
-:global(:root[data-theme='dark'] .category-top.all-categories.selected) {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-hover) !important;
-}
-
-:global(:root[data-theme='dark'] .category-top.all-categories.selected .badge) {
-  color: var(--text-inverted) !important;
-}
-
-:global(:root[data-theme='dark'] .category-top.status-item.selected) {
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected) {
   color: var(--text-inverted) !important;
   background-color: var(--bg-hover) !important;
 }
 
-:global(:root[data-theme='dark'] .category-top.status-item.selected .badge) {
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected .sidebar-count) {
   color: var(--text-inverted) !important;
 }
 
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected {
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-hover) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-count) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected {
   color: var(--text-inverted) !important;
   background-color: var(--bg-secondary) !important;
   background-image: none !important;
 }
 
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected {
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected {
   color: var(--text-inverted) !important;
   background-color: var(--bg-secondary) !important;
   background-image: none !important;
 }
 
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge,
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge.white,
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge-unread,
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .title,
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .glyphicon,
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge,
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge.white,
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge-unread,
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .title,
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .glyphicon,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count-wrapper,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-item-title,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-icon,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count.sidebar-count-white,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count-wrapper,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-item-title,
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-icon,
 :global(:root[data-theme='dark']) .selected .icon-star,
 :global(:root[data-theme='dark']) .selected .icon-hot {
   color: var(--text-inverted) !important;
 }
 
-:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge.white {
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white {
   background-color: transparent !important;
 }
 
-:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge.white {
+:global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count.sidebar-count-white {
   background-color: transparent !important;
 }
 </style>

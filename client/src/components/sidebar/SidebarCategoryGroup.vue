@@ -1,21 +1,21 @@
 <template>
   <div
     :id="category.id"
-    class="category-main"
+    class="sidebar-category"
     :class="{ selected: isSelectedCategory }"
     @click="emit('select-category', category)"
   >
-    <div class="category-sub">
-      <span class="glyphicon">
+    <div class="sidebar-category-header">
+      <span class="sidebar-icon">
         <BootstrapIcon icon="folder" color="currentColor" />
       </span>
-      <span class="title">{{ category.name }}</span>
-      <span class="badge-unread">
-        <span v-if="count !== null" class="badge white">{{ formattedCount }}</span>
+      <span class="sidebar-item-title">{{ category.name }}</span>
+      <span class="sidebar-count-wrapper">
+        <span v-if="count !== null" class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
       </span>
     </div>
     <div v-if="category.feeds && isExpanded">
-      <div class="category-feeds">
+      <div class="sidebar-feed-list">
         <SidebarFeedItem
           v-for="(feed, index) in category.feeds"
           :key="feed.id"
@@ -71,7 +71,7 @@ function getFeedCount(feed) {
 </script>
 
 <style scoped>
-.category-main {
+.sidebar-category {
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
@@ -82,52 +82,52 @@ function getFeedCount(feed) {
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.category-main.selected {
+.sidebar-category.selected {
   color: #2A71E7;
   background-color: #EBF2FE;
   box-shadow: none;
 }
 
-.category-sub,
-.category-feed,
-.category-top {
+.sidebar-category-header,
+.sidebar-feed,
+.sidebar-item {
   padding: 4px 4px 4px 12px;
 }
 
-.category-sub {
+.sidebar-category-header {
   min-height: 24px;
 }
 
-.badge-unread {
+.sidebar-count-wrapper {
   float: right;
   position: absolute;
   right: 28px;
   margin-top: -25px;
 }
 
-.badge {
+.sidebar-count {
   color: var(--text-primary);
   font-weight: 500;
 }
 
-.category-main.selected .badge {
+.sidebar-category.selected .sidebar-count {
   color: #2A71E7;
 }
 
-.badge.white {
+.sidebar-count.sidebar-count-white {
   float: right;
   color: inherit;
   background-color: transparent;
   margin-top: 3px;
 }
 
-.glyphicon {
+.sidebar-icon {
   float: left;
   margin-right: 5px;
   min-width: 13px;
 }
 
-.title {
+.sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
@@ -135,31 +135,31 @@ function getFeedCount(feed) {
   padding-right: 25px;
 }
 
-.category-feeds {
+.sidebar-feed-list {
   margin-bottom: 0;
 }
 
 @media (prefers-color-scheme: dark) {
-  .category-main {
+  .sidebar-category {
     background-color: var(--bg-option);
   }
 
-  .category-main.selected {
+  .sidebar-category.selected {
     color: var(--text-inverted);
     background-color: var(--bg-selected);
   }
 
-  .category-main.selected .badge {
+  .sidebar-category.selected .sidebar-count {
     color: var(--text-inverted);
   }
 }
 
-:global(:root[data-theme='dark'] .category-main.selected) {
+:global(:root[data-theme='dark'] .sidebar-category.selected) {
   color: var(--text-inverted) !important;
   background-color: var(--bg-selected) !important;
 }
 
-:global(:root[data-theme='dark'] .category-main.selected .badge) {
+:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-count) {
   color: var(--text-inverted) !important;
 }
 </style>
