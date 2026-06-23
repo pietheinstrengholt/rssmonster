@@ -610,7 +610,7 @@ export default {
 .article-card .article-body h5 a {
   margin: 0;
   color: #111827;
-  font-size: 20px;
+  font-size: 22px;
   line-height: 1;
   font-weight: 700;
   letter-spacing: -0.01em;
@@ -618,6 +618,7 @@ export default {
   border-bottom: none;
   display: flex;
   align-items: center;
+  line-height: 1.25;
 }
 
 .article-card .article-body h5.article-header {
@@ -686,10 +687,11 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: #64748B;
-  font-size: 14px;
+  color: #6B7280;
+  font-size: 13px;
   line-height: 1.3;
   margin: 0;
+  font-weight: 400;
 }
 
 .article-card .article-tags {
@@ -713,6 +715,7 @@ export default {
   white-space: nowrap;
   cursor: pointer;
   vertical-align: middle;
+  opacity: 0.85;
 }
 
 .article-card .article-tags .tag {
@@ -749,21 +752,25 @@ export default {
 }
 
 .article-card .article-tags .overall-score {
+  opacity: 0.85;
   background-color: var(--article-overall-score-background);  /* Pale red */
   color: var(--article-overall-score-text);             /* Darker red */
 }
 
 .article-card .article-tags .ad-score {
+  opacity: 0.85;
   background-color: var(--article-ad-score-background);
   color: var(--article-ad-score-text);
 }
 
 .article-card .article-tags .sentiment-score {
+  opacity: 0.85;
   background-color: var(--article-sentiment-score-background);
   color: var(--article-sentiment-score-text);
 }
 
 .article-card .article-tags .quality-score {
+  opacity: 0.85;
   background-color: var(--article-quality-background);
   color: var(--article-quality-positive);
 }
@@ -858,6 +865,7 @@ span.similar-badge {
   white-space: nowrap;
   cursor: pointer;
   vertical-align: middle;
+  opacity: 0.85;
 }
 
 .source-badge {
@@ -873,6 +881,7 @@ span.similar-badge {
   color: var(--article-quality-positive);
   white-space: nowrap;
   vertical-align: middle;
+  opacity: 0.85;
 }
 
 :root[data-theme='dark'] .source-badge {

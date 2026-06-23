@@ -9,7 +9,7 @@
       <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16" alt="" />
       <BootstrapIcon v-else icon="rss-fill" color="currentColor" />
     </span>
-    <span class="sidebar-item-title">{{ feed.feedName }}</span>
+    <span class="sidebar-item-title" :class="{ last }">{{ feed.feedName }}</span>
     <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
       <span class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
     </span>
@@ -92,7 +92,7 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-feed.selected {
-  border-radius: 4px;
+  border-radius: 6px;
 }
 
 .sidebar-icon {
@@ -113,7 +113,11 @@ const formattedCount = computed(() => formatCount(props.count));
   float: right;
   position: absolute;
   right: 28px;
-  margin-top: -25px;
+  margin-top: -24px;
+}
+
+.sidebar-feed-list .sidebar.feed .sidebar-count-wrapper {
+  margin-top: -28px;
 }
 
 .sidebar-count {

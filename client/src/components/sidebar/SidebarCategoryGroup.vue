@@ -75,7 +75,7 @@ function getFeedCount(feed) {
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
@@ -102,7 +102,7 @@ function getFeedCount(feed) {
   float: right;
   position: absolute;
   right: 28px;
-  margin-top: -25px;
+  margin-top: -28px;
 }
 
 .sidebar-count {
@@ -139,6 +139,20 @@ function getFeedCount(feed) {
   margin-bottom: 0;
 }
 
+.sidebar-category.selected :deep(.sidebar-feed.last) {
+  border-radius: 0 0 6px 6px;
+}
+
+.sidebar-category.selected .sidebar-feed-list,
+.sidebar-category.selected :deep(.sidebar-feed) {
+  background-color: #EBF2FE;
+}
+
+.sidebar-category.selected .sidebar-feed-list {
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
 @media (prefers-color-scheme: dark) {
   .sidebar-category {
     background-color: var(--bg-option);
@@ -152,6 +166,11 @@ function getFeedCount(feed) {
   .sidebar-category.selected .sidebar-count {
     color: var(--text-inverted);
   }
+
+  .sidebar-category.selected .sidebar-feed-list,
+  .sidebar-category.selected :deep(.sidebar-feed) {
+    background-color: var(--bg-selected);
+  }
 }
 
 :global(:root[data-theme='dark'] .sidebar-category.selected) {
@@ -161,5 +180,10 @@ function getFeedCount(feed) {
 
 :global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-count) {
   color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed-list),
+:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed) {
+  background-color: var(--bg-selected) !important;
 }
 </style>

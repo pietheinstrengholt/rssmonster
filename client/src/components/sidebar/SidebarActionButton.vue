@@ -85,18 +85,17 @@ const buttonClasses = computed(() => [props.variant]);
 .sidebar-button-add-feed { width: calc(100% - 24px); }
 
 .sidebar-button-refresh {
-  color: #FFFFFF;
-  background-color: #2563EB;
+  color: #0368E2;
+  background-color: #EEF0F3;
 }
 
 .sidebar-button-refresh:hover {
-  background-color: #1D4ED8;
+  background-color: #E5E7EB;
 }
 
 .sidebar-button-add-feed {
-  color: #0E6522;
-  background-color: #FFFFFF;
-  border-color: #E7EAF0;
+  color: #2E8B57;
+  background-color: #EEF0F3;
 }
 
 .sidebar-button-mark-read {

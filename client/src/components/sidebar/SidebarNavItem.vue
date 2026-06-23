@@ -64,7 +64,7 @@ const formattedCount = computed(() => formatCount(props.count));
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
   padding: 4px 4px 4px 12px;
   color: var(--text-primary);
@@ -114,7 +114,11 @@ const formattedCount = computed(() => formatCount(props.count));
   float: right;
   position: absolute;
   right: 28px;
-  margin-top: -25px;
+  margin-top: -24px;
+}
+
+.sidebar-item.sidebar-all-categories-item.selected .sidebar-count-wrapper {
+  margin-top: -20px;
 }
 
 .sidebar-count {

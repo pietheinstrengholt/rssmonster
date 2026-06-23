@@ -195,6 +195,8 @@
 .sidebar-scroll {
   background-color: transparent;
   color: var(--text-primary);
+  margin-left: 8px;
+  width: 250px;
 }
 
 .sidebar-brand {
