@@ -556,7 +556,7 @@ export default {
   margin-bottom: 5px;
   margin-top: 1px;
   margin-left: 0px;
-  padding-bottom: 3px;
+  padding-bottom: 6px;
 }
 
 .block .article-body {
