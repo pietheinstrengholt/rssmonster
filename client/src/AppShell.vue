@@ -70,7 +70,7 @@
     padding-right: 0px;
   }
 
-  div#mobile-toolbar {
+  .mobile-toolbar {
     position: fixed;
     z-index: 9999;
   }
@@ -78,7 +78,7 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  div#mobile-toolbar {
+  .mobile-toolbar {
     display: none;
   }
 

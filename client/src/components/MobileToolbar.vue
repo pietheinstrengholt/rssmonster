@@ -1,27 +1,29 @@
 <template>
-  <div class="navbar-container">
-    <div id="mobile-toolbar">
-      <button
-        @click="emitClickEvent('mobile','mobile')"
-        id="rssmonster"
-        class="view-button icon-button"
-        title="Settings"
-      >
-        <BootstrapIcon icon="gear-fill" />
-      </button>
-      <a
-        id="search"
-        class="view-button"
-        title="Search"
-        @click="toggleSearch"
-        data-behavior="search"
-        data-remote="true"
-      >
-        <i class="fas fa-search" data-fa-transform="down-0 shrink-0 left-5"></i>
-      </a>
-    <!-- Read Mode Dropdown -->
-    <div class="dropdown top-menu-dropdown first">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+  <div class="mobile-toolbar-container">
+    <nav class="mobile-toolbar" aria-label="Mobile article toolbar">
+      <div class="mobile-toolbar-actions">
+        <button
+          @click="emitClickEvent('mobile','mobile')"
+          class="mobile-toolbar-button mobile-icon-button mobile-settings-button"
+          title="Settings"
+        >
+          <BootstrapIcon icon="gear-fill" />
+        </button>
+        <button
+          type="button"
+          class="mobile-toolbar-button mobile-search-toggle"
+          title="Search"
+          @click="toggleSearch"
+          data-behavior="search"
+          data-remote="true"
+        >
+          <i class="fas fa-search" data-fa-transform="down-0 shrink-0 left-5"></i>
+        </button>
+      </div>
+      <div class="mobile-toolbar-filters">
+        <!-- Read Mode Dropdown -->
+        <div class="dropdown mobile-toolbar-filter">
+      <button class="dropdown-toggle mobile-filter-button" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ capitalize(currentStatus) }} {{ getStatusCount() }}
       </button>
       <div class="dropdown-menu" aria-labelledby="readModeDropdown">
@@ -41,9 +43,9 @@
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
       </div>
     </div>
-    <!-- Smart Folder Dropdown -->
-    <div class="dropdown top-menu-dropdown middle">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="smartFoldersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <!-- Smart Folder Dropdown -->
+        <div class="dropdown mobile-toolbar-filter">
+          <button class="dropdown-toggle mobile-filter-button" type="button" id="smartFoldersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ 'Smart folders' }}
       </button>
       <div class="dropdown-menu" aria-labelledby="smartFoldersDropdown">
@@ -64,9 +66,9 @@
         </button>
       </div>
     </div>
-    <!-- Categories Dropdown -->
-    <div class="dropdown top-menu-dropdown last">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <!-- Categories Dropdown -->
+        <div class="dropdown mobile-toolbar-filter">
+          <button class="dropdown-toggle mobile-filter-button" type="button" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ 'Categories' }}
       </button>
       <div class="dropdown-menu" aria-labelledby="categoriesDropdown">
@@ -86,14 +88,15 @@
           {{ category.name }} {{ getCategoryCount(category) }}
         </button>
       </div>
-    </div>
-    </div>
-    <div v-if="showSearch" class="search-dialog">
+        </div>
+      </div>
+    </nav>
+    <div v-if="showSearch" class="mobile-search-panel">
       <input
         v-model="$store.data.searchQuery"
         @input="updateSearch"
         type="text"
-        class="search-input"
+        class="mobile-search-input"
         placeholder="Search articles..."
         @keyup.enter="performSearch"
         @keyup.esc="toggleSearch"
@@ -104,11 +107,11 @@
 </template>
 
 <style>
-.navbar-container {
+.mobile-toolbar-container {
   display: contents;
 }
 
-#mobile-toolbar {
+.mobile-toolbar {
   width: 100%;
   background-color: var(--toolbar-active-background);
   display: -webkit-box;
@@ -124,15 +127,20 @@
   opacity: 1;
   transition: visibility 0s linear 0s, opacity 150ms;
 }
+
+.mobile-toolbar-actions,
+.mobile-toolbar-filters {
+  display: flex;
+}
 </style>
 
 <style scoped>
-#mobile-toolbar a {
+.mobile-search-toggle {
   font-size: 14px;
   cursor: pointer;
 }
 
-.view-button {
+.mobile-toolbar-button {
   flex: 1;
   text-align: center;
   line-height: 41px;
@@ -146,7 +154,7 @@
   color: var(--mobile-toolbar-title);
 }
 
-#rssmonster.icon-button {
+.mobile-settings-button.mobile-icon-button {
   margin-top: 2px;
   max-width: 36px;
   min-width: 36px;
@@ -162,24 +170,29 @@
   border-color: var(--mobile-toolbar-border);
 }
 
-#rssmonster.icon-button:hover {
+.mobile-settings-button.mobile-icon-button:hover {
   color: var(--text-inverted);
 }
 
-#search.view-button {
+.mobile-search-toggle.mobile-toolbar-button {
   max-width: 36px;
   min-width: 36px;
   flex: 0;
   position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: normal;
   background: none;
+  border: none;
   border-left: 1px solid var(--mobile-toolbar-border);
 }
 
-#search.view-button::before {
+.mobile-search-toggle.mobile-toolbar-button::before {
   content: "";
   position: absolute;
-  top: 13px;
-  left: 10px;
+  inset: 0;
+  margin: auto;
   width: 16px;
   height: 16px;
   background: url(../assets/images/magnifying-glass.png) center no-repeat;
@@ -188,11 +201,11 @@
   pointer-events: none;
 }
 
-#search.view-button .fa-search {
+.mobile-search-toggle.mobile-toolbar-button .fa-search {
   display: none;
 }
 
-.search-dialog {
+.mobile-search-panel {
   position: fixed;
   top: 41px;
   left: 0;
@@ -206,7 +219,7 @@
   z-index: 9998;
 }
 
-.search-input {
+.mobile-search-input {
   flex: 1;
   border: none;
   outline: none;
@@ -215,7 +228,7 @@
   background: transparent;
 }
 
-.toolbar-dropdown {
+.mobile-filter-button {
   background-color: transparent !important;
   border: none !important;
   color: var(--text-inverted);
@@ -226,11 +239,11 @@
   margin-top: 10px;
 }
 
-.toolbar-dropdown:hover {
+.mobile-filter-button:hover {
   color: var(--text-inverted);
 }
 
-.toolbar-dropdown:focus {
+.mobile-filter-button:focus {
   box-shadow: none !important;
   color: var(--text-inverted);
 }
@@ -239,50 +252,50 @@
   background-color: var(--toolbar-active-background);
 }
 
-.top-menu-dropdown {
+.mobile-toolbar-filter {
   border-left: 1px solid transparent;
   border-color: var(--mobile-toolbar-border);
 }
 
 @media (prefers-color-scheme: dark) {
-  #mobile-toolbar {
+  .mobile-toolbar {
     background: var(--bg-control);
   }
 
-  .toolbar-dropdown,
-  .toolbar-dropdown:hover,
-  .toolbar-dropdown:focus,
-  .toolbar-dropdown:active,
-  .toolbar-dropdown.show,
-  .show > .toolbar-dropdown.dropdown-toggle {
+  .mobile-filter-button,
+  .mobile-filter-button:hover,
+  .mobile-filter-button:focus,
+  .mobile-filter-button:active,
+  .mobile-filter-button.show,
+  .show > .mobile-filter-button.dropdown-toggle {
     color: var(--text-inverted) !important;
   }
 
-  .view-button {
+  .mobile-toolbar-button {
     color: var(--text-inverted);
     background: var(--bg-control);
     border-color: var(--dark-contrast);
   }
 
-  #rssmonster.icon-button,
-  #rssmonster.icon-button:hover {
+  .mobile-settings-button.mobile-icon-button,
+  .mobile-settings-button.mobile-icon-button:hover {
     color: var(--text-inverted);
   }
 
-  #search.view-button::before {
+  .mobile-search-toggle.mobile-toolbar-button::before {
     filter: brightness(0) invert(1);
   }
 
-  .search-dialog {
+  .mobile-search-panel {
     background-color: var(--toolbar-search-background-dark);
     border-bottom-color: var(--bg-subtle);
   }
 
-  .search-input {
+  .mobile-search-input {
     color: var(--text-inverted);
   }
 
-  .search-input::placeholder {
+  .mobile-search-input::placeholder {
     color: var(--text-muted);
   }
 

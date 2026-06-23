@@ -794,6 +794,10 @@ export default {
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
+  .article-card .article-body {
+    padding: 4px 8px 4px 8px;
+  }
+
   .article-card .article-meta {
     display: flex;
     flex-wrap: wrap;
