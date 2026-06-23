@@ -88,10 +88,10 @@ function getFeedCount(feed) {
   box-shadow: none;
 }
 
-.sidebar-category-header,
-.sidebar-feed,
-.sidebar-item {
+.sidebar-category-header {
   padding: 4px 4px 4px 12px;
+  display: flex;
+  align-items: center;
 }
 
 .sidebar-category-header {
@@ -99,10 +99,9 @@ function getFeedCount(feed) {
 }
 
 .sidebar-count-wrapper {
-  float: right;
-  position: absolute;
-  right: 28px;
-  margin-top: -28px;
+  margin-left: auto;
+  padding-left: 8px;
+  flex: 0 0 auto;
 }
 
 .sidebar-count {
@@ -115,24 +114,22 @@ function getFeedCount(feed) {
 }
 
 .sidebar-count.sidebar-count-white {
-  float: right;
   color: inherit;
   background-color: transparent;
-  margin-top: 3px;
 }
 
 .sidebar-icon {
-  float: left;
   margin-right: 5px;
   min-width: 13px;
+  flex: 0 0 auto;
 }
 
 .sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  display: block;
-  padding-right: 25px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .sidebar-feed-list {

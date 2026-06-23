@@ -67,6 +67,8 @@ const formattedCount = computed(() => formatCount(props.count));
   border-radius: 6px;
   cursor: pointer;
   padding: 4px 4px 4px 12px;
+  display: flex;
+  align-items: center;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
@@ -92,9 +94,9 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-icon {
-  float: left;
   margin-right: 5px;
   min-width: 13px;
+  flex: 0 0 auto;
 }
 
 /* This adjusts the All feeds status icons without changing tag or smart-folder rows. */
@@ -106,19 +108,10 @@ const formattedCount = computed(() => formatCount(props.count));
   color: var(--text-primary);
 }
 
-.sidebar-status-item .sidebar-count-wrapper {
-  transform: translateY(-1px);
-}
-
 .sidebar-count-wrapper {
-  float: right;
-  position: absolute;
-  right: 28px;
-  margin-top: -24px;
-}
-
-.sidebar-item.sidebar-all-categories-item.selected .sidebar-count-wrapper {
-  margin-top: -20px;
+  margin-left: auto;
+  padding-left: 8px;
+  flex: 0 0 auto;
 }
 
 .sidebar-count {
@@ -131,18 +124,16 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-count.sidebar-count-white {
-  float: right;
   color: inherit;
   background-color: transparent;
-  margin-top: 3px;
 }
 
 .sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  display: block;
-  padding-right: 25px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .icon-star { color: var(--icon-star); }

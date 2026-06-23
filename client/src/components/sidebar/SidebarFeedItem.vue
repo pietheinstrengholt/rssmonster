@@ -54,6 +54,8 @@ const formattedCount = computed(() => formatCount(props.count));
 <style scoped>
 .sidebar-feed {
   padding: 4px 4px 4px 12px;
+  display: flex;
+  align-items: center;
   cursor: pointer;
   color: var(--text-primary);
   background-color: var(--bg-secondary);
@@ -96,28 +98,23 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-icon {
-  float: left;
   margin-right: 5px;
   min-width: 13px;
+  flex: 0 0 auto;
 }
 
 .sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  display: block;
-  padding-right: 25px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
 .sidebar-count-wrapper {
-  float: right;
-  position: absolute;
-  right: 28px;
-  margin-top: -24px;
-}
-
-.sidebar-feed-list .sidebar.feed .sidebar-count-wrapper {
-  margin-top: -28px;
+  margin-left: auto;
+  padding-left: 8px;
+  flex: 0 0 auto;
 }
 
 .sidebar-count {
@@ -130,10 +127,8 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-count.sidebar-count-white {
-  float: right;
   color: inherit;
   background-color: transparent;
-  margin-top: 3px;
 }
 
 .sidebar-feed span.sidebar-icon img {
