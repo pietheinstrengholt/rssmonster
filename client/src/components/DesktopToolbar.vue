@@ -1,57 +1,62 @@
 <template>
-  <div class="toolbar">
+  <nav class="desktop-toolbar" aria-label="Article toolbar">
     <!-- Article filter dropdowns -->
-    <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
-        <span class="toolbar-dropdown-label">{{ dropdown.label }}:</span>
-        <span class="toolbar-dropdown-value">{{ dropdown.selectedLabel }}</span>
-      </button>
-      <div class="dropdown-menu" :aria-labelledby="dropdown.id">
-        <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+    <div class="toolbar-filters">
+      <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown toolbar-filter">
+        <button class="dropdown-toggle toolbar-filter-button" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="toolbar-filter-label">{{ dropdown.label }}:</span>
+          <span class="toolbar-filter-value">{{ dropdown.selectedLabel }}</span>
+        </button>
+        <div class="dropdown-menu" :aria-labelledby="dropdown.id">
+          <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+        </div>
       </div>
     </div>
 
-    <button v-if="isAIEnabled" type="button" class="chat-button" @click="chatAssistant">
-      <BootstrapIcon icon="chat-dots" />
-      <span>
-        {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
-      </span>
-    </button>
-    <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid, 'compact-search-open': isCompactSearchOpen }">
-      <span class="search-icon" aria-hidden="true">
+    <div class="toolbar-actions">
+      <button v-if="isAIEnabled" type="button" class="toolbar-chat-button" @click="chatAssistant">
+        <BootstrapIcon icon="chat-dots" />
+        <span>
+          {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
+        </span>
+      </button>
+      <div class="toolbar-search" :class="{ 'toolbar-search-invalid': isSearchQueryInvalid, 'toolbar-search-open': isCompactSearchOpen }">
+        <span class="toolbar-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
+          </svg>
+        </span>
+        <input
+          ref="searchInput"
+          type="text"
+          v-model="$store.data.searchQuery"
+          @input="debounceSearchEvent"
+          @keydown.esc="closeCompactSearch"
+          placeholder="Search for words or tag:name, title:text, etc."
+          autocomplete="off"
+          class="toolbar-search-input"
+          :class="{ 'toolbar-search-input-invalid': isSearchQueryInvalid }"
+          :title="searchQueryError"
+        />
+      </div>
+      <button type="button" class="toolbar-search-button" title="Search" @click="toggleCompactSearch">
         <svg viewBox="0 0 16 16" aria-hidden="true">
           <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
         </svg>
-      </span>
-      <input
-        ref="searchInput"
-        type="text"
-        v-model="$store.data.searchQuery"
-        @input="debounceSearchEvent"
-        @keydown.esc="closeCompactSearch"
-        placeholder="Search for words or tag:name, title:text, etc."
-        autocomplete="off"
-        :class="{ 'input-invalid': isSearchQueryInvalid }"
-        :title="searchQueryError"
-      />
-    </div>
-    <button type="button" class="search-button" title="Search" @click="toggleCompactSearch">
-      <svg viewBox="0 0 16 16" aria-hidden="true">
-        <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
-      </svg>
-    </button>
-    <button type="button" class="theme-icon" title="Toggle light and dark mode" @click="toggleTheme">
-      <BootstrapIcon icon="brightness-high" size="20" />
-    </button>
-    <div class="settings-icon" @click="settingsClicked" title="Settings">
-      <BootstrapIcon icon="gear-fill" size="20" />
+      </button>
+      <button type="button" class="toolbar-theme-button" title="Toggle light and dark mode" @click="toggleTheme">
+        <BootstrapIcon icon="brightness-high" size="20" />
+      </button>
+      <div class="toolbar-settings-button" @click="settingsClicked" title="Settings">
+        <BootstrapIcon icon="gear-fill" size="20" />
+      </div>
     </div>
     <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
-  </div>
+  </nav>
 </template>
 
 <style scoped>
-.toolbar {
+.desktop-toolbar {
   height: 56px;
   box-sizing: border-box;
   border-bottom: 1px solid transparent;
@@ -68,7 +73,18 @@
   padding-left: clamp(16px, 2vw, 28px);
 }
 
-.toolbar-dropdown {
+.toolbar-filters,
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.toolbar-actions {
+  flex: 1;
+}
+
+.toolbar-filter-button {
   background: transparent;
   border: none;
   color: inherit;
@@ -81,38 +97,38 @@
 
 }
 
-.toolbar > .dropdown {
+.toolbar-filters > .toolbar-filter {
   margin-right: clamp(6px, 1.5vw, 32px);
 }
 
 @media (max-width: 1080px) {
-  .toolbar > .dropdown {
+  .toolbar-filters > .toolbar-filter {
     margin-right: clamp(0px, calc(3.846vw - 29.538px), 12px);
   }
 
-  .toolbar-dropdown {
+  .toolbar-filter-button {
     padding-right: 5px;
     padding-left: 5px;
   }
 
-  .toolbar-dropdown-label {
+  .toolbar-filter-label {
     display: none;
   }
 }
 
-.toolbar-dropdown-label {
+.toolbar-filter-label {
   color: var(--text-muted);
 }
 
-.toolbar-dropdown-value {
+.toolbar-filter-value {
   margin-left: 4px;
   color: var(--toolbar-text);
   font-weight: 500;
 }
 
-.toolbar-dropdown:focus,
-.toolbar-dropdown:active,
-.toolbar-dropdown:focus-visible {
+.toolbar-filter-button:focus,
+.toolbar-filter-button:active,
+.toolbar-filter-button:focus-visible {
   outline: none;
   box-shadow: none;
 }
@@ -134,8 +150,8 @@
   border-radius: 4px;
 }
 
-.settings-icon,
-.theme-icon {
+.toolbar-settings-button,
+.toolbar-theme-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -153,84 +169,84 @@
   font-size: 20px;
 }
 
-.theme-icon {
+.toolbar-theme-button {
   right: 64px;
 }
 
-:global(:root[data-theme='dark'] .theme-icon) {
+:global(:root[data-theme='dark'] .toolbar-theme-button) {
   color: var(--text-inverted);
   background-color: var(--bg-control);
   border-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark'] .toolbar) {
+:global(:root[data-theme='dark'] .desktop-toolbar) {
   background-color: var(--bg-modal);
 }
 
-:global(:root[data-theme='dark'] .theme-icon:hover) {
+:global(:root[data-theme='dark'] .toolbar-theme-button:hover) {
   background-color: var(--toolbar-settings-hover-background-dark);
 }
 
-:global(:root[data-theme='dark'] .settings-icon),
-:global(:root[data-theme='dark'] .chat-button),
-:global(:root[data-theme='dark'] .search-button) {
+:global(:root[data-theme='dark'] .toolbar-settings-button),
+:global(:root[data-theme='dark'] .toolbar-chat-button),
+:global(:root[data-theme='dark'] .toolbar-search-button) {
   color: var(--text-inverted);
   background-color: var(--bg-control);
   border-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark'] .settings-icon:hover),
-:global(:root[data-theme='dark'] .chat-button:hover),
-:global(:root[data-theme='dark'] .search-button:hover) {
+:global(:root[data-theme='dark'] .toolbar-settings-button:hover),
+:global(:root[data-theme='dark'] .toolbar-chat-button:hover),
+:global(:root[data-theme='dark'] .toolbar-search-button:hover) {
   background-color: var(--toolbar-settings-hover-background-dark);
 }
 
-:global(:root[data-theme='dark'] .search-wrap) {
+:global(:root[data-theme='dark'] .toolbar-search) {
   border-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark'] .toolbar-dropdown::after) {
+:global(:root[data-theme='dark'] .toolbar-filter-button::after) {
   color: var(--text-inverted);
   border-top-color: currentColor;
 }
 
-:global(:root[data-theme='dark'] .toolbar .dropdown-menu.show) {
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu.show) {
   background-color: var(--bg-modal);
   border-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark'] .toolbar .dropdown-menu .dropdown-item) {
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item) {
   color: var(--text-secondary);
 }
 
-:global(:root[data-theme='dark'] .toolbar .dropdown-menu .dropdown-item:hover),
-:global(:root[data-theme='dark'] .toolbar .dropdown-menu .dropdown-item.active) {
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item:hover),
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item.active) {
   color: var(--text-inverted);
   background-color: var(--toolbar-active-background);
 }
 
 @media (max-width: 1120px) {
-  :global(:root[data-theme='dark'] .settings-icon),
-  :global(:root[data-theme='dark'] .theme-icon) {
+  :global(:root[data-theme='dark'] .toolbar-settings-button),
+  :global(:root[data-theme='dark'] .toolbar-theme-button) {
     box-shadow: 0 0 0 8px var(--bg-control);
   }
 }
 
-.settings-icon:hover,
-.theme-icon:hover {
+.toolbar-settings-button:hover,
+.toolbar-theme-button:hover {
   background-color: var(--border-input);
 }
 
-.settings-icon svg,
-.theme-icon svg,
-.search-button svg {
+.toolbar-settings-button svg,
+.toolbar-theme-button svg,
+.toolbar-search-button svg {
   display: block;
   margin-bottom: 0;
   width: 20px;
   height: 20px;
 }
 
-.chat-button {
+.toolbar-chat-button {
   height: 36px;
   padding: 0 18px;
   border: 1px solid #E5E7EB;
@@ -248,11 +264,11 @@
   flex-shrink: 0;
 }
 
-.chat-button:hover {
+.toolbar-chat-button:hover {
   background-color: var(--bg-hover);
 }
 
-.search-wrap {
+.toolbar-search {
   flex: 0 1 clamp(320px, 40vw, 620px);
   min-width: 0;
   box-sizing: border-box;
@@ -267,19 +283,19 @@
   border-radius: 8px;
 }
 
-.search-icon {
+.toolbar-search-icon {
   display: flex;
   flex-shrink: 0;
   color: var(--text-muted);
 }
 
-.search-icon svg {
+.toolbar-search-icon svg {
   width: 16px;
   height: 16px;
   fill: currentColor;
 }
 
-.search-wrap input {
+.toolbar-search-input {
   width: 100%;
   min-width: 0;
   height: 100%;
@@ -290,70 +306,70 @@
   border: none;
 }
 
-.search-wrap input::placeholder {
+.toolbar-search-input::placeholder {
   color: var(--text-muted);
 }
 
-.search-wrap input:focus {
+.toolbar-search-input:focus {
   outline: none;
 }
 
-.search-wrap.invalid {
+.toolbar-search.toolbar-search-invalid {
   background-color: var(--bg-danger-subtle);
 }
 
-.search-wrap.invalid input.input-invalid {
+.toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid {
   color: var(--text-danger);
 }
 
-.search-wrap.invalid input.input-invalid::placeholder {
+.toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid::placeholder {
   color: var(--text-danger-placeholder);
 }
 
-.search-wrap input.input-invalid {
+.toolbar-search-input.toolbar-search-input-invalid {
   background-color: var(--bg-danger-subtle);
   color: var(--text-danger);
   border-color: var(--border-danger-subtle);
 }
 
-.search-wrap input.input-invalid::placeholder {
+.toolbar-search-input.toolbar-search-input-invalid::placeholder {
   color: var(--text-danger-placeholder);
 }
 
-.search-button {
+.toolbar-search-button {
   display: none;
 }
 
 @media (min-width: 768px) {
-  .toolbar {
+  .desktop-toolbar {
     left: 268px;
   }
 }
 
 @media (min-width: 1600px) {
-  .search-wrap {
+  .toolbar-search {
     margin-left: 0;
   }
 }
 
 @media (max-width: 1120px) {
-  .search-wrap {
+  .toolbar-search {
     margin-right: 128px;
   }
 
-  .settings-icon,
-  .theme-icon {
+  .toolbar-settings-button,
+  .toolbar-theme-button {
     z-index: 1;
     box-shadow: 0 0 0 8px #FEFEFE;
   }
 }
 
 @media (max-width: 1199px) {
-  .search-wrap {
+  .toolbar-search {
     display: none;
   }
 
-  .search-wrap.compact-search-open {
+  .toolbar-search.toolbar-search-open {
     display: flex;
     position: fixed;
     top: 64px;
@@ -364,7 +380,7 @@
     z-index: 1001;
   }
 
-  .search-button {
+  .toolbar-search-button {
     display: inline-flex;
     align-items: center;
     justify-content: center;
@@ -381,7 +397,7 @@
     z-index: 1;
   }
 
-  .search-button svg {
+  .toolbar-search-button svg {
     width: 16px;
     height: 16px;
     fill: currentColor;
@@ -389,7 +405,7 @@
 }
 
 @media (max-width: 1149px) {
-  .chat-button {
+  .toolbar-chat-button {
     position: fixed;
     top: 10px;
     right: 176px;
@@ -403,13 +419,13 @@
     z-index: 1;
   }
 
-  .chat-button span {
+  .toolbar-chat-button span {
     display: none;
   }
 }
 
 @media (prefers-color-scheme: dark) {
-  .toolbar,
+  .desktop-toolbar,
   .dropdownmenu .item {
     color: var(--text-inverted);
     background: var(--bg-control);
@@ -421,7 +437,7 @@
     border-left: 1px solid var(--text-inverted);
   }
 
-  .chat-button {
+  .toolbar-chat-button {
     color: var(--text-inverted);
     background: var(--bg-control);
     border-color: var(--border-color);
@@ -446,27 +462,27 @@
     color: var(--text-inverted);
   }
 
-  .settings-icon,
-  .theme-icon {
+  .toolbar-settings-button,
+  .toolbar-theme-button {
     color: var(--text-inverted);
     background-color: var(--bg-control);
     border-color: var(--border-color);
   }
 
-  .settings-icon:hover,
-  .theme-icon:hover {
+  .toolbar-settings-button:hover,
+  .toolbar-theme-button:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
   }
 
   @media (max-width: 1120px) {
-    .settings-icon,
-    .theme-icon {
+    .toolbar-settings-button,
+    .toolbar-theme-button {
       box-shadow: 0 0 0 8px var(--bg-control);
     }
   }
 
   @media (max-width: 1199px) {
-    .search-button {
+    .toolbar-search-button {
       color: var(--text-inverted);
       background-color: var(--bg-control);
       border-color: var(--border-color);
@@ -477,7 +493,7 @@
     color: var(--text-inverted);
   }
 
-  .toolbar-dropdown-value {
+  .toolbar-filter-value {
     color: var(--text-inverted);
   }
 
@@ -487,30 +503,30 @@
     border-left: 1px solid var(--text-inverted);
   }
 
-  .search-wrap {
+  .toolbar-search {
     background-color: var(--toolbar-search-background-dark);
     border-color: var(--border-input);
   }
 
-  .search-wrap input {
+  .toolbar-search-input {
     color: var(--text-inverted);
     background: transparent;
   }
 
-  .search-wrap input::placeholder {
+  .toolbar-search-input::placeholder {
     color: var(--text-muted);
   }
 
-  .search-wrap.invalid {
+  .toolbar-search.toolbar-search-invalid {
     background-color: var(--bg-danger-subtle);
   }
 
-  .search-wrap.invalid input.input-invalid {
+  .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid {
     color: var(--text-danger);
     border-color: var(--border-danger-subtle);
   }
 
-  .search-wrap.invalid input.input-invalid::placeholder {
+  .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid::placeholder {
     color: var(--text-danger);
   }
 }
