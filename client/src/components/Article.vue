@@ -1,7 +1,7 @@
 <template>
-  <div class="block" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }" v-bind="filteredAttrs">
-    <div class="article" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
-      <div class="maximal">
+  <div class="article-card" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }" v-bind="filteredAttrs">
+    <div class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
+      <div class="article-layout">
         <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <div class="meta-row">
           <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
@@ -356,70 +356,70 @@ export default {
 </script>
 
 <style>
-.block .article-body iframe {
+.article-card .article-full-content iframe {
   display: none;
 }
 
 /* Override css that comes from other websites */
-.article-content img, .article-content div {
+.article-content-wrapper img, .article-content-wrapper div {
   float: none !important;
 }
 
 /* Override css that comes from other websites */
-.article-content iframe {
+.article-content-wrapper iframe {
     width: 100% !important;
     height: auto !important;
 }
 
 /* Override css that comes from other websites */
-.article {
+.article-body {
   max-width: 100% !important;
 }
 
-.block .article-content img, .block .article-content figure {
+.article-card .article-content-wrapper img, .article-card .article-content-wrapper figure {
   display: block;
   max-width: 100% !important;
   height: auto !important;
   margin-bottom: 10px !important;
 }
 
-.block .article-content figure {
+.article-card .article-content-wrapper figure {
   margin: 0 0 10px !important;
   padding: 0 !important;
 }
 
-.block .article-content figure video,
-.block .article-content video {
+.article-card .article-content-wrapper figure video,
+.article-card .article-content-wrapper video {
   width: 100% !important;
   height: auto !important;
   display: block;
 }
 
-.block .article-content figure.wp-block-video {
+.article-card .article-content-wrapper figure.wp-block-video {
   max-width: 100% !important;
   width: 100% !important;
 }
 
-.block .article-content p {
+.article-card .article-content-wrapper p {
   display: inline !important;
 }
 
 /* Remove position: relative from all elements in article body */
-.article-body * {
+.article-full-content * {
   position: static !important;
 }
 </style>
 
 <style>
-.article.affinity-muted {
+.article-body.affinity-muted {
   opacity: 0.55;
 }
 
-.article.affinity-compact h5 a {
+.article-body.affinity-compact h5 a {
   font-size: 17px;
 }
 
-.article.affinity-expanded h5 a {
+.article-body.affinity-expanded h5 a {
   font-size: 20px;
 }
 
@@ -445,11 +445,11 @@ export default {
 
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  .block {
+  .article-card {
     padding-top: 2px;
   }
 
-  .article {
+  .article-body {
     display: inline-block;
     position: relative;
     margin-top: 2px;
@@ -458,29 +458,29 @@ export default {
 
 /* Landscape phones and portrait tablets */
 @media (min-width: 767px) {
-  .block {
+  .article-card {
     padding-top: 4px;
   }
 }
 
-.block {
+.article-card {
   margin-bottom: 0px;
 }
 
-.block.cluster-article {
+.article-card.cluster-article {
   background-color: var(--article-cluster-background);
 }
 
-.block.cluster-article .article {
+.article-card.cluster-article .article-body {
   background-color: var(--article-cluster-background);
 }
 
-.block .article.hot {
+.article-card .article-body.hot {
   background-color: var(--article-hot-background);
   border-color: var(--article-highlight-border);
 }
 
-.block .article.starred {
+.article-card .article-body.starred {
   background-color: var(--desktop-toolbar-background);
 }
 
@@ -529,7 +529,7 @@ export default {
   opacity: 0.8;
 }
 
-.block .article {
+.article-card .article-body {
   padding: 4px 48px 4px 16px;
   font-family: var(--font-family);
   margin-top: 6px;
@@ -538,39 +538,39 @@ export default {
   width: 100%;
 }
 
-:root[data-theme='dark'] .block .article {
+:root[data-theme='dark'] .article-card .article-body {
   background-color: var(--dark-page-surface);
   border-bottom-color: var(--border-color);
 }
 
-:root[data-theme='dark'] .block .article h5 a {
+:root[data-theme='dark'] .article-card .article-body h5 a {
   color: var(--text-inverted);
 }
 
-:root[data-theme='dark'] .block .article-body {
+:root[data-theme='dark'] .article-card .article-full-content {
   color: var(--text-inverted);
 }
 
-:root[data-theme='dark'] .block.cluster-article,
-:root[data-theme='dark'] .block.cluster-article .article,
-:root[data-theme='dark'] .block.cluster-article .article-content,
-:root[data-theme='dark'] .block.cluster-article h5.heading,
-:root[data-theme='dark'] .block.cluster-article .article-meta {
+:root[data-theme='dark'] .article-card.cluster-article,
+:root[data-theme='dark'] .article-card.cluster-article .article-body,
+:root[data-theme='dark'] .article-card.cluster-article .article-content-wrapper,
+:root[data-theme='dark'] .article-card.cluster-article h5.article-header,
+:root[data-theme='dark'] .article-card.cluster-article .article-meta {
   background-color: var(--article-cluster-background-dark);
 }
 
-:root[data-theme='dark'] .block .article-meta,
-:root[data-theme='dark'] .block .article-meta .published_date,
-:root[data-theme='dark'] .block .article-meta .feed_name a {
+:root[data-theme='dark'] .article-card .article-meta,
+:root[data-theme='dark'] .article-card .article-meta .published_date,
+:root[data-theme='dark'] .article-card .article-meta .article-source a {
   color: var(--text-secondary);
 }
 
-:root[data-theme='dark'] .block .menu-icon-wrapper .btn {
+:root[data-theme='dark'] .article-card .article-actions .btn {
   color: var(--text-secondary);
   opacity: 0.9;
 }
 
-.block .meta-row {
+.article-card .meta-row {
   display: flex;
   align-items: center;
   justify-content: flex-start;
@@ -578,7 +578,7 @@ export default {
   gap: 12px;
   margin-top: 6px;
 }
-.block .article-content {
+.article-card .article-content-wrapper {
   color: #111827;
   padding-top: 6px;
   font-size: 14px;
@@ -590,7 +590,7 @@ export default {
   padding-bottom: 6px;
 }
 
-.block .article-body {
+.article-card .article-full-content {
   font-family: var(--font-family);
   color: #1F2937;
   font-size: 14px;
@@ -598,7 +598,7 @@ export default {
   font-weight: 400;
 }
 
-.block .article h5 a {
+.article-card .article-body h5 a {
   margin: 0;
   color: #111827;
   font-size: 20px;
@@ -611,13 +611,13 @@ export default {
   align-items: center;
 }
 
-.block .article h5.heading {
+.article-card .article-body h5.article-header {
   margin: 0;
   line-height: 1;
   margin-bottom: 8px;
 }
 
-.heading-content {
+.article-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -625,22 +625,22 @@ export default {
   gap: 8px;
 }
 
-.heading-left {
+.article-header-left {
   display: flex;
   align-items: center;
   flex: 1;
   min-width: 0;
 }
 
-.heading-left svg {
+.article-header-left svg {
   margin-bottom: 0 !important;
 }
 
-.block .dropdown {
+.article-card .dropdown {
   position: relative;
 }
 
-.block .dropdown .btn {
+.article-card .dropdown .btn {
   width: 30px !important;
   height: 30px !important;
   padding: 0 !important;
@@ -653,26 +653,26 @@ export default {
   transition: opacity 0.2s;
 }
 
-.block .dropdown .btn:hover {
+.article-card .dropdown .btn:hover {
   opacity: 1;
   background-color: transparent !important;
 }
 
-.block .dropdown-menu {
+.article-card .dropdown-menu {
   min-width: 120px !important;
 }
 
-.block .dropdown-item {
+.article-card .dropdown-item {
   padding: 6px 8px !important;
   font-size: 13px !important;
 }
 
-.block .dropdown-item:hover,
-.block .dropdown-item:focus {
+.article-card .dropdown-item:hover,
+.article-card .dropdown-item:focus {
   color: var(--text-inverted) !important;
 }
 
-.block .article-meta {
+.article-card .article-meta {
   display: flex;
   align-items: center;
   flex-wrap: wrap;
@@ -683,7 +683,7 @@ export default {
   margin: 0;
 }
 
-.block .article-tags-scores {
+.article-card .article-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -691,7 +691,7 @@ export default {
   margin: 0;
 }
 
-.block .article-tags-scores .category-badge {
+.article-card .article-tags .tag-badge {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-category-badge-background);
@@ -706,7 +706,7 @@ export default {
   vertical-align: middle;
 }
 
-.block .article-tags-scores .tag {
+.article-card .article-tags .tag {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-tag-background);
@@ -720,12 +720,12 @@ export default {
   vertical-align: middle;
 }
 
-.block .article-tags-scores .tag.tag-rule {
+.article-card .article-tags .tag.tag-rule {
   background-color: var(--article-rule-tag-background);
   color: var(--article-rule-tag-text);
 }
 
-.block .article-tags-scores .score {
+.article-card .article-tags .score {
   display: inline-flex;
   align-items: center;
   padding: 3px 8px;
@@ -739,66 +739,66 @@ export default {
   vertical-align: middle;
 }
 
-.block .article-tags-scores .overall-score {
+.article-card .article-tags .overall-score {
   background-color: var(--article-overall-score-background);  /* Pale red */
   color: var(--article-overall-score-text);             /* Darker red */
 }
 
-.block .article-tags-scores .ad-score {
+.article-card .article-tags .ad-score {
   background-color: var(--article-ad-score-background);
   color: var(--article-ad-score-text);
 }
 
-.block .article-tags-scores .sentiment-score {
+.article-card .article-tags .sentiment-score {
   background-color: var(--article-sentiment-score-background);
   color: var(--article-sentiment-score-text);
 }
 
-.block .article-tags-scores .quality-score {
+.article-card .article-tags .quality-score {
   background-color: var(--article-quality-background);
   color: var(--article-quality-positive);
 }
 
-.article-content h1 {
+.article-content-wrapper h1 {
   font-size: 24px !important;
   line-height: 1.2;
 }
 
-.article-content h2 {
+.article-content-wrapper h2 {
   font-size: 20px !important;
 }
 
-.article-content h3 {
+.article-content-wrapper h3 {
   font-size: 18px !important;
 }
 
-.article:hover {
+.article-body:hover {
     background: #fafafa;
 }
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
-  .block .article-meta {
+  .article-card .article-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     gap: 8px;
   }
 
-  .block .article-tags-scores .tag {
+  .article-card .article-tags .tag {
     display: none;
   }
 
-  .block .article-tags-scores .score {
+  .article-card .article-tags .score {
     display: none;
   }
 
-  .block .article h5 a {
+  .article-card .article-body h5 a {
     font-size: 18px;
   }
 }
 
-.block.active {
+.article-card.active {
   background-color: var(--article-active-background);
 }
 
@@ -807,8 +807,8 @@ export default {
   margin-top: -1px;
 }
 
-.block .article-meta .published_date,
-.block .article-meta .feed_name a {
+.article-card .article-meta .published_date,
+.article-card .article-meta .article-source a {
   color: #6B7280;
 }
 
@@ -820,23 +820,23 @@ export default {
 }
 
 /* Override css that comes from other websites */
-.block .article-content img {
+.article-card .article-content-wrapper img {
   max-width: 100%;
   height: auto !important;
   margin-top: 10px;
 }
 
-span.feed_name {
+span.article-source {
   margin-left: -3px;
   margin-top: -1px;
   margin-right: 10px;
 }
 
-span.feed_name a {
+span.article-source a {
   text-decoration: none;
 }
 
-span.cluster {
+span.similar-badge {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-cluster-background);
@@ -851,7 +851,7 @@ span.cluster {
   vertical-align: middle;
 }
 
-.source-diversity-badge {
+.source-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
@@ -866,52 +866,52 @@ span.cluster {
   vertical-align: middle;
 }
 
-:root[data-theme='dark'] .source-diversity-badge {
+:root[data-theme='dark'] .source-badge {
   background-color: var(--article-quality-background-dark);
   color: var(--article-quality-good-dark);
 }
 
-:root[data-theme='dark'] span.cluster {
+:root[data-theme='dark'] span.similar-badge {
   background-color: var(--article-cluster-background-dark);
   color: var(--article-link-dark);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .category-badge {
+:root[data-theme='dark'] .article-card .article-tags .tag-badge {
   background-color: var(--bg-control);
   color: var(--text-secondary);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .tag {
+:root[data-theme='dark'] .article-card .article-tags .tag {
   background-color: var(--article-tag-background-dark);
   color: var(--article-tag-text-dark);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .tag.tag-rule {
+:root[data-theme='dark'] .article-card .article-tags .tag.tag-rule {
   background-color: var(--article-rule-tag-background-dark);
   color: var(--article-rule-tag-text-dark);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .score {
+:root[data-theme='dark'] .article-card .article-tags .score {
   background-color: var(--bg-modal);
   color: var(--text-secondary);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .overall-score {
+:root[data-theme='dark'] .article-card .article-tags .overall-score {
   background-color: var(--article-overall-score-background-dark);
   color: var(--article-quality-poor-dark);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .ad-score {
+:root[data-theme='dark'] .article-card .article-tags .ad-score {
   background-color: var(--article-ad-score-background-dark);
   color: var(--article-ad-score-text-dark);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .sentiment-score {
+:root[data-theme='dark'] .article-card .article-tags .sentiment-score {
   background-color: var(--article-sentiment-background-dark);
   color: var(--article-sentiment-score-text-dark);
 }
 
-:root[data-theme='dark'] .block .article-tags-scores .quality-score {
+:root[data-theme='dark'] .article-card .article-tags .quality-score {
   background-color: var(--article-quality-background-dark);
   color: var(--article-quality-excellent);
 }
@@ -991,7 +991,7 @@ span.cluster {
   color: var(--text-danger-placeholder);
 }
 
-.block span.favicon img.favicon {
+.article-card span.favicon img.favicon {
   margin-right: 5px;
   height: 18px;
   width: 18px;
@@ -1041,13 +1041,13 @@ span.cluster {
   padding-bottom: 5px;
 }
 
-.summary-bullets {
+.article-summary {
   margin: 5px 0;
   padding-left: 20px;
   list-style-type: disc;
 }
 
-.summary-bullets li {
+.article-summary li {
   color: var(--article-content-text);
   font-family: var(--font-family);
   font-size: 14px;
@@ -1056,13 +1056,13 @@ span.cluster {
 }
 
 @media (prefers-color-scheme: dark) {
-  .summary-bullets li {
+  .article-summary li {
     color: var(--text-inverted);
   }
 }
 
 @media (prefers-color-scheme: dark) {
-  .block, .block .article, .article-content, h5.heading, .block .article-meta {
+  .article-card, .article-card .article-body, .article-content-wrapper, h5.article-header, .article-card .article-meta {
     color: var(--text-inverted);
     background: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
@@ -1070,70 +1070,70 @@ span.cluster {
     background-color: var(--dark-page-surface);
   }
 
-  .block a, .block .article h5 a, .block .article-content, .block span.feed_name a {
+  .article-card a, .article-card .article-body h5 a, .article-card .article-content-wrapper, .article-card span.article-source a {
     color: var(--text-inverted);
   }
 
-  .block {
+  .article-card {
     border-bottom-color: var(--dark-page-surface);
     background: var(--article-surface-dark);
   }
 
   /* Landscape phones and portrait tablets */
   @media (max-width: 766px) {
-    .block {
+    .article-card {
       background: var(--article-surface-dark);
     }
   }
 
-  .article h1.heading, .article h2.heading {
+  .article-body h1.article-header, .article-body h2.article-header {
     color: var(--text-inverted);
   }
 
-  .article h1.heading a {
+  .article-body h1.article-header a {
     color: var(--text-inverted);
   }
 
-  .block .article {
+  .article-card .article-body {
     border-bottom-color: var(--dark-contrast);
     border-width: 0px;
     border-radius: 0px;
   }
 
-  .block .article.hot {
+  .article-card .article-body.hot {
     background-color: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
   }
 
-  .block .article.starred {
+  .article-card .article-body.starred {
     background-color: var(--dark-page-surface);
   }
 
-  .block.cluster-article {
+  .article-card.cluster-article {
     background-color: var(--article-cluster-background-dark);
   }
 
-  .block.cluster-article .article {
+  .article-card.cluster-article .article-body {
     background-color: var(--article-cluster-background-dark);
   }
 
-  .block.cluster-article .article-content,
-  .block.cluster-article h5.heading,
-  .block.cluster-article .article-meta {
+  .article-card.cluster-article .article-content-wrapper,
+  .article-card.cluster-article h5.article-header,
+  .article-card.cluster-article .article-meta {
     background-color: var(--article-cluster-background-dark);
   }
 
-  .block .article-tags-scores .tag {
+  .article-card .article-tags .tag {
     background-color: var(--article-tag-background-dark);
     color: var(--article-tag-text-dark);
   }
 
-  .block .article-tags-scores .category-badge {
+  .article-card .article-tags .tag-badge {
     background-color: var(--bg-control);
     color: var(--text-secondary);
   }
 
-  .block .article-tags-scores .tag.tag-rule {
+  .article-card .article-tags .tag.tag-rule {
     background-color: var(--article-rule-tag-background-dark);
     color: var(--article-rule-tag-text-dark);
   }
@@ -1143,47 +1143,47 @@ span.cluster {
     color: var(--article-rule-tag-text-dark);
   }
 
-  .block .article-tags-scores .score {
+  .article-card .article-tags .score {
     background-color: var(--bg-modal);
     color: var(--text-secondary);
   }
 
- .block .article-tags-scores .overall-score {
+ .article-card .article-tags .overall-score {
     background-color: var(--article-overall-score-background-dark);  /* Dark reddish-brown */
     color: var(--article-quality-poor-dark);             /* Bright red */
   }
 
-  .block .dropdown .btn {
+  .article-card .dropdown .btn {
     color: var(--text-inverted);
     opacity: 0.9;
   }
 
-  .block .dropdown-menu {
+  .article-card .dropdown-menu {
     background-color: var(--article-dropdown-background-dark);
     border-color: var(--bg-modal);
   }
 
-  .block .dropdown-item {
+  .article-card .dropdown-item {
     color: var(--text-inverted) !important;
   }
 
-  .block .dropdown-item:hover,
-  .block .dropdown-item:focus {
+  .article-card .dropdown-item:hover,
+  .article-card .dropdown-item:focus {
     background-color: var(--bg-modal);
     color: var(--text-inverted) !important;
   }
 
-  .block .article-tags-scores .ad-score {
+  .article-card .article-tags .ad-score {
     background-color: var(--article-ad-score-background-dark);
     color: var(--article-ad-score-text-dark);
   }
 
-  .block .article-tags-scores .sentiment-score {
+  .article-card .article-tags .sentiment-score {
     background-color: var(--article-sentiment-background-dark);
     color: var(--article-sentiment-score-text-dark);
   }
 
-  .block .article-tags-scores .quality-score {
+  .article-card .article-tags .quality-score {
     background-color: var(--article-quality-background-dark);
     color: var(--article-quality-excellent);
   }
@@ -1258,7 +1258,7 @@ span.cluster {
     background: var(--dark-contrast);
   }
 
-  .source-diversity-badge {
+  .source-badge {
     background-color: var(--article-quality-background-dark);
     color: var(--article-quality-excellent);
   }

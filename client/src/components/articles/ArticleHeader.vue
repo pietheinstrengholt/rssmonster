@@ -1,7 +1,7 @@
 <template>
-  <h5 class="heading">
-    <div class="heading-content">
-      <div class="heading-left">
+  <h5 class="article-header">
+    <div class="article-header-row">
+      <div class="article-header-left">
         <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="article-kind-icon clicked-icon" />
         <BootstrapIcon v-if="starInd === 1" icon="heart-fill" class="article-kind-icon star-icon" />
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />

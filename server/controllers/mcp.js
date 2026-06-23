@@ -34,17 +34,17 @@ function generateArticlesHtml(articles, options = {}) {
   
   if (articles.length > 0) {
     articles.forEach(article => {
-      html += `<div class="block" id="${article.id}">`;
-      html += '<div class="article">';
-      html += '<div class="maximal">';
-      html += '<h5 class="heading">';
+      html += `<div class="article-card" id="${article.id}">`;
+      html += '<div class="article-body">';
+      html += '<div class="article-layout">';
+      html += '<h5 class="article-header">';
       html += `${emoji ? emoji + ' ' : ''}<a target="_blank" href="${article.url || '#'}">${article.title || 'No Title'}</a>`;
       html += '</h5>';
       html += '<div class="feedname">';
       html += `<span class="published_date">${article.published ? new Date(article.published).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;
       if (article.author || feedName) {
         html += '<span class="break">by</span>';
-        html += '<span class="feed_name">';
+        html += '<span class="article-source">';
         if (feedName && feedUrl) {
           html += `<a target="_blank" href="${feedUrl}">${feedName}</a>`;
         } else if (article.author) {
@@ -54,8 +54,8 @@ function generateArticlesHtml(articles, options = {}) {
       }
       html += '</div>';
       html += '</div>';
-      html += '<div class="article-content">';
-      html += `<div class="article-body">${article.content || ''}</div>`;
+      html += '<div class="article-content-wrapper">';
+      html += `<div class="article-full-content">${article.content || ''}</div>`;
       html += '</div>';
       html += '</div>';
       html += '</div>';
