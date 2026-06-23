@@ -538,6 +538,32 @@ export default {
   width: 100%;
 }
 
+:root[data-theme='dark'] .block .article {
+  background-color: var(--dark-page-surface);
+  border-bottom-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .block .article h5 a {
+  color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .block .article-body {
+  color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .block.cluster-article,
+:root[data-theme='dark'] .block.cluster-article .article,
+:root[data-theme='dark'] .block.cluster-article .article-content,
+:root[data-theme='dark'] .block.cluster-article h5.heading,
+:root[data-theme='dark'] .block.cluster-article .article-meta {
+  background-color: var(--article-cluster-background-dark);
+}
+
+:root[data-theme='dark'] .block .article-meta,
+:root[data-theme='dark'] .block .article-meta .published_date,
+:root[data-theme='dark'] .block .article-meta .feed_name a {
+  color: var(--text-secondary);
+}
 
 .block .meta-row {
   display: flex;
@@ -816,6 +842,56 @@ span.cluster {
   color: var(--article-quality-positive);
   white-space: nowrap;
   vertical-align: middle;
+}
+
+:root[data-theme='dark'] .source-diversity-badge {
+  background-color: var(--article-quality-background-dark);
+  color: var(--article-quality-good-dark);
+}
+
+:root[data-theme='dark'] span.cluster {
+  background-color: var(--article-cluster-background-dark);
+  color: var(--article-link-dark);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .category-badge {
+  background-color: var(--bg-control);
+  color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .tag {
+  background-color: var(--article-tag-background-dark);
+  color: var(--article-tag-text-dark);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .tag.tag-rule {
+  background-color: var(--article-rule-tag-background-dark);
+  color: var(--article-rule-tag-text-dark);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .score {
+  background-color: var(--bg-modal);
+  color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .overall-score {
+  background-color: var(--article-overall-score-background-dark);
+  color: var(--article-quality-poor-dark);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .ad-score {
+  background-color: var(--article-ad-score-background-dark);
+  color: var(--article-ad-score-text-dark);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .sentiment-score {
+  background-color: var(--article-sentiment-background-dark);
+  color: var(--article-sentiment-score-text-dark);
+}
+
+:root[data-theme='dark'] .block .article-tags-scores .quality-score {
+  background-color: var(--article-quality-background-dark);
+  color: var(--article-quality-excellent);
 }
 
 .source-diversity-icon {

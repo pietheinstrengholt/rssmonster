@@ -147,6 +147,10 @@ export default {
   cursor: pointer;
 }
 
+:global(:root[data-theme='dark'] .mark-all-read) {
+  color: var(--text-inverted) !important;
+}
+
 @media (prefers-color-scheme: dark) {
   #articles {
     color: var(--text-inverted);
@@ -168,6 +172,10 @@ div.infinite-loading-container {
   padding-top: 30px;
   padding-bottom: 30px;
   text-align: center;
+}
+
+:root[data-theme='dark'] #no-more {
+  color: var(--text-inverted);
 }
 
 #no-more p {

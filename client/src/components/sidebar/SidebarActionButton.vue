@@ -156,4 +156,25 @@ const buttonClasses = computed(() => [props.variant]);
     fill: var(--text-inverted);
   }
 }
+
+:global(:root[data-theme='dark'] .option.refresh) {
+  color: var(--sidebar-action-refresh-text) !important;
+  background-color: var(--sidebar-action-refresh-background) !important;
+}
+
+:global(:root[data-theme='dark'] .option.refresh:hover) {
+  background-color: var(--color-primary-hover) !important;
+}
+
+:global(:root[data-theme='dark'] .option.addnew) {
+  color: var(--sidebar-action-add-text) !important;
+  background-color: var(--sidebar-action-add-background) !important;
+  border-color: var(--border-color) !important;
+}
+
+:global(:root[data-theme='dark'] .option.mark-as-read) {
+  color: var(--sidebar-action-mark-as-read-text) !important;
+  background-color: var(--sidebar-action-mark-as-read-background) !important;
+  border-color: var(--border-color) !important;
+}
 </style>
