@@ -791,8 +791,8 @@ span.feed_name a {
 span.cluster {
   display: inline-flex;
   align-items: center;
-  background-color: var(--article-category-badge-background);
-  color: var(--text-muted);
+  background-color: var(--article-cluster-background);
+  color: var(--article-cluster-text);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;

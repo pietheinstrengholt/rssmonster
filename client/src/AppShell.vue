@@ -62,7 +62,7 @@
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
   #sidebar,
-  #toolbar {
+  #desktop-toolbar {
     display: none;
   }
 

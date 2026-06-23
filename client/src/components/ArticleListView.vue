@@ -116,6 +116,13 @@ export default {
   left: 0;
 }
 
+/* This rule reduces the article offset below the mobile toolbar. */
+@media (max-width: 766px) {
+  #articles {
+    padding-top: 36px;
+  }
+}
+
 #articles.mobile-search-open {
   padding-top: 98px;
 }
