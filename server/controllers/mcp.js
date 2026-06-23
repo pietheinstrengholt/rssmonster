@@ -38,10 +38,10 @@ function generateArticlesHtml(articles, options = {}) {
       html += '<div class="article-body">';
       html += '<div class="article-layout">';
       html += '<h5 class="article-header">';
-      html += `${emoji ? emoji + ' ' : ''}<a target="_blank" href="${article.url || '#'}">${article.title || 'No Title'}</a>`;
+      html += `${emoji ? emoji + ' ' : ''}<a class="article-link" target="_blank" href="${article.url || '#'}">${article.title || 'No Title'}</a>`;
       html += '</h5>';
       html += '<div class="feedname">';
-      html += `<span class="published_date">${article.published ? new Date(article.published).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;
+      html += `<span class="article-published">${article.published ? new Date(article.published).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;
       if (article.author || feedName) {
         html += '<span class="break">by</span>';
         html += '<span class="article-source">';

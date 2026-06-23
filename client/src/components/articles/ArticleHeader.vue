@@ -7,7 +7,7 @@
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
         <BootstrapIcon v-if="hasInterestScore" icon="award-fill" class="article-kind-icon recommendation-icon" />
         <BootstrapIcon v-else-if="isEventClusterView && clusterCountTotal > 1" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
-        <a target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
+        <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </div>
       <ArticleActionsMenu :starInd="starInd" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @less-like-this="$emit('less-like-this')" @ignore-topic="$emit('ignore-topic')" @mute-feed="$emit('mute-feed')" />
     </div>

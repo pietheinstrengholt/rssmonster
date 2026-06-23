@@ -3,7 +3,7 @@
     <BootstrapIcon v-if="isMobilePortrait && quality !== undefined && roundedQuality !== neutralScore" :icon="getQualityIcon(roundedQuality)" :class="['mobile-score-icon', 'quality-icon', getQualityClass(roundedQuality)]" :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`" />
     <BootstrapIcon v-if="isMobilePortrait && advertisementScore !== undefined && advertisementScore < neutralScore" icon="megaphone-fill" class="mobile-score-icon ad-icon" :title="`Promotional content detected (score: ${advertisementScore})`" />
     <BootstrapIcon v-if="isMobilePortrait && sentimentScore !== undefined && sentimentScore < neutralScore" icon="arrow-down-circle-fill" :class="['mobile-score-icon', 'sentiment-icon', getSentimentClass(sentimentScore)]" :title="`Tone quality: ${sentimentScore}`" />
-    <span class="published_date">{{ formatDate(published) }}</span><span class="break">·</span>
+    <span class="article-published">{{ formatDate(published) }}</span><span class="break">·</span>
     <span class="article-source"><a target="_blank" :href="mainURL(feed.url)">{{ author || feed.feedName }}</a></span>
     <span v-if="cluster && clusterCountTotal > 1 && clusterView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
     <span v-if="cluster && clusterCountTotal > 1 && clusterView !== 'all'" class="similar-badge" @click.stop="$emit('view-cluster-articles', cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>

@@ -98,11 +98,20 @@ export default {
     this.teardownMediaQueryListener();
   },
   computed: {
-    // Removes oversized embedding attributes from the root element.
+    // Removes internal article metadata from the root element.
     filteredAttrs() {
       const attrs = { ...this.$attrs };
-      delete attrs.articlevector;
-      delete attrs.articleVector;
+      [
+        'articlevector',
+        'articleVector',
+        'contenthash',
+        'contentHash',
+        'description',
+        'embedding_model',
+        'embeddingModel',
+        'urlhash',
+        'urlHash'
+      ].forEach(attribute => delete attrs[attribute]);
       return attrs;
     },
     // Returns tags that were assigned by rules.
@@ -560,7 +569,7 @@ export default {
 }
 
 :root[data-theme='dark'] .article-card .article-meta,
-:root[data-theme='dark'] .article-card .article-meta .published_date,
+:root[data-theme='dark'] .article-card .article-meta .article-published,
 :root[data-theme='dark'] .article-card .article-meta .article-source a {
   color: var(--text-secondary);
 }
@@ -802,12 +811,12 @@ export default {
   background-color: var(--article-active-background);
 }
 
-.published_date {
+.article-published {
   margin-right: -3px;
   margin-top: -1px;
 }
 
-.article-card .article-meta .published_date,
+.article-card .article-meta .article-published,
 .article-card .article-meta .article-source a {
   color: #6B7280;
 }
@@ -839,8 +848,8 @@ span.article-source a {
 span.similar-badge {
   display: inline-flex;
   align-items: center;
-  background-color: var(--article-cluster-background);
-  color: var(--article-cluster-text);
+  background-color: var(--bg-info-code);
+  color: var(--text-info-code);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -872,8 +881,8 @@ span.similar-badge {
 }
 
 :root[data-theme='dark'] span.similar-badge {
-  background-color: var(--article-cluster-background-dark);
-  color: var(--article-link-dark);
+  background-color: var(--article-tag-background-dark);
+  color: var(--article-tag-text-dark);
 }
 
 :root[data-theme='dark'] .article-card .article-tags .tag-badge {
