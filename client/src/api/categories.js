@@ -9,8 +9,8 @@ export const createCategory = (name) =>
 /**
  * Update a category
  */
-export const updateCategory = (categoryId, name) =>
-  api.put(`/categories/${categoryId}`, { name });
+export const updateCategory = (categoryId, name, iconName) =>
+  api.put(`/categories/${categoryId}`, { name, iconName });
 
 /**
  * Delete a category

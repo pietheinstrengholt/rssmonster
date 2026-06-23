@@ -7,7 +7,7 @@
   >
     <div class="sidebar-category-header">
       <span class="sidebar-icon">
-        <BootstrapIcon icon="folder" color="currentColor" />
+        <BootstrapIcon :icon="categoryIconName" color="currentColor" />
       </span>
       <span class="sidebar-item-title">{{ category.name }}</span>
       <span class="sidebar-count-wrapper">
@@ -34,6 +34,33 @@
 import { computed } from 'vue';
 import SidebarFeedItem from './SidebarFeedItem.vue';
 import { formatCount } from './formatCount.js';
+
+const CATEGORY_ICON_NAMES = new Set([
+  'folder-fill',
+  'newspaper',
+  'cpu-fill',
+  'robot',
+  'file-code-fill',
+  'cloud-fill',
+  'shield-lock-fill',
+  'diagram-3-fill',
+  'bar-chart-fill',
+  'briefcase-fill',
+  'graph-up-arrow',
+  'piggy-bank-fill',
+  'heart-pulse-fill',
+  'mortarboard-fill',
+  'controller',
+  'trophy-fill',
+  'camera-reels-fill',
+  'music-note-beamed',
+  'book-fill',
+  'compass-fill',
+  'tools',
+  'rss-fill',
+  'megaphone-fill',
+  'chat-square-text-fill'
+]);
 
 const props = defineProps({
   category: {
@@ -63,6 +90,10 @@ const emit = defineEmits(['select-category', 'select-feed']);
 const isSelectedCategory = computed(() => props.selectedCategoryId == props.category.id && props.selectedFeedId === '%');
 const isExpanded = computed(() => props.selectedCategoryId == props.category.id);
 const formattedCount = computed(() => formatCount(props.count));
+const categoryIconName = computed(() => CATEGORY_ICON_NAMES.has(props.category.iconName)
+  ? props.category.iconName
+  : 'folder-fill'
+);
 
 function getFeedCount(feed) {
   const value = props.countResolver(feed);

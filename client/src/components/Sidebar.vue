@@ -53,7 +53,7 @@
       <SidebarNavItem
         v-for="smartFolder in $store.data.smartFolders"
         :key="smartFolder.id"
-        icon="tag"
+        icon="tag-fill"
         :title="smartFolder.name"
         :count="smartFolder.ArticleCount"
         :selected="$store.data.currentSelection.smartFolderId === smartFolder.id"
@@ -93,7 +93,7 @@
       <SidebarNavItem
         v-for="tag in topTagsDisplay"
         :key="tag.name"
-        icon="tag"
+        icon="tag-fill"
         :title="`${tag.name.toLowerCase()}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
         :count="tag.count"
         :selected="$store.data.currentSelection.tag === tag.name"

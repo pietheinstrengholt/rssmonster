@@ -18,6 +18,10 @@ export default (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false
       },
+      iconName: {
+        type: DataTypes.STRING,
+        allowNull: true
+      },
       categoryOrder: {
         type: DataTypes.INTEGER,
         defaultValue: 0
