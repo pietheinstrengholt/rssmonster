@@ -186,6 +186,7 @@ p.content-header {
 @media (prefers-color-scheme: dark) {
   .overlay {
     background-color: var(--dark-page-surface);
+    color: var(--text-inverted);
   }
 
   p.content-header {
@@ -199,6 +200,14 @@ p.content-header {
   .overlay-content li.category.selected {
       background-color: var(--mobile-menu-selected-background-dark);
   }
+}
+
+:global(:root[data-theme='dark'] #mobile-container) {
+  color: var(--text-inverted);
+}
+
+:global(:root[data-theme='dark'] #mobile-container .overlay-content .content-header) {
+  color: #FFFFFF !important;
 }
 </style>
 
