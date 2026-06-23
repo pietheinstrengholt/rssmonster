@@ -10,7 +10,12 @@
         <!-- Sidebar events -->
         <app-sidebar ref="sidebar" @forceReload="forceReload"></app-sidebar>
       </div>
-      <div id="home" class="col-md-9 offset-md-3 col-sm-12">
+      <div
+        id="home"
+        ref="homeScrollRef"
+        class="col-md-9 offset-md-3 col-sm-12"
+        @scroll="handleHomeScroll"
+      >
         <!-- MobileToolbar events -->
         <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
         <!-- Toolbar events -->
@@ -111,21 +116,56 @@
     background-color: var(--sidebar-scrollbar-thumb);
   }
 
+  #home {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  #home::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  #home::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  #home::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    transition: background-color 0.2s ease;
+  }
+
+  #home.is-scrolling {
+    scrollbar-color: var(--home-scrollbar-thumb) transparent;
+  }
+
+  #home.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: var(--home-scrollbar-thumb);
+  }
+
   @media (prefers-color-scheme: dark) {
     #sidebar {
       background-color: var(--bg-secondary);
       --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.45);
+    }
+
+    #home {
+      --home-scrollbar-thumb: rgba(255, 255, 255, 0.45);
     }
   }
 }
 
 @media (min-width: 768px) {
   #sidebar {
+    width: 280px;
+    min-width: 280px;
     max-width: 280px;
   }
-}
 
-@media (min-width: 1120px) {
   #home {
     width: calc(100% - 280px);
     margin-left: 280px;
@@ -139,6 +179,10 @@ div.row {
 #sidebar {
   position: fixed;
   --sidebar-scrollbar-thumb: rgba(0, 0, 0, 0.45);
+}
+
+#home {
+  --home-scrollbar-thumb: rgba(0, 0, 0, 0.45);
 }
 
 .app-error {
@@ -239,7 +283,8 @@ export default {
       offlineStatus: false,
       overviewIntervalId: null,
       overviewLoaded: false,
-      sidebarScrollTimeout: null
+      sidebarScrollTimeout: null,
+      homeScrollTimeout: null
     };
   },
   async created() {
@@ -300,6 +345,10 @@ export default {
     if (this.sidebarScrollTimeout) {
       clearTimeout(this.sidebarScrollTimeout);
     }
+
+    if (this.homeScrollTimeout) {
+      clearTimeout(this.homeScrollTimeout);
+    }
   },
   methods: {
     handleSidebarScroll() {
@@ -316,6 +365,22 @@ export default {
       this.sidebarScrollTimeout = setTimeout(() => {
         sidebar.classList.remove('is-scrolling');
         this.sidebarScrollTimeout = null;
+      }, 1000);
+    },
+    handleHomeScroll() {
+      const home = this.$refs.homeScrollRef;
+
+      if (!home) return;
+
+      home.classList.add('is-scrolling');
+
+      if (this.homeScrollTimeout) {
+        clearTimeout(this.homeScrollTimeout);
+      }
+
+      this.homeScrollTimeout = setTimeout(() => {
+        home.classList.remove('is-scrolling');
+        this.homeScrollTimeout = null;
       }, 1000);
     },
     mobileClick(value) {

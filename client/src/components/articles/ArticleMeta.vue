@@ -6,7 +6,7 @@
     <span class="published_date">{{ formatDate(published) }}</span><span class="break">·</span>
     <span class="feed_name"><a target="_blank" :href="mainURL(feed.url)">{{ author || feed.feedName }}</a></span>
     <span v-if="cluster && clusterCountTotal > 1 && clusterView !== 'all' && cluster.sourceCount >= 2" class="source-diversity-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
-    <span v-if="cluster && clusterCountTotal > 1 && clusterView !== 'all'" class="cluster" @click.stop="$emit('view-cluster-articles', cluster.id)">{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
+    <span v-if="cluster && clusterCountTotal > 1 && clusterView !== 'all'" class="cluster" @click.stop="$emit('view-cluster-articles', cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
     <span v-for="tag in ruleTags" :key="'mobile-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="$emit('select-tag', tag)">{{ tag.name.toLowerCase() }}</span>
   </div>
 </template>

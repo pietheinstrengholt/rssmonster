@@ -148,8 +148,11 @@
   background-color: var(--border-input);
 }
 
-.settings-icon svg {
-  margin-top: 0;
+.settings-icon svg,
+.theme-icon svg,
+.search-button svg {
+  display: block;
+  margin-bottom: 0;
   width: 20px;
   height: 20px;
 }
@@ -256,7 +259,7 @@
 
 @media (min-width: 1120px) {
   .toolbar {
-    left: 265px;
+    left: 268px;
   }
 }
 
