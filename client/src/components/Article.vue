@@ -583,6 +583,7 @@ export default {
 .block .article h5.heading {
   margin: 0;
   line-height: 1;
+  margin-bottom: 8px;
 }
 
 .heading-content {
@@ -758,6 +759,11 @@ export default {
   margin-top: -1px;
 }
 
+.block .article-meta .published_date,
+.block .article-meta .feed_name a {
+  color: #6B7280;
+}
+
 .break {
   margin-left: -3px;
   margin-right: -3px;
@@ -779,7 +785,6 @@ span.feed_name {
 }
 
 span.feed_name a {
-  color: var(--article-heading-text);
   text-decoration: none;
 }
 
