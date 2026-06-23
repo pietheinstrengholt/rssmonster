@@ -170,7 +170,7 @@
 }
 
 .toolbar-theme-button {
-  right: 64px;
+  right: 68px;
 }
 
 :global(:root[data-theme='dark'] .toolbar-theme-button) {
@@ -276,7 +276,7 @@
   align-items: center;
   gap: 8px;
   height: 34px;
-  margin: 0 112px 0 auto;
+  margin: 0 130px 0 auto;
   padding: 0 12px;
   background-color: var(--bg-input);
   border: 1px solid #E5E7EB;
