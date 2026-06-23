@@ -46,7 +46,7 @@
 
 <style>
 div#inputArea {
-  margin-top: 50px;
+  margin-top: 70px;
 }
 
 .user-message {
@@ -147,6 +147,22 @@ div#inputArea {
   .loading-spinner {
     color: var(--chat-loading-spinner);
   }
+}
+
+:root[data-theme='dark'] #chatTextarea {
+  color: var(--text-secondary);
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-input);
+}
+
+:root[data-theme='dark'] #chatTextarea:focus {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+:root[data-theme='dark'] #inputArea .form-label {
+  color: var(--text-inverted);
 }
 </style>
 

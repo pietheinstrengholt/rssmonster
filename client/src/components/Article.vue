@@ -530,7 +530,7 @@ export default {
 }
 
 .block .article {
-  padding: 4px 48px 4px 12px;
+  padding: 4px 48px 4px 16px;
   font-family: var(--font-family);
   margin-top: 6px;
   background-color: var(--desktop-toolbar-background);
@@ -563,6 +563,11 @@ export default {
 :root[data-theme='dark'] .block .article-meta .published_date,
 :root[data-theme='dark'] .block .article-meta .feed_name a {
   color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .block .menu-icon-wrapper .btn {
+  color: var(--text-secondary);
+  opacity: 0.9;
 }
 
 .block .meta-row {

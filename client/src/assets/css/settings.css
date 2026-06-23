@@ -47,6 +47,80 @@ body.modal-open {
     overflow-y: auto;
 }
 
+:root[data-theme='dark'] .modal-content {
+    background-color: var(--bg-modal);
+    color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .modal-header,
+:root[data-theme='dark'] .modal-body,
+:root[data-theme='dark'] .modal-footer,
+:root[data-theme='dark'] .modal-title {
+    color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .modal-header,
+:root[data-theme='dark'] .modal-footer {
+    border-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .modal-content p {
+    color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .modal-content .text-muted {
+    color: var(--text-muted) !important;
+}
+
+:root[data-theme='dark'] .modal-content .btn-close {
+    filter: invert(1) brightness(1.2);
+}
+
+:root[data-theme='dark'] .modal-content .form-control {
+    color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .modal-content .form-control::placeholder {
+    color: var(--text-placeholder);
+}
+
+:root[data-theme='dark'] .modal-content .form-select,
+:root[data-theme='dark'] .modal-content .form-select option {
+    color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .modal-content .form-select option {
+    background-color: var(--bg-control);
+}
+
+:root[data-theme='dark'] .modal-content .card {
+    --bs-card-bg: var(--bg-modal);
+    --bs-card-color: var(--text-inverted);
+    --bs-card-border-color: var(--border-color);
+    background-color: var(--bg-modal);
+    color: var(--text-inverted);
+    border-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .modal-content .list-group {
+    --bs-list-group-bg: var(--bg-modal);
+    --bs-list-group-color: var(--text-inverted);
+    --bs-list-group-border-color: var(--border-color);
+    --bs-list-group-action-hover-bg: var(--bg-control);
+    --bs-list-group-action-hover-color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .modal-content .list-group-item {
+    background-color: var(--bg-modal);
+    color: var(--text-inverted);
+    border-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .modal-content .text-bg-success {
+    color: var(--sidebar-action-add-text) !important;
+    background-color: var(--sidebar-action-add-background) !important;
+}
+
 .settings-group {
     margin-bottom: 20px;
 }

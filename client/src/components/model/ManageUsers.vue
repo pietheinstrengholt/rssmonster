@@ -144,6 +144,14 @@ select#role {
     --bs-table-striped-bg: var(--bg-control);
   }
 }
+
+:global(:root[data-theme='dark'] .table.table-striped) {
+  --bs-table-color: var(--text-inverted);
+  --bs-table-bg: var(--bg-modal);
+  --bs-table-border-color: var(--border-color);
+  --bs-table-striped-color: var(--text-inverted);
+  --bs-table-striped-bg: var(--bg-control);
+}
 </style>
 
 <script>

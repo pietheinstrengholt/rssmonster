@@ -86,6 +86,12 @@
   margin-right: clamp(6px, 1.5vw, 32px);
 }
 
+@media (max-width: 1120px) {
+  .toolbar > .dropdown {
+    margin-right: clamp(0px, calc(4.545vw - 34.909px), 16px);
+  }
+}
+
 .toolbar-dropdown-label {
   color: var(--text-muted);
 }
@@ -141,6 +147,65 @@
 
 .theme-icon {
   right: 64px;
+}
+
+:global(:root[data-theme='dark'] .theme-icon) {
+  color: var(--text-inverted);
+  background-color: var(--bg-control);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar) {
+  background-color: var(--bg-modal);
+}
+
+:global(:root[data-theme='dark'] .theme-icon:hover) {
+  background-color: var(--toolbar-settings-hover-background-dark);
+}
+
+:global(:root[data-theme='dark'] .settings-icon),
+:global(:root[data-theme='dark'] .chat-button),
+:global(:root[data-theme='dark'] .search-button) {
+  color: var(--text-inverted);
+  background-color: var(--bg-control);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .settings-icon:hover),
+:global(:root[data-theme='dark'] .chat-button:hover),
+:global(:root[data-theme='dark'] .search-button:hover) {
+  background-color: var(--toolbar-settings-hover-background-dark);
+}
+
+:global(:root[data-theme='dark'] .search-wrap) {
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar-dropdown::after) {
+  color: var(--text-inverted);
+  border-top-color: currentColor;
+}
+
+:global(:root[data-theme='dark'] .toolbar .dropdown-menu.show) {
+  background-color: var(--bg-modal);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar .dropdown-menu .dropdown-item) {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .toolbar .dropdown-menu .dropdown-item:hover),
+:global(:root[data-theme='dark'] .toolbar .dropdown-menu .dropdown-item.active) {
+  color: var(--text-inverted);
+  background-color: var(--toolbar-active-background);
+}
+
+@media (max-width: 1120px) {
+  :global(:root[data-theme='dark'] .settings-icon),
+  :global(:root[data-theme='dark'] .theme-icon) {
+    box-shadow: 0 0 0 8px var(--bg-control);
+  }
 }
 
 .settings-icon:hover,
