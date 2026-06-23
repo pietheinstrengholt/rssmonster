@@ -759,6 +759,23 @@ export default {
   color: var(--article-quality-positive);
 }
 
+.article-content h1 {
+  font-size: 24px !important;
+  line-height: 1.2;
+}
+
+.article-content h2 {
+  font-size: 20px !important;
+}
+
+.article-content h3 {
+  font-size: 18px !important;
+}
+
+.article:hover {
+    background: #fafafa;
+}
+
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
   .block .article-meta {
