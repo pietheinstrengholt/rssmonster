@@ -153,4 +153,13 @@ function getFeedCount(feed) {
     color: var(--text-inverted);
   }
 }
+
+:global(:root[data-theme='dark'] .category-main.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-selected) !important;
+}
+
+:global(:root[data-theme='dark'] .category-main.selected .badge) {
+  color: var(--text-inverted) !important;
+}
 </style>

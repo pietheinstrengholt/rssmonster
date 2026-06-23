@@ -275,6 +275,11 @@
   #monster p {
     color: var(--text-inverted);
   }
+
+  div.category-top.status-item.selected span.title, div.category-top.all-categories.selected span.title, div.category-top.tag-item.selected span.title, .category-feed.selected span.title {
+    color: #fff !important;
+  }
+
 }
 </style>
 

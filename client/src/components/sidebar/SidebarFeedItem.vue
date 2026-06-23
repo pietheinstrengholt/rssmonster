@@ -156,4 +156,13 @@ const formattedCount = computed(() => formatCount(props.count));
     color: var(--text-inverted);
   }
 }
+
+:global(:root[data-theme='dark'] .category-feed.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-selected) !important;
+}
+
+:global(:root[data-theme='dark'] .category-feed.selected .badge) {
+  color: var(--text-inverted) !important;
+}
 </style>

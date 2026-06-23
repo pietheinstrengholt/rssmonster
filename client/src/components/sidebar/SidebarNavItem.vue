@@ -152,4 +152,70 @@ const formattedCount = computed(() => formatCount(props.count));
     color: var(--text-inverted);
   }
 }
+
+:global(:root[data-theme='dark']) .category-top {
+  background-color: var(--bg-option);
+}
+
+:global(:root[data-theme='dark'] .category-top.tag-item.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-hover) !important;
+}
+
+:global(:root[data-theme='dark'] .category-top.tag-item.selected .badge) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark'] .category-top.all-categories.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-hover) !important;
+}
+
+:global(:root[data-theme='dark'] .category-top.all-categories.selected .badge) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark'] .category-top.status-item.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-hover) !important;
+}
+
+:global(:root[data-theme='dark'] .category-top.status-item.selected .badge) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-secondary) !important;
+  background-image: none !important;
+}
+
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-secondary) !important;
+  background-image: none !important;
+}
+
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge,
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge.white,
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge-unread,
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .title,
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .glyphicon,
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge,
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge.white,
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge-unread,
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .title,
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .glyphicon,
+:global(:root[data-theme='dark']) .selected .icon-star,
+:global(:root[data-theme='dark']) .selected .icon-hot {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark']) .drag .category-top.status-item.selected .badge.white {
+  background-color: transparent !important;
+}
+
+:global(:root[data-theme='dark']) .drag .category-top.tag-item.selected .badge.white {
+  background-color: transparent !important;
+}
 </style>
