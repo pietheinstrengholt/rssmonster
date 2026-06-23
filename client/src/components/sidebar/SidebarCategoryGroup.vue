@@ -77,7 +77,7 @@ function getFeedCount(feed) {
   margin-top: 4px;
   border-radius: 4px;
   cursor: pointer;
-  color: #4B5563;
+  color: var(--text-primary);
   background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
@@ -106,7 +106,7 @@ function getFeedCount(feed) {
 }
 
 .badge {
-  color: #4B5563;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -142,6 +142,15 @@ function getFeedCount(feed) {
 @media (prefers-color-scheme: dark) {
   .category-main {
     background-color: var(--bg-option);
+  }
+
+  .category-main.selected {
+    color: var(--text-inverted);
+    background-color: var(--bg-selected);
+  }
+
+  .category-main.selected .badge {
+    color: var(--text-inverted);
   }
 }
 </style>

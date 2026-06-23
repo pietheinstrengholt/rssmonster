@@ -55,7 +55,7 @@ const formattedCount = computed(() => formatCount(props.count));
 .category-feed {
   padding: 4px 4px 4px 12px;
   cursor: pointer;
-  color: #4B5563;
+  color: var(--text-primary);
   background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
@@ -117,7 +117,7 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .badge {
-  color: #4B5563;
+  color: var(--text-primary);
   font-weight: 500;
 }
 
@@ -143,6 +143,17 @@ const formattedCount = computed(() => formatCount(props.count));
 
   .category-feed.disabled {
     background-color: var(--bg-option);
+  }
+
+  .category-feed.selected,
+  .category-feed.selected.error,
+  .category-feed.selected.disabled {
+    color: var(--text-inverted);
+    background-color: var(--bg-selected);
+  }
+
+  .category-feed.selected .badge {
+    color: var(--text-inverted);
   }
 }
 </style>

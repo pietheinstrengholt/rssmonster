@@ -108,7 +108,7 @@ const buttonClasses = computed(() => [props.variant]);
 .sidebar-option {
   margin-left: 0;
   height: 44px;
-  color: #4B5563;
+  color: var(--text-primary);
   font-weight: 500;
   box-sizing: border-box;
   width: 72px;
@@ -143,7 +143,7 @@ const buttonClasses = computed(() => [props.variant]);
 
 .sidebar-option.delete,
 .sidebar-option.rename {
-  color: #4B5563;
+  color: var(--text-primary);
 }
 
 @media (prefers-color-scheme: dark) {

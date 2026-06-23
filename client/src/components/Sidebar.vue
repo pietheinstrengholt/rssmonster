@@ -192,7 +192,7 @@
 <style scoped>
 .drag {
   background-color: transparent;
-  color: #4B5563;
+  color: var(--text-primary);
 }
 
 #monster {
@@ -203,7 +203,7 @@
 
 #monster p {
   padding: 27px 0px 8px 78px;
-  color: #1F2937;
+  color: var(--text-primary);
   font-size: 26px;
   font-weight: 600;
 }

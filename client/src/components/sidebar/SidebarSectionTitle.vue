@@ -15,7 +15,7 @@ defineProps({
 
 <style scoped>
 p.title {
-  color: #4B5563;
+  color: var(--text-primary);
   margin-left: 14px;
   margin-top: 10px;
   margin-bottom: 5px;
