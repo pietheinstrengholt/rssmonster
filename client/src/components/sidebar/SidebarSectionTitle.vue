@@ -21,7 +21,7 @@ p.sidebar-section-title {
   margin-bottom: 5px;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   p.sidebar-section-title {
     color: var(--text-inverted);
   }

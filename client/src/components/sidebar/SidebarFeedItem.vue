@@ -136,7 +136,7 @@ const formattedCount = computed(() => formatCount(props.count));
   margin-bottom: 2px;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .sidebar-feed {
     background-color: var(--bg-option);
   }

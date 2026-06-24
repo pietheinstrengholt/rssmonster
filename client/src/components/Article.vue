@@ -1077,13 +1077,13 @@ span.similar-badge {
   line-height: 1.5;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   .article-summary li {
     color: var(--text-inverted);
   }
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   .article-card, .article-card .article-body, .article-content-wrapper, h5.article-header, .article-card .article-meta {
     color: var(--text-inverted);
     background: var(--dark-page-surface);

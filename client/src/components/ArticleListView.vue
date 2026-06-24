@@ -151,7 +151,7 @@ export default {
   color: var(--text-inverted) !important;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   #articles {
     color: var(--text-inverted);
     background: var(--dark-page-surface);
@@ -188,7 +188,7 @@ div.infinite-loading-container {
   width: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   div.infinite-loading-container {
     color: var(--text-inverted);
     background: var(--dark-page-surface);

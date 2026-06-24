@@ -135,7 +135,7 @@ select#role {
     margin-left: 20px;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .table {
     --bs-table-color: var(--text-inverted);
     --bs-table-bg: var(--bg-modal);

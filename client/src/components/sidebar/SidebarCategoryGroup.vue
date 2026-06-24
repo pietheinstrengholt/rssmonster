@@ -182,7 +182,7 @@ function getFeedCount(feed) {
   overflow: hidden;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .sidebar-category {
     background-color: var(--bg-option);
   }

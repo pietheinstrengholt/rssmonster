@@ -287,7 +287,7 @@ div.form-group.row {
   margin-bottom: 1rem;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   #form-box {
     color: var(--text-inverted);
   }

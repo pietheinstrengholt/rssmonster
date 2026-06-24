@@ -373,7 +373,7 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .overlay {
     --options-sheet-background: var(--bg-modal);
     --options-control-background: var(--bg-control);

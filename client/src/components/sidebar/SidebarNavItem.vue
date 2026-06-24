@@ -145,7 +145,7 @@ const formattedCount = computed(() => formatCount(props.count));
   color: #2A71E7;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .sidebar-item {
     background-color: var(--bg-option);
   }

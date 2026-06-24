@@ -273,7 +273,7 @@
   margin-bottom: 4px;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .sidebar-brand p {
     color: var(--text-inverted);
   }

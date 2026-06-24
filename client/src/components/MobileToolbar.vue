@@ -274,7 +274,7 @@
   background-color: #ebf2fe;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .mobile-toolbar {
     color: var(--text-inverted);
     background: var(--bg-control);

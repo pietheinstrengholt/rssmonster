@@ -86,7 +86,7 @@
     height: 100%;
     font-weight: 500;
     background-color: var(--bg-surface-muted);
-    border-right: 1px solid #EFF2F6;
+    border-right: 1px solid var(--border-subtle);
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
@@ -147,7 +147,7 @@
     background-color: var(--home-scrollbar-thumb);
   }
 
-  @media (prefers-color-scheme: dark) {
+  :root[data-theme='dark'] {
     #sidebar {
       background-color: var(--bg-secondary);
       --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.45);
@@ -198,7 +198,7 @@ html, #app, body {
     height: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   html, #app {
     background-color: var(--bg-primary);
   }

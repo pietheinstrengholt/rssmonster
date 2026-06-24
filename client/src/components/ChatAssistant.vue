@@ -121,7 +121,7 @@ div#inputArea {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   div#inputArea {
     color: var(--text-inverted);
   }

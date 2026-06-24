@@ -147,7 +147,7 @@ const buttonClasses = computed(() => [props.variant]);
   color: var(--text-primary);
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .sidebar-management-button {
     color: var(--text-inverted);
     background-color: var(--bg-secondary);

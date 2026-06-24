@@ -380,7 +380,7 @@ body.modal-open {
     }
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
     .modal-content {
         background: var(--bg-modal);
         color: var(--text-inverted);

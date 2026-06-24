@@ -44,9 +44,26 @@
           <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
         </svg>
       </button>
-      <button type="button" class="toolbar-theme-button" title="Toggle light and dark mode" @click="toggleTheme">
-        <BootstrapIcon icon="brightness-high" size="20" />
-      </button>
+      <div class="dropdown toolbar-theme-dropdown">
+        <button id="themeModeDropdown" type="button" class="dropdown-toggle toolbar-theme-button" title="Choose theme" data-bs-toggle="dropdown" aria-expanded="false">
+          <BootstrapIcon icon="brightness-high" size="20" />
+          <span class="visually-hidden">Choose theme</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end toolbar-theme-menu" aria-labelledby="themeModeDropdown">
+          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'system' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'system'" @click="selectThemeMode('system')">
+            <BootstrapIcon icon="laptop" size="16" />
+            System
+          </button>
+          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'light' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'light'" @click="selectThemeMode('light')">
+            <BootstrapIcon icon="sun" size="16" />
+            Light
+          </button>
+          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'dark' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'dark'" @click="selectThemeMode('dark')">
+            <BootstrapIcon icon="moon-stars" size="16" />
+            Dark
+          </button>
+        </div>
+      </div>
       <div class="toolbar-settings-button" @click="settingsClicked" title="Settings">
         <BootstrapIcon icon="gear-fill" size="20" />
       </div>
@@ -170,12 +187,54 @@
 }
 
 .toolbar-theme-button {
+  position: static;
+}
+
+.toolbar-theme-dropdown {
+  position: fixed;
+  top: 10px;
   right: 68px;
+  z-index: 1;
+  border: none;
+}
+
+.toolbar-theme-button::after {
+  display: none;
+}
+
+.toolbar-theme-menu {
+  min-width: 132px;
+  padding: 4px;
+  border-color: var(--border-input);
+  border-radius: 6px;
+  box-shadow: var(--shadow-modal);
+}
+
+.toolbar-theme-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  border-radius: 4px;
+}
+
+.toolbar-theme-menu .dropdown-item svg {
+  flex-shrink: 0;
+}
+
+.toolbar-theme-menu .dropdown-item.active {
+  color: #2A71E7;
+  background-color: #EBF2FE;
 }
 
 :global(:root[data-theme='dark'] .toolbar-theme-button) {
   color: var(--text-inverted);
   background-color: var(--bg-control);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar-theme-menu) {
+  background-color: var(--bg-modal);
   border-color: var(--border-subtle);
 }
 
@@ -416,17 +475,17 @@
   }
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .desktop-toolbar,
   .dropdownmenu .item {
     color: var(--text-inverted);
     background: var(--bg-control);
-    border-color: var(--dark-contrast);
-    border-bottom: 1px solid var(--text-inverted);
+    border-color: var(--border-subtle);
+    border-bottom-color: var(--border-subtle);
   }
 
   .dropdown {
-    border-left: 1px solid var(--text-inverted);
+    border-left: 0;
   }
 
   .toolbar-chat-button {
@@ -483,9 +542,7 @@
   }
 
   .dropdown-menu .item {
-    border-bottom: 1px solid var(--text-inverted);
-    border-right: 1px solid var(--text-inverted);
-    border-left: 1px solid var(--text-inverted);
+    border-color: var(--border-subtle);
   }
 
   .toolbar-search {
@@ -533,7 +590,7 @@
 <script>
 import Settings from './model/Settings.vue';
 import { validateSearchQuery } from '../services/queryValidation.js';
-import { getPreferredTheme, setThemeOverride } from '../services/theme.js';
+import { getThemeMode, setThemeMode } from '../services/theme.js';
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -547,6 +604,7 @@ export default {
       showSettingsModal: false,
       isCompactSearchOpen: false,
       searchDebounceTimer: null,
+      selectedThemeMode: getThemeMode(),
       statusOptions: [
         { value: 'unread', label: 'Unread' },
         { value: 'star', label: 'Star' },
@@ -642,9 +700,10 @@ export default {
     settingsClicked: function() {
       this.showSettingsModal = true;
     },
-    // This function toggles the saved application color theme.
-    toggleTheme: function() {
-      setThemeOverride(getPreferredTheme() === 'dark' ? 'light' : 'dark');
+    // This function saves and applies an explicitly selected color theme.
+    selectThemeMode: function(theme) {
+      this.selectedThemeMode = theme;
+      setThemeMode(theme);
     },
     // This function closes the settings modal.
     closeSettingsModal: function() {

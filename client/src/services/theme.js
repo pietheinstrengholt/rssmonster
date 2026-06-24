@@ -1,10 +1,22 @@
 const THEME_OVERRIDE_STORAGE_KEY = 'rssmonster-theme-override';
 
-// This function returns the user's saved theme override when one exists.
-export function getThemeOverride() {
+// This function returns the user's saved theme mode, defaulting new users to system.
+export function getThemeMode() {
   const savedTheme = window.localStorage.getItem(THEME_OVERRIDE_STORAGE_KEY);
 
-  return savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : null;
+  if (savedTheme === 'system' || savedTheme === 'light' || savedTheme === 'dark') {
+    return savedTheme;
+  }
+
+  window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, 'system');
+  return 'system';
+}
+
+// This function returns the user's saved theme override when one exists.
+export function getThemeOverride() {
+  const themeMode = getThemeMode();
+
+  return themeMode === 'light' || themeMode === 'dark' ? themeMode : null;
 }
 
 // This function returns the current system color-scheme preference.
@@ -30,10 +42,10 @@ export function applyTheme(theme) {
   document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeColor);
 }
 
-// This function saves a user-selected theme override and applies it.
-export function setThemeOverride(theme) {
+// This function saves a user-selected theme mode and applies it.
+export function setThemeMode(theme) {
   window.localStorage.setItem(THEME_OVERRIDE_STORAGE_KEY, theme);
-  applyTheme(theme);
+  applyTheme(theme === 'system' ? getSystemTheme() : theme);
 }
 
 // This function listens for system theme changes until a user override is set.

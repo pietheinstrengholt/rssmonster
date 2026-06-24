@@ -200,7 +200,7 @@
 <style src="../../assets/css/settings.css"></style>
 
 <style scoped>
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
   .card {
     --bs-card-bg: var(--bg-modal);
     --bs-card-border-color: var(--border-color);

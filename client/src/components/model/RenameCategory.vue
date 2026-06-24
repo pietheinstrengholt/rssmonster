@@ -94,7 +94,7 @@
     height: 18px;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark']) {
     .category-icon-option {
         color: var(--text-muted);
         background: var(--bg-control);
