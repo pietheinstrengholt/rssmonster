@@ -1276,10 +1276,6 @@ span.similar-badge {
     color: var(--article-quality-poor-dark);
   }
 
-  nav ul li {
-    background: var(--dark-contrast);
-  }
-
   .source-badge {
     background-color: var(--article-quality-background-dark);
     color: var(--article-quality-excellent);
