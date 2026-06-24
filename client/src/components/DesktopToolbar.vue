@@ -533,7 +533,7 @@
 <script>
 import Settings from './model/Settings.vue';
 import { validateSearchQuery } from '../services/queryValidation.js';
-import { applyTheme, getPreferredTheme } from '../services/theme.js';
+import { getPreferredTheme, setThemeOverride } from '../services/theme.js';
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -644,7 +644,7 @@ export default {
     },
     // This function toggles the saved application color theme.
     toggleTheme: function() {
-      applyTheme(getPreferredTheme() === 'dark' ? 'light' : 'dark');
+      setThemeOverride(getPreferredTheme() === 'dark' ? 'light' : 'dark');
     },
     // This function closes the settings modal.
     closeSettingsModal: function() {

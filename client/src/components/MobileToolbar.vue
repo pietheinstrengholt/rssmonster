@@ -337,6 +337,68 @@
     color: var(--text-inverted);
   }
 }
+
+:global(:root[data-theme='dark'] .mobile-toolbar) {
+  color: var(--text-inverted);
+  background: var(--bg-control);
+  border-bottom-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-toolbar-brand),
+:global(:root[data-theme='dark'] .mobile-toolbar-button),
+:global(:root[data-theme='dark'] .mobile-filter-button),
+:global(:root[data-theme='dark'] .mobile-filter-button:hover),
+:global(:root[data-theme='dark'] .mobile-filter-button:focus),
+:global(:root[data-theme='dark'] .mobile-filter-button.show) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark'] .mobile-toolbar-button:hover),
+:global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible) {
+  background: var(--bg-subtle);
+}
+
+:global(:root[data-theme='dark'] .mobile-filter-button),
+:global(:root[data-theme='dark'] .mobile-filter-button:hover),
+:global(:root[data-theme='dark'] .mobile-filter-button:focus),
+:global(:root[data-theme='dark'] .mobile-filter-button.show) {
+  background: var(--bg-control);
+  border-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-search-panel) {
+  background-color: var(--toolbar-search-background-dark);
+  border-bottom-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-search-input) {
+  color: var(--text-inverted);
+  background: var(--bg-control);
+  border-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-search-input::placeholder) {
+  color: var(--text-muted);
+}
+
+:global(:root[data-theme='dark'] .dropdown-menu) {
+  background-color: var(--bg-modal);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark'] .dropdown-item) {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .dropdown-item:hover) {
+  color: var(--text-inverted);
+  background-color: var(--bg-control);
+}
+
+:global(:root[data-theme='dark'] .dropdown-item.active) {
+  color: var(--text-inverted);
+  background-color: var(--toolbar-active-background);
+}
 </style>
 
 <script>

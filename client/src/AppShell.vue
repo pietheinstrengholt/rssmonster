@@ -226,7 +226,7 @@ html, #app, body {
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
-import { applyTheme, getPreferredTheme } from './services/theme.js';
+import { applyTheme, getPreferredTheme, subscribeToSystemTheme } from './services/theme.js';
 
 import ArticleFeed from "./components/ArticleFeed.vue";
 
@@ -284,7 +284,8 @@ export default {
       overviewIntervalId: null,
       overviewLoaded: false,
       sidebarScrollTimeout: null,
-      homeScrollTimeout: null
+      homeScrollTimeout: null,
+      unsubscribeFromSystemTheme: null
     };
   },
   async created() {
@@ -336,12 +337,15 @@ export default {
     }
 
     applyTheme(getPreferredTheme());
+    this.unsubscribeFromSystemTheme = subscribeToSystemTheme(applyTheme);
     //add metadata properties to document
     document.title = "RSSMonster";
     document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
   beforeUnmount() {
+    this.unsubscribeFromSystemTheme?.();
+
     if (this.sidebarScrollTimeout) {
       clearTimeout(this.sidebarScrollTimeout);
     }
