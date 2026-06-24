@@ -594,6 +594,7 @@
 
 <script>
 import Settings from './model/Settings.vue';
+import { saveThemeMode as saveThemeModeAPI } from '../api/settings.js';
 import { validateSearchQuery } from '../services/queryValidation.js';
 import { getThemeMode, setThemeMode } from '../services/theme.js';
 
@@ -706,9 +707,20 @@ export default {
       this.showSettingsModal = true;
     },
     // This function saves and applies an explicitly selected color theme.
-    selectThemeMode: function(theme) {
+    selectThemeMode: async function(theme) {
+      const previousThemeMode = this.selectedThemeMode;
       this.selectedThemeMode = theme;
       setThemeMode(theme);
+      this.$store.data.setThemeMode(theme);
+
+      try {
+        await saveThemeModeAPI(theme);
+      } catch (err) {
+        console.error('Error saving theme mode:', err);
+        this.selectedThemeMode = previousThemeMode;
+        setThemeMode(previousThemeMode);
+        this.$store.data.setThemeMode(previousThemeMode);
+      }
     },
     // This function closes the settings modal.
     closeSettingsModal: function() {
@@ -727,6 +739,14 @@ export default {
   // This function clears a pending search update before the component is removed.
   beforeUnmount() {
     clearTimeout(this.searchDebounceTimer);
+  },
+  watch: {
+    // This function keeps the selected toolbar option in sync with saved settings.
+    '$store.data.themeMode': function(themeMode) {
+      if (themeMode) {
+        this.selectedThemeMode = themeMode;
+      }
+    }
   },
   computed:{
     // This function returns the currently active article selection from the store.

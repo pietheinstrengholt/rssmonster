@@ -45,10 +45,10 @@ export const searchArticles = async ({
      * use values from settings; otherwise fallback to 0.
      */
     let userSettings = null;
-    if (minAdvertisementScore === null || minSentimentScore === null || minQualityScore === null) {
+    if (persistSettings || minAdvertisementScore === null || minSentimentScore === null || minQualityScore === null) {
         userSettings = await Setting.findOne({
             where: { userId },
-            attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore']
+            attributes: ['minAdvertisementScore', 'minSentimentScore', 'minQualityScore', 'themeMode']
         });
     }
 
@@ -290,7 +290,8 @@ export const searchArticles = async ({
         minSentimentScore: finalMinSentimentScore,
         minQualityScore: finalMinQualityScore,
         viewMode: viewMode,
-        clusterView: clusterView
+        clusterView: clusterView,
+        themeMode: userSettings?.themeMode ?? 'system'
       };
 
       // Persist atomically to avoid race conditions across concurrent requests.

@@ -9,6 +9,9 @@ export const fetchSettings = () =>
 export const saveSettings = (settingsData) =>
   api.post('/setting', settingsData);
 
+export const saveThemeMode = themeMode =>
+  api.patch('/setting/theme', { themeMode });
+
 export const fetchIslandsOverview = () =>
   api.get('/setting/islands');
 

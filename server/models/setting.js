@@ -59,6 +59,14 @@ export default (sequelize) => {
         type: DataTypes.STRING,
         allowNull: false,
         defaultValue: 'all'
+      },
+      themeMode: {
+        type: DataTypes.STRING(10),
+        allowNull: false,
+        defaultValue: 'system',
+        validate: {
+          isIn: [['system', 'light', 'dark']]
+        }
       }
     },
     {

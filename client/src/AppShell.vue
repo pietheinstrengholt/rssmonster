@@ -226,7 +226,7 @@ html, #app, body {
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
-import { applyTheme, getPreferredTheme, subscribeToSystemTheme } from './services/theme.js';
+import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
 
 import ArticleFeed from "./components/ArticleFeed.vue";
 
@@ -538,6 +538,12 @@ export default {
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
+    // This function applies a theme mode loaded from the user's settings.
+    "$store.data.themeMode": function(themeMode) {
+      if (themeMode) {
+        setThemeMode(themeMode);
+      }
+    },
     "$store.data.currentSelection": {
       handler: function(data) {
         this.updateSelection(data);

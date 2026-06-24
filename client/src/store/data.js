@@ -64,6 +64,7 @@ export const useStore = defineStore('data', {
     chatAssistantOpen: false,
     mobileSearchOpen: false,
     searchQuery: '',
+    themeMode: null,
 
     fatalError: null
   }),
@@ -75,7 +76,13 @@ export const useStore = defineStore('data', {
 
     async fetchSettings() {
       const { data } = await fetchSettingsAPI();
+      this.themeMode = data.themeMode;
       this.setCurrentSelection(data);
+    },
+
+    // This function records the user's selected color theme mode.
+    setThemeMode(themeMode) {
+      this.themeMode = themeMode;
     },
 
     async fetchOverview({ initial = false, forceUpdate = false } = {}) {
