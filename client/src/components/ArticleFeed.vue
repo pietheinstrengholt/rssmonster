@@ -35,6 +35,7 @@ export default {
       // scroll variables for comparing the scroll positions
       prevScroll: 0,
       scrollDirection: "down",
+      scrollContainer: null,
       visibilityObserver: null,
       loadMoreObserver: null,
       observedArticleElements: new Map(),
@@ -82,13 +83,16 @@ export default {
 
   // Starts scroll handling and article observers after mounting.
   mounted() {
-    window.addEventListener("scroll", this.handleScroll);
+    this.scrollContainer = document.getElementById("home");
+    window.addEventListener("scroll", this.handleScroll, { passive: true });
+    this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
     this.setupObservers();
   },
 
   // Removes scroll handling and disconnects observers before unmounting.
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
+    this.scrollContainer?.removeEventListener("scroll", this.handleScroll);
     this.teardownObservers();
   },
 
@@ -137,6 +141,7 @@ export default {
     handleScroll() {
       const mobileToolbar = document.getElementById("mobile-toolbar");
       const curScroll =
+        Math.ceil(this.scrollContainer?.scrollTop) ||
         Math.ceil(window.scrollY) ||
         Math.ceil(document.documentElement.scrollTop);
 

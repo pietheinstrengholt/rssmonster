@@ -1,6 +1,6 @@
 <template>
   <div class="mobile-toolbar-container">
-    <nav class="mobile-toolbar" aria-label="Mobile article toolbar">
+    <nav id="mobile-toolbar" class="mobile-toolbar" aria-label="Mobile article toolbar">
       <div class="mobile-toolbar-brand-row">
         <div class="mobile-toolbar-brand">
           <img class="mobile-toolbar-logo" src="../assets/images/monster.png" alt="" />
@@ -129,6 +129,17 @@
   color: #111827;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
+}
+
+@media (max-width: 766px) {
+  .mobile-toolbar {
+    transition: transform 150ms ease;
+    will-change: transform;
+  }
+
+  .mobile-toolbar.hide {
+    transform: translateY(-100%);
+  }
 }
 
 .mobile-toolbar-brand-row,
