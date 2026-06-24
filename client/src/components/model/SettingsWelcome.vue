@@ -43,7 +43,7 @@
     </div>
 
     <p class="small text-muted mt-4">
-      <strong>Tip:</strong> Use the navigation buttons above to configure each feature. Changes are saved independently per section.
+      <strong>Tip:</strong> Use the navigation buttons below to configure each feature. Changes are saved independently per section.
     </p>
   </div>
 </template>

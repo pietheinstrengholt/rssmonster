@@ -1,13 +1,5 @@
 <template>
-    <div>
-        <h5>Smart Folders</h5>
-        <div class="modal" tabindex="-1" role="dialog">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Smart Folders</h5>
-                    </div>
-                    <div class="modal-body">
+    <div class="settings-section">
                         <!-- Info text -->
                         <div class="alert alert-info mb-3">
                             <p class="mb-2">
@@ -175,39 +167,13 @@
                                 Add Smart Folder
                             </button>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-primary" @click="save" :disabled="hasInvalidSmartFolders">
-                            Save
-                        </button>
-                        <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button class="btn btn-secondary" @click="$emit('close')">Close</button>
+      <div class="settings-section__actions">
+        <button class="btn btn-primary" @click="save" :disabled="hasInvalidSmartFolders">Save</button>
+      </div>
     </div>
 </template>
 
 <style src="../../assets/css/settings.css"></style>
-<style scoped>
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--overlay-backdrop);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-dialog {
-    max-width: 90%;
-    width: 100%;
-}
-</style>
 
 <script>
 import { saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';

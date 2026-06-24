@@ -4,8 +4,16 @@
       <div class="modal-content">
 
         <div class="modal-header">
-          <h5 class="modal-title">Settings</h5>
-          <button class="btn-close" @click="$emit('close')" />
+          <h5 class="modal-title">{{ activeTitle }}</h5>
+          <button
+            v-if="active !== 'welcome'"
+            type="button"
+            class="btn btn-secondary settings-back-button"
+            @click="active = 'welcome'"
+          >
+            Back to settings
+          </button>
+          <button v-else class="btn-close" aria-label="Close settings" @click="$emit('close')" />
         </div>
 
         <div class="modal-body">
@@ -16,7 +24,7 @@
           />
         </div>
 
-        <div class="modal-footer">
+        <div v-if="active === 'welcome'" class="modal-footer">
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
           <button class="btn btn-secondary" @click="active = 'actions'">Actions</button>
           <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'scores'">Scores</button>
@@ -76,6 +84,18 @@ export default {
         islands: 'SettingsIslands',
         feeds: 'FeedsOverview',
         users: 'ManageUsers'
+      }[this.active];
+    },
+    activeTitle() {
+      return {
+        welcome: 'Settings',
+        smartfolders: 'Smart Folders',
+        actions: 'Actions',
+        scores: 'Score Thresholds',
+        topics: 'Events and topics',
+        islands: 'Interest islands',
+        feeds: 'Feeds Overview',
+        users: 'Manage Users'
       }[this.active];
     }
   },

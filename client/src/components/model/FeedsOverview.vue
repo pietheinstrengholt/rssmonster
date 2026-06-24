@@ -1,14 +1,5 @@
 <template>
-  <div>
-    <h5>Feeds Overview</h5>
-    <!-- Feeds overview modal (placeholder; feed logic to be implemented) -->
-    <div class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Feeds Overview</h5>
-                </div>
-                <div class="modal-body">
+  <div class="settings-section">
                     <!-- Info text -->
                     <div class="alert alert-info mb-3">
                         <p class="mb-2">
@@ -93,14 +84,6 @@
                             </table>
                         </div>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
-                </div>
-            </div>
-        </div>
-    </div>
-    <button class="btn btn-secondary" @click="$emit('close')">Close</button>
   </div>
 </template>
 

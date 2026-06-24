@@ -1,15 +1,5 @@
 <template>
-  <div>
-    <h5>Score Thresholds</h5>
-
-    <!-- Score Thresholds modal -->
-    <div class="modal" tabindex="-1" role="dialog">
-        <div class="modal-dialog" role="document">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h5 class="modal-title">Score Thresholds</h5>
-                </div>
-                <div class="modal-body">
+  <div class="settings-section">
                     <!-- Info text -->
                     <div class="alert alert-info mb-3">
                         <p class="mb-2">
@@ -71,15 +61,8 @@
                             <option v-for="value in scoreOptions" :key="value" :value="value">{{ value }}</option>
                         </select>
                     </div>
-                </div>
-                <div class="modal-footer">
-                    <button class="btn btn-primary" @click="save">
-                        Save
-                    </button>
-                    <button class="btn btn-secondary" @click="$emit('close')">Close</button>
-                </div>
-            </div>
-        </div>
+    <div class="settings-section__actions">
+      <button class="btn btn-primary" @click="save">Save</button>
     </div>
   </div>
 </template>

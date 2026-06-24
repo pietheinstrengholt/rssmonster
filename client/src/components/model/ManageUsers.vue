@@ -1,13 +1,6 @@
 <template>
   <div class="manage-users">
-    <div class="modal" tabindex="-1" role="dialog" aria-modal="true" aria-labelledby="manage-users-title">
-      <div class="modal-dialog" role="document">
-        <div class="modal-content">
-          <div class="modal-header">
-            <h5 class="modal-title">Manage Users</h5>
-          </div>
-          <div class="modal-body">
-            <div v-if="userIdToDelete">
+    <div v-if="userIdToDelete">
               <section class="manage-users__confirmation" aria-labelledby="delete-user-title">
                 <p class="manage-users__eyebrow">Destructive action</p>
                 <h6 id="delete-user-title">Delete {{ user.username }}?</h6>
@@ -20,7 +13,7 @@
               <p v-if="message" class="manage-users__message manage-users__message--error">{{ message }}</p>
             </div>
 
-            <div v-else-if="user" class="manage-users__editor">
+    <div v-else-if="user" class="manage-users__editor">
               <div class="manage-users__section-heading">
                 <div>
                   <p class="manage-users__eyebrow">Account details</p>
@@ -53,7 +46,7 @@
               <p v-if="message" class="manage-users__message manage-users__message--error">{{ message }}</p>
             </div>
 
-            <div v-else class="manage-users__directory">
+    <div v-else class="manage-users__directory">
               <p v-if="message" class="manage-users__message manage-users__message--success">{{ message }}</p>
               <div v-if="users.length !== 0" class="manage-users__table-wrap">
                 <table class="manage-users__table">
@@ -90,35 +83,11 @@
                 <i class="bi bi-people" aria-hidden="true"></i>
                 <p>No users found.</p>
               </div>
-            </div>
-          </div>
-          <div class="modal-footer">
-            <button type="button" class="btn btn-secondary" @click="$emit('close')">Back to settings</button>
-          </div>
-        </div>
-      </div>
     </div>
   </div>
 </template>
 
 <style scoped>
-.modal {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--overlay-backdrop);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.modal-dialog {
-  max-width: 780px;
-  width: calc(100% - 32px);
-}
-
 .manage-users__header {
   align-items: flex-start;
   border-bottom: 1px solid var(--border-subtle);
@@ -349,8 +318,7 @@
   margin-top: 26px;
 }
 
-.manage-users__form-actions .btn,
-.modal-footer .btn {
+.manage-users__form-actions .btn {
   margin: 0;
 }
 
@@ -387,16 +355,7 @@
   margin: 0;
 }
 
-.modal-footer {
-  border-top: 1px solid var(--border-subtle);
-  padding: 14px 28px;
-}
-
 @media (max-width: 600px) {
-  .modal-dialog {
-    width: calc(100% - 20px);
-  }
-
   .manage-users__header,
   .manage-users__editor,
   .manage-users__confirmation {

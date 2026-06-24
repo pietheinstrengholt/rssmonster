@@ -42,6 +42,16 @@ body.modal-open {
     font-weight: 600;
 }
 
+.settings-back-button {
+    margin-left: auto;
+}
+
+.settings-section__actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 20px;
+}
+
 .modal-body {
     padding: 15px;
     overflow-y: auto;

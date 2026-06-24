@@ -133,9 +133,8 @@
       </div>
     </div>
 
-    <div class="d-flex justify-content-end gap-2">
+    <div class="d-flex justify-content-end">
       <button type="button" class="btn btn-secondary" @click="reload" :disabled="loading">Refresh</button>
-      <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
     </div>
   </div>
 </template>
