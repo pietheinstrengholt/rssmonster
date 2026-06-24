@@ -62,6 +62,7 @@ const bootstrapIconNames = [
   'record-circle-fill',
   'robot',
   'rss-fill',
+  'search',
   'slash-circle-fill',
   'tag-fill',
   'three-dots',
