@@ -108,7 +108,7 @@
   font-weight: 500;
   box-shadow: none;
   padding: 6px 10px;
-  height: 40px;
+  height: 36px;
   line-height: 20px;
   font-size: 14px;
 
@@ -215,7 +215,12 @@
   align-items: center;
   gap: 8px;
   padding: 7px 8px;
+  margin-bottom: 4px;
   border-radius: 4px;
+}
+
+.toolbar-theme-menu .dropdown-item:last-child {
+  margin-bottom: 0;
 }
 
 .toolbar-theme-menu .dropdown-item svg {
@@ -327,7 +332,7 @@
   display: flex;
   align-items: center;
   gap: 8px;
-  height: 34px;
+  height: 36px;
   margin: 0 130px 0 auto;
   padding: 0 12px;
   background-color: var(--bg-input);

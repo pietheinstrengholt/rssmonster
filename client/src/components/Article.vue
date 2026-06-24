@@ -10,6 +10,7 @@
       </div>
       <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
     </div>
+    <div class="article-divider"></div>
   </div>
 </template>
 
@@ -543,8 +544,17 @@ export default {
   font-family: var(--font-family);
   margin-top: 6px;
   background-color: var(--desktop-toolbar-background);
-  border-bottom: 1px solid #E5E7EB /* Light gray border for light mode */;
   width: 100%;
+}
+
+.article-divider {
+  height: 1px;
+  margin: 10px 18px 0 16px;
+  background-color: var(--border-subtle);
+}
+
+:root[data-theme='dark'] .article-divider {
+  background-color: var(--border-color);
 }
 
 :root[data-theme='dark'] .article-card .article-body {
@@ -796,6 +806,11 @@ export default {
 @media (max-width: 766px) and (orientation: portrait) {
   .article-card .article-body {
     padding: 4px 8px 4px 8px;
+  }
+
+  .article-divider {
+    margin-right: 8px;
+    margin-left: 8px;
   }
 
   .article-card .article-meta {
@@ -1098,14 +1113,6 @@ span.similar-badge {
 
   .article-card {
     border-bottom-color: var(--dark-page-surface);
-    background: var(--article-surface-dark);
-  }
-
-  /* Landscape phones and portrait tablets */
-  @media (max-width: 766px) {
-    .article-card {
-      background: var(--article-surface-dark);
-    }
   }
 
   .article-body h1.article-header, .article-body h2.article-header {

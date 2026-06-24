@@ -104,7 +104,7 @@ export default {
 @media (min-width: 767px) {
   #articles {
     margin-left: -15px;
-    margin-right: -12px;
+    margin-right: -23px;
   }
 }
 
