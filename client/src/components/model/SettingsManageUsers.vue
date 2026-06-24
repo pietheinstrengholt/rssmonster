@@ -137,30 +137,38 @@
 
 .manage-users__table-wrap {
   overflow-x: auto;
+  background: #ffffff;
+  border: 1px solid #e5e7eb;
+  border-radius: 12px;
 }
 
 .manage-users__table {
   border-collapse: collapse;
   width: 100%;
+  min-width: 520px;
+  font-size: 14px;
 }
 
 .manage-users__table th {
-  background: var(--bg-surface-muted);
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-muted);
-  font-size: 11px;
+  height: 46px;
+  padding: 0 14px;
+  background: #fafafb;
+  color: #475569;
+  font-size: 12px;
   font-weight: 700;
-  letter-spacing: 0.06em;
-  padding: 11px 28px;
+  letter-spacing: 0.04em;
   text-align: left;
   text-transform: uppercase;
+  white-space: nowrap;
 }
 
 .manage-users__table td {
-  border-bottom: 1px solid var(--border-subtle);
-  color: var(--text-primary);
-  padding: 15px 28px;
+  height: 58px;
+  padding: 10px 14px;
+  border-top: 1px solid #e5e7eb;
+  color: #334155;
   vertical-align: middle;
+  white-space: nowrap;
 }
 
 .manage-users__table tbody tr:last-child td {
@@ -168,7 +176,7 @@
 }
 
 .manage-users__table tbody tr:hover {
-  background: var(--bg-hover);
+  background: #f8fafc;
 }
 
 .manage-users__actions-heading {
@@ -238,24 +246,25 @@
 .manage-users__action {
   background: transparent;
   border: 0;
-  border-radius: 4px;
-  color: var(--color-primary);
+  border-radius: 6px;
+  color: #ea650d;
   font-size: 13px;
   font-weight: 600;
   padding: 6px 8px;
 }
 
 .manage-users__action:hover {
-  background: var(--bg-secondary);
-  color: var(--color-primary-hover);
+  background: #fff1e8;
+  color: #ea650d;
 }
 
 .manage-users__action--remove {
-  color: var(--color-danger);
+  color: #dc2626;
 }
 
 .manage-users__action--remove:hover {
-  color: var(--color-danger-hover);
+  background: #fef2f2;
+  color: #dc2626;
 }
 
 .manage-users__editor,
@@ -355,6 +364,31 @@
   margin: 0;
 }
 
+:global(:root[data-theme='dark']) .manage-users__table-wrap {
+  background: var(--bg-modal) !important;
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .manage-users__table,
+:global(:root[data-theme='dark']) .manage-users__table tbody,
+:global(:root[data-theme='dark']) .manage-users__table tbody tr {
+  background: var(--bg-modal) !important;
+}
+
+:global(:root[data-theme='dark']) .manage-users__table th {
+  background: var(--bg-control);
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark']) .manage-users__table td {
+  border-color: var(--border-color);
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark']) .manage-users__table tbody tr:hover {
+  background: var(--bg-control);
+}
+
 @media (max-width: 600px) {
   .manage-users__header,
   .manage-users__editor,
@@ -369,14 +403,36 @@
     padding-right: 16px;
   }
 
-  .manage-users__table th:nth-child(2),
-  .manage-users__table td:nth-child(2) {
-    display: none;
-  }
-
   .manage-users__actions {
     gap: 0;
   }
+}
+</style>
+
+<style>
+:root[data-theme="dark"] .manage-users .manage-users__table-wrap,
+:root[data-theme="dark"] .manage-users .manage-users__table,
+:root[data-theme="dark"] .manage-users .manage-users__table thead,
+:root[data-theme="dark"] .manage-users .manage-users__table tbody,
+:root[data-theme="dark"] .manage-users .manage-users__table tbody tr {
+  background: var(--bg-modal) !important;
+  border-color: var(--border-color) !important;
+}
+
+:root[data-theme="dark"] .manage-users .manage-users__table th {
+  background: var(--bg-control) !important;
+  color: var(--text-secondary) !important;
+}
+
+:root[data-theme="dark"] .manage-users .manage-users__table td {
+  background: var(--bg-modal) !important;
+  border-color: var(--border-color) !important;
+  color: var(--text-inverted) !important;
+}
+
+:root[data-theme="dark"] .manage-users .manage-users__table tbody tr:hover,
+:root[data-theme="dark"] .manage-users .manage-users__table tbody tr:hover td {
+  background: var(--bg-control) !important;
 }
 </style>
 
@@ -385,7 +441,7 @@ import { fetchUsers, updateUser, deleteUser } from '../../api/users';
 import { setAuthToken } from '../../api/client';
 
 export default {
-    name: 'ManageUsers',
+    name: 'SettingsManageUsers',
     emits: ['close'],
     created: function() {
         setAuthToken(this.$store.auth.token);

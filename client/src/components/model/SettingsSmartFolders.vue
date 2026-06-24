@@ -1,9 +1,9 @@
 <template>
     <div class="settings-section">
                         <!-- Info text -->
-                        <div class="alert alert-info mb-3">
+                        <div class="alert alert-info mb-3 smart-folders-intro">
                             <p class="mb-2">
-                                <strong>What are Smart Folders?</strong>
+                                <i class="bi bi-folder me-2" aria-hidden="true"></i><strong>What are Smart Folders?</strong>
                             </p>
                             <p class="mb-2">
                                 Smart Folders are dynamic, saved searches that automatically organize your articles based on custom filter queries.
@@ -38,10 +38,10 @@
                         </div>
 
                         <!-- Smart Folder Recommendations trigger & results -->
-                        <div class="settings-group d-flex justify-content-between align-items-center gap-3">
+                        <div class="settings-group d-flex justify-content-between align-items-center gap-3 smart-folders-insights">
                             <div>
                                 <label class="mb-1">Smart Folder Insights</label>
-                                <div class="text-muted small">Generate personalized smart folder suggestions on demand.</div>
+                                <div class="text-muted small">Let RSSMonster analyze your reading history and suggest useful smart folders.</div>
                             </div>
                             <button
                                 type="button"
@@ -103,16 +103,17 @@
                         </div>
 
                         <!-- Smart Folders -->
-                        <div class="settings-group">
-                            <label>
+                        <div class="settings-group smart-folders-list">
+                            <div class="smart-folders-list-heading"><div><label class="mb-1">Your Smart Folders</label><div class="text-muted small">Smart Folders update automatically as new articles arrive.</div></div><button type="button" class="btn btn-add" @click="addSmartFolder"><BootstrapIcon icon="plus-circle-fill" /> Add Smart Folder</button></div>
+                            <label class="visually-hidden">
                                 Smart Folders
                                 <span class="info-icon" :title="'Define smart folders to automatically organize articles based on criteria'">
                                     <BootstrapIcon icon="info-circle-fill" />
                                 </span>
                             </label>
 
-                            <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row">
-                                <div class="action-fields">
+                            <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row smart-folder-row">
+                                <div class="action-fields smart-folder-row-grid"><BootstrapIcon icon="grip-vertical" class="smart-folder-grip" aria-hidden="true" /><span class="smart-folder-icon"><BootstrapIcon icon="folder" aria-hidden="true" /></span>
                                     <div class="form-group">
                                         <label :for="'smart-folder-name-' + index" class="small-label">Name</label>
                                         <input
@@ -153,7 +154,7 @@
 
                                     <button
                                         type="button"
-                                        class="btn btn-remove"
+                                        class="btn btn-remove smart-folder-delete-button"
                                         @click="removeSmartFolder(index)"
                                         :title="'Remove smart folder'"
                                     >
@@ -162,18 +163,20 @@
                                 </div>
                             </div>
 
-                            <button type="button" class="btn btn-add" @click="addSmartFolder">
-                                <BootstrapIcon icon="plus-circle-fill" />
-                                Add Smart Folder
-                            </button>
                         </div>
       <div class="settings-section__actions">
-        <button class="btn btn-primary" @click="save" :disabled="hasInvalidSmartFolders">Save</button>
+      <button class="btn btn-primary smart-folders-save" @click="save" :disabled="hasInvalidSmartFolders"><BootstrapIcon icon="floppy" /> Save Changes</button>
       </div>
     </div>
 </template>
 
 <style src="../../assets/css/settings.css"></style>
+
+<style scoped>
+.smart-folders-intro{padding:26px 28px;background:var(--bg-info-subtle);border:1px solid var(--border-info);border-radius:8px;color:var(--text-info)}.smart-folders-intro p:first-child{font-size:20px}.smart-folders-intro ul{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px 24px;padding:0;list-style:none}.smart-folders-intro li{padding:0;background:transparent;border:0;color:var(--text-secondary);font-size:13px}.smart-folders-intro li strong{display:block;margin-bottom:6px;color:var(--text-primary)}.smart-folders-intro code{display:inline-block;margin:2px;padding:3px 6px;background:#edf3ff;border-radius:5px;color:#1451bb}.smart-folders-insights{padding:18px 0;background:transparent;border:0;border-radius:0}.smart-folders-insights .btn-secondary{background:var(--color-primary)}.smart-folders-list{padding:0;background:transparent;border:0;border-radius:0}.smart-folders-list>label{display:block;margin:0 0 4px;font-size:16px;font-weight:700}.smart-folders-list>.settings-group{padding:16px;background:var(--bg-primary);border:1px solid var(--border-subtle);border-radius:10px}.settings-section__actions .btn-primary{display:inline-flex;align-items:center;gap:8px}.settings-section__actions .btn-primary::before{content:'\f4a2';font-family:'bootstrap-icons'}:global(:root[data-theme='dark']) .smart-folders-intro,:global(:root[data-theme='dark']) .smart-folders-list>.settings-group{background:var(--bg-modal);border-color:var(--border-color)}@media(max-width:766px){.smart-folders-intro ul{grid-template-columns:1fr}.smart-folders-insights{align-items:flex-start!important;flex-direction:column}.smart-folders-insights .btn-secondary{width:100%}}
+.smart-folder-row{padding:14px 16px!important;background:var(--bg-primary)!important;border:1px solid var(--border-subtle)!important;border-radius:12px!important}.smart-folder-row-grid{display:grid!important;grid-template-columns:24px 56px minmax(140px,1fr) minmax(260px,2fr) 150px 56px!important;align-items:center!important;gap:16px!important}.smart-folder-row-grid .form-group{margin:0!important}.smart-folder-row-grid .form-group-full{grid-column:auto!important}.smart-folder-row-grid .small-label{margin-bottom:5px;color:var(--text-muted);font-size:11px;font-weight:700}.smart-folder-grip{align-self:center;color:var(--text-muted);justify-self:center}.smart-folder-icon{justify-self:center;align-self:center;margin:0!important}.smart-folder-row-grid .form-control,.smart-folder-row-grid .form-select{height:38px}.smart-folder-row-grid .form-group-full .form-control{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;background:var(--bg-surface-muted);color:var(--color-primary)}.smart-folder-delete-button{width:38px!important;height:38px!important;padding:0!important;justify-self:end;align-self:center}.smart-folder-row+.smart-folder-row{margin-top:12px}@media(max-width:900px){.smart-folder-row-grid{grid-template-columns:24px 56px 1fr auto!important;gap:12px!important}.smart-folder-row-grid .form-group{grid-column:1/-1}.smart-folder-delete-button{grid-column:4;grid-row:1}}@media(max-width:520px){.smart-folder-row-grid{grid-template-columns:24px 40px 1fr auto!important}.smart-folder-icon{width:32px;height:32px}.smart-folder-row{padding:14px!important}}
+.smart-folders-insights{margin-top:22px!important;align-items:center!important}.smart-folders-insights .btn-secondary{padding:10px 14px}.smart-folders-list{margin-top:20px}.smart-folders-list-heading{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:14px}.smart-folders-list-heading>label{font-size:16px}.smart-folder-row{padding:14px!important;border:1px solid var(--border-subtle)!important;border-radius:10px!important;background:var(--bg-primary)!important}.smart-folder-row+.smart-folder-row{margin-top:10px}.smart-folder-grip{align-self:center;color:var(--text-muted)}.smart-folder-icon{display:inline-flex;width:34px;height:34px;align-items:center;justify-content:center;background:var(--bg-info-subtle);border-radius:8px;color:var(--color-primary)}.smart-folders-save{min-height:42px;padding:0 16px;background:var(--color-primary)!important}@media(max-width:766px){.smart-folders-list-heading{align-items:flex-start;flex-direction:column}.smart-folders-list-heading .btn-add{width:100%}.smart-folder-row .action-fields{grid-template-columns:1fr!important}}
+</style>
 
 <script>
 import { saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';

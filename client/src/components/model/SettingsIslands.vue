@@ -141,6 +141,14 @@
 
 <style src="../../assets/css/settings.css"></style>
 
+<style scoped>
+.alert-danger {
+  background-color: var(--bg-danger-subtle);
+  border-color: var(--border-danger-subtle);
+  color: var(--text-danger);
+}
+</style>
+
 <script>
 import { fetchIslandsOverview } from '../../api/settings';
 

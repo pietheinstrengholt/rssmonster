@@ -34,6 +34,20 @@
       </p>
     </div>
 
+    <div v-if="$store.data.currentSelection.AIEnabled" class="mb-3">
+      <h6 class="mb-2"><strong>Topics</strong></h6>
+      <p class="small text-muted mb-0">
+        Review topic and event insights to see how related articles are grouped into current stories and longer-running themes.
+      </p>
+    </div>
+
+    <div v-if="$store.data.currentSelection.AIEnabled" class="mb-3">
+      <h6 class="mb-2"><strong>Islands</strong></h6>
+      <p class="small text-muted mb-0">
+        Explore your interest islands to understand which topics, stars, and clicks are shaping your reading priorities.
+      </p>
+    </div>
+
     <div class="mb-3">
       <h6 class="mb-2"><strong>Feeds Overview</strong></h6>
       <p class="small text-muted mb-0">
@@ -43,7 +57,7 @@
     </div>
 
     <p class="small text-muted mt-4">
-      <strong>Tip:</strong> Use the navigation buttons below to configure each feature. Changes are saved independently per section.
+      <strong>Tip:</strong> Use the settings navigation to configure each feature. Changes are saved independently per section.
     </p>
   </div>
 </template>

@@ -246,7 +246,7 @@ const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "dele
 const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/model/RenameCategory.vue"));
 const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/model/UpdateFeed.vue"));
 const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/model/Cleanup.vue"));
-const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/ManageUsers.vue"));
+const SettingsManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/SettingsManageUsers.vue"));
 
 //import onboarding component
 const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/onboarding/InitialFeeds.vue"));
@@ -271,7 +271,7 @@ export default {
     appRenameCategory: RenameCategory,
     appUpdateFeed: UpdateFeed,
     appCleanup: Cleanup,
-    appManageUsers: ManageUsers,
+    appManageUsers: SettingsManageUsers,
     appInitialFeeds: InitialFeeds
   },
   data() {
