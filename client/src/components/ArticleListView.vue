@@ -116,10 +116,10 @@ export default {
   left: 0;
 }
 
-/* This rule reduces the article offset below the mobile toolbar. */
-@media (max-width: 766px) {
-  #articles {
-    padding-top: 36px;
+/* Removes the article offset when the mobile toolbar overlays portrait layouts. */
+@media (max-width: 766px) and (orientation: portrait) {
+  #main-container #articles {
+    padding-top: 0;
   }
 }
 

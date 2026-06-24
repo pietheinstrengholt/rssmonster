@@ -125,7 +125,7 @@
   top: 0;
   z-index: 100;
   width: 100%;
-  padding: 14px 16px 10px;
+  padding: 8px 12px 10px;
   color: #111827;
   background: #ffffff;
   border-bottom: 1px solid #e5e7eb;
@@ -152,7 +152,7 @@
 
 .mobile-toolbar-brand-row {
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 8px;
 }
 
 .mobile-toolbar-brand {
@@ -201,6 +201,7 @@
 
 .mobile-toolbar-filter {
   flex: 0 0 auto;
+  margin-right: 8px;
 }
 
 .mobile-search-panel {
@@ -231,10 +232,18 @@
   border: 1px solid #e5e7eb;
   border-radius: 14px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  font-size: 16px;
-  font-weight: 400;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
   white-space: nowrap;
   cursor: pointer;
+}
+
+.dropdown-menu.show,
+.dropdown-menu.show .dropdown-item {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
 }
 
 .mobile-filter-button:hover,
