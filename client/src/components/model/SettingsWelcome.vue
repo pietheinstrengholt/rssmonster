@@ -1,11 +1,18 @@
 <template>
   <div class="settings-group">
-    <h4>Welcome to Settings</h4>
-
-    <p class="text-muted mb-3">
-      RSSMonster provides powerful automation and filtering tools to help you take control of your reading experience.
-      Configure how articles are processed, filtered, and organized to surface the content that matters most to you.
-    </p>
+    <section class="settings-insight-card" aria-labelledby="settings-welcome-title">
+      <span class="settings-insight-icon" aria-hidden="true">
+        <BootstrapIcon icon="gear-fill" />
+      </span>
+      <div>
+        <p class="settings-page-eyebrow">Settings — Overview</p>
+        <h3 id="settings-welcome-title">Welcome to Settings</h3>
+        <p>
+          RSSMonster provides powerful automation and filtering tools to help you take control of your reading experience.
+          Configure how articles are processed, filtered, and organized to surface the content that matters most to you.
+        </p>
+      </div>
+    </section>
 
     <div v-if="$store.data.currentSelection.AIEnabled" class="mb-3">
       <h6 class="mb-2"><strong>Smart Folders</strong></h6>
@@ -71,6 +78,12 @@
 </template>
 
 <style src="../../assets/css/settings.css"></style>
+
+<style scoped>
+.settings-group {
+  max-width: 1100px;
+}
+</style>
 
 <script>
 export default {

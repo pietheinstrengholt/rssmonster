@@ -107,6 +107,10 @@
 </template>
 
 <style scoped>
+.manage-users {
+  max-width: 1100px;
+}
+
 .manage-users__header {
   align-items: flex-start;
   border-bottom: 1px solid var(--border-subtle);

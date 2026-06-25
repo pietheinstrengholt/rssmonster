@@ -123,6 +123,7 @@
 
 <style scoped>
 .feeds-overview {
+  max-width: 1100px;
   color: #334155;
 }
 

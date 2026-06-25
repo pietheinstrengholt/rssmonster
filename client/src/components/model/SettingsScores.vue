@@ -96,7 +96,7 @@
 
 <style scoped>
 .scores-settings {
-  max-width: 1040px;
+  max-width: 1100px;
   color: var(--text-primary);
 }
 

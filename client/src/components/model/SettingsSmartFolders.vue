@@ -176,6 +176,10 @@
 <style src="../../assets/css/settings.css"></style>
 
 <style scoped>
+.settings-section {
+  max-width: 1100px;
+}
+
 .smart-folders-intro {
   color: var(--text-info);
 }
@@ -285,13 +289,11 @@
 }
 .smart-folder-row-grid .small-label {
   margin-bottom: 5px;
-  color: var(--text-muted);
   font-size: 11px;
   font-weight: 700;
 }
 .smart-folder-grip {
   align-self: center;
-  color: var(--text-muted);
   justify-self: center;
 }
 .smart-folder-icon {
@@ -374,7 +376,6 @@
 }
 .smart-folder-grip {
   align-self: center;
-  color: var(--text-muted);
 }
 .smart-folder-icon {
   display: inline-flex;
