@@ -6,7 +6,7 @@
     align-items: center;
     justify-content: center;
     padding: 24px;
-    background: rgba(15, 23, 42, 0.55);
+    background: var(--literal-color-rgba-15-23-42-0-55);
 }
 
 .modal {
@@ -27,10 +27,10 @@ body.modal-open {
     width: min(1300px, calc(100vw - 48px));
     height: min(800px, calc(100vh - 48px));
     overflow: hidden;
-    background: #ffffff;
-    border: 1px solid #e5e7eb;
+    background: var(--literal-color-hex-ffffff);
+    border: 1px solid var(--literal-color-hex-e5e7eb);
     border-radius: 16px;
-    box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+    box-shadow: 0 24px 80px var(--literal-color-rgba-15-23-42-0-28);
 }
 
 .settings-header {
@@ -39,13 +39,13 @@ body.modal-open {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    background: #ffffff;
-    border-bottom: 1px solid #e5e7eb;
+    background: var(--literal-color-hex-ffffff);
+    border-bottom: 1px solid var(--literal-color-hex-e5e7eb);
 }
 
 .settings-title {
     margin: 0;
-    color: #111827;
+    color: var(--literal-color-hex-111827);
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -53,7 +53,7 @@ body.modal-open {
 
 .settings-subtitle {
     margin: 4px 0 0;
-    color: #64748b;
+    color: var(--literal-color-hex-64748b);
     font-size: 13px;
 }
 
@@ -66,8 +66,8 @@ body.modal-open {
 .settings-sidebar {
     padding: 18px 12px;
     overflow-y: auto;
-    background: #fafafb;
-    border-right: 1px solid #e5e7eb;
+    background: var(--literal-color-hex-fafafb);
+    border-right: 1px solid var(--literal-color-hex-e5e7eb);
 }
 
 .settings-sidebar-item {
@@ -79,8 +79,8 @@ body.modal-open {
     gap: 12px;
     border: 0;
     border-radius: 10px;
-    background: transparent;
-    color: #334155;
+    background: var(--literal-color-transparent);
+    color: var(--literal-color-hex-334155);
     font-size: 14px;
     font-weight: 600;
     text-align: left;
@@ -88,12 +88,12 @@ body.modal-open {
 }
 
 .settings-sidebar-item:hover {
-    background: #f1f5f9;
+    background: var(--literal-color-hex-f1f5f9);
 }
 
 .settings-sidebar-item.active {
-    background: #fff1e8;
-    color: #ea650d;
+    background: var(--literal-color-hex-fff1e8);
+    color: var(--literal-color-hex-ea650d);
 }
 
 .settings-sidebar-icon {
@@ -107,7 +107,7 @@ body.modal-open {
     min-width: 0;
     padding: 28px 30px;
     overflow-y: auto;
-    background: #ffffff;
+    background: var(--literal-color-hex-ffffff);
 }
 
 .settings-close-button {
@@ -118,8 +118,8 @@ body.modal-open {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    background: transparent;
-    color: #1f2937 !important;
+    background: var(--literal-color-transparent);
+    color: var(--literal-color-hex-1f2937) !important;
     cursor: pointer;
 }
 
@@ -128,8 +128,8 @@ body.modal-open {
 }
 
 .settings-close-button:hover {
-    background: #f1f5f9;
-    color: #111827;
+    background: var(--literal-color-hex-f1f5f9);
+    color: var(--literal-color-hex-111827);
 }
 
 .settings-section__actions {
@@ -211,8 +211,8 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .settings-dialog {
-    border-color: rgba(148, 163, 184, 0.22);
-    box-shadow: 0 24px 80px rgba(0, 0, 0, 0.48);
+    border-color: var(--literal-color-rgba-148-163-184-0-22);
+    box-shadow: 0 24px 80px var(--literal-color-rgba-0-0-0-0-48);
 }
 
 :root[data-theme='dark'] .settings-sidebar {
@@ -232,8 +232,8 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .settings-sidebar-item.active {
-    background: #4a2b18;
-    color: #ffad70;
+    background: var(--literal-color-hex-4a2b18);
+    color: var(--literal-color-hex-ffad70);
 }
 
 :root[data-theme='dark'] .settings-header,
@@ -590,7 +590,7 @@ body.modal-open {
         overflow-y: hidden;
         padding: 10px 12px;
         border-right: 0;
-        border-bottom: 1px solid #e5e7eb;
+        border-bottom: 1px solid var(--literal-color-hex-e5e7eb);
     }
 
     .settings-sidebar-item {

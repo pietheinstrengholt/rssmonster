@@ -500,7 +500,7 @@ export default {
   justify-content: center;
   width: 20px;
   height: 20px;
-  color: #F59E0B;
+  color: var(--literal-color-hex-f59e0b);
   margin-right: 8px;
   flex-shrink: 0;
   line-height: 1;
@@ -598,7 +598,7 @@ export default {
   margin-top: 6px;
 }
 .article-card .article-content-wrapper {
-  color: #111827;
+  color: var(--literal-color-hex-111827);
   padding-top: 6px;
   font-size: 14px;
   line-height: 1.65;
@@ -611,7 +611,7 @@ export default {
 
 .article-card .article-full-content {
   font-family: var(--font-family);
-  color: #1F2937;
+  color: var(--literal-color-hex-1f2937);
   font-size: 14px;
   line-height: 1.65;
   font-weight: 400;
@@ -619,7 +619,7 @@ export default {
 
 .article-card .article-body h5 a {
   margin: 0;
-  color: #111827;
+  color: var(--literal-color-hex-111827);
   font-size: 22px;
   line-height: 1;
   font-weight: 700;
@@ -675,7 +675,7 @@ export default {
 
 .article-card .dropdown .btn:hover {
   opacity: 1;
-  background-color: transparent !important;
+  background-color: var(--literal-color-transparent) !important;
 }
 
 .article-card .dropdown-menu {
@@ -697,7 +697,7 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: #6B7280;
+  color: var(--literal-color-hex-6b7280);
   font-size: 13px;
   line-height: 1.3;
   margin: 0;
@@ -799,7 +799,7 @@ export default {
 }
 
 .article-body:hover {
-    background: #fafafa;
+    background: var(--literal-color-hex-fafafa);
 }
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
@@ -844,7 +844,7 @@ export default {
 
 .article-card .article-meta .article-published,
 .article-card .article-meta .article-source a {
-  color: #6B7280;
+  color: var(--literal-color-hex-6b7280);
 }
 
 .break {

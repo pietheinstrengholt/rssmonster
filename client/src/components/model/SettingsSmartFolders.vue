@@ -200,7 +200,7 @@
 }
 .smart-folders-intro li {
   padding: 0;
-  background: transparent;
+  background: var(--literal-color-transparent);
   border: 0;
   color: var(--text-secondary);
   font-size: 13px;
@@ -214,13 +214,13 @@
   display: inline-block;
   margin: 2px;
   padding: 3px 6px;
-  background: #edf3ff;
+  background: var(--literal-color-hex-edf3ff);
   border-radius: 5px;
-  color: #1451bb;
+  color: var(--literal-color-hex-1451bb);
 }
 .smart-folders-insights {
   padding: 18px 0;
-  background: transparent;
+  background: var(--literal-color-transparent);
   border: 0;
   border-radius: 0;
 }
@@ -229,7 +229,7 @@
 }
 .smart-folders-list {
   padding: 0;
-  background: transparent;
+  background: var(--literal-color-transparent);
   border: 0;
   border-radius: 0;
 }

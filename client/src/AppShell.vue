@@ -90,7 +90,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
+    scrollbar-color: var(--literal-color-transparent) var(--literal-color-transparent);
     transition: scrollbar-color 0.2s ease;
   }
 
@@ -100,16 +100,16 @@
   }
 
   #sidebar::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--literal-color-transparent);
   }
 
   #sidebar::-webkit-scrollbar-thumb {
-    background-color: transparent;
+    background-color: var(--literal-color-transparent);
     transition: background-color 0.2s ease;
   }
 
   #sidebar.is-scrolling {
-    scrollbar-color: var(--sidebar-scrollbar-thumb) transparent;
+    scrollbar-color: var(--sidebar-scrollbar-thumb) var(--literal-color-transparent);
   }
 
   #sidebar.is-scrolling::-webkit-scrollbar-thumb {
@@ -121,7 +121,7 @@
     overflow-y: auto;
     overflow-x: hidden;
     scrollbar-width: thin;
-    scrollbar-color: transparent transparent;
+    scrollbar-color: var(--literal-color-transparent) var(--literal-color-transparent);
     transition: scrollbar-color 0.2s ease;
   }
 
@@ -131,16 +131,16 @@
   }
 
   #home::-webkit-scrollbar-track {
-    background: transparent;
+    background: var(--literal-color-transparent);
   }
 
   #home::-webkit-scrollbar-thumb {
-    background-color: transparent;
+    background-color: var(--literal-color-transparent);
     transition: background-color 0.2s ease;
   }
 
   #home.is-scrolling {
-    scrollbar-color: var(--home-scrollbar-thumb) transparent;
+    scrollbar-color: var(--home-scrollbar-thumb) var(--literal-color-transparent);
   }
 
   #home.is-scrolling::-webkit-scrollbar-thumb {
@@ -150,11 +150,11 @@
   :root[data-theme='dark'] {
     #sidebar {
       background-color: var(--bg-secondary);
-      --sidebar-scrollbar-thumb: rgba(255, 255, 255, 0.45);
+      --sidebar-scrollbar-thumb: var(--literal-color-rgba-255-255-255-0-45);
     }
 
     #home {
-      --home-scrollbar-thumb: rgba(255, 255, 255, 0.45);
+      --home-scrollbar-thumb: var(--literal-color-rgba-255-255-255-0-45);
     }
   }
 }
@@ -178,11 +178,11 @@ div.row {
 
 #sidebar {
   position: fixed;
-  --sidebar-scrollbar-thumb: rgba(0, 0, 0, 0.45);
+  --sidebar-scrollbar-thumb: var(--literal-color-rgba-0-0-0-0-45);
 }
 
 #home {
-  --home-scrollbar-thumb: rgba(0, 0, 0, 0.45);
+  --home-scrollbar-thumb: var(--literal-color-rgba-0-0-0-0-45);
 }
 
 .app-error {

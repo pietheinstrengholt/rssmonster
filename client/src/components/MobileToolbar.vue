@@ -126,9 +126,9 @@
   z-index: 100;
   width: 100%;
   padding: 8px 12px 10px;
-  color: #111827;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  color: var(--literal-color-hex-111827);
+  background: var(--literal-color-hex-ffffff);
+  border-bottom: 1px solid var(--literal-color-hex-e5e7eb);
 }
 
 @media (max-width: 766px) {
@@ -157,7 +157,7 @@
 
 .mobile-toolbar-brand {
   gap: 10px;
-  color: #111827;
+  color: var(--literal-color-hex-111827);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -182,15 +182,15 @@
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: transparent;
-  color: #111827;
+  background: var(--literal-color-transparent);
+  color: var(--literal-color-hex-111827);
   font-size: 18px;
   cursor: pointer;
 }
 
 .mobile-toolbar-button:hover,
 .mobile-toolbar-button:focus-visible {
-  background: #f3f4f6;
+  background: var(--literal-color-hex-f3f4f6);
 }
 
 .mobile-toolbar-filters {
@@ -208,17 +208,17 @@
   position: relative;
   width: 100%;
   padding: 10px 16px;
-  background: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--literal-color-hex-ffffff);
+  border-bottom: 1px solid var(--literal-color-hex-e5e7eb);
 }
 
 .mobile-search-input {
   width: 100%;
   height: 42px;
   padding: 0 14px;
-  color: #111827;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  color: var(--literal-color-hex-111827);
+  background: var(--literal-color-hex-ffffff);
+  border: 1px solid var(--literal-color-hex-e5e7eb);
   border-radius: 14px;
   outline: none;
   font-size: 15px;
@@ -227,11 +227,11 @@
 .mobile-filter-button {
   height: 40px;
   padding: 0 6px;
-  color: #111827;
-  background: #ffffff;
-  border: 1px solid #e5e7eb;
+  color: var(--literal-color-hex-111827);
+  background: var(--literal-color-hex-ffffff);
+  border: 1px solid var(--literal-color-hex-e5e7eb);
   border-radius: 14px;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: 0 1px 2px var(--literal-color-rgba-15-23-42-0-04);
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
@@ -249,9 +249,9 @@
 .mobile-filter-button:hover,
 .mobile-filter-button:focus,
 .mobile-filter-button.show {
-  color: #111827;
-  background: #f9fafb;
-  border-color: #d1d5db;
+  color: var(--literal-color-hex-111827);
+  background: var(--literal-color-hex-f9fafb);
+  border-color: var(--literal-color-hex-d1d5db);
   box-shadow: none;
 }
 
@@ -270,8 +270,8 @@
 }
 
 .dropdown-item.active {
-  color: #2a71e7;
-  background-color: #ebf2fe;
+  color: var(--literal-color-hex-2a71e7);
+  background-color: var(--literal-color-hex-ebf2fe);
 }
 
 :global(:root[data-theme='dark']) {

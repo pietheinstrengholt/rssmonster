@@ -75,18 +75,18 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-item.selected {
-  color: #2A71E7;
-  background-color: #EBF2FE;
+  color: var(--literal-color-hex-2a71e7);
+  background-color: var(--literal-color-hex-ebf2fe);
   box-shadow: none;
 }
 
 .sidebar-item.sidebar-refresh-alert {
-  color: #991B1B;
-  background-color: #FEF2F2;
+  color: var(--literal-color-hex-991b1b);
+  background-color: var(--literal-color-hex-fef2f2);
 }
 
 .sidebar-item.sidebar-refresh-alert:hover {
-  background-color: #FEE2E2;
+  background-color: var(--literal-color-hex-fee2e2);
 }
 
 .sidebar-refresh-alert .sidebar-count {
@@ -121,12 +121,12 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-item.selected .sidebar-count {
-  color: #2A71E7;
+  color: var(--literal-color-hex-2a71e7);
 }
 
 .sidebar-count.sidebar-count-white {
   color: inherit;
-  background-color: transparent;
+  background-color: var(--literal-color-transparent);
 }
 
 .sidebar-item-title {
@@ -142,7 +142,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
 .selected .icon-star,
 .selected .icon-hot {
-  color: #2A71E7;
+  color: var(--literal-color-hex-2a71e7);
 }
 
 :global(:root[data-theme='dark']) {
@@ -162,12 +162,12 @@ const formattedCount = computed(() => formatCount(props.count));
   }
 
   .sidebar-item.sidebar-refresh-alert {
-    color: #FECACA;
-    background-color: #2B1B1E;
+    color: var(--literal-color-hex-fecaca);
+    background-color: var(--literal-color-hex-2b1b1e);
   }
 
   .sidebar-item.sidebar-refresh-alert:hover {
-    background-color: #3A2328;
+    background-color: var(--literal-color-hex-3a2328);
   }
 }
 
@@ -176,12 +176,12 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert) {
-  color: #FECACA;
-  background-color: #2B1B1E;
+  color: var(--literal-color-hex-fecaca);
+  background-color: var(--literal-color-hex-2b1b1e);
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert:hover) {
-  background-color: #3A2328;
+  background-color: var(--literal-color-hex-3a2328);
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected) {
@@ -239,10 +239,10 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white {
-  background-color: transparent !important;
+  background-color: var(--literal-color-transparent) !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count.sidebar-count-white {
-  background-color: transparent !important;
+  background-color: var(--literal-color-transparent) !important;
 }
 </style>

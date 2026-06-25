@@ -61,7 +61,7 @@ const buttonClasses = computed(() => [props.variant]);
   height: 36px;
   margin-bottom: 8px;
   padding: 0 12px;
-  border: 1px solid transparent;
+  border: 1px solid var(--literal-color-transparent);
   display: flex;
   align-items: center;
   font-weight: 500;
@@ -87,23 +87,23 @@ const buttonClasses = computed(() => [props.variant]);
 .sidebar-button-add-feed { width: calc(100% - 24px); }
 
 .sidebar-button-refresh {
-  color: #0368E2;
-  background-color: #EEF0F3;
+  color: var(--literal-color-hex-0368e2);
+  background-color: var(--literal-color-hex-eef0f3);
 }
 
 .sidebar-button-refresh:hover {
-  background-color: #E5E7EB;
+  background-color: var(--literal-color-hex-e5e7eb);
 }
 
 .sidebar-button-add-feed {
-  color: #2E8B57;
-  background-color: #EEF0F3;
+  color: var(--literal-color-hex-2e8b57);
+  background-color: var(--literal-color-hex-eef0f3);
 }
 
 .sidebar-button-mark-read {
-  color: #374151;
-  background-color: #FFFFFF;
-  border-color: #E7EAF0;
+  color: var(--literal-color-hex-374151);
+  background-color: var(--literal-color-hex-ffffff);
+  border-color: var(--literal-color-hex-e7eaf0);
 }
 
 .sidebar-management-button {

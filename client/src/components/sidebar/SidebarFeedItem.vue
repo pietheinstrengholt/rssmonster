@@ -63,8 +63,8 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-feed.selected {
-  color: #2A71E7;
-  background-color: #EBF2FE;
+  color: var(--literal-color-hex-2a71e7);
+  background-color: var(--literal-color-hex-ebf2fe);
   box-shadow: none;
 }
 
@@ -73,7 +73,7 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-feed.selected.error {
-  background-color: #EBF2FE;
+  background-color: var(--literal-color-hex-ebf2fe);
 }
 
 .sidebar-feed.disabled {
@@ -81,8 +81,8 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-feed.selected.disabled {
-  color: #2A71E7;
-  background-color: #EBF2FE;
+  color: var(--literal-color-hex-2a71e7);
+  background-color: var(--literal-color-hex-ebf2fe);
 }
 
 .sidebar-feed.disabled .sidebar-item-title {
@@ -124,12 +124,12 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-feed.selected .sidebar-count {
-  color: #2A71E7;
+  color: var(--literal-color-hex-2a71e7);
 }
 
 .sidebar-count.sidebar-count-white {
   color: inherit;
-  background-color: transparent;
+  background-color: var(--literal-color-transparent);
 }
 
 .sidebar-feed span.sidebar-icon img {

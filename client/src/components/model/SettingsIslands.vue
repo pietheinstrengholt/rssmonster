@@ -278,7 +278,7 @@
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
-  background: #e8f1ff;
+  background: var(--literal-color-hex-e8f1ff);
   color: var(--color-primary);
   font-size: 17px;
 }
@@ -402,8 +402,8 @@
 }
 
 :global(:root[data-theme='dark']) .interest-island-icon {
-  background: #1f3658;
-  color: #8bbdff;
+  background: var(--literal-color-hex-1f3658);
+  color: var(--literal-color-hex-8bbdff);
 }
 
 :global(:root[data-theme='dark']) .settings-coverage-track,

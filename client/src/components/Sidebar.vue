@@ -193,7 +193,7 @@
 
 <style scoped>
 .sidebar-scroll {
-  background-color: transparent;
+  background-color: var(--literal-color-transparent);
   color: var(--text-primary);
   margin-left: 8px;
   width: 250px;
@@ -279,7 +279,7 @@
   }
 
   div.sidebar-item.sidebar-status-item.selected span.sidebar-item-title, div.sidebar-item.sidebar-all-categories-item.selected span.sidebar-item-title, div.sidebar-item.sidebar-tag-item.selected span.sidebar-item-title, .sidebar-feed.selected span.sidebar-item-title {
-    color: #fff !important;
+    color: var(--literal-color-hex-fff) !important;
   }
 
 }

@@ -109,7 +109,7 @@
 .overlay {
   --options-sheet-bottom-gap: calc(12px + env(safe-area-inset-bottom));
   align-items: flex-end;
-  background: rgba(17, 24, 39, 0.45);
+  background: var(--literal-color-rgba-17-24-39-0-45);
   box-sizing: border-box;
   display: flex;
   height: 100%;
@@ -126,10 +126,10 @@
 
 .options-sheet {
   -webkit-overflow-scrolling: touch;
-  background: var(--options-sheet-background, #FFFFFF);
-  border: 1px solid var(--options-border, #E5E7EB);
+  background: var(--options-sheet-background, var(--literal-color-hex-ffffff));
+  border: 1px solid var(--options-border, var(--literal-color-hex-e5e7eb));
   border-radius: 20px;
-  box-shadow: 0 -12px 32px rgba(17, 24, 39, 0.16);
+  box-shadow: 0 -12px 32px var(--literal-color-rgba-17-24-39-0-16);
   box-sizing: border-box;
   height: min(calc(100vh - var(--options-sheet-bottom-gap)), calc(96vh + 12px - var(--options-sheet-bottom-gap)));
   height: min(calc(100dvh - var(--options-sheet-bottom-gap)), calc(96dvh + 12px - var(--options-sheet-bottom-gap)));
@@ -142,7 +142,7 @@
 }
 
 .options-drag-handle {
-  background: #C7CDD6;
+  background: var(--literal-color-hex-c7cdd6);
   border-radius: 999px;
   height: 5px;
   margin: 4px auto 14px;
@@ -157,7 +157,7 @@
 }
 
 .options-header h2 {
-  color: var(--options-text, #111827);
+  color: var(--options-text, var(--literal-color-hex-111827));
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
@@ -166,10 +166,10 @@
 
 .mobile-close-button {
   align-items: center;
-  background: var(--options-control-background, #FFFFFF);
+  background: var(--options-control-background, var(--literal-color-hex-ffffff));
   border: 0;
   border-radius: 50%;
-  color: var(--options-text, #111827);
+  color: var(--options-text, var(--literal-color-hex-111827));
   display: inline-flex;
   flex: 0 0 40px;
   height: 40px;
@@ -181,7 +181,7 @@
 
 .mobile-close-button::before,
 .mobile-close-button::after {
-  background-color: currentColor;
+  background-color: var(--literal-color-currentcolor);
   content: "";
   height: 18px;
   position: absolute;
@@ -198,7 +198,7 @@
 
 .mobile-close-button:hover,
 .mobile-close-button:focus-visible {
-  background: #F3F4F6;
+  background: var(--literal-color-hex-f3f4f6);
 }
 
 .overlay-content {
@@ -217,7 +217,7 @@
 }
 
 .options-section-header h3 {
-  color: var(--options-text, #111827);
+  color: var(--options-text, var(--literal-color-hex-111827));
   font-size: 17px;
   font-weight: 700;
   line-height: 1.3;
@@ -226,9 +226,9 @@
 
 .options-section-number {
   align-items: center;
-  background: var(--options-icon-background, #EFF6FF);
+  background: var(--options-icon-background, var(--literal-color-hex-eff6ff));
   border-radius: 50%;
-  color: var(--options-icon-color, #2563EB);
+  color: var(--options-icon-color, var(--literal-color-hex-2563eb));
   display: inline-flex;
   flex: 0 0 24px;
   font-size: 13px;
@@ -248,9 +248,9 @@
 
 .options-row {
   align-items: center;
-  border-bottom: 1px solid var(--options-row-border, #EEF0F3);
+  border-bottom: 1px solid var(--options-row-border, var(--literal-color-hex-eef0f3));
   box-sizing: border-box;
-  color: var(--options-text, #111827);
+  color: var(--options-text, var(--literal-color-hex-111827));
   cursor: pointer;
   display: flex;
   font-size: 15px;
@@ -261,12 +261,12 @@
 }
 
 .options-row .glyphicon {
-  color: var(--options-muted-text, #6B7280);
+  color: var(--options-muted-text, var(--literal-color-hex-6b7280));
   width: 18px;
 }
 
 .options-row::after {
-  border: 2px solid var(--options-indicator-border, #B8C0CC);
+  border: 2px solid var(--options-indicator-border, var(--literal-color-hex-b8c0cc));
   border-radius: 50%;
   content: "";
   height: 18px;
@@ -275,22 +275,22 @@
 }
 
 .options-row.selected {
-  background: var(--options-selected-background, #EFF6FF);
-  border: 1px solid var(--options-selected-border, #3B82F6);
+  background: var(--options-selected-background, var(--literal-color-hex-eff6ff));
+  border: 1px solid var(--options-selected-border, var(--literal-color-hex-3b82f6));
   border-radius: 10px;
-  color: var(--options-selected-text, #1D4ED8);
+  color: var(--options-selected-text, var(--literal-color-hex-1d4ed8));
   font-weight: 600;
   margin: 2px 0;
 }
 
 .options-row.selected::after {
-  background: var(--options-selected-indicator, #2563EB);
-  border-color: var(--options-selected-indicator, #2563EB);
-  box-shadow: inset 0 0 0 4px var(--options-selected-background, #EFF6FF);
+  background: var(--options-selected-indicator, var(--literal-color-hex-2563eb));
+  border-color: var(--options-selected-indicator, var(--literal-color-hex-2563eb));
+  box-shadow: inset 0 0 0 4px var(--options-selected-background, var(--literal-color-hex-eff6ff));
 }
 
 .options-row.selected .glyphicon {
-  color: var(--options-selected-indicator, #2563EB);
+  color: var(--options-selected-indicator, var(--literal-color-hex-2563eb));
 }
 
 .options-view-grid {
@@ -300,10 +300,10 @@
 }
 
 .options-view-card {
-  background: var(--options-control-background, #FFFFFF);
-  border: 1px solid var(--options-border, #E5E7EB);
+  background: var(--options-control-background, var(--literal-color-hex-ffffff));
+  border: 1px solid var(--options-border, var(--literal-color-hex-e5e7eb));
   border-radius: 12px;
-  color: var(--options-text, #111827);
+  color: var(--options-text, var(--literal-color-hex-111827));
   display: flex;
   flex-direction: column;
   min-height: 78px;
@@ -312,8 +312,8 @@
 }
 
 .options-view-card.selected {
-  background: var(--options-selected-background, #EFF6FF);
-  border-color: var(--options-selected-border, #2563EB);
+  background: var(--options-selected-background, var(--literal-color-hex-eff6ff));
+  border-color: var(--options-selected-border, var(--literal-color-hex-2563eb));
 }
 
 .options-view-title {
@@ -323,14 +323,14 @@
 }
 
 .options-view-description {
-  color: var(--options-muted-text, #6B7280);
+  color: var(--options-muted-text, var(--literal-color-hex-6b7280));
   font-size: 13px;
   line-height: 1.4;
   margin-top: 5px;
 }
 
 .options-action-button {
-  background: var(--options-control-background, #FFFFFF);
+  background: var(--options-control-background, var(--literal-color-hex-ffffff));
   border: 1px solid;
   border-radius: 10px;
   font-weight: 700;
@@ -339,20 +339,20 @@
 }
 
 .options-action-button--refresh {
-  background: var(--options-refresh-background, #FEF2F2);
-  border-color: var(--options-refresh-border, #EF4444);
-  color: var(--options-refresh-text, #DC2626);
+  background: var(--options-refresh-background, var(--literal-color-hex-fef2f2));
+  border-color: var(--options-refresh-border, var(--literal-color-hex-ef4444));
+  color: var(--options-refresh-text, var(--literal-color-hex-dc2626));
 }
 
 .options-action-button--add {
-  background: var(--options-add-background, #F0FDF4);
-  border-color: var(--options-add-border, #22C55E);
-  color: var(--options-add-text, #15803D);
+  background: var(--options-add-background, var(--literal-color-hex-f0fdf4));
+  border-color: var(--options-add-border, var(--literal-color-hex-22c55e));
+  color: var(--options-add-text, var(--literal-color-hex-15803d));
 }
 
 .options-action-button--neutral {
-  border-color: var(--options-border, #D1D5DB);
-  color: var(--options-text, #374151);
+  border-color: var(--options-border, var(--literal-color-hex-d1d5db));
+  color: var(--options-text, var(--literal-color-hex-374151));
 }
 
 .options-action-button:hover,
@@ -381,19 +381,19 @@
     --options-muted-text: var(--text-muted);
     --options-border: var(--border-color);
     --options-row-border: var(--border-color);
-    --options-indicator-border: #8B95A5;
-    --options-icon-background: #1E3A5F;
-    --options-icon-color: #93C5FD;
-    --options-selected-background: #1E3A5F;
-    --options-selected-border: #4A7FC7;
-    --options-selected-text: #DDEBFF;
-    --options-selected-indicator: #4A7FC7;
-    --options-refresh-background: #4A1F1F;
-    --options-refresh-border: #F87171;
-    --options-refresh-text: #FCA5A5;
-    --options-add-background: #1F4A32;
-    --options-add-border: #4ADE80;
-    --options-add-text: #BBF7D0;
+    --options-indicator-border: var(--literal-color-hex-8b95a5);
+    --options-icon-background: var(--literal-color-hex-1e3a5f);
+    --options-icon-color: var(--literal-color-hex-93c5fd);
+    --options-selected-background: var(--literal-color-hex-1e3a5f);
+    --options-selected-border: var(--literal-color-hex-4a7fc7);
+    --options-selected-text: var(--literal-color-hex-ddebff);
+    --options-selected-indicator: var(--literal-color-hex-4a7fc7);
+    --options-refresh-background: var(--literal-color-hex-4a1f1f);
+    --options-refresh-border: var(--literal-color-hex-f87171);
+    --options-refresh-text: var(--literal-color-hex-fca5a5);
+    --options-add-background: var(--literal-color-hex-1f4a32);
+    --options-add-border: var(--literal-color-hex-4ade80);
+    --options-add-text: var(--literal-color-hex-bbf7d0);
   }
 }
 
@@ -404,19 +404,19 @@
   --options-muted-text: var(--text-muted);
   --options-border: var(--border-color);
   --options-row-border: var(--border-color);
-  --options-indicator-border: #8B95A5;
-  --options-icon-background: #1E3A5F;
-  --options-icon-color: #93C5FD;
-  --options-selected-background: #1E3A5F;
-  --options-selected-border: #4A7FC7;
-  --options-selected-text: #DDEBFF;
-  --options-selected-indicator: #4A7FC7;
-  --options-refresh-background: #4A1F1F;
-  --options-refresh-border: #F87171;
-  --options-refresh-text: #FCA5A5;
-  --options-add-background: #1F4A32;
-  --options-add-border: #4ADE80;
-  --options-add-text: #BBF7D0;
+  --options-indicator-border: var(--literal-color-hex-8b95a5);
+  --options-icon-background: var(--literal-color-hex-1e3a5f);
+  --options-icon-color: var(--literal-color-hex-93c5fd);
+  --options-selected-background: var(--literal-color-hex-1e3a5f);
+  --options-selected-border: var(--literal-color-hex-4a7fc7);
+  --options-selected-text: var(--literal-color-hex-ddebff);
+  --options-selected-indicator: var(--literal-color-hex-4a7fc7);
+  --options-refresh-background: var(--literal-color-hex-4a1f1f);
+  --options-refresh-border: var(--literal-color-hex-f87171);
+  --options-refresh-text: var(--literal-color-hex-fca5a5);
+  --options-add-background: var(--literal-color-hex-1f4a32);
+  --options-add-border: var(--literal-color-hex-4ade80);
+  --options-add-text: var(--literal-color-hex-bbf7d0);
 }
 
 :global(body.mobile-options-open) {
