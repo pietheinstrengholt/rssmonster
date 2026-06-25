@@ -161,7 +161,6 @@
   color: var(--text-primary);
 }
 
-.settings-insight-card,
 .settings-data-panel,
 .settings-metric-card {
   background: var(--bg-primary);
@@ -169,54 +168,10 @@
   border-radius: 14px;
 }
 
-.settings-insight-card {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 24px;
-  background: var(--bg-info-subtle);
-  border-color: var(--border-info);
-}
-
-.settings-insight-icon {
-  display: inline-flex;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  border-radius: 12px;
-  color: var(--color-primary);
-  font-size: 20px;
-}
-
-.settings-page-eyebrow {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.settings-insight-card h3,
 .settings-data-panel h4 {
   margin: 0;
   color: var(--text-primary);
   font-weight: 700;
-}
-
-.settings-insight-card h3 {
-  font-size: 20px;
-}
-
-.settings-insight-card p:not(.settings-page-eyebrow) {
-  max-width: 760px;
-  margin: 6px 0 0;
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1.5;
 }
 
 .settings-metric-grid,
@@ -369,7 +324,6 @@
   opacity: 0.65;
 }
 
-:global(:root[data-theme='dark']) .settings-insight-card,
 :global(:root[data-theme='dark']) .settings-data-panel,
 :global(:root[data-theme='dark']) .settings-metric-card {
   background: var(--bg-modal);
@@ -390,10 +344,6 @@
 }
 
 @media (max-width: 766px) {
-  .settings-insight-card {
-    padding: 20px;
-  }
-
   .settings-metric-grid,
   .settings-panel-grid,
   .settings-compact-grid {

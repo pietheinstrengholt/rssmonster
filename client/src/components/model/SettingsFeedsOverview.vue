@@ -126,38 +126,6 @@
   color: #334155;
 }
 
-.settings-insight-card {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 24px;
-  background: var(--bg-info-subtle);
-  border: 1px solid var(--border-info);
-  border-radius: 14px;
-}
-
-.settings-insight-icon {
-  display: inline-flex;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  border-radius: 12px;
-  color: var(--color-primary);
-  font-size: 20px;
-}
-
-.settings-page-eyebrow {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
 .feeds-header h3 {
   margin: 0;
   color: #111827;
@@ -479,8 +447,6 @@
 }
 
 :global(:root[data-theme='dark']) .feeds-overview { color: var(--text-secondary); }
-:global(:root[data-theme='dark']) .settings-insight-card { background: var(--bg-modal); border-color: var(--border-color); }
-:global(:root[data-theme='dark']) .settings-insight-icon { background: var(--bg-control); }
 :global(:root[data-theme='dark']) .feeds-header h3,
 :global(:root[data-theme='dark']) .feeds-stat-value,
 :global(:root[data-theme='dark']) .feeds-name-cell strong { color: var(--text-inverted); }
@@ -535,7 +501,6 @@
 }
 
 @media (max-width: 766px) {
-  .settings-insight-card { padding: 20px; }
   .feeds-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .feeds-toolbar,
   .feeds-toolbar-actions,

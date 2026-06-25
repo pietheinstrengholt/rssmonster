@@ -1,7 +1,7 @@
 <template>
   <div class="actions-settings">
     <!-- Info text -->
-    <section class="actions-intro-card" aria-labelledby="actions-intro-title">
+    <section class="settings-insight-card settings-insight-card--stacked actions-intro-card" aria-labelledby="actions-intro-title">
       <header class="actions-intro-heading"><span class="actions-intro-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="actions-eyebrow">Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
       <div class="actions-type-grid" aria-label="Available action types">
         <article v-for="actionType in actionTypes" :key="actionType.value" class="actions-type-card"><span class="actions-type-icon" :class="actionType.iconClass" aria-hidden="true"><BootstrapIcon :icon="actionType.icon" /></span><div><h4>{{ actionType.label }}</h4><p>{{ actionType.description }}</p></div></article>
@@ -52,15 +52,20 @@ import { setAuthToken } from '../../api/client';
 
 export default {
   emits: ['close', 'saved'],
-  data() { return { actions: [], actionTypes: [
-    { value: 'delete', label: 'Delete', selectLabel: 'Delete article', icon: 'trash', iconClass: 'actions-type-icon--delete', description: 'Prevents the article from being saved.' },
-    { value: 'star', label: 'Star', selectLabel: 'Set starred', icon: 'star', iconClass: 'actions-type-icon--star', description: 'Marks the article as important.' },
-    { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
-    { value: 'clicked', label: 'Clicked', selectLabel: 'Mark as clicked', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Sets the read-later indicator.' },
-    { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 100.' },
-    { value: 'badquality', label: 'Mark as low quality', selectLabel: 'Mark as low quality', icon: 'arrow-down-square', iconClass: 'actions-type-icon--badquality', description: 'Overrides the quality score to 100.' },
-    { value: 'tag', label: 'Assign tag', selectLabel: 'Assign tag', icon: 'tag', iconClass: 'actions-type-icon--tag', description: 'Adds a custom tag to the article.' }
-  ] }; },
+  data() {
+    return {
+      actions: [],
+      actionTypes: [
+        { value: 'delete', label: 'Delete', selectLabel: 'Delete article', icon: 'trash', iconClass: 'actions-type-icon--delete', description: 'Prevents the article from being saved.' },
+        { value: 'star', label: 'Star', selectLabel: 'Set starred', icon: 'star', iconClass: 'actions-type-icon--star', description: 'Marks the article as important.' },
+        { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
+        { value: 'clicked', label: 'Clicked', selectLabel: 'Mark as clicked', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Sets the read-later indicator.' },
+        { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 100.' },
+        { value: 'badquality', label: 'Mark as low quality', selectLabel: 'Mark as low quality', icon: 'arrow-down-square', iconClass: 'actions-type-icon--badquality', description: 'Overrides the quality score to 100.' },
+        { value: 'tag', label: 'Assign tag', selectLabel: 'Assign tag', icon: 'tag', iconClass: 'actions-type-icon--tag', description: 'Adds a custom tag to the article.' }
+      ]
+    };
+  },
   async created() { setAuthToken(this.$store.auth.token); this.fetchActions(); },
   methods: {
     actionTypeMeta(actionType) { return this.actionTypes.find((type) => type.value === actionType) || { label: 'Select type', icon: 'lightning-charge', iconClass: 'actions-type-icon--default' }; },

@@ -1,9 +1,9 @@
 <template>
     <div class="settings-section">
                         <!-- Info text -->
-                        <div class="alert alert-info mb-3 smart-folders-intro">
+                        <div class="settings-insight-card settings-insight-card--stacked smart-folders-intro">
                             <p class="mb-2 smart-folders-intro-heading">
-                                <span class="actions-intro-icon" aria-hidden="true">
+                                <span class="settings-insight-icon" aria-hidden="true">
                                     <BootstrapIcon icon="folder" />
                                 </span>
                                 <strong>What are Smart Folders?</strong>
@@ -177,10 +177,6 @@
 
 <style scoped>
 .smart-folders-intro {
-  padding: 26px 28px;
-  background: var(--bg-info-subtle);
-  border: 1px solid var(--border-info);
-  border-radius: 8px;
   color: var(--text-info);
 }
 .smart-folders-intro p:first-child {
@@ -190,18 +186,6 @@
   display: flex;
   align-items: center;
   gap: 12px;
-}
-.actions-intro-icon {
-  display: inline-flex;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  border-radius: 10px;
-  color: var(--color-primary);
-  font-size: 20px;
 }
 .smart-folders-intro ul {
   display: grid;
@@ -262,13 +246,9 @@
   align-items: center;
   gap: 8px;
 }
-:global(:root[data-theme="dark"]) .smart-folders-intro,
 :global(:root[data-theme="dark"]) .smart-folders-list > .settings-group {
   background: var(--bg-modal);
   border-color: var(--border-color);
-}
-:global(:root[data-theme="dark"]) .actions-intro-icon {
-  background: var(--bg-control);
 }
 @media (max-width: 766px) {
   .smart-folders-intro ul {

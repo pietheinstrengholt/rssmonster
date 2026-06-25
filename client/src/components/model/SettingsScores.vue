@@ -1,10 +1,13 @@
 <template>
   <div class="scores-settings">
     <!-- Info text -->
-    <section class="scores-intro-card" aria-labelledby="scores-intro-title">
-      <div class="scores-intro-heading">
+    <section class="settings-insight-card settings-insight-card--stacked scores-intro-card" aria-labelledby="scores-intro-title">
+      <div class="settings-insight-header scores-intro-heading">
+        <span class="settings-insight-icon" aria-hidden="true">
+          <BootstrapIcon icon="sliders" />
+        </span>
         <div>
-          <p class="scores-eyebrow">RSSMonster AI</p>
+          <p class="settings-page-eyebrow">Settings — Scores</p>
           <h3 id="scores-intro-title">About AI Content Scoring</h3>
           <p>RSSMonster analyzes new articles to help you keep your reading feed useful and focused.</p>
         </div>
@@ -97,26 +100,10 @@
   color: var(--text-primary);
 }
 
-.scores-intro-card,
 .scores-threshold-section {
   background: var(--bg-primary);
   border: 1px solid var(--border-subtle);
   border-radius: 14px;
-}
-
-.scores-intro-card {
-  padding: 26px;
-  background: var(--bg-info-subtle);
-  border-color: var(--border-info);
-}
-
-.scores-eyebrow {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
 }
 
 .scores-intro-heading h3,
@@ -127,14 +114,14 @@
   font-weight: 700;
 }
 
-.scores-intro-heading p:not(.scores-eyebrow),
+.scores-intro-heading p:not(.settings-page-eyebrow),
 .scores-threshold-heading p,
 .scores-explanation p,
 .scores-threshold-details p {
   color: var(--text-muted);
 }
 
-.scores-intro-heading p:not(.scores-eyebrow) {
+.scores-intro-heading p:not(.settings-page-eyebrow) {
   max-width: 640px;
   margin: 6px 0 0;
   font-size: 14px;
@@ -307,7 +294,6 @@
   height: 42px;
   align-items: center;
   justify-content: center;
-  gap: 8px;
   padding: 0 16px;
   background: var(--color-primary) !important;
   border: 0;
@@ -320,11 +306,6 @@
 
 .scores-save-button:hover {
   background: var(--color-primary-hover) !important;
-}
-
-:global(:root[data-theme='dark']) .scores-intro-card {
-  background: var(--bg-modal);
-  border-color: var(--border-color);
 }
 
 :global(:root[data-theme='dark']) .scores-explanation,
@@ -343,10 +324,6 @@
 }
 
 @media (max-width: 766px) {
-  .scores-intro-card {
-    padding: 20px;
-  }
-
   .scores-explanation-grid {
     grid-template-columns: 1fr;
   }

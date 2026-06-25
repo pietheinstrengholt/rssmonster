@@ -154,53 +154,6 @@
   padding: 0;
 }
 
-.settings-insight-card {
-  display: flex;
-  gap: 16px;
-  margin-bottom: 24px;
-  padding: 24px;
-  background: var(--bg-info-subtle);
-  border: 1px solid var(--border-info);
-  border-radius: 14px;
-}
-
-.settings-insight-icon {
-  display: inline-flex;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  align-items: center;
-  justify-content: center;
-  background: var(--bg-primary);
-  border-radius: 12px;
-  color: var(--color-primary);
-  font-size: 20px;
-}
-
-.settings-page-eyebrow {
-  margin: 0 0 4px;
-  color: var(--color-primary);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-}
-
-.settings-insight-card h3 {
-  margin: 0;
-  color: var(--text-primary);
-  font-size: 20px;
-  font-weight: 700;
-}
-
-.settings-insight-card p:not(.settings-page-eyebrow) {
-  max-width: 680px;
-  margin: 6px 0 0;
-  color: var(--text-muted);
-  font-size: 14px;
-  line-height: 1.5;
-}
-
 .manage-users__table-wrap {
   overflow-x: auto;
   background: #ffffff;
@@ -460,15 +413,6 @@
   margin: 0;
 }
 
-:global(:root[data-theme='dark']) .settings-insight-card {
-  background: var(--bg-modal);
-  border-color: var(--border-color);
-}
-
-:global(:root[data-theme='dark']) .settings-insight-icon {
-  background: var(--bg-control);
-}
-
 :global(:root[data-theme='dark']) .manage-users__table-wrap {
   background: var(--bg-modal) !important;
   border-color: var(--border-color);
@@ -500,10 +444,6 @@
   .manage-users__confirmation {
     padding-left: 20px;
     padding-right: 20px;
-  }
-
-  .settings-insight-card {
-    padding: 20px;
   }
 
   .manage-users__table th,
