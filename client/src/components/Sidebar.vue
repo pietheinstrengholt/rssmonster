@@ -247,7 +247,7 @@
 
 .sidebar-refresh-progress-fill {
   height: 100%;
-  background: var(--button-main);
+  background: var(--color-primary);
   transition: width 0.25s ease;
 }
 

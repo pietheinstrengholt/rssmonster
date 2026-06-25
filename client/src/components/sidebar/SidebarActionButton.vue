@@ -96,7 +96,7 @@ const buttonClasses = computed(() => [props.variant]);
 }
 
 .sidebar-button-add-feed {
-  color: var(--literal-color-hex-2e8b57);
+  color: var(--sidebar-success-action-text);
   background-color: var(--bg-muted);
 }
 

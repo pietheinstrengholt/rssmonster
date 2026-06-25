@@ -402,8 +402,8 @@
 }
 
 :global(:root[data-theme='dark']) .interest-island-icon {
-  background: var(--literal-color-hex-1f3658);
-  color: var(--literal-color-hex-8bbdff);
+  background: var(--settings-icon-primary-bg-dark);
+  color: var(--settings-icon-primary-text-dark);
 }
 
 :global(:root[data-theme='dark']) .settings-coverage-track,

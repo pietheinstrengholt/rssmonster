@@ -163,11 +163,11 @@ const formattedCount = computed(() => formatCount(props.count));
 
   .sidebar-item.sidebar-refresh-alert {
     color: var(--color-danger-border);
-    background-color: var(--literal-color-hex-2b1b1e);
+    background-color: var(--sidebar-danger-surface-dark);
   }
 
   .sidebar-item.sidebar-refresh-alert:hover {
-    background-color: var(--literal-color-hex-3a2328);
+    background-color: var(--sidebar-warning-surface-dark);
   }
 }
 
@@ -177,11 +177,11 @@ const formattedCount = computed(() => formatCount(props.count));
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert) {
   color: var(--color-danger-border);
-  background-color: var(--literal-color-hex-2b1b1e);
+  background-color: var(--sidebar-danger-surface-dark);
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert:hover) {
-  background-color: var(--literal-color-hex-3a2328);
+  background-color: var(--sidebar-warning-surface-dark);
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected) {

@@ -251,7 +251,7 @@
 .mobile-filter-button.show {
   color: var(--text-strong);
   background: var(--bg-page);
-  border-color: var(--literal-color-hex-d1d5db);
+  border-color: var(--border-control-muted);
   box-shadow: none;
 }
 

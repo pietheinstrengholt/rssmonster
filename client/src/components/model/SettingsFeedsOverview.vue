@@ -190,10 +190,10 @@
 }
 
 .feeds-stat-icon--orange { background: var(--color-warning-soft); color: var(--color-warning-action); }
-.feeds-stat-icon--green { background: var(--literal-color-hex-ecfdf5); color: var(--literal-color-hex-15803d); }
+.feeds-stat-icon--green { background: var(--color-success-pale); color: var(--color-success-strong); }
 .feeds-stat-icon--red { background: var(--color-danger-soft); color: var(--color-danger-action); }
 .feeds-stat-icon--blue { background: var(--color-primary-soft); color: var(--color-primary-action); }
-.feeds-stat-icon--purple { background: var(--literal-color-hex-f5f3ff); color: var(--literal-color-hex-7c3aed); }
+.feeds-stat-icon--purple { background: var(--color-purple-soft); color: var(--color-purple-action); }
 
 .feeds-stat-label,
 .feeds-stat-value {
@@ -253,7 +253,7 @@
 
 .feeds-toolbar-button:hover:not(:disabled) {
   background: var(--bg-page);
-  border-color: var(--literal-color-hex-cbd5e1);
+  border-color: var(--border-muted-strong);
 }
 
 .feeds-toolbar-button:disabled {
@@ -379,7 +379,7 @@
   text-transform: capitalize;
 }
 
-.feeds-status-pill--active { background: var(--literal-color-hex-dcfce7); color: var(--literal-color-hex-166534); }
+.feeds-status-pill--active { background: var(--color-success-soft); color: var(--color-success-deep); }
 .feeds-status-pill--error { background: var(--color-danger-soft); color: var(--color-danger-strong); }
 .feeds-status-pill--disabled { background: var(--border-muted); color: var(--text-body); }
 
@@ -402,7 +402,7 @@
 
 .feeds-health--error { color: var(--color-danger-strong); font-weight: 600; }
 .feeds-health--disabled { color: var(--text-subtle); }
-.feeds-health--active { color: var(--literal-color-hex-15803d); }
+.feeds-health--active { color: var(--color-success-strong); }
 
 .feeds-table-row--error {
   background: var(--color-danger-soft);
@@ -438,7 +438,7 @@
   font-size: 14px;
 }
 
-.feeds-message--success { background: var(--literal-color-hex-ecfdf5); color: var(--literal-color-hex-166534); }
+.feeds-message--success { background: var(--color-success-pale); color: var(--color-success-deep); }
 .feeds-message--error { background: var(--color-danger-soft); color: var(--color-danger-strong); }
 
 .feeds-footer {

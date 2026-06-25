@@ -57,6 +57,95 @@
   --color-link: var(--color-primary);
   --theme-color-light: #31344B;
 
+  /* Foundational UI colors */
+  --color-current: currentColor;
+  --color-transparent: transparent;
+  --bg-card: #ffffff;
+  --bg-page: #f8fafc;
+  --bg-muted: #f3f4f6;
+  --border-muted: #e5e7eb;
+  --text-strong: #111827;
+  --text-body: #334155;
+  --text-subtle: #64748b;
+  --text-soft: #94a3b8;
+  --color-primary-action: #2a71e7;
+  --color-primary-soft: #ebf2fe;
+  --color-primary-border: #3b82f6;
+  --color-danger-action: #dc2626;
+  --color-danger-strong: #991b1b;
+  --color-danger-soft: #fef2f2;
+  --color-danger-border: #fecaca;
+  --color-warning-action: #ea650d;
+  --color-warning-soft: #fff1e8;
+  --color-warning-border: #fdba74;
+  --overlay-backdrop-strong: rgba(15, 23, 42, 0.55);
+  --overlay-mobile-backdrop: rgba(17, 24, 39, 0.45);
+  --shadow-settings-dialog-color: rgba(15, 23, 42, 0.28);
+  --shadow-settings-dialog-dark-color: rgba(0, 0, 0, 0.48);
+  --border-settings-dialog-dark: rgba(148, 163, 184, 0.22);
+  --shadow-card-subtle-color: rgba(15, 23, 42, 0.04);
+  --shadow-mobile-sheet-color: rgba(17, 24, 39, 0.16);
+  --scrollbar-thumb-strong: rgba(0, 0, 0, 0.45);
+  --scrollbar-thumb-strong-dark: rgba(255, 255, 255, 0.45);
+  --shadow-warning-focus-color: rgba(234, 101, 13, 0.12);
+
+  /* Component accent colors */
+  --color-info-strong: #0369a1;
+  --color-info-soft: #e0f2fe;
+  --color-success-strong: #15803d;
+  --color-success-deep: #166534;
+  --color-success-border: #22c55e;
+  --color-success-soft: #dcfce7;
+  --color-success-pale: #ecfdf5;
+  --color-success-pale-strong: #f0fdf4;
+  --color-success-surface-dark: #1f4a32;
+  --color-success-border-dark: #4ade80;
+  --color-success-text-dark: #bbf7d0;
+  --color-danger-border-strong: #ef4444;
+  --color-danger-surface-dark: #4a1f1f;
+  --color-danger-border-dark: #f87171;
+  --color-danger-text-dark: #fca5a5;
+  --color-primary-strong: #1d4ed8;
+  --color-primary-surface-dark: #1e3a5f;
+  --color-primary-border-dark: #4a7fc7;
+  --color-primary-icon-dark: #93c5fd;
+  --color-purple-action: #7c3aed;
+  --color-purple-soft: #f5f3ff;
+  --text-tertiary: #666;
+  --border-muted-strong: #cbd5e1;
+  --border-control-muted: #d1d5db;
+  --settings-code-bg: #edf3ff;
+  --settings-code-text: #1451bb;
+  --settings-nav-active-bg-dark: #4a2b18;
+  --settings-nav-active-text-dark: #ffad70;
+  --settings-icon-primary-bg: #dbeafe;
+  --settings-icon-primary-bg-dark: #1f3658;
+  --settings-icon-primary-text-dark: #8bbdff;
+  --settings-icon-info-bg-dark: #1d3b4b;
+  --settings-icon-info-text-dark: #82d3f4;
+  --settings-icon-success-bg-dark: #1d4032;
+  --settings-icon-success-text-dark: #86d8a5;
+  --settings-icon-danger-bg-dark: #4a2428;
+  --settings-icon-danger-text-dark: #ff9a9f;
+  --settings-icon-yellow-bg: #fef3c7;
+  --settings-icon-yellow-text: #a16207;
+  --settings-icon-yellow-bg-dark: #44391d;
+  --settings-icon-yellow-text-dark: #f8d86b;
+  --settings-icon-orange-bg-dark: #452b1e;
+  --settings-icon-orange-text-dark: #ffb37a;
+  --settings-icon-purple-bg: #ede9fe;
+  --settings-icon-purple-text: #6d28d9;
+  --settings-icon-purple-bg-dark: #35264d;
+  --settings-icon-purple-text-dark: #c7a7ff;
+  --settings-icon-violet-bg: #f3e8ff;
+  --settings-icon-violet-text: #7e22ce;
+  --mobile-option-indicator-border: #b8c0cc;
+  --mobile-sheet-handle-bg: #c7cdd6;
+  --sidebar-danger-surface-dark: #2b1b1e;
+  --sidebar-warning-surface-dark: #3a2328;
+  --sidebar-success-action-text: #2e8b57;
+  --article-warning-text: #f59e0b;
+
   /* Component-specific colors */
 
   /* Shared dark-mode foundations */
@@ -160,130 +249,6 @@
   --icon-hot: #D97706;
   --icon-clicked: #D97706;
   --icon-read: #81C784;
-
-
-  /* Foundational UI colors */
-  --color-current: currentColor;
-  --color-transparent: transparent;
-  --bg-card: #ffffff;
-  --bg-page: #f8fafc;
-  --bg-muted: #f3f4f6;
-  --border-muted: #e5e7eb;
-  --text-strong: #111827;
-  --text-body: #334155;
-  --text-subtle: #64748b;
-  --text-soft: #94a3b8;
-  --color-primary-action: #2a71e7;
-  --color-primary-soft: #ebf2fe;
-  --color-primary-border: #3b82f6;
-  --color-danger-action: #dc2626;
-  --color-danger-strong: #991b1b;
-  --color-danger-soft: #fef2f2;
-  --color-danger-border: #fecaca;
-  --color-warning-action: #ea650d;
-  --color-warning-soft: #fff1e8;
-  --color-warning-border: #fdba74;
-  --overlay-backdrop-strong: rgba(15, 23, 42, 0.55);
-  --overlay-mobile-backdrop: rgba(17, 24, 39, 0.45);
-  --shadow-settings-dialog-color: rgba(15, 23, 42, 0.28);
-  --shadow-settings-dialog-dark-color: rgba(0, 0, 0, 0.48);
-  --border-settings-dialog-dark: rgba(148, 163, 184, 0.22);
-  --shadow-card-subtle-color: rgba(15, 23, 42, 0.04);
-  --shadow-mobile-sheet-color: rgba(17, 24, 39, 0.16);
-  --scrollbar-thumb-strong: rgba(0, 0, 0, 0.45);
-  --scrollbar-thumb-strong-dark: rgba(255, 255, 255, 0.45);
-  --shadow-warning-focus-color: rgba(234, 101, 13, 0.12);
-
-
-    /* Foundational UI colors */
-    --color-current: currentColor;
-    --color-transparent: transparent;
-    --bg-card: #ffffff;
-    --bg-page: #f8fafc;
-    --bg-muted: #f3f4f6;
-    --border-muted: #e5e7eb;
-    --text-strong: #111827;
-    --text-body: #334155;
-    --text-subtle: #64748b;
-    --text-soft: #94a3b8;
-    --color-primary-action: #2a71e7;
-    --color-primary-soft: #ebf2fe;
-    --color-primary-border: #3b82f6;
-    --color-danger-action: #dc2626;
-    --color-danger-strong: #991b1b;
-    --color-danger-soft: #fef2f2;
-    --color-danger-border: #fecaca;
-    --color-warning-action: #ea650d;
-    --color-warning-soft: #fff1e8;
-    --color-warning-border: #fdba74;
-    --overlay-backdrop-strong: rgba(15, 23, 42, 0.55);
-    --overlay-mobile-backdrop: rgba(17, 24, 39, 0.45);
-    --shadow-settings-dialog-color: rgba(15, 23, 42, 0.28);
-    --shadow-settings-dialog-dark-color: rgba(0, 0, 0, 0.48);
-    --border-settings-dialog-dark: rgba(148, 163, 184, 0.22);
-    --shadow-card-subtle-color: rgba(15, 23, 42, 0.04);
-    --shadow-mobile-sheet-color: rgba(17, 24, 39, 0.16);
-    --scrollbar-thumb-strong: rgba(0, 0, 0, 0.45);
-    --scrollbar-thumb-strong-dark: rgba(255, 255, 255, 0.45);
-    --shadow-warning-focus-color: rgba(234, 101, 13, 0.12);
-
-  /* Extracted literal colors */
-  --literal-color-hex-0369a1: #0369a1;
-  --literal-color-hex-1451bb: #1451bb;
-  --literal-color-hex-15803d: #15803d;
-  --literal-color-hex-166534: #166534;
-  --literal-color-hex-1d3b4b: #1d3b4b;
-  --literal-color-hex-1d4032: #1d4032;
-  --literal-color-hex-1d4ed8: #1d4ed8;
-  --literal-color-hex-1e3a5f: #1e3a5f;
-  --literal-color-hex-1f3658: #1f3658;
-  --literal-color-hex-1f4a32: #1f4a32;
-  --literal-color-hex-22c55e: #22c55e;
-  --literal-color-hex-2b1b1e: #2b1b1e;
-  --literal-color-hex-2e8b57: #2e8b57;
-  --literal-color-hex-35264d: #35264d;
-  --literal-color-hex-3a2328: #3a2328;
-  --literal-color-hex-44391d: #44391d;
-  --literal-color-hex-452b1e: #452b1e;
-  --literal-color-hex-4a1f1f: #4a1f1f;
-  --literal-color-hex-4a2428: #4a2428;
-  --literal-color-hex-4a2b18: #4a2b18;
-  --literal-color-hex-4a7fc7: #4a7fc7;
-  --literal-color-hex-4ade80: #4ade80;
-  --literal-color-hex-666: #666;
-  --literal-color-hex-6d28d9: #6d28d9;
-  --literal-color-hex-7c3aed: #7c3aed;
-  --literal-color-hex-7e22ce: #7e22ce;
-  --literal-color-hex-82d3f4: #82d3f4;
-  --literal-color-hex-86d8a5: #86d8a5;
-  --literal-color-hex-8bbdff: #8bbdff;
-  --literal-color-hex-93c5fd: #93c5fd;
-  --literal-color-hex-a16207: #a16207;
-  --literal-color-hex-b8c0cc: #b8c0cc;
-  --literal-color-hex-bbf7d0: #bbf7d0;
-  --literal-color-hex-c7a7ff: #c7a7ff;
-  --literal-color-hex-c7cdd6: #c7cdd6;
-  --literal-color-hex-cbd5e1: #cbd5e1;
-  --literal-color-hex-d1d5db: #d1d5db;
-  --literal-color-hex-dbeafe: #dbeafe;
-  --literal-color-hex-dcfce7: #dcfce7;
-  --literal-color-hex-e0f2fe: #e0f2fe;
-  --literal-color-hex-ecfdf5: #ecfdf5;
-  --literal-color-hex-ede9fe: #ede9fe;
-  --literal-color-hex-edf3ff: #edf3ff;
-  --literal-color-hex-ef4444: #ef4444;
-  --literal-color-hex-f0fdf4: #f0fdf4;
-  --literal-color-hex-f3e8ff: #f3e8ff;
-  --literal-color-hex-f59e0b: #f59e0b;
-  --literal-color-hex-f5f3ff: #f5f3ff;
-  --literal-color-hex-f87171: #f87171;
-  --literal-color-hex-f8d86b: #f8d86b;
-  --literal-color-hex-fca5a5: #fca5a5;
-  --literal-color-hex-fef3c7: #fef3c7;
-  --literal-color-hex-ff9a9f: #ff9a9f;
-  --literal-color-hex-ffad70: #ffad70;
-  --literal-color-hex-ffb37a: #ffb37a;
-  /* End extracted literal colors */
 }
 
 :root[data-theme="dark"] {
@@ -341,64 +306,6 @@
     --icon-read: #81C784;
     --desktop-toolbar-background: var(--bg-control);
     --toolbar-text: #FFFFFF;
-
-  /* Extracted literal colors */
-  --literal-color-hex-0369a1: #0369a1;
-  --literal-color-hex-1451bb: #1451bb;
-  --literal-color-hex-15803d: #15803d;
-  --literal-color-hex-166534: #166534;
-  --literal-color-hex-1d3b4b: #1d3b4b;
-  --literal-color-hex-1d4032: #1d4032;
-  --literal-color-hex-1d4ed8: #1d4ed8;
-  --literal-color-hex-1e3a5f: #1e3a5f;
-  --literal-color-hex-1f3658: #1f3658;
-  --literal-color-hex-1f4a32: #1f4a32;
-  --literal-color-hex-22c55e: #22c55e;
-  --literal-color-hex-2b1b1e: #2b1b1e;
-  --literal-color-hex-2e8b57: #2e8b57;
-  --literal-color-hex-35264d: #35264d;
-  --literal-color-hex-3a2328: #3a2328;
-  --literal-color-hex-44391d: #44391d;
-  --literal-color-hex-452b1e: #452b1e;
-  --literal-color-hex-4a1f1f: #4a1f1f;
-  --literal-color-hex-4a2428: #4a2428;
-  --literal-color-hex-4a2b18: #4a2b18;
-  --literal-color-hex-4a7fc7: #4a7fc7;
-  --literal-color-hex-4ade80: #4ade80;
-  --literal-color-hex-666: #666;
-  --literal-color-hex-6d28d9: #6d28d9;
-  --literal-color-hex-7c3aed: #7c3aed;
-  --literal-color-hex-7e22ce: #7e22ce;
-  --literal-color-hex-82d3f4: #82d3f4;
-  --literal-color-hex-86d8a5: #86d8a5;
-  --literal-color-hex-8bbdff: #8bbdff;
-  --literal-color-hex-93c5fd: #93c5fd;
-  --literal-color-hex-a16207: #a16207;
-  --literal-color-hex-b8c0cc: #b8c0cc;
-  --literal-color-hex-bbf7d0: #bbf7d0;
-  --literal-color-hex-c7a7ff: #c7a7ff;
-  --literal-color-hex-c7cdd6: #c7cdd6;
-  --literal-color-hex-cbd5e1: #cbd5e1;
-  --literal-color-hex-d1d5db: #d1d5db;
-  --literal-color-hex-dbeafe: #dbeafe;
-  --literal-color-hex-dcfce7: #dcfce7;
-  --literal-color-hex-e0f2fe: #e0f2fe;
-  --literal-color-hex-ecfdf5: #ecfdf5;
-  --literal-color-hex-ede9fe: #ede9fe;
-  --literal-color-hex-edf3ff: #edf3ff;
-  --literal-color-hex-ef4444: #ef4444;
-  --literal-color-hex-f0fdf4: #f0fdf4;
-  --literal-color-hex-f3e8ff: #f3e8ff;
-  --literal-color-hex-f59e0b: #f59e0b;
-  --literal-color-hex-f5f3ff: #f5f3ff;
-  --literal-color-hex-f87171: #f87171;
-  --literal-color-hex-f8d86b: #f8d86b;
-  --literal-color-hex-fca5a5: #fca5a5;
-  --literal-color-hex-fef3c7: #fef3c7;
-  --literal-color-hex-ff9a9f: #ff9a9f;
-  --literal-color-hex-ffad70: #ffad70;
-  --literal-color-hex-ffb37a: #ffb37a;
-  /* End extracted literal colors */
 }
 
 :root[data-theme="dark"] .form-select {

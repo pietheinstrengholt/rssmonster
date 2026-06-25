@@ -142,7 +142,7 @@
 }
 
 .options-drag-handle {
-  background: var(--literal-color-hex-c7cdd6);
+  background: var(--mobile-sheet-handle-bg);
   border-radius: 999px;
   height: 5px;
   margin: 4px auto 14px;
@@ -266,7 +266,7 @@
 }
 
 .options-row::after {
-  border: 2px solid var(--options-indicator-border, var(--literal-color-hex-b8c0cc));
+  border: 2px solid var(--options-indicator-border, var(--mobile-option-indicator-border));
   border-radius: 50%;
   content: "";
   height: 18px;
@@ -278,7 +278,7 @@
   background: var(--options-selected-background, var(--color-primary-soft));
   border: 1px solid var(--options-selected-border, var(--color-primary-border));
   border-radius: 10px;
-  color: var(--options-selected-text, var(--literal-color-hex-1d4ed8));
+  color: var(--options-selected-text, var(--color-primary-strong));
   font-weight: 600;
   margin: 2px 0;
 }
@@ -340,18 +340,18 @@
 
 .options-action-button--refresh {
   background: var(--options-refresh-background, var(--color-danger-soft));
-  border-color: var(--options-refresh-border, var(--literal-color-hex-ef4444));
+  border-color: var(--options-refresh-border, var(--color-danger-border-strong));
   color: var(--options-refresh-text, var(--color-danger-action));
 }
 
 .options-action-button--add {
-  background: var(--options-add-background, var(--literal-color-hex-f0fdf4));
-  border-color: var(--options-add-border, var(--literal-color-hex-22c55e));
-  color: var(--options-add-text, var(--literal-color-hex-15803d));
+  background: var(--options-add-background, var(--color-success-pale-strong));
+  border-color: var(--options-add-border, var(--color-success-border));
+  color: var(--options-add-text, var(--color-success-strong));
 }
 
 .options-action-button--neutral {
-  border-color: var(--options-border, var(--literal-color-hex-d1d5db));
+  border-color: var(--options-border, var(--border-control-muted));
   color: var(--options-text, var(--text-body));
 }
 
@@ -382,18 +382,18 @@
     --options-border: var(--border-color);
     --options-row-border: var(--border-color);
     --options-indicator-border: var(--text-soft);
-    --options-icon-background: var(--literal-color-hex-1e3a5f);
-    --options-icon-color: var(--literal-color-hex-93c5fd);
-    --options-selected-background: var(--literal-color-hex-1e3a5f);
-    --options-selected-border: var(--literal-color-hex-4a7fc7);
+    --options-icon-background: var(--color-primary-surface-dark);
+    --options-icon-color: var(--color-primary-icon-dark);
+    --options-selected-background: var(--color-primary-surface-dark);
+    --options-selected-border: var(--color-primary-border-dark);
     --options-selected-text: var(--color-primary-soft);
-    --options-selected-indicator: var(--literal-color-hex-4a7fc7);
-    --options-refresh-background: var(--literal-color-hex-4a1f1f);
-    --options-refresh-border: var(--literal-color-hex-f87171);
-    --options-refresh-text: var(--literal-color-hex-fca5a5);
-    --options-add-background: var(--literal-color-hex-1f4a32);
-    --options-add-border: var(--literal-color-hex-4ade80);
-    --options-add-text: var(--literal-color-hex-bbf7d0);
+    --options-selected-indicator: var(--color-primary-border-dark);
+    --options-refresh-background: var(--color-danger-surface-dark);
+    --options-refresh-border: var(--color-danger-border-dark);
+    --options-refresh-text: var(--color-danger-text-dark);
+    --options-add-background: var(--color-success-surface-dark);
+    --options-add-border: var(--color-success-border-dark);
+    --options-add-text: var(--color-success-text-dark);
   }
 }
 
@@ -405,18 +405,18 @@
   --options-border: var(--border-color);
   --options-row-border: var(--border-color);
   --options-indicator-border: var(--text-soft);
-  --options-icon-background: var(--literal-color-hex-1e3a5f);
-  --options-icon-color: var(--literal-color-hex-93c5fd);
-  --options-selected-background: var(--literal-color-hex-1e3a5f);
-  --options-selected-border: var(--literal-color-hex-4a7fc7);
+  --options-icon-background: var(--color-primary-surface-dark);
+  --options-icon-color: var(--color-primary-icon-dark);
+  --options-selected-background: var(--color-primary-surface-dark);
+  --options-selected-border: var(--color-primary-border-dark);
   --options-selected-text: var(--color-primary-soft);
-  --options-selected-indicator: var(--literal-color-hex-4a7fc7);
-  --options-refresh-background: var(--literal-color-hex-4a1f1f);
-  --options-refresh-border: var(--literal-color-hex-f87171);
-  --options-refresh-text: var(--literal-color-hex-fca5a5);
-  --options-add-background: var(--literal-color-hex-1f4a32);
-  --options-add-border: var(--literal-color-hex-4ade80);
-  --options-add-text: var(--literal-color-hex-bbf7d0);
+  --options-selected-indicator: var(--color-primary-border-dark);
+  --options-refresh-background: var(--color-danger-surface-dark);
+  --options-refresh-border: var(--color-danger-border-dark);
+  --options-refresh-text: var(--color-danger-text-dark);
+  --options-add-background: var(--color-success-surface-dark);
+  --options-add-border: var(--color-success-border-dark);
+  --options-add-text: var(--color-success-text-dark);
 }
 
 :global(body.mobile-options-open) {

@@ -500,7 +500,7 @@ export default {
   justify-content: center;
   width: 20px;
   height: 20px;
-  color: var(--literal-color-hex-f59e0b);
+  color: var(--article-warning-text);
   margin-right: 8px;
   flex-shrink: 0;
   line-height: 1;

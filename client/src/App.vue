@@ -259,7 +259,7 @@ export default {
   left: 12px;
   padding: 0 4px;
   background-color: var(--border-muted);
-  color: var(--literal-color-hex-666);
+  color: var(--text-tertiary);
   font-size: 14px;
   transform: translateY(-50%);
   pointer-events: none;
@@ -276,7 +276,7 @@ export default {
   align-items: center;
   height: 100vh;
   font-size: 1.2rem;
-  color: var(--literal-color-hex-666);
+  color: var(--text-tertiary);
 }
 
 html, body, #app {

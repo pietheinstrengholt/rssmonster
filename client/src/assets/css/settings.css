@@ -232,8 +232,8 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .settings-sidebar-item.active {
-    background: var(--literal-color-hex-4a2b18);
-    color: var(--literal-color-hex-ffad70);
+    background: var(--settings-nav-active-bg-dark);
+    color: var(--settings-nav-active-text-dark);
 }
 
 :root[data-theme='dark'] .settings-header,

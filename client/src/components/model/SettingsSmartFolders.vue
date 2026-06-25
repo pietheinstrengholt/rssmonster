@@ -214,9 +214,9 @@
   display: inline-block;
   margin: 2px;
   padding: 3px 6px;
-  background: var(--literal-color-hex-edf3ff);
+  background: var(--settings-code-bg);
   border-radius: 5px;
-  color: var(--literal-color-hex-1451bb);
+  color: var(--settings-code-text);
 }
 .smart-folders-insights {
   padding: 18px 0;
