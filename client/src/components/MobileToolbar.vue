@@ -126,9 +126,9 @@
   z-index: 100;
   width: 100%;
   padding: 8px 12px 10px;
-  color: var(--text-strong);
+  color: var(--text-primary);
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border-muted);
+  border-bottom: 1px solid var(--border-color);
 }
 
 @media (max-width: 766px) {
@@ -157,7 +157,7 @@
 
 .mobile-toolbar-brand {
   gap: 10px;
-  color: var(--text-strong);
+  color: var(--text-primary);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -183,7 +183,7 @@
   border: none;
   border-radius: 999px;
   background: var(--color-transparent);
-  color: var(--text-strong);
+  color: var(--text-primary);
   font-size: 18px;
   cursor: pointer;
 }
@@ -209,16 +209,16 @@
   width: 100%;
   padding: 10px 16px;
   background: var(--bg-card);
-  border-bottom: 1px solid var(--border-muted);
+  border-bottom: 1px solid var(--border-color);
 }
 
 .mobile-search-input {
   width: 100%;
   height: 42px;
   padding: 0 14px;
-  color: var(--text-strong);
+  color: var(--text-primary);
   background: var(--bg-card);
-  border: 1px solid var(--border-muted);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   outline: none;
   font-size: 15px;
@@ -227,9 +227,9 @@
 .mobile-filter-button {
   height: 40px;
   padding: 0 6px;
-  color: var(--text-strong);
+  color: var(--text-primary);
   background: var(--bg-card);
-  border: 1px solid var(--border-muted);
+  border: 1px solid var(--border-color);
   border-radius: 14px;
   box-shadow: 0 1px 2px var(--shadow-card-subtle-color);
   font-size: 14px;
@@ -249,9 +249,9 @@
 .mobile-filter-button:hover,
 .mobile-filter-button:focus,
 .mobile-filter-button.show {
-  color: var(--text-strong);
+  color: var(--text-primary);
   background: var(--bg-page);
-  border-color: var(--border-control-muted);
+  border-color: var(--border-subtle);
   box-shadow: none;
 }
 
@@ -270,7 +270,7 @@
 }
 
 .dropdown-item.active {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
   background-color: var(--color-primary-soft);
 }
 

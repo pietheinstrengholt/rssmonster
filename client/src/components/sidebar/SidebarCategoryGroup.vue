@@ -114,7 +114,7 @@ function getFeedCount(feed) {
 }
 
 .sidebar-category.selected {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
   background-color: var(--color-primary-soft);
   box-shadow: none;
 }
@@ -142,7 +142,7 @@ function getFeedCount(feed) {
 }
 
 .sidebar-category.selected .sidebar-count {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
 }
 
 .sidebar-count.sidebar-count-white {

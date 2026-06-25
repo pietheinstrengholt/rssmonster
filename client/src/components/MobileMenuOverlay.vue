@@ -127,7 +127,7 @@
 .options-sheet {
   -webkit-overflow-scrolling: touch;
   background: var(--options-sheet-background, var(--bg-card));
-  border: 1px solid var(--options-border, var(--border-muted));
+  border: 1px solid var(--options-border, var(--border-color));
   border-radius: 20px;
   box-shadow: 0 -12px 32px var(--shadow-mobile-sheet-color);
   box-sizing: border-box;
@@ -157,7 +157,7 @@
 }
 
 .options-header h2 {
-  color: var(--options-text, var(--text-strong));
+  color: var(--options-text, var(--text-primary));
   font-size: 24px;
   font-weight: 700;
   line-height: 1.2;
@@ -169,7 +169,7 @@
   background: var(--options-control-background, var(--bg-card));
   border: 0;
   border-radius: 50%;
-  color: var(--options-text, var(--text-strong));
+  color: var(--options-text, var(--text-primary));
   display: inline-flex;
   flex: 0 0 40px;
   height: 40px;
@@ -217,7 +217,7 @@
 }
 
 .options-section-header h3 {
-  color: var(--options-text, var(--text-strong));
+  color: var(--options-text, var(--text-primary));
   font-size: 17px;
   font-weight: 700;
   line-height: 1.3;
@@ -228,7 +228,7 @@
   align-items: center;
   background: var(--options-icon-background, var(--color-primary-soft));
   border-radius: 50%;
-  color: var(--options-icon-color, var(--color-primary-action));
+  color: var(--options-icon-color, var(--color-primary));
   display: inline-flex;
   flex: 0 0 24px;
   font-size: 13px;
@@ -250,7 +250,7 @@
   align-items: center;
   border-bottom: 1px solid var(--options-row-border, var(--bg-muted));
   box-sizing: border-box;
-  color: var(--options-text, var(--text-strong));
+  color: var(--options-text, var(--text-primary));
   cursor: pointer;
   display: flex;
   font-size: 15px;
@@ -261,7 +261,7 @@
 }
 
 .options-row .glyphicon {
-  color: var(--options-muted-text, var(--text-subtle));
+  color: var(--options-muted-text, var(--text-muted));
   width: 18px;
 }
 
@@ -276,7 +276,7 @@
 
 .options-row.selected {
   background: var(--options-selected-background, var(--color-primary-soft));
-  border: 1px solid var(--options-selected-border, var(--color-primary-border));
+  border: 1px solid var(--options-selected-border, var(--color-primary));
   border-radius: 10px;
   color: var(--options-selected-text, var(--color-primary-strong));
   font-weight: 600;
@@ -284,13 +284,13 @@
 }
 
 .options-row.selected::after {
-  background: var(--options-selected-indicator, var(--color-primary-action));
-  border-color: var(--options-selected-indicator, var(--color-primary-action));
+  background: var(--options-selected-indicator, var(--color-primary));
+  border-color: var(--options-selected-indicator, var(--color-primary));
   box-shadow: inset 0 0 0 4px var(--options-selected-background, var(--color-primary-soft));
 }
 
 .options-row.selected .glyphicon {
-  color: var(--options-selected-indicator, var(--color-primary-action));
+  color: var(--options-selected-indicator, var(--color-primary));
 }
 
 .options-view-grid {
@@ -301,9 +301,9 @@
 
 .options-view-card {
   background: var(--options-control-background, var(--bg-card));
-  border: 1px solid var(--options-border, var(--border-muted));
+  border: 1px solid var(--options-border, var(--border-color));
   border-radius: 12px;
-  color: var(--options-text, var(--text-strong));
+  color: var(--options-text, var(--text-primary));
   display: flex;
   flex-direction: column;
   min-height: 78px;
@@ -313,7 +313,7 @@
 
 .options-view-card.selected {
   background: var(--options-selected-background, var(--color-primary-soft));
-  border-color: var(--options-selected-border, var(--color-primary-action));
+  border-color: var(--options-selected-border, var(--color-primary));
 }
 
 .options-view-title {
@@ -323,7 +323,7 @@
 }
 
 .options-view-description {
-  color: var(--options-muted-text, var(--text-subtle));
+  color: var(--options-muted-text, var(--text-muted));
   font-size: 13px;
   line-height: 1.4;
   margin-top: 5px;
@@ -351,8 +351,8 @@
 }
 
 .options-action-button--neutral {
-  border-color: var(--options-border, var(--border-control-muted));
-  color: var(--options-text, var(--text-body));
+  border-color: var(--options-border, var(--border-subtle));
+  color: var(--options-text, var(--text-secondary));
 }
 
 .options-action-button:hover,
@@ -381,7 +381,7 @@
     --options-muted-text: var(--text-muted);
     --options-border: var(--border-color);
     --options-row-border: var(--border-color);
-    --options-indicator-border: var(--text-soft);
+    --options-indicator-border: var(--text-muted);
     --options-icon-background: var(--color-primary-surface-dark);
     --options-icon-color: var(--color-primary-icon-dark);
     --options-selected-background: var(--color-primary-surface-dark);
@@ -404,7 +404,7 @@
   --options-muted-text: var(--text-muted);
   --options-border: var(--border-color);
   --options-row-border: var(--border-color);
-  --options-indicator-border: var(--text-soft);
+  --options-indicator-border: var(--text-muted);
   --options-icon-background: var(--color-primary-surface-dark);
   --options-icon-color: var(--color-primary-icon-dark);
   --options-selected-background: var(--color-primary-surface-dark);

@@ -219,7 +219,7 @@ export default {
 
 #monster p {
   padding: 44px 0px 30px 80px;
-  color: var(--text-strong);
+  color: var(--text-primary);
   font-size: 26px;
   font-weight: 400;
 }
@@ -234,7 +234,7 @@ export default {
   border-color: lightgrey;
   border-style: solid;
   padding: 20px;
-  background-color: var(--border-muted);
+  background-color: var(--border-color);
 }
 
 #form-box {
@@ -258,8 +258,8 @@ export default {
   top: 0;
   left: 12px;
   padding: 0 4px;
-  background-color: var(--border-muted);
-  color: var(--text-tertiary);
+  background-color: var(--border-color);
+  color: var(--text-muted);
   font-size: 14px;
   transform: translateY(-50%);
   pointer-events: none;
@@ -276,7 +276,7 @@ export default {
   align-items: center;
   height: 100vh;
   font-size: 1.2rem;
-  color: var(--text-tertiary);
+  color: var(--text-muted);
 }
 
 html, body, #app {

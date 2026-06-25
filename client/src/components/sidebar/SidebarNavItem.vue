@@ -75,7 +75,7 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-item.selected {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
   background-color: var(--color-primary-soft);
   box-shadow: none;
 }
@@ -121,7 +121,7 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-item.selected .sidebar-count {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
 }
 
 .sidebar-count.sidebar-count-white {
@@ -142,7 +142,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
 .selected .icon-star,
 .selected .icon-hot {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
 }
 
 :global(:root[data-theme='dark']) {

@@ -167,7 +167,7 @@
   font-size: 17px;
 }
 
-.scores-icon-tile--advertisement { background: var(--color-warning-soft); color: var(--color-warning-action); }
+.scores-icon-tile--advertisement { background: var(--color-warning-soft); color: var(--color-warning); }
 .scores-icon-tile--sentiment { background: var(--settings-icon-yellow-bg); color: var(--settings-icon-yellow-text); }
 .scores-icon-tile--quality { background: var(--settings-icon-purple-bg); color: var(--settings-icon-purple-text); }
 

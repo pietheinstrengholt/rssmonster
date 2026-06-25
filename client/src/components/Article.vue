@@ -598,7 +598,7 @@ export default {
   margin-top: 6px;
 }
 .article-card .article-content-wrapper {
-  color: var(--text-strong);
+  color: var(--text-primary);
   padding-top: 6px;
   font-size: 14px;
   line-height: 1.65;
@@ -611,7 +611,7 @@ export default {
 
 .article-card .article-full-content {
   font-family: var(--font-family);
-  color: var(--text-strong);
+  color: var(--text-primary);
   font-size: 14px;
   line-height: 1.65;
   font-weight: 400;
@@ -619,7 +619,7 @@ export default {
 
 .article-card .article-body h5 a {
   margin: 0;
-  color: var(--text-strong);
+  color: var(--text-primary);
   font-size: 22px;
   line-height: 1;
   font-weight: 700;
@@ -697,7 +697,7 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: var(--text-subtle);
+  color: var(--text-muted);
   font-size: 13px;
   line-height: 1.3;
   margin: 0;
@@ -844,7 +844,7 @@ export default {
 
 .article-card .article-meta .article-published,
 .article-card .article-meta .article-source a {
-  color: var(--text-subtle);
+  color: var(--text-muted);
 }
 
 .break {

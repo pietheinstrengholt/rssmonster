@@ -162,7 +162,7 @@
 }
 
 .dropdown-item.active {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
   background-color: var(--color-primary-soft);
   border-radius: 4px;
 }
@@ -228,7 +228,7 @@
 }
 
 .toolbar-theme-menu .dropdown-item.active {
-  color: var(--color-primary-action);
+  color: var(--color-primary);
   background-color: var(--color-primary-soft);
 }
 
@@ -306,7 +306,7 @@
 .toolbar-chat-button {
   height: 36px;
   padding: 0 18px;
-  border: 1px solid var(--border-muted);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
   background: var(--bg-input);
   font-weight: 600;
@@ -336,7 +336,7 @@
   margin: 0 130px 0 auto;
   padding: 0 12px;
   background-color: var(--bg-input);
-  border: 1px solid var(--border-muted);
+  border: 1px solid var(--border-color);
   border-radius: 8px;
 }
 
@@ -356,7 +356,7 @@
   width: 100%;
   min-width: 0;
   height: 100%;
-  color: var(--text-soft);
+  color: var(--text-muted);
   background-color: var(--color-transparent);
   font-size: 14px;
   font-weight: 500;
@@ -448,7 +448,7 @@
     padding: 0;
     color: var(--toolbar-text);
   background-color: var(--desktop-toolbar-background);
-    border: 1px solid var(--border-muted);
+    border: 1px solid var(--border-color);
     border-radius: 999px;
     z-index: 1;
   }

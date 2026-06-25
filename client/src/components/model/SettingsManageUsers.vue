@@ -161,7 +161,7 @@
 .manage-users__table-wrap {
   overflow-x: auto;
   background: var(--bg-card);
-  border: 1px solid var(--border-muted);
+  border: 1px solid var(--border-color);
   border-radius: 12px;
 }
 
@@ -176,7 +176,7 @@
   height: 46px;
   padding: 0 14px;
   background: var(--bg-page);
-  color: var(--text-body);
+  color: var(--text-secondary);
   font-size: 12px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -188,8 +188,8 @@
 .manage-users__table td {
   height: 58px;
   padding: 10px 14px;
-  border-top: 1px solid var(--border-muted);
-  color: var(--text-body);
+  border-top: 1px solid var(--border-color);
+  color: var(--text-secondary);
   vertical-align: middle;
   white-space: nowrap;
 }
@@ -270,7 +270,7 @@
   background: var(--color-transparent);
   border: 0;
   border-radius: 6px;
-  color: var(--color-warning-action);
+  color: var(--color-warning);
   font-size: 13px;
   font-weight: 600;
   padding: 6px 8px;
@@ -278,7 +278,7 @@
 
 .manage-users__action:hover {
   background: var(--color-warning-soft);
-  color: var(--color-warning-action);
+  color: var(--color-warning);
 }
 
 .manage-users__action--remove {

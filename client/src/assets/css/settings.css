@@ -28,7 +28,7 @@ body.modal-open {
     height: min(800px, calc(100vh - 48px));
     overflow: hidden;
     background: var(--bg-card);
-    border: 1px solid var(--border-muted);
+    border: 1px solid var(--border-color);
     border-radius: 16px;
     box-shadow: 0 24px 80px var(--shadow-settings-dialog-color);
 }
@@ -40,12 +40,12 @@ body.modal-open {
     align-items: center;
     justify-content: space-between;
     background: var(--bg-card);
-    border-bottom: 1px solid var(--border-muted);
+    border-bottom: 1px solid var(--border-color);
 }
 
 .settings-title {
     margin: 0;
-    color: var(--text-strong);
+    color: var(--text-primary);
     font-size: 22px;
     font-weight: 700;
     letter-spacing: -0.01em;
@@ -53,7 +53,7 @@ body.modal-open {
 
 .settings-subtitle {
     margin: 4px 0 0;
-    color: var(--text-subtle);
+    color: var(--text-muted);
     font-size: 13px;
 }
 
@@ -67,7 +67,7 @@ body.modal-open {
     padding: 18px 12px;
     overflow-y: auto;
     background: var(--bg-page);
-    border-right: 1px solid var(--border-muted);
+    border-right: 1px solid var(--border-color);
 }
 
 .settings-sidebar-item {
@@ -80,7 +80,7 @@ body.modal-open {
     border: 0;
     border-radius: 10px;
     background: var(--color-transparent);
-    color: var(--text-body);
+    color: var(--text-secondary);
     font-size: 14px;
     font-weight: 600;
     text-align: left;
@@ -93,7 +93,7 @@ body.modal-open {
 
 .settings-sidebar-item.active {
     background: var(--color-warning-soft);
-    color: var(--color-warning-action);
+    color: var(--color-warning);
 }
 
 .settings-sidebar-icon {
@@ -119,7 +119,7 @@ body.modal-open {
     align-items: center;
     justify-content: center;
     background: var(--color-transparent);
-    color: var(--text-strong) !important;
+    color: var(--text-primary) !important;
     cursor: pointer;
 }
 
@@ -129,7 +129,7 @@ body.modal-open {
 
 .settings-close-button:hover {
     background: var(--bg-muted);
-    color: var(--text-strong);
+    color: var(--text-primary);
 }
 
 .settings-section__actions {
@@ -590,7 +590,7 @@ body.modal-open {
         overflow-y: hidden;
         padding: 10px 12px;
         border-right: 0;
-        border-bottom: 1px solid var(--border-muted);
+        border-bottom: 1px solid var(--border-color);
     }
 
     .settings-sidebar-item {

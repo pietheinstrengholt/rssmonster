@@ -84,9 +84,9 @@
 }
 
 .category-icon-option.selected {
-    color: var(--color-primary-action);
+    color: var(--color-primary);
     background: var(--color-primary-soft);
-    border-color: var(--color-primary-action);
+    border-color: var(--color-primary);
 }
 
 .category-icon-option :deep(svg) {
