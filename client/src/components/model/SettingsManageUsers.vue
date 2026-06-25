@@ -1,6 +1,15 @@
 <template>
   <div class="manage-users">
-    <div v-if="userIdToDelete">
+    <div v-if="!isAdmin" class="manage-users__access-denied" role="alert">
+      <BootstrapIcon icon="shield-lock" aria-hidden="true" />
+      <div>
+        <p class="manage-users__eyebrow">Admin required</p>
+        <h6>Manage Users is restricted</h6>
+        <p>You need admin rights to view or change user accounts.</p>
+      </div>
+    </div>
+
+    <div v-else-if="userIdToDelete">
               <section class="manage-users__confirmation" aria-labelledby="delete-user-title">
                 <p class="manage-users__eyebrow">Destructive action</p>
                 <h6 id="delete-user-title">Delete {{ user.username }}?</h6>
@@ -47,6 +56,16 @@
             </div>
 
     <div v-else class="manage-users__directory">
+              <section class="settings-insight-card" aria-labelledby="manage-users-title">
+                <span class="settings-insight-icon" aria-hidden="true">
+                  <BootstrapIcon icon="people" />
+                </span>
+                <div>
+                  <p class="settings-page-eyebrow">Settings — Manage Users</p>
+                  <h3 id="manage-users-title">Users Overview</h3>
+                  <p>Review RSSMonster accounts, update roles, and manage user access from one place.</p>
+                </div>
+              </section>
               <p v-if="message" class="manage-users__message manage-users__message--success">{{ message }}</p>
               <div v-if="users.length !== 0" class="manage-users__table-wrap">
                 <table class="manage-users__table">
@@ -80,7 +99,7 @@
                 </table>
               </div>
               <div v-else class="manage-users__empty">
-                <i class="bi bi-people" aria-hidden="true"></i>
+                <BootstrapIcon icon="people" aria-hidden="true" />
                 <p>No users found.</p>
               </div>
     </div>
@@ -133,6 +152,53 @@
 
 .modal-body {
   padding: 0;
+}
+
+.settings-insight-card {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--bg-info-subtle);
+  border: 1px solid var(--border-info);
+  border-radius: 14px;
+}
+
+.settings-insight-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  color: var(--color-primary);
+  font-size: 20px;
+}
+
+.settings-page-eyebrow {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-insight-card h3 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 20px;
+  font-weight: 700;
+}
+
+.settings-insight-card p:not(.settings-page-eyebrow) {
+  max-width: 680px;
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
 }
 
 .manage-users__table-wrap {
@@ -274,6 +340,35 @@
   padding: 28px;
 }
 
+.manage-users__access-denied {
+  display: flex;
+  gap: 16px;
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 28px;
+  background: var(--bg-danger-subtle);
+  border: 1px solid var(--border-danger-subtle);
+  border-radius: 14px;
+  color: var(--text-secondary);
+}
+
+.manage-users__access-denied svg {
+  flex: 0 0 auto;
+  color: var(--text-danger);
+  font-size: 24px;
+}
+
+.manage-users__access-denied h6 {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 17px;
+  font-weight: 600;
+}
+
+.manage-users__access-denied p:not(.manage-users__eyebrow) {
+  margin: 8px 0 0;
+}
+
 .manage-users__confirmation {
   background: var(--bg-danger-subtle);
   max-width: none;
@@ -354,14 +449,24 @@
   text-align: center;
 }
 
-.manage-users__empty i {
+.manage-users__empty svg {
   display: block;
   font-size: 24px;
   margin-bottom: 10px;
+  margin-inline: auto;
 }
 
 .manage-users__empty p {
   margin: 0;
+}
+
+:global(:root[data-theme='dark']) .settings-insight-card {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .settings-insight-icon {
+  background: var(--bg-control);
 }
 
 :global(:root[data-theme='dark']) .manage-users__table-wrap {
@@ -395,6 +500,10 @@
   .manage-users__confirmation {
     padding-left: 20px;
     padding-right: 20px;
+  }
+
+  .settings-insight-card {
+    padding: 20px;
   }
 
   .manage-users__table th,
@@ -445,6 +554,10 @@ export default {
     emits: ['close'],
     created: function() {
         setAuthToken(this.$store.auth.token);
+        if (!this.isAdmin) {
+          this.message = 'You need admin rights to manage users.';
+          return;
+        }
         this.fetchUsers(); // Fetch users when the component is created
     },
     data() {
@@ -455,8 +568,25 @@ export default {
           userIdToDelete: null // This will hold the ID of the deleted user
         };
     },
+    computed: {
+      isAdmin() {
+        return this.$store.auth.getRole === 'admin';
+      }
+    },
     methods: {
+      hasAdminRights() {
+        if (this.isAdmin) {
+          return true;
+        }
+
+        this.message = 'You need admin rights to manage users.';
+        return false;
+      },
       async fetchUsers() {
+        if (!this.hasAdminRights()) {
+          return;
+        }
+
         try {
           const response = await fetchUsers();
           this.users = response.data.users;
@@ -465,6 +595,10 @@ export default {
         }
       },
       editUser(userId) {
+        if (!this.hasAdminRights()) {
+          return;
+        }
+
         // Find the user by ID and set it to the user data property
         const user = this.users.find(user => user.id === userId);
         this.user = JSON.parse(JSON.stringify(user));
@@ -477,6 +611,10 @@ export default {
         this.fetchUsers(); // Refresh the user list
       },
       async updateUser() {
+        if (!this.hasAdminRights()) {
+          return;
+        }
+
         // Logic to update user
         const userPassword = this.$el.querySelector('#password').value;
         const userPasswordRepeat = this.$el.querySelector('#password-repeat').value;
@@ -509,6 +647,10 @@ export default {
         }
       },
       async deleteUser(userId) {
+        if (!this.hasAdminRights()) {
+          return;
+        }
+
         // Logic to delete user
         try {
           await deleteUser(userId);
@@ -522,6 +664,10 @@ export default {
         }
       },
       showDeleteForm(userId) {
+        if (!this.hasAdminRights()) {
+          return;
+        }
+
         // Find the user by ID and set it to the user data property
         const user = this.users.find(user => user.id === userId);
         this.user = JSON.parse(JSON.stringify(user));

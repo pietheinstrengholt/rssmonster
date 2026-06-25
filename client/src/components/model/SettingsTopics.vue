@@ -1,9 +1,17 @@
 <template>
-  <div class="settings-group">
-    <h4>Events and topics</h4>
-    <p class="text-muted mb-3">
-      Events group related articles into current stories. Topics connect those events and articles into longer-running themes.
-    </p>
+  <div class="settings-topics">
+    <section class="settings-insight-card" aria-labelledby="topics-title">
+      <span class="settings-insight-icon" aria-hidden="true">
+        <BootstrapIcon icon="diagram-3" />
+      </span>
+      <div>
+        <p class="settings-page-eyebrow">Settings — Topic Insights</p>
+        <h3 id="topics-title">Events and topics</h3>
+        <p>
+          Events group related articles into current stories. Topics connect those events and articles into longer-running themes.
+        </p>
+      </div>
+    </section>
 
     <div v-if="loading" class="d-flex align-items-center gap-2 mb-3">
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -15,183 +23,132 @@
     </div>
 
     <div v-else>
-      <div class="row g-3 mb-3">
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Active events</div>
-              <div class="fs-4 fw-semibold">{{ totals.activeEventCount }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Topics</div>
-              <div class="fs-4 fw-semibold">{{ totals.topicCount }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Event articles</div>
-              <div class="fs-4 fw-semibold">{{ totals.eventLinkedArticles }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Topic coverage</div>
-              <div class="fs-4 fw-semibold">{{ formatPercent(totals.topicCoveragePercent) }}</div>
-            </div>
-          </div>
-        </div>
+      <div class="settings-metric-grid">
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Active events</span>
+          <strong>{{ totals.activeEventCount }}</strong>
+        </article>
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Topics</span>
+          <strong>{{ totals.topicCount }}</strong>
+        </article>
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Event articles</span>
+          <strong>{{ totals.eventLinkedArticles }}</strong>
+        </article>
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Topic coverage</span>
+          <strong>{{ formatPercent(totals.topicCoveragePercent) }}</strong>
+        </article>
       </div>
 
-      <div class="row g-3 mb-3">
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Event health</h5>
-              <dl class="row mb-0">
-                <dt class="col-7 fw-normal text-muted">Unclustered articles</dt>
-                <dd class="col-5 text-end">{{ totals.unclusteredArticles }}</dd>
-                <dt class="col-7 fw-normal text-muted">Articles linked to events</dt>
-                <dd class="col-5 text-end">{{ totals.eventLinkedArticles }}</dd>
-                <dt class="col-7 fw-normal text-muted">New events created</dt>
-                <dd class="col-5 text-end">{{ totals.eventCount }}</dd>
-                <dt class="col-7 fw-normal text-muted">Unassigned articles</dt>
-                <dd class="col-5 text-end">{{ totals.unassignedArticles }}</dd>
-                <dt class="col-7 fw-normal text-muted">Event reuse ratio</dt>
-                <dd class="col-5 text-end">{{ formatPercent(totals.eventReuseRatio) }}</dd>
-                <dt class="col-7 fw-normal text-muted">New event ratio</dt>
-                <dd class="col-5 text-end">{{ formatPercent(totals.newEventRatio) }}</dd>
-                <dt class="col-7 fw-normal text-muted">Average articles per event</dt>
-                <dd class="col-5 text-end">{{ formatNumber(totals.averageArticlesPerEvent) }}</dd>
-                <dt class="col-7 fw-normal text-muted">Largest event size</dt>
-                <dd class="col-5 text-end">{{ totals.largestEventSize }} articles</dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+      <div class="settings-panel-grid">
+        <section class="settings-data-panel" aria-labelledby="event-health-title">
+          <h4 id="event-health-title">Event health</h4>
+          <dl class="settings-definition-list">
+            <div><dt>Unclustered articles</dt><dd>{{ totals.unclusteredArticles }}</dd></div>
+            <div><dt>Articles linked to events</dt><dd>{{ totals.eventLinkedArticles }}</dd></div>
+            <div><dt>New events created</dt><dd>{{ totals.eventCount }}</dd></div>
+            <div><dt>Unassigned articles</dt><dd>{{ totals.unassignedArticles }}</dd></div>
+            <div><dt>Event reuse ratio</dt><dd>{{ formatPercent(totals.eventReuseRatio) }}</dd></div>
+            <div><dt>New event ratio</dt><dd>{{ formatPercent(totals.newEventRatio) }}</dd></div>
+            <div><dt>Average articles per event</dt><dd>{{ formatNumber(totals.averageArticlesPerEvent) }}</dd></div>
+            <div><dt>Largest event size</dt><dd>{{ totals.largestEventSize }} articles</dd></div>
+          </dl>
+        </section>
 
-        <div class="col-lg-6">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Topic health</h5>
-              <dl class="row mb-0">
-                <dt class="col-7 fw-normal text-muted">Topics</dt>
-                <dd class="col-5 text-end">{{ totals.topicCount }}</dd>
-                <dt class="col-7 fw-normal text-muted">Topics with events</dt>
-                <dd class="col-5 text-end">{{ totals.topicsWithEvents }}</dd>
-                <dt class="col-7 fw-normal text-muted">Events linked to topics</dt>
-                <dd class="col-5 text-end">{{ totals.eventsLinkedToTopics }}</dd>
-                <dt class="col-7 fw-normal text-muted">Events without topics</dt>
-                <dd class="col-5 text-end">{{ totals.eventsWithoutTopics }}</dd>
-                <dt class="col-7 fw-normal text-muted">Articles linked to topics</dt>
-                <dd class="col-5 text-end">{{ totals.articlesLinkedToTopics }}</dd>
-                <dt class="col-7 fw-normal text-muted">Average events per topic</dt>
-                <dd class="col-5 text-end">{{ formatNumber(totals.averageEventsPerTopic) }}</dd>
-              </dl>
-            </div>
-          </div>
-        </div>
+        <section class="settings-data-panel" aria-labelledby="topic-health-title">
+          <h4 id="topic-health-title">Topic health</h4>
+          <dl class="settings-definition-list">
+            <div><dt>Topics</dt><dd>{{ totals.topicCount }}</dd></div>
+            <div><dt>Topics with events</dt><dd>{{ totals.topicsWithEvents }}</dd></div>
+            <div><dt>Events linked to topics</dt><dd>{{ totals.eventsLinkedToTopics }}</dd></div>
+            <div><dt>Events without topics</dt><dd>{{ totals.eventsWithoutTopics }}</dd></div>
+            <div><dt>Articles linked to topics</dt><dd>{{ totals.articlesLinkedToTopics }}</dd></div>
+            <div><dt>Average events per topic</dt><dd>{{ formatNumber(totals.averageEventsPerTopic) }}</dd></div>
+          </dl>
+        </section>
       </div>
 
-      <div class="row g-3 mb-3">
-        <div class="col-lg-4">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Event sizes</h5>
-              <div v-if="eventSizeBuckets.length" class="d-flex flex-column gap-2">
-                <div v-for="bucket in eventSizeBuckets" :key="bucket.bucket" class="d-flex justify-content-between">
-                  <span class="text-muted">Events with {{ bucket.bucket }} {{ bucket.bucket === '1' ? 'article' : 'articles' }}</span>
-                  <span>{{ bucket.count }}</span>
-                </div>
-              </div>
-              <div v-else class="text-muted">No event sizes yet.</div>
+      <div class="settings-compact-grid">
+        <section class="settings-data-panel" aria-labelledby="event-sizes-title">
+          <h4 id="event-sizes-title">Event sizes</h4>
+          <div v-if="eventSizeBuckets.length" class="settings-compact-list">
+            <div v-for="bucket in eventSizeBuckets" :key="bucket.bucket">
+              <span>Events with {{ bucket.bucket }} {{ bucket.bucket === '1' ? 'article' : 'articles' }}</span>
+              <strong>{{ bucket.count }}</strong>
             </div>
           </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Event statuses</h5>
-              <div v-if="eventStatuses.length" class="d-flex flex-column gap-2">
-                <div v-for="status in eventStatuses" :key="status.status" class="d-flex justify-content-between">
-                  <span class="text-muted text-capitalize">{{ status.status }}</span>
-                  <span>{{ status.count }}</span>
-                </div>
-              </div>
-              <div v-else class="text-muted">No events yet.</div>
+          <p v-else class="settings-empty-text">No event sizes yet.</p>
+        </section>
+        <section class="settings-data-panel" aria-labelledby="event-statuses-title">
+          <h4 id="event-statuses-title">Event statuses</h4>
+          <div v-if="eventStatuses.length" class="settings-compact-list">
+            <div v-for="status in eventStatuses" :key="status.status">
+              <span class="text-capitalize">{{ status.status }}</span>
+              <strong>{{ status.count }}</strong>
             </div>
           </div>
-        </div>
-        <div class="col-lg-4">
-          <div class="card h-100">
-            <div class="card-body">
-              <h5 class="mb-3">Topic types</h5>
-              <div v-if="topicTypes.length" class="d-flex flex-column gap-2">
-                <div v-for="type in topicTypes" :key="type.topicType" class="d-flex justify-content-between">
-                  <span class="text-muted text-capitalize">{{ type.topicType }}</span>
-                  <span>{{ type.count }}</span>
-                </div>
-              </div>
-              <div v-else class="text-muted">No topics yet.</div>
+          <p v-else class="settings-empty-text">No events yet.</p>
+        </section>
+        <section class="settings-data-panel" aria-labelledby="topic-types-title">
+          <h4 id="topic-types-title">Topic types</h4>
+          <div v-if="topicTypes.length" class="settings-compact-list">
+            <div v-for="type in topicTypes" :key="type.topicType">
+              <span class="text-capitalize">{{ type.topicType }}</span>
+              <strong>{{ type.count }}</strong>
             </div>
           </div>
-        </div>
+          <p v-else class="settings-empty-text">No topics yet.</p>
+        </section>
       </div>
 
       <div v-if="!events.length && !topics.length" class="alert alert-info mb-3">
         Events and topics will appear here after articles have been clustered.
       </div>
 
-      <div v-else class="row g-3 mb-3">
-        <div class="col-lg-6">
-          <h5 class="mb-2">Largest events</h5>
-          <div class="list-group">
-            <div v-for="event in events" :key="event.id" class="list-group-item">
-              <div class="d-flex justify-content-between gap-3">
-                <div>
-                  <div class="fw-semibold">{{ event.name || `Event #${event.id}` }}</div>
-                  <div class="text-muted small">
-                    {{ event.articleCount }} articles · {{ event.topicCount }} topics · {{ formatDate(event.updatedAt) }}
-                  </div>
-                </div>
-                <span class="badge align-self-start" :class="statusClass(event.status)">
-                  {{ event.status }}
-                </span>
+      <div v-else class="settings-panel-grid">
+        <section class="settings-data-panel" aria-labelledby="largest-events-title">
+          <h4 id="largest-events-title">Largest events</h4>
+          <div class="settings-object-list">
+            <article v-for="event in events" :key="event.id" class="settings-object-row">
+              <div>
+                <strong>{{ event.name || `Event #${event.id}` }}</strong>
+                <p>
+                  {{ event.articleCount }} articles &middot; {{ event.topicCount }} topics &middot; {{ formatDate(event.updatedAt) }}
+                </p>
               </div>
-            </div>
+              <span class="badge align-self-start" :class="statusClass(event.status)">
+                {{ event.status }}
+              </span>
+            </article>
           </div>
-        </div>
+        </section>
 
-        <div class="col-lg-6">
-          <h5 class="mb-2">Recent topics</h5>
-          <div class="list-group">
-            <div v-for="topic in topics" :key="topic.id" class="list-group-item">
-              <div class="d-flex justify-content-between gap-3">
-                <div>
-                  <div class="fw-semibold">{{ topic.name }}</div>
-                  <div class="text-muted small">
-                    {{ topic.linkedEventCount }} events · {{ topic.linkedArticleCount }} articles · {{ formatDate(topic.lastActivityAt) }}
-                  </div>
-                </div>
-                <span class="badge align-self-start" :class="topicTypeClass(topic.topicType)">
-                  {{ topic.topicType }}
-                </span>
+        <section class="settings-data-panel" aria-labelledby="recent-topics-title">
+          <h4 id="recent-topics-title">Recent topics</h4>
+          <div class="settings-object-list">
+            <article v-for="topic in topics" :key="topic.id" class="settings-object-row">
+              <div>
+                <strong>{{ topic.name }}</strong>
+                <p>
+                  {{ topic.linkedEventCount }} events &middot; {{ topic.linkedArticleCount }} articles &middot; {{ formatDate(topic.lastActivityAt) }}
+                </p>
               </div>
-            </div>
+              <span class="badge align-self-start" :class="topicTypeClass(topic.topicType)">
+                {{ topic.topicType }}
+              </span>
+            </article>
           </div>
-        </div>
+        </section>
       </div>
     </div>
 
-    <div class="d-flex justify-content-end">
-      <button type="button" class="btn btn-secondary" @click="reload" :disabled="loading">Refresh</button>
+    <div class="settings-refresh-actions">
+      <button type="button" class="settings-refresh-button" @click="reload" :disabled="loading">
+        <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
+        Refresh
+      </button>
     </div>
   </div>
 </template>
@@ -199,19 +156,252 @@
 <style src="../../assets/css/settings.css"></style>
 
 <style scoped>
-:global(:root[data-theme='dark']) {
-  .card {
-    --bs-card-bg: var(--bg-modal);
-    --bs-card-border-color: var(--border-color);
-    --bs-card-color: var(--text-inverted);
+.settings-topics {
+  max-width: 1100px;
+  color: var(--text-primary);
+}
+
+.settings-insight-card,
+.settings-data-panel,
+.settings-metric-card {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+}
+
+.settings-insight-card {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--bg-info-subtle);
+  border-color: var(--border-info);
+}
+
+.settings-insight-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  color: var(--color-primary);
+  font-size: 20px;
+}
+
+.settings-page-eyebrow {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.settings-insight-card h3,
+.settings-data-panel h4 {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.settings-insight-card h3 {
+  font-size: 20px;
+}
+
+.settings-insight-card p:not(.settings-page-eyebrow) {
+  max-width: 760px;
+  margin: 6px 0 0;
+  color: var(--text-muted);
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.settings-metric-grid,
+.settings-panel-grid,
+.settings-compact-grid {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.settings-metric-grid {
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+}
+
+.settings-panel-grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.settings-compact-grid {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.settings-metric-card {
+  padding: 16px;
+}
+
+.settings-metric-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-metric-card strong {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.settings-data-panel {
+  padding: 20px;
+}
+
+.settings-data-panel h4 {
+  margin-bottom: 14px;
+  font-size: 16px;
+}
+
+.settings-definition-list {
+  display: grid;
+  gap: 10px;
+  margin: 0;
+}
+
+.settings-definition-list div,
+.settings-compact-list div {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.settings-definition-list dt,
+.settings-compact-list span,
+.settings-empty-text,
+.settings-object-row p {
+  color: var(--text-muted);
+}
+
+.settings-definition-list dt {
+  font-weight: 500;
+}
+
+.settings-definition-list dd {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+  text-align: right;
+}
+
+.settings-compact-list {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-compact-list strong {
+  color: var(--text-primary);
+}
+
+.settings-empty-text {
+  margin: 0;
+  font-size: 13px;
+}
+
+.settings-object-list {
+  display: grid;
+  gap: 10px;
+}
+
+.settings-object-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 12px;
+  background: var(--bg-surface-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+
+.settings-object-row strong {
+  color: var(--text-primary);
+  font-size: 14px;
+}
+
+.settings-object-row p {
+  margin: 3px 0 0;
+  font-size: 12px;
+}
+
+.settings-refresh-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.settings-refresh-button {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-inverted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-refresh-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.settings-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+:global(:root[data-theme='dark']) .settings-insight-card,
+:global(:root[data-theme='dark']) .settings-data-panel,
+:global(:root[data-theme='dark']) .settings-metric-card {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .settings-object-row {
+  background: var(--bg-control);
+  border-color: var(--border-color);
+}
+
+@media (max-width: 900px) {
+  .settings-metric-grid,
+  .settings-panel-grid,
+  .settings-compact-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 766px) {
+  .settings-insight-card {
+    padding: 20px;
   }
 
-  .list-group {
-    --bs-list-group-bg: var(--bg-modal);
-    --bs-list-group-color: var(--text-inverted);
-    --bs-list-group-border-color: var(--border-color);
-    --bs-list-group-action-hover-bg: var(--bg-control);
-    --bs-list-group-action-hover-color: var(--text-inverted);
+  .settings-metric-grid,
+  .settings-panel-grid,
+  .settings-compact-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-object-row {
+    flex-direction: column;
   }
 }
 </style>

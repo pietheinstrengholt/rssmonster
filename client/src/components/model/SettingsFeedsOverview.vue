@@ -1,15 +1,19 @@
 <template>
   <div class="feeds-overview">
-    <header class="feeds-header">
+    <section class="settings-insight-card feeds-header" aria-labelledby="feeds-overview-title">
+      <span class="settings-insight-icon" aria-hidden="true">
+        <BootstrapIcon icon="rss" />
+      </span>
       <div>
-        <h3>Feeds Overview</h3>
+        <p class="settings-page-eyebrow">Settings — Manage Feeds</p>
+        <h3 id="feeds-overview-title">Feeds Overview</h3>
         <p>Manage your RSS subscriptions and monitor key metrics.</p>
         <!-- Info text -->
         <span class="feeds-helper-text">
           Trust Score reflects feed quality and originality, while Duplication Rate tracks repeated content. Import or export OPML to move subscriptions between readers.
         </span>
       </div>
-    </header>
+    </section>
 
     <div v-if="feedsLoading" class="feeds-state">Loading feeds…</div>
     <div v-else-if="feedsError" class="feeds-state feeds-state--error">{{ feedsError }}</div>
@@ -101,7 +105,6 @@
                   <td>{{ formatScore(feed.feedDuplicationRate) }}</td>
                   <td>
                     <button class="feeds-edit-button" type="button" @click="openFeedEdit(feed)">
-                      <BootstrapIcon icon="pencil" aria-hidden="true" />
                       <span>Edit</span>
                     </button>
                   </td>
@@ -123,18 +126,50 @@
   color: #334155;
 }
 
+.settings-insight-card {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 24px;
+  padding: 24px;
+  background: var(--bg-info-subtle);
+  border: 1px solid var(--border-info);
+  border-radius: 14px;
+}
+
+.settings-insight-icon {
+  display: inline-flex;
+  width: 42px;
+  height: 42px;
+  flex: 0 0 42px;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-primary);
+  border-radius: 12px;
+  color: var(--color-primary);
+  font-size: 20px;
+}
+
+.settings-page-eyebrow {
+  margin: 0 0 4px;
+  color: var(--color-primary);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
 .feeds-header h3 {
   margin: 0;
   color: #111827;
-  font-size: 26px;
+  font-size: 20px;
   font-weight: 700;
-  letter-spacing: -0.02em;
 }
 
 .feeds-header p {
   margin: 6px 0 0;
   color: #64748b;
   font-size: 14px;
+  line-height: 1.5;
 }
 
 .feeds-helper-text {
@@ -444,6 +479,8 @@
 }
 
 :global(:root[data-theme='dark']) .feeds-overview { color: var(--text-secondary); }
+:global(:root[data-theme='dark']) .settings-insight-card { background: var(--bg-modal); border-color: var(--border-color); }
+:global(:root[data-theme='dark']) .settings-insight-icon { background: var(--bg-control); }
 :global(:root[data-theme='dark']) .feeds-header h3,
 :global(:root[data-theme='dark']) .feeds-stat-value,
 :global(:root[data-theme='dark']) .feeds-name-cell strong { color: var(--text-inverted); }
@@ -498,6 +535,7 @@
 }
 
 @media (max-width: 766px) {
+  .settings-insight-card { padding: 20px; }
   .feeds-stat-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .feeds-toolbar,
   .feeds-toolbar-actions,
@@ -679,8 +717,6 @@ export default {
         },
         feedStats() {
             const totalArticles = this.feeds.reduce((total, feed) => total + (Number(feed.articleCount) || 0), 0);
-            const articlesPerDay = this.feeds.reduce((total, feed) => total + (Number(feed.articlesPerDay) || 0), 0);
-            const averageArticlesPerDay = this.feeds.length ? articlesPerDay / this.feeds.length : 0;
 
             return [
                 { label: 'Total Feeds', value: this.feeds.length, icon: 'rss', tone: 'orange' },

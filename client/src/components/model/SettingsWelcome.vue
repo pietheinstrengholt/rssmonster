@@ -56,6 +56,14 @@
       </p>
     </div>
 
+    <div v-if="this.$store.auth.getRole === 'admin'" class="mb-3">
+      <h6 class="mb-2"><strong>Manage Users</strong></h6>
+      <p class="small text-muted mb-0">
+        Manage user accounts, roles, and permissions for multi-user installations. Admins can create, edit, and delete users,
+        as well as assign roles to control access to features and settings.
+      </p>
+    </div>    
+
     <p class="small text-muted mt-4">
       <strong>Tip:</strong> Use the settings navigation to configure each feature. Changes are saved independently per section.
     </p>

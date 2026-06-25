@@ -304,8 +304,22 @@
 
 .scores-save-button {
   display: inline-flex;
+  height: 42px;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  padding: 0 16px;
+  background: var(--color-primary) !important;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-inverted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.scores-save-button:hover {
+  background: var(--color-primary-hover) !important;
 }
 
 :global(:root[data-theme='dark']) .scores-intro-card {

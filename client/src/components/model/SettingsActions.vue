@@ -26,7 +26,7 @@
       <p v-else class="actions-empty-state">No actions yet. Add one to automate how incoming articles are handled.</p>
       <div class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Delete action matches, the article will not be saved and no other actions will be applied.</p></div>
     </section>
-    <div class="actions-save-area"><button class="actions-save-button" type="button" @click="save"><BootstrapIcon icon="floppy" aria-hidden="true" />Save Changes</button></div>
+    <div class="actions-save-area"><button class="actions-save-button" type="button" @click="save">Save Changes</button></div>
   </div>
 </template>
 
