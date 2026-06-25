@@ -76,7 +76,7 @@
 .desktop-toolbar {
   height: 56px;
   box-sizing: border-box;
-  border-bottom: 1px solid var(--literal-color-transparent);
+  border-bottom: 1px solid var(--color-transparent);
   border-color: var(--border-input);
   right: 0;
   overflow: visible;
@@ -102,7 +102,7 @@
 }
 
 .toolbar-filter-button {
-  background: var(--literal-color-transparent);
+  background: var(--color-transparent);
   border: none;
   color: inherit;
   font-weight: 500;
@@ -162,8 +162,8 @@
 }
 
 .dropdown-item.active {
-  color: var(--literal-color-hex-2a71e7);
-  background-color: var(--literal-color-hex-ebf2fe);
+  color: var(--color-primary-action);
+  background-color: var(--color-primary-soft);
   border-radius: 4px;
 }
 
@@ -182,7 +182,7 @@
   flex-shrink: 0;
   cursor: pointer;
   color: var(--toolbar-text);
-  background-color: var(--literal-color-hex-fefefe);
+  background-color: var(--bg-card);
   font-size: 20px;
 }
 
@@ -228,8 +228,8 @@
 }
 
 .toolbar-theme-menu .dropdown-item.active {
-  color: var(--literal-color-hex-2a71e7);
-  background-color: var(--literal-color-hex-ebf2fe);
+  color: var(--color-primary-action);
+  background-color: var(--color-primary-soft);
 }
 
 :global(:root[data-theme='dark'] .toolbar-theme-button) {
@@ -271,7 +271,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-filter-button::after) {
   color: var(--text-inverted);
-  border-top-color: var(--literal-color-currentcolor);
+  border-top-color: var(--color-current);
 }
 
 :global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu.show) {
@@ -306,7 +306,7 @@
 .toolbar-chat-button {
   height: 36px;
   padding: 0 18px;
-  border: 1px solid var(--literal-color-hex-e5e7eb);
+  border: 1px solid var(--border-muted);
   border-radius: 8px;
   background: var(--bg-input);
   font-weight: 600;
@@ -336,7 +336,7 @@
   margin: 0 130px 0 auto;
   padding: 0 12px;
   background-color: var(--bg-input);
-  border: 1px solid var(--literal-color-hex-e5e7eb);
+  border: 1px solid var(--border-muted);
   border-radius: 8px;
 }
 
@@ -349,15 +349,15 @@
 .toolbar-search-icon svg {
   width: 16px;
   height: 16px;
-  fill: var(--literal-color-currentcolor);
+  fill: var(--color-current);
 }
 
 .toolbar-search-input {
   width: 100%;
   min-width: 0;
   height: 100%;
-  color: var(--literal-color-hex-9ca3af);
-  background-color: var(--literal-color-transparent);
+  color: var(--text-soft);
+  background-color: var(--color-transparent);
   font-size: 14px;
   font-weight: 500;
   border: none;
@@ -448,7 +448,7 @@
     padding: 0;
     color: var(--toolbar-text);
   background-color: var(--desktop-toolbar-background);
-    border: 1px solid var(--literal-color-hex-e5e7eb);
+    border: 1px solid var(--border-muted);
     border-radius: 999px;
     z-index: 1;
   }
@@ -456,7 +456,7 @@
   .toolbar-search-button svg {
     width: 16px;
     height: 16px;
-    fill: var(--literal-color-currentcolor);
+    fill: var(--color-current);
   }
 }
 
@@ -557,7 +557,7 @@
 
   .toolbar-search-input {
     color: var(--text-inverted);
-    background: var(--literal-color-transparent);
+    background: var(--color-transparent);
   }
 
   .toolbar-search-input::placeholder {
@@ -582,7 +582,7 @@
 :global(:root[data-theme='light'] .toolbar-settings-button),
 :global(:root[data-theme='light'] .toolbar-theme-button) {
   color: var(--toolbar-text);
-  background-color: var(--literal-color-hex-fefefe);
+  background-color: var(--bg-card);
   border-color: var(--border-input);
 }
 

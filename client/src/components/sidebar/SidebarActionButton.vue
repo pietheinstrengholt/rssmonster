@@ -61,7 +61,7 @@ const buttonClasses = computed(() => [props.variant]);
   height: 36px;
   margin-bottom: 8px;
   padding: 0 12px;
-  border: 1px solid var(--literal-color-transparent);
+  border: 1px solid var(--color-transparent);
   display: flex;
   align-items: center;
   font-weight: 500;
@@ -87,23 +87,23 @@ const buttonClasses = computed(() => [props.variant]);
 .sidebar-button-add-feed { width: calc(100% - 24px); }
 
 .sidebar-button-refresh {
-  color: var(--literal-color-hex-0368e2);
-  background-color: var(--literal-color-hex-eef0f3);
+  color: var(--color-primary-action);
+  background-color: var(--bg-muted);
 }
 
 .sidebar-button-refresh:hover {
-  background-color: var(--literal-color-hex-e5e7eb);
+  background-color: var(--border-muted);
 }
 
 .sidebar-button-add-feed {
   color: var(--literal-color-hex-2e8b57);
-  background-color: var(--literal-color-hex-eef0f3);
+  background-color: var(--bg-muted);
 }
 
 .sidebar-button-mark-read {
-  color: var(--literal-color-hex-374151);
-  background-color: var(--literal-color-hex-ffffff);
-  border-color: var(--literal-color-hex-e7eaf0);
+  color: var(--text-body);
+  background-color: var(--bg-card);
+  border-color: var(--border-muted);
 }
 
 .sidebar-management-button {

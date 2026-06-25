@@ -114,8 +114,8 @@ function getFeedCount(feed) {
 }
 
 .sidebar-category.selected {
-  color: var(--literal-color-hex-2a71e7);
-  background-color: var(--literal-color-hex-ebf2fe);
+  color: var(--color-primary-action);
+  background-color: var(--color-primary-soft);
   box-shadow: none;
 }
 
@@ -142,12 +142,12 @@ function getFeedCount(feed) {
 }
 
 .sidebar-category.selected .sidebar-count {
-  color: var(--literal-color-hex-2a71e7);
+  color: var(--color-primary-action);
 }
 
 .sidebar-count.sidebar-count-white {
   color: inherit;
-  background-color: var(--literal-color-transparent);
+  background-color: var(--color-transparent);
 }
 
 .sidebar-icon {
@@ -174,7 +174,7 @@ function getFeedCount(feed) {
 
 .sidebar-category.selected .sidebar-feed-list,
 .sidebar-category.selected :deep(.sidebar-feed) {
-  background-color: var(--literal-color-hex-ebf2fe);
+  background-color: var(--color-primary-soft);
 }
 
 .sidebar-category.selected .sidebar-feed-list {

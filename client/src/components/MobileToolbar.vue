@@ -126,9 +126,9 @@
   z-index: 100;
   width: 100%;
   padding: 8px 12px 10px;
-  color: var(--literal-color-hex-111827);
-  background: var(--literal-color-hex-ffffff);
-  border-bottom: 1px solid var(--literal-color-hex-e5e7eb);
+  color: var(--text-strong);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-muted);
 }
 
 @media (max-width: 766px) {
@@ -157,7 +157,7 @@
 
 .mobile-toolbar-brand {
   gap: 10px;
-  color: var(--literal-color-hex-111827);
+  color: var(--text-strong);
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
@@ -182,15 +182,15 @@
   padding: 0;
   border: none;
   border-radius: 999px;
-  background: var(--literal-color-transparent);
-  color: var(--literal-color-hex-111827);
+  background: var(--color-transparent);
+  color: var(--text-strong);
   font-size: 18px;
   cursor: pointer;
 }
 
 .mobile-toolbar-button:hover,
 .mobile-toolbar-button:focus-visible {
-  background: var(--literal-color-hex-f3f4f6);
+  background: var(--bg-muted);
 }
 
 .mobile-toolbar-filters {
@@ -208,17 +208,17 @@
   position: relative;
   width: 100%;
   padding: 10px 16px;
-  background: var(--literal-color-hex-ffffff);
-  border-bottom: 1px solid var(--literal-color-hex-e5e7eb);
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-muted);
 }
 
 .mobile-search-input {
   width: 100%;
   height: 42px;
   padding: 0 14px;
-  color: var(--literal-color-hex-111827);
-  background: var(--literal-color-hex-ffffff);
-  border: 1px solid var(--literal-color-hex-e5e7eb);
+  color: var(--text-strong);
+  background: var(--bg-card);
+  border: 1px solid var(--border-muted);
   border-radius: 14px;
   outline: none;
   font-size: 15px;
@@ -227,11 +227,11 @@
 .mobile-filter-button {
   height: 40px;
   padding: 0 6px;
-  color: var(--literal-color-hex-111827);
-  background: var(--literal-color-hex-ffffff);
-  border: 1px solid var(--literal-color-hex-e5e7eb);
+  color: var(--text-strong);
+  background: var(--bg-card);
+  border: 1px solid var(--border-muted);
   border-radius: 14px;
-  box-shadow: 0 1px 2px var(--literal-color-rgba-15-23-42-0-04);
+  box-shadow: 0 1px 2px var(--shadow-card-subtle-color);
   font-size: 14px;
   font-weight: 500;
   line-height: 20px;
@@ -249,8 +249,8 @@
 .mobile-filter-button:hover,
 .mobile-filter-button:focus,
 .mobile-filter-button.show {
-  color: var(--literal-color-hex-111827);
-  background: var(--literal-color-hex-f9fafb);
+  color: var(--text-strong);
+  background: var(--bg-page);
   border-color: var(--literal-color-hex-d1d5db);
   box-shadow: none;
 }
@@ -270,8 +270,8 @@
 }
 
 .dropdown-item.active {
-  color: var(--literal-color-hex-2a71e7);
-  background-color: var(--literal-color-hex-ebf2fe);
+  color: var(--color-primary-action);
+  background-color: var(--color-primary-soft);
 }
 
 :global(:root[data-theme='dark']) {

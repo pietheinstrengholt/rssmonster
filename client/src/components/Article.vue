@@ -598,7 +598,7 @@ export default {
   margin-top: 6px;
 }
 .article-card .article-content-wrapper {
-  color: var(--literal-color-hex-111827);
+  color: var(--text-strong);
   padding-top: 6px;
   font-size: 14px;
   line-height: 1.65;
@@ -611,7 +611,7 @@ export default {
 
 .article-card .article-full-content {
   font-family: var(--font-family);
-  color: var(--literal-color-hex-1f2937);
+  color: var(--text-strong);
   font-size: 14px;
   line-height: 1.65;
   font-weight: 400;
@@ -619,7 +619,7 @@ export default {
 
 .article-card .article-body h5 a {
   margin: 0;
-  color: var(--literal-color-hex-111827);
+  color: var(--text-strong);
   font-size: 22px;
   line-height: 1;
   font-weight: 700;
@@ -675,7 +675,7 @@ export default {
 
 .article-card .dropdown .btn:hover {
   opacity: 1;
-  background-color: var(--literal-color-transparent) !important;
+  background-color: var(--color-transparent) !important;
 }
 
 .article-card .dropdown-menu {
@@ -697,7 +697,7 @@ export default {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
-  color: var(--literal-color-hex-6b7280);
+  color: var(--text-subtle);
   font-size: 13px;
   line-height: 1.3;
   margin: 0;
@@ -799,7 +799,7 @@ export default {
 }
 
 .article-body:hover {
-    background: var(--literal-color-hex-fafafa);
+    background: var(--bg-page);
 }
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
@@ -844,7 +844,7 @@ export default {
 
 .article-card .article-meta .article-published,
 .article-card .article-meta .article-source a {
-  color: var(--literal-color-hex-6b7280);
+  color: var(--text-subtle);
 }
 
 .break {

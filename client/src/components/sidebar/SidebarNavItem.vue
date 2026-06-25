@@ -75,18 +75,18 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-item.selected {
-  color: var(--literal-color-hex-2a71e7);
-  background-color: var(--literal-color-hex-ebf2fe);
+  color: var(--color-primary-action);
+  background-color: var(--color-primary-soft);
   box-shadow: none;
 }
 
 .sidebar-item.sidebar-refresh-alert {
-  color: var(--literal-color-hex-991b1b);
-  background-color: var(--literal-color-hex-fef2f2);
+  color: var(--color-danger-strong);
+  background-color: var(--color-danger-soft);
 }
 
 .sidebar-item.sidebar-refresh-alert:hover {
-  background-color: var(--literal-color-hex-fee2e2);
+  background-color: var(--color-danger-soft);
 }
 
 .sidebar-refresh-alert .sidebar-count {
@@ -121,12 +121,12 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 .sidebar-item.selected .sidebar-count {
-  color: var(--literal-color-hex-2a71e7);
+  color: var(--color-primary-action);
 }
 
 .sidebar-count.sidebar-count-white {
   color: inherit;
-  background-color: var(--literal-color-transparent);
+  background-color: var(--color-transparent);
 }
 
 .sidebar-item-title {
@@ -142,7 +142,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
 .selected .icon-star,
 .selected .icon-hot {
-  color: var(--literal-color-hex-2a71e7);
+  color: var(--color-primary-action);
 }
 
 :global(:root[data-theme='dark']) {
@@ -162,7 +162,7 @@ const formattedCount = computed(() => formatCount(props.count));
   }
 
   .sidebar-item.sidebar-refresh-alert {
-    color: var(--literal-color-hex-fecaca);
+    color: var(--color-danger-border);
     background-color: var(--literal-color-hex-2b1b1e);
   }
 
@@ -176,7 +176,7 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-refresh-alert) {
-  color: var(--literal-color-hex-fecaca);
+  color: var(--color-danger-border);
   background-color: var(--literal-color-hex-2b1b1e);
 }
 
@@ -239,10 +239,10 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white {
-  background-color: var(--literal-color-transparent) !important;
+  background-color: var(--color-transparent) !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-count.sidebar-count-white {
-  background-color: var(--literal-color-transparent) !important;
+  background-color: var(--color-transparent) !important;
 }
 </style>

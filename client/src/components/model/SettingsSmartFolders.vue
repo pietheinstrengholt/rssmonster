@@ -200,7 +200,7 @@
 }
 .smart-folders-intro li {
   padding: 0;
-  background: var(--literal-color-transparent);
+  background: var(--color-transparent);
   border: 0;
   color: var(--text-secondary);
   font-size: 13px;
@@ -220,7 +220,7 @@
 }
 .smart-folders-insights {
   padding: 18px 0;
-  background: var(--literal-color-transparent);
+  background: var(--color-transparent);
   border: 0;
   border-radius: 0;
 }
@@ -229,7 +229,7 @@
 }
 .smart-folders-list {
   padding: 0;
-  background: var(--literal-color-transparent);
+  background: var(--color-transparent);
   border: 0;
   border-radius: 0;
 }

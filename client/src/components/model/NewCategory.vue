@@ -81,9 +81,9 @@
 }
 
 .category-icon-option.selected {
-    color: var(--literal-color-hex-2a71e7);
-    background: var(--literal-color-hex-ebf2fe);
-    border-color: var(--literal-color-hex-2a71e7);
+    color: var(--color-primary-action);
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary-action);
 }
 
 .category-icon-option :deep(svg) {

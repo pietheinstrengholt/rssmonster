@@ -167,7 +167,7 @@
   font-size: 17px;
 }
 
-.scores-icon-tile--advertisement { background: var(--literal-color-hex-fff1e8); color: var(--literal-color-hex-ea650d); }
+.scores-icon-tile--advertisement { background: var(--color-warning-soft); color: var(--color-warning-action); }
 .scores-icon-tile--sentiment { background: var(--literal-color-hex-fef3c7); color: var(--literal-color-hex-a16207); }
 .scores-icon-tile--quality { background: var(--literal-color-hex-ede9fe); color: var(--literal-color-hex-6d28d9); }
 
@@ -217,7 +217,7 @@
   align-items: center;
   gap: 8px;
   padding: 0 12px;
-  background: var(--literal-color-transparent);
+  background: var(--color-transparent);
   border: 1px solid var(--border-subtle);
   border-radius: 8px;
   color: var(--text-secondary);

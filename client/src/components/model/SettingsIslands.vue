@@ -278,7 +278,7 @@
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
-  background: var(--literal-color-hex-e8f1ff);
+  background: var(--color-primary-soft);
   color: var(--color-primary);
   font-size: 17px;
 }
