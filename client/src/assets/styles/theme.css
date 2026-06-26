@@ -1,6 +1,6 @@
 :root {
   /* Foundation colors */
-  --color-brand: #3F5D7A;
+  --color-brand: #2563EB;
   --color-primary: var(--color-brand);
   --color-success: #58735E;
   --color-warning: #ea650d;
@@ -48,7 +48,10 @@
   --color-danger-hover: #803A44;
   --color-disabled: #B0B0B0;
   --color-success-hover: #48604E;
-  --color-link: var(--color-primary);
+  --color-link: #2563EB;
+  --color-link-hover: #1D4ED8;
+  --color-link-visited: #1E40AF;
+  --color-link-active: #1E3A8A;
   --theme-color-light: #31344B;
   --color-current: currentColor;
   --color-transparent: transparent;
@@ -82,7 +85,7 @@
   --color-danger-soft: #fef2f2;
   --color-danger-border: #fecaca;
   --color-danger-border-strong: #ef4444;
-  --color-primary-soft: #ebf2fe;
+  --color-primary-soft: #E8F2FE;
   --color-primary-strong: #1d4ed8;
   --color-purple-action: #7c3aed;
   --color-purple-soft: #f5f3ff;
@@ -97,7 +100,7 @@
   --settings-icon-violet-text: #7e22ce;
   --mobile-option-indicator-border: #b8c0cc;
   --mobile-sheet-handle-bg: #c7cdd6;
-  --sidebar-success-action-text: #2e8b57;
+  --sidebar-success-action-text: #166534;
   --article-warning-text: #f59e0b;
 
   /* Article surfaces and content */
@@ -118,22 +121,36 @@
   --article-hot-icon: #F3A712;
 
   /* Article tags and category badges */
-  --article-category-badge-background: #F0F0F0;
-  --article-tag-background: #E8F4F8;
-  --article-rule-tag-background: #F3E8FF;
-  --article-rule-tag-text: #7C3AED;
+  --badge-similar-bg: #E8F2FE;
+  --badge-similar-text: #1D4ED8;
+  --badge-tag-bg: #F3F4F6;
+  --badge-tag-text: #4B5563;
+  --badge-quality-bg: #FEE2E2;
+  --badge-quality-text: #B91C1C;
+  --badge-ad-bg: #FFEDD5;
+  --badge-ad-text: #EA650D;
+  --badge-sentiment-bg: #E8ECFC;
+  --badge-sentiment-text: #1D4ED8;
+  --badge-writing-bg: #E6F4EA;
+  --badge-writing-text: #1F5E3A;
+  --badge-tag-rule-bg: #F3E8FF;
+  --badge-tag-rule-text: #7C3AED;
+  --article-category-badge-background: var(--badge-tag-bg);
+  --article-tag-background: var(--badge-tag-bg);
+  --article-rule-tag-background: var(--badge-tag-rule-bg);
+  --article-rule-tag-text: var(--badge-tag-rule-text);
 
   /* Article score badges */
-  --article-score-text: #666666;
-  --article-overall-score-background: #FFEBEE;
-  --article-overall-score-text: #C62828;
-  --article-ad-score-background: #FFF3E0;
-  --article-ad-score-text: #E65100;
-  --article-sentiment-score-background: #E8EAF6;
-  --article-sentiment-score-text: #3F51B5;
+  --article-score-text: var(--badge-tag-text);
+  --article-overall-score-background: var(--badge-quality-bg);
+  --article-overall-score-text: var(--badge-quality-text);
+  --article-ad-score-background: var(--badge-ad-bg);
+  --article-ad-score-text: var(--badge-ad-text);
+  --article-sentiment-score-background: var(--badge-sentiment-bg);
+  --article-sentiment-score-text: var(--badge-sentiment-text);
   --article-sentiment-moderate: #D4A017;
-  --article-quality-background: #E8F5E9;
-  --article-quality-positive: #2E7D32;
+  --article-quality-background: var(--badge-writing-bg);
+  --article-quality-positive: var(--badge-writing-text);
   --article-quality-good: #43A047;
   --article-quality-excellent: #81C784;
   --article-quality-okay: #FBC02D;
@@ -152,12 +169,20 @@
   --mobile-toolbar-title: #6B7280;
 
   /* Sidebar action buttons */
-  --sidebar-action-refresh-background: #E5F0FC;
-  --sidebar-action-refresh-text: #1C4E80;
-  --sidebar-action-add-background: #E6F4EA;
-  --sidebar-action-add-text: #216E39;
-  --sidebar-action-mark-as-read-background: #EEF0F3;
-  --sidebar-action-mark-as-read-text: #3F4652;
+  --sidebar-action-refresh-background: #2563EB;
+  --sidebar-action-refresh-hover-background: #1D4ED8;
+  --sidebar-action-refresh-border: var(--color-transparent);
+  --sidebar-action-refresh-text: #FFFFFF;
+  --sidebar-action-add-background: #fff1e8;
+  --sidebar-action-add-hover-background: #FFE6D5;
+  --sidebar-action-add-hover-text: #C2410C;
+  --sidebar-action-add-border: #FFC4A3;
+  --sidebar-action-add-text: #EA650D;
+  --sidebar-action-mark-as-read-background: #EAF7EF;
+  --sidebar-action-mark-as-read-hover-background: #DDF2E5;
+  --sidebar-action-mark-as-read-hover-text: #14532D;
+  --sidebar-action-mark-as-read-border: #B9DFC6;
+  --sidebar-action-mark-as-read-text: #166534;
 
   /* Mobile menu */
   --mobile-menu-category-background: #7F8798;
@@ -291,12 +316,20 @@
   /* Dark toolbar and sidebar colors */
   --toolbar-search-background-dark: #1E1E1E;
   --toolbar-settings-hover-background-dark: #4A4A4A;
-  --sidebar-action-refresh-background: #1E3A5F;
-  --sidebar-action-refresh-text: #DDEBFF;
-  --sidebar-action-add-background: #1F4A32;
-  --sidebar-action-add-text: #D5F5DF;
-  --sidebar-action-mark-as-read-background: #3A3E47;
-  --sidebar-action-mark-as-read-text: #E8EAED;
+  --sidebar-action-refresh-background: #2563EB;
+  --sidebar-action-refresh-hover-background: #1D4ED8;
+  --sidebar-action-refresh-border: var(--color-transparent);
+  --sidebar-action-refresh-text: #FFFFFF;
+  --sidebar-action-add-background: #fff1e8;
+  --sidebar-action-add-hover-background: #FFE6D5;
+  --sidebar-action-add-hover-text: #C2410C;
+  --sidebar-action-add-border: #FFC4A3;
+  --sidebar-action-add-text: #EA650D;
+  --sidebar-action-mark-as-read-background: #EAF7EF;
+  --sidebar-action-mark-as-read-hover-background: #DDF2E5;
+  --sidebar-action-mark-as-read-hover-text: #14532D;
+  --sidebar-action-mark-as-read-border: #B9DFC6;
+  --sidebar-action-mark-as-read-text: #166534;
   --sidebar-action-primary-background-dark: #1E3A5F;
   --sidebar-mark-as-read-background-dark: #606060;
   --mobile-menu-category-background-dark: #323232;

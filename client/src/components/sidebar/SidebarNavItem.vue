@@ -108,6 +108,10 @@ const formattedCount = computed(() => formatCount(props.count));
   color: var(--text-primary);
 }
 
+.sidebar-status-item.selected .sidebar-item-title {
+  color: var(--color-primary);
+}
+
 .sidebar-count-wrapper {
   margin-left: auto;
   padding-left: 8px;

@@ -617,6 +617,26 @@ export default {
   font-weight: 400;
 }
 
+.article-card .article-full-content a,
+.article-card .article-content-wrapper a {
+  color: var(--color-link);
+}
+
+.article-card .article-full-content a:hover,
+.article-card .article-content-wrapper a:hover {
+  color: var(--color-link-hover);
+}
+
+.article-card .article-full-content a:visited,
+.article-card .article-content-wrapper a:visited {
+  color: var(--color-link-visited);
+}
+
+.article-card .article-full-content a:active,
+.article-card .article-content-wrapper a:active {
+  color: var(--color-link-active);
+}
+
 .article-card .article-body h5 a {
   margin: 0;
   color: var(--text-primary);
@@ -716,7 +736,7 @@ export default {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-category-badge-background);
-  color: var(--text-muted);
+  color: var(--badge-tag-text);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -732,7 +752,7 @@ export default {
   display: inline-flex;
   align-items: center;
   background-color: var(--article-tag-background);
-  color: var(--color-primary);
+  color: var(--badge-tag-text);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -874,8 +894,8 @@ span.article-source a {
 span.similar-badge {
   display: inline-flex;
   align-items: center;
-  background-color: var(--bg-info-code);
-  color: var(--text-info-code);
+  background-color: var(--badge-similar-bg);
+  color: var(--badge-similar-text);
   padding: 3px 8px;
   border-radius: 6px;
   font-size: 11px;
@@ -1046,7 +1066,7 @@ span.similar-badge {
 
 .inline-mobile-tags .tag,
 .inline-mobile-tags .score {
-  background-color: var(--bg-subtle);
+  background-color: var(--badge-tag-bg);
   color: var(--article-score-text);
   padding: 2px 6px;
   border-radius: 3px;

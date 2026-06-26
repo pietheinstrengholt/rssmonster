@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@dvuckovic/vue3-bootstrap-icons": "^2.0.0",
-    "@vue/server-renderer": "^3.5.38",
+    "@vue/server-renderer": "^3.5.39",
     "axios": "^1.18.1",
     "bootstrap": "^5.3.8",
     "bootswatch": "^5.3.8",
@@ -26,14 +26,14 @@
     "js-cookie": "^3.0.8",
     "pinia": "^3.0.4",
     "register-service-worker": "^1.7.2",
-    "vue": "^3.5.38",
+    "vue": "^3.5.39",
     "vuedraggable": "^4.1.0"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^6.0.7",
-    "@vue/compiler-sfc": "^3.5.38",
+    "@vue/compiler-sfc": "^3.5.39",
     "@vue/test-utils": "^2.4.11",
-    "baseline-browser-mapping": "^2.10.38",
+    "baseline-browser-mapping": "^2.10.40",
     "eslint": "^10.5.0",
     "eslint-plugin-vue": "^10.9.2",
     "favicons": "^7.3.0",

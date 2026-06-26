@@ -87,23 +87,35 @@ const buttonClasses = computed(() => [props.variant]);
 .sidebar-button-add-feed { width: calc(100% - 24px); }
 
 .sidebar-button-refresh {
-  color: var(--color-primary);
-  background-color: var(--bg-muted);
+  color: var(--sidebar-action-refresh-text);
+  background: var(--sidebar-action-refresh-background);
+  border-color: var(--sidebar-action-refresh-border);
 }
 
 .sidebar-button-refresh:hover {
-  background-color: var(--border-color);
+  background-color: var(--sidebar-action-refresh-hover-background);
 }
 
 .sidebar-button-add-feed {
-  color: var(--sidebar-success-action-text);
-  background-color: var(--bg-muted);
+  color: var(--sidebar-action-add-text);
+  background-color: var(--sidebar-action-add-background);
+  border-color: var(--sidebar-action-add-border);
+}
+
+.sidebar-button-add-feed:hover {
+  color: var(--sidebar-action-add-hover-text);
+  background-color: var(--sidebar-action-add-hover-background);
 }
 
 .sidebar-button-mark-read {
-  color: var(--text-secondary);
-  background-color: var(--bg-card);
-  border-color: var(--border-color);
+  color: var(--sidebar-action-mark-as-read-text);
+  background-color: var(--sidebar-action-mark-as-read-background);
+  border-color: var(--sidebar-action-mark-as-read-border);
+}
+
+.sidebar-button-mark-read:hover {
+  color: var(--sidebar-action-mark-as-read-hover-text);
+  background-color: var(--sidebar-action-mark-as-read-hover-background);
 }
 
 .sidebar-management-button {
@@ -160,22 +172,33 @@ const buttonClasses = computed(() => [props.variant]);
 
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-button-refresh) {
   color: var(--sidebar-action-refresh-text) !important;
-  background-color: var(--sidebar-action-refresh-background) !important;
+  background: var(--sidebar-action-refresh-background) !important;
+  border-color: var(--sidebar-action-refresh-border) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-button-refresh:hover) {
-  background-color: var(--color-primary-hover) !important;
+  background-color: var(--sidebar-action-refresh-hover-background) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-button-add-feed) {
   color: var(--sidebar-action-add-text) !important;
   background-color: var(--sidebar-action-add-background) !important;
-  border-color: var(--border-color) !important;
+  border-color: var(--sidebar-action-add-border) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-add-feed:hover) {
+  color: var(--sidebar-action-add-hover-text) !important;
+  background-color: var(--sidebar-action-add-hover-background) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-button-mark-read) {
   color: var(--sidebar-action-mark-as-read-text) !important;
   background-color: var(--sidebar-action-mark-as-read-background) !important;
-  border-color: var(--border-color) !important;
+  border-color: var(--sidebar-action-mark-as-read-border) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-button-mark-read:hover) {
+  color: var(--sidebar-action-mark-as-read-hover-text) !important;
+  background-color: var(--sidebar-action-mark-as-read-hover-background) !important;
 }
 </style>
