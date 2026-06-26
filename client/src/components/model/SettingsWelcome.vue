@@ -2,7 +2,7 @@
   <div class="settings-group">
     <section class="settings-insight-card" aria-labelledby="settings-welcome-title">
       <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="gear-fill" />
+        <BootstrapIcon icon="info-circle-fill" />
       </span>
       <div>
         <p class="settings-page-eyebrow">Settings — Overview</p>

@@ -2,7 +2,7 @@
   <div class="settings-islands">
     <section class="settings-insight-card" aria-labelledby="islands-title">
       <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="globe2" />
+        <BootstrapIcon icon="compass-fill" />
       </span>
       <div>
         <p class="settings-page-eyebrow">Settings — Island Insights</p>

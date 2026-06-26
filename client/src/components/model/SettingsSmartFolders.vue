@@ -4,7 +4,7 @@
                         <div class="settings-insight-card settings-insight-card--stacked smart-folders-intro">
                             <p class="mb-2 smart-folders-intro-heading">
                                 <span class="settings-insight-icon" aria-hidden="true">
-                                    <BootstrapIcon icon="folder" />
+                                    <BootstrapIcon icon="folder-fill" />
                                 </span>
                                 <strong>What are Smart Folders?</strong>
                             </p>

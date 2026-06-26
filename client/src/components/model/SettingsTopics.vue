@@ -2,7 +2,7 @@
   <div class="settings-topics">
     <section class="settings-insight-card" aria-labelledby="topics-title">
       <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="diagram-3" />
+        <BootstrapIcon icon="diagram-3-fill" />
       </span>
       <div>
         <p class="settings-page-eyebrow">Settings — Topic Insights</p>

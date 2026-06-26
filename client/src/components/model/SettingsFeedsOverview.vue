@@ -2,7 +2,7 @@
   <div class="feeds-overview">
     <section class="settings-insight-card feeds-header" aria-labelledby="feeds-overview-title">
       <span class="settings-insight-icon" aria-hidden="true">
-        <BootstrapIcon icon="rss" />
+        <BootstrapIcon icon="rss-fill" />
       </span>
       <div>
         <p class="settings-page-eyebrow">Settings — Manage Feeds</p>

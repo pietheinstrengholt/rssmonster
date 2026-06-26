@@ -85,7 +85,7 @@ export default {
       const aiEnabled = this.$store.data.currentSelection.AIEnabled;
 
       return [
-        { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'house-fill', visible: true },
+        { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'info-circle-fill', visible: true },
         { key: 'smartfolders', label: 'Smart Folders', description: 'Organize articles with AI', icon: 'folder-fill', visible: aiEnabled },
         { key: 'actions', label: 'Actions', description: 'Configure article actions', icon: 'lightning-charge-fill', visible: true },
         { key: 'scores', label: 'Scores', description: 'Set AI score thresholds', icon: 'bar-chart-fill', visible: aiEnabled },

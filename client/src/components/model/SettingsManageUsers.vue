@@ -58,7 +58,7 @@
     <div v-else class="manage-users__directory">
               <section class="settings-insight-card" aria-labelledby="manage-users-title">
                 <span class="settings-insight-icon" aria-hidden="true">
-                  <BootstrapIcon icon="people" />
+                  <BootstrapIcon icon="people-fill" />
                 </span>
                 <div>
                   <p class="settings-page-eyebrow">Settings — Manage Users</p>

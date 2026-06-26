@@ -4,7 +4,7 @@
     <section class="settings-insight-card settings-insight-card--stacked scores-intro-card" aria-labelledby="scores-intro-title">
       <div class="settings-insight-header scores-intro-heading">
         <span class="settings-insight-icon" aria-hidden="true">
-          <BootstrapIcon icon="sliders" />
+          <BootstrapIcon icon="bar-chart-fill" />
         </span>
         <div>
           <p class="settings-page-eyebrow">Settings — Scores</p>
