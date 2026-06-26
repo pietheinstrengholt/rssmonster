@@ -85,14 +85,14 @@ export default {
       const aiEnabled = this.$store.data.currentSelection.AIEnabled;
 
       return [
-        { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'house', visible: true },
+        { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'house-fill', visible: true },
         { key: 'smartfolders', label: 'Smart Folders', description: 'Organize articles with AI', icon: 'folder-fill', visible: aiEnabled },
-        { key: 'actions', label: 'Actions', description: 'Configure article actions', icon: 'lightning-charge', visible: true },
-        { key: 'scores', label: 'Scores', description: 'Set AI score thresholds', icon: 'sliders', visible: aiEnabled },
-        { key: 'topics', label: 'Topics', description: 'Manage events and topics', icon: 'diagram-3', visible: aiEnabled },
-        { key: 'islands', label: 'Islands', description: 'Manage interest islands', icon: 'globe2', visible: aiEnabled },
-        { key: 'feeds', label: 'Feeds', description: 'Manage RSS subscriptions', icon: 'rss', visible: true },
-        { key: 'users', label: 'Manage Users', description: 'Manage user access', icon: 'people', visible: this.$store.auth.getRole === 'admin' }
+        { key: 'actions', label: 'Actions', description: 'Configure article actions', icon: 'lightning-charge-fill', visible: true },
+        { key: 'scores', label: 'Scores', description: 'Set AI score thresholds', icon: 'bar-chart-fill', visible: aiEnabled },
+        { key: 'topics', label: 'Topics', description: 'Manage events and topics', icon: 'diagram-3-fill', visible: aiEnabled },
+        { key: 'islands', label: 'Islands', description: 'Manage interest islands', icon: 'compass-fill', visible: aiEnabled },
+        { key: 'feeds', label: 'Feeds', description: 'Manage RSS subscriptions', icon: 'rss-fill', visible: true },
+        { key: 'users', label: 'Manage Users', description: 'Manage user access', icon: 'people-fill', visible: this.$store.auth.getRole === 'admin' }
       ];
     },
     visibleSettingsNavigation() {

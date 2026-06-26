@@ -32,6 +32,7 @@ const bootstrapIconNames = [
   'globe2',
   'piggy-bank-fill',
   'heart-pulse-fill',
+  'house-fill',
   'house',
   'mortarboard-fill',
   'controller',
