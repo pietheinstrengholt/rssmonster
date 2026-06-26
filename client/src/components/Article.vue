@@ -563,11 +563,11 @@ export default {
 }
 
 :root[data-theme='dark'] .article-card .article-body h5 a {
-  color: var(--text-inverted);
+  color: var(--text-primary);
 }
 
 :root[data-theme='dark'] .article-card .article-full-content {
-  color: var(--text-inverted);
+  color: var(--article-content-text);
 }
 
 :root[data-theme='dark'] .article-card.cluster-article,
@@ -929,8 +929,8 @@ span.similar-badge {
 }
 
 :root[data-theme='dark'] span.similar-badge {
-  background-color: var(--article-tag-background-dark);
-  color: var(--article-tag-text-dark);
+  background-color: var(--badge-similar-bg);
+  color: var(--badge-similar-text);
 }
 
 :root[data-theme='dark'] .article-card .article-tags .tag-badge {
@@ -1114,21 +1114,21 @@ span.similar-badge {
 
 :root[data-theme='dark'] {
   .article-summary li {
-    color: var(--text-inverted);
+    color: var(--article-content-text);
   }
 }
 
 :root[data-theme='dark'] {
   .article-card, .article-card .article-body, .article-content-wrapper, h5.article-header, .article-card .article-meta {
-    color: var(--text-inverted);
+    color: var(--article-content-text);
     background: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
-    border-bottom-color: var(--text-inverted);
+    border-bottom-color: var(--border-color);
     background-color: var(--dark-page-surface);
   }
 
   .article-card a, .article-card .article-body h5 a, .article-card .article-content-wrapper, .article-card span.article-source a {
-    color: var(--text-inverted);
+    color: var(--text-primary);
   }
 
   .article-card {
@@ -1136,11 +1136,11 @@ span.similar-badge {
   }
 
   .article-body h1.article-header, .article-body h2.article-header {
-    color: var(--text-inverted);
+    color: var(--text-primary);
   }
 
   .article-body h1.article-header a {
-    color: var(--text-inverted);
+    color: var(--text-primary);
   }
 
   .article-card .article-body {
@@ -1308,8 +1308,24 @@ span.similar-badge {
     color: var(--article-quality-excellent);
   }
 
-  a:visited, a:active, a:link {
+  .article-card .article-full-content a,
+  .article-card .article-content-wrapper a {
     color: var(--article-link-dark);
+  }
+
+  .article-card .article-full-content a:hover,
+  .article-card .article-content-wrapper a:hover {
+    color: var(--article-link-hover-dark);
+  }
+
+  .article-card .article-full-content a:visited,
+  .article-card .article-content-wrapper a:visited {
+    color: var(--article-link-visited-dark);
+  }
+
+  .article-card .article-full-content a:active,
+  .article-card .article-content-wrapper a:active {
+    color: var(--article-link-active-dark);
   }
 }
 </style>

@@ -158,7 +158,7 @@
 }
 
 .feeds-state--error {
-  color: var(--color-danger-strong);
+  color: var(--settings-danger-text);
 }
 
 .feeds-stat-grid {
@@ -189,11 +189,11 @@
   font-size: 16px;
 }
 
-.feeds-stat-icon--orange { background: var(--color-warning-soft); color: var(--color-warning); }
-.feeds-stat-icon--green { background: var(--color-success-pale); color: var(--color-success-strong); }
-.feeds-stat-icon--red { background: var(--color-danger-soft); color: var(--color-danger-action); }
-.feeds-stat-icon--blue { background: var(--color-primary-soft); color: var(--color-primary); }
-.feeds-stat-icon--purple { background: var(--color-purple-soft); color: var(--color-purple-action); }
+.feeds-stat-icon--orange { background: var(--settings-orange-bg); color: var(--settings-orange-text); }
+.feeds-stat-icon--green { background: var(--settings-success-bg); color: var(--settings-success-text); }
+.feeds-stat-icon--red { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
+.feeds-stat-icon--blue { background: var(--settings-info-bg); color: var(--settings-info-text); }
+.feeds-stat-icon--purple { background: var(--settings-rule-bg); color: var(--settings-rule-text); }
 
 .feeds-stat-label,
 .feeds-stat-value {
@@ -275,7 +275,7 @@
 }
 
 .feeds-search:focus-within {
-  border-color: var(--color-warning-border);
+  border-color: var(--settings-orange-border);
   box-shadow: 0 0 0 3px var(--shadow-warning-focus-color);
 }
 
@@ -379,9 +379,9 @@
   text-transform: capitalize;
 }
 
-.feeds-status-pill--active { background: var(--color-success-soft); color: var(--color-success-deep); }
-.feeds-status-pill--error { background: var(--color-danger-soft); color: var(--color-danger-strong); }
-.feeds-status-pill--disabled { background: var(--border-color); color: var(--text-secondary); }
+.feeds-status-pill--active { background: var(--settings-success-bg); color: var(--settings-success-text); }
+.feeds-status-pill--error { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
+.feeds-status-pill--disabled { background: var(--settings-neutral-bg); color: var(--settings-neutral-text); }
 
 .feeds-trust-bar {
   display: block;
@@ -396,16 +396,16 @@
 .feeds-trust-bar span {
   display: block;
   height: 100%;
-  background: var(--color-warning);
+  background: var(--settings-orange-text);
   border-radius: inherit;
 }
 
-.feeds-health--error { color: var(--color-danger-strong); font-weight: 600; }
+.feeds-health--error { color: var(--settings-danger-text); font-weight: 600; }
 .feeds-health--disabled { color: var(--text-muted); }
-.feeds-health--active { color: var(--color-success-strong); }
+.feeds-health--active { color: var(--settings-success-text); }
 
 .feeds-table-row--error {
-  background: var(--color-danger-soft);
+  background: var(--settings-danger-bg);
 }
 
 .feeds-table-row--disabled {
@@ -421,14 +421,19 @@
   border: 0;
   border-radius: 6px;
   background: var(--color-transparent);
-  color: var(--color-warning);
+  color: var(--settings-orange-text);
   font-size: 13px;
   font-weight: 700;
   cursor: pointer;
 }
 
 .feeds-edit-button:hover {
-  background: var(--color-warning-soft);
+  background: var(--settings-orange-bg);
+}
+
+:global(:root[data-theme='dark']) .feeds-edit-button:hover {
+  background: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
 }
 
 .feeds-message {
@@ -438,8 +443,8 @@
   font-size: 14px;
 }
 
-.feeds-message--success { background: var(--color-success-pale); color: var(--color-success-deep); }
-.feeds-message--error { background: var(--color-danger-soft); color: var(--color-danger-strong); }
+.feeds-message--success { background: var(--settings-success-bg); color: var(--settings-success-text); }
+.feeds-message--error { background: var(--settings-danger-bg); color: var(--settings-danger-text); }
 
 .feeds-footer {
   margin: 12px 0 0;

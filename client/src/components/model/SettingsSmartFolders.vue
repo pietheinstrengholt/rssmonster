@@ -214,9 +214,9 @@
   display: inline-block;
   margin: 2px;
   padding: 3px 6px;
-  background: var(--settings-code-bg);
+  background: var(--settings-query-code-bg);
   border-radius: 5px;
-  color: var(--settings-code-text);
+  color: var(--settings-query-code-text);
 }
 .smart-folders-insights {
   padding: 18px 0;
@@ -226,6 +226,7 @@
 }
 .smart-folders-insights .btn-secondary {
   background: var(--color-primary);
+  font-weight: 700;
 }
 .smart-folders-list {
   padding: 0;
@@ -307,8 +308,8 @@
 }
 .smart-folder-row-grid .form-group-full .form-control {
   font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
-  background: var(--bg-surface-muted);
-  color: var(--color-primary);
+  background: var(--settings-query-code-bg);
+  color: var(--settings-query-code-text);
 }
 .smart-folder-delete-button {
   width: 38px !important;
@@ -365,6 +366,18 @@
 .smart-folders-list-heading > label {
   font-size: 16px;
 }
+
+:global(:root[data-theme='dark']) .smart-folders-list-heading .btn-add {
+  background-color: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
+  border: 1px solid var(--settings-orange-border);
+}
+
+:global(:root[data-theme='dark']) .smart-folders-list-heading .btn-add:hover {
+  background-color: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
+}
+
 .smart-folder-row {
   padding: 14px !important;
   border: 1px solid var(--border-subtle) !important;
@@ -383,9 +396,9 @@
   height: 34px;
   align-items: center;
   justify-content: center;
-  background: var(--bg-info-subtle);
+  background: var(--settings-rule-bg);
   border-radius: 8px;
-  color: var(--color-primary);
+  color: var(--settings-rule-text);
 }
 .smart-folders-save {
   display: inline-flex;

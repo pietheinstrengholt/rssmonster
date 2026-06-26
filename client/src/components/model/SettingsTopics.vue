@@ -279,7 +279,7 @@
   justify-content: space-between;
   gap: 16px;
   padding: 12px;
-  background: var(--bg-surface-muted);
+  background: var(--settings-neutral-bg);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
 }

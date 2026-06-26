@@ -256,8 +256,8 @@
 }
 
 .manage-users__role--admin {
-  background: var(--bg-info-subtle);
-  color: var(--text-info);
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
 }
 
 .manage-users__actions {
@@ -270,24 +270,34 @@
   background: var(--color-transparent);
   border: 0;
   border-radius: 6px;
-  color: var(--color-warning);
+  color: var(--settings-orange-text);
   font-size: 13px;
   font-weight: 600;
   padding: 6px 8px;
 }
 
 .manage-users__action:hover {
-  background: var(--color-warning-soft);
-  color: var(--color-warning);
+  background: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
 }
 
 .manage-users__action--remove {
-  color: var(--color-danger-action);
+  color: var(--settings-danger-text);
 }
 
 .manage-users__action--remove:hover {
-  background: var(--color-danger-soft);
-  color: var(--color-danger-action);
+  background: var(--settings-danger-bg);
+  color: var(--settings-danger-text);
+}
+
+:global(:root[data-theme='dark']) .manage-users__action:hover {
+  background: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
+}
+
+:global(:root[data-theme='dark']) .manage-users__action--remove:hover {
+  background: var(--settings-danger-bg);
+  color: var(--settings-danger-text);
 }
 
 .manage-users__editor,
@@ -303,15 +313,15 @@
   max-width: 640px;
   margin: 0 auto;
   padding: 28px;
-  background: var(--bg-danger-subtle);
-  border: 1px solid var(--border-danger-subtle);
+  background: var(--settings-danger-bg);
+  border: 1px solid var(--settings-danger-border);
   border-radius: 14px;
   color: var(--text-secondary);
 }
 
 .manage-users__access-denied svg {
   flex: 0 0 auto;
-  color: var(--text-danger);
+  color: var(--settings-danger-text);
   font-size: 24px;
 }
 
@@ -327,7 +337,7 @@
 }
 
 .manage-users__confirmation {
-  background: var(--bg-danger-subtle);
+  background: var(--settings-danger-bg);
   max-width: none;
 }
 
@@ -391,13 +401,13 @@
 }
 
 .manage-users__message--error {
-  background: var(--bg-danger-subtle);
-  color: var(--text-danger);
+  background: var(--settings-danger-bg);
+  color: var(--settings-danger-text);
 }
 
 .manage-users__message--success {
-  background: var(--bg-secondary);
-  color: var(--color-success);
+  background: var(--settings-success-bg);
+  color: var(--settings-success-text);
 }
 
 .manage-users__empty {

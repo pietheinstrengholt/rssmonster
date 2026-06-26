@@ -156,7 +156,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
   .sidebar-item.selected {
     color: var(--text-inverted);
-    background-color: var(--bg-hover);
+    background-color: var(--bg-selected);
   }
 
   .sidebar-item.selected .sidebar-count,
@@ -190,7 +190,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected) {
   color: var(--text-inverted) !important;
-  background-color: var(--bg-hover) !important;
+  background-color: var(--bg-selected) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected .sidebar-count) {
@@ -199,7 +199,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected) {
   color: var(--text-inverted) !important;
-  background-color: var(--bg-hover) !important;
+  background-color: var(--bg-selected) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected .sidebar-count) {
@@ -208,22 +208,27 @@ const formattedCount = computed(() => formatCount(props.count));
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected) {
   color: var(--text-inverted) !important;
-  background-color: var(--bg-hover) !important;
+  background-color: var(--bg-selected) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-count) {
   color: var(--text-inverted) !important;
 }
 
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-item-title),
+:global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-icon) {
+  color: var(--text-inverted) !important;
+}
+
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected {
   color: var(--text-inverted) !important;
-  background-color: var(--bg-secondary) !important;
+  background-color: var(--bg-selected) !important;
   background-image: none !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected {
   color: var(--text-inverted) !important;
-  background-color: var(--bg-secondary) !important;
+  background-color: var(--bg-selected) !important;
   background-image: none !important;
 }
 

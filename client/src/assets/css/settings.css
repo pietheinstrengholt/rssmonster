@@ -92,8 +92,8 @@ body.modal-open {
 }
 
 .settings-sidebar-item.active {
-    background: var(--color-warning-soft);
-    color: var(--color-warning);
+    background: var(--settings-info-bg);
+    color: var(--settings-info-text);
 }
 
 .settings-sidebar-icon {
@@ -143,8 +143,8 @@ body.modal-open {
     gap: 16px;
     margin-bottom: 24px;
     padding: 24px;
-    background: var(--bg-info-subtle);
-    border: 1px solid var(--border-info);
+    background: var(--settings-info-bg);
+    border: 1px solid var(--settings-info-border);
     border-radius: 14px;
 }
 
@@ -167,7 +167,7 @@ body.modal-open {
     justify-content: center;
     background: var(--bg-primary);
     border-radius: 12px;
-    color: var(--color-primary);
+    color: var(--settings-info-text);
     font-size: 20px;
     line-height: 1;
 }
@@ -295,8 +295,13 @@ body.modal-open {
 }
 
 :root[data-theme='dark'] .settings-dialog .text-bg-success {
-    color: var(--sidebar-action-add-text) !important;
-    background-color: var(--sidebar-action-add-background) !important;
+    color: var(--settings-success-text) !important;
+    background-color: var(--settings-success-bg) !important;
+}
+
+:root[data-theme='dark'] .settings-dialog .badge.text-bg-warning {
+    color: var(--settings-orange-text) !important;
+    background-color: var(--settings-orange-bg) !important;
 }
 
 :root[data-theme='dark'] .settings-insight-card {
@@ -382,7 +387,7 @@ body.modal-open {
 }
 
 .btn-download {
-    background-color: var(--color-success);
+    background-color: var(--settings-success-text);
     color: var(--text-inverted);
     display: flex;
     align-items: center;
@@ -390,7 +395,7 @@ body.modal-open {
 }
 
 .btn-download:hover {
-    background-color: var(--color-success-hover);
+    background-color: var(--settings-success-hover-text);
 }
 
 .btn-upload {
@@ -410,7 +415,7 @@ body.modal-open {
     padding: 12px;
     border: 1px solid var(--border-subtle);
     border-radius: 4px;
-    background-color: var(--bg-surface-muted);
+    background-color: var(--settings-neutral-bg);
 }
 
 .action-fields {
@@ -452,17 +457,17 @@ body.modal-open {
 }
 
 .input-invalid {
-    background-color: var(--bg-danger-subtle);
-    color: var(--text-danger);
-    border-color: var(--border-danger-subtle);
+    background-color: var(--settings-danger-bg);
+    color: var(--settings-danger-text);
+    border-color: var(--settings-danger-border);
 }
 
 .input-invalid::placeholder {
-    color: var(--text-danger-placeholder);
+    color: var(--settings-danger-text);
 }
 
 .btn-remove {
-    background-color: var(--color-danger);
+    background-color: var(--settings-danger-text);
     color: var(--text-inverted);
     padding: 6px 10px;
     height: fit-content;
@@ -471,11 +476,11 @@ body.modal-open {
 }
 
 .btn-remove:hover {
-    background-color: var(--color-danger-hover);
+    background-color: var(--settings-danger-text);
 }
 
 .btn-add {
-    background-color: var(--color-success);
+    background-color: var(--settings-orange-text);
     color: var(--text-inverted);
     display: flex;
     align-items: center;
@@ -483,26 +488,48 @@ body.modal-open {
 }
 
 .btn-add:hover {
-    background-color: var(--color-success-hover);
+    background-color: var(--settings-orange-hover-text);
 }
 
 /* Alert box styles */
 .alert-info {
-    background-color: var(--bg-info-subtle);
-    border: 1px solid var(--border-info);
+    background-color: var(--settings-info-bg);
+    border: 1px solid var(--settings-info-border);
     border-radius: 4px;
     padding: 15px;
-    color: var(--text-info);
+    color: var(--settings-info-text);
 }
 
 .alert-info code {
-    background-color: var(--border-info);
-    color: var(--text-info-code);
+    background-color: var(--settings-code-bg);
+    color: var(--settings-code-text);
     padding: 2px 6px;
     border-radius: 3px;
     font-family: 'Courier New', Courier, monospace;
     font-size: 90%;
     font-weight: 600;
+}
+
+.settings-dialog .badge.text-bg-primary,
+.settings-dialog .badge.text-bg-info {
+    background-color: var(--settings-info-bg) !important;
+    color: var(--settings-info-text) !important;
+}
+
+.settings-dialog .badge.text-bg-success {
+    background-color: var(--settings-success-bg) !important;
+    color: var(--settings-success-text) !important;
+}
+
+.settings-dialog .badge.text-bg-secondary,
+.settings-dialog .badge.text-bg-dark {
+    background-color: var(--settings-neutral-bg) !important;
+    color: var(--settings-neutral-text) !important;
+}
+
+.settings-dialog .badge.text-bg-danger {
+    background-color: var(--settings-danger-bg) !important;
+    color: var(--settings-danger-text) !important;
 }
 
 .alert-info ul {
@@ -533,7 +560,7 @@ body.modal-open {
 }
 
 .feeds-table th {
-    background-color: var(--bg-subtle);
+    background-color: var(--settings-neutral-bg);
     font-weight: 600;
 }
 
@@ -542,13 +569,13 @@ body.modal-open {
 }
 
 .row-error {
-    background-color: var(--bg-danger-subtle) !important;
-    color: var(--text-danger) !important;
+    background-color: var(--settings-danger-bg) !important;
+    color: var(--settings-danger-text) !important;
 }
 
 .row-error td {
-    background-color: var(--bg-danger-subtle) !important;
-    color: var(--text-danger) !important;
+    background-color: var(--settings-danger-bg) !important;
+    color: var(--settings-danger-text) !important;
 }
 
 .row-disabled {

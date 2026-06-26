@@ -246,13 +246,13 @@
   height: 10px;
   margin-top: 16px;
   overflow: hidden;
-  background: var(--bg-surface-muted);
+  background: var(--settings-neutral-bg);
   border-radius: 999px;
 }
 
 .settings-coverage-fill {
   height: 100%;
-  background: var(--color-success);
+  background: var(--settings-success-text);
   border-radius: inherit;
 }
 
@@ -278,8 +278,8 @@
   width: 38px;
   height: 38px;
   flex: 0 0 38px;
-  background: var(--color-primary-soft);
-  color: var(--color-primary);
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
   font-size: 17px;
 }
 
@@ -334,7 +334,7 @@
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 14px;
   padding: 12px;
-  background: var(--bg-surface-muted);
+  background: var(--settings-neutral-bg);
   border: 1px solid var(--border-subtle);
   border-radius: 10px;
   color: inherit;
@@ -359,9 +359,9 @@
 }
 
 .alert-danger {
-  background-color: var(--bg-danger-subtle);
-  border-color: var(--border-danger-subtle);
-  color: var(--text-danger);
+  background-color: var(--settings-danger-bg);
+  border-color: var(--settings-danger-border);
+  color: var(--settings-danger-text);
 }
 
 .settings-refresh-actions {
