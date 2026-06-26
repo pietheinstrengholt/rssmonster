@@ -3,14 +3,14 @@ import api from './client';
 /**
  * Create a new category
  */
-export const createCategory = (name) =>
-  api.post('/categories', { name });
+export const createCategory = (name, iconName) =>
+  api.post('/categories', { name, iconName });
 
 /**
  * Update a category
  */
-export const updateCategory = (categoryId, name) =>
-  api.put(`/categories/${categoryId}`, { name });
+export const updateCategory = (categoryId, name, iconName) =>
+  api.put(`/categories/${categoryId}`, { name, iconName });
 
 /**
  * Delete a category

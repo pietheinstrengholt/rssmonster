@@ -48,16 +48,23 @@ export default {
   data() {
     return {
         feeds: [
+            // Reddit
             {
-                title: "Reuters - World News",
-                url: "https://www.reuters.com/rssFeed/worldNews",
-                category: "World News",
+                title: "Reddit - All",
+                url: "https://www.reddit.com/.rss",
+                category: "Reddit",
                 selected: true
             },
             {
-                title: "Reuters - Technology",
-                url: "https://www.reuters.com/rssFeed/technologyNews",
-                category: "World News",
+                title: "Reddit - Technology",
+                url: "https://www.reddit.com/r/technology/.rss",
+                category: "Technology",
+                selected: true
+            },
+            {
+                title: "Reddit - Science",
+                url: "https://www.reddit.com/r/science/.rss",
+                category: "Science",
                 selected: true
             },
 
@@ -119,14 +126,8 @@ export default {
 
             // Business & Economy
             {
-                title: "Financial Times – Technology",
+                title: "Financial Times - Technology",
                 url: "https://www.ft.com/technology?format=rss",
-                category: "Business & Economy",
-                selected: true
-            },
-            {
-                title: "Bloomberg – Technology",
-                url: "https://www.bloomberg.com/feeds/technology.xml",
                 category: "Business & Economy",
                 selected: true
             },

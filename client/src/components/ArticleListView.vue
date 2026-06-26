@@ -104,16 +104,23 @@ export default {
 @media (min-width: 767px) {
   #articles {
     margin-left: -15px;
-    margin-right: -12px;
+    margin-right: -23px;
   }
 }
 
 #articles {
-  padding-top: 38px;
+  padding-top: 58px;
   overflow-x: hidden;
   overflow-y: hidden;
   right: 0;
   left: 0;
+}
+
+/* Removes the article offset when the mobile toolbar overlays portrait layouts. */
+@media (max-width: 766px) and (orientation: portrait) {
+  #main-container #articles {
+    padding-top: 0;
+  }
 }
 
 #articles.mobile-search-open {
@@ -140,7 +147,11 @@ export default {
   cursor: pointer;
 }
 
-@media (prefers-color-scheme: dark) {
+:global(:root[data-theme='dark'] .mark-all-read) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark']) {
   #articles {
     color: var(--text-inverted);
     background: var(--dark-page-surface);
@@ -163,6 +174,10 @@ div.infinite-loading-container {
   text-align: center;
 }
 
+:root[data-theme='dark'] #no-more {
+  color: var(--text-inverted);
+}
+
 #no-more p {
   margin: 0px;
   vertical-align: middle;
@@ -173,7 +188,7 @@ div.infinite-loading-container {
   width: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   div.infinite-loading-container {
     color: var(--text-inverted);
     background: var(--dark-page-surface);

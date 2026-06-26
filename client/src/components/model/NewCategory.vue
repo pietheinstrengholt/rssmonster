@@ -6,7 +6,29 @@
                 <h5 class="modal-title">Add new category</h5>
             </div>
             <div class="modal-body">
-                <input class="form-control" type="text" placeholder="Enter new category name.." v-model="categoryName">
+                <div class="mb-4">
+                    <label class="form-label" for="new-category-name">Category name</label>
+                    <input id="new-category-name" class="form-control" type="text" placeholder="Enter new category name.." v-model="categoryName">
+                </div>
+                <div>
+                    <div class="form-label mb-2">Category icon</div>
+                    <div class="category-icon-grid" role="radiogroup" aria-label="Category icon">
+                        <button
+                            v-for="icon in iconOptions"
+                            :key="icon.name"
+                            type="button"
+                            class="category-icon-option"
+                            :class="{ selected: iconName === icon.name }"
+                            role="radio"
+                            :aria-checked="iconName === icon.name"
+                            :aria-label="icon.label"
+                            :title="icon.label"
+                            @click="iconName = icon.name"
+                        >
+                            <BootstrapIcon :icon="icon.name" color="currentColor" />
+                        </button>
+                    </div>
+                </div>
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn btn-primary" @click="saveCategory">Add category</button>
@@ -17,7 +39,7 @@
     </div>
 </template>
 
-<style>
+<style scoped>
 .modal {
     position: fixed;
     top: 0;
@@ -34,6 +56,59 @@
     max-width: 600px;
     width: 100%;
 }
+
+.category-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.category-icon-option {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 38px;
+    padding: 8px;
+    color: var(--text-secondary);
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+}
+
+.category-icon-option:hover {
+    color: var(--text-primary);
+    background: var(--bg-hover);
+}
+
+.category-icon-option.selected {
+    color: var(--color-primary);
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+}
+
+.category-icon-option :deep(svg) {
+    width: 18px;
+    height: 18px;
+}
+
+:global(:root[data-theme='dark']) {
+    .category-icon-option {
+        color: var(--text-muted);
+        background: var(--bg-control);
+        border-color: var(--border-color);
+    }
+
+    .category-icon-option:hover {
+        color: var(--text-inverted);
+        background: var(--bg-hover);
+    }
+
+    .category-icon-option.selected {
+        color: var(--text-inverted);
+        background: var(--bg-selected);
+        border-color: var(--bg-selected);
+    }
+}
 </style>
 
 <script>
@@ -47,18 +122,43 @@ export default {
     data() {
         return {
             categoryName: '',
+            iconName: 'folder-fill',
+            iconOptions: [
+                { name: 'folder-fill', label: 'Folder' },
+                { name: 'newspaper', label: 'Newspaper' },
+                { name: 'cpu-fill', label: 'Technology' },
+                { name: 'robot', label: 'Robotics' },
+                { name: 'file-code-fill', label: 'Development' },
+                { name: 'cloud-fill', label: 'Cloud' },
+                { name: 'shield-lock-fill', label: 'Security' },
+                { name: 'diagram-3-fill', label: 'Systems' },
+                { name: 'bar-chart-fill', label: 'Analytics' },
+                { name: 'briefcase-fill', label: 'Business' },
+                { name: 'graph-up-arrow', label: 'Markets' },
+                { name: 'piggy-bank-fill', label: 'Finance' },
+                { name: 'heart-pulse-fill', label: 'Health' },
+                { name: 'mortarboard-fill', label: 'Education' },
+                { name: 'controller', label: 'Gaming' },
+                { name: 'trophy-fill', label: 'Sports' },
+                { name: 'camera-reels-fill', label: 'Film' },
+                { name: 'music-note-beamed', label: 'Music' },
+                { name: 'book-fill', label: 'Books' },
+                { name: 'compass-fill', label: 'Travel' },
+                { name: 'tools', label: 'Tools' },
+                { name: 'rss-fill', label: 'RSS' },
+                { name: 'megaphone-fill', label: 'Announcements' },
+                { name: 'chat-square-text-fill', label: 'Discussion' }
+            ],
             category: {}
         }
     },
     methods: {
         async saveCategory() {
             // Logic to save the new category
-            const categoryName = this.$el.querySelector('input').value;
-            console.log('New category name:', categoryName);
             //save category when category name is set
-            if (categoryName) {
+            if (this.categoryName) {
                 try {
-                    const result = await createCategory(categoryName);
+                    const result = await createCategory(this.categoryName, this.iconName);
                     //create new local category in data object
                     this.category = result.data;
 

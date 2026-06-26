@@ -1,6 +1,6 @@
 <template>
-  <div v-if="categoryName || tags.length || showQuality || showAdvertisement || showSentiment || showWritingQuality" class="article-tags-scores">
-    <span v-if="categoryName" class="category-badge" @click.stop="$emit('select-category')">{{ categoryName }}</span>
+  <div v-if="categoryName || tags.length || showQuality || showAdvertisement || showSentiment || showWritingQuality" class="article-tags">
+    <span v-if="categoryName" class="tag-badge" @click.stop="$emit('select-category')">{{ categoryName }}</span>
     <span v-for="tag in tags" :key="tag.id" :class="['tag', { 'tag-rule': tag.tagType === 'rule' }]" @click.stop="$emit('select-tag', tag)">{{ tag.name.toLowerCase() }}</span>
     <span v-if="showQuality" class="score overall-score" :title="`Overall quality: ${roundedQuality} (${scoreLabel(roundedQuality)})`">Quality: {{ roundedQuality }} · {{ scoreLabel(roundedQuality) }}</span>
     <span v-if="showAdvertisement" class="score ad-score" :title="`Promotional content detected (score: ${advertisementScore})`">Ads: {{ advertisementScore }}</span>

@@ -1,21 +1,21 @@
 <template>
   <div
     :id="category.id"
-    class="category-main"
+    class="sidebar-category"
     :class="{ selected: isSelectedCategory }"
     @click="emit('select-category', category)"
   >
-    <div class="category-sub">
-      <span class="glyphicon">
-        <BootstrapIcon icon="folder-fill" variant="light" />
+    <div class="sidebar-category-header">
+      <span class="sidebar-icon">
+        <BootstrapIcon :icon="categoryIconName" color="currentColor" />
       </span>
-      <span class="title">{{ category.name }}</span>
-      <span class="badge-unread">
-        <span v-if="count !== null" class="badge white">{{ count }}</span>
+      <span class="sidebar-item-title">{{ category.name }}</span>
+      <span class="sidebar-count-wrapper">
+        <span v-if="count !== null" class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
       </span>
     </div>
     <div v-if="category.feeds && isExpanded">
-      <div class="category-feeds">
+      <div class="sidebar-feed-list">
         <SidebarFeedItem
           v-for="(feed, index) in category.feeds"
           :key="feed.id"
@@ -33,6 +33,34 @@
 <script setup>
 import { computed } from 'vue';
 import SidebarFeedItem from './SidebarFeedItem.vue';
+import { formatCount } from './formatCount.js';
+
+const CATEGORY_ICON_NAMES = new Set([
+  'folder-fill',
+  'newspaper',
+  'cpu-fill',
+  'robot',
+  'file-code-fill',
+  'cloud-fill',
+  'shield-lock-fill',
+  'diagram-3-fill',
+  'bar-chart-fill',
+  'briefcase-fill',
+  'graph-up-arrow',
+  'piggy-bank-fill',
+  'heart-pulse-fill',
+  'mortarboard-fill',
+  'controller',
+  'trophy-fill',
+  'camera-reels-fill',
+  'music-note-beamed',
+  'book-fill',
+  'compass-fill',
+  'tools',
+  'rss-fill',
+  'megaphone-fill',
+  'chat-square-text-fill'
+]);
 
 const props = defineProps({
   category: {
@@ -61,6 +89,11 @@ const emit = defineEmits(['select-category', 'select-feed']);
 
 const isSelectedCategory = computed(() => props.selectedCategoryId == props.category.id && props.selectedFeedId === '%');
 const isExpanded = computed(() => props.selectedCategoryId == props.category.id);
+const formattedCount = computed(() => formatCount(props.count));
+const categoryIconName = computed(() => CATEGORY_ICON_NAMES.has(props.category.iconName)
+  ? props.category.iconName
+  : 'folder-fill'
+);
 
 function getFeedCount(feed) {
   const value = props.countResolver(feed);
@@ -69,70 +102,117 @@ function getFeedCount(feed) {
 </script>
 
 <style scoped>
-.category-main {
+.sidebar-category {
   margin-left: 12px;
   margin-right: 12px;
   margin-top: 4px;
-  border-radius: 4px;
+  border-radius: 6px;
   cursor: pointer;
-  background-color: var(--color-secondary);
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.category-main.selected {
-  background-color: var(--color-selected);
-  box-shadow: var(--shadow-selected);
+.sidebar-category.selected {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  box-shadow: none;
 }
 
-.category-main.selected .glyphicon {
-  color: var(--text-inverted);
-}
-
-.category-sub,
-.category-feed,
-.category-top {
+.sidebar-category-header {
   padding: 4px 4px 4px 12px;
+  display: flex;
+  align-items: center;
 }
 
-.category-sub {
+.sidebar-category-header {
   min-height: 24px;
 }
 
-.badge-unread {
-  float: right;
-  position: absolute;
-  right: 28px;
-  margin-top: -25px;
+.sidebar-count-wrapper {
+  margin-left: auto;
+  padding-left: 8px;
+  padding-right: 4px;
+  flex: 0 0 auto;
 }
 
-.badge.white {
-  float: right;
-  color: var(--text-inverted);
-  background-color: transparent;
-  margin-top: 3px;
+.sidebar-count {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
-.glyphicon {
-  float: left;
+.sidebar-category.selected .sidebar-count {
+  color: var(--color-primary);
+}
+
+.sidebar-count.sidebar-count-white {
+  color: inherit;
+  background-color: var(--color-transparent);
+}
+
+.sidebar-icon {
   margin-right: 5px;
   min-width: 13px;
+  flex: 0 0 auto;
 }
 
-.title {
+.sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  display: block;
-  padding-right: 25px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.category-feeds {
+.sidebar-feed-list {
   margin-bottom: 0;
 }
 
-@media (prefers-color-scheme: dark) {
-  .category-main {
+.sidebar-category.selected :deep(.sidebar-feed.last) {
+  border-radius: 0 0 6px 6px;
+}
+
+.sidebar-category.selected .sidebar-feed-list,
+.sidebar-category.selected :deep(.sidebar-feed) {
+  background-color: var(--color-primary-soft);
+}
+
+.sidebar-category.selected .sidebar-feed-list {
+  border-radius: 0 0 6px 6px;
+  overflow: hidden;
+}
+
+:global(:root[data-theme='dark']) {
+  .sidebar-category {
     background-color: var(--bg-option);
   }
+
+  .sidebar-category.selected {
+    color: var(--text-inverted);
+    background-color: var(--bg-selected);
+  }
+
+  .sidebar-category.selected .sidebar-count {
+    color: var(--text-inverted);
+  }
+
+  .sidebar-category.selected .sidebar-feed-list,
+  .sidebar-category.selected :deep(.sidebar-feed) {
+    background-color: var(--bg-selected);
+  }
+}
+
+:global(:root[data-theme='dark'] .sidebar-category.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-selected) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-count) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed-list),
+:global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed) {
+  background-color: var(--bg-selected) !important;
 }
 </style>

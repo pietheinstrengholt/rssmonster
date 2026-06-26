@@ -1,106 +1,108 @@
 <template>
-  <div id="monster">
+  <div class="sidebar-brand">
     <p>RSSMonster</p>
   </div>
 
-  <div class="drag">
-    <SidebarActionButton
-      icon="arrow-down-circle-fill"
-      label="Refresh feeds"
-      variant="option refresh"
-      :loading="refreshing"
-      @select="refreshFeeds"
-    />
+  <div class="sidebar-scroll">
+    <div class="sidebar-primary-actions">
+      <SidebarActionButton
+        icon="arrow-repeat"
+        label="Refresh feeds"
+        variant="sidebar-button sidebar-button-refresh"
+        :loading="refreshing"
+        @select="refreshFeeds"
+      />
 
-    <div v-if="refreshProgress.visible" class="refresh-progress-panel">
-      <div class="refresh-progress-header">
-        <strong>Live refresh</strong>
-        <span>{{ refreshProgress.currentFeedLabel }}</span>
+      <div v-if="refreshProgress.visible" class="sidebar-refresh-progress-panel">
+        <div class="sidebar-refresh-progress-header">
+          <strong>Live refresh</strong>
+          <span>{{ refreshProgress.currentFeedLabel }}</span>
+        </div>
+        <div class="sidebar-refresh-progress-bar">
+          <div class="sidebar-refresh-progress-fill" :style="{ width: `${refreshProgress.progressPercent}%` }"></div>
+        </div>
+        <div class="sidebar-refresh-progress-stats">
+          <span>Processed: {{ refreshProgress.processedFeeds }}/{{ refreshProgress.totalFeeds }}</span>
+          <span>New: {{ refreshProgress.newArticles }}</span>
+          <span>Errors: {{ refreshProgress.errors }}</span>
+        </div>
+        <ul class="sidebar-refresh-progress-logs">
+          <li v-for="(line, index) in refreshProgress.logs" :key="`${line}-${index}`">{{ line }}</li>
+        </ul>
       </div>
-      <div class="refresh-progress-bar">
-        <div class="refresh-progress-fill" :style="{ width: `${refreshProgress.progressPercent}%` }"></div>
-      </div>
-      <div class="refresh-progress-stats">
-        <span>Processed: {{ refreshProgress.processedFeeds }}/{{ refreshProgress.totalFeeds }}</span>
-        <span>New: {{ refreshProgress.newArticles }}</span>
-        <span>Errors: {{ refreshProgress.errors }}</span>
-      </div>
-      <ul class="refresh-progress-logs">
-        <li v-for="(line, index) in refreshProgress.logs" :key="`${line}-${index}`">{{ line }}</li>
-      </ul>
+
+      <SidebarActionButton
+        icon="plus-square-fill"
+        label="Add new feed"
+        variant="sidebar-button sidebar-button-add-feed"
+        @select="$store.data.setShowModal('NewFeed')"
+      />
+
+      <SidebarActionButton
+        icon="check-square-fill"
+        label="Mark as read"
+        variant="sidebar-button sidebar-button-mark-read"
+        :loading="markingAsRead"
+        @select="markAsRead($store.data.currentSelection)"
+      />
     </div>
 
-    <SidebarActionButton
-      icon="plus-square-fill"
-      label="Add new feed"
-      variant="option addnew"
-      @select="$store.data.setShowModal('NewFeed')"
-    />
+    <div v-if="$store.data.smartFolders.length" class="sidebar-section sidebar-smart-folders">
+      <SidebarSectionTitle title="Smart Folders" />
 
-    <SidebarActionButton
-      icon="check-square-fill"
-      label="Mark as read"
-      variant="option mark-as-read"
-      :loading="markingAsRead"
-      @select="markAsRead($store.data.currentSelection)"
-    />
+      <SidebarNavItem
+        v-for="smartFolder in $store.data.smartFolders"
+        :key="smartFolder.id"
+        icon="tag-fill"
+        :title="smartFolder.name"
+        :count="smartFolder.ArticleCount"
+        :selected="$store.data.currentSelection.smartFolderId === smartFolder.id"
+        row-class="sidebar-tag-item"
+        @select="selectSmartFolder(smartFolder)"
+      />
+    </div>
 
-    <SidebarSectionTitle
-      v-if="$store.data.smartFolders.length"
-      title="Smart Folders"
-    />
+    <div class="sidebar-section sidebar-status-filters">
+      <SidebarSectionTitle title="All feeds" />
 
-    <SidebarNavItem
-      v-for="smartFolder in $store.data.smartFolders"
-      :key="smartFolder.id"
-      icon="tag-fill"
-      :title="smartFolder.name"
-      :count="smartFolder.ArticleCount"
-      :selected="$store.data.currentSelection.smartFolderId === smartFolder.id"
-      row-class="tag-item"
-      @select="selectSmartFolder(smartFolder)"
-    />
+      <SidebarNavItem
+        v-if="$store.data.unreadsSinceLastUpdate > 0"
+        icon="lightbulb-fill"
+        title="Click to refresh!"
+        :count="$store.data.unreadsSinceLastUpdate"
+        row-class="sidebar-refresh-alert"
+        @select="loadType('refresh')"
+      />
 
-    <SidebarSectionTitle title="All feeds" />
+      <SidebarNavItem
+        v-for="filter in statusFilters"
+        :key="filter.status"
+        :icon="filter.icon"
+        :icon-class="filter.iconClass"
+        :title="filter.label"
+        :count="getStatusCount(filter.status)"
+        :selected="$store.data.currentSelection.status === filter.status && $store.data.currentSelection.smartFolderId === null"
+        row-class="sidebar-status-item"
+        @select="loadType(filter.status)"
+      />
+    </div>
 
-    <SidebarNavItem
-      v-if="$store.data.unreadsSinceLastUpdate > 0"
-      icon="lightbulb-fill"
-      title="Click to refresh!"
-      :count="$store.data.unreadsSinceLastUpdate"
-      row-class="refresh-alert"
-      @select="loadType('refresh')"
-    />
+    <div v-if="$store.data.topTags.length" class="sidebar-section sidebar-tags">
+      <SidebarSectionTitle title="Top tags" />
 
-    <SidebarNavItem
-      v-for="filter in statusFilters"
-      :key="filter.status"
-      :icon="filter.icon"
-      :icon-class="filter.iconClass"
-      :title="filter.label"
-      :count="getStatusCount(filter.status)"
-      :selected="$store.data.currentSelection.status === filter.status && $store.data.currentSelection.smartFolderId === null"
-      row-class="status-item"
-      @select="loadType(filter.status)"
-    />
+      <SidebarNavItem
+        v-for="tag in topTagsDisplay"
+        :key="tag.name"
+        icon="tag-fill"
+        :title="`${tag.name.toLowerCase()}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
+        :count="tag.count"
+        :selected="$store.data.currentSelection.tag === tag.name"
+        row-class="sidebar-tag-item"
+        @select="selectTag(tag.name)"
+      />
+    </div>
 
-    <SidebarSectionTitle
-      v-if="$store.data.topTags.length"
-      title="Top tags"
-    />
-
-    <SidebarNavItem
-      v-for="tag in topTagsDisplay"
-      :key="tag.name"
-      icon="tag-fill"
-      :title="`${tag.name.toLowerCase()}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
-      :count="tag.count"
-      :selected="$store.data.currentSelection.tag === tag.name"
-      row-class="tag-item"
-      @select="selectTag(tag.name)"
-    />
-
-    <div v-if="$store.data.currentSelection.status != 'hot'">
+    <div v-if="$store.data.currentSelection.status != 'hot'" class="sidebar-section sidebar-categories">
       <SidebarSectionTitle title="All" />
 
       <SidebarNavItem
@@ -108,8 +110,8 @@
         title="Load all categories"
         :count="getStatusCount($store.data.currentSelection.status)"
         :selected="$store.data.currentSelection.categoryId === '%'"
-        badge-class="white"
-        row-class="all-categories"
+        badge-class="sidebar-count-white"
+        row-class="sidebar-all-categories-item"
         @select="loadAll"
       />
 
@@ -129,11 +131,11 @@
         </template>
       </draggable>
 
-      <div class="sidebar-options">
+      <div class="sidebar-management-actions">
         <SidebarActionButton
           icon="plus-circle-fill"
           label="Add"
-          variant="sidebar-option"
+          variant="sidebar-management-button"
           @select="$store.data.setShowModal('NewCategory')"
         />
 
@@ -141,14 +143,14 @@
           <SidebarActionButton
             icon="eraser-fill"
             label="Cleanup"
-            variant="sidebar-option"
+            variant="sidebar-management-button"
             @select="$store.data.setShowModal('Cleanup')"
           />
 
           <SidebarActionButton
             icon="box-arrow-right"
             label="Logout"
-            variant="sidebar-option"
+            variant="sidebar-management-button"
             @select="logout"
           />
         </template>
@@ -157,7 +159,7 @@
           v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
           icon="trash3-fill"
           label="Delete"
-          variant="sidebar-option delete"
+          variant="sidebar-management-button delete"
           @select="$store.data.setShowModal('DeleteCategory')"
         />
 
@@ -165,7 +167,7 @@
           v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId === '%'"
           icon="pencil-fill"
           label="Edit"
-          variant="sidebar-option rename"
+          variant="sidebar-management-button rename"
           @select="$store.data.setShowModal('RenameCategory')"
         />
 
@@ -173,7 +175,7 @@
           v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId !== '%'"
           icon="trash3-fill"
           label="Delete"
-          variant="sidebar-option delete"
+          variant="sidebar-management-button delete"
           @select="$store.data.setShowModal('DeleteFeed')"
         />
 
@@ -181,7 +183,7 @@
           v-if="$store.data.currentSelection.categoryId != '%' && $store.data.currentSelection.feedId != '%'"
           icon="pencil-fill"
           label="Edit"
-          variant="sidebar-option rename"
+          variant="sidebar-management-button rename"
           @select="$store.data.setShowModal('UpdateFeed')"
         />
       </div>
@@ -190,45 +192,35 @@
 </template>
 
 <style scoped>
-.drag {
-  background-color: transparent;
-  color: var(--text-inverted);
+.sidebar-scroll {
+  background-color: var(--color-transparent);
+  color: var(--text-primary);
+  margin-left: 8px;
+  width: 250px;
 }
 
-#monster {
+.sidebar-brand {
   background: url('../assets/images/monster.png') 14px 14px no-repeat;
   background-size: 60px 60px;
   height: 90px;
 }
 
-#monster p {
+.sidebar-brand p {
   padding: 27px 0px 8px 78px;
   color: var(--text-primary);
   font-size: 26px;
-  font-weight: 400;
+  font-weight: 600;
 }
 
-::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.sidebar-management-actions {
+  margin: 10px 12px 20px;
+  width: calc(100% - 24px);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 4px;
 }
 
-::-webkit-scrollbar-track {
-  background: var(--scrollbar-track);
-}
-
-::-webkit-scrollbar-thumb {
-  background: var(--scrollbar-thumb);
-}
-
-.sidebar-options {
-  margin-top: 10px;
-  margin-bottom: 20px;
-  height: 40px;
-  width: 105%;
-}
-
-.refresh-progress-panel {
+.sidebar-refresh-progress-panel {
   margin: 0px 12px 20px;
   padding: 10px;
   border-radius: 8px;
@@ -237,7 +229,7 @@
   color: var(--text-primary);
 }
 
-.refresh-progress-header {
+.sidebar-refresh-progress-header {
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -245,7 +237,7 @@
   margin-bottom: 8px;
 }
 
-.refresh-progress-bar {
+.sidebar-refresh-progress-bar {
   width: 100%;
   height: 6px;
   border-radius: 999px;
@@ -253,13 +245,13 @@
   overflow: hidden;
 }
 
-.refresh-progress-fill {
+.sidebar-refresh-progress-fill {
   height: 100%;
-  background: var(--button-main);
+  background: var(--color-primary);
   transition: width 0.25s ease;
 }
 
-.refresh-progress-stats {
+.sidebar-refresh-progress-stats {
   display: flex;
   gap: 10px;
   flex-wrap: wrap;
@@ -267,7 +259,7 @@
   margin-top: 8px;
 }
 
-.refresh-progress-logs {
+.sidebar-refresh-progress-logs {
   list-style: none;
   margin: 8px 0 0;
   padding: 0;
@@ -277,14 +269,19 @@
   color: var(--text-muted);
 }
 
-.refresh-progress-logs li {
+.sidebar-refresh-progress-logs li {
   margin-bottom: 4px;
 }
 
-@media (prefers-color-scheme: dark) {
-  #monster p {
+:global(:root[data-theme='dark']) {
+  .sidebar-brand p {
     color: var(--text-inverted);
   }
+
+  div.sidebar-item.sidebar-status-item.selected span.sidebar-item-title, div.sidebar-item.sidebar-all-categories-item.selected span.sidebar-item-title, div.sidebar-item.sidebar-tag-item.selected span.sidebar-item-title, .sidebar-feed.selected span.sidebar-item-title {
+    color: var(--text-inverted) !important;
+  }
+
 }
 </style>
 

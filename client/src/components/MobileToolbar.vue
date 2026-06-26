@@ -1,27 +1,38 @@
 <template>
-  <div class="navbar-container">
-    <div id="mobile-toolbar">
-      <button
-        @click="emitClickEvent('mobile','mobile')"
-        id="rssmonster"
-        class="view-button icon-button"
-        title="Settings"
-      >
-        <BootstrapIcon icon="gear-fill" />
-      </button>
-      <a
-        id="search"
-        class="view-button"
-        title="Search"
-        @click="toggleSearch"
-        data-behavior="search"
-        data-remote="true"
-      >
-        <i class="fas fa-search" data-fa-transform="down-0 shrink-0 left-5"></i>
-      </a>
-    <!-- Read Mode Dropdown -->
-    <div class="dropdown top-menu-dropdown first">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+  <div class="mobile-toolbar-container">
+    <nav id="mobile-toolbar" class="mobile-toolbar" aria-label="Mobile article toolbar">
+      <div class="mobile-toolbar-brand-row">
+        <div class="mobile-toolbar-brand">
+          <img class="mobile-toolbar-logo" src="../assets/images/monster.png" alt="" />
+          <span>RSSMonster</span>
+        </div>
+        <div class="mobile-toolbar-actions">
+          <button
+            type="button"
+            class="mobile-toolbar-button mobile-search-toggle"
+            title="Search"
+            aria-label="Search articles"
+            @click="toggleSearch"
+            data-behavior="search"
+            data-remote="true"
+          >
+            <BootstrapIcon icon="search" aria-hidden="true" />
+          </button>
+          <button
+            type="button"
+            @click="emitClickEvent('mobile','mobile')"
+            class="mobile-toolbar-button mobile-icon-button mobile-settings-button"
+            title="Settings"
+            aria-label="Open settings"
+          >
+            <BootstrapIcon icon="gear-fill" aria-hidden="true" />
+          </button>
+        </div>
+      </div>
+      <div class="mobile-toolbar-filters">
+        <!-- Read Mode Dropdown -->
+        <div class="dropdown mobile-toolbar-filter">
+      <button class="dropdown-toggle mobile-filter-button" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ capitalize(currentStatus) }} {{ getStatusCount() }}
       </button>
       <div class="dropdown-menu" aria-labelledby="readModeDropdown">
@@ -41,9 +52,9 @@
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
       </div>
     </div>
-    <!-- Smart Folder Dropdown -->
-    <div class="dropdown top-menu-dropdown middle">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="smartFoldersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <!-- Smart Folder Dropdown -->
+        <div class="dropdown mobile-toolbar-filter">
+          <button class="dropdown-toggle mobile-filter-button" type="button" id="smartFoldersDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ 'Smart folders' }}
       </button>
       <div class="dropdown-menu" aria-labelledby="smartFoldersDropdown">
@@ -64,9 +75,9 @@
         </button>
       </div>
     </div>
-    <!-- Categories Dropdown -->
-    <div class="dropdown top-menu-dropdown last">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+        <!-- Categories Dropdown -->
+        <div class="dropdown mobile-toolbar-filter">
+          <button class="dropdown-toggle mobile-filter-button" type="button" id="categoriesDropdown" data-bs-toggle="dropdown" aria-expanded="false">
         {{ 'Categories' }}
       </button>
       <div class="dropdown-menu" aria-labelledby="categoriesDropdown">
@@ -86,14 +97,15 @@
           {{ category.name }} {{ getCategoryCount(category) }}
         </button>
       </div>
-    </div>
-    </div>
-    <div v-if="showSearch" class="search-dialog">
+        </div>
+      </div>
+    </nav>
+    <div v-if="showSearch" class="mobile-search-panel">
       <input
         v-model="$store.data.searchQuery"
         @input="updateSearch"
         type="text"
-        class="search-input"
+        class="mobile-search-input"
         placeholder="Search articles..."
         @keyup.enter="performSearch"
         @keyup.esc="toggleSearch"
@@ -103,186 +115,206 @@
   </div>
 </template>
 
-<style>
-.navbar-container {
+<style scoped>
+.mobile-toolbar-container {
   display: contents;
 }
 
-#mobile-toolbar {
+.mobile-toolbar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
   width: 100%;
-  background-color: var(--toolbar-active-background);
-  display: -webkit-box;
-  display: -webkit-flex;
-  display: -ms-flexbox;
-  display: flex;
-  height: 40px;
-  border-bottom: 1px solid transparent;
-  border-color: var(--mobile-toolbar-border);
-  position: fixed;
+  padding: 8px 12px 10px;
   color: var(--text-primary);
-  visibility: visible;
-  opacity: 1;
-  transition: visibility 0s linear 0s, opacity 150ms;
-}
-</style>
-
-<style scoped>
-#mobile-toolbar a {
-  font-size: 14px;
-  cursor: pointer;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
 }
 
-.view-button {
-  flex: 1;
-  text-align: center;
-  line-height: 41px;
-  height: 100%;
-  text-decoration: none;
-  display: block;
-  font-size: 10px;
-  text-transform: uppercase;
-  font-weight: bold;
-  user-select: none;
-  color: var(--mobile-toolbar-title);
+@media (max-width: 766px) {
+  .mobile-toolbar {
+    transition: transform 150ms ease;
+    will-change: transform;
+  }
+
+  .mobile-toolbar.hide {
+    transform: translateY(-100%);
+  }
 }
 
-#rssmonster.icon-button {
-  margin-top: 2px;
-  max-width: 36px;
-  min-width: 36px;
-  flex: 0;
-  border: none;
-  background: transparent;
-  color: var(--text-inverted);
-  font-size: 18px;
-  cursor: pointer;
+.mobile-toolbar-brand-row,
+.mobile-toolbar-actions,
+.mobile-toolbar-brand,
+.mobile-toolbar-filters {
   display: flex;
+  align-items: center;
+}
+
+.mobile-toolbar-brand-row {
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.mobile-toolbar-brand {
+  gap: 10px;
+  color: var(--text-primary);
+  font-size: 26px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.mobile-toolbar-logo {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.mobile-toolbar-actions {
+  gap: 4px;
+}
+
+.mobile-toolbar-button {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  border-color: var(--mobile-toolbar-border);
-}
-
-#rssmonster.icon-button:hover {
-  color: var(--text-inverted);
-}
-
-#search.view-button {
-  max-width: 36px;
-  min-width: 36px;
-  flex: 0;
-  position: relative;
-  background: none;
-  border-left: 1px solid var(--mobile-toolbar-border);
-}
-
-#search.view-button::before {
-  content: "";
-  position: absolute;
-  top: 13px;
-  left: 10px;
-  width: 16px;
-  height: 16px;
-  background: url(../assets/images/magnifying-glass.png) center no-repeat;
-  background-size: 16px 16px;
-  filter: brightness(0) invert(1);
-  pointer-events: none;
-}
-
-#search.view-button .fa-search {
-  display: none;
-}
-
-.search-dialog {
-  position: fixed;
-  top: 41px;
-  left: 0;
-  right: 0;
-  width: 100%;
-  background-color: var(--text-inverted);
-  border-bottom: 1px solid var(--border-input);
-  display: flex;
-  align-items: center;
-  padding: 8px 0;
-  z-index: 9998;
-}
-
-.search-input {
-  flex: 1;
+  width: 42px;
+  height: 42px;
+  padding: 0;
   border: none;
-  outline: none;
-  padding: 8px 12px;
-  font-size: 16px;
-  background: transparent;
-}
-
-.toolbar-dropdown {
-  background-color: transparent !important;
-  border: none !important;
-  color: var(--text-inverted);
-  padding: 0 12px;
-  font-weight: 500;
-  font-size: 14px;
+  border-radius: 999px;
+  background: var(--color-transparent);
+  color: var(--text-primary);
+  font-size: 18px;
   cursor: pointer;
-  margin-top: 10px;
 }
 
-.toolbar-dropdown:hover {
-  color: var(--text-inverted);
+.mobile-toolbar-button:hover,
+.mobile-toolbar-button:focus-visible {
+  background: var(--bg-muted);
 }
 
-.toolbar-dropdown:focus {
-  box-shadow: none !important;
-  color: var(--text-inverted);
+.mobile-toolbar-filters {
+  gap: 8px;
+  padding-bottom: 2px;
+  overflow: visible;
+}
+
+.mobile-toolbar-filter {
+  flex: 0 0 auto;
+  margin-right: 8px;
+}
+
+.mobile-search-panel {
+  position: relative;
+  width: 100%;
+  padding: 10px 16px;
+  background: var(--bg-card);
+  border-bottom: 1px solid var(--border-color);
+}
+
+.mobile-search-input {
+  width: 100%;
+  height: 42px;
+  padding: 0 14px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  outline: none;
+  font-size: 15px;
+}
+
+.mobile-filter-button {
+  height: 40px;
+  padding: 0 6px;
+  color: var(--text-primary);
+  background: var(--bg-card);
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  box-shadow: 0 1px 2px var(--shadow-card-subtle-color);
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+.dropdown-menu.show,
+.dropdown-menu.show .dropdown-item {
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+}
+
+.mobile-filter-button:hover,
+.mobile-filter-button:focus,
+.mobile-filter-button.show {
+  color: var(--text-primary);
+  background: var(--bg-page);
+  border-color: var(--border-subtle);
+  box-shadow: none;
+}
+
+.mobile-filter-button::after {
+  margin-left: 6px;
+}
+
+@media (max-width: 360px) {
+  .mobile-toolbar-filters {
+    gap: 6px;
+  }
+
+  .mobile-filter-button {
+    padding: 0 4px;
+  }
 }
 
 .dropdown-item.active {
-  background-color: var(--toolbar-active-background);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
-.top-menu-dropdown {
-  border-left: 1px solid transparent;
-  border-color: var(--mobile-toolbar-border);
-}
-
-@media (prefers-color-scheme: dark) {
-  #mobile-toolbar {
+:global(:root[data-theme='dark']) {
+  .mobile-toolbar {
+    color: var(--text-inverted);
     background: var(--bg-control);
+    border-bottom-color: var(--dark-contrast);
   }
 
-  .toolbar-dropdown,
-  .toolbar-dropdown:hover,
-  .toolbar-dropdown:focus,
-  .toolbar-dropdown:active,
-  .toolbar-dropdown.show,
-  .show > .toolbar-dropdown.dropdown-toggle {
+  .mobile-toolbar-brand,
+  .mobile-toolbar-button,
+  .mobile-filter-button,
+  .mobile-filter-button:hover,
+  .mobile-filter-button:focus,
+  .mobile-filter-button.show {
     color: var(--text-inverted) !important;
   }
 
-  .view-button {
+  .mobile-toolbar-button:hover,
+  .mobile-toolbar-button:focus-visible {
+    background: var(--bg-subtle);
+  }
+
+  .mobile-filter-button,
+  .mobile-filter-button:hover,
+  .mobile-filter-button:focus,
+  .mobile-filter-button.show {
+    background: var(--bg-control);
+    border-color: var(--dark-contrast);
+  }
+
+  .mobile-search-panel {
+    background-color: var(--toolbar-search-background-dark);
+    border-bottom-color: var(--dark-contrast);
+  }
+
+  .mobile-search-input {
     color: var(--text-inverted);
     background: var(--bg-control);
     border-color: var(--dark-contrast);
   }
 
-  #rssmonster.icon-button,
-  #rssmonster.icon-button:hover {
-    color: var(--text-inverted);
-  }
-
-  #search.view-button::before {
-    filter: brightness(0) invert(1);
-  }
-
-  .search-dialog {
-    background-color: var(--toolbar-search-background-dark);
-    border-bottom-color: var(--bg-subtle);
-  }
-
-  .search-input {
-    color: var(--text-inverted);
-  }
-
-  .search-input::placeholder {
+  .mobile-search-input::placeholder {
     color: var(--text-muted);
   }
 
@@ -304,6 +336,68 @@
     background-color: var(--toolbar-active-background);
     color: var(--text-inverted);
   }
+}
+
+:global(:root[data-theme='dark'] .mobile-toolbar) {
+  color: var(--text-inverted);
+  background: var(--bg-control);
+  border-bottom-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-toolbar-brand),
+:global(:root[data-theme='dark'] .mobile-toolbar-button),
+:global(:root[data-theme='dark'] .mobile-filter-button),
+:global(:root[data-theme='dark'] .mobile-filter-button:hover),
+:global(:root[data-theme='dark'] .mobile-filter-button:focus),
+:global(:root[data-theme='dark'] .mobile-filter-button.show) {
+  color: var(--text-inverted) !important;
+}
+
+:global(:root[data-theme='dark'] .mobile-toolbar-button:hover),
+:global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible) {
+  background: var(--bg-subtle);
+}
+
+:global(:root[data-theme='dark'] .mobile-filter-button),
+:global(:root[data-theme='dark'] .mobile-filter-button:hover),
+:global(:root[data-theme='dark'] .mobile-filter-button:focus),
+:global(:root[data-theme='dark'] .mobile-filter-button.show) {
+  background: var(--bg-control);
+  border-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-search-panel) {
+  background-color: var(--toolbar-search-background-dark);
+  border-bottom-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-search-input) {
+  color: var(--text-inverted);
+  background: var(--bg-control);
+  border-color: var(--dark-contrast);
+}
+
+:global(:root[data-theme='dark'] .mobile-search-input::placeholder) {
+  color: var(--text-muted);
+}
+
+:global(:root[data-theme='dark'] .dropdown-menu) {
+  background-color: var(--bg-modal);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark'] .dropdown-item) {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .dropdown-item:hover) {
+  color: var(--text-inverted);
+  background-color: var(--bg-control);
+}
+
+:global(:root[data-theme='dark'] .dropdown-item.active) {
+  color: var(--text-inverted);
+  background-color: var(--toolbar-active-background);
 }
 </style>
 

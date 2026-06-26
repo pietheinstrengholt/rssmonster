@@ -1,5 +1,5 @@
 <template>
-  <div class="menu-icon-wrapper dropdown">
+  <div class="article-actions dropdown">
     <button class="btn btn-sm" type="button" data-bs-toggle="dropdown" aria-expanded="false">
       <BootstrapIcon icon="three-dots" />
     </button>

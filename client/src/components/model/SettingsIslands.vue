@@ -1,10 +1,18 @@
 <template>
-  <div class="settings-group">
-    <h4>Your evolving interests</h4>
-    <p class="text-muted mb-3">
-      Interest islands capture the topics your reading, stars, and clicks keep reinforcing. Use this dashboard to review
-      what is growing, what it is connected to, and how much of your library is covered.
-    </p>
+  <div class="settings-islands">
+    <section class="settings-insight-card" aria-labelledby="islands-title">
+      <span class="settings-insight-icon" aria-hidden="true">
+        <BootstrapIcon icon="compass-fill" />
+      </span>
+      <div>
+        <p class="settings-page-eyebrow">Settings — Island Insights</p>
+        <h3 id="islands-title">Your evolving interests</h3>
+        <p>
+          Interest islands capture the topics your reading, stars, and clicks keep reinforcing. Review what is growing,
+          what it is connected to, and how much of your library is covered.
+        </p>
+      </div>
+    </section>
 
     <div v-if="loading" class="d-flex align-items-center gap-2 mb-3">
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
@@ -16,49 +24,36 @@
     </div>
 
     <div v-else>
-      <div class="row g-3 mb-3">
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Interest islands</div>
-              <div class="fs-4 fw-semibold">{{ totals.islandCount }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Island articles</div>
-              <div class="fs-4 fw-semibold">{{ totals.islandArticles }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Outside islands</div>
-              <div class="fs-4 fw-semibold">{{ totals.nonIslandArticles }}</div>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-3">
-          <div class="card h-100">
-            <div class="card-body">
-              <div class="text-muted small text-uppercase">Coverage</div>
-              <div class="fs-4 fw-semibold">{{ formatPercent(totals.islandCoveragePercent) }}</div>
-            </div>
-          </div>
-        </div>
+      <div class="settings-metric-grid">
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Interest islands</span>
+          <strong>{{ totals.islandCount }}</strong>
+        </article>
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Island articles</span>
+          <strong>{{ totals.islandArticles }}</strong>
+        </article>
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Outside islands</span>
+          <strong>{{ totals.nonIslandArticles }}</strong>
+        </article>
+        <article class="settings-metric-card">
+          <span class="settings-metric-label">Coverage</span>
+          <strong>{{ formatPercent(totals.islandCoveragePercent) }}</strong>
+        </article>
       </div>
 
-      <div class="mb-3">
-        <div class="d-flex justify-content-between small text-muted mb-1">
-          <span>Island coverage</span>
-          <span>{{ formatPercent(totals.islandCoveragePercent) }} / {{ formatPercent(totals.nonIslandCoveragePercent) }}</span>
+      <section class="settings-data-panel settings-coverage-panel" aria-labelledby="island-coverage-title">
+        <div class="settings-section-heading">
+          <div>
+            <h4 id="island-coverage-title">Island coverage</h4>
+            <p>How much of your article library is currently connected to interest islands.</p>
+          </div>
+          <strong>{{ formatPercent(totals.islandCoveragePercent) }}</strong>
         </div>
-        <div class="progress" style="height: 12px;">
+        <div class="settings-coverage-track">
           <div
-            class="progress-bar bg-success"
+            class="settings-coverage-fill"
             role="progressbar"
             :style="{ width: `${totals.islandCoveragePercent}%` }"
             :aria-valuenow="totals.islandCoveragePercent"
@@ -66,81 +61,388 @@
             aria-valuemax="100"
           ></div>
         </div>
-      </div>
+        <p class="settings-coverage-note">
+          {{ formatPercent(totals.nonIslandCoveragePercent) }} of articles are still outside islands.
+        </p>
+      </section>
 
       <div v-if="!islands.length" class="alert alert-info mb-3">
         You do not have any interest islands yet. Star articles, click through articles, or keep reading in a topic to grow one.
       </div>
 
-      <div v-else class="interest-islands-list">
-        <div v-for="island in islands" :key="island.id" class="interest-island-card card mb-3">
-          <div class="card-body">
-            <div class="d-flex justify-content-between gap-3 align-items-start flex-wrap">
+      <section v-else class="settings-data-panel" aria-labelledby="interest-islands-title">
+        <div class="settings-section-heading">
+          <div>
+            <h4 id="interest-islands-title">Interest islands</h4>
+            <p>Review the strongest clusters RSSMonster has learned from your reading behavior.</p>
+          </div>
+        </div>
+
+        <div class="interest-islands-list">
+          <article v-for="island in islands" :key="island.id" class="interest-island-row">
+            <div class="interest-island-summary">
+              <span class="interest-island-icon" aria-hidden="true">
+                <BootstrapIcon icon="compass-fill" />
+              </span>
               <div>
-                <h5 class="mb-1">{{ island.label || `Island #${island.id}` }}</h5>
-                <div class="text-muted small">
-                  {{ island.relatedArticleCount }} related articles · {{ island.topicCount }} topics linked
-                </div>
-              </div>
-              <div class="text-end">
-                <div class="small text-muted text-uppercase">Affinity</div>
-                <div class="fs-5 fw-semibold">{{ formatNormalizedAffinity(island.effectiveWeight) }}</div>
+                <h5>{{ island.label || `Island #${island.id}` }}</h5>
+                <p>
+                  {{ island.relatedArticleCount }} related articles &middot; {{ island.topicCount }} topics linked
+                </p>
               </div>
             </div>
 
-            <div class="d-flex flex-wrap gap-2 mt-3">
+            <div class="interest-island-affinity">
+              <span>Affinity</span>
+              <strong>{{ formatNormalizedAffinity(island.effectiveWeight) }}</strong>
+            </div>
+
+            <div class="interest-island-badges">
               <span class="badge text-bg-primary">{{ island.starCount }} {{ island.starCount === 1 ? 'star' : 'stars' }}</span>
               <span class="badge text-bg-info">{{ island.clickCount }} {{ island.clickCount === 1 ? 'click' : 'clicks' }}</span>
               <span class="badge text-bg-secondary">{{ island.interactionCount }} interactions</span>
-              <span class="badge" :class="island.archivedInd ? 'text-bg-dark' : 'text-bg-success'">{{ island.archivedInd ? 'Archived' : 'Active' }}</span>
+              <span class="badge" :class="island.archivedInd ? 'text-bg-dark' : 'text-bg-success'">
+                {{ island.archivedInd ? 'Archived' : 'Active' }}
+              </span>
             </div>
 
-            <div v-if="island.relatedArticles?.length" class="mt-3">
-              <div class="small text-uppercase text-muted mb-2">Recent related articles</div>
-              <div class="list-group">
-                <a
-                  v-for="article in island.relatedArticles"
-                  :key="article.id"
-                  class="list-group-item list-group-item-action"
-                  :href="article.url"
-                  target="_blank"
-                >
-                  <div class="d-flex justify-content-between gap-3">
-                    <div class="flex-grow-1">
-                      <div class="fw-semibold">{{ article.title }}</div>
-                      <div class="text-muted small">
-                        {{ article.feedName || 'Unknown feed' }} · {{ formatDate(article.published) }}
-                      </div>
-                      <div class="mt-1">
-                        <span
-                          class="badge"
-                          :class="article.isPopulationSource ? 'text-bg-primary' : 'text-bg-warning'"
-                        >
-                          {{ article.isPopulationSource ? 'Population source' : 'New to island' }}
-                        </span>
-                      </div>
-                    </div>
-                    <div class="text-end small text-muted">
-                      <div>{{ article.starInd === 1 ? 'Starred' : 'Not starred' }}</div>
-                      <div>{{ article.clickedAmount > 0 ? `${article.clickedAmount} clicks` : 'No clicks' }}</div>
-                    </div>
-                  </div>
-                </a>
-              </div>
+            <div v-if="island.relatedArticles?.length" class="interest-article-list">
+              <div class="interest-article-heading">Recent related articles</div>
+              <a
+                v-for="article in island.relatedArticles"
+                :key="article.id"
+                class="interest-article-row"
+                :href="article.url"
+                target="_blank"
+              >
+                <div>
+                  <strong>{{ article.title }}</strong>
+                  <p>{{ article.feedName || 'Unknown feed' }} &middot; {{ formatDate(article.published) }}</p>
+                </div>
+                <div class="interest-article-meta">
+                  <span
+                    class="badge"
+                    :class="article.isPopulationSource ? 'text-bg-primary' : 'text-bg-warning'"
+                  >
+                    {{ article.isPopulationSource ? 'Population source' : 'New to island' }}
+                  </span>
+                  <small>{{ article.starInd === 1 ? 'Starred' : 'Not starred' }}</small>
+                  <small>{{ article.clickedAmount > 0 ? `${article.clickedAmount} clicks` : 'No clicks' }}</small>
+                </div>
+              </a>
             </div>
-          </div>
+          </article>
         </div>
-      </div>
+      </section>
     </div>
 
-    <div class="d-flex justify-content-end gap-2">
-      <button type="button" class="btn btn-secondary" @click="reload" :disabled="loading">Refresh</button>
-      <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
+    <div class="settings-refresh-actions">
+      <button type="button" class="settings-refresh-button" @click="reload" :disabled="loading">
+        <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
+        Refresh
+      </button>
     </div>
   </div>
 </template>
 
 <style src="../../assets/css/settings.css"></style>
+
+<style scoped>
+.settings-islands {
+  max-width: 1100px;
+  color: var(--text-primary);
+}
+
+.settings-data-panel,
+.settings-metric-card,
+.interest-island-row {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+}
+
+.interest-island-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+}
+
+.settings-data-panel h4,
+.interest-island-row h5 {
+  margin: 0;
+  color: var(--text-primary);
+  font-weight: 700;
+}
+
+.settings-metric-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+  margin-bottom: 18px;
+}
+
+.settings-metric-card {
+  padding: 16px;
+}
+
+.settings-metric-label {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.settings-metric-card strong {
+  color: var(--text-primary);
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.settings-data-panel {
+  margin-bottom: 18px;
+  padding: 20px;
+}
+
+.settings-section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.settings-section-heading h4 {
+  font-size: 16px;
+}
+
+.settings-section-heading p,
+.settings-coverage-note,
+.interest-island-summary p,
+.interest-article-row p,
+.interest-island-affinity span,
+.interest-article-heading,
+.interest-article-meta small {
+  color: var(--text-muted);
+}
+
+.settings-section-heading p,
+.settings-coverage-note,
+.interest-island-summary p,
+.interest-article-row p {
+  margin: 4px 0 0;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.settings-section-heading > strong {
+  color: var(--text-primary);
+  font-size: 20px;
+}
+
+.settings-coverage-track {
+  height: 10px;
+  margin-top: 16px;
+  overflow: hidden;
+  background: var(--settings-neutral-bg);
+  border-radius: 999px;
+}
+
+.settings-coverage-fill {
+  height: 100%;
+  background: var(--settings-success-text);
+  border-radius: inherit;
+}
+
+.interest-islands-list {
+  display: grid;
+  gap: 12px;
+}
+
+.interest-island-row {
+  display: grid;
+  grid-template-columns: minmax(240px, 1fr) 110px;
+  gap: 14px;
+  padding: 16px;
+}
+
+.interest-island-summary {
+  display: flex;
+  gap: 12px;
+  min-width: 0;
+}
+
+.interest-island-icon {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
+  background: var(--settings-info-bg);
+  color: var(--settings-info-text);
+  font-size: 17px;
+}
+
+.interest-island-row h5 {
+  font-size: 15px;
+}
+
+.interest-island-affinity {
+  text-align: right;
+}
+
+.interest-island-affinity span {
+  display: block;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.interest-island-affinity strong {
+  color: var(--text-primary);
+  font-size: 18px;
+}
+
+.interest-island-badges,
+.interest-article-list {
+  grid-column: 1 / -1;
+}
+
+.interest-island-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.interest-article-list {
+  display: grid;
+  gap: 8px;
+  padding-top: 12px;
+  border-top: 1px solid var(--border-subtle);
+}
+
+.interest-article-heading {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.interest-article-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 14px;
+  padding: 12px;
+  background: var(--settings-neutral-bg);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.interest-article-row:hover {
+  border-color: var(--border-focus);
+}
+
+.interest-article-row strong {
+  color: var(--text-primary);
+  font-size: 13px;
+}
+
+.interest-article-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  text-align: right;
+}
+
+.alert-danger {
+  background-color: var(--settings-danger-bg);
+  border-color: var(--settings-danger-border);
+  color: var(--settings-danger-text);
+}
+
+.settings-refresh-actions {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 20px;
+}
+
+.settings-refresh-button {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  gap: 8px;
+  padding: 0 14px;
+  background: var(--color-primary);
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-inverted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.settings-refresh-button:hover {
+  background: var(--color-primary-hover);
+}
+
+.settings-refresh-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+
+:global(:root[data-theme='dark']) .settings-data-panel,
+:global(:root[data-theme='dark']) .settings-metric-card,
+:global(:root[data-theme='dark']) .interest-island-row {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .interest-island-icon {
+  background: var(--settings-icon-primary-bg-dark);
+  color: var(--settings-icon-primary-text-dark);
+}
+
+:global(:root[data-theme='dark']) .settings-coverage-track,
+:global(:root[data-theme='dark']) .interest-article-row {
+  background: var(--bg-control);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .interest-article-list {
+  border-color: var(--border-color);
+}
+
+@media (max-width: 900px) {
+  .settings-metric-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .interest-island-row,
+  .interest-article-row {
+    grid-template-columns: 1fr;
+  }
+
+  .interest-island-affinity,
+  .interest-article-meta {
+    align-items: flex-start;
+    text-align: left;
+  }
+}
+
+@media (max-width: 766px) {
+  .settings-metric-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .settings-section-heading {
+    flex-direction: column;
+  }
+}
+</style>
 
 <script>
 import { fetchIslandsOverview } from '../../api/settings';

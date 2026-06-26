@@ -1,11 +1,21 @@
 <template>
   <div id="app">
     <div class="row">
-      <div id="sidebar" class="col-md-3 col-sm-0">
+      <div
+        id="sidebar"
+        ref="sidebarScrollRef"
+        class="col-md-3 col-sm-0"
+        @scroll="handleSidebarScroll"
+      >
         <!-- Sidebar events -->
         <app-sidebar ref="sidebar" @forceReload="forceReload"></app-sidebar>
       </div>
-      <div id="home" class="col-md-9 offset-md-3 col-sm-12">
+      <div
+        id="home"
+        ref="homeScrollRef"
+        class="col-md-9 offset-md-3 col-sm-12"
+        @scroll="handleHomeScroll"
+      >
         <!-- MobileToolbar events -->
         <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
         <!-- Toolbar events -->
@@ -52,7 +62,7 @@
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
   #sidebar,
-  #toolbar {
+  #desktop-toolbar {
     display: none;
   }
 
@@ -60,7 +70,7 @@
     padding-right: 0px;
   }
 
-  div#mobile-toolbar {
+  .mobile-toolbar {
     position: fixed;
     z-index: 9999;
   }
@@ -68,21 +78,97 @@
 
 /* Desktop */
 @media (min-width: 766px) {
-  div#mobile-toolbar {
+  .mobile-toolbar {
     display: none;
   }
 
   #sidebar {
     height: 100%;
-    background-color: #F3F4F6;
+    font-weight: 500;
+    background-color: var(--bg-surface-muted);
+    border-right: 1px solid var(--border-subtle);
     overflow-y: auto;
     overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-transparent) var(--color-transparent);
+    transition: scrollbar-color 0.2s ease;
   }
 
-  @media (prefers-color-scheme: dark) {
+  #sidebar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  #sidebar::-webkit-scrollbar-track {
+    background: var(--color-transparent);
+  }
+
+  #sidebar::-webkit-scrollbar-thumb {
+    background-color: var(--color-transparent);
+    transition: background-color 0.2s ease;
+  }
+
+  #sidebar.is-scrolling {
+    scrollbar-color: var(--sidebar-scrollbar-thumb) var(--color-transparent);
+  }
+
+  #sidebar.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: var(--sidebar-scrollbar-thumb);
+  }
+
+  #home {
+    height: 100vh;
+    overflow-y: auto;
+    overflow-x: hidden;
+    scrollbar-width: thin;
+    scrollbar-color: var(--color-transparent) var(--color-transparent);
+    transition: scrollbar-color 0.2s ease;
+  }
+
+  #home::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  #home::-webkit-scrollbar-track {
+    background: var(--color-transparent);
+  }
+
+  #home::-webkit-scrollbar-thumb {
+    background-color: var(--color-transparent);
+    transition: background-color 0.2s ease;
+  }
+
+  #home.is-scrolling {
+    scrollbar-color: var(--home-scrollbar-thumb) var(--color-transparent);
+  }
+
+  #home.is-scrolling::-webkit-scrollbar-thumb {
+    background-color: var(--home-scrollbar-thumb);
+  }
+
+  :root[data-theme='dark'] {
     #sidebar {
       background-color: var(--bg-secondary);
+      --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
     }
+
+    #home {
+      --home-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
+    }
+  }
+}
+
+@media (min-width: 768px) {
+  #sidebar {
+    width: 280px;
+    min-width: 280px;
+    max-width: 280px;
+  }
+
+  #home {
+    width: calc(100% - 280px);
+    margin-left: 280px;
   }
 }
 
@@ -92,6 +178,11 @@ div.row {
 
 #sidebar {
   position: fixed;
+  --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong);
+}
+
+#home {
+  --home-scrollbar-thumb: var(--scrollbar-thumb-strong);
 }
 
 .app-error {
@@ -100,14 +191,14 @@ div.row {
 }
 
 html, #app {
-  background-color: #d6d6d6;
+  background-color: var(--bg-primary);
 }
 
 html, #app, body {
     height: 100%;
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   html, #app {
     background-color: var(--bg-primary);
   }
@@ -135,6 +226,7 @@ html, #app, body {
 
 //import idb-keyval
 import { get, set } from 'idb-keyval';
+import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
 
 import ArticleFeed from "./components/ArticleFeed.vue";
 
@@ -154,7 +246,7 @@ const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "dele
 const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/model/RenameCategory.vue"));
 const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/model/UpdateFeed.vue"));
 const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/model/Cleanup.vue"));
-const ManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/ManageUsers.vue"));
+const SettingsManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/SettingsManageUsers.vue"));
 
 //import onboarding component
 const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/onboarding/InitialFeeds.vue"));
@@ -179,7 +271,7 @@ export default {
     appRenameCategory: RenameCategory,
     appUpdateFeed: UpdateFeed,
     appCleanup: Cleanup,
-    appManageUsers: ManageUsers,
+    appManageUsers: SettingsManageUsers,
     appInitialFeeds: InitialFeeds
   },
   data() {
@@ -190,7 +282,10 @@ export default {
       notificationStatus: null,
       offlineStatus: false,
       overviewIntervalId: null,
-      overviewLoaded: false
+      overviewLoaded: false,
+      sidebarScrollTimeout: null,
+      homeScrollTimeout: null,
+      unsubscribeFromSystemTheme: null
     };
   },
   async created() {
@@ -241,28 +336,57 @@ export default {
       }, 300 * 1000);
     }
 
-    //default body background color to black for dark mode.
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) {
-      //This addresses bounce background glitch for devices running safari: https://www.tempertemper.net/blog/scroll-bounce-page-background-colour
-      const darkThemeColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--bg-bounce')
-        .trim();
-      document.body.style.background = darkThemeColor;
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', darkThemeColor);
-    }
-    //default body background color to blue for light mode.
-    if (window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches) {
-      const lightThemeColor = getComputedStyle(document.documentElement)
-        .getPropertyValue('--theme-color-light')
-        .trim();
-      document.querySelector('meta[name="theme-color"]').setAttribute('content', lightThemeColor);
-    }
+    applyTheme(getPreferredTheme());
+    this.unsubscribeFromSystemTheme = subscribeToSystemTheme(applyTheme);
     //add metadata properties to document
     document.title = "RSSMonster";
     document.head.querySelector("meta[name=viewport]").content = "width=device-width, initial-scale=1";
     document.head.querySelector("meta[http-equiv=X-UA-Compatible]").content = "IE=edge";
   },
+  beforeUnmount() {
+    this.unsubscribeFromSystemTheme?.();
+
+    if (this.sidebarScrollTimeout) {
+      clearTimeout(this.sidebarScrollTimeout);
+    }
+
+    if (this.homeScrollTimeout) {
+      clearTimeout(this.homeScrollTimeout);
+    }
+  },
   methods: {
+    handleSidebarScroll() {
+      const sidebar = this.$refs.sidebarScrollRef;
+
+      if (!sidebar) return;
+
+      sidebar.classList.add('is-scrolling');
+
+      if (this.sidebarScrollTimeout) {
+        clearTimeout(this.sidebarScrollTimeout);
+      }
+
+      this.sidebarScrollTimeout = setTimeout(() => {
+        sidebar.classList.remove('is-scrolling');
+        this.sidebarScrollTimeout = null;
+      }, 1000);
+    },
+    handleHomeScroll() {
+      const home = this.$refs.homeScrollRef;
+
+      if (!home) return;
+
+      home.classList.add('is-scrolling');
+
+      if (this.homeScrollTimeout) {
+        clearTimeout(this.homeScrollTimeout);
+      }
+
+      this.homeScrollTimeout = setTimeout(() => {
+        home.classList.remove('is-scrolling');
+        this.homeScrollTimeout = null;
+      }, 1000);
+    },
     mobileClick(value) {
       this.mobile = value;
     },
@@ -414,6 +538,12 @@ export default {
   },
   //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
+    // This function applies a theme mode loaded from the user's settings.
+    "$store.data.themeMode": function(themeMode) {
+      if (themeMode) {
+        setThemeMode(themeMode);
+      }
+    },
     "$store.data.currentSelection": {
       handler: function(data) {
         this.updateSelection(data);

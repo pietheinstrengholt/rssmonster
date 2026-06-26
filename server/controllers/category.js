@@ -65,12 +65,13 @@ const addCategory = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const { name, categoryOrder } = req.body;
+    const { name, categoryOrder, iconName } = req.body;
 
     const category = await Category.create({
       userId,
       name,
-      categoryOrder
+      categoryOrder,
+      iconName
     });
 
     return res.status(201).json(category);
@@ -90,7 +91,7 @@ const updateCategory = async (req, res, _next) => {
     }
 
     const { categoryId } = req.params;
-    const { name, categoryOrder } = req.body;
+    const { name, categoryOrder, iconName } = req.body;
 
     const category = await Category.findOne({
       where: {
@@ -107,7 +108,8 @@ const updateCategory = async (req, res, _next) => {
 
     await category.update({
       name,
-      categoryOrder
+      categoryOrder,
+      iconName
     });
 
     return res.status(200).json(category);

@@ -24,6 +24,7 @@ export const getSettings = async (req, res, _next) => {
     let minQualityScore = 0;
     let viewMode = "full";
     let clusterView = "all";
+    let themeMode = 'system';
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
 
@@ -38,6 +39,7 @@ export const getSettings = async (req, res, _next) => {
       minQualityScore = settings.minQualityScore || 0;
       viewMode = settings.viewMode || 'full';
       clusterView = settings.clusterView || 'all';
+      themeMode = settings.themeMode || 'system';
     }
 
     //return all query params
@@ -53,6 +55,7 @@ export const getSettings = async (req, res, _next) => {
       minQualityScore: minQualityScore,
       viewMode: viewMode,
       clusterView: String(clusterView),
+      themeMode: themeMode,
       AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
   } catch (err) {
@@ -109,6 +112,36 @@ export const setSettings = async (req, res, _next) => {
   } catch (err) {
     console.error('Error in setSettings:', err);
     return res.status(400).json({ error: err.message });
+  }
+};
+
+// This function saves a user's selected color theme mode.
+export const setThemeMode = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const { themeMode } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!['system', 'light', 'dark'].includes(themeMode)) {
+      return res.status(400).json({ error: 'themeMode must be system, light, or dark' });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { themeMode }
+    });
+
+    if (!created) {
+      await settings.update({ themeMode });
+    }
+
+    return res.status(200).json({ success: true, themeMode });
+  } catch (err) {
+    console.error('Error in setThemeMode:', err);
+    return res.status(500).json({ error: err.message });
   }
 };
 
@@ -662,6 +695,7 @@ export const getTopicsOverview = async (req, res, _next) => {
 export default {
   getSettings,
   setSettings,
+  setThemeMode,
   getIslandsOverview,
   getTopicsOverview
 }

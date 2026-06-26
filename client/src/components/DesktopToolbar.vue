@@ -1,92 +1,159 @@
 <template>
-  <div class="toolbar">
-    <div class="settings-icon" @click="settingsClicked" title="Settings">
-      <BootstrapIcon icon="gear-fill" size="20" />
-    </div>
+  <nav class="desktop-toolbar" aria-label="Article toolbar">
     <!-- Article filter dropdowns -->
-    <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown">
-      <button class="dropdown-toggle toolbar-dropdown" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
-        <span class="toolbar-dropdown-label">{{ dropdown.label }}:</span>
-        <span class="toolbar-dropdown-value">{{ dropdown.selectedLabel }}</span>
-      </button>
-      <div class="dropdown-menu" :aria-labelledby="dropdown.id">
-        <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+    <div class="toolbar-filters">
+      <div v-for="dropdown in toolbarDropdowns" :key="dropdown.id" class="dropdown toolbar-filter">
+        <button class="dropdown-toggle toolbar-filter-button" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
+          <span class="toolbar-filter-label">{{ dropdown.label }}:</span>
+          <span class="toolbar-filter-value">{{ dropdown.selectedLabel }}</span>
+        </button>
+        <div class="dropdown-menu" :aria-labelledby="dropdown.id">
+          <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
+        </div>
       </div>
     </div>
 
-    <div v-if="isAIEnabled" class="status-toolbar" @click="chatAssistant">
-      <div id="chat-icon">
-          <BootstrapIcon icon="robot" size="20" />
+    <div class="toolbar-actions">
+      <button v-if="isAIEnabled" type="button" class="toolbar-chat-button" @click="chatAssistant">
+        <BootstrapIcon icon="chat-dots" />
+        <span>
+          {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
+        </span>
+      </button>
+      <div class="toolbar-search" :class="{ 'toolbar-search-invalid': isSearchQueryInvalid, 'toolbar-search-open': isCompactSearchOpen }">
+        <span class="toolbar-search-icon" aria-hidden="true">
+          <svg viewBox="0 0 16 16" aria-hidden="true">
+            <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
+          </svg>
+        </span>
+        <input
+          ref="searchInput"
+          type="text"
+          v-model="$store.data.searchQuery"
+          @input="debounceSearchEvent"
+          @keydown.esc="closeCompactSearch"
+          placeholder="Search for words or tag:name, title:text, etc."
+          autocomplete="off"
+          class="toolbar-search-input"
+          :class="{ 'toolbar-search-input-invalid': isSearchQueryInvalid }"
+          :title="searchQueryError"
+        />
       </div>
-      <p id="chat-text">
-        {{ $store.data.chatAssistantOpen ? 'Close Chat' : 'Chat' }}
-      </p>
-    </div>
-    <div class="search-wrap" :class="{ invalid: isSearchQueryInvalid }">
-      <input
-        type="text"
-        v-model="$store.data.searchQuery"
-        @input="debounceSearchEvent"
-        placeholder="Search for words or tag:name, title:text, etc."
-        autocomplete="off"
-        :class="{ 'input-invalid': isSearchQueryInvalid }"
-        :title="searchQueryError"
-      />
+      <button type="button" class="toolbar-search-button" title="Search" @click="toggleCompactSearch">
+        <svg viewBox="0 0 16 16" aria-hidden="true">
+          <path d="M6.5 12a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11m0-1a4.5 4.5 0 1 0 0-9 4.5 4.5 0 0 0 0 9m7.854 4.146-3.85-3.85a1 1 0 0 0-1.414 1.415l3.85 3.85a1 1 0 0 0 1.414-1.415" />
+        </svg>
+      </button>
+      <div class="dropdown toolbar-theme-dropdown">
+        <button id="themeModeDropdown" type="button" class="dropdown-toggle toolbar-theme-button" title="Choose theme" data-bs-toggle="dropdown" aria-expanded="false">
+          <BootstrapIcon icon="brightness-high" size="20" />
+          <span class="visually-hidden">Choose theme</span>
+        </button>
+        <div class="dropdown-menu dropdown-menu-end toolbar-theme-menu" aria-labelledby="themeModeDropdown">
+          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'system' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'system'" @click="selectThemeMode('system')">
+            <BootstrapIcon icon="laptop" size="16" />
+            System
+          </button>
+          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'light' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'light'" @click="selectThemeMode('light')">
+            <BootstrapIcon icon="sun" size="16" />
+            Light
+          </button>
+          <button type="button" class="dropdown-item" :class="{ active: selectedThemeMode === 'dark' }" role="menuitemradio" :aria-checked="selectedThemeMode === 'dark'" @click="selectThemeMode('dark')">
+            <BootstrapIcon icon="moon-stars" size="16" />
+            Dark
+          </button>
+        </div>
+      </div>
+      <div class="toolbar-settings-button" @click="settingsClicked" title="Settings">
+        <BootstrapIcon icon="gear-fill" size="20" />
+      </div>
     </div>
     <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
-  </div>
+  </nav>
 </template>
 
 <style scoped>
-.toolbar {
-  height: 40px;
-  border-bottom: 1px solid transparent;
+.desktop-toolbar {
+  height: 56px;
+  box-sizing: border-box;
+  border-bottom: 1px solid var(--color-transparent);
   border-color: var(--border-input);
-  width: 100%;
+  right: 0;
   overflow: visible;
   background-color: var(--desktop-toolbar-background);
   position: fixed;
-  margin-left: -15px;
+  margin-left: 0;
   display: flex;
   align-items: center;
+  min-width: 0;
   z-index: 1000;
+  padding-left: clamp(16px, 2vw, 28px);
 }
 
-.toolbar-dropdown {
-  background: transparent;
+.toolbar-filters,
+.toolbar-actions {
+  display: flex;
+  align-items: center;
+  min-width: 0;
+}
+
+.toolbar-actions {
+  flex: 1;
+}
+
+.toolbar-filter-button {
+  background: var(--color-transparent);
   border: none;
   color: inherit;
+  font-weight: 500;
   box-shadow: none;
   padding: 6px 10px;
-  height: 40px;
+  height: 36px;
   line-height: 20px;
   font-size: 14px;
+
 }
 
-.toolbar-dropdown-label {
+.toolbar-filters > .toolbar-filter {
+  margin-right: clamp(6px, 1.5vw, 32px);
+}
+
+@media (max-width: 1080px) {
+  .toolbar-filters > .toolbar-filter {
+    margin-right: clamp(0px, calc(3.846vw - 29.538px), 12px);
+  }
+
+  .toolbar-filter-button {
+    padding-right: 5px;
+    padding-left: 5px;
+  }
+
+  .toolbar-filter-label {
+    display: none;
+  }
+}
+
+.toolbar-filter-label {
   color: var(--text-muted);
 }
 
-.toolbar-dropdown-value {
+.toolbar-filter-value {
   margin-left: 4px;
   color: var(--toolbar-text);
   font-weight: 500;
 }
 
-.toolbar-dropdown:focus,
-.toolbar-dropdown:active,
-.toolbar-dropdown:focus-visible {
+.toolbar-filter-button:focus,
+.toolbar-filter-button:active,
+.toolbar-filter-button:focus-visible {
   outline: none;
   box-shadow: none;
-}
-
-.dropdown, .status-toolbar {
-  border-left: 1px solid var(--border-subtle);
 }
 
 .dropdown-item {
   color: var(--toolbar-text);
   font-size: 14px;
+  font-weight: 500;
 }
 
 .dropdown-item.active,
@@ -95,127 +162,341 @@
 }
 
 .dropdown-item.active {
-  background-color: var(--toolbar-active-background);
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  border-radius: 4px;
 }
 
-.settings-icon {
-  display: flex;
+.toolbar-settings-button,
+.toolbar-theme-button {
+  display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 40px;
-  height: 40px;
+  position: fixed;
+  top: 10px;
+  right: 12px;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--border-input);
+  border-radius: 999px;
   flex-shrink: 0;
   cursor: pointer;
   color: var(--toolbar-text);
-  border-right: 1px solid var(--border-subtle);
+  background-color: var(--bg-card);
+  font-size: 20px;
 }
 
-.settings-icon:hover {
-  background-color: var(--border-input);
+.toolbar-theme-button {
+  position: static;
 }
 
-.settings-icon svg {
-  margin-top: 3px;
-  width: 20px;
-  height: 20px;
-}
-
-.status-toolbar {
-  border-right: 1px solid var(--border-subtle);
-  margin-left: 10px;
-  text-align: center;
-  cursor: pointer;
-  color: var(--toolbar-text);
-  height: 40px;
-  flex-shrink: 0;
-}
-
-.status-toolbar p {
-  padding: 5px;
-  font-size: 14px;
-  margin-right: 12px;
-  margin-top: 5px;
-  height: 20px;
-}
-
-.search-wrap {
-  border-bottom: 1px solid var(--border-subtle);
-}
-
-.status-toolbar #status {
-  width: 50px;
-}
-
-#chat-icon {
-  float:left;
-  width: 20px;
-  height: 20px;
-  margin-top: 7px;
-  margin-left: 5px;
-}
-
-#chat-text {
-  float:left;
-  margin: 0;
-  padding: 4px;
-  font-size: 14px;
-  margin-top: 6px;
-  margin-right: 6px;
-}
-
-.search-wrap {
-  flex-grow: 1;
-  display: flex;
-  align-items: center;
-  padding-left: 6px;
-}
-
-.search-wrap input {
-  width: 100%;
-  height: 40px;
-  background-color: var(--desktop-toolbar-background);
-  font-size: 14px;
+.toolbar-theme-dropdown {
+  position: fixed;
+  top: 10px;
+  right: 68px;
+  z-index: 1;
   border: none;
 }
 
-.search-wrap input:focus {
+.toolbar-theme-button::after {
+  display: none;
+}
+
+.toolbar-theme-menu {
+  min-width: 132px;
+  padding: 4px;
+  border-color: var(--border-input);
+  border-radius: 6px;
+  box-shadow: var(--shadow-modal);
+}
+
+.toolbar-theme-menu .dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 8px;
+  margin-bottom: 4px;
+  border-radius: 4px;
+}
+
+.toolbar-theme-menu .dropdown-item:last-child {
+  margin-bottom: 0;
+}
+
+.toolbar-theme-menu .dropdown-item svg {
+  flex-shrink: 0;
+}
+
+.toolbar-theme-menu .dropdown-item.active {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+}
+
+:global(:root[data-theme='dark'] .toolbar-theme-button) {
+  color: var(--text-inverted);
+  background-color: var(--bg-control);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar-theme-menu) {
+  background-color: var(--bg-modal);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .desktop-toolbar) {
+  background-color: var(--bg-modal);
+}
+
+:global(:root[data-theme='dark'] .toolbar-theme-button:hover) {
+  background-color: var(--toolbar-settings-hover-background-dark);
+}
+
+:global(:root[data-theme='dark'] .toolbar-settings-button),
+:global(:root[data-theme='dark'] .toolbar-chat-button),
+:global(:root[data-theme='dark'] .toolbar-search-button) {
+  color: var(--text-inverted);
+  background-color: var(--bg-control);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar-settings-button:hover),
+:global(:root[data-theme='dark'] .toolbar-chat-button:hover),
+:global(:root[data-theme='dark'] .toolbar-search-button:hover) {
+  background-color: var(--toolbar-settings-hover-background-dark);
+}
+
+:global(:root[data-theme='dark'] .toolbar-search) {
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar-filter-button::after) {
+  color: var(--text-inverted);
+  border-top-color: var(--color-current);
+}
+
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu.show) {
+  background-color: var(--bg-modal);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item) {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item:hover),
+:global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu .dropdown-item.active) {
+  color: var(--text-inverted);
+  background-color: var(--toolbar-active-background);
+}
+
+.toolbar-settings-button:hover,
+.toolbar-theme-button:hover {
+  background-color: var(--border-input);
+}
+
+.toolbar-settings-button svg,
+.toolbar-theme-button svg,
+.toolbar-search-button svg {
+  display: block;
+  margin-bottom: 0;
+  width: 20px;
+  height: 20px;
+}
+
+.toolbar-chat-button {
+  height: 36px;
+  padding: 0 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--bg-input);
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: 0;
+  margin-right: clamp(16px, 2.5vw, 28px);
+  cursor: pointer;
+  color: var(--toolbar-text);
+  font-size: 14px;
+  flex-shrink: 0;
+}
+
+.toolbar-chat-button:hover {
+  background-color: var(--bg-hover);
+}
+
+.toolbar-search {
+  flex: 0 1 clamp(320px, 40vw, 620px);
+  min-width: 0;
+  box-sizing: border-box;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  margin: 0 130px 0 auto;
+  padding: 0 12px;
+  background-color: var(--bg-input);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+}
+
+.toolbar-search-icon {
+  display: flex;
+  flex-shrink: 0;
+  color: var(--text-muted);
+}
+
+.toolbar-search-icon svg {
+  width: 16px;
+  height: 16px;
+  fill: var(--color-current);
+}
+
+.toolbar-search-input {
+  width: 100%;
+  min-width: 0;
+  height: 100%;
+  color: var(--text-muted);
+  background-color: var(--color-transparent);
+  font-size: 14px;
+  font-weight: 500;
+  border: none;
+}
+
+.toolbar-search-input::placeholder {
+  color: var(--text-muted);
+}
+
+.toolbar-search-input:focus {
   outline: none;
 }
 
-.search-wrap.invalid {
+.toolbar-search.toolbar-search-invalid {
   background-color: var(--bg-danger-subtle);
 }
 
-.search-wrap.invalid input.input-invalid {
+.toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid {
   color: var(--text-danger);
 }
 
-.search-wrap.invalid input.input-invalid::placeholder {
+.toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid::placeholder {
   color: var(--text-danger-placeholder);
 }
 
-.search-wrap input.input-invalid {
+.toolbar-search-input.toolbar-search-input-invalid {
   background-color: var(--bg-danger-subtle);
   color: var(--text-danger);
   border-color: var(--border-danger-subtle);
 }
 
-.search-wrap input.input-invalid::placeholder {
+.toolbar-search-input.toolbar-search-input-invalid::placeholder {
   color: var(--text-danger-placeholder);
 }
 
-@media (prefers-color-scheme: dark) {
-  .toolbar,
-  .status-toolbar,
+.toolbar-search-button {
+  display: none;
+}
+
+@media (min-width: 768px) {
+  .desktop-toolbar {
+    left: 268px;
+  }
+}
+
+@media (min-width: 1600px) {
+  .toolbar-search {
+    margin-left: 0;
+  }
+}
+
+@media (max-width: 1120px) {
+  .toolbar-search {
+    margin-right: 128px;
+  }
+
+  .toolbar-settings-button,
+  .toolbar-theme-button {
+    z-index: 1;
+  }
+}
+
+@media (max-width: 1199px) {
+  .toolbar-search {
+    display: none;
+  }
+
+  .toolbar-search.toolbar-search-open {
+    display: flex;
+    position: fixed;
+    top: 64px;
+    right: 120px;
+    width: min(420px, calc(100vw - 320px));
+    margin: 0;
+    box-shadow: var(--shadow-modal);
+    z-index: 1001;
+  }
+
+  .toolbar-search-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    position: fixed;
+    top: 10px;
+    right: 120px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: var(--toolbar-text);
+  background-color: var(--desktop-toolbar-background);
+    border: 1px solid var(--border-color);
+    border-radius: 999px;
+    z-index: 1;
+  }
+
+  .toolbar-search-button svg {
+    width: 16px;
+    height: 16px;
+    fill: var(--color-current);
+  }
+}
+
+@media (max-width: 1149px) {
+  .toolbar-chat-button {
+    position: fixed;
+    top: 10px;
+    right: 176px;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    margin-right: 0;
+    justify-content: center;
+    border-radius: 999px;
+    font-size: 20px;
+    z-index: 1;
+  }
+
+  .toolbar-chat-button span {
+    display: none;
+  }
+}
+
+:global(:root[data-theme='dark']) {
+  .desktop-toolbar,
   .dropdownmenu .item {
     color: var(--text-inverted);
     background: var(--bg-control);
-    border-color: var(--dark-contrast);
-    border-bottom: 1px solid var(--text-inverted);
+    border-color: var(--border-subtle);
+    border-bottom-color: var(--border-subtle);
   }
 
-  .dropdown, .status-toolbar {
-    border-left: 1px solid var(--text-inverted);
+  .dropdown {
+    border-left: 0;
+  }
+
+  .toolbar-chat-button {
+    color: var(--text-inverted);
+    background: var(--bg-control);
+    border-color: var(--border-color);
   }
 
   .dropdown-menu {
@@ -237,58 +518,85 @@
     color: var(--text-inverted);
   }
 
-  .settings-icon {
+  .toolbar-settings-button,
+  .toolbar-theme-button {
     color: var(--text-inverted);
+    background-color: var(--bg-control);
+    border-color: var(--border-color);
   }
 
-  .settings-icon:hover {
+  .toolbar-settings-button:hover,
+  .toolbar-theme-button:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
+  }
+
+  @media (max-width: 1199px) {
+    .toolbar-search-button {
+      color: var(--text-inverted);
+      background-color: var(--bg-control);
+      border-color: var(--border-color);
+    }
   }
 
   .dropdown-item {
     color: var(--text-inverted);
   }
 
-  .dropdown-menu .item {
-    border-bottom: 1px solid var(--text-inverted);
-    border-right: 1px solid var(--text-inverted);
-    border-left: 1px solid var(--text-inverted);
-  }
-
-  .search-wrap {
-    border-left: 1px solid var(--text-inverted);
-    border-bottom: 1px solid var(--text-inverted);
-  }
-
-  .search-wrap input {
-    background-color: var(--toolbar-search-background-dark);
+  .toolbar-filter-value {
     color: var(--text-inverted);
-    border-color: var(--bg-subtle);
-    background: var(--bg-control);
   }
 
-  .search-wrap input::placeholder {
+  .dropdown-menu .item {
+    border-color: var(--border-subtle);
+  }
+
+  .toolbar-search {
+    background-color: var(--toolbar-search-background-dark);
+    border-color: var(--border-input);
+  }
+
+  .toolbar-search-input {
+    color: var(--text-inverted);
+    background: var(--color-transparent);
+  }
+
+  .toolbar-search-input::placeholder {
     color: var(--text-muted);
   }
 
-  .search-wrap.invalid {
+  .toolbar-search.toolbar-search-invalid {
     background-color: var(--bg-danger-subtle);
   }
 
-  .search-wrap.invalid input.input-invalid {
+  .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid {
     color: var(--text-danger);
     border-color: var(--border-danger-subtle);
   }
 
-  .search-wrap.invalid input.input-invalid::placeholder {
+  .toolbar-search.toolbar-search-invalid .toolbar-search-input.toolbar-search-input-invalid::placeholder {
     color: var(--text-danger);
   }
+}
+
+/* Keep explicit light-mode controls light when the device prefers dark mode. */
+:global(:root[data-theme='light'] .toolbar-settings-button),
+:global(:root[data-theme='light'] .toolbar-theme-button) {
+  color: var(--toolbar-text);
+  background-color: var(--bg-card);
+  border-color: var(--border-input);
+}
+
+:global(:root[data-theme='light'] .toolbar-settings-button:hover),
+:global(:root[data-theme='light'] .toolbar-theme-button:hover) {
+  background-color: var(--border-input);
 }
 </style>
 
 <script>
 import Settings from './model/Settings.vue';
+import { saveThemeMode as saveThemeModeAPI } from '../api/settings.js';
 import { validateSearchQuery } from '../services/queryValidation.js';
+import { getThemeMode, setThemeMode } from '../services/theme.js';
 
 const SEARCH_DEBOUNCE_DELAY = 300;
 
@@ -300,7 +608,9 @@ export default {
   data() {
     return {
       showSettingsModal: false,
+      isCompactSearchOpen: false,
       searchDebounceTimer: null,
+      selectedThemeMode: getThemeMode(),
       statusOptions: [
         { value: 'unread', label: 'Unread' },
         { value: 'star', label: 'Star' },
@@ -328,6 +638,19 @@ export default {
     };
   },
   methods: {
+    // This function toggles the compact search field and focuses it when opening.
+    toggleCompactSearch: function() {
+      if (this.isCompactSearchOpen) {
+        this.closeCompactSearch();
+        return;
+      }
+      this.isCompactSearchOpen = true;
+      this.$nextTick(() => this.$refs.searchInput.focus());
+    },
+    // This function closes the compact search field.
+    closeCompactSearch: function() {
+      this.isCompactSearchOpen = false;
+    },
     // This function delays search updates until typing pauses.
     debounceSearchEvent: function() {
       clearTimeout(this.searchDebounceTimer);
@@ -383,6 +706,22 @@ export default {
     settingsClicked: function() {
       this.showSettingsModal = true;
     },
+    // This function saves and applies an explicitly selected color theme.
+    selectThemeMode: async function(theme) {
+      const previousThemeMode = this.selectedThemeMode;
+      this.selectedThemeMode = theme;
+      setThemeMode(theme);
+      this.$store.data.setThemeMode(theme);
+
+      try {
+        await saveThemeModeAPI(theme);
+      } catch (err) {
+        console.error('Error saving theme mode:', err);
+        this.selectedThemeMode = previousThemeMode;
+        setThemeMode(previousThemeMode);
+        this.$store.data.setThemeMode(previousThemeMode);
+      }
+    },
     // This function closes the settings modal.
     closeSettingsModal: function() {
       this.showSettingsModal = false;
@@ -400,6 +739,14 @@ export default {
   // This function clears a pending search update before the component is removed.
   beforeUnmount() {
     clearTimeout(this.searchDebounceTimer);
+  },
+  watch: {
+    // This function keeps the selected toolbar option in sync with saved settings.
+    '$store.data.themeMode': function(themeMode) {
+      if (themeMode) {
+        this.selectedThemeMode = themeMode;
+      }
+    }
   },
   computed:{
     // This function returns the currently active article selection from the store.

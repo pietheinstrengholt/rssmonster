@@ -1,16 +1,11 @@
 <template>
-    <div>
-        <h5>Smart Folders</h5>
-        <div class="modal" tabindex="-1" role="dialog">
-            <div class="modal-dialog" role="document">
-                <div class="modal-content">
-                    <div class="modal-header">
-                        <h5 class="modal-title">Smart Folders</h5>
-                    </div>
-                    <div class="modal-body">
+    <div class="settings-section">
                         <!-- Info text -->
-                        <div class="alert alert-info mb-3">
-                            <p class="mb-2">
+                        <div class="settings-insight-card settings-insight-card--stacked smart-folders-intro">
+                            <p class="mb-2 smart-folders-intro-heading">
+                                <span class="settings-insight-icon" aria-hidden="true">
+                                    <BootstrapIcon icon="folder-fill" />
+                                </span>
                                 <strong>What are Smart Folders?</strong>
                             </p>
                             <p class="mb-2">
@@ -35,10 +30,10 @@
                                 <strong>Example queries:</strong>
                             </p>
                             <ul class="mb-2 small">
-                                <li><code>tag:ai unread:true quality:>0.6</code> – Unread AI articles with high quality</li>
-                                <li><code>star:true @"last Monday"</code> – Starred articles from last Monday</li>
-                                <li><code>title:javascript @today sort:RECOMMENDED</code> – Today's JavaScript articles by recommended score</li>
-                                <li><code>cluster:eventCluster clustercount:2 sort:ATTENTION</code> – Event clusters with 2+ articles by attention</li>
+                                <li><code>tag:ai unread:true quality:>0.6</code><p> – Unread AI articles with high quality</p></li>
+                                <li><code>star:true @"last Monday"</code><p> – Starred articles from last Monday</p></li>
+                                <li><code>title:javascript @today sort:RECOMMENDED</code><p> – Today's JavaScript articles by recommended score</p></li>
+                                <li><code>cluster:eventCluster clustercount:2 sort:ATTENTION</code><p> – Event clusters with 2+ articles by attention</p></li>
                             </ul>
                             <p class="mb-0">
                                 <strong>Limits:</strong> Set a maximum article count (50-500) to keep folders focused and performant.
@@ -46,10 +41,10 @@
                         </div>
 
                         <!-- Smart Folder Recommendations trigger & results -->
-                        <div class="settings-group d-flex justify-content-between align-items-center gap-3">
+                        <div class="settings-group d-flex justify-content-between align-items-center gap-3 smart-folders-insights">
                             <div>
                                 <label class="mb-1">Smart Folder Insights</label>
-                                <div class="text-muted small">Generate personalized smart folder suggestions on demand.</div>
+                                <div class="text-muted small">Let RSSMonster analyze your reading history and suggest useful smart folders.</div>
                             </div>
                             <button
                                 type="button"
@@ -111,16 +106,17 @@
                         </div>
 
                         <!-- Smart Folders -->
-                        <div class="settings-group">
-                            <label>
+                        <div class="settings-group smart-folders-list">
+                            <div class="smart-folders-list-heading"><div><label class="mb-1">Your Smart Folders</label><div class="text-muted small">Smart Folders update automatically as new articles arrive.</div></div><button type="button" class="btn btn-add" @click="addSmartFolder"><BootstrapIcon icon="plus-circle-fill" /> Add Smart Folder</button></div>
+                            <label class="visually-hidden">
                                 Smart Folders
                                 <span class="info-icon" :title="'Define smart folders to automatically organize articles based on criteria'">
                                     <BootstrapIcon icon="info-circle-fill" />
                                 </span>
                             </label>
 
-                            <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row">
-                                <div class="action-fields">
+                            <div v-for="(smartFolder, index) in smartFolders" :key="index" class="action-row smart-folder-row">
+                                <div class="action-fields smart-folder-row-grid"><BootstrapIcon icon="grip-vertical" class="smart-folder-grip" aria-hidden="true" /><span class="smart-folder-icon"><BootstrapIcon icon="folder" aria-hidden="true" /></span>
                                     <div class="form-group">
                                         <label :for="'smart-folder-name-' + index" class="small-label">Name</label>
                                         <input
@@ -130,20 +126,6 @@
                                             class="form-control"
                                             placeholder="Smart folder name"
                                         />
-                                    </div>
-
-                                    <div class="form-group">
-                                        <label :for="'smart-folder-limitCount-' + index" class="small-label">Maximum Articles</label>
-                                        <select
-                                            :id="'smart-folder-limitCount-' + index"
-                                            v-model="smartFolder.limitCount"
-                                            class="form-select"
-                                        >
-                                            <option value="50">50</option>
-                                            <option value="100">100</option>
-                                            <option value="250">250</option>
-                                            <option value="500">500</option>
-                                        </select>
                                     </div>
 
                                     <div class="form-group form-group-full">
@@ -159,9 +141,23 @@
                                         />
                                     </div>
 
+                                    <div class="form-group smart-folder-limit-field">
+                                        <label :for="'smart-folder-limitCount-' + index" class="small-label">Maximum Articles</label>
+                                        <select
+                                            :id="'smart-folder-limitCount-' + index"
+                                            v-model="smartFolder.limitCount"
+                                            class="form-select"
+                                        >
+                                            <option value="50">50</option>
+                                            <option value="100">100</option>
+                                            <option value="250">250</option>
+                                            <option value="500">500</option>
+                                        </select>
+                                    </div>
+
                                     <button
                                         type="button"
-                                        class="btn btn-remove"
+                                        class="btn btn-remove smart-folder-delete-button"
                                         @click="removeSmartFolder(index)"
                                         :title="'Remove smart folder'"
                                     >
@@ -170,42 +166,311 @@
                                 </div>
                             </div>
 
-                            <button type="button" class="btn btn-add" @click="addSmartFolder">
-                                <BootstrapIcon icon="plus-circle-fill" />
-                                Add Smart Folder
-                            </button>
                         </div>
-                    </div>
-                    <div class="modal-footer">
-                        <button class="btn btn-primary" @click="save" :disabled="hasInvalidSmartFolders">
-                            Save
-                        </button>
-                        <button type="button" class="btn btn-primary" @click="$emit('close')">Back to settings</button>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <button class="btn btn-secondary" @click="$emit('close')">Close</button>
+      <div class="settings-section__actions">
+      <button class="btn btn-primary smart-folders-save" @click="save" :disabled="hasInvalidSmartFolders">Save Changes</button>
+      </div>
     </div>
 </template>
 
 <style src="../../assets/css/settings.css"></style>
+
 <style scoped>
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--overlay-backdrop);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+.settings-section {
+  max-width: 1100px;
 }
 
-.modal-dialog {
-    max-width: 90%;
+.smart-folders-intro {
+  color: var(--text-info);
+}
+.smart-folders-intro p:first-child {
+  font-size: 20px;
+}
+.smart-folders-intro-heading {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.smart-folders-intro ul {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 18px 24px;
+  padding: 0;
+  list-style: none;
+}
+.smart-folders-intro li {
+  padding: 0;
+  background: var(--color-transparent);
+  border: 0;
+  color: var(--text-secondary);
+  font-size: 13px;
+}
+.smart-folders-intro li strong {
+  display: block;
+  margin-bottom: 6px;
+  color: var(--text-primary);
+}
+.smart-folders-intro code {
+  display: inline-block;
+  margin: 2px;
+  padding: 3px 6px;
+  background: var(--settings-query-code-bg);
+  border-radius: 5px;
+  color: var(--settings-query-code-text);
+}
+.smart-folders-insights {
+  padding: 18px 0;
+  background: var(--color-transparent);
+  border: 0;
+  border-radius: 0;
+}
+.smart-folders-insights .btn-secondary {
+  background: var(--color-primary);
+  font-weight: 700;
+}
+.smart-folders-list {
+  padding: 0;
+  background: var(--color-transparent);
+  border: 0;
+  border-radius: 0;
+}
+.smart-folders-list > label {
+  display: block;
+  margin: 0 0 4px;
+  font-size: 16px;
+  font-weight: 700;
+}
+.smart-folders-list > .settings-group {
+  padding: 16px;
+  background: var(--bg-primary);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+}
+.settings-section__actions .btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+:global(:root[data-theme="dark"]) .smart-folders-list > .settings-group {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+}
+@media (max-width: 766px) {
+  .smart-folders-intro ul {
+    grid-template-columns: 1fr;
+  }
+  .smart-folders-insights {
+    align-items: flex-start !important;
+    flex-direction: column;
+  }
+  .smart-folders-insights .btn-secondary {
     width: 100%;
+  }
+}
+.smart-folder-row {
+  padding: 14px 16px !important;
+  background: var(--bg-primary) !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 12px !important;
+}
+.smart-folder-row-grid {
+  display: grid !important;
+  grid-template-columns: 24px 56px minmax(140px, 1fr) minmax(
+      260px,
+      2fr
+    ) 150px 56px !important;
+  align-items: center !important;
+  gap: 16px !important;
+}
+.smart-folder-row-grid .form-group {
+  margin: 0 !important;
+}
+.smart-folder-row-grid .form-group-full {
+  grid-column: auto !important;
+}
+.smart-folder-row-grid .small-label {
+  margin-bottom: 5px;
+  font-size: 11px;
+  font-weight: 700;
+}
+.smart-folder-grip {
+  align-self: center;
+  justify-self: center;
+}
+.smart-folder-icon {
+  justify-self: center;
+  align-self: center;
+  margin: 0 !important;
+}
+.smart-folder-row-grid .form-control,
+.smart-folder-row-grid .form-select {
+  height: 38px;
+}
+.smart-folder-row-grid .form-group-full .form-control {
+  font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+  background: var(--settings-query-code-bg);
+  color: var(--settings-query-code-text);
+}
+.smart-folder-delete-button {
+  width: 38px !important;
+  height: 38px !important;
+  padding: 0 !important;
+  justify-self: end;
+  align-self: center;
+}
+.smart-folder-row + .smart-folder-row {
+  margin-top: 12px;
+}
+@media (max-width: 900px) {
+  .smart-folder-row-grid {
+    grid-template-columns: 24px 56px 1fr auto !important;
+    gap: 12px !important;
+  }
+  .smart-folder-row-grid .form-group {
+    grid-column: 1/-1;
+  }
+  .smart-folder-delete-button {
+    grid-column: 4;
+    grid-row: 1;
+  }
+}
+@media (max-width: 520px) {
+  .smart-folder-row-grid {
+    grid-template-columns: 24px 40px 1fr auto !important;
+  }
+  .smart-folder-icon {
+    width: 32px;
+    height: 32px;
+  }
+  .smart-folder-row {
+    padding: 14px !important;
+  }
+}
+.smart-folders-insights {
+  margin-top: 22px !important;
+  align-items: center !important;
+}
+.smart-folders-insights .btn-secondary {
+  padding: 10px 14px;
+}
+.smart-folders-list {
+  margin-top: 20px;
+}
+.smart-folders-list-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 14px;
+}
+.smart-folders-list-heading > label {
+  font-size: 16px;
+}
+
+:global(:root[data-theme='dark']) .smart-folders-list-heading .btn-add {
+  background-color: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
+  border: 1px solid var(--settings-orange-border);
+}
+
+:global(:root[data-theme='dark']) .smart-folders-list-heading .btn-add:hover {
+  background-color: var(--settings-orange-bg);
+  color: var(--settings-orange-text);
+}
+
+.smart-folder-row {
+  padding: 14px !important;
+  border: 1px solid var(--border-subtle) !important;
+  border-radius: 10px !important;
+  background: var(--bg-primary) !important;
+}
+.smart-folder-row + .smart-folder-row {
+  margin-top: 10px;
+}
+.smart-folder-grip {
+  align-self: center;
+}
+.smart-folder-icon {
+  display: inline-flex;
+  width: 34px;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  background: var(--settings-rule-bg);
+  border-radius: 8px;
+  color: var(--settings-rule-text);
+}
+.smart-folders-save {
+  display: inline-flex;
+  height: 42px;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  background: var(--color-primary) !important;
+  border: 0;
+  border-radius: 8px;
+  color: var(--text-inverted);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+.smart-folders-save:hover:not(:disabled) {
+  background: var(--color-primary-hover) !important;
+}
+.smart-folders-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.65;
+}
+@media (max-width: 766px) {
+  .smart-folders-list-heading {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+  .smart-folders-list-heading .btn-add {
+    width: 100%;
+  }
+  .smart-folder-row .action-fields {
+    grid-template-columns: 1fr !important;
+  }
+}
+.smart-folder-row-grid {
+  grid-template-columns: 24px 44px minmax(160px, 220px) minmax(
+      320px,
+      1fr
+    ) 120px 48px !important;
+  gap: 14px !important;
+}
+.smart-folder-icon {
+  justify-self: start !important;
+}
+.smart-folder-row-grid .form-group-full {
+  min-width: 0;
+}
+.smart-folder-row-grid .form-group-full .form-control {
+  width: 100% !important;
+}
+.smart-folder-limit-field {
+  max-width: 120px;
+}
+.smart-folder-limit-field .form-select {
+  width: 120px !important;
+}
+@media (max-width: 900px) {
+  .smart-folder-row-grid {
+    grid-template-columns: 24px 44px 1fr auto !important;
+  }
+  .smart-folder-row-grid .form-group,
+  .smart-folder-row-grid .form-group-full {
+    grid-column: 1/-1;
+  }
+  .smart-folder-limit-field {
+    max-width: 120px;
+  }
+  .smart-folder-delete-button {
+    grid-column: 4;
+    grid-row: 1;
+  }
 }
 </style>
 

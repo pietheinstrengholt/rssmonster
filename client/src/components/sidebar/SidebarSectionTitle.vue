@@ -1,6 +1,6 @@
 <template>
-  <div class="title-box">
-    <p class="title">{{ title }}</p>
+  <div class="sidebar-section-header">
+    <p class="sidebar-section-title">{{ title }}</p>
   </div>
 </template>
 
@@ -14,15 +14,15 @@ defineProps({
 </script>
 
 <style scoped>
-p.title {
+p.sidebar-section-title {
   color: var(--text-primary);
   margin-left: 14px;
   margin-top: 10px;
   margin-bottom: 5px;
 }
 
-@media (prefers-color-scheme: dark) {
-  p.title {
+:global(:root[data-theme='dark']) {
+  p.sidebar-section-title {
     color: var(--text-inverted);
   }
 }

@@ -1,23 +1,24 @@
 <template>
   <div
-    class="category-feed"
+    class="sidebar-feed"
     :class="feedClasses"
     :id="feed.id"
     @click.stop="emit('select', feed)"
   >
-    <span class="glyphicon">
+    <span class="sidebar-icon">
       <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16" alt="" />
-      <BootstrapIcon v-else icon="rss-fill" variant="light" />
+      <BootstrapIcon v-else icon="rss-fill" color="currentColor" />
     </span>
-    <span class="title">{{ feed.feedName }}</span>
-    <span v-if="count !== null && count !== undefined" class="badge-unread">
-      <span class="badge white">{{ count }}</span>
+    <span class="sidebar-item-title" :class="{ last }">{{ feed.feedName }}</span>
+    <span v-if="count !== null && count !== undefined" class="sidebar-count-wrapper">
+      <span class="sidebar-count sidebar-count-white">{{ formattedCount }}</span>
     </span>
   </div>
 </template>
 
 <script setup>
 import { computed } from 'vue';
+import { formatCount } from './formatCount.js';
 
 const props = defineProps({
   feed: {
@@ -46,85 +47,122 @@ const feedClasses = computed(() => ({
   disabled: props.feed.status === 'disabled',
   last: props.last
 }));
+
+const formattedCount = computed(() => formatCount(props.count));
 </script>
 
 <style scoped>
-.category-feed {
+.sidebar-feed {
   padding: 4px 4px 4px 12px;
+  display: flex;
+  align-items: center;
   cursor: pointer;
-  background-color: var(--color-secondary);
+  color: var(--text-primary);
+  background-color: var(--bg-secondary);
   transition: background-color 0.2s ease, transform 0.15s ease, box-shadow 0.2s ease;
 }
 
-.category-feed.selected {
-  background-color: var(--color-selected);
-  box-shadow: var(--shadow-selected);
+.sidebar-feed.selected {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
+  box-shadow: none;
 }
 
-.category-feed.error,
-.category-feed.selected.error {
-  background-color: var(--color-danger);
+.sidebar-feed.error {
+  background-color: var(--bg-secondary);
 }
 
-.category-feed.disabled {
-  background-color: var(--color-disabled);
+.sidebar-feed.selected.error {
+  background-color: var(--color-primary-soft);
 }
 
-.category-feed.selected.disabled {
-  background-color: var(--bg-selected);
+.sidebar-feed.disabled {
+  background-color: var(--bg-secondary);
 }
 
-.category-feed.disabled .title {
-  color: var(--text-disabled);
+.sidebar-feed.selected.disabled {
+  color: var(--color-primary);
+  background-color: var(--color-primary-soft);
 }
 
-.category-feed.selected.disabled .title {
-  color: var(--color-disabled);
+.sidebar-feed.disabled .sidebar-item-title {
+  color: inherit;
 }
 
-.category-feed.last {
+.sidebar-feed.last {
   border-radius: 0px 0px 4px 4px;
 }
 
-.glyphicon {
-  float: left;
-  margin-right: 5px;
-  min-width: 13px;
+.sidebar-feed.selected {
+  border-radius: 6px;
 }
 
-.title {
+.sidebar-icon {
+  margin-right: 5px;
+  min-width: 13px;
+  flex: 0 0 auto;
+}
+
+.sidebar-item-title {
   text-overflow: ellipsis;
   overflow: hidden;
   white-space: nowrap;
-  display: block;
-  padding-right: 25px;
+  flex: 1 1 auto;
+  min-width: 0;
 }
 
-.badge-unread {
-  float: right;
-  position: absolute;
-  right: 28px;
-  margin-top: -25px;
+.sidebar-count-wrapper {
+  margin-left: auto;
+  padding-left: 8px;
+  padding-right: 4px;
+  flex: 0 0 auto;
 }
 
-.badge.white {
-  float: right;
-  color: var(--text-inverted);
-  background-color: transparent;
-  margin-top: 3px;
+.sidebar-count {
+  color: var(--text-primary);
+  font-weight: 500;
 }
 
-.category-feed span.glyphicon img {
+.sidebar-feed.selected .sidebar-count {
+  color: var(--color-primary);
+}
+
+.sidebar-count.sidebar-count-white {
+  color: inherit;
+  background-color: var(--color-transparent);
+}
+
+.sidebar-feed span.sidebar-icon img {
   margin-bottom: 2px;
 }
 
-@media (prefers-color-scheme: dark) {
-  .category-feed {
+:global(:root[data-theme='dark']) {
+  .sidebar-feed {
     background-color: var(--bg-option);
   }
 
-  .category-feed.disabled {
-    background-color: var(--color-disabled);
+  .sidebar-feed.disabled {
+    background-color: var(--bg-option);
   }
+
+  .sidebar-feed.selected,
+  .sidebar-feed.selected.error,
+  .sidebar-feed.selected.disabled {
+    color: var(--text-inverted);
+    background-color: var(--bg-selected);
+  }
+
+  .sidebar-feed.selected .sidebar-count {
+    color: var(--text-inverted);
+  }
+}
+
+:global(:root[data-theme='dark'] .sidebar-feed.selected) {
+  color: var(--text-inverted) !important;
+  background-color: var(--bg-selected) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-feed.selected .sidebar-count) {
+  color: var(--text-inverted) !important;
 }
 </style>

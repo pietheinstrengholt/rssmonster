@@ -1,13 +1,16 @@
 <template>
-  <div class="block" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }">
-    <div class="article" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
-      <div class="maximal">
+  <div class="article-card" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }" v-bind="filteredAttrs">
+    <div class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
+      <div class="article-layout">
         <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
-        <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
-        <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+        <div class="meta-row">
+          <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
+          <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+        </div>
       </div>
       <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
     </div>
+    <div class="article-divider"></div>
   </div>
 </template>
 
@@ -47,6 +50,7 @@ function timeDifference(current, previous) {
 }
 
 export default {
+  inheritAttrs: false,
   components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent },
   emits: ['update-star', 'update-clicked', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
   props: {
@@ -95,6 +99,22 @@ export default {
     this.teardownMediaQueryListener();
   },
   computed: {
+    // Removes internal article metadata from the root element.
+    filteredAttrs() {
+      const attrs = { ...this.$attrs };
+      [
+        'articlevector',
+        'articleVector',
+        'contenthash',
+        'contentHash',
+        'description',
+        'embedding_model',
+        'embeddingModel',
+        'urlhash',
+        'urlHash'
+      ].forEach(attribute => delete attrs[attribute]);
+      return attrs;
+    },
     // Returns tags that were assigned by rules.
     ruleTags() {
       return (this.tags || []).filter(t => t.tagType === 'rule');
@@ -346,70 +366,70 @@ export default {
 </script>
 
 <style>
-.block .article-body iframe {
+.article-card .article-full-content iframe {
   display: none;
 }
 
 /* Override css that comes from other websites */
-.article-content img, .article-content div {
+.article-content-wrapper img, .article-content-wrapper div {
   float: none !important;
 }
 
 /* Override css that comes from other websites */
-.article-content iframe {
+.article-content-wrapper iframe {
     width: 100% !important;
     height: auto !important;
 }
 
 /* Override css that comes from other websites */
-.article {
+.article-body {
   max-width: 100% !important;
 }
 
-.block .article-content img, .block .article-content figure {
+.article-card .article-content-wrapper img, .article-card .article-content-wrapper figure {
   display: block;
   max-width: 100% !important;
   height: auto !important;
   margin-bottom: 10px !important;
 }
 
-.block .article-content figure {
+.article-card .article-content-wrapper figure {
   margin: 0 0 10px !important;
   padding: 0 !important;
 }
 
-.block .article-content figure video,
-.block .article-content video {
+.article-card .article-content-wrapper figure video,
+.article-card .article-content-wrapper video {
   width: 100% !important;
   height: auto !important;
   display: block;
 }
 
-.block .article-content figure.wp-block-video {
+.article-card .article-content-wrapper figure.wp-block-video {
   max-width: 100% !important;
   width: 100% !important;
 }
 
-.block .article-content p {
+.article-card .article-content-wrapper p {
   display: inline !important;
 }
 
 /* Remove position: relative from all elements in article body */
-.article-body * {
+.article-full-content * {
   position: static !important;
 }
 </style>
 
 <style>
-.article.affinity-muted {
+.article-body.affinity-muted {
   opacity: 0.55;
 }
 
-.article.affinity-compact h5 a {
+.article-body.affinity-compact h5 a {
   font-size: 17px;
 }
 
-.article.affinity-expanded h5 a {
+.article-body.affinity-expanded h5 a {
   font-size: 20px;
 }
 
@@ -435,11 +455,11 @@ export default {
 
 /* Landscape phones and portrait tablets */
 @media (max-width: 766px) {
-  .block {
+  .article-card {
     padding-top: 2px;
   }
 
-  .article {
+  .article-body {
     display: inline-block;
     position: relative;
     margin-top: 2px;
@@ -448,43 +468,55 @@ export default {
 
 /* Landscape phones and portrait tablets */
 @media (min-width: 767px) {
-  .block {
+  .article-card {
     padding-top: 4px;
   }
 }
 
-.block {
+.article-card {
   margin-bottom: 0px;
 }
 
-.block.cluster-article {
+.article-card.cluster-article {
   background-color: var(--article-cluster-background);
 }
 
-.block.cluster-article .article {
+.article-card.cluster-article .article-body {
   background-color: var(--article-cluster-background);
 }
 
-.block .article.hot {
+.article-card .article-body.hot {
   background-color: var(--article-hot-background);
   border-color: var(--article-highlight-border);
 }
 
-.block .article.starred {
-  background-color: var(--article-starred-background);
-  border-color: var(--article-highlight-border);
+.article-card .article-body.starred {
+  background-color: var(--desktop-toolbar-background);
+}
+
+.article-kind-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  color: var(--article-warning-text);
+  margin-right: 8px;
+  flex-shrink: 0;
+  line-height: 1;
+  vertical-align: middle;
+}
+
+.article-kind-icon svg {
+  margin-bottom: 0;
 }
 
 .star-icon {
   color: var(--article-star-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .clicked-icon {
   color: var(--article-clicked-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .read-icon {
@@ -495,59 +527,137 @@ export default {
 
 .hot-icon {
   color: var(--article-hot-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .cluster-icon {
   color: var(--article-hot-icon);
-  margin-right: 4px;
-  vertical-align: middle;
 }
 
 .recommendation-icon {
   color: var(--article-hot-icon);
   font-size: 0.85rem;
-  margin-right: 4px;
   opacity: 0.8;
-  vertical-align: middle;
 }
 
-.block .article {
-  padding-top: 2px;
-  padding-left: 5px;
-  padding-right: 5px;
+.article-card .article-body {
+  padding: 4px 48px 4px 16px;
   font-family: var(--font-family);
-  border-color: var(--border-subtle);
-  background-color: var(--article-background);
+  margin-top: 6px;
+  background-color: var(--desktop-toolbar-background);
   width: 100%;
 }
 
-.block .article-content {
+.article-divider {
+  height: 1px;
+  margin: 10px 18px 0 16px;
+  background-color: var(--border-subtle);
+}
+
+:root[data-theme='dark'] .article-divider {
+  background-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .article-card .article-body {
+  background-color: var(--dark-page-surface);
+  border-bottom-color: var(--border-color);
+}
+
+:root[data-theme='dark'] .article-card .article-body h5 a {
+  color: var(--text-primary);
+}
+
+:root[data-theme='dark'] .article-card .article-full-content {
   color: var(--article-content-text);
-  font-family: var(--font-family);
+}
+
+:root[data-theme='dark'] .article-card.cluster-article,
+:root[data-theme='dark'] .article-card.cluster-article .article-body,
+:root[data-theme='dark'] .article-card.cluster-article .article-content-wrapper,
+:root[data-theme='dark'] .article-card.cluster-article h5.article-header,
+:root[data-theme='dark'] .article-card.cluster-article .article-meta {
+  background-color: var(--article-cluster-background-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-meta,
+:root[data-theme='dark'] .article-card .article-meta .article-published,
+:root[data-theme='dark'] .article-card .article-meta .article-source a {
+  color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .article-card .article-actions .btn {
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
+
+.article-card .meta-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}
+.article-card .article-content-wrapper {
+  color: var(--text-primary);
+  padding-top: 6px;
   font-size: 14px;
-  line-height: 1.45;
+  line-height: 1.65;
+  font-weight: 400;
   margin-bottom: 5px;
   margin-top: 1px;
   margin-left: 0px;
-  padding-bottom: 3px;
+  padding-bottom: 6px;
 }
 
-.block .article-body {
+.article-card .article-full-content {
   font-family: var(--font-family);
-  line-height: 1.45;
+  color: var(--text-primary);
+  font-size: 14px;
+  line-height: 1.65;
+  font-weight: 400;
 }
 
-.block .article h5 a {
-  color: var(--article-heading-text);
-  font-weight: 600;
-  font-size: 19px;
+.article-card .article-full-content a,
+.article-card .article-content-wrapper a {
+  color: var(--color-link);
+}
+
+.article-card .article-full-content a:hover,
+.article-card .article-content-wrapper a:hover {
+  color: var(--color-link-hover);
+}
+
+.article-card .article-full-content a:visited,
+.article-card .article-content-wrapper a:visited {
+  color: var(--color-link-visited);
+}
+
+.article-card .article-full-content a:active,
+.article-card .article-content-wrapper a:active {
+  color: var(--color-link-active);
+}
+
+.article-card .article-body h5 a {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 22px;
+  line-height: 1;
+  font-weight: 700;
+  letter-spacing: -0.01em;
   text-decoration: none;
   border-bottom: none;
+  display: flex;
+  align-items: center;
+  line-height: 1.25;
 }
 
-.heading-content {
+.article-card .article-body h5.article-header {
+  margin: 0;
+  line-height: 1;
+  margin-bottom: 8px;
+}
+
+.article-header-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -555,18 +665,22 @@ export default {
   gap: 8px;
 }
 
-.heading-left {
+.article-header-left {
   display: flex;
   align-items: center;
   flex: 1;
   min-width: 0;
 }
 
-.block .dropdown {
+.article-header-left svg {
+  margin-bottom: 0 !important;
+}
+
+.article-card .dropdown {
   position: relative;
 }
 
-.block .dropdown .btn {
+.article-card .dropdown .btn {
   width: 30px !important;
   height: 30px !important;
   padding: 0 !important;
@@ -579,77 +693,83 @@ export default {
   transition: opacity 0.2s;
 }
 
-.block .dropdown .btn:hover {
+.article-card .dropdown .btn:hover {
   opacity: 1;
-  background-color: transparent !important;
+  background-color: var(--color-transparent) !important;
 }
 
-.block .dropdown-menu {
+.article-card .dropdown-menu {
   min-width: 120px !important;
 }
 
-.block .dropdown-item {
+.article-card .dropdown-item {
   padding: 6px 8px !important;
   font-size: 13px !important;
 }
 
-.block .dropdown-item:hover,
-.block .dropdown-item:focus {
+.article-card .dropdown-item:hover,
+.article-card .dropdown-item:focus {
   color: var(--text-inverted) !important;
 }
 
-.block .feedname {
-  margin-top: -8px;
-  font-size: 12px;
-  padding-top: 1px;
-  padding-left: 0px;
-  font-family: Lato, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-  font-weight: bold;
-  margin-bottom: 2px;
-  color: var(--article-heading-text);
+.article-card .article-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  color: var(--text-muted);
+  font-size: 13px;
+  line-height: 1.3;
+  margin: 0;
+  font-weight: 400;
 }
 
-.block .article-tags-scores {
-  margin-top: 5px;
-  margin-bottom: 5px;
+.article-card .article-tags {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px;
+  gap: 12px;
+  margin: 0;
 }
 
-.block .article-tags-scores .category-badge {
-  display: inline-block;
+.article-card .article-tags .tag-badge {
+  display: inline-flex;
+  align-items: center;
   background-color: var(--article-category-badge-background);
-  color: var(--text-muted);
+  color: var(--badge-tag-text);
   padding: 3px 8px;
-  border-radius: 3px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
   cursor: pointer;
+  vertical-align: middle;
+  opacity: 0.85;
 }
 
-.block .article-tags-scores .tag {
-  display: inline-block;
+.article-card .article-tags .tag {
+  display: inline-flex;
+  align-items: center;
   background-color: var(--article-tag-background);
-  color: var(--color-primary);
+  color: var(--badge-tag-text);
   padding: 3px 8px;
-  border-radius: 3px;
+  border-radius: 6px;
   font-size: 11px;
-  font-weight: 500;
+  font-weight: 600;
   line-height: 1.4;
   white-space: nowrap;
+  vertical-align: middle;
 }
 
-.block .article-tags-scores .tag.tag-rule {
+.article-card .article-tags .tag.tag-rule {
   background-color: var(--article-rule-tag-background);
   color: var(--article-rule-tag-text);
 }
 
-.block .article-tags-scores .score {
-  display: inline-block;
+.article-card .article-tags .score {
+  display: inline-flex;
+  align-items: center;
   padding: 3px 8px;
   border-radius: 3px;
   font-size: 11px;
@@ -658,92 +778,206 @@ export default {
   white-space: nowrap;
   background-color: var(--bg-subtle);
   color: var(--article-score-text);
+  vertical-align: middle;
 }
 
-.block .article-tags-scores .overall-score {
+.article-card .article-tags .overall-score {
+  opacity: 0.85;
   background-color: var(--article-overall-score-background);  /* Pale red */
   color: var(--article-overall-score-text);             /* Darker red */
 }
 
-.block .article-tags-scores .ad-score {
+.article-card .article-tags .ad-score {
+  opacity: 0.85;
   background-color: var(--article-ad-score-background);
   color: var(--article-ad-score-text);
 }
 
-.block .article-tags-scores .sentiment-score {
+.article-card .article-tags .sentiment-score {
+  opacity: 0.85;
   background-color: var(--article-sentiment-score-background);
   color: var(--article-sentiment-score-text);
 }
 
-.block .article-tags-scores .quality-score {
+.article-card .article-tags .quality-score {
+  opacity: 0.85;
   background-color: var(--article-quality-background);
   color: var(--article-quality-positive);
+}
+
+.article-content-wrapper h1 {
+  font-size: 24px !important;
+  line-height: 1.2;
+}
+
+.article-content-wrapper h2 {
+  font-size: 20px !important;
+}
+
+.article-content-wrapper h3 {
+  font-size: 18px !important;
+}
+
+.article-body:hover {
+    background: var(--bg-page);
 }
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
-  .block .feedname {
+  .article-card .article-body {
+    padding: 4px 8px 4px 8px;
+  }
+
+  .article-divider {
+    margin-right: 8px;
+    margin-left: 8px;
+  }
+
+  .article-card .article-meta {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 2px;
+    gap: 8px;
   }
 
-  .block .article-tags-scores .tag {
+  .article-card .article-tags .tag {
     display: none;
   }
 
-  .block .article-tags-scores .score {
+  .article-card .article-tags .score {
     display: none;
   }
 
-  .block .article h5 a {
+  .article-card .article-body h5 a {
     font-size: 18px;
   }
 }
 
-.block.active {
+.article-card.active {
   background-color: var(--article-active-background);
 }
 
+.article-published {
+  margin-right: -3px;
+  margin-top: -1px;
+}
+
+.article-card .article-meta .article-published,
+.article-card .article-meta .article-source a {
+  color: var(--text-muted);
+}
+
 .break {
-  margin-left: 2px;
-  margin-right: 2px;
+  margin-left: -3px;
+  margin-right: -3px;
+  margin-top: -1px;
+  font-size: 16px;
 }
 
 /* Override css that comes from other websites */
-.block .article-content img {
+.article-card .article-content-wrapper img {
   max-width: 100%;
   height: auto !important;
+  margin-top: 10px;
 }
 
-span.feed_name a {
-  color: var(--article-heading-text);
+span.article-source {
+  margin-left: -3px;
+  margin-top: -1px;
+  margin-right: 10px;
 }
 
-span.cluster {
+span.article-source a {
+  text-decoration: none;
+}
+
+span.similar-badge {
+  display: inline-flex;
+  align-items: center;
+  background-color: var(--badge-similar-bg);
+  color: var(--badge-similar-text);
+  padding: 3px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  white-space: nowrap;
   cursor: pointer;
+  vertical-align: middle;
+  opacity: 0.85;
 }
 
-.source-diversity-badge {
+.source-badge {
   display: inline-flex;
   align-items: center;
   gap: 3px;
-  margin-left: 6px;
-  padding: 1px 6px;
-  border-radius: 3px;
+  padding: 3px 8px;
+  border-radius: 6px;
   font-size: 11px;
   font-weight: 600;
+  line-height: 1.4;
   background-color: var(--article-quality-background);
   color: var(--article-quality-positive);
   white-space: nowrap;
+  vertical-align: middle;
+  opacity: 0.85;
+}
+
+:root[data-theme='dark'] .source-badge {
+  background-color: var(--article-quality-background-dark);
+  color: var(--article-quality-good-dark);
+}
+
+:root[data-theme='dark'] span.similar-badge {
+  background-color: var(--badge-similar-bg);
+  color: var(--badge-similar-text);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .tag-badge {
+  background-color: var(--bg-control);
+  color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .tag {
+  background-color: var(--article-tag-background-dark);
+  color: var(--article-tag-text-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .tag.tag-rule {
+  background-color: var(--article-rule-tag-background-dark);
+  color: var(--article-rule-tag-text-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .score {
+  background-color: var(--bg-modal);
+  color: var(--text-secondary);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .overall-score {
+  background-color: var(--article-overall-score-background-dark);
+  color: var(--article-quality-poor-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .ad-score {
+  background-color: var(--article-ad-score-background-dark);
+  color: var(--article-ad-score-text-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .sentiment-score {
+  background-color: var(--article-sentiment-background-dark);
+  color: var(--article-sentiment-score-text-dark);
+}
+
+:root[data-theme='dark'] .article-card .article-tags .quality-score {
+  background-color: var(--article-quality-background-dark);
+  color: var(--article-quality-excellent);
 }
 
 .source-diversity-icon {
   font-size: 10px;
 }
 
-/* Rule-based tags shown inline with feedname on mobile portrait only */
+/* Rule-based tags shown inline with article-meta on mobile portrait only */
 .mobile-rule-tag {
   display: none;
 }
@@ -814,7 +1048,7 @@ span.cluster {
   color: var(--text-danger-placeholder);
 }
 
-.block span.favicon img.favicon {
+.article-card span.favicon img.favicon {
   margin-right: 5px;
   height: 18px;
   width: 18px;
@@ -832,7 +1066,7 @@ span.cluster {
 
 .inline-mobile-tags .tag,
 .inline-mobile-tags .score {
-  background-color: var(--bg-subtle);
+  background-color: var(--badge-tag-bg);
   color: var(--article-score-text);
   padding: 2px 6px;
   border-radius: 3px;
@@ -864,13 +1098,13 @@ span.cluster {
   padding-bottom: 5px;
 }
 
-.summary-bullets {
+.article-summary {
   margin: 5px 0;
   padding-left: 20px;
   list-style-type: disc;
 }
 
-.summary-bullets li {
+.article-summary li {
   color: var(--article-content-text);
   font-family: var(--font-family);
   font-size: 14px;
@@ -878,92 +1112,77 @@ span.cluster {
   line-height: 1.5;
 }
 
-@media (prefers-color-scheme: dark) {
-  .summary-bullets li {
-    color: var(--text-inverted);
+:root[data-theme='dark'] {
+  .article-summary li {
+    color: var(--article-content-text);
   }
 }
 
-@media (prefers-color-scheme: light) {
-  .block {
-  box-shadow: var(--shadow-article);
-}
-}
-
-@media (prefers-color-scheme: dark) {
-  .block, .block .article, .article-content, h5.heading, .block .feedname {
-    color: var(--text-inverted);
+:root[data-theme='dark'] {
+  .article-card, .article-card .article-body, .article-content-wrapper, h5.article-header, .article-card .article-meta {
+    color: var(--article-content-text);
     background: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
-    border-bottom-color: var(--text-inverted);
+    border-bottom-color: var(--border-color);
     background-color: var(--dark-page-surface);
   }
 
-  .block a, .block .article h5 a, .block .article-content, .block span.feed_name a {
-    color: var(--text-inverted);
+  .article-card a, .article-card .article-body h5 a, .article-card .article-content-wrapper, .article-card span.article-source a {
+    color: var(--text-primary);
   }
 
-  .block {
+  .article-card {
     border-bottom-color: var(--dark-page-surface);
-    background: var(--article-surface-dark);
   }
 
-  /* Landscape phones and portrait tablets */
-  @media (max-width: 766px) {
-    .block {
-      background: var(--article-surface-dark);
-    }
+  .article-body h1.article-header, .article-body h2.article-header {
+    color: var(--text-primary);
   }
 
-  .article h1.heading, .article h2.heading {
-    color: var(--text-inverted);
+  .article-body h1.article-header a {
+    color: var(--text-primary);
   }
 
-  .article h1.heading a {
-    color: var(--text-inverted);
-  }
-
-  .block .article {
+  .article-card .article-body {
     border-bottom-color: var(--dark-contrast);
     border-width: 0px;
     border-radius: 0px;
   }
 
-  .block .article.hot {
+  .article-card .article-body.hot {
     background-color: var(--dark-page-surface);
     border-color: var(--dark-page-surface);
   }
 
-  .block .article.starred {
+  .article-card .article-body.starred {
     background-color: var(--dark-page-surface);
-    border-color: var(--dark-page-surface);
   }
 
-  .block.cluster-article {
+  .article-card.cluster-article {
     background-color: var(--article-cluster-background-dark);
   }
 
-  .block.cluster-article .article {
+  .article-card.cluster-article .article-body {
     background-color: var(--article-cluster-background-dark);
   }
 
-  .block.cluster-article .article-content,
-  .block.cluster-article h5.heading,
-  .block.cluster-article .feedname {
+  .article-card.cluster-article .article-content-wrapper,
+  .article-card.cluster-article h5.article-header,
+  .article-card.cluster-article .article-meta {
     background-color: var(--article-cluster-background-dark);
   }
 
-  .block .article-tags-scores .tag {
+  .article-card .article-tags .tag {
     background-color: var(--article-tag-background-dark);
     color: var(--article-tag-text-dark);
   }
 
-  .block .article-tags-scores .category-badge {
+  .article-card .article-tags .tag-badge {
     background-color: var(--bg-control);
     color: var(--text-secondary);
   }
 
-  .block .article-tags-scores .tag.tag-rule {
+  .article-card .article-tags .tag.tag-rule {
     background-color: var(--article-rule-tag-background-dark);
     color: var(--article-rule-tag-text-dark);
   }
@@ -973,47 +1192,47 @@ span.cluster {
     color: var(--article-rule-tag-text-dark);
   }
 
-  .block .article-tags-scores .score {
+  .article-card .article-tags .score {
     background-color: var(--bg-modal);
     color: var(--text-secondary);
   }
 
- .block .article-tags-scores .overall-score {
+ .article-card .article-tags .overall-score {
     background-color: var(--article-overall-score-background-dark);  /* Dark reddish-brown */
     color: var(--article-quality-poor-dark);             /* Bright red */
   }
 
-  .block .dropdown .btn {
+  .article-card .dropdown .btn {
     color: var(--text-inverted);
     opacity: 0.9;
   }
 
-  .block .dropdown-menu {
+  .article-card .dropdown-menu {
     background-color: var(--article-dropdown-background-dark);
     border-color: var(--bg-modal);
   }
 
-  .block .dropdown-item {
+  .article-card .dropdown-item {
     color: var(--text-inverted) !important;
   }
 
-  .block .dropdown-item:hover,
-  .block .dropdown-item:focus {
+  .article-card .dropdown-item:hover,
+  .article-card .dropdown-item:focus {
     background-color: var(--bg-modal);
     color: var(--text-inverted) !important;
   }
 
-  .block .article-tags-scores .ad-score {
+  .article-card .article-tags .ad-score {
     background-color: var(--article-ad-score-background-dark);
     color: var(--article-ad-score-text-dark);
   }
 
-  .block .article-tags-scores .sentiment-score {
+  .article-card .article-tags .sentiment-score {
     background-color: var(--article-sentiment-background-dark);
     color: var(--article-sentiment-score-text-dark);
   }
 
-  .block .article-tags-scores .quality-score {
+  .article-card .article-tags .quality-score {
     background-color: var(--article-quality-background-dark);
     color: var(--article-quality-excellent);
   }
@@ -1084,17 +1303,29 @@ span.cluster {
     color: var(--article-quality-poor-dark);
   }
 
-  nav ul li {
-    background: var(--dark-contrast);
-  }
-
-  .source-diversity-badge {
+  .source-badge {
     background-color: var(--article-quality-background-dark);
     color: var(--article-quality-excellent);
   }
 
-  a:visited, a:active, a:link {
+  .article-card .article-full-content a,
+  .article-card .article-content-wrapper a {
     color: var(--article-link-dark);
+  }
+
+  .article-card .article-full-content a:hover,
+  .article-card .article-content-wrapper a:hover {
+    color: var(--article-link-hover-dark);
+  }
+
+  .article-card .article-full-content a:visited,
+  .article-card .article-content-wrapper a:visited {
+    color: var(--article-link-visited-dark);
+  }
+
+  .article-card .article-full-content a:active,
+  .article-card .article-content-wrapper a:active {
+    color: var(--article-link-active-dark);
   }
 }
 </style>

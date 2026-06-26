@@ -46,7 +46,7 @@
 
 <style>
 div#inputArea {
-  margin-top: 50px;
+  margin-top: 70px;
 }
 
 .user-message {
@@ -71,27 +71,27 @@ div#inputArea {
 }
 
 /* Override css that comes from other websites */
-.article {
+.article-body {
   max-width: 100% !important;
 }
 
-.block .article-content img, .block .article-content figure {
+.article-card .article-content-wrapper img, .article-card .article-content-wrapper figure {
   display: block;
   width: 100% !important;
   height: auto !important;
   margin-bottom: 10px !important;
 }
 
-.block .article-content p {
+.article-card .article-content-wrapper p {
   display: inline !important;
 }
 
-.block .article {
+.article-card .article-body {
   padding-top: 2px;
   width: 100%;
 }
 
-.block .article-content {
+.article-card .article-content-wrapper {
   color: var(--article-content-text);
   font-size: 14px;
   margin-bottom: 5px;
@@ -99,7 +99,7 @@ div#inputArea {
   margin-left: 0px;
 }
 
-.block .article h5 a {
+.article-card .article-body h5 a {
   color: var(--article-heading-text);
   font-weight: 600;
   font-size: 19px;
@@ -108,7 +108,7 @@ div#inputArea {
 }
 
 /* Override css that comes from other websites */
-.block .article-content img {
+.article-card .article-content-wrapper img {
   max-width: 100%;
   height: auto !important;
 }
@@ -121,7 +121,7 @@ div#inputArea {
   }
 }
 
-@media (prefers-color-scheme: dark) {
+:root[data-theme='dark'] {
   div#inputArea {
     color: var(--text-inverted);
   }
@@ -147,6 +147,22 @@ div#inputArea {
   .loading-spinner {
     color: var(--chat-loading-spinner);
   }
+}
+
+:root[data-theme='dark'] #chatTextarea {
+  color: var(--text-secondary);
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-input);
+}
+
+:root[data-theme='dark'] #chatTextarea:focus {
+  background-color: var(--bg-input) !important;
+  border-color: var(--border-focus);
+  box-shadow: var(--shadow-focus-primary);
+}
+
+:root[data-theme='dark'] #inputArea .form-label {
+  color: var(--text-inverted);
 }
 </style>
 

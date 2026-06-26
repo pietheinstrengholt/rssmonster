@@ -73,6 +73,24 @@ describe('category ownership authorization', () => {
     expect(res.body).toEqual({ error: 'Category not found' });
   });
 
+  it('POST category creates a category with its selected icon', async () => {
+    const owner = await createUser('category-create-owner');
+
+    const res = await request(app)
+      .post('/api/categories')
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        name: 'Technology',
+        iconName: 'cpu-fill'
+      });
+
+    const category = await Category.findByPk(res.body.id);
+
+    expect(res.status).toBe(201);
+    expect(res.body.iconName).toBe('cpu-fill');
+    expect(category.iconName).toBe('cpu-fill');
+  });
+
   it('PUT category by ID rejects foreign-user category', async () => {
     const owner = await createUser('category-owner');
     const foreignUser = await createUser('category-editor');
@@ -92,6 +110,26 @@ describe('category ownership authorization', () => {
     expect(res.body).toEqual({ error: 'Category not found' });
     expect(category.name).toBe(`${owner.username} category`);
     expect(category.categoryOrder).toBe(1);
+  });
+
+  it('PUT category by ID updates the owner category icon', async () => {
+    const owner = await createUser('category-icon-owner');
+    const { category } = await createCategoryWithFeed(owner);
+
+    const res = await request(app)
+      .put(`/api/categories/${category.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        name: category.name,
+        categoryOrder: category.categoryOrder,
+        iconName: 'newspaper'
+      });
+
+    await category.reload();
+
+    expect(res.status).toBe(200);
+    expect(res.body.iconName).toBe('newspaper');
+    expect(category.iconName).toBe('newspaper');
   });
 
   it('DELETE category by ID rejects foreign-user category', async () => {

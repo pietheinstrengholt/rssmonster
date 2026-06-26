@@ -1,33 +1,48 @@
 <template>
-  <div class="modal">
-    <div class="modal-dialog">
-      <div class="modal-content">
-
-        <div class="modal-header">
-          <h5 class="modal-title">Settings</h5>
-          <button class="btn-close" @click="$emit('close')" />
+  <div class="settings-overlay">
+    <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+      <header class="settings-header">
+        <div>
+          <h2 id="settings-title" class="settings-title">Settings</h2>
+          <p class="settings-subtitle">{{ activeSectionDescription }}</p>
         </div>
 
-        <div class="modal-body">
+        <button
+          class="settings-close-button"
+          type="button"
+          aria-label="Close settings"
+          @click="$emit('close')"
+        >
+          <BootstrapIcon icon="x-lg" aria-hidden="true" />
+        </button>
+      </header>
+
+      <div class="settings-layout">
+        <aside class="settings-sidebar" aria-label="Settings navigation">
+          <button
+            v-for="item in visibleSettingsNavigation"
+            :key="item.key"
+            type="button"
+            class="settings-sidebar-item"
+            :class="{ active: active === item.key }"
+            :aria-current="active === item.key ? 'page' : undefined"
+            @click="active = item.key"
+          >
+            <BootstrapIcon class="settings-sidebar-icon" :icon="item.icon" aria-hidden="true" />
+            <span>{{ item.label }}</span>
+          </button>
+        </aside>
+
+        <main class="settings-content">
           <component
             :is="activeComponent"
             @close="active = 'welcome'"
             @saved="handleSaved"
+            @forceReload="$emit('forceReload')"
           />
-        </div>
-
-        <div class="modal-footer">
-          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'smartfolders'">Smart Folders</button>
-          <button class="btn btn-secondary" @click="active = 'actions'">Actions</button>
-          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'scores'">Scores</button>
-          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'topics'">Topics</button>
-          <button v-if="$store.data.currentSelection.AIEnabled" class="btn btn-secondary" @click="active = 'islands'">Islands</button>
-          <button class="btn btn-secondary" @click="active = 'feeds'">Feeds</button>
-          <button v-if="$store.auth.getRole === 'admin'" class="btn btn-secondary" @click="active = 'users'">Manage Users</button>
-        </div>
-
+        </main>
       </div>
-    </div>
+    </section>
   </div>
 </template>
 
@@ -35,26 +50,26 @@
 
 <script>
 import SettingsWelcome from './SettingsWelcome.vue';
-import SmartFoldersSettings from './SmartFoldersSettings.vue';
-import ActionsSettings from './ActionsSettings.vue';
-import ScoresSettings from './ScoresSettings.vue';
+import SettingsSmartFolders from './SettingsSmartFolders.vue';
+import SettingsActions from './SettingsActions.vue';
+import SettingsScores from './SettingsScores.vue';
 import SettingsIslands from './SettingsIslands.vue';
 import SettingsTopics from './SettingsTopics.vue';
-import FeedsOverview from './FeedsOverview.vue';
-import ManageUsers from './ManageUsers.vue';
+import SettingsFeedsOverview from './SettingsFeedsOverview.vue';
+import SettingsManageUsers from './SettingsManageUsers.vue';
 
 export default {
   name: 'SettingsModal',
   emits: ['close', 'forceReload'],
   components: {
     SettingsWelcome,
-    SmartFoldersSettings,
-    ActionsSettings,
-    ScoresSettings,
+    SettingsSmartFolders,
+    SettingsActions,
+    SettingsScores,
     SettingsIslands,
     SettingsTopics,
-    FeedsOverview,
-    ManageUsers
+    SettingsFeedsOverview,
+    SettingsManageUsers
   },
   data() {
     return { active: 'welcome' };
@@ -66,17 +81,42 @@ export default {
     document.body.classList.remove('modal-open');
   },
   computed: {
+    settingsNavigation() {
+      const aiEnabled = this.$store.data.currentSelection.AIEnabled;
+
+      return [
+        { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'info-circle-fill', visible: true },
+        { key: 'smartfolders', label: 'Smart Folders', description: 'Organize articles with AI', icon: 'folder-fill', visible: aiEnabled },
+        { key: 'actions', label: 'Actions', description: 'Configure article actions', icon: 'lightning-charge-fill', visible: true },
+        { key: 'scores', label: 'Scores', description: 'Set AI score thresholds', icon: 'bar-chart-fill', visible: aiEnabled },
+        { key: 'topics', label: 'Topics', description: 'Manage events and topics', icon: 'diagram-3-fill', visible: aiEnabled },
+        { key: 'islands', label: 'Islands', description: 'Manage interest islands', icon: 'compass-fill', visible: aiEnabled },
+        { key: 'feeds', label: 'Feeds', description: 'Manage RSS subscriptions', icon: 'rss-fill', visible: true },
+        { key: 'users', label: 'Manage Users', description: 'Manage user access', icon: 'people-fill', visible: this.$store.auth.getRole === 'admin' }
+      ];
+    },
+    visibleSettingsNavigation() {
+      return this.settingsNavigation.filter((item) => item.visible);
+    },
+    activeNavigationItem() {
+      return this.settingsNavigation.find((item) => item.key === this.active);
+    },
+    activeSectionDescription() {
+      if (!this.activeNavigationItem) return 'Settings — Overview';
+
+      return `Settings — ${this.activeNavigationItem.label}: ${this.activeNavigationItem.description}`;
+    },
     activeComponent() {
       return {
         welcome: 'SettingsWelcome',
-        smartfolders: 'SmartFoldersSettings',
-        actions: 'ActionsSettings',
-        scores: 'ScoresSettings',
+        smartfolders: 'SettingsSmartFolders',
+        actions: 'SettingsActions',
+        scores: 'SettingsScores',
         topics: 'SettingsTopics',
         islands: 'SettingsIslands',
-        feeds: 'FeedsOverview',
-        users: 'ManageUsers'
-      }[this.active];
+        feeds: 'SettingsFeedsOverview',
+        users: 'SettingsManageUsers'
+      }[this.active] || 'SettingsWelcome';
     }
   },
   methods: {
