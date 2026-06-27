@@ -17,7 +17,7 @@ defineProps({
 p.sidebar-section-title {
   color: var(--text-primary);
   margin-left: 14px;
-  margin-top: 10px;
+  margin-top: 18px;
   margin-bottom: 5px;
 }
 

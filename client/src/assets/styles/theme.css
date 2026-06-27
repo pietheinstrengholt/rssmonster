@@ -377,7 +377,7 @@
   --chat-assistant-message-background-dark: #3A4A2A;
 
   /* Dark toolbar and sidebar colors */
-  --toolbar-search-background-dark: #1E1E1E;
+  --toolbar-search-background-dark: var(--bg-control);
   --toolbar-settings-hover-background-dark: #4A4A4A;
   --sidebar-action-refresh-background: #2563EB;
   --sidebar-action-refresh-hover-background: #1D4ED8;

@@ -332,22 +332,42 @@
 .options-action-button {
   background: var(--options-control-background, var(--bg-card));
   border: 1px solid;
-  border-radius: 10px;
-  font-weight: 700;
-  height: 48px;
+  border-radius: 8px;
+  box-sizing: border-box;
+  cursor: pointer;
+  font-weight: 500;
+  height: 36px;
+  overflow: hidden;
+  padding: 0 12px;
+  text-align: left;
+  text-indent: 4px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   width: 100%;
 }
 
 .options-action-button--refresh {
-  background: var(--options-refresh-background, var(--color-danger-soft));
-  border-color: var(--options-refresh-border, var(--color-danger-border-strong));
-  color: var(--options-refresh-text, var(--color-danger-action));
+  background: var(--options-refresh-background, var(--sidebar-action-refresh-background));
+  border-color: var(--options-refresh-border, var(--sidebar-action-refresh-border));
+  color: var(--options-refresh-text, var(--sidebar-action-refresh-text));
+}
+
+.options-action-button--refresh:hover,
+.options-action-button--refresh:focus-visible {
+  background: var(--options-refresh-hover-background, var(--sidebar-action-refresh-hover-background));
+  color: var(--options-refresh-text, var(--sidebar-action-refresh-text));
 }
 
 .options-action-button--add {
-  background: var(--options-add-background, var(--color-success-pale-strong));
-  border-color: var(--options-add-border, var(--color-success-border));
-  color: var(--options-add-text, var(--color-success-strong));
+  background: var(--options-add-background, var(--sidebar-action-mark-as-read-background));
+  border-color: var(--options-add-border, var(--sidebar-action-mark-as-read-border));
+  color: var(--options-add-text, var(--sidebar-action-mark-as-read-text));
+}
+
+.options-action-button--add:hover,
+.options-action-button--add:focus-visible {
+  background: var(--options-add-hover-background, var(--sidebar-action-mark-as-read-hover-background));
+  color: var(--options-add-hover-text, var(--sidebar-action-mark-as-read-hover-text));
 }
 
 .options-action-button--neutral {
@@ -356,7 +376,10 @@
 }
 
 .options-action-button:hover,
-.options-action-button:focus-visible,
+.options-action-button:focus-visible {
+  filter: none;
+}
+
 .options-view-card:hover,
 .options-view-card:focus-visible {
   filter: brightness(0.98);
@@ -388,12 +411,15 @@
     --options-selected-border: var(--color-primary-border-dark);
     --options-selected-text: var(--color-primary-soft);
     --options-selected-indicator: var(--color-primary-border-dark);
-    --options-refresh-background: var(--color-danger-surface-dark);
-    --options-refresh-border: var(--color-danger-border-dark);
-    --options-refresh-text: var(--color-danger-text-dark);
-    --options-add-background: var(--color-success-surface-dark);
-    --options-add-border: var(--color-success-border-dark);
-    --options-add-text: var(--color-success-text-dark);
+    --options-refresh-background: var(--sidebar-action-refresh-background);
+    --options-refresh-hover-background: var(--sidebar-action-refresh-hover-background);
+    --options-refresh-border: var(--sidebar-action-refresh-border);
+    --options-refresh-text: var(--sidebar-action-refresh-text);
+    --options-add-background: var(--sidebar-action-mark-as-read-background);
+    --options-add-hover-background: var(--sidebar-action-mark-as-read-hover-background);
+    --options-add-border: var(--sidebar-action-mark-as-read-border);
+    --options-add-text: var(--sidebar-action-mark-as-read-text);
+    --options-add-hover-text: var(--sidebar-action-mark-as-read-hover-text);
   }
 }
 
@@ -411,12 +437,15 @@
   --options-selected-border: var(--color-primary-border-dark);
   --options-selected-text: var(--color-primary-soft);
   --options-selected-indicator: var(--color-primary-border-dark);
-  --options-refresh-background: var(--color-danger-surface-dark);
-  --options-refresh-border: var(--color-danger-border-dark);
-  --options-refresh-text: var(--color-danger-text-dark);
-  --options-add-background: var(--color-success-surface-dark);
-  --options-add-border: var(--color-success-border-dark);
-  --options-add-text: var(--color-success-text-dark);
+  --options-refresh-background: var(--sidebar-action-refresh-background);
+  --options-refresh-hover-background: var(--sidebar-action-refresh-hover-background);
+  --options-refresh-border: var(--sidebar-action-refresh-border);
+  --options-refresh-text: var(--sidebar-action-refresh-text);
+  --options-add-background: var(--sidebar-action-mark-as-read-background);
+  --options-add-hover-background: var(--sidebar-action-mark-as-read-hover-background);
+  --options-add-border: var(--sidebar-action-mark-as-read-border);
+  --options-add-text: var(--sidebar-action-mark-as-read-text);
+  --options-add-hover-text: var(--sidebar-action-mark-as-read-hover-text);
 }
 
 :global(body.mobile-options-open) {

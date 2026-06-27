@@ -987,11 +987,13 @@ span.similar-badge {
     display: inline-flex;
     align-items: center;
     margin-left: 6px;
-    padding: 1px 6px;
-    border-radius: 3px;
+    padding: 3px 8px;
+    border-radius: 6px;
     font-size: 11px;
     font-weight: 600;
+    line-height: 1.4;
     white-space: nowrap;
+    vertical-align: middle;
     background-color: var(--article-rule-tag-background);
     color: var(--article-rule-tag-text);
   }
