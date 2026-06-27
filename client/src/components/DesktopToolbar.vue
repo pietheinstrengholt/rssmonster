@@ -644,7 +644,7 @@ export default {
         { value: 'reader', label: 'Reader' },
         { value: 'summarized', label: 'Summarized' },
         { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },
-        { value: 'minimal', label: 'Minimal' }
+        { value: 'minimal', label: 'List' }
       ],
       sortOptions: [
         { value: 'ASC', label: 'Oldest' },

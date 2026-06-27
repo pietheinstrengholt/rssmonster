@@ -5,8 +5,12 @@
         v-for="article in articles"
         v-bind="article"
         :key="article.id"
+        :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
         @update-star="$emit('update-star', $event)"
         @update-clicked="$emit('update-clicked', $event)"
+        @minimal-article-opened="$emit('minimal-article-opened', $event)"
+        @minimal-article-closed="$emit('minimal-article-closed', $event)"
+        @toggle-minimal-read-status="$emit('toggle-minimal-read-status', $event)"
         @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
         @cluster-articles-collapsed="$emit('cluster-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
@@ -36,6 +40,9 @@ export default {
   emits: [
     'update-star',
     'update-clicked',
+    'minimal-article-opened',
+    'minimal-article-closed',
+    'toggle-minimal-read-status',
     'cluster-articles-loaded',
     'cluster-articles-collapsed',
     'article-not-interested',
@@ -78,6 +85,10 @@ export default {
     distance: {
       type: Number,
       required: true
+    },
+    activeMinimalArticleId: {
+      type: [Number, String],
+      default: null
     }
   },
   computed: {

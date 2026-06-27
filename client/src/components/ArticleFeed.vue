@@ -1,7 +1,7 @@
 <template>
   <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -50,6 +50,7 @@ export default {
       hasLoadedContent: false,
       isFlushed: false,
       isLoading: false,
+      activeMinimalArticleId: null,
       activeRequestId: 0,
       pendingReadStatusArticleIds: new Set(),
 
@@ -402,6 +403,7 @@ export default {
       this.articles = [];
       this.container = [];
       this.pool = new Set();
+      this.activeMinimalArticleId = null;
       this.pendingReadStatusArticleIds.clear();
       this.distance = 0;
       this.isFlushed = false;
@@ -446,6 +448,93 @@ export default {
         for (const readArticle of readArticles) {
           this.$store.data.increaseReadCount(readArticle);
         }
+      }
+    },
+
+    // Opens a minimal article and marks the previously open unread article as read.
+    async handleMinimalArticleOpened({ id }) {
+      if (this.$store.data.currentSelection.viewMode !== 'minimal') return;
+
+      const previousArticleId = this.activeMinimalArticleId;
+      this.activeMinimalArticleId = id;
+
+      if (!previousArticleId || String(previousArticleId) === String(id)) return;
+
+      const previousArticle = this.articles.find(article => String(article.id) === String(previousArticleId));
+      if (!previousArticle || previousArticle.status === 'read') return;
+
+      await this.markMinimalArticleRead(previousArticleId);
+    },
+
+    // Closes the currently open minimal article content.
+    handleMinimalArticleClosed({ id }) {
+      if (String(this.activeMinimalArticleId) === String(id)) {
+        this.activeMinimalArticleId = null;
+      }
+    },
+
+    // Marks a minimal article as read and updates local read counts.
+    async markMinimalArticleRead(articleId) {
+      const pendingArticleId = Number(articleId);
+      const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : articleId;
+      if (this.pendingReadStatusArticleIds.has(normalizedArticleId)) return;
+
+      this.pendingReadStatusArticleIds.add(normalizedArticleId);
+
+      try {
+        const response = await markArticleSeen(articleId, {
+          clusterView: this.$store.data.currentSelection.clusterView,
+          visibleSeconds: 0,
+          selectedStatus: 'unread'
+        });
+
+        this.applyArticleSeenResponse(response.data, {
+          updateReadCounts: this.$store.data.currentSelection.status === 'unread'
+        });
+        this.pool.add(normalizedArticleId);
+      } catch (error) {
+        console.error('Error marking minimal article as read:', error);
+      } finally {
+        this.pendingReadStatusArticleIds.delete(normalizedArticleId);
+      }
+    },
+
+    // Toggles a minimal article between read and unread from the status icon.
+    async toggleMinimalArticleReadStatus({ id, status }) {
+      if (this.$store.data.currentSelection.viewMode !== 'minimal') return;
+
+      const pendingArticleId = Number(id);
+      const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : id;
+      if (this.pendingReadStatusArticleIds.has(normalizedArticleId)) return;
+
+      this.pendingReadStatusArticleIds.add(normalizedArticleId);
+      if (String(this.activeMinimalArticleId) === String(id)) {
+        this.activeMinimalArticleId = null;
+      }
+
+      try {
+        if (status === 'read') {
+          const response = await markArticleUnread(id);
+          this.updateArticleStatusLocal(response.data);
+          this.$store.data.decreaseReadCount(response.data);
+          this.pool.delete(normalizedArticleId);
+          return;
+        }
+
+        const response = await markArticleSeen(id, {
+          clusterView: this.$store.data.currentSelection.clusterView,
+          visibleSeconds: 0,
+          selectedStatus: 'unread'
+        });
+
+        this.applyArticleSeenResponse(response.data, {
+          updateReadCounts: this.$store.data.currentSelection.status === 'unread'
+        });
+        this.pool.add(normalizedArticleId);
+      } catch (error) {
+        console.error('Error toggling minimal article read status:', error);
+      } finally {
+        this.pendingReadStatusArticleIds.delete(normalizedArticleId);
       }
     },
 

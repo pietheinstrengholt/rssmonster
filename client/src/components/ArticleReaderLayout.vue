@@ -60,6 +60,7 @@
 
 <script>
 import Article from "./Article.vue";
+import { formatRelativeDate } from '../utils/date';
 
 const PREVIEW_LENGTH = 150;
 
@@ -225,7 +226,7 @@ export default {
     },
     // Returns the publication label for a row in the reader article list.
     publishedLabel(article) {
-      return article.firstSeen || article.publishedAt || article.published || '';
+      return formatRelativeDate(article.firstSeen || article.publishedAt || article.published);
     },
     // Returns a short plain-text preview for a row in the reader article list.
     articlePreview(article) {

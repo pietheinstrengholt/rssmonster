@@ -1,6 +1,34 @@
 <template>
-  <div class="article-card" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }" v-bind="filteredAttrs">
-    <div class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
+  <div class="article-card" :id="`article-${id}`" :class="[{ 'cluster-article': isClusterArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
+    <div v-if="isMinimalView" class="article-list-row" :class="{ 'is-read': status === 'read', starred: starInd === 1, hot: hotInd === 1 }" @click="articleTouched($event)">
+      <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
+        <i :class="['bi', status === 'read' ? 'bi-check-circle-fill' : 'bi-circle']" aria-hidden="true"></i>
+      </button>
+      <div class="article-list-source" aria-hidden="true">
+        <img v-if="feedFavicon" :src="feedFavicon" class="favicon" alt="" />
+        <BootstrapIcon v-else icon="rss-fill" />
+      </div>
+      <div class="article-list-main">
+        <h5 class="article-list-title">
+          <a class="article-link" target="_blank" :href="url" v-text="title" @click="articleClicked"></a>
+        </h5>
+        <div class="article-list-meta">
+          <span class="article-list-feed">{{ author || feed.feedName }}</span>
+          <span class="article-list-dot">·</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
+          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ tag.name.toLowerCase() }}</span>
+        </div>
+      </div>
+      <div class="article-list-actions">
+        <span class="article-list-time">{{ formatDate(published) }}</span>
+        <ArticleActionsMenu :starInd="starInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+        <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
+          <i :class="['bi', starInd === 1 ? 'bi-heart-fill' : 'bi-heart']" aria-hidden="true"></i>
+        </button>
+      </div>
+    </div>
+    <div v-else class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
       <div class="article-layout">
         <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <div class="meta-row">
@@ -10,6 +38,7 @@
       </div>
       <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
     </div>
+    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -28,31 +57,15 @@ import ArticleHeader from './articles/ArticleHeader.vue';
 import ArticleMeta from './articles/ArticleMeta.vue';
 import ArticleTagsScores from './articles/ArticleTagsScores.vue';
 import ArticleContent from './articles/ArticleContent.vue';
+import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
+import { formatRelativeDate } from '../utils/date';
 
 const NEUTRAL_SCORE = 70;
 
-// This function formats elapsed time for article publication dates.
-function timeDifference(current, previous) {
-  const msPerMinute = 60 * 1000;
-  const msPerHour = msPerMinute * 60;
-  const msPerDay = msPerHour * 24;
-  const msPerMonth = msPerDay * 30;
-  const msPerYear = msPerDay * 365;
-  const elapsed = Math.abs(current - previous);
-  const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
-
-  if (elapsed < msPerMinute) return plural(Math.round(elapsed / 1000), 'second');
-  if (elapsed < msPerHour) return plural(Math.round(elapsed / msPerMinute), 'minute');
-  if (elapsed < msPerDay) return plural(Math.round(elapsed / msPerHour), 'hour');
-  if (elapsed < msPerMonth) return plural(Math.round(elapsed / msPerDay), 'day');
-  if (elapsed < msPerYear) return plural(Math.round(elapsed / msPerMonth), 'month');
-  return plural(Math.round(elapsed / msPerYear), 'year');
-}
-
 export default {
   inheritAttrs: false,
-  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent },
-  emits: ['update-star', 'update-clicked', 'toggle-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
+  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleActionsMenu },
+  emits: ['update-star', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
   props: {
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
@@ -81,7 +94,8 @@ export default {
     cluster: { type: Object, default: null },
     contentSummaryBullets: { type: Array, default: () => [] },
     isClusterArticle: { type: Boolean, default: false },
-    presentation: { type: Object, default: null }
+    presentation: { type: Object, default: null },
+    isMinimalContentOpen: { type: Boolean, default: false }
   },
   data() {
     return {
@@ -131,13 +145,7 @@ export default {
     },
     // Formats publication dates as elapsed time.
     formatDate() {
-      return value => {
-        if (!value) return '';
-        const publishedAt = new Date(value).getTime();
-        if (Number.isNaN(publishedAt)) return '';
-        const result = timeDifference(Date.now(), publishedAt);
-        return result.charAt(0).toUpperCase() + result.slice(1);
-      };
+      return formatRelativeDate;
     },
     // Extracts the origin URL from a URL value.
     mainURL() {
@@ -191,6 +199,36 @@ export default {
     hasInterestScore() {
       const score = Number(this.interestScore);
       return Number.isFinite(score) && score !== 0;
+    },
+    // Returns whether the article should use the compact list row.
+    isMinimalView() {
+      return this.$store.data.currentSelection.viewMode === 'minimal';
+    },
+    // Returns the accessible label for the favorite toggle.
+    favoriteLabel() {
+      return this.starInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
+    },
+    // Returns the accessible label for the compact read status control.
+    statusToggleLabel() {
+      return this.status === 'read' ? 'Mark article as unread' : 'Mark article as read';
+    },
+    // Returns whether the minimal content panel should be visible.
+    shouldShowMinimalContent() {
+      return this.isMinimalView ? this.isMinimalContentOpen : this.showMinimalContent;
+    },
+    // Returns the article feed favicon from the payload or loaded sidebar feed data.
+    feedFavicon() {
+      if (this.feed?.favicon) return this.feed.favicon;
+
+      const targetFeedId = String(this.feed?.id ?? this.feedId ?? '');
+      if (!targetFeedId) return '';
+
+      for (const category of this.$store.data.categories) {
+        const matchedFeed = category.feeds?.find(feed => String(feed.id) === targetFeedId);
+        if (matchedFeed?.favicon) return matchedFeed.favicon;
+      }
+
+      return '';
     }
   },
   methods: {
@@ -253,9 +291,18 @@ export default {
     // Toggles minimal article content when the article is touched.
     articleTouched(event) {
       if (this.$store.data.currentSelection.viewMode === 'minimal') {
-        if (event.target?.nodeName === 'A') return;
-        this.showMinimalContent = !this.showMinimalContent;
+        if (event.target?.closest?.('a, button, .dropdown-menu')) return;
+        if (this.isMinimalContentOpen) {
+          this.$emit('minimal-article-closed', { id: this.id });
+          return;
+        }
+
+        this.$emit('minimal-article-opened', { id: this.id, status: this.status });
       }
+    },
+    // Requests a read/unread toggle from the compact list status control.
+    toggleMinimalReadStatus() {
+      this.$emit('toggle-minimal-read-status', { id: this.id, status: this.status });
     },
     // Selects a tag in the current view.
     selectTag(tag) {
@@ -1120,6 +1167,213 @@ span.similar-badge {
   margin-top: -1px;
 }
 
+.article-list-card {
+  padding-top: 0 !important;
+  margin-bottom: 0;
+}
+
+.article-list-row {
+  min-height: 68px;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 18px 24px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
+  background: var(--bg-page);
+  font-family: var(--font-family);
+}
+
+.article-list-row:hover {
+  background: var(--bg-sidebar, var(--bg-menu-item, var(--bg-subtle)));
+}
+
+.article-list-row.active,
+.article-list-row.selected,
+.article-card.active .article-list-row {
+  background: var(--bg-selected-soft, var(--article-active-background));
+}
+
+.article-list-row.hot {
+  background-color: var(--article-hot-background);
+  border-color: var(--article-highlight-border);
+}
+
+.article-list-row.starred {
+  background-color: var(--desktop-toolbar-background);
+}
+
+.article-list-card.cluster-article,
+.article-list-card.cluster-article .article-list-row {
+  background-color: var(--article-cluster-background);
+}
+
+.article-list-card .article-divider {
+  display: none;
+}
+
+.article-list-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.article-list-row.is-read .article-list-status {
+  color: var(--text-meta, var(--text-muted));
+}
+
+.article-list-source {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-meta, var(--text-muted));
+  font-size: 15px;
+}
+
+.article-list-source img,
+.article-list-source .favicon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.article-list-main {
+  min-width: 0;
+}
+
+.article-list-title {
+  margin: 0;
+  min-width: 0;
+}
+
+.article-list-title a {
+  color: var(--article-heading-text);
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+  text-decoration: none;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.article-list-title a:hover {
+  color: var(--article-heading-text);
+  text-decoration: none;
+}
+
+.article-list-meta {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-meta, var(--text-muted));
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.article-list-meta .article-list-feed {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.article-list-dot {
+  color: var(--text-meta, var(--text-muted));
+}
+
+.article-list-meta .mobile-rule-tag {
+  display: inline-flex;
+  margin-left: 0;
+}
+
+.article-list-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.article-list-time {
+  color: var(--text-meta, var(--text-muted));
+  font-size: 13px;
+  min-width: 72px;
+  text-align: right;
+}
+
+.article-list-action-button,
+.article-list-actions .dropdown .btn {
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  color: var(--text-meta, var(--text-muted)) !important;
+  cursor: pointer;
+  opacity: 1;
+  padding: 0 !important;
+}
+
+.article-list-action-button:hover,
+.article-list-actions .dropdown .btn:hover {
+  background: var(--bg-menu-item, var(--bg-subtle)) !important;
+  color: var(--article-heading-text) !important;
+}
+
+.article-list-favorite-button .bi {
+  color: var(--article-star-icon);
+}
+
+.article-list-card .article-content-wrapper {
+  margin: 0;
+  padding: 10px 16px 12px 70px;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
+}
+
+@media (max-width: 766px) and (orientation: portrait) {
+  .article-list-row {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    column-gap: 10px;
+    padding: 12px 10px;
+  }
+
+  .article-list-source {
+    display: none;
+  }
+
+  .article-list-time {
+    display: none;
+  }
+
+  .article-list-actions {
+    gap: 4px;
+  }
+
+  .article-list-card .article-content-wrapper {
+    padding-left: 40px;
+    padding-right: 10px;
+  }
+}
+
 .inline-mobile-tags {
   display: inline-flex;
   flex-wrap: wrap;
@@ -1391,6 +1645,58 @@ span.similar-badge {
   .article-card .article-full-content a:active,
   .article-card .article-content-wrapper a:active {
     color: var(--article-link-active-dark);
+  }
+
+  .article-list-card,
+  .article-list-row {
+    background: var(--dark-bg-page, var(--dark-page-surface));
+    border-bottom-color: var(--dark-border, var(--border-color));
+  }
+
+  .article-list-row:hover {
+    background: var(--dark-bg-hover, var(--bg-control));
+  }
+
+  .article-list-row.active,
+  .article-list-row.selected,
+  .article-card.active .article-list-row {
+    background: #1E3A8A;
+  }
+
+  .article-list-card.cluster-article,
+  .article-list-card.cluster-article .article-list-row {
+    background-color: var(--article-cluster-background-dark);
+  }
+
+  .article-list-row.hot,
+  .article-list-row.starred {
+    background-color: var(--dark-bg-page, var(--dark-page-surface));
+    border-color: var(--dark-border, var(--border-color));
+  }
+
+  .article-list-meta,
+  .article-list-dot,
+  .article-list-time,
+  .article-list-source,
+  .article-list-action-button,
+  .article-list-actions .dropdown .btn {
+    color: var(--dark-text-meta, var(--text-secondary)) !important;
+  }
+
+  .article-list-title a,
+  .article-list-title a:hover {
+    color: var(--article-heading-text);
+  }
+
+  .article-list-action-button:hover,
+  .article-list-actions .dropdown .btn:hover {
+    background: var(--dark-bg-hover, var(--bg-control)) !important;
+    color: var(--dark-text-primary, var(--text-primary)) !important;
+  }
+
+  .article-list-card .article-content-wrapper {
+    background: var(--dark-bg-page, var(--dark-page-surface));
+    border-bottom-color: var(--dark-border, var(--border-color));
   }
 }
 </style>

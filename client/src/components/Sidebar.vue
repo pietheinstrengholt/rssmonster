@@ -139,22 +139,6 @@
           @select="$store.data.setShowModal('NewCategory')"
         />
 
-        <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
-          <SidebarActionButton
-            icon="eraser-fill"
-            label="Cleanup"
-            variant="sidebar-management-button"
-            @select="$store.data.setShowModal('Cleanup')"
-          />
-
-          <SidebarActionButton
-            icon="box-arrow-right"
-            label="Logout"
-            variant="sidebar-management-button"
-            @select="logout"
-          />
-        </template>
-
         <SidebarActionButton
           v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
           icon="trash3-fill"
@@ -187,6 +171,30 @@
           @select="$store.data.setShowModal('UpdateFeed')"
         />
       </div>
+
+      <div class="sidebar-footer-actions">
+        <div class="sidebar-divider"></div>
+
+        <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
+          <SidebarActionButton
+            icon="trash"
+            label="Cleanup"
+            variant="sidebar-button sidebar-cleanup-button"
+            @select="$store.data.setShowModal('Cleanup')"
+          />
+
+          <SidebarActionButton
+            icon="box-arrow-right"
+            label="Logout"
+            variant="sidebar-button sidebar-logout-button"
+            @select="logout"
+          />
+        </template>
+
+        <div class="sidebar-divider sidebar-version-divider"></div>
+
+        <div class="sidebar-version">RSSMonster v1.0.0</div>
+      </div>
     </div>
   </div>
 </template>
@@ -218,6 +226,29 @@
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 4px;
+}
+
+.sidebar-footer-actions {
+  margin: 12px 0 20px;
+  width: 100%;
+}
+
+.sidebar-divider {
+  height: 1px;
+  margin: 0 12px 12px;
+  background-color: var(--border-subtle);
+}
+
+.sidebar-version-divider {
+  margin-top: 12px;
+}
+
+.sidebar-version {
+  margin: 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
 }
 
 .sidebar-refresh-progress-panel {

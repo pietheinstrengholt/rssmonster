@@ -59,6 +59,7 @@ const bootstrapIconNames = [
   'hand-thumbs-down-fill',
   'hand-thumbs-up-fill',
   'heart-fill',
+  'heart',
   'info-circle-fill',
   'info-circle',
   'cursor',
