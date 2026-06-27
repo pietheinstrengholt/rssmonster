@@ -345,6 +345,8 @@
   --settings-icon-purple-text-dark: var(--badge-tag-rule-text);
   --sidebar-danger-surface-dark: #2b1b1e;
   --sidebar-warning-surface-dark: #3a2328;
+  --sidebar-selected-background-dark: rgba(37, 99, 235, 0.22);
+  --sidebar-selected-text-dark: #8DBBFF;
 
   /* Dark article colors */
   --article-surface-dark: #1A202C;
@@ -377,8 +379,12 @@
   --chat-assistant-message-background-dark: #3A4A2A;
 
   /* Dark toolbar and sidebar colors */
-  --toolbar-search-background-dark: var(--bg-control);
-  --toolbar-settings-hover-background-dark: #4A4A4A;
+  --toolbar-search-background-dark: #2A3342;
+  --toolbar-search-hover-background-dark: #313B4D;
+  --toolbar-search-border-dark: #3A4557;
+  --toolbar-search-placeholder-dark: #9CA3AF;
+  --toolbar-search-text-dark: #E5E7EB;
+  --toolbar-settings-hover-background-dark: #2A3342;
   --sidebar-action-refresh-background: #2563EB;
   --sidebar-action-refresh-hover-background: #1D4ED8;
   --sidebar-action-refresh-border: var(--color-transparent);

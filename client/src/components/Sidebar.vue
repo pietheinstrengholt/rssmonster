@@ -279,7 +279,7 @@
   }
 
   div.sidebar-item.sidebar-status-item.selected span.sidebar-item-title, div.sidebar-item.sidebar-all-categories-item.selected span.sidebar-item-title, div.sidebar-item.sidebar-tag-item.selected span.sidebar-item-title, .sidebar-feed.selected span.sidebar-item-title {
-    color: var(--text-inverted) !important;
+    color: var(--sidebar-selected-text-dark) !important;
   }
 
 }

@@ -148,21 +148,21 @@ const formattedCount = computed(() => formatCount(props.count));
   .sidebar-feed.selected,
   .sidebar-feed.selected.error,
   .sidebar-feed.selected.disabled {
-    color: var(--text-inverted);
-    background-color: var(--bg-selected);
+    color: var(--sidebar-selected-text-dark);
+    background-color: var(--sidebar-selected-background-dark);
   }
 
   .sidebar-feed.selected .sidebar-count {
-    color: var(--text-inverted);
+    color: var(--sidebar-selected-text-dark);
   }
 }
 
 :global(:root[data-theme='dark'] .sidebar-feed.selected) {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-feed.selected .sidebar-count) {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 </style>

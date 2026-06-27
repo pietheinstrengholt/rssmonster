@@ -155,14 +155,14 @@ const formattedCount = computed(() => formatCount(props.count));
   }
 
   .sidebar-item.selected {
-    color: var(--text-inverted);
-    background-color: var(--bg-selected);
+    color: var(--sidebar-selected-text-dark);
+    background-color: var(--sidebar-selected-background-dark);
   }
 
   .sidebar-item.selected .sidebar-count,
   .selected .icon-star,
   .selected .icon-hot {
-    color: var(--text-inverted);
+    color: var(--sidebar-selected-text-dark);
   }
 
   .sidebar-item.sidebar-refresh-alert {
@@ -189,46 +189,46 @@ const formattedCount = computed(() => formatCount(props.count));
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected) {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-tag-item.selected .sidebar-count) {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected) {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-all-categories-item.selected .sidebar-count) {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected) {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-count) {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-item-title),
 :global(:root[data-theme='dark'] .sidebar-item.sidebar-status-item.selected .sidebar-icon) {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
   background-image: none !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
   background-image: none !important;
 }
 
@@ -244,7 +244,7 @@ const formattedCount = computed(() => formatCount(props.count));
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-tag-item.selected .sidebar-icon,
 :global(:root[data-theme='dark']) .selected .icon-star,
 :global(:root[data-theme='dark']) .selected .icon-hot {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 
 :global(:root[data-theme='dark']) .sidebar-scroll .sidebar-item.sidebar-status-item.selected .sidebar-count.sidebar-count-white {

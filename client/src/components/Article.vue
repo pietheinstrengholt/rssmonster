@@ -410,6 +410,24 @@ export default {
   width: 100% !important;
 }
 
+@media (min-width: 1200px) {
+  .article-card .article-content-wrapper img {
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 1500px) {
+  .article-card .article-content-wrapper img {
+    max-width: 90% !important;
+  }
+}
+
+@media (min-width: 2000px) {
+  .article-card .article-content-wrapper img {
+    max-width: 80% !important;
+  }
+}
+
 .article-card .article-content-wrapper p {
   display: inline !important;
 }
@@ -889,6 +907,26 @@ span.article-source {
 
 span.article-source a {
   text-decoration: none;
+}
+
+@media (min-width: 767px) {
+  .article-card .meta-row,
+  .article-card .article-meta {
+    gap: 14px;
+  }
+
+  .article-published {
+    margin-right: -1px;
+  }
+
+  .break {
+    margin-left: -1px;
+    margin-right: -1px;
+  }
+
+  span.article-source {
+    margin-left: -1px;
+  }
 }
 
 span.similar-badge {

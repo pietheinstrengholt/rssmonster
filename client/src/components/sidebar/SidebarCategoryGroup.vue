@@ -188,31 +188,31 @@ function getFeedCount(feed) {
   }
 
   .sidebar-category.selected {
-    color: var(--text-inverted);
-    background-color: var(--bg-selected);
+    color: var(--sidebar-selected-text-dark);
+    background-color: var(--sidebar-selected-background-dark);
   }
 
   .sidebar-category.selected .sidebar-count {
-    color: var(--text-inverted);
+    color: var(--sidebar-selected-text-dark);
   }
 
   .sidebar-category.selected .sidebar-feed-list,
   .sidebar-category.selected :deep(.sidebar-feed) {
-    background-color: var(--bg-selected);
+    background-color: var(--sidebar-selected-background-dark);
   }
 }
 
 :global(:root[data-theme='dark'] .sidebar-category.selected) {
-  color: var(--text-inverted) !important;
-  background-color: var(--bg-selected) !important;
+  color: var(--sidebar-selected-text-dark) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-count) {
-  color: var(--text-inverted) !important;
+  color: var(--sidebar-selected-text-dark) !important;
 }
 
 :global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed-list),
 :global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-feed) {
-  background-color: var(--bg-selected) !important;
+  background-color: var(--sidebar-selected-background-dark) !important;
 }
 </style>
