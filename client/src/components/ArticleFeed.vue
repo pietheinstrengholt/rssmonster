@@ -1,10 +1,13 @@
 <template>
-  <ArticleListView :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  </ArticleReaderLayout>
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
 <script>
 import ArticleListView from "./ArticleListView.vue";
+import ArticleReaderLayout from "./ArticleReaderLayout.vue";
 import {
   fetchArticleIds,
   fetchArticleDetails,
@@ -14,7 +17,8 @@ import {
 
 export default {
   components: {
-    ArticleListView
+    ArticleListView,
+    ArticleReaderLayout
   },
 
   // Initializes article feed state and observer bookkeeping.
@@ -38,6 +42,8 @@ export default {
       scrollContainer: null,
       visibilityObserver: null,
       loadMoreObserver: null,
+      desktopReaderQuery: null,
+      isDesktopReaderWidth: false,
       observedArticleElements: new Map(),
 
       hasLoadedContent: false,
@@ -67,6 +73,11 @@ export default {
       return this.$store.data.currentSelection.viewMode === "minimal"
         ? 50
         : 20;
+    },
+
+    // Returns whether the reader layout should replace the normal stream.
+    isReaderLayoutActive() {
+      return this.$store.data.currentSelection.viewMode === 'reader' && this.isDesktopReaderWidth;
     }
   },
 
@@ -78,12 +89,21 @@ export default {
       },
       deep: true,
       immediate: true
+    },
+    isReaderLayoutActive() {
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
     }
   },
 
   // Starts scroll handling and article observers after mounting.
   mounted() {
     this.scrollContainer = document.getElementById("home");
+    this.desktopReaderQuery = window.matchMedia('(min-width: 1024px)');
+    this.isDesktopReaderWidth = this.desktopReaderQuery.matches;
+    this.desktopReaderQuery.addEventListener('change', this.handleReaderWidthChange);
     window.addEventListener("scroll", this.handleScroll, { passive: true });
     this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
     this.setupObservers();
@@ -93,6 +113,7 @@ export default {
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
     this.scrollContainer?.removeEventListener("scroll", this.handleScroll);
+    this.desktopReaderQuery?.removeEventListener('change', this.handleReaderWidthChange);
     this.teardownObservers();
   },
 
@@ -135,6 +156,15 @@ export default {
           this.isLoading = false;
         }
       }
+    },
+
+    // Updates reader layout activation when the desktop breakpoint changes.
+    handleReaderWidthChange(event) {
+      this.isDesktopReaderWidth = event.matches;
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
     },
 
     // Shows or hides the mobile toolbar based on scroll direction.

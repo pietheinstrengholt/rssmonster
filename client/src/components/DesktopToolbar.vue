@@ -641,6 +641,7 @@ export default {
       ],
       viewModeOptions: [
         { value: 'full', label: 'Full' },
+        { value: 'reader', label: 'Reader' },
         { value: 'summarized', label: 'Summarized' },
         { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },
         { value: 'minimal', label: 'Minimal' }
