@@ -1,5 +1,5 @@
 <template>
-  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
   <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
@@ -12,6 +12,7 @@ import {
   fetchArticleIds,
   fetchArticleDetails,
   markAllAsRead,
+  markArticleUnread,
   markArticleSeen
 } from '../api/articles';
 
@@ -50,6 +51,7 @@ export default {
       isFlushed: false,
       isLoading: false,
       activeRequestId: 0,
+      pendingReadStatusArticleIds: new Set(),
 
       // tracks previous visibility state per article
       visibleMap: new Map(),
@@ -400,6 +402,7 @@ export default {
       this.articles = [];
       this.container = [];
       this.pool = new Set();
+      this.pendingReadStatusArticleIds.clear();
       this.distance = 0;
       this.isFlushed = false;
 
@@ -417,26 +420,65 @@ export default {
           visibleSeconds,
           selectedStatus: this.$store.data.currentSelection.status
         });
-        
-        // Always reflect latest status (and related fields) in local articles array.
-        this.updateArticleStatusLocal(response.data);
 
-        const readArticles = response.data.readArticles?.length
-          ? response.data.readArticles
-          : (response.data.status === "read" ? [response.data] : []);
-
-        for (const readArticle of readArticles) {
-          this.updateArticleStatusLocal({ id: readArticle.id, status: 'read' });
-        }
-
-        // Update counters when transitioning from unread view to read.
-        if (this.$store.data.currentSelection.status === 'unread') {
-          for (const readArticle of readArticles) {
-            this.$store.data.increaseReadCount(readArticle);
-          }
-        }
+        this.applyArticleSeenResponse(response.data, {
+          updateReadCounts: this.$store.data.currentSelection.status === 'unread'
+        });
       } catch (error) {
         console.log("oops something went wrong", error);
+      }
+    },
+
+    // Applies the server response from marking articles as seen/read.
+    applyArticleSeenResponse(updatedArticle, { updateReadCounts = false } = {}) {
+      // Always reflect latest status (and related fields) in local articles array.
+      this.updateArticleStatusLocal(updatedArticle);
+
+      const readArticles = updatedArticle.readArticles?.length
+        ? updatedArticle.readArticles
+        : (updatedArticle.status === "read" ? [updatedArticle] : []);
+
+      for (const readArticle of readArticles) {
+        this.updateArticleStatusLocal({ id: readArticle.id, status: 'read' });
+      }
+
+      if (updateReadCounts) {
+        for (const readArticle of readArticles) {
+          this.$store.data.increaseReadCount(readArticle);
+        }
+      }
+    },
+
+    // Toggles the selected reader article between read and unread.
+    async toggleReaderArticleReadStatus({ id, status }) {
+      if (this.$store.data.currentSelection.viewMode !== 'reader') return;
+
+      const articleId = Number(id);
+      const pendingArticleId = Number.isFinite(articleId) ? articleId : id;
+      if (this.pendingReadStatusArticleIds.has(pendingArticleId)) return;
+
+      this.pendingReadStatusArticleIds.add(pendingArticleId);
+
+      try {
+        if (status === 'read') {
+          const response = await markArticleUnread(id);
+          this.updateArticleStatusLocal(response.data);
+          this.$store.data.decreaseReadCount(response.data);
+          this.pool.delete(pendingArticleId);
+          return;
+        }
+
+        const response = await markArticleSeen(id, {
+          clusterView: this.$store.data.currentSelection.clusterView,
+          visibleSeconds: 0,
+          selectedStatus: 'unread'
+        });
+
+        this.applyArticleSeenResponse(response.data, { updateReadCounts: true });
+      } catch (error) {
+        console.error('Error toggling reader article read status:', error);
+      } finally {
+        this.pendingReadStatusArticleIds.delete(pendingArticleId);
       }
     },
 

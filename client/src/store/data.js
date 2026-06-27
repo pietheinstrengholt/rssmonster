@@ -396,6 +396,38 @@ export const useStore = defineStore('data', {
       }
     },
 
+    decreaseReadCount(article) {
+      // Find category and feed to update their counts
+      const category = this.categories.find(
+        c => c.id === article.feed.categoryId
+      );
+      if (!category) {
+        console.warn('[decreaseReadCount] Category not found for categoryId:', article.feed.categoryId);
+        return;
+      }
+
+      const feed = category.feeds?.find(f => f.id === article.feedId);
+      if (!feed) {
+        console.warn('[decreaseReadCount] Feed not found for feedId:', article.feedId);
+        return;
+      }
+
+      if (category.readCount > 0) {
+        category.readCount--;
+        category.unreadCount++;
+      }
+
+      if (feed.readCount > 0) {
+        feed.readCount--;
+        feed.unreadCount++;
+      }
+
+      if (this.readCount > 0) {
+        this.readCount--;
+        this.unreadCount++;
+      }
+    },
+
     /* --------------------------------------------------
      * Error handling
      * -------------------------------------------------- */

@@ -25,6 +25,12 @@ export const markArticleSeen = (id, payload) =>
   });
 
 /**
+ * Mark article as unread
+ */
+export const markArticleUnread = (id) =>
+  api.post(`/articles/marktounread/${id}`);
+
+/**
  * Star / unstar article
  */
 export const markWithStar = (articleId, update) =>

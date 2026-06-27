@@ -19,7 +19,6 @@
           <span class="readerArticleListItemTitle">{{ article.title }}</span>
           <span v-if="articlePreview(article)" class="readerArticleListItemPreview">{{ articlePreview(article) }}</span>
           <span class="readerArticleListItemBadges">
-            <span class="readerArticleListBadge">{{ article.status === 'read' ? 'Read' : 'Unread' }}</span>
             <span v-if="article.starInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
@@ -50,6 +49,7 @@
         :key="selectedArticle.id"
         @update-star="$emit('update-star', $event)"
         @update-clicked="$emit('update-clicked', $event)"
+        @toggle-read-status="$emit('toggle-read-status', $event)"
         @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
         @cluster-articles-collapsed="$emit('cluster-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
@@ -70,6 +70,7 @@ export default {
   emits: [
     'update-star',
     'update-clicked',
+    'toggle-read-status',
     'cluster-articles-loaded',
     'cluster-articles-collapsed',
     'article-not-interested',

@@ -99,7 +99,8 @@ const bootstrapIconNames = [
   'x-lg',
   'brightness-high',
   'chat-dots',
-  'chat-square-text-fill'
+  'chat-square-text-fill',
+  'circle'
 ]
 
 const bootstrapIconsSprite = () => {
