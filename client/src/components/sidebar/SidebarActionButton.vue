@@ -118,26 +118,15 @@ const buttonClasses = computed(() => [props.variant]);
   background-color: var(--sidebar-action-mark-as-read-hover-background);
 }
 
-.sidebar-cleanup-button {
-  color: var(--sidebar-action-add-text);
-  background-color: var(--sidebar-action-add-background);
-  border-color: var(--sidebar-action-add-border);
+.sidebar-bottom-action-button {
+  color: var(--text-primary);
+  background-color: var(--bg-muted);
+  border-color: var(--border-subtle);
 }
 
-.sidebar-cleanup-button:hover {
-  color: var(--sidebar-action-add-hover-text);
-  background-color: var(--sidebar-action-add-hover-background);
-}
-
-.sidebar-logout-button {
-  color: var(--sidebar-action-mark-as-read-text);
-  background-color: var(--sidebar-action-mark-as-read-background);
-  border-color: var(--sidebar-action-mark-as-read-border);
-}
-
-.sidebar-logout-button:hover {
-  color: var(--sidebar-action-mark-as-read-hover-text);
-  background-color: var(--sidebar-action-mark-as-read-hover-background);
+.sidebar-bottom-action-button:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
 }
 
 .sidebar-management-button {
@@ -224,25 +213,14 @@ const buttonClasses = computed(() => [props.variant]);
   background-color: var(--sidebar-action-mark-as-read-hover-background) !important;
 }
 
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-cleanup-button) {
-  color: var(--sidebar-action-add-text) !important;
-  background-color: var(--sidebar-action-add-background) !important;
-  border-color: var(--sidebar-action-add-border) !important;
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button) {
+  color: var(--toolbar-search-text-dark) !important;
+  background-color: var(--toolbar-search-background-dark) !important;
+  border-color: var(--toolbar-search-border-dark) !important;
 }
 
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-cleanup-button:hover) {
-  color: var(--sidebar-action-add-hover-text) !important;
-  background-color: var(--sidebar-action-add-hover-background) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-logout-button) {
-  color: var(--sidebar-action-mark-as-read-text) !important;
-  background-color: var(--sidebar-action-mark-as-read-background) !important;
-  border-color: var(--sidebar-action-mark-as-read-border) !important;
-}
-
-:global(:root[data-theme='dark'] .sidebar-button.sidebar-logout-button:hover) {
-  color: var(--sidebar-action-mark-as-read-hover-text) !important;
-  background-color: var(--sidebar-action-mark-as-read-hover-background) !important;
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button:hover) {
+  color: var(--toolbar-search-text-dark) !important;
+  background-color: var(--toolbar-search-hover-background-dark) !important;
 }
 </style>

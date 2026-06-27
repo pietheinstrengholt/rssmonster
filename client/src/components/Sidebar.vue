@@ -131,69 +131,74 @@
         </template>
       </draggable>
 
-      <div class="sidebar-management-actions">
-        <SidebarActionButton
-          icon="plus-circle-fill"
-          label="Add"
-          variant="sidebar-management-button"
-          @select="$store.data.setShowModal('NewCategory')"
-        />
-
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
-          icon="trash3-fill"
-          label="Delete"
-          variant="sidebar-management-button delete"
-          @select="$store.data.setShowModal('DeleteCategory')"
-        />
-
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId === '%'"
-          icon="pencil-fill"
-          label="Edit"
-          variant="sidebar-management-button rename"
-          @select="$store.data.setShowModal('RenameCategory')"
-        />
-
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId !== '%'"
-          icon="trash3-fill"
-          label="Delete"
-          variant="sidebar-management-button delete"
-          @select="$store.data.setShowModal('DeleteFeed')"
-        />
-
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId != '%' && $store.data.currentSelection.feedId != '%'"
-          icon="pencil-fill"
-          label="Edit"
-          variant="sidebar-management-button rename"
-          @select="$store.data.setShowModal('UpdateFeed')"
-        />
-      </div>
-
       <div class="sidebar-footer-actions">
         <div class="sidebar-divider"></div>
 
-        <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
+        <div class="sidebar-management-actions">
           <SidebarActionButton
-            icon="trash"
-            label="Cleanup"
-            variant="sidebar-button sidebar-cleanup-button"
-            @select="$store.data.setShowModal('Cleanup')"
+            icon="plus-circle-fill"
+            label="Add"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-add-button"
+            @select="$store.data.setShowModal('NewCategory')"
           />
 
           <SidebarActionButton
-            icon="box-arrow-right"
-            label="Logout"
-            variant="sidebar-button sidebar-logout-button"
-            @select="logout"
+            v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
+            icon="trash3-fill"
+            label="Delete"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-delete-button"
+            @select="$store.data.setShowModal('DeleteCategory')"
           />
-        </template>
+
+          <SidebarActionButton
+            v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId === '%'"
+            icon="pencil-fill"
+            label="Edit"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
+            @select="$store.data.setShowModal('RenameCategory')"
+          />
+
+          <SidebarActionButton
+            v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId !== '%'"
+            icon="trash3-fill"
+            label="Delete"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-delete-button"
+            @select="$store.data.setShowModal('DeleteFeed')"
+          />
+
+          <SidebarActionButton
+            v-if="$store.data.currentSelection.categoryId != '%' && $store.data.currentSelection.feedId != '%'"
+            icon="pencil-fill"
+            label="Edit"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
+            @select="$store.data.setShowModal('UpdateFeed')"
+          />
+
+          <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
+            <SidebarActionButton
+              icon="trash"
+              label="Cleanup"
+              variant="sidebar-button sidebar-bottom-action-button sidebar-cleanup-button"
+              @select="$store.data.setShowModal('Cleanup')"
+            />
+
+            <SidebarActionButton
+              icon="box-arrow-right"
+              label="Logout"
+              variant="sidebar-button sidebar-bottom-action-button sidebar-logout-button"
+              @select="logout"
+            />
+          </template>
+        </div>
 
         <div class="sidebar-divider sidebar-version-divider"></div>
 
-        <div class="sidebar-version">RSSMonster v1.0.0</div>
+        <a
+          class="sidebar-version"
+          href="https://github.com/pietheinstrengholt/rssmonster/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >RSSMonster v1.0.0</a>
       </div>
     </div>
   </div>
@@ -221,11 +226,8 @@
 }
 
 .sidebar-management-actions {
-  margin: 10px 12px 20px;
-  width: calc(100% - 24px);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  margin: 0;
+  width: 100%;
 }
 
 .sidebar-footer-actions {
@@ -240,15 +242,21 @@
 }
 
 .sidebar-version-divider {
-  margin-top: 12px;
+  margin-top: 4px;
 }
 
 .sidebar-version {
+  display: block;
   margin: 0 12px;
   color: var(--text-muted);
   font-size: 12px;
   line-height: 1.4;
   text-align: center;
+  text-decoration: none;
+}
+
+.sidebar-version:hover {
+  text-decoration: underline;
 }
 
 .sidebar-refresh-progress-panel {

@@ -640,11 +640,11 @@ export default {
         { value: 'read', label: 'Read' }
       ],
       viewModeOptions: [
-        { value: 'full', label: 'Expanded' },
         { value: 'reader', label: 'Reader' },
+        { value: 'full', label: 'Expanded' },
         { value: 'summarized', label: 'Summarized' },
         { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },
-        { value: 'minimal', label: 'List' }
+        { value: 'minimal', label: 'Headlines' }
       ],
       sortOptions: [
         { value: 'ASC', label: 'Oldest' },
