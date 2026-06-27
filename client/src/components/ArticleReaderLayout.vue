@@ -73,6 +73,7 @@ export default {
     'cluster-articles-loaded',
     'cluster-articles-collapsed',
     'article-not-interested',
+    'mark-previous-article-read',
     'flush-pool',
     'forceReload'
   ],
@@ -158,13 +159,17 @@ export default {
     },
     // Selects the article displayed in the reader panel.
     selectArticle(articleId) {
+      if (articleId === this.selectedArticleId) return;
+      if (this.selectedArticleId !== null) {
+        this.$emit('mark-previous-article-read', this.selectedArticleId);
+      }
       this.selectedArticleId = articleId;
     },
     // Selects an article by index when keyboard navigation moves through the list.
     selectArticleByIndex(index) {
       if (index < 0 || index >= this.articles.length) return;
       const article = this.articles[index];
-      this.selectedArticleId = article.id;
+      this.selectArticle(article.id);
       this.$nextTick(() => this.focusSelectedListItem());
     },
     // Focuses and scrolls the selected article list item into view.

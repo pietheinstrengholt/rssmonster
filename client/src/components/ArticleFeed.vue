@@ -1,5 +1,5 @@
 <template>
-  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
   <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
@@ -363,6 +363,18 @@ export default {
       if (this.$store.data.currentSelection.viewMode !== "minimal") {
         this.markArticleSeen(articleId, visibleSeconds);
       }
+    },
+
+    // Marks the previously selected reader article as read before navigating away.
+    markReaderPreviousArticleRead(articleId) {
+      if (this.$store.data.currentSelection.viewMode !== 'reader') return;
+
+      const normalizedArticleId = Number(articleId);
+      const poolArticleId = Number.isFinite(normalizedArticleId) ? normalizedArticleId : articleId;
+      const article = this.articles.find(item => item.id === articleId || item.id === poolArticleId);
+      if (!article || article.status === 'read' || this.pool.has(poolArticleId)) return;
+
+      this.addToPool(poolArticleId);
     },
 
     // Marks all unread articles in the current selection as read.

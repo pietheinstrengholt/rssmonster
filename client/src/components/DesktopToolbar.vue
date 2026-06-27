@@ -640,7 +640,7 @@ export default {
         { value: 'read', label: 'Read' }
       ],
       viewModeOptions: [
-        { value: 'full', label: 'Full' },
+        { value: 'full', label: 'Expanded' },
         { value: 'reader', label: 'Reader' },
         { value: 'summarized', label: 'Summarized' },
         { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },

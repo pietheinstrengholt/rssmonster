@@ -53,7 +53,7 @@
           </div>
           <div class="options-view-grid">
             <button @click="selectViewMode('full')" type="button" class="options-view-card" :class="{ selected: $store.data.currentSelection.viewMode === 'full' }">
-              <span class="options-view-title">Full content</span>
+              <span class="options-view-title">Expanded</span>
               <span class="options-view-description">Show the full article content</span>
             </button>
             <button @click="selectViewMode('summarized')" type="button" class="options-view-card" :class="{ selected: $store.data.currentSelection.viewMode === 'summarized' }">
