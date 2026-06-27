@@ -214,6 +214,23 @@
   --sidebar-action-mark-as-read-border: #B9DFC6;
   --sidebar-action-mark-as-read-text: #166534;
 
+  /* Reader layout */
+  --reader-list-item-background: #FFFFFF;
+  --reader-list-item-hover-background: #F8FAFC;
+  --reader-list-item-border: #E5E7EB;
+  --reader-list-item-hover-border: #D1D5DB;
+  --reader-list-item-title: #111827;
+  --reader-list-item-meta: #6B7280;
+  --reader-list-item-preview: #6B7280;
+  --reader-list-item-selected-background: #E8F2FE;
+  --reader-list-selected-hover-background: #DBEAFE;
+  --reader-list-item-selected-border: #BFDBFE;
+  --reader-list-item-selected-hover-border: #93C5FD;
+  --reader-list-item-selected-accent: #2563EB;
+  --reader-list-item-selected-title: #1D4ED8;
+  --reader-list-item-selected-meta: #6B7280;
+  --reader-list-item-selected-preview: #6B7280;
+
   /* Mobile menu */
   --mobile-menu-category-background: #7F8798;
   --mobile-menu-selected-background: #3B4651;
@@ -347,6 +364,23 @@
   --sidebar-warning-surface-dark: #3a2328;
   --sidebar-selected-background-dark: rgba(37, 99, 235, 0.22);
   --sidebar-selected-text-dark: #8DBBFF;
+  --reader-list-item-background: var(--color-transparent);
+  --reader-list-item-hover-background: #222836;
+  --reader-list-item-border: #2A3342;
+  --reader-list-item-hover-border: #3A4557;
+  --reader-list-item-title: #E5E7EB;
+  --reader-list-item-meta: #9CA3AF;
+  --reader-list-item-preview: #D1D5DB;
+  --reader-list-item-selected-background: #142544;
+  --reader-list-selected-hover-background: #162B4D;
+  --reader-list-item-selected-border: #1E3A8A;
+  --reader-list-item-selected-hover-border: #2563EB;
+  --reader-list-item-selected-accent: #3B82F6;
+  --reader-list-item-selected-title: #FFFFFF;
+  --reader-list-item-selected-meta: #BFDBFE;
+  --reader-list-item-selected-preview: #E5E7EB;
+  --reader-list-item-selected-hover-meta: #DBEAFE;
+  --reader-list-item-selected-hover-preview: #F3F4F6;
 
   /* Dark article colors */
   --article-surface-dark: #1A202C;

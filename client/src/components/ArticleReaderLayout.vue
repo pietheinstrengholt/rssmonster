@@ -7,10 +7,25 @@
         type="button"
         class="readerArticleListItem"
         :class="{ readerArticleListItemSelected: article.id === selectedArticleId }"
+        :aria-current="article.id === selectedArticleId ? 'true' : null"
+        :ref="element => setArticleItemRef(element, article.id)"
         @click="selectArticle(article.id)"
       >
-        <span class="readerArticleListItemTitle">{{ article.title }}</span>
-        <span class="readerArticleListItemMeta">{{ articleMeta(article) }}</span>
+        <span class="readerArticleListItemContent">
+          <span class="readerArticleListItemKicker">
+            <span>{{ feedName(article) }}</span>
+            <span v-if="publishedLabel(article)">{{ publishedLabel(article) }}</span>
+          </span>
+          <span class="readerArticleListItemTitle">{{ article.title }}</span>
+          <span v-if="articlePreview(article)" class="readerArticleListItemPreview">{{ articlePreview(article) }}</span>
+          <span class="readerArticleListItemBadges">
+            <span class="readerArticleListBadge">{{ article.status === 'read' ? 'Read' : 'Unread' }}</span>
+            <span v-if="article.starInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
+            <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
+            <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
+          </span>
+        </span>
+        <img v-if="thumbnailUrl(article)" class="readerArticleListThumbnail" :src="thumbnailUrl(article)" alt="" loading="lazy" />
       </button>
 
       <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
@@ -30,6 +45,7 @@
     <section class="readerArticlePanel" aria-label="Reader">
       <Article
         v-if="selectedArticle"
+        ref="selectedArticleComponent"
         v-bind="selectedArticle"
         :key="selectedArticle.id"
         @update-star="$emit('update-star', $event)"
@@ -44,6 +60,8 @@
 
 <script>
 import Article from "./Article.vue";
+
+const PREVIEW_LENGTH = 150;
 
 export default {
   components: {
@@ -94,8 +112,15 @@ export default {
   },
   data() {
     return {
+      articleItemRefs: {},
       selectedArticleId: null
     };
+  },
+  mounted() {
+    window.addEventListener('keydown', this.handleReaderKeydown);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleReaderKeydown);
   },
   computed: {
     // Returns the article currently shown in the reader panel.
@@ -123,13 +148,92 @@ export default {
     }
   },
   methods: {
+    // Stores article list item element refs by article id.
+    setArticleItemRef(element, articleId) {
+      if (element) {
+        this.articleItemRefs[articleId] = element;
+      } else {
+        delete this.articleItemRefs[articleId];
+      }
+    },
     // Selects the article displayed in the reader panel.
     selectArticle(articleId) {
       this.selectedArticleId = articleId;
     },
-    // Returns compact metadata for a row in the reader article list.
-    articleMeta(article) {
-      return [article.author || article.feed?.feedName, article.feed?.category?.name].filter(Boolean).join(' · ');
+    // Selects an article by index when keyboard navigation moves through the list.
+    selectArticleByIndex(index) {
+      if (index < 0 || index >= this.articles.length) return;
+      const article = this.articles[index];
+      this.selectedArticleId = article.id;
+      this.$nextTick(() => this.focusSelectedListItem());
+    },
+    // Focuses and scrolls the selected article list item into view.
+    focusSelectedListItem() {
+      const selectedItem = this.articleItemRefs[this.selectedArticleId];
+      if (!selectedItem) return;
+      selectedItem.focus({ preventScroll: true });
+      selectedItem.scrollIntoView({ block: 'nearest' });
+    },
+    // Returns whether keyboard navigation should ignore the current event target.
+    shouldIgnoreKeyboardEvent(event) {
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      const isReaderListItem = target?.classList?.contains('readerArticleListItem');
+      const isInteractiveElement = ['a', 'button', 'input', 'textarea', 'select'].includes(tagName);
+      return Boolean(
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        target?.isContentEditable ||
+        (isInteractiveElement && !isReaderListItem)
+      );
+    },
+    // Handles reader-mode keyboard navigation.
+    handleReaderKeydown(event) {
+      if (this.shouldIgnoreKeyboardEvent(event)) return;
+      if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+
+      const currentIndex = this.articles.findIndex(article => article.id === this.selectedArticleId);
+      if (currentIndex === -1) return;
+
+      if (event.key === 'ArrowDown') {
+        event.preventDefault();
+        this.selectArticleByIndex(Math.min(currentIndex + 1, this.articles.length - 1));
+      } else if (event.key === 'ArrowUp') {
+        event.preventDefault();
+        this.selectArticleByIndex(Math.max(currentIndex - 1, 0));
+      } else {
+        event.preventDefault();
+        this.openSelectedArticle();
+      }
+    },
+    // Opens the selected article through the existing article link behavior.
+    openSelectedArticle() {
+      const articleLink = this.$refs.selectedArticleComponent?.$el?.querySelector('.article-link');
+      articleLink?.click();
+    },
+    // Returns the feed label for a row in the reader article list.
+    feedName(article) {
+      return article.author || article.feed?.feedName || 'Unknown feed';
+    },
+    // Returns the publication label for a row in the reader article list.
+    publishedLabel(article) {
+      return article.firstSeen || article.publishedAt || article.published || '';
+    },
+    // Returns a short plain-text preview for a row in the reader article list.
+    articlePreview(article) {
+      const source = article.contentSummary || article.summary || article.contentSummaryBullets?.join(' ') || article.contentOriginal || '';
+      const text = String(source).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
+      return text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH).trim()}...` : text;
+    },
+    // Returns an image thumbnail URL for a row in the reader article list.
+    thumbnailUrl(article) {
+      return article.imageUrl || article.image || article.enclosureUrl || '';
+    },
+    // Returns the related article count when available.
+    similarCount(article) {
+      return article.clusterCountTotal > 1 ? article.clusterCountTotal - 1 : 0;
     }
   }
 }
@@ -151,29 +255,121 @@ export default {
 }
 
 .readerArticleListItem {
-  background: var(--bg-secondary);
-  border: 1px solid var(--color-transparent);
+  background: var(--reader-list-item-background);
+  border: 1px solid var(--reader-list-item-border);
   border-radius: 8px;
-  color: var(--text-primary);
+  box-sizing: border-box;
+  color: var(--reader-list-item-title);
   cursor: pointer;
-  display: block;
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
   margin-bottom: 8px;
   padding: 10px 12px;
   text-align: left;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
   width: 100%;
 }
 
+.readerArticleListItem:hover {
+  background: var(--reader-list-item-hover-background);
+  border-color: var(--reader-list-item-hover-border);
+}
+
+.readerArticleListItem:focus,
+.readerArticleListItem:focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+
 .readerArticleListItemSelected {
-  background: var(--color-primary-soft);
-  border-color: var(--color-primary);
-  color: var(--color-primary-strong);
+  background: var(--reader-list-item-selected-background);
+  border-color: var(--reader-list-item-selected-border);
+  border-left: 3px solid var(--reader-list-item-selected-accent);
+  color: var(--reader-list-item-selected-title);
+}
+
+.readerArticleListItemSelected:hover {
+  background: var(--reader-list-selected-hover-background);
+  border-color: var(--reader-list-item-selected-hover-border);
+  border-left: 3px solid var(--reader-list-item-selected-accent);
+  color: var(--reader-list-item-selected-title);
+}
+
+.readerArticleListItemContent {
+  min-width: 0;
+}
+
+.readerArticleListItemKicker {
+  color: var(--reader-list-item-meta);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  font-weight: 600;
+  gap: 8px;
+  line-height: 1.3;
+  margin-bottom: 5px;
 }
 
 .readerArticleListItemTitle {
+  color: var(--reader-list-item-title);
   display: block;
   font-size: 14px;
   font-weight: 700;
   line-height: 1.35;
+}
+
+.readerArticleListItemSelected .readerArticleListItemTitle {
+  color: var(--reader-list-item-selected-title);
+}
+
+.readerArticleListItemPreview {
+  color: var(--reader-list-item-preview);
+  display: -webkit-box;
+  font-size: 12px;
+  line-height: 1.45;
+  margin-top: 6px;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.readerArticleListItemBadges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+  margin-top: 8px;
+}
+
+.readerArticleListBadge {
+  background: var(--badge-tag-bg);
+  border-radius: 999px;
+  color: var(--badge-tag-text);
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1;
+  padding: 4px 7px;
+}
+
+.readerArticleListBadgeFavorite {
+  background: var(--badge-quality-bg);
+  color: var(--badge-quality-text);
+}
+
+.readerArticleListBadgeHot {
+  background: var(--badge-ad-bg);
+  color: var(--badge-ad-text);
+}
+
+.readerArticleListThumbnail {
+  align-self: start;
+  background: var(--bg-muted);
+  border-radius: 6px;
+  display: block;
+  height: 56px;
+  object-fit: cover;
+  width: 72px;
 }
 
 .readerArticleListItemMeta {
@@ -213,13 +409,65 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .readerArticleListItem {
-  background: var(--bg-option);
-  color: var(--text-primary);
+  background: var(--reader-list-item-background);
+  border-color: var(--reader-list-item-border);
+  color: var(--reader-list-item-title);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItem:hover {
+  background: var(--reader-list-item-hover-background);
+  border-color: var(--reader-list-item-hover-border);
+  color: var(--reader-list-item-title);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemTitle {
+  color: var(--reader-list-item-title);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemKicker {
+  color: var(--reader-list-item-meta);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemPreview {
+  color: var(--reader-list-item-preview);
 }
 
 :global(:root[data-theme='dark']) .readerArticleListItemSelected {
-  background: var(--sidebar-selected-background-dark);
-  border-color: var(--color-primary-border-dark);
-  color: var(--sidebar-selected-text-dark);
+  background: var(--reader-list-item-selected-background);
+  border-color: var(--reader-list-item-selected-border);
+  border-left: 3px solid var(--reader-list-item-selected-accent);
+  color: var(--reader-list-item-selected-title);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover {
+  background: var(--reader-list-selected-hover-background);
+  border-color: var(--reader-list-item-selected-hover-border);
+  border-left: 3px solid var(--reader-list-item-selected-accent);
+  color: var(--reader-list-item-selected-title);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItemSelected .readerArticleListItemTitle,
+:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover .readerArticleListItemTitle {
+  color: var(--reader-list-item-selected-title);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItemSelected .readerArticleListItemKicker {
+  color: var(--reader-list-item-selected-meta);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItemSelected .readerArticleListItemPreview {
+  color: var(--reader-list-item-selected-preview);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover .readerArticleListItemKicker {
+  color: var(--reader-list-item-selected-hover-meta);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListItemSelected:hover .readerArticleListItemPreview {
+  color: var(--reader-list-item-selected-hover-preview);
+}
+
+:global(:root[data-theme='dark']) .readerArticleListThumbnail {
+  background: var(--bg-control);
 }
 </style>
