@@ -24,7 +24,7 @@
         <span class="article-list-time">{{ formatDate(published) }}</span>
         <ArticleActionsMenu :starInd="starInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
-          <i :class="['bi', starInd === 1 ? 'bi-bookmark-fill' : 'bi-heart']" aria-hidden="true"></i>
+          <i :class="['bi', starInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
         </button>
       </div>
     </div>
