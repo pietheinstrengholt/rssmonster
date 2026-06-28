@@ -648,5 +648,5 @@ function updateSortOrder() {
     .catch(error => console.log('oops something went wrong', error));
 }
 
-defineExpose({ updateSortOrder });
+defineExpose({ refreshFeeds, updateSortOrder });
 </script>

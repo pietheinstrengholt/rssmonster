@@ -18,7 +18,12 @@
     </div>
     <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
     <div id="no-more" v-if="hasLoadedContent">
-      <p v-if="container.length === 0" id="no-results">No posts found!</p>
+      <ArticleEmptyState
+        v-if="container.length === 0"
+        @clear-filters="$emit('clear-filters')"
+        @refresh-feeds="$emit('refresh-feeds')"
+        @open-smart-folders="$emit('open-smart-folders')"
+      />
       <ArticleEndState
         v-if="showArticleEndState"
         :unread-count="currentViewUnreadCount"
@@ -36,11 +41,13 @@
 
 <script>
 import Article from "./Article.vue";
+import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 
 export default {
   components: {
     Article,
+    ArticleEmptyState,
     ArticleEndState
   },
   emits: [
@@ -53,6 +60,9 @@ export default {
     'cluster-articles-collapsed',
     'article-not-interested',
     'flush-pool',
+    'clear-filters',
+    'refresh-feeds',
+    'open-smart-folders',
     'forceReload'
   ],
   props: {

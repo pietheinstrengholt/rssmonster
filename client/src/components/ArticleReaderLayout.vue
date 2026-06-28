@@ -1,5 +1,13 @@
 <template>
-  <div class="readerLayout">
+  <ArticleEmptyState
+    v-if="hasLoadedContent && container.length === 0"
+    class="readerEmptyState"
+    @clear-filters="$emit('clear-filters')"
+    @refresh-feeds="$emit('refresh-feeds')"
+    @open-smart-folders="$emit('open-smart-folders')"
+  />
+
+  <div v-else class="readerLayout">
     <aside class="readerArticleList" aria-label="Article list">
       <button
         v-for="article in articles"
@@ -30,7 +38,6 @@
       <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
 
       <div id="no-more" v-if="hasLoadedContent">
-        <p v-if="container.length === 0" id="no-results">No posts found!</p>
         <ArticleEndState
           v-if="showReaderEndState"
           :unread-count="currentViewUnreadCount"
@@ -64,6 +71,7 @@
 
 <script>
 import Article from "./Article.vue";
+import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import { formatRelativeDate } from '../utils/date';
 
@@ -72,6 +80,7 @@ const PREVIEW_LENGTH = 150;
 export default {
   components: {
     Article,
+    ArticleEmptyState,
     ArticleEndState
   },
   emits: [
@@ -83,6 +92,9 @@ export default {
     'article-not-interested',
     'mark-previous-article-read',
     'flush-pool',
+    'clear-filters',
+    'refresh-feeds',
+    'open-smart-folders',
     'forceReload'
   ],
   props: {
