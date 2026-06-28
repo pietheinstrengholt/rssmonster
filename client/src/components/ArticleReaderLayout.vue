@@ -31,9 +31,13 @@
 
       <div id="no-more" v-if="hasLoadedContent">
         <p v-if="container.length === 0" id="no-results">No posts found!</p>
-        <p v-if="currentSelection !== 'unread' && container.length !== 0 && remainingItems < fetchCount">You reached the bottom!</p>
-        <button v-if="currentSelection === 'unread' && container.length !== 0 && isFlushed === false && distance >= container.length" id="mark-all-read" type="button" class="mark-all-read" @click="$emit('flush-pool')">Click to mark all articles as read.</button>
-        <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate === 0">All items are marked as read.</p>
+        <ArticleEndState
+          v-if="showReaderEndState"
+          :unread-count="currentViewUnreadCount"
+          :show-actions="showReaderEndStateActions"
+          @mark-all-read="$emit('flush-pool')"
+          @dismiss="dismissReaderEndState"
+        />
         <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0" class="clickable" @click="$emit('forceReload')">{{ unreadsSinceLastUpdate }} new unread {{ unreadsSinceLastUpdate === 1 ? 'article' : 'articles' }} available! <br>Click here to refresh!</p>
       </div>
       <div id="no-more" v-else>
@@ -60,13 +64,15 @@
 
 <script>
 import Article from "./Article.vue";
+import ArticleEndState from "./ArticleEndState.vue";
 import { formatRelativeDate } from '../utils/date';
 
 const PREVIEW_LENGTH = 150;
 
 export default {
   components: {
-    Article
+    Article,
+    ArticleEndState
   },
   emits: [
     'update-star',
@@ -90,6 +96,10 @@ export default {
     },
     currentSelection: {
       type: String,
+      required: true
+    },
+    currentViewUnreadCount: {
+      type: Number,
       required: true
     },
     remainingItems: {
@@ -116,7 +126,8 @@ export default {
   data() {
     return {
       articleItemRefs: {},
-      selectedArticleId: null
+      selectedArticleId: null,
+      isReaderEndStateDismissed: false
     };
   },
   mounted() {
@@ -133,6 +144,18 @@ export default {
     // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
       return this.$store.data.unreadsSinceLastUpdate;
+    },
+    // Returns whether the reader list has loaded every article in the current scope.
+    hasReachedArticleListEnd() {
+      return this.container.length > 0 && this.distance >= this.container.length;
+    },
+    // Returns whether the end state should appear below the final reader list item.
+    showReaderEndState() {
+      return this.hasReachedArticleListEnd && !this.isReaderEndStateDismissed;
+    },
+    // Returns whether the end state should offer the mark-all-read action.
+    showReaderEndStateActions() {
+      return this.currentSelection === 'unread' && !this.isFlushed && this.currentViewUnreadCount > 0;
     }
   },
   watch: {
@@ -148,9 +171,16 @@ export default {
           this.selectedArticleId = articles[0].id;
         }
       }
+    },
+    container() {
+      this.isReaderEndStateDismissed = false;
     }
   },
   methods: {
+    // Hides the reader end state until the current article session changes.
+    dismissReaderEndState() {
+      this.isReaderEndStateDismissed = true;
+    },
     // Stores article list item element refs by article id.
     setArticleItemRef(element, articleId) {
       if (element) {
@@ -396,16 +426,6 @@ export default {
   cursor: pointer;
 }
 
-.mark-all-read {
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
 .article-load-sentinel {
   height: 1px;
   width: 100%;
@@ -477,4 +497,5 @@ export default {
 :global(:root[data-theme='dark']) .readerArticleListThumbnail {
   background: var(--bg-control);
 }
+
 </style>

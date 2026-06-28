@@ -2,7 +2,7 @@
   <div class="article-card" :id="`article-${id}`" :class="[{ 'cluster-article': isClusterArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
     <div v-if="isMinimalView" class="article-list-row" :class="{ 'is-read': status === 'read', starred: starInd === 1, hot: hotInd === 1 }" @click="articleTouched($event)">
       <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
-        <i :class="['bi', status === 'read' ? 'bi-check-circle-fill' : 'bi-circle']" aria-hidden="true"></i>
+        <i :class="['bi', status === 'read' ? 'bi-circle-fill' : 'bi-record-circle-fill']" aria-hidden="true"></i>
       </button>
       <div class="article-list-source" aria-hidden="true">
         <img v-if="feedFavicon" :src="feedFavicon" class="favicon" alt="" />
@@ -24,7 +24,7 @@
         <span class="article-list-time">{{ formatDate(published) }}</span>
         <ArticleActionsMenu :starInd="starInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
-          <i :class="['bi', starInd === 1 ? 'bi-heart-fill' : 'bi-heart']" aria-hidden="true"></i>
+          <i :class="['bi', starInd === 1 ? 'bi-bookmark-fill' : 'bi-heart']" aria-hidden="true"></i>
         </button>
       </div>
     </div>
@@ -908,10 +908,6 @@ export default {
   font-size: 18px !important;
 }
 
-.article-body:hover {
-    background: var(--bg-page);
-}
-
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
 @media (max-width: 766px) and (orientation: portrait) {
   .article-card .article-body {
@@ -1225,10 +1221,6 @@ span.similar-badge {
   cursor: pointer;
   font-size: 13px;
   line-height: 1;
-}
-
-.article-list-row.is-read .article-list-status {
-  color: var(--text-meta, var(--text-muted));
 }
 
 .article-list-source {

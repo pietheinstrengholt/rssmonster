@@ -1,7 +1,7 @@
 <template>
-  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -81,6 +81,34 @@ export default {
     // Returns whether the reader layout should replace the normal stream.
     isReaderLayoutActive() {
       return this.$store.data.currentSelection.viewMode === 'reader' && this.isDesktopReaderWidth;
+    },
+
+    // Returns the unread count for the currently selected article scope.
+    currentViewUnreadCount() {
+      const selection = this.$store.data.currentSelection;
+      if (selection.status !== 'unread') return 0;
+
+      if (selection.smartFolderId !== null) {
+        const smartFolder = this.$store.data.smartFolders.find(folder => folder.id === selection.smartFolderId);
+        return smartFolder?.ArticleCount ?? 0;
+      }
+
+      const categoryId = Number(selection.categoryId);
+      const feedId = Number(selection.feedId);
+      const category = Number.isFinite(categoryId)
+        ? this.$store.data.categories.find(item => item.id === categoryId)
+        : null;
+
+      if (Number.isFinite(feedId) && category) {
+        const feed = category.feeds?.find(item => item.id === feedId);
+        return feed?.unreadCount ?? 0;
+      }
+
+      if (category) {
+        return category.unreadCount ?? 0;
+      }
+
+      return this.$store.data.unreadCount;
     }
   },
 

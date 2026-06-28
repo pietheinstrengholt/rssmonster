@@ -19,9 +19,13 @@
     <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
     <div id="no-more" v-if="hasLoadedContent">
       <p v-if="container.length === 0" id="no-results">No posts found!</p>
-      <p v-if="currentSelection !== 'unread' && container.length !== 0 && remainingItems < fetchCount">You reached the bottom!</p>
-      <button v-if="currentSelection === 'unread' && container.length !== 0 && isFlushed === false && distance >= container.length" id="mark-all-read" type="button" class="mark-all-read" @click="flushPool">Click to mark all articles as read.</button>
-      <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate === 0">All items are marked as read.</p>
+      <ArticleEndState
+        v-if="showArticleEndState"
+        :unread-count="currentViewUnreadCount"
+        :show-actions="showArticleEndStateActions"
+        @mark-all-read="flushPool"
+        @dismiss="dismissArticleEndState"
+      />
       <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0" class="clickable" v-on:click="this.$emit('forceReload')">{{ unreadsSinceLastUpdate }} new unread {{ unreadsSinceLastUpdate === 1 ? 'article' : 'articles' }} available! <br>Click here to refresh!</p>
     </div>
     <div id="no-more" v-else>
@@ -32,10 +36,12 @@
 
 <script>
 import Article from "./Article.vue";
+import ArticleEndState from "./ArticleEndState.vue";
 
 export default {
   components: {
-    Article
+    Article,
+    ArticleEndState
   },
   emits: [
     'update-star',
@@ -66,6 +72,14 @@ export default {
       type: String,
       required: true
     },
+    currentViewUnreadCount: {
+      type: Number,
+      required: true
+    },
+    viewMode: {
+      type: String,
+      required: true
+    },
     remainingItems: {
       type: Number,
       required: true
@@ -91,6 +105,11 @@ export default {
       default: null
     }
   },
+  data() {
+    return {
+      isArticleEndStateDismissed: false
+    };
+  },
   computed: {
     // Returns whether the mobile search dialog is currently open.
     mobileSearchOpen() {
@@ -99,9 +118,34 @@ export default {
     // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
       return this.$store.data.unreadsSinceLastUpdate;
+    },
+    // Returns whether the full article list has loaded every article in the current scope.
+    hasReachedArticleListEnd() {
+      return this.container.length > 0 && this.distance >= this.container.length;
+    },
+    // Returns whether this list view should use the modern article end state.
+    supportsArticleEndState() {
+      return ['full', 'summarized'].includes(this.viewMode);
+    },
+    // Returns whether the end state should appear for the current list mode.
+    showArticleEndState() {
+      return this.supportsArticleEndState && this.hasReachedArticleListEnd && !this.isArticleEndStateDismissed;
+    },
+    // Returns whether the end state should offer the mark-all-read action.
+    showArticleEndStateActions() {
+      return this.currentSelection === 'unread' && !this.isFlushed && this.currentViewUnreadCount > 0;
+    }
+  },
+  watch: {
+    container() {
+      this.isArticleEndStateDismissed = false;
     }
   },
   methods: {
+    // Hides the article end state until the current article session changes.
+    dismissArticleEndState() {
+      this.isArticleEndStateDismissed = true;
+    },
     // Requests that the parent marks the remaining unread articles as read.
     flushPool() {
       this.$emit('flush-pool');
@@ -148,20 +192,6 @@ export default {
   cursor: pointer;
 }
 
-.mark-all-read {
-  padding: 0;
-  font: inherit;
-  color: inherit;
-  background: none;
-  border: 0;
-  text-decoration: underline;
-  cursor: pointer;
-}
-
-:global(:root[data-theme='dark'] .mark-all-read) {
-  color: var(--text-inverted) !important;
-}
-
 :global(:root[data-theme='dark']) {
   #articles {
     color: var(--text-inverted);
@@ -180,7 +210,7 @@ div.infinite-loading-container {
 }
 
 #no-more {
-  padding-top: 30px;
+  padding-top: 10px;
   padding-bottom: 30px;
   text-align: center;
 }

@@ -137,7 +137,7 @@
         <div class="sidebar-management-actions">
           <SidebarActionButton
             icon="plus-circle-fill"
-            label="Add"
+            label="Add category"
             variant="sidebar-button sidebar-bottom-action-button sidebar-add-button"
             @select="$store.data.setShowModal('NewCategory')"
           />
@@ -145,7 +145,7 @@
           <SidebarActionButton
             v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
             icon="trash3-fill"
-            label="Delete"
+            label="Delete category"
             variant="sidebar-button sidebar-bottom-action-button sidebar-delete-button"
             @select="$store.data.setShowModal('DeleteCategory')"
           />
@@ -153,7 +153,7 @@
           <SidebarActionButton
             v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId === '%'"
             icon="pencil-fill"
-            label="Edit"
+            label="Edit category"
             variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
             @select="$store.data.setShowModal('RenameCategory')"
           />
@@ -161,7 +161,7 @@
           <SidebarActionButton
             v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId !== '%'"
             icon="trash3-fill"
-            label="Delete"
+            label="Delete feed"
             variant="sidebar-button sidebar-bottom-action-button sidebar-delete-button"
             @select="$store.data.setShowModal('DeleteFeed')"
           />
@@ -169,7 +169,7 @@
           <SidebarActionButton
             v-if="$store.data.currentSelection.categoryId != '%' && $store.data.currentSelection.feedId != '%'"
             icon="pencil-fill"
-            label="Edit"
+            label="Edit feed"
             variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
             @select="$store.data.setShowModal('UpdateFeed')"
           />
@@ -177,7 +177,7 @@
           <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
             <SidebarActionButton
               icon="trash"
-              label="Cleanup"
+              label="Cleanup articles"
               variant="sidebar-button sidebar-bottom-action-button sidebar-cleanup-button"
               @select="$store.data.setShowModal('Cleanup')"
             />
@@ -362,10 +362,10 @@ const refreshProgress = reactive({
 
 const statusFilters = [
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
-  { status: 'star', label: 'Favorites', icon: 'heart-fill', iconClass: 'icon-star' },
+  { status: 'read', label: 'Read', icon: 'circle-fill', iconClass: 'icon-read' },
+  { status: 'star', label: 'Favorites', icon: 'bookmark-fill', iconClass: 'icon-star' },
   { status: 'hot', label: 'Hot', icon: 'fire', iconClass: 'icon-hot' },
-  { status: 'clicked', label: 'Clicked', icon: 'bookmark-fill', iconClass: 'icon-clicked' },
-  { status: 'read', label: 'Read', icon: 'check-circle-fill', iconClass: 'icon-read' }
+  { status: 'clicked', label: 'Clicked', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked' }
 ];
 
 const orderList = computed(() => store.data.categories.map(category => category.id));

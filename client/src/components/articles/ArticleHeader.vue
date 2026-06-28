@@ -2,8 +2,8 @@
   <h5 class="article-header">
     <div class="article-header-row">
       <div class="article-header-left">
-        <BootstrapIcon v-if="clickedAmount > 0" icon="bookmark-fill" class="article-kind-icon clicked-icon" />
-        <BootstrapIcon v-if="starInd === 1" icon="heart-fill" class="article-kind-icon star-icon" />
+        <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" />
+        <BootstrapIcon v-if="starInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
         <BootstrapIcon v-if="hasInterestScore" icon="award-fill" class="article-kind-icon recommendation-icon" />
         <BootstrapIcon v-else-if="isEventClusterView && clusterCountTotal > 1" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
@@ -38,7 +38,7 @@ export default {
     },
     // Returns the status icon shown beside the article actions menu.
     statusIcon() {
-      return this.status === 'read' ? 'check-circle-fill' : 'circle';
+      return this.status === 'read' ? 'check-circle-fill' : 'circle-fill';
     },
     // Returns the accessible label for the current read status.
     statusLabel() {
