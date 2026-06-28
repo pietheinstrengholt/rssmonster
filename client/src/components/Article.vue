@@ -504,6 +504,10 @@ export default {
   gap: 8px;
 }
 
+.recommendation-action-item svg {
+  margin-right: 3px;
+} 
+  
 .recommendation-action-icon {
   width: 14px;
   flex: 0 0 auto;
