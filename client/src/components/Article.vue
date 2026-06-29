@@ -1208,6 +1208,22 @@ span.similar-badge {
   background-color: var(--article-cluster-background);
 }
 
+.article-list-card.article-list-card-selected {
+  background: transparent;
+}
+
+.article-list-card.article-list-card-selected:focus {
+  outline: 0;
+}
+
+.article-list-card.article-list-card-selected .article-list-row {
+  background: var(--reader-list-item-selected-background);
+}
+
+.article-list-card.article-list-card-selected .article-list-row:hover {
+  background: var(--reader-list-selected-hover-background);
+}
+
 .article-list-card .article-divider {
   display: none;
 }
@@ -1668,6 +1684,22 @@ span.similar-badge {
   .article-list-row.starred {
     background-color: var(--dark-bg-page, var(--dark-page-surface));
     border-color: var(--dark-border, var(--border-color));
+  }
+
+  .article-list-card.article-list-card-selected {
+    background: transparent;
+  }
+
+  .article-list-card.article-list-card-selected:focus {
+    outline: 0;
+  }
+
+  .article-list-card.article-list-card-selected .article-list-row {
+    background: var(--reader-list-item-selected-background);
+  }
+
+  .article-list-card.article-list-card-selected .article-list-row:hover {
+    background: var(--reader-list-selected-hover-background);
   }
 
   .article-list-meta,

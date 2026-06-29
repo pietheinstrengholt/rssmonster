@@ -5,6 +5,10 @@
         v-for="article in articles"
         v-bind="article"
         :key="article.id"
+        :ref="element => setMinimalArticleRef(element, article.id)"
+        :class="{ 'article-list-card-selected': isMinimalArticleSelected(article.id) }"
+        :aria-current="isMinimalArticleSelected(article.id) ? 'true' : null"
+        :tabindex="minimalArticleTabindex(article.id)"
         :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
         @update-star="$emit('update-star', $event)"
         @update-clicked="$emit('update-clicked', $event)"
@@ -117,8 +121,15 @@ export default {
   },
   data() {
     return {
+      minimalArticleRefs: {},
       isArticleEndStateDismissed: false
     };
+  },
+  mounted() {
+    window.addEventListener('keydown', this.handleMinimalKeydown);
+  },
+  beforeUnmount() {
+    window.removeEventListener('keydown', this.handleMinimalKeydown);
   },
   computed: {
     // Returns whether the mobile search dialog is currently open.
@@ -149,9 +160,32 @@ export default {
   watch: {
     container() {
       this.isArticleEndStateDismissed = false;
+    },
+    articles() {
+      this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
+    },
+    activeMinimalArticleId() {
+      this.$nextTick(() => this.focusSelectedMinimalArticle({ preventScroll: true }));
     }
   },
   methods: {
+    // Stores compact article component refs by article id.
+    setMinimalArticleRef(element, articleId) {
+      if (element) {
+        this.minimalArticleRefs[articleId] = element;
+      } else {
+        delete this.minimalArticleRefs[articleId];
+      }
+    },
+    // Returns whether an article is the active compact selection.
+    isMinimalArticleSelected(articleId) {
+      return this.viewMode === 'minimal' && String(articleId) === String(this.activeMinimalArticleId);
+    },
+    // Returns the compact article focus order without touching other modes.
+    minimalArticleTabindex(articleId) {
+      if (this.viewMode !== 'minimal') return null;
+      return this.isMinimalArticleSelected(articleId) ? 0 : -1;
+    },
     // Hides the article end state until the current article session changes.
     dismissArticleEndState() {
       this.isArticleEndStateDismissed = true;
@@ -159,6 +193,75 @@ export default {
     // Requests that the parent marks the remaining unread articles as read.
     flushPool() {
       this.$emit('flush-pool');
+    },
+    // Returns whether keyboard navigation should ignore the current event target.
+    shouldIgnoreKeyboardEvent(event) {
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      const isEditableTarget = ['input', 'textarea', 'select'].includes(tagName)
+        || target?.isContentEditable
+        || Boolean(target?.closest?.('[contenteditable="true"], [contenteditable=""]'));
+      const isInteractiveElement = ['a', 'button'].includes(tagName);
+
+      return Boolean(
+        event.altKey ||
+        event.ctrlKey ||
+        event.metaKey ||
+        event.shiftKey ||
+        isEditableTarget ||
+        isInteractiveElement
+      );
+    },
+    // Handles compact headline keyboard navigation.
+    handleMinimalKeydown(event) {
+      if (this.viewMode !== 'minimal') return;
+      if (this.shouldIgnoreKeyboardEvent(event)) return;
+      if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+      if (!this.articles.length) return;
+
+      if (event.key === 'Enter') {
+        event.preventDefault();
+        this.openSelectedMinimalArticle();
+        return;
+      }
+
+      const currentIndex = this.articles.findIndex(article => String(article.id) === String(this.activeMinimalArticleId));
+      const fallbackIndex = event.key === 'ArrowDown' ? 0 : this.articles.length - 1;
+      const nextIndex = currentIndex === -1
+        ? fallbackIndex
+        : event.key === 'ArrowDown'
+          ? Math.min(currentIndex + 1, this.articles.length - 1)
+          : Math.max(currentIndex - 1, 0);
+
+      event.preventDefault();
+      this.selectMinimalArticleByIndex(nextIndex);
+    },
+    // Selects a compact headline and keeps it visible for keyboard users.
+    selectMinimalArticleByIndex(index) {
+      const article = this.articles[index];
+      if (!article) return;
+
+      this.$emit('minimal-article-opened', { id: article.id, status: article.status });
+      this.$nextTick(() => this.focusSelectedMinimalArticle());
+    },
+    // Focuses and scrolls the selected compact article into view.
+    focusSelectedMinimalArticle({ preventScroll = false } = {}) {
+      if (this.viewMode !== 'minimal' || this.activeMinimalArticleId === null) return;
+
+      const selectedComponent = this.minimalArticleRefs[this.activeMinimalArticleId];
+      const selectedElement = selectedComponent?.$el;
+      if (!selectedElement) return;
+
+      selectedElement.focus({ preventScroll });
+      selectedElement.scrollIntoView({ block: 'nearest' });
+    },
+    // Opens the selected compact article through the existing article link behavior.
+    openSelectedMinimalArticle() {
+      if (this.activeMinimalArticleId === null) return;
+
+      const selectedComponent = this.minimalArticleRefs[this.activeMinimalArticleId];
+      const articleLink = selectedComponent?.$el?.querySelector('.article-link');
+      articleLink?.click();
     }
   }
 }
