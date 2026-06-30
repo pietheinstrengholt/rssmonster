@@ -1,6 +1,11 @@
 <template>
   <div class="article-card" :id="`article-${id}`" :class="[{ 'cluster-article': isClusterArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
-    <div v-if="isMinimalView" class="article-list-row" :class="{ 'is-read': status === 'read', starred: starInd === 1, hot: hotInd === 1 }" @click="articleTouched($event)">
+    <div v-if="isMinimalView" class="mobile-swipe-shell">
+      <div class="mobile-swipe-action" aria-hidden="true">
+        <i :class="['bi', starInd === 1 ? 'bi-bookmark-x' : 'bi-bookmark']" aria-hidden="true"></i>
+        <span>{{ starInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
+      </div>
+      <div class="article-list-row mobile-swipe-content" :class="{ 'is-read': status === 'read', starred: starInd === 1, hot: hotInd === 1 }" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
       <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
         <i :class="['bi', status === 'read' ? 'bi-circle-fill' : 'bi-record-circle-fill']" aria-hidden="true"></i>
       </button>
@@ -26,6 +31,7 @@
         <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
           <i :class="['bi', starInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
         </button>
+      </div>
       </div>
     </div>
     <div v-else class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
@@ -61,6 +67,8 @@ import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
 import { formatRelativeDate } from '../utils/date';
 
 const NEUTRAL_SCORE = 70;
+const SWIPE_MAX = 128;
+const SWIPE_THRESHOLD = 86;
 
 export default {
   inheritAttrs: false,
@@ -103,7 +111,13 @@ export default {
       clusterExpanded: false,
       NEUTRAL_SCORE,
       isMobilePortrait: false,
-      mediaQuery: null
+      mediaQuery: null,
+      swipeStartX: 0,
+      swipeStartY: 0,
+      swipeTranslateX: 0,
+      swipeTracking: false,
+      swipeLocked: false,
+      swipeSuppressClick: false
     };
   },
   mounted() {
@@ -229,6 +243,15 @@ export default {
       }
 
       return '';
+    },
+    // Returns the inline transform used while a mobile swipe is active.
+    mobileSwipeStyle() {
+      if (!this.isMobilePortrait && !this.swipeTranslateX) return {};
+
+      return {
+        transform: `translateX(${this.swipeTranslateX}px)`,
+        transition: this.swipeTracking ? 'none' : 'transform 180ms ease'
+      };
     }
   },
   methods: {
@@ -257,6 +280,65 @@ export default {
     // Updates the portrait state when the media query changes.
     handleMediaChange(event) {
       this.isMobilePortrait = event.matches;
+      if (!event.matches) this.resetSwipe();
+    },
+    // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
+    onSwipeTouchStart(event) {
+      if (!this.isMobilePortrait || !this.isMinimalView) return;
+
+      const touch = event.touches[0];
+      this.swipeStartX = touch.clientX;
+      this.swipeStartY = touch.clientY;
+      this.swipeTranslateX = 0;
+      this.swipeTracking = true;
+      this.swipeLocked = false;
+      this.swipeSuppressClick = false;
+    },
+    // Updates the article offset while ignoring vertical scroll gestures.
+    onSwipeTouchMove(event) {
+      if (!this.swipeTracking || !this.isMobilePortrait || !this.isMinimalView) return;
+
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - this.swipeStartX;
+      const deltaY = touch.clientY - this.swipeStartY;
+
+      if (!this.swipeLocked && Math.abs(deltaY) > Math.abs(deltaX)) {
+        this.resetSwipe();
+        return;
+      }
+
+      if (deltaX <= 0) {
+        this.swipeTranslateX = 0;
+        return;
+      }
+
+      this.swipeLocked = true;
+      this.swipeSuppressClick = true;
+      this.swipeTranslateX = Math.min(deltaX, SWIPE_MAX);
+      if (event.cancelable) event.preventDefault();
+    },
+    // Toggles favorite status when the swipe crosses the threshold.
+    onSwipeTouchEnd() {
+      if (!this.swipeTracking) return;
+
+      const shouldToggle = this.swipeTranslateX >= SWIPE_THRESHOLD;
+      this.swipeTracking = false;
+
+      if (shouldToggle) this.markAsFavorite();
+
+      this.resetSwipe(false);
+      if (this.swipeSuppressClick) {
+        window.setTimeout(() => {
+          this.swipeSuppressClick = false;
+        }, 250);
+      }
+    },
+    // Resets all swipe gesture state.
+    resetSwipe(clearSuppressClick = true) {
+      this.swipeTranslateX = 0;
+      this.swipeTracking = false;
+      this.swipeLocked = false;
+      if (clearSuppressClick) this.swipeSuppressClick = false;
     },
     // Returns the icon name for a quality score.
     getQualityIcon(score) {
@@ -290,6 +372,12 @@ export default {
     },
     // Toggles minimal article content when the article is touched.
     articleTouched(event) {
+      if (this.swipeSuppressClick) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
+      }
+
       if (this.$store.data.currentSelection.viewMode === 'minimal') {
         if (event.target?.closest?.('a, button, .dropdown-menu')) return;
         if (this.isMinimalContentOpen) {
@@ -1228,6 +1316,10 @@ span.similar-badge {
   display: none;
 }
 
+.mobile-swipe-action {
+  display: none;
+}
+
 .article-list-status {
   display: flex;
   align-items: center;
@@ -1362,6 +1454,44 @@ span.similar-badge {
 }
 
 @media (max-width: 766px) and (orientation: portrait) {
+  .mobile-swipe-shell {
+    position: relative;
+    overflow: hidden;
+    background: var(--mobile-swipe-bookmark-bg, var(--color-primary));
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .mobile-swipe-action {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 128px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--mobile-swipe-bookmark-bg, var(--color-primary));
+    color: var(--mobile-swipe-bookmark-text, var(--text-inverted));
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .mobile-swipe-action .bi {
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .mobile-swipe-content {
+    position: relative;
+    z-index: 1;
+    background: var(--bg-card);
+    will-change: transform;
+    touch-action: pan-y;
+  }
+
   .article-list-row {
     grid-template-columns: 18px minmax(0, 1fr) auto;
     column-gap: 10px;
@@ -1383,6 +1513,16 @@ span.similar-badge {
   .article-list-card .article-content-wrapper {
     padding-left: 40px;
     padding-right: 10px;
+  }
+
+  :root[data-theme='dark'] .mobile-swipe-shell,
+  :root[data-theme='dark'] .mobile-swipe-action {
+    background: var(--mobile-swipe-bookmark-bg, #1E3A8A);
+    color: var(--mobile-swipe-bookmark-text, #FFFFFF);
+  }
+
+  :root[data-theme='dark'] .mobile-swipe-content {
+    background: var(--bg-card);
   }
 }
 

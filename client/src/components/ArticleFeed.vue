@@ -1,7 +1,7 @@
 <template>
-  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -12,8 +12,11 @@ import {
   fetchArticleIds,
   fetchArticleDetails,
   markAllAsRead,
+  markArticlesAsRead,
   markArticleUnread,
-  markArticleSeen
+  markArticleSeen,
+  markManyClicked,
+  markManyWithStar
 } from '../api/articles';
 
 export default {
@@ -50,6 +53,7 @@ export default {
       hasLoadedContent: false,
       isFlushed: false,
       isLoading: false,
+      currentViewSourceCount: null,
       activeMinimalArticleId: null,
       activeRequestId: 0,
       pendingReadStatusArticleIds: new Set(),
@@ -162,6 +166,9 @@ export default {
         if (requestId !== this.activeRequestId) return;
 
         this.container = response.data.itemIds;
+        this.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
+          ? Number(response.data.sourceCount)
+          : null;
 
         if (response.data.firstPage) {
           this.distance += response.data.firstPage.length;
@@ -435,6 +442,7 @@ export default {
       this.pendingReadStatusArticleIds.clear();
       this.distance = 0;
       this.isFlushed = false;
+      this.currentViewSourceCount = null;
 
       this.observedArticleElements.clear();
       this.visibleMap.clear();
@@ -563,6 +571,130 @@ export default {
         console.error('Error toggling minimal article read status:', error);
       } finally {
         this.pendingReadStatusArticleIds.delete(normalizedArticleId);
+      }
+    },
+
+    // Handles reader list bulk actions selected from the middle pane header.
+    async handleReaderBulkAction({ action, selectedArticleId }) {
+      if (this.$store.data.currentSelection.viewMode !== 'reader') return;
+
+      try {
+        if (action === 'star-visible') {
+          await this.starReaderArticles(this.articles);
+          return;
+        }
+
+        if (action === 'mark-visible-clicked') {
+          await this.markReaderArticlesClicked(this.articles);
+          return;
+        }
+
+        const articles = this.getReaderBulkReadArticles(action, selectedArticleId);
+        await this.markReaderArticlesRead(articles);
+      } catch (error) {
+        console.error('Error handling reader bulk action:', error);
+      }
+    },
+
+    // Returns the articles targeted by a reader bulk read action.
+    getReaderBulkReadArticles(action, selectedArticleId) {
+      const selectedIndex = this.articles.findIndex(article => String(article.id) === String(selectedArticleId));
+
+      if (action === 'mark-visible-read') {
+        return this.articles;
+      }
+
+      if (selectedIndex === -1) {
+        return [];
+      }
+
+      if (action === 'mark-above-read') {
+        return this.articles.slice(0, selectedIndex);
+      }
+
+      if (action === 'mark-below-read') {
+        return this.articles.slice(selectedIndex + 1);
+      }
+
+      if (action === 'mark-older-read') {
+        const selectedTime = this.articlePublishedTime(this.articles[selectedIndex]);
+        if (!Number.isFinite(selectedTime)) return [];
+
+        return this.articles.filter(article => {
+          const articleTime = this.articlePublishedTime(article);
+          return Number.isFinite(articleTime) && articleTime < selectedTime;
+        });
+      }
+
+      return [];
+    },
+
+    // Returns an article publication timestamp used for relative bulk actions.
+    articlePublishedTime(article) {
+      const value = article?.published;
+      const time = Date.parse(value);
+      return Number.isFinite(time) ? time : NaN;
+    },
+
+    // Marks the provided reader articles as read.
+    async markReaderArticlesRead(articles) {
+      const unreadArticles = articles.filter(article => article.status !== 'read');
+      if (!unreadArticles.length) return;
+
+      const response = await markArticlesAsRead(unreadArticles.map(article => article.id));
+      const updatedArticles = response.data.articles || [];
+
+      for (const article of updatedArticles) {
+        const pendingArticleId = Number(article.id);
+        const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : article.id;
+        this.updateArticleStatusLocal(article);
+        this.pool.add(normalizedArticleId);
+      }
+
+      await this.$store.data.fetchOverviewSplit({ forceUpdate: true });
+    },
+
+    // Stars each visible reader article that is not already starred.
+    async starReaderArticles(articles) {
+      const unstarredArticles = articles.filter(article => article.starInd !== 1);
+      if (!unstarredArticles.length) return;
+
+      const response = await markManyWithStar(unstarredArticles.map(article => article.id), 'mark');
+      const updatedArticles = response.data.articles || [];
+
+      for (const updatedArticle of updatedArticles) {
+        this.applyReaderStarResponse(updatedArticle);
+      }
+    },
+
+    // Applies the local and overview count changes for a starred reader article.
+    applyReaderStarResponse(updatedArticle) {
+      const category = this.$store.data.categories.find(
+        item => item.id === updatedArticle.feed?.categoryId
+      );
+
+      if (category) {
+        category.starCount++;
+        const feed = category.feeds?.find(item => item.id === updatedArticle.feedId);
+        if (feed) feed.starCount++;
+      }
+
+      this.$store.data.increaseStarCount();
+      this.updateStarInd({ id: updatedArticle.id, starInd: 1 });
+    },
+
+    // Marks each visible reader article as clicked.
+    async markReaderArticlesClicked(articles) {
+      if (!articles.length) return;
+
+      const response = await markManyClicked(articles.map(article => article.id));
+      const updatedArticles = response.data.articles || [];
+
+      for (const article of updatedArticles) {
+        this.updateClickedInd({
+          id: article.id,
+          clickedAmount: article.clickedAmount
+        });
       }
     },
 

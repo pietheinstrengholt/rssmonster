@@ -9,6 +9,79 @@
 
   <div v-else class="readerLayout">
     <aside class="readerArticleList" aria-label="Article list">
+      <div class="article-list-bulk-header" @click.stop>
+        <div class="article-list-bulk-summary">
+          <div class="article-list-bulk-title">
+            <i :class="selectionIcon" aria-hidden="true"></i>
+            <span>{{ selectionTitle }}</span>
+          </div>
+
+          <div class="article-list-bulk-stats" aria-label="Current collection summary">
+            <span>{{ formattedUnreadCount }} Unread</span>
+            <span>{{ eventCount }} Events</span>
+            <span>{{ sourceCount }} Sources</span>
+          </div>
+
+          <div v-if="topVisibleTags.length" class="article-list-bulk-tags">
+            <span>Top tags:</span>
+            <button
+              v-for="tag in topVisibleTags"
+              :key="tag"
+              type="button"
+              class="article-list-bulk-tag"
+              @click="$store.data.setCurrentSelection({ tag })"
+            >
+              {{ tag.toLowerCase() }}
+            </button>
+          </div>
+        </div>
+
+        <div class="bulk-action-menu-wrap">
+          <button
+            ref="bulkMoreButton"
+            type="button"
+            class="bulk-more-button"
+            title="More actions"
+            aria-label="More actions"
+            :aria-expanded="isBulkMenuOpen ? 'true' : 'false'"
+            @click.stop="toggleBulkMenu"
+          >
+            <i class="bi bi-three-dots" aria-hidden="true"></i>
+          </button>
+
+          <div v-if="isBulkMenuOpen" class="bulk-action-menu" :style="bulkMenuStyle" role="menu">
+            <div class="bulk-action-menu-section">
+              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-read')">
+                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                <span>Mark all visible as read</span>
+              </button>
+              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="!selectedArticle" @click="runBulkAction('mark-older-read')">
+                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                <span>Mark older than current article as read</span>
+              </button>
+              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex <= 0" @click="runBulkAction('mark-above-read')">
+                <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                <span>Mark articles above as read</span>
+              </button>
+              <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex === -1 || selectedArticleIndex >= articles.length - 1" @click="runBulkAction('mark-below-read')">
+                <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                <span>Mark articles below as read</span>
+              </button>
+            </div>
+            <div class="bulk-action-menu-section">
+              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('star-visible')">
+                <i class="bi bi-bookmark" aria-hidden="true"></i>
+                <span>Favorite all visible</span>
+              </button>
+              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-clicked')">
+                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                <span>Mark all visible as clicked</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+
       <button
         v-for="article in articles"
         :key="article.id"
@@ -95,7 +168,8 @@ export default {
     'clear-filters',
     'refresh-feeds',
     'open-smart-folders',
-    'forceReload'
+    'forceReload',
+    'bulk-action'
   ],
   props: {
     articles: {
@@ -113,6 +187,10 @@ export default {
     currentViewUnreadCount: {
       type: Number,
       required: true
+    },
+    currentViewSourceCount: {
+      type: Number,
+      default: null
     },
     remainingItems: {
       type: Number,
@@ -139,19 +217,120 @@ export default {
     return {
       articleItemRefs: {},
       selectedArticleId: null,
-      isReaderEndStateDismissed: false
+      isReaderEndStateDismissed: false,
+      isBulkMenuOpen: false,
+      bulkMenuStyle: {}
     };
   },
   mounted() {
     window.addEventListener('keydown', this.handleReaderKeydown);
+    window.addEventListener('resize', this.updateBulkMenuPosition);
+    window.addEventListener('scroll', this.updateBulkMenuPosition, true);
+    document.addEventListener('click', this.closeBulkMenu);
   },
   beforeUnmount() {
     window.removeEventListener('keydown', this.handleReaderKeydown);
+    window.removeEventListener('resize', this.updateBulkMenuPosition);
+    window.removeEventListener('scroll', this.updateBulkMenuPosition, true);
+    document.removeEventListener('click', this.closeBulkMenu);
   },
   computed: {
     // Returns the article currently shown in the reader panel.
     selectedArticle() {
       return this.articles.find(article => article.id === this.selectedArticleId) || null;
+    },
+    // Returns the index of the article currently shown in the reader panel.
+    selectedArticleIndex() {
+      return this.articles.findIndex(article => article.id === this.selectedArticleId);
+    },
+    // Returns the icon class that matches the active reader collection.
+    selectionIcon() {
+      const selection = this.$store.data.currentSelection;
+      if (selection.smartFolderId !== null || selection.tag) return 'bi bi-tag-fill';
+      if (selection.search) return 'bi bi-search';
+      if (selection.feedId !== '%') return 'bi bi-rss-fill';
+      if (selection.categoryId !== '%') return 'bi bi-folder-fill';
+
+      const icons = {
+        unread: 'record-circle-fill',
+        read: 'circle-fill',
+        star: 'bookmark-fill',
+        hot: 'fire',
+        clicked: 'arrow-up-right-square-fill'
+      };
+
+      return `bi bi-${icons[selection.status] || 'collection-fill'}`;
+    },
+    // Returns the display name for the active reader collection.
+    selectionTitle() {
+      const selection = this.$store.data.currentSelection;
+
+      if (selection.smartFolderId !== null) {
+        const smartFolder = this.$store.data.smartFolders.find(folder => folder.id === selection.smartFolderId);
+        if (smartFolder?.name) return smartFolder.name;
+      }
+
+      if (selection.tag) return selection.tag;
+      if (selection.search) return `Search: ${selection.search}`;
+
+      const categoryId = Number(selection.categoryId);
+      const feedId = Number(selection.feedId);
+      const category = Number.isFinite(categoryId)
+        ? this.$store.data.categories.find(item => item.id === categoryId)
+        : null;
+
+      if (Number.isFinite(feedId) && category) {
+        const feed = category.feeds?.find(item => item.id === feedId);
+        if (feed?.feedName) return feed.feedName;
+      }
+
+      if (category?.name) return category.name;
+
+      const labels = {
+        unread: 'Unread',
+        read: 'Read',
+        star: 'Favorites',
+        hot: 'Hot',
+        clicked: 'Clicked'
+      };
+
+      return labels[selection.status] || 'All articles';
+    },
+    // Returns the formatted unread count for the active reader collection.
+    formattedUnreadCount() {
+      return new Intl.NumberFormat().format(this.currentViewUnreadCount);
+    },
+    // Returns the distinct event count in the loaded reader list.
+    eventCount() {
+      const eventIds = new Set();
+      for (const article of this.articles) {
+        const eventId = article.cluster?.id || article.eventId || article.clusterId;
+        if (eventId) eventIds.add(eventId);
+      }
+      return eventIds.size;
+    },
+    // Returns the distinct source count for the current article collection.
+    sourceCount() {
+      if (this.currentViewSourceCount !== null) {
+        return this.currentViewSourceCount;
+      }
+
+      return new Set(this.articles.map(article => article.feedId || article.feed?.id).filter(Boolean)).size;
+    },
+    // Returns the most frequent tags in the loaded reader list.
+    topVisibleTags() {
+      const counts = new Map();
+      for (const article of this.articles) {
+        for (const tag of article.tags || article.Tags || []) {
+          if (!tag?.name) continue;
+          counts.set(tag.name, (counts.get(tag.name) || 0) + 1);
+        }
+      }
+
+      return [...counts.entries()]
+        .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0]))
+        .slice(0, 4)
+        .map(([tag]) => tag);
     },
     // Returns the number of unread articles received since the last update.
     unreadsSinceLastUpdate() {
@@ -186,9 +365,45 @@ export default {
     },
     container() {
       this.isReaderEndStateDismissed = false;
+      this.closeBulkMenu();
     }
   },
   methods: {
+    // Opens or closes the reader bulk action menu.
+    toggleBulkMenu() {
+      this.isBulkMenuOpen = !this.isBulkMenuOpen;
+      if (this.isBulkMenuOpen) {
+        this.$nextTick(() => this.updateBulkMenuPosition());
+      }
+    },
+    // Closes the reader bulk action menu.
+    closeBulkMenu() {
+      this.isBulkMenuOpen = false;
+    },
+    // Positions the bulk menu under the three-dot button across pane boundaries.
+    updateBulkMenuPosition() {
+      if (!this.isBulkMenuOpen) return;
+
+      const button = this.$refs.bulkMoreButton;
+      if (!button) return;
+
+      const rect = button.getBoundingClientRect();
+      const menuWidth = 280;
+      const left = Math.min(rect.left, window.innerWidth - menuWidth - 12);
+
+      this.bulkMenuStyle = {
+        left: `${Math.round(Math.max(12, left))}px`,
+        top: `${Math.round(rect.bottom + 8)}px`
+      };
+    },
+    // Emits the selected bulk action to the article feed parent.
+    runBulkAction(action) {
+      this.closeBulkMenu();
+      this.$emit('bulk-action', {
+        action,
+        selectedArticleId: this.selectedArticleId
+      });
+    },
     // Hides the reader end state until the current article session changes.
     dismissReaderEndState() {
       this.isReaderEndStateDismissed = true;
@@ -240,6 +455,11 @@ export default {
     },
     // Handles reader-mode keyboard navigation.
     handleReaderKeydown(event) {
+      if (event.key === 'Escape' && this.isBulkMenuOpen) {
+        this.closeBulkMenu();
+        return;
+      }
+
       if (this.shouldIgnoreKeyboardEvent(event)) return;
       if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
 
@@ -300,7 +520,185 @@ export default {
   border-right: 1px solid var(--border-subtle);
   max-height: calc(100vh - 58px);
   overflow-y: auto;
-  padding: 10px 10px 24px;
+  padding: 0 10px 24px;
+}
+
+.article-list-bulk-header {
+  background: var(--bg-primary);
+  border-bottom: 1px solid var(--border-subtle);
+  color: var(--text-primary);
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  margin: 0 -10px 10px;
+  padding: 16px 14px 14px;
+  position: relative;
+}
+
+.article-list-bulk-summary {
+  min-width: 0;
+}
+
+.article-list-bulk-title {
+  align-items: center;
+  color: var(--text-primary);
+  display: flex;
+  gap: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.article-list-bulk-title span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.article-list-bulk-title i {
+  color: var(--text-secondary);
+  flex: 0 0 auto;
+  font-size: 15px;
+}
+
+.article-list-bulk-stats {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 12px;
+  font-weight: 700;
+  gap: 0;
+  margin-top: 16px;
+}
+
+.article-list-bulk-stats span {
+  border-right: 1px solid var(--border-subtle);
+  line-height: 1;
+  padding: 0 12px;
+}
+
+.article-list-bulk-stats span:first-child {
+  padding-left: 0;
+}
+
+.article-list-bulk-stats span:last-child {
+  border-right: 0;
+  padding-right: 0;
+}
+
+.article-list-bulk-tags {
+  align-items: center;
+  color: var(--text-muted);
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 11px;
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.article-list-bulk-tag {
+  align-items: center;
+  background-color: var(--article-tag-background);
+  border: 0;
+  border-radius: 6px;
+  color: var(--badge-tag-text);
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.4;
+  padding: 3px 8px;
+  vertical-align: middle;
+  white-space: nowrap;
+}
+
+.article-list-bulk-tag:hover {
+  opacity: 0.85;
+}
+
+.bulk-action-menu-wrap {
+  position: relative;
+}
+
+.bulk-more-button {
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  width: 30px;
+}
+
+.bulk-more-button:hover,
+.bulk-more-button:focus-visible {
+  background: var(--reader-list-item-hover-background);
+  color: var(--text-primary);
+  outline: none;
+}
+
+.bulk-action-menu {
+  background: var(--bg-primary);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+  max-width: calc(100vw - 24px);
+  min-width: 280px;
+  padding: 8px;
+  position: fixed;
+  z-index: 1000;
+}
+
+.bulk-action-menu-section {
+  border-bottom: 1px solid var(--border-subtle);
+  padding: 6px 0;
+}
+
+.bulk-action-menu-section:first-child {
+  padding-top: 0;
+}
+
+.bulk-action-menu-section:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.bulk-action-menu-item {
+  align-items: center;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-primary);
+  display: flex;
+  gap: 10px;
+  min-height: 36px;
+  padding: 8px 10px;
+  text-align: left;
+  width: 100%;
+}
+
+.bulk-action-menu-item:hover:not(:disabled),
+.bulk-action-menu-item:focus-visible:not(:disabled) {
+  background: var(--reader-list-item-hover-background);
+  outline: none;
+}
+
+.bulk-action-menu-item:disabled {
+  color: var(--text-muted);
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.bulk-action-menu-item i {
+  color: var(--text-secondary);
+  flex: 0 0 18px;
+  width: 18px;
 }
 
 .readerArticleListItem {
@@ -445,6 +843,26 @@ export default {
 
 :global(:root[data-theme='dark']) .readerArticleList {
   border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .article-list-bulk-header {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .bulk-action-menu {
+  background: var(--bg-modal);
+  border-color: var(--border-color);
+  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.36);
+}
+
+:global(:root[data-theme='dark']) .bulk-action-menu-section {
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark']) .article-list-bulk-tag {
+  background-color: var(--article-tag-background-dark);
+  color: var(--article-tag-text-dark);
 }
 
 :global(:root[data-theme='dark']) .readerArticleListItem {

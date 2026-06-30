@@ -151,9 +151,42 @@ const getArticle = async (req, res, _next) => {
 const markAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
+    const articleIds = Array.isArray(req.body.articleIds)
+      ? req.body.articleIds
+      : String(req.body.articleIds || '').split(',').filter(Boolean);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (articleIds.length > 0) {
+      const articles = await Article.findAll({
+        where: {
+          id: { [Op.in]: articleIds },
+          userId: userId,
+          status: "unread"
+        },
+        include: [{
+          model: Feed,
+          required: true
+        }]
+      });
+
+      if (!articles.length) {
+        return res.status(200).json({
+          message: "No unread articles to mark as read",
+          articles: []
+        });
+      }
+
+      const updatedArticles = await Promise.all(
+        articles.map(article => article.update({ status: "read" }))
+      );
+
+      return res.status(200).json({
+        message: "Articles marked as read",
+        articles: updatedArticles
+      });
     }
 
     const categoryId = req.body.categoryId || "%";
@@ -207,9 +240,38 @@ const markClicked = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
+    const articleIds = Array.isArray(req.body.articleIds)
+      ? req.body.articleIds
+      : String(req.body.articleIds || '').split(',').filter(Boolean);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!articleId && articleIds.length > 0) {
+      const articles = await Article.findAll({
+        where: {
+          id: { [Op.in]: articleIds },
+          userId: userId
+        }
+      });
+
+      if (!articles.length) {
+        return res.status(404).json({ error: "Articles not found" });
+      }
+
+      const updatedArticles = await Promise.all(articles.map(article => {
+        const currentClicked = article.clickedAmount || 0;
+        return article.update({ clickedAmount: currentClicked + 1 });
+      }));
+
+      return res.status(200).json({
+        message: "Articles marked as clicked",
+        articles: updatedArticles.map(article => ({
+          id: article.id,
+          clickedAmount: article.clickedAmount
+        }))
+      });
     }
 
     if (!articleId) {
@@ -727,9 +789,48 @@ const articleMarkWithStar = async (req, res, _next) => {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
     const update = req.body.update;
+    const articleIds = Array.isArray(req.body.articleIds)
+      ? req.body.articleIds
+      : String(req.body.articleIds || '').split(',').filter(Boolean);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (update === undefined) {
+      return res.status(400).json({
+        message: "Star indicator is not set"
+      });
+    }
+
+    const starInd = update === "mark" ? 1 : 0;
+
+    if (!articleId && articleIds.length > 0) {
+      const articles = await Article.findAll({
+        where: {
+          id: { [Op.in]: articleIds },
+          userId: userId
+        },
+        include: [{
+          model: Feed,
+          required: true
+        }]
+      });
+
+      if (!articles.length) {
+        return res.status(404).json({
+          message: "Articles not found"
+        });
+      }
+
+      await Promise.all(articles.map(article => article.update({ starInd })));
+      return res.status(200).json({ articles });
+    }
+
+    if (!articleId) {
+      return res.status(400).json({
+        message: "articleId or articleIds is required"
+      });
     }
 
     const article = await Article.findOne({
@@ -743,19 +844,12 @@ const articleMarkWithStar = async (req, res, _next) => {
       }]
     });
 
-    if (update === undefined) {
-      return res.status(400).json({
-        message: "Star indicator is not set"
-      });
-    }
-
     if (!article) {
       return res.status(404).json({
         message: "Article not found"
       });
     }
     
-    const starInd = update === "mark" ? 1 : 0;
     article
       .update({ starInd })
       .then(() => res.status(200).json(article))

@@ -38,7 +38,7 @@ export default {
     },
     // Returns the status icon shown beside the article actions menu.
     statusIcon() {
-      return this.status === 'read' ? 'check-circle-fill' : 'circle-fill';
+      return this.status === 'read' ? 'circle-fill' : 'record-circle-fill';
     },
     // Returns the accessible label for the current read status.
     statusLabel() {

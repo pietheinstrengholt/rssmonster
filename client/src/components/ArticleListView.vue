@@ -14,6 +14,7 @@
         @update-clicked="$emit('update-clicked', $event)"
         @minimal-article-opened="$emit('minimal-article-opened', $event)"
         @minimal-article-closed="$emit('minimal-article-closed', $event)"
+        @toggle-read-status="$emit('toggle-read-status', $event)"
         @toggle-minimal-read-status="$emit('toggle-minimal-read-status', $event)"
         @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
         @cluster-articles-collapsed="$emit('cluster-articles-collapsed', $event)"
@@ -59,6 +60,7 @@ export default {
     'update-clicked',
     'minimal-article-opened',
     'minimal-article-closed',
+    'toggle-read-status',
     'toggle-minimal-read-status',
     'cluster-articles-loaded',
     'cluster-articles-collapsed',
