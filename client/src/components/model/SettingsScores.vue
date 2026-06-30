@@ -85,7 +85,6 @@
 
     <div class="scores-actions">
       <button class="btn btn-primary scores-save-button" type="button" @click="save">
-        <i class="bi bi-floppy" aria-hidden="true"></i>
         Save Changes
       </button>
     </div>

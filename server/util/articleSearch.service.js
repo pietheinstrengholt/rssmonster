@@ -24,7 +24,7 @@ const normalizeSort = sortValue => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
- * event:true/false, eventCount:>=2, tag:name, title:text,
+ * event:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
  * sort:desc/asc/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
@@ -40,7 +40,7 @@ export const searchArticles = async ({
     sort = "desc",
     viewMode = "full",
     tag = null,
-    clusterView = false,
+    eventView = false,
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
     limitCount = null, // Maximum number of results (used by smart folders)
@@ -89,6 +89,8 @@ export const searchArticles = async ({
       seen: seenFilter = null,
       firstSeenAge: firstSeenAgeFilter = null,
       title: titleFilter = null,
+      author: authorFilter = null,
+      language: languageFilter = null,
       quality: qualityFilter = null,
       freshness: freshnessFilter = null,
       event: eventFilter = null,
@@ -209,9 +211,11 @@ export const searchArticles = async ({
       status,
       rawSearch,
       eventFilter,
-      clusterView,
+      eventView,
       clusterCountFilter: eventCountFilter,
-      firstSeenAgeFilter
+      firstSeenAgeFilter,
+      authorFilter,
+      languageFilter
     });
 
     console.log(`\x1b[36mQuery attributes: ${articleQuery.attributes.join(", ")} (smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -310,7 +314,7 @@ export const searchArticles = async ({
         minSentimentScore: finalMinSentimentScore,
         minQualityScore: finalMinQualityScore,
         viewMode: viewMode,
-        clusterView: clusterView,
+        eventView: eventView,
         themeMode: userSettings?.themeMode ?? 'system'
       };
 

@@ -6,7 +6,7 @@
         <BootstrapIcon v-if="favoriteInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
         <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
         <BootstrapIcon v-if="hasInterestScore" icon="award-fill" class="article-kind-icon recommendation-icon" />
-        <BootstrapIcon v-else-if="isEventClusterView && clusterCountTotal > 1" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
+        <BootstrapIcon v-else-if="isEventView && clusterCountTotal > 1" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
         <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </div>
       <div class="article-header-actions">
@@ -29,7 +29,7 @@ export default {
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
     favoriteInd: { type: Number, default: 0 }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
     viewMode: { type: String, default: '' }, hasInterestScore: { type: Boolean, default: false },
-    isEventClusterView: { type: Boolean, default: false }, clusterCountTotal: { type: Number, default: 0 }
+    isEventView: { type: Boolean, default: false }, clusterCountTotal: { type: Number, default: 0 }
   },
   computed: {
     // Returns whether the article is displayed in the reader layout.

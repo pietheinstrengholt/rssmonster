@@ -35,9 +35,11 @@ export const buildArticleSearchQuery = ({
   status,
   rawSearch,
   eventFilter,
-  clusterView,
+  eventView,
   clusterCountFilter,
-  firstSeenAgeFilter
+  firstSeenAgeFilter,
+  authorFilter,
+  languageFilter
 }) => {
   const queryAttributes = ['id', 'feedId'];
 
@@ -115,6 +117,14 @@ export const buildArticleSearchQuery = ({
     });
   }
 
+  if (authorFilter) {
+    articleQuery.where.author = { [Op.like]: `%${authorFilter}%` };
+  }
+
+  if (languageFilter) {
+    articleQuery.where.language = languageFilter;
+  }
+
   if (starFilter !== null) {
     articleQuery.where.favoriteInd = starFilter ? 1 : 0;
   }
@@ -170,7 +180,7 @@ export const buildArticleSearchQuery = ({
     );
   }
 
-  if (eventFilter === null && clusterView === 'eventCluster') {
+  if (eventFilter === null && eventView === 'eventCluster') {
     appendAndCondition(articleQuery.where, {
       [Op.or]: [
         {

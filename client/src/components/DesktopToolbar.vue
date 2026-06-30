@@ -689,12 +689,12 @@ export default {
         }
       }
     },
-    // This function changes the cluster view only when the value differs.
-    setClusterView: function(value) {
-      if (this.$store.data.currentSelection.clusterView === value) {
+    // This function changes the event view only when the value differs.
+    setEventView: function(value) {
+      if (this.$store.data.currentSelection.eventView === value) {
         return;
       }
-      this.$store.data.setClusterView(value);
+      this.$store.data.setEventView(value);
     },
     // This function updates the selected article status or reloads the current one.
     statusClicked: function(status) {
@@ -721,7 +721,7 @@ export default {
       } else if (type === 'sort') {
         this.sortClicked(value);
       } else if (type === 'grouping') {
-        this.setClusterView(value);
+        this.setEventView(value);
       }
     },
     // This function opens the settings modal.
@@ -797,7 +797,7 @@ export default {
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
       const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
       const selectedViewModeOption = this.viewModeOptions.find((option) => option.value === this.selectedViewMode);
-      const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.clusterView);
+      const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.eventView);
 
       const dropdowns = [
         {
@@ -832,7 +832,7 @@ export default {
           type: 'grouping',
           label: 'Grouping',
           selectedLabel: selectedGroupingOption ? selectedGroupingOption.label : 'None',
-          selectedValue: this.currentSelection.clusterView,
+          selectedValue: this.currentSelection.eventView,
           options: this.groupingOptions
         });
       }

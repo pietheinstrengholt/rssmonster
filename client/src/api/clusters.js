@@ -5,11 +5,11 @@ import api from './client';
  */
 export const fetchClusterArticles = (
   clusterId,
-  clusterView = 'all',
+  eventView = 'all',
   articleId = null
 ) =>
   api.post('/clusters/articles', {
     clusterId,
-    clusterView,
+    eventView,
     articleId
   });

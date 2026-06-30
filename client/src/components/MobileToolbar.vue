@@ -48,8 +48,8 @@
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'quality' }" @click="sortClicked('quality')">Quality</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Attention</button>
         <li><hr class="dropdown-divider"></li>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'all' }" @click="setClusterView('all')">All articles</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.eventView === 'all' }" @click="setEventView('all')">All articles</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.eventView === 'eventCluster' }" @click="setEventView('eventCluster')">Cluster per event</button>
       </div>
     </div>
         <!-- Smart Folder Dropdown -->
@@ -442,12 +442,12 @@ export default {
       this.showSearch = !this.showSearch;
       this.$store.data.setMobileSearchOpen(this.showSearch);
     },
-    setClusterView: function(value) {
+    setEventView: function(value) {
       // Don't trigger if already at the selected value
-      if (this.$store.data.currentSelection.clusterView === value) {
+      if (this.$store.data.currentSelection.eventView === value) {
         return;
       }
-      this.$store.data.setClusterView(value);
+      this.$store.data.setEventView(value);
     },
     performSearch() {
       if (this.$store.data.searchQuery.trim()) {

@@ -11,13 +11,47 @@ function extractEntryFields(entry) {
     return isNaN(d.getTime()) ? null : d.toISOString();
   };
 
+  const normalizeCategoryName = value =>
+    typeof value === 'string'
+      ? value.trim()
+      : null;
+
+  const extractCategoryName = category => {
+    if (!category) return null;
+
+    if (typeof category === 'string') {
+      return normalizeCategoryName(category);
+    }
+
+    return normalizeCategoryName(
+      category.name ||
+      category.term ||
+      category.label ||
+      category.value ||
+      category._ ||
+      category['#text'] ||
+      category.$?.term ||
+      category.$?.label ||
+      category.$?.value ||
+      category.$?.name
+    );
+  };
+
+  const categorySources = [
+    ...(Array.isArray(entry.categories) ? entry.categories : []),
+    ...(Array.isArray(entry.category) ? entry.category : entry.category ? [entry.category] : []),
+    ...(Array.isArray(entry.tags) ? entry.tags : []),
+    ...(Array.isArray(entry.dc?.subject) ? entry.dc.subject : entry.dc?.subject ? [entry.dc.subject] : []),
+    ...(Array.isArray(entry.subjects) ? entry.subjects : [])
+  ];
+
   // Categories extraction
-  const categoryNames = Array.isArray(entry.categories)
-    ? entry.categories
-        .map(c => c.name)
-        .filter(Boolean)
-        .filter(name => !name.includes('|'))
-    : [];
+  const categoryNames = [...new Set(
+    categorySources
+      .map(extractCategoryName)
+      .filter(Boolean)
+      .filter(name => !name.includes('|'))
+  )];
 
   return {
     title: entry.title?.trim() || 'Untitled',
@@ -34,14 +68,14 @@ function extractEntryFields(entry) {
       entry.author ||
       entry.dc?.creators?.[0] ||
       null,
-    categories: categoryNames || [],
+    categories: categoryNames,
     published: normalizeDate(
-      entry.date_published || 
-      entry.pubDate || 
-      entry.published || 
+      entry.date_published ||
+      entry.pubDate ||
+      entry.published ||
       entry.updated ||
-      entry.dc?.date || 
-      entry.date || 
+      entry.dc?.date ||
+      entry.date ||
       entry.created)
   };
 }

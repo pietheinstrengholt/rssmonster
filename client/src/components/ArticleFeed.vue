@@ -463,7 +463,7 @@ export default {
     async markArticleSeen(articleId, visibleSeconds = 0) {
       try {
         const response = await markArticleSeen(articleId, {
-          clusterView: this.$store.data.currentSelection.clusterView,
+          eventView: this.$store.data.currentSelection.eventView,
           visibleSeconds,
           selectedStatus: this.$store.data.currentSelection.status
         });
@@ -530,7 +530,7 @@ export default {
 
       try {
         const response = await markArticleSeen(articleId, {
-          clusterView: this.$store.data.currentSelection.clusterView,
+          eventView: this.$store.data.currentSelection.eventView,
           visibleSeconds: 0,
           selectedStatus: 'unread'
         });
@@ -569,7 +569,7 @@ export default {
         }
 
         const response = await markArticleSeen(id, {
-          clusterView: this.$store.data.currentSelection.clusterView,
+          eventView: this.$store.data.currentSelection.eventView,
           visibleSeconds: 0,
           selectedStatus: 'unread'
         });
@@ -729,7 +729,7 @@ export default {
         }
 
         const response = await markArticleSeen(id, {
-          clusterView: this.$store.data.currentSelection.clusterView,
+          eventView: this.$store.data.currentSelection.eventView,
           visibleSeconds: 0,
           selectedStatus: 'unread'
         });
@@ -775,7 +775,7 @@ export default {
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
-        clusterView: 'all',
+        eventView: 'all',
         sort: 'desc'
       });
     },

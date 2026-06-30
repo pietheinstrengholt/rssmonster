@@ -11,7 +11,7 @@ export const fetchOverview = (currentSelection) =>
     ...currentSelection,
     search: normalizeQuerySortAliasesForApi(currentSelection.search),
     sort: normalizeSortValueForApi(currentSelection.sort),
-    clusterView: String(currentSelection.clusterView)
+    eventView: String(currentSelection.eventView)
   });
 
 /**
@@ -28,7 +28,7 @@ export const fetchOverviewCounts = (currentSelection) =>
     ...currentSelection,
     search: normalizeQuerySortAliasesForApi(currentSelection.search),
     sort: normalizeSortValueForApi(currentSelection.sort),
-    clusterView: String(currentSelection.clusterView)
+    eventView: String(currentSelection.eventView)
   });
 
 /**

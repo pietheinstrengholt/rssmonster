@@ -24,7 +24,7 @@ const defaultSelection = () => ({
   minQualityScore: 0,
   sort: 'desc',
   viewMode: 'full',
-  clusterView: 'all'
+  eventView: 'all'
 });
 
 const normalizeSort = value => {
@@ -47,7 +47,7 @@ const removeSortTokens = query => {
   return cleaned || null;
 };
 
-const normalizeClusterView = value => {
+const normalizeEventView = value => {
   const normalized = String(value ?? 'all');
   if (normalized === 'topicGroup') return 'eventCluster';
   if (normalized === 'eventCluster') return 'eventCluster';
@@ -206,7 +206,7 @@ export const useStore = defineStore('data', {
 
     async fetchTopTags() {
       const { data } = await fetchTopTagsAPI({
-        clusterView: this.currentSelection.clusterView
+        eventView: this.currentSelection.eventView
       });
 
       this.topTags = data.tags || [];
@@ -224,10 +224,10 @@ export const useStore = defineStore('data', {
           selection.sort != null
             ? normalizeSort(selection.sort)
             : normalizeSort(prev.sort),
-        clusterView:
-          selection.clusterView != null
-            ? normalizeClusterView(selection.clusterView)
-            : normalizeClusterView(prev.clusterView)
+        eventView:
+          selection.eventView != null
+            ? normalizeEventView(selection.eventView)
+            : normalizeEventView(prev.eventView)
       };
     },
 
@@ -332,11 +332,11 @@ export const useStore = defineStore('data', {
       this.chatAssistantOpen = false;
     },
 
-    setClusterView(value) {
-      this.currentSelection.clusterView = normalizeClusterView(value);
+    setEventView(value) {
+      this.currentSelection.eventView = normalizeEventView(value);
       this.fetchOverviewSplit({ forceUpdate: true }).catch(err => {
         if (import.meta.env.DEV) {
-          console.warn('Cluster view refresh failed', err);
+          console.warn('Event view refresh failed', err);
         }
       });
     },

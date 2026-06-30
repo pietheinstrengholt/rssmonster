@@ -103,7 +103,8 @@ const bootstrapIconNames = [
   'circle-fill',
   'arrow-up-right-square-fill',
   'eye-fill',
-  'record-circle-fill'
+  'record-circle-fill',
+  'stars'
 ]
 
 const bootstrapIconsSprite = () => {

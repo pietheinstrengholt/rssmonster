@@ -55,7 +55,7 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'full'
       },
-      clusterView: {
+      eventView: {
         type: DataTypes.STRING,
         allowNull: false,
         defaultValue: 'all'

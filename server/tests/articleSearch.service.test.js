@@ -50,7 +50,7 @@ describe('articleSearch.service', () => {
       minSentimentScore: 0,
       minQualityScore: 0,
       viewMode: 'full',
-      clusterView: 'all'
+      eventView: 'all'
     });
 
     // ---- Articles with diverse properties ----

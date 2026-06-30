@@ -48,8 +48,8 @@ const loadCategoriesStructure = userId => Category.findAll({
   order: ['categoryOrder', 'name']
 });
 
-const applyClusterViewFilter = (baseWhere, clusterView) => {
-  if (clusterView === 'eventCluster') {
+const applyEventViewFilter = (baseWhere, eventView) => {
+  if (eventView === 'eventCluster') {
     baseWhere[Op.or] = [
       {
         id: {
@@ -66,7 +66,7 @@ const applyClusterViewFilter = (baseWhere, clusterView) => {
     ];
   }
 
-  if (clusterView === 'topicGroup') {
+  if (eventView === 'topicGroup') {
     baseWhere[Op.or] = [
       {
         id: {
@@ -101,7 +101,7 @@ const applyClusterViewFilter = (baseWhere, clusterView) => {
   }
 };
 
-const buildOverviewWhere = async ({ userId, clusterView }) => {
+const buildOverviewWhere = async ({ userId, eventView }) => {
   const settings = await Setting.findOne({
     where: { userId },
     attributes: [
@@ -119,7 +119,7 @@ const buildOverviewWhere = async ({ userId, clusterView }) => {
     qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
   };
 
-  applyClusterViewFilter(baseWhere, clusterView);
+  applyEventViewFilter(baseWhere, eventView);
 
   return baseWhere;
 };
@@ -229,9 +229,9 @@ export const getOverviewCounts = async (req, res, _next) => {
   }
 
   try {
-    const clusterView = String(req.body?.clusterView || 'all');
+    const eventView = String(req.body?.eventView || 'all');
     const [baseWhere, categoriesRaw] = await Promise.all([
-      buildOverviewWhere({ userId, clusterView }),
+      buildOverviewWhere({ userId, eventView }),
       loadCategoriesStructure(userId)
     ]);
 
@@ -262,9 +262,9 @@ export const getOverview = async (req, res, _next) => {
   }
 
   try {
-    const clusterView = String(req.body?.clusterView || 'all');
+    const eventView = String(req.body?.eventView || 'all');
     const [baseWhere, categoriesRaw] = await Promise.all([
-      buildOverviewWhere({ userId, clusterView }),
+      buildOverviewWhere({ userId, eventView }),
       loadCategoriesStructure(userId)
     ]);
     const categories = buildCategoriesStructure(categoriesRaw);

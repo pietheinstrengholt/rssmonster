@@ -6,7 +6,7 @@ const getClusterArticles = async (req, res) => {
   try {
     const userId = req.userData.userId;
     const eventId = req.body?.clusterId;
-    const clusterView = req.body?.clusterView || 'all';
+    const eventView = req.body?.eventView || 'all';
     const requestedTopicId = Number(req.body?.topicId) || null;
     const articleId = Number(req.body?.articleId) || null;
 
@@ -32,7 +32,7 @@ const getClusterArticles = async (req, res) => {
 
     let targetClusterIds = [eventId];
     const topicId = cluster.topicId || requestedTopicId;
-    if (clusterView === 'topicGroup' && topicId) {
+    if (eventView === 'topicGroup' && topicId) {
       const topicClusters = await Event.findAll({
         where: {
           userId: userId,

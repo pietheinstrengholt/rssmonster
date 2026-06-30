@@ -131,7 +131,7 @@ describe('article ownership authorization', () => {
       .set('Authorization', authHeaderFor(owner))
       .send({
         selectedStatus: 'unread',
-        clusterView: 'eventCluster',
+        eventView: 'eventCluster',
         visibleSeconds: 120
       });
 

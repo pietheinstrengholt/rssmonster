@@ -19,6 +19,8 @@ export const expressionPatterns = [
     { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
     { name: 'title', regex: /^title:(.+)$/i },
+    { name: 'author', regex: /^author:(.+)$/i },
+    { name: 'language', regex: /^language:[a-z]{2,3}$/i },
     { name: 'sort', regex: /^sort:(desc|asc|recommended|quality|attention)$/ },
     { name: 'limit', regex: /^limit:\s*(\d+)$/i },
     { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
@@ -35,7 +37,7 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'eventCount', 'hot', 'tag', 'title', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
+export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
 
 export const normalizeSortValueForApi = sort => sort;
 
@@ -44,12 +46,12 @@ export const normalizeQuerySortAliasesForApi = query => query;
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|eventCount|hot|tag|title|sort|limit|quality|freshness|firstSeen)=/i;
+const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|eventCount|hot|tag|title|author|language|sort|limit|quality|freshness|firstSeen)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)
  */
-const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|eventCount|hot|tag|title|sort|limit|quality|freshness|firstSeen|@)/i;
+const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|eventCount|hot|tag|title|author|language|sort|limit|quality|freshness|firstSeen|@)/i;
 
 /**
  * Calculate Levenshtein distance between two strings for typo detection.
@@ -121,8 +123,8 @@ export function validateQuery(query, options = { allowEmpty: true }) {
         workingQuery = workingQuery.replace(lastDayMatch[0], '__LASTDAY_PLACEHOLDER__');
     }
 
-    // Split on whitespace/commas
-    const tokens = workingQuery.split(/[\s,]+/).filter(Boolean);
+    // Split on whitespace/commas while preserving field:"quoted phrase" tokens.
+    const tokens = workingQuery.match(/(?:[A-Za-z]+:)?"[^"]*"|[^\s,]+/g) || [];
     
     for (const token of tokens) {
         // Skip placeholders

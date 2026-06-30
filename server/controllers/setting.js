@@ -23,7 +23,7 @@ export const getSettings = async (req, res, _next) => {
     let minSentimentScore = 0;
     let minQualityScore = 0;
     let viewMode = "full";
-    let clusterView = "all";
+    let eventView = "all";
     let themeMode = 'system';
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
@@ -38,7 +38,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore = settings.minSentimentScore || 0;
       minQualityScore = settings.minQualityScore || 0;
       viewMode = settings.viewMode || 'full';
-      clusterView = settings.clusterView || 'all';
+      eventView = settings.eventView || 'all';
       themeMode = settings.themeMode || 'system';
     }
 
@@ -54,7 +54,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore: minSentimentScore,
       minQualityScore: minQualityScore,
       viewMode: viewMode,
-      clusterView: String(clusterView),
+      eventView: String(eventView),
       themeMode: themeMode,
       AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });

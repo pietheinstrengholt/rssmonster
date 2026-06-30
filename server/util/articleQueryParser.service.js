@@ -99,6 +99,12 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     workingSearch = workingSearch.replace(titleQuotedMatch[0], '').trim();
   }
 
+  const authorQuotedMatch = workingSearch.match(/author:"([^"]+)"/i);
+  if (authorQuotedMatch) {
+    filters.author = authorQuotedMatch[1].trim();
+    workingSearch = workingSearch.replace(authorQuotedMatch[0], '').trim();
+  }
+
   const quotedDate = parseQuotedDatePattern(workingSearch);
   if (quotedDate.date) {
     filters.date = quotedDate.date;
@@ -112,7 +118,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     workingSearch = workingSearch.replace(quotedTextMatch[0], '').trim();
   }
 
-  const tokens = workingSearch === '' ? [] : workingSearch.split(/[\s,]+/).filter(Boolean);
+  const tokens = workingSearch.match(/(?:[A-Za-z]+:)?"[^"]*"|[^\s,]+/g) || [];
   const remainingTokens = [];
 
   for (const token of tokens) {
@@ -150,9 +156,21 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     if (!filters.title) {
       const titleMatch = cleaned.match(/^title:\s*(.+)$/i);
       if (titleMatch) {
-        filters.title = titleMatch[1].trim();
+        filters.title = titleMatch[1].trim().replace(/^"|"$/g, '');
         continue;
       }
+    }
+
+    const authorMatch = cleaned.match(/^author:\s*(.+)$/i);
+    if (authorMatch) {
+      filters.author = authorMatch[1].trim().replace(/^"|"$/g, '');
+      continue;
+    }
+
+    const languageMatch = cleaned.match(/^language:\s*([a-z]{2,3})$/i);
+    if (languageMatch) {
+      filters.language = languageMatch[1].toLowerCase();
+      continue;
     }
 
     const sortMatch = cleaned.match(/^sort:\s*(desc|asc|recommended|quality|attention)$/i);

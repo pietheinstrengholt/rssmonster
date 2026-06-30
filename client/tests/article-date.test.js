@@ -31,7 +31,7 @@ function mountArticle(props = {}) {
             categories: [],
             currentSelection: {
               viewMode: 'minimal',
-              clusterView: 'all'
+              eventView: 'all'
             }
           }
         }

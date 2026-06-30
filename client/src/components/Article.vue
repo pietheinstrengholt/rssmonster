@@ -20,8 +20,8 @@
         <div class="article-list-meta">
           <span class="article-list-feed">{{ author || feed.feedName }}</span>
           <span class="article-list-dot">·</span>
-          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
-          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.eventView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.eventView !== 'all'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
           <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ tag.name.toLowerCase() }}</span>
         </div>
       </div>
@@ -41,9 +41,9 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventView="isEventView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
+            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :eventView="$store.data.currentSelection.eventView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
         </div>
@@ -203,17 +203,17 @@ export default {
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
     },
-    // Returns the total number of articles in the active cluster view.
+    // Returns the total number of articles in the active event view.
     clusterCountTotal() {
       if (!this.cluster) return 0;
-      if (this.$store.data.currentSelection.clusterView === 'topicGroup') {
+      if (this.$store.data.currentSelection.eventView === 'topicGroup') {
         return Number(this.cluster.topicGroupCount ?? this.cluster.articleCount ?? 0);
       }
       return Number(this.cluster.articleCount || 0);
     },
     // Determines whether the active view is an event cluster.
-    isEventClusterView() {
-      return this.$store.data.currentSelection.clusterView === 'eventCluster';
+    isEventView() {
+      return this.$store.data.currentSelection.eventView === 'eventCluster';
     },
     // Determines whether the article has a non-zero interest score.
     hasInterestScore() {
@@ -487,7 +487,7 @@ export default {
       console.log('Fetching articles for cluster:', clusterId);
       fetchClusterArticles(
         clusterId,
-        this.$store.data.currentSelection.clusterView,
+        this.$store.data.currentSelection.eventView,
         this.id
       )
       .then(response => {

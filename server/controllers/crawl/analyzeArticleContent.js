@@ -254,12 +254,13 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
                 .map(b => b.trim())
                 .slice(0, 7)
             : [],
-          // Use feed categories as tags when available, otherwise use LLM-generated tags
-          tags: hasFeedCategories
-            ? feedCategoryTags
-            : (Array.isArray(parsed.tags)
-              ? [...new Set(parsed.tags.map(normalizeTag).filter(Boolean))].slice(0, 5)
-              : []),
+          // Merge feed-provided categories with LLM-generated tags
+          tags: [...new Set([
+              ...feedCategoryTags,
+              ...(Array.isArray(parsed.tags)
+                ? parsed.tags.map(normalizeTag).filter(Boolean)
+                : [])
+          ])].slice(0, 5),
           advertisementScore: bucketScore(parsed.advertisementScore),
           sentimentScore: bucketScore(parsed.sentimentScore),
           qualityScore: bucketScore(parsed.qualityScore)

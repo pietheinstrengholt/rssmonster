@@ -80,7 +80,7 @@ export const getArticles = async (req, res) => {
       sort: req.query.sort,
       tag: req.query.tag,
       viewMode: req.query.viewMode,
-      clusterView: req.query.clusterView || 'all',
+      eventView: req.query.eventView || 'all',
       persistSettings: true
     });
 
@@ -595,7 +595,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     ) {
       let clusterCount = response.cluster.articleCount;
 
-      if (req.body?.clusterView === 'topicGroup') {
+      if (req.body?.eventView === 'topicGroup') {
         const cluster = await Event.findOne({
           where: {
             id: updatedArticle.eventId,
@@ -628,8 +628,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
     }
 
     // If eventCluster is enabled and article has an eventId, update all articles in the same event using the same payload
-    if (req.body?.clusterView === 'eventCluster' && article.eventId) {
-      console.log(`eventCluster view enabled: marking all articles in event ${article.eventId} as seen`);
+    if (req.body?.eventView === 'eventCluster' && article.eventId) {
+      console.log(`event view enabled: marking all articles in event ${article.eventId} as seen`);
 
       // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
       // If status should be marked as read, ensure it is set for the cluster update as well
@@ -673,8 +673,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
       });
     }
 
-    // Check if cluster view is enabled for topicGroup only
-    if (req.body?.clusterView === 'topicGroup' && article.eventId) {
+    // Check if event view is enabled for topicGroup only
+    if (req.body?.eventView === 'topicGroup' && article.eventId) {
       const cluster = await Event.findOne({
         where: {
           id: article.eventId,
