@@ -783,8 +783,8 @@ const articleMarkToUnread = async (req, res, _next) => {
   }
 };
 
-// Mark article with star
-const articleMarkWithStar = async (req, res, _next) => {
+// Mark article as favorite
+const articleMarkAsFavorite = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
@@ -799,11 +799,11 @@ const articleMarkWithStar = async (req, res, _next) => {
 
     if (update === undefined) {
       return res.status(400).json({
-        message: "Star indicator is not set"
+        message: "Favorite indicator is not set"
       });
     }
 
-    const starInd = update === "mark" ? 1 : 0;
+    const favoriteInd = update === "mark" ? 1 : 0;
 
     if (!articleId && articleIds.length > 0) {
       const articles = await Article.findAll({
@@ -823,7 +823,7 @@ const articleMarkWithStar = async (req, res, _next) => {
         });
       }
 
-      await Promise.all(articles.map(article => article.update({ starInd })));
+      await Promise.all(articles.map(article => article.update({ favoriteInd })));
       return res.status(200).json({ articles });
     }
 
@@ -849,13 +849,10 @@ const articleMarkWithStar = async (req, res, _next) => {
         message: "Article not found"
       });
     }
-    
-    article
-      .update({ starInd })
-      .then(() => res.status(200).json(article))
-      .catch(error => res.status(400).json(error));
+    await article.update({ favoriteInd });
+    return res.status(200).json(article);
   } catch (err) {
-    console.log(err);
+    console.error('Error in articleMarkAsFavorite:', err);
     return res.status(500).json(err);
   }
 };
@@ -894,6 +891,6 @@ export default {
   articleDetails,
   articleMarkAsSeen,
   articleMarkToUnread,
-  articleMarkWithStar,
+  articleMarkAsFavorite,
   articleMarkAllAsRead
 }

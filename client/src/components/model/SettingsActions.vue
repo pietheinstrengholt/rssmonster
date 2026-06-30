@@ -66,7 +66,7 @@ export default {
       actions: [],
       actionTypes: [
         { value: 'delete', label: 'Delete', selectLabel: 'Delete article', icon: 'trash', iconClass: 'actions-type-icon--delete', description: 'Prevents the article from being saved.' },
-        { value: 'star', label: 'Star', selectLabel: 'Set starred', icon: 'star', iconClass: 'actions-type-icon--star', description: 'Marks the article as important.' },
+        { value: 'favorite', label: 'Favorite', selectLabel: 'Set favorite', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Marks the article as a favorite.' },
         { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
         { value: 'clicked', label: 'Clicked', selectLabel: 'Mark as clicked', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Sets the read-later indicator.' },
         { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 100.' },

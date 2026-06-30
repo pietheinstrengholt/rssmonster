@@ -1,13 +1,19 @@
 <template>
-  <ArticleReaderLayout v-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-star="updateStarInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <SmartFoldersGridOverview
+    v-if="showSmartFoldersOverview"
+    :smart-folders="$store.data.smartFolders"
+    @selectSmartFolder="selectSmartFolderFromOverview"
+  />
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-star="updateStarInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
 <script>
 import ArticleListView from "./ArticleListView.vue";
 import ArticleReaderLayout from "./ArticleReaderLayout.vue";
+import SmartFoldersGridOverview from "./SmartFoldersGridOverview.vue";
 import {
   fetchArticleIds,
   fetchArticleDetails,
@@ -16,13 +22,14 @@ import {
   markArticleUnread,
   markArticleSeen,
   markManyClicked,
-  markManyWithStar
+  markManyAsFavorite
 } from '../api/articles';
 
 export default {
   components: {
     ArticleListView,
-    ArticleReaderLayout
+    ArticleReaderLayout,
+    SmartFoldersGridOverview
   },
 
   // Initializes article feed state and observer bookkeeping.
@@ -57,6 +64,7 @@ export default {
       activeMinimalArticleId: null,
       activeRequestId: 0,
       pendingReadStatusArticleIds: new Set(),
+      showSmartFoldersOverview: false,
 
       // tracks previous visibility state per article
       visibleMap: new Map(),
@@ -120,6 +128,7 @@ export default {
     "$store.data.currentSelection": {
       // Reloads articles when the active selection changes.
       handler(data) {
+        this.showSmartFoldersOverview = false;
         this.fetchArticleIds(data);
       },
       deep: true,
@@ -515,6 +524,8 @@ export default {
       const normalizedArticleId = Number.isFinite(pendingArticleId) ? pendingArticleId : articleId;
       if (this.pendingReadStatusArticleIds.has(normalizedArticleId)) return;
 
+      const article = this.articles.find(item => String(item.id) === String(articleId));
+      const wasUnread = article?.status !== 'read';
       this.pendingReadStatusArticleIds.add(normalizedArticleId);
 
       try {
@@ -525,7 +536,7 @@ export default {
         });
 
         this.applyArticleSeenResponse(response.data, {
-          updateReadCounts: this.$store.data.currentSelection.status === 'unread'
+          updateReadCounts: wasUnread
         });
         this.pool.add(normalizedArticleId);
       } catch (error) {
@@ -564,7 +575,7 @@ export default {
         });
 
         this.applyArticleSeenResponse(response.data, {
-          updateReadCounts: this.$store.data.currentSelection.status === 'unread'
+          updateReadCounts: status !== 'read'
         });
         this.pool.add(normalizedArticleId);
       } catch (error) {
@@ -579,8 +590,8 @@ export default {
       if (this.$store.data.currentSelection.viewMode !== 'reader') return;
 
       try {
-        if (action === 'star-visible') {
-          await this.starReaderArticles(this.articles);
+        if (action === 'favorite-visible') {
+          await this.favoriteReaderArticles(this.articles);
           return;
         }
 
@@ -654,33 +665,33 @@ export default {
       await this.$store.data.fetchOverviewSplit({ forceUpdate: true });
     },
 
-    // Stars each visible reader article that is not already starred.
-    async starReaderArticles(articles) {
-      const unstarredArticles = articles.filter(article => article.starInd !== 1);
-      if (!unstarredArticles.length) return;
+    // Favorites each visible reader article that is not already favorited.
+    async favoriteReaderArticles(articles) {
+      const unfavoritedArticles = articles.filter(article => article.favoriteInd !== 1);
+      if (!unfavoritedArticles.length) return;
 
-      const response = await markManyWithStar(unstarredArticles.map(article => article.id), 'mark');
+      const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark');
       const updatedArticles = response.data.articles || [];
 
       for (const updatedArticle of updatedArticles) {
-        this.applyReaderStarResponse(updatedArticle);
+        this.applyReaderFavoriteResponse(updatedArticle);
       }
     },
 
-    // Applies the local and overview count changes for a starred reader article.
-    applyReaderStarResponse(updatedArticle) {
+    // Applies the local and overview count changes for a favorited reader article.
+    applyReaderFavoriteResponse(updatedArticle) {
       const category = this.$store.data.categories.find(
         item => item.id === updatedArticle.feed?.categoryId
       );
 
       if (category) {
-        category.starCount++;
+        category.favoriteCount++;
         const feed = category.feeds?.find(item => item.id === updatedArticle.feedId);
-        if (feed) feed.starCount++;
+        if (feed) feed.favoriteCount++;
       }
 
-      this.$store.data.increaseStarCount();
-      this.updateStarInd({ id: updatedArticle.id, starInd: 1 });
+      this.$store.data.increaseFavoriteCount();
+      this.updateFavoriteInd({ id: updatedArticle.id, favoriteInd: 1 });
     },
 
     // Marks each visible reader article as clicked.
@@ -752,6 +763,7 @@ export default {
 
     // Clears the active article filters using the existing selection state.
     clearFilters() {
+      this.showSmartFoldersOverview = false;
       this.$store.data.setSearchQuery('');
       this.$store.data.setCurrentSelection({
         status: 'unread',
@@ -764,7 +776,7 @@ export default {
         minSentimentScore: 0,
         minQualityScore: 0,
         clusterView: 'all',
-        sort: 'DESC'
+        sort: 'desc'
       });
     },
 
@@ -773,23 +785,26 @@ export default {
       this.$emit("refresh-feeds");
     },
 
-    // Selects the first configured smart folder when smart folder navigation is available.
-    openSmartFolders() {
-      const firstSmartFolder = this.$store.data.smartFolders[0];
-
-      if (!firstSmartFolder) {
-        // TODO: Add smart folder management navigation when a shared route or modal action exists.
-        return;
+    // Shows the smart folders navigation overview when smart folders are available.
+    async openSmartFolders() {
+      if (!this.$store.data.smartFolders.length) {
+        await this.$store.data.fetchSmartFolders();
       }
 
-      this.$store.data.setSmartFolder(firstSmartFolder);
+      this.showSmartFoldersOverview = true;
     },
 
-    // Updates an article's local star indicator.
-    updateStarInd({ id, starInd }) {
+    // Selects a smart folder from the overview using the existing store behavior.
+    selectSmartFolderFromOverview(smartFolder) {
+      this.showSmartFoldersOverview = false;
+      this.$store.data.setSmartFolder(smartFolder);
+    },
+
+    // Updates an article's local favorite indicator.
+    updateFavoriteInd({ id, favoriteInd }) {
       const idx = this.articles.findIndex(a => a.id === id);
       if (idx !== -1) {
-        this.articles[idx].starInd = starInd;
+        this.articles[idx].favoriteInd = favoriteInd;
       }
     },
 
@@ -865,12 +880,11 @@ export default {
     // Removes an article from the currently rendered feed.
     removeArticle({ id }) {
       console.log(`Removing article ${id} from view`);
-      
-      // Find and remove the article from the articles array
-      const index = this.articles.findIndex(a => a.id === id);
-      
-      if (index !== -1) {
-        this.articles.splice(index, 1);
+
+      const nextArticles = this.articles.filter(a => a.id !== id);
+
+      if (nextArticles.length !== this.articles.length) {
+        this.articles = nextArticles;
         console.log(`Successfully removed article ${id}`);
       } else {
         console.error('Could not find article to remove:', id);

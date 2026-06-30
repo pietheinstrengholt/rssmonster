@@ -70,7 +70,7 @@ function buildTargetWhere({ userId = null, afterId = null } = {}) {
   const where = {
     articleVector: null,
     [Op.or]: [
-      { starInd: 1 },
+      { favoriteInd: 1 },
       { positiveInd: 1 },
       { negativeInd: 1 },
       { clickedAmount: { [Op.gt]: 0 } }
@@ -102,7 +102,7 @@ async function fetchBatch({ userId, afterId, batchSize }) {
       'contentStripped',
       'articleVector',
       'embedding_model',
-      'starInd',
+      'favoriteInd',
       'positiveInd',
       'negativeInd',
       'clickedAmount'

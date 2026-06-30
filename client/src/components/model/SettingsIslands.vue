@@ -8,7 +8,7 @@
         <p class="settings-page-eyebrow">Settings — Island Insights</p>
         <h3 id="islands-title">Your evolving interests</h3>
         <p>
-          Interest islands capture the topics your reading, stars, and clicks keep reinforcing. Review what is growing,
+          Interest islands capture the topics your reading, favorites, and clicks keep reinforcing. Review what is growing,
           what it is connected to, and how much of your library is covered.
         </p>
       </div>
@@ -67,7 +67,7 @@
       </section>
 
       <div v-if="!islands.length" class="alert alert-info mb-3">
-        You do not have any interest islands yet. Star articles, click through articles, or keep reading in a topic to grow one.
+        You do not have any interest islands yet. Favorite articles, click through articles, or keep reading in a topic to grow one.
       </div>
 
       <section v-else class="settings-data-panel" aria-labelledby="interest-islands-title">
@@ -98,7 +98,7 @@
             </div>
 
             <div class="interest-island-badges">
-              <span class="badge text-bg-primary">{{ island.starCount }} {{ island.starCount === 1 ? 'star' : 'stars' }}</span>
+              <span class="badge text-bg-primary">{{ island.favoriteCount }} {{ island.favoriteCount === 1 ? 'favorite' : 'favorites' }}</span>
               <span class="badge text-bg-info">{{ island.clickCount }} {{ island.clickCount === 1 ? 'click' : 'clicks' }}</span>
               <span class="badge text-bg-secondary">{{ island.interactionCount }} interactions</span>
               <span class="badge" :class="island.archivedInd ? 'text-bg-dark' : 'text-bg-success'">
@@ -126,7 +126,7 @@
                   >
                     {{ article.isPopulationSource ? 'Population source' : 'New to island' }}
                   </span>
-                  <small>{{ article.starInd === 1 ? 'Starred' : 'Not starred' }}</small>
+                  <small>{{ article.favoriteInd === 1 ? 'Favorite' : 'Not favorite' }}</small>
                   <small>{{ article.clickedAmount > 0 ? `${article.clickedAmount} clicks` : 'No clicks' }}</small>
                 </div>
               </a>

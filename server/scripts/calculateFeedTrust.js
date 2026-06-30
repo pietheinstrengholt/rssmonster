@@ -4,7 +4,7 @@
  * This script calculates a trust score (0-1) for each feed based on:
  * - Originality: How many articles are original vs duplicates
  * - Quality: Computed quality scores of articles
- * - Engagement: How many articles users star or click
+ * - Engagement: How many articles users favorite or click
  * - Consistency: Publishing frequency/cadence
  * - Volume penalties: Very spammy/high-volume feeds are penalized
  *
@@ -202,7 +202,7 @@ export async function calculateFeedTrustForFeed(feedId) {
 
   for (const article of articles) {
     const explicitEngagement =
-      (article.starInd ? 1 : 0) +
+      (article.favoriteInd ? 1 : 0) +
       (article.clickedAmount > 0 ? 0.5 : 0);
 
     const attentionEngagement =

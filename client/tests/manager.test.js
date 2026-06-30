@@ -39,7 +39,7 @@ describe('Sidebar manager', () => {
 							topTags: [],
 							unreadCount: 0,
 							readCount: 0,
-							starCount: 0,
+							favoriteCount: 0,
 							hotCount: 0,
 							clickedCount: 0,
 							unreadsSinceLastUpdate: 0,

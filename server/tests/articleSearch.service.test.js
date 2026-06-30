@@ -45,7 +45,7 @@ describe('articleSearch.service', () => {
       categoryId: '%',
       feedId: '%',
       status: 'unread',
-      sort: 'DESC',
+      sort: 'desc',
       minAdvertisementScore: 0,
       minSentimentScore: 0,
       minQualityScore: 0,
@@ -97,7 +97,7 @@ describe('articleSearch.service', () => {
       contentOriginal: '<p>Rust provides memory safety without garbage collection through its ownership system.</p>',
       contentStripped: 'Rust provides memory safety without garbage collection through its ownership system.',
       status: 'read',
-      starInd: 1,
+      favoriteInd: 1,
       firstSeen: hoursAgo(23),
       published: hoursAgo(24),
       advertisementScore: 95,
@@ -168,7 +168,13 @@ describe('articleSearch.service', () => {
       expect(result.itemIds.length).toBe(5);
     });
 
-    it('returns starred articles when status is star', async () => {
+    it('returns favorite articles when status is favorite', async () => {
+      const result = await searchArticles({ userId: user.id, status: 'favorite' });
+      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds.length).toBe(1);
+    });
+
+    it('keeps legacy star status as a favorite alias', async () => {
       const result = await searchArticles({ userId: user.id, status: 'star' });
       expect(result.itemIds).toContain(articles.starred.id);
       expect(result.itemIds.length).toBe(1);
@@ -209,12 +215,17 @@ describe('articleSearch.service', () => {
   // ============================
 
   describe('field filters', () => {
-    it('filters by star:true', async () => {
-      const result = await searchArticles({ userId: user.id, search: 'star:true' });
+    it('filters by favorite:true', async () => {
+      const result = await searchArticles({ userId: user.id, search: 'favorite:true' });
       expect(result.itemIds).toContain(articles.starred.id);
       result.itemIds.forEach(id => {
         expect(id).toBe(articles.starred.id);
       });
+    });
+
+    it('keeps legacy star:true as a favorite alias', async () => {
+      const result = await searchArticles({ userId: user.id, search: 'star:true' });
+      expect(result.itemIds).toContain(articles.starred.id);
     });
 
     it('filters by unread:true', async () => {
@@ -350,20 +361,20 @@ describe('articleSearch.service', () => {
     });
 
     it('sorts by published ASC when specified', async () => {
-      const result = await searchArticles({ userId: user.id, sort: 'ASC', status: '%' });
+      const result = await searchArticles({ userId: user.id, sort: 'asc', status: '%' });
       const recentIdx = result.itemIds.indexOf(articles.recent.id);
       const oldIdx = result.itemIds.indexOf(articles.old.id);
       expect(oldIdx).toBeLessThan(recentIdx);
     });
 
     it('sort: search token overrides sort parameter', async () => {
-      const result = await searchArticles({ userId: user.id, search: 'sort:ASC', sort: 'DESC', status: '%' });
+      const result = await searchArticles({ userId: user.id, search: 'sort:asc', sort: 'desc', status: '%' });
       const recentIdx = result.itemIds.indexOf(articles.recent.id);
       const oldIdx = result.itemIds.indexOf(articles.old.id);
       expect(oldIdx).toBeLessThan(recentIdx);
     });
 
-    it('sorts by RECOMMENDED using loaded cluster attributes', async () => {
+    it('sorts by recommended using loaded cluster attributes', async () => {
       let lowCoverageArticle;
       let highCoverageArticle;
       let lowCluster;
@@ -424,7 +435,7 @@ describe('articleSearch.service', () => {
         await lowCoverageArticle.update({ eventId: lowCluster.id });
         await highCoverageArticle.update({ eventId: highCluster.id });
 
-        const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'RECOMMENDED' });
+        const result = await searchArticles({ userId: user.id, status: 'unread', sort: 'recommended' });
         const lowCoverageIdx = result.itemIds.indexOf(lowCoverageArticle.id);
         const highCoverageIdx = result.itemIds.indexOf(highCoverageArticle.id);
 

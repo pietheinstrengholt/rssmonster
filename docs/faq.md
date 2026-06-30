@@ -41,7 +41,7 @@ Everything can be inspected, filtered, or overridden.
 Yes.
 
 You can:
-- Sort by date (`sort:DESC`)
+- Sort by date (`sort:desc`)
 - Ignore quality or trust thresholds
 - Use Smart Folders that behave like traditional views
 

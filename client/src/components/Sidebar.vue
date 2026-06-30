@@ -53,7 +53,7 @@
       <SidebarNavItem
         v-for="smartFolder in $store.data.smartFolders"
         :key="smartFolder.id"
-        icon="tag-fill"
+        icon="folder-fill"
         :title="smartFolder.name"
         :count="smartFolder.ArticleCount"
         :selected="$store.data.currentSelection.smartFolderId === smartFolder.id"
@@ -363,7 +363,7 @@ const refreshProgress = reactive({
 const statusFilters = [
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
   { status: 'read', label: 'Read', icon: 'circle-fill', iconClass: 'icon-read' },
-  { status: 'star', label: 'Favorites', icon: 'bookmark-fill', iconClass: 'icon-star' },
+  { status: 'favorite', label: 'Favorites', icon: 'bookmark-fill', iconClass: 'icon-star' },
   { status: 'hot', label: 'Hot', icon: 'fire', iconClass: 'icon-hot' },
   { status: 'clicked', label: 'Clicked', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked' }
 ];

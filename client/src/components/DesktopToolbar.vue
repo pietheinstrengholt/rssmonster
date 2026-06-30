@@ -634,7 +634,7 @@ export default {
       selectedThemeMode: getThemeMode(),
       statusOptions: [
         { value: 'unread', label: 'Unread' },
-        { value: 'star', label: 'Star' },
+        { value: 'favorite', label: 'Favorite' },
         { value: 'hot', label: 'Hot' },
         { value: 'clicked', label: 'Clicked' },
         { value: 'read', label: 'Read' }
@@ -647,11 +647,11 @@ export default {
         { value: 'minimal', label: 'Headlines' }
       ],
       sortOptions: [
-        { value: 'ASC', label: 'Oldest' },
-        { value: 'DESC', label: 'Newest' },
-        { value: 'RECOMMENDED', label: 'Recommended', requiresAI: true },
-        { value: 'QUALITY', label: 'Quality', requiresAI: true },
-        { value: 'ATTENTION', label: 'Attention', requiresAI: true }
+        { value: 'asc', label: 'Oldest' },
+        { value: 'desc', label: 'Newest' },
+        { value: 'recommended', label: 'Recommended', requiresAI: true },
+        { value: 'quality', label: 'Quality', requiresAI: true },
+        { value: 'attention', label: 'Attention', requiresAI: true }
       ],
       groupingOptions: [
         { value: 'all', label: 'None' },

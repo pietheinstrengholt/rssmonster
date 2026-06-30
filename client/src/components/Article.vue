@@ -2,10 +2,10 @@
   <div class="article-card" :id="`article-${id}`" :class="[{ 'cluster-article': isClusterArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
     <div v-if="isMinimalView" class="mobile-swipe-shell">
       <div class="mobile-swipe-action" aria-hidden="true">
-        <i :class="['bi', starInd === 1 ? 'bi-bookmark-x' : 'bi-bookmark']" aria-hidden="true"></i>
-        <span>{{ starInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
+        <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-x-fill' : 'bi-bookmark-fill']" aria-hidden="true"></i>
+        <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
-      <div class="article-list-row mobile-swipe-content" :class="{ 'is-read': status === 'read', starred: starInd === 1, hot: hotInd === 1 }" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
+      <div class="article-list-row mobile-swipe-content" :class="{ 'is-read': status === 'read', favorited: favoriteInd === 1, hot: hotInd === 1 }" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
       <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
         <i :class="['bi', status === 'read' ? 'bi-circle-fill' : 'bi-record-circle-fill']" aria-hidden="true"></i>
       </button>
@@ -27,22 +27,28 @@
       </div>
       <div class="article-list-actions">
         <span class="article-list-time">{{ formatDate(published) }}</span>
-        <ArticleActionsMenu :starInd="starInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+        <ArticleActionsMenu :favoriteInd="favoriteInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
-          <i :class="['bi', starInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
+          <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
         </button>
       </div>
       </div>
     </div>
-    <div v-else class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
-      <div class="article-layout">
-        <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
-        <div class="meta-row">
-          <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
-          <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
-        </div>
+    <div v-else class="mobile-swipe-shell">
+      <div class="mobile-swipe-action" aria-hidden="true">
+        <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-x-fill' : 'bi-bookmark-fill']" aria-hidden="true"></i>
+        <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
-      <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
+      <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
+        <div class="article-layout">
+          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+          <div class="meta-row">
+            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
+            <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+          </div>
+        </div>
+        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
+      </div>
     </div>
     <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
@@ -51,7 +57,7 @@
 
 <script>
 import {
-  markWithStar,
+  markAsFavorite as markArticleAsFavoriteAPI,
   markClicked,
   markNotInterested,
   markMoreLikeThis
@@ -73,7 +79,7 @@ const SWIPE_THRESHOLD = 86;
 export default {
   inheritAttrs: false,
   components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleActionsMenu },
-  emits: ['update-star', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
+  emits: ['update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
   props: {
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
@@ -84,7 +90,7 @@ export default {
     author: { type: String, default: '' },
     hotInd: { type: Number, default: 0 },
     status: { type: String, default: '' },
-    starInd: { type: Number, default: 0 },
+    favoriteInd: { type: Number, default: 0 },
     clickedAmount: { type: Number, default: 0 },
     imageUrl: { type: String, default: '' },
     media: { type: [Boolean, Object, Array, String], default: null },
@@ -220,7 +226,7 @@ export default {
     },
     // Returns the accessible label for the favorite toggle.
     favoriteLabel() {
-      return this.starInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
+      return this.favoriteInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
     },
     // Returns the accessible label for the compact read status control.
     statusToggleLabel() {
@@ -284,7 +290,7 @@ export default {
     },
     // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
     onSwipeTouchStart(event) {
-      if (!this.isMobilePortrait || !this.isMinimalView) return;
+      if (!this.isMobilePortrait) return;
 
       const touch = event.touches[0];
       this.swipeStartX = touch.clientX;
@@ -296,7 +302,7 @@ export default {
     },
     // Updates the article offset while ignoring vertical scroll gestures.
     onSwipeTouchMove(event) {
-      if (!this.swipeTracking || !this.isMobilePortrait || !this.isMinimalView) return;
+      if (!this.swipeTracking || !this.isMobilePortrait) return;
 
       const touch = event.touches[0];
       const deltaX = touch.clientX - this.swipeStartX;
@@ -413,26 +419,26 @@ export default {
     },
     // Toggles the article's favorite status.
     markAsFavorite() {
-      // Toggle star status
-      const updateType = this.starInd ? 'unmark' : 'mark';
-      const newStarInd = this.starInd ? 0 : 1;
+      // Toggle favorite status.
+      const updateType = this.favoriteInd ? 'unmark' : 'mark';
+      const newFavoriteInd = this.favoriteInd ? 0 : 1;
       
-      markWithStar(this.id, updateType)
+      markArticleAsFavoriteAPI(this.id, updateType)
       .then(response => {
         const category = this.$store.data.categories.find(
           c => c.id === response.data.feed.categoryId
         );
         if (category) {
-          const delta = newStarInd ? 1 : -1;
-          category.starCount += delta;
+          const delta = newFavoriteInd ? 1 : -1;
+          category.favoriteCount += delta;
           const feed = category.feeds.find(f => f.id === response.data.feedId);
-          if (feed) feed.starCount += delta;
+          if (feed) feed.favoriteCount += delta;
         }
-        newStarInd
-          ? this.$store.data.increaseStarCount()
-          : this.$store.data.decreaseStarCount();
+        newFavoriteInd
+          ? this.$store.data.increaseFavoriteCount()
+          : this.$store.data.decreaseFavoriteCount();
 
-        this.$emit('update-star', { id: this.id, starInd: newStarInd });
+        this.$emit('update-favorite', { id: this.id, favoriteInd: newFavoriteInd });
       });
     },
     // Marks the article as not interesting.
@@ -591,10 +597,6 @@ export default {
   align-items: center;
   gap: 8px;
 }
-
-.recommendation-action-item svg {
-  margin-right: 3px;
-} 
   
 .recommendation-action-icon {
   width: 14px;
@@ -647,7 +649,7 @@ export default {
   border-color: var(--article-highlight-border);
 }
 
-.article-card .article-body.starred {
+.article-card .article-body.favorited {
   background-color: var(--desktop-toolbar-background);
 }
 
@@ -885,8 +887,10 @@ export default {
 }
 
 .article-card .dropdown-item {
+  color: var(--toolbar-text) !important;
+  font-size: 14px !important;
+  font-weight: 500;
   padding: 6px 8px !important;
-  font-size: 13px !important;
 }
 
 .article-card .dropdown-item:hover,
@@ -1287,7 +1291,7 @@ span.similar-badge {
   border-color: var(--article-highlight-border);
 }
 
-.article-list-row.starred {
+.article-list-row.favorited {
   background-color: var(--desktop-toolbar-background);
 }
 
@@ -1457,7 +1461,6 @@ span.similar-badge {
   .mobile-swipe-shell {
     position: relative;
     overflow: hidden;
-    background: var(--mobile-swipe-bookmark-bg, var(--color-primary));
     border-bottom: 1px solid var(--border-subtle);
   }
 
@@ -1470,8 +1473,7 @@ span.similar-badge {
     align-items: center;
     justify-content: center;
     gap: 8px;
-    background: var(--mobile-swipe-bookmark-bg, var(--color-primary));
-    color: var(--mobile-swipe-bookmark-text, var(--text-inverted));
+    color: var(--text-primary);
     font-size: 15px;
     font-weight: 700;
     line-height: 1.2;
@@ -1517,8 +1519,7 @@ span.similar-badge {
 
   :root[data-theme='dark'] .mobile-swipe-shell,
   :root[data-theme='dark'] .mobile-swipe-action {
-    background: var(--mobile-swipe-bookmark-bg, #1E3A8A);
-    color: var(--mobile-swipe-bookmark-text, #FFFFFF);
+    color: var(--text-primary);
   }
 
   :root[data-theme='dark'] .mobile-swipe-content {
@@ -1625,7 +1626,7 @@ span.similar-badge {
     border-color: var(--dark-page-surface);
   }
 
-  .article-card .article-body.starred {
+  .article-card .article-body.favorited {
     background-color: var(--dark-page-surface);
   }
 
@@ -1684,13 +1685,13 @@ span.similar-badge {
   }
 
   .article-card .dropdown-item {
-    color: var(--text-inverted) !important;
+    color: var(--toolbar-text) !important;
   }
 
   .article-card .dropdown-item:hover,
   .article-card .dropdown-item:focus {
     background-color: var(--bg-modal);
-    color: var(--text-inverted) !important;
+    color: var(--toolbar-text) !important;
   }
 
   .article-card .article-tags .ad-score {
@@ -1821,7 +1822,7 @@ span.similar-badge {
   }
 
   .article-list-row.hot,
-  .article-list-row.starred {
+  .article-list-row.favorited {
     background-color: var(--dark-bg-page, var(--dark-page-surface));
     border-color: var(--dark-border, var(--border-color));
   }

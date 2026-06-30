@@ -83,13 +83,13 @@ const parseQuotedDatePattern = search => {
 };
 
 // Converts a raw article search expression into normalized search text, filters, sorting, and limit data.
-export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) => {
+export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) => {
   const rawSearch = String(search).trim();
   const filters = {};
   let workingSearch = rawSearch;
   let text = '';
   let textMode = 'none';
-  let sort = (defaultSort || 'DESC').toUpperCase();
+  let sort = String(defaultSort || 'desc').toLowerCase();
   let limit = null;
 
   const titleQuotedMatch = workingSearch.match(/title:"([^"]+)"/i);
@@ -120,10 +120,10 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
 
     // Simplified boolean filter parsing
     let matchedBooleanFilter = false;
-    for (const key of ['star', 'unread', 'read', 'clicked', 'seen', 'hot']) {
+    for (const key of ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'hot']) {
       const value = parseBooleanFilter(cleaned, key);
       if (value !== null) {
-        filters[key] = value;
+        filters[key === 'favorite' ? 'star' : key] = value;
         matchedBooleanFilter = true;
         break;
       }
@@ -155,15 +155,33 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'DESC' } = {}) =>
       }
     }
 
-    const sortMatch = cleaned.match(/^sort:\s*(DESC|ASC|RECOMMENDED|QUALITY|ATTENTION)$/i);
+    const sortMatch = cleaned.match(/^sort:\s*(desc|asc|recommended|quality|attention)$/i);
     if (sortMatch) {
-      sort = sortMatch[1].toUpperCase();
+      sort = sortMatch[1].toLowerCase();
       continue;
     }
 
     const qualityMatch = cleaned.match(/^quality:(.+)$/i);
     if (qualityMatch) {
       filters.quality = parseNumberOperatorFilter(qualityMatch[1]);
+      continue;
+    }
+
+    const freshnessMatch = cleaned.match(/^freshness:(.+)$/i);
+    if (freshnessMatch) {
+      filters.freshness = parseNumberOperatorFilter(freshnessMatch[1]);
+      continue;
+    }
+
+    const eventMatch = cleaned.match(/^event:\s*(true|false)$/i);
+    if (eventMatch) {
+      filters.event = eventMatch[1].toLowerCase() === 'true';
+      continue;
+    }
+
+    const eventCountMatch = cleaned.match(/^eventCount:\s*(?:>=)?\s*(\d+)$/i);
+    if (eventCountMatch) {
+      filters.eventCount = parseInt(eventCountMatch[1], 10);
       continue;
     }
 

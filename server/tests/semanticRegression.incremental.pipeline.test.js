@@ -305,7 +305,7 @@ async function insertMissingFixtureArticles(userId, fixture, vectorByContentHash
       userId,
       feedId: feedIdMap.get(fixtureArticle.feedId),
       status: fixtureArticle.status || 'unread',
-      starInd: fixtureArticle.starInd || 0,
+      favoriteInd: fixtureArticle.favoriteInd || 0,
       negativeInd: fixtureArticle.negativeInd || 0,
       clickedAmount: fixtureArticle.clickedAmount || 0,
       url: fixtureArticle.url || `${urlPrefix}/${index + 1}`,

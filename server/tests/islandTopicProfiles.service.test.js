@@ -60,13 +60,13 @@ describe('buildTopicInterestIslandProfilesForUser', () => {
 
     const ownerArticle = await Article.create(articlePayload(owner.user, owner.feed, 1, {
       clickedAmount: 0,
-      starInd: 0,
+      favoriteInd: 0,
       attentionBucket: 0,
       negativeInd: 0
     }));
     const foreignArticle = await Article.create(articlePayload(foreign.user, foreign.feed, 2, {
       clickedAmount: 3,
-      starInd: 1,
+      favoriteInd: 1,
       attentionBucket: 4,
       negativeInd: 1
     }));

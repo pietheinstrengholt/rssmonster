@@ -10,7 +10,7 @@
         :aria-current="isMinimalArticleSelected(article.id) ? 'true' : null"
         :tabindex="minimalArticleTabindex(article.id)"
         :isMinimalContentOpen="String(article.id) === String(activeMinimalArticleId)"
-        @update-star="$emit('update-star', $event)"
+        @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @minimal-article-opened="$emit('minimal-article-opened', $event)"
         @minimal-article-closed="$emit('minimal-article-closed', $event)"
@@ -56,7 +56,7 @@ export default {
     ArticleEndState
   },
   emits: [
-    'update-star',
+    'update-favorite',
     'update-clicked',
     'minimal-article-opened',
     'minimal-article-closed',

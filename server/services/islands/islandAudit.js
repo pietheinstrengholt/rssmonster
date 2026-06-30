@@ -41,7 +41,7 @@ export async function buildPopulationAuditEntry({ userId, topicIds = [], article
         userId,
         id: { [Op.in]: articleIds }
       },
-      attributes: ['id', 'title', 'starInd', 'clickedAmount', 'negativeInd'],
+      attributes: ['id', 'title', 'favoriteInd', 'clickedAmount', 'negativeInd'],
       raw: true,
       transaction
     })
@@ -50,7 +50,7 @@ export async function buildPopulationAuditEntry({ userId, topicIds = [], article
       SELECT DISTINCT
         a.id,
         a.title,
-        a.starInd,
+        a.favoriteInd,
         a.clickedAmount,
         a.negativeInd
       FROM article_topics atp
@@ -73,19 +73,19 @@ export async function buildPopulationAuditEntry({ userId, topicIds = [], article
     .map(row => ({
       id: Number(row.id),
       title: row.title,
-      starInd: Number(row.starInd || 0),
+      favoriteInd: Number(row.favoriteInd || 0),
       clickedAmount: Number(row.clickedAmount || 0),
       negativeInd: Number(row.negativeInd || 0)
     }))
     .filter(row => Number.isFinite(row.id))
     .sort((a, b) => (
-      b.starInd - a.starInd ||
+      b.favoriteInd - a.favoriteInd ||
       b.clickedAmount - a.clickedAmount ||
       b.negativeInd - a.negativeInd ||
       a.id - b.id
     ));
 
-  const starredRows = articleRows.filter(row => row.starInd === 1);
+  const starredRows = articleRows.filter(row => row.favoriteInd === 1);
   const clickedRows = articleRows.filter(row => row.clickedAmount > 0);
   const negativeRows = articleRows.filter(row => row.negativeInd === 1);
 

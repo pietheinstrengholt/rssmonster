@@ -225,7 +225,7 @@ const serializeArticle = (article) => {
   const categories = [
     READING_LIST_STREAM,
     ...(article.status === 'read' ? [READ_STREAM] : []),
-    ...(article.starInd === 1 ? [STARRED_STREAM] : []),
+    ...(article.favoriteInd === 1 ? [STARRED_STREAM] : []),
     ...(category?.name ? [`${LABEL_PREFIX}${encodeLabelName(category.name)}`] : [])
   ];
 
@@ -270,7 +270,7 @@ const applyStreamFilter = async (where, streamId, userId) => {
   }
 
   if (normalized === STARRED_STREAM) {
-    where.starInd = 1;
+    where.favoriteInd = 1;
     return STARRED_STREAM;
   }
 
@@ -302,7 +302,7 @@ const applyTargetFilter = (where, target, include = true) => {
   if (target === READ_STREAM) {
     where.status = include ? 'read' : 'unread';
   } else if (target === STARRED_STREAM) {
-    where.starInd = include ? 1 : { [Op.ne]: 1 };
+    where.favoriteInd = include ? 1 : { [Op.ne]: 1 };
   }
 };
 
@@ -981,7 +981,7 @@ export const editTag = async (req, res) => {
         );
       } else if (tag === 'user/-/state/com.google/starred') {
         await Article.update(
-          { starInd: 1 },
+          { favoriteInd: 1 },
           { where: { id: { [Op.in]: numericIds }, userId: user.id } }
         );
       }
@@ -996,7 +996,7 @@ export const editTag = async (req, res) => {
         );
       } else if (tag === 'user/-/state/com.google/starred') {
         await Article.update(
-          { starInd: 0 },
+          { favoriteInd: 0 },
           { where: { id: { [Op.in]: numericIds }, userId: user.id } }
         );
       }

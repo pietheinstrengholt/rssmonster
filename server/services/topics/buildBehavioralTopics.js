@@ -40,7 +40,7 @@ const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
 // This function scores positive behavioral evidence for an article.
 function engagementScore(article) {
-  const stars = article.starInd === 1 ? 1 : 0;
+  const stars = article.favoriteInd === 1 ? 1 : 0;
   const clicks = Math.min(Number(article.clickedAmount || 0), 3);
   const deepReads = Number(article.attentionBucket || 0) >= 3 ? 1 : 0;
 
@@ -268,7 +268,7 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
       userId,
       articleVector: { [Op.ne]: null },
       [Op.or]: [
-        { starInd: 1 },
+        { favoriteInd: 1 },
         { clickedAmount: { [Op.gt]: 0 } },
         { attentionBucket: { [Op.gte]: 3 } }
       ]
@@ -278,7 +278,7 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
       'feedId',
       'title',
       'articleVector',
-      'starInd',
+      'favoriteInd',
       'clickedAmount',
       'attentionBucket',
       'published',
@@ -286,7 +286,7 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
       'updatedAt'
     ],
     order: [
-      ['starInd', 'DESC'],
+      ['favoriteInd', 'DESC'],
       ['clickedAmount', 'DESC'],
       ['attentionBucket', 'DESC'],
       ['published', 'DESC'],

@@ -48,7 +48,7 @@ Your PRIMARY goal is to reflect the user's demonstrated interests.
 
 Personalization should be driven by CONVERGING SIGNALS:
 keywords, topics, or entities that appear across multiple sources
-(starredItems, feed names, and tags).
+(favoriteItems, feed names, and tags).
 
 If no strong convergence exists, you may include a small number of
 generally useful folders — but they must not dominate the result.
@@ -61,8 +61,8 @@ SIGNAL PRIORITY & CONVERGENCE (VERY IMPORTANT)
 When generating Smart Folders, look for topics that appear in
 MULTIPLE of the following places:
 
-1. starredItems (strongest signal – explicit user intent)
-2. feed names with high starred counts
+1. favoriteItems (strongest signal – explicit user intent)
+2. feed names with high favorite counts
 3. interests.topTags and frequent tags
 4. general engagement patterns
 
@@ -74,13 +74,13 @@ GUIDELINES
 --------------------
 
 - Prefer Smart Folders based on topics with clear signal overlap
-  (e.g. a keyword appearing in feed name + starred item + tag)
+  (e.g. a keyword appearing in feed name + favorite item + tag)
 - If such a topic does not yet have a Smart Folder, you SHOULD propose one
 - Use free-text search or tag-based filters to capture the topic
 - 2-3 suggestions should be strongly personalized
 - 1-2 suggestions may be more generic if needed
 
-If starredItems are diverse:
+If favoriteItems are diverse:
 - You MAY generalize overlapping themes
   (e.g. "Apple", "Nintendo", "Gaming", "Gadgets", "Software")
 - Avoid overly broad concepts unless they clearly recur
@@ -95,7 +95,7 @@ SUPPORTED FILTERING EXPRESSIONS (STRICT)
 You MUST produce queries using ONLY the following:
 
 Boolean filters:
-- star:true | star:false
+- favorite:true | favorite:false
 - unread:true | unread:false
 - read:true | read:false
 - clicked:true | clicked:false
@@ -113,6 +113,10 @@ Free-text content search:
 Numeric filters:
 - quality:<number>, quality:>number, quality:<number, quality:>=number, quality:<=number
 - freshness:<number>, freshness:>number, freshness:<number, freshness:>=number, freshness:<=number
+- eventCount:<number>, eventCount:>=number
+
+Event filters:
+- event:true | event:false
 
 Date filters:
 - @YYYY-MM-DD
@@ -120,7 +124,7 @@ Date filters:
 - @yesterday
 
 Sorting:
-- sort:DESC | sort:ASC | sort:RECOMMENDED | sort:QUALITY | sort:ATTENTION
+- sort:desc | sort:asc | sort:recommended | sort:quality | sort:attention
 
 --------------------
 RULES
@@ -136,9 +140,9 @@ RULES
 GUIDANCE
 --------------------
 
-When using starredItems:
+When using favoriteItems:
 - Look for recurring entities or themes
-- It is acceptable to generalize across multiple starred titles
+- It is acceptable to generalize across multiple favorite titles
 - Prefer free-text search for conceptual topics
 
 If exact matches would duplicate existing folders:

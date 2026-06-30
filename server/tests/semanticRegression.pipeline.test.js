@@ -270,13 +270,13 @@ function islandAuditArticles(island) {
     .map(article => ({
       id: Number(article.id),
       title: article.title || '-',
-      starInd: Number(article.starInd || 0),
+      favoriteInd: Number(article.favoriteInd || 0),
       clickedAmount: Number(article.clickedAmount || 0),
       negativeInd: Number(article.negativeInd || 0)
     }))
     .filter(article => Number.isFinite(article.id))
     .sort((a, b) => (
-      b.starInd - a.starInd ||
+      b.favoriteInd - a.favoriteInd ||
       b.clickedAmount - a.clickedAmount ||
       b.negativeInd - a.negativeInd ||
       a.id - b.id
@@ -284,7 +284,7 @@ function islandAuditArticles(island) {
 }
 
 function formatArticleSignalSummary(article) {
-  return `star=${article.starInd} clicked=${article.clickedAmount} negative=${article.negativeInd}`;
+  return `star=${article.favoriteInd} clicked=${article.clickedAmount} negative=${article.negativeInd}`;
 }
 
 function approximatelyEqualScore(left, right) {
@@ -331,7 +331,7 @@ function plainScoredArticle(article) {
     title: article.title || '-',
     interestScore: Number(article.interestScore || 0),
     articleVector: article.articleVector,
-    starInd: Number(article.starInd || 0),
+    favoriteInd: Number(article.favoriteInd || 0),
     clickedAmount: Number(article.clickedAmount || 0),
     negativeInd: Number(article.negativeInd || 0),
     feedName: feed?.feedName || null,
@@ -488,7 +488,7 @@ function buildIslandFallbackScores(islands, articles, threshold = SEMANTIC_FIXTU
         similarity: Number(similarity.toFixed(4)),
         islandWeight: roundedScore(islandWeight),
         interestScore: currentScore,
-        starInd: Number(article.starInd || 0),
+        favoriteInd: Number(article.favoriteInd || 0),
         clickedAmount: Number(article.clickedAmount || 0),
         negativeInd: Number(article.negativeInd || 0),
         feedName: article.feedName || null,
@@ -805,7 +805,7 @@ async function printSemanticPipelineReport(userId, islandResult = null) {
         'title',
         'interestScore',
         'articleVector',
-        'starInd',
+        'favoriteInd',
         'clickedAmount',
         'negativeInd'
       ],
@@ -978,7 +978,7 @@ async function printSemanticPipelineReport(userId, islandResult = null) {
       reportLine(
         `- score=${article.interestScore.toFixed(4)} ` +
         `sim=${article.similarity.toFixed(4)} ` +
-        `[star=${article.starInd} clicked=${article.clickedAmount} negative=${article.negativeInd}] ` +
+        `[star=${article.favoriteInd} clicked=${article.clickedAmount} negative=${article.negativeInd}] ` +
         `${reportTitle(article.title)}${sourceSuffix}`
       );
     }
@@ -1120,7 +1120,7 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
         userId: user.id,
         feedId: feedIdMap.get(fixtureArticle.feedId),
         status: fixtureArticle.status,
-        starInd: fixtureArticle.starInd,
+        favoriteInd: fixtureArticle.favoriteInd,
         negativeInd: fixtureArticle.negativeInd,
         clickedAmount: fixtureArticle.clickedAmount,
         url: `https://fixtures.rssmonster.test/semantic/${index + 1}`,

@@ -54,7 +54,7 @@ const generateRss = async (req, res, next) => {
       where.feedId = feedId;
     }
     if (starred === 'true') {
-      where.starInd = 1;
+      where.favoriteInd = 1;
     }
     if (unread === 'true') {
       where.status = 'unread';

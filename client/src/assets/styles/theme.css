@@ -16,8 +16,6 @@
   --text-inverted: #FFFFFF;
   --border-color: #D9DEE5;
   --border-subtle: #E0E0E0;
-  --mobile-swipe-bookmark-bg: var(--color-primary);
-  --mobile-swipe-bookmark-text: #FFFFFF;
 
   /* Foundation aliases */
   --bg-primary: var(--bg-card);
@@ -295,8 +293,6 @@
   --text-icon: #E5E7EB;
   --border-color: #2A3342;
   --border-subtle: #2A3342;
-  --mobile-swipe-bookmark-bg: #1E3A8A;
-  --mobile-swipe-bookmark-text: #FFFFFF;
   --border-input: #2A3342;
   --border-danger-subtle: #DD7777;
   --border-info: #145A6D;

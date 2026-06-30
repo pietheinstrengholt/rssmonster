@@ -7,7 +7,7 @@ module.exports = {
       {
         userId: 1,
         name: 'Top Stories Today',
-        query: '@today unread:true cluster:true sort:RECOMMENDED',
+        query: '@today unread:true event:true sort:recommended',
         limitCount: 30,
         createdAt: Sequelize.literal('NOW()'),
         updatedAt: Sequelize.literal('NOW()')
@@ -15,7 +15,7 @@ module.exports = {
       {
         userId: 1,
         name: 'Worth Your Time',
-        query: 'unread:true quality:>0.65 cluster:true sort:QUALITY',
+        query: 'unread:true quality:>0.65 event:true sort:quality',
         limitCount: 25,
         createdAt: Sequelize.literal('NOW()'),
         updatedAt: Sequelize.literal('NOW()')
@@ -23,7 +23,7 @@ module.exports = {
       {
         userId: 1,
         name: 'Quick Scan',
-        query: '@today unread:true cluster:true quality:>0.4 sort:RECOMMENDED',
+        query: '@today unread:true event:true quality:>0.4 sort:recommended',
         limitCount: 40,
         createdAt: Sequelize.literal('NOW()'),
         updatedAt: Sequelize.literal('NOW()')
@@ -31,7 +31,7 @@ module.exports = {
       {
         userId: 1,
         name: 'Low Noise Mode',
-        query: 'unread:true cluster:true quality:>0.75 freshness:>=0.4 sort:RECOMMENDED',
+        query: 'unread:true event:true quality:>0.75 freshness:>=0.4 sort:recommended',
         limitCount: 15,
         createdAt: Sequelize.literal('NOW()'),
         updatedAt: Sequelize.literal('NOW()')

@@ -1,7 +1,7 @@
 import api from './client';
 
 /**
- * Cleanup old articles (removes non-starred articles older than one week)
+ * Cleanup old articles (removes non-favorited articles older than one week)
  */
 export const cleanupOldArticles = () =>
   api.post('/cleanup');

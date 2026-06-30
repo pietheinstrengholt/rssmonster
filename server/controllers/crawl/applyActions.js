@@ -6,13 +6,13 @@
    - read
    - advertisement
    - bad quality
-   - star
+   - favorite
    - clicked
    - tag (assign tag)
 ====================================================== */
 function applyActions(actions, contentStripped, title) {
   const result = {
-    starInd: 0,
+    favoriteInd: 0,
     clickedAmount: 0,
     status: 'unread',
     shouldDelete: false,
@@ -56,9 +56,10 @@ function applyActions(actions, contentStripped, title) {
         result.qualityScore = 100;
         break;
 
-      // Star action: marks article as important
+      // Favorite action: marks article as a favorite
+      case 'favorite':
       case 'star':
-        result.starInd = 1;
+        result.favoriteInd = 1;
         break;
 
       // Clicked action: read-later indicator

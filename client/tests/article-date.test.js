@@ -15,7 +15,7 @@ function mountArticle(props = {}) {
         feedName: 'Example Feed'
       },
       status: 'unread',
-      starInd: 0,
+      favoriteInd: 0,
       hotInd: 0,
       clickedAmount: 0,
       contentOriginal: '<html><head></head><body>null</body></html>',

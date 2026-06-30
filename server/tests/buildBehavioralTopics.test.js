@@ -51,7 +51,7 @@ function articlePayload(userId, feedId, index, overrides = {}) {
     title: `Behavioral preference ${index}`,
     url: `https://example.com/articles/${index}`,
     articleVector: [0.91 + index * 0.001, 0.08, 0.02],
-    starInd: 0,
+    favoriteInd: 0,
     clickedAmount: 0,
     attentionBucket: 3,
     published: new Date(`2026-05-${20 + index}T10:00:00.000Z`),
@@ -64,7 +64,7 @@ describe('buildBehavioralTopicsForUser', () => {
     const { user, feeds } = await createUserGraph();
 
     await Article.bulkCreate([
-      articlePayload(user.id, feeds[0].id, 1, { starInd: 1 }),
+      articlePayload(user.id, feeds[0].id, 1, { favoriteInd: 1 }),
       articlePayload(user.id, feeds[1].id, 2, { clickedAmount: 2 }),
       articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
     ]);
@@ -104,7 +104,7 @@ describe('buildBehavioralTopicsForUser', () => {
     const { user, feeds } = await createUserGraph();
 
     const articles = await Article.bulkCreate([
-      articlePayload(user.id, feeds[0].id, 1, { starInd: 1 }),
+      articlePayload(user.id, feeds[0].id, 1, { favoriteInd: 1 }),
       articlePayload(user.id, feeds[1].id, 2, { clickedAmount: 2 }),
       articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
     ]);
@@ -133,7 +133,7 @@ describe('buildBehavioralTopicsForUser', () => {
 
     await Article.update(
       {
-        starInd: 0,
+        favoriteInd: 0,
         clickedAmount: 0,
         attentionBucket: 0
       },
@@ -165,7 +165,7 @@ describe('buildBehavioralTopicsForUser', () => {
     const { user, feeds } = await createUserGraph();
 
     const articles = await Article.bulkCreate([
-      articlePayload(user.id, feeds[0].id, 1, { starInd: 1 }),
+      articlePayload(user.id, feeds[0].id, 1, { favoriteInd: 1 }),
       articlePayload(user.id, feeds[1].id, 2, { clickedAmount: 2 }),
       articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
     ]);

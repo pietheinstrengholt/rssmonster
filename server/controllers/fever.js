@@ -155,7 +155,7 @@ export const postFever = async (req, res, _next) => {
           const articles = await Article.findAll({
             attributes: ["id"],
             where: {
-              starInd: 1,
+              favoriteInd: 1,
               userId: loggedInUser.id
             },
             order: [['id', 'ASC']]
@@ -241,7 +241,7 @@ export const postFever = async (req, res, _next) => {
               author: article.author || '',
               html: article.contentOriginal || article.contentStripped || article.description || '',
               url: article.url,
-              is_saved: parseInt(article.starInd),
+              is_saved: parseInt(article.favoriteInd),
               is_read: (article.status === 'read' ? 1 : 0),
               created_on_time: Math.floor(article.published / 1000)
             };
@@ -300,7 +300,7 @@ export const postFever = async (req, res, _next) => {
               temperature: 99 + article.hotlinks,
               is_item: 1,
               is_local: 1,
-              is_saved: parseInt(article.starInd),
+              is_saved: parseInt(article.favoriteInd),
               title: article.title,
               url: article.url,
               //string/comma-separated list of positive integers of all hot links
@@ -469,12 +469,12 @@ function genUpdate(req_body_as) {
 
     case "saved":
       return {
-        starInd: 1
+        favoriteInd: 1
       };
 
     case "unsaved":
       return {
-        starInd: 0
+        favoriteInd: 0
       };
   }
 }

@@ -31,16 +31,16 @@ export const markArticleUnread = (id) =>
   api.post(`/articles/marktounread/${id}`);
 
 /**
- * Star / unstar article
+ * Favorite / unfavorite article
  */
-export const markWithStar = (articleId, update) =>
-  api.post(`/articles/markwithstar/${articleId}`, { update });
+export const markAsFavorite = (articleId, update) =>
+  api.post(`/articles/markasfavorite/${articleId}`, { update });
 
 /**
- * Star / unstar multiple articles
+ * Favorite / unfavorite multiple articles
  */
-export const markManyWithStar = (articleIds, update) =>
-  api.post('/articles/markwithstar', { articleIds, update });
+export const markManyAsFavorite = (articleIds, update) =>
+  api.post('/articles/markasfavorite', { articleIds, update });
 
 /**
  * Mark article as clicked

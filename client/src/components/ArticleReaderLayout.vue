@@ -69,7 +69,7 @@
               </button>
             </div>
             <div class="bulk-action-menu-section">
-              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('star-visible')">
+              <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('favorite-visible')">
                 <i class="bi bi-bookmark" aria-hidden="true"></i>
                 <span>Favorite all visible</span>
               </button>
@@ -100,7 +100,7 @@
           <span class="readerArticleListItemTitle">{{ article.title }}</span>
           <span v-if="articlePreview(article)" class="readerArticleListItemPreview">{{ articlePreview(article) }}</span>
           <span class="readerArticleListItemBadges">
-            <span v-if="article.starInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
+            <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
           </span>
@@ -131,7 +131,7 @@
         ref="selectedArticleComponent"
         v-bind="selectedArticle"
         :key="selectedArticle.id"
-        @update-star="$emit('update-star', $event)"
+        @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
         @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
@@ -157,7 +157,7 @@ export default {
     ArticleEndState
   },
   emits: [
-    'update-star',
+    'update-favorite',
     'update-clicked',
     'toggle-read-status',
     'cluster-articles-loaded',
@@ -254,7 +254,7 @@ export default {
       const icons = {
         unread: 'record-circle-fill',
         read: 'circle-fill',
-        star: 'bookmark-fill',
+        favorite: 'bookmark-fill',
         hot: 'fire',
         clicked: 'arrow-up-right-square-fill'
       };
@@ -289,7 +289,7 @@ export default {
       const labels = {
         unread: 'Unread',
         read: 'Read',
-        star: 'Favorites',
+        favorite: 'Favorites',
         hot: 'Hot',
         clicked: 'Clicked'
       };
@@ -674,8 +674,10 @@ export default {
   background: transparent;
   border: none;
   border-radius: 6px;
-  color: var(--text-primary);
+  color: var(--toolbar-text);
   display: flex;
+  font-size: 14px;
+  font-weight: 500;
   gap: 10px;
   min-height: 36px;
   padding: 8px 10px;

@@ -25,13 +25,13 @@ function makeResult({ structured, error=false }) {
 // Shared helper to generate HTML for articles
 function generateArticlesHtml(articles, options = {}) {
   const { title = "Articles", emoji = "", feedName = "", feedUrl = "" } = options;
-  
+
   let html = `<h3>${emoji ? emoji + ' ' : ''}${title}</h3>`;
   if (feedName && feedUrl) {
     html += `<p><strong>Feed:</strong> <a href="${feedUrl}" target="_blank">${feedName}</a></p>`;
   }
   html += `<p>Total articles: <strong>${articles.length}</strong></p>`;
-  
+
   if (articles.length > 0) {
     articles.forEach(article => {
       html += `<div class="article-card" id="${article.id}">`;
@@ -63,7 +63,7 @@ function generateArticlesHtml(articles, options = {}) {
   } else {
     html += '<p><em>No articles found.</em></p>';
   }
-  
+
   return html;
 }
 
@@ -72,9 +72,9 @@ const postMcp = async (req, res) => {
     // Authenticate user
     const userId = req.userData.userId;
     if (!userId) {
-      return res.status(401).json({ 
-        error: "Authentication error", 
-        message: "Missing or invalid authentication token. Please include a valid JWT token in the request headers using 'Authorization: Bearer <token>'. You can obtain a token by authenticating through the /api/auth/login endpoint." 
+      return res.status(401).json({
+        error: "Authentication error",
+        message: "Missing or invalid authentication token. Please include a valid JWT token in the request headers using 'Authorization: Bearer <token>'. You can obtain a token by authenticating through the /api/auth/login endpoint."
       });
     }
 
@@ -87,7 +87,7 @@ const postMcp = async (req, res) => {
     - Categories contain multiple Feeds (many-to-one relationship: many feeds belong to one category)
     - Feeds contain multiple Articles (one-to-many relationship: one feed has many articles)
     - Each Article belongs to exactly one Feed, and each Feed belongs to exactly one Category
-    
+
     You have access to the following tools:
 
     1. categories
@@ -121,12 +121,12 @@ const postMcp = async (req, res) => {
       - Remember: each article belongs to exactly one feed.
 
     7. favorite_articles
-      - Returns all articles where status = "star".  
+      - Returns all articles where status = "favorite".
       - You MUST summarize each returned article.
 
     8. hot_articles
-      - Returns all articles considered “hot”, based on an internal cache of URLs.  
-      - Does not require a search term.  
+      - Returns all articles considered “hot”, based on an internal cache of URLs.
+      - Does not require a search term.
       - You MUST summarize each article.
 
     9. feeds_by_category_id
@@ -244,15 +244,15 @@ const postMcp = async (req, res) => {
       async ({ feed_name }) => {
         console.log('[MCP Tool Called] search_feed_by_name - feed_name:', feed_name);
         try {
-          const feed = await Feed.findOne({ 
-            where: { 
+          const feed = await Feed.findOne({
+            where: {
               [Op.or]: [
                 { feedName: { [Op.like]: `%${feed_name}%` } },
                 { feedDesc: { [Op.like]: `%${feed_name}%` } }
               ],
-              userId: userId 
-            }, 
-            raw: true 
+              userId: userId
+            },
+            raw: true
           });
           console.log(`Fetched feed for name "${feed_name}":`, feed);
 
@@ -273,13 +273,13 @@ const postMcp = async (req, res) => {
       "search_articles_by_keyword",
       `
       Searches for articles containing a specific keyword in the title or content.
-      The agent must summarize each article in the results (e.g., 2-3 sentence summaries 
+      The agent must summarize each article in the results (e.g., 2-3 sentence summaries
       based on the article title and content).
 
       You may optionally provide a feedId:
       - If "feedId" is provided, only articles from that feed are returned.
       - If "feedId" is NOT provided, articles from ALL feeds are returned.
-      
+
       You may optionally provide a status:
       - If "status" is provided, only articles with that status are returned.
       - If "status" is NOT provided, defaults to "unread".
@@ -361,7 +361,7 @@ const postMcp = async (req, res) => {
         seconds: z.number()
           .min(1)
           .describe("The time window (in seconds) from the current time to look back."),
-        
+
         feedId: z.string()
           .optional()
           .describe("Optional feedId. If omitted, articles from all feeds are included."),
@@ -424,10 +424,10 @@ const postMcp = async (req, res) => {
       "articles_by_feed_id",
       `
       Retrieves all articles associated with a specific feed, identified by its feedId.
-      The agent should summarize each article returned in the results 
+      The agent should summarize each article returned in the results
       (e.g., a 2–3 sentence summary based on title and content).
-      
-      Note: If the agent does not know the feedId, it must first call the "feeds" tool 
+
+      Note: If the agent does not know the feedId, it must first call the "feeds" tool
       to retrieve a list of all available feeds along with their corresponding feedIds.
 
       You may optionally provide a status:
@@ -517,7 +517,7 @@ const postMcp = async (req, res) => {
     server.tool(
       "favorite_articles",
       `
-      Retrieves all articles that are marked as favorites (where starInd = 1).
+      Retrieves all articles that are marked as favorites (where favoriteInd = 1).
       The agent must summarize each article returned in the results (e.g., a 2–3 sentence summary).
 
       You may optionally provide a feedId:
@@ -554,7 +554,7 @@ const postMcp = async (req, res) => {
         console.log('[MCP Tool Called] favorite_articles - feedId:', feedId, 'status:', status, 'seconds:', seconds);
         try {
           const whereClause = {
-            starInd: 1,
+            favoriteInd: 1,
             userId: userId,
             status: status,
             ...(feedId ? { feedId: feedId } : {}),
@@ -605,7 +605,7 @@ const postMcp = async (req, res) => {
     server.tool(
       "hot_articles",
       `
-      Retrieves all hot articles. Hot articles are determined by a hotlink cache, 
+      Retrieves all hot articles. Hot articles are determined by a hotlink cache,
       which provides a list of URLs that should be considered hot.
       Results are sorted by the 'published' field in the requested order.
 
@@ -672,7 +672,7 @@ const postMcp = async (req, res) => {
       Retrieves all feeds associated with a specific category, identified by its categoryId.
       Provides a list of all feeds with details like ID, name, URL, and category.
 
-      Note: If the agent does not know the categoryId, it must first call the "categories" tool 
+      Note: If the agent does not know the categoryId, it must first call the "categories" tool
       to retrieve a list of all available categories along with their corresponding categoryId.
       `,
       {
@@ -1008,7 +1008,7 @@ const postMcp = async (req, res) => {
         categoryId: z.string()
           .optional()
           .describe("The unique identifier (ID) of the category to fetch."),
-        
+
         categoryName: z.string()
           .optional()
           .describe("The name of the category to search for (partial match supported).")
@@ -1063,17 +1063,17 @@ const postMcp = async (req, res) => {
 
           console.log(`Fetched category:`, categoryData);
 
-          return makeResult({ 
-            structured: { 
+          return makeResult({
+            structured: {
               category: categoryData,
               totalFeeds: categoryData.feeds?.length || 0
-            } 
+            }
           });
         } catch (err) {
           console.error('Error fetching category details:', err);
-          return makeResult({ 
-            structured: { error: 'Failed to fetch category details.' }, 
-            error: true 
+          return makeResult({
+            structured: { error: 'Failed to fetch category details.' },
+            error: true
           });
         }
       }

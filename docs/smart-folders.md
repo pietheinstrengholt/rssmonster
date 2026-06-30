@@ -16,7 +16,7 @@ They update automatically as new articles arrive.
 - Each Smart Folder stores a search expression (same syntax as the [Search Guide](search.md)).
 - Results refresh continuously as new items match the query.
 - Limit: each folder returns up to `limitCount` articles (default 50).
-- Sorting respects the query (`sort:RECOMMENDED`, `sort:QUALITY`, `sort:ATTENTION`, `sort:DESC|ASC`).
+- Sorting respects the query (`sort:recommended`, `sort:quality`, `sort:attention`, `sort:desc|asc`).
 
 ---
 
@@ -26,23 +26,25 @@ They update automatically as new articles arrive.
 3. (Optional) Set `limitCount` to cap results (50 by default).
 4. Save. The folder updates itself as content changes.
 
-Use the same tokens as the search bar: status (`unread:true`, `star:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), hot items (`hot:true`), and sorts.
+Use the same tokens as the search bar: status (`unread:true`, `favorite:true`), tags (`tag:news`), dates (`@today`, `@"3 days ago"`), quality (`quality:>0.7`), freshness (`freshness:>=0.5`), event grouping (`event:true`, `eventCount:>=3`), hot items (`hot:true`), and sorts.
 
 ---
 
 ## Recipes
-- Top stories today: `@today unread:true sort:RECOMMENDED limit:100`
-- High-quality long reads: `quality:>0.75 sort:QUALITY unread:true`
-- Engaged items: `sort:ATTENTION clicked:true limit:80`
-- Hot right now: `hot:true sort:ATTENTION`
-- Topic by tag: `tag:ai unread:true sort:RECOMMENDED`
-- Yesterday's highlights: `@yesterday unread:true sort:RECOMMENDED`
+- Top stories today: `@today unread:true sort:recommended limit:100`
+- High-quality long reads: `quality:>0.75 sort:quality unread:true`
+- Engaged items: `sort:attention clicked:true limit:80`
+- Hot right now: `hot:true sort:attention`
+- Events with broad coverage: `event:true eventCount:>=3 sort:recommended`
+- Topic by tag: `tag:ai unread:true sort:recommended`
+- Yesterday's highlights: `@yesterday unread:true sort:recommended`
 
 ---
 
 ## Tips
 - Combine status with time to keep the list focused: `unread:true @today`.
 - Use `quality:>=0.7` to filter after fetch; it can shrink the result set even if the limit is higher.
+- Use `event:true` for a low-noise event view. Add `eventCount:>=3` when you only want events with broad coverage.
 - If you omit status but include text, all statuses are searched; add `unread:true` or `read:true` if you want to constrain.
 
 ---

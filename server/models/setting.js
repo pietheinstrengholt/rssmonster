@@ -33,7 +33,7 @@ export default (sequelize) => {
       sort: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'DESC'
+        defaultValue: 'desc'
       },
       minAdvertisementScore: {
         type: DataTypes.INTEGER,

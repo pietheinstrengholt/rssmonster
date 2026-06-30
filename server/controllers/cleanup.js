@@ -2,7 +2,7 @@ import db from '../models/index.js';
 const { Article } = db;
 import { Op } from 'sequelize';
 
-// Delete all non-starred articles older than one week
+// Delete all non-favorited articles older than one week
 const cleanup = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
@@ -15,7 +15,7 @@ const cleanup = async (req, res, _next) => {
 
     const deletedCount = await Article.destroy({
       where: {
-        starInd: 0,
+        favoriteInd: 0,
         createdAt: { [Op.lte]: oneWeekAgo },
         userId: userId
       }

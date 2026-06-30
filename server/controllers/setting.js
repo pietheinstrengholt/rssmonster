@@ -18,7 +18,7 @@ export const getSettings = async (req, res, _next) => {
     let categoryId = "%";
     let feedId = "%";
     let status = "unread";
-    let sort = "DESC";
+    let sort = "desc";
     let minAdvertisementScore = 0;
     let minSentimentScore = 0;
     let minQualityScore = 0;
@@ -184,7 +184,7 @@ export const getIslandsOverview = async (req, res, _next) => {
             SELECT COUNT(*)
             FROM articles a
             WHERE a.userId = :userId
-              AND a.starInd = 1
+              AND a.favoriteInd = 1
               AND EXISTS (
                 SELECT 1
                 FROM article_topics atp
@@ -235,7 +235,7 @@ export const getIslandsOverview = async (req, res, _next) => {
           a.title,
           a.url,
           a.published,
-          a.starInd,
+          a.favoriteInd,
           a.clickedAmount,
           f.feedName
         FROM articles a
@@ -287,21 +287,21 @@ export const getIslandsOverview = async (req, res, _next) => {
       )];
 
       const populationSourceSet = new Set(populationSourceArticleIds);
-      const starCount = Number(islandStats?.starredArticles || 0);
+      const favoriteCount = Number(islandStats?.starredArticles || 0);
       const clickCount = Number(islandStats?.clickedArticles || 0);
 
       islands.push({
         ...island,
         topicCount: Number(islandStats?.topicCount || 0),
-        starredArticles: starCount,
+        starredArticles: favoriteCount,
         clickedArticles: clickCount,
         relatedArticleCount: Number(islandStats?.relatedArticleCount || 0),
         populationAudit,
         populationSourceArticleIds,
         effectiveWeight: Number(island.weight || 0),
-        starCount,
+        favoriteCount,
         clickCount,
-        interactionCount: starCount + clickCount,
+        interactionCount: favoriteCount + clickCount,
         relatedArticles: relatedArticles.map(article => {
           const articleId = Number(article.id);
           const isPopulationSource = populationSourceSet.has(articleId);

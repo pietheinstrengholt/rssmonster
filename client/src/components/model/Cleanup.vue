@@ -6,7 +6,7 @@
                 <h5 class="modal-title">Cleanup</h5>
             </div>
             <div class="modal-body">
-                <p>Clicking the cleanup button will remove all articles that are not starred and are older than one week.</p>
+                <p>Clicking the cleanup button will remove all articles that are not favorited and are older than one week.</p>
                 <p>Are you sure you want to proceed with this cleanup?</p>
             </div>
             <div class="modal-footer">

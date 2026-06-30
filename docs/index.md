@@ -9,7 +9,7 @@ Imagine opening your RSS reader and seeing **exactly what matters**—not buried
 
 **That's RSSMonster.**
 
-![Screenshot](/rssmonster/assets/screenshot01.png)
+![Screenshot](/rssmonster/assets/screenshot04.png)
 
 ---
 
@@ -49,7 +49,7 @@ Each Smart Folder is a living query. New content flows in; irrelevant content st
 
 Ask for what you want, naturally:
 - `title:javascript @today quality:>0.7`
-- `unread:true sort:RECOMMENDED`
+- `unread:true sort:recommended`
 - Or just: *"Show me tech articles from last week"*
 
 No complex syntax to memorize. RSSMonster speaks your language.

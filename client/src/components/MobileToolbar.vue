@@ -37,16 +37,16 @@
       </button>
       <div class="dropdown-menu" aria-labelledby="readModeDropdown">
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'unread' }" @click="statusClicked('unread')">Unread {{ $store.data.unreadCount }}</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'star' }" @click="statusClicked('star')">Star {{ $store.data.starCount }}</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'favorite' }" @click="statusClicked('favorite')">Favorite {{ $store.data.favoriteCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'hot' }" @click="statusClicked('hot')">Hot {{ $store.data.hotCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'clicked' }" @click="statusClicked('clicked')">Clicked {{ $store.data.clickedCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'read' }" @click="statusClicked('read')">Read {{ $store.data.readCount }}</button>
         <li><hr class="dropdown-divider"></li>
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'ASC' }" @click="sortClicked('ASC')">Oldest</button>
-        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'DESC' }" @click="sortClicked('DESC')">Newest</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'RECOMMENDED' }" @click="sortClicked('RECOMMENDED')">Recommended</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'QUALITY' }" @click="sortClicked('QUALITY')">Quality</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'ATTENTION' }" @click="sortClicked('ATTENTION')">Attention</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'asc' }" @click="sortClicked('asc')">Oldest</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'desc' }" @click="sortClicked('desc')">Newest</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'recommended' }" @click="sortClicked('recommended')">Recommended</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'quality' }" @click="sortClicked('quality')">Quality</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Attention</button>
         <li><hr class="dropdown-divider"></li>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'all' }" @click="setClusterView('all')">All articles</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.clusterView === 'eventCluster' }" @click="setClusterView('eventCluster')">Cluster per event</button>
@@ -406,7 +406,7 @@ const MOBILE_LANDSCAPE_WIDTH = 767;
 
 const statusCountMap = {
   unread: 'unreadCount',
-  star: 'starCount',
+  favorite: 'favoriteCount',
   hot: 'hotCount',
   clicked: 'clickedCount',
   read: 'readCount'

@@ -5,9 +5,9 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 ---
 
 ## Quick Examples
-- `javascript @today sort:RECOMMENDED` - fresh JavaScript stories ranked by recommended score
+- `javascript @today sort:recommended` - fresh JavaScript stories ranked by recommended score
 - `title:"rust async" unread:true` - title contains the exact phrase, only unread
-- `tag:ai quality:>0.7 sort:QUALITY` - tagged items with high quality first
+- `tag:ai quality:>0.7 sort:quality` - tagged items with high quality first
 - `hot:true limit:50` - hottest 50 items (ignores feed filter)
 
 ---
@@ -20,11 +20,14 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 ---
 
 ## Filters & Tokens
-- Status: `unread:true|false`, `read:true|false`, `star:true|false`, `clicked:true|false`, `seen:true|false`, `hot:true|false` (hot ignores feed filter when true).
+- Status: `unread:true|false`, `read:true|false`, `favorite:true|false`, `clicked:true|false`, `seen:true|false`, `hot:true|false` (hot ignores feed filter when true).
 - Age: `firstSeen:24h` or `firstSeen:7d` (filters articles by how long ago they were first seen).
 - Tags: `tag:my-tag` matches articles tagged for the current user.
 - Quality: `quality:>0.7` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
-- Sort: `sort:DESC|ASC|RECOMMENDED|QUALITY|ATTENTION`. RECOMMENDED/QUALITY/ATTENTION are computed in memory after fetching.
+- Freshness: `freshness:>=0.5` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
+- Events: `event:true` shows articles that belong to an event; `event:false` shows articles that are not assigned to any event.
+- Event size: `eventCount:>=3` keeps articles whose event has at least 3 articles. `eventCount:3` is accepted as the same minimum-count shorthand.
+- Sort: `sort:desc|asc|recommended|quality|attention`. Recommended, quality, and attention sorts are computed in memory after fetching.
 - Limit: `limit:50` caps results (overrides defaults).
 
 ---
@@ -49,7 +52,7 @@ Date filters replace the normal published-date window; they are inclusive of the
 ---
 
 ## Combining Tokens
-- Mix tokens freely: `title:ai tag:ml @yesterday sort:ATTENTION limit:100`
+- Mix tokens freely: `title:ai tag:ml @yesterday sort:attention limit:100`
 - Title + content: `title:typescript decorators` -> title matches "typescript", content matches any of `decorators`.
 - Status + date: `unread:true @today` keeps only unread items from the last 24 hours.
 

@@ -22,25 +22,35 @@ const defaultSelection = () => ({
   minAdvertisementScore: 0,
   minSentimentScore: 0,
   minQualityScore: 0,
+  sort: 'desc',
   viewMode: 'full',
   clusterView: 'all'
 });
+
+const normalizeSort = value => {
+  const normalized = String(value ?? 'desc').toLowerCase();
+  return ['asc', 'desc', 'recommended', 'quality', 'attention'].includes(normalized)
+    ? normalized
+    : 'desc';
+};
+
+const removeSortTokens = query => {
+  if (!query || !/(^|[\s,])sort:/i.test(query)) return query;
+
+  const cleaned = String(query)
+    .split(/([\s,]+)/)
+    .filter(part => !/^sort:(desc|asc|recommended|quality|attention)[.,;]*$/i.test(part.trim()))
+    .join('')
+    .replace(/\s+/g, ' ')
+    .trim();
+
+  return cleaned || null;
+};
 
 const normalizeClusterView = value => {
   const normalized = String(value ?? 'all');
   if (normalized === 'topicGroup') return 'eventCluster';
   if (normalized === 'eventCluster') return 'eventCluster';
-  return 'all';
-};
-
-const extractClusterViewFromQuery = query => {
-  if (!query) return null;
-  const match = String(query).match(/(?:^|\s)cluster:(all|eventCluster|topicGroup)(?=\s|$)/i);
-  if (!match) return null;
-
-  const value = match[1].toLowerCase();
-  if (value === 'eventcluster') return 'eventCluster';
-  if (value === 'topicgroup') return 'eventCluster';
   return 'all';
 };
 
@@ -53,7 +63,7 @@ export const useStore = defineStore('data', {
 
     unreadCount: 0,
     readCount: 0,
-    starCount: 0,
+    favoriteCount: 0,
     hotCount: 0,
     clickedCount: 0,
 
@@ -110,14 +120,14 @@ export const useStore = defineStore('data', {
     },
 
     updateOverview(
-      { unreadCount, readCount, starCount, hotCount, clickedCount, categories },
+      { unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
       { initial = false, forceUpdate = false } = {}
     ) {
       const previousUnreadCount = this.unreadCount;
 
       this.unreadCount = unreadCount;
       this.readCount = readCount;
-      this.starCount = starCount;
+      this.favoriteCount = favoriteCount;
       this.hotCount = hotCount;
       this.clickedCount = clickedCount;
       this.categories = categories;
@@ -144,14 +154,14 @@ export const useStore = defineStore('data', {
     },
 
     updateOverviewCounts(
-      { unreadCount, readCount, starCount, hotCount, clickedCount, categories },
+      { unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
       { initial = false, forceUpdate = false } = {}
     ) {
       const previousUnreadCount = this.unreadCount;
 
       this.unreadCount = unreadCount;
       this.readCount = readCount;
-      this.starCount = starCount;
+      this.favoriteCount = favoriteCount;
       this.hotCount = hotCount;
       this.clickedCount = clickedCount;
       this.categories = categories;
@@ -210,6 +220,10 @@ export const useStore = defineStore('data', {
       this.currentSelection = {
         ...prev,
         ...selection,
+        sort:
+          selection.sort != null
+            ? normalizeSort(selection.sort)
+            : normalizeSort(prev.sort),
         clusterView:
           selection.clusterView != null
             ? normalizeClusterView(selection.clusterView)
@@ -250,18 +264,19 @@ export const useStore = defineStore('data', {
     },
 
     setSelectedSearch(search) {
-      const clusterView = extractClusterViewFromQuery(search);
       Object.assign(this.currentSelection, {
         search,
-        tag: null,
-        ...(clusterView ? { clusterView } : {})
+        tag: null
       });
 
       this.chatAssistantOpen = false;
     },
 
     setSelectedSort(sort) {
-      this.currentSelection.sort = sort;
+      Object.assign(this.currentSelection, {
+        sort: normalizeSort(sort),
+        search: removeSortTokens(this.currentSelection.search)
+      });
       this.chatAssistantOpen = false;
     },
 
@@ -282,17 +297,15 @@ export const useStore = defineStore('data', {
         ? smartFolder.query +
           (smartFolder.limitCount ? ` limit:${smartFolder.limitCount}` : '')
         : null;
-      const clusterView = extractClusterViewFromQuery(search);
 
       Object.assign(this.currentSelection, {
         categoryId: '%',
         feedId: '%',
         status: 'unread',
-        sort: 'DESC',
+        sort: 'desc',
         tag: null,
         smartFolderId: smartFolder?.id ?? null,
-        search,
-        ...(clusterView ? { clusterView } : {})
+        search
       });
 
       this.chatAssistantOpen = false;
@@ -332,12 +345,12 @@ export const useStore = defineStore('data', {
      * Counters + UI flags
      * -------------------------------------------------- */
 
-    increaseStarCount() {
-      this.starCount++;
+    increaseFavoriteCount() {
+      this.favoriteCount++;
     },
 
-    decreaseStarCount() {
-      if (this.starCount > 0) this.starCount--;
+    decreaseFavoriteCount() {
+      if (this.favoriteCount > 0) this.favoriteCount--;
     },
 
     increaseRefreshCategories() {
@@ -446,7 +459,7 @@ export const useStore = defineStore('data', {
 
     getUnreadCount: s => s.unreadCount,
     getReadCount: s => s.readCount,
-    getStarCount: s => s.starCount,
+    getFavoriteCount: s => s.favoriteCount,
     getHotCount: s => s.hotCount,
     getClickedCount: s => s.clickedCount,
 

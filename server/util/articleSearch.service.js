@@ -14,10 +14,18 @@ const articleValue = (article, key) => (
   typeof article.get === 'function' ? article.get(key) : article[key]
 );
 
+const normalizeSort = sortValue => {
+  const normalized = String(sortValue || 'desc').toLowerCase();
+  return ['asc', 'desc', 'recommended', 'quality', 'attention'].includes(normalized)
+    ? normalized
+    : 'desc';
+};
+
 /**
  * Get all article IDs based on query parameters with advanced filtering.
- * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
- * tag:name, title:text, sort:DESC/ASC/RECOMMENDED/QUALITY/ATTENTION, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
+ * event:true/false, eventCount:>=2, tag:name, title:text,
+ * sort:desc/asc/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
 export const searchArticles = async ({
@@ -29,7 +37,7 @@ export const searchArticles = async ({
     minAdvertisementScore = null,
     minSentimentScore = null,
     minQualityScore = null,
-    sort = "DESC",
+    sort = "desc",
     viewMode = "full",
     tag = null,
     clusterView = false,
@@ -63,10 +71,10 @@ export const searchArticles = async ({
     console.log(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
 
     const rawSearch = search.trim();
-    const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'DESC' });
+    const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'desc' });
     const {
       filters = {},
-      sort: sortFilter = sort || 'DESC',
+      sort: sortFilter = sort || 'desc',
       limit: limitFilter = null,
       text = '',
       textMode = 'none'
@@ -83,10 +91,10 @@ export const searchArticles = async ({
       title: titleFilter = null,
       quality: qualityFilter = null,
       freshness: freshnessFilter = null,
-      cluster: clusterFilter = null,
+      event: eventFilter = null,
       hot: hotFilter = null
     } = filters;
-    const clusterCountFilter = Number.isFinite(filters.clusterCount) ? filters.clusterCount : null;
+    const eventCountFilter = Number.isFinite(filters.eventCount) ? filters.eventCount : null;
 
     let dateRange = null;
     let dateToken = null;
@@ -104,14 +112,14 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:ASC/DESC/RECOMMENDED/QUALITY/ATTENTION) overrides query param
+    // Sort: search token (sort:asc/desc/recommended/quality/attention) overrides query param
     // Smart folder optimization: skip sort entirely (only counting articles)
-    const logicalSort = (sortFilter !== null ? sortFilter : (sort || 'DESC')).toUpperCase();
-    const sortRecommended = logicalSort === 'RECOMMENDED';
-    const sortQuality = logicalSort === 'QUALITY';
-    const sortAttention = logicalSort === 'ATTENTION';
-    const databaseSort = ['RECOMMENDED', 'QUALITY', 'ATTENTION'].includes(logicalSort)
-      ? 'DESC'
+    const logicalSort = normalizeSort(sortFilter !== null ? sortFilter : sort);
+    const sortRecommended = logicalSort === 'recommended';
+    const sortQuality = logicalSort === 'quality';
+    const sortAttention = logicalSort === 'attention';
+    const databaseSort = ['recommended', 'quality', 'attention'].includes(logicalSort)
+      ? 'desc'
       : logicalSort;
     console.log(`\x1b[31mFinal sort value: "${databaseSort}" (logical: ${logicalSort}, smartFolder: ${smartFolderSearch})\x1b[0m`);
 
@@ -200,9 +208,9 @@ export const searchArticles = async ({
       hotFilter,
       status,
       rawSearch,
-      clusterFilter,
+      eventFilter,
       clusterView,
-      clusterCountFilter,
+      clusterCountFilter: eventCountFilter,
       firstSeenAgeFilter
     });
 

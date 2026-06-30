@@ -15,8 +15,8 @@ router.post('/markmorelikethis/:articleId', userMiddleware.isLoggedIn, articleCo
 router.post('/details', userMiddleware.isLoggedIn, articleController.articleDetails);
 router.post('/markasseen/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkAsSeen);
 router.post('/marktounread/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkToUnread);
-router.post('/markwithstar', userMiddleware.isLoggedIn, articleController.articleMarkWithStar);
-router.post('/markwithstar/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkWithStar);
+router.post('/markasfavorite', userMiddleware.isLoggedIn, articleController.articleMarkAsFavorite);
+router.post('/markasfavorite/:articleId', userMiddleware.isLoggedIn, articleController.articleMarkAsFavorite);
 router.post('/markallasread', userMiddleware.isLoggedIn, articleController.articleMarkAllAsRead);
 
 export default router;

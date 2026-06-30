@@ -304,7 +304,7 @@ export async function buildTopicInterestIslandProfilesForUser(userId, options = 
       as: 'articles',
       required: false,
       where: { userId },
-      attributes: ['id', 'positiveInd', 'starInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'published'],
+      attributes: ['id', 'positiveInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'published'],
       through: { attributes: [] }
     }],
     order: [

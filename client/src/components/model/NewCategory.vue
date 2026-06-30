@@ -165,7 +165,7 @@ export default {
                     //add missing count properties, since these are populated dynamically
                     this.category.unreadCount = 0;
                     this.category.readCount = 0;
-                    this.category.starCount = 0;
+                    this.category.favoriteCount = 0;
                     this.category.feeds = [];
 
                     //push the new category to categories in store

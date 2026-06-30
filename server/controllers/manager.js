@@ -9,7 +9,7 @@ const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow 
 
   category.readCount = 0;
   category.unreadCount = 0;
-  category.starCount = 0;
+  category.favoriteCount = 0;
   category.hotCount = 0;
   category.clickedCount = 0;
 
@@ -17,7 +17,7 @@ const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow 
     ...feed,
     readCount: 0,
     unreadCount: 0,
-    starCount: 0,
+    favoriteCount: 0,
     hotCount: 0,
     clickedCount: 0
   }));
@@ -130,7 +130,7 @@ const loadOverviewTotals = async baseWhere => {
     attributes: [
       [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
-      [Sequelize.literal("COUNT(CASE WHEN starInd = 1 THEN 1 END)"), 'starCount'],
+      [Sequelize.literal("COUNT(CASE WHEN favoriteInd = 1 THEN 1 END)"), 'favoriteCount'],
       [Sequelize.literal("SUM(CASE WHEN clickedAmount > 0 THEN 1 ELSE 0 END)"), 'clickedCount'],
       [Sequelize.literal("COUNT(CASE WHEN hotInd = 1 THEN 1 END)"), 'hotCount']
     ],
@@ -140,7 +140,7 @@ const loadOverviewTotals = async baseWhere => {
   return {
     unreadCount: Number(totals?.unreadCount) || 0,
     readCount: Number(totals?.readCount) || 0,
-    starCount: Number(totals?.starCount) || 0,
+    favoriteCount: Number(totals?.favoriteCount) || 0,
     clickedCount: Number(totals?.clickedCount) || 0,
     hotCount: Number(totals?.hotCount) || 0
   };
@@ -157,7 +157,7 @@ const loadGroupedFeedCounts = baseWhere => Feed.findAll({
     ['id', 'feedId'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
-    [Sequelize.literal("COUNT(CASE WHEN `articles`.`starInd` = 1 THEN 1 END)"), 'starCount'],
+    [Sequelize.literal("COUNT(CASE WHEN `articles`.`favoriteInd` = 1 THEN 1 END)"), 'favoriteCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`hotInd` = 1 THEN 1 END)"), 'hotCount'],
     [Sequelize.literal("SUM(CASE WHEN `articles`.`clickedAmount` > 0 THEN 1 ELSE 0 END)"), 'clickedCount']
   ],
@@ -175,19 +175,19 @@ const mergeCountsIntoStructure = (categories, groupedRows) => {
 
     const unread = Number(row.unreadCount) || 0;
     const read = Number(row.readCount) || 0;
-    const star = Number(row.starCount) || 0;
+    const favorite = Number(row.favoriteCount) || 0;
     const hot = Number(row.hotCount) || 0;
     const clicked = Number(row.clickedCount) || 0;
 
     feedEntry.feed.unreadCount = unread;
     feedEntry.feed.readCount = read;
-    feedEntry.feed.starCount = star;
+    feedEntry.feed.favoriteCount = favorite;
     feedEntry.feed.hotCount = hot;
     feedEntry.feed.clickedCount = clicked;
 
     feedEntry.category.unreadCount += unread;
     feedEntry.category.readCount += read;
-    feedEntry.category.starCount += star;
+    feedEntry.category.favoriteCount += favorite;
     feedEntry.category.hotCount += hot;
     feedEntry.category.clickedCount += clicked;
   });
@@ -210,7 +210,7 @@ export const getOverviewLite = async (req, res, _next) => {
       total: 0,
       readCount: 0,
       unreadCount: 0,
-      starCount: 0,
+      favoriteCount: 0,
       hotCount: 0,
       clickedCount: 0,
       categories

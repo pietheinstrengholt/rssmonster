@@ -19,21 +19,21 @@
                                 Use filter expressions to define what articles appear in each folder. You can combine multiple filters with spaces:
                             </p>
                             <ul class="mb-2 small">
-                                <li><strong>Status filters:</strong> <code>unread:true</code>, <code>read:false</code>, <code>star:true</code>, <code>clicked:true</code>, <code>seen:false</code>, <code>firstSeen:24h</code></li>
+                                <li><strong>Status filters:</strong> <code>unread:true</code>, <code>read:false</code>, <code>favorite:true</code>, <code>clicked:true</code>, <code>seen:false</code>, <code>firstSeen:24h</code></li>
                                 <li><strong>Content filters:</strong> <code>tag:ai</code>, <code>title:javascript</code>, <code>python</code></li>
                                 <li><strong>Quality filters:</strong> <code>quality:>0.6</code>, <code>quality:<=0.8</code>, <code>freshness:>=0.5</code>, <code>freshness:<0.3</code></li>
                                 <li><strong>Date filters:</strong> <code>@today</code>, <code>@yesterday</code>, <code>@lastweek</code>, <code>@2025-12-14</code></li>
-                                <li><strong>Special filters:</strong> <code>cluster:all</code>, <code>cluster:eventCluster</code>, <code>clustercount:>=3</code>, <code>hot:false</code>, <code>limit:100</code></li>
-                                <li><strong>Sorting:</strong> <code>sort:RECOMMENDED</code>, <code>sort:QUALITY</code>, <code>sort:ATTENTION</code>, <code>sort:DESC</code>, <code>sort:ASC</code></li>
+                                <li><strong>Special filters:</strong> <code>event:true</code>, <code>event:false</code>, <code>eventCount:>=3</code>, <code>hot:false</code>, <code>limit:100</code></li>
+                                <li><strong>Sorting:</strong> <code>sort:recommended</code>, <code>sort:quality</code>, <code>sort:attention</code>, <code>sort:desc</code>, <code>sort:asc</code></li>
                             </ul>
                             <p class="mb-2">
                                 <strong>Example queries:</strong>
                             </p>
                             <ul class="mb-2 small">
                                 <li><code>tag:ai unread:true quality:>0.6</code><p> – Unread AI articles with high quality</p></li>
-                                <li><code>star:true @"last Monday"</code><p> – Starred articles from last Monday</p></li>
-                                <li><code>title:javascript @today sort:RECOMMENDED</code><p> – Today's JavaScript articles by recommended score</p></li>
-                                <li><code>cluster:eventCluster clustercount:2 sort:ATTENTION</code><p> – Event clusters with 2+ articles by attention</p></li>
+                                <li><code>favorite:true @"last Monday"</code><p> – Favorite articles from last Monday</p></li>
+                                <li><code>title:javascript @today sort:recommended</code><p> – Today's JavaScript articles by recommended score</p></li>
+                                <li><code>event:true eventCount:>=2 sort:attention</code><p> – Events with 2+ articles by attention</p></li>
                             </ul>
                             <p class="mb-0">
                                 <strong>Limits:</strong> Set a maximum article count (50-500) to keep folders focused and performant.

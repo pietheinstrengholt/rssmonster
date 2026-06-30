@@ -137,7 +137,7 @@ async function main() {
         'id',
         'feedId',
         'status',
-        'starInd',
+        'favoriteInd',
         'negativeInd',
         'clickedAmount',
         'title',
@@ -181,7 +181,7 @@ async function main() {
         published: articlePublished(article),
         feedId: feedIdMap.get(article.feedId),
         status: article.status || 'unread',
-        starInd: article.starInd || 0,
+        favoriteInd: article.favoriteInd || 0,
         negativeInd: article.negativeInd || 0,
         clickedAmount: article.clickedAmount || 0
       }))

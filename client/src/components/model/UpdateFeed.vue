@@ -268,15 +268,15 @@ export default {
         const [deletedFeed] = category.feeds.splice(feedIndex, 1);
         const unreadCount = deletedFeed?.unreadCount || 0;
         const readCount = deletedFeed?.readCount || 0;
-        const starCount = deletedFeed?.starCount || 0;
+        const favoriteCount = deletedFeed?.favoriteCount || 0;
 
         category.unreadCount = Math.max((category.unreadCount || 0) - unreadCount, 0);
         category.readCount = Math.max((category.readCount || 0) - readCount, 0);
-        category.starCount = Math.max((category.starCount || 0) - starCount, 0);
+        category.favoriteCount = Math.max((category.favoriteCount || 0) - favoriteCount, 0);
 
         this.$store.data.unreadCount = Math.max((this.$store.data.unreadCount || 0) - unreadCount, 0);
         this.$store.data.readCount = Math.max((this.$store.data.readCount || 0) - readCount, 0);
-        this.$store.data.starCount = Math.max((this.$store.data.starCount || 0) - starCount, 0);
+        this.$store.data.favoriteCount = Math.max((this.$store.data.favoriteCount || 0) - favoriteCount, 0);
 
         return true;
       }

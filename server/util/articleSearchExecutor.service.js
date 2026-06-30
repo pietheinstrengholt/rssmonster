@@ -5,6 +5,11 @@ import { Op } from 'sequelize';
 
 const { Article, Event, Feed, Tag } = db;
 
+// Converts search-language sort values to the SQL directions Sequelize/MySQL expect.
+const toSqlSortDirection = sort => (
+  String(sort).toLowerCase() === 'asc' ? 'ASC' : 'DESC'
+);
+
 // Appends a condition to a Sequelize Op.and array, creating the array when needed.
 const appendAndCondition = (whereClause, condition) => {
   whereClause[Op.and] ??= [];
@@ -29,7 +34,7 @@ export const buildArticleSearchQuery = ({
   hotFilter,
   status,
   rawSearch,
-  clusterFilter,
+  eventFilter,
   clusterView,
   clusterCountFilter,
   firstSeenAgeFilter
@@ -92,7 +97,11 @@ export const buildArticleSearchQuery = ({
   }
 
   if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
-    articleQuery.order = [['published', workingSort]];
+    const sqlSortDirection = toSqlSortDirection(workingSort);
+    articleQuery.order = [
+      ['published', sqlSortDirection],
+      ['id', sqlSortDirection]
+    ];
   }
 
   if (firstSeenAgeFilter) {
@@ -107,7 +116,7 @@ export const buildArticleSearchQuery = ({
   }
 
   if (starFilter !== null) {
-    articleQuery.where.starInd = starFilter ? 1 : 0;
+    articleQuery.where.favoriteInd = starFilter ? 1 : 0;
   }
 
   if (unreadFilter !== null) {
@@ -134,10 +143,10 @@ export const buildArticleSearchQuery = ({
   }
 
   if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
-    const effectiveStatus = rawSearch && !['star', 'hot', 'clicked'].includes(status) ? '%' : status;
+    const effectiveStatus = rawSearch && !['favorite', 'star', 'hot', 'clicked'].includes(status) ? '%' : status;
 
-    if (effectiveStatus === 'star') {
-      articleQuery.where.starInd = 1;
+    if (effectiveStatus === 'favorite' || effectiveStatus === 'star') {
+      articleQuery.where.favoriteInd = 1;
     } else if (effectiveStatus === 'hot') {
       delete articleQuery.where.feedId;
       articleQuery.where.hotInd = 1;
@@ -148,7 +157,10 @@ export const buildArticleSearchQuery = ({
     }
   }
 
-  const workingClusterView = clusterFilter !== null ? clusterFilter : clusterView;
+  if (eventFilter !== null) {
+    articleQuery.where.eventId = eventFilter ? { [Op.not]: null } : { [Op.is]: null };
+  }
+
   if (Number.isFinite(clusterCountFilter)) {
     const countLiteral = Article.sequelize.literal(
       '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
@@ -158,7 +170,7 @@ export const buildArticleSearchQuery = ({
     );
   }
 
-  if (workingClusterView === 'eventCluster') {
+  if (eventFilter === null && clusterView === 'eventCluster') {
     appendAndCondition(articleQuery.where, {
       [Op.or]: [
         {

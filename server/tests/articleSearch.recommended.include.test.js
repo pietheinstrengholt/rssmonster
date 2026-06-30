@@ -21,8 +21,8 @@ describe('articleSearch recommended include wiring', () => {
     vi.restoreAllMocks();
   });
 
-  it('includes cluster association when sorting by RECOMMENDED', async () => {
-    await searchArticles({ userId: 1, sort: 'RECOMMENDED', status: '%' });
+  it('includes cluster association when sorting by recommended', async () => {
+    await searchArticles({ userId: 1, sort: 'recommended', status: '%' });
 
     expect(Article.findAll).toHaveBeenCalledTimes(1);
     const query = Article.findAll.mock.calls[0][0];
@@ -35,10 +35,10 @@ describe('articleSearch recommended include wiring', () => {
     );
   });
 
-  it('includes cluster association in smartFolderSearch mode when sort:RECOMMENDED is requested', async () => {
+  it('includes cluster association in smartFolderSearch mode when sort:recommended is requested', async () => {
     await searchArticles({
       userId: 1,
-      search: 'sort:RECOMMENDED',
+      search: 'sort:recommended',
       status: '%',
       smartFolderSearch: true
     });

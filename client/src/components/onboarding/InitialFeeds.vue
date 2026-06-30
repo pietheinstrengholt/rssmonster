@@ -177,7 +177,7 @@ export default {
 
           category.unreadCount = 0;
           category.readCount = 0;
-          category.starCount = 0;
+          category.favoriteCount = 0;
           category.feeds = [];
 
           this.$store.data.categories.push(category);
@@ -213,7 +213,7 @@ export default {
           // Normalize feed object
           newFeed.unreadCount = 0;
           newFeed.readCount = 0;
-          newFeed.starCount = 0;
+          newFeed.favoriteCount = 0;
           newFeed.errorCount = 0;
 
           category.feeds.push(newFeed);

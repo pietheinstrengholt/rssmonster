@@ -33,7 +33,7 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'unread'
       },
-      starInd: {
+      favoriteInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },

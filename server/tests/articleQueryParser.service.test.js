@@ -3,7 +3,7 @@ import { parseArticleQuery } from '../util/articleQueryParser.service.js';
 
 describe('articleQueryParser.service', () => {
   it('parses mixed filters and quoted text', () => {
-    const result = parseArticleQuery({ search: 'star:true quality:>0.7 @today "AI agents"' });
+    const result = parseArticleQuery({ search: 'favorite:true quality:>0.7 @today "AI agents"' });
 
     expect(result).toEqual({
       text: 'AI agents',
@@ -18,9 +18,15 @@ describe('articleQueryParser.service', () => {
           type: 'today'
         }
       },
-      sort: 'DESC',
+      sort: 'desc',
       limit: null
     });
+  });
+
+  it('keeps legacy star filter as a favorite alias', () => {
+    const result = parseArticleQuery({ search: 'star:true' });
+
+    expect(result.filters.star).toBe(true);
   });
 
   it('parses days ago date expressions', () => {
@@ -52,10 +58,33 @@ describe('articleQueryParser.service', () => {
   });
 
   it('parses sort and limit', () => {
-    const result = parseArticleQuery({ search: 'sort:asc limit:50', defaultSort: 'DESC' });
+    const result = parseArticleQuery({ search: 'sort:asc limit:50', defaultSort: 'desc' });
 
-    expect(result.sort).toBe('ASC');
+    expect(result.sort).toBe('asc');
     expect(result.limit).toBe(50);
+  });
+
+  it('parses event and freshness filters', () => {
+    const result = parseArticleQuery({
+      search: 'event:true eventCount:>=3 freshness:>=0.5 sort:attention'
+    });
+
+    expect(result.filters.event).toBe(true);
+    expect(result.filters.eventCount).toBe(3);
+    expect(result.filters.freshness).toEqual({
+      operator: '>=',
+      value: 0.5
+    });
+    expect(result.sort).toBe('attention');
+    expect(result.text).toBe('');
+    expect(result.textMode).toBe('none');
+  });
+
+  it('parses normal article view and event count shorthand', () => {
+    const result = parseArticleQuery({ search: 'event:false eventCount:2' });
+
+    expect(result.filters.event).toBe(false);
+    expect(result.filters.eventCount).toBe(2);
   });
 
   it('supports title exact phrase filter', () => {
