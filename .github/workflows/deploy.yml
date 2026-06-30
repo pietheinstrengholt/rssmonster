@@ -1,0 +1,16 @@
+name: Deploy RSSMonster
+
+on:
+  push:
+    branches:
+      - master
+
+jobs:
+  deploy:
+    runs-on: self-hosted
+
+    steps:
+      - name: Deploy
+        run: |
+          cd ~/rssmonster-dev
+          ./deploy-dev.sh
