@@ -12,5 +12,4 @@ jobs:
     steps:
       - name: Deploy
         run: |
-          cd ~/rssmonster-dev
-          ./deploy-dev.sh
+          /home/piethein/deploy-dev.sh
