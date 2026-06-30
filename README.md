@@ -30,15 +30,11 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 ## Key Features
 
 - **Lightweight & Responsive**: Built with Vue.js 3 and Express, styled with Bootstrap 5 for a fluid experience across all devices
-- **Google Reader-inspired UX**: Automatic mark-as-read on scroll and trending content identification
+- **Three Reading Modes**: Choose the reading experience that fits your workflow. Use **Reader Mode** for distraction-free full articles, **List Mode** for scanning headlines quickly, or **Summary Mode** to review AI-generated bullet point summaries before deciding what to read.
 - **Advanced Search Expressions**: Composable filters using field operators (`favorite:true`, `star:true`, `unread:false`, `read:true`, `clicked:true`, `seen:false`, `hot:true`, `tag:tech`, `title:javascript`), article age filters (`firstSeen:24h`, `firstSeen:7d`), score thresholds (`quality:>0.6`, `freshness:>=0.5`), event filters (`event:true`, `event:false`, `eventCount:>=3`), sorting (`sort:asc`, `sort:desc`, `sort:recommended`, `sort:quality`, `sort:attention`), and flexible date filters (`@2025-12-14`, `@today`, `@yesterday`, `@lastweek`, `@"3 days ago"`, `@"last Monday"`). Example: `title:javascript ai @today quality:>0.6 sort:recommended`
 - **Smart Folders**: Smart Folders allow you to create declarative, dynamic views of your content using composable search expressions. Examples: `@today unread:true sort:recommended` (Top Stories Today), `unread:true quality:>0.7 sort:quality` (Worth Your Time), `event:true eventCount:>=3 sort:recommended` (low-noise events), `hot:true unread:true sort:attention` (Low Noise Mode).
 - **Article Quality Scoring**: Each article is automatically evaluated for promotional content, sentiment neutrality, and writing quality, producing a normalized quality score used for ranking
-- **Semantic Deduplication & Clustering**: RSSMonster groups related coverage so repeated syndication, copied press releases, and duplicate reporting do not overwhelm your reading flow. The architecture distinguishes between two semantic layers:
-  - **Event clusters** group articles about the same concrete event, announcement, incident, release, or development. They are designed for deduplication and coverage comparison: one story can represent many articles while still preserving the individual sources behind it.
-  - **Topic groups** connect related event clusters under a broader storyline, such as an ongoing product launch cycle, regulatory debate, market trend, security campaign, or political issue. They help you zoom out from individual updates and follow the larger narrative over time.
-  - This layered approach lets Smart Folders operate at different levels of detail. A low-noise view can show only representative clusters with strong coverage, while a research-oriented view can open the full set of articles, sources, and related topic context behind a story.
-  - Clustering metadata is used by ranking and article context views, so semantic organization remains transparent instead of being hidden behind a fixed recommendation feed.
+- **Event Discovery**: Multiple articles covering the same story are automatically grouped into events. Expand an event to compare reporting from different sources instead of reading duplicate coverage.
 - **Uniqueness Scoring**: Articles are ranked higher when they provide original coverage rather than repeated or copied content
 - **Feed Trust Scoring**: Sources earn a long-term trust score (0.0 to 1.0) based on content generation (articles per day), uniqueness, reading time, clicks, and starred items, improving ranking reliability over time. Run `npm run feedtrust` to calculate scores using originality (35%), quality (25%), engagement (20%), and consistency (20%)
 - **Importance-Based Ranking**: Articles are ranked using a transparent, runtime importance score combining freshness, quality, uniqueness, and feed trust — prioritizing what actually matters
@@ -46,6 +42,7 @@ Every ranking decision is explainable. Every view is customizable. Every signal 
 - **Progressive Web App (PWA)**: Install on any device for native app-like experience with offline support
 - **Drag & Drop Management**: Intuitive feed organization and categorization
 - **Dark Mode**: Automatic theme switching
+- **Mobile Swipe Gestures**: Quickly bookmark or process articles using intuitive swipe gestures on touch devices.
 - **OPML Support**: Import and export feeds in OPML format for seamless migration
 - **Fever API Compatible**: Works with popular RSS clients like Reeder (iOS)
 - **Google Reader API Compatible**: Works with apps like News+, FeedMe, Reeder, and Vienna RSS
