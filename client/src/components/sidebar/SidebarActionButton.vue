@@ -118,6 +118,17 @@ const buttonClasses = computed(() => [props.variant]);
   background-color: var(--sidebar-action-mark-as-read-hover-background);
 }
 
+.sidebar-bottom-action-button {
+  color: var(--text-primary);
+  background-color: var(--bg-muted);
+  border-color: var(--border-subtle);
+}
+
+.sidebar-bottom-action-button:hover {
+  color: var(--text-primary);
+  background-color: var(--bg-hover);
+}
+
 .sidebar-management-button {
   width: 100%;
   height: 40px;
@@ -200,5 +211,16 @@ const buttonClasses = computed(() => [props.variant]);
 :global(:root[data-theme='dark'] .sidebar-button.sidebar-button-mark-read:hover) {
   color: var(--sidebar-action-mark-as-read-hover-text) !important;
   background-color: var(--sidebar-action-mark-as-read-hover-background) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button) {
+  color: var(--toolbar-search-text-dark) !important;
+  background-color: var(--toolbar-search-background-dark) !important;
+  border-color: var(--toolbar-search-border-dark) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-button.sidebar-bottom-action-button:hover) {
+  color: var(--toolbar-search-text-dark) !important;
+  background-color: var(--toolbar-search-hover-background-dark) !important;
 }
 </style>

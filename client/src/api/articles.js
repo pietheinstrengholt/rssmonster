@@ -25,16 +25,34 @@ export const markArticleSeen = (id, payload) =>
   });
 
 /**
+ * Mark article as unread
+ */
+export const markArticleUnread = (id) =>
+  api.post(`/articles/marktounread/${id}`);
+
+/**
  * Star / unstar article
  */
 export const markWithStar = (articleId, update) =>
   api.post(`/articles/markwithstar/${articleId}`, { update });
 
 /**
+ * Star / unstar multiple articles
+ */
+export const markManyWithStar = (articleIds, update) =>
+  api.post('/articles/markwithstar', { articleIds, update });
+
+/**
  * Mark article as clicked
  */
 export const markClicked = (articleId) =>
   api.post(`/articles/markclicked/${articleId}`);
+
+/**
+ * Mark multiple articles as clicked
+ */
+export const markManyClicked = (articleIds) =>
+  api.post('/articles/markclicked', { articleIds });
 
 /**
  * Mark article as not interested
@@ -53,3 +71,9 @@ export const markMoreLikeThis = (articleId) =>
  */
 export const markAllAsRead = (currentSelection) =>
   api.post('/articles/markasread', currentSelection);
+
+/**
+ * Mark selected articles as read
+ */
+export const markArticlesAsRead = (articleIds) =>
+  api.post('/articles/markasread', { articleIds });

@@ -143,7 +143,7 @@ const formattedCount = computed(() => formatCount(props.count));
 
 .icon-star { color: var(--icon-star); }
 .icon-hot { color: var(--icon-hot); }
-
+.icon-clicked { color: currentColor; }
 .selected .icon-star,
 .selected .icon-hot {
   color: var(--color-primary);

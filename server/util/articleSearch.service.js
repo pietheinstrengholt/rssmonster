@@ -10,6 +10,10 @@ import { buildArticleSearchQuery, executeSearch, executeSearchCount } from './ar
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 
+const articleValue = (article, key) => (
+  typeof article.get === 'function' ? article.get(key) : article[key]
+);
+
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: star:true/false, unread:true/false, clicked:true/false,
@@ -276,6 +280,14 @@ export const searchArticles = async ({
       };
     }
 
+    const itemIdSet = new Set(itemIds.map(id => String(id)));
+    const sourceCount = new Set(
+      articles
+        .filter(article => itemIdSet.has(String(articleValue(article, 'id'))))
+        .map(article => articleValue(article, 'feedId'))
+        .filter(feedId => feedId !== null && feedId !== undefined)
+    ).size;
+
     if (persistSettings) {
       // Update user settings (skip when tag-based query is used)
       // Note: tag is not persisted in settings currently
@@ -300,6 +312,7 @@ export const searchArticles = async ({
 
     return {
         query: queryMetadata,
-        itemIds
+        itemIds,
+        sourceCount
     };
 };

@@ -58,7 +58,7 @@ const bootstrapIconNames = [
   'gear-fill',
   'hand-thumbs-down-fill',
   'hand-thumbs-up-fill',
-  'heart-fill',
+  'heart',
   'info-circle-fill',
   'info-circle',
   'cursor',
@@ -80,7 +80,6 @@ const bootstrapIconNames = [
   'plus-lg',
   'plus-square',
   'plus-square-fill',
-  'record-circle-fill',
   'robot',
   'rss-fill',
   'rss',
@@ -99,7 +98,12 @@ const bootstrapIconNames = [
   'x-lg',
   'brightness-high',
   'chat-dots',
-  'chat-square-text-fill'
+  'chat-square-text-fill',
+  'circle',
+  'circle-fill',
+  'arrow-up-right-square-fill',
+  'eye-fill',
+  'record-circle-fill'
 ]
 
 const bootstrapIconsSprite = () => {

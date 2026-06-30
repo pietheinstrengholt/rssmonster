@@ -53,7 +53,7 @@
           </div>
           <div class="options-view-grid">
             <button @click="selectViewMode('full')" type="button" class="options-view-card" :class="{ selected: $store.data.currentSelection.viewMode === 'full' }">
-              <span class="options-view-title">Full content</span>
+              <span class="options-view-title">Expanded</span>
               <span class="options-view-description">Show the full article content</span>
             </button>
             <button @click="selectViewMode('summarized')" type="button" class="options-view-card" :class="{ selected: $store.data.currentSelection.viewMode === 'summarized' }">
@@ -65,8 +65,8 @@
               <span class="options-view-description">Show short summaries as bullet points</span>
             </button>
             <button @click="selectViewMode('minimal')" type="button" class="options-view-card" :class="{ selected: $store.data.currentSelection.viewMode === 'minimal' }">
-              <span class="options-view-title">Minimal content</span>
-              <span class="options-view-description">Show only the title and metadata</span>
+              <span class="options-view-title">Headlines</span>
+              <span class="options-view-description">Show only the article titles</span>
             </button>
           </div>
         </section>

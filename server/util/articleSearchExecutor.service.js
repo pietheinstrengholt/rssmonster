@@ -34,7 +34,7 @@ export const buildArticleSearchQuery = ({
   clusterCountFilter,
   firstSeenAgeFilter
 }) => {
-  const queryAttributes = ['id'];
+  const queryAttributes = ['id', 'feedId'];
 
   const needsQuality = qualityFilter || sortQuality;
   const needsFreshness = freshnessFilter || sortRecommended;

@@ -640,10 +640,11 @@ export default {
         { value: 'read', label: 'Read' }
       ],
       viewModeOptions: [
-        { value: 'full', label: 'Full' },
+        { value: 'reader', label: 'Reader' },
+        { value: 'full', label: 'Expanded' },
         { value: 'summarized', label: 'Summarized' },
         { value: 'summaryBullets', label: 'Summary Bullets', requiresAI: true },
-        { value: 'minimal', label: 'Minimal' }
+        { value: 'minimal', label: 'Headlines' }
       ],
       sortOptions: [
         { value: 'ASC', label: 'Oldest' },
@@ -795,6 +796,7 @@ export default {
       // This function filters out AI-only options when AI is unavailable.
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
       const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
+      const selectedViewModeOption = this.viewModeOptions.find((option) => option.value === this.selectedViewMode);
       const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.clusterView);
 
       const dropdowns = [
@@ -810,7 +812,7 @@ export default {
           id: 'viewModeDropdown',
           type: 'viewMode',
           label: 'View',
-          selectedLabel: this.capitalize(this.selectedViewMode),
+          selectedLabel: selectedViewModeOption ? selectedViewModeOption.label : this.capitalize(this.selectedViewMode),
           selectedValue: this.selectedViewMode,
           options: visibleOptions(this.viewModeOptions)
         },

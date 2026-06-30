@@ -11,6 +11,7 @@ import analyzeArticleContent from './analyzeArticleContent.js';
 import saveArticle from './saveArticle.js';
 import normalizeUrl from '../../util/normalizeUrl.js';
 import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
+import extractLeadImage from '../../util/extractLeadImage.js';
 
 // Maximum length for normalized description
 const MAX_DESCRIPTION_LENGTH = 8000;
@@ -70,11 +71,10 @@ const processArticle = async (
     // Normalize HTML entities
     fields.title = decodeHtmlEntities(fields.title);
     fields.content = decodeHtmlEntities(fields.content);
+    const rawDescription = decodeHtmlEntities(fields.description);
 
     // Description must be bounded + sanitized (feeds may contain base64 blobs)
-    fields.description = normalizeDescription(
-      decodeHtmlEntities(fields.description)
-    );
+    fields.description = normalizeDescription(rawDescription);
 
     // Skip processing if the article is older than the feed's crawlSince
     if (feed?.crawlSince && fields.published) {
@@ -99,13 +99,20 @@ const processArticle = async (
 
     // Check if there's media content (e.g., YouTube videos)
     const mediaResult = processMedia(entry);
+    leadImage = extractLeadImage({
+      entry,
+      content: fields.content,
+      description: rawDescription,
+      articleUrl: fields.link,
+      existingLeadImage: mediaResult.leadImage
+    });
+
     if (mediaResult.content) {
       // Media-based content
       contentOriginal = mediaResult.content;
       contentStripped = mediaResult.content;
       contentLanguage = 'unknown';
       contentHash = null;
-      leadImage = mediaResult.leadImage;
       mediaFound = true;
     }
 

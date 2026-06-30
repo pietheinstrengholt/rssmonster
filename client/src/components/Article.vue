@@ -1,8 +1,42 @@
 <template>
-  <div class="article-card" :id="`article-${id}`" :class="{ 'cluster-article': isClusterArticle }" v-bind="filteredAttrs">
-    <div class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
+  <div class="article-card" :id="`article-${id}`" :class="[{ 'cluster-article': isClusterArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
+    <div v-if="isMinimalView" class="mobile-swipe-shell">
+      <div class="mobile-swipe-action" aria-hidden="true">
+        <i :class="['bi', starInd === 1 ? 'bi-bookmark-x' : 'bi-bookmark']" aria-hidden="true"></i>
+        <span>{{ starInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
+      </div>
+      <div class="article-list-row mobile-swipe-content" :class="{ 'is-read': status === 'read', starred: starInd === 1, hot: hotInd === 1 }" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
+      <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
+        <i :class="['bi', status === 'read' ? 'bi-circle-fill' : 'bi-record-circle-fill']" aria-hidden="true"></i>
+      </button>
+      <div class="article-list-source" aria-hidden="true">
+        <img v-if="feedFavicon" :src="feedFavicon" class="favicon" alt="" />
+        <BootstrapIcon v-else icon="rss-fill" />
+      </div>
+      <div class="article-list-main">
+        <h5 class="article-list-title">
+          <a class="article-link" target="_blank" :href="url" v-text="title" @click="articleClicked"></a>
+        </h5>
+        <div class="article-list-meta">
+          <span class="article-list-feed">{{ author || feed.feedName }}</span>
+          <span class="article-list-dot">·</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.clusterView !== 'all'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
+          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ tag.name.toLowerCase() }}</span>
+        </div>
+      </div>
+      <div class="article-list-actions">
+        <span class="article-list-time">{{ formatDate(published) }}</span>
+        <ArticleActionsMenu :starInd="starInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+        <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
+          <i :class="['bi', starInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
+        </button>
+      </div>
+      </div>
+    </div>
+    <div v-else class="article-body" :class="[{ starred: starInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" @click="articleTouched($event)">
       <div class="article-layout">
-        <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+        <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :starInd="starInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventClusterView="isEventClusterView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <div class="meta-row">
           <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :clusterView="$store.data.currentSelection.clusterView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
           <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
@@ -10,6 +44,7 @@
       </div>
       <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
     </div>
+    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -28,31 +63,17 @@ import ArticleHeader from './articles/ArticleHeader.vue';
 import ArticleMeta from './articles/ArticleMeta.vue';
 import ArticleTagsScores from './articles/ArticleTagsScores.vue';
 import ArticleContent from './articles/ArticleContent.vue';
+import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
+import { formatRelativeDate } from '../utils/date';
 
 const NEUTRAL_SCORE = 70;
-
-// This function formats elapsed time for article publication dates.
-function timeDifference(current, previous) {
-  const msPerMinute = 60 * 1000;
-  const msPerHour = msPerMinute * 60;
-  const msPerDay = msPerHour * 24;
-  const msPerMonth = msPerDay * 30;
-  const msPerYear = msPerDay * 365;
-  const elapsed = Math.abs(current - previous);
-  const plural = (n, unit) => `${n} ${unit}${n === 1 ? '' : 's'} ago`;
-
-  if (elapsed < msPerMinute) return plural(Math.round(elapsed / 1000), 'second');
-  if (elapsed < msPerHour) return plural(Math.round(elapsed / msPerMinute), 'minute');
-  if (elapsed < msPerDay) return plural(Math.round(elapsed / msPerHour), 'hour');
-  if (elapsed < msPerMonth) return plural(Math.round(elapsed / msPerDay), 'day');
-  if (elapsed < msPerYear) return plural(Math.round(elapsed / msPerMonth), 'month');
-  return plural(Math.round(elapsed / msPerYear), 'year');
-}
+const SWIPE_MAX = 128;
+const SWIPE_THRESHOLD = 86;
 
 export default {
   inheritAttrs: false,
-  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent },
-  emits: ['update-star', 'update-clicked', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
+  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleActionsMenu },
+  emits: ['update-star', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
   props: {
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
@@ -81,7 +102,8 @@ export default {
     cluster: { type: Object, default: null },
     contentSummaryBullets: { type: Array, default: () => [] },
     isClusterArticle: { type: Boolean, default: false },
-    presentation: { type: Object, default: null }
+    presentation: { type: Object, default: null },
+    isMinimalContentOpen: { type: Boolean, default: false }
   },
   data() {
     return {
@@ -89,7 +111,13 @@ export default {
       clusterExpanded: false,
       NEUTRAL_SCORE,
       isMobilePortrait: false,
-      mediaQuery: null
+      mediaQuery: null,
+      swipeStartX: 0,
+      swipeStartY: 0,
+      swipeTranslateX: 0,
+      swipeTracking: false,
+      swipeLocked: false,
+      swipeSuppressClick: false
     };
   },
   mounted() {
@@ -131,13 +159,7 @@ export default {
     },
     // Formats publication dates as elapsed time.
     formatDate() {
-      return value => {
-        if (!value) return '';
-        const publishedAt = new Date(value).getTime();
-        if (Number.isNaN(publishedAt)) return '';
-        const result = timeDifference(Date.now(), publishedAt);
-        return result.charAt(0).toUpperCase() + result.slice(1);
-      };
+      return formatRelativeDate;
     },
     // Extracts the origin URL from a URL value.
     mainURL() {
@@ -191,6 +213,45 @@ export default {
     hasInterestScore() {
       const score = Number(this.interestScore);
       return Number.isFinite(score) && score !== 0;
+    },
+    // Returns whether the article should use the compact list row.
+    isMinimalView() {
+      return this.$store.data.currentSelection.viewMode === 'minimal';
+    },
+    // Returns the accessible label for the favorite toggle.
+    favoriteLabel() {
+      return this.starInd === 1 ? 'Unmark favorite' : 'Mark as favorite';
+    },
+    // Returns the accessible label for the compact read status control.
+    statusToggleLabel() {
+      return this.status === 'read' ? 'Mark article as unread' : 'Mark article as read';
+    },
+    // Returns whether the minimal content panel should be visible.
+    shouldShowMinimalContent() {
+      return this.isMinimalView ? this.isMinimalContentOpen : this.showMinimalContent;
+    },
+    // Returns the article feed favicon from the payload or loaded sidebar feed data.
+    feedFavicon() {
+      if (this.feed?.favicon) return this.feed.favicon;
+
+      const targetFeedId = String(this.feed?.id ?? this.feedId ?? '');
+      if (!targetFeedId) return '';
+
+      for (const category of this.$store.data.categories) {
+        const matchedFeed = category.feeds?.find(feed => String(feed.id) === targetFeedId);
+        if (matchedFeed?.favicon) return matchedFeed.favicon;
+      }
+
+      return '';
+    },
+    // Returns the inline transform used while a mobile swipe is active.
+    mobileSwipeStyle() {
+      if (!this.isMobilePortrait && !this.swipeTranslateX) return {};
+
+      return {
+        transform: `translateX(${this.swipeTranslateX}px)`,
+        transition: this.swipeTracking ? 'none' : 'transform 180ms ease'
+      };
     }
   },
   methods: {
@@ -219,6 +280,65 @@ export default {
     // Updates the portrait state when the media query changes.
     handleMediaChange(event) {
       this.isMobilePortrait = event.matches;
+      if (!event.matches) this.resetSwipe();
+    },
+    // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
+    onSwipeTouchStart(event) {
+      if (!this.isMobilePortrait || !this.isMinimalView) return;
+
+      const touch = event.touches[0];
+      this.swipeStartX = touch.clientX;
+      this.swipeStartY = touch.clientY;
+      this.swipeTranslateX = 0;
+      this.swipeTracking = true;
+      this.swipeLocked = false;
+      this.swipeSuppressClick = false;
+    },
+    // Updates the article offset while ignoring vertical scroll gestures.
+    onSwipeTouchMove(event) {
+      if (!this.swipeTracking || !this.isMobilePortrait || !this.isMinimalView) return;
+
+      const touch = event.touches[0];
+      const deltaX = touch.clientX - this.swipeStartX;
+      const deltaY = touch.clientY - this.swipeStartY;
+
+      if (!this.swipeLocked && Math.abs(deltaY) > Math.abs(deltaX)) {
+        this.resetSwipe();
+        return;
+      }
+
+      if (deltaX <= 0) {
+        this.swipeTranslateX = 0;
+        return;
+      }
+
+      this.swipeLocked = true;
+      this.swipeSuppressClick = true;
+      this.swipeTranslateX = Math.min(deltaX, SWIPE_MAX);
+      if (event.cancelable) event.preventDefault();
+    },
+    // Toggles favorite status when the swipe crosses the threshold.
+    onSwipeTouchEnd() {
+      if (!this.swipeTracking) return;
+
+      const shouldToggle = this.swipeTranslateX >= SWIPE_THRESHOLD;
+      this.swipeTracking = false;
+
+      if (shouldToggle) this.markAsFavorite();
+
+      this.resetSwipe(false);
+      if (this.swipeSuppressClick) {
+        window.setTimeout(() => {
+          this.swipeSuppressClick = false;
+        }, 250);
+      }
+    },
+    // Resets all swipe gesture state.
+    resetSwipe(clearSuppressClick = true) {
+      this.swipeTranslateX = 0;
+      this.swipeTracking = false;
+      this.swipeLocked = false;
+      if (clearSuppressClick) this.swipeSuppressClick = false;
     },
     // Returns the icon name for a quality score.
     getQualityIcon(score) {
@@ -252,10 +372,25 @@ export default {
     },
     // Toggles minimal article content when the article is touched.
     articleTouched(event) {
-      if (this.$store.data.currentSelection.viewMode === 'minimal') {
-        if (event.target?.nodeName === 'A') return;
-        this.showMinimalContent = !this.showMinimalContent;
+      if (this.swipeSuppressClick) {
+        event.preventDefault();
+        event.stopPropagation();
+        return;
       }
+
+      if (this.$store.data.currentSelection.viewMode === 'minimal') {
+        if (event.target?.closest?.('a, button, .dropdown-menu')) return;
+        if (this.isMinimalContentOpen) {
+          this.$emit('minimal-article-closed', { id: this.id });
+          return;
+        }
+
+        this.$emit('minimal-article-opened', { id: this.id, status: this.status });
+      }
+    },
+    // Requests a read/unread toggle from the compact list status control.
+    toggleMinimalReadStatus() {
+      this.$emit('toggle-minimal-read-status', { id: this.id, status: this.status });
     },
     // Selects a tag in the current view.
     selectTag(tag) {
@@ -457,6 +592,10 @@ export default {
   gap: 8px;
 }
 
+.recommendation-action-item svg {
+  margin-right: 3px;
+} 
+  
 .recommendation-action-icon {
   width: 14px;
   flex: 0 0 auto;
@@ -694,6 +833,31 @@ export default {
   margin-bottom: 0 !important;
 }
 
+.article-header-actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 2px;
+}
+
+.article-read-status-button {
+  align-items: center;
+  background: var(--color-transparent);
+  border: 0;
+  color: var(--article-heading-text);
+  display: inline-flex;
+  height: 30px;
+  justify-content: center;
+  line-height: 1;
+  opacity: 0.7;
+  padding: 0;
+  width: 30px;
+}
+
+.article-read-status-button svg {
+  margin-bottom: 0 !important;
+}
+
 .article-card .dropdown {
   position: relative;
 }
@@ -834,10 +998,6 @@ export default {
 
 .article-content-wrapper h3 {
   font-size: 18px !important;
-}
-
-.article-body:hover {
-    background: var(--bg-page);
 }
 
 /* Hide tags and scores on mobile portrait mode, except rule-based tags */
@@ -1093,6 +1253,277 @@ span.similar-badge {
   height: 18px;
   width: 18px;
   margin-top: -1px;
+}
+
+.article-list-card {
+  padding-top: 0 !important;
+  margin-bottom: 0;
+}
+
+.article-list-row {
+  min-height: 68px;
+  padding: 12px 16px;
+  display: grid;
+  grid-template-columns: 18px 24px minmax(0, 1fr) auto;
+  column-gap: 12px;
+  align-items: center;
+  border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
+  background: var(--bg-page);
+  font-family: var(--font-family);
+}
+
+.article-list-row:hover {
+  background: var(--bg-sidebar, var(--bg-menu-item, var(--bg-subtle)));
+}
+
+.article-list-row.active,
+.article-list-row.selected,
+.article-card.active .article-list-row {
+  background: var(--bg-selected-soft, var(--article-active-background));
+}
+
+.article-list-row.hot {
+  background-color: var(--article-hot-background);
+  border-color: var(--article-highlight-border);
+}
+
+.article-list-row.starred {
+  background-color: var(--desktop-toolbar-background);
+}
+
+.article-list-card.cluster-article,
+.article-list-card.cluster-article .article-list-row {
+  background-color: var(--article-cluster-background);
+}
+
+.article-list-card.article-list-card-selected {
+  background: transparent;
+}
+
+.article-list-card.article-list-card-selected:focus {
+  outline: 0;
+}
+
+.article-list-card.article-list-card-selected .article-list-row {
+  background: var(--reader-list-item-selected-background);
+}
+
+.article-list-card.article-list-card-selected .article-list-row:hover {
+  background: var(--reader-list-selected-hover-background);
+}
+
+.article-list-card .article-divider {
+  display: none;
+}
+
+.mobile-swipe-action {
+  display: none;
+}
+
+.article-list-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 34px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--color-primary);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+}
+
+.article-list-source {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-meta, var(--text-muted));
+  font-size: 15px;
+}
+
+.article-list-source img,
+.article-list-source .favicon {
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  object-fit: cover;
+}
+
+.article-list-main {
+  min-width: 0;
+}
+
+.article-list-title {
+  margin: 0;
+  min-width: 0;
+}
+
+.article-list-title a {
+  color: var(--article-heading-text);
+  font-size: 16px;
+  line-height: 1.35;
+  font-weight: 700;
+  text-decoration: none;
+  display: block;
+  overflow-wrap: anywhere;
+}
+
+.article-list-title a:hover {
+  color: var(--article-heading-text);
+  text-decoration: none;
+}
+
+.article-list-meta {
+  margin-top: 4px;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 6px;
+  color: var(--text-meta, var(--text-muted));
+  font-size: 13px;
+  line-height: 1.3;
+}
+
+.article-list-meta .article-list-feed {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.article-list-dot {
+  color: var(--text-meta, var(--text-muted));
+}
+
+.article-list-meta .mobile-rule-tag {
+  display: inline-flex;
+  margin-left: 0;
+}
+
+.article-list-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  align-self: center;
+  white-space: nowrap;
+}
+
+.article-list-time {
+  color: var(--text-meta, var(--text-muted));
+  font-size: 13px;
+  min-width: 72px;
+  text-align: right;
+}
+
+.article-list-action-button,
+.article-list-actions .dropdown .btn {
+  width: 34px !important;
+  height: 34px !important;
+  border: 1px solid transparent !important;
+  border-radius: 8px !important;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent !important;
+  color: var(--text-meta, var(--text-muted)) !important;
+  cursor: pointer;
+  opacity: 1;
+  padding: 0 !important;
+}
+
+.article-list-action-button:hover,
+.article-list-actions .dropdown .btn:hover {
+  background: var(--bg-menu-item, var(--bg-subtle)) !important;
+  color: var(--article-heading-text) !important;
+}
+
+.article-list-favorite-button .bi {
+  color: var(--article-star-icon);
+}
+
+.article-list-card .article-content-wrapper {
+  margin: 0;
+  padding: 10px 16px 12px 70px;
+  background: var(--bg-page);
+  border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
+}
+
+@media (max-width: 766px) and (orientation: portrait) {
+  .mobile-swipe-shell {
+    position: relative;
+    overflow: hidden;
+    background: var(--mobile-swipe-bookmark-bg, var(--color-primary));
+    border-bottom: 1px solid var(--border-subtle);
+  }
+
+  .mobile-swipe-action {
+    position: absolute;
+    inset: 0 auto 0 0;
+    width: 128px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    background: var(--mobile-swipe-bookmark-bg, var(--color-primary));
+    color: var(--mobile-swipe-bookmark-text, var(--text-inverted));
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.2;
+    text-align: center;
+    pointer-events: none;
+  }
+
+  .mobile-swipe-action .bi {
+    font-size: 30px;
+    line-height: 1;
+  }
+
+  .mobile-swipe-content {
+    position: relative;
+    z-index: 1;
+    background: var(--bg-card);
+    will-change: transform;
+    touch-action: pan-y;
+  }
+
+  .article-list-row {
+    grid-template-columns: 18px minmax(0, 1fr) auto;
+    column-gap: 10px;
+    padding: 12px 10px;
+  }
+
+  .article-list-source {
+    display: none;
+  }
+
+  .article-list-time {
+    display: none;
+  }
+
+  .article-list-actions {
+    gap: 4px;
+  }
+
+  .article-list-card .article-content-wrapper {
+    padding-left: 40px;
+    padding-right: 10px;
+  }
+
+  :root[data-theme='dark'] .mobile-swipe-shell,
+  :root[data-theme='dark'] .mobile-swipe-action {
+    background: var(--mobile-swipe-bookmark-bg, #1E3A8A);
+    color: var(--mobile-swipe-bookmark-text, #FFFFFF);
+  }
+
+  :root[data-theme='dark'] .mobile-swipe-content {
+    background: var(--bg-card);
+  }
 }
 
 .inline-mobile-tags {
@@ -1366,6 +1797,74 @@ span.similar-badge {
   .article-card .article-full-content a:active,
   .article-card .article-content-wrapper a:active {
     color: var(--article-link-active-dark);
+  }
+
+  .article-list-card,
+  .article-list-row {
+    background: var(--dark-bg-page, var(--dark-page-surface));
+    border-bottom-color: var(--dark-border, var(--border-color));
+  }
+
+  .article-list-row:hover {
+    background: var(--dark-bg-hover, var(--bg-control));
+  }
+
+  .article-list-row.active,
+  .article-list-row.selected,
+  .article-card.active .article-list-row {
+    background: #1E3A8A;
+  }
+
+  .article-list-card.cluster-article,
+  .article-list-card.cluster-article .article-list-row {
+    background-color: var(--article-cluster-background-dark);
+  }
+
+  .article-list-row.hot,
+  .article-list-row.starred {
+    background-color: var(--dark-bg-page, var(--dark-page-surface));
+    border-color: var(--dark-border, var(--border-color));
+  }
+
+  .article-list-card.article-list-card-selected {
+    background: transparent;
+  }
+
+  .article-list-card.article-list-card-selected:focus {
+    outline: 0;
+  }
+
+  .article-list-card.article-list-card-selected .article-list-row {
+    background: var(--reader-list-item-selected-background);
+  }
+
+  .article-list-card.article-list-card-selected .article-list-row:hover {
+    background: var(--reader-list-selected-hover-background);
+  }
+
+  .article-list-meta,
+  .article-list-dot,
+  .article-list-time,
+  .article-list-source,
+  .article-list-action-button,
+  .article-list-actions .dropdown .btn {
+    color: var(--dark-text-meta, var(--text-secondary)) !important;
+  }
+
+  .article-list-title a,
+  .article-list-title a:hover {
+    color: var(--article-heading-text);
+  }
+
+  .article-list-action-button:hover,
+  .article-list-actions .dropdown .btn:hover {
+    background: var(--dark-bg-hover, var(--bg-control)) !important;
+    color: var(--dark-text-primary, var(--text-primary)) !important;
+  }
+
+  .article-list-card .article-content-wrapper {
+    background: var(--dark-bg-page, var(--dark-page-surface));
+    border-bottom-color: var(--dark-border, var(--border-color));
   }
 }
 </style>

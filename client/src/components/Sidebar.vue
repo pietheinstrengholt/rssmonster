@@ -131,61 +131,74 @@
         </template>
       </draggable>
 
-      <div class="sidebar-management-actions">
-        <SidebarActionButton
-          icon="plus-circle-fill"
-          label="Add"
-          variant="sidebar-management-button"
-          @select="$store.data.setShowModal('NewCategory')"
-        />
+      <div class="sidebar-footer-actions">
+        <div class="sidebar-divider"></div>
 
-        <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
+        <div class="sidebar-management-actions">
           <SidebarActionButton
-            icon="eraser-fill"
-            label="Cleanup"
-            variant="sidebar-management-button"
-            @select="$store.data.setShowModal('Cleanup')"
+            icon="plus-circle-fill"
+            label="Add category"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-add-button"
+            @select="$store.data.setShowModal('NewCategory')"
           />
 
           <SidebarActionButton
-            icon="box-arrow-right"
-            label="Logout"
-            variant="sidebar-management-button"
-            @select="logout"
+            v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
+            icon="trash3-fill"
+            label="Delete category"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-delete-button"
+            @select="$store.data.setShowModal('DeleteCategory')"
           />
-        </template>
 
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId == '%'"
-          icon="trash3-fill"
-          label="Delete"
-          variant="sidebar-management-button delete"
-          @select="$store.data.setShowModal('DeleteCategory')"
-        />
+          <SidebarActionButton
+            v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId === '%'"
+            icon="pencil-fill"
+            label="Edit category"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
+            @select="$store.data.setShowModal('RenameCategory')"
+          />
 
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId === '%'"
-          icon="pencil-fill"
-          label="Edit"
-          variant="sidebar-management-button rename"
-          @select="$store.data.setShowModal('RenameCategory')"
-        />
+          <SidebarActionButton
+            v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId !== '%'"
+            icon="trash3-fill"
+            label="Delete feed"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-delete-button"
+            @select="$store.data.setShowModal('DeleteFeed')"
+          />
 
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId !== '%' && $store.data.currentSelection.feedId !== '%'"
-          icon="trash3-fill"
-          label="Delete"
-          variant="sidebar-management-button delete"
-          @select="$store.data.setShowModal('DeleteFeed')"
-        />
+          <SidebarActionButton
+            v-if="$store.data.currentSelection.categoryId != '%' && $store.data.currentSelection.feedId != '%'"
+            icon="pencil-fill"
+            label="Edit feed"
+            variant="sidebar-button sidebar-bottom-action-button sidebar-edit-button"
+            @select="$store.data.setShowModal('UpdateFeed')"
+          />
 
-        <SidebarActionButton
-          v-if="$store.data.currentSelection.categoryId != '%' && $store.data.currentSelection.feedId != '%'"
-          icon="pencil-fill"
-          label="Edit"
-          variant="sidebar-management-button rename"
-          @select="$store.data.setShowModal('UpdateFeed')"
-        />
+          <template v-if="$store.data.currentSelection.categoryId === '%' && $store.data.currentSelection.feedId == '%'">
+            <SidebarActionButton
+              icon="trash"
+              label="Cleanup articles"
+              variant="sidebar-button sidebar-bottom-action-button sidebar-cleanup-button"
+              @select="$store.data.setShowModal('Cleanup')"
+            />
+
+            <SidebarActionButton
+              icon="box-arrow-right"
+              label="Logout"
+              variant="sidebar-button sidebar-bottom-action-button sidebar-logout-button"
+              @select="logout"
+            />
+          </template>
+        </div>
+
+        <div class="sidebar-divider sidebar-version-divider"></div>
+
+        <a
+          class="sidebar-version"
+          href="https://github.com/pietheinstrengholt/rssmonster/"
+          target="_blank"
+          rel="noopener noreferrer"
+        >RSSMonster v1.0.0</a>
       </div>
     </div>
   </div>
@@ -213,11 +226,37 @@
 }
 
 .sidebar-management-actions {
-  margin: 10px 12px 20px;
-  width: calc(100% - 24px);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 4px;
+  margin: 0;
+  width: 100%;
+}
+
+.sidebar-footer-actions {
+  margin: 12px 0 20px;
+  width: 100%;
+}
+
+.sidebar-divider {
+  height: 1px;
+  margin: 0 12px 12px;
+  background-color: var(--border-subtle);
+}
+
+.sidebar-version-divider {
+  margin-top: 4px;
+}
+
+.sidebar-version {
+  display: block;
+  margin: 0 12px;
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 1.4;
+  text-align: center;
+  text-decoration: none;
+}
+
+.sidebar-version:hover {
+  text-decoration: underline;
 }
 
 .sidebar-refresh-progress-panel {
@@ -323,10 +362,10 @@ const refreshProgress = reactive({
 
 const statusFilters = [
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
-  { status: 'star', label: 'Favorites', icon: 'heart-fill', iconClass: 'icon-star' },
+  { status: 'read', label: 'Read', icon: 'circle-fill', iconClass: 'icon-read' },
+  { status: 'star', label: 'Favorites', icon: 'bookmark-fill', iconClass: 'icon-star' },
   { status: 'hot', label: 'Hot', icon: 'fire', iconClass: 'icon-hot' },
-  { status: 'clicked', label: 'Clicked', icon: 'bookmark-fill', iconClass: 'icon-clicked' },
-  { status: 'read', label: 'Read', icon: 'check-circle-fill', iconClass: 'icon-read' }
+  { status: 'clicked', label: 'Clicked', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked' }
 ];
 
 const orderList = computed(() => store.data.categories.map(category => category.id));
@@ -609,5 +648,5 @@ function updateSortOrder() {
     .catch(error => console.log('oops something went wrong', error));
 }
 
-defineExpose({ updateSortOrder });
+defineExpose({ refreshFeeds, updateSortOrder });
 </script>
