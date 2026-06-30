@@ -1,15 +1,20 @@
 name: Deploy RSSMonster
 
 on:
-  push:
+  workflow_run:
+    workflows:
+      - CI
+    types:
+      - completed
     branches:
       - master
 
 jobs:
   deploy:
+    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: self-hosted
 
     steps:
       - name: Deploy
         run: |
-          /home/piethein/deploy-dev.sh
+          bash /home/piethein/deploy-dev.sh
