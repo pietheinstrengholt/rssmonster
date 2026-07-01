@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import {
+  incrementalClusterForUser,
   reclusterForUser,
   retrospectiveClusterForUser
 } from '../services/events/reclusterForUser.js';
@@ -200,6 +201,90 @@ describe('reclusterForUser', () => {
     expect(events).toHaveLength(1);
     expect(events[0].articleCount).toBe(2);
     expect(events[0].articles).toHaveLength(2);
+  });
+
+  it('incrementally clusters recent unassigned articles created before the latest event update', async () => {
+    const { user, feed } = await createUserGraph('incremental-highwater');
+    const feedTwo = await Feed.create({
+      userId: user.id,
+      categoryId: feed.categoryId,
+      feedName: 'incremental highwater second feed',
+      url: `https://example.com/incremental-highwater-second-${user.id}.xml`
+    });
+    const existingArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Existing unrelated event article',
+      url: `https://example.com/${user.id}/existing-event`,
+      published: recentDateWithOffset(-2 * 60 * 60 * 1000),
+      articleVector: [0, 1, 0]
+    }));
+    const existingEvent = await Event.create({
+      userId: user.id,
+      representativeArticleId: existingArticle.id,
+      name: 'Existing unrelated event',
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [0, 1, 0],
+      eventWindowStartAt: existingArticle.published,
+      eventWindowEndAt: existingArticle.published,
+      status: 'active'
+    });
+
+    await existingArticle.update({ eventId: existingEvent.id });
+    await existingEvent.update({ name: 'Existing unrelated event updated after crawl insert' });
+
+    const beforeLatestEventUpdate = new Date(new Date(existingEvent.updatedAt).getTime() - 60 * 1000);
+    const basePublishedAt = recentDateWithOffset();
+    const sharedVector = [1, 0, 0];
+    const targetUrls = [
+      `https://example.com/${user.id}/spanish-heatwave-1`,
+      `https://example.com/${user.id}/spanish-heatwave-2`
+    ];
+    await Article.bulkCreate([
+      articlePayload(user, feed, 2, {
+        title: 'Spanish heatwave death toll reaches 1028 in June',
+        url: targetUrls[0],
+        published: basePublishedAt,
+        createdAt: beforeLatestEventUpdate,
+        updatedAt: beforeLatestEventUpdate,
+        articleVector: sharedVector
+      }),
+      articlePayload(user, feedTwo, 3, {
+        title: 'Spanish heatwave death toll reaches 1028 in June',
+        url: targetUrls[1],
+        published: new Date(basePublishedAt.getTime() + 3 * 60 * 1000),
+        createdAt: beforeLatestEventUpdate,
+        updatedAt: beforeLatestEventUpdate,
+        articleVector: sharedVector
+      })
+    ]);
+
+    await incrementalClusterForUser(user.id, { skipTopicAssignment: true });
+
+    const clusteredArticles = await Article.findAll({
+      where: {
+        userId: user.id,
+        url: { [db.Sequelize.Op.in]: targetUrls }
+      },
+      attributes: ['eventId'],
+      raw: true
+    });
+    const eventIds = [...new Set(clusteredArticles.map(article => article.eventId))];
+
+    expect(eventIds).toHaveLength(1);
+    expect(eventIds[0]).not.toBeNull();
+    expect(eventIds[0]).not.toBe(existingEvent.id);
+
+    const event = await Event.findByPk(eventIds[0], {
+      include: [{
+        model: Article,
+        as: 'articles',
+        attributes: ['id']
+      }]
+    });
+
+    expect(event.articleCount).toBe(2);
+    expect(event.articles).toHaveLength(2);
   });
 
   it('retrospectively clusters vectorized articles outside the replay window', async () => {

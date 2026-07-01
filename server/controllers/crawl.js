@@ -6,6 +6,7 @@ import processArticle from './crawl/processArticle.js';
 import createArticleDuplicateCache from './crawl/articleDuplicateCache.js';
 import createHotlinkCountCache from './crawl/hotlinkCountCache.js';
 import createHotlinkBatcher from './crawl/hotlinkBatcher.js';
+import { runPostCrawlEventClustering } from '../services/crawl/postCrawlEventClustering.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -65,12 +66,12 @@ const resetRateLimitDelay = () => {
 const shouldCrawlFeed = (feed, now = new Date()) => {
   const interval = feed.updateIntervalMinutes;
 
-  if (Number(interval) === 0) {
-    return false;
-  }
-
   if (interval === null || typeof interval === 'undefined') {
     return true;
+  }
+
+  if (Number(interval) === 0) {
+    return false;
   }
 
   const intervalMinutes = Number(interval);
@@ -277,25 +278,32 @@ const performCrawl = async (userId = null, options = {}) => {
   });
 
   if (feeds.length === 0) {
-    emitProgress({
-      type: 'done',
-      event: 'refresh_completed',
-      feedId: null,
-      feedName: null,
-      currentFeed: 0,
-      totalFeeds: 0,
-      newArticles: 0,
-      updatedArticles: 0,
-      errors: 0,
-      timeouts: 0,
-      processedFeeds: 0,
-      crawlTimedOut: false
-    });
+    if (!options.suppressDoneEvent) {
+      emitProgress({
+        type: 'done',
+        event: 'refresh_completed',
+        feedId: null,
+        feedName: null,
+        currentFeed: 0,
+        totalFeeds: 0,
+        newArticles: 0,
+        updatedArticles: 0,
+        errors: 0,
+        timeouts: 0,
+        processedFeeds: 0,
+        crawlTimedOut: false
+      });
+    }
+
     return {
       total: 0,
       processed: 0,
       errors: 0,
-      timeouts: 0
+      timeouts: 0,
+      crawlTimedOut: false,
+      processedUserIds: userId ? [userId] : [],
+      totalNewArticles: 0,
+      totalUpdatedArticles: 0
     };
   }
 
@@ -505,7 +513,6 @@ const performCrawl = async (userId = null, options = {}) => {
 
     try {
       await withTimeout(processSingleFeed(feed, currentFeed), FEED_TIMEOUT_MS, feed.url);
-      if (feed.userId) processedUserIds.add(feed.userId);
     } catch (err) {
       const errMsg = err?.message || String(err) || 'Unknown error';
 
@@ -538,6 +545,8 @@ const performCrawl = async (userId = null, options = {}) => {
 
       errorCount++;
     } finally {
+      if (feed.userId) processedUserIds.add(feed.userId);
+
       emitProgress({
         type: 'progress',
         event: 'feed_status',
@@ -591,23 +600,59 @@ const performCrawl = async (userId = null, options = {}) => {
     errors: errorCount,
     timeouts: timeoutCount,
     crawlTimedOut,
-    processedUserIds: [...processedUserIds]
+    processedUserIds: [...processedUserIds],
+    totalNewArticles,
+    totalUpdatedArticles
   };
 
-  emitProgress({
-    type: 'done',
-    event: 'refresh_completed',
-    feedId: null,
-    feedName: null,
-    currentFeed: result.total,
-    totalFeeds: result.total,
-    processedFeeds: result.processed,
-    newArticles: totalNewArticles,
-    updatedArticles: totalUpdatedArticles,
-    errors: result.errors,
-    timeouts: result.timeouts,
-    crawlTimedOut: result.crawlTimedOut
+  if (!options.suppressDoneEvent) {
+    emitProgress({
+      type: 'done',
+      event: 'refresh_completed',
+      feedId: null,
+      feedName: null,
+      currentFeed: result.total,
+      totalFeeds: result.total,
+      processedFeeds: result.processed,
+      newArticles: totalNewArticles,
+      updatedArticles: totalUpdatedArticles,
+      errors: result.errors,
+      timeouts: result.timeouts,
+      crawlTimedOut: result.crawlTimedOut
+    });
+  }
+
+  return result;
+};
+
+// This function runs a crawl and then clusters crawled articles into events.
+const performCrawlWithEventClustering = async (userId = null, options = {}) => {
+  const result = await performCrawl(userId, {
+    ...options,
+    suppressDoneEvent: true
   });
+
+  await runPostCrawlEventClustering(result, {
+    userId,
+    onProgress: options.onProgress
+  });
+
+  if (typeof options.onProgress === 'function') {
+    options.onProgress({
+      type: 'done',
+      event: 'refresh_completed',
+      feedId: null,
+      feedName: null,
+      currentFeed: result.total,
+      totalFeeds: result.total,
+      processedFeeds: result.processed,
+      newArticles: result.totalNewArticles || 0,
+      updatedArticles: result.totalUpdatedArticles || 0,
+      errors: result.errors,
+      timeouts: result.timeouts,
+      crawlTimedOut: result.crawlTimedOut
+    });
+  }
 
   return result;
 };
@@ -621,7 +666,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   console.log(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
-    performCrawl(userId)
+    performCrawlWithEventClustering(userId)
       .then(async result => {
         resetRateLimitDelay();
         console.log(
@@ -642,6 +687,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 
 export default {
   crawlRssLinks,
+  performCrawlWithEventClustering,
   performCrawl,
   shouldCrawlFeed
 }

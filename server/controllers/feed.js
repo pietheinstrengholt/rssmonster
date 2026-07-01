@@ -526,7 +526,7 @@ const startRefresh = async (req, res) => {
       message: 'Refresh job queued'
     });
 
-    crawlController.performCrawl(userId, {
+    crawlController.performCrawlWithEventClustering(userId, {
       onProgress: (event) => {
         crawlJobManager.publishEvent(jobId, event);
       }

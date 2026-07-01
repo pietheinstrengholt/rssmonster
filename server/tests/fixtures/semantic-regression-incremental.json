@@ -229,6 +229,17 @@
                       "feedType":  "rss",
                       "url":  "https://feeds.skynews.com/feeds/rss/world.xml",
                       "status":  "active"
+                  },
+                  {
+                      "id":  19,
+                      "sourceId":  96,
+                      "categoryId":  1,
+                      "feedName":  "AD:home",
+                      "description":  "AD.nl biedt het laatste nieuws, opinie en achtergronden",
+                      "feedDesc":  "AD.nl biedt het laatste nieuws, opinie en achtergronden",
+                      "feedType":  "rss",
+                      "url":  "https://www.ad.nl/home/rss.xml",
+                      "status":  "active"
                   }
               ],
     "articles":  [
@@ -1385,6 +1396,51 @@
                          "contentOriginal":  "\u003chtml\u003e\u003chead\u003e\u003c/head\u003e\u003cbody\u003eRacing Bulls drivers Liam Lawson and Arvid Lindblad gave their verdicts on the Canadian Grand Prix after both suffered contrasting fortunes last weekend.\u003c/body\u003e\u003c/html\u003e",
                          "contentStripped":  "Racing Bulls drivers Liam Lawson and Arvid Lindblad gave their verdicts on the Canadian Grand Prix after both suffered contrasting fortunes last weekend.",
                          "published":  "2026-05-27T13:58:11.000Z",
+                         "firstSeen":  null
+                     },
+                     {
+                         "sourceId":  771,
+                         "feedId":  19,
+                         "status":  "unread",
+                         "favoriteInd":  0,
+                         "negativeInd":  0,
+                         "clickedAmount":  0,
+                         "url":  "https://www.ad.nl/buitenland/spaanse-hitte-eist-1028-levens-in-juni-ruim-2-keer-zoveel-doden-door-hitte-als-vorig-jaar~aab325c97/",
+                         "title":  "Spaanse hitte eist 1028 levens in juni, ruim 2 keer zoveel doden door hitte als vorig jaar",
+                         "description":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar door hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
+                         "contentOriginal":  "\u003chtml\u003e\u003chead\u003e\u003c/head\u003e\u003cbody\u003eHet officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar door hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.\u003c/body\u003e\u003c/html\u003e",
+                         "contentStripped":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar door hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
+                         "published":  "2026-07-01T07:46:03.000Z",
+                         "firstSeen":  null
+                     },
+                     {
+                         "sourceId":  772,
+                         "feedId":  19,
+                         "status":  "unread",
+                         "favoriteInd":  0,
+                         "negativeInd":  0,
+                         "clickedAmount":  0,
+                         "url":  "https://www.ad.nl/buitenland/spaanse-hitte-eist-1028-levens-in-juni-ruim-2-keer-zo-veel-doden-door-hitte-als-vorig-jaar~aab325c97/",
+                         "title":  "Spaanse hitte eist 1028 levens in juni, ruim 2 keer zo veel doden door hitte als vorig jaar",
+                         "description":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar aan de gevolgen van de hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
+                         "contentOriginal":  "\u003chtml\u003e\u003chead\u003e\u003c/head\u003e\u003cbody\u003eHet officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar aan de gevolgen van de hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.\u003c/body\u003e\u003c/html\u003e",
+                         "contentStripped":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar aan de gevolgen van de hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
+                         "published":  "2026-07-01T07:46:00.000Z",
+                         "firstSeen":  null
+                     },
+                     {
+                         "sourceId":  773,
+                         "feedId":  19,
+                         "status":  "unread",
+                         "favoriteInd":  0,
+                         "negativeInd":  0,
+                         "clickedAmount":  0,
+                         "url":  "https://www.ad.nl/buitenland/spaanse-hitte-eist-1028-levens-in-juni-ruim-twee-keer-zo-veel-doden-door-hitte-als-vorig-jaar~aab325c97/",
+                         "title":  "Spaanse hitte eist 1028 levens in juni, ruim twee keer zo veel doden door hitte als vorig jaar",
+                         "description":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Vorig jaar overleden er in juni 407 mensen aan de gevolgen van de hitte. Dat was de heetste maand juni sinds de temperaturen in Spanje stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
+                         "contentOriginal":  "\u003chtml\u003e\u003chead\u003e\u003c/head\u003e\u003cbody\u003eHet officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Vorig jaar overleden er in juni 407 mensen aan de gevolgen van de hitte. Dat was de heetste maand juni sinds de temperaturen in Spanje stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.\u003c/body\u003e\u003c/html\u003e",
+                         "contentStripped":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Vorig jaar overleden er in juni 407 mensen aan de gevolgen van de hitte. Dat was de heetste maand juni sinds de temperaturen in Spanje stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
+                         "published":  "2026-07-01T07:46:00.000Z",
                          "firstSeen":  null
                      }
                  ]

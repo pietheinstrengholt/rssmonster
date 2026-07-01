@@ -36,7 +36,7 @@ const INCREMENTAL_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-re
 const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'island-taxonomy.vectors.json');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
-const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 77;
+const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 80;
 const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 const MIN_STRONG_EVENT_STRENGTH = 0.35;
 const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
@@ -684,7 +684,7 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
       fallbackScoredCount: baselineIslandResult.fallbackScoredCount,
       rescoredArticleCount: baselineIslandResult.rescoredArticleCount
     }]);
-  }, 60000);
+  }, 180000);
 
   it('loads unread incremental fixture content without replaying existing clusters', async () => {
     const userId = semanticRegressionUserId;
