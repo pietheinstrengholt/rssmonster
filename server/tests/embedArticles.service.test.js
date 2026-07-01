@@ -45,6 +45,11 @@ describe('embedArticles', () => {
     const summary = await embedArticles(42, { batchSize: 10 });
 
     expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        userId: 42,
+        id: expect.any(Object),
+        createdAt: expect.any(Object)
+      }),
       include: [{
         model: expect.any(Object),
         attributes: [],
@@ -75,10 +80,27 @@ describe('embedArticles', () => {
     });
 
     expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: {
+      where: expect.objectContaining({
         userId: 42,
         id: expect.any(Object),
         createdAt: expect.any(Object)
+      })
+    }));
+  });
+
+  it('can opt out of the recent-article guard for intentional historical backfills', async () => {
+    mocked.articleFindAll.mockResolvedValueOnce([]);
+
+    const { embedArticles } = await import('../services/articles/embedArticles.js');
+    await embedArticles(42, {
+      batchSize: 10,
+      maxAgeDays: null
+    });
+
+    expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        userId: 42,
+        id: expect.any(Object)
       }
     }));
   });
