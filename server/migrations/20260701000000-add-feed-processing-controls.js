@@ -19,7 +19,7 @@ module.exports = {
 
     await queryInterface.changeColumn('feeds', 'feedTags', {
       type: Sequelize.JSON,
-      allowNull: false
+      allowNull: true
     });
 
     await queryInterface.addColumn('feeds', 'generateEmbeddings', {
