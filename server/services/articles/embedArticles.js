@@ -23,6 +23,7 @@ const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.ARTICLE_EMBED_BATCH_SIZE 
 export async function embedArticles(userId, options = {}) {
   // Batch size is tunable for memory/latency trade-offs during backfills.
   const batchSize = Number.parseInt(options.batchSize || DEFAULT_BATCH_SIZE, 10);
+  const createdAfter = options.createdAfter || null;
 
   let lastId = 0;
   let scannedCount = 0;
@@ -34,7 +35,8 @@ export async function embedArticles(userId, options = {}) {
     const articles = await Article.findAll({
       where: {
         userId,
-        id: { [Op.gt]: lastId }
+        id: { [Op.gt]: lastId },
+        ...(createdAfter ? { createdAt: { [Op.gte]: createdAfter } } : {})
       },
       include: [{
         model: Feed,

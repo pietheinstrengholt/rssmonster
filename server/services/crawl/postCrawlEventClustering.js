@@ -35,7 +35,9 @@ export async function runPostCrawlEventClustering(result, options = {}) {
   });
 
   for (const userId of userIds) {
-    const embedSummary = await embedArticles(userId);
+    const embedSummary = await embedArticles(userId, {
+      createdAfter: result?.crawlStartedAt || null
+    });
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
 

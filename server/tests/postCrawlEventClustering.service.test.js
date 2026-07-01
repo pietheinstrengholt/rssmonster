@@ -33,7 +33,9 @@ describe('runPostCrawlEventClustering', () => {
       crawlStartedAt
     });
 
-    expect(mocked.embedArticles).toHaveBeenCalledWith(42);
+    expect(mocked.embedArticles).toHaveBeenCalledWith(42, {
+      createdAfter: crawlStartedAt
+    });
     expect(mocked.incrementalClusterForUser).toHaveBeenCalledWith(42, {
       createdAfter: crawlStartedAt,
       skipTopicAssignment: true

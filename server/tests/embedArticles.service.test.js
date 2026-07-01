@@ -62,4 +62,24 @@ describe('embedArticles', () => {
       skippedCount: 0
     });
   });
+
+  it('can limit scans to articles created after a crawl boundary', async () => {
+    const crawlStartedAt = new Date('2026-07-01T12:00:00.000Z');
+
+    mocked.articleFindAll.mockResolvedValueOnce([]);
+
+    const { embedArticles } = await import('../services/articles/embedArticles.js');
+    await embedArticles(42, {
+      batchSize: 10,
+      createdAfter: crawlStartedAt
+    });
+
+    expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+      where: {
+        userId: 42,
+        id: expect.any(Object),
+        createdAt: expect.any(Object)
+      }
+    }));
+  });
 });
