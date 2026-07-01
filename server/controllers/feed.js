@@ -16,6 +16,47 @@ const findOwnedCategory = (categoryId, userId) => Category.findOne({
   }
 });
 
+const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
+
+// This function normalizes feed tag input from arrays or text fields.
+const normalizeFeedTags = value => {
+  if (typeof value === 'undefined') {
+    return [];
+  }
+
+  const tags = Array.isArray(value)
+    ? value
+    : String(value).split(/[\s,]+/);
+
+  return tags
+    .map(tag => String(tag).trim())
+    .filter(Boolean);
+};
+
+// This function validates the feed update interval selector value.
+const normalizeUpdateIntervalMinutes = value => {
+  if (value === null || value === '') {
+    return null;
+  }
+
+  const interval = Number(value);
+
+  if (!Number.isInteger(interval) || !UPDATE_INTERVAL_MINUTES.includes(interval)) {
+    throw new Error('Invalid update interval');
+  }
+
+  return interval;
+};
+
+// This function validates boolean feed processing controls.
+const normalizeBooleanControl = (value, fieldName) => {
+  if (typeof value === 'boolean') {
+    return value;
+  }
+
+  throw new Error(`Invalid ${fieldName}`);
+};
+
 const getFeeds = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
@@ -141,6 +182,28 @@ const updateFeed = async (req, res, _next) => {
       return res.status(400).json({ error: 'Category not found' });
     }
 
+    let updateIntervalMinutes;
+    let feedTags;
+    let generateEmbeddings;
+    let applyAiAnalysis;
+
+    try {
+      updateIntervalMinutes = typeof req.body.updateIntervalMinutes === 'undefined'
+        ? feed.updateIntervalMinutes
+        : normalizeUpdateIntervalMinutes(req.body.updateIntervalMinutes);
+      feedTags = typeof req.body.feedTags === 'undefined'
+        ? feed.feedTags
+        : normalizeFeedTags(req.body.feedTags);
+      generateEmbeddings = typeof req.body.generateEmbeddings === 'undefined'
+        ? feed.generateEmbeddings
+        : normalizeBooleanControl(req.body.generateEmbeddings, 'generateEmbeddings');
+      applyAiAnalysis = typeof req.body.applyAiAnalysis === 'undefined'
+        ? feed.applyAiAnalysis
+        : normalizeBooleanControl(req.body.applyAiAnalysis, 'applyAiAnalysis');
+    } catch (validationError) {
+      return res.status(400).json({ error: validationError.message });
+    }
+
     await feed.update({
       userId: userId,
       feedName: req.body.feedName,
@@ -149,6 +212,10 @@ const updateFeed = async (req, res, _next) => {
       url: req.body.url,
       favicon: req.body.favicon,
       status: req.body.status,
+      updateIntervalMinutes,
+      feedTags,
+      generateEmbeddings,
+      applyAiAnalysis,
       errorCount: 0
     });
     return res.status(200).json({ feed });

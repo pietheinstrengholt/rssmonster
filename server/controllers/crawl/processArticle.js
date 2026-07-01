@@ -55,6 +55,15 @@ const emptyArticleResult = {
   errors: 0
 };
 
+const defaultArticleAnalysis = {
+  summary: null,
+  contentSummaryBullets: [],
+  tags: [],
+  advertisementScore: 70,
+  sentimentScore: 70,
+  qualityScore: 70
+};
+
 const processArticle = async (
   feed,
   entry,
@@ -168,15 +177,17 @@ const processArticle = async (
     // Skip article creation if delete action matched
     if (actionResult.shouldDelete) return emptyArticleResult;
 
-    // Analyze content once (summary + tags + scores)
-    // Done AFTER delete check to avoid wasting API calls
-    const analysis = await analyzeArticleContent(
-      contentStripped,
-      fields.title,
-      fields.categories,
-      feed?.feedName || '',
-      RATE_LIMIT_DELAY_MS
-    );
+    // Analyze content once (summary + tags + scores) unless disabled for this feed.
+    // Done AFTER delete check to avoid wasting API calls.
+    const analysis = feed?.applyAiAnalysis === false
+      ? { ...defaultArticleAnalysis }
+      : await analyzeArticleContent(
+        contentStripped,
+        fields.title,
+        fields.categories,
+        feed?.feedName || '',
+        RATE_LIMIT_DELAY_MS
+      );
 
     // Apply action overrides for scores after analysis
     if (actionResult.advertisementScore !== null) {

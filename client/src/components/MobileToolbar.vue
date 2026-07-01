@@ -102,6 +102,7 @@
     </nav>
     <div v-if="showSearch" class="mobile-search-panel">
       <input
+        ref="searchInput"
         v-model="$store.data.searchQuery"
         @input="updateSearch"
         type="text"
@@ -421,9 +422,11 @@ export default {
   },
   mounted() {
     window.addEventListener('resize', this.handleResize);
+    window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
   },
   unmounted() {
     window.removeEventListener('resize', this.handleResize);
+    window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
   },
   methods: {
     emitClickEvent(eventType, value) {
@@ -441,6 +444,11 @@ export default {
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.$store.data.setMobileSearchOpen(this.showSearch);
+    },
+    focusSearchInput() {
+      this.showSearch = true;
+      this.$store.data.setMobileSearchOpen(true);
+      this.$nextTick(() => this.$refs.searchInput?.focus());
     },
     setEventView: function(value) {
       // Don't trigger if already at the selected value

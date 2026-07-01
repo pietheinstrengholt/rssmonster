@@ -164,6 +164,8 @@ export default {
     'cluster-articles-collapsed',
     'article-not-interested',
     'mark-previous-article-read',
+    'shortcut-toggle-read',
+    'shortcut-toggle-favorite',
     'flush-pool',
     'clear-filters',
     'refresh-feeds',
@@ -468,26 +470,45 @@ export default {
       }
 
       if (this.shouldIgnoreKeyboardEvent(event)) return;
-      if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+      if (!['ArrowDown', 'ArrowUp', 'Enter', 'j', 'k', 'o', 'm', 'r', 's'].includes(event.key)) return;
 
       const currentIndex = this.articles.findIndex(article => article.id === this.selectedArticleId);
       if (currentIndex === -1) return;
 
-      if (event.key === 'ArrowDown') {
+      if (['ArrowDown', 'j'].includes(event.key)) {
         event.preventDefault();
         this.selectArticleByIndex(Math.min(currentIndex + 1, this.articles.length - 1));
-      } else if (event.key === 'ArrowUp') {
+      } else if (['ArrowUp', 'k'].includes(event.key)) {
         event.preventDefault();
         this.selectArticleByIndex(Math.max(currentIndex - 1, 0));
-      } else {
+      } else if (['Enter', 'o'].includes(event.key)) {
         event.preventDefault();
         this.openSelectedArticle();
+      } else if (['m', 'r'].includes(event.key)) {
+        event.preventDefault();
+        this.toggleSelectedReadStatus();
+      } else {
+        event.preventDefault();
+        this.toggleSelectedFavorite();
       }
     },
     // Opens the selected article through the existing article link behavior.
     openSelectedArticle() {
       const articleLink = this.$refs.selectedArticleComponent?.$el?.querySelector('.article-link');
       articleLink?.click();
+    },
+    // Requests a read status toggle for the selected reader article.
+    toggleSelectedReadStatus() {
+      if (!this.selectedArticle) return;
+      this.$emit('shortcut-toggle-read', {
+        id: this.selectedArticle.id,
+        status: this.selectedArticle.status
+      });
+    },
+    // Requests a favorite toggle for the selected reader article.
+    toggleSelectedFavorite() {
+      if (!this.selectedArticle) return;
+      this.$emit('shortcut-toggle-favorite', { id: this.selectedArticle.id });
     },
     // Returns the feed label for a row in the reader article list.
     feedName(article) {

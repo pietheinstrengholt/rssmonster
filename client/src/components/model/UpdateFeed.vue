@@ -127,6 +127,83 @@
               </select>
             </div>
 
+            <!-- Feed processing controls -->
+            <div class="feed-controls-panel">
+              <div class="mb-3">
+                <label class="form-label" for="feed-update-interval">
+                  Update interval
+                </label>
+                <select
+                  id="feed-update-interval"
+                  class="form-select"
+                  v-model="feed.updateIntervalMinutes"
+                >
+                  <option
+                    v-for="option in updateIntervalOptions"
+                    :key="option.label"
+                    :value="option.value"
+                  >
+                    {{ option.label }}
+                  </option>
+                </select>
+                <div class="form-text">
+                  Minimum time between feed fetches.
+                </div>
+              </div>
+
+              <div class="row g-3">
+                <div class="col-md-6">
+                  <label class="form-label" for="feed-generate-embeddings">
+                    Generate embeddings
+                  </label>
+                  <select
+                    id="feed-generate-embeddings"
+                    class="form-select"
+                    v-model="feed.generateEmbeddings"
+                  >
+                    <option :value="true">Yes</option>
+                    <option :value="false">No</option>
+                  </select>
+                  <div class="form-text">
+                    Whether articles from this feed get vectors.
+                  </div>
+                </div>
+
+                <div class="col-md-6">
+                  <label class="form-label" for="feed-apply-ai-analysis">
+                    Apply AI analysis
+                  </label>
+                  <select
+                    id="feed-apply-ai-analysis"
+                    class="form-select"
+                    v-model="feed.applyAiAnalysis"
+                  >
+                    <option :value="true">Yes</option>
+                    <option :value="false">No</option>
+                  </select>
+                  <div class="form-text">
+                    Whether articles get AI summary, tags, sentiment, quality, and ad score.
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-3">
+                <label class="form-label" for="feed-tags">
+                  Feed tags
+                </label>
+                <input
+                  id="feed-tags"
+                  type="text"
+                  class="form-control"
+                  placeholder="ai, security, must-read"
+                  v-model="feedTagsInput"
+                />
+                <div class="form-text">
+                  Separate labels with spaces or commas.
+                </div>
+              </div>
+            </div>
+
             <!-- Error info -->
             <div
               class="mb-3"
@@ -187,7 +264,19 @@ export default {
       originalFeed: {}, // Store the original feed to track changes
       rediscovering: false,
       rediscoveredRss: null,
-      deleting: false
+      deleting: false,
+      updateIntervalOptions: [
+        { label: 'Global setting', value: null },
+        { label: 'Every 5 minutes', value: 5 },
+        { label: 'Every 15 minutes', value: 15 },
+        { label: 'Every 30 minutes', value: 30 },
+        { label: 'Every hour', value: 60 },
+        { label: 'Every 2 hours', value: 120 },
+        { label: 'Every 6 hours', value: 360 },
+        { label: 'Every 12 hours', value: 720 },
+        { label: 'Once a day', value: 1440 },
+        { label: 'Never (manual refresh only)', value: 0 }
+      ]
     };
   },
 
@@ -211,6 +300,22 @@ export default {
     }
   },
 
+  computed: {
+    feedTagsInput: {
+      get() {
+        return Array.isArray(this.feed.feedTags)
+          ? this.feed.feedTags.join(', ')
+          : '';
+      },
+      set(value) {
+        this.feed.feedTags = value
+          .split(/[\s,]+/)
+          .map(tag => tag.trim())
+          .filter(Boolean);
+      }
+    }
+  },
+
   methods: {
     // This function initializes the editable feed from the store.
     initializeFeed() {
@@ -221,6 +326,10 @@ export default {
         const feed = category.feeds?.find(f => f.id === feedId);
         if (feed) {
           this.feed = JSON.parse(JSON.stringify(feed));
+          this.feed.updateIntervalMinutes = this.feed.updateIntervalMinutes ?? null;
+          this.feed.feedTags = Array.isArray(this.feed.feedTags) ? this.feed.feedTags : [];
+          this.feed.generateEmbeddings = this.feed.generateEmbeddings ?? true;
+          this.feed.applyAiAnalysis = this.feed.applyAiAnalysis ?? true;
           this.originalFeed = JSON.parse(JSON.stringify(feed)); // Store original for comparison
           return;
         }
@@ -329,7 +438,11 @@ export default {
           feedDesc: this.feed.feedDesc,
           categoryId: selectedCategoryId,
           url: this.feed.url,
-          status: this.feed.status
+          status: this.feed.status,
+          updateIntervalMinutes: this.feed.updateIntervalMinutes,
+          feedTags: this.feed.feedTags,
+          generateEmbeddings: this.feed.generateEmbeddings,
+          applyAiAnalysis: this.feed.applyAiAnalysis
         });
 
         if (currentIndexFeed === -1 || currentIndexCategory === -1) {
@@ -381,5 +494,20 @@ export default {
 
 .form-label {
   font-weight: 500;
+}
+
+.feed-controls-panel {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.5rem;
+  background: var(--bg-muted);
+}
+
+@media (prefers-color-scheme: dark) {
+  .feed-controls-panel {
+    border-color: var(--border-subtle);
+    background: var(--bg-card);
+  }
 }
 </style>

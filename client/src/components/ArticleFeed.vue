@@ -4,9 +4,9 @@
     :smart-folders="$store.data.smartFolders"
     @selectSmartFolder="selectSmartFolderFromOverview"
   />
-  <ArticleReaderLayout v-else-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleReaderLayout>
-  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="$store.data.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :view-mode="$store.data.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @cluster-articles-loaded="insertClusterArticles" @cluster-articles-collapsed="removeClusterArticles" @article-not-interested="removeArticle">
   </ArticleListView>
 </template>
 
@@ -21,6 +21,7 @@ import {
   markArticlesAsRead,
   markArticleUnread,
   markArticleSeen,
+  markAsFavorite,
   markManyClicked,
   markManyAsFavorite
 } from '../api/articles';
@@ -149,6 +150,7 @@ export default {
     this.isDesktopReaderWidth = this.desktopReaderQuery.matches;
     this.desktopReaderQuery.addEventListener('change', this.handleReaderWidthChange);
     window.addEventListener("scroll", this.handleScroll, { passive: true });
+    window.addEventListener("keydown", this.handleGlobalShortcut);
     this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
     this.setupObservers();
   },
@@ -156,6 +158,7 @@ export default {
   // Removes scroll handling and disconnects observers before unmounting.
   unmounted() {
     window.removeEventListener("scroll", this.handleScroll);
+    window.removeEventListener("keydown", this.handleGlobalShortcut);
     this.scrollContainer?.removeEventListener("scroll", this.handleScroll);
     this.desktopReaderQuery?.removeEventListener('change', this.handleReaderWidthChange);
     this.teardownObservers();
@@ -239,6 +242,31 @@ export default {
 
       this.prevScroll = curScroll;
       this.scrollDirection = direction;
+    },
+    // Handles shortcuts that apply to every article view mode.
+    handleGlobalShortcut(event) {
+      if (this.shouldIgnoreGlobalShortcut(event)) return;
+
+      if (event.key === 'R') {
+        event.preventDefault();
+        this.forceReload();
+        return;
+      }
+
+      if (event.key === '/') {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent('rssmonster:focus-search'));
+      }
+    },
+    // Returns whether a global shortcut should ignore the current target.
+    shouldIgnoreGlobalShortcut(event) {
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      const isEditableTarget = ['input', 'textarea', 'select'].includes(tagName)
+        || target?.isContentEditable
+        || Boolean(target?.closest?.('[contenteditable="true"], [contenteditable=""]'));
+
+      return Boolean(event.altKey || event.ctrlKey || event.metaKey || isEditableTarget);
     },
 
     // Creates observers for article visibility and incremental loading.
@@ -584,6 +612,76 @@ export default {
         this.pendingReadStatusArticleIds.delete(normalizedArticleId);
       }
     },
+    // Toggles an article between read and unread from a keyboard shortcut.
+    async toggleShortcutArticleReadStatus({ id, status }) {
+      if (this.$store.data.currentSelection.viewMode === 'minimal') {
+        await this.toggleMinimalArticleReadStatus({ id, status });
+        return;
+      }
+
+      await this.toggleArticleReadStatus({ id, status });
+    },
+    // Toggles an article between read and unread.
+    async toggleArticleReadStatus({ id, status }) {
+      const articleId = Number(id);
+      const pendingArticleId = Number.isFinite(articleId) ? articleId : id;
+      if (this.pendingReadStatusArticleIds.has(pendingArticleId)) return;
+
+      this.pendingReadStatusArticleIds.add(pendingArticleId);
+
+      try {
+        if (status === 'read') {
+          const response = await markArticleUnread(id);
+          this.updateArticleStatusLocal(response.data);
+          this.$store.data.decreaseReadCount(response.data);
+          this.pool.delete(pendingArticleId);
+          return;
+        }
+
+        const response = await markArticleSeen(id, {
+          eventView: this.$store.data.currentSelection.eventView,
+          visibleSeconds: 0,
+          selectedStatus: 'unread'
+        });
+
+        this.applyArticleSeenResponse(response.data, { updateReadCounts: status !== 'read' });
+        this.pool.add(pendingArticleId);
+      } catch (error) {
+        console.error('Error toggling article read status:', error);
+      } finally {
+        this.pendingReadStatusArticleIds.delete(pendingArticleId);
+      }
+    },
+    // Toggles an article favorite state from a keyboard shortcut.
+    async toggleShortcutArticleFavorite({ id }) {
+      const article = this.articles.find(item => String(item.id) === String(id));
+      if (!article) return;
+
+      const newFavoriteInd = article.favoriteInd === 1 ? 0 : 1;
+      const updateType = newFavoriteInd ? 'mark' : 'unmark';
+
+      try {
+        const response = await markAsFavorite(id, updateType);
+        const category = this.$store.data.categories.find(
+          item => item.id === response.data.feed?.categoryId
+        );
+        const delta = newFavoriteInd ? 1 : -1;
+
+        if (category) {
+          category.favoriteCount += delta;
+          const feed = category.feeds?.find(item => item.id === response.data.feedId);
+          if (feed) feed.favoriteCount += delta;
+        }
+
+        newFavoriteInd
+          ? this.$store.data.increaseFavoriteCount()
+          : this.$store.data.decreaseFavoriteCount();
+
+        this.updateFavoriteInd({ id, favoriteInd: newFavoriteInd });
+      } catch (error) {
+        console.error('Error toggling article favorite:', error);
+      }
+    },
 
     // Handles reader list bulk actions selected from the middle pane header.
     async handleReaderBulkAction({ action, selectedArticleId }) {
@@ -712,34 +810,7 @@ export default {
     // Toggles the selected reader article between read and unread.
     async toggleReaderArticleReadStatus({ id, status }) {
       if (this.$store.data.currentSelection.viewMode !== 'reader') return;
-
-      const articleId = Number(id);
-      const pendingArticleId = Number.isFinite(articleId) ? articleId : id;
-      if (this.pendingReadStatusArticleIds.has(pendingArticleId)) return;
-
-      this.pendingReadStatusArticleIds.add(pendingArticleId);
-
-      try {
-        if (status === 'read') {
-          const response = await markArticleUnread(id);
-          this.updateArticleStatusLocal(response.data);
-          this.$store.data.decreaseReadCount(response.data);
-          this.pool.delete(pendingArticleId);
-          return;
-        }
-
-        const response = await markArticleSeen(id, {
-          eventView: this.$store.data.currentSelection.eventView,
-          visibleSeconds: 0,
-          selectedStatus: 'unread'
-        });
-
-        this.applyArticleSeenResponse(response.data, { updateReadCounts: true });
-      } catch (error) {
-        console.error('Error toggling reader article read status:', error);
-      } finally {
-        this.pendingReadStatusArticleIds.delete(pendingArticleId);
-      }
+      await this.toggleArticleReadStatus({ id, status });
     },
 
     // Updates an article's local status and optional returned fields.

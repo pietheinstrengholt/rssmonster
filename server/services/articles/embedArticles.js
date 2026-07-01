@@ -15,7 +15,7 @@ import embedArticle from './embedArticle.js';
  * `embedArticle` so storage logic is not duplicated.
  */
 
-const { Article } = db;
+const { Article, Feed } = db;
 const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.ARTICLE_EMBED_BATCH_SIZE || '200', 10);
 
 // This function backfills embeddings for one user's articles in stable id-ordered batches.
@@ -36,6 +36,14 @@ export async function embedArticles(userId, options = {}) {
         userId,
         id: { [Op.gt]: lastId }
       },
+      include: [{
+        model: Feed,
+        attributes: [],
+        required: true,
+        where: {
+          generateEmbeddings: true
+        }
+      }],
       order: [['id', 'ASC']],
       limit: batchSize,
       attributes: [

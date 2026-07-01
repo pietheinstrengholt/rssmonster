@@ -65,6 +65,8 @@ export default {
     'cluster-articles-loaded',
     'cluster-articles-collapsed',
     'article-not-interested',
+    'shortcut-toggle-read',
+    'shortcut-toggle-favorite',
     'flush-pool',
     'clear-filters',
     'refresh-feeds',
@@ -124,6 +126,7 @@ export default {
   data() {
     return {
       minimalArticleRefs: {},
+      selectedArticleId: null,
       isArticleEndStateDismissed: false
     };
   },
@@ -223,35 +226,81 @@ export default {
     },
     // Handles compact headline keyboard navigation.
     handleMinimalKeydown(event) {
-      if (this.viewMode !== 'minimal') return;
       if (this.shouldIgnoreKeyboardEvent(event)) return;
-      if (!['ArrowDown', 'ArrowUp', 'Enter'].includes(event.key)) return;
+      if (!['ArrowDown', 'ArrowUp', 'Enter', 'j', 'k', 'o', 'm', 'r', 's'].includes(event.key)) return;
       if (!this.articles.length) return;
 
-      if (event.key === 'Enter') {
+      if (['Enter', 'o'].includes(event.key)) {
         event.preventDefault();
-        this.openSelectedMinimalArticle();
+        this.openSelectedArticle();
         return;
       }
 
-      const currentIndex = this.articles.findIndex(article => String(article.id) === String(this.activeMinimalArticleId));
-      const fallbackIndex = event.key === 'ArrowDown' ? 0 : this.articles.length - 1;
+      if (['m', 'r'].includes(event.key)) {
+        event.preventDefault();
+        this.toggleSelectedReadStatus();
+        return;
+      }
+
+      if (event.key === 's') {
+        event.preventDefault();
+        this.toggleSelectedFavorite();
+        return;
+      }
+
+      const currentIndex = this.selectedArticleIndex();
+      const isNextKey = ['ArrowDown', 'j'].includes(event.key);
+      const fallbackIndex = isNextKey ? 0 : this.articles.length - 1;
       const nextIndex = currentIndex === -1
         ? fallbackIndex
-        : event.key === 'ArrowDown'
+        : isNextKey
           ? Math.min(currentIndex + 1, this.articles.length - 1)
           : Math.max(currentIndex - 1, 0);
 
       event.preventDefault();
-      this.selectMinimalArticleByIndex(nextIndex);
+      this.selectArticleByIndex(nextIndex);
     },
-    // Selects a compact headline and keeps it visible for keyboard users.
-    selectMinimalArticleByIndex(index) {
+    // Returns the selected article index for the active list mode.
+    selectedArticleIndex() {
+      const selectedId = this.viewMode === 'minimal'
+        ? this.activeMinimalArticleId
+        : this.selectedArticleId ?? this.closestArticleIdToViewport();
+
+      return this.articles.findIndex(article => String(article.id) === String(selectedId));
+    },
+    // Returns the article nearest to the top of the reading viewport.
+    closestArticleIdToViewport() {
+      const scrollRoot = document.getElementById('home');
+      const viewportTop = scrollRoot?.getBoundingClientRect?.().top || 0;
+      let closestArticleId = null;
+      let closestDistance = Infinity;
+
+      for (const article of this.articles) {
+        const element = this.minimalArticleRefs[article.id]?.$el;
+        if (!element) continue;
+
+        const distance = Math.abs(element.getBoundingClientRect().top - viewportTop);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestArticleId = article.id;
+        }
+      }
+
+      return closestArticleId;
+    },
+    // Selects an article and keeps it visible for keyboard users.
+    selectArticleByIndex(index) {
       const article = this.articles[index];
       if (!article) return;
 
-      this.$emit('minimal-article-opened', { id: article.id, status: article.status });
-      this.$nextTick(() => this.focusSelectedMinimalArticle());
+      if (this.viewMode === 'minimal') {
+        this.$emit('minimal-article-opened', { id: article.id, status: article.status });
+        this.$nextTick(() => this.focusSelectedMinimalArticle());
+        return;
+      }
+
+      this.selectedArticleId = article.id;
+      this.$nextTick(() => this.scrollSelectedArticleIntoView());
     },
     // Focuses and scrolls the selected compact article into view.
     focusSelectedMinimalArticle({ preventScroll = false } = {}) {
@@ -264,13 +313,42 @@ export default {
       selectedElement.focus({ preventScroll });
       selectedElement.scrollIntoView({ block: 'nearest' });
     },
-    // Opens the selected compact article through the existing article link behavior.
-    openSelectedMinimalArticle() {
-      if (this.activeMinimalArticleId === null) return;
+    // Scrolls the selected expanded article into view.
+    scrollSelectedArticleIntoView() {
+      const selectedComponent = this.minimalArticleRefs[this.selectedArticleId];
+      const selectedElement = selectedComponent?.$el;
+      selectedElement?.scrollIntoView({ block: 'nearest' });
+    },
+    // Returns the currently selected article for shortcut actions.
+    selectedArticle() {
+      const selectedId = this.viewMode === 'minimal'
+        ? this.activeMinimalArticleId
+        : this.selectedArticleId ?? this.closestArticleIdToViewport();
 
-      const selectedComponent = this.minimalArticleRefs[this.activeMinimalArticleId];
+      return this.articles.find(article => String(article.id) === String(selectedId)) || null;
+    },
+    // Opens the selected article through the existing article link behavior.
+    openSelectedArticle() {
+      const selectedArticle = this.selectedArticle();
+      if (!selectedArticle) return;
+
+      const selectedComponent = this.minimalArticleRefs[selectedArticle.id];
       const articleLink = selectedComponent?.$el?.querySelector('.article-link');
       articleLink?.click();
+    },
+    // Requests a read status toggle for the selected article.
+    toggleSelectedReadStatus() {
+      const article = this.selectedArticle();
+      if (!article) return;
+
+      this.$emit('shortcut-toggle-read', { id: article.id, status: article.status });
+    },
+    // Requests a favorite toggle for the selected article.
+    toggleSelectedFavorite() {
+      const article = this.selectedArticle();
+      if (!article) return;
+
+      this.$emit('shortcut-toggle-favorite', { id: article.id });
     }
   }
 }

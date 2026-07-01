@@ -164,6 +164,41 @@ describe('feed ownership authorization', () => {
     expect(feed.status).toBe('active');
   });
 
+  it('PUT feed by ID updates feed processing controls', async () => {
+    const owner = await createUser(uniqueName('feed-owner'));
+    const { feed } = await createFeedFor(owner);
+
+    const res = await request(app)
+      .put(`/api/feeds/${feed.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        feedName: 'Updated feed controls',
+        feedDesc: 'Updated feed control settings',
+        categoryId: feed.categoryId,
+        url: 'https://example.com/updated-feed-controls.xml',
+        favicon: '',
+        status: 'active',
+        updateIntervalMinutes: null,
+        feedTags: ['ai', 'security', 'must-read'],
+        generateEmbeddings: false,
+        applyAiAnalysis: false
+      });
+
+    await feed.reload();
+
+    expect(res.status).toBe(200);
+    expect(res.body.feed).toMatchObject({
+      updateIntervalMinutes: null,
+      feedTags: ['ai', 'security', 'must-read'],
+      generateEmbeddings: false,
+      applyAiAnalysis: false
+    });
+    expect(feed.updateIntervalMinutes).toBeNull();
+    expect(feed.feedTags).toEqual(['ai', 'security', 'must-read']);
+    expect(feed.generateEmbeddings).toBe(false);
+    expect(feed.applyAiAnalysis).toBe(false);
+  });
+
   it('POST feed rejects foreign-user category', async () => {
     const owner = await createUser(uniqueName('feed-owner'));
     const foreignUser = await createUser(uniqueName('feed-category-owner'));

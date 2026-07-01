@@ -1,6 +1,28 @@
 import db from '../../models/index.js';
 const { Article, Tag } = db;
 
+// This function normalizes feed tags before inheriting them onto articles.
+const normalizeFeedTags = feedTags => {
+  if (!Array.isArray(feedTags)) {
+    return [];
+  }
+
+  const seen = new Set();
+
+  return feedTags
+    .map(tag => String(tag).trim())
+    .filter(tag => {
+      const key = tag.toLowerCase();
+
+      if (!key || seen.has(key)) {
+        return false;
+      }
+
+      seen.add(key);
+      return true;
+    });
+};
+
 /* ======================================================
    Save article & tags to database
    ------------------------------------------------------
@@ -56,6 +78,24 @@ async function saveArticle(feed, data, analysis, actionResult) {
           tagType: 'generated' // can be used later to differentiate between user-generated and system-generated tags
         }).catch(err =>
           console.error(`Error saving tag "${tag}":`, err.message)
+        )
+      )
+    );
+  }
+
+  const feedTags = normalizeFeedTags(feed.feedTags);
+
+  // Save inherited feed tags as article-level tags.
+  if (feedTags.length > 0) {
+    await Promise.all(
+      feedTags.map(tag =>
+        Tag.create({
+          articleId: article.id,
+          userId: feed.userId,
+          name: tag,
+          tagType: 'feed'
+        }).catch(err =>
+          console.error(`Error saving feed tag "${tag}":`, err.message)
         )
       )
     );

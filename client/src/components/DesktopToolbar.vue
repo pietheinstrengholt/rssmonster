@@ -659,6 +659,9 @@ export default {
       ]
     };
   },
+  mounted() {
+    window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
+  },
   methods: {
     // This function toggles the compact search field and focuses it when opening.
     toggleCompactSearch: function() {
@@ -672,6 +675,11 @@ export default {
     // This function closes the compact search field.
     closeCompactSearch: function() {
       this.isCompactSearchOpen = false;
+    },
+    // This function opens the compact search field and puts focus in it.
+    focusSearchInput: function() {
+      this.isCompactSearchOpen = true;
+      this.$nextTick(() => this.$refs.searchInput?.focus());
     },
     // This function delays search updates until typing pauses.
     debounceSearchEvent: function() {
@@ -761,6 +769,7 @@ export default {
   // This function clears a pending search update before the component is removed.
   beforeUnmount() {
     clearTimeout(this.searchDebounceTimer);
+    window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
   },
   watch: {
     // This function keeps the selected toolbar option in sync with saved settings.

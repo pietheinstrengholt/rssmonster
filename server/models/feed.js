@@ -107,6 +107,30 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
+
+      /**
+       * Feed-specific update controls
+       */
+      updateIntervalMinutes: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: 60
+      },
+      feedTags: {
+        type: DataTypes.JSON,
+        allowNull: false,
+        defaultValue: []
+      },
+      generateEmbeddings: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+      },
+      applyAiAnalysis: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
+      },
       crawlSince: {
         type: DataTypes.DATE,
         allowNull: true,

@@ -1,0 +1,65 @@
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+const mocked = vi.hoisted(() => ({
+  articleFindAll: vi.fn(),
+  embedArticle: vi.fn()
+}));
+
+vi.mock('../models/index.js', () => ({
+  default: {
+    Article: {
+      findAll: mocked.articleFindAll
+    },
+    Feed: {
+      name: 'Feed'
+    }
+  }
+}));
+
+vi.mock('../services/articles/embedArticle.js', () => ({
+  default: mocked.embedArticle
+}));
+
+describe('embedArticles', () => {
+  beforeEach(() => {
+    mocked.articleFindAll.mockReset();
+    mocked.embedArticle.mockReset();
+  });
+
+  it('only scans articles from feeds that allow embeddings', async () => {
+    const article = {
+      id: 7,
+      title: 'Vector article',
+      contentStripped: 'Enough content to be useful for embeddings'
+    };
+
+    mocked.articleFindAll
+      .mockResolvedValueOnce([article])
+      .mockResolvedValueOnce([]);
+    mocked.embedArticle.mockResolvedValue({
+      eventVector: [0.1, 0.2, 0.3],
+      reused: false
+    });
+
+    const { embedArticles } = await import('../services/articles/embedArticles.js');
+    const summary = await embedArticles(42, { batchSize: 10 });
+
+    expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+      include: [{
+        model: expect.any(Object),
+        attributes: [],
+        required: true,
+        where: {
+          generateEmbeddings: true
+        }
+      }]
+    }));
+    expect(mocked.embedArticle).toHaveBeenCalledWith(article, { persist: true });
+    expect(summary).toMatchObject({
+      userId: 42,
+      scannedCount: 1,
+      embeddedCount: 1,
+      skippedCount: 0
+    });
+  });
+});

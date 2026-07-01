@@ -20,7 +20,7 @@ import {
 } from './eventTopicAssignment.js';
 import { recomputeTopicStatsForUser } from '../topics/topicStats.service.js';
 
-const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
+const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
 
 // This function clears article event references that point outside the owning user's events.
 async function clearForeignEventReferencesForUser(userId) {
@@ -81,6 +81,11 @@ function hasStoredArticleVector(article) {
   return Array.isArray(article?.articleVector) && article.articleVector.length > 0;
 }
 
+// This function checks whether an article's feed allows new embeddings.
+function canGenerateEmbeddingForArticle(article) {
+  return article?.Feed?.generateEmbeddings !== false;
+}
+
 // This function embeds, assigns, reconciles, and summarizes article-to-event clustering for one pass.
 async function assignAndReconcile(userId, articles, label, options = {}) {
   const {
@@ -123,6 +128,10 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
           eventVector: article.articleVector,
           embedding_model: article.embedding_model || null
         };
+      }
+
+      if (!canGenerateEmbeddingForArticle(article)) {
+        return null;
       }
 
       const vectors = await embedArticle(article, { persist: true });
@@ -321,6 +330,11 @@ export async function incrementalClusterForUser(userId, options = {}) {
 
   const articles = await Article.findAll({
     where: articleWhere,
+    include: [{
+      model: Feed,
+      attributes: ['generateEmbeddings'],
+      required: false
+    }],
     order: [
       ['published', 'ASC'],
       ['id', 'ASC']
@@ -356,6 +370,11 @@ export async function reclusterForUser(userId, options = {}) {
       userId,
       published: { [Op.gte]: cutoffDate }
     },
+    include: [{
+      model: Feed,
+      attributes: ['generateEmbeddings'],
+      required: false
+    }],
     order: [
       ['published', 'ASC'],
       ['id', 'ASC']

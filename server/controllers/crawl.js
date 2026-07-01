@@ -26,6 +26,8 @@ const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
 // Rate limit delay tracking for OpenAI API
 let rateLimitDelay = 0;
 
+const MINUTE_MS = 60 * 1000;
+
 /* ------------------------------------------------------------------
  * Helpers
  * ------------------------------------------------------------------ */
@@ -59,6 +61,37 @@ const resetRateLimitDelay = () => {
   }
 };
 
+// This function checks whether a feed is due for crawling based on its interval.
+const shouldCrawlFeed = (feed, now = new Date()) => {
+  const interval = feed.updateIntervalMinutes;
+
+  if (Number(interval) === 0) {
+    return false;
+  }
+
+  if (interval === null || typeof interval === 'undefined') {
+    return true;
+  }
+
+  const intervalMinutes = Number(interval);
+
+  if (!Number.isInteger(intervalMinutes) || intervalMinutes < 0) {
+    return true;
+  }
+
+  if (!feed.lastFetched) {
+    return true;
+  }
+
+  const lastFetchedTime = new Date(feed.lastFetched).getTime();
+
+  if (Number.isNaN(lastFetchedTime)) {
+    return true;
+  }
+
+  return lastFetchedTime + intervalMinutes * MINUTE_MS <= now.getTime();
+};
+
 /* ------------------------------------------------------------------
  * Feed fetching
  * ------------------------------------------------------------------ */
@@ -83,11 +116,21 @@ const getFeeds = async (userId = null) => {
       where.userId = userId;
     }
 
-    const feeds = await Feed.findAll({
+    const crawlCandidates = await Feed.findAll({
       where,
-      order: [['updatedAt', 'ASC']],
-      limit: feedCount
+      order: [['updatedAt', 'ASC']]
     });
+
+    const now = new Date();
+    const dueFeeds = crawlCandidates.filter(feed => shouldCrawlFeed(feed, now));
+    const feeds = dueFeeds.slice(0, feedCount);
+
+    const skippedCount = crawlCandidates.length - dueFeeds.length;
+
+    if (skippedCount > 0) {
+      console.log(`[Crawl] Skipped ${skippedCount} feeds because their update interval has not elapsed.`);
+    }
+
     return feeds;
   } catch (err) {
     console.error('Error fetching feeds from database:', err.message);
@@ -599,5 +642,6 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 
 export default {
   crawlRssLinks,
-  performCrawl
+  performCrawl,
+  shouldCrawlFeed
 }
