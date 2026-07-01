@@ -344,9 +344,16 @@ export default {
     showReaderEndState() {
       return this.hasReachedArticleListEnd && !this.isReaderEndStateDismissed;
     },
+    // Returns whether the fully loaded reader list still contains unread articles.
+    hasUnreadArticlesInCurrentView() {
+      return this.articles.some(article => article.status !== 'read');
+    },
     // Returns whether the end state should offer the mark-all-read action.
     showReaderEndStateActions() {
-      return this.currentSelection === 'unread' && !this.isFlushed && this.currentViewUnreadCount > 0;
+      return this.currentSelection === 'unread'
+        && !this.isFlushed
+        && this.currentViewUnreadCount > 0
+        && this.hasUnreadArticlesInCurrentView;
     }
   },
   watch: {

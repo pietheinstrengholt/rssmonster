@@ -55,7 +55,7 @@
       </footer>
     </main>
     <!-- Main app view -->
-    <main v-else>
+    <main v-else id="main">
       <app-shell></app-shell>
     </main>
   </div>
@@ -425,6 +425,11 @@ export default {
 }
 
 html, body, #app {
+  height: 100%;
+}
+
+#main,
+#main #home {
   height: 100%;
 }
 

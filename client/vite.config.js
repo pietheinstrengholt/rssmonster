@@ -14,6 +14,7 @@ const bootstrapIconNames = [
   'arrow-repeat',
   'arrow-up-circle-fill',
   'award-fill',
+  'bookmark',
   'bookmark-fill',
   'box-arrow-right',
   'check-circle-fill',
@@ -104,7 +105,10 @@ const bootstrapIconNames = [
   'arrow-up-right-square-fill',
   'eye-fill',
   'record-circle-fill',
-  'stars'
+  'stars',
+  'clock-fill',
+  'info-lg',
+  'link-45deg'
 ]
 
 const bootstrapIconsSprite = () => {

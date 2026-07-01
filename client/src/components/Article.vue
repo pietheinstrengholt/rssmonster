@@ -1461,7 +1461,6 @@ span.similar-badge {
   .mobile-swipe-shell {
     position: relative;
     overflow: hidden;
-    border-bottom: 1px solid var(--border-subtle);
   }
 
   .mobile-swipe-action {
