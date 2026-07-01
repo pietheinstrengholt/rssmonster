@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
+import assignArticleToEvent, { EventCache } from '../services/articles/assignArticleToEvent.js';
 import {
   incrementalClusterForUser,
   reclusterForUser,
@@ -285,6 +286,89 @@ describe('reclusterForUser', () => {
 
     expect(event.articleCount).toBe(2);
     expect(event.articles).toHaveLength(2);
+  });
+
+  it('uses already-assigned similar candidates as evidence when the event centroid misses', async () => {
+    const { user, feed } = await createUserGraph('assigned-candidates');
+    const existingArticleA = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Spanish heatwave death toll reaches 1028 in June',
+      url: `https://example.com/${user.id}/assigned-candidate-a`,
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0]
+    }));
+    const existingArticleB = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Spanish heatwave death toll reaches 1028 in June',
+      url: `https://example.com/${user.id}/assigned-candidate-b`,
+      published: recentDateWithOffset(2 * 60 * 1000),
+      articleVector: [1, 0, 0]
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: existingArticleA.id,
+      name: 'Unrelated centroid label',
+      articleCount: 2,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [0, 1, 0],
+      eventWindowStartAt: existingArticleA.published,
+      eventWindowEndAt: existingArticleB.published,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 3, {
+      title: 'Spanish heatwave death toll reaches 1028 in June',
+      url: `https://example.com/${user.id}/assigned-candidate-c`,
+      published: recentDateWithOffset(4 * 60 * 1000),
+      articleVector: [1, 0, 0]
+    }));
+    const runContext = {
+      records: [
+        {
+          id: existingArticleA.id,
+          feedId: existingArticleA.feedId,
+          title: existingArticleA.title,
+          description: existingArticleA.description,
+          published: existingArticleA.published,
+          createdAt: existingArticleA.createdAt,
+          eventId: event.id,
+          eventVector: existingArticleA.articleVector
+        },
+        {
+          id: existingArticleB.id,
+          feedId: existingArticleB.feedId,
+          title: existingArticleB.title,
+          description: existingArticleB.description,
+          published: existingArticleB.published,
+          createdAt: existingArticleB.createdAt,
+          eventId: event.id,
+          eventVector: existingArticleB.articleVector
+        }
+      ],
+      indexById: new Map([
+        [existingArticleA.id, 0],
+        [existingArticleB.id, 1]
+      ]),
+      stats: {}
+    };
+
+    await existingArticleA.update({ eventId: event.id });
+    await existingArticleB.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([event]),
+      { eventVector: incomingArticle.articleVector },
+      [],
+      runContext,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+    await event.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+    expect(event.articleCount).toBe(3);
+    expect(runContext.stats.linkedToExistingEventCount).toBe(1);
   });
 
   it('retrospectively clusters vectorized articles outside the replay window', async () => {

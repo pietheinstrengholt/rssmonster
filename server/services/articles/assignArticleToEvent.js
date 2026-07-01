@@ -289,6 +289,7 @@ export class EventCache {
   updateInMemory(eventId, updates) {
     const event = this._events.find(e => e.id === eventId);
     if (event) {
+      Object.assign(event, updates);
       Object.assign(event.dataValues, updates);
     }
   }
@@ -379,6 +380,7 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
       meetsSemantic: false,
       meetsTemporal: false,
       meetsAuxiliary: false,
+      eventId: candidate.eventId ?? null,
       accepted: false
     };
   }
@@ -419,11 +421,77 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
     meetsTemporal,
     meetsAuxiliary,
     nearDuplicate,
+    eventId: candidate.eventId ?? null,
     accepted
   };
 }
 
-// This function finds persisted unassigned articles that can corroborate the current article.
+// This function chooses the strongest existing event represented by accepted candidate articles.
+function resolveBestCandidateEvent(candidateSignals, acceptedCandidates) {
+  const acceptedById = new Map(
+    acceptedCandidates.map(candidate => [candidate.id, candidate])
+  );
+  const eventGroups = new Map();
+
+  for (const signal of candidateSignals) {
+    if (!signal.accepted) continue;
+
+    const candidate = acceptedById.get(signal.candidateId);
+    const eventId = candidate?.eventId;
+
+    if (eventId == null) continue;
+
+    const key = Number(eventId);
+    const group = eventGroups.get(key) || {
+      eventId: key,
+      acceptedCandidateCount: 0,
+      semanticTotal: 0,
+      maxSemantic: 0
+    };
+
+    group.acceptedCandidateCount++;
+    group.semanticTotal += signal.semantic;
+    group.maxSemantic = Math.max(group.maxSemantic, signal.semantic);
+    eventGroups.set(key, group);
+  }
+
+  const candidates = [...eventGroups.values()]
+    .map(group => ({
+      ...group,
+      averageSemantic: group.semanticTotal / group.acceptedCandidateCount
+    }))
+    .sort((left, right) => (
+      right.acceptedCandidateCount - left.acceptedCandidateCount ||
+      right.averageSemantic - left.averageSemantic ||
+      right.maxSemantic - left.maxSemantic ||
+      left.eventId - right.eventId
+    ));
+
+  return candidates[0] || null;
+}
+
+// This function loads a candidate-backed event and makes sure the cache can see later updates.
+async function loadCandidateEvent({ userId, eventId, cache }) {
+  if (!eventId) return null;
+
+  const cachedEvent = cache?.events?.find(event => Number(event.id) === Number(eventId));
+  if (cachedEvent) return cachedEvent;
+
+  const event = await Event.findOne({
+    where: {
+      id: eventId,
+      userId
+    }
+  });
+
+  if (event && cache) {
+    cache.add(event);
+  }
+
+  return event;
+}
+
+// This function finds persisted recent articles that can corroborate the current article.
 async function findCandidateArticles({ article, articleEventVector }) {
   const articleTs = articleEventTimestamp(article) ?? Date.now();
   const cutoff = new Date(articleTs - EVENT_MAX_GAP_HOURS * HOUR_MS);
@@ -432,14 +500,13 @@ async function findCandidateArticles({ article, articleEventVector }) {
   const candidates = await Article.findAll({
     where: {
       userId: article.userId,
-      eventId: null,
       id: { [Op.ne]: article.id },
       published: {
         [Op.gte]: cutoff,
         [Op.lte]: upperBound
       }
     },
-    attributes: ['id', 'feedId', 'title', 'description', 'published', 'createdAt', 'articleVector'],
+    attributes: ['id', 'feedId', 'eventId', 'title', 'description', 'published', 'createdAt', 'articleVector'],
     order: [['published', 'DESC']],
     limit: MAX_CANDIDATES
   });
@@ -499,7 +566,6 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
 
   const candidatePool = (runContext?.records || []).filter(candidate => {
     if (candidate.id === article.id) return false;
-    if (candidate.eventId != null) return false;
     if (!Array.isArray(resolveArticleVector(candidate))) return false;
 
     const candidateTs = articleEventTimestamp(candidate);
@@ -706,11 +772,20 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       articleEventVector
     });
   const candidateArticles = candidateResult.acceptedCandidates;
-
-  const corroboratedArticleCount = candidateArticles.length + 1;
+  const assignedCandidates = candidateArticles.filter(candidate => candidate.eventId != null);
+  const unassignedCandidates = candidateArticles.filter(candidate => candidate.eventId == null);
+  const selectedCandidateEvent = resolveBestCandidateEvent(
+    candidateResult.evaluatedSignals,
+    assignedCandidates
+  );
+  const selectedCandidateEventId = selectedCandidateEvent?.eventId ?? null;
+  const candidateEventIds = [
+    ...new Set(assignedCandidates.map(candidate => Number(candidate.eventId)).filter(Boolean))
+  ];
+  const corroboratedArticleCount = unassignedCandidates.length + 1;
   const corroboratedSourceCount = new Set([
     article.feedId,
-    ...candidateArticles.map(candidate => candidate.feedId)
+    ...unassignedCandidates.map(candidate => candidate.feedId)
   ]).size;
 
   if (EVENT_DEBUG) {
@@ -718,6 +793,10 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       topicId: null,
       totalCandidatePool: candidateResult.evaluatedSignals.length,
       acceptedCandidates: candidateArticles.length,
+      assignedCandidateCount: assignedCandidates.length,
+      unassignedCandidateCount: unassignedCandidates.length,
+      candidateEventIds,
+      selectedCandidateEventId,
       corroboratedArticleCount,
       corroboratedSourceCount,
       required: {
@@ -730,6 +809,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         .slice(0, 8)
         .map(signal => ({
           candidateId: signal.candidateId,
+          eventId: signal.eventId,
           semantic: Number(signal.semantic.toFixed(4)),
           temporal: Number(signal.temporal.toFixed(4)),
           headline: Number(signal.headline.toFixed(4)),
@@ -741,6 +821,74 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
           meetsAuxiliary: signal.meetsAuxiliary
         }))
     });
+  }
+
+  if (selectedCandidateEventId) {
+    const candidateEvent = await loadCandidateEvent({
+      userId: article.userId,
+      eventId: selectedCandidateEventId,
+      cache
+    });
+
+    if (candidateEvent) {
+      await updateExistingEvent({
+        article,
+        articleEventVector,
+        bestEvent: candidateEvent,
+        cache,
+        bestScore: selectedCandidateEvent.averageSemantic,
+        matchSignal: {
+          semantic: selectedCandidateEvent.averageSemantic,
+          maxSemantic: selectedCandidateEvent.maxSemantic,
+          acceptedCandidateCount: selectedCandidateEvent.acceptedCandidateCount
+        },
+        skipTopicAssignment,
+        assignTopicsForEvent: async ({ event, eventTopicVector }) => {
+          const eventTopicAssignments = await deriveEventTopicAssignments({
+            event,
+            eventTopicVector,
+            topicsCache,
+            assignmentContext
+          });
+
+          const persistedEventTopics = await persistEventTopicAssignments(event, eventTopicAssignments);
+          await syncEventTopicsToArticles(event.id, persistedEventTopics);
+
+          return primaryTopicId(persistedEventTopics);
+        }
+      });
+
+      const eventTopicAssignments = skipTopicAssignment
+        ? []
+        : await loadEventTopicAssignments(candidateEvent.id);
+
+      upsertRunContextRecord(runContext, {
+        id: article.id,
+        feedId: article.feedId,
+        title: article.title,
+        description: article.description,
+        published: article.published,
+        createdAt: article.createdAt,
+        topicId: primaryTopicId(eventTopicAssignments),
+        topicAssignments: eventTopicAssignments,
+        eventId: candidateEvent.id,
+        eventVector: articleEventVector
+      });
+
+      incrementRunStat(runContext, 'linkedToExistingEventCount');
+
+      if (EVENT_DEBUG) {
+        debugEventLog(`article=${article.id} candidate-event-selected`, {
+          selectedCandidateEventId,
+          assignedCandidateCount: assignedCandidates.length,
+          unassignedCandidateCount: unassignedCandidates.length,
+          candidateEventIds,
+          selectedCandidateEvent
+        });
+      }
+
+      return candidateEvent.id;
+    }
   }
 
   if (
@@ -767,7 +915,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
 
   const newEventId = await createAndAssignEvent({
-    candidateArticles,
+    candidateArticles: unassignedCandidates,
     article,
     cache,
     topicsCache,
@@ -783,7 +931,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     ? await loadEventTopicAssignments(newEventId)
     : [];
 
-  for (const candidate of candidateArticles) {
+  for (const candidate of unassignedCandidates) {
     upsertRunContextRecord(runContext, {
       id: candidate.id,
       eventId: newEventId,
