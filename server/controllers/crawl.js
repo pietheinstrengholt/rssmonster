@@ -236,6 +236,7 @@ const getHotlinkCountCachesByUserId = async (feeds) => {
 
 // Core crawl function with shared feed processing
 const performCrawl = async (userId = null, options = {}) => {
+  const crawlStartedAt = new Date();
   const emitProgress = (event) => {
     if (typeof options.onProgress !== 'function') {
       return;
@@ -302,6 +303,7 @@ const performCrawl = async (userId = null, options = {}) => {
       timeouts: 0,
       crawlTimedOut: false,
       processedUserIds: userId ? [userId] : [],
+      crawlStartedAt,
       totalNewArticles: 0,
       totalUpdatedArticles: 0
     };
@@ -601,6 +603,7 @@ const performCrawl = async (userId = null, options = {}) => {
     timeouts: timeoutCount,
     crawlTimedOut,
     processedUserIds: [...processedUserIds],
+    crawlStartedAt,
     totalNewArticles,
     totalUpdatedArticles
   };

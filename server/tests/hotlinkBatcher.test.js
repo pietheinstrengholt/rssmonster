@@ -43,10 +43,16 @@ describe('hotlink batcher', () => {
   });
 
   it('keeps hotlink write failures best-effort', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     setMany.mockRejectedValueOnce(new Error('database unavailable'));
     const batcher = createHotlinkBatcher(feed);
     batcher.add(['https://example.com/one']);
 
     await expect(batcher.flush()).resolves.toBeUndefined();
+    expect(consoleError).toHaveBeenCalledWith(
+      `Error saving hotlink batch for feed ${feed.id}:`,
+      expect.any(Error)
+    );
+    consoleError.mockRestore();
   });
 });

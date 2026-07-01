@@ -304,7 +304,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
 
 // This function assigns recent unread articles that do not yet belong to an event.
 export async function incrementalClusterForUser(userId, options = {}) {
-  const { skipTopicAssignment = false } = options;
+  const { createdAfter = null, skipTopicAssignment = false } = options;
   console.log(`[EVENT] Incremental clustering for user ${userId}`);
 
   const cutoffDate = new Date();
@@ -316,6 +316,10 @@ export async function incrementalClusterForUser(userId, options = {}) {
     eventId: null,
     published: { [Op.gte]: cutoffDate }
   };
+
+  if (createdAfter) {
+    articleWhere.createdAt = { [Op.gte]: createdAfter };
+  }
 
   const articles = await Article.findAll({
     where: articleWhere,

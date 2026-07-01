@@ -722,6 +722,7 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
     const baselineEventIdByArticleId = new Map(
       baselineAssignments.map(article => [Number(article.id), article.eventId])
     );
+    const incrementalInsertedAfter = new Date(Date.now() - 1000);
 
     const insertedCount = await insertMissingFixtureArticles(
       userId,
@@ -756,7 +757,7 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
 
     expect(preClusteredIncrementalCount).toBe(0);
 
-    await incrementalClusterForUser(userId);
+    await incrementalClusterForUser(userId, { createdAfter: incrementalInsertedAfter });
     const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
     const islandResult = await buildInterestIslandsForUser(userId, {
       topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD

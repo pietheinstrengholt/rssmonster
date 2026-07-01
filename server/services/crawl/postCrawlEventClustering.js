@@ -39,7 +39,10 @@ export async function runPostCrawlEventClustering(result, options = {}) {
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
 
-    await incrementalClusterForUser(userId, { skipTopicAssignment: true });
+    await incrementalClusterForUser(userId, {
+      createdAfter: result?.crawlStartedAt || null,
+      skipTopicAssignment: true
+    });
   }
 
   onProgress?.({
