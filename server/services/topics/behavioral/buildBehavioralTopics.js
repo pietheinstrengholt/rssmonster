@@ -1,14 +1,14 @@
 import { Op } from 'sequelize';
-import db from '../../models/index.js';
+import db from '../../../models/index.js';
 import {
   blendTopicVectorWithAlpha,
   cosineSimilarity,
   generateTopicKey
-} from './topicHelpers.js';
+} from '../shared/topicHelpers.js';
 import {
   normalizeVector,
   weightedAverageVector
-} from '../vectors/index.js';
+} from '../../vectors/index.js';
 
 const { Article, ArticleTopic, Topic } = db;
 

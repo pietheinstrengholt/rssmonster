@@ -21,6 +21,41 @@ import {
 
 const { Island, IslandTopic, IslandTaxonomy, sequelize } = db;
 
+// This function formats island metric values for concise logs.
+function formatIslandMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function writes verbose island evidence logs only when island debugging is enabled.
+function debugIslandLog(message) {
+  if (!ISLAND_DEBUG) return;
+  console.log(`[ISLAND] ${message}`);
+}
+
+// This function escapes island names in single-line logs.
+function logSafeIslandName(name = '') {
+  return String(name || '').replace(/"/g, '\\"');
+}
+
+// This function returns a human-readable article engagement label for island logs.
+function strongestArticleEngagement(article = {}) {
+  const signals = article.positiveSignals || {};
+  if (Number(signals.deepReads || 0) > 0) return 'deep-read';
+  if (Number(signals.stars || 0) > 0) return 'star';
+  if (Number(signals.positives || 0) > 0) return 'positive';
+  if (Number(signals.clicks || 0) > 0) return 'click';
+  if (Number(signals.negatives || 0) > 0) return 'negative';
+  return 'behavior';
+}
+
+// This function computes average similarity for topic evidence rows.
+function averageSimilarity(rows = []) {
+  if (!rows.length) return 0;
+  const total = rows.reduce((sum, row) => sum + Number(row.similarity || 0), 0);
+  return total / rows.length;
+}
+
 // This function creates, updates, archives, and links islands from computed profiles.
 export async function persistInterestIslandProfiles(userId, profiles, transaction, options = {}) {
   const topicConfidenceThreshold =
@@ -53,6 +88,10 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
   const createdIslands = [];
   let createdIslandCount = 0;
   let updatedIslandCount = 0;
+  let archivedIslandCount = 0;
+  let totalMembershipCount = 0;
+  let newMembershipCount = 0;
+  let removedMembershipCount = 0;
   let updatedWithPositiveSignalCount = 0;
   let updatedWithStarSignalCount = 0;
   let updatedWithClickSignalCount = 0;
@@ -112,6 +151,26 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       matchedIslandIds.add(updatedIsland.id);
       updatedIslandCount += 1;
 
+      const strongestTopic = (profile.topics || [])
+        .slice()
+        .sort((a, b) => Math.abs(Number(b.strength || 0)) - Math.abs(Number(a.strength || 0)))[0] || null;
+      const strongestArticle = (profile.articles || [])
+        .slice()
+        .sort((a, b) => Math.abs(Number(b.score || 0)) - Math.abs(Number(a.score || 0)))[0] || null;
+
+      if (strongestTopic) {
+        debugIslandLog(
+          `island=${updatedIsland.id} ← topic=${strongestTopic.name || strongestTopic.topicId} ` +
+          `sim=${formatIslandMetric(bestSimilarity)} weight=${formatIslandMetric(profile.weight, 2)} existing`
+        );
+      } else if (strongestArticle) {
+        debugIslandLog(
+          `island=${updatedIsland.id} ← article=${strongestArticle.articleId} ` +
+          `sim=${formatIslandMetric(bestSimilarity)} ` +
+          `engagement=${strongestArticleEngagement(strongestArticle)} existing`
+        );
+      }
+
       if (Number(profile?.positiveSignals?.stars || 0) > 0) {
         updatedWithStarSignalCount += 1;
       }
@@ -126,7 +185,10 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       }
 
       if (islandRows.length) {
-        await evolveIslandTopicMemberships(updatedIsland.id, islandRows, transaction);
+        const membershipSummary = await evolveIslandTopicMemberships(updatedIsland.id, islandRows, transaction);
+        totalMembershipCount += membershipSummary.totalMembershipCount;
+        newMembershipCount += membershipSummary.newMembershipCount;
+        removedMembershipCount += membershipSummary.removedMembershipCount;
       }
 
       createdIslands.push(updatedIsland);
@@ -145,6 +207,14 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     }, { transaction });
     createdIslandCount += 1;
 
+    console.log(
+      `[ISLAND] new-island=${island.id}\n` +
+      `[ISLAND]          name="${logSafeIslandName(resolvedLabel)}"\n` +
+      `[ISLAND]          seedTopics=${profile.topics.length}\n` +
+      `[ISLAND]          seedArticles=${(profile.articles || []).length}\n` +
+      `[ISLAND]          avgSim=${formatIslandMetric(averageSimilarity(islandRows))}`
+    );
+
     if (islandRows.length) {
       await IslandTopic.bulkCreate(
         islandRows.map(row => ({
@@ -155,6 +225,13 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
         })),
         { transaction }
       );
+      totalMembershipCount += islandRows.length;
+      newMembershipCount += islandRows.length;
+      for (const row of islandRows) {
+        debugIslandLog(
+          `island=${island.id} ↔ topic=${row.topicId} affinity=${formatIslandMetric(row.similarity)}`
+        );
+      }
     }
 
     createdIslands.push(island);
@@ -196,9 +273,21 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
           },
           { transaction }
         );
+        archivedIslandCount += 1;
       }
     }
   }
+
+  createdIslands.summary = {
+    existingIslandCount: existingIslands.length,
+    createdIslandCount,
+    updatedIslandCount,
+    archivedIslandCount,
+    activeIslandCount: createdIslands.filter(island => !island.archivedInd).length,
+    totalMembershipCount,
+    newMembershipCount,
+    removedMembershipCount
+  };
 
   if (ISLAND_DEBUG) {
     debugIsland('island-persistence-summary', {

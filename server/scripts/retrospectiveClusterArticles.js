@@ -3,7 +3,7 @@
  * Retrospective event clustering CLI runner
  *
  * Usage:
- *   npm run recluster:retrospective
+ *   npm run events:all
  *   node scripts/retrospectiveClusterArticles.js
  *   node scripts/retrospectiveClusterArticles.js --userId=3
  *   node scripts/retrospectiveClusterArticles.js --batchSize=500
@@ -15,7 +15,7 @@
 import db from '../models/index.js';
 const { User } = db;
 
-import { retrospectiveClusterForUser } from '../services/events/reclusterForUser.js';
+import { retrospectiveClusterForUser } from '../services/reconcile/reclusterForUser.js';
 
 // This function parses CLI flags for the retrospective clustering runner.
 function parseArgs(argv) {
@@ -62,7 +62,7 @@ export async function retrospectiveClusterArticles({
   });
 
   console.log(
-    `[CLUSTER-RETROSPECTIVE] Found ${users.length} users to retrospectively cluster`
+    `[SEMANTIC] Stage 1 Events historical users=${users.length}`
   );
 
   for (const user of users) {
@@ -76,7 +76,7 @@ export async function retrospectiveClusterArticles({
     }
   }
 
-  console.log('[CLUSTER-RETROSPECTIVE] Finished retrospective clustering');
+  console.log('[SEMANTIC] Stage 1 Events Historical Finished');
 }
 
 export default retrospectiveClusterArticles;
@@ -86,11 +86,11 @@ if (process.argv[1]?.includes('retrospectiveClusterArticles')) {
 
   retrospectiveClusterArticles({ userId, batchSize, skipTopicAssignment })
     .then(() => {
-      console.log('[CLUSTER-RETROSPECTIVE] Done');
+      console.log('[SEMANTIC] Stage 1 Events Historical Done');
       process.exit(0);
     })
     .catch(err => {
-      console.error('[CLUSTER-RETROSPECTIVE] Fatal error:', err);
+      console.error('[SEMANTIC] Stage 1 Events Historical Fatal error:', err);
       process.exit(1);
     });
 }

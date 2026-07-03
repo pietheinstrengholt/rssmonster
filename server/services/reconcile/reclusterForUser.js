@@ -1,26 +1,96 @@
-// services/events/reclusterForUser.js
+// services/reconcile/reclusterForUser.js
 // This service rebuilds semantic event clusters for a user and keeps event-topic links in sync.
 // It treats Article.topicId as event-owned denormalization, so behavioral topic evidence stays in ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
-import { assignArticleToEvent, EventCache } from '../articles/assignArticleToEvent.js';
+import ArticleEventCandidateCache from '../events/ArticleEventCandidateCache.js';
+import { assignArticleToEvent, EventCache } from '../events/assignArticleToEvent.js';
 import embedArticle from '../articles/embedArticle.js';
 import {
+  EVENT_MAX_GAP_HOURS,
   RECENCY_WINDOW_DAYS
 } from '../config/semanticConfig.js';
-import { logEventProcessingSummary } from './eventPipelineDebug.js';
+import { logEventProcessingSummary } from '../events/eventPipelineDebug.js';
 import {
   computeEventStrength,
   reconcileTouchedEvents
-} from './eventReconciliation.js';
+} from '../events/eventReconciliation.js';
 import {
   assignTopicsForEvents,
   EVENT_TOPIC_TYPES
-} from './eventTopicAssignment.js';
-import { recomputeTopicStatsForUser } from '../topics/topicStats.service.js';
+} from '../topics/event/eventTopicAssignment.js';
+import { recomputeTopicStatsForUser } from '../topics/shared/topicStats.service.js';
+import { HOUR_MS } from '../events/articleEventTime.js';
 
 const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
+const CACHE_BUFFER_HOURS = Number.parseInt(process.env.EVENT_CACHE_BUFFER_HOURS || '2', 10);
+
+// This function returns the rolling event cache horizon used for post-crawl clustering.
+function rollingEventWindowHours() {
+  return EVENT_MAX_GAP_HOURS + CACHE_BUFFER_HOURS;
+}
+
+// This function returns the latest event-time timestamp from articles in one clustering batch.
+function latestArticleEventDate(articles = []) {
+  const timestamps = articles
+    .flatMap(article => [article.published, article.createdAt])
+    .map(value => value ? new Date(value).getTime() : null)
+    .filter(Number.isFinite);
+
+  if (!timestamps.length) return new Date();
+
+  return new Date(Math.max(...timestamps));
+}
+
+// This function builds a cacheable article candidate record from a Sequelize article and vector result.
+function cacheRecordForArticle(article, vectors) {
+  const plainArticle = typeof article.get === 'function'
+    ? article.get({ plain: true })
+    : article;
+
+  return {
+    ...plainArticle,
+    eventId: article.eventId ?? plainArticle.eventId ?? null,
+    eventVector: vectors?.eventVector || plainArticle.articleVector || null
+  };
+}
+
+// This function builds the structured assignment summary returned to post-crawl callers.
+function buildAssignmentResult({
+  userId,
+  mode,
+  articles,
+  touchedEventIds,
+  touchedTopicIds = [],
+  runContext,
+  topicAssignment = null
+}) {
+  const assignedArticleCount = articles.filter(article => article.eventId != null).length;
+  const unassignedCount = Math.max(articles.length - assignedArticleCount, 0);
+
+  return {
+    userId,
+    mode,
+    articleCount: articles.length,
+    touchedEventIds: [...new Set([...touchedEventIds].map(Number).filter(Boolean))],
+    touchedTopicIds: [...new Set(touchedTopicIds.map(Number).filter(Boolean))],
+    newEventsCreatedCount: Number(runContext.stats.newEventsCreatedCount || 0),
+    linkedToExistingEventCount: Number(runContext.stats.linkedToExistingEventCount || 0),
+    unassignedCount,
+    topicAssignment: topicAssignment || {
+      skipped: true,
+      eventCount: 0,
+      touchedTopicIds: [],
+      stats: {
+        eventsSkipped: 0,
+        eventsMatched: 0,
+        eventsUnmatched: 0,
+        newTopicsCreated: 0
+      }
+    }
+  };
+}
 
 // This function clears article event references that point outside the owning user's events.
 async function clearForeignEventReferencesForUser(userId) {
@@ -90,7 +160,9 @@ function canGenerateEmbeddingForArticle(article) {
 async function assignAndReconcile(userId, articles, label, options = {}) {
   const {
     skipTopicAssignment = false,
-    useTemporalEventCandidates = false
+    useTemporalEventCandidates = false,
+    eventCacheWindowHours = null,
+    articleCandidateCache = null
   } = options;
   const touchedEventIds = new Set();
   const touchedTopicIds = new Set();
@@ -106,7 +178,9 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     }
   };
 
-  const cache = useTemporalEventCandidates ? null : await EventCache.forUser(userId);
+  const cache = useTemporalEventCandidates
+    ? null
+    : await EventCache.forUser(userId, { windowHours: eventCacheWindowHours });
 
   const topicsCache = await db.Topic.findAll({
     where: {
@@ -153,6 +227,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   }
 
   for (let i = 0; i < articles.length; i++) {
+    const article = articles[i];
     const vectors = embedResults[i];
     if (!vectors?.eventVector) {
       runContext.stats.eventVectorSkippedCount++;
@@ -160,24 +235,29 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     }
 
     const eventCache = useTemporalEventCandidates
-      ? await EventCache.forArticle(articles[i])
+      ? await EventCache.forArticle(article)
       : cache;
 
     const eventId = await assignArticleToEvent(
-      articles[i],
+      article,
       eventCache,
       vectors,
       topicsCache,
       runContext,
       {
         assignmentContext: label === 'replay' ? 'replay' : 'incremental',
-        skipTopicAssignment: true
+        // Topic assignment runs once after touched events are reconciled.
+        skipTopicAssignment: true,
+        articleCandidateCache
       }
     );
 
     if (eventId) {
       touchedEventIds.add(eventId);
     }
+
+    article.eventId = eventId ?? null;
+    articleCandidateCache?.update(cacheRecordForArticle(article, vectors));
   }
 
   const assignmentSummary = [
@@ -193,7 +273,13 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   if (!touchedEventIds.size) {
     await logEventProcessingSummary(userId, articles, runContext);
     console.log(`[EVENT] ${label}: no events created or updated`);
-    return [];
+    return buildAssignmentResult({
+      userId,
+      mode: label,
+      articles,
+      touchedEventIds,
+      runContext
+    });
   }
 
   const touchedIds = [...touchedEventIds];
@@ -208,7 +294,13 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
   await logEventProcessingSummary(userId, articles, runContext);
 
   if (skipTopicAssignment) {
-    return [];
+    return buildAssignmentResult({
+      userId,
+      mode: label,
+      articles,
+      touchedEventIds,
+      runContext
+    });
   }
 
   const reconciledEvents = await Event.findAll({
@@ -299,7 +391,21 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])]
   );
 
-  return [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])];
+  const allTouchedTopicIds = [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])];
+
+  return buildAssignmentResult({
+    userId,
+    mode: label,
+    articles,
+    touchedEventIds,
+    touchedTopicIds: allTouchedTopicIds,
+    runContext,
+    topicAssignment: {
+      skipped: false,
+      ...topicAssignmentResult,
+      touchedTopicIds: allTouchedTopicIds
+    }
+  });
 }
 
 // This function assigns recent unread articles that do not yet belong to an event.
@@ -307,18 +413,19 @@ export async function incrementalClusterForUser(userId, options = {}) {
   const { createdAfter = null, skipTopicAssignment = false } = options;
   console.log(`[EVENT] Incremental clustering for user ${userId}`);
 
-  const cutoffDate = new Date();
-  cutoffDate.setDate(cutoffDate.getDate() - RECENCY_WINDOW_DAYS);
+  const cacheWindowHours = rollingEventWindowHours();
+  const cutoffDate = new Date(Date.now() - cacheWindowHours * HOUR_MS);
 
   const articleWhere = {
     status: 'unread',
     userId,
-    eventId: null,
-    published: { [Op.gte]: cutoffDate }
+    eventId: null
   };
 
   if (createdAfter) {
     articleWhere.createdAt = { [Op.gte]: createdAfter };
+  } else {
+    articleWhere.published = { [Op.gte]: cutoffDate };
   }
 
   const articles = await Article.findAll({
@@ -336,16 +443,48 @@ export async function incrementalClusterForUser(userId, options = {}) {
 
   if (!articles.length) {
     console.log('[EVENT] No unclustered articles - nothing to do');
-    return;
+    return {
+      userId,
+      mode: 'incremental',
+      articleCount: 0,
+      touchedEventIds: [],
+      touchedTopicIds: [],
+      newEventsCreatedCount: 0,
+      linkedToExistingEventCount: 0,
+      unassignedCount: 0,
+      topicAssignment: {
+        skipped: skipTopicAssignment,
+        eventCount: 0,
+        touchedTopicIds: [],
+        stats: {
+          eventsSkipped: 0,
+          eventsMatched: 0,
+          eventsUnmatched: 0,
+          newTopicsCreated: 0
+        }
+      }
+    };
   }
 
   console.log(`[EVENT] ${articles.length} unclustered articles to assign`);
+  const cacheReferenceDate = latestArticleEventDate(articles);
 
-  await assignAndReconcile(userId, articles, 'incremental', {
-    skipTopicAssignment
+  const articleCandidateCache = await ArticleEventCandidateCache.forUser(userId, {
+    excludeArticleIds: articles.map(article => article.id),
+    referenceDate: cacheReferenceDate
   });
 
+  const result = await assignAndReconcile(userId, articles, 'incremental', {
+    skipTopicAssignment,
+    eventCacheWindowHours: cacheWindowHours,
+    articleCandidateCache
+  });
+
+  articleCandidateCache.removeExpired(cacheReferenceDate);
+
   console.log(`[EVENT] Finished incremental pass for user ${userId}`);
+
+  return result;
 }
 
 // This function replays the recent article window and rebuilds affected events and event topics.
@@ -376,7 +515,27 @@ export async function reclusterForUser(userId, options = {}) {
 
   if (!windowArticles.length) {
     console.log('[EVENT] No vectorized articles in recency window - nothing to do');
-    return;
+    return {
+      userId,
+      mode: 'replay',
+      articleCount: 0,
+      touchedEventIds: [],
+      touchedTopicIds: [],
+      newEventsCreatedCount: 0,
+      linkedToExistingEventCount: 0,
+      unassignedCount: 0,
+      topicAssignment: {
+        skipped: skipTopicAssignment,
+        eventCount: 0,
+        touchedTopicIds: [],
+        stats: {
+          eventsSkipped: 0,
+          eventsMatched: 0,
+          eventsUnmatched: 0,
+          newTopicsCreated: 0
+        }
+      }
+    };
   }
 
   const previousEventIds = new Set(
@@ -492,12 +651,12 @@ export async function reclusterForUser(userId, options = {}) {
     console.log(`[EVENT] Removed ${deletedCount} empty events`);
   }
 
-  const newTouchedTopicIds = await assignAndReconcile(userId, windowArticles, 'replay', {
+  const replayResult = await assignAndReconcile(userId, windowArticles, 'replay', {
     skipTopicAssignment
   });
 
   if (!skipTopicAssignment) {
-    await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...newTouchedTopicIds])]);
+    await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...replayResult.touchedTopicIds])]);
   }
 
   const summary = await summarizeArticleAssignments(windowArticleIds);
@@ -515,6 +674,8 @@ export async function reclusterForUser(userId, options = {}) {
     ` (window=${RECENCY_WINDOW_DAYS}d, articles=${windowArticles.length},` +
     ` pruned=${deletedCount})`
   );
+
+  return replayResult;
 }
 
 // This function replays all vectorized articles for a user without the recency window.
@@ -531,6 +692,10 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
   let lastId = 0;
   let totalProcessed = 0;
   let touchedTopicIds = [];
+  let touchedEventIds = [];
+  let newEventsCreatedCount = 0;
+  let linkedToExistingEventCount = 0;
+  let unassignedCount = 0;
 
   while (true) {
     const articles = await Article.findAll({
@@ -547,7 +712,7 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
       break;
     }
 
-    const batchTouchedTopicIds = await assignAndReconcile(
+    const batchResult = await assignAndReconcile(
       userId,
       articles,
       'replay',
@@ -557,7 +722,11 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
       }
     );
 
-    touchedTopicIds = [...new Set([...touchedTopicIds, ...batchTouchedTopicIds])];
+    touchedTopicIds = [...new Set([...touchedTopicIds, ...batchResult.touchedTopicIds])];
+    touchedEventIds = [...new Set([...touchedEventIds, ...batchResult.touchedEventIds])];
+    newEventsCreatedCount += batchResult.newEventsCreatedCount;
+    linkedToExistingEventCount += batchResult.linkedToExistingEventCount;
+    unassignedCount += batchResult.unassignedCount;
     totalProcessed += articles.length;
     lastId = articles[articles.length - 1].id;
 
@@ -572,6 +741,28 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
     `[EVENT] Finished retrospective clustering for user ${userId}, ` +
     `articles=${totalProcessed}`
   );
+
+  return {
+    userId,
+    mode: 'retrospective',
+    articleCount: totalProcessed,
+    touchedEventIds,
+    touchedTopicIds,
+    newEventsCreatedCount,
+    linkedToExistingEventCount,
+    unassignedCount,
+    topicAssignment: {
+      skipped: skipTopicAssignment,
+      eventCount: touchedEventIds.length,
+      touchedTopicIds,
+      stats: {
+        eventsSkipped: 0,
+        eventsMatched: 0,
+        eventsUnmatched: 0,
+        newTopicsCreated: 0
+      }
+    }
+  };
 }
 
 // This function rebuilds only event and hybrid topic assignments for a user.
@@ -671,6 +862,19 @@ export async function rebuildTopicsForUser(userId, options = {}) {
   console.log(`[TOPIC] Largest topic size     ${largestTopicSize} events`);
   console.log(`[TOPIC] Topic reuse ratio      ${reuseRatio}%`);
   console.log(`[TOPIC] Topic creation ratio   ${creationRatio}%`);
+
+  return {
+    userId,
+    eventCount,
+    touchedTopicIds,
+    stats,
+    topicCount,
+    totalEventLinks,
+    largestTopicSize,
+    avgEventsPerTopic,
+    reuseRatio,
+    creationRatio
+  };
 }
 
 export default reclusterForUser;

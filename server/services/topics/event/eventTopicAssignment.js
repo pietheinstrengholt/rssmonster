@@ -1,13 +1,13 @@
-import db from '../../models/index.js';
+import db from '../../../models/index.js';
 import { Op } from 'sequelize';
 
 import {
   MAX_TOPICS_PER_ARTICLE,
   PRIMARY_TOPIC_THRESHOLD,
   SECONDARY_TOPIC_THRESHOLD
-} from '../config/semanticConfig.js';
-import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
-import { syncEventTopicsToArticles } from './eventArticleTopicSync.js';
+} from '../../config/semanticConfig.js';
+import { assignSemanticUnitToTopic } from './assignEventToTopic.js';
+import { syncEventTopicsToArticles } from '../../events/eventArticleTopicSync.js';
 
 const { EventTopic } = db;
 

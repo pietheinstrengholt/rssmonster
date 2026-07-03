@@ -51,8 +51,6 @@ Treat this area as a layered pipeline, not as isolated helper files.
 
 ### Articles to Events
 
-Use `services/articles/assignArticleToEvent.js` as the main assignment boundary.
-
 - Reuse stored article vectors when present.
 - Match events with semantic, headline, temporal, and entity corroboration.
 - Let event creation/update services maintain event summary fields.
@@ -60,8 +58,6 @@ Use `services/articles/assignArticleToEvent.js` as the main assignment boundary.
 - Do not treat event assignment as proof of long-term user interest.
 
 ### Events to Topics
-
-Use `services/events/eventTopicAssignment.js` and `services/topics/assignEventToTopic.js` for event-shaped topic assignment.
 
 - Event assignment should consider only `event` and `hybrid` topics.
 - Do not match events into pure `behavioral` topics.
@@ -71,16 +67,12 @@ Use `services/events/eventTopicAssignment.js` and `services/topics/assignEventTo
 
 ### Behavioral Interests to Topics
 
-Use `services/topics/buildBehavioralTopics.js` for explicit user engagement.
-
 - Behavioral topics should be built from positive signals such as stars, clicks, and deep reads.
 - Preserve breadth checks so one accidental interaction does not become durable memory.
 - Write behavioral article evidence to `ArticleTopic` with `primaryInd: false` unless the surrounding code clearly changes that contract.
 - Existing `hybrid` topics may absorb behavioral evidence; pure event topics should not become behavioral without an intentional transition.
 
 ### Topics and Articles to Islands
-
-Use `services/islands/buildInterestIslands.js` as the island orchestration boundary.
 
 - Build behavior-derived islands first, then enrich from topic profiles, then refresh article interest scores.
 - Prefer topic-to-island scoring before article-vector fallback.
@@ -94,15 +86,10 @@ Use `services/islands/buildInterestIslands.js` as the island orchestration bound
 
 Before editing semantic services:
 
-1. Trace the whole path affected by the change.
-   - Article assignment: `articles/assignArticleToEvent.js` -> `events/*` -> `topics/*`.
-   - Replay/recluster: `events/reclusterForUser.js`.
-   - Behavioral topics: `topics/buildBehavioralTopics.js`.
-   - Islands: `islands/buildInterestIslands.js` -> profiles -> persistence -> scoring.
-2. Identify which table is the source of truth.
-3. Check whether the field being edited is derived and needs reconciliation.
-4. Prefer threshold/config changes in `config/semanticConfig.js` or existing env-backed constants.
-5. Add focused tests around user isolation, join-table rows, denormalized primary links, and score/count updates.
+1. Identify which table is the source of truth.
+2. Check whether the field being edited is derived and needs reconciliation.
+3. Prefer threshold/config changes in `config/semanticConfig.js` or existing env-backed constants.
+4. Add focused tests around user isolation, join-table rows, denormalized primary links, and score/count updates.
 
 Keep diffs small. These services are sensitive to subtle scoring drift.
 
@@ -158,37 +145,6 @@ Add or update tests when changing:
 - island persistence, membership evolution, archival, audit, or article interest scoring.
 
 Server tests use real database behavior. Avoid Sequelize model mocks for these service pipelines.
-
----
-
-## 8) File Map
-
-- `articles/assignArticleToEvent.js`
-  - Article-to-event assignment and event-owned topic sync.
-- `articles/embedArticle.js`, `articles/embedArticles.js`
-  - Article embedding generation and persistence.
-- `config/semanticConfig.js`
-  - Shared semantic thresholds, lifecycle windows, and blend factors.
-- `events/reclusterForUser.js`
-  - Replay/rebuild orchestration for event clusters and event-topic assignments.
-- `events/eventReconciliation.js`
-  - Event summary recalculation and ownership-safe reconciliation.
-- `events/eventTopicAssignment.js`
-  - Ranked topic assignment helpers for events.
-- `topics/assignEventToTopic.js`
-  - Event-shaped semantic unit assignment into event/hybrid topics.
-- `topics/buildBehavioralTopics.js`
-  - Explicit engagement to behavioral/hybrid topics.
-- `topics/topicStats.service.js`
-  - Denormalized topic count/activity maintenance.
-- `islands/buildInterestIslands.js`
-  - Island orchestration and article interest scoring refresh.
-- `islands/island*Profiles.js`
-  - Behavior/topic profile construction for island clustering.
-- `islands/islandPersistence.js`, `islands/islandMemberships.js`
-  - Island creation, update, archival, and topic membership evolution.
-- `vectors/`
-  - Shared vector normalization, averaging, blending, parsing, and similarity utilities.
 
 ---
 

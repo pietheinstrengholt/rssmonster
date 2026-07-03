@@ -1,15 +1,15 @@
-import db from '../../models/index.js';
+import db from '../../../models/index.js';
 import {
   MAX_CANDIDATES,
   TOPIC_IDENTITY_THRESHOLD,
   PRIMARY_TOPIC_THRESHOLD,
   SECONDARY_TOPIC_THRESHOLD,
   MAX_TOPICS_PER_ARTICLE
-} from '../config/semanticConfig.js';
+} from '../../config/semanticConfig.js';
 import {
   cosineSimilarity,
   generateTopicKey
-} from './topicHelpers.js';
+} from '../shared/topicHelpers.js';
 import {
   updateMatchedTopics,
   updateIdentityTopic,
@@ -25,6 +25,44 @@ const { Topic } = db;
 const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
 const REPLAY_PRIMARY_HYSTERESIS = 0.01;
 const REPLAY_SECONDARY_HYSTERESIS = 0.02;
+
+// This function formats topic similarity values for concise logs.
+function formatTopicMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function logs a single event-to-topic assignment.
+function logTopicAssignment(semanticUnit, assignment) {
+  console.log(
+    `[TOPIC] event=${semanticUnit.id} → topic=${assignment.topicId} ` +
+    `sim=${formatTopicMetric(assignment.confidence)} ` +
+    `rank=${assignment.rank} primary=${Boolean(assignment.primaryInd)} matched`
+  );
+}
+
+// This function logs a compact summary when an event gets multiple topic assignments.
+function logMultiTopicAssignment(semanticUnit, assignments) {
+  if (assignments.length <= 1) return;
+
+  const topicIds = assignments.map(assignment => assignment.topicId).join(',');
+  const primaryTopicId = assignments.find(assignment => assignment.primaryInd)?.topicId ?? assignments[0]?.topicId;
+  const bestSim = Math.max(...assignments.map(assignment => Number(assignment.confidence || 0)));
+
+  console.log(
+    `[TOPIC] event=${semanticUnit.id} → topics=${topicIds} ` +
+    `primary=${primaryTopicId} bestSim=${formatTopicMetric(bestSim)} ` +
+    `matched=${assignments.length}`
+  );
+}
+
+// This function logs that an event could not be assigned to a topic.
+function logNoTopic(semanticUnit, bestTopicSim, gate = 'blocked') {
+  console.log(
+    `[TOPIC] event=${semanticUnit.id} → no-topic ` +
+    `bestSim=${formatTopicMetric(bestTopicSim)} gate=${gate}`
+  );
+}
 
 export async function assignSemanticUnitToTopic({
   semanticUnit,
@@ -91,17 +129,25 @@ export async function assignSemanticUnitToTopic({
       rankedCandidates,
       primaryCandidate,
       semanticVector,
+      semanticUnit,
       assignmentContext,
       now,
       topicsCache
     });
 
-    return rankedCandidates.map((candidate, index) => ({
+    const assignments = rankedCandidates.map((candidate, index) => ({
       topicId: candidate.topic.id,
       confidence: Number(candidate.sim.toFixed(4)),
       rank: index + 1,
       primaryInd: Boolean(primaryCandidate && candidate.topic.id === primaryCandidate.topic.id)
     }));
+
+    for (const assignment of assignments) {
+      logTopicAssignment(semanticUnit, assignment);
+    }
+    logMultiTopicAssignment(semanticUnit, assignments);
+
+    return assignments;
   }
 
   const topicKey = generateTopicKey(semanticVector);
@@ -112,10 +158,14 @@ export async function assignSemanticUnitToTopic({
       bestTopic,
       bestTopicSim,
       semanticVector,
+      semanticUnit,
       assignmentContext,
       now,
       topicsCache
-    })];
+    })].map(assignment => {
+      logTopicAssignment(semanticUnit, assignment);
+      return assignment;
+    });
   }
 
   if (topicKey) {
@@ -125,7 +175,10 @@ export async function assignSemanticUnitToTopic({
         topic: cachedKeyMatch,
         now,
         topicsCache
-      })];
+      })].map(assignment => {
+        logTopicAssignment(semanticUnit, assignment);
+        return assignment;
+      });
     }
 
     const persistedKeyMatch = await Topic.findOne({
@@ -141,11 +194,14 @@ export async function assignSemanticUnitToTopic({
         topic: persistedKeyMatch,
         now,
         topicsCache
-      })];
+      })].map(assignment => {
+        logTopicAssignment(semanticUnit, assignment);
+        return assignment;
+      });
     }
   }
 
-  return createTopic({
+  const createdAssignments = await createTopic({
     semanticUnit,
     semanticVector,
     topicKey,
@@ -153,6 +209,17 @@ export async function assignSemanticUnitToTopic({
     currentEventId,
     topicsCache
   });
+
+  if (!createdAssignments.length) {
+    logNoTopic(semanticUnit, bestTopicSim);
+    return [];
+  }
+
+  for (const assignment of createdAssignments) {
+    logTopicAssignment(semanticUnit, assignment);
+  }
+
+  return createdAssignments;
 }
 
 export async function assignEventToTopic({

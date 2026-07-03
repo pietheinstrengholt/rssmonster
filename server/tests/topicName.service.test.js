@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { generateTopicName } from '../services/topics/topicName.service.js';
+import { generateTopicName } from '../services/topics/shared/topicName.service.js';
 
 describe('generateTopicName', () => {
   it('names topics from repeated semantic anchors instead of article sentences', () => {

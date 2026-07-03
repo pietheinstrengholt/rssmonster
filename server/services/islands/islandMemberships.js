@@ -4,10 +4,23 @@ import {
   DEFAULT_ISLAND_MEMBERSHIP_BLEND,
   DEFAULT_ISLAND_MEMBERSHIP_DECAY,
   DEFAULT_ISLAND_MEMBERSHIP_MIN_CONFIDENCE,
+  ISLAND_DEBUG,
   clamp
 } from './islandVectorUtils.js';
 
 const { IslandTopic } = db;
+
+// This function formats island metric values for concise logs.
+function formatIslandMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function writes verbose island membership logs only when island debugging is enabled.
+function debugIslandLog(message) {
+  if (!ISLAND_DEBUG) return;
+  console.log(`[ISLAND] ${message}`);
+}
 
 // This function evolves IslandTopic memberships with blending, decay, and cleanup.
 export async function evolveIslandTopicMemberships(islandId, islandRows, transaction) {
@@ -23,6 +36,7 @@ export async function evolveIslandTopicMemberships(islandId, islandRows, transac
 
   const nextRows = [];
   const nextTopicIds = new Set();
+  let newMembershipCount = 0;
   const blendWeight = clamp(DEFAULT_ISLAND_MEMBERSHIP_BLEND, 0, 1);
   const decayWeight = clamp(DEFAULT_ISLAND_MEMBERSHIP_DECAY, 0, 1);
 
@@ -44,6 +58,13 @@ export async function evolveIslandTopicMemberships(islandId, islandRows, transac
       similarity: Number(similarity.toFixed(4)),
       confidence: Number(confidence.toFixed(4))
     });
+    if (!previous) {
+      newMembershipCount += 1;
+    }
+
+    debugIslandLog(
+      `island=${islandId} ↔ topic=${topicId} affinity=${formatIslandMetric(similarity)}`
+    );
 
     nextTopicIds.add(topicId);
   }
@@ -79,6 +100,16 @@ export async function evolveIslandTopicMemberships(islandId, islandRows, transac
     .filter(topicId => Number.isFinite(topicId) && !nextTopicIds.has(topicId));
 
   if (removableTopicIds.length) {
+    for (const row of existingRows) {
+      const topicId = Number(row.topicId);
+      if (!removableTopicIds.includes(topicId)) continue;
+
+      debugIslandLog(
+        `island=${islandId} ✕ topic=${topicId} ` +
+        `confidence=${formatIslandMetric(row.confidence, 2)} removed`
+      );
+    }
+
     await IslandTopic.destroy({
       where: {
         islandId,
@@ -87,4 +118,11 @@ export async function evolveIslandTopicMemberships(islandId, islandRows, transac
       transaction
     });
   }
+
+  return {
+    islandId,
+    totalMembershipCount: nextRows.length,
+    newMembershipCount,
+    removedMembershipCount: removableTopicIds.length
+  };
 }

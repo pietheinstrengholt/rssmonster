@@ -1,16 +1,16 @@
-// services/articles/assignArticleToEvent.js
+// services/events/assignArticleToEvent.js
 // This service assigns one article to an existing event, creates a new event, or leaves it eventless.
 // It maintains event-owned topic links while preserving behavioral topic evidence owned by ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
-import { assignSemanticUnitToTopic } from '../topics/assignEventToTopic.js';
-import { createAndAssignEvent as createEventFromCandidates } from '../events/createEvents.js';
-import { syncEventTopicsToArticles } from '../events/eventArticleTopicSync.js';
+import { assignSemanticUnitToTopic } from '../topics/event/assignEventToTopic.js';
+import { createAndAssignEvent as createEventFromCandidates } from './createEvents.js';
+import { syncEventTopicsToArticles } from './eventArticleTopicSync.js';
 import {
   normalizeTopicAssignments,
   primaryTopicId
-} from '../events/eventTopicAssignment.js';
-import { assignArticleToExistingEvent as updateExistingEvent } from '../events/updateEvents.js';
+} from '../topics/event/eventTopicAssignment.js';
+import { assignArticleToExistingEvent as updateExistingEvent } from './updateEvents.js';
 import {
   EVENT_SIM_THRESHOLD,
   MAX_CANDIDATES,
@@ -25,7 +25,7 @@ import {
   articleWindowScore,
   eventTimestamp,
   eventWindowScore
-} from '../events/articleEventTime.js';
+} from './articleEventTime.js';
 
 const { Article, Event, ArticleTopic, EventTopic } = db;
 const DUPLICATE_HEADLINE_SIM = 0.92;
@@ -37,7 +37,7 @@ const REQUIRE_MULTI_SOURCE_FOR_EVENT = ['1', 'true', 'yes'].includes(
 );
 const EVENT_DEBUG = ['1', 'true', 'yes'].includes(
   String(process.env.EVENT_DEBUG || process.env.EVENT_RECLUSTER_DEBUG || '').toLowerCase()
-);
+) || process.env.NODE_ENV === 'development';
 
 const STOPWORDS = new Set([
   'a', 'an', 'and', 'are', 'as', 'at', 'be', 'but', 'by', 'for',
@@ -64,10 +64,22 @@ function tokenSet(text = '') {
   );
 }
 
+// This function returns a precomputed token set when the candidate cache already has one.
+function resolveTokenSet(record = {}) {
+  return record.tokenSet instanceof Set
+    ? record.tokenSet
+    : tokenSet(record.title || '');
+}
+
 // This function estimates lexical overlap between two headlines.
 function headlineSimilarity(titleA = '', titleB = '') {
   const a = tokenSet(titleA);
   const b = tokenSet(titleB);
+  return headlineSimilarityFromSets(a, b);
+}
+
+// This function estimates lexical overlap between two precomputed headline token sets.
+function headlineSimilarityFromSets(a = new Set(), b = new Set()) {
   if (!a.size || !b.size) return 0;
 
   let intersection = 0;
@@ -96,6 +108,13 @@ function entityOverlapCount(a = new Set(), b = new Set()) {
     if (b.has(value)) overlap++;
   }
   return overlap;
+}
+
+// This function returns a precomputed entity set when the candidate cache already has one.
+function resolveEntitySet(record = {}) {
+  return record.entitySet instanceof Set
+    ? record.entitySet
+    : extractEntitySet(record);
 }
 
 // This function gradually discounts older events during candidate matching.
@@ -160,6 +179,35 @@ function cosineSimilarity(a, b) {
   return dot / (Math.sqrt(normA) * Math.sqrt(normB));
 }
 
+// This function compares normalized vectors with a fast dot product.
+function dotProductSimilarity(a, b) {
+  if (!Array.isArray(a) || !Array.isArray(b)) return 0;
+  if (!a.length || !b.length) return 0;
+  if (a.length !== b.length) return 0;
+
+  let dot = 0;
+  for (let i = 0; i < a.length; i++) {
+    dot += a[i] * b[i];
+  }
+
+  return dot;
+}
+
+// This function normalizes the incoming vector once when a cache lookup can reuse it.
+function normalizeVector(vector) {
+  if (!Array.isArray(vector) || !vector.length) return null;
+
+  let norm = 0;
+  for (const value of vector) {
+    norm += value * value;
+  }
+
+  if (!norm) return null;
+
+  const divisor = Math.sqrt(norm);
+  return vector.map(value => value / divisor);
+}
+
 // This function writes debug output only when event debug logging is enabled.
 function debugEventLog(message, payload = null) {
   if (!EVENT_DEBUG) return;
@@ -170,6 +218,35 @@ function debugEventLog(message, payload = null) {
   }
 
   console.log(`[EVENT DEBUG] ${message}`, payload);
+}
+
+// This function writes one concise event processing line in development/debug mode.
+function conciseEventLog(message) {
+  if (!EVENT_DEBUG) return;
+  console.log(`[EVENT] ${message}`);
+}
+
+// This function formats numeric debug values for concise event logs.
+function formatEventMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function computes average semantic similarity across accepted candidate signals.
+function averageAcceptedSemantic(signals = []) {
+  const acceptedSignals = signals.filter(signal => signal.accepted);
+  if (!acceptedSignals.length) return 0;
+
+  const total = acceptedSignals.reduce((sum, signal) => sum + Number(signal.semantic || 0), 0);
+  return total / acceptedSignals.length;
+}
+
+// This function finds the strongest accepted signal for concise candidate-event logging.
+function strongestAcceptedCandidateSignal(signals = [], eventId = null) {
+  return signals
+    .filter(signal => signal.accepted)
+    .filter(signal => eventId == null || Number(signal.eventId) === Number(eventId))
+    .sort((left, right) => Number(right.semantic || 0) - Number(left.semantic || 0))[0] || null;
 }
 
 // This function loads topic assignments already stored for an event.
@@ -242,10 +319,20 @@ export class EventCache {
   }
 
   // This function loads the newest candidate events for a user.
-  static async forUser(userId) {
+  static async forUser(userId, options = {}) {
+    const where = { userId };
+    const windowHours = Number(options.windowHours || 0);
+
+    if (windowHours > 0) {
+      where.eventWindowEndAt = {
+        [Op.gte]: new Date(Date.now() - windowHours * HOUR_MS)
+      };
+      where.status = { [Op.ne]: 'archived' };
+    }
+
     const events = await Event.findAll({
-      where: { userId },
-      order: [['updatedAt', 'DESC']],
+      where,
+      order: [['eventWindowEndAt', 'DESC'], ['updatedAt', 'DESC']],
       limit: MAX_CANDIDATES
     });
 
@@ -367,10 +454,11 @@ function resolveArticleVector(record) {
 }
 
 // This function scores whether a candidate article can corroborate a new event.
-function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
+function evaluateCandidateSignal({ article, candidate, articleEventVector, normalizedArticleEventVector = null }) {
   const candidateVector = resolveArticleVector(candidate);
+  const normalizedCandidateVector = candidate.normalizedEventVector || null;
 
-  if (!Array.isArray(candidateVector)) {
+  if (!Array.isArray(candidateVector) && !Array.isArray(normalizedCandidateVector)) {
     return {
       candidateId: candidate.id,
       semantic: 0,
@@ -385,16 +473,20 @@ function evaluateCandidateSignal({ article, candidate, articleEventVector }) {
     };
   }
 
-  const semantic = cosineSimilarity(articleEventVector, candidateVector);
+  const semantic = normalizedArticleEventVector && normalizedCandidateVector
+    ? dotProductSimilarity(normalizedArticleEventVector, normalizedCandidateVector)
+    : cosineSimilarity(articleEventVector, candidateVector);
   const meetsSemantic = semantic >= EVENT_SIM_THRESHOLD;
 
   const temporal = articleWindowScore(article, candidate);
   const meetsTemporal = temporal > 0;
 
-  const headline = headlineSimilarity(article.title, candidate.title || '');
+  const articleTokens = resolveTokenSet(article);
+  const candidateTokens = resolveTokenSet(candidate);
+  const headline = headlineSimilarityFromSets(articleTokens, candidateTokens);
   const overlap = entityOverlapCount(
-    extractEntitySet(article),
-    extractEntitySet(candidate)
+    resolveEntitySet(article),
+    resolveEntitySet(candidate)
   );
 
   const meetsAuxiliary = (
@@ -531,6 +623,35 @@ async function findCandidateArticles({ article, articleEventVector }) {
   };
 }
 
+// This function finds corroborating candidates from the rolling in-memory article cache.
+function findCandidateArticlesFromCache({
+  article,
+  articleEventVector,
+  normalizedArticleEventVector,
+  articleCandidateCache
+}) {
+  const candidates = articleCandidateCache.findNearby(article);
+  const evaluatedSignals = candidates.map(candidate => evaluateCandidateSignal({
+    article,
+    candidate,
+    articleEventVector,
+    normalizedArticleEventVector
+  }));
+
+  const acceptedIds = new Set(
+    evaluatedSignals
+      .filter(signal => signal.accepted)
+      .map(signal => signal.candidateId)
+  );
+
+  const acceptedCandidates = candidates.filter(candidate => acceptedIds.has(candidate.id));
+
+  return {
+    acceptedCandidates,
+    evaluatedSignals
+  };
+}
+
 // This function inserts or updates one article record in the current run context.
 function upsertRunContextRecord(runContext, record) {
   if (!runContext) return;
@@ -577,7 +698,8 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
   const evaluatedSignals = candidatePool.map(candidate => evaluateCandidateSignal({
     article,
     candidate,
-    articleEventVector
+    articleEventVector,
+    normalizedArticleEventVector: runContext?.normalizedArticleEventVector || null
   }));
 
   const acceptedIds = new Set(
@@ -599,14 +721,19 @@ function findCandidateArticlesFromContext({ article, articleEventVector, runCont
 export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors = null, topicsCache = null, runContext = null, options = {}) {
   const assignmentContext = options.assignmentContext || 'incremental';
   const skipTopicAssignment = Boolean(options.skipTopicAssignment);
+  const articleCandidateCache = options.articleCandidateCache || null;
 
   const article = typeof articleIdOrObj === 'object'
     ? articleIdOrObj
     : await Article.findByPk(articleIdOrObj);
 
   const articleEventVector = vectors?.eventVector ?? null;
+  const normalizedArticleEventVector = normalizeVector(articleEventVector);
 
   if (!article) return null;
+
+  article.tokenSet ??= tokenSet(article.title || '');
+  article.entitySet ??= extractEntitySet(article);
 
   if (!articleEventVector) {
     await assignTopicOnly({ article });
@@ -755,13 +882,28 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     });
 
     incrementRunStat(runContext, 'linkedToExistingEventCount');
+    articleCandidateCache?.updateEventId?.([article.id], bestEvent.id);
+    conciseEventLog(
+      `article=${article.id} → event=${bestEvent.id} ` +
+      `sim=${formatEventMetric(bestSignal.semantic)} ` +
+      `head=${formatEventMetric(bestSignal.headline, 2)} ` +
+      `temp=${formatEventMetric(bestSignal.temporal, 2)} ` +
+      `overlap=${bestSignal.overlap ?? 0} decision=existing-event`
+    );
 
     return bestEvent.id;
   }
 
   await assignTopicOnly({ article });
 
-  const candidateResult = runContext
+  const candidateResult = articleCandidateCache
+    ? findCandidateArticlesFromCache({
+      article,
+      articleEventVector,
+      normalizedArticleEventVector,
+      articleCandidateCache
+    })
+    : runContext
     ? findCandidateArticlesFromContext({
       article,
       articleEventVector,
@@ -876,6 +1018,18 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       });
 
       incrementRunStat(runContext, 'linkedToExistingEventCount');
+      articleCandidateCache?.updateEventId?.([article.id], candidateEvent.id);
+      const selectedCandidateSignal = strongestAcceptedCandidateSignal(
+        candidateResult.evaluatedSignals,
+        candidateEvent.id
+      );
+      conciseEventLog(
+        `article=${article.id} → event=${candidateEvent.id} ` +
+        `sim=${formatEventMetric(selectedCandidateEvent.averageSemantic)} ` +
+        `head=${formatEventMetric(selectedCandidateSignal?.headline, 2)} ` +
+        `temp=${formatEventMetric(selectedCandidateSignal?.temporal, 2)} ` +
+        `overlap=${selectedCandidateSignal?.overlap ?? 0} decision=existing-event`
+      );
 
       if (EVENT_DEBUG) {
         debugEventLog(`article=${article.id} candidate-event-selected`, {
@@ -910,6 +1064,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       eventId: null,
       eventVector: articleEventVector
     });
+    articleCandidateCache?.updateEventId?.([article.id], null);
 
     return null;
   }
@@ -925,6 +1080,13 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
 
   if (newEventId) {
     incrementRunStat(runContext, 'newEventsCreatedCount');
+    const avgSim = averageAcceptedSemantic(candidateResult.evaluatedSignals);
+    conciseEventLog(
+      `new-event=${newEventId} article=${article.id} ` +
+      `corroborated=${corroboratedArticleCount} ` +
+      `avgSim=${formatEventMetric(avgSim)} ` +
+      `sources=${corroboratedSourceCount} decision=new-event`
+    );
   }
 
   const eventTopicAssignments = (newEventId && !skipTopicAssignment)
@@ -938,6 +1100,10 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       topicId: primaryTopicId(eventTopicAssignments)
     });
   }
+  articleCandidateCache?.updateEventId?.(
+    [article.id, ...unassignedCandidates.map(candidate => candidate.id)],
+    newEventId
+  );
 
   upsertRunContextRecord(runContext, {
     id: article.id,

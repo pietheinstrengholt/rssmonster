@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
-import { incrementalClusterForUser } from '../services/events/reclusterForUser.js';
+import { incrementalClusterForUser } from '../services/reconcile/reclusterForUser.js';
 
 const {
   sequelize,
@@ -130,14 +130,17 @@ async function seedAdHeatwaveArticles(userId) {
     status: feedFixture.status || 'active'
   });
   const insertedArticles = [];
+  const basePublishedAt = new Date(Date.now() - 2 * 60 * 60 * 1000);
 
-  for (const fixtureArticle of articleFixtures) {
+  for (const [index, fixtureArticle] of articleFixtures.entries()) {
     const content = articleContent(fixtureArticle);
     const contentHash = hashContent(content);
     const vectorRecord = vectorByContentHash.get(contentHash);
 
     expect(vectorRecord?.articleVector?.length, `missing vector for ${fixtureArticle.sourceId}`)
       .toBeGreaterThan(0);
+
+    const published = new Date(basePublishedAt.getTime() + index * 3 * 60 * 1000);
 
     insertedArticles.push(await Article.create({
       userId,
@@ -154,8 +157,8 @@ async function seedAdHeatwaveArticles(userId) {
       contentHash,
       articleVector: vectorRecord.articleVector,
       embedding_model: vectorRecord.embeddingModel,
-      published: new Date(fixtureArticle.published),
-      firstSeen: fixtureArticle.firstSeen ? new Date(fixtureArticle.firstSeen) : new Date(fixtureArticle.published)
+      published,
+      firstSeen: published
     }));
   }
 

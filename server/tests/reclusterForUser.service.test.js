@@ -1,12 +1,12 @@
 import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import assignArticleToEvent, { EventCache } from '../services/articles/assignArticleToEvent.js';
+import assignArticleToEvent, { EventCache } from '../services/events/assignArticleToEvent.js';
 import {
   incrementalClusterForUser,
   reclusterForUser,
   retrospectiveClusterForUser
-} from '../services/events/reclusterForUser.js';
+} from '../services/reconcile/reclusterForUser.js';
 
 const { Article, Category, Event, EventTopic, Feed, Topic, User } = db;
 
@@ -48,9 +48,9 @@ function articlePayload(user, feed, index, overrides = {}) {
   };
 }
 
-// This function returns a stable recent date inside the replay window.
+// This function returns a stable recent date inside the incremental event window.
 function recentDateWithOffset(offsetMs = 0) {
-  return new Date(Date.now() - 2 * 24 * 60 * 60 * 1000 + offsetMs);
+  return new Date(Date.now() - 2 * 60 * 60 * 1000 + offsetMs);
 }
 
 describe('reclusterForUser', () => {

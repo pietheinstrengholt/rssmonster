@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { rebuildTopicsForUser } from '../services/events/reclusterForUser.js';
-import { buildBehavioralTopicsForUser } from '../services/topics/buildBehavioralTopics.js';
+import { rebuildTopicsForUser } from '../services/reconcile/reclusterForUser.js';
+import { buildBehavioralTopicsForUser } from '../services/topics/behavioral/buildBehavioralTopics.js';
 
 const { Article, ArticleTopic, Category, Event, EventTopic, Feed, Topic, User } = db;
 let userSequence = 0;

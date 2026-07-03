@@ -17,7 +17,7 @@ export const EMBEDDING_MODEL = 'text-embedding-3-small';
 const MIN_EVENT_LENGTH = 60;
 const MIN_TOPIC_LENGTH = 120;
 const MAX_TOPIC_LENGTH = 2200;
-const MAX_EMBEDDING_INPUT_TOKENS = 192;
+const MAX_EMBEDDING_INPUT_TOKENS = 512;
 
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
 const openai = hasApiKey
@@ -92,6 +92,17 @@ function estimateTokenCount(text = '') {
   return normalized.split(/\s+/).length;
 }
 
+// This function clips text to the embedding token budget using the local token estimate.
+function clipToEmbeddingTokenLimit(text = '') {
+  const normalized = String(text || '').trim();
+  if (!normalized) return '';
+
+  const tokens = normalized.split(/\s+/);
+  if (tokens.length <= MAX_EMBEDDING_INPUT_TOKENS) return normalized;
+
+  return tokens.slice(0, MAX_EMBEDDING_INPUT_TOKENS).join(' ');
+}
+
 // This function enforces a max token budget before calling the embedding API.
 function isWithinEmbeddingTokenLimit(text = '') {
   return estimateTokenCount(text) <= MAX_EMBEDDING_INPUT_TOKENS;
@@ -161,17 +172,12 @@ export async function embedArticle(articleOrInput, options = {}) {
     return null;
   }
 
-  const eventText = buildArticleEventEmbeddingText({ title, contentStripped });
+  const eventText = clipToEmbeddingTokenLimit(
+    buildArticleEventEmbeddingText({ title, contentStripped })
+  );
   const topicText = extractTopicText({ contentStripped });
 
   if (!eventText || (!allowShortEventText && eventText.length < MIN_EVENT_LENGTH)) {
-    return null;
-  }
-
-  if (!isWithinEmbeddingTokenLimit(eventText)) {
-    console.debug(
-      `[EMBED] skipped (event text exceeds ${MAX_EMBEDDING_INPUT_TOKENS} token estimate)`
-    );
     return null;
   }
 

@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 import { cosineSimilarity as sharedCosineSimilarity } from '../vectors/index.js';
+import { ISLAND_DEBUG } from './islandVectorUtils.js';
 
 // This service refreshes article interest scores from island memberships.
 // It uses topic-to-island links first, then falls back to article-vector similarity when needed.
@@ -17,6 +18,18 @@ const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
 );
 const SCORABLE_ARTICLE_STATUS = 'unread';
 
+// This function formats island score values for concise logs.
+function formatIslandMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function writes verbose article scoring logs only when island debugging is enabled.
+function debugIslandLog(message) {
+  if (!ISLAND_DEBUG) return;
+  console.log(`[ISLAND] ${message}`);
+}
+
 // This function compares two article/island vectors with cosine similarity.
 function cosineSimilarity(vectorA, vectorB) {
   return sharedCosineSimilarity(vectorA, vectorB, {
@@ -27,19 +40,22 @@ function cosineSimilarity(vectorA, vectorB) {
 
 // This function finds the strongest island-derived score for one article vector.
 function strongestIslandScore(articleVector, islands, threshold) {
-  let strongestScore = null;
+  let strongest = null;
 
   for (const island of islands) {
     const similarity = cosineSimilarity(articleVector, island.islandVector);
     if (similarity < threshold) continue;
 
     const score = Number(island.weight || 0) * similarity;
-    if (strongestScore === null || Math.abs(score) > Math.abs(strongestScore)) {
-      strongestScore = score;
+    if (strongest === null || Math.abs(score) > Math.abs(strongest.score)) {
+      strongest = {
+        islandId: island.id,
+        score
+      };
     }
   }
 
-  return strongestScore;
+  return strongest;
 }
 
 // This function normalizes dialect-specific update metadata into an affected row count.
@@ -94,15 +110,20 @@ async function applyVectorFallbackScores(userId, options = {}) {
   let fallbackScoredCount = 0;
 
   for (const article of articles) {
-    const fallbackScore = strongestIslandScore(article.articleVector, islands, threshold);
-    if (fallbackScore === null) continue;
+    const fallback = strongestIslandScore(article.articleVector, islands, threshold);
+    if (fallback === null) continue;
 
     const currentScore = Number(article.interestScore || 0);
-    if (Math.abs(fallbackScore) <= Math.abs(currentScore)) continue;
+    if (Math.abs(fallback.score) <= Math.abs(currentScore)) continue;
 
     await article.update({
-      interestScore: Number(fallbackScore.toFixed(4))
+      interestScore: Number(fallback.score.toFixed(4))
     }, { transaction });
+
+    debugIslandLog(
+      `article=${article.id} score=${formatIslandMetric(fallback.score)} ` +
+      `island=${fallback.islandId} vector-fallback`
+    );
 
     fallbackScoredCount += 1;
   }
@@ -165,6 +186,44 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
   );
 
   const topicScoredCount = updatedRowCount(result, metadata);
+
+  if (ISLAND_DEBUG && topicScoredCount > 0) {
+    const topicScoredRows = await sequelize.query(
+      `
+      SELECT
+        a.id AS articleId,
+        a.interestScore AS score,
+        MIN(i.id) AS islandId
+      FROM articles a
+      INNER JOIN article_topics atp
+        ON atp.articleId = a.id
+      INNER JOIN island_topics it
+        ON it.topicId = atp.topicId
+      INNER JOIN islands i
+        ON i.id = it.islandId
+       AND i.userId = :userId
+       AND i.archivedInd = 0
+      WHERE a.userId = :userId
+        AND a.status = :status
+        AND a.interestScore <> 0
+      GROUP BY a.id, a.interestScore
+      ORDER BY a.id ASC
+      `,
+      {
+        replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
+        type: db.Sequelize.QueryTypes.SELECT,
+        transaction
+      }
+    );
+
+    for (const row of topicScoredRows) {
+      debugIslandLog(
+        `article=${row.articleId} score=${formatIslandMetric(row.score)} ` +
+        `island=${row.islandId} topic-path`
+      );
+    }
+  }
+
   const fallbackScoredCount = await applyVectorFallbackScores(userId, {
     transaction,
     threshold: options.articleScoreThreshold

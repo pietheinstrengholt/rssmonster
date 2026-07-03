@@ -3,7 +3,7 @@
  * Event builder CLI runner
  *
  * Usage:
- *   npm run build:events
+ *   npm run events
  *   node scripts/buildEvents.js
  *   node scripts/buildEvents.js --mode=incremental
  *   node scripts/buildEvents.js --mode=replay --userId=3
@@ -18,7 +18,7 @@ const { User } = db;
 import {
   incrementalClusterForUser,
   reclusterForUser
-} from '../services/events/reclusterForUser.js';
+} from '../services/reconcile/reclusterForUser.js';
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -61,7 +61,7 @@ export async function buildEvents({ userId = null, mode = 'replay' } = {}) {
     order: [['id', 'ASC']]
   });
 
-  console.log(`[EVENT BUILD] mode=${mode} users=${users.length}`);
+  console.log(`[SEMANTIC] Stage 1 Events mode=${mode} users=${users.length}`);
 
   for (const user of users) {
     try {
@@ -71,7 +71,7 @@ export async function buildEvents({ userId = null, mode = 'replay' } = {}) {
     }
   }
 
-  console.log('[EVENT BUILD] Finished');
+  console.log('[SEMANTIC] Stage 1 Events Finished');
 }
 
 export default buildEvents;

@@ -20,11 +20,90 @@ import {
 // This service builds and enriches "interest islands" from user behavior and topic history.
 // Islands represent durable preference areas that can later score articles and group topics.
 
-const { User, Island, IslandTaxonomy, sequelize } = db;
+const { User, Island, IslandTaxonomy, Sequelize, sequelize } = db;
 
 export { cosineSimilarity } from './islandVectorUtils.js';
 export { buildInterestIslandProfilesForUser } from './islandArticleProfiles.js';
 export { buildTopicInterestIslandProfilesForUser } from './islandTopicProfiles.js';
+
+// This function formats integers for island summary logs.
+function formatIslandCount(value) {
+  return Number(value || 0).toLocaleString('en-US');
+}
+
+// This function formats elapsed time for island summary logs.
+function formatElapsedSeconds(startedAt) {
+  return ((Date.now() - startedAt) / 1000).toFixed(1);
+}
+
+// This function writes the island run header for one user.
+function logIslandRunStart(userId) {
+  console.log('[ISLAND] ==================================================');
+  console.log(`[ISLAND] Building Interest Islands for user ${userId}`);
+  console.log('[ISLAND] ==================================================');
+}
+
+// This function writes the island run summary for one user.
+async function logIslandRunSummary(userId, result, startedAt) {
+  const [activeIslandCount, topicMembershipRows, largestIslandRows] = await Promise.all([
+    Island.count({ where: { userId, archivedInd: false } }),
+    sequelize.query(
+      `
+        SELECT COUNT(*) AS count
+        FROM island_topics AS islandTopic
+        INNER JOIN islands AS island
+          ON island.id = islandTopic.islandId
+        WHERE island.userId = :userId
+      `,
+      {
+        replacements: { userId },
+        type: Sequelize.QueryTypes.SELECT
+      }
+    ),
+    sequelize.query(
+      `
+        SELECT islandTopic.islandId, COUNT(islandTopic.topicId) AS topicCount
+        FROM island_topics AS islandTopic
+        INNER JOIN islands AS island
+          ON island.id = islandTopic.islandId
+        WHERE island.userId = :userId
+        GROUP BY islandTopic.islandId
+        ORDER BY topicCount DESC
+        LIMIT 1
+      `,
+      {
+        replacements: { userId },
+        type: Sequelize.QueryTypes.SELECT
+      }
+    )
+  ]);
+
+  const persistence = result.persistenceSummary || {};
+  const topicMembershipCount = Number(topicMembershipRows?.[0]?.count || 0);
+  const averageTopicsPerIsland = activeIslandCount
+    ? (topicMembershipCount / activeIslandCount).toFixed(1)
+    : '0.0';
+  const largestIslandTopicCount = Number(largestIslandRows?.[0]?.topicCount || 0);
+
+  console.log('[ISLAND] =============================================');
+  console.log(`[ISLAND] Existing islands.............. ${formatIslandCount(persistence.existingIslandCount)}`);
+  console.log(`[ISLAND] New islands................... ${formatIslandCount(persistence.createdIslandCount)}`);
+  console.log(`[ISLAND] Archived islands.............. ${formatIslandCount(persistence.archivedIslandCount)}`);
+  console.log(`[ISLAND] Active islands................ ${formatIslandCount(activeIslandCount)}`);
+  console.log('[ISLAND]');
+  console.log(`[ISLAND] Topic memberships............. ${formatIslandCount(topicMembershipCount)}`);
+  console.log(`[ISLAND] New memberships............... ${formatIslandCount((persistence.newMembershipCount || 0) + (result.enrichmentNewMembershipCount || 0))}`);
+  console.log(`[ISLAND] Removed memberships........... ${formatIslandCount((persistence.removedMembershipCount || 0) + (result.enrichmentRemovedMembershipCount || 0))}`);
+  console.log('[ISLAND]');
+  console.log(`[ISLAND] Articles scored............... ${formatIslandCount(result.rescoredArticleCount)}`);
+  console.log(`[ISLAND]  ├─ via Topics................ ${formatIslandCount(result.topicScoredCount)}`);
+  console.log(`[ISLAND]  └─ via Island vectors........ ${formatIslandCount(result.fallbackScoredCount)}`);
+  console.log('[ISLAND]');
+  console.log(`[ISLAND] Average topics/island......... ${averageTopicsPerIsland}`);
+  console.log(`[ISLAND] Largest island................ ${formatIslandCount(largestIslandTopicCount)} topics`);
+  console.log(`[ISLAND] Finished...................... ${formatElapsedSeconds(startedAt)} sec`);
+  console.log('[ISLAND] =============================================');
+}
 
 // This function builds and persists behavior-derived islands for one user.
 export async function buildInterestIslandsFromBehaviorForUser(userId, options = {}) {
@@ -38,6 +117,7 @@ export async function buildInterestIslandsFromBehaviorForUser(userId, options = 
     userId,
     islandCount: islands.length,
     articleCount: profiles.reduce((sum, profile) => sum + (profile.articles || []).length, 0),
+    persistenceSummary: islands.summary || {},
     profiles
   };
 }
@@ -97,6 +177,8 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
 
     let enrichedIslandCount = 0;
     let islandTopicLinkCount = 0;
+    let enrichmentNewMembershipCount = 0;
+    let enrichmentRemovedMembershipCount = 0;
 
     for (const island of islands) {
       const candidateTopicRows = topicProfiles
@@ -134,7 +216,7 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
 
       if (!topicRows.length) continue;
 
-      await evolveIslandTopicMemberships(island.id, topicRows, transaction);
+      const membershipSummary = await evolveIslandTopicMemberships(island.id, topicRows, transaction);
 
       const matchedTopicIds = new Set(topicRows.map(row => Number(row.topicId)));
       const matchedTopics = topicProfiles
@@ -165,12 +247,16 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
 
       enrichedIslandCount += 1;
       islandTopicLinkCount += topicRows.length;
+      enrichmentNewMembershipCount += membershipSummary.newMembershipCount;
+      enrichmentRemovedMembershipCount += membershipSummary.removedMembershipCount;
     }
 
     return {
       userId,
       enrichedIslandCount,
-      islandTopicLinkCount
+      islandTopicLinkCount,
+      enrichmentNewMembershipCount,
+      enrichmentRemovedMembershipCount
     };
   });
 }
@@ -207,21 +293,30 @@ export async function enrichInterestIslandsFromTopics(options = {}) {
 
 // This function runs the full island pipeline for one user and refreshes article interest scores.
 export async function buildInterestIslandsForUser(userId, options = {}) {
+  const startedAt = Date.now();
+  logIslandRunStart(userId);
   const behaviorResult = await buildInterestIslandsFromBehaviorForUser(userId, options);
   const enrichmentResult = await enrichInterestIslandsFromTopicsForUser(userId, options);
   const scoringResult = await buildArticleInterestScoresForUser(userId);
 
-  return {
+  const result = {
     userId,
     islandCount: behaviorResult.islandCount,
     articleCount: behaviorResult.articleCount,
     enrichedIslandCount: enrichmentResult.enrichedIslandCount,
     islandTopicLinkCount: enrichmentResult.islandTopicLinkCount,
+    enrichmentNewMembershipCount: Number(enrichmentResult.enrichmentNewMembershipCount || 0),
+    enrichmentRemovedMembershipCount: Number(enrichmentResult.enrichmentRemovedMembershipCount || 0),
     topicScoredCount: Number(scoringResult?.topicScoredCount || 0),
     fallbackScoredCount: Number(scoringResult?.fallbackScoredCount || 0),
     rescoredArticleCount: Number(scoringResult?.updatedCount || 0),
+    persistenceSummary: behaviorResult.persistenceSummary,
     profiles: behaviorResult.profiles
   };
+
+  await logIslandRunSummary(userId, result, startedAt);
+
+  return result;
 }
 
 // This function runs the full island pipeline for one user or every user.

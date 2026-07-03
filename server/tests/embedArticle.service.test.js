@@ -23,17 +23,28 @@ describe('embedArticle token limit guard', () => {
     delete process.env.OPENAI_API_KEY;
   });
 
-  it('skips provider call when event embedding text exceeds token limit', async () => {
+  it('clips oversized event embedding text before provider call', async () => {
     const { embedArticle } = await import('../services/articles/embedArticle.js');
 
-    const oversizedContent = Array.from({ length: 193 }, (_, index) => `token${index}`).join(' ');
+    embeddingsCreate.mockResolvedValue({
+      data: [{ embedding: [0.7, 0.8, 0.9] }]
+    });
+
+    const oversizedContent = Array.from(
+      { length: 600 },
+      (_, index) => `token${index}`
+    ).join(' ');
     const result = await embedArticle({
       title: 'Breaking: Oversized event input',
       contentStripped: oversizedContent
     });
 
-    expect(result).toBeNull();
-    expect(embeddingsCreate).not.toHaveBeenCalled();
+    expect(result.eventVector).toEqual([0.7, 0.8, 0.9]);
+    expect(embeddingsCreate).toHaveBeenCalledTimes(2);
+
+    const input = embeddingsCreate.mock.calls[0][0].input;
+    expect(input.split(/\s+/)).toHaveLength(512);
+    expect(input).toMatch(/^Oversized event input token0/);
   });
 
   it('still calls provider for normal-sized event input', async () => {

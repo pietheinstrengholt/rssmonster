@@ -3,7 +3,7 @@
  * Recluster Articles CLI runner
  *
  * Usage:
- *   npm run recluster
+ *   npm run semantic:repair
  *   node scripts/reclusterArticles.js
  *
  * Programmatic usage:
@@ -13,10 +13,10 @@
 import db from '../models/index.js';
 const { User } = db;
 
-import { reclusterForUser } from '../services/events/reclusterForUser.js';
+import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
 
 /* ------------------------------------------------------------------
- * FULL reclustering entrypoint
+ * Seven-day replay clustering entrypoint
  * ------------------------------------------------------------------ */
 
 /**
@@ -30,8 +30,8 @@ export async function fullReclusterArticles({ userId = null } = {}) {
     return;
   }
 
-  // Case 2: No userId → recluster all users
-  console.log('[CLUSTER-REBUILD] No userId provided, reclustering ALL users');
+  // Case 2: No userId provided, replay the recent window for all users.
+  console.log('[SEMANTIC] Stage 1 Events recent replay for ALL users');
 
   const users = await User.findAll({
     attributes: ['id'],
@@ -39,7 +39,7 @@ export async function fullReclusterArticles({ userId = null } = {}) {
   });
 
   console.log(
-    `[CLUSTER-REBUILD] Found ${users.length} users to recluster`
+    `[SEMANTIC] Stage 1 Events users=${users.length}`
   );
 
   for (const user of users) {
@@ -47,13 +47,13 @@ export async function fullReclusterArticles({ userId = null } = {}) {
       await reclusterForUser(user.id);
     } catch (err) {
       console.error(
-        `[CLUSTER-REBUILD] Failed reclustering for user ${user.id}:`,
+        `[CLUSTER-REBUILD] Failed replay for user ${user.id}:`,
         err
       );
     }
   }
 
-  console.log('[CLUSTER-REBUILD] Finished reclustering ALL users');
+  console.log('[SEMANTIC] Stage 1 Events Finished');
 }
 
 export default fullReclusterArticles;
@@ -65,11 +65,11 @@ export default fullReclusterArticles;
 if (process.argv[1]?.includes('reclusterArticles')) {
   fullReclusterArticles()
     .then(() => {
-      console.log('[CLUSTER-REBUILD] Done');
+      console.log('[SEMANTIC] Stage 1 Events Done');
       process.exit(0);
     })
     .catch(err => {
-      console.error('[CLUSTER-REBUILD] Failed:', err);
+      console.error('[SEMANTIC] Stage 1 Events Failed:', err);
       process.exit(1);
     });
 }

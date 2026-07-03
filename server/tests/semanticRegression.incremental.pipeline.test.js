@@ -7,7 +7,7 @@ import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
-import { incrementalClusterForUser, reclusterForUser } from '../services/events/reclusterForUser.js';
+import { incrementalClusterForUser, reclusterForUser } from '../services/reconcile/reclusterForUser.js';
 import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
 import { cosineSimilarity as sharedCosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';

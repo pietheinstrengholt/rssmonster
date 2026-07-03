@@ -7,7 +7,7 @@ import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 
 import db from '../models/index.js';
-import { reclusterForUser } from '../services/events/reclusterForUser.js';
+import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
 import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 

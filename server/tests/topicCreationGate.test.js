@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   evaluateTopicCreationGate,
   TOPIC_IDENTITY_THRESHOLD
-} from '../services/topics/topicHelpers.js';
+} from '../services/topics/shared/topicHelpers.js';
 
 describe('evaluateTopicCreationGate', () => {
   it('preserves seed-evidence topic creation for durable multi-article events', () => {

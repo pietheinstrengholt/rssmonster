@@ -121,7 +121,7 @@ export default (sequelize) => {
          * for efficient topic-level queries without JOIN traversal. This maintains
          * consistency: article.topicId always equals article.event.topicId (if event exists).
          * 
-         * See: services/articles/assignArticleToEvent.js for assignment logic.
+         * See: services/events/assignArticleToEvent.js for assignment logic.
          */
         type: DataTypes.INTEGER,
         allowNull: true

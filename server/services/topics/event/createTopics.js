@@ -1,4 +1,4 @@
-import db from '../../models/index.js';
+import db from '../../../models/index.js';
 import {
   MIN_ARTICLES_FOR_TOPIC_CREATION,
   MIN_EVENTS_FOR_TOPIC_CREATION,
@@ -8,13 +8,24 @@ import {
   evaluateTopicCreationGate,
   debugTopicGate,
   upsertTopicInCache
-} from './topicHelpers.js';
-import { generateTopicName } from './topicName.service.js';
+} from '../shared/topicHelpers.js';
+import { generateTopicName } from '../shared/topicName.service.js';
 
 const { Topic } = db;
 
 // This service creates event topics after validating that an event has enough corroborating evidence.
 // Behavioral topics are created in buildBehavioralTopics.js and do not use these event-topic gates.
+
+// This function formats topic creation similarity values for concise logs.
+function formatTopicMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function escapes topic names in single-line logs.
+function logSafeTopicName(name = '') {
+  return String(name || '').replace(/"/g, '\\"');
+}
 
 export async function createTopic({
   semanticUnit,
@@ -66,10 +77,11 @@ export async function createTopic({
 
   if (!creationGate.passed) {
     console.log(
-      `[TOPIC] Creation gated: event=${currentEventId} user=${semanticUnit.userId}` +
+      `[TOPIC] gated event=${currentEventId}` +
       ` seeds=${topicSeedEvents.length}/${MIN_EVENTS_FOR_TOPIC_CREATION}` +
       ` articles=${seedArticleCount}/${MIN_ARTICLES_FOR_TOPIC_CREATION}` +
-      ` topSim=${topSeedSimilarity}`
+      ` topSim=${formatTopicMetric(topSeedSimilarity)}` +
+      ` reason=insufficient-evidence`
     );
     debugTopicGate('topic-creation-gate-blocked', {
       userId: semanticUnit.userId,
@@ -101,6 +113,13 @@ export async function createTopic({
   });
 
   upsertTopicInCache(topicsCache, createdTopic);
+
+  console.log(
+    `[TOPIC] new-topic=${createdTopic.id} event=${currentEventId} ` +
+    `name="${logSafeTopicName(topicName)}" ` +
+    `seeds=${topicSeedEvents.length} articles=${seedArticleCount} ` +
+    `topSim=${formatTopicMetric(topSeedSimilarity)} gate=${creationGate.reason}`
+  );
 
   debugTopicGate(`topic-creation-gate-passed: ${creationGate.reason}`, {
     userId: semanticUnit.userId,

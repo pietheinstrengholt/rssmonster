@@ -3,7 +3,7 @@
  * Topic builder CLI runner
  *
  * Usage:
- *   npm run build:topics
+ *   npm run topics
  *   node scripts/buildTopics.js
  *   node scripts/buildTopics.js --assignmentContext=incremental
  *   node scripts/buildTopics.js --userId=3
@@ -12,7 +12,7 @@
 import db from '../models/index.js';
 const { User } = db;
 
-import { rebuildTopicsForUser } from '../services/events/reclusterForUser.js';
+import { rebuildTopicsForUser } from '../services/reconcile/reclusterForUser.js';
 
 function parseArgs(argv) {
   const args = argv.slice(2);
@@ -46,7 +46,7 @@ export async function buildTopics({ userId = null, assignmentContext = 'replay' 
     order: [['id', 'ASC']]
   });
 
-  console.log(`[TOPIC BUILD] assignmentContext=${assignmentContext} users=${users.length}`);
+  console.log(`[SEMANTIC] Stage 2 Topics assignmentContext=${assignmentContext} users=${users.length}`);
 
   for (const user of users) {
     try {
@@ -56,7 +56,7 @@ export async function buildTopics({ userId = null, assignmentContext = 'replay' 
     }
   }
 
-  console.log('[TOPIC BUILD] Finished');
+  console.log('[SEMANTIC] Stage 2 Topics Finished');
 }
 
 export default buildTopics;

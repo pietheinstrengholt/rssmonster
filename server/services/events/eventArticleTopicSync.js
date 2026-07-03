@@ -1,7 +1,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
-import { normalizeTopicAssignments, primaryTopicId } from './eventTopicAssignment.js';
+import { normalizeTopicAssignments, primaryTopicId } from '../topics/event/eventTopicAssignment.js';
 
 const { Article, ArticleTopic } = db;
 

@@ -1,5 +1,6 @@
 import { embedArticles } from '../articles/embedArticles.js';
-import { incrementalClusterForUser } from '../events/reclusterForUser.js';
+import { incrementalClusterForUser } from '../reconcile/reclusterForUser.js';
+import buildArticleInterestScoresForUser from '../islands/buildArticleInterestScores.js';
 
 // This function returns the users whose articles should be clustered after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
@@ -10,7 +11,7 @@ function getPostCrawlUserIds(result, userId = null) {
   return [...new Set((result?.processedUserIds || []).filter(Boolean))];
 }
 
-// This function generates embeddings and assigns newly crawled articles into events.
+// This function runs the incremental semantic hierarchy for users touched by a crawl.
 export async function runPostCrawlEventClustering(result, options = {}) {
   const userIds = getPostCrawlUserIds(result, options.userId);
   const onProgress = typeof options.onProgress === 'function'
@@ -21,16 +22,18 @@ export async function runPostCrawlEventClustering(result, options = {}) {
     return {
       users: 0,
       embedded: 0,
-      skipped: 0
+      skipped: 0,
+      results: []
     };
   }
 
   let embedded = 0;
   let skipped = 0;
+  const results = [];
 
   onProgress?.({
     type: 'semantic_started',
-    stage: 'event_clustering',
+    stage: 'semantic_pipeline',
     users: userIds.length
   });
 
@@ -41,15 +44,55 @@ export async function runPostCrawlEventClustering(result, options = {}) {
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
 
-    await incrementalClusterForUser(userId, {
+    console.log(
+      `[SEMANTIC] user=${userId} stage=embedding ` +
+      `embedded=${embedSummary.embeddedCount || 0} skipped=${embedSummary.skippedCount || 0}`
+    );
+
+    const eventResult = await incrementalClusterForUser(userId, {
       createdAfter: result?.crawlStartedAt || null,
-      skipTopicAssignment: true
+      skipTopicAssignment: false
+    });
+
+    console.log(
+      `[SEMANTIC] user=${userId} stage=events ` +
+      `articles=${eventResult.articleCount} ` +
+      `newEvents=${eventResult.newEventsCreatedCount} ` +
+      `linked=${eventResult.linkedToExistingEventCount} ` +
+      `unassigned=${eventResult.unassignedCount} ` +
+      `touchedEvents=${eventResult.touchedEventIds.length}`
+    );
+
+    const topicStats = eventResult.topicAssignment?.stats || {};
+    console.log(
+      `[SEMANTIC] user=${userId} stage=topics ` +
+      `touchedTopics=${eventResult.touchedTopicIds.length} ` +
+      `createdTopics=${topicStats.newTopicsCreated || 0} ` +
+      `matchedEvents=${topicStats.eventsMatched || 0} ` +
+      `unmatchedEvents=${topicStats.eventsUnmatched || 0}`
+    );
+
+    const scoringResult = await buildArticleInterestScoresForUser(userId);
+
+    console.log(
+      `[SEMANTIC] user=${userId} stage=interest-scores ` +
+      `updated=${scoringResult.updatedCount || 0} ` +
+      `topicScored=${scoringResult.topicScoredCount || 0} ` +
+      `fallbackScored=${scoringResult.fallbackScoredCount || 0}`
+    );
+    console.log(`[SEMANTIC] user=${userId} stage=completed`);
+
+    results.push({
+      userId,
+      embedding: embedSummary,
+      events: eventResult,
+      interestScores: scoringResult
     });
   }
 
   onProgress?.({
     type: 'semantic_completed',
-    stage: 'event_clustering',
+    stage: 'semantic_pipeline',
     users: userIds.length,
     embedded,
     skipped
@@ -58,7 +101,8 @@ export async function runPostCrawlEventClustering(result, options = {}) {
   return {
     users: userIds.length,
     embedded,
-    skipped
+    skipped,
+    results
   };
 }
 

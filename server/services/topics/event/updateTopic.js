@@ -4,16 +4,33 @@ import {
   blendTopicVectorWithAlpha,
   shouldDriftTopicVector,
   upsertTopicInCache
-} from './topicHelpers.js';
+} from '../shared/topicHelpers.js';
 
 // This service updates existing topics after semantic assignment matches.
 // It centralizes vector drift, activity timestamps, and in-memory cache refreshes.
+
+// This function formats topic drift similarity values for concise logs.
+function formatTopicMetric(value, digits = 3) {
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
+}
+
+// This function logs when an event causes a topic vector to drift.
+function logTopicDrift({ topicId, similarity, semanticUnit }) {
+  console.log(
+    `[TOPIC] topic=${topicId} drift ` +
+    `sim=${formatTopicMetric(similarity)} ` +
+    `alpha=${formatTopicMetric(TOPIC_VECTOR_DRIFT_ALPHA, 2)} ` +
+    `event=${semanticUnit?.id ?? 'n/a'}`
+  );
+}
 
 // This function updates all matched candidate topics and drifts the primary topic when allowed.
 export async function updateMatchedTopics({
   rankedCandidates,
   primaryCandidate,
   semanticVector,
+  semanticUnit = null,
   assignmentContext,
   now,
   topicsCache
@@ -32,6 +49,12 @@ export async function updateMatchedTopics({
         blendedTopicVector,
         Math.max(0, Math.min(TOPIC_VECTOR_DRIFT_ALPHA, 1))
       );
+
+      logTopicDrift({
+        topicId: candidate.topic.id,
+        similarity: candidate.sim,
+        semanticUnit
+      });
 
       return candidate.topic.update({
         topicVector: anchoredVector,
@@ -56,11 +79,20 @@ export async function updateIdentityTopic({
   bestTopic,
   bestTopicSim,
   semanticVector,
+  semanticUnit = null,
   assignmentContext,
   now,
   topicsCache
 }) {
   const canDrift = shouldDriftTopicVector(bestTopicSim, assignmentContext);
+  if (canDrift) {
+    logTopicDrift({
+      topicId: bestTopic.id,
+      similarity: bestTopicSim,
+      semanticUnit
+    });
+  }
+
   const updatedTopic = canDrift
     ? await bestTopic.update({
       topicVector: blendTopicVectorWithAlpha(

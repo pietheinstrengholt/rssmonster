@@ -205,7 +205,6 @@ export const discoverRssLink = async (url, feed) => {
       if (isLikelyFeedContentType(ct)) {
         // Don't immediately accept; validate by parsing to enable retry fallback on parse failures.
         if (isValidFeedBody(body)) {
-          console.log(`Discovered feed URL directly: ${responseUrl}`);
           await persistDiscoveredUrl(feed, responseUrl);
           return responseUrl;
         }

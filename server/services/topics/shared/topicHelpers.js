@@ -1,15 +1,15 @@
 import crypto from 'crypto';
-import db from '../../models/index.js';
+import db from '../../../models/index.js';
 import {
   MAX_CANDIDATES,
   TOPIC_VECTOR_ALPHA,
   TOPIC_IDENTITY_THRESHOLD
-} from '../config/semanticConfig.js';
+} from '../../config/semanticConfig.js';
 import {
   averageVector,
   blendVector,
   cosineSimilarity
-} from '../vectors/index.js';
+} from '../../vectors/index.js';
 
 const { Article, Event } = db;
 
