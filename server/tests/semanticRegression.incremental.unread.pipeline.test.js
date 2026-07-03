@@ -6,8 +6,8 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
-import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
-import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+import { incrementalClusterForUser } from '../services/reconcile/reclusterForUser.js';
+import buildArticleInterestScoresForUser from '../services/islands/buildArticleInterestScores.js';
 import { cosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
@@ -29,7 +29,6 @@ const INCREMENTAL_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-re
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const TEST_DATABASE_NAME = 'rssmonstertest';
 const TAKE_TWO_ARTICLE_IDS_TO_MARK_READ = [652, 576];
-const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
 );
@@ -449,6 +448,7 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
       }
     );
 
+    const incrementalInsertedAfter = new Date(Date.now() - 1000);
     const insertedArticleIds = await insertMissingFixtureArticles(
       userId,
       fixture,
@@ -456,10 +456,8 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
       'https://fixtures.rssmonster.test/semantic-incremental.unread'
     );
 
-    await reclusterForUser(userId);
-    await buildInterestIslandsForUser(userId, {
-      topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
-    });
+    await incrementalClusterForUser(userId, { createdAfter: incrementalInsertedAfter });
+    await buildArticleInterestScoresForUser(userId);
 
     const markedReadCount = await Article.count({
       where: {

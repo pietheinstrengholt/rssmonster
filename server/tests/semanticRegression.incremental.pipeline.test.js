@@ -8,7 +8,7 @@ import { Op } from 'sequelize';
 
 import db from '../models/index.js';
 import { incrementalClusterForUser, reclusterForUser } from '../services/reconcile/reclusterForUser.js';
-import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+import buildArticleInterestScoresForUser from '../services/islands/buildArticleInterestScores.js';
 import { cosineSimilarity as sharedCosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
@@ -24,7 +24,6 @@ const {
   EventTopic,
   Island,
   IslandTopic,
-  IslandTaxonomy,
   Tag
 } = db;
 
@@ -33,11 +32,9 @@ const BASELINE_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.j
 const BASELINE_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.vectors.json');
 const INCREMENTAL_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression-incremental.json');
 const INCREMENTAL_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression-incremental.vectors.json');
-const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'island-taxonomy.vectors.json');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 80;
-const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 const MIN_STRONG_EVENT_STRENGTH = 0.35;
 const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
@@ -82,8 +79,7 @@ async function hasVectorFixtures(paths) {
 }
 const semanticRegressionDescribe = (await hasVectorFixtures([
   BASELINE_VECTOR_FIXTURE_PATH,
-  INCREMENTAL_VECTOR_FIXTURE_PATH,
-  TAXONOMY_VECTOR_FIXTURE_PATH
+  INCREMENTAL_VECTOR_FIXTURE_PATH
 ])) ? describe : describe.skip;
 
 // This function hashes article content using the same stable key as the vector fixtures.
@@ -349,34 +345,6 @@ async function ensureBaselineContent(userId) {
   return { seeded: true, articleCount: insertedCount };
 }
 
-// This function loads taxonomy rows needed to enrich interest islands from topics.
-async function loadIslandTaxonomyFixture(taxonomyVectorFixture) {
-  await IslandTaxonomy.bulkCreate(
-    taxonomyVectorFixture.taxonomy.map(row => ({
-      identity: row.identity,
-      categoryName: row.categoryName,
-      displayName: row.displayName,
-      description: row.description ?? null,
-      status: row.status || 'active',
-      vector: row.vector,
-      embedding_model: row.embeddingModel || taxonomyVectorFixture.embeddingModel
-    })),
-    {
-      updateOnDuplicate: [
-        'categoryName',
-        'displayName',
-        'description',
-        'status',
-        'vector',
-        'embedding_model',
-        'updatedAt'
-      ]
-    }
-  );
-
-  return IslandTaxonomy.count({ where: { status: 'active' } });
-}
-
 // This function formats recommended-score rows for incremental article debugging.
 function recommendedDebugRows(articles, islandByTopicId, islands) {
   return articles
@@ -532,8 +500,7 @@ async function printIncrementalDebugReport({
   baselineTopicCount,
   baselineIslandCount,
   baselineIslandTopicLinkCount,
-  taxonomyCount,
-  islandResult
+  scoringResult
 }) {
   const [
     finalArticleCount,
@@ -619,20 +586,16 @@ async function printIncrementalDebugReport({
     finalIslandCount,
     baselineIslandTopicLinkCount,
     finalIslandTopicLinkCount,
-    taxonomyCount,
     assignedIncrementalArticleCount,
     topicLinkedIncrementalArticleCount,
     scoredIncrementalArticleCount
   }]);
 
-  console.log('[SEMANTIC INCREMENTAL DEBUG] island build result');
+  console.log('[SEMANTIC INCREMENTAL DEBUG] interest score refresh result');
   console.table([{
-    islandCount: islandResult.islandCount,
-    enrichedIslandCount: islandResult.enrichedIslandCount,
-    islandTopicLinkCount: islandResult.islandTopicLinkCount,
-    topicScoredCount: islandResult.topicScoredCount,
-    fallbackScoredCount: islandResult.fallbackScoredCount,
-    rescoredArticleCount: islandResult.rescoredArticleCount
+    topicScoredCount: scoringResult.topicScoredCount,
+    fallbackScoredCount: scoringResult.fallbackScoredCount,
+    rescoredArticleCount: scoringResult.updatedCount
   }]);
 
   console.log('[SEMANTIC INCREMENTAL DEBUG] top scored incremental articles');
@@ -661,28 +624,13 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
     await sequelize.authenticate();
 
     const user = await findOrCreateRegressionUser();
-    const taxonomyVectorFixture = await loadVectorFixture(
-      TAXONOMY_VECTOR_FIXTURE_PATH,
-      'Run `npm run fixture:taxonomy-vectors` in server/ before this test.'
-    );
 
     semanticRegressionUserId = user.id;
     await ensureBaselineContent(user.id);
 
-    const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
-    const baselineIslandResult = await buildInterestIslandsForUser(user.id, {
-      topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
-    });
-
     console.log('[SEMANTIC INCREMENTAL DEBUG] baseline full pipeline result');
     console.table([{
-      taxonomyCount,
-      islandCount: baselineIslandResult.islandCount,
-      enrichedIslandCount: baselineIslandResult.enrichedIslandCount,
-      islandTopicLinkCount: baselineIslandResult.islandTopicLinkCount,
-      topicScoredCount: baselineIslandResult.topicScoredCount,
-      fallbackScoredCount: baselineIslandResult.fallbackScoredCount,
-      rescoredArticleCount: baselineIslandResult.rescoredArticleCount
+      baselineReady: true
     }]);
   }, 180000);
 
@@ -693,14 +641,9 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
       INCREMENTAL_VECTOR_FIXTURE_PATH,
       'Run `npm run fixture:semantic-incremental-vectors` in server/ before this test.'
     );
-    const taxonomyVectorFixture = await loadVectorFixture(
-      TAXONOMY_VECTOR_FIXTURE_PATH,
-      'Run `npm run fixture:taxonomy-vectors` in server/ before this test.'
-    );
     const incrementalVectorByContentHash = buildVectorMap(incrementalVectorFixture);
 
     expect(incrementalFixture.articles).toHaveLength(EXPECTED_INCREMENTAL_ARTICLE_COUNT);
-    expect(taxonomyVectorFixture.taxonomy.length).toBeGreaterThan(0);
 
     const baselineArticleCount = await Article.count({ where: { userId } });
     const baselineEventCount = await Event.count({ where: { userId } });
@@ -758,10 +701,7 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
     expect(preClusteredIncrementalCount).toBe(0);
 
     await incrementalClusterForUser(userId, { createdAfter: incrementalInsertedAfter });
-    const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
-    const islandResult = await buildInterestIslandsForUser(userId, {
-      topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
-    });
+    const scoringResult = await buildArticleInterestScoresForUser(userId);
 
     const [
       finalArticleCount,
@@ -849,18 +789,14 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
       baselineTopicCount,
       baselineIslandCount,
       baselineIslandTopicLinkCount,
-      taxonomyCount,
-      islandResult
+      scoringResult
     });
     const recommendedRows = await printIncrementalRecommendedDebug(userId, incrementalArticleIds);
 
-    expect(taxonomyCount).toBeGreaterThan(0);
     expect(finalArticleCount).toBe(baselineArticleCount + insertedCount);
     expect(finalEventCount).toBeGreaterThanOrEqual(baselineEventCount);
     expect(finalTopicCount).toBeGreaterThanOrEqual(baselineTopicCount);
-    expect(islandResult.islandCount).toBeGreaterThan(0);
-    expect(islandResult.enrichedIslandCount).toBeGreaterThan(0);
-    expect(islandResult.islandTopicLinkCount).toBeGreaterThan(0);
+    expect(scoringResult.updatedCount).toBeGreaterThan(0);
     expect(finalIslandCount).toBeGreaterThan(0);
     expect(finalIslandTopicLinkCount).toBeGreaterThan(0);
     expect(preservedBaselineAssignments).toHaveLength(baselineEventIdByArticleId.size);

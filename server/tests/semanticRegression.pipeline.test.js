@@ -8,7 +8,6 @@ import bcrypt from 'bcryptjs';
 
 import db from '../models/index.js';
 import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
-import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
 const {
@@ -23,23 +22,19 @@ const {
   EventTopic,
   Island,
   IslandTopic,
-  IslandTaxonomy,
   Tag
 } = db;
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.json');
 const VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'semantic-regression.vectors.json');
-const TAXONOMY_VECTOR_FIXTURE_PATH = join(__dirname, 'fixtures', 'island-taxonomy.vectors.json');
 const FIXTURE_USERNAME = 'semantic-regression-user';
 const FIXTURE_PASSWORD = 'rssmonster';
 const EXPECTED_MIN_EVENTS = 3;
 const EXPECTED_MIN_TOPICS = 2;
-const EXPECTED_MIN_ISLANDS = 1;
 const EXPECTED_MIN_ASSIGNED_ARTICLES = 3;
 const EXPECTED_MIN_TOPIC_LINKED_ARTICLES = 3;
 const EXPECTED_MIN_ARTICLE_TOPIC_LINKS = 3;
-const SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD = 0.02;
 const SEMANTIC_FIXTURE_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
 );
@@ -71,20 +66,6 @@ async function loadVectorFixture() {
   }
 }
 
-async function loadTaxonomyVectorFixture() {
-  try {
-    return await readFile(TAXONOMY_VECTOR_FIXTURE_PATH, 'utf8').then(JSON.parse);
-  } catch (err) {
-    if (err.code === 'ENOENT') {
-      throw new Error(
-        'Missing taxonomy vector fixture. Run `npm run fixture:taxonomy-vectors` in server/ before this regression test.'
-      );
-    }
-
-    throw err;
-  }
-}
-
 // This function checks whether the semantic regression vector fixtures are available.
 async function hasVectorFixtures(paths) {
   for (const path of paths) {
@@ -99,8 +80,7 @@ async function hasVectorFixtures(paths) {
   return true;
 }
 const semanticRegressionDescribe = (await hasVectorFixtures([
-  VECTOR_FIXTURE_PATH,
-  TAXONOMY_VECTOR_FIXTURE_PATH
+  VECTOR_FIXTURE_PATH
 ])) ? describe : describe.skip;
 
 function hashContent(content) {
@@ -622,33 +602,6 @@ async function applyArticleVectors(userId, vectorByContentHash) {
   return articles.length;
 }
 
-async function loadIslandTaxonomyFixture(taxonomyVectorFixture) {
-  await IslandTaxonomy.bulkCreate(
-    taxonomyVectorFixture.taxonomy.map(row => ({
-      identity: row.identity,
-      categoryName: row.categoryName,
-      displayName: row.displayName,
-      description: row.description ?? null,
-      status: row.status || 'active',
-      vector: row.vector,
-      embedding_model: row.embeddingModel || taxonomyVectorFixture.embeddingModel
-    })),
-    {
-      updateOnDuplicate: [
-        'categoryName',
-        'displayName',
-        'description',
-        'status',
-        'vector',
-        'embedding_model',
-        'updatedAt'
-      ]
-    }
-  );
-
-  return IslandTaxonomy.count({ where: { status: 'active' } });
-}
-
 async function printSemanticPipelineReport(userId, islandResult = null) {
   const categories = await loadCategoryReportRows(userId);
   const events = await Event.findAll({
@@ -1037,12 +990,10 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
   it('loads semantic fixture content and reclusters it', async () => {
     const fixture = await loadFixture();
     const vectorFixture = await loadVectorFixture();
-    const taxonomyVectorFixture = await loadTaxonomyVectorFixture();
     const vectorByContentHash = buildVectorMap(vectorFixture);
 
     expect(fixture.feeds.length).toBeGreaterThan(0);
     expect(fixture.articles.length).toBeGreaterThan(0);
-    expect(taxonomyVectorFixture.taxonomy.length).toBeGreaterThan(0);
 
     const missingVectorArticles = fixture.articles
       .map((article, index) => {
@@ -1140,30 +1091,21 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
     expect(vectorizedArticleCount).toBe(fixture.articles.length);
 
     await reclusterForUser(user.id);
-    const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
-    const islandResult = await buildInterestIslandsForUser(user.id, {
-      topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
-    });
-    await printSemanticPipelineReport(user.id, islandResult);
 
     const [
       feedCount,
       articleCount,
       eventCount,
       topicCount,
-      islandCount,
       assignedArticleCount,
       topicLinkedArticleCount,
       articleTopicLinkCount,
-      eventTopicLinkCount,
-      islandTopicLinkCount,
-      negativeSignalScoredArticleCount
+      eventTopicLinkCount
     ] = await Promise.all([
       Feed.count({ where: { userId: user.id } }),
       Article.count({ where: { userId: user.id } }),
       Event.count({ where: { userId: user.id } }),
       Topic.count({ where: { userId: user.id } }),
-      Island.count({ where: { userId: user.id } }),
       Article.count({ where: { userId: user.id, eventId: { [Op.ne]: null } } }),
       Article.count({ where: { userId: user.id, topicId: { [Op.ne]: null } } }),
       ArticleTopic.count({
@@ -1181,21 +1123,6 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
           attributes: [],
           where: { userId: user.id }
         }]
-      }),
-      IslandTopic.count({
-        include: [{
-          model: Island,
-          required: true,
-          attributes: [],
-          where: { userId: user.id }
-        }]
-      }),
-      Article.count({
-        where: {
-          userId: user.id,
-          negativeInd: 1,
-          interestScore: { [Op.ne]: 0 }
-        }
       })
     ]);
 
@@ -1203,15 +1130,10 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
     expect(articleCount).toBe(fixture.articles.length);
     expect(eventCount).toBeGreaterThanOrEqual(EXPECTED_MIN_EVENTS);
     expect(topicCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
-    expect(taxonomyCount).toBeGreaterThan(0);
-    expect(islandResult.islandCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
-    expect(islandCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
     expect(assignedArticleCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ASSIGNED_ARTICLES);
     expect(topicLinkedArticleCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPIC_LINKED_ARTICLES);
     expect(articleTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ARTICLE_TOPIC_LINKS);
     expect(eventTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
-    expect(islandTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ISLANDS);
-    expect(negativeSignalScoredArticleCount).toBeGreaterThanOrEqual(1);
   }, 60000);
 
   it('prints recommended-score ranking for the semantic fixture articles', async () => {
