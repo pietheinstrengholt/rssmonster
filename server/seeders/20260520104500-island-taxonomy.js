@@ -265,7 +265,7 @@ const taxonomyPairs = [
   ['Technology & Computing', 'Accessibility'],
   ['Technology & Computing', 'Human Computer Interaction'],
   ['Technology & Computing', 'No-Code Development'],
-  ['Technology & Computing', 'Low-Code Platforms']
+  ['Technology & Computing', 'Low-Code Platforms'],
   ['Science', 'Physics'],
   ['Science', 'Astronomy'],
   ['Science', 'Space Exploration'],
@@ -530,7 +530,7 @@ const taxonomyPairs = [
   ['Gaming & Interactive Media', 'Game Soundtracks'],
   ['Gaming & Interactive Media', 'Gaming Accessibility'],
   ['Gaming & Interactive Media', 'Family Games'],
-  ['Gaming & Interactive Media', 'Educational Games']
+  ['Gaming & Interactive Media', 'Educational Games'],
   ['Sports', 'Football'],
   ['Sports', 'Soccer'],
   ['Sports', 'Formula 1'],

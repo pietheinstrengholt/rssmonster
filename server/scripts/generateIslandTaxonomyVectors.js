@@ -1,6 +1,6 @@
 // scripts/generateIslandTaxonomyVectors.js
 /**
- * Generate vectors for island taxonomy entries.
+ * Reload island taxonomy entries from the seed file and generate vectors.
  *
  * Usage:
  *   npm run taxonomy:vectors
@@ -11,10 +11,16 @@
  *   OPENAI_EMBEDDING_MODEL=text-embedding-3-small (optional)
  */
 
+import { readFile } from 'node:fs/promises';
+import { dirname, join } from 'node:path';
+import { fileURLToPath } from 'node:url';
+import vm from 'node:vm';
 import OpenAI from 'openai';
 import db from '../models/index.js';
 
-const { IslandTaxonomy } = db;
+const { IslandTaxonomy, sequelize } = db;
+const __dirname = dirname(fileURLToPath(import.meta.url));
+const TAXONOMY_SEEDER_PATH = join(__dirname, '..', 'seeders', '20260520104500-island-taxonomy.js');
 
 const EMBEDDING_MODEL = process.env.OPENAI_EMBEDDING_MODEL || 'text-embedding-3-small';
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
@@ -24,6 +30,47 @@ const openai = hasApiKey
 
 const buildEmbeddingInput = (row) =>
   `${row.categoryName} ${row.displayName}`.replace(/\s+/g, ' ').trim();
+
+// This function loads the CommonJS taxonomy seeder from the ESM script runtime.
+async function loadTaxonomySeeder() {
+  const source = await readFile(TAXONOMY_SEEDER_PATH, 'utf8');
+  const module = { exports: {} };
+  const context = vm.createContext({
+    module,
+    exports: module.exports,
+    console
+  });
+
+  vm.runInContext(source, context, {
+    filename: TAXONOMY_SEEDER_PATH
+  });
+
+  if (typeof module.exports?.up !== 'function') {
+    throw new Error(`Taxonomy seeder ${TAXONOMY_SEEDER_PATH} does not export an up() function`);
+  }
+
+  return module.exports;
+}
+
+// This function clears and reloads island taxonomy rows from the seed file.
+async function reloadIslandTaxonomyFromSeeder() {
+  const seeder = await loadTaxonomySeeder();
+  const queryInterface = sequelize.getQueryInterface();
+
+  await IslandTaxonomy.destroy({
+    where: {},
+    truncate: true,
+    cascade: true,
+    force: true
+  });
+
+  await seeder.up(queryInterface, db.Sequelize);
+
+  const count = await IslandTaxonomy.count();
+  console.log(`[TAXONOMY-VECTORS] Reloaded taxonomy seed rows=${count}`);
+
+  return count;
+}
 
 async function embedText(text) {
   const response = await openai.embeddings.create({
@@ -36,8 +83,11 @@ async function embedText(text) {
 
 export async function generateIslandTaxonomyVectors({ force = false } = {}) {
   if (!hasApiKey) {
-    throw new Error('OPENAI_API_KEY is required to generate taxonomy vectors');
+    throw new Error('OPENAI_API_KEY is required before reloading taxonomy and generating vectors');
   }
+
+  await sequelize.authenticate();
+  const reloaded = await reloadIslandTaxonomyFromSeeder();
 
   const rows = await IslandTaxonomy.findAll({
     order: [['id', 'ASC']]
@@ -84,6 +134,7 @@ export async function generateIslandTaxonomyVectors({ force = false } = {}) {
 
   const result = {
     total: rows.length,
+    reloaded,
     updated,
     skipped,
     failed,
