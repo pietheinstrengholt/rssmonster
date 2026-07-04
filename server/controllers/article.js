@@ -151,9 +151,10 @@ const getArticle = async (req, res, _next) => {
 const markAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
-    const articleIds = Array.isArray(req.body.articleIds)
-      ? req.body.articleIds
-      : String(req.body.articleIds || '').split(',').filter(Boolean);
+    const body = req.body || {};
+    const articleIds = Array.isArray(body.articleIds)
+      ? body.articleIds
+      : String(body.articleIds || '').split(',').filter(Boolean);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
@@ -200,21 +201,27 @@ const markAsRead = async (req, res, _next) => {
       tag = null,
       viewMode = 'full',
       eventView = 'all'
-    } = req.body;
+    } = body;
+
+    const normalizedEventView = eventView === 'topicGroup' ? 'eventCluster' : eventView || 'all';
+    const toScoreThreshold = value => {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue) ? numericValue : 0;
+    };
 
     const result = await searchArticles({
       userId,
-      search,
-      categoryId,
-      feedId,
+      search: search ? String(search) : '',
+      categoryId: categoryId ?? '%',
+      feedId: feedId ?? '%',
       status: 'unread',
-      minAdvertisementScore,
-      minSentimentScore,
-      minQualityScore,
-      sort,
+      minAdvertisementScore: toScoreThreshold(minAdvertisementScore),
+      minSentimentScore: toScoreThreshold(minSentimentScore),
+      minQualityScore: toScoreThreshold(minQualityScore),
+      sort: sort || 'desc',
       tag,
       viewMode,
-      eventView,
+      eventView: normalizedEventView,
       persistSettings: false
     });
 
@@ -231,7 +238,7 @@ const markAsRead = async (req, res, _next) => {
 
     let eventIds = [];
 
-    if (eventView === 'eventCluster') {
+    if (normalizedEventView === 'eventCluster') {
       const selectedArticles = await Article.findAll({
         where: {
           id: { [Op.in]: itemIds },

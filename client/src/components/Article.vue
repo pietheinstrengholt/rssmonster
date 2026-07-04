@@ -293,7 +293,10 @@ export default {
     },
     // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
     onSwipeTouchStart(event) {
-      if (!this.isMobilePortrait) return;
+      if (!this.isMobilePortrait || event.touches.length !== 1) {
+        this.resetSwipe();
+        return;
+      }
 
       const touch = event.touches[0];
       this.swipeStartX = touch.clientX;
@@ -306,6 +309,10 @@ export default {
     // Updates the article offset while ignoring vertical scroll gestures.
     onSwipeTouchMove(event) {
       if (!this.swipeTracking || !this.isMobilePortrait) return;
+      if (event.touches.length !== 1) {
+        this.resetSwipe();
+        return;
+      }
 
       const touch = event.touches[0];
       const deltaX = touch.clientX - this.swipeStartX;
@@ -1503,7 +1510,7 @@ span.similar-badge {
     z-index: 1;
     background: var(--bg-card);
     will-change: transform;
-    touch-action: pan-y;
+    touch-action: pan-y pinch-zoom;
   }
 
   .article-list-row {
