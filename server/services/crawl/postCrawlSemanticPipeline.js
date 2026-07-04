@@ -1,8 +1,8 @@
 import { embedArticles } from '../articles/embedArticles.js';
-import { incrementalClusterForUser } from '../reconcile/reclusterForUser.js';
-import buildArticleInterestScoresForUser from '../islands/buildArticleInterestScores.js';
+import { runIncrementalEventsForUser } from '../reconcile/semanticPipelineScopes.js';
+import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
 
-// This function returns the users whose articles should be clustered after a crawl.
+// This function returns the users whose articles should be processed after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
   if (userId) {
     return [userId];
@@ -12,7 +12,7 @@ function getPostCrawlUserIds(result, userId = null) {
 }
 
 // This function runs the incremental semantic hierarchy for users touched by a crawl.
-export async function runPostCrawlEventClustering(result, options = {}) {
+export async function runPostCrawlSemanticPipeline(result, options = {}) {
   const userIds = getPostCrawlUserIds(result, options.userId);
   const onProgress = typeof options.onProgress === 'function'
     ? options.onProgress
@@ -49,7 +49,7 @@ export async function runPostCrawlEventClustering(result, options = {}) {
       `embedded=${embedSummary.embeddedCount || 0} skipped=${embedSummary.skippedCount || 0}`
     );
 
-    const eventResult = await incrementalClusterForUser(userId, {
+    const eventResult = await runIncrementalEventsForUser(userId, {
       createdAfter: result?.crawlStartedAt || null,
       skipTopicAssignment: false
     });
@@ -72,7 +72,7 @@ export async function runPostCrawlEventClustering(result, options = {}) {
       `unmatchedEvents=${topicStats.eventsUnmatched || 0}`
     );
 
-    const scoringResult = await buildArticleInterestScoresForUser(userId);
+    const scoringResult = await scoreArticlesFromIslandsForUser(userId);
 
     console.log(
       `[SEMANTIC] user=${userId} stage=interest-scores ` +
@@ -106,4 +106,9 @@ export async function runPostCrawlEventClustering(result, options = {}) {
   };
 }
 
-export default runPostCrawlEventClustering;
+export default runPostCrawlSemanticPipeline;
+
+
+
+
+

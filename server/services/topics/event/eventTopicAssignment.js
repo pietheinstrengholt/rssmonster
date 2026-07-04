@@ -84,8 +84,8 @@ export async function persistEventTopicAssignments(event, topicAssignments) {
   return normalizedAssignments;
 }
 
-// This function assigns topics to a set of existing events during replay or rebuild.
-export async function assignTopicsForEvents(userId, events, { assignmentContext = 'replay' } = {}) {
+// This function assigns topics to a set of existing events for an explicit pipeline scope.
+export async function assignTopicsForEvents(userId, events, { assignmentContext = 'recent-repair' } = {}) {
   if (!events.length) {
     return {
       eventCount: 0,

@@ -4,7 +4,7 @@ import { dirname, join } from 'node:path';
 import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
-import { buildInterestIslandsForUser } from '../../services/islands/buildInterestIslands.js';
+import { runIslandCalibrationForUser } from '../../services/islands/runIslandCalibration.js';
 
 const {
   User,
@@ -76,7 +76,7 @@ export async function expectSemanticRegressionIslandsBuilt(expect) {
 
   const taxonomyVectorFixture = await loadFixture(TAXONOMY_VECTOR_FIXTURE_PATH);
   const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
-  const islandResult = await buildInterestIslandsForUser(user.id, {
+  const islandResult = await runIslandCalibrationForUser(user.id, {
     topicConfidenceThreshold: SEMANTIC_FIXTURE_ISLAND_TOPIC_CONFIDENCE_THRESHOLD
   });
   const [islandCount, islandTopicLinkCount, scoredArticleCount] = await Promise.all([
@@ -105,3 +105,5 @@ export async function expectSemanticRegressionIslandsBuilt(expect) {
   expect(islandTopicLinkCount).toBeGreaterThan(0);
   expect(scoredArticleCount).toBeGreaterThan(0);
 }
+
+

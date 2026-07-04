@@ -1,37 +1,37 @@
-// scripts/reclusterArticles.js
+// scripts/repairRecentArticles.js
 /**
- * Recluster Articles CLI runner
+ * Recent-repair events command runner.
  *
  * Usage:
  *   npm run semantic:repair
- *   node scripts/reclusterArticles.js
+ *   node scripts/repairRecentArticles.js
  *
  * Programmatic usage:
- *   fullReclusterArticles({ userId })
+ *   repairRecentArticles({ userId })
  */
 
 import db from '../models/index.js';
 const { User } = db;
 
-import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
+import { repairRecentEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 
 /* ------------------------------------------------------------------
- * Seven-day replay clustering entrypoint
+ * Seven-day recent-repair event assignment entrypoint
  * ------------------------------------------------------------------ */
 
 /**
  * @param {Object} [options]
  * @param {number|null} [options.userId]
  */
-export async function fullReclusterArticles({ userId = null } = {}) {
+export async function repairRecentArticles({ userId = null } = {}) {
   // Case 1: Explicit userId provided
   if (userId) {
-    await reclusterForUser(userId);
+    await repairRecentEventsForUser(userId);
     return;
   }
 
-  // Case 2: No userId provided, replay the recent window for all users.
-  console.log('[SEMANTIC] Stage 1 Events recent replay for ALL users');
+  // Case 2: No userId provided, repair the recent window for all users.
+  console.log('[SEMANTIC] Stage 1 Events recent-repair for ALL users');
 
   const users = await User.findAll({
     attributes: ['id'],
@@ -44,10 +44,10 @@ export async function fullReclusterArticles({ userId = null } = {}) {
 
   for (const user of users) {
     try {
-      await reclusterForUser(user.id);
+      await repairRecentEventsForUser(user.id);
     } catch (err) {
       console.error(
-        `[CLUSTER-REBUILD] Failed replay for user ${user.id}:`,
+        `[EVENT RECENT-REPAIR] Failed for user ${user.id}:`,
         err
       );
     }
@@ -56,14 +56,14 @@ export async function fullReclusterArticles({ userId = null } = {}) {
   console.log('[SEMANTIC] Stage 1 Events Finished');
 }
 
-export default fullReclusterArticles;
+export default repairRecentArticles;
 
 /* ------------------------------------------------------------------
  * CLI runner
  * ------------------------------------------------------------------ */
 
-if (process.argv[1]?.includes('reclusterArticles')) {
-  fullReclusterArticles()
+if (process.argv[1]?.includes('repairRecentArticles')) {
+  repairRecentArticles()
     .then(() => {
       console.log('[SEMANTIC] Stage 1 Events Done');
       process.exit(0);
@@ -73,3 +73,4 @@ if (process.argv[1]?.includes('reclusterArticles')) {
       process.exit(1);
     });
 }
+

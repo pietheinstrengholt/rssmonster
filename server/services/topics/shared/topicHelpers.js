@@ -285,7 +285,7 @@ export function upsertTopicInCache(topicsCache, topic) {
 // This function decides whether a matched topic vector may drift toward new evidence.
 export function shouldDriftTopicVector(similarity, assignmentContext) {
   if (!TOPIC_VECTOR_DRIFT_ENABLED) return false;
-  if (assignmentContext === 'replay') return false;
+  if (assignmentContext !== 'incremental') return false;
   if (!Number.isFinite(similarity)) return false;
 
   return similarity <= TOPIC_VECTOR_DRIFT_MAX_SIMILARITY;

@@ -20,7 +20,7 @@ dotenv.config();
 // ---- Runtime bootstrap ----
 import db from '../models/index.js';
 import crawlController from '../controllers/crawl.js';
-import runPostCrawlEventClustering from '../services/crawl/postCrawlEventClustering.js';
+import runPostCrawlSemanticPipeline from '../services/crawl/postCrawlSemanticPipeline.js';
 
 const { sequelize } = db;
 
@@ -42,7 +42,7 @@ const run = async () => {
     console.log('[PHASE 3/5] Incremental Events');
     console.log('[PHASE 4/5] Incremental Topics for touched Events');
     console.log('[PHASE 5/5] Refresh Interest Scores from existing Islands');
-    const semanticResult = await runPostCrawlEventClustering(result);
+    const semanticResult = await runPostCrawlSemanticPipeline(result);
     console.log(
       `[SEMANTIC] stage=completed users=${semanticResult.users} ` +
       `embedded=${semanticResult.embedded} skipped=${semanticResult.skipped}`
@@ -64,3 +64,4 @@ const run = async () => {
 };
 
 await run();
+

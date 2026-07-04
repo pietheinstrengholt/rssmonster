@@ -7,8 +7,8 @@ import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
-import { incrementalClusterForUser, reclusterForUser } from '../services/reconcile/reclusterForUser.js';
-import buildArticleInterestScoresForUser from '../services/islands/buildArticleInterestScores.js';
+import { runIncrementalEventsForUser, repairRecentEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
+import scoreArticlesFromIslandsForUser from '../services/score/scoreArticlesFromIslands.js';
 import { cosineSimilarity as sharedCosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
@@ -340,7 +340,7 @@ async function ensureBaselineContent(userId) {
     'https://fixtures.rssmonster.test/semantic'
   );
 
-  await reclusterForUser(userId);
+  await repairRecentEventsForUser(userId);
 
   return { seeded: true, articleCount: insertedCount };
 }
@@ -634,7 +634,7 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
     }]);
   }, 180000);
 
-  it('loads unread incremental fixture content without replaying existing clusters', async () => {
+  it('loads unread incremental fixture content without rebuilding existing events', async () => {
     const userId = semanticRegressionUserId;
     const incrementalFixture = await loadFixture(INCREMENTAL_FIXTURE_PATH);
     const incrementalVectorFixture = await loadVectorFixture(
@@ -700,8 +700,8 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
 
     expect(preClusteredIncrementalCount).toBe(0);
 
-    await incrementalClusterForUser(userId, { createdAfter: incrementalInsertedAfter });
-    const scoringResult = await buildArticleInterestScoresForUser(userId);
+    await runIncrementalEventsForUser(userId, { createdAfter: incrementalInsertedAfter });
+    const scoringResult = await scoreArticlesFromIslandsForUser(userId);
 
     const [
       finalArticleCount,
@@ -822,3 +822,8 @@ semanticRegressionDescribe('semantic regression incremental pipeline', () => {
     expect(recommendedRows[0].recommended).toBeGreaterThanOrEqual(recommendedRows.at(-1).recommended);
   }, 60000);
 });
+
+
+
+
+

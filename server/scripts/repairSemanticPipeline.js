@@ -11,8 +11,8 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 import db from '../models/index.js';
-import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
-import buildArticleInterestScoresForUser from '../services/islands/buildArticleInterestScores.js';
+import { repairRecentEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
+import scoreArticlesFromIslandsForUser from '../services/score/scoreArticlesFromIslands.js';
 
 const { User, sequelize } = db;
 
@@ -42,7 +42,7 @@ async function loadUsers(userId = null) {
 // This function runs the recent semantic repair pipeline for one user.
 async function repairUser(userId) {
   console.log(`[SEMANTIC] user=${userId} Stage 1 Events`);
-  const eventResult = await reclusterForUser(userId, { skipTopicAssignment: false });
+  const eventResult = await repairRecentEventsForUser(userId, { skipTopicAssignment: false });
 
   console.log(
     `[SEMANTIC] user=${userId} stage=events ` +
@@ -64,7 +64,7 @@ async function repairUser(userId) {
   );
 
   console.log(`[SEMANTIC] user=${userId} Stage 3 Interest Scores`);
-  const scoringResult = await buildArticleInterestScoresForUser(userId);
+  const scoringResult = await scoreArticlesFromIslandsForUser(userId);
   console.log(
     `[SEMANTIC] user=${userId} stage=interest-scores ` +
     `updated=${scoringResult.updatedCount || 0} ` +
@@ -118,3 +118,7 @@ if (process.argv[1]?.includes('repairSemanticPipeline')) {
       process.exit(1);
     });
 }
+
+
+
+

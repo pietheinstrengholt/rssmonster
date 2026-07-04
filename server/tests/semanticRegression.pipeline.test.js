@@ -7,7 +7,7 @@ import { Op } from 'sequelize';
 import bcrypt from 'bcryptjs';
 
 import db from '../models/index.js';
-import { reclusterForUser } from '../services/reconcile/reclusterForUser.js';
+import { repairRecentEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
 const {
@@ -1090,7 +1090,7 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
 
     expect(vectorizedArticleCount).toBe(fixture.articles.length);
 
-    await reclusterForUser(user.id);
+    await repairRecentEventsForUser(user.id);
 
     const [
       feedCount,
@@ -1151,3 +1151,4 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
     expect(rows[0].recommended).toBeGreaterThanOrEqual(rows.at(-1).recommended);
   }, 60000);
 });
+

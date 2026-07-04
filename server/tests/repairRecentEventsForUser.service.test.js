@@ -3,10 +3,10 @@ import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import assignArticleToEvent, { EventCache } from '../services/events/assignArticleToEvent.js';
 import {
-  incrementalClusterForUser,
-  reclusterForUser,
-  retrospectiveClusterForUser
-} from '../services/reconcile/reclusterForUser.js';
+  runIncrementalEventsForUser,
+  repairRecentEventsForUser,
+  rebuildAllEventsForUser
+} from '../services/reconcile/semanticPipelineScopes.js';
 
 const { Article, Category, Event, EventTopic, Feed, Topic, User } = db;
 
@@ -53,7 +53,7 @@ function recentDateWithOffset(offsetMs = 0) {
   return new Date(Date.now() - 2 * 60 * 60 * 1000 + offsetMs);
 }
 
-describe('reclusterForUser', () => {
+describe('repairRecentEventsForUser', () => {
   it('does not clear or delete foreign events referenced by stale article data', async () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');
@@ -91,7 +91,7 @@ describe('reclusterForUser', () => {
 
     await ownerArticle.update({ eventId: foreignEvent.id });
 
-    await reclusterForUser(owner.user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(owner.user.id, { skipTopicAssignment: true });
 
     const persistedForeignEvent = await Event.findByPk(foreignEvent.id);
     const persistedForeignEventTopicCount = await EventTopic.count({
@@ -148,7 +148,7 @@ describe('reclusterForUser', () => {
       })
     ]);
 
-    await reclusterForUser(user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(user.id, { skipTopicAssignment: true });
 
     const events = await Event.findAll({
       where: { userId: user.id },
@@ -188,7 +188,7 @@ describe('reclusterForUser', () => {
       })
     ]);
 
-    await reclusterForUser(user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(user.id, { skipTopicAssignment: true });
 
     const events = await Event.findAll({
       where: { userId: user.id },
@@ -260,7 +260,7 @@ describe('reclusterForUser', () => {
       })
     ]);
 
-    await incrementalClusterForUser(user.id, { skipTopicAssignment: true });
+    await runIncrementalEventsForUser(user.id, { skipTopicAssignment: true });
 
     const clusteredArticles = await Article.findAll({
       where: {
@@ -371,7 +371,7 @@ describe('reclusterForUser', () => {
     expect(runContext.stats.linkedToExistingEventCount).toBe(1);
   });
 
-  it('retrospectively clusters vectorized articles outside the replay window', async () => {
+  it('full-rebuild assigns vectorized articles outside the recent repair window', async () => {
     const { user, feed } = await createUserGraph('retrospective');
     const feedTwo = await Feed.create({
       userId: user.id,
@@ -397,13 +397,13 @@ describe('reclusterForUser', () => {
       })
     ]);
 
-    await reclusterForUser(user.id, { skipTopicAssignment: true });
+    await repairRecentEventsForUser(user.id, { skipTopicAssignment: true });
 
     const recentReplayEventCount = await Event.count({
       where: { userId: user.id }
     });
 
-    await retrospectiveClusterForUser(user.id, {
+    await rebuildAllEventsForUser(user.id, {
       skipTopicAssignment: true,
       batchSize: 250
     });
@@ -423,3 +423,5 @@ describe('reclusterForUser', () => {
     expect(events[0].articles).toHaveLength(2);
   });
 });
+
+

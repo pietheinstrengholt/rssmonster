@@ -1,6 +1,6 @@
 import db from '../../models/index.js';
 import { cosineSimilarity as sharedCosineSimilarity } from '../vectors/index.js';
-import { ISLAND_DEBUG } from './islandVectorUtils.js';
+import { ISLAND_DEBUG } from '../islands/islandVectorUtils.js';
 
 // This service refreshes article interest scores from island memberships.
 // It uses topic-to-island links first, then falls back to article-vector similarity when needed.
@@ -131,11 +131,9 @@ async function applyVectorFallbackScores(userId, options = {}) {
   return fallbackScoredCount;
 }
 
-// This function rebuilds all article interest scores for one user.
-// It first applies topic/island memberships, then fills stronger vector fallback scores.
-export async function buildArticleInterestScoresForUser(userId, options = {}) {
+// This function clears previous interest scores before applying current island state.
+async function resetArticleInterestScores(userId, options = {}) {
   const { transaction } = options;
-
   await sequelize.query(
     `
     UPDATE articles
@@ -149,7 +147,11 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
       transaction
     }
   );
+}
 
+// This function scores articles through topic-to-island memberships.
+async function applyTopicPathScores(userId, options = {}) {
+  const { transaction } = options;
   const [result, metadata] = await sequelize.query(
     `
     UPDATE articles a
@@ -224,6 +226,16 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
     }
   }
 
+  return topicScoredCount;
+}
+
+// This function scores unread articles for one user from existing island state.
+// It first applies topic/island memberships, then fills stronger vector fallback scores.
+export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
+  const { transaction } = options;
+
+  await resetArticleInterestScores(userId, { transaction });
+  const topicScoredCount = await applyTopicPathScores(userId, { transaction });
   const fallbackScoredCount = await applyVectorFallbackScores(userId, {
     transaction,
     threshold: options.articleScoreThreshold
@@ -237,4 +249,7 @@ export async function buildArticleInterestScoresForUser(userId, options = {}) {
   };
 }
 
-export default buildArticleInterestScoresForUser;
+export default scoreArticlesFromIslandsForUser;
+
+
+

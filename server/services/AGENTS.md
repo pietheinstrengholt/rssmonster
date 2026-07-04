@@ -1,159 +1,401 @@
-# Agents.md — Server Services
+# AGENTS.md
 
-This file is the local operator guide for `server/services/`.
-It narrows the repo-wide guidance to the semantic clustering architecture:
-articles become **events**, events and engaged articles shape **topics**, and topics/articles feed durable **interest islands**.
+# RSSMonster Semantic Architecture
 
----
+This document defines the semantic architecture of RSSMonster.
 
-## 1) Mental Model
+The semantic system transforms raw RSS articles into increasingly stable and meaningful representations.
 
-Treat this area as a layered pipeline, not as isolated helper files.
-
-1. **Articles**
-   - Raw feed items with embeddings and engagement signals.
-   - `Article.eventId` and `Article.topicId` are read-side denormalizations.
-   - `ArticleTopic` is the durable source for article-topic evidence, especially behavioral evidence.
-2. **Events**
-   - Short-lived, time-aware clusters of related articles.
-   - `Event.eventVector`, window fields, counts, status, and representative article summarize the cluster.
-   - Event lifecycle and assignment thresholds belong in `services/config/semanticConfig.js`.
-3. **Topics**
-   - Longer-lived semantic memory.
-   - `event` topics come from event clusters.
-   - `behavioral` topics come from explicit user engagement.
-   - `hybrid` topics can bridge both, but pure behavioral topics must not steal event ownership.
-   - `EventTopic` and `ArticleTopic` are the ranked, confidence-scored sources of truth.
-4. **Interest Islands**
-   - Durable preference areas derived from user behavior and topic history.
-   - Islands should evolve slowly, keep auditability, and score articles through topic links before vector fallback.
-
----
-
-## 2) Non-Negotiable Invariants
-
-- Always scope service queries by `userId` when touching user-owned `Article`, `Event`, `Topic`, or `Island` data.
-- Import Sequelize models only through `../../models/index.js` or the correct relative path to `models/index.js`.
-- Preserve `.js` extensions in local imports.
-- Keep service modules framework-agnostic; controllers own request/response concerns.
-- Do not directly import model definition files.
-- Do not mutate old migrations to support service behavior; add a new migration when schema changes are required.
-- Preserve join-table truth:
-  - `ArticleTopic` owns article-topic evidence.
-  - `EventTopic` owns event-topic evidence.
-  - `IslandTopic` owns island-topic evidence.
-  - `Article.topicId` and `Event.topicId` are primary-topic denormalizations only.
-- Keep vector math centralized in `services/vectors/` or existing island/topic helpers. Avoid one-off cosine, normalize, or blend implementations unless a nearby local helper already exists and the scope is intentionally narrow.
-
----
-
-## 3) Pipeline Boundaries
-
-### Articles to Events
-
-- Reuse stored article vectors when present.
-- Match events with semantic, headline, temporal, and entity corroboration.
-- Let event creation/update services maintain event summary fields.
-- Sync event-owned topic links back to articles only through the existing event-topic sync path.
-- Do not treat event assignment as proof of long-term user interest.
-
-### Events to Topics
-
-- Event assignment should consider only `event` and `hybrid` topics.
-- Do not match events into pure `behavioral` topics.
-- Keep ranked multi-topic assignments normalized with `normalizeTopicAssignments`.
-- Update `Event.topicId` from the primary `EventTopic` row.
-- Recompute topic stats after event-topic changes when counts or activity timestamps may be stale.
-
-### Behavioral Interests to Topics
-
-- Behavioral topics should be built from positive signals such as stars, clicks, and deep reads.
-- Preserve breadth checks so one accidental interaction does not become durable memory.
-- Write behavioral article evidence to `ArticleTopic` with `primaryInd: false` unless the surrounding code clearly changes that contract.
-- Existing `hybrid` topics may absorb behavioral evidence; pure event topics should not become behavioral without an intentional transition.
-
-### Topics and Articles to Islands
-
-- Build behavior-derived islands first, then enrich from topic profiles, then refresh article interest scores.
-- Prefer topic-to-island scoring before article-vector fallback.
-- Keep island updates gradual with existing blend/decay helpers.
-- Maintain `populationAudit` when changing island membership or enrichment behavior.
-- Archive stale or low-confidence islands through existing persistence rules rather than hard-deleting them.
-
----
-
-## 4) Change Strategy for This Area
-
-Before editing semantic services:
-
-1. Identify which table is the source of truth.
-2. Check whether the field being edited is derived and needs reconciliation.
-3. Prefer threshold/config changes in `config/semanticConfig.js` or existing env-backed constants.
-4. Add focused tests around user isolation, join-table rows, denormalized primary links, and score/count updates.
-
-Keep diffs small. These services are sensitive to subtle scoring drift.
-
----
-
-## 5) Service Coding Rules
-
-- Use plain ESM named exports for reusable services; default exports are fine only where the file already uses that pattern.
-- Keep functions cohesive and deterministic when possible.
-- Pass `transaction` through all writes that are part of one logical rebuild or persistence step.
-- Use `raw: true` only when model instance methods are not needed.
-- Normalize numeric IDs with `Number(...)` before comparing IDs from models, raw rows, and request inputs.
-- Clamp scores, confidence, weights, and similarities before persisting.
-- Round persisted scores consistently with nearby code, usually `toFixed(4)` converted back to `Number`.
-- Sort deterministic outputs by score first and stable IDs second.
-- Preserve debug flags such as `EVENT_DEBUG`, `EVENT_RECLUSTER_DEBUG`, and `ISLAND_DEBUG`; keep logs compact and actionable.
-
----
-
-## 6) Common Regression Traps
-
-- Updating `Article.topicId` directly while forgetting `ArticleTopic`.
-- Updating `Event.topicId` directly while forgetting `EventTopic`.
-- Letting event assignment match pure behavioral topics.
-- Treating old events from another user as candidates during replay or reconciliation.
-- Rebuilding recent windows without cleaning stale event/topic links.
-- Creating durable topics or islands from too little evidence.
-- Blending vectors without normalization.
-- Comparing vectors with different dimensions as if similarity were meaningful.
-- Forgetting that event clusters are time-bounded while topics and islands are memory.
-- Recomputing article interest scores before island-topic links are settled.
-
----
-
-## 7) Testing Guidance
-
-For service changes, prefer targeted Vitest tests under `server/tests/`.
-
-Run the smallest relevant checks:
-
-```bash
-cd server
-npm test -- <test-file-or-pattern>
-npm run lint
+```
+Article
+    ↓
+Event
+    ↓
+Topic
+    ↓
+Interest Island
 ```
 
-Add or update tests when changing:
+Each layer has a single responsibility.
 
-- user ownership or isolation behavior,
-- event assignment thresholds or candidate filtering,
-- event/topic join-table synchronization,
-- behavioral topic creation or cleanup,
-- island persistence, membership evolution, archival, audit, or article interest scoring.
+Lower layers represent individual observations.
 
-Server tests use real database behavior. Avoid Sequelize model mocks for these service pipelines.
+Higher layers summarize and compress information into increasingly durable semantic knowledge.
 
 ---
 
-## 9) Definition of Done
+# Mental Model
 
-A service change is done when:
+RSSMonster continuously answers four increasingly abstract questions.
 
-1. The requested behavior works without breaking article -> event -> topic -> island invariants.
-2. User-owned data remains scoped to the correct user.
-3. Source-of-truth join rows and denormalized primary fields stay synchronized.
-4. Scores, counts, vectors, and lifecycle state are reconciled where needed.
-5. Targeted server tests and lint pass, or any limitation is explicitly documented.
+## Articles
+
+> What was published?
+
+Articles are individual feed items.
+
+They represent raw observations.
+
+Articles are the most numerous and most volatile layer.
+
+---
+
+## Events
+
+> What happened?
+
+Events group multiple genuinely similar Articles into a single real-world news story.
+
+Events are:
+
+- time-aware
+- short-lived
+- evidence-based
+- order-independent
+
+Not every Article belongs to an Event.
+
+Standalone articles remain eventless.
+
+---
+
+## Topics
+
+> What recurring subject does this belong to?
+
+Topics represent recurring semantic subjects that span multiple Events or repeated user behavior.
+
+Topics evolve slowly.
+
+They intentionally survive beyond individual news stories.
+
+RSSMonster supports three Topic types:
+
+### Event Topics
+
+Created automatically from recurring Events.
+
+Purpose:
+
+- connect related Events
+- improve discovery
+- reduce fragmentation
+
+---
+
+### Behavioral Topics
+
+Created from repeated positive user engagement.
+
+Behavioral Topics are durable Topic records.
+
+They are built from semantically similar engaged Articles.
+
+Behavioral Topics represent long-term user interests.
+
+Behavioral Topics never own Events.
+
+---
+
+### Hybrid Topics
+
+Hybrid Topics contain both Event evidence and Behavioral evidence.
+
+They bridge recurring news with long-term interests.
+
+Hybrid Topics may own Events.
+
+---
+
+## Interest Islands
+
+> What does this user consistently care about?
+
+Interest Islands are the highest semantic layer.
+
+They represent durable user interests.
+
+Unlike Events and Topics:
+
+- completely user-specific
+- highly stable
+- evolve slowly
+- drive personalization
+
+Interest Islands consume:
+
+- behavioral article evidence
+- persisted Topics
+- historical user behavior
+
+---
+
+# Semantic Compression
+
+Every layer summarizes the layer below.
+
+```
+Many Articles
+        ↓
+Fewer Events
+        ↓
+Fewer Topics
+        ↓
+Few Interest Islands
+```
+
+As information moves upward it becomes:
+
+- less volatile
+- more stable
+- more personalized
+- slower to change
+
+Lower layers describe what happened.
+
+Upper layers describe what consistently matters.
+
+---
+
+# Processing Pipeline
+
+The semantic pipeline always flows in one direction.
+
+```
+Articles
+    ↓
+Event clustering
+    ↓
+Topic assignment
+    ↓
+Behavioral topic generation
+    ↓
+Interest Island generation
+    ↓
+Article interest scoring
+```
+
+Downstream systems consume upstream results.
+
+Higher layers must never redefine lower layers.
+
+---
+
+# Layer Relationships
+
+## Articles → Events
+
+Events summarize Articles.
+
+Articles never decide Event membership by themselves.
+
+Multiple corroborating Articles are required before creating an Event.
+
+---
+
+## Events → Topics
+
+Events may be assigned to one or more Event or Hybrid Topics.
+
+Pure Behavioral Topics are never candidates for Event assignment.
+
+Topic creation is intentionally conservative.
+
+Not every Event becomes a Topic.
+
+---
+
+## Behavioral Articles → Behavioral Topics
+
+Positive user engagement creates Behavioral Topics.
+
+Signals include:
+
+- starring
+- clicking
+- deep reading
+
+Behavioral Topics are persisted in the Topic table.
+
+ArticleTopic stores the durable evidence linking Articles to Behavioral Topics.
+
+---
+
+## Topics → Interest Islands
+
+Interest Islands consume Topics.
+
+Topics help describe recurring semantic interests.
+
+Interest Islands are responsible for personalization, not semantic grouping.
+
+---
+
+# Source of Truth
+
+The semantic model intentionally separates relationship tables from denormalized convenience fields.
+
+## Articles
+
+Primary relationships:
+
+- ArticleTopic
+
+Convenience field:
+
+- Article.topicId
+
+---
+
+## Events
+
+Primary relationships:
+
+- EventTopic
+
+Convenience field:
+
+- Event.topicId
+
+---
+
+## Interest Islands
+
+Primary relationships:
+
+- IslandTopic
+
+---
+
+Join tables are always the source of truth.
+
+Denormalized fields exist only for efficient querying.
+
+Never update denormalized fields without updating their corresponding relationship tables.
+
+---
+
+# Architectural Principles
+
+## Conservative Creation
+
+Do not create semantic objects without sufficient evidence.
+
+Events require corroborating Articles.
+
+Topics require recurring semantic evidence.
+
+Interest Islands require repeated behavioral evidence.
+
+---
+
+## Stable Evolution
+
+Higher semantic layers evolve gradually.
+
+Avoid replacing vectors or memberships outright.
+
+Prefer:
+
+- blending
+- decay
+- confidence updates
+
+over destructive replacement.
+
+---
+
+## Explainability
+
+Every semantic decision should be explainable.
+
+The system should be able to answer questions such as:
+
+- Why was this Article assigned to this Event?
+- Why was this Event assigned to this Topic?
+- Why does this Topic belong to this Interest Island?
+
+Explainability is a first-class design goal.
+
+---
+
+## User Isolation
+
+All semantic processing is scoped by user.
+
+Never mix Articles, Events, Topics or Interest Islands across users.
+
+Every query touching user-owned semantic data must filter by `userId`.
+
+---
+
+## Deterministic Processing
+
+Semantic processing should produce the same result regardless of:
+
+- crawl order
+- publication order
+- processing batches
+- repair runs
+
+Incremental processing and rebuilds should converge toward the same semantic state.
+
+---
+
+# Persistence Principles
+
+Semantic objects should not be recreated unnecessarily.
+
+Prefer updating existing semantic objects over creating new ones.
+
+Preserve:
+
+- identifiers
+- relationships
+- confidence
+- historical context
+
+whenever possible.
+
+---
+
+# Coding Principles
+
+- Keep semantic logic inside services.
+- Controllers should not contain semantic algorithms.
+- Import Sequelize models only through `models/index.js`.
+- Keep vector operations centralized.
+- Avoid duplicate implementations of similarity or blending logic.
+- Keep thresholds configurable through `semanticConfig.js` or environment variables.
+- Preserve existing debug logging.
+- Keep semantic processing deterministic and testable.
+
+---
+
+# Common Regression Traps
+
+Avoid introducing changes that:
+
+- create one-article Events
+- create Topics for every Event
+- allow Behavioral Topics to own Events
+- bypass join tables
+- recreate semantic objects unnecessarily
+- mix data between users
+- replace vector blending with full overwrites
+- remove explainability
+- make incremental processing behave differently from rebuilds
+
+---
+
+# Definition of Done
+
+A semantic change is complete when:
+
+1. Every layer preserves its own responsibility.
+2. Lower layers remain independent of higher layers.
+3. User isolation is preserved.
+4. Relationship tables remain the source of truth.
+5. Semantic decisions remain explainable.
+6. Incremental processing and rebuilds converge toward the same result.
+7. Existing tests continue to pass or are updated accordingly.

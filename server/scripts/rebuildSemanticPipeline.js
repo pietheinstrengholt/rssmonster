@@ -13,10 +13,10 @@ dotenv.config();
 
 import db from '../models/index.js';
 import {
-  rebuildTopicsForUser,
-  retrospectiveClusterForUser
-} from '../services/reconcile/reclusterForUser.js';
-import { buildInterestIslandsForUser } from '../services/islands/buildInterestIslands.js';
+  rebuildAllTopicsForUser,
+  rebuildAllEventsForUser
+} from '../services/reconcile/semanticPipelineScopes.js';
+import { runIslandCalibrationForUser } from '../services/islands/runIslandCalibration.js';
 
 const { User, sequelize } = db;
 
@@ -58,7 +58,7 @@ async function loadUsers(userId = null) {
 // This function runs the full semantic rebuild pipeline for one user.
 async function rebuildUser(userId, options = {}) {
   console.log(`[SEMANTIC] user=${userId} Stage 1 Events`);
-  const eventResult = await retrospectiveClusterForUser(userId, {
+  const eventResult = await rebuildAllEventsForUser(userId, {
     batchSize: options.batchSize,
     skipTopicAssignment: true
   });
@@ -73,8 +73,8 @@ async function rebuildUser(userId, options = {}) {
   );
 
   console.log(`[SEMANTIC] user=${userId} Stage 2 Topics`);
-  const topicResult = await rebuildTopicsForUser(userId, {
-    assignmentContext: 'replay'
+  const topicResult = await rebuildAllTopicsForUser(userId, {
+    assignmentContext: 'full-rebuild'
   });
   console.log(
     `[SEMANTIC] user=${userId} stage=topics ` +
@@ -85,7 +85,7 @@ async function rebuildUser(userId, options = {}) {
   );
 
   console.log(`[SEMANTIC] user=${userId} Stage 3 Interest Islands`);
-  const islandResult = await buildInterestIslandsForUser(userId, {
+  const islandResult = await runIslandCalibrationForUser(userId, {
     incremental: false,
     touchedEventIds: eventResult.touchedEventIds,
     touchedTopicIds: topicResult.touchedTopicIds
@@ -155,3 +155,6 @@ if (process.argv[1]?.includes('rebuildSemanticPipeline')) {
       process.exit(1);
     });
 }
+
+
+

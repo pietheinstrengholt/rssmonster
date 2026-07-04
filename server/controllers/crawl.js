@@ -6,7 +6,7 @@ import processArticle from './crawl/processArticle.js';
 import createArticleDuplicateCache from './crawl/articleDuplicateCache.js';
 import createHotlinkCountCache from './crawl/hotlinkCountCache.js';
 import createHotlinkBatcher from './crawl/hotlinkBatcher.js';
-import { runPostCrawlEventClustering } from '../services/crawl/postCrawlEventClustering.js';
+import { runPostCrawlSemanticPipeline } from '../services/crawl/postCrawlSemanticPipeline.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -635,7 +635,7 @@ const performCrawlWithEventClustering = async (userId = null, options = {}) => {
     suppressDoneEvent: true
   });
 
-  await runPostCrawlEventClustering(result, {
+  await runPostCrawlSemanticPipeline(result, {
     userId,
     onProgress: options.onProgress
   });

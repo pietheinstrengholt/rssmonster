@@ -12,7 +12,7 @@ import {
 
 const { Article, ArticleTopic, Topic } = db;
 
-// This service builds durable behavioral topics from articles a user has explicitly engaged with.
+// This service calibrates durable behavioral topics from articles a user has explicitly engaged with.
 // It uses the existing Topic and ArticleTopic tables so behavioral interests can coexist with event topics.
 
 const SIGNAL_WEIGHTS = {
@@ -255,8 +255,8 @@ async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transa
   });
 }
 
-// This function builds behavioral topics for one user's engaged articles.
-export async function buildBehavioralTopicsForUser(userId, options = {}) {
+// This function calibrates behavioral topics for one user's engaged articles.
+export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
   const communitySimilarityThreshold =
     options.communitySimilarityThreshold ?? DEFAULT_COMMUNITY_SIMILARITY_THRESHOLD;
   const topicMatchThreshold = options.topicMatchThreshold ?? DEFAULT_TOPIC_MATCH_THRESHOLD;
@@ -374,11 +374,12 @@ export async function buildBehavioralTopicsForUser(userId, options = {}) {
 }
 
 // This function runs behavioral topic generation from a simple options object.
-export async function buildBehavioralTopics(options = {}) {
+export async function calibrateBehavioralTopics(options = {}) {
   const { userId } = options;
-  if (!userId) throw new Error('buildBehavioralTopics requires a userId');
+  if (!userId) throw new Error('calibrateBehavioralTopics requires a userId');
 
-  return buildBehavioralTopicsForUser(userId, options);
+  return calibrateBehavioralTopicsForUser(userId, options);
 }
 
-export default buildBehavioralTopics;
+export default calibrateBehavioralTopics;
+

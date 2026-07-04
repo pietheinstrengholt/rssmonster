@@ -7,7 +7,7 @@ const { User, Island } = db;
 const FIXTURE_USERNAME = 'semantic-regression-user';
 
 describe('semantic regression island architecture guard', () => {
-  it('does not create islands during baseline article event topic replay', async () => {
+  it('does not create islands during baseline article event topic assignment', async () => {
     const user = await User.findOne({
       where: { username: FIXTURE_USERNAME },
       attributes: ['id'],
@@ -21,3 +21,4 @@ describe('semantic regression island architecture guard', () => {
     expect(islandCount).toBe(0);
   });
 });
+

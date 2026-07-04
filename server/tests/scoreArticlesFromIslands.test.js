@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { randomUUID } from 'node:crypto';
 import db from '../models/index.js';
-import { buildArticleInterestScoresForUser } from '../services/islands/buildArticleInterestScores.js';
+import { scoreArticlesFromIslandsForUser } from '../services/score/scoreArticlesFromIslands.js';
 
 const { Article, ArticleTopic, Category, Feed, Island, IslandTopic, Topic, User } = db;
 
@@ -44,7 +44,7 @@ function articlePayload(userId, feedId, index, suffix, overrides = {}) {
   };
 }
 
-describe('buildArticleInterestScoresForUser', () => {
+describe('scoreArticlesFromIslandsForUser', () => {
   it('clears stale island scores for unread articles when no current island matches', async () => {
     const { user, feed } = await createUserGraph();
     const suffix = randomUUID();
@@ -56,7 +56,7 @@ describe('buildArticleInterestScoresForUser', () => {
       interestScore: 0.9
     }));
 
-    await buildArticleInterestScoresForUser(user.id);
+    await scoreArticlesFromIslandsForUser(user.id);
 
     await unreadArticle.reload();
     await readArticle.reload();
@@ -109,7 +109,7 @@ describe('buildArticleInterestScoresForUser', () => {
       })
     ]);
 
-    await buildArticleInterestScoresForUser(user.id);
+    await scoreArticlesFromIslandsForUser(user.id);
 
     await unreadArticle.reload();
     await readArticle.reload();
@@ -118,3 +118,6 @@ describe('buildArticleInterestScoresForUser', () => {
     expect(readArticle.interestScore).toBe(0.9);
   });
 });
+
+
+

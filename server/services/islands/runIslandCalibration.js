@@ -1,7 +1,7 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
-import buildArticleInterestScoresForUser from './buildArticleInterestScores.js';
-import { buildInterestIslandProfilesForUser } from './islandArticleProfiles.js';
+import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
+import { buildInterestIslandProfilesForUser as buildIslandProfilesForUser } from './islandArticleProfiles.js';
 import { buildTopicInterestIslandProfilesForUser } from './islandTopicProfiles.js';
 import { buildPopulationAuditEntry, appendPopulationAudit } from './islandAudit.js';
 import { evolveIslandTopicMemberships } from './islandMemberships.js';
@@ -17,13 +17,13 @@ import {
   sortIslandsByWeight
 } from './islandVectorUtils.js';
 
-// This service builds and enriches "interest islands" from user behavior and topic history.
+// This service recalibrates "interest islands" from user behavior and topic history.
 // Islands represent durable preference areas that can later score articles and group topics.
 
 const { User, Island, IslandTaxonomy, Sequelize, sequelize } = db;
 
 export { cosineSimilarity } from './islandVectorUtils.js';
-export { buildInterestIslandProfilesForUser } from './islandArticleProfiles.js';
+export { buildIslandProfilesForUser };
 export { buildTopicInterestIslandProfilesForUser } from './islandTopicProfiles.js';
 
 // This function formats integers for island summary logs.
@@ -39,7 +39,7 @@ function formatElapsedSeconds(startedAt) {
 // This function writes the island run header for one user.
 function logIslandRunStart(userId) {
   console.log('[ISLAND] ==================================================');
-  console.log(`[ISLAND] Building Interest Islands for user ${userId}`);
+  console.log(`[ISLAND] Recalibrating Interest Islands for user ${userId}`);
   console.log('[ISLAND] ==================================================');
 }
 
@@ -105,10 +105,8 @@ async function logIslandRunSummary(userId, result, startedAt) {
   console.log('[ISLAND] =============================================');
 }
 
-// This function builds and persists behavior-derived islands for one user.
-export async function buildInterestIslandsFromBehaviorForUser(userId, options = {}) {
-  const profiles = await buildInterestIslandProfilesForUser(userId, options);
-
+// This function persists calibrated island profiles for one user.
+export async function persistIslandProfilesForUser(userId, profiles, options = {}) {
   const islands = await sequelize.transaction((transaction) =>
     persistInterestIslandProfiles(userId, profiles, transaction, options)
   );
@@ -122,12 +120,18 @@ export async function buildInterestIslandsFromBehaviorForUser(userId, options = 
   };
 }
 
-// This function builds behavior-derived islands for one user or every user.
-export async function buildInterestIslandsFromBehavior(options = {}) {
+// This function calibrates behavior-derived island profiles for one user.
+export async function calibrateIslandsFromBehaviorForUser(userId, options = {}) {
+  const profiles = await buildIslandProfilesForUser(userId, options);
+  return persistIslandProfilesForUser(userId, profiles, options);
+}
+
+// This function calibrates behavior-derived islands for one user or every user.
+export async function calibrateIslandsFromBehavior(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 
   if (userId) {
-    return buildInterestIslandsFromBehaviorForUser(userId, { ...options, maxIslands });
+    return calibrateIslandsFromBehaviorForUser(userId, { ...options, maxIslands });
   }
 
   const users = await User.findAll({
@@ -139,10 +143,10 @@ export async function buildInterestIslandsFromBehavior(options = {}) {
 
   for (const user of users) {
     try {
-      const result = await buildInterestIslandsFromBehaviorForUser(user.id, { ...options, maxIslands });
+      const result = await calibrateIslandsFromBehaviorForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
-      console.error(`[ISLANDS] Failed building interest islands for user ${user.id}:`, err);
+      console.error(`[ISLANDS] Failed calibrating interest islands for user ${user.id}:`, err);
     }
   }
 
@@ -153,7 +157,7 @@ export async function buildInterestIslandsFromBehavior(options = {}) {
 }
 
 // This function enriches existing islands with topic memberships based on vector similarity.
-export async function enrichInterestIslandsFromTopicsForUser(userId, options = {}) {
+export async function enrichIslandsFromTopicsForUser(userId, options = {}) {
   const topicConfidenceThreshold =
     options.topicConfidenceThreshold ?? DEFAULT_TOPIC_CONFIDENCE_THRESHOLD;
 
@@ -262,11 +266,11 @@ export async function enrichInterestIslandsFromTopicsForUser(userId, options = {
 }
 
 // This function enriches islands from topics for one user or every user.
-export async function enrichInterestIslandsFromTopics(options = {}) {
+export async function enrichIslandsFromTopics(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 
   if (userId) {
-    return enrichInterestIslandsFromTopicsForUser(userId, { ...options, maxIslands });
+    return enrichIslandsFromTopicsForUser(userId, { ...options, maxIslands });
   }
 
   const users = await User.findAll({
@@ -278,7 +282,7 @@ export async function enrichInterestIslandsFromTopics(options = {}) {
 
   for (const user of users) {
     try {
-      const result = await enrichInterestIslandsFromTopicsForUser(user.id, { ...options, maxIslands });
+      const result = await enrichIslandsFromTopicsForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
       console.error(`[ISLANDS] Failed enriching interest islands for user ${user.id}:`, err);
@@ -291,13 +295,13 @@ export async function enrichInterestIslandsFromTopics(options = {}) {
   };
 }
 
-// This function runs the full island pipeline for one user and refreshes article interest scores.
-export async function buildInterestIslandsForUser(userId, options = {}) {
+// This function orchestrates island calibration for one user and refreshes article scores.
+export async function runIslandCalibrationForUser(userId, options = {}) {
   const startedAt = Date.now();
   logIslandRunStart(userId);
-  const behaviorResult = await buildInterestIslandsFromBehaviorForUser(userId, options);
-  const enrichmentResult = await enrichInterestIslandsFromTopicsForUser(userId, options);
-  const scoringResult = await buildArticleInterestScoresForUser(userId);
+  const behaviorResult = await calibrateIslandsFromBehaviorForUser(userId, options);
+  const enrichmentResult = await enrichIslandsFromTopicsForUser(userId, options);
+  const scoringResult = await scoreArticlesFromIslandsForUser(userId);
 
   const result = {
     userId,
@@ -319,12 +323,12 @@ export async function buildInterestIslandsForUser(userId, options = {}) {
   return result;
 }
 
-// This function runs the full island pipeline for one user or every user.
-export async function buildInterestIslands(options = {}) {
+// This function orchestrates island calibration for one user or every user.
+export async function runIslandCalibration(options = {}) {
   const { userId = null, maxIslands = DEFAULT_MAX_ISLANDS_PER_USER } = options;
 
   if (userId) {
-    return buildInterestIslandsForUser(userId, { ...options, maxIslands });
+    return runIslandCalibrationForUser(userId, { ...options, maxIslands });
   }
 
   const users = await User.findAll({
@@ -336,10 +340,10 @@ export async function buildInterestIslands(options = {}) {
 
   for (const user of users) {
     try {
-      const result = await buildInterestIslandsForUser(user.id, { ...options, maxIslands });
+      const result = await runIslandCalibrationForUser(user.id, { ...options, maxIslands });
       results.push(result);
     } catch (err) {
-      console.error(`[ISLANDS] Failed building interest islands for user ${user.id}:`, err);
+      console.error(`[ISLANDS] Failed calibrating interest islands for user ${user.id}:`, err);
     }
   }
 
@@ -349,4 +353,8 @@ export async function buildInterestIslands(options = {}) {
   };
 }
 
-export default buildInterestIslands;
+export default runIslandCalibration;
+
+
+
+

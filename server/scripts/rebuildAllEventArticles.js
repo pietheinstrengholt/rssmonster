@@ -1,23 +1,23 @@
-// scripts/retrospectiveClusterArticles.js
+// scripts/rebuildAllEventArticles.js
 /**
- * Retrospective event clustering CLI runner
+ * Full-rebuild events command runner.
  *
  * Usage:
  *   npm run events:all
- *   node scripts/retrospectiveClusterArticles.js
- *   node scripts/retrospectiveClusterArticles.js --userId=3
- *   node scripts/retrospectiveClusterArticles.js --batchSize=500
+ *   node scripts/rebuildAllEventArticles.js
+ *   node scripts/rebuildAllEventArticles.js --userId=3
+ *   node scripts/rebuildAllEventArticles.js --batchSize=500
  *
- * This backfills events from all vectorized articles instead of the recent
- * replay window used by reclusterArticles.js.
+ * This full-rebuild scope backfills events from all vectorized articles instead
+ * of the recent-repair window used by repairRecentArticles.js.
  */
 
 import db from '../models/index.js';
 const { User } = db;
 
-import { retrospectiveClusterForUser } from '../services/reconcile/reclusterForUser.js';
+import { rebuildAllEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 
-// This function parses CLI flags for the retrospective clustering runner.
+// This function parses CLI flags for the full-rebuild event runner.
 function parseArgs(argv) {
   const args = argv.slice(2);
   let userId = null;
@@ -45,14 +45,14 @@ function parseArgs(argv) {
   };
 }
 
-// This function runs retrospective clustering for one user or every user.
-export async function retrospectiveClusterArticles({
+// This function runs full-rebuild event assignment for one user or every user.
+export async function rebuildAllEventArticles({
   userId = null,
   batchSize = 250,
   skipTopicAssignment = false
 } = {}) {
   if (userId) {
-    await retrospectiveClusterForUser(userId, { batchSize, skipTopicAssignment });
+    await rebuildAllEventsForUser(userId, { batchSize, skipTopicAssignment });
     return;
   }
 
@@ -67,10 +67,10 @@ export async function retrospectiveClusterArticles({
 
   for (const user of users) {
     try {
-      await retrospectiveClusterForUser(user.id, { batchSize, skipTopicAssignment });
+      await rebuildAllEventsForUser(user.id, { batchSize, skipTopicAssignment });
     } catch (err) {
       console.error(
-        `[CLUSTER-RETROSPECTIVE] Failed for user ${user.id}:`,
+        `[EVENT FULL-REBUILD] Failed for user ${user.id}:`,
         err
       );
     }
@@ -79,12 +79,12 @@ export async function retrospectiveClusterArticles({
   console.log('[SEMANTIC] Stage 1 Events Historical Finished');
 }
 
-export default retrospectiveClusterArticles;
+export default rebuildAllEventArticles;
 
-if (process.argv[1]?.includes('retrospectiveClusterArticles')) {
+if (process.argv[1]?.includes('rebuildAllEventArticles')) {
   const { userId, batchSize, skipTopicAssignment } = parseArgs(process.argv);
 
-  retrospectiveClusterArticles({ userId, batchSize, skipTopicAssignment })
+  rebuildAllEventArticles({ userId, batchSize, skipTopicAssignment })
     .then(() => {
       console.log('[SEMANTIC] Stage 1 Events Historical Done');
       process.exit(0);
@@ -94,3 +94,4 @@ if (process.argv[1]?.includes('retrospectiveClusterArticles')) {
       process.exit(1);
     });
 }
+

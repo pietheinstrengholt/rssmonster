@@ -6,8 +6,8 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
-import { incrementalClusterForUser } from '../services/reconcile/reclusterForUser.js';
-import buildArticleInterestScoresForUser from '../services/islands/buildArticleInterestScores.js';
+import { runIncrementalEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
+import scoreArticlesFromIslandsForUser from '../services/score/scoreArticlesFromIslands.js';
 import { cosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 
@@ -328,7 +328,7 @@ function resolveIslandName(article, islandByTopicId, islands) {
   return islandName;
 }
 
-// This function prints the top recommended unread articles after the incremental unread replay.
+// This function prints the top recommended unread articles after the incremental unread pass.
 async function printTopUnreadRecommendedDebug(userId) {
   const articles = await Article.findAll({
     where: {
@@ -418,11 +418,11 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
 
     const user = await User.findOne({ where: { username: FIXTURE_USERNAME } });
 
-    expect(user, 'semantic regression user must exist before incremental unread ranking replay').toBeTruthy();
+    expect(user, 'semantic regression user must exist before incremental unread ranking pass').toBeTruthy();
     semanticRegressionUserId = user.id;
   }, 60000);
 
-  it('marks prior Take-Two articles read, inserts the next article, reclusters, and prints top unread recommendations', async () => {
+  it('marks prior Take-Two articles read, inserts the next article, repairs recent events, and prints top unread recommendations', async () => {
     const userId = semanticRegressionUserId;
     const fixture = await loadFixture(INCREMENTAL_FIXTURE_PATH);
     const vectorFixture = await loadFixture(INCREMENTAL_VECTOR_FIXTURE_PATH);
@@ -456,8 +456,8 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
       'https://fixtures.rssmonster.test/semantic-incremental.unread'
     );
 
-    await incrementalClusterForUser(userId, { createdAfter: incrementalInsertedAfter });
-    await buildArticleInterestScoresForUser(userId);
+    await runIncrementalEventsForUser(userId, { createdAfter: incrementalInsertedAfter });
+    await scoreArticlesFromIslandsForUser(userId);
 
     const markedReadCount = await Article.count({
       where: {
@@ -482,3 +482,8 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     expect(rows[0].recommended).toBeGreaterThanOrEqual(rows.at(-1).recommended);
   }, 60000);
 });
+
+
+
+
+

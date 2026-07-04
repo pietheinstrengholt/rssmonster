@@ -1,51 +1,55 @@
+# AGENTS.md
+
 # Interest Island System
 
-## Purpose
+This document defines how RSSMonster builds and maintains Interest Islands.
 
-Interest Islands are the highest personalization layer in RSSMonster.
-
-```text
+```
 Article
     ↓
 Event
     ↓
 Topic
     ↓
-Interest Island
+▶ Interest Island
 ```
 
-Articles describe individual news items.
+Interest Islands are the highest semantic layer in RSSMonster.
 
-Events describe one real-world news story.
-
-Topics describe recurring semantic subjects.
-
-Interest Islands describe **long-term user interests**.
+They represent long-term user interests rather than the news itself.
 
 Unlike Events and Topics, Interest Islands are completely user-specific.
 
-Different users reading exactly the same feeds can therefore end up with completely different Interest Islands.
-
 ---
 
-# What is an Interest Island?
+# Purpose
 
-An Interest Island is a durable cluster of related interests that emerges from a user's reading behavior.
+Interest Islands answer a single question:
+
+> **What does this user consistently care about?**
 
 Examples:
 
-```text
+```
 Artificial Intelligence
-Dutch Politics
-Climate & Sustainability
+
 Linux & Self-hosting
+
 Photography
-Cycling
+
+Climate & Sustainability
+
+Electric Vehicles
 ```
 
-An Island is not created because an article exists.
+An Interest Island is **not**:
 
-An Island is created because the user's behavior repeatedly demonstrates interest in related subjects.
+- a news story
+- a Topic
+- a feed category
+- a semantic cluster of Articles
+
+It represents a durable area of user interest.
 
 ---
 
@@ -53,237 +57,332 @@ An Island is created because the user's behavior repeatedly demonstrates interes
 
 Interest Islands are intentionally:
 
-* Personal
-* Long-lived
-* Stable
-* Slowly evolving
-* Behavior-driven
+- personal
+- long-lived
+- stable
+- behavior-driven
+- slowly evolving
 
-Unlike Events, they are not tied to a specific time window.
+Interest Islands should survive individual reading sessions and short-term news cycles.
 
-Unlike Topics, they are not intended to represent the news itself.
-
-They represent the user's interests.
+They model persistent interests that emerge over weeks or months.
 
 ---
 
 # Sources of Evidence
 
-RSSMonster builds Interest Islands from two independent evidence sources.
+Interest Islands consume two complementary evidence layers.
 
-## 1. Behavioral Articles
+## Behavioral Articles
 
-Direct article interactions.
+Direct user engagement.
 
-Signals include:
+Signals may include:
 
-* Positive feedback
-* Starred articles
-* Clicked articles
-* Deep reading
-* Negative feedback
+- starred articles
+- clicked articles
+- deep reading
+- positive feedback
+- negative feedback
 
-These signals represent explicit user behavior.
-
----
-
-## 2. Behavioral Topics
-
-Existing Topics are also analyzed.
-
-Instead of looking only at articles, RSSMonster also learns which Topics repeatedly attract user engagement.
-
-This allows broader interests to emerge over time.
+These signals provide the strongest evidence of user interest.
 
 ---
 
-# Overall Processing Pipeline
+## Topics
 
-The complete pipeline is:
+Interest Islands also consume persisted Topics.
 
-```text
-User behavior
+These Topics summarize recurring semantic subjects discovered earlier in the pipeline.
+
+Using Topics allows Islands to become broader and more stable than individual Articles.
+
+Topics enrich Interest Islands.
+
+They do not create them independently.
+
+---
+
+# Processing Pipeline
+
+Interest Island generation follows a deterministic pipeline.
+
+```
+User Behavior
         ↓
 Behavioral Article Profiles
         ↓
-Article Interest Islands
+Candidate Islands
         ↓
 Persist Islands
         ↓
 Topic Enrichment
         ↓
-Island ↔ Topic memberships
+Island ↔ Topic Relationships
         ↓
 Article Interest Scores
 ```
+
+Each stage builds upon the previous one.
+
+Higher stages should never redefine lower semantic layers.
 
 ---
 
 # Phase 1 — Behavioral Article Profiles
 
-Files:
+User engagement is converted into behavioral profiles.
 
-```text
-services/islands/islandArticleProfiles.js
-```
+Each profile typically contains:
 
-This phase converts user behavior into weighted behavioral article profiles.
+- engagement score
+- normalized vector
+- publication time
+- behavioral signals
 
-Each engaged article receives:
+Profiles are temporary processing artifacts.
 
-* behavioral score
-* normalized vector
-* engagement signals
-* publication timestamp
-
-Articles with similar vectors are clustered into candidate Interest Islands.
-
-The centroid of each cluster becomes the initial Island vector.
+They are not persisted.
 
 ---
 
-# Phase 2 — Persist Islands
+# Phase 2 — Candidate Islands
 
-Files:
+Semantically similar behavioral profiles are clustered.
 
-```text
-services/islands/islandPersistence.js
-services/islands/islandMemberships.js
-services/islands/islandAudit.js
-```
+Each cluster becomes a candidate Interest Island.
 
-Each generated Island profile is compared with existing Islands.
+Candidate Islands exist only during processing.
+
+They become durable only after persistence.
+
+---
+
+# Phase 3 — Island Persistence
+
+Each candidate Island is compared against existing Islands.
 
 If a sufficiently similar Island already exists:
 
-* update vector
-* update behavioral signals
-* update audit history
-* evolve Topic memberships
+- update the vector
+- update behavioral evidence
+- update memberships
+- update audit history
 
 Otherwise:
 
-* create a new Interest Island.
+- create a new Interest Island
 
-Old inactive Islands are eventually archived instead of immediately deleted.
-
-This keeps Interests stable over time.
+Existing Islands should almost always evolve rather than be recreated.
 
 ---
 
-# Phase 3 — Topic Enrichment
+# Phase 4 — Topic Enrichment
 
-Files:
+Once Islands exist, persisted Topics are evaluated.
 
-```text
-services/islands/islandTopicProfiles.js
-```
+Topics that consistently relate to an Island become members of that Island.
 
-Once Islands exist, RSSMonster discovers which Topics belong to each Island.
+Typical evidence includes:
 
-Behavioral Topic Profiles are built using:
+- semantic similarity
+- behavioral affinity
+- user engagement
+- temporal consistency
 
-* Topic vectors
-* Topic affinity
-* User engagement
-* Reading patterns
-* Temporal engagement
-
-Topics are clustered into behavioral communities.
-
-Each Island is then linked with one or more Topics.
-
-These memberships evolve gradually using blending and decay rather than being recreated every run.
+Island ↔ Topic memberships evolve gradually over time.
 
 ---
 
-# Phase 4 — Article Interest Scores
+# Phase 5 — Article Interest Scoring
 
-Files:
+Finally unread Articles receive an Interest Score.
 
-```text
-services/islands/buildArticleInterestScores.js
+Preferred path:
+
 ```
-
-Finally every unread article receives an Interest Score.
-
-The preferred path is:
-
-```text
 Article
     ↓
 Topic
     ↓
-Island
+Interest Island
 ```
 
-If no Topic relationship exists, RSSMonster falls back to direct vector similarity between the Article and Island.
+If no Topic relationship exists:
 
-The strongest matching Island determines the final Interest Score.
+```
+Article
+        ↓
+Vector similarity
+        ↓
+Interest Island
+```
 
-This score can later be used for:
+Direct vector comparison is a fallback.
 
-* ranking
-* Smart Folders
-* recommendations
-* discovery
-* personalized feeds
+Topic-based matching is preferred because it is more stable and explainable.
 
 ---
 
 # Membership Evolution
 
-Island memberships are intentionally stable.
+Interest Island memberships should evolve slowly.
 
-Rather than replacing memberships every run, RSSMonster:
+Prefer:
 
-* blends confidence
-* decays stale memberships
-* removes only very weak relationships
+- confidence blending
+- gradual decay
+- incremental updates
 
-This prevents Islands from changing drastically because of a few recently read articles.
+Avoid:
+
+- replacing memberships
+- rebuilding Islands every run
+- abrupt changes
+
+Small behavioral changes should not significantly alter long-term interests.
 
 ---
 
 # Population Audit
 
-Every Island keeps a compact audit history.
+Every Interest Island maintains a compact audit history.
 
-The audit records:
+Typical information includes:
 
-* source Topics
-* source Articles
-* starred articles
-* clicked articles
-* negative articles
-* population metrics
+- contributing Topics
+- contributing Articles
+- behavioral evidence
+- population metrics
 
-The audit exists purely for explainability and debugging.
+The audit exists solely for explainability.
 
-It allows RSSMonster to answer:
+It should never become semantic evidence itself.
 
-> "Why does this Interest Island exist?"
+The system should be able to answer questions such as:
 
-without storing every historical article forever.
+- Why does this Interest Island exist?
+- Which Topics contributed?
+- Which Articles strengthened it?
 
 ---
 
-# Design Philosophy
+# Interest Scores
 
-Interest Islands are the user's long-term interest memory.
+Interest Scores represent how strongly an Article aligns with a user's long-term interests.
 
-Events answer:
+Interest Scores are derived.
 
-> What happened?
+They should never become semantic evidence themselves.
 
-Topics answer:
+They are intended for:
 
-> What recurring subject is this?
+- ranking
+- Smart Folders
+- recommendations
+- personalized discovery
 
-Interest Islands answer:
+---
 
-> What does this user consistently care about?
+# Source of Truth
 
-The goal is not to model the news.
+Island relationships are stored in relationship tables.
 
-The goal is to model the user's interests, allowing RSSMonster to personalize ranking, discovery, Smart Folders and recommendations while remaining stable over months or years.
+```
+IslandTopic
+```
+
+is the durable relationship between Islands and Topics.
+
+Relationship tables remain the source of truth.
+
+Derived scores, audits and statistics should never replace them.
+
+---
+
+# Architectural Boundaries
+
+Interest Islands consume semantic knowledge.
+
+They do **not**:
+
+- cluster Articles
+- create Events
+- create Topics
+- redefine semantic relationships
+
+Events determine:
+
+- what happened
+
+Topics determine:
+
+- what recurring subject it belongs to
+
+Interest Islands determine:
+
+- what consistently interests this user
+
+These responsibilities should remain clearly separated.
+
+---
+
+# Explainability
+
+Every Interest Island decision should be explainable.
+
+The system should be able to answer:
+
+- Why was this Topic added to this Island?
+- Why did this Island evolve?
+- Why did this Article receive a high Interest Score?
+- Why does this Island represent this user's interests?
+
+Explainability is a core architectural goal.
+
+---
+
+# Coding Principles
+
+- Keep Island algorithms inside semantic services.
+- Consume existing semantic layers rather than rebuilding them.
+- Prefer Topic-based matching over direct vector matching.
+- Reuse shared vector helpers.
+- Blend vectors gradually.
+- Preserve deterministic processing.
+- Keep thresholds configurable.
+- Preserve concise debug logging.
+
+---
+
+# Common Regression Traps
+
+Avoid introducing changes that:
+
+- create Islands from too little behavioral evidence
+- recreate Islands every processing run
+- replace memberships instead of blending them
+- use audit history as semantic evidence
+- bypass IslandTopic relationships
+- ignore Topic enrichment
+- rely solely on direct vector matching
+- make incremental processing behave differently from rebuilds
+- Lower layers never depend on higher layers
+- Higher layers consume lower layers
+- No semantic layer may redefine the responsibility of another layer
+- Incremental processing and rebuilds should converge to the same semantic state
+
+---
+
+# Definition of Done
+
+An Interest Island change is complete when:
+
+1. Islands represent durable user interests.
+2. Island creation requires sufficient behavioral evidence.
+3. Existing Islands evolve gradually rather than being recreated.
+4. Topic enrichment strengthens Island semantics.
+5. Article Interest Scores remain stable and explainable.
+6. Relationship tables remain the source of truth.
+7. Incremental processing and rebuilds converge toward the same semantic state.
+8. Relevant tests continue to pass or are updated accordingly.

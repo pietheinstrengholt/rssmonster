@@ -1,5 +1,5 @@
-// services/reconcile/reclusterForUser.js
-// This service rebuilds semantic event clusters for a user and keeps event-topic links in sync.
+// services/reconcile/semanticPipelineScopes.js
+// This service exposes explicit semantic pipeline scopes for events and event-topic assignment.
 // It treats Article.topicId as event-owned denormalization, so behavioral topic evidence stays in ArticleTopic.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
@@ -26,12 +26,12 @@ import { HOUR_MS } from '../events/articleEventTime.js';
 const { Article, Event, Feed, Topic, ArticleTopic, EventTopic } = db;
 const CACHE_BUFFER_HOURS = Number.parseInt(process.env.EVENT_CACHE_BUFFER_HOURS || '2', 10);
 
-// This function returns the rolling event cache horizon used for post-crawl clustering.
+// This function returns the rolling event cache horizon used for incremental post-crawl event assignment.
 function rollingEventWindowHours() {
   return EVENT_MAX_GAP_HOURS + CACHE_BUFFER_HOURS;
 }
 
-// This function returns the latest event-time timestamp from articles in one clustering batch.
+// This function returns the latest event-time timestamp from articles in one event assignment batch.
 function latestArticleEventDate(articles = []) {
   const timestamps = articles
     .flatMap(article => [article.published, article.createdAt])
@@ -114,7 +114,7 @@ async function clearForeignEventReferencesForUser(userId) {
   }
 }
 
-// This function counts how many replayed articles ended up assigned to events.
+// This function counts how many scoped articles ended up assigned to events.
 async function summarizeArticleAssignments(articleIds) {
   if (!articleIds.length) {
     return {
@@ -156,17 +156,9 @@ function canGenerateEmbeddingForArticle(article) {
   return article?.Feed?.generateEmbeddings !== false;
 }
 
-// This function embeds, assigns, reconciles, and summarizes article-to-event clustering for one pass.
-async function assignAndReconcile(userId, articles, label, options = {}) {
-  const {
-    skipTopicAssignment = false,
-    useTemporalEventCandidates = false,
-    eventCacheWindowHours = null,
-    articleCandidateCache = null
-  } = options;
-  const touchedEventIds = new Set();
-  const touchedTopicIds = new Set();
-  const runContext = {
+// This function creates a fresh event assignment run context.
+function createEventAssignmentContext() {
+  return {
     records: [],
     indexById: new Map(),
     stats: {
@@ -177,23 +169,19 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
       eventVectorSkippedCount: 0
     }
   };
+}
 
-  const cache = useTemporalEventCandidates
-    ? null
-    : await EventCache.forUser(userId, { windowHours: eventCacheWindowHours });
+// This function resolves the topic assignment context for one pipeline scope.
+function topicAssignmentContextForScope(scope) {
+  return scope === 'incremental' ? 'incremental' : scope;
+}
 
-  const topicsCache = await db.Topic.findAll({
-    where: {
-      userId,
-      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
-    },
-    order: [['updatedAt', 'DESC']]
-  });
-
+// This function embeds missing article vectors for one event assignment pass.
+async function embedArticlesForEventAssignment(articles, scope) {
   let reusedEmbeddingCount = 0;
   let generatedEmbeddingCount = 0;
 
-  const embedResults = await Promise.all(
+  const vectorsByIndex = await Promise.all(
     articles.map(async article => {
       if (hasStoredArticleVector(article)) {
         reusedEmbeddingCount++;
@@ -222,13 +210,29 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
 
   if (reusedEmbeddingCount || generatedEmbeddingCount) {
     console.log(
-      `[EVENT] ${label}: embeddings reused=${reusedEmbeddingCount} generated=${generatedEmbeddingCount}`
+      `[EVENT] ${scope}: embeddings reused=${reusedEmbeddingCount} generated=${generatedEmbeddingCount}`
     );
   }
 
+  return vectorsByIndex;
+}
+
+// This function assigns articles to events and tracks the event ids touched by the pass.
+async function assignArticlesToEvents({
+  articles,
+  vectorsByIndex,
+  topicsCache,
+  runContext,
+  scope,
+  cache,
+  useTemporalEventCandidates,
+  articleCandidateCache
+}) {
+  const touchedEventIds = new Set();
+
   for (let i = 0; i < articles.length; i++) {
     const article = articles[i];
-    const vectors = embedResults[i];
+    const vectors = vectorsByIndex[i];
     if (!vectors?.eventVector) {
       runContext.stats.eventVectorSkippedCount++;
       continue;
@@ -245,7 +249,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
       topicsCache,
       runContext,
       {
-        assignmentContext: label === 'replay' ? 'replay' : 'incremental',
+        assignmentContext: topicAssignmentContextForScope(scope),
         // Topic assignment runs once after touched events are reconciled.
         skipTopicAssignment: true,
         articleCandidateCache
@@ -260,49 +264,22 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     articleCandidateCache?.update(cacheRecordForArticle(article, vectors));
   }
 
-  const assignmentSummary = [
+  return touchedEventIds;
+}
+
+// This function formats event assignment counters for logs.
+function formatEventAssignmentSummary(runContext) {
+  return [
     `newEvents=${runContext.stats.newEventsCreatedCount}`,
     `linkedToExisting=${runContext.stats.linkedToExistingEventCount}`,
     `topicOnlyNoVector=${runContext.stats.topicOnlyNoVectorCount}`,
     `topicOnlyInsufficient=${runContext.stats.topicOnlyInsufficientCandidatesCount}`,
     `eventVectorSkipped=${runContext.stats.eventVectorSkippedCount}`
   ].join(' ');
+}
 
-  console.log(`[EVENT] ${label}: assignment summary ${assignmentSummary}`);
-
-  if (!touchedEventIds.size) {
-    await logEventProcessingSummary(userId, articles, runContext);
-    console.log(`[EVENT] ${label}: no events created or updated`);
-    return buildAssignmentResult({
-      userId,
-      mode: label,
-      articles,
-      touchedEventIds,
-      runContext
-    });
-  }
-
-  const touchedIds = [...touchedEventIds];
-
-  console.log(
-    `[EVENT] ${label}: ${touchedIds.length} events touched ` +
-    `(${articles.length} articles assigned)`
-  );
-
-  const { articlesByEventId } = await reconcileTouchedEvents(userId, touchedIds);
-
-  await logEventProcessingSummary(userId, articles, runContext);
-
-  if (skipTopicAssignment) {
-    return buildAssignmentResult({
-      userId,
-      mode: label,
-      articles,
-      touchedEventIds,
-      runContext
-    });
-  }
-
+// This function assigns topics to reconciled events and refreshes derived topic metadata.
+async function assignTopicsForTouchedEvents({ userId, articles, touchedIds, articlesByEventId, scope }) {
   const reconciledEvents = await Event.findAll({
     where: { id: { [Op.in]: touchedIds } },
     order: [
@@ -311,7 +288,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     ]
   });
   const topicAssignmentResult = await assignTopicsForEvents(userId, reconciledEvents, {
-    assignmentContext: label === 'replay' ? 'replay' : 'incremental'
+    assignmentContext: topicAssignmentContextForScope(scope)
   });
 
   const primaryEventTopics = await EventTopic.findAll({
@@ -378,6 +355,7 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     })
     : [];
 
+  const touchedTopicIds = new Set();
   for (const row of touchedEventTopicRows) {
     if (row.topicId != null) touchedTopicIds.add(Number(row.topicId));
   }
@@ -385,33 +363,115 @@ async function assignAndReconcile(userId, articles, label, options = {}) {
     if (row.topicId != null) touchedTopicIds.add(Number(row.topicId));
   }
 
-  const touchedTopicList = [...touchedTopicIds];
-  await recomputeTopicStatsForUser(
-    userId,
-    [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])]
+  const allTouchedTopicIds = [
+    ...new Set([...touchedTopicIds, ...topicAssignmentResult.touchedTopicIds])
+  ];
+
+  await recomputeTopicStatsForUser(userId, allTouchedTopicIds);
+
+  return {
+    ...topicAssignmentResult,
+    touchedTopicIds: allTouchedTopicIds
+  };
+}
+
+// This function orchestrates one scoped event assignment pass.
+async function runEventAssignmentPass(userId, articles, scope, options = {}) {
+  const {
+    skipTopicAssignment = false,
+    useTemporalEventCandidates = false,
+    eventCacheWindowHours = null,
+    articleCandidateCache = null
+  } = options;
+  const runContext = createEventAssignmentContext();
+
+  const cache = useTemporalEventCandidates
+    ? null
+    : await EventCache.forUser(userId, { windowHours: eventCacheWindowHours });
+
+  const topicsCache = await db.Topic.findAll({
+    where: {
+      userId,
+      topicType: { [Op.in]: EVENT_TOPIC_TYPES }
+    },
+    order: [['updatedAt', 'DESC']]
+  });
+
+  const vectorsByIndex = await embedArticlesForEventAssignment(articles, scope);
+  const touchedEventIds = await assignArticlesToEvents({
+    articles,
+    vectorsByIndex,
+    topicsCache,
+    runContext,
+    scope,
+    cache,
+    useTemporalEventCandidates,
+    articleCandidateCache
+  });
+
+  const assignmentSummary = formatEventAssignmentSummary(runContext);
+
+  console.log(`[EVENT] ${scope}: assignment summary ${assignmentSummary}`);
+
+  if (!touchedEventIds.size) {
+    await logEventProcessingSummary(userId, articles, runContext);
+    console.log(`[EVENT] ${scope}: no events created or updated`);
+    return buildAssignmentResult({
+      userId,
+      mode: scope,
+      articles,
+      touchedEventIds,
+      runContext
+    });
+  }
+
+  const touchedIds = [...touchedEventIds];
+
+  console.log(
+    `[EVENT] ${scope}: ${touchedIds.length} events touched ` +
+    `(${articles.length} articles assigned)`
   );
 
-  const allTouchedTopicIds = [...new Set([...touchedTopicList, ...topicAssignmentResult.touchedTopicIds])];
+  const { articlesByEventId } = await reconcileTouchedEvents(userId, touchedIds);
+
+  await logEventProcessingSummary(userId, articles, runContext);
+
+  if (skipTopicAssignment) {
+    return buildAssignmentResult({
+      userId,
+      mode: scope,
+      articles,
+      touchedEventIds,
+      runContext
+    });
+  }
+
+  const topicAssignment = await assignTopicsForTouchedEvents({
+    userId,
+    articles,
+    touchedIds,
+    articlesByEventId,
+    scope
+  });
 
   return buildAssignmentResult({
     userId,
-    mode: label,
+    mode: scope,
     articles,
     touchedEventIds,
-    touchedTopicIds: allTouchedTopicIds,
+    touchedTopicIds: topicAssignment.touchedTopicIds,
     runContext,
     topicAssignment: {
       skipped: false,
-      ...topicAssignmentResult,
-      touchedTopicIds: allTouchedTopicIds
+      ...topicAssignment
     }
   });
 }
 
-// This function assigns recent unread articles that do not yet belong to an event.
-export async function incrementalClusterForUser(userId, options = {}) {
+// This function runs the incremental event scope for recent unread articles that do not yet belong to an event.
+export async function runIncrementalEventsForUser(userId, options = {}) {
   const { createdAfter = null, skipTopicAssignment = false } = options;
-  console.log(`[EVENT] Incremental clustering for user ${userId}`);
+  console.log(`[EVENT] Incremental event assignment for user ${userId}`);
 
   const cacheWindowHours = rollingEventWindowHours();
   const cutoffDate = new Date(Date.now() - cacheWindowHours * HOUR_MS);
@@ -474,7 +534,7 @@ export async function incrementalClusterForUser(userId, options = {}) {
     referenceDate: cacheReferenceDate
   });
 
-  const result = await assignAndReconcile(userId, articles, 'incremental', {
+  const result = await runEventAssignmentPass(userId, articles, 'incremental', {
     skipTopicAssignment,
     eventCacheWindowHours: cacheWindowHours,
     articleCandidateCache
@@ -487,10 +547,10 @@ export async function incrementalClusterForUser(userId, options = {}) {
   return result;
 }
 
-// This function replays the recent article window and rebuilds affected events and event topics.
-export async function reclusterForUser(userId, options = {}) {
+// This function runs the recent-repair event scope over the configured recency window.
+export async function repairRecentEventsForUser(userId, options = {}) {
   const { skipTopicAssignment = false } = options;
-  console.log(`[EVENT] Window replay clustering for user ${userId}`);
+  console.log(`[EVENT] Recent-repair event assignment for user ${userId}`);
 
   await clearForeignEventReferencesForUser(userId);
 
@@ -517,7 +577,7 @@ export async function reclusterForUser(userId, options = {}) {
     console.log('[EVENT] No vectorized articles in recency window - nothing to do');
     return {
       userId,
-      mode: 'replay',
+      mode: 'recent-repair',
       articleCount: 0,
       touchedEventIds: [],
       touchedTopicIds: [],
@@ -651,18 +711,18 @@ export async function reclusterForUser(userId, options = {}) {
     console.log(`[EVENT] Removed ${deletedCount} empty events`);
   }
 
-  const replayResult = await assignAndReconcile(userId, windowArticles, 'replay', {
+  const repairResult = await runEventAssignmentPass(userId, windowArticles, 'recent-repair', {
     skipTopicAssignment
   });
 
   if (!skipTopicAssignment) {
-    await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...replayResult.touchedTopicIds])]);
+    await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...repairResult.touchedTopicIds])]);
   }
 
   const summary = await summarizeArticleAssignments(windowArticleIds);
 
   console.log(
-    `[EVENT] User ${userId} replay summary: ` +
+    `[EVENT] User ${userId} recent-repair summary: ` +
     `articles=${summary.totalArticles} ` +
     `articlesWithEvents=${summary.assignedArticles} ` +
     `events=${summary.eventCount} ` +
@@ -670,22 +730,22 @@ export async function reclusterForUser(userId, options = {}) {
   );
 
   console.log(
-    `[EVENT] Finished window replay for user ${userId}` +
+    `[EVENT] Finished recent-repair event pass for user ${userId}` +
     ` (window=${RECENCY_WINDOW_DAYS}d, articles=${windowArticles.length},` +
     ` pruned=${deletedCount})`
   );
 
-  return replayResult;
+  return repairResult;
 }
 
-// This function replays all vectorized articles for a user without the recency window.
-export async function retrospectiveClusterForUser(userId, options = {}) {
+// This function runs the full-rebuild event scope over all vectorized articles for a user.
+export async function rebuildAllEventsForUser(userId, options = {}) {
   const {
     skipTopicAssignment = false,
     batchSize = 250
   } = options;
 
-  console.log(`[EVENT] Retrospective clustering for user ${userId}`);
+  console.log(`[EVENT] Full-rebuild event assignment for user ${userId}`);
 
   await clearForeignEventReferencesForUser(userId);
 
@@ -712,10 +772,10 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
       break;
     }
 
-    const batchResult = await assignAndReconcile(
+    const batchResult = await runEventAssignmentPass(
       userId,
       articles,
-      'replay',
+      'full-rebuild',
       {
         skipTopicAssignment,
         useTemporalEventCandidates: true
@@ -730,7 +790,7 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
     totalProcessed += articles.length;
     lastId = articles[articles.length - 1].id;
 
-    console.log(`[EVENT] Retrospective processed=${totalProcessed}, lastId=${lastId}`);
+    console.log(`[EVENT] Full-rebuild processed=${totalProcessed}, lastId=${lastId}`);
   }
 
   if (!skipTopicAssignment && touchedTopicIds.length) {
@@ -738,13 +798,13 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
   }
 
   console.log(
-    `[EVENT] Finished retrospective clustering for user ${userId}, ` +
+    `[EVENT] Finished full-rebuild event assignment for user ${userId}, ` +
     `articles=${totalProcessed}`
   );
 
   return {
     userId,
-    mode: 'retrospective',
+    mode: 'full-rebuild',
     articleCount: totalProcessed,
     touchedEventIds,
     touchedTopicIds,
@@ -765,12 +825,12 @@ export async function retrospectiveClusterForUser(userId, options = {}) {
   };
 }
 
-// This function rebuilds only event and hybrid topic assignments for a user.
-// Behavioral topics are left intact because they are maintained by buildBehavioralTopics.js.
-export async function rebuildTopicsForUser(userId, options = {}) {
-  const { assignmentContext = 'replay' } = options;
+// This function runs the full-rebuild topic scope for event and hybrid topic assignments for a user.
+// Behavioral topics are left intact because they are maintained by calibrateBehavioralTopics.js.
+export async function rebuildAllTopicsForUser(userId, options = {}) {
+  const { assignmentContext = 'full-rebuild' } = options;
 
-  console.log(`[TOPIC] Rebuilding topics for user ${userId}`);
+  console.log(`[TOPIC] Full-rebuild topics for user ${userId}`);
 
   const userTopics = await Topic.findAll({
     where: {
@@ -851,7 +911,7 @@ export async function rebuildTopicsForUser(userId, options = {}) {
     ? ((stats.newTopicsCreated / assignableEvents) * 100).toFixed(1)
     : '0';
 
-  console.log(`[TOPIC] === Topic Build Summary for user ${userId} ===`);
+  console.log(`[TOPIC] === Topic Rebuild Summary for user ${userId} ===`);
   console.log(`[TOPIC] Active topics          ${topicCount}`);
   console.log(`[TOPIC] Events processed       ${eventCount}`);
   console.log(`[TOPIC] Events matched         ${stats.eventsMatched}`);
@@ -877,4 +937,5 @@ export async function rebuildTopicsForUser(userId, options = {}) {
   };
 }
 
-export default reclusterForUser;
+export default repairRecentEventsForUser;
+

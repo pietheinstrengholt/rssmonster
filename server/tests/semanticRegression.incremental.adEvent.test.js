@@ -6,7 +6,7 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
-import { incrementalClusterForUser } from '../services/reconcile/reclusterForUser.js';
+import { runIncrementalEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 
 const {
   sequelize,
@@ -165,7 +165,7 @@ async function seedAdHeatwaveArticles(userId) {
   return insertedArticles;
 }
 
-semanticRegressionDescribe('semantic regression AD heatwave event clustering', () => {
+semanticRegressionDescribe('semantic regression AD heatwave semantic processing', () => {
   beforeAll(async () => {
     await sequelize.authenticate();
     expect(sequelize.getDatabaseName()).toBe(TEST_DATABASE_NAME);
@@ -181,7 +181,7 @@ semanticRegressionDescribe('semantic regression AD heatwave event clustering', (
     const insertedArticles = await seedAdHeatwaveArticles(userId);
     const insertedArticleIds = insertedArticles.map(article => article.id);
 
-    await incrementalClusterForUser(userId, { skipTopicAssignment: true });
+    await runIncrementalEventsForUser(userId, { skipTopicAssignment: true });
 
     const clusteredArticles = await Article.findAll({
       where: {
@@ -207,3 +207,5 @@ semanticRegressionDescribe('semantic regression AD heatwave event clustering', (
     expect(event.sourceCount).toBe(1);
   }, 60000);
 });
+
+

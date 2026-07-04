@@ -1,198 +1,381 @@
-# Event system
+# AGENTS.md
 
-RSSMonster event clustering groups genuinely similar articles into shared events while leaving standalone articles eventless.
+# Event System
 
-## Core Principles
-Do not create one-article events.
-Articles must only receive an eventId when there is at least one genuinely similar article.
-Standalone articles must keep eventId = null.
-Event assignment must be order-independent: similar articles should cluster correctly regardless of crawl order, publication order, or incremental run timing.
-Existing clustered articles must be allowed to act as corroborating evidence for new articles.
-Event clustering must use semantic similarity plus supporting signals, not URL/title matching alone.
-Event/article embedding cosine similarity
-Event process stands alone from other article processing (e.g., scoring, deduplication, etc.) and should not depend on any other article processing results.
+This document defines how RSSMonster groups individual Articles into semantic Events.
 
-## High level process
-Load all recent candidate articles into memory. Use the EVENT_MAX_GAP_HOURS to determine the time window for candidate events.
-Load all recent candidate events into memory.
-Run the assignment flow for each article, updating the in-memory event cache as articles are assigned to events.
-Update the event vector and other event metadata whenever an article joins an event or a new event is created. Such as representativeArticleId for the strongest article in the event, eventWindowStartAt and eventWindowEndAt for the earliest and latest article in the event, sourceCount and sourceDiversityScore for the number of unique sources and their diversity, and lifecycle status for the current state of the event.
-Log one concise line whenever an article joins an event or a new event is created.
-Summarize the event clustering results at the end of the run, including the number of new events created, the number of articles assigned to existing events, and any articles that remain eventless.
+```
+Article
+    ↓
+▶ Event
+    ↓
+Topic
+    ↓
+Interest Island
+```
 
-## Assignment Flow
-For each article:
+Events represent **one real-world news story**.
 
-Ensure the article has a usable event embedding.
-Search recent candidate events within the configured event time window.
-If a sufficiently similar existing event is found, attach the article to that event.
-If no event match is found, search recent candidate articles within the event time window.
-Candidate article search must include both:
-unassigned articles where eventId = null
-already assigned articles where eventId != null
-If similar assigned candidates mostly point to an existing event, attach the article to that event.
-If enough similar unassigned candidates exist, create a new event from those candidates plus the current article.
-If neither condition is met, leave the article eventless.
+They are the first semantic layer built from individual Articles.
 
-## Event Update Rules
-When an article joins an existing event:
+Their purpose is to consolidate duplicate reporting while leaving genuinely unique stories untouched.
 
-set the article’s eventId
-update the event vector
-update articleCount
-update eventWindowStartAt and eventWindowEndAt
-update lifecycle status
-update sourceCount and sourceDiversityScore
-keep in-memory event cache values consistent with persisted values
+---
 
-## Expected Behavior
-Three near-identical articles from the same publisher should become one event:
+# Purpose
 
-A arrives -> no similar article yet -> eventId remains null
-B arrives -> similar to A -> create event A+B
-C arrives -> similar to A/B -> join existing event
+Events answer a single question:
 
-A unique standalone article should remain eventless:
+> **What happened?**
 
-A arrives -> no accepted similar candidates -> eventId remains null
+An Event represents a single news story reported by one or more Articles.
 
-## Cache window
-The caches only exist for the lifetime of a clustering run (npm run crawl, npm run cluster, replay, etc.). They are not persisted and are rebuilt at the start of every run.
+Examples:
 
-Use:
+```
+Apple announces new iPhone
 
-EVENT_MAX_GAP_HOURS = 24; + buffer (2 hours)
+Ukraine signs ceasefire agreement
 
-## EventCache
-Load only events whose window overlaps:
+Microsoft acquires startup X
+```
 
-EVENT_MAX_GAP_HOURS + buffer (2 hours)
+An Event is **not**:
 
-Store:
+- a Topic
+- a user interest
+- a news category
 
-{
-    id,
-    articleCount,
-    eventVector,
-    eventWindowStartAt,
-    eventWindowEndAt,
-    topicId,
-    sourceCount
-}
+It is one concrete occurrence in the real world.
 
-Update the cache immediately after:
+---
 
-article joins event
-new event created
-event vector changes
+# Design Principles
 
-Do not retain old archived events.
+Events are intentionally:
 
-## ArticleCandidateCache
+- evidence-based
+- short-lived
+- time-aware
+- deterministic
+- order-independent
 
-Store only fields required for matching:
+Events should only exist when multiple Articles genuinely describe the same story.
 
-{
-    id,
-    userId,
-    feedId,
-    eventId,
-    title,
-    description,
-    published,
-    createdAt,
-    normalizedEventVector,
-    tokenSet,
-    entitySet
-}
+Standalone Articles should remain eventless.
 
-Requirements:
+---
 
-Normalize vectors once when inserted.
-Store token/entity sets once.
-Never recompute them during matching.
-Support:
-cache.findNearby(article)
-cache.insert(article)
-cache.update(article)
-cache.removeExpired()
+# Core Invariants
 
-Candidate lookup should only perform an in-memory timestamp comparison.
+These rules should never be violated.
 
-No database query should occur during normal article matching.
+## Do not create one-article Events
 
-## Assignment flow
+An Event requires corroborating evidence.
 
-For every article:
+A single Article should keep:
 
-Search EventCache
-↓
-If matching event found
-↓
-Join event
-↓
-Else search ArticleCandidateCache
-↓
-If similar assigned articles exist
-↓
-Join their event
-↓
-Else if enough similar unassigned articles exist
-↓
-Create new event
-↓
-Else
+```
+eventId = null
+```
 
+until sufficient similar Articles exist.
+
+---
+
+## Articles may remain eventless
+
+Not every Article belongs to an Event.
+
+Unique news stories should remain standalone.
+
+This is expected behavior.
+
+---
+
+## Event assignment must be order-independent
+
+The final clustering result should not depend on:
+
+- crawl order
+- publication order
+- processing batches
+- incremental execution
+
+Incremental assignment and full rebuilds should converge toward the same Event structure.
+
+---
+
+## Existing Events are preferred
+
+Whenever sufficient semantic evidence exists, new Articles should join existing Events.
+
+Creating a new Event is the fallback.
+
+---
+
+# Event Lifecycle
+
+```
+New Article
+        ↓
+Find matching Event
+        ↓
+Join existing Event
+        ↓
+OR
+        ↓
+Find corroborating Articles
+        ↓
+Create new Event
+        ↓
+OR
+        ↓
 Remain eventless
+```
 
-## Reclustering
-for reclustering and replay/rebuild operations.
+---
 
-Keep:
+# Assignment Algorithm
 
-RECENCY_WINDOW_DAYS = 7
+For every Article:
 
-only for:
+1. Ensure a usable Event embedding exists.
+2. Search nearby candidate Events.
+3. If a sufficiently similar Event exists:
+   - join that Event.
+4. Otherwise search nearby candidate Articles.
+5. Include both:
+   - assigned Articles
+   - unassigned Articles
+6. If assigned Articles consistently point to one Event:
+   - join that Event.
+7. If enough similar unassigned Articles exist:
+   - create a new Event.
+8. Otherwise:
+   - leave the Article eventless.
 
-reclusterForUser()
-retrospectiveClusterForUser()
+---
 
-These are repair/replay commands.
+# Candidate Evidence
 
-It currently loads all articles from the last RECENCY_WINDOW_DAYS, clears their event links, removes empty events, and rebuilds clustering for that window.
+Event assignment uses multiple signals.
 
-## Vector optimization
+Semantic similarity is the primary signal.
 
-Normalize vectors once when entering the cache.
+Additional supporting evidence may include:
 
-Similarity should become:
+- headline similarity
+- entity overlap
+- temporal proximity
+- source diversity
 
-dotProduct(normalizedA, normalizedB)
+Semantic similarity alone should not automatically create an Event.
 
-instead of repeatedly calculating cosine norms.
+Multiple signals should corroborate the decision.
 
-Never normalize vectors inside the matching loop.
+---
 
-## Development logging
+# Event Creation
 
-When
+A new Event should only be created when sufficient corroborating evidence exists.
 
-NODE_ENV === 'development'
+Typical evidence includes:
 
-or
+- multiple similar Articles
+- multiple independent publishers
+- strong semantic similarity
+- reasonable publication proximity
 
-EVENT_DEBUG === true
+Creating duplicate Events should be avoided.
 
-log one concise line whenever an article joins an event.
+---
 
-Example:
+# Event Updates
 
-[EVENT] article=421 → event=18 sim=0.942 head=0.71 temp=0.98 overlap=2 existing
+Whenever an Article joins an Event, the Event must be updated.
 
-When creating a new event:
+Typical updates include:
 
-[EVENT] new-event=52 article=421 corroborated=3 avgSim=0.934 sources=2
+- event vector
+- representative article
+- article count
+- source count
+- source diversity
+- event window
+- event strength
+- lifecycle status
 
-Keep logging concise.
+The in-memory cache and persisted database state must remain consistent.
 
-Never print vectors.
+---
+
+# Event Cache
+
+Event processing is intentionally cache-driven.
+
+During one assignment run, recent Events are loaded into memory.
+
+The cache exists only for the lifetime of the processing scope.
+
+It is never persisted.
+
+The cache should be updated immediately whenever:
+
+- an Article joins an Event
+- a new Event is created
+- an Event vector changes
+
+---
+
+# Article Candidate Cache
+
+Recent Articles are also cached.
+
+The cache should contain only the information required for semantic matching.
+
+Typical fields include:
+
+- identifiers
+- timestamps
+- normalized vectors
+- token sets
+- entity sets
+- current eventId
+
+Candidate lookup should be entirely in-memory.
+
+Normal Event assignment should not perform database searches for every Article.
+
+---
+
+# Event Repair
+
+RSSMonster supports multiple Event assignment scopes.
+
+## Incremental
+
+Used during normal feed crawling.
+
+Processes only recent unassigned Articles.
+
+---
+
+## Recent Repair
+
+Used after threshold or algorithm improvements.
+
+Rebuilds only a configurable recent time window.
+
+---
+
+## Full Rebuild
+
+Used after major semantic changes.
+
+Rebuilds all historical Event assignments.
+
+---
+
+# Vector Handling
+
+Normalize vectors once before entering the cache.
+
+Do not repeatedly normalize vectors during matching.
+
+Similarity calculations should reuse normalized vectors.
+
+Avoid recomputing embeddings or normalization inside matching loops.
+
+---
+
+# Logging
+
+Development logging should remain concise.
+
+Typical log lines include:
+
+```
+[EVENT] article=421 → event=18 decision=existing-event sim=0.94
+```
+
+```
+[EVENT] article=421 decision=new-event corroborated=3
+```
+
+At the end of every processing run, output a concise summary.
+
+Typical metrics include:
+
+- articles processed
+- new Events
+- existing Event assignments
+- standalone Articles
+- total Events
+
+Never log full vectors.
+
+---
+
+# Source of Truth
+
+Articles belong to Events through:
+
+```
+Article.eventId
+```
+
+Unlike Topics, Event membership does not currently use a relationship table.
+
+An Event owns its member Articles.
+
+All Event summary fields are derived from those Articles.
+
+---
+
+# Architectural Boundaries
+
+Events are responsible only for grouping Articles.
+
+Events do **not**:
+
+- discover Topics
+- model user interests
+- personalize ranking
+- score recommendations
+
+Those responsibilities belong to higher semantic layers.
+
+---
+
+# Regression Traps
+
+Avoid introducing changes that:
+
+- create one-article Events
+- force every Article into an Event
+- make clustering dependent on crawl order
+- repeatedly normalize vectors
+- query the database during every Article comparison
+- create duplicate Events
+- ignore existing corroborating Articles
+- leave Event metadata inconsistent with assigned Articles
+- Lower layers never depend on higher layers
+- Higher layers consume lower layers
+- No semantic layer may redefine the responsibility of another layer
+- Incremental processing and rebuilds should converge to the same semantic state
+
+---
+
+# Definition of Done
+
+An Event change is complete when:
+
+1. Similar Articles consistently cluster together.
+2. Standalone Articles remain eventless.
+3. Event assignment is deterministic.
+4. Incremental processing and rebuilds converge toward the same result.
+5. Event metadata remains synchronized with member Articles.
+6. Cache and persisted state remain consistent.
+7. Relevant tests continue to pass or are updated accordingly.

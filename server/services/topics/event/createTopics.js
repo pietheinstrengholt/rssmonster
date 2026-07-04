@@ -14,7 +14,7 @@ import { generateTopicName } from '../shared/topicName.service.js';
 const { Topic } = db;
 
 // This service creates event topics after validating that an event has enough corroborating evidence.
-// Behavioral topics are created in buildBehavioralTopics.js and do not use these event-topic gates.
+// Behavioral topics are calibrated in calibrateBehavioralTopics.js and do not use these event-topic gates.
 
 // This function formats topic creation similarity values for concise logs.
 function formatTopicMetric(value, digits = 3) {
@@ -146,3 +146,4 @@ export async function createTopic({
 }
 
 export default createTopic;
+

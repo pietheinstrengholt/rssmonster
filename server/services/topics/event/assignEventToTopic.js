@@ -23,8 +23,8 @@ const { Topic } = db;
 // Pure behavioral topics are excluded here so preference clusters do not steal event ownership.
 
 const MAX_TOPIC_CANDIDATES = MAX_TOPICS_PER_ARTICLE;
-const REPLAY_PRIMARY_HYSTERESIS = 0.01;
-const REPLAY_SECONDARY_HYSTERESIS = 0.02;
+const NON_INCREMENTAL_PRIMARY_HYSTERESIS = 0.01;
+const NON_INCREMENTAL_SECONDARY_HYSTERESIS = 0.02;
 
 // This function formats topic similarity values for concise logs.
 function formatTopicMetric(value, digits = 3) {
@@ -74,11 +74,12 @@ export async function assignSemanticUnitToTopic({
   // It updates matched topic activity and returns ranked assignments for EventTopic and ArticleTopic rows.
   if (!semanticVector) return [];
 
-  const primaryThreshold = assignmentContext === 'replay'
-    ? Math.min(PRIMARY_TOPIC_THRESHOLD + REPLAY_PRIMARY_HYSTERESIS, 0.999)
+  const isIncremental = assignmentContext === 'incremental';
+  const primaryThreshold = !isIncremental
+    ? Math.min(PRIMARY_TOPIC_THRESHOLD + NON_INCREMENTAL_PRIMARY_HYSTERESIS, 0.999)
     : PRIMARY_TOPIC_THRESHOLD;
-  const secondaryThreshold = assignmentContext === 'replay'
-    ? Math.min(SECONDARY_TOPIC_THRESHOLD + REPLAY_SECONDARY_HYSTERESIS, 0.999)
+  const secondaryThreshold = !isIncremental
+    ? Math.min(SECONDARY_TOPIC_THRESHOLD + NON_INCREMENTAL_SECONDARY_HYSTERESIS, 0.999)
     : SECONDARY_TOPIC_THRESHOLD;
 
   const matchedCandidates = [];

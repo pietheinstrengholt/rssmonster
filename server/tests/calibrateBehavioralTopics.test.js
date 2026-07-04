@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { rebuildTopicsForUser } from '../services/reconcile/reclusterForUser.js';
-import { buildBehavioralTopicsForUser } from '../services/topics/behavioral/buildBehavioralTopics.js';
+import { rebuildAllTopicsForUser } from '../services/reconcile/semanticPipelineScopes.js';
+import { calibrateBehavioralTopicsForUser } from '../services/topics/behavioral/calibrateBehavioralTopics.js';
 
 const { Article, ArticleTopic, Category, Event, EventTopic, Feed, Topic, User } = db;
 let userSequence = 0;
@@ -59,7 +59,7 @@ function articlePayload(userId, feedId, index, overrides = {}) {
   };
 }
 
-describe('buildBehavioralTopicsForUser', () => {
+describe('calibrateBehavioralTopicsForUser', () => {
   it('creates behavioral topics without requiring event linkage', async () => {
     const { user, feeds } = await createUserGraph();
 
@@ -69,7 +69,7 @@ describe('buildBehavioralTopicsForUser', () => {
       articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
     ]);
 
-    const result = await buildBehavioralTopicsForUser(user.id, {
+    const result = await calibrateBehavioralTopicsForUser(user.id, {
       engagementThreshold: 6,
       communitySimilarityThreshold: 0.5
     });
@@ -109,7 +109,7 @@ describe('buildBehavioralTopicsForUser', () => {
       articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
     ]);
 
-    await buildBehavioralTopicsForUser(user.id, {
+    await calibrateBehavioralTopicsForUser(user.id, {
       engagementThreshold: 6,
       communitySimilarityThreshold: 0.5
     });
@@ -144,7 +144,7 @@ describe('buildBehavioralTopicsForUser', () => {
       }
     );
 
-    const result = await buildBehavioralTopicsForUser(user.id, {
+    const result = await calibrateBehavioralTopicsForUser(user.id, {
       engagementThreshold: 6,
       communitySimilarityThreshold: 0.5
     });
@@ -170,7 +170,7 @@ describe('buildBehavioralTopicsForUser', () => {
       articlePayload(user.id, feeds[0].id, 3, { attentionBucket: 4 })
     ]);
 
-    await buildBehavioralTopicsForUser(user.id, {
+    await calibrateBehavioralTopicsForUser(user.id, {
       engagementThreshold: 6,
       communitySimilarityThreshold: 0.5
     });
@@ -246,7 +246,7 @@ describe('buildBehavioralTopicsForUser', () => {
 
     expect(behavioralLinksBefore).toBe(3);
 
-    await rebuildTopicsForUser(user.id);
+    await rebuildAllTopicsForUser(user.id);
 
     const [
       behavioralLinksAfter,
@@ -278,3 +278,5 @@ describe('buildBehavioralTopicsForUser', () => {
     expect(eventArticleLinksAfter).toBe(3);
   });
 });
+
+

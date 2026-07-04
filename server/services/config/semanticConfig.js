@@ -10,7 +10,7 @@ export const SEMANTIC_GRANULARITY = {
   // Topic assignment thresholds for ranked multi-topic membership.
   topicAssignment: {
     // Identity threshold is used to preserve/reuse topic memory.
-    // Keep this lower than secondary assignment threshold so replay can reattach
+    // Keep this lower than secondary assignment threshold so recent repair can reattach
     // to an existing semantic region without creating a new topic.
     identityThreshold: Number.parseFloat(process.env.TOPIC_IDENTITY_THRESHOLD || '0.50'),
     primaryThreshold: Number.parseFloat(process.env.PRIMARY_TOPIC_THRESHOLD || '0.76'),
@@ -99,3 +99,4 @@ export const EVENT_LIFECYCLE = SEMANTIC_GRANULARITY.eventLifecycle;
 export const TOPIC_VECTOR_ALPHA = SEMANTIC_GRANULARITY.topicUpdate.vectorAlpha;
 export const EVENT_VECTOR_ALPHA = SEMANTIC_GRANULARITY.eventUpdate.vectorAlpha;
 export const EVENT_STRENGTH_CONFIG = SEMANTIC_GRANULARITY.eventStrength;
+
