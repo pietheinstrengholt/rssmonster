@@ -3,6 +3,11 @@ import { describe, expect, it } from 'vitest';
 import db from '../models/index.js';
 import { cosineSimilarity, parseVector } from '../services/vectors/index.js';
 import {
+  compareIslandStrength,
+  normalizeIslandName,
+  sourceArticleCountForIsland
+} from '../services/islands/islandNameDisambiguation.js';
+import {
   FIXTURE_USERNAME,
   expectSemanticRegressionIslandsBuilt,
   hasTaxonomyVectorFixture
@@ -11,16 +16,6 @@ import {
 const { User, Island, IslandTopic } = db;
 const NEAR_DUPLICATE_ISLAND_SIMILARITY = 0.92;
 const semanticRegressionDescribe = (await hasTaxonomyVectorFixture()) ? describe : describe.skip;
-
-// This function normalizes island names for duplicate-name diagnostics.
-function normalizeIslandName(name = '') {
-  return String(name || '')
-    .toLowerCase()
-    .trim()
-    .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
-    .replace(/\s+/g, ' ')
-    .trim();
-}
 
 // This function groups islands by their normalized display name.
 function groupIslandsByNormalizedName(islands = []) {
@@ -36,19 +31,6 @@ function groupIslandsByNormalizedName(islands = []) {
   }
 
   return groups;
-}
-
-// This function returns the latest audited source article count for one island.
-function sourceArticleCountForIsland(island) {
-  const audit = Array.isArray(island.populationAudit) ? island.populationAudit : [];
-  const latest = audit[audit.length - 1] || null;
-  const relatedCount = latest?.metrics?.relatedArticleCount;
-  if (Number.isFinite(Number(relatedCount))) return Number(relatedCount);
-
-  const sourceArticles = latest?.sourceArticles?.articles;
-  if (Array.isArray(sourceArticles)) return sourceArticles.length;
-
-  return null;
 }
 
 // This function formats one duplicate island row for console.table diagnostics.
@@ -116,6 +98,48 @@ function assertNoNearDuplicateIslandNames(groups) {
   expect(nearDuplicates).toEqual([]);
 }
 
+// This function asserts active islands have unique normalized labels after disambiguation.
+function assertNoDuplicateNormalizedIslandNames(groups) {
+  const duplicateNames = [...groups.entries()]
+    .filter(([, islands]) => islands.length > 1)
+    .map(([normalizedName, islands]) => ({
+      normalizedName,
+      islandIds: islands.map(island => Number(island.id)).join(',')
+    }));
+
+  expect(duplicateNames).toEqual([]);
+}
+
+// This function asserts disambiguated variants have a stronger active broad-name island.
+function assertDisambiguatedVariantsKeepStrongerBase(islands, topicCountByIslandId) {
+  const islandByNormalizedName = new Map(
+    islands.map(island => [normalizeIslandName(island.label), island])
+  );
+  const invalidVariants = [];
+
+  for (const island of islands) {
+    if (!String(island.label || '').includes(':')) continue;
+
+    const [baseName, suffix] = String(island.label).split(':').map(part => part.trim());
+    const baseIsland = islandByNormalizedName.get(normalizeIslandName(baseName));
+    const strengthComparison = baseIsland
+      ? compareIslandStrength(baseIsland, island, topicCountByIslandId)
+      : 1;
+
+    if (!baseIsland || !suffix || strengthComparison > 0) {
+      invalidVariants.push({
+        islandId: Number(island.id),
+        label: island.label,
+        baseName,
+        baseIslandId: baseIsland?.id ?? null,
+        strengthComparison
+      });
+    }
+  }
+
+  expect(invalidVariants).toEqual([]);
+}
+
 // This function loads active island rows and topic counts for the semantic regression user.
 async function loadActiveIslandDiagnostics() {
   const user = await User.findOne({
@@ -171,5 +195,7 @@ semanticRegressionDescribe('semantic regression island rebuild command', () => {
     });
 
     assertNoNearDuplicateIslandNames(groups);
+    assertNoDuplicateNormalizedIslandNames(groups);
+    assertDisambiguatedVariantsKeepStrongerBase(islands, topicCountByIslandId);
   }, 180000);
 });

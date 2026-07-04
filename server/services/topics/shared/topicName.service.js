@@ -118,6 +118,29 @@ const EVENT_WORDS = new Set([
   'story', 'news', 'coverage'
 ]);
 
+const WEAK_TOPIC_WORDS = new Set([
+  'current',
+  'wide',
+  'picks',
+  'pick',
+  'forces',
+  'force',
+  'joins',
+  'join',
+  'keeps',
+  'keep',
+  'price',
+  'prices',
+  'edition',
+  'classic',
+  'thing',
+  'things',
+  'look',
+  'looks',
+  'best',
+  'worst'
+]);
+
 const ENTITY_STOPWORDS = new Set([
   'Analysis',
   'Breaking News',
@@ -154,20 +177,54 @@ function cleanTitle(value = '') {
     .trim();
 }
 
+// This function removes weak leading and trailing words from generated labels.
+function trimWeakEdges(value = '') {
+  const tokens = String(value)
+    .split(/\s+/)
+    .map(token => token.trim())
+    .filter(Boolean);
+
+  while (tokens.length) {
+    const key = tokens[tokens.length - 1].toLowerCase();
+
+    if (!STOPWORDS.has(key) && !EVENT_WORDS.has(key) && !WEAK_TOPIC_WORDS.has(key)) break;
+
+    tokens.pop();
+  }
+
+  while (tokens.length) {
+    const key = tokens[0].toLowerCase();
+
+    if (!STOPWORDS.has(key) && !EVENT_WORDS.has(key) && !WEAK_TOPIC_WORDS.has(key)) break;
+
+    tokens.shift();
+  }
+
+  return tokens.join(' ');
+}
+
 // This function normalizes spacing and enforces the maximum topic name length.
 function compactTopicName(value) {
-  const compact = String(value || '')
+  const cleaned = trimWeakEdges(value);
+
+  const compact = String(cleaned || '')
     .replace(/\s+/g, ' ')
     .replace(/\s*\/\s*/g, ' / ')
     .replace(/\s+([,:;])/g, '$1')
+    .replace(/(?:\s*\/\s*)+$/g, '')
+    .replace(/^(?:\s*\/\s*)+/g, '')
     .trim();
+
+  if (!compact) return DEFAULT_TOPIC_NAME;
 
   if (compact.length <= MAX_TOPIC_NAME_LENGTH) return compact;
 
-  return compact
-    .slice(0, MAX_TOPIC_NAME_LENGTH)
-    .replace(/\s+\S*$/, '')
-    .trim();
+  return trimWeakEdges(
+    compact
+      .slice(0, MAX_TOPIC_NAME_LENGTH)
+      .replace(/\s+\S*$/, '')
+      .trim()
+  ) || DEFAULT_TOPIC_NAME;
 }
 
 // This function trims punctuation and whitespace from a candidate label.
@@ -183,11 +240,57 @@ function candidateKey(value = '') {
   return normalizeCandidate(value).toLowerCase();
 }
 
+// This function rejects candidate labels that are only weak or generic fragments.
+function isWeakCandidate(value = '') {
+  const key = candidateKey(value);
+  if (!key) return true;
+
+  const tokens = key.split(/\s+/).filter(Boolean);
+  if (!tokens.length) return true;
+
+  if (tokens.every(token =>
+    STOPWORDS.has(token) ||
+    EVENT_WORDS.has(token) ||
+    WEAK_TOPIC_WORDS.has(token)
+  )) {
+    return true;
+  }
+
+  if (tokens.length === 1 && tokens[0].length < 4) return true;
+
+  return false;
+}
+
+// This function splits entity phrases around weak connector words.
+function splitEntityOnWeakWords(value = '') {
+  const segments = [];
+  let current = [];
+
+  for (const token of String(value).split(/\s+/).filter(Boolean)) {
+    const key = token.toLowerCase();
+
+    if (STOPWORDS.has(key) || EVENT_WORDS.has(key) || WEAK_TOPIC_WORDS.has(key)) {
+      if (current.length) {
+        segments.push(current.join(' '));
+        current = [];
+      }
+      continue;
+    }
+
+    current.push(token);
+  }
+
+  if (current.length) segments.push(current.join(' '));
+
+  return segments;
+}
+
 // This function adds or strengthens one candidate topic label.
 function addCandidate(candidates, value, weight, sourceIndex) {
   const label = normalizeCandidate(value);
   if (label.length < 3) return;
   if (ENTITY_STOPWORDS.has(label)) return;
+  if (isWeakCandidate(label)) return;
 
   const key = candidateKey(label);
   if (!key || STOPWORDS.has(key) || EVENT_WORDS.has(key)) return;
@@ -215,7 +318,14 @@ function extractEntities(title) {
 
   for (const match of title.matchAll(matcher)) {
     const entity = normalizeCandidate(match[0]);
-    if (entity) entities.push(entity);
+    if (!entity) continue;
+
+    const parts = splitEntityOnWeakWords(entity);
+    const hasSplit = parts.length > 1 || parts[0] !== entity;
+
+    for (const part of (hasSplit ? parts : [entity])) {
+      if (part && !isWeakCandidate(part)) entities.push(part);
+    }
   }
 
   return entities;
@@ -228,7 +338,12 @@ function tokenize(title) {
     .replace(/[^a-z0-9\s]/g, ' ')
     .split(/\s+/)
     .map(token => token.trim())
-    .filter(token => token.length > 2 && !STOPWORDS.has(token) && !EVENT_WORDS.has(token));
+    .filter(token =>
+      token.length > 2 &&
+      !STOPWORDS.has(token) &&
+      !EVENT_WORDS.has(token) &&
+      !WEAK_TOPIC_WORDS.has(token)
+    );
 }
 
 // This function converts a keyword phrase into title case without breaking acronyms.

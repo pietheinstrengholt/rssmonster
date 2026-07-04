@@ -2,6 +2,7 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { buildPopulationAuditEntry, appendPopulationAudit } from './islandAudit.js';
 import { evolveIslandTopicMemberships } from './islandMemberships.js';
+import { disambiguateDuplicateIslandNamesForUser } from './islandNameDisambiguation.js';
 import {
   DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD,
   DEFAULT_ISLAND_MATCH_THRESHOLD,
@@ -278,6 +279,8 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     }
   }
 
+  const nameDisambiguationSummary = await disambiguateDuplicateIslandNamesForUser(userId, { transaction });
+
   createdIslands.summary = {
     existingIslandCount: existingIslands.length,
     createdIslandCount,
@@ -286,7 +289,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     activeIslandCount: createdIslands.filter(island => !island.archivedInd).length,
     totalMembershipCount,
     newMembershipCount,
-    removedMembershipCount
+    removedMembershipCount,
+    renamedDuplicateIslandCount: nameDisambiguationSummary.renamed.length,
+    archivedDuplicateIslandCount: nameDisambiguationSummary.archived.length
   };
 
   if (ISLAND_DEBUG) {

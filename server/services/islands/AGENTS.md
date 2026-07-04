@@ -175,6 +175,16 @@ Otherwise:
 
 Existing Islands should almost always evolve rather than be recreated.
 
+When duplicate normalized island names exist:
+
+1. Compare semantic similarity.
+2. If similarity is high:
+   - treat as duplicate and update/merge/prevent creation.
+3. If similarity is low:
+   - allow both.
+   - keep the broader name for the stronger island.
+   - rename the smaller or newer island with a distinguishing keyword phrase.
+
 ---
 
 # Phase 4 — Topic Enrichment
