@@ -31,7 +31,7 @@
               class="article-list-bulk-tag"
               @click="$store.data.setCurrentSelection({ tag })"
             >
-              {{ tag.toLowerCase() }}
+              {{ formatTagName(tag) }}
             </button>
           </div>
         </div>
@@ -147,6 +147,7 @@ import Article from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import { formatRelativeDate } from '../utils/date';
+import { formatTagName } from '../utils/tags';
 
 const PREVIEW_LENGTH = 150;
 
@@ -272,7 +273,7 @@ export default {
         if (smartFolder?.name) return smartFolder.name;
       }
 
-      if (selection.tag) return selection.tag;
+      if (selection.tag) return this.formatTagName(selection.tag);
       if (selection.search) return `Search: ${selection.search}`;
 
       const categoryId = Number(selection.categoryId);
@@ -378,6 +379,8 @@ export default {
     }
   },
   methods: {
+    // Formats stored tag names for display.
+    formatTagName,
     // Opens or closes the reader bulk action menu.
     toggleBulkMenu() {
       this.isBulkMenuOpen = !this.isBulkMenuOpen;

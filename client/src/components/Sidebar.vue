@@ -94,7 +94,7 @@
         v-for="tag in topTagsDisplay"
         :key="tag.name"
         icon="tag-fill"
-        :title="`${tag.name.toLowerCase()}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
+        :title="`${formatTagName(tag.name)}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
         :count="tag.count"
         :selected="$store.data.currentSelection.tag === tag.name"
         row-class="sidebar-tag-item"
@@ -337,6 +337,7 @@ import SidebarActionButton from './sidebar/SidebarActionButton.vue';
 import SidebarCategoryGroup from './sidebar/SidebarCategoryGroup.vue';
 import SidebarNavItem from './sidebar/SidebarNavItem.vue';
 import SidebarSectionTitle from './sidebar/SidebarSectionTitle.vue';
+import { formatTagName } from '../utils/tags';
 
 const emit = defineEmits(['forceReload']);
 const instance = getCurrentInstance();

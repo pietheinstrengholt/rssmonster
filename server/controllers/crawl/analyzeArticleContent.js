@@ -1,5 +1,6 @@
 // server/controllers/crawl/analyzeArticleContent.js
 import OpenAI from 'openai';
+import { normalizeTagName } from './tags.js';
 
 /* ======================================================
    OpenAI analysis (rate limited)
@@ -44,16 +45,15 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
 
 async function analyzeArticleContent(contentStripped, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
   // Normalize category names
-  const normalizeTag = t =>
-    String(t)
-      .toLowerCase()
+  const normalizeGeneratedTag = tag =>
+    normalizeTagName(tag)
       .replace(/[^a-z0-9]/g, '')
       .slice(0, 32);
 
   // Check if feed provides categories to use as tags
   const hasFeedCategories = Array.isArray(categoryNames) && categoryNames.length > 0;
   const feedCategoryTags = hasFeedCategories
-    ? [...new Set(categoryNames.map(normalizeTag).filter(Boolean))].slice(0, 5)
+    ? [...new Set(categoryNames.map(normalizeGeneratedTag).filter(Boolean))].slice(0, 5)
     : [];
 
   // Start with default analysis
@@ -258,7 +258,7 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
           tags: [...new Set([
               ...feedCategoryTags,
               ...(Array.isArray(parsed.tags)
-                ? parsed.tags.map(normalizeTag).filter(Boolean)
+                ? parsed.tags.map(normalizeGeneratedTag).filter(Boolean)
                 : [])
           ])].slice(0, 5),
           advertisementScore: bucketScore(parsed.advertisementScore),

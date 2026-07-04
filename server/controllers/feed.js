@@ -8,6 +8,7 @@ import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/auth.js';
 import crawlController from './crawl.js';
 import crawlJobManager from '../util/crawlJobManager.js';
+import { normalizeTagList } from './crawl/tags.js';
 
 const findOwnedCategory = (categoryId, userId) => Category.findOne({
   where: {
@@ -28,9 +29,7 @@ const normalizeFeedTags = value => {
     ? value
     : String(value).split(/[\s,]+/);
 
-  return tags
-    .map(tag => String(tag).trim())
-    .filter(Boolean);
+  return normalizeTagList(tags);
 };
 
 // This function validates the feed update interval selector value.

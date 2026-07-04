@@ -22,7 +22,7 @@
           <span class="article-list-dot">·</span>
           <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.eventView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
           <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.eventView !== 'all'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
-          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ tag.name.toLowerCase() }}</span>
+          <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
         </div>
       </div>
       <div class="article-list-actions">
@@ -71,6 +71,7 @@ import ArticleTagsScores from './articles/ArticleTagsScores.vue';
 import ArticleContent from './articles/ArticleContent.vue';
 import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
 import { formatRelativeDate } from '../utils/date';
+import { formatTagName } from '../utils/tags';
 
 const NEUTRAL_SCORE = 70;
 const SWIPE_MAX = 128;
@@ -261,6 +262,8 @@ export default {
     }
   },
   methods: {
+    // Formats stored tag names for display.
+    formatTagName,
     // Sets up the listener that tracks mobile portrait orientation.
     setupMediaQueryListener() {
       if (typeof window === 'undefined' || !window.matchMedia) return;

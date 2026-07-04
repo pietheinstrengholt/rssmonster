@@ -31,7 +31,7 @@ describe('saveArticle feed tags', () => {
       {
         id: 7,
         userId: 42,
-        feedTags: ['ai', 'security', 'ai', 'must-read', '']
+        feedTags: ['ai', 'Security', 'ai', 'must-read', '']
       },
       {
         link: 'https://example.com/article',
@@ -47,7 +47,7 @@ describe('saveArticle feed tags', () => {
       {
         summary: 'Summary',
         contentSummaryBullets: [],
-        tags: ['generated'],
+        tags: ['Generated', 'Hardware'],
         advertisementScore: 70,
         sentimentScore: 70,
         qualityScore: 70
@@ -57,7 +57,7 @@ describe('saveArticle feed tags', () => {
         favoriteInd: false,
         clickedAmount: 0,
         hotInd: false,
-        tags: ['rule-tag']
+        tags: ['rule-tag', 'hardware']
       }
     );
 
@@ -88,9 +88,15 @@ describe('saveArticle feed tags', () => {
     expect(mocked.tagCreate).toHaveBeenCalledWith({
       articleId: 123,
       userId: 42,
+      name: 'hardware',
+      tagType: 'rule'
+    });
+    expect(mocked.tagCreate).toHaveBeenCalledWith({
+      articleId: 123,
+      userId: 42,
       name: 'rule-tag',
       tagType: 'rule'
     });
-    expect(mocked.tagCreate).toHaveBeenCalledTimes(5);
+    expect(mocked.tagCreate).toHaveBeenCalledTimes(6);
   });
 });
