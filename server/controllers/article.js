@@ -189,46 +189,92 @@ const markAsRead = async (req, res, _next) => {
       });
     }
 
-    const categoryId = req.body.categoryId || "%";
-    const feedId = req.body.feedId || "%";
-    const minAdvertisementScore = req.body.minAdvertisementScore != null ? parseInt(req.body.minAdvertisementScore) : 0;
-    const minSentimentScore = req.body.minSentimentScore != null ? parseInt(req.body.minSentimentScore) : 0;
-    const minQualityScore = req.body.minQualityScore != null ? parseInt(req.body.minQualityScore) : 0;
+    const {
+      search = '',
+      categoryId = '%',
+      feedId = '%',
+      minAdvertisementScore = 0,
+      minSentimentScore = 0,
+      minQualityScore = 0,
+      sort = 'desc',
+      tag = null,
+      viewMode = 'full',
+      eventView = 'all'
+    } = req.body;
 
-    // Build where clause based on currentSelection
-    const whereClause = {
-      userId: userId,
-      status: "unread",
-      advertisementScore: { [Op.gte]: minAdvertisementScore },
-      sentimentScore: { [Op.gte]: minSentimentScore },
-      qualityScore: { [Op.gte]: minQualityScore }
+    const result = await searchArticles({
+      userId,
+      search,
+      categoryId,
+      feedId,
+      status: 'unread',
+      minAdvertisementScore,
+      minSentimentScore,
+      minQualityScore,
+      sort,
+      tag,
+      viewMode,
+      eventView,
+      persistSettings: false
+    });
+
+    const itemIds = result.itemIds || [];
+
+    if (itemIds.length === 0) {
+      return res.status(200).json({
+        message: 'No unread articles to mark as read',
+        updatedCount: 0,
+        matchedCount: 0,
+        expandedEventCount: 0
+      });
+    }
+
+    let eventIds = [];
+
+    if (eventView === 'eventCluster') {
+      const selectedArticles = await Article.findAll({
+        where: {
+          id: { [Op.in]: itemIds },
+          userId
+        },
+        attributes: ['id', 'eventId']
+      });
+
+      eventIds = [
+        ...new Set(
+          selectedArticles
+            .map(article => article.eventId)
+            .filter(eventId => eventId !== null && eventId !== undefined)
+        )
+      ];
+    }
+
+    const updateWhere = {
+      userId,
+      status: 'unread',
+      ...(eventIds.length > 0
+        ? {
+            [Op.or]: [
+              { id: { [Op.in]: itemIds } },
+              { eventId: { [Op.in]: eventIds } }
+            ]
+          }
+        : {
+            id: { [Op.in]: itemIds }
+          })
     };
 
-    // Add categoryId filter if not "all"
-    if (categoryId !== "%") {
-      // Get feeds for this category
-      const feeds = await Feed.findAll({
-        attributes: ["id"],
-        where: { 
-          userId: userId,
-          categoryId: categoryId
-        }
-      });
-      const feedIds = feeds.map(feed => feed.id);
-      whereClause.feedId = feedIds;
-    }
-
-    // Add feedId filter if specific feed selected
-    if (feedId !== "%") {
-      whereClause.feedId = feedId;
-    }
-    
-    await Article.update(
-      { status: "read" },
-      { where: whereClause }
+    const [updatedCount] = await Article.update(
+      { status: 'read' },
+      { where: updateWhere }
     );
 
-    res.status(200).json({ message: "All articles marked as read" });
+    return res.status(200).json({
+      message: 'Articles marked as read',
+      updatedCount,
+      matchedCount: itemIds.length,
+      expandedEventCount: eventIds.length
+    });
   } catch (err) {
     console.error("Error in markAsRead:", err);
     return res.status(500).json({ error: err.message });
