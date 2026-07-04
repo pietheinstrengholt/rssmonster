@@ -1007,7 +1007,7 @@ export default {
   font-size: 18px !important;
 }
 
-/* Hide tags and scores on mobile portrait mode, except rule-based tags */
+/* Keep mobile portrait metadata and visible tags in one wrapping row. */
 @media (max-width: 766px) and (orientation: portrait) {
   .article-card .article-body {
     padding: 4px 8px 4px 8px;
@@ -1018,11 +1018,21 @@ export default {
     margin-left: 8px;
   }
 
-  .article-card .article-meta {
-    display: flex;
-    flex-wrap: wrap;
+  .article-card .meta-row {
     align-items: center;
     gap: 8px;
+  }
+
+  .article-card .article-meta {
+    display: contents;
+  }
+
+  .article-card .article-tags {
+    display: contents;
+  }
+
+  .article-card .article-meta .mobile-rule-tag {
+    margin-left: 0;
   }
 
   .article-card .article-tags .tag {
