@@ -4,6 +4,7 @@ import {
   EVENT_MAX_GAP_HOURS,
   MAX_CANDIDATES
 } from '../config/semanticConfig.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { articleEventTimestamp, HOUR_MS } from './articleEventTime.js';
 
 const { Article } = db;
@@ -77,6 +78,7 @@ export default class ArticleEventCandidateCache {
       : [];
     const where = {
       userId,
+      ...canonicalArticleWhere(),
       published: { [Op.gte]: cutoff },
       articleVector: { [Op.ne]: null }
     };

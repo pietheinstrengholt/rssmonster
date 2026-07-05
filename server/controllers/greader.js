@@ -4,6 +4,7 @@ const { Feed, Category, Article, User } = db;
 import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 import { generateOpml } from './opml.js';
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 /**
  * Google Reader API compatible implementation
@@ -698,13 +699,14 @@ export const getUnreadCount = async (req, res) => {
         where: {
           feedId: feed.id,
           status: 'unread',
-          userId: user.id
+          userId: user.id,
+          ...canonicalArticleWhere()
         }
       });
       
       // Get newest item timestamp.
       const newestArticle = await Article.findOne({
-        where: { feedId: feed.id, userId: user.id },
+        where: { feedId: feed.id, userId: user.id, ...canonicalArticleWhere() },
         order: [['createdAt', 'DESC']],
         attributes: ['createdAt', 'firstSeen', 'published']
       });
@@ -741,7 +743,8 @@ export const getUnreadCount = async (req, res) => {
     const totalUnreads = await Article.count({
       where: {
         status: 'unread',
-        userId: user.id
+        userId: user.id,
+        ...canonicalArticleWhere()
       }
     });
     
@@ -785,7 +788,7 @@ export const getStreamContents = async (req, res) => {
     const continuation = req.query.c || '';
     
     // Build query conditions
-    const where = { userId: user.id };
+    const where = { userId: user.id, ...canonicalArticleWhere() };
     const streamId = await applyStreamFilter(where, streamPath, user.id);
     applyTargetFilter(where, excludeTarget, false);
     applyTargetFilter(where, filterTarget, true);
@@ -852,7 +855,7 @@ export const getStreamItemIds = async (req, res) => {
     const stopTime = parseReaderTimestamp(req.query.nt);
     const continuation = req.query.c || '';
     
-    const where = { userId: user.id };
+    const where = { userId: user.id, ...canonicalArticleWhere() };
     await applyStreamFilter(where, streamId, user.id);
     applyTargetFilter(where, excludeTarget, false);
     applyTargetFilter(where, filterTarget, true);
@@ -923,7 +926,8 @@ export const getStreamItemContents = async (req, res) => {
     const articles = await Article.findAll({
       where: {
         id: { [Op.in]: numericIds },
-        userId: user.id
+        userId: user.id,
+        ...canonicalArticleWhere()
       },
       include: articleInclude
     });
@@ -977,12 +981,12 @@ export const editTag = async (req, res) => {
       if (tag === 'user/-/state/com.google/read') {
         await Article.update(
           { status: 'read' },
-          { where: { id: { [Op.in]: numericIds }, userId: user.id } }
+          { where: { id: { [Op.in]: numericIds }, userId: user.id, ...canonicalArticleWhere() } }
         );
       } else if (tag === 'user/-/state/com.google/starred') {
         await Article.update(
           { favoriteInd: 1 },
-          { where: { id: { [Op.in]: numericIds }, userId: user.id } }
+          { where: { id: { [Op.in]: numericIds }, userId: user.id, ...canonicalArticleWhere() } }
         );
       }
     }
@@ -992,12 +996,12 @@ export const editTag = async (req, res) => {
       if (tag === 'user/-/state/com.google/read') {
         await Article.update(
           { status: 'unread' },
-          { where: { id: { [Op.in]: numericIds }, userId: user.id } }
+          { where: { id: { [Op.in]: numericIds }, userId: user.id, ...canonicalArticleWhere() } }
         );
       } else if (tag === 'user/-/state/com.google/starred') {
         await Article.update(
           { favoriteInd: 0 },
-          { where: { id: { [Op.in]: numericIds }, userId: user.id } }
+          { where: { id: { [Op.in]: numericIds }, userId: user.id, ...canonicalArticleWhere() } }
         );
       }
     }
@@ -1025,7 +1029,7 @@ export const markAllAsRead = async (req, res) => {
     
     const olderThan = parseReaderTimestamp(timestamp) || new Date();
     
-    const where = { userId: user.id, published: { [Op.lte]: olderThan } };
+    const where = { userId: user.id, ...canonicalArticleWhere(), published: { [Op.lte]: olderThan } };
     await applyStreamFilter(where, streamId, user.id);
     
     await Article.update(

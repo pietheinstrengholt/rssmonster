@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -6,7 +6,9 @@ import crypto from 'node:crypto';
 import { Op } from 'sequelize';
 
 import db from '../models/index.js';
+import { markDuplicateArticlesForUser } from '../services/duplicates/articleDuplicates.js';
 import { runIncrementalEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
+import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
 
 const {
   sequelize,
@@ -26,6 +28,7 @@ const FIXTURE_PASSWORD = 'rssmonster';
 const TARGET_FEED_SOURCE_ID = 96;
 const TARGET_ARTICLE_SOURCE_IDS = [771, 772, 773];
 const TEST_DATABASE_NAME = 'rssmonstertest';
+const AD_DUPLICATE_TEST_THRESHOLD = 0.985;
 
 let semanticRegressionUserId = null;
 
@@ -174,37 +177,53 @@ semanticRegressionDescribe('semantic regression AD heatwave semantic processing'
     semanticRegressionUserId = user.id;
   }, 60000);
 
-  it('creates one event containing all three AD heatwave article variants', async () => {
+  afterAll(async () => {
+    await printSemanticArticleRankingTable(semanticRegressionUserId);
+  });
+
+  it('marks two AD heatwave article variants as duplicates of one canonical article', async () => {
     const userId = semanticRegressionUserId;
 
     await clearFixtureUserContent(userId);
     const insertedArticles = await seedAdHeatwaveArticles(userId);
     const insertedArticleIds = insertedArticles.map(article => article.id);
 
+    const duplicateResult = await markDuplicateArticlesForUser(userId, {
+      threshold: AD_DUPLICATE_TEST_THRESHOLD
+    });
     await runIncrementalEventsForUser(userId, { skipTopicAssignment: true });
 
-    const clusteredArticles = await Article.findAll({
+    const articles = await Article.findAll({
       where: {
         id: { [Op.in]: insertedArticleIds }
       },
-      attributes: ['id', 'eventId', 'title'],
+      attributes: ['id', 'eventId', 'title', 'status', 'duplicateOfArticleId', 'duplicateCount'],
       order: [['id', 'ASC']],
       raw: true
     });
-    const eventIds = [...new Set(clusteredArticles.map(article => article.eventId))];
 
-    expect(clusteredArticles).toHaveLength(TARGET_ARTICLE_SOURCE_IDS.length);
-    expect(eventIds).toHaveLength(1);
-    expect(eventIds[0]).not.toBeNull();
+    expect(duplicateResult.duplicateCount).toBe(2);
+    expect(articles).toHaveLength(TARGET_ARTICLE_SOURCE_IDS.length);
 
-    const event = await Event.findByPk(eventIds[0], {
-      attributes: ['id', 'articleCount', 'sourceCount', 'name'],
-      raw: true
-    });
+    const canonicalArticles = articles.filter(article => article.duplicateOfArticleId === null);
+    const duplicateArticles = articles.filter(article => article.duplicateOfArticleId !== null);
 
-    expect(event).toBeTruthy();
-    expect(event.articleCount).toBe(TARGET_ARTICLE_SOURCE_IDS.length);
-    expect(event.sourceCount).toBe(1);
+    expect(canonicalArticles).toHaveLength(1);
+    expect(duplicateArticles).toHaveLength(2);
+
+    const [canonicalArticle] = canonicalArticles;
+    expect(canonicalArticle.status).toBe('unread');
+    expect(canonicalArticle.eventId).toBeNull();
+    expect(canonicalArticle.duplicateCount).toBe(2);
+
+    for (const duplicateArticle of duplicateArticles) {
+      expect(duplicateArticle.status).toBe('duplicate');
+      expect(duplicateArticle.duplicateOfArticleId).toBe(canonicalArticle.id);
+      expect(duplicateArticle.eventId).toBeNull();
+    }
+
+    const eventCount = await Event.count({ where: { userId } });
+    expect(eventCount).toBe(0);
   }, 60000);
 });
 

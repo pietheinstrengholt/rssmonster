@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 import db from '../models/index.js';
 import { cosineSimilarity, parseVector } from '../services/vectors/index.js';
@@ -12,6 +12,7 @@ import {
   expectSemanticRegressionIslandsBuilt,
   hasTaxonomyVectorFixture
 } from './helpers/semanticRegressionIslands.js';
+import { printSemanticArticleRankingTableForUser } from './helpers/semanticRegressionReport.js';
 
 const { User, Island, IslandTopic } = db;
 const NEAR_DUPLICATE_ISLAND_SIMILARITY = 0.92;
@@ -179,6 +180,10 @@ async function loadActiveIslandDiagnostics() {
 }
 
 semanticRegressionDescribe('semantic regression island rebuild command', () => {
+  afterAll(async () => {
+    await printSemanticArticleRankingTableForUser(FIXTURE_USERNAME);
+  });
+
   it('refreshes interest islands when the island build runs again after recluster', async () => {
     await expectSemanticRegressionIslandsBuilt(expect);
 

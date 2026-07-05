@@ -1,6 +1,7 @@
 import db from '../models/index.js';
 const { Feed, Category, Article, User, Hotlink } = db;
 import { Op } from 'sequelize';
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 //use Fever API
 //specs: https://github.com/dasmurphy/tinytinyrss-fever-plugin/blob/master/fever-api.md
@@ -136,7 +137,8 @@ export const postFever = async (req, res, _next) => {
             attributes: ["id"],
             where: {
               status: 'unread',
-              userId: loggedInUser.id
+              userId: loggedInUser.id,
+              ...canonicalArticleWhere()
             },
             order: [['id', 'ASC']]
           });
@@ -156,7 +158,8 @@ export const postFever = async (req, res, _next) => {
             attributes: ["id"],
             where: {
               favoriteInd: 1,
-              userId: loggedInUser.id
+              userId: loggedInUser.id,
+              ...canonicalArticleWhere()
             },
             order: [['id', 'ASC']]
           });
@@ -174,7 +177,8 @@ export const postFever = async (req, res, _next) => {
           //add total number of articles to arr
           const total_articles = await Article.count({
             where: {
-              userId: loggedInUser.id
+              userId: loggedInUser.id,
+              ...canonicalArticleWhere()
             }
           });
           arr['total_items'] = total_articles;
@@ -191,7 +195,8 @@ export const postFever = async (req, res, _next) => {
             articles = await Article.findAll({
               where: {
                 id: arrayIds,
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               },
               order: [['id', 'ASC']],
               limit: 50
@@ -204,7 +209,8 @@ export const postFever = async (req, res, _next) => {
                 id: {
                   [Op.gt]: req.query.since_id
                 },
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               },
               order: [['id', 'ASC']],
               limit: 50
@@ -217,7 +223,8 @@ export const postFever = async (req, res, _next) => {
                 id: {
                   [Op.lt]: req.query.max_id
                 },
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               },
               order: [['id', 'DESC']],
               limit: 50
@@ -226,7 +233,8 @@ export const postFever = async (req, res, _next) => {
           } else {
             articles = await Article.findAll({
               where: {
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               },
               order: [['id', 'ASC']],
               limit: 50
@@ -270,7 +278,8 @@ export const postFever = async (req, res, _next) => {
             url: {
               [Op.in]: hotlinkUrls
             },
-            userId: loggedInUser.id
+            userId: loggedInUser.id,
+            ...canonicalArticleWhere()
           };
 
           if (req.query.since_id) {
@@ -352,7 +361,8 @@ export const postFever = async (req, res, _next) => {
               where: {
                 status: 'read',
                 updatedAt: { [Op.gte]: oneDayAgo },
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               }
             }
           );
@@ -371,7 +381,8 @@ export const postFever = async (req, res, _next) => {
             await Article.update(update, {
               where: {
                 id: markId,
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               }
             });
           }
@@ -384,7 +395,8 @@ export const postFever = async (req, res, _next) => {
                 published: {
                   [Op.lte]: timestamp
                 },
-                userId: loggedInUser.id
+                userId: loggedInUser.id,
+                ...canonicalArticleWhere()
               }
             });
           }
@@ -395,7 +407,8 @@ export const postFever = async (req, res, _next) => {
               published: {
                 [Op.lte]: timestamp
               },
-              userId: loggedInUser.id
+              userId: loggedInUser.id,
+              ...canonicalArticleWhere()
             };
 
             // id === '0' means all items (Kindling super group)

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import assignArticleToEvent, { EventCache } from '../services/events/assignArticleToEvent.js';
@@ -260,7 +260,22 @@ describe('repairRecentEventsForUser', () => {
       })
     ]);
 
-    await runIncrementalEventsForUser(user.id, { skipTopicAssignment: true });
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    let summaryOutput = '';
+
+    try {
+      await runIncrementalEventsForUser(user.id, { skipTopicAssignment: true });
+      summaryOutput = logSpy.mock.calls
+        .map(call => call.join(' '))
+        .join('\n');
+    } finally {
+      logSpy.mockRestore();
+    }
+
+    expect(summaryOutput).not.toContain('Articles linked to events');
+    expect(summaryOutput).toMatch(/Articles assigned to new events\.+ 2/);
+    expect(summaryOutput).toMatch(/Total articles assigned to events\.+ 2/);
 
     const clusteredArticles = await Article.findAll({
       where: {

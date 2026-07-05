@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterAll, beforeAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
@@ -10,6 +10,7 @@ import { runIncrementalEventsForUser } from '../services/reconcile/semanticPipel
 import scoreArticlesFromIslandsForUser from '../services/score/scoreArticlesFromIslands.js';
 import { cosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
+import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
 
 const {
   sequelize,
@@ -32,11 +33,8 @@ const TAKE_TWO_ARTICLE_IDS_TO_MARK_READ = [652, 576];
 const DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD = Number.parseFloat(
   process.env.ISLAND_ARTICLE_SCORE_THRESHOLD || '0.62'
 );
-const RECOMMENDED_DEBUG_FORMULA =
-  '0.20*freshness + 0.22*interest + 0.10*quality + 0.22*coverage + ' +
-  '0.13*crossSource + 0.13*corroboration + eventBoost + ruleBoost';
-
 let semanticRegressionUserId = null;
+let insertedArticleIdsForReport = [];
 
 // This function loads a JSON fixture from disk.
 async function loadFixture(path) {
@@ -246,26 +244,6 @@ function compactName(name) {
     .join(' ');
 }
 
-// This function prints a compact table without the default console row index.
-function printDebugTable(rows, columns) {
-  const widths = columns.map(column => {
-    const values = rows.map(row => String(row[column] ?? ''));
-    return Math.max(column.length, ...values.map(value => value.length));
-  });
-
-  const separator = `+${widths.map(width => '-'.repeat(width + 2)).join('+')}+`;
-  const formatRow = values =>
-    `| ${values.map((value, index) => String(value ?? '').padEnd(widths[index], ' ')).join(' | ')} |`;
-
-  console.log(separator);
-  console.log(formatRow(columns));
-  console.log(separator);
-  for (const row of rows) {
-    console.log(formatRow(columns.map(column => row[column])));
-  }
-  console.log(separator);
-}
-
 // This function maps topic IDs to the user's strongest matching island.
 async function buildIslandLookups(userId) {
   const islands = await Island.findAll({
@@ -390,24 +368,6 @@ async function printTopUnreadRecommendedDebug(userId) {
       };
     });
 
-  console.log(`[SEMANTIC INCREMENTAL UNREAD DEBUG] Formula: ${RECOMMENDED_DEBUG_FORMULA}`);
-  console.log(`[SEMANTIC INCREMENTAL UNREAD DEBUG] topUnreadRecommended=${rows.length}`);
-  printDebugTable(rows, [
-    'articleId',
-    'unread',
-    'eventName',
-    'islandName',
-    'freshness',
-    'interestScore',
-    'coverage',
-    'crossSource',
-    'corroboration',
-    'clusterSize',
-    'sourceCount',
-    'recommended',
-    'title'
-  ]);
-
   return rows;
 }
 
@@ -421,6 +381,12 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     expect(user, 'semantic regression user must exist before incremental unread ranking pass').toBeTruthy();
     semanticRegressionUserId = user.id;
   }, 60000);
+
+  afterAll(async () => {
+    await printSemanticArticleRankingTable(semanticRegressionUserId, {
+      newArticleIds: insertedArticleIdsForReport
+    });
+  });
 
   it('marks prior Take-Two articles read, inserts the next article, repairs recent events, and prints top unread recommendations', async () => {
     const userId = semanticRegressionUserId;
@@ -455,6 +421,7 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
       vectorByContentHash,
       'https://fixtures.rssmonster.test/semantic-incremental.unread'
     );
+    insertedArticleIdsForReport = insertedArticleIds;
 
     await runIncrementalEventsForUser(userId, { createdAfter: incrementalInsertedAfter });
     await scoreArticlesFromIslandsForUser(userId);

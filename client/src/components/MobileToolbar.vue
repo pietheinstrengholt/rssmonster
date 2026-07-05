@@ -48,8 +48,9 @@
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'quality' }" @click="sortClicked('quality')">Quality</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Attention</button>
         <li><hr class="dropdown-divider"></li>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.eventView === 'all' }" @click="setEventView('all')">All articles</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.eventView === 'eventCluster' }" @click="setEventView('eventCluster')">Cluster per event</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'none' }" @click="setGrouping('none')">All articles</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'event' }" @click="setGrouping('event')">Cluster per event</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'topic' }" @click="setGrouping('topic')">Cluster per topic</button>
       </div>
     </div>
         <!-- Smart Folder Dropdown -->
@@ -450,12 +451,12 @@ export default {
       this.$store.data.setMobileSearchOpen(true);
       this.$nextTick(() => this.$refs.searchInput?.focus());
     },
-    setEventView: function(value) {
+    setGrouping: function(value) {
       // Don't trigger if already at the selected value
-      if (this.$store.data.currentSelection.eventView === value) {
+      if (this.$store.data.currentSelection.grouping === value) {
         return;
       }
-      this.$store.data.setEventView(value);
+      this.$store.data.setGrouping(value);
     },
     performSearch() {
       if (this.$store.data.searchQuery.trim()) {

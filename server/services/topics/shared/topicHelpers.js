@@ -10,6 +10,7 @@ import {
   blendVector,
   cosineSimilarity
 } from '../../vectors/index.js';
+import { canonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
 
 const { Article, Event } = db;
 
@@ -259,7 +260,7 @@ export async function collectEventArticleTitles(userId, eventId) {
   if (!eventId) return [];
 
   const articles = await Article.findAll({
-    where: { userId, eventId },
+    where: { userId, eventId, ...canonicalArticleWhere() },
     attributes: ['title'],
     order: [['published', 'ASC'], ['id', 'ASC']],
     limit: 6,

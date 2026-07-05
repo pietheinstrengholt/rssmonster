@@ -1,6 +1,7 @@
 import { Builder } from 'xml2js';
 import db from '../models/index.js';
 const { Article, Feed, Category } = db;
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 // Build an RSS 2.0 XML document from a list of articles
 const buildRssXml = (articles, meta) => {
@@ -49,7 +50,7 @@ const generateRss = async (req, res, next) => {
     const parsedLimit = Number.parseInt(limit, 10);
     const queryLimit = Number.isFinite(parsedLimit) ? Math.min(parsedLimit, maxLimit) : 50;
 
-    const where = { userId };
+    const where = { userId, ...canonicalArticleWhere() };
     if (feedId) {
       where.feedId = feedId;
     }

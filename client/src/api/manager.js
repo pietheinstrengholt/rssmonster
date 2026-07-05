@@ -11,7 +11,7 @@ export const fetchOverview = (currentSelection) =>
     ...currentSelection,
     search: normalizeQuerySortAliasesForApi(currentSelection.search),
     sort: normalizeSortValueForApi(currentSelection.sort),
-    eventView: String(currentSelection.eventView)
+    grouping: String(currentSelection.grouping)
   });
 
 /**
@@ -28,7 +28,7 @@ export const fetchOverviewCounts = (currentSelection) =>
     ...currentSelection,
     search: normalizeQuerySortAliasesForApi(currentSelection.search),
     sort: normalizeSortValueForApi(currentSelection.sort),
-    eventView: String(currentSelection.eventView)
+    grouping: String(currentSelection.grouping)
   });
 
 /**

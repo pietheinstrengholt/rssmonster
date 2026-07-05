@@ -3,6 +3,7 @@
 // It blends event vectors, refreshes lifecycle/source stats, and keeps event topic links in sync.
 import db from '../../models/index.js';
 import { EVENT_LIFECYCLE, EVENT_VECTOR_ALPHA } from '../config/semanticConfig.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { blendVector } from '../vectors/index.js';
 import { eventDateFromArticle, eventTimestamp } from './articleEventTime.js';
 
@@ -46,7 +47,7 @@ function blendEventVector(existingVector, incomingVector) {
 // This function recalculates source diversity after an article joins an event.
 async function updateSourceDiversity(eventId, userId) {
   const sourceCount = await Article.count({
-    where: { eventId, userId },
+    where: { eventId, userId, ...canonicalArticleWhere() },
     distinct: true,
     col: 'feedId'
   });

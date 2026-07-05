@@ -64,15 +64,17 @@ export async function hasTaxonomyVectorFixture() {
   }
 }
 
-// This function runs and validates the island build command for the semantic regression user.
-export async function expectSemanticRegressionIslandsBuilt(expect) {
+// This function runs the semantic regression island build command and returns its counts.
+export async function runSemanticRegressionIslandBuild() {
   const user = await User.findOne({
     where: { username: FIXTURE_USERNAME },
     attributes: ['id'],
     raw: true
   });
 
-  expect(user, 'semantic regression user should exist before island build').toBeTruthy();
+  if (!user) {
+    throw new Error('semantic regression user should exist before island build');
+  }
 
   const taxonomyVectorFixture = await loadFixture(TAXONOMY_VECTOR_FIXTURE_PATH);
   const taxonomyCount = await loadIslandTaxonomyFixture(taxonomyVectorFixture);
@@ -96,6 +98,26 @@ export async function expectSemanticRegressionIslandsBuilt(expect) {
       }
     })
   ]);
+
+  return {
+    user,
+    taxonomyCount,
+    islandResult,
+    islandCount,
+    islandTopicLinkCount,
+    scoredArticleCount
+  };
+}
+
+// This function runs and validates the island build command for the semantic regression user.
+export async function expectSemanticRegressionIslandsBuilt(expect) {
+  const {
+    taxonomyCount,
+    islandResult,
+    islandCount,
+    islandTopicLinkCount,
+    scoredArticleCount
+  } = await runSemanticRegressionIslandBuild();
 
   expect(taxonomyCount).toBeGreaterThan(0);
   expect(islandResult.islandCount).toBeGreaterThan(0);

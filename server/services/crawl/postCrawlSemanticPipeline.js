@@ -1,4 +1,5 @@
 import { embedArticles } from '../articles/embedArticles.js';
+import { markDuplicateArticlesForUser } from '../duplicates/articleDuplicates.js';
 import { runIncrementalEventsForUser } from '../reconcile/semanticPipelineScopes.js';
 import scoreArticlesFromIslandsForUser from '../score/scoreArticlesFromIslands.js';
 
@@ -49,6 +50,16 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       `embedded=${embedSummary.embeddedCount || 0} skipped=${embedSummary.skippedCount || 0}`
     );
 
+    const duplicateResult = await markDuplicateArticlesForUser(userId, {
+      createdAfter: result?.crawlStartedAt || null
+    });
+
+    console.log(
+      `[SEMANTIC] user=${userId} stage=duplicates ` +
+      `scanned=${duplicateResult.scannedCount || 0} ` +
+      `duplicates=${duplicateResult.duplicateCount || 0}`
+    );
+
     const eventResult = await runIncrementalEventsForUser(userId, {
       createdAfter: result?.crawlStartedAt || null,
       skipTopicAssignment: false
@@ -85,6 +96,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     results.push({
       userId,
       embedding: embedSummary,
+      duplicates: duplicateResult,
       events: eventResult,
       interestScores: scoringResult
     });

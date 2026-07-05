@@ -3,6 +3,10 @@ const { Article, Feed, Tag, Event } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../util/articleSearch.service.js";
 import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+
+// This function normalizes article grouping values used by API consumers.
+const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
 
 // Helper function to batch-load article details
 const loadArticleDetails = async (userId, articlesArray) => {
@@ -34,26 +38,26 @@ const loadArticleDetails = async (userId, articlesArray) => {
         attributes: ['id', 'articleCount', 'sourceCount', 'topicId']
       }
     ],
-    where: { userId, id: articlesArray }
+    where: { userId, id: articlesArray, ...canonicalArticleWhere() }
   });
 
-  // Compute topicGroupCount in a single grouped query to avoid per-row subqueries.
-  const topicIds = [...new Set(articles.map(a => a.cluster?.topicId).filter(Boolean))];
+  // Compute topic-level article counts in one grouped query for topic grouping badges.
+  const topicIds = [...new Set(articles.map(article => article.cluster?.topicId).filter(Boolean))];
   if (topicIds.length > 0) {
     const topicRows = await Event.findAll({
       where: { userId, topicId: { [Op.in]: topicIds } },
-      attributes: ['topicId', [fn('SUM', col('articleCount')), 'topicGroupCount']],
+      attributes: ['topicId', [fn('SUM', col('articleCount')), 'topicArticleCount']],
       group: ['topicId'],
       raw: true
     });
-    const topicCountMap = new Map(topicRows.map(r => [r.topicId, Number(r.topicGroupCount) || 0]));
+    const topicCountMap = new Map(topicRows.map(row => [row.topicId, Number(row.topicArticleCount) || 0]));
 
     for (const article of articles) {
-      if (article.cluster) {
-        const count = article.cluster.topicId
-          ? topicCountMap.get(article.cluster.topicId) ?? article.cluster.articleCount ?? 0
-          : article.cluster.articleCount ?? 0;
-        article.cluster.setDataValue('topicGroupCount', count);
+      if (article.cluster?.topicId) {
+        article.cluster.setDataValue(
+          'topicArticleCount',
+          topicCountMap.get(article.cluster.topicId) ?? article.cluster.articleCount ?? 0
+        );
       }
     }
   }
@@ -80,7 +84,7 @@ export const getArticles = async (req, res) => {
       sort: req.query.sort,
       tag: req.query.tag,
       viewMode: req.query.viewMode,
-      eventView: req.query.eventView || 'all',
+      grouping: req.query.grouping || 'none',
       persistSettings: true
     });
 
@@ -111,7 +115,8 @@ const getArticle = async (req, res, _next) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       },
       include: [
         {
@@ -165,6 +170,7 @@ const markAsRead = async (req, res, _next) => {
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
+          ...canonicalArticleWhere(),
           status: "unread"
         },
         include: [{
@@ -200,10 +206,10 @@ const markAsRead = async (req, res, _next) => {
       sort = 'desc',
       tag = null,
       viewMode = 'full',
-      eventView = 'all'
+      grouping = body.grouping ?? 'none'
     } = body;
 
-    const normalizedEventView = eventView === 'topicGroup' ? 'eventCluster' : eventView || 'all';
+    const normalizedGrouping = normalizeGrouping(grouping);
     const toScoreThreshold = value => {
       const numericValue = Number(value);
       return Number.isFinite(numericValue) ? numericValue : 0;
@@ -221,7 +227,7 @@ const markAsRead = async (req, res, _next) => {
       sort: sort || 'desc',
       tag,
       viewMode,
-      eventView: normalizedEventView,
+      grouping: normalizedGrouping,
       persistSettings: false
     });
 
@@ -238,26 +244,56 @@ const markAsRead = async (req, res, _next) => {
 
     let eventIds = [];
 
-    if (normalizedEventView === 'eventCluster') {
+    if (normalizedGrouping === 'event' || normalizedGrouping === 'topic') {
       const selectedArticles = await Article.findAll({
         where: {
           id: { [Op.in]: itemIds },
-          userId
+          userId,
+          ...canonicalArticleWhere()
         },
-        attributes: ['id', 'eventId']
+        attributes: ['id', 'eventId'],
+        include: [{
+          model: Event,
+          as: 'cluster',
+          required: false,
+          attributes: ['topicId']
+        }]
       });
 
-      eventIds = [
-        ...new Set(
-          selectedArticles
-            .map(article => article.eventId)
-            .filter(eventId => eventId !== null && eventId !== undefined)
-        )
-      ];
+      if (normalizedGrouping === 'topic') {
+        const topicIds = [
+          ...new Set(
+            selectedArticles
+              .map(article => article.cluster?.topicId)
+              .filter(topicId => topicId !== null && topicId !== undefined)
+          )
+        ];
+
+        if (topicIds.length > 0) {
+          const topicEvents = await Event.findAll({
+            where: {
+              userId,
+              topicId: { [Op.in]: topicIds }
+            },
+            attributes: ['id']
+          });
+
+          eventIds = topicEvents.map(event => event.id);
+        }
+      } else {
+        eventIds = [
+          ...new Set(
+            selectedArticles
+              .map(article => article.eventId)
+              .filter(eventId => eventId !== null && eventId !== undefined)
+          )
+        ];
+      }
     }
 
     const updateWhere = {
       userId,
+      ...canonicalArticleWhere(),
       status: 'unread',
       ...(eventIds.length > 0
         ? {
@@ -305,7 +341,8 @@ const markClicked = async (req, res, _next) => {
       const articles = await Article.findAll({
         where: {
           id: { [Op.in]: articleIds },
-          userId: userId
+          userId: userId,
+          ...canonicalArticleWhere()
         }
       });
 
@@ -334,7 +371,8 @@ const markClicked = async (req, res, _next) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       }
     });
 
@@ -372,7 +410,8 @@ const markNotInterested = async (req, res, _next) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       }
     });
 
@@ -409,7 +448,8 @@ const markMoreLikeThis = async (req, res, _next) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       }
     });
 
@@ -511,7 +551,8 @@ const updateArticleStatus = async (userId, articleId, status) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       },
       include: [{
         model: Feed,
@@ -574,7 +615,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId
+        userId,
+        ...canonicalArticleWhere()
       },
       include: [
         {
@@ -646,43 +688,14 @@ const articleMarkAsSeen = async (req, res, _next) => {
       response.cluster &&
       Number.isInteger(response.cluster.articleCount)
     ) {
-      let clusterCount = response.cluster.articleCount;
-
-      if (req.body?.eventView === 'topicGroup') {
-        const cluster = await Event.findOne({
-          where: {
-            id: updatedArticle.eventId,
-            userId: userId
-          },
-          attributes: ['topicId']
-        });
-
-        if (cluster?.topicId) {
-          clusterCount = await Article.count({
-            where: {
-              userId: userId
-            },
-            include: [
-              {
-                model: Event,
-                as: 'cluster',
-                required: true,
-                attributes: [],
-                where: {
-                  topicId: cluster.topicId
-                }
-              }
-            ]
-          });
-        }
-      }
-
-      response.clusterCount = clusterCount;
+      response.clusterCount = response.cluster.articleCount;
     }
 
-    // If eventCluster is enabled and article has an eventId, update all articles in the same event using the same payload
-    if (req.body?.eventView === 'eventCluster' && article.eventId) {
-      console.log(`event view enabled: marking all articles in event ${article.eventId} as seen`);
+    // If event grouping is enabled and article has an eventId, update all articles in the same event using the same payload.
+    const grouping = normalizeGrouping(req.body?.grouping);
+
+    if ((grouping === 'event' || grouping === 'topic') && article.eventId) {
+      console.log(`${grouping} grouping enabled: marking related articles for event ${article.eventId} as seen`);
 
       // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
       // If status should be marked as read, ensure it is set for the cluster update as well
@@ -693,10 +706,34 @@ const articleMarkAsSeen = async (req, res, _next) => {
         // Remove status if not updating
         delete clusterPayload.status;
       }
+      let relatedEventIds = [article.eventId];
+
+      if (grouping === 'topic') {
+        const cluster = await Event.findOne({
+          where: {
+            id: article.eventId,
+            userId
+          },
+          attributes: ['topicId']
+        });
+
+        if (cluster?.topicId) {
+          const topicEvents = await Event.findAll({
+            where: {
+              userId,
+              topicId: cluster.topicId
+            },
+            attributes: ['id']
+          });
+          relatedEventIds = topicEvents.map(event => event.id);
+        }
+      }
+
       const clusterWhere = {
         id: { [Op.ne]: articleId },
         userId: userId,
-        eventId: article.eventId
+        ...canonicalArticleWhere(),
+        eventId: { [Op.in]: relatedEventIds }
       };
 
       if (shouldMarkRead) {
@@ -724,73 +761,6 @@ const articleMarkAsSeen = async (req, res, _next) => {
       await Article.update(clusterPayload, {
         where: clusterWhere
       });
-    }
-
-    // Check if event view is enabled for topicGroup only
-    if (req.body?.eventView === 'topicGroup' && article.eventId) {
-      const cluster = await Event.findOne({
-        where: {
-          id: article.eventId,
-          userId: userId
-        },
-        attributes: ['id', 'topicId']
-      });
-
-      if (!cluster?.topicId) {
-        console.log(`topicGroup view enabled but no topicId for event ${article.eventId}`);
-      } else {
-        const topicClusters = await Event.findAll({
-          where: {
-            userId: userId,
-            topicId: cluster.topicId
-          },
-          attributes: ['id']
-        });
-
-        const topicClusterIds = topicClusters.map(c => c.id);
-        if (topicClusterIds.length) {
-          console.log(`topicGroup view enabled: marking all articles in topic ${cluster.topicId} as seen`);
-
-          const clusterPayload = { ...payload };
-          if (shouldMarkRead) {
-            clusterPayload.status = 'read';
-          } else {
-            delete clusterPayload.status;
-          }
-
-          const topicWhere = {
-            id: { [Op.ne]: articleId },
-            userId: userId,
-            eventId: { [Op.in]: topicClusterIds }
-          };
-
-          if (shouldMarkRead) {
-            const unreadTopicArticles = await Article.findAll({
-              where: {
-                ...topicWhere,
-                status: 'unread'
-              },
-              attributes: ['id', 'feedId'],
-              include: [{
-                model: Feed,
-                required: true,
-                attributes: ['id', 'categoryId']
-              }]
-            });
-            readArticles.push(
-              ...unreadTopicArticles.map(topicArticle => ({
-                id: Number(topicArticle.id),
-                feedId: topicArticle.feedId,
-                feed: topicArticle.feed
-              }))
-            );
-          }
-
-          await Article.update(clusterPayload, {
-            where: topicWhere
-          });
-        }
-      }
     }
 
     if (shouldMarkRead) {
@@ -862,7 +832,8 @@ const articleMarkAsFavorite = async (req, res, _next) => {
       const articles = await Article.findAll({
         where: {
           id: { [Op.in]: articleIds },
-          userId: userId
+          userId: userId,
+          ...canonicalArticleWhere()
         },
         include: [{
           model: Feed,
@@ -889,7 +860,8 @@ const articleMarkAsFavorite = async (req, res, _next) => {
     const article = await Article.findOne({
       where: {
         id: articleId,
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       },
       include: [{
         model: Feed,
@@ -924,7 +896,8 @@ const articleMarkAllAsRead = async (req, res, _next) => {
     }, {
       where: {
         status: "unread",
-        userId: userId
+        userId: userId,
+        ...canonicalArticleWhere()
       }
     });
 

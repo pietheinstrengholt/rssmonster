@@ -33,6 +33,15 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'unread'
       },
+      duplicateOfArticleId: {
+        type: DataTypes.INTEGER,
+        allowNull: true
+      },
+      duplicateCount: {
+        type: DataTypes.INTEGER,
+        allowNull: false,
+        defaultValue: 0
+      },
       favoriteInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0

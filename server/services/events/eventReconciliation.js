@@ -5,6 +5,7 @@ import {
   EVENT_LIFECYCLE,
   EVENT_STRENGTH_CONFIG
 } from '../config/semanticConfig.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import {
   articleEventTimestamp,
   eventWindowFromArticles
@@ -110,7 +111,8 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
   const allEventArticles = await Article.findAll({
     where: {
       eventId: { [Op.in]: touchedIds },
-      userId
+      userId,
+      ...canonicalArticleWhere()
     },
     attributes: ['id', 'eventId', 'feedId', 'published', 'createdAt', 'articleVector']
   });

@@ -9,6 +9,7 @@ import { parseArticleQuery } from './articleQueryParser.service.js';
 import { buildArticleSearchQuery, executeSearch, executeSearchCount } from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 const articleValue = (article, key) => (
   typeof article.get === 'function' ? article.get(key) : article[key]
@@ -40,7 +41,7 @@ export const searchArticles = async ({
     sort = "desc",
     viewMode = "full",
     tag = null,
-    eventView = false,
+    grouping = 'none',
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
     limitCount = null, // Maximum number of results (used by smart folders)
@@ -93,7 +94,7 @@ export const searchArticles = async ({
       language: languageFilter = null,
       quality: qualityFilter = null,
       freshness: freshnessFilter = null,
-      event: eventFilter = null,
+      event = null,
       hot: hotFilter = null
     } = filters;
     const eventCountFilter = Number.isFinite(filters.eventCount) ? filters.eventCount : null;
@@ -171,6 +172,7 @@ export const searchArticles = async ({
     const baseWhere = {
       userId: userId,
       feedId: feedIds,
+      ...canonicalArticleWhere(),
       // Quality filters: get articles above minimum scores
       advertisementScore: { [Op.gte]: finalMinAdvertisementScore },
       sentimentScore: { [Op.gte]: finalMinSentimentScore },
@@ -210,8 +212,8 @@ export const searchArticles = async ({
       hotFilter,
       status,
       rawSearch,
-      eventFilter,
-      eventView,
+      event,
+      grouping,
       clusterCountFilter: eventCountFilter,
       firstSeenAgeFilter,
       authorFilter,
@@ -314,7 +316,7 @@ export const searchArticles = async ({
         minSentimentScore: finalMinSentimentScore,
         minQualityScore: finalMinQualityScore,
         viewMode: viewMode,
-        eventView: eventView,
+        grouping,
         themeMode: userSettings?.themeMode ?? 'system'
       };
 

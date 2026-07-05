@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 import { cosineSimilarity as sharedCosineSimilarity } from '../vectors/index.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { ISLAND_DEBUG } from '../islands/islandVectorUtils.js';
 
 // This service refreshes article interest scores from island memberships.
@@ -98,6 +99,7 @@ async function applyVectorFallbackScores(userId, options = {}) {
     where: {
       userId,
       status: SCORABLE_ARTICLE_STATUS,
+      ...canonicalArticleWhere(),
       articleVector: { [Op.ne]: null }
     },
     attributes: ['id', 'interestScore', 'articleVector'],
@@ -140,6 +142,7 @@ async function resetArticleInterestScores(userId, options = {}) {
     SET interestScore = 0
     WHERE userId = :userId
       AND status = :status
+      AND duplicateOfArticleId IS NULL
     `,
     {
       replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
@@ -173,12 +176,14 @@ async function applyTopicPathScores(userId, options = {}) {
         ON src.id = atp.articleId
        AND src.userId = :userId
        AND src.status = :status
+       AND src.duplicateOfArticleId IS NULL
       GROUP BY atp.articleId
     ) scored
       ON scored.articleId = a.id
     SET a.interestScore = scored.interestScore
     WHERE a.userId = :userId
       AND a.status = :status
+      AND a.duplicateOfArticleId IS NULL
     `,
     {
       replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
@@ -207,6 +212,7 @@ async function applyTopicPathScores(userId, options = {}) {
        AND i.archivedInd = 0
       WHERE a.userId = :userId
         AND a.status = :status
+        AND a.duplicateOfArticleId IS NULL
         AND a.interestScore <> 0
       GROUP BY a.id, a.interestScore
       ORDER BY a.id ASC

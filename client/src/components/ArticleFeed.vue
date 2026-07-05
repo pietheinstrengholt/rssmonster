@@ -491,7 +491,7 @@ export default {
     async markArticleSeen(articleId, visibleSeconds = 0) {
       try {
         const response = await markArticleSeen(articleId, {
-          eventView: this.$store.data.currentSelection.eventView,
+          grouping: this.$store.data.currentSelection.grouping,
           visibleSeconds,
           selectedStatus: this.$store.data.currentSelection.status
         });
@@ -558,7 +558,7 @@ export default {
 
       try {
         const response = await markArticleSeen(articleId, {
-          eventView: this.$store.data.currentSelection.eventView,
+          grouping: this.$store.data.currentSelection.grouping,
           visibleSeconds: 0,
           selectedStatus: 'unread'
         });
@@ -597,7 +597,7 @@ export default {
         }
 
         const response = await markArticleSeen(id, {
-          eventView: this.$store.data.currentSelection.eventView,
+          grouping: this.$store.data.currentSelection.grouping,
           visibleSeconds: 0,
           selectedStatus: 'unread'
         });
@@ -639,7 +639,7 @@ export default {
         }
 
         const response = await markArticleSeen(id, {
-          eventView: this.$store.data.currentSelection.eventView,
+          grouping: this.$store.data.currentSelection.grouping,
           visibleSeconds: 0,
           selectedStatus: 'unread'
         });
@@ -846,7 +846,7 @@ export default {
         minAdvertisementScore: 0,
         minSentimentScore: 0,
         minQualityScore: 0,
-        eventView: 'all',
+        grouping: 'none',
         sort: 'desc'
       });
     },

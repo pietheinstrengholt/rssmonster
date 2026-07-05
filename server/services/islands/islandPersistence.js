@@ -209,11 +209,11 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     createdIslandCount += 1;
 
     console.log(
-      `[ISLAND] new-island=${island.id}\n` +
-      `[ISLAND]          name="${logSafeIslandName(resolvedLabel)}"\n` +
-      `[ISLAND]          seedTopics=${profile.topics.length}\n` +
-      `[ISLAND]          seedArticles=${(profile.articles || []).length}\n` +
-      `[ISLAND]          avgSim=${formatIslandMetric(averageSimilarity(islandRows))}`
+      `[ISLAND] new-island=${island.id} ` +
+      `name="${logSafeIslandName(resolvedLabel)}" ` +
+      `seedTopics=${profile.topics.length} ` +
+      `seedArticles=${(profile.articles || []).length} ` +
+      `avgSim=${formatIslandMetric(averageSimilarity(islandRows))}`
     );
 
     if (islandRows.length) {

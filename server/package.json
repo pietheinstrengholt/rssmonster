@@ -37,6 +37,7 @@
     "seed:island-taxonomy": "./node_modules/.bin/sequelize db:seed --seed 20260520104500-island-taxonomy.js",
     "seed:undo:island-taxonomy": "./node_modules/.bin/sequelize db:seed:undo --seed 20260520104500-island-taxonomy.js",
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js",
+    "repair-duplicates": "NODE_ENV=production node scripts/repairDuplicateCounts.js",
     "reset:semantic": "node scripts/resetSemanticState.js"
   },
   "engines": {
@@ -76,6 +77,5 @@
     "fsevents": "^2.3.3"
   }
 }
-
 
 
