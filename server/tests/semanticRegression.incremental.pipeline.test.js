@@ -14,6 +14,11 @@ import {
   loadIncrementalVectorFixture
 } from './helpers/semanticRegressionIncremental.js';
 import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
+import {
+  markSemanticRegressionArticles,
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const {
   sequelize,
@@ -221,5 +226,19 @@ semanticRegressionDescribe('semantic regression incremental event pipeline', () 
       expect(event.status).toBeTruthy();
       expect(Number(event.eventStrength || 0)).toBeGreaterThanOrEqual(MIN_STRONG_EVENT_STRENGTH);
     }
+
+    await markSemanticRegressionArticles({
+      userId,
+      incrementalArticleIds
+    });
+    await refreshSemanticRegressionTrace({
+      userId,
+      phase: 'incremental-events',
+      incrementalArticleIds
+    });
+    await printSemanticRegressionTrace({
+      userId,
+      phase: 'incremental-events'
+    });
   }, 180000);
 });

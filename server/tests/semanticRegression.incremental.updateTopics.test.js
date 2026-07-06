@@ -11,6 +11,10 @@ import {
   loadIncrementalFixture
 } from './helpers/semanticRegressionIncremental.js';
 import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
+import {
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const {
   sequelize,
@@ -116,5 +120,15 @@ semanticRegressionDescribe('semantic regression incremental topic update', () =>
     expect(topicLinkedIncrementalArticleCount).toBeGreaterThan(0);
     expect(incrementalArticleTopicLinkCount).toBeGreaterThan(0);
     expect(incrementalEventTopicLinkCount).toBeGreaterThan(0);
+
+    await refreshSemanticRegressionTrace({
+      userId,
+      phase: 'incremental-topics',
+      incrementalArticleIds
+    });
+    await printSemanticRegressionTrace({
+      userId,
+      phase: 'incremental-topics'
+    });
   }, 180000);
 });

@@ -7,6 +7,10 @@ import { Op } from 'sequelize';
 import db from '../models/index.js';
 import { rebuildAllTopicsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 import { printSemanticArticleRankingTableForUser } from './helpers/semanticRegressionReport.js';
+import {
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const {
   User,
@@ -94,5 +98,14 @@ semanticRegressionDescribe('semantic regression topic creation command', () => {
     expect(topicLinkedArticleCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPIC_LINKED_ARTICLES);
     expect(articleTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ARTICLE_TOPIC_LINKS);
     expect(eventTopicLinkCount).toBeGreaterThanOrEqual(EXPECTED_MIN_TOPICS);
+
+    await refreshSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'baseline-topics'
+    });
+    await printSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'baseline-topics'
+    });
   }, 180000);
 });

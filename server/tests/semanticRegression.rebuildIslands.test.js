@@ -13,6 +13,10 @@ import {
   hasTaxonomyVectorFixture
 } from './helpers/semanticRegressionIslands.js';
 import { printSemanticArticleRankingTableForUser } from './helpers/semanticRegressionReport.js';
+import {
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const { User, Island, IslandTopic } = db;
 const NEAR_DUPLICATE_ISLAND_SIMILARITY = 0.92;
@@ -202,5 +206,20 @@ semanticRegressionDescribe('semantic regression island rebuild command', () => {
     assertNoNearDuplicateIslandNames(groups);
     assertNoDuplicateNormalizedIslandNames(groups);
     assertDisambiguatedVariantsKeepStrongerBase(islands, topicCountByIslandId);
+
+    const user = await User.findOne({
+      where: { username: FIXTURE_USERNAME },
+      attributes: ['id'],
+      raw: true
+    });
+
+    await refreshSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'rebuild-islands'
+    });
+    await printSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'rebuild-islands'
+    });
   }, 180000);
 });

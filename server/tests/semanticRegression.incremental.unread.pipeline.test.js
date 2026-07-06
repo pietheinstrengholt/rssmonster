@@ -11,6 +11,11 @@ import scoreArticlesFromIslandsForUser from '../services/score/scoreArticlesFrom
 import { cosineSimilarity } from '../services/vectors/index.js';
 import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
 import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
+import {
+  markSemanticRegressionArticles,
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const {
   sequelize,
@@ -447,6 +452,20 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     expect(rows).toHaveLength(25);
     expect(rows.every(row => row.unread)).toBe(true);
     expect(rows[0].recommended).toBeGreaterThanOrEqual(rows.at(-1).recommended);
+
+    await markSemanticRegressionArticles({
+      userId,
+      incrementalArticleIds: insertedArticleIds
+    });
+    await refreshSemanticRegressionTrace({
+      userId,
+      phase: 'incremental-unread',
+      incrementalArticleIds: insertedArticleIds
+    });
+    await printSemanticRegressionTrace({
+      userId,
+      phase: 'incremental-unread'
+    });
   }, 60000);
 });
 

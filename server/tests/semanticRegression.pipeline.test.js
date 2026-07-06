@@ -9,6 +9,11 @@ import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
 import { repairRecentEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
+import {
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace,
+  resetSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const {
   sequelize,
@@ -336,6 +341,25 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
     expect(articleCount).toBe(fixture.articles.length);
     expect(eventCount).toBeGreaterThanOrEqual(EXPECTED_MIN_EVENTS);
     expect(assignedArticleCount).toBeGreaterThanOrEqual(EXPECTED_MIN_ASSIGNED_ARTICLES);
+
+    const baselineArticleIds = await Article.findAll({
+      where: { userId: user.id },
+      attributes: ['id'],
+      raw: true
+    }).then(rows => rows.map(row => Number(row.id)));
+
+    await resetSemanticRegressionTrace({
+      userId: user.id,
+      baselineArticleIds
+    });
+    await refreshSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'baseline-events'
+    });
+    await printSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'baseline-events'
+    });
   }, 60000);
 
 });
