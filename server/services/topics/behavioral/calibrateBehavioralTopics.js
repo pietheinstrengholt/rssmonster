@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../../models/index.js';
+import { canonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
 import {
   blendTopicVectorWithAlpha,
   cosineSimilarity,
@@ -266,6 +267,7 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
   const articles = await Article.findAll({
     where: {
       userId,
+      ...canonicalArticleWhere(),
       articleVector: { [Op.ne]: null },
       [Op.or]: [
         { favoriteInd: 1 },

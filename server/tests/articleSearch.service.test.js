@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
-import { searchArticles } from '../util/articleSearch.service.js';
+import { searchArticles } from '../services/articleSearch/articleSearch.service.js';
 
 const { sequelize, User, Category, Feed, Article, Event, Tag, Setting } = db;
 
@@ -50,7 +50,7 @@ describe('articleSearch.service', () => {
       minSentimentScore: 0,
       minQualityScore: 0,
       viewMode: 'full',
-      eventView: 'all'
+      grouping: 'none'
     });
 
     // ---- Articles with diverse properties ----

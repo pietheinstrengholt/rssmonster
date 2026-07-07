@@ -1,6 +1,6 @@
 // Builds and executes Sequelize article search queries from normalized filters.
 // It keeps database predicate construction separate from higher-level search orchestration.
-import db from '../models/index.js';
+import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
 const { Article, Event, Feed, Tag } = db;
@@ -34,8 +34,8 @@ export const buildArticleSearchQuery = ({
   hotFilter,
   status,
   rawSearch,
-  eventFilter,
-  eventView,
+  event,
+  grouping,
   clusterCountFilter,
   firstSeenAgeFilter,
   authorFilter,
@@ -167,8 +167,8 @@ export const buildArticleSearchQuery = ({
     }
   }
 
-  if (eventFilter !== null) {
-    articleQuery.where.eventId = eventFilter ? { [Op.not]: null } : { [Op.is]: null };
+  if (event !== null) {
+    articleQuery.where.eventId = event ? { [Op.not]: null } : { [Op.is]: null };
   }
 
   if (Number.isFinite(clusterCountFilter)) {
@@ -180,7 +180,7 @@ export const buildArticleSearchQuery = ({
     );
   }
 
-  if (eventFilter === null && eventView === 'eventCluster') {
+  if (event === null && grouping === 'event') {
     appendAndCondition(articleQuery.where, {
       [Op.or]: [
         {
@@ -194,6 +194,34 @@ export const buildArticleSearchQuery = ({
           }
         }
       ]
+    });
+  }
+
+  if (event === null && grouping === 'topic') {
+    appendAndCondition(articleQuery.where, {
+      id: {
+        [Op.in]: Article.sequelize.literal(`(
+          SELECT e.representativeArticleId
+          FROM events e
+          INNER JOIN (
+            SELECT userId, topicId, MAX(eventStrength) AS maxStrength
+            FROM events
+            WHERE topicId IS NOT NULL
+            GROUP BY userId, topicId
+          ) t
+            ON e.userId = t.userId
+            AND e.topicId = t.topicId
+            AND e.eventStrength = t.maxStrength
+          WHERE e.topicId IS NOT NULL
+            AND e.id = (
+              SELECT MAX(e2.id)
+              FROM events e2
+              WHERE e2.userId = e.userId
+                AND e2.topicId = e.topicId
+                AND e2.eventStrength = e.eventStrength
+            )
+        )`)
+      }
     });
   }
 

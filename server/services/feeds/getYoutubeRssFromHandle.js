@@ -1,6 +1,6 @@
 // Resolves YouTube channel, handle, or custom URLs to YouTube's RSS feed endpoint.
 // Video URLs are rejected because they do not represent a channel feed.
-import { fetchURL as fetchURLInternal } from './fetchURL.js';
+import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
 
 // Converts supported YouTube inputs into the corresponding channel RSS URL.
 export const getYoutubeRssFromHandle = async (input) => {

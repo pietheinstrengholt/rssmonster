@@ -94,7 +94,7 @@
         v-for="tag in topTagsDisplay"
         :key="tag.name"
         icon="tag-fill"
-        :title="`${formatTagName(tag.name)}${tag.tagType === 'rule' ? ' (rule-based)' : ''}`"
+        :title="`${formatTagName(tag.name)}`"
         :count="tag.count"
         :selected="$store.data.currentSelection.tag === tag.name"
         row-class="sidebar-tag-item"

@@ -1,9 +1,10 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
 import db from '../models/index.js';
+import { printSemanticArticleRankingTableForUser } from './helpers/semanticRegressionReport.js';
 
 const { User, Island } = db;
 
@@ -25,6 +26,12 @@ async function hasVectorFixture() {
 const semanticRegressionDescribe = (await hasVectorFixture()) ? describe : describe.skip;
 
 semanticRegressionDescribe('semantic regression island architecture guard', () => {
+  afterAll(async () => {
+    await printSemanticArticleRankingTableForUser(FIXTURE_USERNAME, {
+      includeIslands: false
+    });
+  });
+
   it('does not create islands during baseline article event topic assignment', async () => {
     const user = await User.findOne({
       where: { username: FIXTURE_USERNAME },

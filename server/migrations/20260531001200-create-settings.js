@@ -59,10 +59,10 @@ module.exports = {
       allowNull: false,
       defaultValue: 'full'
     },
-    clusterView: {
+    grouping: {
       type: Sequelize.STRING,
       allowNull: false,
-      defaultValue: 'all'
+      defaultValue: 'none'
     },
     createdAt: {
       type: Sequelize.DATE,

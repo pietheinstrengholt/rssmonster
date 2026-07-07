@@ -1,11 +1,11 @@
 import db from '../models/index.js';
 const { Action, Article, Feed, Hotlink } = db;
-import discoverRssLink from '../util/discoverRssLink.js';
-import parseFeed from '../util/parser.js';
-import processArticle from './crawl/processArticle.js';
-import createArticleDuplicateCache from './crawl/articleDuplicateCache.js';
-import createHotlinkCountCache from './crawl/hotlinkCountCache.js';
-import createHotlinkBatcher from './crawl/hotlinkBatcher.js';
+import discoverRssLink from '../services/feeds/discoverRssLink.js';
+import parseFeed from '../services/feeds/parser.js';
+import processArticle from '../services/crawl/processArticle.js';
+import createArticleDuplicateCache from '../services/crawl/articleDuplicateCache.js';
+import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
+import createHotlinkBatcher from '../services/crawl/hotlinkBatcher.js';
 import { runPostCrawlSemanticPipeline } from '../services/crawl/postCrawlSemanticPipeline.js';
 
 /* ------------------------------------------------------------------
@@ -20,6 +20,11 @@ const FEED_TIMEOUT_MS = parseInt(process.env.FEED_TIMEOUT_MS) || 60000;
 
 // Overall crawl deadline (default 10 minutes)
 const CRAWL_TIMEOUT_MS = parseInt(process.env.CRAWL_TIMEOUT_MS) || 10 * 60 * 1000;
+
+const parsedDuplicateCacheDays = Number.parseInt(process.env.CRAWL_DUPLICATE_CACHE_DAYS, 10);
+const DUPLICATE_CACHE_DAYS = Number.isInteger(parsedDuplicateCacheDays) && parsedDuplicateCacheDays > 0
+  ? parsedDuplicateCacheDays
+  : 30;
 
 // Controls whether feeds are processed in parallel (1) or sequentially (0, default)
 const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
@@ -171,10 +176,17 @@ const getDuplicateCachesByFeedId = async (feeds) => {
     return cachesByFeedId;
   }
 
+  const duplicateCacheSince = new Date(Date.now() - DUPLICATE_CACHE_DAYS * 24 * 60 * 60 * 1000);
+
+  console.log(`[Crawl] Building duplicate cache for articles published in the last ${DUPLICATE_CACHE_DAYS} days.`);
+
   const [feedArticleLists, userContentHashArticles] = await Promise.all([
     Promise.all(feeds.map(feed => Article.findAll({
       attributes: ['id', 'url', 'title', 'contentHash'],
-      where: { feedId: feed.id },
+      where: {
+        feedId: feed.id,
+        published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
+      },
       raw: true
     }))),
     userIds.length > 0
@@ -182,7 +194,8 @@ const getDuplicateCachesByFeedId = async (feeds) => {
         attributes: ['id', 'userId', 'contentHash'],
         where: {
           userId: { [db.Sequelize.Op.in]: userIds },
-          contentHash: { [db.Sequelize.Op.not]: null }
+          contentHash: { [db.Sequelize.Op.not]: null },
+          published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
         },
         raw: true
       })
@@ -628,8 +641,8 @@ const performCrawl = async (userId = null, options = {}) => {
   return result;
 };
 
-// This function runs a crawl and then clusters crawled articles into events.
-const performCrawlWithEventClustering = async (userId = null, options = {}) => {
+// This function runs a crawl and then groups crawled articles semantically.
+const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => {
   const result = await performCrawl(userId, {
     ...options,
     suppressDoneEvent: true
@@ -669,7 +682,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   console.log(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
-    performCrawlWithEventClustering(userId)
+    performCrawlWithSemanticGrouping(userId)
       .then(async result => {
         resetRateLimitDelay();
         console.log(
@@ -690,7 +703,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
 
 export default {
   crawlRssLinks,
-  performCrawlWithEventClustering,
+  performCrawlWithSemanticGrouping,
   performCrawl,
   shouldCrawlFeed
 }

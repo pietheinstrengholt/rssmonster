@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import {
   DEFAULT_ARTICLE_AFFINITY_THRESHOLD,
   DEFAULT_ARTICLE_SIGNAL_THRESHOLD,
@@ -175,6 +176,7 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
   const articles = await Article.findAll({
     where: {
       userId,
+      ...canonicalArticleWhere(),
       articleVector: { [Op.ne]: null },
       [Op.or]: [
         { positiveInd: 1 },

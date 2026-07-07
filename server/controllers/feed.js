@@ -1,14 +1,15 @@
 import db from '../models/index.js';
 const { Feed, Article, Category } = db;
 
-import discoverRssLink from "../util/discoverRssLink.js";
-import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';
-import parseFeed from "../util/parser.js";
+import discoverRssLink from "../services/feeds/discoverRssLink.js";
+import { rediscoverRssUrl } from '../services/feeds/rediscoverRssUrl.js';
+import parseFeed from "../services/feeds/parser.js";
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/auth.js';
 import crawlController from './crawl.js';
-import crawlJobManager from '../util/crawlJobManager.js';
-import { normalizeTagList } from './crawl/tags.js';
+import crawlJobManager from '../services/crawl/crawlJobManager.js';
+import { normalizeTagList } from '../services/crawl/tags.js';
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 const findOwnedCategory = (categoryId, userId) => Category.findOne({
   where: {
@@ -77,7 +78,7 @@ const getFeeds = async (req, res, _next) => {
         [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount'],
         [Article.sequelize.fn('COUNT', Article.sequelize.col('eventId')), 'clusteredArticleCount']
       ],
-      where: { userId: userId },
+      where: { userId: userId, ...canonicalArticleWhere() },
       group: ['feedId'],
       raw: true
     });
@@ -91,6 +92,7 @@ const getFeeds = async (req, res, _next) => {
       ],
       where: { 
         userId: userId,
+        ...canonicalArticleWhere(),
         published: { [db.Sequelize.Op.gte]: thirtyDaysAgo }
       },
       group: ['feedId'],
@@ -525,7 +527,7 @@ const startRefresh = async (req, res) => {
       message: 'Refresh job queued'
     });
 
-    crawlController.performCrawlWithEventClustering(userId, {
+    crawlController.performCrawlWithSemanticGrouping(userId, {
       onProgress: (event) => {
         crawlJobManager.publishEvent(jobId, event);
       }

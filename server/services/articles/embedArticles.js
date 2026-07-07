@@ -2,6 +2,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import embedArticle from './embedArticle.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
 /**
  * Backfill runner for article vectors.
@@ -52,6 +53,7 @@ export async function embedArticles(userId, options = {}) {
       where: {
         userId,
         id: { [Op.gt]: lastId },
+        ...canonicalArticleWhere(),
         ...(createdAfter ? { createdAt: { [Op.gte]: createdAfter } } : {})
       },
       include: [{

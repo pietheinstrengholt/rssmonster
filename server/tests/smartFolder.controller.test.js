@@ -25,11 +25,11 @@ vi.mock('../models/index.js', () => ({
   }
 }));
 
-vi.mock('../util/articleSearch.service.js', () => ({
+vi.mock('../services/articleSearch/articleSearch.service.js', () => ({
   searchArticles: mocked.searchArticles
 }));
 
-vi.mock('../util/smartFolderLLM.js', () => ({
+vi.mock('../services/smartFolders/smartFolderLLM.js', () => ({
   getSmartFolderRecommendations: mocked.getSmartFolderRecommendations
 }));
 

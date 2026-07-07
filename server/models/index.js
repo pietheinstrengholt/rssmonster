@@ -125,6 +125,10 @@ Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'artic
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'cluster' });
 
+// Article duplicate traceability
+Article.belongsTo(Article, { foreignKey: 'duplicateOfArticleId', as: 'canonicalArticle' });
+Article.hasMany(Article, { foreignKey: 'duplicateOfArticleId', as: 'duplicateArticles' });
+
 // Topic ↔ Article (denormalized primary link)
 Topic.hasMany(Article, { foreignKey: 'topicId', as: 'primaryArticles', onDelete: 'SET NULL' });
 Article.belongsTo(Topic, { foreignKey: 'topicId', as: 'topic' });

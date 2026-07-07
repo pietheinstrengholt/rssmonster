@@ -2,6 +2,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
 import { normalizeTopicAssignments, primaryTopicId } from '../topics/event/eventTopicAssignment.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
 const { Article, ArticleTopic } = db;
 
@@ -12,7 +13,7 @@ export async function syncEventTopicsToArticles(eventId, eventTopicAssignments) 
   const primaryId = primaryTopicId(normalizedAssignments);
 
   const eventArticles = await Article.findAll({
-    where: { eventId },
+    where: { eventId, ...canonicalArticleWhere() },
     attributes: ['id'],
     raw: true
   });

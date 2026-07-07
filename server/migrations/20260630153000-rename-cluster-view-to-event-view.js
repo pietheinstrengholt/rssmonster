@@ -2,13 +2,9 @@
 
 /** @type {import('sequelize-cli').Migration} */
 module.exports = {
-  // Rename the persisted article grouping preference to match event terminology.
-  async up(queryInterface) {
-    await queryInterface.renameColumn('settings', 'clusterView', 'eventView');
-  },
+  // This migration is retained for installations that already recorded it.
+  async up() {},
 
-  // Restore the previous column name for rollback compatibility.
-  async down(queryInterface) {
-    await queryInterface.renameColumn('settings', 'eventView', 'clusterView');
-  }
+  // This migration is retained for installations that already recorded it.
+  async down() {}
 };

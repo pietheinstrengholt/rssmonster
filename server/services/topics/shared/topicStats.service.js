@@ -1,4 +1,5 @@
 import db from '../../../models/index.js';
+import { canonicalArticleWhere } from '../../duplicates/articleDuplicates.js';
 
 const { Article, Event, Topic, ArticleTopic, EventTopic } = db;
 
@@ -17,7 +18,7 @@ export async function recomputeTopicStatsForUser(userId, topicIds) {
             model: Article,
             required: true,
             attributes: [],
-            where: { userId }
+            where: { userId, ...canonicalArticleWhere() }
           }],
           distinct: true,
           col: 'articleId'

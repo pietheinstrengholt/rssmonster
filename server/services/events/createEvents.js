@@ -4,6 +4,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { averageVector } from '../vectors/index.js';
 import { eventDateFromArticle, eventWindowFromArticles } from './articleEventTime.js';
 
@@ -136,7 +137,8 @@ export async function createAndAssignEvent({
     { eventId: newEvent.id },
     {
       where: {
-        id: { [Op.in]: eventArticleIds }
+        id: { [Op.in]: eventArticleIds },
+        ...canonicalArticleWhere()
       }
     }
   );

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { afterAll, describe, expect, it } from 'vitest';
 
 import db from '../models/index.js';
 import { cosineSimilarity, parseVector } from '../services/vectors/index.js';
@@ -12,6 +12,11 @@ import {
   expectSemanticRegressionIslandsBuilt,
   hasTaxonomyVectorFixture
 } from './helpers/semanticRegressionIslands.js';
+import { printSemanticArticleRankingTableForUser } from './helpers/semanticRegressionReport.js';
+import {
+  printSemanticRegressionTrace,
+  refreshSemanticRegressionTrace
+} from './helpers/semanticRegressionTrace.js';
 
 const { User, Island, IslandTopic } = db;
 const NEAR_DUPLICATE_ISLAND_SIMILARITY = 0.92;
@@ -179,6 +184,10 @@ async function loadActiveIslandDiagnostics() {
 }
 
 semanticRegressionDescribe('semantic regression island rebuild command', () => {
+  afterAll(async () => {
+    await printSemanticArticleRankingTableForUser(FIXTURE_USERNAME);
+  });
+
   it('refreshes interest islands when the island build runs again after recluster', async () => {
     await expectSemanticRegressionIslandsBuilt(expect);
 
@@ -197,5 +206,20 @@ semanticRegressionDescribe('semantic regression island rebuild command', () => {
     assertNoNearDuplicateIslandNames(groups);
     assertNoDuplicateNormalizedIslandNames(groups);
     assertDisambiguatedVariantsKeepStrongerBase(islands, topicCountByIslandId);
+
+    const user = await User.findOne({
+      where: { username: FIXTURE_USERNAME },
+      attributes: ['id'],
+      raw: true
+    });
+
+    await refreshSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'rebuild-islands'
+    });
+    await printSemanticRegressionTrace({
+      userId: user.id,
+      phase: 'rebuild-islands'
+    });
   }, 180000);
 });

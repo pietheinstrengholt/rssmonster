@@ -19,7 +19,7 @@
 import { Op } from 'sequelize';
 import db from '../models/index.js';
 const { Feed, Article, Event } = db;
-import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
+import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 
 /* ------------------------------------------------------------------
  * Configuration

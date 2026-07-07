@@ -2,8 +2,8 @@
 
 import db from '../models/index.js';
 import { Op, fn, col, literal } from 'sequelize';
-import { searchArticles } from "../util/articleSearch.service.js";
-import { getSmartFolderRecommendations } from '../util/smartFolderLLM.js';
+import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import { getSmartFolderRecommendations } from '../services/smartFolders/smartFolderLLM.js';
 const { Article, Feed, Tag, SmartFolder, Setting } = db;
 
 const SMART_FOLDER_COUNT_CONCURRENCY = 4;

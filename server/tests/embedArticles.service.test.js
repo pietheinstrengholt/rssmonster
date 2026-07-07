@@ -98,10 +98,11 @@ describe('embedArticles', () => {
     });
 
     expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: {
+      where: expect.objectContaining({
         userId: 42,
-        id: expect.any(Object)
-      }
+        id: expect.any(Object),
+        duplicateOfArticleId: expect.any(Object)
+      })
     }));
   });
 });

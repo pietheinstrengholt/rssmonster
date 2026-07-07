@@ -4,6 +4,7 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { assignSemanticUnitToTopic } from '../topics/event/assignEventToTopic.js';
+import { canonicalArticleWhere, DUPLICATE_ARTICLE_STATUS } from '../duplicates/articleDuplicates.js';
 import { createAndAssignEvent as createEventFromCandidates } from './createEvents.js';
 import { syncEventTopicsToArticles } from './eventArticleTopicSync.js';
 import {
@@ -593,6 +594,7 @@ async function findCandidateArticles({ article, articleEventVector }) {
     where: {
       userId: article.userId,
       id: { [Op.ne]: article.id },
+      ...canonicalArticleWhere(),
       published: {
         [Op.gte]: cutoff,
         [Op.lte]: upperBound
@@ -680,6 +682,28 @@ function incrementRunStat(runContext, key, amount = 1) {
   runContext.stats[key] = Number(runContext.stats[key] || 0) + amount;
 }
 
+// This function tracks whether an event was created during the current assignment run.
+function isRunCreatedEvent(runContext, eventId) {
+  if (!runContext?.newEventIds || eventId == null) return false;
+
+  return runContext.newEventIds.has(Number(eventId));
+}
+
+// This function counts assignments only when the target event existed before the current run.
+function incrementExistingEventAssignment(runContext, eventId) {
+  if (isRunCreatedEvent(runContext, eventId)) return;
+
+  incrementRunStat(runContext, 'linkedToExistingEventCount');
+}
+
+// This function records an event created during the current assignment run.
+function recordNewEvent(runContext, eventId) {
+  if (!runContext || eventId == null) return;
+
+  runContext.newEventIds ??= new Set();
+  runContext.newEventIds.add(Number(eventId));
+}
+
 // This function finds corroborating candidates from articles already seen in the current run.
 function findCandidateArticlesFromContext({ article, articleEventVector, runContext }) {
   const articleTs = articleEventTimestamp(article) ?? Date.now();
@@ -731,6 +755,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   const normalizedArticleEventVector = normalizeVector(articleEventVector);
 
   if (!article) return null;
+  if (article.status === DUPLICATE_ARTICLE_STATUS || article.duplicateOfArticleId != null) return null;
 
   article.tokenSet ??= tokenSet(article.title || '');
   article.entitySet ??= extractEntitySet(article);
@@ -881,7 +906,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       eventVector: articleEventVector
     });
 
-    incrementRunStat(runContext, 'linkedToExistingEventCount');
+    incrementExistingEventAssignment(runContext, bestEvent.id);
     articleCandidateCache?.updateEventId?.([article.id], bestEvent.id);
     conciseEventLog(
       `article=${article.id} → event=${bestEvent.id} ` +
@@ -1017,7 +1042,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         eventVector: articleEventVector
       });
 
-      incrementRunStat(runContext, 'linkedToExistingEventCount');
+      incrementExistingEventAssignment(runContext, candidateEvent.id);
       articleCandidateCache?.updateEventId?.([article.id], candidateEvent.id);
       const selectedCandidateSignal = strongestAcceptedCandidateSignal(
         candidateResult.evaluatedSignals,
@@ -1080,6 +1105,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
 
   if (newEventId) {
     incrementRunStat(runContext, 'newEventsCreatedCount');
+    recordNewEvent(runContext, newEventId);
     const avgSim = averageAcceptedSemantic(candidateResult.evaluatedSignals);
     conciseEventLog(
       `new-event=${newEventId} article=${article.id} ` +

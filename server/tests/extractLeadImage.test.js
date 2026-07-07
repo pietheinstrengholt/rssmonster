@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import extractLeadImage from '../util/extractLeadImage.js';
+import extractLeadImage from '../utils/extractLeadImage.js';
 
 describe('extractLeadImage', () => {
   it('preserves an existing safe lead image', () => {

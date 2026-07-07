@@ -20,8 +20,8 @@
         <div class="article-list-meta">
           <span class="article-list-feed">{{ author || feed.feedName }}</span>
           <span class="article-list-dot">·</span>
-          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.eventView !== 'all' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
-          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.eventView !== 'all'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.grouping !== 'none' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
+          <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
           <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
         </div>
       </div>
@@ -41,10 +41,19 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isEventView="isEventView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :eventView="$store.data.currentSelection.eventView" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
+            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+          </div>
+          <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
+            <template v-for="(signal, index) in articleSignals" :key="signal.label">
+              <span v-if="index > 0" class="signal-divider" aria-hidden="true"></span>
+              <span class="signal-badge">
+                <span :class="['signal-icon', signal.icon]" aria-hidden="true"></span>
+                {{ signal.label }}
+              </span>
+            </template>
           </div>
         </div>
         <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
@@ -64,7 +73,8 @@ import {
 } from '../api/articles';
 
 import { muteFeed } from '../api/feeds';
-import { fetchClusterArticles } from '../api/clusters';
+import { fetchEventArticles } from '../api/events';
+import { fetchTopicArticles } from '../api/topics';
 import ArticleHeader from './articles/ArticleHeader.vue';
 import ArticleMeta from './articles/ArticleMeta.vue';
 import ArticleTagsScores from './articles/ArticleTagsScores.vue';
@@ -76,6 +86,7 @@ import { formatTagName } from '../utils/tags';
 const NEUTRAL_SCORE = 70;
 const SWIPE_MAX = 128;
 const SWIPE_THRESHOLD = 86;
+const TRUSTED_FEED_THRESHOLD = 0.85;
 
 export default {
   inheritAttrs: false,
@@ -104,6 +115,7 @@ export default {
     advertisementScore: { type: Number, default: undefined },
     sentimentScore: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
+    recommendationScore: { type: Number, default: undefined },
     quality: { type: Number, default: undefined },
     interestScore: { type: [Number, String], default: 0 },
     cluster: { type: Object, default: null },
@@ -204,17 +216,67 @@ export default {
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
     },
+    // Returns compact relevance signals for the current article.
+    articleSignals() {
+      const signals = [];
+
+      if (this.hasHighQualitySignal) {
+        signals.push({ label: 'High quality', icon: 'bi bi-stars' });
+      }
+
+      if (this.hasMajorEventSignal) {
+        signals.push({ label: 'Major event', icon: 'bi bi-broadcast' });
+      } else if (this.hasTrendingSignal) {
+        signals.push({ label: 'Trending', icon: 'bi bi-graph-up-arrow' });
+      }
+
+      if (this.hasTrustedSourceSignal) {
+        signals.push({ label: this.trustedSourceLabel, icon: 'bi bi-shield-fill-check' });
+      }
+
+      return signals;
+    },
+    // Returns whether quality or recommendation metadata clears the high-quality threshold.
+    hasHighQualitySignal() {
+      return this.scoreAsPercent(this.qualityScore) > 90
+        || this.scoreAsPercent(this.recommendationScore) > 90;
+    },
+    // Returns whether the feed trust score clears the trusted-source threshold.
+    hasTrustedSourceSignal() {
+      const feedTrust = Number(this.feed?.feedTrust);
+      return Number.isFinite(feedTrust) && feedTrust > TRUSTED_FEED_THRESHOLD;
+    },
+    // Returns the trusted-source label, including feed name when metadata shows an author.
+    trustedSourceLabel() {
+      const feedName = this.feed?.feedName;
+      return this.author && feedName
+        ? `Trusted source (${feedName})`
+        : 'Trusted source';
+    },
+    // Returns whether event source coverage clears the trending threshold.
+    hasTrendingSignal() {
+      return this.eventSourceScore > 4;
+    },
+    // Returns whether event source coverage clears the major-event threshold.
+    hasMajorEventSignal() {
+      return this.eventSourceScore > 6;
+    },
+    // Returns the unique-source score stored on the event/cluster metadata.
+    eventSourceScore() {
+      const score = Number(this.cluster?.sourceCount);
+      return Number.isFinite(score) ? score : 0;
+    },
     // Returns the total number of articles in the active event view.
     clusterCountTotal() {
       if (!this.cluster) return 0;
-      if (this.$store.data.currentSelection.eventView === 'topicGroup') {
-        return Number(this.cluster.topicGroupCount ?? this.cluster.articleCount ?? 0);
+      if (this.$store.data.currentSelection.grouping === 'topic') {
+        return Number(this.cluster.topicArticleCount ?? this.cluster.articleCount ?? 0);
       }
       return Number(this.cluster.articleCount || 0);
     },
-    // Determines whether the active view is an event cluster.
-    isEventView() {
-      return this.$store.data.currentSelection.eventView === 'eventCluster';
+    // Determines whether the active view is grouped.
+    isGroupedView() {
+      return this.$store.data.currentSelection.grouping !== 'none';
     },
     // Determines whether the article has a non-zero interest score.
     hasInterestScore() {
@@ -264,6 +326,12 @@ export default {
   methods: {
     // Formats stored tag names for display.
     formatTagName,
+    // Converts score values stored as either 0-1 or 0-100 into percentages.
+    scoreAsPercent(value) {
+      const score = Number(value);
+      if (!Number.isFinite(score)) return 0;
+      return score <= 1 ? score * 100 : score;
+    },
     // Sets up the listener that tracks mobile portrait orientation.
     setupMediaQueryListener() {
       if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -487,29 +555,31 @@ export default {
         });
       }
     },
-    // Expands or collapses articles in the selected cluster.
-    viewClusterArticles(clusterId) {
+    // Expands or collapses related articles for the selected event or topic.
+    viewClusterArticles(eventId) {
       if (this.clusterExpanded) {
         this.clusterExpanded = false;
         this.$emit('cluster-articles-collapsed', { articleId: this.id });
         return;
       }
-      console.log('Fetching articles for cluster:', clusterId);
-      fetchClusterArticles(
-        clusterId,
-        this.$store.data.currentSelection.eventView,
-        this.id
-      )
+
+      const grouping = this.$store.data.currentSelection.grouping;
+      const fetchRelatedArticles = grouping === 'topic'
+        ? fetchTopicArticles
+        : fetchEventArticles;
+
+      console.log(`Fetching ${grouping} articles for event:`, eventId);
+      fetchRelatedArticles(eventId, this.id)
       .then(response => {
         this.clusterExpanded = true;
         this.$emit('cluster-articles-loaded', {
           articleId: this.id,
-          clusterId,
+          clusterId: eventId,
           articles: response.data.articles || []
         });
       })
       .catch(error => {
-        console.error('Error fetching cluster articles:', error);
+        console.error(`Error fetching ${grouping} articles:`, error);
       });
     }
   }
@@ -766,6 +836,51 @@ export default {
   gap: 12px;
   margin-top: 6px;
 }
+
+.article-signal-bar {
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #7c2d12;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 10px;
+  margin: 12px 0 8px;
+  padding: 10px 14px;
+}
+
+.signal-badge {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.signal-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.signal-divider {
+  background: #fdba74;
+  height: 16px;
+  opacity: 0.8;
+  width: 1px;
+}
+
+:root[data-theme='dark'] .article-signal-bar {
+  background: rgba(124, 45, 18, 0.22);
+  border-color: rgba(253, 186, 116, 0.42);
+  color: #fed7aa;
+}
+
+:root[data-theme='dark'] .signal-divider {
+  background: rgba(253, 186, 116, 0.55);
+}
+
 .article-card .article-content-wrapper {
   color: var(--text-primary);
   padding-top: 6px;
@@ -941,7 +1056,6 @@ export default {
   white-space: nowrap;
   cursor: pointer;
   vertical-align: middle;
-  opacity: 0.85;
 }
 
 .article-card .article-tags .tag {

@@ -8,8 +8,8 @@ vi.mock('../controllers/hotlink.js', () => ({
   }
 }));
 
-const { default: processHtmlContent } = await import('../controllers/crawl/processHtmlContent.js');
-const { default: processMedia } = await import('../controllers/crawl/processMedia.js');
+const { default: processHtmlContent } = await import('../services/crawl/processHtmlContent.js');
+const { default: processMedia } = await import('../services/crawl/processMedia.js');
 
 const feed = {
   id: 10,

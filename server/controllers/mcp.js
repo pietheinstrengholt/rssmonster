@@ -6,6 +6,7 @@ import db from '../models/index.js';
 const { Feed, Category, Article, Tag } = db;
 import { Op, fn, col, literal } from 'sequelize';
 import crawlController from "./crawl.js";
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 // Shared helper to build tool result
 function makeResult({ structured, error=false }) {
@@ -303,6 +304,7 @@ const postMcp = async (req, res) => {
               userId: userId,
               status: status,
               ...(feedId ? { feedId: feedId } : {}),
+              ...canonicalArticleWhere(),
               [Op.or]: [
                 { title: { [Op.like]: `%${search}%` } },
                 { contentStripped: { [Op.like]: `%${search}%` } },
@@ -380,6 +382,7 @@ const postMcp = async (req, res) => {
             where: {
               userId: userId,
               status: status,
+              ...canonicalArticleWhere(),
               createdAt: {
                 [Op.between]: [fromTime, now],
               },
@@ -468,7 +471,8 @@ const postMcp = async (req, res) => {
           const whereClause = {
             feedId,
             userId: userId,
-            status: status
+            status: status,
+            ...canonicalArticleWhere()
           };
 
           // If seconds is provided, add time filter
@@ -558,6 +562,7 @@ const postMcp = async (req, res) => {
             userId: userId,
             status: status,
             ...(feedId ? { feedId: feedId } : {}),
+            ...canonicalArticleWhere()
           };
 
           // If seconds is provided, add time filter
@@ -632,6 +637,7 @@ const postMcp = async (req, res) => {
               url: hotArticleIds,
               userId: userId,
               status: status,
+              ...canonicalArticleWhere(),
               hotInd: 1
             },
             order: [["published", sort]],
@@ -824,7 +830,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
-            where: { id: articleIds, userId: userId },
+            where: { id: articleIds, userId: userId, ...canonicalArticleWhere() },
             order: [["createdAt", "DESC"]],
             raw: true
           });
@@ -909,6 +915,7 @@ const postMcp = async (req, res) => {
             userId: userId,
             clickedAmount: { [Op.gt]: 0 },
             ...(feedId ? { feedId: feedId } : {}),
+            ...canonicalArticleWhere()
           };
 
           // If seconds is provided, add time filter
@@ -965,7 +972,7 @@ const postMcp = async (req, res) => {
         try {
           // 1) Fetch clicked article IDs for this user
           const clicked = await Article.findAll({
-            where: { userId: userId, clickedAmount: { [Op.gt]: 0 } },
+            where: { userId: userId, clickedAmount: { [Op.gt]: 0 }, ...canonicalArticleWhere() },
             attributes: ['id'],
             raw: true
           });

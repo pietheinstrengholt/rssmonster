@@ -24,7 +24,7 @@ const defaultSelection = () => ({
   minQualityScore: 0,
   sort: 'desc',
   viewMode: 'full',
-  eventView: 'all'
+  grouping: 'none'
 });
 
 const normalizeSort = value => {
@@ -47,11 +47,11 @@ const removeSortTokens = query => {
   return cleaned || null;
 };
 
-const normalizeEventView = value => {
-  const normalized = String(value ?? 'all');
-  if (normalized === 'topicGroup') return 'eventCluster';
-  if (normalized === 'eventCluster') return 'eventCluster';
-  return 'all';
+const normalizeGrouping = value => {
+  const normalized = String(value ?? 'none');
+  if (normalized === 'event') return 'event';
+  if (normalized === 'topic') return 'topic';
+  return 'none';
 };
 
 export const useStore = defineStore('data', {
@@ -206,7 +206,7 @@ export const useStore = defineStore('data', {
 
     async fetchTopTags() {
       const { data } = await fetchTopTagsAPI({
-        eventView: this.currentSelection.eventView
+        grouping: this.currentSelection.grouping
       });
 
       this.topTags = data.tags || [];
@@ -216,7 +216,6 @@ export const useStore = defineStore('data', {
       this.chatAssistantOpen = false;
 
       const prev = this.currentSelection;
-
       this.currentSelection = {
         ...prev,
         ...selection,
@@ -224,10 +223,10 @@ export const useStore = defineStore('data', {
           selection.sort != null
             ? normalizeSort(selection.sort)
             : normalizeSort(prev.sort),
-        eventView:
-          selection.eventView != null
-            ? normalizeEventView(selection.eventView)
-            : normalizeEventView(prev.eventView)
+        grouping:
+          selection.grouping != null
+            ? normalizeGrouping(selection.grouping)
+            : normalizeGrouping(prev.grouping)
       };
     },
 
@@ -332,11 +331,11 @@ export const useStore = defineStore('data', {
       this.chatAssistantOpen = false;
     },
 
-    setEventView(value) {
-      this.currentSelection.eventView = normalizeEventView(value);
+    setGrouping(value) {
+      this.currentSelection.grouping = normalizeGrouping(value);
       this.fetchOverviewSplit({ forceUpdate: true }).catch(err => {
         if (import.meta.env.DEV) {
-          console.warn('Event view refresh failed', err);
+          console.warn('Grouping refresh failed', err);
         }
       });
     },

@@ -1,8 +1,8 @@
 import { load } from 'cheerio';
-import language from '../../util/language.js';
+import language from '../../utils/language.js';
 import hotlink from '../../controllers/hotlink.js';
-import normalizeUrl from '../../util/normalizeUrl.js';
-import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
+import normalizeUrl from '../../utils/normalizeUrl.js';
+import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import crypto from 'crypto';
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;

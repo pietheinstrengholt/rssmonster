@@ -654,8 +654,9 @@ export default {
         { value: 'attention', label: 'Attention', requiresAI: true }
       ],
       groupingOptions: [
-        { value: 'all', label: 'None' },
-        { value: 'eventCluster', label: 'Events' }
+        { value: 'none', label: 'None' },
+        { value: 'event', label: 'Events' },
+        { value: 'topic', label: 'Topics' }
       ]
     };
   },
@@ -697,12 +698,12 @@ export default {
         }
       }
     },
-    // This function changes the event view only when the value differs.
-    setEventView: function(value) {
-      if (this.$store.data.currentSelection.eventView === value) {
+    // This function changes the grouping only when the value differs.
+    setGrouping: function(value) {
+      if (this.$store.data.currentSelection.grouping === value) {
         return;
       }
-      this.$store.data.setEventView(value);
+      this.$store.data.setGrouping(value);
     },
     // This function updates the selected article status or reloads the current one.
     statusClicked: function(status) {
@@ -729,7 +730,7 @@ export default {
       } else if (type === 'sort') {
         this.sortClicked(value);
       } else if (type === 'grouping') {
-        this.setEventView(value);
+        this.setGrouping(value);
       }
     },
     // This function opens the settings modal.
@@ -806,7 +807,7 @@ export default {
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
       const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
       const selectedViewModeOption = this.viewModeOptions.find((option) => option.value === this.selectedViewMode);
-      const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.eventView);
+      const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.grouping);
 
       const dropdowns = [
         {
@@ -841,7 +842,7 @@ export default {
           type: 'grouping',
           label: 'Grouping',
           selectedLabel: selectedGroupingOption ? selectedGroupingOption.label : 'None',
-          selectedValue: this.currentSelection.eventView,
+          selectedValue: this.currentSelection.grouping,
           options: this.groupingOptions
         });
       }

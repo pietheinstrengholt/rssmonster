@@ -23,7 +23,7 @@ export const getSettings = async (req, res, _next) => {
     let minSentimentScore = 0;
     let minQualityScore = 0;
     let viewMode = "full";
-    let eventView = "all";
+    let grouping = "none";
     let themeMode = 'system';
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
@@ -38,7 +38,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore = settings.minSentimentScore || 0;
       minQualityScore = settings.minQualityScore || 0;
       viewMode = settings.viewMode || 'full';
-      eventView = settings.eventView || 'all';
+      grouping = settings.grouping || 'none';
       themeMode = settings.themeMode || 'system';
     }
 
@@ -54,7 +54,7 @@ export const getSettings = async (req, res, _next) => {
       minSentimentScore: minSentimentScore,
       minQualityScore: minQualityScore,
       viewMode: viewMode,
-      eventView: String(eventView),
+      grouping: String(grouping),
       themeMode: themeMode,
       AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
@@ -184,6 +184,7 @@ export const getIslandsOverview = async (req, res, _next) => {
             SELECT COUNT(*)
             FROM articles a
             WHERE a.userId = :userId
+              AND a.duplicateOfArticleId IS NULL
               AND a.favoriteInd = 1
               AND EXISTS (
                 SELECT 1
@@ -198,6 +199,7 @@ export const getIslandsOverview = async (req, res, _next) => {
             SELECT COUNT(*)
             FROM articles a
             WHERE a.userId = :userId
+              AND a.duplicateOfArticleId IS NULL
               AND a.clickedAmount > 0
               AND EXISTS (
                 SELECT 1
@@ -212,6 +214,7 @@ export const getIslandsOverview = async (req, res, _next) => {
             SELECT COUNT(*)
             FROM articles a
             WHERE a.userId = :userId
+              AND a.duplicateOfArticleId IS NULL
               AND EXISTS (
                 SELECT 1
                 FROM article_topics atp
@@ -243,6 +246,7 @@ export const getIslandsOverview = async (req, res, _next) => {
           ON f.id = a.feedId
          AND f.userId = :userId
         WHERE a.userId = :userId
+          AND a.duplicateOfArticleId IS NULL
           AND EXISTS (
             SELECT 1
             FROM article_topics atp
@@ -328,6 +332,7 @@ export const getIslandsOverview = async (req, res, _next) => {
           SELECT COUNT(*)
           FROM articles a
           WHERE a.userId = :userId
+            AND a.duplicateOfArticleId IS NULL
             AND EXISTS (
               SELECT 1
               FROM article_topics atp
@@ -340,7 +345,7 @@ export const getIslandsOverview = async (req, res, _next) => {
               WHERE atp.articleId = a.id
             )
         ), 0) AS islandArticles,
-        COALESCE((SELECT COUNT(*) FROM articles a2 WHERE a2.userId = :userId), 0) AS totalArticles
+        COALESCE((SELECT COUNT(*) FROM articles a2 WHERE a2.userId = :userId AND a2.duplicateOfArticleId IS NULL), 0) AS totalArticles
       `,
       {
         replacements: { userId },
@@ -387,8 +392,8 @@ export const getTopicsOverview = async (req, res, _next) => {
     const [totalsRaw] = await db.sequelize.query(
       `
       SELECT
-        COALESCE((SELECT COUNT(*) FROM articles a WHERE a.userId = :userId), 0) AS totalArticles,
-        COALESCE((SELECT COUNT(*) FROM articles a WHERE a.userId = :userId AND a.eventId IS NULL), 0) AS unclusteredArticles,
+        COALESCE((SELECT COUNT(*) FROM articles a WHERE a.userId = :userId AND a.duplicateOfArticleId IS NULL), 0) AS totalArticles,
+        COALESCE((SELECT COUNT(*) FROM articles a WHERE a.userId = :userId AND a.duplicateOfArticleId IS NULL AND a.eventId IS NULL), 0) AS unclusteredArticles,
         COALESCE((
           SELECT COUNT(DISTINCT a.id)
           FROM articles a
@@ -396,6 +401,7 @@ export const getTopicsOverview = async (req, res, _next) => {
             ON e.id = a.eventId
            AND e.userId = :userId
           WHERE a.userId = :userId
+            AND a.duplicateOfArticleId IS NULL
         ), 0) AS eventLinkedArticles,
         COALESCE((SELECT COUNT(*) FROM events e WHERE e.userId = :userId), 0) AS eventCount,
         COALESCE((
@@ -448,6 +454,7 @@ export const getTopicsOverview = async (req, res, _next) => {
           SELECT COUNT(DISTINCT a.id)
           FROM articles a
           WHERE a.userId = :userId
+            AND a.duplicateOfArticleId IS NULL
             AND (
               a.topicId IS NOT NULL
               OR EXISTS (
@@ -530,6 +537,7 @@ export const getTopicsOverview = async (req, res, _next) => {
           SELECT COUNT(*)
           FROM articles a
           WHERE a.userId = :userId
+            AND a.duplicateOfArticleId IS NULL
             AND a.eventId = e.id
         ), 0) AS actualArticleCount,
         (
@@ -599,6 +607,7 @@ export const getTopicsOverview = async (req, res, _next) => {
           SELECT COUNT(DISTINCT a.id)
           FROM articles a
           WHERE a.userId = :userId
+            AND a.duplicateOfArticleId IS NULL
             AND (
               a.topicId = t.id
               OR EXISTS (

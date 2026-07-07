@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { parseArticleQuery } from '../util/articleQueryParser.service.js';
+import { parseArticleQuery } from '../services/articleSearch/articleQueryParser.service.js';
 
 describe('articleQueryParser.service', () => {
   it('parses mixed filters and quoted text', () => {

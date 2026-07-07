@@ -3,6 +3,7 @@ const { Feed, Category, Article, Setting } = db;
 
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
+import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow => {
   const category = categoryRow.get({ plain: true });
@@ -48,8 +49,8 @@ const loadCategoriesStructure = userId => Category.findAll({
   order: ['categoryOrder', 'name']
 });
 
-const applyEventViewFilter = (baseWhere, eventView) => {
-  if (eventView === 'eventCluster') {
+const applyGroupingFilter = (baseWhere, grouping) => {
+  if (grouping === 'event') {
     baseWhere[Op.or] = [
       {
         id: {
@@ -66,42 +67,34 @@ const applyEventViewFilter = (baseWhere, eventView) => {
     ];
   }
 
-  if (eventView === 'topicGroup') {
-    baseWhere[Op.or] = [
-      {
-        id: {
-          [Op.in]: Sequelize.literal(`(
-            SELECT e.representativeArticleId
-            FROM events e
-            INNER JOIN (
-              SELECT userId, topicId, MAX(eventStrength) AS maxStrength
-              FROM events
-              WHERE topicId IS NOT NULL
-              GROUP BY userId, topicId
-            ) t
-              ON e.userId = t.userId
-              AND e.topicId = t.topicId
-            AND e.eventStrength = t.maxStrength
-            WHERE e.id = (
-              SELECT MAX(e2.id)
-              FROM events e2
-              WHERE e2.userId = e.userId
-                AND e2.topicId = e.topicId
-                AND e2.eventStrength = e.eventStrength
-            )
-          )`)
-        }
-      },
-      {
-        eventId: {
-          [Op.is]: null
-        }
-      }
-    ];
+  if (grouping === 'topic') {
+    baseWhere.id = {
+      [Op.in]: Sequelize.literal(`(
+        SELECT e.representativeArticleId
+        FROM events e
+        INNER JOIN (
+          SELECT userId, topicId, MAX(eventStrength) AS maxStrength
+          FROM events
+          WHERE topicId IS NOT NULL
+          GROUP BY userId, topicId
+        ) t
+          ON e.userId = t.userId
+          AND e.topicId = t.topicId
+          AND e.eventStrength = t.maxStrength
+        WHERE e.topicId IS NOT NULL
+          AND e.id = (
+            SELECT MAX(e2.id)
+            FROM events e2
+            WHERE e2.userId = e.userId
+              AND e2.topicId = e.topicId
+              AND e2.eventStrength = e.eventStrength
+          )
+      )`)
+    };
   }
 };
 
-const buildOverviewWhere = async ({ userId, eventView }) => {
+const buildOverviewWhere = async ({ userId, grouping }) => {
   const settings = await Setting.findOne({
     where: { userId },
     attributes: [
@@ -114,12 +107,13 @@ const buildOverviewWhere = async ({ userId, eventView }) => {
 
   const baseWhere = {
     userId,
+    ...canonicalArticleWhere(),
     advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
     sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
     qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
   };
 
-  applyEventViewFilter(baseWhere, eventView);
+  applyGroupingFilter(baseWhere, grouping);
 
   return baseWhere;
 };
@@ -229,9 +223,9 @@ export const getOverviewCounts = async (req, res, _next) => {
   }
 
   try {
-    const eventView = String(req.body?.eventView || 'all');
+    const grouping = String(req.body?.grouping || 'none');
     const [baseWhere, categoriesRaw] = await Promise.all([
-      buildOverviewWhere({ userId, eventView }),
+      buildOverviewWhere({ userId, grouping }),
       loadCategoriesStructure(userId)
     ]);
 
@@ -262,9 +256,9 @@ export const getOverview = async (req, res, _next) => {
   }
 
   try {
-    const eventView = String(req.body?.eventView || 'all');
+    const grouping = String(req.body?.grouping || 'none');
     const [baseWhere, categoriesRaw] = await Promise.all([
-      buildOverviewWhere({ userId, eventView }),
+      buildOverviewWhere({ userId, grouping }),
       loadCategoriesStructure(userId)
     ]);
     const categories = buildCategoriesStructure(categoriesRaw);

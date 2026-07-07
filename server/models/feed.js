@@ -114,7 +114,7 @@ export default (sequelize) => {
       updateIntervalMinutes: {
         type: DataTypes.INTEGER,
         allowNull: true,
-        defaultValue: 60
+        defaultValue: null
       },
       feedTags: {
         type: DataTypes.JSON,

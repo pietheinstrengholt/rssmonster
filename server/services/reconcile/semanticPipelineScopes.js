@@ -11,6 +11,7 @@ import {
   EVENT_MAX_GAP_HOURS,
   RECENCY_WINDOW_DAYS
 } from '../config/semanticConfig.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { logEventProcessingSummary } from '../events/eventPipelineDebug.js';
 import {
   computeEventStrength,
@@ -115,7 +116,7 @@ async function clearForeignEventReferencesForUser(userId) {
 }
 
 // This function counts how many scoped articles ended up assigned to events.
-async function summarizeArticleAssignments(articleIds) {
+async function summarizeArticleAssignments(userId, articleIds) {
   if (!articleIds.length) {
     return {
       totalArticles: 0,
@@ -128,6 +129,8 @@ async function summarizeArticleAssignments(articleIds) {
   const assignedRows = await Article.findAll({
     where: {
       id: { [Op.in]: articleIds },
+      userId,
+      ...canonicalArticleWhere(),
       eventId: { [Op.ne]: null }
     },
     attributes: ['eventId'],
@@ -479,6 +482,7 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
   const articleWhere = {
     status: 'unread',
     userId,
+    ...canonicalArticleWhere(),
     eventId: null
   };
 
@@ -560,6 +564,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
   const windowArticles = await Article.findAll({
     where: {
       userId,
+      ...canonicalArticleWhere(),
       published: { [Op.gte]: cutoffDate }
     },
     include: [{
@@ -658,7 +663,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
 
   await Article.update(
     { eventId: null },
-    { where: { id: { [Op.in]: windowArticleIds } } }
+    { where: { id: { [Op.in]: windowArticleIds }, ...canonicalArticleWhere() } }
   );
 
   await Article.update(
@@ -697,7 +702,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
   if (ownedPreviousEventIds.size) {
     for (const eventId of ownedPreviousEventIds) {
       const remaining = await Article.count({
-        where: { eventId, userId }
+        where: { eventId, userId, ...canonicalArticleWhere() }
       });
 
       if (remaining === 0) {
@@ -719,7 +724,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
     await recomputeTopicStatsForUser(userId, [...new Set([...staleTopicIds, ...repairResult.touchedTopicIds])]);
   }
 
-  const summary = await summarizeArticleAssignments(windowArticleIds);
+  const summary = await summarizeArticleAssignments(userId, windowArticleIds);
 
   console.log(
     `[EVENT] User ${userId} recent-repair summary: ` +
@@ -761,6 +766,7 @@ export async function rebuildAllEventsForUser(userId, options = {}) {
     const articles = await Article.findAll({
       where: {
         userId,
+        ...canonicalArticleWhere(),
         id: { [Op.gt]: lastId },
         articleVector: { [Op.ne]: null }
       },

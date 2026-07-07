@@ -55,10 +55,10 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'full'
       },
-      eventView: {
+      grouping: {
         type: DataTypes.STRING,
         allowNull: false,
-        defaultValue: 'all'
+        defaultValue: 'none'
       },
       themeMode: {
         type: DataTypes.STRING(10),

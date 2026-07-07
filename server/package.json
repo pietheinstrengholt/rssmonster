@@ -21,8 +21,8 @@
     "lint": "eslint .",
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
-    "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./util --watch-path=./config bootstrap.js",
-    "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./util --watch-path=./config bootstrap.js",
+    "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
+    "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/runSemanticPipeline.js",
     "semantic:repair": "NODE_ENV=production node scripts/repairSemanticPipeline.js",
@@ -37,6 +37,7 @@
     "seed:island-taxonomy": "./node_modules/.bin/sequelize db:seed --seed 20260520104500-island-taxonomy.js",
     "seed:undo:island-taxonomy": "./node_modules/.bin/sequelize db:seed:undo --seed 20260520104500-island-taxonomy.js",
     "hotlinks": "NODE_ENV=production node scripts/rebuildHotlinks.js",
+    "repair-duplicates": "NODE_ENV=production node scripts/repairDuplicateCounts.js",
     "reset:semantic": "node scripts/resetSemanticState.js"
   },
   "engines": {
@@ -48,23 +49,23 @@
     "globals": "^17.7.0",
     "nodemon": "^3.1.14",
     "supertest": "^7.2.2",
-    "vitest": "^4.1.9"
+    "vitest": "^4.1.10"
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@openai/agents": "^0.12.0",
+    "@openai/agents": "^0.13.0",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
-    "feedsmith": "^2.9.4",
+    "feedsmith": "^2.9.5",
     "franc-min": "^6.2.0",
     "he": "^1.2.0",
     "jsonwebtoken": "^9.0.3",
     "morgan": "^1.11.0",
     "multer": "^2.2.0",
-    "mysql2": "^3.22.5",
+    "mysql2": "^3.22.6",
     "node-cache": "^5.1.2",
     "openai": "^6.45.0",
     "sequelize": "^6.37.8",
@@ -76,6 +77,3 @@
     "fsevents": "^2.3.3"
   }
 }
-
-
-
