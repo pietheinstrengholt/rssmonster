@@ -8,7 +8,30 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
 // This function normalizes article grouping values used by API consumers.
 const normalizeGrouping = value => (value === 'event' || value === 'topic' ? value : 'none');
 
-// Helper function to batch-load article details
+// This function attaches feed-level predicted affinity hints to unread articles.
+const attachPredictedAffinity = articles => {
+  for (const article of articles) {
+    const feed = article.Feed;
+
+    if (!feed) continue;
+
+    const prediction = resolvePredictedAffinity({
+      article,
+      feed
+    });
+
+    if (prediction && prediction.predictedAffinity) {
+      article.setDataValue('presentation', {
+        predictedAffinity: prediction.predictedAffinity,
+        confidence: prediction.confidence,
+        source: prediction.source,
+        engagementScore: prediction.engagementScore
+      });
+    }
+  }
+};
+
+// This function batch-loads article details with presentation metadata.
 const loadArticleDetails = async (userId, articlesArray) => {
   const articles = await Article.findAll({
     include: [
@@ -24,6 +47,9 @@ const loadArticleDetails = async (userId, articlesArray) => {
           'feedAttentionAvg',
           'feedDeepReadRatio',
           'feedSkimRatio',
+          'feedIgnoreRatio',
+          'feedClickAvg',
+          'feedClickRatio',
           'feedAttentionSampleSize'
         ]
       },
@@ -66,6 +92,8 @@ const loadArticleDetails = async (userId, articlesArray) => {
   // Preserve incoming ID order
   const idIndexMap = new Map(articlesArray.map((id, i) => [String(id), i]));
   articles.sort((a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id)));
+
+  attachPredictedAffinity(articles);
 
   return articles;
 };
@@ -132,6 +160,9 @@ const getArticle = async (req, res, _next) => {
             'feedAttentionAvg',
             'feedDeepReadRatio',
             'feedSkimRatio',
+            'feedIgnoreRatio',
+            'feedClickAvg',
+            'feedClickRatio',
             'feedAttentionSampleSize'
           ]
         },
@@ -498,33 +529,6 @@ const articleDetails = async (req, res, _next) => {
       return res.status(404).json({
         message: "No articles found"
       });
-    }
-
-    /* ============================================================
-     * Predicted Reading Affinity (NEW)
-     * ============================================================
-     *
-     * Attach presentation hints for unread articles only.
-     * This is non-breaking and purely additive.
-     */
-
-    for (const article of articles) {
-      const feed = article.Feed;
-
-      if (!feed) continue;
-
-      const prediction = resolvePredictedAffinity({
-        article,
-        feed
-      });
-
-      if (prediction && prediction.predictedAffinity) {
-        article.setDataValue('presentation', {
-          predictedAffinity: prediction.predictedAffinity,
-          confidence: prediction.confidence,
-          source: prediction.source
-        });
-      }
     }
 
     return res.status(200).json(articles);
