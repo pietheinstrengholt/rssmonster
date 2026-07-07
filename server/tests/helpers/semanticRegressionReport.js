@@ -2,7 +2,7 @@ import { Op } from 'sequelize';
 
 import db from '../../models/index.js';
 import { cosineSimilarity } from '../../services/vectors/index.js';
-import { computeRecommended, computeRecommendedBreakdown } from '../../util/recommendedScore.js';
+import { computeRecommended, computeRecommendedBreakdown } from '../../services/recommendations/recommendedScore.js';
 
 const {
   User,

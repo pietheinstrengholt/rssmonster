@@ -2,7 +2,7 @@
 // It validates candidates by content type and feed parsing, and can persist successful discoveries on feed models.
 import { load } from 'cheerio';
 import { parseFeed } from 'feedsmith';
-import { fetchURL as fetchURLInternal } from './fetchURL.js';
+import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
 import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
 
 // Checks whether a string looks like an absolute HTTP(S) URL.

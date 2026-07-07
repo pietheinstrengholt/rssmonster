@@ -1,11 +1,11 @@
 import db from '../models/index.js';
 const { Action, Article, Feed, Hotlink } = db;
-import discoverRssLink from '../util/discoverRssLink.js';
-import parseFeed from '../util/parser.js';
-import processArticle from './crawl/processArticle.js';
-import createArticleDuplicateCache from './crawl/articleDuplicateCache.js';
-import createHotlinkCountCache from './crawl/hotlinkCountCache.js';
-import createHotlinkBatcher from './crawl/hotlinkBatcher.js';
+import discoverRssLink from '../services/feeds/discoverRssLink.js';
+import parseFeed from '../services/feeds/parser.js';
+import processArticle from '../services/crawl/processArticle.js';
+import createArticleDuplicateCache from '../services/crawl/articleDuplicateCache.js';
+import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
+import createHotlinkBatcher from '../services/crawl/hotlinkBatcher.js';
 import { runPostCrawlSemanticPipeline } from '../services/crawl/postCrawlSemanticPipeline.js';
 
 /* ------------------------------------------------------------------

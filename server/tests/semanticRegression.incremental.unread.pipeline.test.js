@@ -9,7 +9,7 @@ import db from '../models/index.js';
 import { runIncrementalEventsForUser } from '../services/reconcile/semanticPipelineScopes.js';
 import scoreArticlesFromIslandsForUser from '../services/score/scoreArticlesFromIslands.js';
 import { cosineSimilarity } from '../services/vectors/index.js';
-import { computeRecommended, computeRecommendedBreakdown } from '../util/recommendedScore.js';
+import { computeRecommended, computeRecommendedBreakdown } from '../services/recommendations/recommendedScore.js';
 import { printSemanticArticleRankingTable } from './helpers/semanticRegressionReport.js';
 import {
   markSemanticRegressionArticles,
@@ -468,7 +468,6 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     });
   }, 60000);
 });
-
 
 
 

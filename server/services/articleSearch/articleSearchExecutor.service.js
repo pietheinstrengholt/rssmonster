@@ -1,6 +1,6 @@
 // Builds and executes Sequelize article search queries from normalized filters.
 // It keeps database predicate construction separate from higher-level search orchestration.
-import db from '../models/index.js';
+import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
 const { Article, Event, Feed, Tag } = db;

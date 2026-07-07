@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import db from '../models/index.js';
-import { searchArticles } from '../util/articleSearch.service.js';
+import { searchArticles } from '../services/articleSearch/articleSearch.service.js';
 
 const { Article, Feed, Setting, Tag } = db;
 

@@ -25,7 +25,7 @@ describe('saveArticle feed tags', () => {
   });
 
   it('adds feed tags as extra article-level tags', async () => {
-    const { default: saveArticle } = await import('../controllers/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../services/crawl/saveArticle.js');
 
     await saveArticle(
       {

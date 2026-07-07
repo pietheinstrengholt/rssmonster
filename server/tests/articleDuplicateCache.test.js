@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import createArticleDuplicateCache from '../controllers/crawl/articleDuplicateCache.js';
+import createArticleDuplicateCache from '../services/crawl/articleDuplicateCache.js';
 
 describe('article duplicate cache', () => {
   it('finds feed URL and title duplicates plus user-wide content hash duplicates', () => {

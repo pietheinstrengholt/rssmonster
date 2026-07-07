@@ -1,6 +1,6 @@
 // Provides development-only diagnostics for recommended article rankings.
 // The helpers compact event metadata and log score components without affecting production behavior.
-import { computeRecommendedBreakdown } from './recommendedScore.js';
+import { computeRecommendedBreakdown } from '../recommendations/recommendedScore.js';
 
 // Normalizes long event names for compact debug-table output.
 function compactEventName(name) {

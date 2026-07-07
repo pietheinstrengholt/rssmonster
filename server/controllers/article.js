@@ -1,8 +1,8 @@
 import db from '../models/index.js';
 const { Article, Feed, Tag, Event } = db;
 import { Op, fn, col } from 'sequelize';
-import { searchArticles } from "../util/articleSearch.service.js";
-import { resolvePredictedAffinity } from '../util/predictedAffinityResolver.js';
+import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 // This function normalizes article grouping values used by API consumers.

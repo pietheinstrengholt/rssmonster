@@ -1,6 +1,6 @@
 // Contains small data-access helpers used by the article search pipeline.
 // These helpers isolate tag and feed id lookups from the search service orchestration.
-import db from '../models/index.js';
+import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
 const { Feed, Tag } = db;

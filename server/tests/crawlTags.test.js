@@ -10,7 +10,7 @@ vi.mock('../models/index.js', () => ({
 
 describe('crawl tag helpers', () => {
   it('normalizes names and de-duplicates tag sources by priority', async () => {
-    const { buildArticleTags } = await import('../controllers/crawl/tags.js');
+    const { buildArticleTags } = await import('../services/crawl/tags.js');
 
     expect(buildArticleTags({
       generatedTags: ['Hardware', 'geekcomputerspcs', ''],

@@ -1,14 +1,14 @@
 import db from '../models/index.js';
 const { Feed, Article, Category } = db;
 
-import discoverRssLink from "../util/discoverRssLink.js";
-import { rediscoverRssUrl } from '../util/rediscoverRssUrl.js';
-import parseFeed from "../util/parser.js";
+import discoverRssLink from "../services/feeds/discoverRssLink.js";
+import { rediscoverRssUrl } from '../services/feeds/rediscoverRssUrl.js';
+import parseFeed from "../services/feeds/parser.js";
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/auth.js';
 import crawlController from './crawl.js';
-import crawlJobManager from '../util/crawlJobManager.js';
-import { normalizeTagList } from './crawl/tags.js';
+import crawlJobManager from '../services/crawl/crawlJobManager.js';
+import { normalizeTagList } from '../services/crawl/tags.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
 const findOwnedCategory = (categoryId, userId) => Category.findOne({

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { computeRecommended } from '../util/recommendedScore.js';
+import { computeRecommended } from '../services/recommendations/recommendedScore.js';
 
 describe('computeRecommended', () => {
   it('ranks larger corroborated clusters higher with equal freshness/quality', () => {

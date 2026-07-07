@@ -1,6 +1,6 @@
 // Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
-import db from '../models/index.js';
+import db from '../../models/index.js';
 const { Setting } = db;
 import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
@@ -9,7 +9,7 @@ import { parseArticleQuery } from './articleQueryParser.service.js';
 import { buildArticleSearchQuery, executeSearch, executeSearchCount } from './articleSearchExecutor.service.js';
 import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.service.js';
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
-import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
 const articleValue = (article, key) => (
   typeof article.get === 'function' ? article.get(key) : article[key]

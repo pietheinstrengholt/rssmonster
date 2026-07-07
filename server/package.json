@@ -21,8 +21,8 @@
     "lint": "eslint .",
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
-    "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./util --watch-path=./config bootstrap.js",
-    "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./util --watch-path=./config bootstrap.js",
+    "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
+    "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
     "crawl": "NODE_ENV=production node scripts/runSemanticPipeline.js",
     "semantic:repair": "NODE_ENV=production node scripts/repairSemanticPipeline.js",
@@ -77,5 +77,3 @@
     "fsevents": "^2.3.3"
   }
 }
-
-

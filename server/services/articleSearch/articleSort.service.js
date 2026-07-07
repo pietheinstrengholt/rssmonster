@@ -1,6 +1,6 @@
 // Handles all in-memory sorting and score-based filtering for articles.
 // This module complements database search when ranking requires runtime virtual fields or joined metadata.
-import { computeRecommended } from './recommendedScore.js';
+import { computeRecommended } from '../recommendations/recommendedScore.js';
 import { debugRecommendedScores } from './articleDebug.service.js';
 
 // Applies a numeric comparison operator to a score value.

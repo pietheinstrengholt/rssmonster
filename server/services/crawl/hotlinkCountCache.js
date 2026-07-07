@@ -1,4 +1,4 @@
-import normalizeUrl from '../../util/normalizeUrl.js';
+import normalizeUrl from '../../utils/normalizeUrl.js';
 
 // This function creates an in-memory hotlink count index for one user's crawl.
 const createHotlinkCountCache = (hotlinks = []) => {

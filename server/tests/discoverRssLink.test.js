@@ -2,11 +2,11 @@ import { describe, it, expect, vi } from 'vitest';
 
 const fetchURL = vi.fn();
 
-vi.mock('../util/fetchURL.js', () => ({
+vi.mock('../utils/fetchURL.js', () => ({
   fetchURL
 }));
 
-const { discoverRssLink } = await import('../util/discoverRssLink.js');
+const { discoverRssLink } = await import('../services/feeds/discoverRssLink.js');
 
 describe('discoverRssLink', () => {
   it('accepts Reddit RSS URL directly', async () => {

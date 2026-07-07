@@ -26,43 +26,43 @@ vi.mock('../models/index.js', () => ({
   }
 }));
 
-vi.mock('../controllers/crawl/extractEntryFields.js', () => ({
+vi.mock('../services/crawl/extractEntryFields.js', () => ({
   default: mocked.extractEntryFields
 }));
 
-vi.mock('../controllers/crawl/findExistingArticle.js', () => ({
+vi.mock('../services/crawl/findExistingArticle.js', () => ({
   default: mocked.findExistingArticle
 }));
 
-vi.mock('../controllers/crawl/processMedia.js', () => ({
+vi.mock('../services/crawl/processMedia.js', () => ({
   default: mocked.processMedia
 }));
 
-vi.mock('../controllers/crawl/processHtmlContent.js', () => ({
+vi.mock('../services/crawl/processHtmlContent.js', () => ({
   default: mocked.processHtmlContent
 }));
 
-vi.mock('../controllers/crawl/applyActions.js', () => ({
+vi.mock('../services/crawl/applyActions.js', () => ({
   default: mocked.applyActions
 }));
 
-vi.mock('../controllers/crawl/analyzeArticleContent.js', () => ({
+vi.mock('../services/crawl/analyzeArticleContent.js', () => ({
   default: mocked.analyzeArticleContent
 }));
 
-vi.mock('../controllers/crawl/saveArticle.js', () => ({
+vi.mock('../services/crawl/saveArticle.js', () => ({
   default: mocked.saveArticle
 }));
 
-vi.mock('../util/normalizeUrl.js', () => ({
+vi.mock('../utils/normalizeUrl.js', () => ({
   default: mocked.normalizeUrl
 }));
 
-vi.mock('../util/decodeHtmlEntities.js', () => ({
+vi.mock('../utils/decodeHtmlEntities.js', () => ({
   default: mocked.decodeHtmlEntities
 }));
 
-vi.mock('../util/extractLeadImage.js', () => ({
+vi.mock('../utils/extractLeadImage.js', () => ({
   default: mocked.extractLeadImage
 }));
 
@@ -107,7 +107,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('skips OpenAI analysis when the feed disables AI analysis', async () => {
-    const { default: processArticle } = await import('../controllers/crawl/processArticle.js');
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
 
     const result = await processArticle(
       {

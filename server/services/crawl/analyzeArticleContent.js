@@ -1,4 +1,4 @@
-// server/controllers/crawl/analyzeArticleContent.js
+// server/services/crawl/analyzeArticleContent.js
 import OpenAI from 'openai';
 import { normalizeTagName } from './tags.js';
 

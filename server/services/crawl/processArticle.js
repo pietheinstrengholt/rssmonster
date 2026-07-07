@@ -9,9 +9,9 @@ import processHtmlContent from './processHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
 import saveArticle from './saveArticle.js';
-import normalizeUrl from '../../util/normalizeUrl.js';
-import decodeHtmlEntities from '../../util/decodeHtmlEntities.js';
-import extractLeadImage from '../../util/extractLeadImage.js';
+import normalizeUrl from '../../utils/normalizeUrl.js';
+import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
+import extractLeadImage from '../../utils/extractLeadImage.js';
 
 // Maximum length for normalized description
 const MAX_DESCRIPTION_LENGTH = 8000;

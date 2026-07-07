@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import createHotlinkCountCache from '../controllers/crawl/hotlinkCountCache.js';
+import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
 
 describe('hotlink count cache', () => {
   it('counts normalized URLs and query-suffixed hotlinks from other feeds', () => {
