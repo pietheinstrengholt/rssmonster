@@ -1,12 +1,13 @@
 /**
  * Feed Trust calculation CLI runner
  *
- * This script calculates a trust score (0-1) for each feed based on:
+ * This script calculates a trust score (0-1) for each feed.
+ * Feed trust does not measure article quality; article quality is scored
+ * separately. Instead, trust reflects source usefulness and user affinity:
+ * - Engagement: How many articles users favorite, click, skim, or read deeply
  * - Originality: How many articles are original vs duplicates
- * - Quality: Computed quality scores of articles
- * - Engagement: How many articles users favorite or click
  * - Consistency: Publishing frequency/cadence
- * - Volume penalties: Very spammy/high-volume feeds are penalized
+ * - Negative signals: High volume, negative feedback, and recent mutes
  *
  * Uses exponential moving average (EMA) to smoothly update trust over time.
  *
@@ -31,25 +32,24 @@ import { resolvePredictedAffinity } from '../services/recommendations/predictedA
 // Lower alpha = slower response, more stable (historical bias)
 // 0.35 means: new_trust = 0.35 * observed + 0.65 * previous_trust
 const EMA_ALPHA = 0.35;
-// BASELINE_TRUST: Initial trust for new feeds with no history
-// Start optimistic (0.9) and let the algorithm adjust down if needed
-const BASELINE_TRUST = 0.9;
-// SPREAD_FACTOR: Amplify deviation from neutral (0.5) to create wider score distribution
-// Without this, scores would cluster around 0.5. This pushes good feeds higher and bad feeds lower.
-const SPREAD_FACTOR = 2.0;
+// NEUTRAL_TRUST: Starting point for trust. Behavior nudges feeds up or down from here.
+const NEUTRAL_TRUST = 0.75;
+// MIN_CONFIDENCE_SAMPLES/FULL_CONFIDENCE_SAMPLES: Low-sample feeds stay close to neutral.
+const MIN_CONFIDENCE_SAMPLES = 10;
+const FULL_CONFIDENCE_SAMPLES = 100;
 // HIGH_VOLUME_THRESHOLD_PER_DAY: Feeds publishing more than this per day start getting penalized
 // Helps identify spam/clickbait feeds that flood with content
 const HIGH_VOLUME_THRESHOLD_PER_DAY = 25;
 // HIGH_VOLUME_MAX_PENALTY: Maximum trust reduction applied at extreme volumes
-// e.g., a feed at 50+ articles/day loses up to 40% trust
-const HIGH_VOLUME_MAX_PENALTY = 0.4;
+// e.g., a feed at 50+ articles/day loses up to 15% trust
+const HIGH_VOLUME_MAX_PENALTY = 0.15;
 // NEGATIVE_MAX_PENALTY: Maximum trust reduction for negativeInd articles.
 // Applies a gentle, sublinear scaling (sqrt) so a few negatives still signal
 // an issue without overwhelming the score when counts are low.
-const NEGATIVE_MAX_PENALTY = 0.2;
+const NEGATIVE_MAX_PENALTY = 0.15;
 // MUTE_MAX_PENALTY: Maximum penalty when a feed has been muted recently
 // MUTE_STALE_MONTHS: Penalize if mutedUntil is within the last MUTE_STALE_MONTHS
-const MUTE_MAX_PENALTY = 0.2;
+const MUTE_MAX_PENALTY = 0.10;
 const MUTE_STALE_MONTHS = 6;
 // LOOKBACK_DAYS: Only analyze articles published in the last 30 days
 // Prevents old, stale data from influencing current feed trust
@@ -118,7 +118,7 @@ export async function calculateFeedTrustForFeed(feedId) {
     });
 
     return {
-      trust: feed.feedTrust ?? BASELINE_TRUST,
+      trust: feed.feedTrust ?? NEUTRAL_TRUST,
       duplicationRate: feed.feedDuplicationRate ?? 0,
 
       feedAttentionAvg: feed.feedAttentionAvg ?? 0,
@@ -126,6 +126,7 @@ export async function calculateFeedTrustForFeed(feedId) {
       feedSkimRatio: feed.feedSkimRatio ?? 0,
       feedIgnoreRatio: feed.feedIgnoreRatio ?? 0,
       feedAttentionSampleSize: feed.feedAttentionSampleSize ?? 0,
+      sampleConfidence: 0,
 
       predictedAffinity: predicted?.predictedAffinity ?? 'cold',
       predictedConfidence: predicted?.confidence ?? 0.25
@@ -185,17 +186,7 @@ export async function calculateFeedTrustForFeed(feedId) {
   );
 
   /* ============================================================
-   * METRIC 3: QUALITY
-   * ============================================================ */
-
-  let qualitySum = 0;
-  for (const article of articles) {
-    qualitySum += article.quality;
-  }
-  const avgQuality = clamp(qualitySum / articles.length);
-
-  /* ============================================================
-   * METRIC 4: ENGAGEMENT
+   * METRIC 3: ENGAGEMENT
    * ============================================================ */
 
   let engagementSum = 0;
@@ -219,14 +210,14 @@ export async function calculateFeedTrustForFeed(feedId) {
   );
 
   /* ============================================================
-   * METRIC 5: CONSISTENCY
+   * METRIC 4: CONSISTENCY
    * ============================================================ */
 
   const articlesPerDay = articles.length / LOOKBACK_DAYS;
   const consistency = clamp(articlesPerDay / 4);
 
   /* ============================================================
-   * METRIC 6: NEGATIVE FEEDBACK
+   * METRIC 5: NEGATIVE FEEDBACK
    * ============================================================ */
 
   let negativeCount = 0;
@@ -237,14 +228,18 @@ export async function calculateFeedTrustForFeed(feedId) {
     articles.length > 0 ? negativeCount / articles.length : 0;
 
   /* ============================================================
-   * METRIC 7: OBSERVED TRUST
+   * METRIC 6: OBSERVED TRUST
    * ============================================================ */
 
+  const originalityAdjustment = (originality - 0.5) * 0.10;
+  const engagementAdjustment = (engagement - 0.35) * 0.35;
+  const consistencyAdjustment = (consistency - 0.25) * 0.08;
+
   const observedTrust = clamp(
-    0.40 * originality +
-    0.30 * avgQuality +
-    0.15 * engagement +
-    0.15 * consistency
+    NEUTRAL_TRUST +
+    originalityAdjustment +
+    engagementAdjustment +
+    consistencyAdjustment
   );
 
   const highVolumePenalty = clamp(
@@ -272,17 +267,21 @@ export async function calculateFeedTrustForFeed(feedId) {
     }
   }
 
-  let adjustedObserved = clamp(
-    0.5 + (observedWithPenalties - 0.5) * SPREAD_FACTOR
+  const sampleConfidence = clamp(
+    (articles.length - MIN_CONFIDENCE_SAMPLES) /
+      (FULL_CONFIDENCE_SAMPLES - MIN_CONFIDENCE_SAMPLES),
+    0,
+    1
   );
 
-  if (observedWithPenalties >= 0.85) {
-    adjustedObserved = clamp(adjustedObserved + 0.05);
-  }
+  const confidenceWeightedObserved = clamp(
+    NEUTRAL_TRUST * (1 - sampleConfidence) +
+    observedWithPenalties * sampleConfidence
+  );
 
-  const previousTrust = feed.feedTrust ?? BASELINE_TRUST;
+  const previousTrust = feed.feedTrust ?? NEUTRAL_TRUST;
   const newTrust =
-    EMA_ALPHA * adjustedObserved +
+    EMA_ALPHA * confidenceWeightedObserved +
     (1 - EMA_ALPHA) * previousTrust;
 
   /* ============================================================
@@ -361,6 +360,7 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedSkimRatio,
     feedIgnoreRatio,
     feedAttentionSampleSize: attentionSamples,
+    sampleConfidence,
 
     predictedAffinity: predicted?.predictedAffinity ?? 'unknown',
     predictedConfidence: predicted?.confidence ?? 0
@@ -371,25 +371,36 @@ export async function calculateFeedTrustForFeed(feedId) {
  * BATCH PROCESSING
  * ================================================================ */
 
-export async function calculateFeedTrustForAllFeeds() {
+export async function calculateFeedTrustForAllFeeds({ userId = null } = {}) {
+  const where = { status: 'active' };
+
+  if (userId) {
+    where.userId = userId;
+  }
+
   const feeds = await Feed.findAll({
-    where: { status: 'active' }
+    where
   });
 
   console.log(
     `[FEED-TRUST] Calculating trust & attention for ${feeds.length} feeds`
   );
 
+  let updatedCount = 0;
+  let failedCount = 0;
+
   for (const feed of feeds) {
     try {
       const result = await calculateFeedTrustForFeed(feed.id);
       if (!result) continue;
+      updatedCount++;
 
       console.log(
         `[FEED-TRUST] Feed ${feed.id} (${feed.feedName}) -> ` +
         `trust=${result.trust.toFixed(3)} ` +
         `affinity=${result.predictedAffinity} ` +
         `conf=${result.predictedConfidence.toFixed(2)} ` +
+        `sampleConf=${result.sampleConfidence.toFixed(2)} ` +
         `att=${result.feedAttentionAvg.toFixed(2)} ` +
         `deep=${(result.feedDeepReadRatio * 100).toFixed(0)}% ` +
         `skim=${(result.feedSkimRatio * 100).toFixed(0)}% ` +
@@ -397,12 +408,19 @@ export async function calculateFeedTrustForAllFeeds() {
         `samples=${result.feedAttentionSampleSize}`
       );
     } catch (err) {
+      failedCount++;
       console.error(
         `[FEED-TRUST] Failed for feed ${feed.id}:`,
         err.message
       );
     }
   }
+
+  return {
+    feedCount: feeds.length,
+    updatedCount,
+    failedCount
+  };
 }
 
 /* ================================================================

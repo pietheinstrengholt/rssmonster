@@ -8,6 +8,7 @@ export const router = express.Router();
 router.get('/', userMiddleware.isLoggedIn, feedController.getFeeds);
 router.post('/refresh', userMiddleware.isLoggedIn, feedController.startRefresh);
 router.get('/refresh/:jobId/events', feedController.streamRefreshEvents);
+router.post('/recalculate-trust', userMiddleware.isLoggedIn, feedController.recalculateFeedTrust);
 router.get('/:feedId', userMiddleware.isLoggedIn, feedController.getFeed);
 router.put('/:feedId', userMiddleware.isLoggedIn, feedController.updateFeed);
 router.delete('/:feedId', userMiddleware.isLoggedIn, feedController.deleteFeed);

@@ -49,6 +49,12 @@ export const startFeedRefresh = () =>
   api.post('/feeds/refresh');
 
 /**
+ * Recalculate feed trust scores
+ */
+export const recalculateFeedTrust = () =>
+  api.post('/feeds/recalculate-trust', null, { timeout: 120000 });
+
+/**
  * Open SSE stream for a refresh job
  */
 export const openFeedRefreshEvents = (jobId, token) => {

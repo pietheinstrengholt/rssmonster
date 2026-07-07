@@ -145,9 +145,9 @@ const processArticle = async (
     }
 
     // Try to find any existing article with the same link or title
-    const existing = duplicateCache
-      ? duplicateCache.find(fields.title, fields.link, contentHash)
-      : await findExistingArticle(feed, fields.title, fields.link, contentHash);
+    const cachedExisting = duplicateCache?.find(fields.title, fields.link, contentHash);
+    const existing = cachedExisting ??
+      await findExistingArticle(feed, fields.title, fields.link, contentHash);
     if (existing) {
       // Existing entry means the feed already contains this article, count as updated for progress reporting.
       return {

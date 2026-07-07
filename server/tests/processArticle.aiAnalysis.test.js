@@ -143,4 +143,69 @@ describe('processArticle AI analysis controls', () => {
       errors: 0
     });
   });
+
+  it('falls back to the database when the duplicate cache misses', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.findExistingArticle.mockResolvedValue({ id: 99 });
+
+    const result = await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Windowed cache feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      {
+        find: vi.fn(() => null),
+        add: vi.fn()
+      },
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.findExistingArticle).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, userId: 42 }),
+      'Article title',
+      'https://example.com/article',
+      'content-hash'
+    );
+    expect(mocked.saveArticle).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      newArticles: 0,
+      updatedArticles: 1,
+      errors: 0
+    });
+  });
+
+  it('uses duplicate cache hits without querying the database', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    const result = await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Cached duplicate feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      {
+        find: vi.fn(() => ({ id: 100 })),
+        add: vi.fn()
+      },
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.findExistingArticle).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      newArticles: 0,
+      updatedArticles: 1,
+      errors: 0
+    });
+  });
 });

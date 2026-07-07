@@ -41,6 +41,15 @@
             <BootstrapIcon icon="download" aria-hidden="true" />
             Export OPML
           </button>
+          <button
+            type="button"
+            class="feeds-toolbar-button"
+            :disabled="feedTrustLoading || feeds.length === 0"
+            @click="handleRecalculateFeedTrust"
+          >
+            <BootstrapIcon icon="arrow-repeat" aria-hidden="true" />
+            {{ feedTrustLoading ? 'Recalculating…' : 'Recalculate Scores' }}
+          </button>
         </div>
 
         <div class="feeds-toolbar-filters">
@@ -62,6 +71,12 @@
       </div>
       <div v-if="opmlError" class="feeds-message feeds-message--error" role="alert">
         {{ opmlError }}
+      </div>
+      <div v-if="feedTrustMessage" class="feeds-message feeds-message--success" role="status">
+        {{ feedTrustMessage }}
+      </div>
+      <div v-if="feedTrustError" class="feeds-message feeds-message--error" role="alert">
+        {{ feedTrustError }}
       </div>
 
       <div v-if="feeds.length === 0" class="feeds-empty-state">No feeds found.</div>
@@ -550,7 +565,7 @@
 </style>
 
 <script>
-import { fetchFeeds } from '../../api/feeds';
+import { fetchFeeds, recalculateFeedTrust } from '../../api/feeds';
 import { exportOpml, importOpml } from '../../api/opml';
 
 export default {
@@ -571,6 +586,9 @@ export default {
             feedsError: null,
             opmlMessage: null,
             opmlError: null,
+            feedTrustLoading: false,
+            feedTrustMessage: null,
+            feedTrustError: null,
             searchQuery: '',
             statusFilter: 'all',
             smartFolderRecommendations: [],
@@ -671,6 +689,28 @@ export default {
                 if (event?.target) {
                     event.target.value = '';
                 }
+            }
+        },
+        async handleRecalculateFeedTrust() {
+            this.feedTrustMessage = null;
+            this.feedTrustError = null;
+
+            try {
+                this.feedTrustLoading = true;
+                const response = await recalculateFeedTrust();
+                const updatedCount = Number(response?.data?.updatedCount || 0);
+                const failedCount = Number(response?.data?.failedCount || 0);
+                this.feedTrustMessage = failedCount > 0
+                    ? `Feed scores recalculated for ${updatedCount} feeds. ${failedCount} failed.`
+                    : `Feed scores recalculated for ${updatedCount} feeds.`;
+
+                await this.fetchFeeds();
+                this.$emit('saved');
+            } catch (err) {
+                console.error('Failed to recalculate feed trust:', err);
+                this.feedTrustError = err?.response?.data?.error || 'Failed to recalculate feed scores.';
+            } finally {
+                this.feedTrustLoading = false;
             }
         }
     },

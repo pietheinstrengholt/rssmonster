@@ -10,6 +10,7 @@ import crawlController from './crawl.js';
 import crawlJobManager from '../services/crawl/crawlJobManager.js';
 import { normalizeTagList } from '../services/crawl/tags.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { calculateFeedTrustForAllFeeds } from '../scripts/calculateFeedTrust.js';
 
 const findOwnedCategory = (categoryId, userId) => Category.findOne({
   where: {
@@ -547,6 +548,26 @@ const startRefresh = async (req, res) => {
   }
 };
 
+const recalculateFeedTrust = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const result = await calculateFeedTrustForAllFeeds({ userId });
+
+    return res.status(200).json({
+      message: 'Feed trust recalculated',
+      ...result
+    });
+  } catch (err) {
+    console.error('Error in recalculateFeedTrust:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 const streamRefreshEvents = async (req, res) => {
   try {
     let userId = req.userData?.userId || null;
@@ -631,5 +652,6 @@ export default {
   rediscoverFeedRss,
   muteFeed,
   startRefresh,
+  recalculateFeedTrust,
   streamRefreshEvents
 }
