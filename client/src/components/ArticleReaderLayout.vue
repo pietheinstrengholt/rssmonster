@@ -93,12 +93,12 @@
         @click="selectArticle(article.id)"
       >
         <span class="readerArticleListItemContent">
+          <span class="readerArticleListItemTitle">{{ article.title }}</span>
+          <span v-if="articlePreview(article)" class="readerArticleListItemPreview">{{ articlePreview(article) }}</span>
           <span class="readerArticleListItemKicker">
             <span>{{ feedName(article) }}</span>
             <span v-if="publishedLabel(article)">{{ publishedLabel(article) }}</span>
           </span>
-          <span class="readerArticleListItemTitle">{{ article.title }}</span>
-          <span v-if="articlePreview(article)" class="readerArticleListItemPreview">{{ articlePreview(article) }}</span>
           <span class="readerArticleListItemBadges">
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
@@ -249,7 +249,8 @@ export default {
     // Returns the icon class that matches the active reader collection.
     selectionIcon() {
       const selection = this.$store.data.currentSelection;
-      if (selection.smartFolderId !== null || selection.tag) return 'bi bi-tag-fill';
+      if (selection.smartFolderId !== null) return 'bi bi-folder-fill';
+      if (selection.tag) return 'bi bi-tag-fill';
       if (selection.search) return 'bi bi-search';
       if (selection.feedId !== '%') return 'bi bi-rss-fill';
       if (selection.categoryId !== '%') return 'bi bi-folder-fill';
@@ -542,7 +543,7 @@ export default {
 <style scoped>
 .readerLayout {
   display: grid;
-  grid-template-columns: minmax(280px, 34%) minmax(0, 1fr);
+  grid-template-columns: minmax(340px, 38%) minmax(0, 1fr);
   min-height: 100vh;
   padding-top: 58px;
 }
@@ -788,7 +789,8 @@ export default {
   font-weight: 600;
   gap: 8px;
   line-height: 1.3;
-  margin-bottom: 5px;
+  margin-bottom: 2px;
+  margin-top: 5px;
 }
 
 .readerArticleListItemTitle {
@@ -847,9 +849,9 @@ export default {
   background: var(--bg-muted);
   border-radius: 6px;
   display: block;
-  height: 56px;
+  height: 72px;
   object-fit: cover;
-  width: 72px;
+  width: 96px;
 }
 
 .readerArticleListItemMeta {

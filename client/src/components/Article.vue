@@ -46,6 +46,15 @@
             <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
+          <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
+            <template v-for="(signal, index) in articleSignals" :key="signal.label">
+              <span v-if="index > 0" class="signal-divider" aria-hidden="true"></span>
+              <span class="signal-badge">
+                <span :class="['signal-icon', signal.icon]" aria-hidden="true"></span>
+                {{ signal.label }}
+              </span>
+            </template>
+          </div>
         </div>
         <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
       </div>
@@ -77,6 +86,7 @@ import { formatTagName } from '../utils/tags';
 const NEUTRAL_SCORE = 70;
 const SWIPE_MAX = 128;
 const SWIPE_THRESHOLD = 86;
+const TRUSTED_FEED_THRESHOLD = 0.85;
 
 export default {
   inheritAttrs: false,
@@ -105,6 +115,7 @@ export default {
     advertisementScore: { type: Number, default: undefined },
     sentimentScore: { type: Number, default: undefined },
     qualityScore: { type: Number, default: undefined },
+    recommendationScore: { type: Number, default: undefined },
     quality: { type: Number, default: undefined },
     interestScore: { type: [Number, String], default: 0 },
     cluster: { type: Object, default: null },
@@ -205,6 +216,56 @@ export default {
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
     },
+    // Returns compact relevance signals for the current article.
+    articleSignals() {
+      const signals = [];
+
+      if (this.hasHighQualitySignal) {
+        signals.push({ label: 'High quality', icon: 'bi bi-stars' });
+      }
+
+      if (this.hasMajorEventSignal) {
+        signals.push({ label: 'Major event', icon: 'bi bi-broadcast' });
+      } else if (this.hasTrendingSignal) {
+        signals.push({ label: 'Trending', icon: 'bi bi-graph-up-arrow' });
+      }
+
+      if (this.hasTrustedSourceSignal) {
+        signals.push({ label: this.trustedSourceLabel, icon: 'bi bi-shield-fill-check' });
+      }
+
+      return signals;
+    },
+    // Returns whether quality or recommendation metadata clears the high-quality threshold.
+    hasHighQualitySignal() {
+      return this.scoreAsPercent(this.qualityScore) > 90
+        || this.scoreAsPercent(this.recommendationScore) > 90;
+    },
+    // Returns whether the feed trust score clears the trusted-source threshold.
+    hasTrustedSourceSignal() {
+      const feedTrust = Number(this.feed?.feedTrust);
+      return Number.isFinite(feedTrust) && feedTrust > TRUSTED_FEED_THRESHOLD;
+    },
+    // Returns the trusted-source label, including feed name when metadata shows an author.
+    trustedSourceLabel() {
+      const feedName = this.feed?.feedName;
+      return this.author && feedName
+        ? `Trusted source (${feedName})`
+        : 'Trusted source';
+    },
+    // Returns whether event source coverage clears the trending threshold.
+    hasTrendingSignal() {
+      return this.eventSourceScore > 4;
+    },
+    // Returns whether event source coverage clears the major-event threshold.
+    hasMajorEventSignal() {
+      return this.eventSourceScore > 6;
+    },
+    // Returns the unique-source score stored on the event/cluster metadata.
+    eventSourceScore() {
+      const score = Number(this.cluster?.sourceCount);
+      return Number.isFinite(score) ? score : 0;
+    },
     // Returns the total number of articles in the active event view.
     clusterCountTotal() {
       if (!this.cluster) return 0;
@@ -265,6 +326,12 @@ export default {
   methods: {
     // Formats stored tag names for display.
     formatTagName,
+    // Converts score values stored as either 0-1 or 0-100 into percentages.
+    scoreAsPercent(value) {
+      const score = Number(value);
+      if (!Number.isFinite(score)) return 0;
+      return score <= 1 ? score * 100 : score;
+    },
     // Sets up the listener that tracks mobile portrait orientation.
     setupMediaQueryListener() {
       if (typeof window === 'undefined' || !window.matchMedia) return;
@@ -769,6 +836,51 @@ export default {
   gap: 12px;
   margin-top: 6px;
 }
+
+.article-signal-bar {
+  align-items: center;
+  background: #fff7ed;
+  border: 1px solid #fed7aa;
+  border-radius: 8px;
+  color: #7c2d12;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 14px;
+  font-weight: 500;
+  gap: 10px;
+  margin: 12px 0 8px;
+  padding: 10px 14px;
+}
+
+.signal-badge {
+  align-items: center;
+  display: inline-flex;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.signal-icon {
+  font-size: 15px;
+  line-height: 1;
+}
+
+.signal-divider {
+  background: #fdba74;
+  height: 16px;
+  opacity: 0.8;
+  width: 1px;
+}
+
+:root[data-theme='dark'] .article-signal-bar {
+  background: rgba(124, 45, 18, 0.22);
+  border-color: rgba(253, 186, 116, 0.42);
+  color: #fed7aa;
+}
+
+:root[data-theme='dark'] .signal-divider {
+  background: rgba(253, 186, 116, 0.55);
+}
+
 .article-card .article-content-wrapper {
   color: var(--text-primary);
   padding-top: 6px;
@@ -944,7 +1056,6 @@ export default {
   white-space: nowrap;
   cursor: pointer;
   vertical-align: middle;
-  opacity: 0.85;
 }
 
 .article-card .article-tags .tag {
