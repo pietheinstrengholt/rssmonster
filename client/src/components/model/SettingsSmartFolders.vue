@@ -404,7 +404,7 @@
                                 <select v-model="draftConfig.sort.field" class="form-select">
                                     <option value="">None</option>
                                     <option value="recommended">Recommended</option>
-                                    <option value="attention">Attention</option>
+                                    <option value="attention">Most Engaged</option>
                                     <option value="quality">Quality</option>
                                     <option value="published-desc">Published date (newest)</option>
                                     <option value="published-asc">Published date (oldest)</option>

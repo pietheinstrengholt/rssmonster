@@ -125,6 +125,8 @@ export async function calculateFeedTrustForFeed(feedId) {
       feedDeepReadRatio: feed.feedDeepReadRatio ?? 0,
       feedSkimRatio: feed.feedSkimRatio ?? 0,
       feedIgnoreRatio: feed.feedIgnoreRatio ?? 0,
+      feedClickAvg: feed.feedClickAvg ?? 0,
+      feedClickRatio: feed.feedClickRatio ?? 0,
       feedAttentionSampleSize: feed.feedAttentionSampleSize ?? 0,
       sampleConfidence: 0,
 
@@ -322,6 +324,14 @@ export async function calculateFeedTrustForFeed(feedId) {
   const feedIgnoreRatio =
     articles.length > 0 ? ignored / articles.length : 0;
 
+  const clickedArticles = articles.filter(article => (article.clickedAmount ?? 0) > 0).length;
+  const totalClicks = articles.reduce(
+    (sum, article) => sum + Math.max(Number(article.clickedAmount ?? 0), 0),
+    0
+  );
+  const feedClickAvg = articles.length > 0 ? totalClicks / articles.length : 0;
+  const feedClickRatio = articles.length > 0 ? clamp(clickedArticles / articles.length) : 0;
+
   /* ============================================================
    * UPDATE FEED
    * ============================================================ */
@@ -335,6 +345,8 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedDeepReadRatio,
     feedSkimRatio,
     feedIgnoreRatio,
+    feedClickAvg,
+    feedClickRatio,
     feedAttentionSampleSize: attentionSamples,
     feedAttentionUpdatedAt: now
   });
@@ -359,6 +371,8 @@ export async function calculateFeedTrustForFeed(feedId) {
     feedDeepReadRatio,
     feedSkimRatio,
     feedIgnoreRatio,
+    feedClickAvg,
+    feedClickRatio,
     feedAttentionSampleSize: attentionSamples,
     sampleConfidence,
 
@@ -405,6 +419,8 @@ export async function calculateFeedTrustForAllFeeds({ userId = null } = {}) {
         `deep=${(result.feedDeepReadRatio * 100).toFixed(0)}% ` +
         `skim=${(result.feedSkimRatio * 100).toFixed(0)}% ` +
         `ignore=${(result.feedIgnoreRatio * 100).toFixed(0)}% ` +
+        `clickAvg=${result.feedClickAvg.toFixed(2)} ` +
+        `clickRatio=${(result.feedClickRatio * 100).toFixed(0)}% ` +
         `samples=${result.feedAttentionSampleSize}`
       );
     } catch (err) {

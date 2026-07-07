@@ -97,6 +97,16 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 0
       },
+      feedClickAvg: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
+      feedClickRatio: {
+        type: DataTypes.FLOAT,
+        allowNull: false,
+        defaultValue: 0
+      },
       feedAttentionSampleSize: {
         type: DataTypes.INTEGER,
         allowNull: false,

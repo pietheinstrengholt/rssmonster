@@ -46,7 +46,7 @@
         <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'desc' }" @click="sortClicked('desc')">Newest</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'recommended' }" @click="sortClicked('recommended')">Recommended</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'quality' }" @click="sortClicked('quality')">Quality</button>
-        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Attention</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Most Engaged</button>
         <li><hr class="dropdown-divider"></li>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'none' }" @click="setGrouping('none')">All articles</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.grouping === 'event' }" @click="setGrouping('event')">Cluster per event</button>

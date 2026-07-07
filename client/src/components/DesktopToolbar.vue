@@ -776,7 +776,7 @@ export default {
         { value: 'desc', label: 'Newest' },
         { value: 'recommended', label: 'Recommended', requiresAI: true },
         { value: 'quality', label: 'Quality', requiresAI: true },
-        { value: 'attention', label: 'Attention', requiresAI: true }
+        { value: 'attention', label: 'Most Engaged', requiresAI: true }
       ],
       groupingOptions: [
         { value: 'none', label: 'None' },
