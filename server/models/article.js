@@ -2,12 +2,62 @@ import { DataTypes } from 'sequelize';
 import { createHash } from 'node:crypto';
 
 const TAU_HOURS = 48; // tune this globally
+const NEUTRAL_FEED_TRUST = 0.75;
+const MIN_FEED_CONFIDENCE_SAMPLES = 10;
+const FULL_FEED_CONFIDENCE_SAMPLES = 100;
+const MAX_FEED_TRUST_BOOST = 0.10;
+const MAX_FEED_TRUST_PENALTY = 0.15;
+const MAX_FEED_DUPLICATION_PENALTY = 0.10;
 
 // This function derives the stable database identity for an article URL.
 const populateUrlHash = article => {
   if (article.url && !article.urlHash) {
     article.urlHash = createHash('sha256').update(article.url).digest('hex');
   }
+};
+
+// This function clamps a numeric score into a bounded range.
+const clamp = (value, min = 0, max = 1) =>
+  Math.max(min, Math.min(max, value));
+
+// This function reads a numeric value from a Sequelize model or plain object.
+const numericValue = (source, key, fallback = 0) => {
+  const value = typeof source?.getDataValue === 'function'
+    ? source.getDataValue(key)
+    : source?.[key];
+  const numeric = Number(value);
+  return Number.isFinite(numeric) ? numeric : fallback;
+};
+
+// This function returns how much feed-level metrics should influence article quality.
+const feedQualityConfidence = feed => {
+  const sampleSize = Math.max(numericValue(feed, 'feedAttentionSampleSize', 0), 0);
+  return clamp(
+    (sampleSize - MIN_FEED_CONFIDENCE_SAMPLES) /
+      (FULL_FEED_CONFIDENCE_SAMPLES - MIN_FEED_CONFIDENCE_SAMPLES)
+  );
+};
+
+// This function gently adjusts article quality using feed trust and duplication history.
+const applyFeedQualityAdjustment = (baseQuality, feed) => {
+  if (!feed) return baseQuality;
+
+  const confidence = feedQualityConfidence(feed);
+  if (confidence <= 0) return baseQuality;
+
+  const feedTrust = clamp(numericValue(feed, 'feedTrust', NEUTRAL_FEED_TRUST));
+  const duplicationRate = clamp(numericValue(feed, 'feedDuplicationRate', 0));
+  const trustAdjustment = feedTrust >= NEUTRAL_FEED_TRUST
+    ? ((feedTrust - NEUTRAL_FEED_TRUST) / (1 - NEUTRAL_FEED_TRUST)) * MAX_FEED_TRUST_BOOST
+    : -((NEUTRAL_FEED_TRUST - feedTrust) / NEUTRAL_FEED_TRUST) * MAX_FEED_TRUST_PENALTY;
+  const duplicationPenalty = duplicationRate * MAX_FEED_DUPLICATION_PENALTY;
+  const multiplier = clamp(
+    1 + confidence * (trustAdjustment - duplicationPenalty),
+    1 - MAX_FEED_TRUST_PENALTY,
+    1 + MAX_FEED_TRUST_BOOST
+  );
+
+  return clamp(baseQuality * multiplier);
 };
 
 export default (sequelize) => {
@@ -258,9 +308,9 @@ export default (sequelize) => {
            * - Articles without scores start at a neutral-good baseline (70)
            *   to avoid unfair penalization during ingestion or reprocessing.
            *
-           * Feed trust adjustment:
-           * - If Feed association is loaded, multiply by feed's trustScore
-           * - This boosts quality for trusted feeds and reduces it for questionable ones
+           * Feed adjustment:
+           * - If Feed association is loaded, gently adjust by trust and duplication history
+           * - Low-sample feeds stay close to the article-only score
            */
           let overall =
             sentimentScore * 0.5 +
@@ -268,15 +318,9 @@ export default (sequelize) => {
             advertisementScore * 0.15;
 
           overall = Math.max(0, Math.min(100, overall));
-          let baseQuality = overall / 100;
+          const baseQuality = overall / 100;
 
-          // Apply feed trust adjustment if Feed association is loaded
-          const feed = this.get('Feed');
-          if (feed && feed.feedTrust) {
-            baseQuality = baseQuality * feed.feedTrust;
-          }
-
-          return baseQuality;
+          return applyFeedQualityAdjustment(baseQuality, this.get('Feed'));
         }
       },
       uniqueness: {

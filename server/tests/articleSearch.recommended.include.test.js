@@ -49,4 +49,17 @@ describe('articleSearch recommended include wiring', () => {
     const clusterInclude = query.include.find(item => item.as === 'cluster');
     expect(clusterInclude).toBeDefined();
   });
+
+  it('includes feed quality fields when sorting by quality', async () => {
+    await searchArticles({ userId: 1, sort: 'quality', status: '%' });
+
+    expect(Article.findAll).toHaveBeenCalledTimes(1);
+    const query = Article.findAll.mock.calls[0][0];
+
+    const feedInclude = query.include.find(item => item.model === Feed);
+    expect(feedInclude).toBeDefined();
+    expect(feedInclude.attributes).toEqual(
+      expect.arrayContaining(['feedTrust', 'feedDuplicationRate', 'feedAttentionSampleSize'])
+    );
+  });
 });

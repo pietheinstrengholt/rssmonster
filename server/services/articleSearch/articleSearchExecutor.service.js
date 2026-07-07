@@ -77,25 +77,28 @@ export const buildArticleSearchQuery = ({
     where: baseWhere
   };
 
-  if (sortRecommended) {
+  if (sortRecommended || needsQuality) {
     articleQuery.include = [
       {
+        model: Feed,
+        attributes: ['id', 'feedTrust', 'feedDuplicationRate', 'feedAttentionSampleSize'],
+        required: false
+      }
+    ];
+
+    if (sortRecommended) {
+      articleQuery.include.unshift({
         model: Event,
         as: 'cluster',
         attributes: ['id', 'name', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
         required: false
-      },
-      {
-        model: Feed,
-        attributes: ['id', 'feedTrust'],
-        required: false
-      },
-      {
+      });
+      articleQuery.include.push({
         model: Tag,
         attributes: ['id', 'tagType'],
         required: false
-      }
-    ];
+      });
+    }
   }
 
   if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
