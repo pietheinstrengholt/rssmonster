@@ -491,6 +491,18 @@ body.modal-open {
     background-color: var(--settings-orange-hover-text);
 }
 
+:root[data-theme='dark'] .btn-add {
+    background-color: var(--settings-orange-bg);
+    border-color: var(--settings-orange-border);
+    color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .btn-add:hover {
+    background-color: var(--settings-orange-border);
+    border-color: var(--settings-orange-border);
+    color: var(--text-inverted);
+}
+
 /* Alert box styles */
 .alert-info {
     background-color: var(--settings-info-bg);
