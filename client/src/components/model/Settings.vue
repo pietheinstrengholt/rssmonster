@@ -56,6 +56,7 @@ import SettingsScores from './SettingsScores.vue';
 import SettingsIslands from './SettingsIslands.vue';
 import SettingsTopics from './SettingsTopics.vue';
 import SettingsFeedsOverview from './SettingsFeedsOverview.vue';
+import SettingsOfficialSources from './SettingsOfficialSources.vue';
 import SettingsManageUsers from './SettingsManageUsers.vue';
 
 export default {
@@ -69,6 +70,7 @@ export default {
     SettingsIslands,
     SettingsTopics,
     SettingsFeedsOverview,
+    SettingsOfficialSources,
     SettingsManageUsers
   },
   data() {
@@ -92,6 +94,7 @@ export default {
         { key: 'topics', label: 'Topics', description: 'Manage events and topics', icon: 'diagram-3-fill', visible: aiEnabled },
         { key: 'islands', label: 'Islands', description: 'Manage interest islands', icon: 'compass-fill', visible: aiEnabled },
         { key: 'feeds', label: 'Feeds', description: 'Manage RSS subscriptions', icon: 'rss-fill', visible: true },
+        { key: 'officialSources', label: 'Official Sources', description: 'Mark trusted organization domains', icon: 'patch-check-fill', visible: true },
         { key: 'users', label: 'Manage Users', description: 'Manage user access', icon: 'people-fill', visible: this.$store.auth.getRole === 'admin' }
       ];
     },
@@ -115,6 +118,7 @@ export default {
         topics: 'SettingsTopics',
         islands: 'SettingsIslands',
         feeds: 'SettingsFeedsOverview',
+        officialSources: 'SettingsOfficialSources',
         users: 'SettingsManageUsers'
       }[this.active] || 'SettingsWelcome';
     }

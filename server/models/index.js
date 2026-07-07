@@ -42,6 +42,7 @@ import IslandModel from './island.js';
 import IslandTopicModel from './islandTopic.js';
 import IslandTaxonomyModel from './islandTaxonomy.js';
 import HotlinkModel from './hotlink.js';
+import OfficialSourceModel from './officialSource.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -60,6 +61,7 @@ const Island = IslandModel(sequelize);
 const IslandTopic = IslandTopicModel(sequelize);
 const IslandTaxonomy = IslandTaxonomyModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
+const OfficialSource = OfficialSourceModel(sequelize);
 
 // ---- Associations ----
 
@@ -78,6 +80,10 @@ Feed.belongsTo(User, { foreignKey: 'userId' });
 // User ↔ Article
 User.hasMany(Article, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Article.belongsTo(User, { foreignKey: 'userId' });
+
+// User ↔ OfficialSource
+User.hasMany(OfficialSource, { foreignKey: 'userId', onDelete: 'CASCADE' });
+OfficialSource.belongsTo(User, { foreignKey: 'userId' });
 
 // Category ↔ Feed
 Category.hasMany(Feed, { foreignKey: 'categoryId', onDelete: 'CASCADE' });
@@ -209,5 +215,6 @@ export default {
   Island,
   IslandTopic,
   IslandTaxonomy,
-  Hotlink
+  Hotlink,
+  OfficialSource
 };

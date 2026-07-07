@@ -117,6 +117,8 @@ export default {
     qualityScore: { type: Number, default: undefined },
     recommendationScore: { type: Number, default: undefined },
     quality: { type: Number, default: undefined },
+    isOfficialSource: { type: Boolean, default: false },
+    officialOrganization: { type: String, default: '' },
     interestScore: { type: [Number, String], default: 0 },
     cluster: { type: Object, default: null },
     contentSummaryBullets: { type: Array, default: () => [] },
@@ -230,7 +232,9 @@ export default {
         signals.push({ label: 'Trending', icon: 'bi bi-graph-up-arrow' });
       }
 
-      if (this.hasTrustedSourceSignal) {
+      if (this.hasOfficialSourceSignal) {
+        signals.push({ label: this.officialSourceLabel, icon: 'bi bi-patch-check-fill' });
+      } else if (this.hasTrustedSourceSignal) {
         signals.push({ label: this.trustedSourceLabel, icon: 'bi bi-shield-fill-check' });
       }
 
@@ -240,6 +244,16 @@ export default {
     hasHighQualitySignal() {
       return this.scoreAsPercent(this.qualityScore) > 90
         || this.scoreAsPercent(this.recommendationScore) > 90;
+    },
+    // Returns whether this article was crawled from a configured official source domain.
+    hasOfficialSourceSignal() {
+      return this.isOfficialSource === true;
+    },
+    // Returns the official-source label, including organization when available.
+    officialSourceLabel() {
+      return this.officialOrganization
+        ? `Official Feed (${this.officialOrganization})`
+        : 'Official Feed';
     },
     // Returns whether the feed trust score clears the trusted-source threshold.
     hasTrustedSourceSignal() {

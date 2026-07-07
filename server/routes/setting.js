@@ -8,7 +8,9 @@ export const router = express.Router();
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
 router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOverview);
+router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);
 router.post('/', userMiddleware.isLoggedIn, settingController.setSettings);
+router.post('/official-sources', userMiddleware.isLoggedIn, settingController.setOfficialSources);
 router.patch('/theme', userMiddleware.isLoggedIn, settingController.setThemeMode);
 
 export default router;

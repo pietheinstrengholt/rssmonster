@@ -1,10 +1,123 @@
 import db from '../models/index.js';
-const { Island, Setting } = db;
+const { Island, OfficialSource, Setting } = db;
 
 // This function formats a ratio as a one-decimal percentage number.
 const percentage = (part, total) => total
   ? Number(((part / total) * 100).toFixed(1))
   : 0;
+
+// This function normalizes an official source domain before storage.
+const normalizeOfficialSourceDomain = (value) => {
+  const trimmedValue = String(value || '').trim().toLowerCase();
+  if (!trimmedValue) return null;
+
+  const withoutWildcard = trimmedValue.replace(/^\*\./, '');
+
+  try {
+    const url = new URL(
+      withoutWildcard.includes('://') ? withoutWildcard : `https://${withoutWildcard}`
+    );
+    return url.hostname.replace(/^www\./, '');
+  } catch {
+    return withoutWildcard
+      .split('/')[0]
+      .split(':')[0]
+      .replace(/^www\./, '') || null;
+  }
+};
+
+// This function fetches all official source rows for the current user.
+export const getOfficialSources = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const officialSources = await OfficialSource.findAll({
+      where: { userId },
+      order: [
+        ['entity', 'ASC'],
+        ['domain', 'ASC']
+      ],
+      raw: true
+    });
+
+    return res.status(200).json({
+      total: officialSources.length,
+      officialSources
+    });
+  } catch (err) {
+    console.error('Error in getOfficialSources:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// This function overwrites all official source rows for the current user.
+export const setOfficialSources = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const officialSources = Array.isArray(req.body?.officialSources)
+      ? req.body.officialSources
+      : [];
+
+    const rowsByDomain = new Map();
+
+    for (const source of officialSources) {
+      const entity = String(source?.entity || '').trim();
+      const domain = normalizeOfficialSourceDomain(source?.domain);
+
+      if (!entity && !domain) continue;
+
+      if (!entity || !domain) {
+        return res.status(400).json({ error: 'Each official source needs an entity and domain.' });
+      }
+
+      rowsByDomain.set(domain, {
+        userId,
+        entity,
+        domain,
+        enabled: source?.enabled !== false
+      });
+    }
+
+    const payload = [...rowsByDomain.values()];
+
+    await db.sequelize.transaction(async (transaction) => {
+      await OfficialSource.destroy({
+        where: { userId },
+        transaction
+      });
+
+      if (payload.length > 0) {
+        await OfficialSource.bulkCreate(payload, { transaction });
+      }
+    });
+
+    const saved = await OfficialSource.findAll({
+      where: { userId },
+      order: [
+        ['entity', 'ASC'],
+        ['domain', 'ASC']
+      ],
+      raw: true
+    });
+
+    return res.status(200).json({
+      total: saved.length,
+      officialSources: saved
+    });
+  } catch (err) {
+    console.error('Error in setOfficialSources:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
 
 export const getSettings = async (req, res, _next) => {
   try {
@@ -702,6 +815,8 @@ export const getTopicsOverview = async (req, res, _next) => {
 };
 
 export default {
+  getOfficialSources,
+  setOfficialSources,
   getSettings,
   setSettings,
   setThemeMode,

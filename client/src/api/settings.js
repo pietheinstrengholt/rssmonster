@@ -17,3 +17,9 @@ export const fetchIslandsOverview = () =>
 
 export const fetchTopicsOverview = () =>
   api.get('/setting/topics');
+
+export const fetchOfficialSources = () =>
+  api.get('/setting/official-sources');
+
+export const saveOfficialSources = officialSources =>
+  api.post('/setting/official-sources', { officialSources });

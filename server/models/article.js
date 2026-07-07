@@ -103,6 +103,16 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      isOfficialSource: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
+      officialOrganization: {
+        type: DataTypes.STRING(128),
+        allowNull: true,
+        defaultValue: null
+      },
       // Embedding vector for semantic search and topic modeling, stored as JSON array of floats
       embedding_model: {
         type: DataTypes.STRING(64),

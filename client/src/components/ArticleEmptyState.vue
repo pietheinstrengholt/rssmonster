@@ -236,54 +236,54 @@ export default {
   }
 }
 
-:global(:root[data-theme='dark']) .article-empty-state {
+:global(:root[data-theme='dark'] .article-empty-state) {
   background: var(--dark-bg-page, var(--bg-page));
   color: var(--dark-text-primary, var(--text-primary));
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-circle {
+:global(:root[data-theme='dark'] .article-empty-state-circle) {
   background: linear-gradient(180deg, rgba(30, 58, 138, 0.72) 0%, rgba(30, 58, 138, 0.24) 100%);
   color: var(--color-link-hover);
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-plane {
+:global(:root[data-theme='dark'] .article-empty-state-plane) {
   color: var(--color-link);
-  opacity: 0.65;
+  opacity: 0.90;
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-title {
+:global(:root[data-theme='dark'] .article-empty-state-title) {
   color: var(--dark-text-primary, var(--text-primary));
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-text {
+:global(:root[data-theme='dark'] .article-empty-state-text) {
   color: var(--dark-text-meta, var(--text-secondary));
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-secondary {
+:global(:root[data-theme='dark'] .article-empty-state-secondary) {
   background: var(--dark-bg-card, var(--bg-card));
   border-color: var(--dark-border, var(--border-color));
   color: var(--dark-text-body, var(--text-secondary));
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-secondary:hover {
+:global(:root[data-theme='dark'] .article-empty-state-secondary:hover) {
   background: var(--dark-bg-hover, var(--bg-hover));
   color: var(--color-link-hover);
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-divider {
+:global(:root[data-theme='dark'] .article-empty-state-divider) {
   color: var(--dark-text-muted, var(--text-muted));
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-divider::before,
-:global(:root[data-theme='dark']) .article-empty-state-divider::after {
+:global(:root[data-theme='dark'] .article-empty-state-divider::before),
+:global(:root[data-theme='dark'] .article-empty-state-divider::after) {
   background: var(--dark-border, var(--border-color));
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-link {
+:global(:root[data-theme='dark'] .article-empty-state-link) {
   color: var(--color-link);
 }
 
-:global(:root[data-theme='dark']) .article-empty-state-link:hover {
+:global(:root[data-theme='dark'] .article-empty-state-link:hover) {
   color: var(--color-link-hover);
 }
 </style>

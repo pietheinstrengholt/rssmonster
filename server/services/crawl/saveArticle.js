@@ -1,5 +1,6 @@
 import db from '../../models/index.js';
 import { saveArticleTags } from './tags.js';
+import { resolveOfficialSourceForArticle } from './officialSource.js';
 
 const { Article } = db;
 
@@ -17,6 +18,8 @@ async function saveArticle(feed, data, analysis, actionResult) {
   let article;
 
   try {
+    const officialSource = await resolveOfficialSourceForArticle(feed.userId, data.link);
+
     article = await Article.create({
       userId: feed.userId,
       feedId: feed.id,
@@ -34,6 +37,8 @@ async function saveArticle(feed, data, analysis, actionResult) {
       contentStripped: analysis.summary || data.contentStripped, // use summary from analysis if available
       contentSummaryBullets: analysis.contentSummaryBullets,
       contentHash: data.contentHash,
+      isOfficialSource: officialSource.isOfficialSource,
+      officialOrganization: officialSource.officialOrganization,
       language: data.language,
       embedding_model: data.embedding_model || null,
       advertisementScore: analysis.advertisementScore,

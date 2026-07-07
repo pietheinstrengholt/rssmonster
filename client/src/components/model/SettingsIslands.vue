@@ -391,7 +391,7 @@
 
 .settings-refresh-button:disabled {
   cursor: not-allowed;
-  opacity: 0.65;
+  opacity: 0.90;
 }
 
 :global(:root[data-theme='dark']) .settings-data-panel,

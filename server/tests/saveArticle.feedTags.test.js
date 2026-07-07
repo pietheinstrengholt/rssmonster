@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   articleCreate: vi.fn(),
+  officialSourceFindAll: vi.fn(),
   tagCreate: vi.fn()
 }));
 
@@ -9,6 +10,9 @@ vi.mock('../models/index.js', () => ({
   default: {
     Article: {
       create: mocked.articleCreate
+    },
+    OfficialSource: {
+      findAll: mocked.officialSourceFindAll
     },
     Tag: {
       create: mocked.tagCreate
@@ -19,8 +23,10 @@ vi.mock('../models/index.js', () => ({
 describe('saveArticle feed tags', () => {
   beforeEach(() => {
     mocked.articleCreate.mockReset();
+    mocked.officialSourceFindAll.mockReset();
     mocked.tagCreate.mockReset();
     mocked.articleCreate.mockResolvedValue({ id: 123 });
+    mocked.officialSourceFindAll.mockResolvedValue([]);
     mocked.tagCreate.mockResolvedValue({});
   });
 
@@ -98,5 +104,54 @@ describe('saveArticle feed tags', () => {
       tagType: 'rule'
     });
     expect(mocked.tagCreate).toHaveBeenCalledTimes(6);
+  });
+
+  it('marks articles from official source domains', async () => {
+    mocked.officialSourceFindAll.mockResolvedValue([
+      { entity: 'Nintendo', domain: 'nintendo.com' }
+    ]);
+
+    const { default: saveArticle } = await import('../services/crawl/saveArticle.js');
+
+    await saveArticle(
+      {
+        id: 7,
+        userId: 42,
+        feedTags: []
+      },
+      {
+        link: 'https://www.nintendo.com/us/news/article',
+        title: 'Nintendo news',
+        description: 'Description',
+        contentOriginal: '<p>Body</p>',
+        contentStripped: 'Body',
+        contentHash: 'hash',
+        mediaFound: false,
+        language: 'en',
+        published: new Date('2026-07-01T00:00:00Z')
+      },
+      {
+        summary: 'Summary',
+        contentSummaryBullets: [],
+        tags: [],
+        advertisementScore: 70,
+        sentimentScore: 70,
+        qualityScore: 70
+      },
+      {
+        status: 'unread',
+        favoriteInd: false,
+        clickedAmount: 0,
+        hotInd: false,
+        tags: []
+      }
+    );
+
+    expect(mocked.articleCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        isOfficialSource: true,
+        officialOrganization: 'Nintendo'
+      })
+    );
   });
 });
