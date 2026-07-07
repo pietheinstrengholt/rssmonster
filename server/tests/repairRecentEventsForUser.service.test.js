@@ -386,6 +386,183 @@ describe('repairRecentEventsForUser', () => {
     expect(runContext.stats.linkedToExistingEventCount).toBe(1);
   });
 
+  it('inherits read status when a new article joins an existing event with a read representative', async () => {
+    const { user, feed } = await createUserGraph('inherit-read');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Spanish heatwave death toll reaches 1028 in June',
+      url: `https://example.com/${user.id}/inherit-read-representative`,
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0],
+      status: 'read'
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [1, 0, 0],
+      eventWindowStartAt: representativeArticle.published,
+      eventWindowEndAt: representativeArticle.published,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Spanish heatwave death toll reaches 1028 in June update',
+      url: `https://example.com/${user.id}/inherit-read-incoming`,
+      published: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0],
+      status: 'unread'
+    }));
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([event]),
+      { eventVector: incomingArticle.articleVector },
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+    expect(incomingArticle.status).toBe('read');
+  });
+
+  it('keeps unread status when a new article joins an existing event with an unread representative', async () => {
+    const { user, feed } = await createUserGraph('inherit-unread');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Acme merger talks advance in Brussels',
+      url: `https://example.com/${user.id}/inherit-unread-representative`,
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0],
+      status: 'unread'
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [1, 0, 0],
+      eventWindowStartAt: representativeArticle.published,
+      eventWindowEndAt: representativeArticle.published,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Acme merger talks advance in Brussels after vote',
+      url: `https://example.com/${user.id}/inherit-unread-incoming`,
+      published: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0],
+      status: 'unread'
+    }));
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([event]),
+      { eventVector: incomingArticle.articleVector },
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+    expect(incomingArticle.status).toBe('unread');
+  });
+
+  it('does not inherit read status while creating a new event', async () => {
+    const { user, feed } = await createUserGraph('inherit-new-event');
+    const existingArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Luna launch mission reaches orbit',
+      url: `https://example.com/${user.id}/inherit-new-event-existing`,
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0],
+      status: 'read'
+    }));
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Luna launch mission reaches orbit successfully',
+      url: `https://example.com/${user.id}/inherit-new-event-incoming`,
+      published: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0],
+      status: 'unread'
+    }));
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([]),
+      { eventVector: incomingArticle.articleVector },
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await existingArticle.reload();
+    await incomingArticle.reload();
+
+    expect(eventId).toBeTruthy();
+    expect(existingArticle.eventId).toBe(eventId);
+    expect(incomingArticle.eventId).toBe(eventId);
+    expect(existingArticle.status).toBe('read');
+    expect(incomingArticle.status).toBe('unread');
+  });
+
+  it('does not overwrite non-unread article status when joining a read event', async () => {
+    const { user, feed } = await createUserGraph('inherit-special-status');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Market regulator opens tech probe',
+      url: `https://example.com/${user.id}/inherit-special-representative`,
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0],
+      status: 'read'
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [1, 0, 0],
+      eventWindowStartAt: representativeArticle.published,
+      eventWindowEndAt: representativeArticle.published,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Market regulator opens tech probe after complaint',
+      url: `https://example.com/${user.id}/inherit-special-incoming`,
+      published: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0],
+      status: 'favorite'
+    }));
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([event]),
+      { eventVector: incomingArticle.articleVector },
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+    expect(incomingArticle.status).toBe('favorite');
+  });
+
   it('full-rebuild assigns vectorized articles outside the recent repair window', async () => {
     const { user, feed } = await createUserGraph('retrospective');
     const feedTwo = await Feed.create({
@@ -438,5 +615,4 @@ describe('repairRecentEventsForUser', () => {
     expect(events[0].articles).toHaveLength(2);
   });
 });
-
 

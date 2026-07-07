@@ -8,6 +8,11 @@ import { blendVector } from '../vectors/index.js';
 import { eventDateFromArticle, eventTimestamp } from './articleEventTime.js';
 
 const { Article, Event } = db;
+const INHERITABLE_ARTICLE_STATUS = 'unread';
+const READ_ARTICLE_STATUS = 'read';
+const EVENT_DEBUG = ['1', 'true', 'yes'].includes(
+  String(process.env.EVENT_DEBUG || process.env.EVENT_RECLUSTER_DEBUG || '').toLowerCase()
+) || process.env.NODE_ENV === 'development';
 
 // This function converts date-like values into timestamps for lifecycle calculations.
 function toTimestamp(value) {
@@ -62,6 +67,87 @@ async function updateSourceDiversity(eventId, userId) {
   return { sourceCount, sourceDiversityScore };
 }
 
+// This function writes read-inheritance decisions when event debug logging is enabled.
+function logReadInheritanceDecision({ article, event, representativeArticleId, decision, reason = null }) {
+  if (!EVENT_DEBUG) return;
+
+  const reasonPart = reason ? ` reason=${reason}` : '';
+  console.log(
+    `[EVENT] inherited read status article=${article.id} event=${event.id} ` +
+    `representative=${representativeArticleId ?? 'none'} decision=${decision}${reasonPart}`
+  );
+}
+
+// This function marks a newly attached unread article read when the event representative was already read.
+export async function inheritReadStatusFromEventRepresentative({ article, event, transaction = null }) {
+  const representativeArticleId = event?.representativeArticleId ?? null;
+
+  if (!article || !event || !representativeArticleId) {
+    logReadInheritanceDecision({
+      article: article || { id: 'unknown' },
+      event: event || { id: 'unknown' },
+      representativeArticleId,
+      decision: 'kept-unread',
+      reason: 'missing-context'
+    });
+    return false;
+  }
+
+  if (article.status !== INHERITABLE_ARTICLE_STATUS) {
+    logReadInheritanceDecision({
+      article,
+      event,
+      representativeArticleId,
+      decision: 'kept-unread',
+      reason: 'article-not-unread'
+    });
+    return false;
+  }
+
+  const representativeArticle = await Article.findOne({
+    where: {
+      id: representativeArticleId,
+      userId: event.userId
+    },
+    attributes: ['id', 'status'],
+    transaction
+  });
+
+  if (!representativeArticle) {
+    logReadInheritanceDecision({
+      article,
+      event,
+      representativeArticleId,
+      decision: 'kept-unread',
+      reason: 'representative-missing'
+    });
+    return false;
+  }
+
+  if (representativeArticle.status !== READ_ARTICLE_STATUS) {
+    logReadInheritanceDecision({
+      article,
+      event,
+      representativeArticleId,
+      decision: 'kept-unread',
+      reason: 'representative-unread'
+    });
+    return false;
+  }
+
+  await article.update({ status: READ_ARTICLE_STATUS }, { transaction });
+  article.status = READ_ARTICLE_STATUS;
+
+  logReadInheritanceDecision({
+    article,
+    event,
+    representativeArticleId,
+    decision: 'marked-read'
+  });
+
+  return true;
+}
+
 // This function attaches an article to an existing event and refreshes event/topic denormalization.
 export async function assignArticleToExistingEvent({
   article,
@@ -71,7 +157,8 @@ export async function assignArticleToExistingEvent({
   bestScore: _bestScore,
   matchSignal: _matchSignal,
   skipTopicAssignment = false,
-  assignTopicsForEvent = null
+  assignTopicsForEvent = null,
+  transaction = null
 }) {
   const newCount = bestEvent.articleCount + 1;
   const updatedEventVector = blendEventVector(bestEvent.eventVector, articleEventVector);
@@ -87,7 +174,12 @@ export async function assignArticleToExistingEvent({
     : seenAt;
   const status = resolveEventStatus(newCount, eventWindowEndAt);
 
-  await article.update({ eventId: bestEvent.id });
+  await article.update({ eventId: bestEvent.id }, { transaction });
+  await inheritReadStatusFromEventRepresentative({
+    article,
+    event: bestEvent,
+    transaction
+  });
 
   const [, diversity] = await Promise.all([
     bestEvent.update({
@@ -96,7 +188,7 @@ export async function assignArticleToExistingEvent({
       eventWindowStartAt,
       eventWindowEndAt,
       status
-    }),
+    }, { transaction }),
     updateSourceDiversity(bestEvent.id, article.userId)
   ]);
 
