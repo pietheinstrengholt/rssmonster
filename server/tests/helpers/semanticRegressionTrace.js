@@ -254,7 +254,11 @@ function deriveEventDecision({ article, previousRow, previousEventIds, isIncreme
 // This function derives topic decisions from the source and prior trace snapshot.
 function deriveTopicDecision({ topic, previousRow, previousTopicIds, isIncremental }) {
   if (!topic?.id) return 'no-topic';
-  if (!isIncremental) return previousRow?.topicDecision || 'baseline-topic';
+  if (!isIncremental) {
+    return previousRow?.topicDecision && previousRow.topicDecision !== 'no-topic'
+      ? previousRow.topicDecision
+      : 'baseline-topic';
+  }
   if (previousRow?.topicDecision && previousRow.topicDecision !== 'no-topic') return previousRow.topicDecision;
 
   return previousTopicIds.has(Number(topic.id)) ? 'existing-topic' : 'new-topic';
