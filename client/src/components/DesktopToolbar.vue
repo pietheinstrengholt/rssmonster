@@ -33,7 +33,7 @@
           v-model="$store.data.searchQuery"
           @input="debounceSearchEvent"
           @keydown.esc="closeCompactSearch"
-          placeholder="Search for words or tag:name, title:text, etc."
+          :placeholder="searchPlaceholder"
           autocomplete="off"
           class="toolbar-search-input"
           :class="{ 'toolbar-search-input-invalid': isSearchQueryInvalid }"
@@ -89,6 +89,7 @@
   min-width: 0;
   z-index: 1000;
   padding-left: clamp(16px, 2vw, 28px);
+  --toolbar-control-gap: clamp(4px, 1vw, 20px);
 }
 
 .toolbar-filters,
@@ -100,6 +101,12 @@
 
 .toolbar-actions {
   flex: 1;
+  gap: var(--toolbar-control-gap);
+}
+
+.toolbar-filters {
+  gap: var(--toolbar-control-gap);
+  margin-right: var(--toolbar-control-gap);
 }
 
 .toolbar-filter-button {
@@ -124,12 +131,12 @@
 }
 
 .toolbar-filters > .toolbar-filter {
-  margin-right: clamp(6px, 1.5vw, 32px);
+  margin-right: 0;
 }
 
 @media (max-width: 1080px) {
-  .toolbar-filters > .toolbar-filter {
-    margin-right: clamp(0px, calc(3.846vw - 29.538px), 12px);
+  .desktop-toolbar {
+    --toolbar-control-gap: clamp(0px, calc(3.846vw - 29.538px), 10px);
   }
 
   .toolbar-filter-button {
@@ -219,7 +226,8 @@
 }
 
 .toolbar-settings-button,
-.toolbar-theme-button {
+.toolbar-theme-button,
+.toolbar-search-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -377,7 +385,8 @@
 }
 
 .toolbar-settings-button:hover,
-.toolbar-theme-button:hover {
+.toolbar-theme-button:hover,
+.toolbar-search-button:hover {
   background-color: var(--border-input);
 }
 
@@ -401,7 +410,7 @@
   align-items: center;
   gap: 8px;
   margin-left: 0;
-  margin-right: clamp(16px, 2.5vw, 28px);
+  margin-right: 0;
   cursor: pointer;
   color: var(--toolbar-text);
   font-size: 14px;
@@ -420,11 +429,17 @@
   align-items: center;
   gap: 8px;
   height: 36px;
-  margin: 0 130px 0 auto;
+  margin: 0 130px 0 0;
   padding: 0 12px;
   background-color: var(--bg-input);
   border: 1px solid var(--border-color);
   border-radius: 8px;
+}
+
+.toolbar-search:hover,
+.toolbar-search:focus-within {
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
 }
 
 .toolbar-search-icon {
@@ -516,7 +531,7 @@
     display: flex;
     position: fixed;
     top: 64px;
-    right: 120px;
+    right: 124px;
     width: min(420px, calc(100vw - 320px));
     margin: 0;
     box-shadow: var(--shadow-modal);
@@ -525,18 +540,10 @@
 
   .toolbar-search-button {
     display: inline-flex;
-    align-items: center;
-    justify-content: center;
     position: fixed;
     top: 10px;
-    right: 120px;
-    width: 36px;
-    height: 36px;
+    right: 124px;
     padding: 0;
-    color: var(--toolbar-text);
-  background-color: var(--desktop-toolbar-background);
-    border: 1px solid var(--border-color);
-    border-radius: 999px;
     z-index: 1;
   }
 
@@ -551,7 +558,7 @@
   .toolbar-chat-button {
     position: fixed;
     top: 10px;
-    right: 176px;
+    right: 180px;
     width: 36px;
     height: 36px;
     padding: 0;
@@ -563,6 +570,33 @@
   }
 
   .toolbar-chat-button span {
+    display: none;
+  }
+}
+
+@media (max-width: 950px) {
+  .toolbar-theme-dropdown {
+    right: 60px;
+  }
+
+  .toolbar-search.toolbar-search-open,
+  .toolbar-search-button {
+    right: 108px;
+  }
+
+  .toolbar-chat-button {
+    right: 156px;
+  }
+}
+
+@media (max-width: 850px) {
+  .toolbar-chat-button {
+    display: none;
+  }
+}
+
+@media (max-width: 790px) {
+  .toolbar-search-button {
     display: none;
   }
 }
@@ -628,23 +662,17 @@
   }
 
   .toolbar-settings-button,
-  .toolbar-theme-button {
+  .toolbar-theme-button,
+  .toolbar-search-button {
     color: var(--text-inverted);
     background-color: var(--bg-control);
     border-color: var(--border-color);
   }
 
   .toolbar-settings-button:hover,
-  .toolbar-theme-button:hover {
+  .toolbar-theme-button:hover,
+  .toolbar-search-button:hover {
     background-color: var(--toolbar-settings-hover-background-dark);
-  }
-
-  @media (max-width: 1199px) {
-    .toolbar-search-button {
-      color: var(--text-inverted);
-      background-color: var(--bg-control);
-      border-color: var(--border-color);
-    }
   }
 
   .dropdown-item {
@@ -695,14 +723,16 @@
 
 /* Keep explicit light-mode controls light when the device prefers dark mode. */
 :global(:root[data-theme='light'] .toolbar-settings-button),
-:global(:root[data-theme='light'] .toolbar-theme-button) {
+:global(:root[data-theme='light'] .toolbar-theme-button),
+:global(:root[data-theme='light'] .toolbar-search-button) {
   color: var(--toolbar-text);
   background-color: var(--bg-card);
   border-color: var(--border-input);
 }
 
 :global(:root[data-theme='light'] .toolbar-settings-button:hover),
-:global(:root[data-theme='light'] .toolbar-theme-button:hover) {
+:global(:root[data-theme='light'] .toolbar-theme-button:hover),
+:global(:root[data-theme='light'] .toolbar-search-button:hover) {
   background-color: var(--border-input);
 }
 </style>
@@ -726,6 +756,7 @@ export default {
       isCompactSearchOpen: false,
       searchDebounceTimer: null,
       selectedThemeMode: getThemeMode(),
+      windowWidth: window.innerWidth,
       statusOptions: [
         { value: 'unread', label: 'Unread' },
         { value: 'favorite', label: 'Favorite' },
@@ -756,8 +787,13 @@ export default {
   },
   mounted() {
     window.addEventListener('rssmonster:focus-search', this.focusSearchInput);
+    window.addEventListener('resize', this.updateWindowWidth);
   },
   methods: {
+    // This function stores the current viewport width for responsive toolbar copy.
+    updateWindowWidth: function() {
+      this.windowWidth = window.innerWidth;
+    },
     // This function toggles the compact search field and focuses it when opening.
     toggleCompactSearch: function() {
       if (this.isCompactSearchOpen) {
@@ -865,6 +901,7 @@ export default {
   beforeUnmount() {
     clearTimeout(this.searchDebounceTimer);
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
+    window.removeEventListener('resize', this.updateWindowWidth);
   },
   watch: {
     // This function keeps the selected toolbar option in sync with saved settings.
@@ -882,6 +919,14 @@ export default {
     // This function reports whether AI-powered toolbar options are available.
     isAIEnabled() {
       return this.currentSelection.AIEnabled;
+    },
+    // This function returns shorter search placeholder text on narrower screens.
+    searchPlaceholder() {
+      if (this.windowWidth < 1440) {
+        return 'Search';
+      }
+
+      return 'Search for words or tag:name, title:text, etc.';
     },
     // This function returns the selected article status.
     selectedStatus() {
