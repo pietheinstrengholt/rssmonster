@@ -796,7 +796,6 @@ export default {
   padding: 4px 48px 4px 16px;
   font-family: var(--font-family);
   margin-top: 6px;
-  background-color: var(--desktop-toolbar-background);
   width: 100%;
 }
 

@@ -6,6 +6,7 @@
         <button class="dropdown-toggle toolbar-filter-button" type="button" :id="dropdown.id" data-bs-toggle="dropdown" aria-expanded="false">
           <span class="toolbar-filter-label">{{ dropdown.label }}:</span>
           <span class="toolbar-filter-value">{{ dropdown.selectedLabel }}</span>
+          <span class="toolbar-filter-chevron" aria-hidden="true"></span>
         </button>
         <div class="dropdown-menu" :aria-labelledby="dropdown.id">
           <button v-for="option in dropdown.options" :key="option.value" type="button" class="dropdown-item" :class="{ active: dropdown.selectedValue === option.value }" @click="dropdownOptionClicked(dropdown.type, option.value)">{{ option.label }}</button>
@@ -102,16 +103,24 @@
 }
 
 .toolbar-filter-button {
-  background: var(--color-transparent);
-  border: none;
-  color: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  height: 34px;
+  padding: 0 11px;
+  color: var(--toolbar-text);
+  background: var(--bg-input);
+  border: 1px solid var(--border-input);
+  border-radius: 8px;
   font-weight: 500;
-  box-shadow: none;
-  padding: 6px 10px;
-  height: 36px;
-  line-height: 20px;
   font-size: 14px;
+  box-shadow: none;
+  line-height: 20px;
+  transition: background-color 0.16s ease, border-color 0.16s ease, box-shadow 0.16s ease, color 0.16s ease;
+}
 
+.toolbar-filter-button::after {
+  display: none;
 }
 
 .toolbar-filters > .toolbar-filter {
@@ -124,8 +133,8 @@
   }
 
   .toolbar-filter-button {
-    padding-right: 5px;
-    padding-left: 5px;
+    padding-right: 10px;
+    padding-left: 10px;
   }
 
   .toolbar-filter-label {
@@ -135,19 +144,61 @@
 
 .toolbar-filter-label {
   color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .toolbar-filter-value {
-  margin-left: 4px;
   color: var(--toolbar-text);
-  font-weight: 500;
+  font-size: 14px;
+  font-weight: 600;
+  margin-left: 0;
+}
+
+.toolbar-filter-chevron {
+  flex-shrink: 0;
+  color: var(--text-muted);
+  width: 6px;
+  height: 6px;
+  margin-left: 3px;
+  border-right: 1.5px solid var(--color-current);
+  border-bottom: 1.5px solid var(--color-current);
+  transform: translateY(-1px) rotate(45deg);
+  transform-origin: center;
+}
+
+.toolbar-filter-button:hover {
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
 }
 
 .toolbar-filter-button:focus,
 .toolbar-filter-button:active,
 .toolbar-filter-button:focus-visible {
   outline: none;
-  box-shadow: none;
+}
+
+.toolbar-filter-button:focus-visible {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+.toolbar-filter-button[aria-expanded='true'] {
+  background-color: var(--bg-hover);
+  border-color: var(--border-subtle);
+  color: var(--toolbar-text);
+}
+
+.toolbar-filter .dropdown-menu {
+  padding: 6px;
+  border: 1px solid var(--border-input);
+  border-radius: 10px;
+  box-shadow: var(--shadow-modal);
+}
+
+.toolbar-filter .dropdown-item {
+  padding: 8px 10px;
+  border-radius: 7px;
 }
 
 .dropdown-item {
@@ -244,7 +295,7 @@
 }
 
 :global(:root[data-theme='dark'] .desktop-toolbar) {
-  background-color: var(--bg-modal);
+  background-color: var(--desktop-toolbar-background);
 }
 
 :global(:root[data-theme='dark'] .toolbar-theme-button:hover) {
@@ -284,9 +335,30 @@
   color: var(--toolbar-search-placeholder-dark);
 }
 
-:global(:root[data-theme='dark'] .toolbar-filter-button::after) {
+:global(:root[data-theme='dark'] .toolbar-filter-button) {
   color: var(--text-inverted);
-  border-top-color: var(--color-current);
+  background-color: var(--bg-control);
+  border-color: var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .toolbar-filter-button:hover),
+:global(:root[data-theme='dark'] .toolbar-filter-button[aria-expanded='true']) {
+  background-color: var(--toolbar-active-background);
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark'] .toolbar-filter-button:focus-visible) {
+  border-color: var(--color-primary);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
+}
+
+:global(:root[data-theme='dark'] .toolbar-filter-label),
+:global(:root[data-theme='dark'] .toolbar-filter-chevron) {
+  color: var(--text-secondary);
+}
+
+:global(:root[data-theme='dark'] .toolbar-filter-value) {
+  color: var(--text-inverted);
 }
 
 :global(:root[data-theme='dark'] .desktop-toolbar .dropdown-menu.show) {
@@ -499,7 +571,7 @@
   .desktop-toolbar,
   .dropdownmenu .item {
     color: var(--text-inverted);
-    background: var(--bg-control);
+    background: var(--desktop-toolbar-background);
     border-color: var(--border-subtle);
     border-bottom-color: var(--border-subtle);
   }
@@ -531,6 +603,28 @@
   .dropdown-item.active {
     background-color: var(--toolbar-active-background);
     color: var(--text-inverted);
+  }
+
+  .toolbar-filter-button {
+    color: var(--text-inverted);
+    background-color: var(--bg-control);
+    border-color: var(--border-subtle);
+  }
+
+  .toolbar-filter-button:hover,
+  .toolbar-filter-button[aria-expanded='true'] {
+    background-color: var(--toolbar-active-background);
+    border-color: var(--border-color);
+  }
+
+  .toolbar-filter-button:focus-visible {
+    border-color: var(--color-primary);
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.24);
+  }
+
+  .toolbar-filter-label,
+  .toolbar-filter-chevron {
+    color: var(--text-secondary);
   }
 
   .toolbar-settings-button,
