@@ -173,7 +173,15 @@ function resolveTopicIsland(topicId, islandTopicByTopicId, islandById) {
   const islandTopic = islandTopicByTopicId.get(Number(topicId));
   if (!islandTopic) return null;
 
-  return islandById.get(Number(islandTopic.islandId)) || null;
+  const island = islandById.get(Number(islandTopic.islandId));
+  if (!island) return null;
+
+  return {
+    island,
+    similarity: Number.isFinite(Number(islandTopic.similarity))
+      ? Number(islandTopic.similarity)
+      : Number(islandTopic.confidence || 0)
+  };
 }
 
 // This function resolves a direct vector fallback island for scored articles.
@@ -182,6 +190,7 @@ function resolveVectorFallbackIsland(article, islands) {
 
   let strongestIsland = null;
   let strongestScore = null;
+  let strongestSimilarity = null;
 
   for (const island of islands) {
     const similarity = cosineSimilarity(article.articleVector, island.islandVector, {
@@ -193,34 +202,45 @@ function resolveVectorFallbackIsland(article, islands) {
     const score = Number(island.weight || 0) * similarity;
     if (strongestScore === null || Math.abs(score) > Math.abs(strongestScore)) {
       strongestScore = score;
+      strongestSimilarity = similarity;
       strongestIsland = island;
     }
   }
 
-  return strongestIsland;
+  return strongestIsland
+    ? {
+      island: strongestIsland,
+      similarity: strongestSimilarity
+    }
+    : null;
 }
 
 // This function resolves the semantic island and how the article reached it.
 function resolveIslandForArticle(article, topic, islandTopicByTopicId, islandById, islands) {
-  const topicIsland = resolveTopicIsland(topic?.id, islandTopicByTopicId, islandById);
-  if (topicIsland) {
+  const topicMatch = resolveTopicIsland(topic?.id, islandTopicByTopicId, islandById);
+  if (topicMatch) {
     return {
-      island: topicIsland,
-      islandDecision: 'topic-island'
+      island: topicMatch.island,
+      islandDecision: 'topic-island',
+      islandDecisionDetail: `topic=${compactLabel(topic?.name)} sim=${Number(topicMatch.similarity || 0).toFixed(2)}`,
+      islandSimilarity: topicMatch.similarity
     };
   }
 
-  const fallbackIsland = resolveVectorFallbackIsland(article, islands);
-  if (fallbackIsland) {
+  const fallbackMatch = resolveVectorFallbackIsland(article, islands);
+  if (fallbackMatch) {
     return {
-      island: fallbackIsland,
-      islandDecision: 'vector-fallback'
+      island: fallbackMatch.island,
+      islandDecision: 'vector-fallback',
+      islandDecisionDetail: `sim=${Number(fallbackMatch.similarity || 0).toFixed(2)}`,
+      islandSimilarity: fallbackMatch.similarity
     };
   }
 
   return {
     island: null,
-    islandDecision: 'no-island'
+    islandDecision: 'no-island',
+    islandDecisionDetail: null
   };
 }
 
@@ -270,6 +290,7 @@ function compareRelationRows(left, right) {
     Number(right.primaryInd || 0) - Number(left.primaryInd || 0) ||
     Number(left.rank || 9999) - Number(right.rank || 9999) ||
     Number(right.confidence || 0) - Number(left.confidence || 0) ||
+    Number(right.similarity || 0) - Number(left.similarity || 0) ||
     Number(left.id || 0) - Number(right.id || 0)
   );
 }
@@ -356,6 +377,8 @@ function buildTraceRow({
   topic,
   island,
   islandDecision,
+  islandDecisionDetail,
+  islandSimilarity,
   topicSource
 }) {
   article.Tags = article.get?.('tags') ?? article.tags ?? article.Tags ?? [];
@@ -394,6 +417,8 @@ function buildTraceRow({
     islandId: island?.id ? Number(island.id) : null,
     islandName: island?.label || null,
     islandDecision,
+    islandDecisionDetail,
+    islandSimilarity: Number.isFinite(islandSimilarity) ? Number(islandSimilarity) : null,
     semanticPath: buildSemanticPath({ article, topic, islandDecision }),
     freshness: Number(breakdown.freshness || 0),
     interestScore: Number(article.interestScore || 0),
@@ -447,7 +472,12 @@ export async function refreshSemanticRegressionTrace({ userId, phase, incrementa
       lookups.articleTopicByArticleId,
       lookups.topicById
     );
-    const { island, islandDecision } = resolveIslandForArticle(
+    const {
+      island,
+      islandDecision,
+      islandDecisionDetail,
+      islandSimilarity
+    } = resolveIslandForArticle(
       article,
       topic,
       lookups.islandTopicByTopicId,
@@ -465,6 +495,8 @@ export async function refreshSemanticRegressionTrace({ userId, phase, incrementa
       topic,
       island,
       islandDecision,
+      islandDecisionDetail,
+      islandSimilarity,
       topicSource
     });
   }
@@ -488,18 +520,37 @@ export async function refreshSemanticRegressionTrace({ userId, phase, incrementa
 // This function builds architecture health metrics from a trace and current DB state.
 async function buildArchitectureHealth(trace, userId) {
   const rows = Object.values(trace.articles || {});
-  const [events, islands] = await Promise.all([
+  const [events, topics, islands, islandTopicRows] = await Promise.all([
     Event.findAll({
       where: { userId },
       attributes: ['id', 'articleCount'],
+      raw: true
+    }),
+    Topic.findAll({
+      where: { userId },
+      attributes: ['id'],
       raw: true
     }),
     Island.findAll({
       where: { userId, archivedInd: false },
       attributes: ['id', 'label'],
       raw: true
+    }),
+    IslandTopic.findAll({
+      include: [{
+        model: Island,
+        required: true,
+        attributes: [],
+        where: { userId, archivedInd: false }
+      }],
+      attributes: ['topicId'],
+      raw: true
     })
   ]);
+  const attachedTopicCount = new Set(islandTopicRows.map(row => Number(row.topicId))).size;
+  const topicCoveragePercent = topics.length
+    ? Math.round((attachedTopicCount / topics.length) * 100)
+    : 0;
   const islandNameCounts = islands.reduce((counts, island) => {
     const normalizedName = normalizeIslandName(island.label);
     if (!normalizedName) return counts;
@@ -515,8 +566,11 @@ async function buildArchitectureHealth(trace, userId) {
     'Articles with topics': rows.filter(row => row.topicId).length,
     'Articles with topic-island path': rows.filter(row => row.islandDecision === 'topic-island').length,
     'Articles with fallback island': rows.filter(row => row.islandDecision === 'vector-fallback').length,
+    'Topics attached to islands': `${attachedTopicCount} / ${topics.length} (${topicCoveragePercent}%)`,
+    'Articles scored via Topics': rows.filter(row => row.islandDecision === 'topic-island').length,
+    'Articles scored via fallback': rows.filter(row => row.islandDecision === 'vector-fallback').length,
     'Eventless articles': rows.filter(row => !row.eventId).length,
-    'Article-only articles': rows.filter(row => row.semanticPath === 'A').length,
+    'Standalone articles': rows.filter(row => row.semanticPath === 'A').length,
     'One-article events': events.filter(event => Number(event.articleCount || 0) === 1).length,
     'Duplicate island names': [...islandNameCounts.values()].filter(count => count > 1).length,
     'Incremental joined existing': rows.filter(row => row.eventDecision === 'existing-event').length,
@@ -546,6 +600,14 @@ function sortedTraceRows(trace, limit) {
   return Number.isInteger(limit) ? rows.slice(0, limit) : rows;
 }
 
+// This function formats the island decision with the reason used to assign it.
+function formatIslandDecision(row) {
+  if (!row.islandDecision || row.islandDecision === 'no-island') return row.islandDecision || '-';
+  if (!row.islandDecisionDetail) return row.islandDecision;
+
+  return `${row.islandDecision} ${row.islandDecisionDetail}`;
+}
+
 // This function prints the cross-file semantic regression trace.
 export async function printSemanticRegressionTrace({ userId, phase, limit = DEFAULT_LIMIT }) {
   const trace = await readTrace();
@@ -563,7 +625,7 @@ export async function printSemanticRegressionTrace({ userId, phase, limit = DEFA
     ['Island', 18],
     ['EventDecision', 15],
     ['TopicDecision', 15],
-    ['IslandDecision', 16],
+    ['IslandDecision', 30],
     ['Fresh', 6],
     ['Int.', 5],
     ['Cov.', 5],
@@ -586,7 +648,7 @@ export async function printSemanticRegressionTrace({ userId, phase, limit = DEFA
       formatCell(compactLabel(row.islandName), 18),
       formatCell(row.eventDecision || '-', 15),
       formatCell(row.topicDecision || '-', 15),
-      formatCell(row.islandDecision || '-', 16),
+      formatCell(formatIslandDecision(row), 30),
       formatCell(formatScore(row.freshness), 6),
       formatCell(formatScore(row.interestScore, 0), 5),
       formatCell(formatScore(row.coverage, 2), 5),
