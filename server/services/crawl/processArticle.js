@@ -2,7 +2,7 @@ import db from '../../models/index.js';
 const { Action, Hotlink } = db;
 import { Op } from 'sequelize';
 
-import extractEntryFields from './extractEntryFields.js';
+import extractEntryFields, { resolveUrlPublishedDate } from './extractEntryFields.js';
 import findExistingArticle from './findExistingArticle.js';
 import processMedia from './processMedia.js';
 import processHtmlContent from './processHtmlContent.js';
@@ -70,12 +70,26 @@ const processArticle = async (
   preloadedActions = null,
   duplicateCache = null,
   hotlinkCountCache = null,
-  hotlinkBatcher = null
+  hotlinkBatcher = null,
+  feedPublishedFallback = null
 ) => {
   try {
 
     // Extract relevant fields from the entry
     const fields = extractEntryFields(entry);
+    if (!fields.published && feedPublishedFallback) {
+      fields.published = feedPublishedFallback;
+      fields.publishedSource = feedPublishedFallback;
+      fields.publishInferred = true;
+    } else if (!fields.published) {
+      const urlPublishedFallback = resolveUrlPublishedDate(fields.link);
+      fields.published = urlPublishedFallback;
+      fields.publishedSource = urlPublishedFallback;
+      fields.publishInferred = Boolean(urlPublishedFallback);
+    } else {
+      fields.publishedSource = null;
+      fields.publishInferred = false;
+    }
 
     // Normalize HTML entities
     fields.title = decodeHtmlEntities(fields.title);
@@ -236,7 +250,9 @@ const processArticle = async (
         hotlinkInd: hotlinkCount > 0,
         hotlinkCount: hotlinkCount,
         language: contentLanguage,
-        published: fields.published
+        published: fields.published,
+        publishedSource: fields.publishedSource,
+        publishInferred: fields.publishInferred
       },
       analysis,
       actionResult

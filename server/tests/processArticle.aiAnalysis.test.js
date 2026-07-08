@@ -4,6 +4,7 @@ const mocked = vi.hoisted(() => ({
   actionFindAll: vi.fn(),
   hotlinkCount: vi.fn(),
   extractEntryFields: vi.fn(),
+  resolveUrlPublishedDate: vi.fn(),
   findExistingArticle: vi.fn(),
   processMedia: vi.fn(),
   processHtmlContent: vi.fn(),
@@ -27,7 +28,8 @@ vi.mock('../models/index.js', () => ({
 }));
 
 vi.mock('../services/crawl/extractEntryFields.js', () => ({
-  default: mocked.extractEntryFields
+  default: mocked.extractEntryFields,
+  resolveUrlPublishedDate: mocked.resolveUrlPublishedDate
 }));
 
 vi.mock('../services/crawl/findExistingArticle.js', () => ({
@@ -84,6 +86,7 @@ describe('processArticle AI analysis controls', () => {
       categories: ['AI'],
       published: new Date('2026-07-01T00:00:00Z')
     });
+    mocked.resolveUrlPublishedDate.mockReturnValue(null);
     mocked.findExistingArticle.mockResolvedValue(null);
     mocked.processMedia.mockReturnValue({});
     mocked.processHtmlContent.mockReturnValue({
@@ -207,5 +210,88 @@ describe('processArticle AI analysis controls', () => {
       updatedArticles: 1,
       errors: 0
     });
+  });
+
+  it('uses feed-level published fallback when the entry has no date', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+    const feedFallback = '2026-07-08T10:00:00.000Z';
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Article title',
+      link: 'https://example.com/article',
+      content: '<p>Article body</p>',
+      description: 'Article description',
+      categories: ['AI'],
+      published: null
+    });
+
+    await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Fallback date feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null,
+      feedFallback
+    );
+
+    expect(mocked.resolveUrlPublishedDate).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        published: feedFallback,
+        publishedSource: feedFallback,
+        publishInferred: true
+      }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
+  it('uses URL published fallback when entry and feed dates are missing', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+    const urlFallback = '2026-07-08T00:00:00.000Z';
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Article title',
+      link: 'https://example.com/2026/07/08/article-title',
+      content: '<p>Article body</p>',
+      description: 'Article description',
+      categories: ['AI'],
+      published: null
+    });
+    mocked.resolveUrlPublishedDate.mockReturnValue(urlFallback);
+
+    await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'URL date feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null,
+      null
+    );
+
+    expect(mocked.resolveUrlPublishedDate).toHaveBeenCalledWith('https://example.com/2026/07/08/article-title');
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        published: urlFallback,
+        publishedSource: urlFallback,
+        publishInferred: true
+      }),
+      expect.any(Object),
+      expect.any(Object)
+    );
   });
 });

@@ -44,7 +44,9 @@ async function saveArticle(feed, data, analysis, actionResult) {
       advertisementScore: analysis.advertisementScore,
       sentimentScore: analysis.sentimentScore,
       qualityScore: analysis.qualityScore,
-      published: data.published || new Date()
+      published: data.published || new Date(),
+      publishedSource: data.publishedSource || null,
+      publishInferred: Boolean(data.publishInferred)
     });
   } catch (err) {
     // A concurrent crawler may have inserted this feed URL after its pre-insert lookup.

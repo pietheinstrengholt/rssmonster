@@ -364,6 +364,18 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.NOW
       },
+      // Source publication timestamp before any fallback or inference is applied.
+      publishedSource: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
+      },
+      // Whether the stored publication timestamp was inferred from fallback signals.
+      publishInferred: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       // Timestamp when the article was first seen on the screen (used for freshness tracking and UI purposes)
       firstSeen: {
         type: DataTypes.DATE,

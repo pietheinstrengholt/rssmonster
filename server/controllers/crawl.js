@@ -3,6 +3,7 @@ const { Action, Article, Feed, Hotlink } = db;
 import discoverRssLink from '../services/feeds/discoverRssLink.js';
 import parseFeed from '../services/feeds/parser.js';
 import processArticle from '../services/crawl/processArticle.js';
+import { resolveFeedPublishedDate } from '../services/crawl/extractEntryFields.js';
 import createArticleDuplicateCache from '../services/crawl/articleDuplicateCache.js';
 import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
 import createHotlinkBatcher from '../services/crawl/hotlinkBatcher.js';
@@ -387,6 +388,7 @@ const performCrawl = async (userId = null, options = {}) => {
 
       // feedsmith: entries are in feedObject.feed.entries
       const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
+      const feedPublishedFallback = resolveFeedPublishedDate(feedObject.feed);
 
       emitProgress({
         type: 'feed_parsed',
@@ -415,7 +417,8 @@ const performCrawl = async (userId = null, options = {}) => {
             preloadedActions,
             duplicateCache,
             hotlinkCountCache,
-            hotlinkBatcher
+            hotlinkBatcher,
+            feedPublishedFallback
           );
           feedNewArticles += articleResult?.newArticles || 0;
           feedUpdatedArticles += articleResult?.updatedArticles || 0;
