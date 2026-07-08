@@ -1,3 +1,9 @@
+// This function returns the cache key used for exact title fallback lookups.
+export const normalizeTitleKey = title =>
+  typeof title === 'string'
+    ? title.trim().toLowerCase()
+    : '';
+
 const createSharedUserArticleHashIds = () => ({
   contentStrippedHashIds: new Map(),
   contentHashIds: new Map()
@@ -18,13 +24,14 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
   const add = (article) => {
     if (article.urlHash) articleIdsByUrlHash.set(article.urlHash, article.id);
     if (article.normalizedUrlHash) articleIdsByNormalizedUrlHash.set(article.normalizedUrlHash, article.id);
-    if (article.title) {
-      const matches = articlesByTitle.get(article.title) || [];
+    const titleKey = normalizeTitleKey(article.title);
+    if (titleKey) {
+      const matches = articlesByTitle.get(titleKey) || [];
       matches.push({
         id: article.id,
         published: article.published
       });
-      articlesByTitle.set(article.title, matches);
+      articlesByTitle.set(titleKey, matches);
     }
     if (article.contentStrippedHash) {
       sharedUserArticleHashIds.contentStrippedHashIds.set(article.contentStrippedHash, article.id);
@@ -54,7 +61,7 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
       return id ? { id } : null;
     },
     findFeedTitleCandidates(title) {
-      return articlesByTitle.get(title) || [];
+      return articlesByTitle.get(normalizeTitleKey(title)) || [];
     },
     add
   };

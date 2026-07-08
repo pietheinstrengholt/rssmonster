@@ -14,7 +14,7 @@ const mocked = vi.hoisted(() => ({
   saveArticle: vi.fn(),
   normalizeUrl: vi.fn(value => value),
   decodeHtmlEntities: vi.fn(value => value),
-  extractLeadImage: vi.fn()
+  detectArticleImage: vi.fn()
 }));
 
 vi.mock('../models/index.js', () => ({
@@ -66,8 +66,8 @@ vi.mock('../utils/decodeHtmlEntities.js', () => ({
   default: mocked.decodeHtmlEntities
 }));
 
-vi.mock('../utils/extractLeadImage.js', () => ({
-  default: mocked.extractLeadImage
+vi.mock('../services/crawl/detectArticleImage.js', () => ({
+  default: mocked.detectArticleImage
 }));
 
 describe('processArticle AI analysis controls', () => {
@@ -121,6 +121,7 @@ describe('processArticle AI analysis controls', () => {
       qualityScore: null
     });
     mocked.saveArticle.mockResolvedValue({ id: 1 });
+    mocked.detectArticleImage.mockResolvedValue(null);
   });
 
   it('skips OpenAI analysis when the feed disables AI analysis', async () => {

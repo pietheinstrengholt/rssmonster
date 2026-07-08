@@ -24,7 +24,7 @@ describe('article duplicate cache', () => {
 
     expect(cache.findByFeedUrlHash('url-hash')).toEqual({ id: 1 });
     expect(cache.findByFeedNormalizedUrlHash('normalized-url-hash')).toEqual({ id: 1 });
-    expect(cache.findFeedTitleCandidates('Existing article')).toEqual([
+    expect(cache.findFeedTitleCandidates('  existing ARTICLE  ')).toEqual([
       { id: 1, published: '2026-07-01T00:00:00.000Z' }
     ]);
     expect(cache.findByUserContentStrippedHash('other-feed-stripped-hash')).toEqual({ id: 8 });
@@ -49,7 +49,7 @@ describe('article duplicate cache', () => {
     expect(cache.findByUserContentHash('new-hash')).toEqual({ id: 2 });
     expect(cache.findByFeedUrlHash('new-url-hash')).toEqual({ id: 2 });
     expect(cache.findByFeedNormalizedUrlHash('new-normalized-url-hash')).toEqual({ id: 2 });
-    expect(cache.findFeedTitleCandidates('New article')).toEqual([
+    expect(cache.findFeedTitleCandidates('new ARTICLE')).toEqual([
       { id: 2, published: '2026-07-02T00:00:00.000Z' }
     ]);
   });

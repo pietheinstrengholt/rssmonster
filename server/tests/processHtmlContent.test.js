@@ -112,6 +112,5 @@ describe('crawl content sanitization', () => {
     expect(result.content).toContain('https://video.example/watch?v=1');
     expect(result.content).toContain('&lt;strong onclick=&quot;alert(1)&quot;&gt;Video&lt;/strong&gt;');
     expect(result.content).not.toMatch(/javascript:|<strong onclick|onerror/i);
-    expect(result.leadImage).toBe('https://cdn.example/image.png');
   });
 });

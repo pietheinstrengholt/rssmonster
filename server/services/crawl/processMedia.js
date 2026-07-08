@@ -26,7 +26,6 @@ function isSafeMediaUrl(value = '') {
 }
 
 function processMedia(entry) {
-  let leadImage = null;
   let content = '';
 
   /* -----------------------------
@@ -41,8 +40,6 @@ function processMedia(entry) {
   );
 
   if (imageEnclosure?.url && isSafeMediaUrl(imageEnclosure.url)) {
-    leadImage = imageEnclosure.url;
-
     content += `
       <div class="media-content enclosure">
         <img src="${escapeHtml(imageEnclosure.url)}" alt="${escapeHtml(entry.title || 'Image')}">
@@ -73,12 +70,6 @@ function processMedia(entry) {
         title: m.title?.value || m.title || null
       }));
 
-      // If no enclosure image exists, use media image
-      if (!leadImage) {
-        leadImage =
-          mediaItems.find(m => isSafeMediaUrl(m.image))?.image || null;
-      }
-
       const media = mediaItems[0];
       const safeImage = isSafeMediaUrl(media.image) ? media.image : null;
       const safeUrl = isSafeMediaUrl(media.url) ? media.url : null;
@@ -94,8 +85,7 @@ function processMedia(entry) {
   }
 
   return {
-    content: content || null,
-    leadImage
+    content: content || null
   };
 }
 

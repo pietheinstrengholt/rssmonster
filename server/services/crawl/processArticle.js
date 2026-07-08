@@ -11,7 +11,7 @@ import saveArticle from './saveArticle.js';
 import normalizeUrl from './normalizeUrl.js';
 import { buildArticleIdentity, matchArticleDuplicate } from './articleDuplicateMatcher.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
-import extractLeadImage from '../../utils/extractLeadImage.js';
+import detectArticleImage from './detectArticleImage.js';
 
 // Maximum length for normalized description
 const MAX_DESCRIPTION_LENGTH = 8000;
@@ -124,13 +124,6 @@ const processArticle = async (
 
     // Check if there's media content (e.g., YouTube videos)
     const mediaResult = processMedia(entry);
-    leadImage = extractLeadImage({
-      entry,
-      content: fields.content,
-      description: rawDescription,
-      articleUrl: fields.link,
-      existingLeadImage: mediaResult.leadImage
-    });
 
     if (mediaResult.content) {
       // Media-based content
@@ -163,6 +156,16 @@ const processArticle = async (
         fields.title = htmlResult.title || fields.title; // Prefer title extracted from content if available
       }
     }
+
+    leadImage = await detectArticleImage({
+      entry,
+      articleUrl: fields.link,
+      contentStripped,
+      content: fields.content,
+      description: rawDescription,
+      feed,
+      title: fields.title
+    });
 
     const normalizedUrl = normalizeUrl(fields.link);
     const articleIdentity = buildArticleIdentity({

@@ -1,7 +1,8 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
+import { normalizeTitleKey } from './articleDuplicateCache.js';
 
-const { Article } = db;
+const { Article, sequelize } = db;
 
 // This function finds an existing article with the same stripped content hash for a user.
 export async function findByUserContentStrippedHash(identity) {
@@ -69,6 +70,8 @@ export async function findFeedTitleCandidates(identity, windowDays) {
   if (Number.isNaN(published.getTime())) return [];
 
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
+  const titleKey = normalizeTitleKey(identity.title);
+  if (!titleKey) return [];
 
   return Article.findAll({
     attributes: ['id', 'published'],
@@ -76,7 +79,10 @@ export async function findFeedTitleCandidates(identity, windowDays) {
     where: {
       userId: identity.userId,
       feedId: identity.feedId,
-      title: identity.title,
+      [Op.and]: sequelize.where(
+        sequelize.fn('LOWER', sequelize.fn('TRIM', sequelize.col('title'))),
+        titleKey
+      ),
       published: {
         [Op.between]: [
           new Date(published.getTime() - windowMs),

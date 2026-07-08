@@ -100,15 +100,18 @@ describe('article duplicate matcher', () => {
     const { buildArticleIdentity, matchArticleDuplicate } = await import('../services/crawl/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
-      title: 'A long enough article title',
+      title: 'A LONG enough article title',
       link: 'not a url',
       published: '2026-07-08T00:00:00.000Z'
     });
     const cache = {
-      findFeedTitleCandidates: vi.fn(() => [
+      findFeedTitleCandidates: vi.fn(title => {
+        expect(title).toBe('A LONG enough article title');
+        return [
         { id: 10, published: '2026-06-20T00:00:00.000Z' },
         { id: 11, published: '2026-07-02T00:00:00.000Z' }
-      ])
+        ];
+      })
     };
 
     await expect(matchArticleDuplicate(identity, cache)).resolves.toEqual({
