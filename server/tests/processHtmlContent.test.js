@@ -43,6 +43,7 @@ describe('crawl content sanitization', () => {
     expect(result.content).toContain('Clean text');
     expect(result.content).toContain('https://example.com/image.jpg');
     expect(result.content).toContain('https://news.example/story');
+    expect(result.contentStrippedHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.content).toContain('rel="noopener noreferrer"');
     expect(result.content).not.toMatch(/onerror|onclick|javascript:|<iframe|<script|<svg|style=/i);
   });
@@ -58,7 +59,7 @@ describe('crawl content sanitization', () => {
 
     expect(hotlinkSetMany).toHaveBeenCalledTimes(1);
     expect(hotlinkSetMany).toHaveBeenCalledWith(
-      ['https://first.example/article', 'https://second.example/article'],
+      ['https://first.example/article', 'https://second.example/article?source=rss'],
       feed.id,
       feed.userId
     );

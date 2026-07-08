@@ -9,7 +9,7 @@ import processHtmlContent from './processHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
 import saveArticle from './saveArticle.js';
-import normalizeUrl from '../../utils/normalizeUrl.js';
+import normalizeUrl from './normalizeUrl.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import extractLeadImage from '../../utils/extractLeadImage.js';
 
@@ -117,6 +117,7 @@ const processArticle = async (
     let contentStripped = null;
     let contentLanguage = 'unknown';
     let contentHash = null;
+    let contentStrippedHash = null;
     let leadImage = null;
     let mediaFound = false;
 
@@ -136,6 +137,7 @@ const processArticle = async (
       contentStripped = mediaResult.content;
       contentLanguage = 'unknown';
       contentHash = null;
+      contentStrippedHash = null;
       mediaFound = true;
     }
 
@@ -154,14 +156,17 @@ const processArticle = async (
         contentStripped = htmlResult.stripped;
         contentLanguage = htmlResult.language;
         contentHash = htmlResult.contentHash;
+        contentStrippedHash = htmlResult.contentStrippedHash;
         fields.title = htmlResult.title || fields.title; // Prefer title extracted from content if available
       }
     }
 
+    const normalizedUrl = normalizeUrl(fields.link);
+
     // Try to find any existing article with the same link or title
-    const cachedExisting = duplicateCache?.find(fields.title, fields.link, contentHash);
+    const cachedExisting = duplicateCache?.find(fields.title, fields.link, contentHash, normalizedUrl);
     const existing = cachedExisting ??
-      await findExistingArticle(feed, fields.title, fields.link, contentHash);
+      await findExistingArticle(feed, fields.title, fields.link, contentHash, normalizedUrl);
     if (existing) {
       // Existing entry means the feed already contains this article, count as updated for progress reporting.
       return {
@@ -213,17 +218,15 @@ const processArticle = async (
 
     // Search if the article link is a hotlink.
     // Hotness is determined by counting how often other articles link to this article URL.
-    const articleUrl = normalizeUrl(fields.link);
-
     const hotlinkCount = hotlinkCountCache
-      ? hotlinkCountCache.count(articleUrl, feed.id)
+      ? hotlinkCountCache.count(normalizedUrl, feed.id)
       : await Hotlink.count({
         where: {
           userId: feed.userId,
           feedId: { [Op.ne]: feed.id }, // Exclude same feed
           [Op.or]: [
-            { url: articleUrl },
-            { url: { [Op.like]: `${articleUrl}?%` } }
+            { url: normalizedUrl },
+            { url: { [Op.like]: `${normalizedUrl}?%` } }
           ]
         }
       });
@@ -242,9 +245,11 @@ const processArticle = async (
       feed,
       {
         ...fields,
+        normalizedUrl,
         contentStripped: contentStripped,
         contentOriginal: contentOriginal,
         contentHash: contentHash,
+        contentStrippedHash,
         mediaFound,
         leadImage,
         hotlinkInd: hotlinkCount > 0,

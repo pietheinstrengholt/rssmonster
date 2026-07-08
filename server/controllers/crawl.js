@@ -183,7 +183,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
 
   const [feedArticleLists, userContentHashArticles] = await Promise.all([
     Promise.all(feeds.map(feed => Article.findAll({
-      attributes: ['id', 'url', 'title', 'contentHash'],
+      attributes: ['id', 'url', 'normalizedUrl', 'title', 'contentHash'],
       where: {
         feedId: feed.id,
         published: { [db.Sequelize.Op.gte]: duplicateCacheSince }

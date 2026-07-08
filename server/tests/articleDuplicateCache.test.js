@@ -9,6 +9,7 @@ describe('article duplicate cache', () => {
         {
           id: 1,
           url: 'https://example.com/article',
+          normalizedUrl: 'https://example.com/article',
           title: 'Existing article',
           contentHash: 'feed-hash'
         }
@@ -17,6 +18,7 @@ describe('article duplicate cache', () => {
     );
 
     expect(cache.find(null, 'https://example.com/article', null)).toEqual({ id: 1 });
+    expect(cache.find(null, 'https://example.com/article?utm_source=newsletter', null, 'https://example.com/article')).toEqual({ id: 1 });
     expect(cache.find('Existing article', null, null)).toEqual({ id: 1 });
     expect(cache.find(null, null, 'other-feed-hash')).toEqual({ id: 9 });
     expect(cache.find('New article', 'https://example.com/new', 'new-hash')).toBeNull();
@@ -28,12 +30,14 @@ describe('article duplicate cache', () => {
     cache.add({
       id: 2,
       url: 'https://example.com/new',
+      normalizedUrl: 'https://example.com/new',
       title: 'New article',
       contentHash: 'new-hash'
     });
 
     expect(cache.find(null, null, 'new-hash')).toEqual({ id: 2 });
     expect(cache.find(null, 'https://example.com/new', null)).toEqual({ id: 2 });
+    expect(cache.find(null, null, null, 'https://example.com/new')).toEqual({ id: 2 });
     expect(cache.find('New article', null, null)).toEqual({ id: 2 });
   });
 });

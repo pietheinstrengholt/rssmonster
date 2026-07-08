@@ -1,5 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { createHash } from 'node:crypto';
+import normalizeUrl from '../services/crawl/normalizeUrl.js';
 
 const TAU_HOURS = 48; // tune this globally
 const NEUTRAL_FEED_TRUST = 0.75;
@@ -9,10 +10,22 @@ const MAX_FEED_TRUST_BOOST = 0.10;
 const MAX_FEED_TRUST_PENALTY = 0.15;
 const MAX_FEED_DUPLICATION_PENALTY = 0.10;
 
-// This function derives the stable database identity for an article URL.
-const populateUrlHash = article => {
+// This function returns the stable SHA-256 identity for text content.
+const hashValue = value => createHash('sha256').update(value || '').digest('hex');
+
+// This function derives stable database identities for article URLs and content.
+const populateArticleHashes = article => {
   if (article.url && !article.urlHash) {
-    article.urlHash = createHash('sha256').update(article.url).digest('hex');
+    article.urlHash = hashValue(article.url);
+  }
+  if (article.url && !article.normalizedUrl) {
+    article.normalizedUrl = normalizeUrl(article.url);
+  }
+  if (article.normalizedUrl && !article.normalizedUrlHash) {
+    article.normalizedUrlHash = hashValue(article.normalizedUrl);
+  }
+  if (!article.contentStrippedHash) {
+    article.contentStrippedHash = hashValue(article.contentStripped);
   }
 };
 
@@ -132,6 +145,14 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: false
       },
+      normalizedUrl: {
+        type: DataTypes.STRING(1024),
+        allowNull: false
+      },
+      normalizedUrlHash: {
+        type: DataTypes.STRING(64),
+        allowNull: false
+      },
       imageUrl: DataTypes.STRING(1024),
       title: {
         type: DataTypes.TEXT,
@@ -144,6 +165,10 @@ export default (sequelize) => {
       contentOriginal: DataTypes.TEXT('medium'),
       // Stripped content with HTML removed, used for summarization and topic modeling
       contentStripped: DataTypes.TEXT,
+      contentStrippedHash: {
+        type: DataTypes.STRING(64),
+        allowNull: false
+      },
       // AI-generated summary bullets (array of strings), stored as JSON
       contentSummaryBullets: {
         type: DataTypes.JSON,
@@ -387,8 +412,8 @@ export default (sequelize) => {
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
       hooks: {
-        beforeValidate: populateUrlHash,
-        beforeBulkCreate: articles => articles.forEach(populateUrlHash)
+        beforeValidate: populateArticleHashes,
+        beforeBulkCreate: articles => articles.forEach(populateArticleHashes)
       }
     }
   );

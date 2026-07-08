@@ -56,7 +56,7 @@ vi.mock('../services/crawl/saveArticle.js', () => ({
   default: mocked.saveArticle
 }));
 
-vi.mock('../utils/normalizeUrl.js', () => ({
+vi.mock('../services/crawl/normalizeUrl.js', () => ({
   default: mocked.normalizeUrl
 }));
 
@@ -173,7 +173,8 @@ describe('processArticle AI analysis controls', () => {
       expect.objectContaining({ id: 1, userId: 42 }),
       'Article title',
       'https://example.com/article',
-      'content-hash'
+      'content-hash',
+      'https://example.com/article'
     );
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(result).toEqual({

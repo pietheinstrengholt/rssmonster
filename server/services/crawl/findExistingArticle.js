@@ -1,13 +1,17 @@
 import { Op } from 'sequelize';
+import { createHash } from 'node:crypto';
 import db from '../../models/index.js';
 const { Article } = db;
+
+// This function derives the URL hash stored alongside article identity fields.
+const hashUrl = url => createHash('sha256').update(url).digest('hex');
 
 /* ======================================================
    Find existing article
    ------------------------------------------------------
    Prevents duplicates based on URL or title+feed+user
 ====================================================== */
-async function findExistingArticle(feed, title, link, contentHash) {
+async function findExistingArticle(feed, title, link, contentHash, normalizedUrl = null) {
   // 1. Strongest signal: content hash (search across ALL feeds for this user)
   if (contentHash) {
     const existing = await Article.findOne({
@@ -27,6 +31,10 @@ async function findExistingArticle(feed, title, link, contentHash) {
   // Exact URL match (canonical duplicate)
   if (link) {
     feedSpecificConditions.push({ url: link });
+  }
+
+  if (normalizedUrl) {
+    feedSpecificConditions.push({ normalizedUrlHash: hashUrl(normalizedUrl) });
   }
 
   // Title match within same feed/user (legacy / media fallback)

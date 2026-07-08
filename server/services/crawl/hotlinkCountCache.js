@@ -1,15 +1,14 @@
-import normalizeUrl from '../../utils/normalizeUrl.js';
+import normalizeUrl from './normalizeUrl.js';
 
 // This function creates an in-memory hotlink count index for one user's crawl.
 const createHotlinkCountCache = (hotlinks = []) => {
   const countsByUrlAndFeed = new Map();
 
-  // This function indexes a hotlink by its query-free URL prefix and feed.
+  // This function indexes a hotlink by its normalized URL prefix and feed.
   const add = (hotlink) => {
     if (!hotlink.url) return;
 
-    const queryIndex = hotlink.url.indexOf('?');
-    const url = queryIndex === -1 ? hotlink.url : hotlink.url.slice(0, queryIndex);
+    const url = normalizeUrl(hotlink.url);
     const countsByFeed = countsByUrlAndFeed.get(url) || new Map();
 
     countsByFeed.set(hotlink.feedId, (countsByFeed.get(hotlink.feedId) || 0) + 1);

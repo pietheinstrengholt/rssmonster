@@ -1,6 +1,7 @@
 import db from '../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import { resolveOfficialSourceForArticle } from './officialSource.js';
+import normalizeUrl from './normalizeUrl.js';
 
 const { Article } = db;
 
@@ -19,6 +20,8 @@ async function saveArticle(feed, data, analysis, actionResult) {
 
   try {
     const officialSource = await resolveOfficialSourceForArticle(feed.userId, data.link);
+    const normalizedUrl = data.normalizedUrl || normalizeUrl(data.link);
+    const contentStripped = analysis.summary || data.contentStripped;
 
     article = await Article.create({
       userId: feed.userId,
@@ -28,13 +31,15 @@ async function saveArticle(feed, data, analysis, actionResult) {
       clickedAmount: actionResult.clickedAmount,
       hotInd: actionResult.hotInd,
       url: data.link,
+      normalizedUrl,
       imageUrl: data.leadImage || null,
       media: data.mediaFound,
       title: data.title,
       author: data.author,
       description: data.description,
       contentOriginal: data.contentOriginal, // use clean HTML content without scripts/styles from HTML processing
-      contentStripped: analysis.summary || data.contentStripped, // use summary from analysis if available
+      contentStripped, // use summary from analysis if available
+      contentStrippedHash: analysis.summary ? undefined : data.contentStrippedHash,
       contentSummaryBullets: analysis.contentSummaryBullets,
       contentHash: data.contentHash,
       isOfficialSource: officialSource.isOfficialSource,

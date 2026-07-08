@@ -1,12 +1,18 @@
 import { load } from 'cheerio';
 import language from '../../utils/language.js';
 import hotlink from '../../controllers/hotlink.js';
-import normalizeUrl from '../../utils/normalizeUrl.js';
+import normalizeUrl from './normalizeUrl.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import crypto from 'crypto';
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;
 const MIN_LANGUAGE_TEXT_LENGTH = 20;
+
+// This function creates a stable hash for processed article content.
+const hashContent = value => crypto
+  .createHash('sha256')
+  .update(value || '', 'utf8')
+  .digest('hex');
 
 const DROP_TAGS = new Set([
   'script',
@@ -206,10 +212,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
 
     if (isPlainText(contentOriginal)) {
       const text = normalizePlainText(contentOriginal);
-      const contentHash = crypto
-        .createHash('sha256')
-        .update(text || '', 'utf8')
-        .digest('hex');
+      const contentStrippedHash = hashContent(text);
 
       if (entryTitle === 'Untitled' && text) {
         const sentenceMatch = text.match(/^[^.!?:]*[.!?:]/);
@@ -234,7 +237,8 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
         content: escapePlainText(text),
         stripped: text,
         language: detectedLanguage,
-        contentHash,
+        contentHash: contentStrippedHash,
+        contentStrippedHash,
         title: entryTitle
       };
     }
@@ -265,7 +269,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
         !href.includes(domain) &&
         (href.startsWith('http://') || href.startsWith('https://'))
       ) {
-        // Remove query string parameters (everything after ?)
+        // Normalize identity noise while preserving meaningful query parameters.
         const cleanUrl = normalizeUrl(href);
 
         hotlinkUrls.push(cleanUrl);
@@ -298,10 +302,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
       }
     }
 
-    const contentHash = crypto
-      .createHash('sha256')
-      .update(text || '', 'utf8')
-      .digest('hex');
+    const contentStrippedHash = hashContent(text);
 
     let detectedLanguage = 'unknown';
 
@@ -318,19 +319,23 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
       content: html,
       stripped: text,
       language: detectedLanguage,
-      contentHash: contentHash,
+      contentHash: contentStrippedHash,
+      contentStrippedHash,
       title: entryTitle
     };
   } catch (err) {
+    const stripped = stripHtml(contentOriginal);
+
     console.error(
       `[${feed.feedName}] Error parsing content for article "${entryTitle}":`,
       err.message
     );
     return {
-      content: stripHtml(contentOriginal),
-      stripped: stripHtml(contentOriginal),
+      content: stripped,
+      stripped,
       language: 'unknown',
       contentHash: null,
+      contentStrippedHash: hashContent(stripped),
       title: entryTitle
     };
   }
