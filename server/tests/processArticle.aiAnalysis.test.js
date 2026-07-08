@@ -219,6 +219,50 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
+  it('passes raw description HTML to content processing when content is missing', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Description-only article',
+      link: 'https://example.com/description-only',
+      content: null,
+      description: '<p>Raw <strong>feed</strong> description</p>',
+      categories: [],
+      published: new Date('2026-07-01T00:00:00Z')
+    });
+
+    await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Description feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.processHtmlContent).toHaveBeenCalledWith(
+      null,
+      '<p>Raw <strong>feed</strong> description</p>',
+      'https://example.com/description-only',
+      expect.objectContaining({ id: 1, userId: 42 }),
+      'Description-only article',
+      null
+    );
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        description: 'Raw feed description'
+      }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
   it('uses duplicate matcher hits without saving the article', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 

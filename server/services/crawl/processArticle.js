@@ -136,11 +136,11 @@ const processArticle = async (
       mediaFound = true;
     }
 
-    // If generic content is found, use the entry content / description. Override media content.
-    if (fields.content || fields.description) {
+    // If generic content is found, use the raw entry content / description. Override media content.
+    if (fields.content || rawDescription) {
       const htmlResult = processHtmlContent(
         fields.content,
-        fields.description,
+        rawDescription,
         fields.link,
         feed,
         fields.title,
