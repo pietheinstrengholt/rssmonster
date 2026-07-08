@@ -56,10 +56,10 @@
             </template>
           </div>
         </div>
-        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
+        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :content="content" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
-    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :contentOriginal="contentOriginal" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :content="content" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -98,6 +98,7 @@ export default {
     title: { type: String, default: '' },
     published: { type: [String, Date], default: '' },
     feed: { type: Object, default: () => ({}) },
+    content: { type: String, default: '' },
     contentOriginal: { type: String, default: '' },
     author: { type: String, default: '' },
     hotInd: { type: Number, default: 0 },

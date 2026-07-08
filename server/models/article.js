@@ -165,6 +165,12 @@ export default (sequelize) => {
       contentOriginal: DataTypes.TEXT('medium'),
       // Stripped content with HTML removed, used for summarization and topic modeling
       contentStripped: DataTypes.TEXT,
+      content: {
+        type: DataTypes.VIRTUAL(DataTypes.TEXT),
+        get() {
+          return this.getDataValue('contentStripped');
+        }
+      },
       contentStrippedHash: {
         type: DataTypes.STRING(64),
         allowNull: false
