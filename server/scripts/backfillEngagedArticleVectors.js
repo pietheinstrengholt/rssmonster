@@ -99,7 +99,7 @@ async function fetchBatch({ userId, afterId, batchSize }) {
       'userId',
       'title',
       'description',
-      'contentStripped',
+      'contentText',
       'articleVector',
       'embedding_model',
       'favoriteInd',

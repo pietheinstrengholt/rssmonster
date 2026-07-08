@@ -38,6 +38,7 @@ function parseIntegerOption(name) {
 
 function articleContent(article) {
   return (
+    article.contentText ||
     article.contentStripped ||
     article.contentOriginal ||
     article.description ||
@@ -61,7 +62,7 @@ function isExportableArticle(article) {
   const eventText = buildArticleEventEmbeddingText({
     title: article.title || '',
     description: article.description || '',
-    contentStripped: article.contentStripped || articleContent(article)
+    contentText: article.contentText || articleContent(article)
   });
 
   return isArticleEventEmbeddingTextUsable(eventText);
@@ -144,6 +145,7 @@ async function main() {
         'description',
         'contentOriginal',
         'contentStripped',
+        'contentText',
         'published'
       ],
       order: [
@@ -178,6 +180,7 @@ async function main() {
         title: article.title || '',
         contentOriginal: article.contentOriginal || '',
         contentStripped: article.contentStripped || articleContent(article),
+        contentText: article.contentText || articleContent(article),
         published: articlePublished(article),
         feedId: feedIdMap.get(article.feedId),
         status: article.status || 'unread',

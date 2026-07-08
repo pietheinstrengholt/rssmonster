@@ -54,6 +54,7 @@ function shouldDetectPlainTextLanguage(text) {
 function processHtmlContent(content, description, entryLink, feed, entryTitle, hotlinkBatcher = null) {
   let contentOriginal;
   let contentStripped;
+  let contentText;
 
   try {
     // Use content if available, otherwise fall back to description
@@ -64,6 +65,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
 
     if (isPlainText(contentStripped)) {
       const text = normalizePlainText(contentStripped);
+      contentText = text;
       const contentStrippedHash = hashContent(text);
 
       if (entryTitle === 'Untitled' && text) {
@@ -88,6 +90,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
       return {
         content: contentOriginal,
         stripped: contentStripped,
+        text: contentText,
         language: detectedLanguage,
         contentHash: contentStrippedHash,
         contentStrippedHash,
@@ -145,6 +148,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
       .text()
       .replace(/\s+/g, ' ')
       .trim();
+    contentText = text;
 
     // If title is "Untitled", try to extract first sentence from content
     if (entryTitle === 'Untitled' && text) {
@@ -170,6 +174,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
     return {
       content: contentOriginal,
       stripped: contentStripped,
+      text: contentText,
       language: detectedLanguage,
       contentHash: contentStrippedHash,
       contentStrippedHash,
@@ -177,6 +182,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
     };
   } catch (err) {
     const stripped = stripHtml(contentOriginal);
+    contentText = stripped;
 
     console.error(
       `[${feed.feedName}] Error parsing content for article "${entryTitle}":`,
@@ -185,6 +191,7 @@ function processHtmlContent(content, description, entryLink, feed, entryTitle, h
     return {
       content: contentOriginal,
       stripped,
+      text: contentText,
       language: 'unknown',
       contentHash: null,
       contentStrippedHash: hashContent(stripped),

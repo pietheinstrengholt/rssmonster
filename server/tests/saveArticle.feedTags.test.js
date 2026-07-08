@@ -45,6 +45,7 @@ describe('saveArticle feed tags', () => {
         description: 'Description',
         contentOriginal: '<p>Body</p>',
         contentStripped: 'Body',
+        contentText: 'Body',
         contentHash: 'hash',
         mediaFound: false,
         language: 'en',
@@ -104,6 +105,11 @@ describe('saveArticle feed tags', () => {
       tagType: 'rule'
     });
     expect(mocked.tagCreate).toHaveBeenCalledTimes(6);
+    expect(mocked.articleCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        contentText: 'Body'
+      })
+    );
   });
 
   it('marks articles from official source domains', async () => {

@@ -115,6 +115,7 @@ const processArticle = async (
 
     let contentOriginal = null;
     let contentStripped = null;
+    let contentText = null;
     let contentLanguage = 'unknown';
     let contentHash = null;
     let contentStrippedHash = null;
@@ -135,6 +136,7 @@ const processArticle = async (
       // Media-based content
       contentOriginal = mediaResult.content;
       contentStripped = mediaResult.content;
+      contentText = null;
       contentLanguage = 'unknown';
       contentHash = null;
       contentStrippedHash = null;
@@ -154,6 +156,7 @@ const processArticle = async (
       if (htmlResult) {
         contentOriginal = htmlResult.content;
         contentStripped = htmlResult.stripped;
+        contentText = htmlResult.text;
         contentLanguage = htmlResult.language;
         contentHash = htmlResult.contentHash;
         contentStrippedHash = htmlResult.contentStrippedHash;
@@ -254,6 +257,7 @@ const processArticle = async (
         ...fields,
         normalizedUrl,
         contentStripped: contentStripped,
+        contentText,
         contentOriginal: contentOriginal,
         contentHash: contentHash,
         contentStrippedHash,

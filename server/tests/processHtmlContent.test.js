@@ -43,6 +43,7 @@ describe('crawl content sanitization', () => {
     expect(result.content).toContain('onclick="alert(1)"');
     expect(result.content).toContain('<script>alert(1)</script>');
     expect(result.stripped).toContain('Clean text');
+    expect(result.text).toBe('Clean text bad link good link');
     expect(result.stripped).toContain('https://example.com/image.jpg');
     expect(result.stripped).toContain('https://news.example/story');
     expect(result.contentStrippedHash).toMatch(/^[a-f0-9]{64}$/);
@@ -78,6 +79,7 @@ describe('crawl content sanitization', () => {
 
     expect(result.content).toBe('2 < 3 & 4.');
     expect(result.stripped).toBe('2 < 3 & 4.');
+    expect(result.text).toBe('2 < 3 & 4.');
     expect(result.contentHash).toMatch(/^[a-f0-9]{64}$/);
     expect(result.language).toBe('unknown');
     expect(result.title).toBe('2 < 3 & 4.');

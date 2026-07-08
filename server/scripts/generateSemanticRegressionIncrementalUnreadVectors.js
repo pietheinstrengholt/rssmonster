@@ -25,6 +25,7 @@ function hashContent(content) {
 
 function articleContent(article) {
   return (
+    article.contentText ||
     article.contentStripped ||
     article.contentOriginal ||
     article.content ||
@@ -44,7 +45,7 @@ function buildEmbeddingInput(article, articleIndex) {
   return buildArticleEventEmbeddingText({
     title: articleTitle(article, articleIndex),
     description: article.description || '',
-    contentStripped: article.contentStripped || articleContent(article)
+    contentText: article.contentText || articleContent(article)
   });
 }
 

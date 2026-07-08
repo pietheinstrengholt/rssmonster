@@ -104,6 +104,7 @@ describe('processArticle AI analysis controls', () => {
     mocked.processHtmlContent.mockReturnValue({
       content: '<p>Article body</p>',
       stripped: 'Article body with enough text to save.',
+      text: 'Article body with enough text to save.',
       language: 'en',
       contentHash: 'content-hash',
       contentStrippedHash: 'content-stripped-hash',
@@ -142,7 +143,9 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
-      expect.any(Object),
+      expect.objectContaining({
+        contentText: 'Article body with enough text to save.'
+      }),
       {
         summary: null,
         contentSummaryBullets: [],

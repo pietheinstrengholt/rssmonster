@@ -56,14 +56,14 @@ function extractParagraphs(text = '') {
 }
 
 // This function builds concise event-oriented text from title and early content.
-function extractEventText({ title, contentStripped }) {
+function extractEventText({ title, contentText }) {
   const parts = [];
 
   const t = normalizeTitle(title);
   if (t) parts.push(t);
 
-  if (contentStripped && !isLikelyHtml(contentStripped)) {
-    const paragraphs = extractParagraphs(contentStripped);
+  if (contentText && !isLikelyHtml(contentText)) {
+    const paragraphs = extractParagraphs(contentText);
     if (paragraphs.length) {
       parts.push(paragraphs.slice(0, 2).join(' '));
     }
@@ -73,10 +73,10 @@ function extractEventText({ title, contentStripped }) {
 }
 
 // This function builds longer topic-oriented text from article body content.
-function extractTopicText({ contentStripped }) {
-  if (!contentStripped || isLikelyHtml(contentStripped)) return '';
+function extractTopicText({ contentText }) {
+  if (!contentText || isLikelyHtml(contentText)) return '';
 
-  const paragraphs = extractParagraphs(contentStripped);
+  const paragraphs = extractParagraphs(contentText);
   if (!paragraphs.length) return '';
 
   return paragraphs
@@ -111,9 +111,9 @@ function isWithinEmbeddingTokenLimit(text = '') {
 // This function exposes the event embedding text builder for tests and callers.
 export function buildArticleEventEmbeddingText(articleOrInput = {}) {
   const title = articleOrInput?.title;
-  const contentStripped = articleOrInput?.contentStripped || articleOrInput?.description || '';
+  const contentText = articleOrInput?.contentText || articleOrInput?.description || '';
 
-  return extractEventText({ title, contentStripped });
+  return extractEventText({ title, contentText });
 }
 
 // This function checks whether event embedding input is long enough to be useful.
@@ -153,9 +153,9 @@ export async function embedArticle(articleOrInput, options = {}) {
   const article = isArticleInstance(articleOrInput) ? articleOrInput : null;
 
   const title = article ? article.title : articleOrInput?.title;
-  const contentStripped = article
-    ? (article.contentStripped || article.description || '')
-    : (articleOrInput?.contentStripped || '');
+  const contentText = article
+    ? (article.contentText || article.description || '')
+    : (articleOrInput?.contentText || articleOrInput?.description || '');
 
   if (article && hasArticleVector(article)) {
     // Fast-path: skip provider call when vector already exists.
@@ -173,9 +173,9 @@ export async function embedArticle(articleOrInput, options = {}) {
   }
 
   const eventText = clipToEmbeddingTokenLimit(
-    buildArticleEventEmbeddingText({ title, contentStripped })
+    buildArticleEventEmbeddingText({ title, contentText })
   );
-  const topicText = extractTopicText({ contentStripped });
+  const topicText = extractTopicText({ contentText });
 
   if (!eventText || (!allowShortEventText && eventText.length < MIN_EVENT_LENGTH)) {
     return null;

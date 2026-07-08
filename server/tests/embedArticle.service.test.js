@@ -36,7 +36,7 @@ describe('embedArticle token limit guard', () => {
     ).join(' ');
     const result = await embedArticle({
       title: 'Breaking: Oversized event input',
-      contentStripped: oversizedContent
+      contentText: oversizedContent
     });
 
     expect(result.eventVector).toEqual([0.7, 0.8, 0.9]);
@@ -45,6 +45,19 @@ describe('embedArticle token limit guard', () => {
     const input = embeddingsCreate.mock.calls[0][0].input;
     expect(input.split(/\s+/)).toHaveLength(512);
     expect(input).toMatch(/^Oversized event input token0/);
+  });
+
+  it('builds embedding text from contentText instead of contentStripped', async () => {
+    const { buildArticleEventEmbeddingText } = await import('../services/articles/embedArticle.js');
+
+    const text = buildArticleEventEmbeddingText({
+      title: 'Semantic source',
+      contentText: 'Plain text article body with enough useful words to become embedding input.',
+      contentStripped: '<p>Old sanitized HTML should not be used for semantic embedding.</p>'
+    });
+
+    expect(text).toContain('Plain text article body');
+    expect(text).not.toContain('Old sanitized HTML');
   });
 
   it('still calls provider for normal-sized event input', async () => {
@@ -56,7 +69,7 @@ describe('embedArticle token limit guard', () => {
 
     const result = await embedArticle({
       title: 'Regular embedding input',
-      contentStripped: 'alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron'
+      contentText: 'alpha beta gamma delta epsilon zeta eta theta iota kappa lambda mu nu xi omicron'
     });
 
     expect(result).not.toBeNull();
@@ -74,7 +87,7 @@ describe('embedArticle token limit guard', () => {
     const result = await embedArticle(
       {
         title: 'Short starred article',
-        contentStripped: ''
+        contentText: ''
       },
       { allowShortEventText: true }
     );

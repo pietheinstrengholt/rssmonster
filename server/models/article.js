@@ -165,6 +165,12 @@ export default (sequelize) => {
       contentOriginal: DataTypes.TEXT('medium'),
       // Stripped content with HTML removed, used for summarization and topic modeling
       contentStripped: DataTypes.TEXT,
+      // Plain text content for NLP extraction and storage
+      contentText: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        defaultValue: null
+      },
       content: {
         type: DataTypes.VIRTUAL(DataTypes.TEXT),
         get() {

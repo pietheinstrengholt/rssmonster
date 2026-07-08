@@ -39,6 +39,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
       description: data.description,
       contentOriginal: data.contentOriginal, // use clean HTML content without scripts/styles from HTML processing
       contentStripped, // use summary from analysis if available
+      contentText: data.contentText || null,
       contentStrippedHash: analysis.summary ? undefined : data.contentStrippedHash,
       contentSummaryBullets: analysis.contentSummaryBullets,
       contentHash: data.contentHash,

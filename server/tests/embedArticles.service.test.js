@@ -30,7 +30,7 @@ describe('embedArticles', () => {
     const article = {
       id: 7,
       title: 'Vector article',
-      contentStripped: 'Enough content to be useful for embeddings'
+      contentText: 'Enough content to be useful for embeddings'
     };
 
     mocked.articleFindAll
@@ -45,6 +45,7 @@ describe('embedArticles', () => {
     const summary = await embedArticles(42, { batchSize: 10 });
 
     expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+      attributes: expect.arrayContaining(['contentText']),
       where: expect.objectContaining({
         userId: 42,
         id: expect.any(Object),

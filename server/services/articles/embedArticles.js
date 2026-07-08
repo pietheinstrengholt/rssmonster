@@ -70,7 +70,7 @@ export async function embedArticles(userId, options = {}) {
         'id',
         'title',
         'description',
-        'contentStripped',
+        'contentText',
         'articleVector',
         'embedding_model'
       ]
