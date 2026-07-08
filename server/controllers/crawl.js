@@ -4,7 +4,7 @@ import discoverRssLink from '../services/feeds/discoverRssLink.js';
 import parseFeed from '../services/feeds/parser.js';
 import processArticle from '../services/crawl/processArticle.js';
 import { resolveFeedPublishedDate } from '../services/crawl/extractEntryFields.js';
-import createArticleDuplicateCache from '../services/crawl/articleDuplicateCache.js';
+import createArticleDuplicateCache, { createSharedUserArticleHashIds } from '../services/crawl/articleDuplicateCache.js';
 import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
 import createHotlinkBatcher from '../services/crawl/hotlinkBatcher.js';
 import { runPostCrawlSemanticPipeline } from '../services/crawl/postCrawlSemanticPipeline.js';
@@ -183,7 +183,15 @@ const getDuplicateCachesByFeedId = async (feeds) => {
 
   const [feedArticleLists, userContentHashArticles] = await Promise.all([
     Promise.all(feeds.map(feed => Article.findAll({
-      attributes: ['id', 'url', 'normalizedUrl', 'title', 'contentHash'],
+      attributes: [
+        'id',
+        'urlHash',
+        'normalizedUrlHash',
+        'title',
+        'published',
+        'contentStrippedHash',
+        'contentHash'
+      ],
       where: {
         feedId: feed.id,
         published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
@@ -192,10 +200,13 @@ const getDuplicateCachesByFeedId = async (feeds) => {
     }))),
     userIds.length > 0
       ? Article.findAll({
-        attributes: ['id', 'userId', 'contentHash'],
+        attributes: ['id', 'userId', 'contentStrippedHash', 'contentHash'],
         where: {
           userId: { [db.Sequelize.Op.in]: userIds },
-          contentHash: { [db.Sequelize.Op.not]: null },
+          [db.Sequelize.Op.or]: [
+            { contentStrippedHash: { [db.Sequelize.Op.not]: null } },
+            { contentHash: { [db.Sequelize.Op.not]: null } }
+          ],
           published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
         },
         raw: true
@@ -203,10 +214,16 @@ const getDuplicateCachesByFeedId = async (feeds) => {
       : []
   ]);
 
-  const contentHashIdsByUserId = new Map(userIds.map(id => [id, new Map()]));
+  const articleHashIdsByUserId = new Map(userIds.map(id => [id, createSharedUserArticleHashIds()]));
 
   for (const article of userContentHashArticles) {
-    contentHashIdsByUserId.get(article.userId)?.set(article.contentHash, article.id);
+    const articleHashIds = articleHashIdsByUserId.get(article.userId);
+    if (article.contentStrippedHash) {
+      articleHashIds?.contentStrippedHashIds.set(article.contentStrippedHash, article.id);
+    }
+    if (article.contentHash) {
+      articleHashIds?.contentHashIds.set(article.contentHash, article.id);
+    }
   }
 
   for (const [index, feed] of feeds.entries()) {
@@ -214,7 +231,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
       feed.id,
       createArticleDuplicateCache(
         feedArticleLists[index],
-        contentHashIdsByUserId.get(feed.userId)
+        articleHashIdsByUserId.get(feed.userId)
       )
     );
   }

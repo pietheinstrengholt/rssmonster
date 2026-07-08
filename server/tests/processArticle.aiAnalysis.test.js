@@ -5,7 +5,8 @@ const mocked = vi.hoisted(() => ({
   hotlinkCount: vi.fn(),
   extractEntryFields: vi.fn(),
   resolveUrlPublishedDate: vi.fn(),
-  findExistingArticle: vi.fn(),
+  buildArticleIdentity: vi.fn(),
+  matchArticleDuplicate: vi.fn(),
   processMedia: vi.fn(),
   processHtmlContent: vi.fn(),
   applyActions: vi.fn(),
@@ -32,8 +33,9 @@ vi.mock('../services/crawl/extractEntryFields.js', () => ({
   resolveUrlPublishedDate: mocked.resolveUrlPublishedDate
 }));
 
-vi.mock('../services/crawl/findExistingArticle.js', () => ({
-  default: mocked.findExistingArticle
+vi.mock('../services/crawl/articleDuplicateMatcher.js', () => ({
+  buildArticleIdentity: mocked.buildArticleIdentity,
+  matchArticleDuplicate: mocked.matchArticleDuplicate
 }));
 
 vi.mock('../services/crawl/processMedia.js', () => ({
@@ -87,13 +89,24 @@ describe('processArticle AI analysis controls', () => {
       published: new Date('2026-07-01T00:00:00Z')
     });
     mocked.resolveUrlPublishedDate.mockReturnValue(null);
-    mocked.findExistingArticle.mockResolvedValue(null);
+    mocked.buildArticleIdentity.mockImplementation(identity => ({
+      userId: identity.feed?.userId,
+      feedId: identity.feed?.id,
+      title: identity.title,
+      link: identity.link,
+      normalizedUrl: identity.normalizedUrl,
+      contentHash: identity.contentHash,
+      contentStrippedHash: identity.contentStrippedHash,
+      published: identity.published
+    }));
+    mocked.matchArticleDuplicate.mockResolvedValue(null);
     mocked.processMedia.mockReturnValue({});
     mocked.processHtmlContent.mockReturnValue({
       content: '<p>Article body</p>',
       stripped: 'Article body with enough text to save.',
       language: 'en',
       contentHash: 'content-hash',
+      contentStrippedHash: 'content-stripped-hash',
       title: 'Article title'
     });
     mocked.applyActions.mockReturnValue({
@@ -147,10 +160,19 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('falls back to the database when the duplicate cache misses', async () => {
+  it('skips article creation when duplicate matcher finds an existing article', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 
-    mocked.findExistingArticle.mockResolvedValue({ id: 99 });
+    mocked.matchArticleDuplicate.mockResolvedValue({
+      matchedArticleId: 99,
+      reason: 'contentHash',
+      scope: 'user',
+      source: 'database'
+    });
+    const duplicateCache = {
+      findByUserContentHash: vi.fn(),
+      add: vi.fn()
+    };
 
     const result = await processArticle(
       {
@@ -161,20 +183,29 @@ describe('processArticle AI analysis controls', () => {
       },
       {},
       [],
-      {
-        find: vi.fn(() => null),
-        add: vi.fn()
-      },
+      duplicateCache,
       { count: () => 0 },
       null
     );
 
-    expect(mocked.findExistingArticle).toHaveBeenCalledWith(
-      expect.objectContaining({ id: 1, userId: 42 }),
-      'Article title',
-      'https://example.com/article',
-      'content-hash',
-      'https://example.com/article'
+    expect(mocked.buildArticleIdentity).toHaveBeenCalledWith(
+      expect.objectContaining({
+        feed: expect.objectContaining({ id: 1, userId: 42 }),
+        title: 'Article title',
+        link: 'https://example.com/article',
+        normalizedUrl: 'https://example.com/article',
+        contentHash: 'content-hash',
+        contentStrippedHash: 'content-stripped-hash'
+      })
+    );
+    expect(mocked.matchArticleDuplicate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: 42,
+        feedId: 1,
+        contentHash: 'content-hash',
+        contentStrippedHash: 'content-stripped-hash'
+      }),
+      duplicateCache
     );
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(result).toEqual({
@@ -184,8 +215,15 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('uses duplicate cache hits without querying the database', async () => {
+  it('uses duplicate matcher hits without saving the article', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.matchArticleDuplicate.mockResolvedValue({
+      matchedArticleId: 100,
+      reason: 'normalizedUrlHash',
+      scope: 'feed',
+      source: 'cache'
+    });
 
     const result = await processArticle(
       {
@@ -196,15 +234,11 @@ describe('processArticle AI analysis controls', () => {
       },
       {},
       [],
-      {
-        find: vi.fn(() => ({ id: 100 })),
-        add: vi.fn()
-      },
+      { add: vi.fn() },
       { count: () => 0 },
       null
     );
 
-    expect(mocked.findExistingArticle).not.toHaveBeenCalled();
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(result).toEqual({
       newArticles: 0,

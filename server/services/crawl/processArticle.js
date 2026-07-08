@@ -3,13 +3,13 @@ const { Action, Hotlink } = db;
 import { Op } from 'sequelize';
 
 import extractEntryFields, { resolveUrlPublishedDate } from './extractEntryFields.js';
-import findExistingArticle from './findExistingArticle.js';
 import processMedia from './processMedia.js';
 import processHtmlContent from './processHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
 import saveArticle from './saveArticle.js';
 import normalizeUrl from './normalizeUrl.js';
+import { buildArticleIdentity, matchArticleDuplicate } from './articleDuplicateMatcher.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import extractLeadImage from '../../utils/extractLeadImage.js';
 
@@ -162,12 +162,19 @@ const processArticle = async (
     }
 
     const normalizedUrl = normalizeUrl(fields.link);
+    const articleIdentity = buildArticleIdentity({
+      feed,
+      title: fields.title,
+      link: fields.link,
+      normalizedUrl,
+      contentHash,
+      contentStrippedHash,
+      published: fields.published
+    });
 
-    // Try to find any existing article with the same link or title
-    const cachedExisting = duplicateCache?.find(fields.title, fields.link, contentHash, normalizedUrl);
-    const existing = cachedExisting ??
-      await findExistingArticle(feed, fields.title, fields.link, contentHash, normalizedUrl);
-    if (existing) {
+    // Try to find any existing article with the same stable article identity.
+    const duplicateMatch = await matchArticleDuplicate(articleIdentity, duplicateCache);
+    if (duplicateMatch) {
       // Existing entry means the feed already contains this article, count as updated for progress reporting.
       return {
         newArticles: 0,
