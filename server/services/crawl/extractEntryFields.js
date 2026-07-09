@@ -50,6 +50,17 @@ const urlDatePatterns = [
   /(?:^|\/)(\d{4})-(\d{1,2})-(\d{1,2})(?:\/|$)/
 ];
 
+// This function returns the first non-empty text value from feed summary fields.
+const firstTextValue = (...values) => {
+  for (const value of values) {
+    if (typeof value !== 'string') continue;
+    if (value.trim() === '') continue;
+    return value;
+  }
+
+  return null;
+};
+
 // This function builds a valid UTC date from URL date path components.
 const normalizeUrlDateParts = (yearValue, monthValue, dayValue) => {
   const year = Number(yearValue);
@@ -170,9 +181,11 @@ function extractEntryFields(entry) {
   return {
     title: entry.title?.trim() || 'Untitled',
     link: entry.links?.[0]?.href || entry.link,
-    description:
-      entry.description ||
-      null,
+    description: firstTextValue(
+      entry.description,
+      entry.summary,
+      entry.atom?.summary
+    ),
     content:
       entry.content?.encoded ||
       entry.content ||

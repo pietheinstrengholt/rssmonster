@@ -219,7 +219,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('passes raw description HTML to content processing when content is missing', async () => {
+  it('keeps description separate when content is missing', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
@@ -245,18 +245,58 @@ describe('processArticle AI analysis controls', () => {
       null
     );
 
-    expect(mocked.processHtmlContent).toHaveBeenCalledWith(
+    expect(mocked.processHtmlContent).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        contentOriginal: null,
+        contentStripped: null,
+        contentText: null,
+        description: '<p>Raw <strong>feed</strong> description</p>'
+      }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
+  it('passes feed description through unchanged when body content is present', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Article with description',
+      link: 'https://example.com/article-with-description',
+      content: '<p>Article body</p>',
+      description: '<p>Raw <strong>feed</strong> description</p>',
+      categories: [],
+      published: new Date('2026-07-01T00:00:00Z')
+    });
+
+    await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Description feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
       null,
-      '<p>Raw <strong>feed</strong> description</p>',
-      'https://example.com/description-only',
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.processHtmlContent).toHaveBeenCalledWith(
+      '<p>Article body</p>',
+      null,
+      'https://example.com/article-with-description',
       expect.objectContaining({ id: 1, userId: 42 }),
-      'Description-only article',
+      'Article with description',
       null
     );
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
-        description: 'Raw feed description'
+        description: '<p>Raw <strong>feed</strong> description</p>'
       }),
       expect.any(Object),
       expect.any(Object)

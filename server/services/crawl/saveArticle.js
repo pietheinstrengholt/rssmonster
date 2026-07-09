@@ -21,8 +21,6 @@ async function saveArticle(feed, data, analysis, actionResult) {
   try {
     const officialSource = await resolveOfficialSourceForArticle(feed.userId, data.link);
     const normalizedUrl = data.normalizedUrl || normalizeUrl(data.link);
-    const contentStripped = analysis.summary || data.contentStripped;
-
     article = await Article.create({
       userId: feed.userId,
       feedId: feed.id,
@@ -38,9 +36,9 @@ async function saveArticle(feed, data, analysis, actionResult) {
       author: data.author,
       description: data.description,
       contentOriginal: data.contentOriginal,
-      contentStripped, // use summary from analysis if available
+      contentStripped: data.contentStripped,
       contentText: data.contentText || null,
-      contentStrippedHash: analysis.summary ? undefined : data.contentStrippedHash,
+      contentStrippedHash: data.contentStrippedHash,
       contentSummaryBullets: analysis.contentSummaryBullets,
       contentHash: data.contentHash,
       isOfficialSource: officialSource.isOfficialSource,

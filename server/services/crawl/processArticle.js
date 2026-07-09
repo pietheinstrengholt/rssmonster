@@ -13,35 +13,6 @@ import { buildArticleIdentity, matchArticleDuplicate } from './articleDuplicateM
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import detectArticleImage from './detectArticleImage.js';
 
-// Maximum length for normalized description
-const MAX_DESCRIPTION_LENGTH = 8000;
-
-/**
- * Remove embedded base64 images which can explode payload size
- */
-const stripBase64Images = (html) =>
-  typeof html === 'string'
-    ? html.replace(
-        /<img[^>]+src=["']data:image\/[^"']+["'][^>]*>/gi,
-        ''
-      )
-    : null;
-
-/**
- * Normalize description into safe, bounded plain text
- */
-const normalizeDescription = (html) => {
-  if (typeof html !== 'string') return null;
-
-  return stripBase64Images(html)
-    .replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '')
-    .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
-    .replace(/<\/?[^>]+>/g, ' ')   // strip remaining HTML
-    .replace(/\s+/g, ' ')
-    .trim()
-    .slice(0, MAX_DESCRIPTION_LENGTH);
-};
-
 /* ------------------------------------------------------------------
  * Article Processor
  * ------------------------------------------------------------------ */
@@ -94,10 +65,7 @@ const processArticle = async (
     // Normalize HTML entities
     fields.title = decodeHtmlEntities(fields.title);
     fields.content = decodeHtmlEntities(fields.content);
-    const rawDescription = decodeHtmlEntities(fields.description);
-
-    // Description must be bounded + sanitized (feeds may contain base64 blobs)
-    fields.description = normalizeDescription(rawDescription);
+    fields.description = decodeHtmlEntities(fields.description);
 
     // Skip processing if the article is older than the feed's crawlSince
     if (feed?.crawlSince && fields.published) {
@@ -136,11 +104,11 @@ const processArticle = async (
       mediaFound = true;
     }
 
-    // If generic content is found, use the raw entry content / description. Override media content.
-    if (fields.content || rawDescription) {
+    // If generic content is found, use the raw entry content. Override media content.
+    if (fields.content) {
       const htmlResult = processHtmlContent(
         fields.content,
-        rawDescription,
+        null,
         fields.link,
         feed,
         fields.title,
@@ -162,7 +130,7 @@ const processArticle = async (
       articleUrl: fields.link,
       contentStripped,
       content: fields.content,
-      description: rawDescription,
+      description: fields.description,
       feed,
       title: fields.title
     });
@@ -189,8 +157,8 @@ const processArticle = async (
       };
     }
 
-    // Add article only if content was found
-    if (!contentOriginal) return emptyArticleResult;
+    // Add article only when body content, media content, or a feed description was found.
+    if (!contentOriginal && !fields.description) return emptyArticleResult;
 
     // Retrieve actions for applying rules to the article
     // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
@@ -243,15 +211,6 @@ const processArticle = async (
           ]
         }
       });
-
-    // Warn if description is abnormally large after normalization
-    if (fields.description?.length > 100000) {
-      console.warn(
-        '[ARTICLE] Abnormally large description after normalization',
-        fields.link,
-        fields.description.length
-      );
-    }
 
     // Create article with analysis results
     const savedArticle = await saveArticle(

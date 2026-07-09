@@ -46,6 +46,7 @@ describe('saveArticle feed tags', () => {
         contentOriginal: '<p>Body</p>',
         contentStripped: 'Body',
         contentText: 'Body',
+        contentStrippedHash: 'stripped-hash',
         contentHash: 'hash',
         mediaFound: false,
         language: 'en',
@@ -107,6 +108,8 @@ describe('saveArticle feed tags', () => {
     expect(mocked.tagCreate).toHaveBeenCalledTimes(6);
     expect(mocked.articleCreate).toHaveBeenCalledWith(
       expect.objectContaining({
+        contentStripped: 'Body',
+        contentStrippedHash: 'stripped-hash',
         contentText: 'Body'
       })
     );

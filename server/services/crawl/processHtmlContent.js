@@ -51,14 +51,14 @@ function shouldDetectPlainTextLanguage(text) {
    - Detects language
    - Computes content hash for duplication checks
 ====================================================== */
-function processHtmlContent(content, description, entryLink, feed, entryTitle, hotlinkBatcher = null) {
+function processHtmlContent(content, _description, entryLink, feed, entryTitle, hotlinkBatcher = null) {
   let contentOriginal;
   let contentStripped;
   let contentText;
 
   try {
-    // Use content if available, otherwise fall back to description
-    contentOriginal = content || description;
+    // Use only feed body content here; feed summaries belong in description.
+    contentOriginal = content;
     // Start contentStripped from the original source before applying HTML cleanup.
     contentStripped = removeKnownShortcodes(contentOriginal);
     if (!contentOriginal) return null;

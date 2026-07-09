@@ -56,10 +56,10 @@
             </template>
           </div>
         </div>
-        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :content="content" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
+        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
-    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :content="content" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -99,6 +99,7 @@ export default {
     published: { type: [String, Date], default: '' },
     feed: { type: Object, default: () => ({}) },
     content: { type: String, default: '' },
+    description: { type: String, default: '' },
     contentOriginal: { type: String, default: '' },
     author: { type: String, default: '' },
     hotInd: { type: Number, default: 0 },
@@ -174,6 +175,10 @@ export default {
       if (!this.feed?.categoryId) return '';
       const category = this.$store.data.categories.find(c => c.id === this.feed.categoryId);
       return category?.name || '';
+    },
+    // Returns article body content, falling back to the feed description.
+    displayContent() {
+      return this.content || this.description || '';
     },
     // Converts the quality score to a percentage.
     roundedQuality() {

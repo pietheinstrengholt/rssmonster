@@ -46,6 +46,28 @@ describe('extract entry fields', () => {
     expect(fields.published).toBe('2026-07-05T13:15:00.000Z');
   });
 
+  it('maps feed summary or description to description without inventing a fallback', () => {
+    expect(extractEntryFields({
+      title: 'Article',
+      link: 'https://example.com/article',
+      description: '<p>Feed description</p>',
+      summary: '<p>Feed summary</p>'
+    }).description).toBe('<p>Feed description</p>');
+
+    expect(extractEntryFields({
+      title: 'Article',
+      link: 'https://example.com/article',
+      description: '',
+      summary: '<p>Feed summary</p>'
+    }).description).toBe('<p>Feed summary</p>');
+
+    expect(extractEntryFields({
+      title: 'Article',
+      link: 'https://example.com/article',
+      description: ''
+    }).description).toBeNull();
+  });
+
   it('resolves feed-level published fallback dates', () => {
     expect(resolveFeedPublishedDate({
       atom: {
