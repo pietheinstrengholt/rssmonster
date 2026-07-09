@@ -97,11 +97,6 @@ module.exports = {
         type: Sequelize.TEXT,
         allowNull: true
       },
-      contentText: {
-        type: Sequelize.TEXT,
-        allowNull: true,
-        defaultValue: null
-      },
       contentSummaryBullets: {
         type: Sequelize.JSON,
         allowNull: true

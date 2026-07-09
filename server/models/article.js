@@ -162,9 +162,17 @@ export default (sequelize) => {
       author: DataTypes.TEXT,
       description: DataTypes.TEXT,
       // Full original content (HTML or text) from the feed, used for processing and vectorization but not sent to client
-      contentOriginal: DataTypes.TEXT('medium'),
+      contentOriginal: {
+        type: DataTypes.TEXT('medium'),
+        allowNull: true,
+        defaultValue: null
+      },
       // Stripped content with HTML removed, used for summarization and topic modeling
-      contentStripped: DataTypes.TEXT,
+      contentStripped: {
+        type: DataTypes.TEXT,
+        allowNull: true,
+        defaultValue: null
+      },
       // Plain text content for NLP extraction and storage
       contentText: {
         type: DataTypes.TEXT,
