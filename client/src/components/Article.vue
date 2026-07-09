@@ -611,6 +611,17 @@ export default {
   display: none;
 }
 
+.article-card .article-full-content iframe.rssmonster-youtube-frame {
+  display: block;
+  width: 100% !important;
+  max-width: 760px !important;
+  aspect-ratio: 16 / 9;
+  height: auto !important;
+  border: 0;
+  border-radius: 8px;
+  background: #000;
+}
+
 /* Override css that comes from other websites */
 .article-content-wrapper img, .article-content-wrapper div {
   float: none !important;
@@ -637,6 +648,12 @@ export default {
 .article-card .article-content-wrapper figure {
   margin: 0 0 10px !important;
   padding: 0 !important;
+}
+
+.article-card .article-content-wrapper figure.rssmonster-youtube-embed {
+  width: 100% !important;
+  max-width: 760px !important;
+  margin: 14px 0 !important;
 }
 
 .article-card .article-content-wrapper figure video,

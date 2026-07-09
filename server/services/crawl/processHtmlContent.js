@@ -58,9 +58,9 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
 
   try {
     // Use only feed body content here; feed summaries belong in description.
-    contentOriginal = content;
+    contentOriginal = removeKnownShortcodes(content);
     // Start contentStripped from the original source before applying HTML cleanup.
-    contentStripped = removeKnownShortcodes(contentOriginal);
+    contentStripped = contentOriginal;
     if (!contentOriginal) return null;
 
     if (isPlainText(contentStripped)) {

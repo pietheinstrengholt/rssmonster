@@ -1,4 +1,6 @@
 const EMBED_SHORTCODE_PATTERN = /\[embed\]([\s\S]*?)\[\/embed\]/gi;
+const CAPTION_OPEN_SHORTCODE_PATTERN = /\[caption\b[^\]]*\]/gi;
+const CAPTION_CLOSE_SHORTCODE_PATTERN = /\[\/caption\]/gi;
 
 // This function extracts a YouTube video ID from supported embed URLs.
 function youtubeVideoIdFromUrl(value = '') {
@@ -37,8 +39,8 @@ function replaceKnownEmbeds(html = '') {
 // This function removes or converts known CMS shortcodes that feeds expose as text.
 function removeKnownShortcodes(html = '') {
   return replaceKnownEmbeds(html)
-    .replace(/\[caption[^\]]*\]/gi, '')
-    .replace(/\[\/caption\]/gi, '');
+    .replace(CAPTION_OPEN_SHORTCODE_PATTERN, '')
+    .replace(CAPTION_CLOSE_SHORTCODE_PATTERN, '');
 }
 
 export default removeKnownShortcodes;
