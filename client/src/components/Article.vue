@@ -1317,8 +1317,8 @@ span.similar-badge {
   font-size: 11px;
   font-weight: 600;
   line-height: 1.4;
-  background-color: var(--badge-similar-bg);
-  color: var(--badge-similar-text);
+  background-color: var(--badge-duplicate-bg);
+  color: var(--badge-duplicate-text);
   white-space: nowrap;
   vertical-align: middle;
   opacity: 0.85;

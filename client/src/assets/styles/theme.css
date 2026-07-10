@@ -153,6 +153,8 @@
   /* Article tags and category badges */
   --badge-similar-bg: #E8F2FE;
   --badge-similar-text: #1D4ED8;
+  --badge-duplicate-bg: #F3E8FF;
+  --badge-duplicate-text: #7C3AED;
   --badge-tag-bg: #F3F4F6;
   --badge-tag-text: #4B5563;
   --badge-quality-bg: #FEE2E2;
@@ -305,6 +307,8 @@
   /* Dark semantic badge palette */
   --badge-similar-bg: #1E3A8A;
   --badge-similar-text: #93C5FD;
+  --badge-duplicate-bg: #3B1D6E;
+  --badge-duplicate-text: #C4B5FD;
   --badge-tag-bg: #2A2F3A;
   --badge-tag-text: #D1D5DB;
   --badge-quality-bg: #7F1D1D;
