@@ -164,6 +164,113 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
+  it('generates a missing article title from RSS feed metadata first', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Untitled',
+      link: 'https://example.com/social-post',
+      content: '<p>Body sentence. More body.</p>',
+      description: 'Description sentence. More description.',
+      categories: [],
+      published: new Date('2026-07-01T00:00:00Z')
+    });
+    mocked.processHtmlContent.mockReturnValue({
+      content: '<p>Body sentence. More body.</p>',
+      stripped: '<p>Body sentence. More body.</p>',
+      text: 'Body sentence. More body.',
+      language: 'en',
+      contentHash: 'content-hash',
+      contentStrippedHash: 'content-stripped-hash',
+      title: 'Body sentence.'
+    });
+
+    await processArticle(
+      { id: 1, userId: 42, feedName: 'Saved feed name', applyAiAnalysis: false },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null,
+      null,
+      'Social Feed. Latest posts.'
+    );
+
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ title: 'Social Feed.' }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
+  it('falls back to description when RSS feed metadata has no title', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Untitled',
+      link: 'https://example.com/social-description',
+      content: null,
+      description: '<p>Description title. More description.</p>',
+      categories: [],
+      published: new Date('2026-07-01T00:00:00Z')
+    });
+
+    await processArticle(
+      { id: 1, userId: 42, feedName: 'Saved feed name', applyAiAnalysis: false },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ title: 'Description title.' }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
+  it('falls back to content text when feed title and description are missing', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Untitled',
+      link: 'https://example.com/social-content',
+      content: '<p>Content title? More content.</p>',
+      description: null,
+      categories: [],
+      published: new Date('2026-07-01T00:00:00Z')
+    });
+    mocked.processHtmlContent.mockReturnValue({
+      content: '<p>Content title? More content.</p>',
+      stripped: '<p>Content title? More content.</p>',
+      text: 'Content title? More content.',
+      language: 'en',
+      contentHash: 'content-hash',
+      contentStrippedHash: 'content-stripped-hash',
+      title: 'Content title?'
+    });
+
+    await processArticle(
+      { id: 1, userId: 42, feedName: 'Saved feed name', applyAiAnalysis: false },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({ title: 'Content title?' }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
   it('skips article creation when duplicate matcher finds an existing article', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 

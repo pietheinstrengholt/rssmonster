@@ -435,7 +435,8 @@ const performCrawl = async (userId = null, options = {}) => {
             duplicateCache,
             hotlinkCountCache,
             hotlinkBatcher,
-            feedPublishedFallback
+            feedPublishedFallback,
+            feedObject.feed?.title
           );
           feedNewArticles += articleResult?.newArticles || 0;
           feedUpdatedArticles += articleResult?.updatedArticles || 0;

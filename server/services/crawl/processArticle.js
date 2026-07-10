@@ -14,6 +14,7 @@ import normalizeUrl from './normalizeUrl.js';
 import { buildArticleIdentity, matchArticleDuplicate } from './articleDuplicateMatcher.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import detectArticleImage from './detectArticleImage.js';
+import generateTitleFromContent from './generateTitleFromContent.js';
 
 /* ------------------------------------------------------------------
  * Article Processor
@@ -50,12 +51,14 @@ const processArticle = async (
   duplicateCache = null,
   hotlinkCountCache = null,
   hotlinkBatcher = null,
-  feedPublishedFallback = null
+  feedPublishedFallback = null,
+  rssFeedTitle = null
 ) => {
   try {
 
     // Extract relevant fields from the entry
     const fields = extractEntryFields(entry);
+    const titleWasMissing = !fields.title || fields.title === 'Untitled';
     if (!fields.published && feedPublishedFallback) {
       fields.published = feedPublishedFallback;
       fields.publishedSource = feedPublishedFallback;
@@ -147,6 +150,13 @@ const processArticle = async (
         contentStripped = $('body').html();
         contentStrippedHash = hashContent(contentText);
       }
+    }
+
+    // Generate a useful title for feeds whose entries do not provide one.
+    if (titleWasMissing) {
+      fields.title = generateTitleFromContent(
+        rssFeedTitle || fields.description || contentText
+      ) || 'Untitled';
     }
 
     leadImage = await detectArticleImage({
