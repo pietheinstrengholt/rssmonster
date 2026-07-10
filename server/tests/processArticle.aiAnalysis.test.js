@@ -303,6 +303,55 @@ describe('processArticle AI analysis controls', () => {
     );
   });
 
+  it('appends the description when sanitized content contains an image but no body text', async () => {
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+    const imageContent = '<div class="media-content enclosure"> <img src="https://example.com/disruption.jpg" loading="lazy"> </div>';
+    const description = 'Door een stroomstoring rijden er geen treinen.';
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Treinverkeer onderbroken',
+      link: 'https://example.com/stroomstoring',
+      content: '<img src="https://example.com/disruption.jpg">',
+      description,
+      categories: [],
+      published: new Date('2026-07-01T00:00:00Z')
+    });
+    mocked.processHtmlContent.mockReturnValue({
+      content: '<img src="https://example.com/disruption.jpg">',
+      stripped: imageContent,
+      text: '',
+      language: 'unknown',
+      contentHash: 'empty-content-hash',
+      contentStrippedHash: 'empty-content-stripped-hash',
+      title: 'Treinverkeer onderbroken'
+    });
+
+    await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Disruption feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        contentStripped: `${imageContent}<p id="description">${description}</p>`,
+        contentText: description,
+        contentStrippedHash: expect.stringMatching(/^[a-f0-9]{64}$/)
+      }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
   it('uses duplicate matcher hits without saving the article', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 

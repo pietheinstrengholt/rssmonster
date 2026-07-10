@@ -2,6 +2,7 @@ import db from '../../models/index.js';
 const { Action, Hotlink } = db;
 import { Op } from 'sequelize';
 import { load } from 'cheerio';
+import crypto from 'crypto';
 
 import extractEntryFields, { resolveUrlPublishedDate } from './extractEntryFields.js';
 import processMedia from './processMedia.js';
@@ -35,6 +36,12 @@ const defaultArticleAnalysis = {
   sentimentScore: 70,
   qualityScore: 70
 };
+
+// This function creates the stable hash used for sanitized article text.
+const hashContent = value => crypto
+  .createHash('sha256')
+  .update(value || '', 'utf8')
+  .digest('hex');
 
 const processArticle = async (
   feed,
@@ -126,17 +133,19 @@ const processArticle = async (
       }
     }
 
-    // If media exists but no body text was extracted, use description as text source
-    if (mediaFound && !contentText && fields.description) {
+    // If the body contains no text, append the description while preserving media HTML.
+    if (contentStripped && !contentText && fields.description) {
       const descriptionText = load(String(fields.description))
         .text()
         .replace(/\s+/g, ' ')
         .trim();
-      
+
       if (descriptionText) {
         contentText = descriptionText;
-        // Append description to media content
-        contentStripped += `<br><p id="description">${fields.description}</p>`;
+        const $ = load(contentStripped);
+        $('body').append($('<p>').attr('id', 'description').text(descriptionText));
+        contentStripped = $('body').html();
+        contentStrippedHash = hashContent(contentText);
       }
     }
 
