@@ -54,7 +54,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@openai/agents": "^0.13.0",
+    "@openai/agents": "^0.13.1",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
@@ -68,7 +68,7 @@
     "multer": "^2.2.0",
     "mysql2": "^3.22.6",
     "node-cache": "^5.1.2",
-    "openai": "^6.45.0",
+    "openai": "^6.46.0",
     "sanitize-html": "^2.17.5",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
