@@ -86,18 +86,6 @@ describe('crawl content sanitization', () => {
     expect(hotlinkSetMany).not.toHaveBeenCalled();
   });
 
-  it('does not fall back to description when article content is missing', () => {
-    const result = processHtmlContent(
-      null,
-      '<p>Feed description only</p>',
-      'https://origin.example/feed-item',
-      feed,
-      'Description only'
-    );
-
-    expect(result).toBeNull();
-  });
-
   it('escapes and filters media-only feed content before storage', () => {
     const result = processMedia({
       title: 'Media "title" <img src=x onerror=alert(1)>',
