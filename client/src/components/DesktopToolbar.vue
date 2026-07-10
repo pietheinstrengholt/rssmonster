@@ -940,7 +940,7 @@ export default {
     selectedSort() {
       return this.currentSelection.sort;
     },
-    // This function builds the configured status, view, and sort dropdowns.
+    // This function builds the configured view, status, and sort dropdowns.
     toolbarDropdowns() {
       // This function filters out AI-only options when AI is unavailable.
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
@@ -950,20 +950,20 @@ export default {
 
       const dropdowns = [
         {
-          id: 'statusDropdown',
-          type: 'status',
-          label: 'Status',
-          selectedLabel: this.capitalize(this.selectedStatus),
-          selectedValue: this.selectedStatus,
-          options: this.statusOptions
-        },
-        {
           id: 'viewModeDropdown',
           type: 'viewMode',
           label: 'View',
           selectedLabel: selectedViewModeOption ? selectedViewModeOption.label : this.capitalize(this.selectedViewMode),
           selectedValue: this.selectedViewMode,
           options: visibleOptions(this.viewModeOptions)
+        },
+        {
+          id: 'statusDropdown',
+          type: 'status',
+          label: 'Status',
+          selectedLabel: this.capitalize(this.selectedStatus),
+          selectedValue: this.selectedStatus,
+          options: this.statusOptions
         },
         {
           id: 'sortDropdown',
