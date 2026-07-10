@@ -136,6 +136,8 @@
         @toggle-read-status="$emit('toggle-read-status', $event)"
         @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
         @cluster-articles-collapsed="$emit('cluster-articles-collapsed', $event)"
+        @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
+        @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
       />
     </section>
@@ -163,6 +165,8 @@ export default {
     'toggle-read-status',
     'cluster-articles-loaded',
     'cluster-articles-collapsed',
+    'duplicate-articles-loaded',
+    'duplicate-articles-collapsed',
     'article-not-interested',
     'mark-previous-article-read',
     'shortcut-toggle-read',

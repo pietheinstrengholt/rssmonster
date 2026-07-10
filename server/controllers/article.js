@@ -131,6 +131,53 @@ export const getArticles = async (req, res) => {
   }
 };
 
+// This function fetches duplicate articles belonging to one canonical article.
+const getDuplicateArticles = async (req, res) => {
+  try {
+    const userId = req.userData.userId;
+    const articleId = Number(req.params.articleId) || null;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!articleId) {
+      return res.status(400).json({ error: 'articleId is required' });
+    }
+
+    const canonicalArticle = await Article.findOne({
+      where: { id: articleId, userId, ...canonicalArticleWhere() },
+      attributes: ['id']
+    });
+
+    if (!canonicalArticle) {
+      return res.status(404).json({ error: 'Article not found' });
+    }
+
+    const articles = await Article.findAll({
+      where: { userId, duplicateOfArticleId: articleId },
+      include: [
+        {
+          model: Feed,
+          required: true,
+          attributes: ['id', 'feedName', 'categoryId', 'url', 'favicon']
+        },
+        {
+          model: Tag,
+          required: false,
+          attributes: ['id', 'name', 'tagType']
+        }
+      ],
+      order: [['published', 'DESC']]
+    });
+
+    return res.status(200).json({ articles });
+  } catch (err) {
+    console.error('Error in getDuplicateArticles:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // Get single article details by ID
 const getArticle = async (req, res, _next) => {
   try {
@@ -917,6 +964,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
 
 export default {
   getArticles,
+  getDuplicateArticles,
   getArticle,
   markAsRead,
   markClicked,

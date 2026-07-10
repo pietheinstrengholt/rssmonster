@@ -22,7 +22,7 @@
           <span class="article-list-dot">·</span>
           <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.grouping !== 'none' && cluster.sourceCount >= 2" class="source-badge" :title="`${cluster.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ cluster.sourceCount }} sources</span>
           <span v-if="cluster && clusterCountTotal > 1 && $store.data.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewClusterArticles(cluster.id)">+{{ clusterCountTotal - 1 }} similar article{{ clusterCountTotal - 1 === 1 ? '' : 's' }}</span>
-          <span v-if="duplicateCount > 0" class="duplicate-badge">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
+          <span v-if="duplicateCount > 0" class="duplicate-badge" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
           <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
         </div>
       </div>
@@ -44,7 +44,7 @@
         <div class="article-layout">
           <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" />
+            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -70,7 +70,8 @@ import {
   markAsFavorite as markArticleAsFavoriteAPI,
   markClicked,
   markNotInterested,
-  markMoreLikeThis
+  markMoreLikeThis,
+  fetchDuplicateArticles
 } from '../api/articles';
 
 import { muteFeed } from '../api/feeds';
@@ -92,7 +93,7 @@ const TRUSTED_FEED_THRESHOLD = 0.85;
 export default {
   inheritAttrs: false,
   components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleActionsMenu },
-  emits: ['update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'article-not-interested'],
+  emits: ['update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested'],
   props: {
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
@@ -134,6 +135,7 @@ export default {
     return {
       showMinimalContent: false,
       clusterExpanded: false,
+      duplicatesExpanded: false,
       NEUTRAL_SCORE,
       isMobilePortrait: false,
       mediaQuery: null,
@@ -162,9 +164,13 @@ export default {
         'contentHash',
         'contenttext',
         'contentText',
+        'contentstrippedhash',
+        'contentStrippedHash',
         'description',
         'embedding_model',
         'embeddingModel',
+        'normalizedurlhash',
+        'normalizedUrlHash',
         'urlhash',
         'urlHash'
       ].forEach(attribute => delete attrs[attribute]);
@@ -604,6 +610,26 @@ export default {
       })
       .catch(error => {
         console.error(`Error fetching ${grouping} articles:`, error);
+      });
+    },
+    // Expands or collapses duplicates belonging to this canonical article.
+    viewDuplicateArticles() {
+      if (this.duplicatesExpanded) {
+        this.duplicatesExpanded = false;
+        this.$emit('duplicate-articles-collapsed', { articleId: this.id });
+        return;
+      }
+
+      fetchDuplicateArticles(this.id)
+      .then(response => {
+        this.duplicatesExpanded = true;
+        this.$emit('duplicate-articles-loaded', {
+          articleId: this.id,
+          articles: response.data.articles || []
+        });
+      })
+      .catch(error => {
+        console.error('Error fetching duplicate articles:', error);
       });
     }
   }
@@ -1296,6 +1322,7 @@ span.similar-badge {
   white-space: nowrap;
   vertical-align: middle;
   opacity: 0.85;
+  cursor: pointer;
 }
 
 .source-badge {

@@ -79,6 +79,35 @@ describe('article ownership authorization', () => {
     expect(res.body).toEqual({ error: 'Article not found' });
   });
 
+  it('GET duplicate articles returns owned duplicates and rejects foreign users', async () => {
+    const owner = await createUser(uniqueName('duplicate-owner'));
+    const foreignUser = await createUser(uniqueName('duplicate-viewer'));
+    const { article, feed } = await createArticleFor(owner);
+    const duplicate = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      duplicateOfArticleId: article.id,
+      status: 'duplicate',
+      url: `https://example.com/${owner.username}/duplicate`,
+      title: `${owner.username} duplicate`,
+      contentOriginal: '<p>Duplicate body</p>',
+      contentStripped: 'Duplicate body',
+      published: new Date('2026-05-01T11:00:00Z')
+    });
+
+    const ownerResponse = await request(app)
+      .get(`/api/articles/duplicates/${article.id}`)
+      .set('Authorization', authHeaderFor(owner));
+    const foreignResponse = await request(app)
+      .get(`/api/articles/duplicates/${article.id}`)
+      .set('Authorization', authHeaderFor(foreignUser));
+
+    expect(ownerResponse.status).toBe(200);
+    expect(ownerResponse.body.articles.map(item => item.id)).toEqual([duplicate.id]);
+    expect(foreignResponse.status).toBe(404);
+    expect(foreignResponse.body).toEqual({ error: 'Article not found' });
+  });
+
   it('mark-as-seen rejects foreign-user article without mutating it', async () => {
     const owner = await createUser(uniqueName('article-owner'));
     const foreignUser = await createUser(uniqueName('article-marker'));

@@ -15,6 +15,10 @@ export const fetchArticleDetails = (articleIds, sort) =>
     sort
   });
 
+// This function fetches duplicates belonging to one canonical article.
+export const fetchDuplicateArticles = articleId =>
+  api.get(`/articles/duplicates/${articleId}`);
+
 /**
  * Mark article as seen
  */
