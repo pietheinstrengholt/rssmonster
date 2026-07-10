@@ -92,23 +92,22 @@ const processArticle = async (
 
     // Check if there's media content (e.g., YouTube videos)
     const mediaResult = processMedia(entry);
+
     if (mediaResult.content) {
+      // Media-based content
+      contentOriginal = mediaResult.content;
+      contentStripped = mediaResult.content;
+      contentText = null;
+      contentLanguage = 'unknown';
+      contentHash = null;
+      contentStrippedHash = null;
       mediaFound = true;
     }
 
-    // Determine body content priority: fields.content > fields.description > nothing
-    const bodyContent = fields.content || fields.description;
-
-    // Combine media with textual content if both exist
-    const combinedContent = [
-      mediaResult.content,
-      bodyContent
-    ].filter(Boolean).join('\n');
-
-    // Process combined content through HTML cleanup and sanitization
-    if (combinedContent) {
+    // If generic content is found, use the raw entry content. Override media content.
+    if (fields.content) {
       const htmlResult = processHtmlContent(
-        combinedContent,
+        fields.content,
         null,
         fields.link,
         feed,
