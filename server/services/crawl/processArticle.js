@@ -1,6 +1,7 @@
 import db from '../../models/index.js';
 const { Action, Hotlink } = db;
 import { Op } from 'sequelize';
+import { load } from 'cheerio';
 
 import extractEntryFields, { resolveUrlPublishedDate } from './extractEntryFields.js';
 import processMedia from './processMedia.js';
@@ -122,6 +123,20 @@ const processArticle = async (
         contentHash = htmlResult.contentHash;
         contentStrippedHash = htmlResult.contentStrippedHash;
         fields.title = htmlResult.title || fields.title; // Prefer title extracted from content if available
+      }
+    }
+
+    // If media exists but no body text was extracted, use description as text source
+    if (mediaFound && !contentText && fields.description) {
+      const descriptionText = load(String(fields.description))
+        .text()
+        .replace(/\s+/g, ' ')
+        .trim();
+      
+      if (descriptionText) {
+        contentText = descriptionText;
+        // Append description to media content
+        contentStripped += `<br><p id="description">${fields.description}</p>`;
       }
     }
 
