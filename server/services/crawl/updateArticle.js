@@ -23,34 +23,45 @@ const preferIncomingValue = (incoming, existing) => hasIncomingValue(incoming)
   ? incoming
   : existing;
 
-// This function normalizes scalar source data before fingerprint comparison.
-const normalizeFingerprintValue = value => {
-  if (value === null || value === undefined) return '';
-  if (value instanceof Date) return value.toISOString();
-  if (typeof value === 'object') return JSON.stringify(value);
+// This function recursively sorts object keys for stable media comparison.
+const stableValue = value => {
+  if (Array.isArray(value)) return value.map(stableValue);
+  if (!value || typeof value !== 'object' || value instanceof Date) return value;
 
-  return String(value).replace(/\s+/g, ' ').trim();
+  return Object.fromEntries(
+    Object.keys(value)
+      .sort()
+      .map(key => [key, stableValue(value[key])])
+  );
+};
+
+// This function serializes media independently of object key insertion order.
+const stableMedia = media => JSON.stringify(stableValue(media ?? null));
+
+// This function normalizes stored and incoming publication dates for comparison.
+const normalizeDate = value => {
+  if (!value) return null;
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
 };
 
 // This function creates the mutable source fingerprint used to detect real feed changes.
 const createSourceFingerprint = ({
   title,
+  contentHash,
   description,
-  contentText,
   url,
   imageUrl,
   media,
-  author,
   published
 }) => hashValue(JSON.stringify([
-  normalizeFingerprintValue(title),
-  normalizeFingerprintValue(description),
-  normalizeFingerprintValue(contentText),
-  normalizeFingerprintValue(url),
-  normalizeFingerprintValue(imageUrl),
-  normalizeFingerprintValue(media),
-  normalizeFingerprintValue(author),
-  normalizeFingerprintValue(published)
+  title ?? null,
+  contentHash ?? null,
+  description ?? null,
+  url ?? null,
+  imageUrl ?? null,
+  stableMedia(media),
+  normalizeDate(published)
 ]));
 
 // This function updates the mutable feed content of an existing externally identified article.
@@ -114,18 +125,14 @@ async function updateArticle(feed, data) {
     contentStrippedHash,
     contentHash
   };
-  const incomingFingerprint = createSourceFingerprint({
-    ...updateValues,
-    url: normalizedUrl
-  });
+  const incomingFingerprint = createSourceFingerprint(updateValues);
   const storedFingerprint = createSourceFingerprint({
     title: storedValue(article, 'title'),
+    contentHash: storedValue(article, 'contentHash'),
     description: storedValue(article, 'description'),
-    contentText: storedValue(article, 'contentText'),
-    url: storedValue(article, 'normalizedUrl') || normalizeUrl(storedValue(article, 'url')),
+    url: storedValue(article, 'url'),
     imageUrl: storedValue(article, 'imageUrl'),
     media: storedValue(article, 'media'),
-    author: storedValue(article, 'author'),
     published: storedValue(article, 'published')
   });
 

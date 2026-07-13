@@ -171,12 +171,17 @@ describe('updateArticle', () => {
   it('does not write an unchanged matching article', async () => {
     const published = new Date('2026-07-13T13:30:00Z');
     const article = {
-      url: 'https://example.com/articles/6402680?utm_source=feed',
+      url: 'https://example.com/articles/6402680',
       normalizedUrl: 'https://example.com/articles/6402680',
       imageUrl: 'https://example.com/image.jpg',
+      media: {
+        type: 'video',
+        url: 'https://video.example/watch/1'
+      },
       title: 'Article title',
       author: 'Article author',
       description: 'Article description',
+      contentHash: 'source-content-hash',
       contentText: 'Article body',
       published,
       update: mocked.articleUpdate
@@ -189,13 +194,19 @@ describe('updateArticle', () => {
       {
         externalId: 'article-6402680',
         externalIdType: 'guid',
-        link: 'https://example.com/articles/6402680?utm_source=newsletter',
+        link: 'https://example.com/articles/6402680',
         normalizedUrl: 'https://example.com/articles/6402680',
         leadImage: 'https://example.com/image.jpg',
-        title: ' Article title ',
-        author: 'Article author',
+        media: {
+          url: 'https://video.example/watch/1',
+          type: 'video'
+        },
+        title: 'Article title',
+        author: 'Changed author not used for detection',
         description: 'Article description',
-        contentText: 'Article body',
+        contentHash: 'source-content-hash',
+        contentStrippedHash: 'changed-visible-text-hash',
+        contentText: 'Changed visible text not used for detection',
         published: '2026-07-13T13:30:00.000Z'
       }
     );
