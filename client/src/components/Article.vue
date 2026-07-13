@@ -161,6 +161,10 @@ export default {
     filteredAttrs() {
       const attrs = { ...this.$attrs };
       [
+        'attentionbucket',
+        'attentionBucket',
+        'attentionscore',
+        'attentionScore',
         'articlevector',
         'articleVector',
         'contenthash',
@@ -172,8 +176,25 @@ export default {
         'description',
         'embedding_model',
         'embeddingModel',
+        'externalid',
+        'externalId',
+        'externalidtype',
+        'externalIdType',
+        'freshness',
+        'hotlinks',
+        'negativeind',
+        'negativeInd',
+        'normalizedurl',
+        'normalizedUrl',
         'normalizedurlhash',
         'normalizedUrlHash',
+        'positiveind',
+        'positiveInd',
+        'publishinferred',
+        'publishInferred',
+        'uniqueness',
+        'userid',
+        'userId',
         'urlhash',
         'urlHash'
       ].forEach(attribute => delete attrs[attribute]);
