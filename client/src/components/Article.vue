@@ -1075,7 +1075,6 @@ export default {
   margin-bottom: 5px;
   margin-top: 1px;
   margin-left: 0px;
-  padding-bottom: 6px;
 }
 
 .article-card .article-full-content {

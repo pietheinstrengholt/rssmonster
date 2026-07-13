@@ -129,7 +129,7 @@
   width: 100%;
   padding: 8px 12px 10px;
   color: var(--text-primary);
-  background: var(--bg-card);
+  background-color: var(--desktop-toolbar-background);
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -279,7 +279,7 @@
 :global(:root[data-theme='dark']) {
   .mobile-toolbar {
     color: var(--text-inverted);
-    background: var(--bg-control);
+    background-color: var(--desktop-toolbar-background);
     border-bottom-color: var(--dark-contrast);
   }
 
@@ -342,7 +342,7 @@
 
 :global(:root[data-theme='dark'] .mobile-toolbar) {
   color: var(--text-inverted);
-  background: var(--bg-control);
+  background-color: var(--desktop-toolbar-background);
   border-bottom-color: var(--dark-contrast);
 }
 
