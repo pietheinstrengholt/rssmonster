@@ -855,6 +855,18 @@ export default {
   color: #dc2626;
 }
 
+.bluesky-icon {
+  color: #1185fe;
+}
+
+.reddit-icon {
+  color: #ff4500;
+}
+
+.github-icon {
+  color: #000;
+}
+
 .cluster-icon {
   color: var(--article-hot-icon);
 }
@@ -869,10 +881,34 @@ export default {
   :root[data-theme='dark'] .media-video-icon {
     color: #991b1b;
   }
+
+  :root[data-theme='dark'] .bluesky-icon {
+    color: #0866c6;
+  }
+
+  :root[data-theme='dark'] .reddit-icon {
+    color: #b83200;
+  }
+
+  :root[data-theme='dark'] .github-icon {
+    color: #fff;
+  }
 }
 
 :root[data-theme='dark'] .media-video-icon {
   color: #991b1b;
+}
+
+:root[data-theme='dark'] .bluesky-icon {
+  color: #0866c6;
+}
+
+:root[data-theme='dark'] .reddit-icon {
+  color: #b83200;
+}
+
+:root[data-theme='dark'] .github-icon {
+  color: #fff;
 }
 
 .article-card .article-body {
