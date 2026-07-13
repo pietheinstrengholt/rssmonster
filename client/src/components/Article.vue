@@ -833,10 +833,6 @@ export default {
   border-color: var(--article-highlight-border);
 }
 
-.article-card .article-body.favorited {
-  background-color: var(--desktop-toolbar-background);
-}
-
 .article-kind-icon {
   display: inline-flex;
   align-items: center;
