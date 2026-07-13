@@ -48,7 +48,6 @@ export default {
 <style scoped>
 .article-empty-state {
   align-items: center;
-  background: var(--bg-page);
   color: var(--text-primary);
   display: flex;
   flex-direction: column;
@@ -194,7 +193,8 @@ export default {
 
 @media (max-width: 766px) {
   .article-empty-state {
-    min-height: calc(100vh - 140px);
+    flex: 1;
+    min-height: 0;
     padding: 48px 18px;
   }
 

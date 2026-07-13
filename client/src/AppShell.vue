@@ -70,8 +70,15 @@
     padding-right: 0px;
   }
 
+  #home {
+    display: flex;
+    flex-direction: column;
+    min-height: 100vh;
+    min-height: 100dvh;
+  }
+
   .mobile-toolbar {
-    position: fixed;
+    position: sticky;
     z-index: 9999;
   }
 }

@@ -382,6 +382,15 @@ export default {
   }
 }
 
+/* Lets an empty article list fill the space below the mobile toolbar. */
+@media (max-width: 766px) {
+  #main-container {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+  }
+}
+
 #articles.mobile-search-open {
   padding-top: 98px;
 }
@@ -415,7 +424,6 @@ div.infinite-loading-container {
 
 #no-more {
   padding-top: 10px;
-  padding-bottom: 30px;
   text-align: center;
 }
 
@@ -423,6 +431,14 @@ div.infinite-loading-container {
   #no-more {
     padding-top: 0;
     padding-bottom: 0;
+  }
+}
+
+@media (max-width: 766px) {
+  #no-more {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
   }
 }
 
