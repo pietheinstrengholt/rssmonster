@@ -14,7 +14,8 @@ const mocked = vi.hoisted(() => ({
   saveArticle: vi.fn(),
   normalizeUrl: vi.fn(value => value),
   decodeHtmlEntities: vi.fn(value => value),
-  detectArticleImage: vi.fn()
+  detectArticleImage: vi.fn(),
+  updateArticle: vi.fn()
 }));
 
 vi.mock('../models/index.js', () => ({
@@ -56,6 +57,10 @@ vi.mock('../services/crawl/analyzeArticleContent.js', () => ({
 
 vi.mock('../services/crawl/saveArticle.js', () => ({
   default: mocked.saveArticle
+}));
+
+vi.mock('../services/crawl/updateArticle.js', () => ({
+  default: mocked.updateArticle
 }));
 
 vi.mock('../services/crawl/normalizeUrl.js', () => ({
@@ -121,6 +126,11 @@ describe('processArticle AI analysis controls', () => {
       qualityScore: null
     });
     mocked.saveArticle.mockResolvedValue({ id: 1 });
+    mocked.updateArticle.mockResolvedValue({
+      article: null,
+      matched: false,
+      changed: false
+    });
     mocked.detectArticleImage.mockResolvedValue(null);
   });
 
@@ -164,7 +174,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('generates a missing article title from RSS feed metadata first', async () => {
+  it('generates a missing article title from content before RSS feed metadata', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
@@ -198,13 +208,13 @@ describe('processArticle AI analysis controls', () => {
 
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
-      expect.objectContaining({ title: 'Social Feed.' }),
+      expect.objectContaining({ title: 'Body sentence.' }),
       expect.any(Object),
       expect.any(Object)
     );
   });
 
-  it('falls back to description when RSS feed metadata has no title', async () => {
+  it('uses description before RSS feed metadata when content text is missing', async () => {
     const { default: processArticle } = await import('../services/crawl/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
@@ -222,7 +232,9 @@ describe('processArticle AI analysis controls', () => {
       [],
       null,
       { count: () => 0 },
-      null
+      null,
+      null,
+      'Social Feed. Latest posts.'
     );
 
     expect(mocked.saveArticle).toHaveBeenCalledWith(
@@ -269,6 +281,76 @@ describe('processArticle AI analysis controls', () => {
       expect.any(Object),
       expect.any(Object)
     );
+  });
+
+  it('updates an externally identified article before enrichment and duplicate checks', async () => {
+    mocked.updateArticle.mockResolvedValue({
+      article: { id: 123 },
+      matched: true,
+      changed: true
+    });
+
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+    const result = await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Update feed'
+      },
+      {
+        guid: { value: 'article-6402680' }
+      },
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.updateArticle).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 1, userId: 42 }),
+      expect.objectContaining({
+        externalId: 'article-6402680',
+        externalIdType: 'guid',
+        contentHash: 'content-hash'
+      })
+    );
+    expect(mocked.matchArticleDuplicate).not.toHaveBeenCalled();
+    expect(mocked.applyActions).not.toHaveBeenCalled();
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(mocked.hotlinkCount).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      newArticles: 0,
+      updatedArticles: 1,
+      errors: 0
+    });
+  });
+
+  it('does not count an unchanged externally identified article as updated', async () => {
+    mocked.updateArticle.mockResolvedValue({
+      article: { id: 123 },
+      matched: true,
+      changed: false
+    });
+
+    const { default: processArticle } = await import('../services/crawl/processArticle.js');
+    const result = await processArticle(
+      { id: 1, userId: 42 },
+      { guid: { value: 'article-6402680' } },
+      [],
+      null,
+      { count: () => 0 },
+      null
+    );
+
+    expect(mocked.matchArticleDuplicate).not.toHaveBeenCalled();
+    expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).not.toHaveBeenCalled();
+    expect(result).toEqual({
+      newArticles: 0,
+      updatedArticles: 0,
+      errors: 0
+    });
   });
 
   it('skips article creation when duplicate matcher finds an existing article', async () => {
@@ -321,7 +403,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(result).toEqual({
       newArticles: 0,
-      updatedArticles: 1,
+      updatedArticles: 0,
       errors: 0
     });
   });
@@ -486,7 +568,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(result).toEqual({
       newArticles: 0,
-      updatedArticles: 1,
+      updatedArticles: 0,
       errors: 0
     });
   });

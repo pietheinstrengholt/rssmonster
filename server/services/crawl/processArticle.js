@@ -2,7 +2,6 @@ import db from '../../models/index.js';
 const { Action, Hotlink } = db;
 import { Op } from 'sequelize';
 import { load } from 'cheerio';
-import crypto from 'crypto';
 
 import extractEntryFields, { resolveUrlPublishedDate } from './extractEntryFields.js';
 import processMedia from './processMedia.js';
@@ -15,6 +14,9 @@ import { buildArticleIdentity, matchArticleDuplicate } from './articleDuplicateM
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import detectArticleImage from './detectArticleImage.js';
 import generateTitleFromContent from './generateTitleFromContent.js';
+import articleIdentityResolver from './articleIdentityResolver.js';
+import updateArticle from './updateArticle.js';
+import { hashVisibleText } from '../../utils/articleContentHashes.js';
 
 /* ------------------------------------------------------------------
  * Article Processor
@@ -38,12 +40,6 @@ const defaultArticleAnalysis = {
   qualityScore: 70
 };
 
-// This function creates the stable hash used for sanitized article text.
-const hashContent = value => crypto
-  .createHash('sha256')
-  .update(value || '', 'utf8')
-  .digest('hex');
-
 const processArticle = async (
   feed,
   entry,
@@ -52,12 +48,14 @@ const processArticle = async (
   hotlinkCountCache = null,
   hotlinkBatcher = null,
   feedPublishedFallback = null,
-  rssFeedTitle = null
+  rssFeedTitle = null,
+  feedFormat = null
 ) => {
   try {
 
     // Extract relevant fields from the entry
     const fields = extractEntryFields(entry);
+    const externalIdentity = articleIdentityResolver(entry, feedFormat);
     const titleWasMissing = !fields.title || fields.title === 'Untitled';
     if (!fields.published && feedPublishedFallback) {
       fields.published = feedPublishedFallback;
@@ -148,14 +146,14 @@ const processArticle = async (
         const $ = load(contentStripped);
         $('body').append($('<p>').attr('id', 'description').text(descriptionText));
         contentStripped = $('body').html();
-        contentStrippedHash = hashContent(contentText);
+        contentStrippedHash = hashVisibleText(contentText);
       }
     }
 
     // Generate a useful title for feeds whose entries do not provide one.
     if (titleWasMissing) {
       fields.title = generateTitleFromContent(
-        rssFeedTitle || fields.description || contentText
+        contentText || fields.description || rssFeedTitle
       ) || 'Untitled';
     }
 
@@ -170,6 +168,36 @@ const processArticle = async (
     });
 
     const normalizedUrl = normalizeUrl(fields.link);
+    const articleData = {
+      ...fields,
+      ...externalIdentity,
+      normalizedUrl,
+      contentStripped,
+      contentText,
+      contentOriginal,
+      contentHash,
+      contentStrippedHash,
+      mediaFound,
+      leadImage,
+      language: contentLanguage,
+      published: fields.published,
+      publishedSource: fields.publishedSource,
+      publishInferred: fields.publishInferred
+    };
+
+    // Add or update articles only when body content, media content, or a feed description was found.
+    if (!contentOriginal && !fields.description) return emptyArticleResult;
+
+    // Update known external identities before duplicate checks or expensive enrichment work.
+    const updateResult = await updateArticle(feed, articleData);
+    if (updateResult.matched) {
+      return {
+        newArticles: 0,
+        updatedArticles: updateResult.changed ? 1 : 0,
+        errors: 0
+      };
+    }
+
     const articleIdentity = buildArticleIdentity({
       feed,
       title: fields.title,
@@ -182,17 +210,7 @@ const processArticle = async (
 
     // Try to find any existing article with the same stable article identity.
     const duplicateMatch = await matchArticleDuplicate(articleIdentity, duplicateCache);
-    if (duplicateMatch) {
-      // Existing entry means the feed already contains this article, count as updated for progress reporting.
-      return {
-        newArticles: 0,
-        updatedArticles: 1,
-        errors: 0
-      };
-    }
-
-    // Add article only when body content, media content, or a feed description was found.
-    if (!contentOriginal && !fields.description) return emptyArticleResult;
+    if (duplicateMatch) return emptyArticleResult;
 
     // Retrieve actions for applying rules to the article
     // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
@@ -250,21 +268,9 @@ const processArticle = async (
     const savedArticle = await saveArticle(
       feed,
       {
-        ...fields,
-        normalizedUrl,
-        contentStripped: contentStripped,
-        contentText,
-        contentOriginal: contentOriginal,
-        contentHash: contentHash,
-        contentStrippedHash,
-        mediaFound,
-        leadImage,
+        ...articleData,
         hotlinkInd: hotlinkCount > 0,
-        hotlinkCount: hotlinkCount,
-        language: contentLanguage,
-        published: fields.published,
-        publishedSource: fields.publishedSource,
-        publishInferred: fields.publishInferred
+        hotlinkCount: hotlinkCount
       },
       analysis,
       actionResult

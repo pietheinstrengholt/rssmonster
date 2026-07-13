@@ -1,6 +1,7 @@
 import { DataTypes } from 'sequelize';
 import { createHash } from 'node:crypto';
 import normalizeUrl from '../services/crawl/normalizeUrl.js';
+import { hashOriginalContent, hashVisibleText } from '../utils/articleContentHashes.js';
 
 const TAU_HOURS = 48; // tune this globally
 const NEUTRAL_FEED_TRUST = 0.75;
@@ -25,7 +26,10 @@ const populateArticleHashes = article => {
     article.normalizedUrlHash = hashValue(article.normalizedUrl);
   }
   if (!article.contentStrippedHash) {
-    article.contentStrippedHash = hashValue(article.contentStripped);
+    article.contentStrippedHash = hashVisibleText(article.contentText);
+  }
+  if (!article.contentHash) {
+    article.contentHash = hashOriginalContent(article.contentOriginal);
   }
 };
 
@@ -82,6 +86,18 @@ export default (sequelize) => {
         autoIncrement: true,
         allowNull: false,
         primaryKey: true
+      },
+      // Publisher-provided article identifier, such as a feed GUID, UUID, numeric ID, or URL
+      externalId: {
+        type: DataTypes.STRING(1024),
+        allowNull: true,
+        defaultValue: null
+      },
+      // Describes the publisher-specific identifier pattern used by externalId
+      externalIdType: {
+        type: DataTypes.STRING(64),
+        allowNull: true,
+        defaultValue: null
       },
       userId: {
         type: DataTypes.INTEGER,
@@ -185,6 +201,7 @@ export default (sequelize) => {
           return this.getDataValue('contentStripped');
         }
       },
+      // SHA-256 identity of normalized visible plain text
       contentStrippedHash: {
         type: DataTypes.STRING(64),
         allowNull: false
@@ -194,6 +211,7 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
+      // SHA-256 identity of normalized original feed source content
       contentHash: {
         type: DataTypes.STRING(64),
         allowNull: true

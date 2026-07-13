@@ -22,6 +22,8 @@ async function saveArticle(feed, data, analysis, actionResult) {
     const officialSource = await resolveOfficialSourceForArticle(feed.userId, data.link);
     const normalizedUrl = data.normalizedUrl || normalizeUrl(data.link);
     article = await Article.create({
+      externalId: data.externalId || null,
+      externalIdType: data.externalIdType || null,
       userId: feed.userId,
       feedId: feed.id,
       status: actionResult.status,

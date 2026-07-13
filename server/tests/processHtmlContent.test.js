@@ -86,6 +86,26 @@ describe('crawl content sanitization', () => {
     expect(hotlinkSetMany).not.toHaveBeenCalled();
   });
 
+  it('separates original source identity from visible text identity', () => {
+    const paragraph = processHtmlContent(
+      '<p>Same visible text</p>',
+      null,
+      'https://origin.example/paragraph',
+      feed,
+      'Paragraph'
+    );
+    const division = processHtmlContent(
+      '<div>Same visible text</div>',
+      null,
+      'https://origin.example/division',
+      feed,
+      'Division'
+    );
+
+    expect(paragraph.contentHash).not.toBe(division.contentHash);
+    expect(paragraph.contentStrippedHash).toBe(division.contentStrippedHash);
+  });
+
   it('escapes and filters media-only feed content before storage', () => {
     const result = processMedia({
       title: 'Media "title" <img src=x onerror=alert(1)>',

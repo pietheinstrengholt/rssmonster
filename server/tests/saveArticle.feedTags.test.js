@@ -41,6 +41,8 @@ describe('saveArticle feed tags', () => {
       },
       {
         link: 'https://example.com/article',
+        externalId: 'article-6402680',
+        externalIdType: 'guid',
         title: 'Article title',
         description: 'Description',
         contentOriginal: '<p>Body</p>',
@@ -108,6 +110,8 @@ describe('saveArticle feed tags', () => {
     expect(mocked.tagCreate).toHaveBeenCalledTimes(6);
     expect(mocked.articleCreate).toHaveBeenCalledWith(
       expect.objectContaining({
+        externalId: 'article-6402680',
+        externalIdType: 'guid',
         contentStripped: 'Body',
         contentStrippedHash: 'stripped-hash',
         contentText: 'Body'

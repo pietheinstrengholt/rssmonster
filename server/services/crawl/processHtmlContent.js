@@ -6,16 +6,10 @@ import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import cleanupHtmlContent from './cleanupHtmlContent.js';
 import sanitizeHtmlContent from './sanitizeHtmlContent.js';
 import removeKnownShortcodes from './removeKnownShortcodes.js';
-import crypto from 'crypto';
+import { hashOriginalContent, hashVisibleText } from '../../utils/articleContentHashes.js';
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;
 const MIN_LANGUAGE_TEXT_LENGTH = 20;
-
-// This function creates a stable hash for processed article content.
-const hashContent = value => crypto
-  .createHash('sha256')
-  .update(value || '', 'utf8')
-  .digest('hex');
 
 function stripHtml(value = '') {
   return load(String(value))
@@ -66,7 +60,8 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
     if (isPlainText(contentStripped)) {
       const text = normalizePlainText(contentStripped);
       contentText = text;
-      const contentStrippedHash = hashContent(text);
+      const contentHash = hashOriginalContent(contentOriginal);
+      const contentStrippedHash = hashVisibleText(text);
 
       if (entryTitle === 'Untitled' && text) {
         const sentenceMatch = text.match(/^[^.!?:]*[.!?:]/);
@@ -92,7 +87,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
         stripped: contentStripped,
         text: contentText,
         language: detectedLanguage,
-        contentHash: contentStrippedHash,
+        contentHash,
         contentStrippedHash,
         title: entryTitle
       };
@@ -158,7 +153,8 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
       }
     }
 
-    const contentStrippedHash = hashContent(text);
+    const contentHash = hashOriginalContent(contentOriginal);
+    const contentStrippedHash = hashVisibleText(text);
 
     let detectedLanguage = 'unknown';
 
@@ -176,7 +172,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
       stripped: contentStripped,
       text: contentText,
       language: detectedLanguage,
-      contentHash: contentStrippedHash,
+      contentHash,
       contentStrippedHash,
       title: entryTitle
     };
@@ -193,8 +189,8 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
       stripped,
       text: contentText,
       language: 'unknown',
-      contentHash: null,
-      contentStrippedHash: hashContent(stripped),
+      contentHash: hashOriginalContent(contentOriginal),
+      contentStrippedHash: hashVisibleText(stripped),
       title: entryTitle
     };
   }
