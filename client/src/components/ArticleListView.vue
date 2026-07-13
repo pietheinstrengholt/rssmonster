@@ -41,7 +41,7 @@
       <p v-if="currentSelection == 'unread' && isFlushed === true && container.length > 0 && unreadsSinceLastUpdate > 0" class="clickable" v-on:click="this.$emit('forceReload')">{{ unreadsSinceLastUpdate }} new unread {{ unreadsSinceLastUpdate === 1 ? 'article' : 'articles' }} available! <br>Click here to refresh!</p>
     </div>
     <div id="no-more" v-else>
-      <p>Loading <BootstrapIcon icon="arrow-repeat" variant="dark" animation="spin"/></p>
+      <ArticleLoadingState />
     </div>
   </div>
 </template>
@@ -50,12 +50,14 @@
 import Article from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
+import ArticleLoadingState from "./ArticleLoadingState.vue";
 
 export default {
   components: {
     Article,
     ArticleEmptyState,
-    ArticleEndState
+    ArticleEndState,
+    ArticleLoadingState
   },
   emits: [
     'update-favorite',
