@@ -149,9 +149,9 @@ export default (sequelize) => {
         defaultValue: 0
       },
       media: {
-        type: DataTypes.BOOLEAN,
-        allowNull: false,
-        defaultValue: false
+        type: DataTypes.JSON,
+        allowNull: true,
+        defaultValue: null
       },
       url: {
         type: DataTypes.STRING(1024),

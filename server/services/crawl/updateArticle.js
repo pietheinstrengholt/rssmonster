@@ -27,6 +27,7 @@ const preferIncomingValue = (incoming, existing) => hasIncomingValue(incoming)
 const normalizeFingerprintValue = value => {
   if (value === null || value === undefined) return '';
   if (value instanceof Date) return value.toISOString();
+  if (typeof value === 'object') return JSON.stringify(value);
 
   return String(value).replace(/\s+/g, ' ').trim();
 };
@@ -38,6 +39,7 @@ const createSourceFingerprint = ({
   contentText,
   url,
   imageUrl,
+  media,
   author,
   published
 }) => hashValue(JSON.stringify([
@@ -46,6 +48,7 @@ const createSourceFingerprint = ({
   normalizeFingerprintValue(contentText),
   normalizeFingerprintValue(url),
   normalizeFingerprintValue(imageUrl),
+  normalizeFingerprintValue(media),
   normalizeFingerprintValue(author),
   normalizeFingerprintValue(published)
 ]));
@@ -86,7 +89,7 @@ async function updateArticle(feed, data) {
     ? data.contentHash || hashOriginalContent(contentOriginal)
     : storedValue(article, 'contentHash');
   const updateValues = {
-    media: data.mediaFound ? true : storedValue(article, 'media'),
+    media: preferIncomingValue(data.media, storedValue(article, 'media')),
     url: data.link,
     imageUrl: preferIncomingValue(data.leadImage, storedValue(article, 'imageUrl')),
     title: preferIncomingValue(data.title, storedValue(article, 'title')),
@@ -118,6 +121,7 @@ async function updateArticle(feed, data) {
     contentText: storedValue(article, 'contentText'),
     url: storedValue(article, 'normalizedUrl') || normalizeUrl(storedValue(article, 'url')),
     imageUrl: storedValue(article, 'imageUrl'),
+    media: storedValue(article, 'media'),
     author: storedValue(article, 'author'),
     published: storedValue(article, 'published')
   });

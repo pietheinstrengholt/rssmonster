@@ -111,7 +111,8 @@ const bootstrapIconNames = [
   'stars',
   'clock-fill',
   'info-lg',
-  'link-45deg'
+  'link-45deg',
+  'play-btn-fill'
 ]
 
 const bootstrapIconsSprite = () => {

@@ -33,7 +33,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
       url: data.link,
       normalizedUrl,
       imageUrl: data.leadImage || null,
-      media: data.mediaFound,
+      media: data.media || null,
       title: data.title,
       author: data.author,
       description: data.description,

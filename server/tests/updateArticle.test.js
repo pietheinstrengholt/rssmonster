@@ -36,7 +36,7 @@ describe('updateArticle', () => {
         externalIdType: 'guid',
         link: 'https://example.com/articles/6402680',
         normalizedUrl: 'https://example.com/articles/6402680',
-        mediaFound: true,
+        media: { type: 'video', url: 'https://video.example/watch/1' },
         leadImage: 'https://example.com/image.jpg',
         title: 'Updated title',
         author: 'Updated author',
@@ -64,7 +64,7 @@ describe('updateArticle', () => {
       }
     });
     expect(mocked.articleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      media: true,
+      media: { type: 'video', url: 'https://video.example/watch/1' },
       url: 'https://example.com/articles/6402680',
       imageUrl: 'https://example.com/image.jpg',
       title: 'Updated title',
@@ -110,7 +110,7 @@ describe('updateArticle', () => {
     const originalPublishedSource = new Date('2026-07-12T09:00:00Z');
     const article = {
       imageUrl: 'https://example.com/original.jpg',
-      media: true,
+      media: { type: 'audio', url: 'https://cdn.example/audio.mp3' },
       title: 'Original title',
       author: 'Original author',
       description: 'Original description',
@@ -135,7 +135,7 @@ describe('updateArticle', () => {
         externalIdType: 'guid',
         link: 'https://example.com/articles/6402680',
         normalizedUrl: 'https://example.com/articles/6402680',
-        mediaFound: false,
+        media: null,
         leadImage: null,
         title: 'Updated title',
         author: '',
@@ -153,7 +153,7 @@ describe('updateArticle', () => {
 
     expect(mocked.articleUpdate).toHaveBeenCalledWith(expect.objectContaining({
       imageUrl: 'https://example.com/original.jpg',
-      media: true,
+      media: { type: 'audio', url: 'https://cdn.example/audio.mp3' },
       title: 'Updated title',
       author: 'Original author',
       description: 'Original description',

@@ -97,21 +97,7 @@ const processArticle = async (
     let contentHash = null;
     let contentStrippedHash = null;
     let leadImage = null;
-    let mediaFound = false;
-
-    // Check if there's media content (e.g., YouTube videos)
-    const mediaResult = processMedia(entry);
-
-    if (mediaResult.content) {
-      // Media-based content
-      contentOriginal = mediaResult.content;
-      contentStripped = mediaResult.content;
-      contentText = null;
-      contentLanguage = 'unknown';
-      contentHash = null;
-      contentStrippedHash = null;
-      mediaFound = true;
-    }
+    const media = processMedia(entry);
 
     // If generic content is found, use the raw entry content. Override media content.
     if (fields.content) {
@@ -177,7 +163,7 @@ const processArticle = async (
       contentOriginal,
       contentHash,
       contentStrippedHash,
-      mediaFound,
+      media,
       leadImage,
       language: contentLanguage,
       published: fields.published,
@@ -186,7 +172,7 @@ const processArticle = async (
     };
 
     // Add or update articles only when body content, media content, or a feed description was found.
-    if (!contentOriginal && !fields.description) return emptyArticleResult;
+    if (!contentOriginal && !fields.description && !media) return emptyArticleResult;
 
     // Update known external identities before duplicate checks or expensive enrichment work.
     const updateResult = await updateArticle(feed, articleData);

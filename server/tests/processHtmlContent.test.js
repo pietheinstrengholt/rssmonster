@@ -106,7 +106,7 @@ describe('crawl content sanitization', () => {
     expect(paragraph.contentStrippedHash).toBe(division.contentStrippedHash);
   });
 
-  it('escapes and filters media-only feed content before storage', () => {
+  it('filters unsafe URLs from normalized media attributes', () => {
     const result = processMedia({
       title: 'Media "title" <img src=x onerror=alert(1)>',
       enclosures: [
@@ -119,6 +119,7 @@ describe('crawl content sanitization', () => {
         group: {
           contents: [
             {
+              type: 'video/mp4',
               url: 'https://video.example/watch?v=1',
               image: 'https://cdn.example/image.png',
               title: '<strong onclick="alert(1)">Video</strong>'
@@ -128,9 +129,12 @@ describe('crawl content sanitization', () => {
       }
     });
 
-    expect(result.content).toContain('https://cdn.example/image.png');
-    expect(result.content).toContain('https://video.example/watch?v=1');
-    expect(result.content).toContain('&lt;strong onclick=&quot;alert(1)&quot;&gt;Video&lt;/strong&gt;');
-    expect(result.content).not.toMatch(/javascript:|<strong onclick|onerror/i);
+    expect(result).toEqual(expect.objectContaining({
+      type: 'video',
+      url: 'https://video.example/watch?v=1',
+      thumbnailUrl: 'https://cdn.example/image.png',
+      mimeType: 'video/mp4'
+    }));
+    expect(JSON.stringify(result)).not.toMatch(/javascript:|onerror/i);
   });
 });

@@ -168,7 +168,6 @@ export async function embedArticle(articleOrInput, options = {}) {
   }
 
   if (!hasApiKey) {
-    console.debug('[EMBED] skipped (no OPENAI_API_KEY)');
     return null;
   }
 

@@ -50,7 +50,7 @@ describe('saveArticle feed tags', () => {
         contentText: 'Body',
         contentStrippedHash: 'stripped-hash',
         contentHash: 'hash',
-        mediaFound: false,
+        media: null,
         language: 'en',
         published: new Date('2026-07-01T00:00:00Z')
       },
@@ -139,7 +139,7 @@ describe('saveArticle feed tags', () => {
         contentOriginal: '<p>Body</p>',
         contentStripped: 'Body',
         contentHash: 'hash',
-        mediaFound: false,
+        media: null,
         language: 'en',
         published: new Date('2026-07-01T00:00:00Z')
       },

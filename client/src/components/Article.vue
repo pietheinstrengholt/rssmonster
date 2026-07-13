@@ -42,7 +42,7 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
             <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
@@ -57,10 +57,12 @@
             </template>
           </div>
         </div>
-        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="showMinimalContent" />
+        <ArticleMedia v-if="shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :title="title" @media-clicked="articleClicked" />
+        <ArticleContent :viewMode="$store.data.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="showMinimalContent" />
       </div>
     </div>
-    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage" :showMinimalContent="shouldShowMinimalContent" />
+    <ArticleMedia v-if="isMinimalView && shouldRenderMedia" :media="media" :articleUrl="url" :imageUrl="imageUrl" :title="title" @media-clicked="articleClicked" />
+    <ArticleContent v-if="isMinimalView" :viewMode="$store.data.currentSelection.viewMode" :content="displayContent" :imageUrl="imageUrl" :contentSummaryBullets="contentSummaryBullets" :visibleBulletCount="visibleBulletCount" :shouldShowImage="shouldShowImage && !hasVideoMedia" :showMinimalContent="shouldShowMinimalContent" />
     <div class="article-divider"></div>
   </div>
 </template>
@@ -81,6 +83,7 @@ import ArticleHeader from './articles/ArticleHeader.vue';
 import ArticleMeta from './articles/ArticleMeta.vue';
 import ArticleTagsScores from './articles/ArticleTagsScores.vue';
 import ArticleContent from './articles/ArticleContent.vue';
+import ArticleMedia from './articles/ArticleMedia.vue';
 import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
@@ -92,7 +95,7 @@ const TRUSTED_FEED_THRESHOLD = 0.85;
 
 export default {
   inheritAttrs: false,
-  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleActionsMenu },
+  components: { ArticleHeader, ArticleMeta, ArticleTagsScores, ArticleContent, ArticleMedia, ArticleActionsMenu },
   emits: ['update-favorite', 'update-clicked', 'toggle-read-status', 'minimal-article-opened', 'minimal-article-closed', 'toggle-minimal-read-status', 'cluster-articles-loaded', 'cluster-articles-collapsed', 'duplicate-articles-loaded', 'duplicate-articles-collapsed', 'article-not-interested'],
   props: {
     id: { type: [Number, String], required: true },
@@ -233,6 +236,19 @@ export default {
     shouldShowImage() {
       if (!this.isUnread || !this.predictedAffinity) return true;
       return this.predictedAffinity !== 'cold';
+    },
+    // Returns whether normalized video metadata is available for this article.
+    hasVideoMedia() {
+      return this.media && typeof this.media === 'object' && this.media.type === 'video';
+    },
+    // Returns whether the media poster belongs in the active article view.
+    shouldRenderMedia() {
+      if (!this.hasVideoMedia) return false;
+
+      const viewMode = this.$store.data.currentSelection.viewMode;
+      return viewMode === 'full' ||
+        viewMode === 'reader' ||
+        (viewMode === 'minimal' && this.shouldShowMinimalContent);
     },
     // Returns compact relevance signals for the current article.
     articleSignals() {
@@ -835,6 +851,10 @@ export default {
   color: var(--article-hot-icon);
 }
 
+.media-video-icon {
+  color: #dc2626;
+}
+
 .cluster-icon {
   color: var(--article-hot-icon);
 }
@@ -843,6 +863,16 @@ export default {
   color: var(--article-hot-icon);
   font-size: 0.85rem;
   opacity: 0.8;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root[data-theme='dark'] .media-video-icon {
+    color: #991b1b;
+  }
+}
+
+:root[data-theme='dark'] .media-video-icon {
+  color: #991b1b;
 }
 
 .article-card .article-body {
@@ -1673,6 +1703,14 @@ span.similar-badge {
   border-bottom: 1px solid var(--article-border, var(--border-subtle, #E5E7EB));
 }
 
+.article-list-card > .article-media {
+  width: auto;
+  max-width: none;
+  margin: 0;
+  padding: 10px 16px 0 70px;
+  background: var(--bg-page);
+}
+
 @media (max-width: 766px) and (orientation: portrait) {
   .mobile-swipe-shell {
     position: relative;
@@ -1728,6 +1766,11 @@ span.similar-badge {
   }
 
   .article-list-card .article-content-wrapper {
+    padding-left: 40px;
+    padding-right: 10px;
+  }
+
+  .article-list-card > .article-media {
     padding-left: 40px;
     padding-right: 10px;
   }
@@ -2081,6 +2124,10 @@ span.similar-badge {
   .article-list-card .article-content-wrapper {
     background: var(--dark-bg-page, var(--dark-page-surface));
     border-bottom-color: var(--dark-border, var(--border-color));
+  }
+
+  .article-list-card > .article-media {
+    background: var(--dark-bg-page, var(--dark-page-surface));
   }
 }
 </style>
