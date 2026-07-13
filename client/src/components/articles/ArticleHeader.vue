@@ -5,13 +5,14 @@
         <BootstrapIcon v-if="isBlueSkyArticle" icon="bluesky" class="article-kind-icon bluesky-icon" />
         <BootstrapIcon v-if="isRedditArticle" icon="reddit" class="article-kind-icon reddit-icon" />
         <BootstrapIcon v-if="isGitHubArticle" icon="github" class="article-kind-icon github-icon" />
+        <BootstrapIcon v-if="isMastodonArticle" icon="mastodon" class="article-kind-icon mastodon-icon" />
         <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
         <template v-else>
           <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" />
           <BootstrapIcon v-if="favoriteInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
           <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
-          <BootstrapIcon v-if="hasInterestScore && !isBlueSkyArticle && !isRedditArticle && !isGitHubArticle" icon="award-fill" class="article-kind-icon recommendation-icon" />
-          <BootstrapIcon v-else-if="isGroupedView && clusterCountTotal > 1 && !isBlueSkyArticle && !isRedditArticle && !isGitHubArticle" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
+          <BootstrapIcon v-if="hasInterestScore && !isBlueSkyArticle && !isRedditArticle && !isGitHubArticle && !isMastodonArticle" icon="award-fill" class="article-kind-icon recommendation-icon" />
+          <BootstrapIcon v-else-if="isGroupedView && clusterCountTotal > 1 && !isBlueSkyArticle && !isRedditArticle && !isGitHubArticle && !isMastodonArticle" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
         </template>
         <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </div>
@@ -50,6 +51,10 @@ export default {
     // Returns whether the article links to GitHub.
     isGitHubArticle() {
       return /^https?:\/\/(?:[^/]+\.)?github\.com(?:\/|$)/i.test(this.url);
+    },
+    // Returns whether the article links to Mastodon Social.
+    isMastodonArticle() {
+      return /^https?:\/\/(?:[^/]+\.)?mastodon\.social(?:\/|$)/i.test(this.url);
     },
     // Returns whether the article is displayed in the reader layout.
     isReaderMode() {

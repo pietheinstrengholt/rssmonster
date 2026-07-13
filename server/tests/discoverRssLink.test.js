@@ -77,7 +77,7 @@ describe('discoverRssLink', () => {
         return {
           ok: true,
           url: rssUrl,
-          text: async () => '<rss version="2.0"></rss>'
+          text: async () => '<rss version="2.0"><channel><title>Bluesky</title></channel></rss>'
         };
       }
 
@@ -101,7 +101,7 @@ describe('discoverRssLink', () => {
         return {
           ok: true,
           url: rssUrl,
-          text: async () => '<rss version="2.0"></rss>'
+          text: async () => '<rss version="2.0"><channel><title>Mastodon</title></channel></rss>'
         };
       }
 

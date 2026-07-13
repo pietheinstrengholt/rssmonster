@@ -68,6 +68,7 @@ export const bootstrapIconNames = [
   'lightning-charge',
   'lightning-charge-fill',
   'link-45deg',
+  'mastodon',
   'megaphone',
   'megaphone-fill',
   'mortarboard-fill',

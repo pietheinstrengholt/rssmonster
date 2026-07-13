@@ -128,3 +128,29 @@ describe('ArticleHeader GitHub icon', () => {
     expect(icons).not.toContain('megaphone-fill');
   });
 });
+
+describe('ArticleHeader Mastodon icon', () => {
+  it.each([
+    'https://mastodon.social/@example/123',
+    'http://www.mastodon.social/@example/123'
+  ])('shows the Mastodon icon without recommendation icons for %s', (url) => {
+    const wrapper = mountArticleHeader({ url });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('mastodon');
+    expect(wrapper.find('.mastodon-icon').exists()).toBe(true);
+    expect(icons).not.toContain('award-fill');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+
+  it('suppresses the grouped-feed icon when no interest score is present', () => {
+    const wrapper = mountArticleHeader({
+      url: 'https://mastodon.social/@example/123',
+      hasInterestScore: false
+    });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('mastodon');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+});

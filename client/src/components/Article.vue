@@ -867,6 +867,10 @@ export default {
   color: #000;
 }
 
+.mastodon-icon {
+  color: #6364ff;
+}
+
 .cluster-icon {
   color: var(--article-hot-icon);
 }
@@ -893,6 +897,10 @@ export default {
   :root[data-theme='dark'] .github-icon {
     color: #fff;
   }
+
+  :root[data-theme='dark'] .mastodon-icon {
+    color: #4547d9;
+  }
 }
 
 :root[data-theme='dark'] .media-video-icon {
@@ -909,6 +917,10 @@ export default {
 
 :root[data-theme='dark'] .github-icon {
   color: #fff;
+}
+
+:root[data-theme='dark'] .mastodon-icon {
+  color: #4547d9;
 }
 
 .article-card .article-body {
