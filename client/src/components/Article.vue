@@ -888,6 +888,14 @@ export default {
   color: #6364ff;
 }
 
+.medium-icon {
+  color: #000;
+}
+
+.podcast-icon {
+  color: #1e40af;
+}
+
 .cluster-icon {
   color: var(--article-hot-icon);
 }
@@ -918,6 +926,14 @@ export default {
   :root[data-theme='dark'] .mastodon-icon {
     color: #4547d9;
   }
+
+  :root[data-theme='dark'] .medium-icon {
+    color: #fff;
+  }
+
+  :root[data-theme='dark'] .podcast-icon {
+    color: #1e3a8a;
+  }
 }
 
 :root[data-theme='dark'] .media-video-icon {
@@ -938,6 +954,14 @@ export default {
 
 :root[data-theme='dark'] .mastodon-icon {
   color: #4547d9;
+}
+
+:root[data-theme='dark'] .medium-icon {
+  color: #fff;
+}
+
+:root[data-theme='dark'] .podcast-icon {
+  color: #1e3a8a;
 }
 
 .article-card .article-body {

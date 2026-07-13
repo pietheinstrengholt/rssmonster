@@ -154,3 +154,68 @@ describe('ArticleHeader Mastodon icon', () => {
     expect(icons).not.toContain('megaphone-fill');
   });
 });
+
+describe('ArticleHeader Medium icon', () => {
+  it.each([
+    'https://medium.com/@example/article-123',
+    'http://engineering.medium.com/article-123'
+  ])('shows the Medium icon without recommendation icons for %s', (url) => {
+    const wrapper = mountArticleHeader({ url });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('medium');
+    expect(wrapper.find('.medium-icon').exists()).toBe(true);
+    expect(icons).not.toContain('award-fill');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+
+  it('suppresses the grouped-feed icon when no interest score is present', () => {
+    const wrapper = mountArticleHeader({
+      url: 'https://medium.com/@example/article-123',
+      hasInterestScore: false
+    });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('medium');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+});
+
+describe('ArticleHeader podcast icon', () => {
+  it.each([
+    'https://anchor.fm/example/episodes/episode-123',
+    'https://open.spotify.com/episode/123',
+    'https://open.spotify.com/show/123',
+    'https://podcasters.spotify.com/pod/show/example/episodes/episode-123',
+    'https://www.buzzsprout.com/123/456-episode',
+    'https://example.podbean.com/e/episode-123/',
+    'https://share.transistor.fm/s/123'
+  ])('shows the podcast icon without recommendation icons for %s', (url) => {
+    const wrapper = mountArticleHeader({ url });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('mic-fill');
+    expect(wrapper.find('.podcast-icon').exists()).toBe(true);
+    expect(icons).not.toContain('award-fill');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+
+  it('suppresses the grouped-feed icon when no interest score is present', () => {
+    const wrapper = mountArticleHeader({
+      url: 'https://example.podbean.com/e/episode-123/',
+      hasInterestScore: false
+    });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('mic-fill');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+
+  it('does not treat Spotify music links as podcast articles', () => {
+    const wrapper = mountArticleHeader({ url: 'https://open.spotify.com/track/123' });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).not.toContain('mic-fill');
+    expect(icons).toContain('award-fill');
+  });
+});
