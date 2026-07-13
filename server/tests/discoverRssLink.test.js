@@ -39,6 +39,33 @@ describe('discoverRssLink', () => {
     expect(fetchURL).toHaveBeenCalledWith(rssUrl, 2);
   });
 
+  it('returns the parsed direct feed without fetching it twice', async () => {
+    fetchURL.mockReset();
+    const rssUrl = 'https://www.reddit.com/.rss';
+
+    fetchURL.mockResolvedValue({
+      ok: true,
+      url: rssUrl,
+      headers: {
+        get: (name) => (name === 'content-type' ? 'application/atom+xml; charset=utf-8' : null)
+      },
+      text: async () => '<feed xmlns="http://www.w3.org/2005/Atom"><title>Reddit</title></feed>'
+    });
+
+    const result = await discoverRssLink(
+      rssUrl,
+      undefined,
+      { includeParsedFeed: true }
+    );
+
+    expect(result.url).toBe(rssUrl);
+    expect(result.parsedFeed).toMatchObject({
+      format: 'atom',
+      feed: { title: 'Reddit' }
+    });
+    expect(fetchURL).toHaveBeenCalledTimes(1);
+  });
+
   it('discovers Bluesky profile RSS by appending /rss', async () => {
     fetchURL.mockReset();
     const profileUrl =

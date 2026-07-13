@@ -31,6 +31,11 @@ export const process = async (feedUrl) => {
     return feed; // return object, NOT string
 
   } catch (err) {
+    // Preserve errors that were deliberately classified above.
+    if (err?.code) {
+      throw err;
+    }
+
     // Suppress feedsmith stack trace
     if (err?.message === 'Unrecognized feed format') {
       const cleanError = new Error('Invalid or unsupported feed format');

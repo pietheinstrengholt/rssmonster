@@ -384,19 +384,23 @@ const performCrawl = async (userId = null, options = {}) => {
 
       //discover RssLink
       const discoveryInputUrl = feed.url;
-      const discoveryResult = await discoverRssLink.discoverRssLink(discoveryInputUrl, feed);
+      const discoveryResult = await discoverRssLink.discoverRssLink(
+        discoveryInputUrl,
+        feed,
+        { includeParsedFeed: true }
+      );
 
       // If Cloudflare blocks discovery, fall back to the original URL so the parser can try it directly
       const url = typeof discoveryResult === 'string'
         ? discoveryResult
-        : (discoveryResult?.cloudflare ? discoveryResult.url : undefined);
+        : discoveryResult?.url;
 
       if (!url) {
         throw new Error('Unable to discover RSS/Atom URL');
       }
 
       // parse the feed using feedsmith
-      const feedObject = await parseFeed.process(url);
+      const feedObject = discoveryResult?.parsedFeed || await parseFeed.process(url);
 
       // Sanity check
       if (!feedObject) {

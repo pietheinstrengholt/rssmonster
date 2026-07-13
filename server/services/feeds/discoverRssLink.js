@@ -90,30 +90,22 @@ const registerDiscoveryError = async (feed, message) => {
 // Checks whether a response content type is likely to contain feed XML.
 const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
 
-// Checks whether a response body starts with recognizable feed XML markers.
-const isLikelyFeedBody = (body = "") => {
-  const head = String(body).trim().slice(0, 500).toLowerCase();
-  return (
-    head.startsWith('<?xml') ||
-    head.includes('<rss') ||
-    head.includes('<feed')
-  );
-};
-
-// Verifies feed validity by asking feedsmith to parse the response body.
-const canParseFeed = (body) => {
+// Parses a response body once and returns null when it is not a valid feed.
+const parseFeedBody = (body) => {
   try {
-    parseFeed(String(body));
-    return true;
+    return parseFeed(String(body));
   } catch {
-    return false;
+    return null;
   }
 };
 
-// Combines cheap feed markers and parser validation into a single feed-body check.
-const isValidFeedBody = (body) => {
-  if (!body) return false;
-  return isLikelyFeedBody(body) || canParseFeed(body);
+// Returns either the legacy URL string or the URL with its already-parsed feed.
+const formatDiscoveryResult = (url, parsedFeed, options) => {
+  if (options?.includeParsedFeed) {
+    return { url, parsedFeed };
+  }
+
+  return url;
 };
 
 // Persists a newly discovered feed URL when it differs from the current one.
@@ -148,7 +140,7 @@ export const fetchURL = async (url, retries = 2) =>
   fetchURLInternal(url, retries);
 
 // Attempts RSS discovery from direct feeds, HTML link tags, social URL conventions, and common fallback paths.
-export const discoverRssLink = async (url, feed) => {
+export const discoverRssLink = async (url, feed, options = {}) => {
   try {
     if (!isURL(url)) {
       await registerDiscoveryError(feed, 'Invalid URL');
@@ -201,14 +193,15 @@ export const discoverRssLink = async (url, feed) => {
     if (initialResponse?.ok) {
       const ct = initialResponse.headers.get('content-type') || '';
       const body = await initialResponse.text();
-      
-      if (isLikelyFeedContentType(ct)) {
-        // Don't immediately accept; validate by parsing to enable retry fallback on parse failures.
-        if (isValidFeedBody(body)) {
-          await persistDiscoveredUrl(feed, responseUrl);
-          return responseUrl;
-        }
-      } else {
+
+      // Parse before inspecting HTML because some feeds are served with a generic content type.
+      const parsedFeed = body ? parseFeedBody(body) : null;
+      if (parsedFeed) {
+        await persistDiscoveredUrl(feed, responseUrl);
+        return formatDiscoveryResult(responseUrl, parsedFeed, options);
+      }
+
+      if (!isLikelyFeedContentType(ct)) {
         if (body) {
           const $ = load(String(body));
           
@@ -276,11 +269,12 @@ export const discoverRssLink = async (url, feed) => {
         // Read body once
         const body = await candidateResponse.text();
         
-        // Check if it's a valid feed
-        if (isValidFeedBody(body)) {
+        // Parse the candidate here so callers do not need to fetch a valid feed again.
+        const parsedFeed = parseFeedBody(body);
+        if (parsedFeed) {
           const discoveredUrl = candidateResponse.url || candidate;
           await persistDiscoveredUrl(feed, discoveredUrl);
-          return discoveredUrl;
+          return formatDiscoveryResult(discoveredUrl, parsedFeed, options);
         }
         
         // If not a feed, check for meta refresh redirect
@@ -299,10 +293,11 @@ export const discoverRssLink = async (url, feed) => {
                   const metaResponse = await fetchURL(resolvedMetaUrl);
                   if (metaResponse?.ok) {
                     const metaBody = await metaResponse.text();
-                    if (isValidFeedBody(metaBody)) {
+                    const parsedFeed = parseFeedBody(metaBody);
+                    if (parsedFeed) {
                       const discoveredUrl = metaResponse.url || resolvedMetaUrl;
                       await persistDiscoveredUrl(feed, discoveredUrl);
-                      return discoveredUrl;
+                      return formatDiscoveryResult(discoveredUrl, parsedFeed, options);
                     }
                   }
                 } catch {

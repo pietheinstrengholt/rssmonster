@@ -330,7 +330,11 @@ const validateFeed = async (req, res, _next) => {
 
     const categoryId = req.body.categoryId;
 
-    const discoveryResult = await discoverRssLink.discoverRssLink(req.body.url);
+    const discoveryResult = await discoverRssLink.discoverRssLink(
+      req.body.url,
+      undefined,
+      { includeParsedFeed: true }
+    );
     console.log("Discovery result:", discoveryResult);
 
     // Cloudflare bot protection detected — inform front end
@@ -342,7 +346,9 @@ const validateFeed = async (req, res, _next) => {
       });
     }
 
-    const url = typeof discoveryResult === 'string' ? discoveryResult : undefined;
+    const url = typeof discoveryResult === 'string'
+      ? discoveryResult
+      : discoveryResult?.url;
 
     if (typeof url === 'undefined') {
       return res.status(400).json({
@@ -356,7 +362,7 @@ const validateFeed = async (req, res, _next) => {
       });
     }
 
-    const feedItem = await parseFeed.process(url);
+    const feedItem = discoveryResult?.parsedFeed || await parseFeed.process(url);
     if (!feedItem) {
       return res.status(400).json({
         error_msg: 'Feed has no meta attributes'
