@@ -120,20 +120,26 @@ const processArticle = async (
       }
     }
 
-    // If the body contains no text, append the description while preserving media HTML.
-    if (contentStripped && !contentText && fields.description) {
-      const descriptionText = load(String(fields.description))
+    // Extract visible description text for body fallback and stable identity hashing.
+    const descriptionText = fields.description
+      ? load(String(fields.description))
         .text()
         .replace(/\s+/g, ' ')
-        .trim();
+        .trim()
+      : null;
 
-      if (descriptionText) {
-        contentText = descriptionText;
-        const $ = load(contentStripped);
-        $('body').append($('<p>').attr('id', 'description').text(descriptionText));
-        contentStripped = $('body').html();
-        contentStrippedHash = hashVisibleText(contentText);
-      }
+    // If the body contains no text, append the description while preserving media HTML.
+    if (contentStripped && !contentText && descriptionText) {
+      contentText = descriptionText;
+      const $ = load(contentStripped);
+      $('body').append($('<p>').attr('id', 'description').text(descriptionText));
+      contentStripped = $('body').html();
+      contentStrippedHash = hashVisibleText(contentText);
+    }
+
+    // Description-only entries retain separate fields but still receive visible-text identity.
+    if (!contentOriginal && descriptionText) {
+      contentStrippedHash = hashVisibleText(descriptionText);
     }
 
     // Generate a useful title for feeds whose entries do not provide one.

@@ -28,7 +28,8 @@ const populateArticleHashes = article => {
   if (!article.contentStrippedHash) {
     article.contentStrippedHash = hashVisibleText(article.contentText);
   }
-  if (!article.contentHash) {
+  // Missing source content must remain null so description-only articles do not share an empty hash.
+  if (!article.contentHash && article.contentOriginal) {
     article.contentHash = hashOriginalContent(article.contentOriginal);
   }
 };

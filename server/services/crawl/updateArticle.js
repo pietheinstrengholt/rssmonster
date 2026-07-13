@@ -82,9 +82,12 @@ async function updateArticle(feed, data) {
   const hasIncomingContentOriginal = hasIncomingValue(data.contentOriginal);
   const hasIncomingContentStripped = hasIncomingValue(data.contentStripped);
   const hasIncomingPublished = hasIncomingValue(data.published);
-  const contentStrippedHash = hasIncomingContentStripped
-    ? data.contentStrippedHash || hashVisibleText(data.contentText)
-    : storedValue(article, 'contentStrippedHash');
+  let contentStrippedHash = storedValue(article, 'contentStrippedHash');
+  if (hasIncomingValue(data.contentStrippedHash)) {
+    contentStrippedHash = data.contentStrippedHash;
+  } else if (hasIncomingContentStripped) {
+    contentStrippedHash = hashVisibleText(data.contentText);
+  }
   const contentHash = hasIncomingContentOriginal
     ? data.contentHash || hashOriginalContent(contentOriginal)
     : storedValue(article, 'contentHash');

@@ -441,6 +441,8 @@ describe('processArticle AI analysis controls', () => {
         contentOriginal: null,
         contentStripped: null,
         contentText: null,
+        contentHash: null,
+        contentStrippedHash: expect.stringMatching(/^[a-f0-9]{64}$/),
         description: '<p>Raw <strong>feed</strong> description</p>'
       }),
       expect.any(Object),
