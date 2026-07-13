@@ -419,6 +419,13 @@ div.infinite-loading-container {
   text-align: center;
 }
 
+@media (orientation: portrait) {
+  #no-more {
+    padding-top: 0;
+    padding-bottom: 0;
+  }
+}
+
 :root[data-theme='dark'] #no-more {
   color: var(--text-inverted);
 }
