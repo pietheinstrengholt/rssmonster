@@ -1,8 +1,6 @@
 import { load } from 'cheerio';
 
-import db from '../../models/index.js';
-
-const { Article } = db;
+import selectLeadImage from './selectLeadImage.js';
 
 const FEED_IMAGE_FIELD_NAMES = ['image', 'banner_image', 'thumbnail'];
 const IMAGE_ATTR_NAMES = [
@@ -13,11 +11,7 @@ const IMAGE_ATTR_NAMES = [
   'srcset',
   'data-srcset'
 ];
-const BAD_IMAGE_PATTERN = /(?:^|[/?&_.=-])(ad|ads|advert|analytics|avatar|badge|blank|button|favicon|feedburner|icon|logo|pixel|profile|spacer|sprite|tracking|tracker|transparent|widget|1x1)(?:[/?&_.=-]|$)/i;
-const TITLE_TOKEN_MIN_LENGTH = 4;
-const TOP_IMAGE_LIMIT = 4;
-const MAX_SCORED_CANDIDATES = 12;
-const DUPLICATE_IMAGE_THRESHOLD = 8;
+const MAX_CANDIDATES_PER_HTML_FRAGMENT = 24;
 
 // This function checks whether an image URL is a usable http/https URL.
 function normalizeImageUrl(value = '', articleUrl = '') {
@@ -75,70 +69,36 @@ function pickFromSrcset(value = '') {
   return candidates[0]?.url || null;
 }
 
-// This function parses an integer-like dimension from an HTML attribute.
+// This function parses an integer-like dimension from feed or HTML metadata.
 function parseDimension(value) {
-  const match = String(value || '').match(/\d+/);
+  const match = String(value ?? '').match(/\d+/);
   return match ? Number(match[0]) : null;
 }
 
-// This function decides whether the dimensions are too small for an article image.
-function isTinyImage(width, height) {
-  if (width !== null && width <= 80) return true;
-  if (height !== null && height <= 80) return true;
-  if (width !== null && height !== null && width * height < 20000) return true;
-
-  return false;
+// This function returns a normalized MIME type when feed metadata provides one.
+function normalizeMimeType(value) {
+  if (typeof value !== 'string' || !value.trim()) return null;
+  const mimeType = value.trim().toLowerCase();
+  return mimeType.startsWith('image/') ? mimeType : null;
 }
 
-// This function catches feed chrome, trackers, icons, and other non-article imagery.
-function isBadImageCandidate(candidate) {
-  const markerText = [
-    candidate.url,
-    candidate.alt,
-    candidate.title,
-    candidate.className,
-    candidate.id
-  ]
-    .filter(Boolean)
-    .join(' ');
+// This function normalizes one discovered feed image into a selection candidate.
+function createFeedCandidate(value, articleUrl, source, mimeType = null) {
+  const url = normalizeImageUrl(readUrlValue(value), articleUrl);
+  if (!url) return null;
 
-  if (BAD_IMAGE_PATTERN.test(markerText)) return true;
-  return isTinyImage(candidate.width, candidate.height);
-}
+  const metadata = value && typeof value === 'object' ? value : {};
 
-// This function calculates how close an image ratio is to common article image ratios.
-function scoreAspectRatio(width, height) {
-  if (!width || !height) return 0;
-
-  const ratio = width / height;
-  const targets = [16 / 9, 4 / 3, 3 / 2];
-  const nearestDistance = Math.min(...targets.map(target => Math.abs(target - ratio)));
-
-  if (nearestDistance <= 0.15) return 35;
-  if (nearestDistance <= 0.35) return 18;
-  if (ratio >= 0.7 && ratio <= 2.4) return 8;
-
-  return -25;
-}
-
-// This function extracts useful title/entity terms for nearby text matching.
-function titleTokens(title = '') {
-  return String(title)
-    .toLowerCase()
-    .replace(/[^\p{L}\p{N}\s-]/gu, ' ')
-    .split(/\s+/)
-    .filter(token => token.length >= TITLE_TOKEN_MIN_LENGTH);
-}
-
-// This function scores whether nearby text relates to the article title.
-function scoreNearbyText(text = '', title = '') {
-  const tokens = titleTokens(title);
-  if (!tokens.length || !text) return 0;
-
-  const normalizedText = text.toLowerCase();
-  const matchCount = tokens.filter(token => normalizedText.includes(token)).length;
-
-  return Math.min(matchCount * 12, 36);
+  return {
+    url,
+    width: parseDimension(metadata.width),
+    height: parseDimension(metadata.height),
+    mimeType: normalizeMimeType(mimeType || metadata.type || metadata.mimeType),
+    source,
+    position: null,
+    alt: typeof metadata.alt === 'string' ? metadata.alt : null,
+    className: null
+  };
 }
 
 // This function extracts candidate images from one HTML fragment.
@@ -149,7 +109,6 @@ function extractHtmlCandidates(html, articleUrl, source) {
   const candidates = [];
 
   $('img').each((index, el) => {
-    const image = $(el);
     const attrs = el.attribs || {};
     let rawUrl = null;
 
@@ -166,22 +125,16 @@ function extractHtmlCandidates(html, articleUrl, source) {
     const url = normalizeImageUrl(rawUrl, articleUrl);
     if (!url) return;
 
-    const candidate = {
+    candidates.push({
       url,
       source,
-      index,
+      position: index,
       width: parseDimension(attrs.width),
       height: parseDimension(attrs.height),
-      alt: attrs.alt || '',
-      title: attrs.title || '',
-      className: attrs.class || '',
-      id: attrs.id || '',
-      nearbyText: image.closest('figure, article, section, div, p').text().replace(/\s+/g, ' ').trim()
-    };
-
-    if (!isBadImageCandidate(candidate)) {
-      candidates.push(candidate);
-    }
+      mimeType: normalizeMimeType(attrs.type),
+      alt: attrs.alt || attrs.title || null,
+      className: [attrs.class, attrs.id].filter(Boolean).join(' ') || null
+    });
   });
 
   return candidates;
@@ -213,99 +166,41 @@ function mediaThumbnails(media = {}) {
   ];
 }
 
-// This function detects the feed-provided featured image before article HTML fallbacks.
-function detectFeedProvidedImage(entry = {}, articleUrl = '') {
+// This function discovers feed-provided image candidates in the existing source order.
+function detectFeedProvidedImages(entry = {}, articleUrl = '') {
   const media = entry.media || {};
-  const mediaContentImage = mediaContents(media)
-    .find(content => {
-      const type = String(content?.type || '').toLowerCase();
-      const medium = String(content?.medium || '').toLowerCase();
+  const candidates = [];
 
-      return content?.url && (type.startsWith('image/') || medium === 'image');
+  mediaContents(media).forEach(content => {
+    const type = normalizeMimeType(content?.type);
+    const medium = String(content?.medium || '').toLowerCase();
+    if (!type && medium !== 'image') return;
+
+    const candidate = createFeedCandidate(content, articleUrl, 'media-content', type);
+    if (candidate) candidates.push(candidate);
+  });
+
+  mediaThumbnails(media).forEach(thumbnail => {
+    const candidate = createFeedCandidate(thumbnail, articleUrl, 'media-thumbnail');
+    if (candidate) candidates.push(candidate);
+  });
+
+  if (Array.isArray(entry.enclosures)) {
+    entry.enclosures.forEach(enclosure => {
+      const type = normalizeMimeType(enclosure?.type);
+      if (!type) return;
+
+      const candidate = createFeedCandidate(enclosure, articleUrl, 'enclosure', type);
+      if (candidate) candidates.push(candidate);
     });
-  const mediaContentUrl = normalizeImageUrl(mediaContentImage?.url, articleUrl);
-  if (mediaContentUrl && !BAD_IMAGE_PATTERN.test(mediaContentUrl)) return mediaContentUrl;
-
-  const thumbnailUrl = mediaThumbnails(media)
-    .map(thumbnail => normalizeImageUrl(thumbnail?.url, articleUrl))
-    .find(url => url && !BAD_IMAGE_PATTERN.test(url));
-  if (thumbnailUrl) return thumbnailUrl;
-
-  const imageEnclosure = Array.isArray(entry.enclosures)
-    ? entry.enclosures.find(enclosure =>
-      enclosure?.url &&
-        typeof enclosure.type === 'string' &&
-        enclosure.type.toLowerCase().startsWith('image/')
-    )
-    : null;
-  const enclosureUrl = normalizeImageUrl(imageEnclosure?.url, articleUrl);
-  if (enclosureUrl && !BAD_IMAGE_PATTERN.test(enclosureUrl)) return enclosureUrl;
-
-  for (const fieldName of FEED_IMAGE_FIELD_NAMES) {
-    const fieldUrl = normalizeImageUrl(readUrlValue(entry[fieldName]), articleUrl);
-    if (fieldUrl && !BAD_IMAGE_PATTERN.test(fieldUrl)) return fieldUrl;
   }
 
-  return null;
-}
+  for (const fieldName of FEED_IMAGE_FIELD_NAMES) {
+    const candidate = createFeedCandidate(entry[fieldName], articleUrl, 'publisher');
+    if (candidate) candidates.push(candidate);
+  }
 
-// This function prefers a meaningful image near the top of cleaned article content.
-function detectTopArticleImage(contentStripped, articleUrl) {
-  return extractHtmlCandidates(contentStripped, articleUrl, 'contentStripped')
-    .slice(0, TOP_IMAGE_LIMIT)
-    .find(candidate => !isBadImageCandidate(candidate))
-    ?.url || null;
-}
-
-// This function counts exact image reuse within the same feed when context is available.
-async function countFeedImageReuse(candidate, feed) {
-  if (!feed?.id || !feed?.userId || !candidate?.url) return 0;
-
-  return Article.count({
-    where: {
-      feedId: feed.id,
-      userId: feed.userId,
-      imageUrl: candidate.url
-    }
-  });
-}
-
-// This function assigns a fallback score to a possible body image.
-async function scoreBodyCandidate(candidate, { feed, title }) {
-  const area = candidate.width && candidate.height
-    ? candidate.width * candidate.height
-    : 0;
-  const reuseCount = await countFeedImageReuse(candidate, feed);
-
-  let score = 0;
-  if (area >= 90000) score += Math.min(area / 10000, 80);
-  if (candidate.width && candidate.height) score += scoreAspectRatio(candidate.width, candidate.height);
-  score += Math.max(40 - candidate.index * 8, 0);
-  score += scoreNearbyText(candidate.nearbyText, title);
-  if (reuseCount >= DUPLICATE_IMAGE_THRESHOLD) score -= 70;
-
-  return {
-    ...candidate,
-    score
-  };
-}
-
-// This function chooses the best scored image from article body fallback candidates.
-async function detectScoredBodyImage({ content, description, articleUrl, feed, title }) {
-  const candidates = [
-    ...extractHtmlCandidates(content, articleUrl, 'content'),
-    ...extractHtmlCandidates(description, articleUrl, 'description')
-  ].slice(0, MAX_SCORED_CANDIDATES);
-
-  if (!candidates.length) return null;
-
-  const scoredCandidates = await Promise.all(
-    candidates.map(candidate => scoreBodyCandidate(candidate, { feed, title }))
-  );
-
-  scoredCandidates.sort((a, b) => b.score - a.score || a.index - b.index);
-
-  return scoredCandidates[0]?.score > 0 ? scoredCandidates[0].url : null;
+  return candidates;
 }
 
 // This function detects the best article image using feed metadata, cleaned content, and body fallback.
@@ -314,27 +209,22 @@ export default async function detectArticleImage({
   articleUrl,
   contentStripped,
   content,
-  description,
-  feed,
-  title
+  description
 } = {}) {
-  const feedImage = detectFeedProvidedImage(entry, articleUrl);
-  if (feedImage) return feedImage;
+  const candidates = [
+    ...detectFeedProvidedImages(entry, articleUrl),
+    ...extractHtmlCandidates(contentStripped, articleUrl, 'content')
+      .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),
+    ...extractHtmlCandidates(content, articleUrl, 'content')
+      .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),
+    ...extractHtmlCandidates(description, articleUrl, 'description')
+      .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT)
+  ];
 
-  const topArticleImage = detectTopArticleImage(contentStripped, articleUrl);
-  if (topArticleImage) return topArticleImage;
-
-  return detectScoredBodyImage({
-    content,
-    description,
-    articleUrl,
-    feed,
-    title
-  });
+  return selectLeadImage(candidates);
 }
 
 export {
-  detectFeedProvidedImage,
-  detectTopArticleImage,
-  detectScoredBodyImage
+  detectFeedProvidedImages,
+  extractHtmlCandidates
 };

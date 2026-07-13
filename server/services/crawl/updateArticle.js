@@ -52,6 +52,10 @@ const createSourceFingerprint = ({
   description,
   url,
   imageUrl,
+  imageWidth,
+  imageHeight,
+  imageMimeType,
+  imageSource,
   media,
   published
 }) => hashValue(JSON.stringify([
@@ -60,6 +64,10 @@ const createSourceFingerprint = ({
   description ?? null,
   url ?? null,
   imageUrl ?? null,
+  imageWidth ?? null,
+  imageHeight ?? null,
+  imageMimeType ?? null,
+  imageSource ?? null,
   stableMedia(media),
   normalizeDate(published)
 ]));
@@ -102,10 +110,33 @@ async function updateArticle(feed, data) {
   const contentHash = hasIncomingContentOriginal
     ? data.contentHash || hashOriginalContent(contentOriginal)
     : storedValue(article, 'contentHash');
+  const incomingLeadImage = typeof data.leadImage === 'string'
+    ? { url: data.leadImage }
+    : data.leadImage;
+  const storedLeadImage = {
+    url: storedValue(article, 'imageUrl'),
+    width: storedValue(article, 'imageWidth'),
+    height: storedValue(article, 'imageHeight'),
+    mimeType: storedValue(article, 'imageMimeType'),
+    source: storedValue(article, 'imageSource')
+  };
+  const selectedLeadImage = hasIncomingValue(incomingLeadImage?.url)
+    ? {
+        url: incomingLeadImage.url,
+        width: incomingLeadImage.width ?? null,
+        height: incomingLeadImage.height ?? null,
+        mimeType: incomingLeadImage.mimeType || null,
+        source: incomingLeadImage.source || null
+      }
+    : storedLeadImage;
   const updateValues = {
     media: preferIncomingValue(data.media, storedValue(article, 'media')),
     url: data.link,
-    imageUrl: preferIncomingValue(data.leadImage, storedValue(article, 'imageUrl')),
+    imageUrl: selectedLeadImage.url,
+    imageWidth: selectedLeadImage.width,
+    imageHeight: selectedLeadImage.height,
+    imageMimeType: selectedLeadImage.mimeType,
+    imageSource: selectedLeadImage.source,
     title: preferIncomingValue(data.title, storedValue(article, 'title')),
     author: preferIncomingValue(data.author, storedValue(article, 'author')),
     description: preferIncomingValue(data.description, storedValue(article, 'description')),
@@ -132,6 +163,10 @@ async function updateArticle(feed, data) {
     description: storedValue(article, 'description'),
     url: storedValue(article, 'url'),
     imageUrl: storedValue(article, 'imageUrl'),
+    imageWidth: storedValue(article, 'imageWidth'),
+    imageHeight: storedValue(article, 'imageHeight'),
+    imageMimeType: storedValue(article, 'imageMimeType'),
+    imageSource: storedValue(article, 'imageSource'),
     media: storedValue(article, 'media'),
     published: storedValue(article, 'published')
   });

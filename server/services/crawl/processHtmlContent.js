@@ -4,6 +4,7 @@ import hotlink from '../../controllers/hotlink.js';
 import normalizeUrl from './normalizeUrl.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import cleanupHtmlContent from './cleanupHtmlContent.js';
+import normalizeHtmlUrls from './normalizeHtmlUrls.js';
 import sanitizeHtmlContent from './sanitizeHtmlContent.js';
 import removeKnownShortcodes from './removeKnownShortcodes.js';
 import { hashOriginalContent, hashVisibleText } from '../../utils/articleContentHashes.js';
@@ -97,16 +98,15 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
     const $ = load(contentStripped);
 
     cleanupHtmlContent($);
+    normalizeHtmlUrls($, entryLink);
 
     // Execute hotlink feature by collecting all the links in each RSS post
     // https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
-    let domain;
+    let articleHostname = null;
     try {
       if (!entryLink) return;
-      domain = new URL(entryLink).hostname;
-    } catch {
-      domain = entryLink;
-    }
+      articleHostname = new URL(entryLink).hostname;
+    } catch {}
 
     const hotlinkUrls = [];
 
@@ -114,16 +114,20 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
     $('a[href]').each((_, el) => {
       const href = $(el).attr('href');
 
-      if (
-        href &&
-        !href.includes(domain) &&
-        (href.startsWith('http://') || href.startsWith('https://'))
-      ) {
+      try {
+        const parsedHref = new URL(href);
+        if (
+          !['http:', 'https:'].includes(parsedHref.protocol) ||
+          (articleHostname && parsedHref.hostname === articleHostname)
+        ) {
+          return;
+        }
+
         // Normalize identity noise while preserving meaningful query parameters.
-        const cleanUrl = normalizeUrl(href);
+        const cleanUrl = normalizeUrl(parsedHref.href);
 
         hotlinkUrls.push(cleanUrl);
-      }
+      } catch {}
     });
 
     // Queue hotlinks for the feed batch when available; retain per-article writes

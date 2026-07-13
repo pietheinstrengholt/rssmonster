@@ -21,6 +21,9 @@ async function saveArticle(feed, data, analysis, actionResult) {
   try {
     const officialSource = await resolveOfficialSourceForArticle(feed.userId, data.link);
     const normalizedUrl = data.normalizedUrl || normalizeUrl(data.link);
+    const leadImage = typeof data.leadImage === 'string'
+      ? { url: data.leadImage }
+      : data.leadImage;
     article = await Article.create({
       externalId: data.externalId || null,
       externalIdType: data.externalIdType || null,
@@ -32,7 +35,11 @@ async function saveArticle(feed, data, analysis, actionResult) {
       hotInd: actionResult.hotInd,
       url: data.link,
       normalizedUrl,
-      imageUrl: data.leadImage || null,
+      imageUrl: leadImage?.url || null,
+      imageWidth: leadImage?.width ?? null,
+      imageHeight: leadImage?.height ?? null,
+      imageMimeType: leadImage?.mimeType || null,
+      imageSource: leadImage?.source || null,
       media: data.media || null,
       title: data.title,
       author: data.author,

@@ -1,5 +1,5 @@
 <template>
-  <div v-if="viewMode === 'full' || viewMode === 'reader'" class="article-content-wrapper"><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div><div v-if="shouldShowImage && imageUrl && !hasArticleContent && !isImageUrlInContent" class="media-content enclosure"><img :src="imageUrl" alt="Image" /></div></div>
+  <div v-if="viewMode === 'full' || viewMode === 'reader'" class="article-content-wrapper"><div v-if="shouldShowFallbackImage" class="media-content enclosure"><img :src="imageUrl" alt="Image" /></div><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summarized'" class="article-content-wrapper"><p v-if="hasContent" class="article-full-content">{{ stripHTML(content) }}</p></div>
   <div v-else-if="viewMode === 'minimal' && showMinimalContent" class="article-content-wrapper"><div v-if="hasContent" class="article-full-content" v-html="renderedContent"></div></div>
   <div v-else-if="viewMode === 'summaryBullets'" class="article-content-wrapper"><ul v-if="contentSummaryBullets && contentSummaryBullets.length" class="article-summary"><li v-for="(bullet, index) in contentSummaryBullets.slice(0, visibleBulletCount)" :key="index">{{ bullet }}</li></ul><p v-else class="article-full-content">No summary available.</p></div>
@@ -17,8 +17,25 @@ export default {
     renderedContent() { return this.renderArticleEmbeds(this.content); },
     // Returns whether the article body contains readable text.
     hasArticleContent() { const text = String(this.content || '').replace(/<(.|\n)*?>/g, ' ').replace(/&nbsp;/gi, ' ').trim(); return text.length > 0; },
+    // Returns whether the rendered article body contains an image or picture element.
+    hasImageInContent() {
+      const html = String(this.renderedContent || '');
+
+      if (typeof DOMParser !== 'undefined') {
+        try {
+          const document = new DOMParser().parseFromString(html, 'text/html');
+          return Boolean(document.querySelector('img, picture'));
+        } catch {
+          // Fall through to the safe regex check when parsing is unavailable.
+        }
+      }
+
+      return /<(?:img|picture)\b/i.test(html);
+    },
     // Returns whether the fallback image is already present in the article body.
-    isImageUrlInContent() { const encodedUrl = this.imageUrl.replace(/&/g, '&amp;'); return this.content.includes(this.imageUrl) || this.content.includes(encodedUrl); }
+    isImageUrlInContent() { const imageUrl = String(this.imageUrl || ''); const encodedUrl = imageUrl.replace(/&/g, '&amp;'); return this.renderedContent.includes(imageUrl) || this.renderedContent.includes(encodedUrl); },
+    // Returns whether the article needs its image URL rendered as a fallback lead image.
+    shouldShowFallbackImage() { return this.shouldShowImage && Boolean(String(this.imageUrl || '').trim()) && !this.hasImageInContent && !this.isImageUrlInContent; }
   },
   methods: {
     // This function strips HTML for summarized article previews.

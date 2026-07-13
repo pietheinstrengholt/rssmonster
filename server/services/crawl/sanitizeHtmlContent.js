@@ -3,6 +3,7 @@ import {
   ALLOWED_TAGS,
   GLOBAL_ATTRS,
   TAG_ATTRS,
+  TAG_CLASSES,
   URL_ATTRS,
   isSafeUrl
 } from './htmlContentAllowlists.js';
@@ -18,6 +19,25 @@ function allowedAttributesFromAllowlists() {
       ])
     )
   };
+}
+
+// This function keeps only explicitly supported classes on their canonical elements.
+function filterClassAttribute(tagName, attribs) {
+  if (!attribs.class) return attribs;
+
+  const allowedClasses = TAG_CLASSES[tagName] || new Set();
+  const classNames = String(attribs.class)
+    .split(/\s+/)
+    .filter(className => allowedClasses.has(className));
+  const safeAttribs = { ...attribs };
+
+  if (classNames.length > 0) {
+    safeAttribs.class = classNames.join(' ');
+  } else {
+    delete safeAttribs.class;
+  }
+
+  return safeAttribs;
 }
 
 // This function keeps the old behavior for allowed empty non-URL attributes.
@@ -75,7 +95,8 @@ function hardenBlankTargetLinks(tagName, attribs) {
 
 // This function applies custom security transforms beyond sanitize-html defaults.
 function transformTag(tagName, attribs) {
-  const transformed = filterUnsafeUrlAttributes(tagName, attribs);
+  const classFilteredAttribs = filterClassAttribute(tagName, attribs);
+  const transformed = filterUnsafeUrlAttributes(tagName, classFilteredAttribs);
   return hardenBlankTargetLinks(transformed.tagName, transformed.attribs);
 }
 

@@ -170,7 +170,33 @@ export default (sequelize) => {
         type: DataTypes.STRING(64),
         allowNull: false
       },
-      imageUrl: DataTypes.STRING(1024),
+      imageUrl: {
+        type: DataTypes.STRING(1024),
+        allowNull: true
+      },
+      imageWidth: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true
+      },
+      imageHeight: {
+        type: DataTypes.INTEGER.UNSIGNED,
+        allowNull: true
+      },
+      imageMimeType: {
+        type: DataTypes.STRING(100),
+        allowNull: true
+      },
+      imageSource: {
+        type: DataTypes.ENUM(
+          'media-content',
+          'media-thumbnail',
+          'enclosure',
+          'content',
+          'description',
+          'publisher'
+        ),
+        allowNull: true
+      },
       title: {
         type: DataTypes.TEXT,
         allowNull: false

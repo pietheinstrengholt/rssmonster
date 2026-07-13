@@ -68,6 +68,52 @@ describe('crawl content sanitization', () => {
     );
   });
 
+  it('does not collect a normalized same-origin link as a hotlink', () => {
+    const result = processHtmlContent(
+      '<a href="/internal/story">Internal story</a>',
+      null,
+      'https://origin.example/articles/current',
+      feed,
+      'Same-origin link test'
+    );
+
+    expect(result.stripped).toContain('href="https://origin.example/internal/story"');
+    expect(hotlinkSetMany).toHaveBeenCalledWith([], feed.id, feed.userId);
+  });
+
+  it('collects a normalized external link as a hotlink', () => {
+    const result = processHtmlContent(
+      '<a href="//external.example/story">External story</a>',
+      null,
+      'https://origin.example/articles/current',
+      feed,
+      'External link test'
+    );
+
+    expect(result.stripped).toContain('href="https://external.example/story"');
+    expect(hotlinkSetMany).toHaveBeenCalledWith(
+      ['https://external.example/story'],
+      feed.id,
+      feed.userId
+    );
+  });
+
+  it('treats hostname substring attacks as external hotlinks', () => {
+    processHtmlContent(
+      '<a href="https://origin.example.attacker.test/story">External story</a>',
+      null,
+      'https://origin.example/articles/current',
+      feed,
+      'Hostname comparison test'
+    );
+
+    expect(hotlinkSetMany).toHaveBeenCalledWith(
+      ['https://origin.example.attacker.test/story'],
+      feed.id,
+      feed.userId
+    );
+  });
+
   it('normalizes publisher-styled truncated links before extracting visible text', () => {
     const href = 'https://www.eff.org/deeplinks/2026/06/are-your-local-police-using-flock-safety-alprs-scan-immigrants';
     const source = `<a href="${href}" target="_blank" rel="nofollow noopener" translate="no"><span class="invisible">https://www.</span><span class="ellipsis">eff.org/deeplinks/2026/06/are-</span><span class="invisible">your-local-police-using-flock-safety-alprs-scan-immigrants</span></a>`;

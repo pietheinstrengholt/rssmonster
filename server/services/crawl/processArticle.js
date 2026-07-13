@@ -96,7 +96,6 @@ const processArticle = async (
     let contentLanguage = 'unknown';
     let contentHash = null;
     let contentStrippedHash = null;
-    let leadImage = null;
     const media = processMedia(entry);
 
     // If generic content is found, use the raw entry content. Override media content.
@@ -149,14 +148,12 @@ const processArticle = async (
       ) || 'Untitled';
     }
 
-    leadImage = await detectArticleImage({
+    const leadImage = await detectArticleImage({
       entry,
       articleUrl: fields.link,
       contentStripped,
       content: fields.content,
-      description: fields.description,
-      feed,
-      title: fields.title
+      description: fields.description
     });
 
     const normalizedUrl = normalizeUrl(fields.link);
