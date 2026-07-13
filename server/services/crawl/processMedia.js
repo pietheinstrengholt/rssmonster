@@ -1,18 +1,3 @@
-const MEDIA_CONTAINER_FIELDS = new Set([
-  'contents',
-  'group',
-  'groups',
-  'type',
-  'medium',
-  'duration',
-  'image',
-  'thumbnail',
-  'thumbnails',
-  'embed',
-  'player',
-  'length'
-]);
-
 // This function returns a trimmed HTTP(S) media URL or null.
 const safeMediaUrl = value => {
   const trimmed = String(value || '').trim();
@@ -161,21 +146,24 @@ const detectProvider = (source, urls, videoId) => {
   return null;
 };
 
-// This function copies additional parsed Media RSS attributes without structural fields.
-const additionalAttributes = (...sources) => {
-  const attributes = {};
-
-  for (const source of sources) {
-    if (!source || typeof source !== 'object') continue;
-
-    for (const [key, value] of Object.entries(source)) {
-      if (MEDIA_CONTAINER_FIELDS.has(key) || value === undefined || value === null) continue;
-      attributes[key] = value;
-    }
-  }
-
-  return attributes;
+// This function normalizes a feed value to a non-negative integer.
+const nonNegativeInteger = value => {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? Math.floor(number) : null;
 };
+
+// This function normalizes a feed value to a non-negative number.
+const nonNegativeNumber = value => {
+  if (value === undefined || value === null || String(value).trim() === '') return null;
+  const number = Number(value);
+  return Number.isFinite(number) && number >= 0 ? number : null;
+};
+
+// This function returns the first valid normalized value from ordered feed values.
+const firstNormalizedValue = (normalize, ...values) => values
+  .map(normalize)
+  .find(value => value !== null) ?? null;
 
 // This function normalizes supported feed duration formats to seconds.
 const normalizeDuration = value => {
@@ -197,11 +185,14 @@ const normalizeDuration = value => {
     : parts[0] * 3600 + minutes * 60 + seconds;
 };
 
-// This function normalizes known non-standard media MIME aliases.
-const normalizeMimeType = value => {
-  const mimeType = String(value || '').toLowerCase();
-  if (!mimeType) return undefined;
-  return mimeType === 'image/jpg' ? 'image/jpeg' : mimeType;
+// This function normalizes direct playable media MIME types.
+const normalizeMimeType = (value, provider, contentUrl) => {
+  let mimeType = String(value || '').trim().toLowerCase();
+  if (!mimeType || mimeType === 'application/x-shockwave-flash') return null;
+  if (mimeType === 'image/jpg') mimeType = 'image/jpeg';
+  if (!/^(video|audio|image)\//.test(mimeType)) return null;
+  if (['youtube', 'vimeo'].includes(provider) && !contentUrl) return null;
+  return mimeType;
 };
 
 // This function returns the safe primary URL represented by a media candidate.
@@ -246,10 +237,10 @@ const normalizeGalleryItem = (candidate, rawMedia) => {
     type: 'image',
     url,
     thumbnailUrl: thumbnailUrl !== url ? thumbnailUrl : undefined,
-    width: item?.width,
-    height: item?.height,
-    mimeType: normalizeMimeType(item?.type),
-    fileSize: item?.fileSize ?? item?.length
+    width: nonNegativeInteger(item?.width),
+    height: nonNegativeInteger(item?.height),
+    mimeType: normalizeMimeType(item?.type, null, url),
+    fileSize: nonNegativeInteger(item?.fileSize ?? item?.length)
   };
 
   return Object.fromEntries(
@@ -290,22 +281,43 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type }) => {
   const status = item?.status || parent?.status || rawMedia?.status;
   const isLive = item?.isLive ?? parent?.isLive ?? rawMedia?.isLive ??
     (status?.state ? status.state === 'live' : undefined);
-  const attributes = additionalAttributes(rawMedia, parent, item);
+  const views = firstNormalizedValue(
+    nonNegativeInteger,
+    item?.community?.statistics?.views,
+    parent?.community?.statistics?.views,
+    rawMedia?.community?.statistics?.views
+  );
+  const rating = firstNormalizedValue(
+    nonNegativeNumber,
+    item?.community?.starRating?.average,
+    parent?.community?.starRating?.average,
+    rawMedia?.community?.starRating?.average
+  );
+  const ratingCount = firstNormalizedValue(
+    nonNegativeInteger,
+    item?.community?.starRating?.count,
+    parent?.community?.starRating?.count,
+    rawMedia?.community?.starRating?.count
+  );
 
   const media = {
     type,
-    ...attributes,
+    provider,
+    externalId: provider === 'youtube' ? videoId : undefined,
     url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : (contentUrl || pageUrl || playerUrl),
     embedUrl: videoId
       ? `https://www.youtube-nocookie.com/embed/${videoId}`
       : (suppliedEmbedUrl || playerUrl),
     thumbnailUrl: thumbnail,
     durationSeconds: duration,
-    width: item?.width ?? item?.embed?.width ?? item?.player?.width ?? parent?.embed?.width ?? parent?.player?.width,
-    height: item?.height ?? item?.embed?.height ?? item?.player?.height ?? parent?.embed?.height ?? parent?.player?.height,
-    mimeType: normalizeMimeType(item?.type),
-    isLive,
-    provider
+    width: nonNegativeInteger(item?.width ?? item?.embed?.width ?? item?.player?.width ?? parent?.embed?.width ?? parent?.player?.width),
+    height: nonNegativeInteger(item?.height ?? item?.embed?.height ?? item?.player?.height ?? parent?.embed?.height ?? parent?.player?.height),
+    mimeType: normalizeMimeType(item?.type, provider, contentUrl),
+    fileSize: nonNegativeInteger(item?.fileSize ?? item?.length),
+    isLive: typeof isLive === 'boolean' ? isLive : undefined,
+    views,
+    rating,
+    ratingCount
   };
 
   return Object.fromEntries(

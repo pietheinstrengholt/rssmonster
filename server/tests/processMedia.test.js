@@ -101,12 +101,18 @@ describe('processMedia', () => {
     expect(invalid).not.toHaveProperty('durationSeconds');
   });
 
-  it('preserves YouTube provider and privacy-enhanced embed metadata', () => {
+  it('normalizes YouTube media to stable allowlisted metadata', () => {
     const media = processMedia({
       link: 'https://www.youtube.com/watch?v=gZUDEBbZSp4',
       yt: { videoId: 'gZUDEBbZSp4' },
       media: {
         group: {
+          title: { value: 'Raw group title' },
+          description: { value: 'Promotional group description' },
+          community: {
+            statistics: { views: '31752' },
+            starRating: { average: '5', count: '1488' }
+          },
           thumbnails: [{ url: 'https://i.ytimg.com/vi/gZUDEBbZSp4/hqdefault.jpg' }],
           contents: [{
             url: 'https://www.youtube.com/v/gZUDEBbZSp4?version=3',
@@ -115,6 +121,8 @@ describe('processMedia', () => {
             width: 1280,
             height: 720,
             bitrate: 2500,
+            title: { value: 'Raw media title' },
+            description: { value: 'Promotional media description' },
             isLive: false
           }]
         }
@@ -124,6 +132,7 @@ describe('processMedia', () => {
     expect(media).toEqual(expect.objectContaining({
       type: 'video',
       provider: 'youtube',
+      externalId: 'gZUDEBbZSp4',
       url: 'https://www.youtube.com/watch?v=gZUDEBbZSp4',
       embedUrl: 'https://www.youtube-nocookie.com/embed/gZUDEBbZSp4',
       thumbnailUrl: 'https://i.ytimg.com/vi/gZUDEBbZSp4/hqdefault.jpg',
@@ -131,8 +140,15 @@ describe('processMedia', () => {
       width: 1280,
       height: 720,
       isLive: false,
-      bitrate: 2500
+      views: 31752,
+      rating: 5,
+      ratingCount: 1488
     }));
+    expect(media).not.toHaveProperty('title');
+    expect(media).not.toHaveProperty('description');
+    expect(media).not.toHaveProperty('community');
+    expect(media).not.toHaveProperty('bitrate');
+    expect(media).not.toHaveProperty('mimeType');
   });
 
   it('ignores malformed and unsafe candidate URLs', () => {
@@ -154,5 +170,87 @@ describe('processMedia', () => {
     });
 
     expect(media.items.every(item => item.mimeType === 'image/jpeg')).toBe(true);
+  });
+
+  it('keeps gallery items compact and normalizes file size', () => {
+    const media = processMedia({
+      link: 'https://example.com/gallery',
+      enclosures: [
+        {
+          url: 'https://example.com/image-1.jpg',
+          type: 'image/jpeg',
+          length: '220000',
+          title: 'Raw title',
+          community: { statistics: { views: 100 } }
+        },
+        {
+          url: 'https://example.com/image-2.jpg',
+          type: 'image/jpeg',
+          fileSize: 210000,
+          description: 'Raw description'
+        }
+      ]
+    });
+
+    expect(media.items).toEqual([
+      { type: 'image', url: 'https://example.com/image-1.jpg', mimeType: 'image/jpeg', fileSize: 220000 },
+      { type: 'image', url: 'https://example.com/image-2.jpg', mimeType: 'image/jpeg', fileSize: 210000 }
+    ]);
+    expect(media.items.every(item => !Object.hasOwn(item, 'length'))).toBe(true);
+  });
+
+  it('retains direct playable MIME types', () => {
+    expect(processMedia({
+      enclosures: [{ url: 'https://example.com/video.mp4', type: 'video/mp4' }]
+    })).toHaveProperty('mimeType', 'video/mp4');
+    expect(processMedia({
+      enclosures: [{ url: 'https://example.com/audio.mp3', type: 'audio/mpeg' }]
+    })).toHaveProperty('mimeType', 'audio/mpeg');
+  });
+
+  it('prefers and normalizes scalar community statistics', () => {
+    const media = processMedia({
+      media: {
+        community: {
+          statistics: { views: '10' },
+          starRating: { average: '2', count: '3' }
+        },
+        group: {
+          community: {
+            statistics: { views: '20.9' },
+            starRating: { average: '3.5', count: '4.9' }
+          },
+          contents: [{
+            url: 'https://example.com/video.mp4',
+            type: 'video/mp4',
+            community: {
+              statistics: { views: '30.9' },
+              starRating: { average: '4.5', count: '5.9' }
+            }
+          }]
+        }
+      }
+    });
+
+    expect(media).toEqual(expect.objectContaining({ views: 30, rating: 4.5, ratingCount: 5 }));
+  });
+
+  it('omits invalid and negative community statistics', () => {
+    const media = processMedia({
+      media: {
+        contents: [{
+          url: 'https://example.com/video.mp4',
+          type: 'video/mp4',
+          community: {
+            statistics: { views: 'invalid' },
+            starRating: { average: -1, count: -2 }
+          }
+        }]
+      }
+    });
+
+    expect(media).not.toHaveProperty('views');
+    expect(media).not.toHaveProperty('rating');
+    expect(media).not.toHaveProperty('ratingCount');
   });
 });
