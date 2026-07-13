@@ -325,13 +325,13 @@
 }
 
 :global(:root[data-theme='dark'] .toolbar-search) {
-  background-color: var(--toolbar-search-background-dark);
+  background-color: var(--bg-control);
   border-color: var(--toolbar-search-border-dark);
 }
 
 :global(:root[data-theme='dark'] .toolbar-search:hover),
 :global(:root[data-theme='dark'] .toolbar-search:focus-within) {
-  background-color: var(--toolbar-search-hover-background-dark);
+  background-color: var(--toolbar-settings-hover-background-dark);
   border-color: var(--toolbar-search-border-dark);
 }
 
@@ -351,7 +351,7 @@
 
 :global(:root[data-theme='dark'] .toolbar-filter-button:hover),
 :global(:root[data-theme='dark'] .toolbar-filter-button[aria-expanded='true']) {
-  background-color: var(--toolbar-active-background);
+  background-color: var(--toolbar-settings-hover-background-dark);
   border-color: var(--border-color);
 }
 
@@ -647,7 +647,7 @@
 
   .toolbar-filter-button:hover,
   .toolbar-filter-button[aria-expanded='true'] {
-    background-color: var(--toolbar-active-background);
+    background-color: var(--toolbar-settings-hover-background-dark);
     border-color: var(--border-color);
   }
 
@@ -688,13 +688,13 @@
   }
 
   .toolbar-search {
-    background-color: var(--toolbar-search-background-dark);
+    background-color: var(--bg-control);
     border-color: var(--toolbar-search-border-dark);
   }
 
   .toolbar-search:hover,
   .toolbar-search:focus-within {
-    background-color: var(--toolbar-search-hover-background-dark);
+    background-color: var(--toolbar-settings-hover-background-dark);
     border-color: var(--toolbar-search-border-dark);
   }
 
