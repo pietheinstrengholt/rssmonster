@@ -127,6 +127,39 @@ function normalizeImages($) {
   });
 }
 
+// This function converts publisher-styled truncated links into standalone readable text.
+function normalizeTruncatedLinks($) {
+  $('a').each((_, el) => {
+    const node = $(el);
+    const children = node.children();
+    const ellipsisParts = children.filter('span.ellipsis');
+    const invisibleParts = children.filter('span.invisible');
+    const hasUnexpectedText = node
+      .contents()
+      .toArray()
+      .some(child => child.type === 'text' && $(child).text().trim());
+
+    if (
+      ellipsisParts.length !== 1 ||
+      invisibleParts.length === 0 ||
+      children.length !== ellipsisParts.length + invisibleParts.length ||
+      hasUnexpectedText
+    ) {
+      return;
+    }
+
+    const label = ellipsisParts.text().replace(/\s+/g, ' ').trim();
+    if (!label) return;
+
+    const hasHiddenSuffix = ellipsisParts
+      .nextAll('span.invisible')
+      .toArray()
+      .some(part => $(part).text().trim());
+
+    node.text(`${label}${hasHiddenSuffix ? '…' : ''}`);
+  });
+}
+
 // This function removes wrappers that do not contain text or useful child content.
 function removeEmptyWrappers($) {
   $('p, div, span').each((_, el) => {
@@ -148,6 +181,7 @@ function cleanupHtmlContent($) {
   $(BOILERPLATE_SELECTORS.join(',')).remove();
 
   normalizeImages($);
+  normalizeTruncatedLinks($);
 
   removeEmptyWrappers($);
 }

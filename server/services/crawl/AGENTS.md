@@ -1,201 +1,430 @@
 # Crawl Architecture
 
-Crawl is the system that keeps RSSMonster's article library current, clean, and useful. It turns external feed entries into trustworthy local articles while preserving user intent, avoiding duplicate noise, and preparing new content for search, reading, recommendations, and semantic organization.
+Crawl is the subsystem responsible for keeping RSSMonster's article library current, clean, and trustworthy. It converts external RSS and Atom entries into local articles while preserving user intent, preventing duplicate noise, updating revised articles, and preparing new content for downstream processing.
 
-This document describes what crawl is supposed to do. It is an architectural specification, not an implementation guide.
+This document describes the architectural contract of Crawl. It intentionally focuses on behaviour rather than implementation.
 
-## Architectural Objective
+---
 
-Crawl must provide a reliable ingestion contract for feed content.
+# Architectural Objective
 
-A crawl run represents:
+A crawl run represents the ingestion contract between external feeds and the RSSMonster article library.
 
-- The user or users whose feeds are being refreshed.
-- The feeds and entries being considered.
-- The freshness boundary that decides whether an entry is still relevant to ingest.
-- The article identity rules that prevent duplicate local records.
-- The content normalization rules that make feed content safe and readable.
-- The user-defined rules that can alter or reject incoming articles.
-- The enrichment work that prepares saved articles for the rest of the product.
-- The progress model that lets callers observe long-running ingestion.
+The crawler is responsible for:
 
-The crawl system is responsible for combining those dimensions into one coherent library update.
+- Refreshing feeds for one or more users.
+- Determining whether an entry should enter the library.
+- Detecting whether an entry is a revision of an existing article.
+- Preventing duplicate articles from being created.
+- Normalizing unsafe publisher content.
+- Applying user-defined rules.
+- Enriching newly created articles.
+- Reporting progress.
 
-## Core Principles
+The crawler owns the transition from an external feed entry to a local article.
 
-Crawl is user-scoped. Every persisted article, tag, rule effect, progress event, and downstream enrichment result must belong to the correct user context.
+---
 
-Crawl is idempotent in spirit. Re-seeing the same article should not create duplicate reading work for the user. Duplicate detection may use URL identity, title identity, content identity, or later semantic identity, but the product promise is that repeated feed entries do not repeatedly appear as new articles.
+# Core Principles
 
-Crawl is conservative with untrusted content. Feed entries come from outside the application and must be treated as unsafe until normalized. Stored article content should be bounded, non-executable, and suitable for later rendering, search, and analysis.
+## User scoped
 
-Crawl is content-preserving where safe. The system should keep enough original structure for pleasant reading while also extracting plain text that supports language detection, duplicate detection, analysis, search, and scoring.
+Every persisted article belongs to exactly one user.
 
-Crawl is observable. A refresh may touch many feeds and take meaningful time, so callers need progress, completion, and failure information rather than a silent background mutation.
+Identity matching, duplicate detection, tags, actions, hotlinks and enrichment are always evaluated within the correct user scope.
 
-Crawl is a gateway, not the whole intelligence layer. It prepares articles for semantic work, recommendations, duplicate marking, clustering, and scoring, but those concepts remain downstream product capabilities.
+---
 
-## Feed Entry Eligibility
+## Idempotent
 
-An entry is eligible for ingestion only when it represents a usable article for the relevant feed and user.
+Refreshing the same feed repeatedly should never create duplicate reading work.
 
-The fundamental eligibility dimensions are:
+Repeated crawl executions should either:
 
-- Ownership: the feed belongs to the user being crawled.
-- Freshness: the entry is not older than the feed's configured crawl boundary.
-- Addressability: the entry has a usable article URL.
-- Content presence: the entry contains readable text, safe HTML, media content, or another supported article body.
-- Local uniqueness: the article is not already represented in the feed or user's library according to article identity rules.
-- User rules: no matching user rule rejects the article.
+- update an existing article,
+- ignore an already known duplicate,
+- or create a genuinely new article.
 
-Eligibility is decided before expensive enrichment whenever possible. The system should avoid doing costly analysis for entries that will not be saved.
+---
 
-## Article Identity
+## Publisher identity first
 
-Article identity answers the question "is this already in the library?"
+Whenever a publisher exposes a stable identity, RSSMonster trusts it.
 
-RSS feeds are imperfect. The same article may appear with changed metadata, tracking parameters, slightly different titles, or duplicated content. Crawl should use normalized article concepts rather than raw feed fields alone.
+Stable identities include:
 
-URL identity is important because it reflects the publisher's intended location. Content identity is important because it catches repeated bodies when URLs vary. Title identity may help when feeds are inconsistent. No single signal is perfect; identity should be resilient to normal feed messiness.
+- Atom `<id>`
+- RSS `<guid>`
+- normalized article URLs
 
-When concurrent crawl work discovers the same article at the same time, the outcome should still be one persisted article. Losing a race to another crawler is not a product error; it means the article already exists.
+Publisher identity is used to detect revisions of the same article.
 
-## Content Normalization
+Duplicate detection is **not** responsible for deciding whether two feed entries represent the same published article.
 
-Crawl turns feed content into two complementary forms:
+---
 
-- A safe readable representation for the article body.
-- A plain-text representation for analysis, duplicate detection, language detection, search, and scoring.
+## Duplicate detection is separate from identity
 
-Executable markup, unsafe embeds, unsafe attributes, unsafe URL protocols, oversized inline payloads, and other hostile or noisy content should not become stored article content.
+Article identity and duplicate detection solve different problems.
 
-Plain text should preserve the article's meaning while removing markup noise. It should be stable enough to support hashing and downstream analysis.
+Article identity answers:
 
-When a feed entry has no useful title, crawl may infer a better title from the article content. This is a reader-experience improvement, not a license to invent meaning that is not present in the entry.
+> "Is this the same feed entry I have already stored?"
 
-When content cannot be fully parsed, crawl should degrade to a safe representation rather than fail the whole run unnecessarily.
+Duplicate detection answers:
 
-## Media and Lead Images
+> "Does another article already represent this information?"
 
-Feeds may represent articles as text, HTML, media, or combinations of those. Crawl should preserve useful media signals and lead imagery when they help the reading experience.
+Identity matching always happens before duplicate detection.
 
-Media should not replace richer article content when usable text or HTML is available. When media is the primary content, the system should still create a readable article representation if it can do so safely.
+---
 
-Lead images are article metadata. They should support browsing and reading, but they should not determine whether an otherwise valid article exists.
+## Preserve content
 
-## User Rules
+RSSMonster preserves enough publisher information to support:
 
-User rules are part of ingestion intent. They let users shape the library before articles become reading work.
+- pleasant reading
+- searching
+- duplicate detection
+- embeddings
+- AI analysis
+- language detection
+
+Original publisher content should never be destroyed unnecessarily.
+
+---
+
+## Safe by default
+
+All external HTML is treated as untrusted.
+
+Stored article bodies must be suitable for safe rendering.
+
+---
+
+# Feed Entry Eligibility
+
+An entry is eligible when it satisfies all required conditions.
+
+Required:
+
+- belongs to the current user
+- newer than crawlSince
+- contains a valid article URL
+- contains either:
+  - article body
+  - description
+  - structured media
+- is not already represented by article identity
+- is not rejected by user rules
+
+Expensive AI work should only happen after eligibility has been established.
+
+---
+
+# Processing Pipeline
+
+The ingestion pipeline follows a fixed order.
+
+```
+Extract feed fields
+        ↓
+Resolve external article identity
+        ↓
+Normalize HTML and visible text
+        ↓
+Extract structured media
+        ↓
+Update existing article by external identity
+        ↓
+Duplicate detection
+        ↓
+Apply user actions
+        ↓
+AI enrichment
+        ↓
+Persist article
+```
+
+The order is intentional.
+
+Updating existing articles happens before duplicate detection and before expensive enrichment.
+
+---
+
+# Article Identity
+
+Article identity represents publisher intent.
+
+RSSMonster supports three identity levels.
+
+## 1. Atom ID
+
+Preferred for Atom feeds.
+
+```
+<id>...</id>
+```
+
+---
+
+## 2. RSS GUID
+
+Preferred for RSS feeds.
+
+```
+<guid>...</guid>
+```
+
+---
+
+## 3. Normalized article URL
+
+Used only when no stable publisher identity exists.
+
+Tracking parameters and URL noise should be removed before comparison.
+
+---
+
+Publisher identity is stored as:
+
+- externalId
+- externalIdType
+
+The combination
+
+```
+userId
+feedId
+externalIdType
+externalId
+```
+
+represents the stable identity of a feed entry.
+
+---
+
+# Article Updates
+
+Once an article has been matched through its external identity, RSSMonster determines whether the publisher changed the article.
+
+Updates compare the mutable publisher fields.
+
+Meaningful changes include:
+
+- title
+- contentHash
+- description
+- URL
+- lead image
+- structured media
+- publication date
+
+If none of these changed, no database update is performed.
+
+Updates preserve user state such as:
+
+- read status
+- favourites
+- stars
+- attention
+- clicks
+- engagement
+
+Publisher revisions should never reset user interaction.
+
+---
+
+# Duplicate Detection
+
+Duplicate detection is only executed for entries that were **not** matched through external identity.
+
+Its purpose is preventing multiple local articles representing the same information.
+
+Duplicate detection relies on progressively weaker evidence.
+
+Typical signals include:
+
+- exact URL
+- normalized URL
+- original content hash
+- visible text hash
+- title and publication fallback
+
+Duplicate detection never updates existing articles.
+
+---
+
+# Content Normalization
+
+Feed content is stored in multiple complementary forms.
+
+## contentOriginal
+
+Publisher content after minimal normalization.
+
+Preserves the original article body as closely as possible.
+
+Used for:
+
+- update detection
+- content hashing
+- future reparsing
+
+---
+
+## contentStripped
+
+Safe HTML.
+
+Suitable for rendering inside RSSMonster.
+
+---
+
+## contentText
+
+Plain visible text.
+
+Used for:
+
+- language detection
+- AI analysis
+- embeddings
+- search
+
+---
+
+When article bodies are missing, descriptions may provide visible text while remaining separate feed metadata.
+
+---
+
+# Content Hashes
+
+RSSMonster maintains two different hashes.
+
+## contentHash
+
+Hash of the normalized original publisher content.
+
+Purpose:
+
+- update detection
+- duplicate detection
+- publisher revision detection
+
+Small publisher changes should result in a different hash.
+
+---
+
+## contentStrippedHash
+
+Hash of visible plain text.
+
+Purpose:
+
+- duplicate detection
+- semantic identity
+
+Equivalent visible text should generate the same hash even if HTML differs.
+
+---
+
+# Media
+
+RSSMonster extracts structured media separately from article bodies.
+
+Supported concepts include:
+
+- video
+- audio
+- image galleries
+
+Media metadata is normalized into structured JSON.
+
+Media does not replace richer article content.
+
+When an article primarily consists of media, structured media is sufficient for the article to be considered valid.
+
+Lead images remain article metadata rather than article identity.
+
+---
+
+# User Rules
+
+User rules execute after duplicate prevention but before persistence.
 
 Rules may:
 
-- Reject an article.
-- Mark an article read.
-- Mark an article favorite.
-- Mark an article as clicked or saved for later.
-- Adjust quality or advertisement signals.
-- Add tags.
+- reject articles
+- mark read
+- favourite
+- add tags
+- adjust scores
 
-Rejecting an article takes precedence over other rule effects because the article should not enter the library. Rule effects that change scores or states should be applied before persistence so saved articles already reflect the user's preferences.
+Rejected articles never reach AI enrichment.
 
-Invalid user rules should not break the crawl. A bad rule should be isolated so the rest of the feed can still be processed.
+---
 
-## Analysis and Enrichment
+# Analysis
 
-Crawl may enrich saved articles with summaries, tags, quality scores, sentiment scores, advertisement scores, language, hotlink state, embeddings, duplicate markings, event assignments, topic assignments, and interest scores.
+Only genuinely new articles are enriched.
 
-Enrichment exists to improve later product behavior:
+Typical enrichment includes:
 
-- Reading views get cleaner summaries and metadata.
-- Search gets better eligibility and ranking signals.
-- Recommendations get interest and quality signals.
-- Events and topics get enough information to organize related articles.
-- Duplicate handling gets additional evidence beyond raw feed identity.
+- summaries
+- tags
+- language
+- sentiment
+- advertisement score
+- quality score
+- embeddings
+- clustering
 
-Enrichment should be bounded by feed and user configuration. If a feed disables a kind of analysis, crawl should still be able to save sensible baseline articles.
+Existing articles updated through publisher revisions are not automatically re-analysed.
 
-Enrichment failures should be handled at the smallest reasonable scope. One failed analysis should not invalidate unrelated entries or feeds.
+---
 
-## Tags
+# Persistence
 
-Tags produced during crawl can come from multiple concepts:
+Only articles that:
 
-- Generated tags derived from article analysis.
-- Feed-level tags that apply to all articles from a source.
-- Rule-level tags added by user intent.
+- are eligible
+- are not updates
+- are not duplicates
+- are not rejected
 
-Tags represent user-facing organization and search metadata. The same conceptual tag should not be saved repeatedly with spelling or casing variations.
+are inserted into the database.
 
-When the same tag is implied by multiple sources, the source that most directly represents user intent should be preserved as the strongest tag origin.
+Concurrent crawlers discovering the same article should still produce exactly one persisted record.
 
-## Hotlinks and Cross-Article Signals
+Losing a race to another crawler is considered a successful outcome.
 
-Crawl observes outbound links because links between articles are useful signals. If many feeds point to the same external article, that target may deserve attention inside the user's library.
+---
 
-Hotlink state is not the same as article identity. It is an attention signal derived from cross-article references. It should help identify articles that other sources are pointing toward, especially when those references come from different feeds.
+# Progress
 
-Link normalization matters because tracking parameters and URL variants should not fragment the signal.
+Crawl exposes observable progress.
 
-## Progress and Job Semantics
+Callers should be able to distinguish:
 
-A crawl run may be long-lived and should be represented as observable work.
+- new articles
+- updated articles
+- skipped articles
+- duplicate articles
+- errors
 
-The progress model should support:
+An empty crawl can still be completely successful.
 
-- Starting a crawl and receiving a stable job identity.
-- Streaming progress events to current observers.
-- Replaying recent progress to late observers.
-- Reporting terminal success or failure.
-- Cleaning up completed or abandoned job state.
-- Preventing unbounded memory growth from large or stalled runs.
+---
 
-Progress events are a reporting contract. They should help the UI and operators understand what happened without requiring direct access to internal execution state.
+# Product Promise
 
-## Results and Counters
+Refreshing feeds should feel invisible.
 
-Crawl results should distinguish between new articles, already-known or updated articles, skipped entries, and errors.
+Existing articles quietly receive publisher corrections.
 
-Counters are for operational understanding and user feedback. They should be honest about the work performed without implying that every non-new entry is a failure.
+Duplicate noise never reaches the reader.
 
-An empty crawl result can be successful. It may mean feeds had no new eligible content, all entries were already known, or configured freshness boundaries excluded older entries.
+New articles become immediately searchable, readable, taggable and ready for downstream recommendation and semantic processing.
 
-## Downstream Readiness
-
-The article library should be coherent after crawl completes.
-
-Newly saved articles should be ready for:
-
-- Reading.
-- Search and filtering.
-- Tag browsing.
-- Duplicate suppression.
-- Event and topic grouping.
-- Interest scoring and recommendations.
-
-Some downstream work may run after the initial persistence phase. This is still part of the crawl architecture when it is triggered by crawl completion and scoped to users touched by the run.
-
-## Failure Semantics
-
-Crawl should isolate failures wherever possible.
-
-A malformed entry should not break an entire feed. A problematic feed should not break unrelated feeds. A downstream enrichment failure should not erase successfully saved articles.
-
-Hard failures are reserved for conditions that prevent the requested crawl from being meaningfully performed, such as missing ownership context, unavailable required persistence, or unrecoverable job-level errors.
-
-Failures should be visible through logs, counters, and progress events so operators can understand whether ingestion was partial, skipped, or unsuccessful.
-
-## Architectural Boundaries
-
-Crawl decides how external feed entries become local article records and related ingestion metadata.
-
-Crawl does not decide how articles are displayed, how users authenticate, how search ranks arbitrary historical articles, how recommendations are presented, or how feed discovery chooses new subscriptions.
-
-Crawl may rely on feeds, articles, actions, tags, hotlinks, semantic processing, duplicate detection, and scoring, but those concepts remain external inputs or downstream collaborators. Crawl composes them into ingestion behavior; it does not own the entire lifecycle of each concept.
-
-## Product Promise
-
-The reader should experience crawl as a quiet, dependable refresh of their knowledge stream.
-
-Feeds should update without duplicate clutter. Unsafe content should become safe to read. User rules should shape the inbox before it fills up. New articles should quickly become searchable, organized, and ready for recommendations.
-
-The architecture succeeds when an agent can infer the correct crawl behavior from the user's intent and these principles, without needing to memorize the current implementation shape.
+The crawler succeeds when external feed chaos consistently produces one clean, trustworthy article library.

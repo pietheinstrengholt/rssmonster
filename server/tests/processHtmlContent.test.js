@@ -68,6 +68,50 @@ describe('crawl content sanitization', () => {
     );
   });
 
+  it('normalizes publisher-styled truncated links before extracting visible text', () => {
+    const href = 'https://www.eff.org/deeplinks/2026/06/are-your-local-police-using-flock-safety-alprs-scan-immigrants';
+    const source = `<a href="${href}" target="_blank" rel="nofollow noopener" translate="no"><span class="invisible">https://www.</span><span class="ellipsis">eff.org/deeplinks/2026/06/are-</span><span class="invisible">your-local-police-using-flock-safety-alprs-scan-immigrants</span></a>`;
+    const result = processHtmlContent(
+      source,
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Truncated link test'
+    );
+
+    expect(result.content).toBe(source);
+    expect(result.text).toBe('eff.org/deeplinks/2026/06/are-…');
+    expect(result.stripped).toContain(`href="${href}"`);
+    expect(result.stripped).toContain('>eff.org/deeplinks/2026/06/are-…</a>');
+    expect(result.stripped).not.toMatch(/class="(?:invisible|ellipsis)"/);
+  });
+
+  it('does not add an ellipsis when a publisher-styled link has no hidden suffix', () => {
+    const result = processHtmlContent(
+      '<a href="https://example.com/article"><span class="invisible">https://</span><span class="ellipsis">example.com/article</span></a>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Visible link test'
+    );
+
+    expect(result.text).toBe('example.com/article');
+  });
+
+  it('preserves unrelated invisible elements and mixed-content links', () => {
+    const result = processHtmlContent(
+      '<span class="invisible">Keep this text</span> <a href="https://example.com">Label <span class="ellipsis">continued</span><span class="invisible">suffix</span></a>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Unrelated invisible content test'
+    );
+
+    expect(result.text).toBe('Keep this text Label continuedsuffix');
+    expect(result.stripped).toContain('<span class="invisible">Keep this text</span>');
+    expect(result.stripped).toContain('Label <span class="ellipsis">continued</span>');
+  });
+
   it('uses a safe fast path for plain text without parsing HTML', () => {
     const result = processHtmlContent(
       '2 < 3 & 4.',
