@@ -11,7 +11,7 @@ vi.mock('../models/index.js', () => ({
 const { default: detectArticleImage } = await import('../services/crawl/detectArticleImage.js');
 
 describe('detectArticleImage', () => {
-  it('uses media:content image before media:thumbnail, enclosure, and HTML', async () => {
+  it('prefers a large content image over feed candidates without useful dimensions', async () => {
     const result = await detectArticleImage({
       entry: {
         media: {
@@ -38,10 +38,16 @@ describe('detectArticleImage', () => {
       contentStripped: '<img src="https://cdn.example/content.jpg" width="1200" height="675">'
     });
 
-    expect(result).toBe('https://cdn.example/media-content.jpg');
+    expect(result).toEqual({
+      url: 'https://cdn.example/content.jpg',
+      width: 1200,
+      height: 675,
+      mimeType: null,
+      source: 'content'
+    });
   });
 
-  it('uses media:thumbnail before image enclosures', async () => {
+  it('prefers a stronger image enclosure over a thumbnail-shaped candidate', async () => {
     const result = await detectArticleImage({
       entry: {
         media: {
@@ -63,10 +69,16 @@ describe('detectArticleImage', () => {
       articleUrl: 'https://news.example/posts/1'
     });
 
-    expect(result).toBe('https://news.example/thumb.jpg');
+    expect(result).toEqual({
+      url: 'https://cdn.example/enclosure.png',
+      width: null,
+      height: null,
+      mimeType: 'image/png',
+      source: 'enclosure'
+    });
   });
 
-  it('uses the first meaningful image near the top of cleaned article content', async () => {
+  it('balances image position and dimensions within cleaned article content', async () => {
     const result = await detectArticleImage({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
@@ -77,10 +89,16 @@ describe('detectArticleImage', () => {
       `
     });
 
-    expect(result).toBe('https://news.example/lead.jpg');
+    expect(result).toEqual({
+      url: 'https://news.example/later.jpg',
+      width: 1200,
+      height: 675,
+      mimeType: null,
+      source: 'content'
+    });
   });
 
-  it('scores body fallback candidates by size, aspect ratio, position, and title text', async () => {
+  it('returns metadata for the strongest body fallback candidate', async () => {
     const result = await detectArticleImage({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
@@ -98,7 +116,13 @@ describe('detectArticleImage', () => {
       title: 'Climate policy leaders meet in Brussels'
     });
 
-    expect(result).toBe('https://news.example/climate-policy.jpg');
+    expect(result).toEqual({
+      url: 'https://news.example/climate-policy.jpg',
+      width: 1200,
+      height: 675,
+      mimeType: null,
+      source: 'content'
+    });
   });
 
   it('returns null when no safe meaningful image is available', async () => {
