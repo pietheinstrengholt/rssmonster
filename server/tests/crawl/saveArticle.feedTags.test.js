@@ -238,6 +238,57 @@ describe('saveArticle feed tags', () => {
     );
   });
 
+  it('stores delete matches without official-source or tag enrichment', async () => {
+    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+
+    await saveArticle(
+      {
+        id: 7,
+        userId: 42,
+        feedTags: ['feed-tag']
+      },
+      {
+        link: 'https://example.com/deleted-article',
+        normalizedUrl: 'https://example.com/deleted-article',
+        title: 'Deleted article',
+        contentOriginal: '<p>Deleted body</p>',
+        contentHtml: '<p>Deleted body</p>',
+        contentText: 'Deleted body',
+        contentTextHash: 'deleted-visible-text-hash',
+        contentSourceHash: 'deleted-source-content-hash',
+        language: 'en',
+        published: new Date('2026-07-01T00:00:00Z')
+      },
+      null,
+      {
+        shouldDelete: true,
+        status: 'delete',
+        favoriteInd: 1,
+        clickedAmount: 2,
+        hotInd: true,
+        tags: ['rule-tag']
+      }
+    );
+
+    expect(mocked.officialSourceFindAll).not.toHaveBeenCalled();
+    expect(mocked.tagCreate).not.toHaveBeenCalled();
+    expect(mocked.articleCreate).toHaveBeenCalledWith(
+      expect.objectContaining({
+        status: 'delete',
+        favoriteInd: undefined,
+        clickedAmount: undefined,
+        hotInd: undefined,
+        hotlinks: undefined,
+        contentOriginal: '<p>Deleted body</p>',
+        contentHtml: '<p>Deleted body</p>',
+        contentText: 'Deleted body',
+        contentTextHash: 'deleted-visible-text-hash',
+        contentSourceHash: 'deleted-source-content-hash'
+      }),
+      { transaction: mocked.transaction }
+    );
+  });
+
   it('propagates tag unique failures without misclassifying them as article races', async () => {
     const tagError = uniqueConstraintError('tags_articleId_name_unique');
     mocked.tagCreate.mockRejectedValue(tagError);

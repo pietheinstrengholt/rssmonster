@@ -136,6 +136,21 @@ describe('articleSearch.service', () => {
       qualityScore: 20
     });
 
+    articles.deleted = await Article.create({
+      userId: user.id,
+      feedId: feed.id,
+      url: 'https://example.com/article-deleted',
+      title: 'Delete-rule article',
+      description: 'This row is retained for ingestion history.',
+      contentOriginal: '<p>This row must stay hidden from normal queries.</p>',
+      contentHtml: 'This row must stay hidden from normal queries.',
+      status: 'delete',
+      published: hoursAgo(2),
+      advertisementScore: 90,
+      sentimentScore: 90,
+      qualityScore: 90
+    });
+
     // ---- Tags ----
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'javascript' });
     await Tag.create({ articleId: articles.recent.id, userId: user.id, name: 'framework' });
@@ -157,6 +172,7 @@ describe('articleSearch.service', () => {
       // starred and clicked are read
       expect(result.itemIds).not.toContain(articles.starred.id);
       expect(result.itemIds).not.toContain(articles.clicked.id);
+      expect(result.itemIds).not.toContain(articles.deleted.id);
     });
 
     it('throws when userId is missing', async () => {
@@ -166,6 +182,7 @@ describe('articleSearch.service', () => {
     it('returns all statuses when status is %', async () => {
       const result = await searchArticles({ userId: user.id, status: '%' });
       expect(result.itemIds.length).toBe(5);
+      expect(result.itemIds).not.toContain(articles.deleted.id);
     });
 
     it('returns favorite articles when status is favorite', async () => {

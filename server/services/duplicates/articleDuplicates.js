@@ -13,7 +13,10 @@ export const DUPLICATE_SIMILARITY_THRESHOLD = Number.parseFloat(
 // This function returns the default canonical-article predicate for user-facing queries.
 export function canonicalArticleWhere() {
   return {
-    duplicateOfArticleId: { [Op.is]: null }
+    duplicateOfArticleId: { [Op.is]: null },
+    [Op.and]: [
+      { status: { [Op.ne]: 'delete' } }
+    ]
   };
 }
 

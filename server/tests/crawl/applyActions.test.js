@@ -58,6 +58,19 @@ describe('applyActions searchable article fields', () => {
     expect(result[scoreField]).toBe(0);
   });
 
+  it('marks delete matches for persistence with delete status', () => {
+    const result = applyActions([{
+      name: 'Delete matching articles',
+      actionType: 'delete',
+      regularExpression: 'Rendered publisher body'
+    }], article);
+
+    expect(result).toMatchObject({
+      shouldDelete: true,
+      status: 'delete'
+    });
+  });
+
   it('logs and skips malformed regular expressions', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
 

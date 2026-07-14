@@ -53,4 +53,73 @@ describe('article duplicate cache', () => {
       { id: 2, published: '2026-07-02T00:00:00.000Z' }
     ]);
   });
+
+  it('replaces stale identities and title candidates after an article update', () => {
+    const previousArticle = {
+      id: 3,
+      urlHash: 'old-url-hash',
+      normalizedUrlHash: 'old-normalized-url-hash',
+      title: 'Old title',
+      published: '2026-07-03T00:00:00.000Z',
+      contentTextHash: 'old-text-hash',
+      contentSourceHash: 'old-source-hash'
+    };
+    const cache = createArticleDuplicateCache([previousArticle]);
+    const updatedArticle = {
+      id: 3,
+      urlHash: 'new-url-hash',
+      normalizedUrlHash: 'new-normalized-url-hash',
+      title: 'New title',
+      published: '2026-07-04T00:00:00.000Z',
+      contentTextHash: 'new-text-hash',
+      contentSourceHash: 'new-source-hash'
+    };
+
+    cache.update(previousArticle, updatedArticle);
+
+    expect(cache.findByFeedUrlHash('old-url-hash')).toBeNull();
+    expect(cache.findByFeedNormalizedUrlHash('old-normalized-url-hash')).toBeNull();
+    expect(cache.findByUserContentTextHash('old-text-hash')).toBeNull();
+    expect(cache.findByUserContentSourceHash('old-source-hash')).toBeNull();
+    expect(cache.findFeedTitleCandidates('Old title')).toEqual([]);
+    expect(cache.findByFeedUrlHash('new-url-hash')).toEqual({ id: 3 });
+    expect(cache.findByFeedNormalizedUrlHash('new-normalized-url-hash')).toEqual({ id: 3 });
+    expect(cache.findByUserContentTextHash('new-text-hash')).toEqual({ id: 3 });
+    expect(cache.findByUserContentSourceHash('new-source-hash')).toEqual({ id: 3 });
+    expect(cache.findFeedTitleCandidates('New title')).toEqual([
+      { id: 3, published: '2026-07-04T00:00:00.000Z' }
+    ]);
+  });
+
+  it('does not remove identities that have since been reassigned to another article', () => {
+    const cache = createArticleDuplicateCache([
+      {
+        id: 4,
+        urlHash: 'shared-url-hash',
+        title: 'Updated article',
+        contentTextHash: 'shared-text-hash'
+      },
+      {
+        id: 5,
+        urlHash: 'shared-url-hash',
+        title: 'Other article',
+        contentTextHash: 'shared-text-hash'
+      }
+    ]);
+
+    cache.update(
+      {
+        id: 4,
+        urlHash: 'shared-url-hash',
+        title: 'Updated article',
+        contentTextHash: 'shared-text-hash'
+      },
+      { id: 4, urlHash: 'replacement-url-hash', title: 'Replacement article' }
+    );
+
+    expect(cache.findByFeedUrlHash('shared-url-hash')).toEqual({ id: 5 });
+    expect(cache.findByUserContentTextHash('shared-text-hash')).toEqual({ id: 5 });
+    expect(cache.findFeedTitleCandidates('Updated article')).toEqual([]);
+    expect(cache.findByFeedUrlHash('replacement-url-hash')).toEqual({ id: 4 });
+  });
 });

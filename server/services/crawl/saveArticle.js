@@ -101,34 +101,39 @@ async function saveArticle(feed, data, analysis, actionResult) {
     throw new Error('Invalid feed: userId is missing. Cannot save article without valid userId.');
   }
 
-  const officialSource = await resolveOfficialSourceForArticle(feed.userId, data.link);
+  const isDeleteMatch = actionResult?.shouldDelete === true;
+  const officialSource = isDeleteMatch
+    ? { isOfficialSource: false, officialOrganization: null }
+    : await resolveOfficialSourceForArticle(feed.userId, data.link);
   const articleValues = buildArticlePersistenceValues(feed, {
     ...data,
-    status: actionResult.status,
-    favoriteInd: actionResult.favoriteInd,
-    clickedAmount: actionResult.clickedAmount,
-    hotInd: data.hotInd ?? actionResult.hotInd,
-    hotlinks: data.hotlinks,
-    contentSummaryBullets: analysis.contentSummaryBullets,
+    status: isDeleteMatch ? 'delete' : actionResult.status,
+    favoriteInd: isDeleteMatch ? undefined : actionResult.favoriteInd,
+    clickedAmount: isDeleteMatch ? undefined : actionResult.clickedAmount,
+    hotInd: isDeleteMatch ? undefined : data.hotInd ?? actionResult.hotInd,
+    hotlinks: isDeleteMatch ? undefined : data.hotlinks,
+    contentSummaryBullets: analysis?.contentSummaryBullets,
     isOfficialSource: officialSource.isOfficialSource,
     officialOrganization: officialSource.officialOrganization,
-    advertisementScore: analysis.advertisementScore,
-    sentimentScore: analysis.sentimentScore,
-    qualityScore: analysis.qualityScore,
+    advertisementScore: analysis?.advertisementScore,
+    sentimentScore: analysis?.sentimentScore,
+    qualityScore: analysis?.qualityScore,
     published: data.published || new Date()
   });
   try {
     const article = await sequelize.transaction(async transaction => {
       const createdArticle = await Article.create(articleValues, { transaction });
 
-      await saveArticleTags({
-        articleId: createdArticle.id,
-        userId: feed.userId,
-        generatedTags: analysis.tags,
-        feedTags: feed.feedTags,
-        ruleTags: actionResult.tags,
-        transaction
-      });
+      if (!isDeleteMatch) {
+        await saveArticleTags({
+          articleId: createdArticle.id,
+          userId: feed.userId,
+          generatedTags: analysis.tags,
+          feedTags: feed.feedTags,
+          ruleTags: actionResult.tags,
+          transaction
+        });
+      }
 
       return createdArticle;
     });

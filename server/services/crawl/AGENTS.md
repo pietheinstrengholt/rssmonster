@@ -251,9 +251,15 @@ Content, title, and description changes rerun actions and analysis; author, publ
 and lead-image-only changes remain source-only. URL changes rerun actions and refresh
 official-source and hotlink metadata without rerunning AI analysis.
 
-Delete rules are creation filters. If an existing article revision newly matches a delete rule,
-RSSMonster keeps the row, applies the source update, and skips derived enrichment and hotlink
-writes for that revision.
+Delete rules are creation filters. If a delete rule is set, do the following:
+
+existing article found
+→ revised source matches delete rule
+→ update source/read-copy fields
+→ set the status to delete
+→ skip lightweight enrichment
+→ keep vector, cluster, event, topic, and island state unchanged
+→ hide article from normal queries
 
 Generated, feed, and rule tags have explicit provenance and may be reconciled during updates.
 Null or unknown tag types are treated as manual and are preserved. Existing read, favorite,
@@ -368,6 +374,9 @@ entities in their own text-specific paths.
 
 RSSMonster maintains two different hashes.
 
+Content hashes detect and describe publisher changes. A changed hash is not an instruction to
+invalidate embeddings or rebuild semantic relationships.
+
 ## contentSourceHash
 
 SHA-256 hash of `contentOriginal` after newline normalization and outer trimming only.
@@ -391,7 +400,7 @@ Hash of visible plain text.
 Purpose:
 
 - duplicate detection
-- semantic identity
+- publisher revision detection
 
 Equivalent visible text should generate the same hash even if HTML differs.
 
@@ -456,8 +465,8 @@ policy is resolved before selecting mutable fields from that canonical mapping.
 # Analysis
 
 Genuinely new articles are enriched unless AI analysis is disabled for the feed. Existing
-publisher identities are re-enriched only when content, title, or description changes.
-Source-only changes do not spend an AI call.
+publisher identities may refresh lightweight article-level enrichment only when content, title,
+or description changes. Source-only changes do not spend an AI call.
 
 Typical enrichment includes:
 
@@ -467,15 +476,18 @@ Typical enrichment includes:
 - sentiment
 - advertisement score
 - quality score
-- embeddings
-- clustering
 
-Actions and analysis receive one canonical representation: sanitized body HTML when available,
-otherwise safe description HTML, plus visible body text when available, otherwise normalized
-description text. Language detection uses the same canonical visible text.
+Embeddings and clustering remain creation-time semantic enrichment performed by the post-crawl
+pipeline for genuinely new articles. Publisher revisions update the stored reading copy but do
+not automatically re-enter that semantic pipeline. Existing embeddings, clusters, events,
+topics, islands, representative relationships, and semantic comparison state are preserved.
+Semantic state for existing articles is rebuilt only through explicit maintenance or rebuild
+workflows. Motivation is that the semantic pipeline is expensive and complex. It should not be 
+rerun for minor publisher changes.
 
-Analysis-relevant updates invalidate stored embedding metadata so downstream semantic processing
-can rebuild it.
+Actions and lightweight analysis receive one canonical representation: sanitized body HTML when
+available, otherwise safe description HTML, plus visible body text when available, otherwise
+normalized description text. Language detection uses the same canonical visible text.
 
 ---
 

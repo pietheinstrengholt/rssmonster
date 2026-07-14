@@ -58,7 +58,8 @@ function applyActions(actions, article = {}) {
     switch (action.actionType) {
       // Delete action: takes precedence over all others
       case 'delete':
-        console.log(`Delete action "${action.name}" matched article "${article.title}". Rejecting this source item.`);
+        console.log(`Delete action "${action.name}" matched article "${article.title}". Storing it with delete status.`);
+        result.status = 'delete';
         result.shouldDelete = true;
         return result;
 

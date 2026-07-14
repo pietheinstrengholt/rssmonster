@@ -149,7 +149,28 @@ const persistAcceptedHotlinks = async (urls, feed, hotlinkBatcher) => {
   }
 };
 
-// This function selectively rebuilds derived state and atomically applies one matched update.
+// This function snapshots the identities that a committed article update may replace in the cache.
+const buildDuplicateCacheArticleState = article => ({
+  id: article.id,
+  urlHash: article.urlHash,
+  normalizedUrlHash: article.normalizedUrlHash,
+  title: article.title,
+  published: article.published,
+  contentTextHash: article.contentTextHash,
+  contentSourceHash: article.contentSourceHash
+});
+
+// This function refreshes cache identities while supporting minimal cache test doubles.
+const refreshDuplicateCache = (duplicateCache, previousArticleState, updatedArticle) => {
+  if (typeof duplicateCache?.update === 'function') {
+    duplicateCache.update(previousArticleState, updatedArticle);
+    return;
+  }
+
+  duplicateCache?.add?.(updatedArticle);
+};
+
+// This function selectively refreshes article-level derived state and applies one matched update.
 const processMatchedArticleUpdate = async ({
   feed,
   articleData,
@@ -158,10 +179,16 @@ const processMatchedArticleUpdate = async ({
   hotlinkCountCache,
   hotlinkBatcher,
   hotlinkUrls,
+  duplicateCache,
   precomputedActionResult = null,
   precomputedAnalysis = null
 }) => {
+  // Publisher revisions update the reading copy but intentionally preserve
+  // creation-time semantic state. Minor feed edits should not trigger vector,
+  // event, topic, cluster, or island recalibration. Semantic rebuilds are
+  // handled only by explicit maintenance workflows.
   const { changes } = updatePlan;
+  const previousArticleState = buildDuplicateCacheArticleState(updatePlan.article);
   const requiresActions = changes.contentChanged ||
     changes.titleChanged ||
     changes.descriptionChanged ||
@@ -176,22 +203,22 @@ const processMatchedArticleUpdate = async ({
     ? precomputedActionResult || applyActions(actions, buildActionArticle(articleData))
     : null;
 
-  // Delete rules remain creation filters and never hard-delete an existing user article.
-  // Persist source changes only so rejected content cannot trigger enrichment or external writes.
+  // Delete-matched revisions update the reading copy and hide the article without
+  // changing article-level enrichment or semantic state.
   if (actionResult?.shouldDelete) {
     const article = await applyArticleUpdate({
       updatePlan,
-      derivedValues: {},
+      derivedValues: { status: 'delete' },
       tagUpdates: null,
       userId: feed.userId
     });
+    refreshDuplicateCache(duplicateCache, previousArticleState, article);
 
     return {
       article,
       newArticles: 0,
       updatedArticles: 1,
-      errors: 0,
-      semanticUpdate: null
+      errors: 0
     };
   }
 
@@ -217,9 +244,7 @@ const processMatchedArticleUpdate = async ({
       contentSummaryBullets: analysis.contentSummaryBullets,
       advertisementScore: analysis.advertisementScore,
       sentimentScore: analysis.sentimentScore,
-      qualityScore: analysis.qualityScore,
-      articleVector: null,
-      embedding_model: null
+      qualityScore: analysis.qualityScore
     });
   } else if (actionResult) {
     // Score provenance is not stored, so only explicit new overrides are safe to apply here.
@@ -261,6 +286,7 @@ const processMatchedArticleUpdate = async ({
     tagUpdates,
     userId: feed.userId
   });
+  refreshDuplicateCache(duplicateCache, previousArticleState, article);
 
   await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
 
@@ -268,14 +294,7 @@ const processMatchedArticleUpdate = async ({
     article,
     newArticles: 0,
     updatedArticles: 1,
-    errors: 0,
-    semanticUpdate: requiresAnalysis
-      ? {
-          articleId: article.id,
-          contentSourceHash: updatePlan.updateValues.contentSourceHash,
-          contentTextHash: updatePlan.updateValues.contentTextHash
-        }
-      : null
+    errors: 0
   };
 };
 
@@ -439,7 +458,8 @@ const processArticle = async (
         preloadedActions,
         hotlinkCountCache,
         hotlinkBatcher,
-        hotlinkUrls
+        hotlinkUrls,
+        duplicateCache
       });
     }
 
@@ -457,43 +477,42 @@ const processArticle = async (
     const duplicateMatch = await matchArticleDuplicate(articleIdentity, duplicateCache);
     if (duplicateMatch) return emptyArticleResult;
 
-    // Retrieve actions for applying rules to the article
-    // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
+    // Retrieve actions before enrichment so delete matches can take the persistence-only path.
     const actions = await resolveArticleActions(feed, preloadedActions);
 
     // Apply each action to the article
     // Actions allow users to automatically modify article properties based on regex patterns
     const actionResult = applyActions(actions, buildActionArticle(articleData));
 
-    // Skip article creation if delete action matched
-    if (actionResult.shouldDelete) return emptyArticleResult;
+    let analysis = null;
+    let persistenceData = articleData;
+    if (!actionResult.shouldDelete) {
+      // Analyze content once (summary + tags + scores) unless disabled for this feed.
+      analysis = feed?.applyAiAnalysis === false
+        ? createDefaultArticleAnalysis()
+        : await analyzeArticleContent(
+          analysisHtml,
+          fields.title,
+          fields.categories,
+          feed?.feedName || '',
+          RATE_LIMIT_DELAY_MS
+        );
 
-    // Analyze content once (summary + tags + scores) unless disabled for this feed.
-    // Done AFTER delete check to avoid wasting API calls.
-    let analysis = feed?.applyAiAnalysis === false
-      ? createDefaultArticleAnalysis()
-      : await analyzeArticleContent(
-        analysisHtml,
-        fields.title,
-        fields.categories,
-        feed?.feedName || '',
-        RATE_LIMIT_DELAY_MS
-      );
+      analysis = applyAnalysisScoreOverrides(analysis, actionResult);
 
-    analysis = applyAnalysisScoreOverrides(analysis, actionResult);
-
-    // Search if the article link is a hotlink.
-    // Hotness is determined by counting how often other articles link to this article URL.
-    const hotlinkCount = await countArticleHotlinks(feed, normalizedUrl, hotlinkCountCache);
-
-    // Create article with analysis results
-    const saveResult = await saveArticle(
-      feed,
-      {
+      // Hotness is derived only for articles accepted into the normal reading pipeline.
+      const hotlinkCount = await countArticleHotlinks(feed, normalizedUrl, hotlinkCountCache);
+      persistenceData = {
         ...articleData,
         hotInd: hotlinkCount > 0,
         hotlinks: hotlinkCount
-      },
+      };
+    }
+
+    // Delete matches still persist their cleaned source and hashes, but saveArticle skips enrichment.
+    const saveResult = await saveArticle(
+      feed,
+      persistenceData,
       analysis,
       actionResult
     );
@@ -503,8 +522,10 @@ const processArticle = async (
     if (!saveResult.created) {
       // Classify the exact winning row so a URL race cannot target a different article.
       const concurrentUpdate = await updateArticle(feed, articleData, { article: savedArticle });
-      duplicateCache?.add(savedArticle);
-      if (!concurrentUpdate.changed) return emptyArticleResult;
+      if (!concurrentUpdate.changed) {
+        duplicateCache?.add(savedArticle);
+        return emptyArticleResult;
+      }
 
       const matchedUpdateResult = await processMatchedArticleUpdate({
         feed,
@@ -514,15 +535,17 @@ const processArticle = async (
         hotlinkCountCache,
         hotlinkBatcher,
         hotlinkUrls,
+        duplicateCache,
         precomputedActionResult: actionResult,
         precomputedAnalysis: analysis
       });
-      duplicateCache?.add(matchedUpdateResult.article);
       return matchedUpdateResult;
     }
 
     duplicateCache?.add(savedArticle);
-    await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
+    if (!actionResult.shouldDelete) {
+      await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
+    }
 
     return {
       newArticles: 1,

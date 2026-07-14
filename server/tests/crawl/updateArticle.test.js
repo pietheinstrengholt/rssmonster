@@ -268,9 +268,7 @@ describe('updateArticle', () => {
     await module.applyArticleUpdate({
       updatePlan,
       derivedValues: {
-        qualityScore: 90,
-        articleVector: null,
-        embedding_model: null
+        qualityScore: 90
       },
       tagUpdates: {
         generatedTags: ['generated-new'],
@@ -283,9 +281,7 @@ describe('updateArticle', () => {
     expect(mocked.articleUpdate).toHaveBeenCalledWith(
       expect.objectContaining({
         title: 'Revised title',
-        qualityScore: 90,
-        articleVector: null,
-        embedding_model: null
+        qualityScore: 90
       }),
       { transaction: mocked.transaction }
     );
@@ -294,6 +290,10 @@ describe('updateArticle', () => {
     expect(persistedValues).not.toHaveProperty('favoriteInd');
     expect(persistedValues).not.toHaveProperty('clickedAmount');
     expect(persistedValues).not.toHaveProperty('attentionBucket');
+    expect(persistedValues).not.toHaveProperty('articleVector');
+    expect(persistedValues).not.toHaveProperty('embedding_model');
+    expect(persistedValues).not.toHaveProperty('eventId');
+    expect(persistedValues).not.toHaveProperty('topicId');
     expect(mocked.replaceArticleDerivedTags).toHaveBeenCalledWith({
       articleId: article.id,
       userId: 42,

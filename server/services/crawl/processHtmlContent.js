@@ -60,8 +60,23 @@ function normalizePlainText(value) {
 }
 
 // This function avoids language detection for text too short to identify reliably.
-function shouldDetectPlainTextLanguage(text) {
+function shouldDetectLanguage(text) {
   return text.length >= MIN_LANGUAGE_TEXT_LENGTH && /\p{L}/u.test(text);
+}
+
+// This function detects language consistently for plain-text and HTML content.
+function detectLanguage(text, feed, entryTitle) {
+  if (!shouldDetectLanguage(text)) return 'unknown';
+
+  try {
+    return language.get(text);
+  } catch (err) {
+    console.error(
+      `[${feed.feedName}] Error detecting language for article "${entryTitle}":`,
+      err.message
+    );
+    return 'unknown';
+  }
 }
 
 /* ======================================================
@@ -104,17 +119,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
         }
       }
 
-      let detectedLanguage = 'unknown';
-      if (shouldDetectPlainTextLanguage(text)) {
-        try {
-          detectedLanguage = language.get(text);
-        } catch (err) {
-          console.error(
-            `[${feed.feedName}] Error detecting language for article "${entryTitle}":`,
-            err.message
-          );
-        }
-      }
+      const detectedLanguage = detectLanguage(text, feed, entryTitle);
 
       return {
         content: contentOriginal,
@@ -190,16 +195,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
     const contentSourceHash = hashOriginalContent(contentOriginal);
     const contentTextHash = hashVisibleText(text);
 
-    let detectedLanguage = 'unknown';
-
-    try {
-      detectedLanguage = language.get(text);
-    } catch (err) {
-      console.error(
-        `[${feed.feedName}] Error detecting language for article "${entryTitle}":`,
-        err.message
-      );
-    }
+    const detectedLanguage = detectLanguage(text, feed, entryTitle);
 
     return {
       content: contentOriginal,

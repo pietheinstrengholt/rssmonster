@@ -340,6 +340,19 @@ describe('crawl content sanitization', () => {
     expect(result.hotlinkUrls).toEqual([]);
   });
 
+  it('skips unreliable language detection for short HTML content', () => {
+    const result = processHtmlContent(
+      '<p>This is English.</p>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Short HTML language test'
+    );
+
+    expect(result.text).toBe('This is English.');
+    expect(result.language).toBe('unknown');
+  });
+
   it('preserves paragraph boundaries in plain-text content', () => {
     const result = processHtmlContent(
       'Line one.\r\n\r\nLine two.\r\n',

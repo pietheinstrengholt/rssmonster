@@ -41,6 +41,51 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
     }
   };
 
+  // This function removes one article from a title index without disturbing other matches.
+  const removeTitleCandidate = (article) => {
+    const titleKey = normalizeTitleKey(article.title);
+    if (!titleKey) return;
+
+    const matches = articlesByTitle.get(titleKey) || [];
+    const remainingMatches = matches.filter(match => match.id !== article.id);
+    if (remainingMatches.length) {
+      articlesByTitle.set(titleKey, remainingMatches);
+    } else {
+      articlesByTitle.delete(titleKey);
+    }
+  };
+
+  // This function replaces an article's old duplicate identities with its committed state.
+  const update = (previousArticleState, updatedArticle) => {
+    if (
+      previousArticleState.urlHash &&
+      articleIdsByUrlHash.get(previousArticleState.urlHash) === previousArticleState.id
+    ) {
+      articleIdsByUrlHash.delete(previousArticleState.urlHash);
+    }
+    if (
+      previousArticleState.normalizedUrlHash &&
+      articleIdsByNormalizedUrlHash.get(previousArticleState.normalizedUrlHash) === previousArticleState.id
+    ) {
+      articleIdsByNormalizedUrlHash.delete(previousArticleState.normalizedUrlHash);
+    }
+    if (
+      previousArticleState.contentTextHash &&
+      sharedUserArticleHashIds.contentTextHashIds.get(previousArticleState.contentTextHash) === previousArticleState.id
+    ) {
+      sharedUserArticleHashIds.contentTextHashIds.delete(previousArticleState.contentTextHash);
+    }
+    if (
+      previousArticleState.contentSourceHash &&
+      sharedUserArticleHashIds.contentSourceHashIds.get(previousArticleState.contentSourceHash) === previousArticleState.id
+    ) {
+      sharedUserArticleHashIds.contentSourceHashIds.delete(previousArticleState.contentSourceHash);
+    }
+
+    removeTitleCandidate(previousArticleState);
+    add(updatedArticle);
+  };
+
   articles.forEach(add);
 
   return {
@@ -63,7 +108,8 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
     findFeedTitleCandidates(title) {
       return articlesByTitle.get(normalizeTitleKey(title)) || [];
     },
-    add
+    add,
+    update
   };
 };
 

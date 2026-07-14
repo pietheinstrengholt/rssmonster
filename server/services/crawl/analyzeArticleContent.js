@@ -44,6 +44,8 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
 };
 
 async function analyzeArticleContent(contentHtml, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
+  const categories = Array.isArray(categoryNames) ? categoryNames : [];
+
   // Normalize category names
   const normalizeGeneratedTag = tag =>
     normalizeTagName(tag)
@@ -51,9 +53,9 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
       .slice(0, 32);
 
   // Check if feed provides categories to use as tags
-  const hasFeedCategories = Array.isArray(categoryNames) && categoryNames.length > 0;
+  const hasFeedCategories = categories.length > 0;
   const feedCategoryTags = hasFeedCategories
-    ? [...new Set(categoryNames.map(normalizeGeneratedTag).filter(Boolean))].slice(0, 5)
+    ? [...new Set(categories.map(normalizeGeneratedTag).filter(Boolean))].slice(0, 5)
     : [];
 
   // Start with default analysis
@@ -94,11 +96,17 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
   }
 
   // Helper to bucket scores to nearest 10
-  const bucketScore = n =>
-    [0,10,20,30,40,50,60,70,80,90,100]
-      .reduce((prev, curr) =>
-        Math.abs(curr - n) < Math.abs(prev - n) ? curr : prev
+  const bucketScore = (value, fallback = 70) => {
+    const number = Number(value);
+    if (!Number.isFinite(number)) return fallback;
+
+    return [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
+      .reduce((previous, current) =>
+        Math.abs(current - number) < Math.abs(previous - number)
+          ? current
+          : previous
       );
+  };
 
   // Queue execution to respect rate limits
   await new Promise(resolve => {
@@ -216,7 +224,7 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
       "",
       `Feed Name: ${feedName || 'unknown'}`,
       `Article Title: ${title}`,
-      `Article Categories: ${categoryNames.join(', ')}`,
+      `Article Categories: ${categories.join(', ')}`,
       "Article Content:",
       "```",
       truncateContentForLLM(contentHtml),

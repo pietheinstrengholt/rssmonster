@@ -291,7 +291,6 @@ const performCrawl = async (userId = null, options = {}) => {
   let crawlTimedOut = false;
   let totalNewArticles = 0;
   let totalUpdatedArticles = 0;
-  const semanticUpdates = [];
 
   const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
 
@@ -337,8 +336,7 @@ const performCrawl = async (userId = null, options = {}) => {
       processedUserIds: userId ? [userId] : [],
       crawlStartedAt,
       totalNewArticles: 0,
-      totalUpdatedArticles: 0,
-      semanticUpdates: []
+      totalUpdatedArticles: 0
     };
   }
 
@@ -447,12 +445,6 @@ const performCrawl = async (userId = null, options = {}) => {
           );
           feedNewArticles += articleResult?.newArticles || 0;
           feedUpdatedArticles += articleResult?.updatedArticles || 0;
-          if (articleResult?.semanticUpdate) {
-            semanticUpdates.push({
-              userId: feed.userId,
-              ...articleResult.semanticUpdate
-            });
-          }
         }
       } finally {
         await hotlinkBatcher.flush();
@@ -652,8 +644,7 @@ const performCrawl = async (userId = null, options = {}) => {
     processedUserIds: [...processedUserIds],
     crawlStartedAt,
     totalNewArticles,
-    totalUpdatedArticles,
-    semanticUpdates
+    totalUpdatedArticles
   };
 
   if (!options.suppressDoneEvent) {

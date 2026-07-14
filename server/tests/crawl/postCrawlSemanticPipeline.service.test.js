@@ -68,18 +68,11 @@ describe('runPostCrawlSemanticPipeline', () => {
     const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/postCrawlSemanticPipeline.js');
     const result = await runPostCrawlSemanticPipeline({
       processedUserIds: [42],
-      crawlStartedAt,
-      semanticUpdates: [{
-        userId: 42,
-        articleId: 99,
-        contentSourceHash: 'source-hash',
-        contentTextHash: 'text-hash'
-      }]
+      crawlStartedAt
     });
 
     expect(mocked.embedArticles).toHaveBeenCalledWith(42, {
-      createdAfter: crawlStartedAt,
-      articleIds: [99]
+      createdAfter: crawlStartedAt
     });
     expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(42, {
       createdAfter: crawlStartedAt,
@@ -94,7 +87,6 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(result.results[0].interestScores.updatedCount).toBe(5);
   });
 });
-
 
 
 

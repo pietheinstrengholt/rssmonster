@@ -39,13 +39,8 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
   });
 
   for (const userId of userIds) {
-    const updatedArticleIds = (result?.semanticUpdates || [])
-      .filter(update => Number(update.userId) === Number(userId))
-      .map(update => update.articleId)
-      .filter(Boolean);
     const embedSummary = await embedArticles(userId, {
-      createdAfter: result?.crawlStartedAt || null,
-      articleIds: updatedArticleIds
+      createdAfter: result?.crawlStartedAt || null
     });
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
@@ -69,9 +64,6 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       createdAfter: result?.crawlStartedAt || null,
       skipTopicAssignment: false
     });
-
-    // Existing clustered articles need a dedicated idempotent reassignment API before
-    // semanticUpdates can safely move them without corrupting event article counts.
 
     console.log(
       `[SEMANTIC] user=${userId} stage=events ` +
@@ -127,7 +119,6 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
 }
 
 export default runPostCrawlSemanticPipeline;
-
 
 
 
