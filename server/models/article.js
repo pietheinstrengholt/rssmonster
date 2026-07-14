@@ -113,6 +113,11 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'unread'
       },
+      filteredInd: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       duplicateOfArticleId: {
         type: DataTypes.INTEGER,
         allowNull: true

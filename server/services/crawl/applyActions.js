@@ -36,6 +36,7 @@ function applyActions(actions, article = {}) {
     favoriteInd: 0,
     clickedAmount: 0,
     status: 'unread',
+    filteredInd: false,
     shouldDelete: false,
     advertisementScore: null,
     qualityScore: null,
@@ -58,8 +59,7 @@ function applyActions(actions, article = {}) {
     switch (action.actionType) {
       // Delete action: takes precedence over all others
       case 'delete':
-        console.log(`Delete action "${action.name}" matched article "${article.title}". Storing it with delete status.`);
-        result.status = 'delete';
+        console.log(`Delete action "${action.name}" matched article "${article.title}". Storing it as filtered.`);
         result.shouldDelete = true;
         return result;
 

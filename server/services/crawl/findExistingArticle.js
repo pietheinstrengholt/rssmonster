@@ -13,7 +13,8 @@ export async function findByUserContentTextHash(identity) {
     raw: true,
     where: {
       userId: identity.userId,
-      contentTextHash: identity.contentTextHash
+      contentTextHash: identity.contentTextHash,
+      filteredInd: false
     }
   });
 }
@@ -27,7 +28,8 @@ export async function findByUserContentSourceHash(identity) {
     raw: true,
     where: {
       userId: identity.userId,
-      contentSourceHash: identity.contentSourceHash
+      contentSourceHash: identity.contentSourceHash,
+      filteredInd: false
     }
   });
 }
@@ -79,6 +81,7 @@ export async function findFeedTitleCandidates(identity, windowDays) {
     where: {
       userId: identity.userId,
       feedId: identity.feedId,
+      filteredInd: false,
       [Op.and]: sequelize.where(
         sequelize.fn('LOWER', sequelize.fn('TRIM', sequelize.col('title'))),
         titleKey

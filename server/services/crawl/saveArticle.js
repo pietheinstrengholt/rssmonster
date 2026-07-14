@@ -107,7 +107,8 @@ async function saveArticle(feed, data, analysis, actionResult) {
     : await resolveOfficialSourceForArticle(feed.userId, data.link);
   const articleValues = buildArticlePersistenceValues(feed, {
     ...data,
-    status: isDeleteMatch ? 'delete' : actionResult.status,
+    status: actionResult.status,
+    filteredInd: isDeleteMatch,
     favoriteInd: isDeleteMatch ? undefined : actionResult.favoriteInd,
     clickedAmount: isDeleteMatch ? undefined : actionResult.clickedAmount,
     hotInd: isDeleteMatch ? undefined : data.hotInd ?? actionResult.hotInd,

@@ -97,6 +97,19 @@ describe('article ownership authorization', () => {
     expect(res.body).toEqual({ error: 'Article not found' });
   });
 
+  it('GET article by ID hides filtered articles from their owner', async () => {
+    const owner = await createUser(uniqueName('filtered-article-owner'));
+    const { article } = await createArticleFor(owner);
+    await article.update({ filteredInd: true });
+
+    const res = await request(app)
+      .get(`/api/articles/${article.id}`)
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(res.status).toBe(404);
+    expect(res.body).toEqual({ error: 'Article not found' });
+  });
+
   it('GET duplicate articles returns owned duplicates and rejects foreign users', async () => {
     const owner = await createUser(uniqueName('duplicate-owner'));
     const foreignUser = await createUser(uniqueName('duplicate-viewer'));
@@ -112,6 +125,18 @@ describe('article ownership authorization', () => {
       contentHtml: 'Duplicate body',
       published: new Date('2026-05-01T11:00:00Z')
     });
+    await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      duplicateOfArticleId: article.id,
+      status: 'duplicate',
+      filteredInd: true,
+      url: `https://example.com/${owner.username}/filtered-duplicate`,
+      title: `${owner.username} filtered duplicate`,
+      contentOriginal: '<p>Filtered duplicate body</p>',
+      contentHtml: 'Filtered duplicate body',
+      published: new Date('2026-05-01T12:00:00Z')
+    });
 
     const ownerResponse = await request(app)
       .get(`/api/articles/duplicates/${article.id}`)
@@ -124,6 +149,33 @@ describe('article ownership authorization', () => {
     expect(ownerResponse.body.articles.map(item => item.id)).toEqual([duplicate.id]);
     expect(foreignResponse.status).toBe(404);
     expect(foreignResponse.body).toEqual({ error: 'Article not found' });
+  });
+
+  it('manager overview counts only unfiltered articles', async () => {
+    const owner = await createUser(uniqueName('manager-filtered-owner'));
+    const { feed, article } = await createArticleFor(owner);
+    await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      filteredInd: true,
+      url: `https://example.com/${owner.username}/filtered-article`,
+      title: `${owner.username} filtered article`,
+      contentOriginal: '<p>Filtered article body</p>',
+      contentHtml: 'Filtered article body',
+      published: new Date('2026-05-01T12:00:00Z')
+    });
+
+    const res = await request(app)
+      .post('/api/manager/overview-counts')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none' });
+
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(1);
+    expect(res.body.unreadCount).toBe(1);
+    expect(res.body.categories[0].feeds[0].unreadCount).toBe(1);
+    expect(article.filteredInd).toBe(false);
   });
 
   it('mark-as-seen rejects foreign-user article without mutating it', async () => {

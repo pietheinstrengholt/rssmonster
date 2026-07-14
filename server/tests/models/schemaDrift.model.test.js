@@ -39,6 +39,13 @@ describe('model schema declarations', () => {
     expect(Article.rawAttributes.contentStripped).toBeUndefined();
   });
 
+  it('declares filtered articles with a false default', () => {
+    expect(Article.rawAttributes.filteredInd).toMatchObject({
+      allowNull: false,
+      defaultValue: false
+    });
+  });
+
   it('declares original source identity as contentSourceHash', () => {
     expect(Article.rawAttributes.contentSourceHash).toMatchObject({
       allowNull: true

@@ -63,6 +63,7 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
     userId: feed?.userId ?? data.userId ?? null,
     feedId: feed?.id ?? data.feedId ?? null,
     status: data.status,
+    filteredInd: Boolean(data.filteredInd),
     favoriteInd: data.favoriteInd,
     clickedAmount: data.clickedAmount,
     hotInd: data.hotInd ?? data.hotlinkInd,

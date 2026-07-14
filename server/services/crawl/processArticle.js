@@ -152,6 +152,7 @@ const persistAcceptedHotlinks = async (urls, feed, hotlinkBatcher) => {
 // This function snapshots the identities that a committed article update may replace in the cache.
 const buildDuplicateCacheArticleState = article => ({
   id: article.id,
+  filteredInd: Boolean(article.filteredInd),
   urlHash: article.urlHash,
   normalizedUrlHash: article.normalizedUrlHash,
   title: article.title,
@@ -202,13 +203,16 @@ const processMatchedArticleUpdate = async ({
   const actionResult = requiresActions
     ? precomputedActionResult || applyActions(actions, buildActionArticle(articleData))
     : null;
+  const derivedValues = requiresActions
+    ? { filteredInd: Boolean(actionResult?.shouldDelete) }
+    : {};
 
   // Delete-matched revisions update the reading copy and hide the article without
   // changing article-level enrichment or semantic state.
   if (actionResult?.shouldDelete) {
     const article = await applyArticleUpdate({
       updatePlan,
-      derivedValues: { status: 'delete' },
+      derivedValues,
       tagUpdates: null,
       userId: feed.userId
     });
@@ -238,7 +242,6 @@ const processMatchedArticleUpdate = async ({
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
   }
 
-  const derivedValues = {};
   if (analysis) {
     Object.assign(derivedValues, {
       contentSummaryBullets: analysis.contentSummaryBullets,

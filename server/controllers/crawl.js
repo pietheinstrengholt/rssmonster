@@ -4,7 +4,10 @@ import discoverRssLink from '../services/feeds/discoverRssLink.js';
 import parseFeed from '../services/feeds/parser.js';
 import processArticle from '../services/crawl/processArticle.js';
 import { resolveFeedPublishedDate } from '../services/crawl/extractEntryFields.js';
-import createArticleDuplicateCache, { createSharedUserArticleHashIds } from '../services/crawl/articleDuplicateCache.js';
+import createArticleDuplicateCache, {
+  addSharedUserArticleHashes,
+  createSharedUserArticleHashIds
+} from '../services/crawl/articleDuplicateCache.js';
 import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
 import createHotlinkBatcher from '../services/crawl/hotlinkBatcher.js';
 import { runPostCrawlSemanticPipeline } from '../services/crawl/postCrawlSemanticPipeline.js';
@@ -167,6 +170,13 @@ const getActionsByUserId = async (feeds) => {
   return actionsByUserId;
 };
 
+// This function fails cache initialization when a seed query omits article filter state.
+const assertDuplicateCacheSeedFilterState = article => {
+  if (article.filteredInd === undefined || article.filteredInd === null) {
+    throw new Error('Duplicate cache seed article is missing filteredInd.');
+  }
+};
+
 // This function preloads duplicate indexes for every feed in the crawl batch.
 const getDuplicateCachesByFeedId = async (feeds) => {
   const feedIds = feeds.map(feed => feed.id);
@@ -185,6 +195,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
     Promise.all(feeds.map(feed => Article.findAll({
       attributes: [
         'id',
+        'filteredInd',
         'urlHash',
         'normalizedUrlHash',
         'title',
@@ -200,7 +211,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
     }))),
     userIds.length > 0
       ? Article.findAll({
-        attributes: ['id', 'userId', 'contentTextHash', 'contentSourceHash'],
+        attributes: ['id', 'userId', 'filteredInd', 'contentTextHash', 'contentSourceHash'],
         where: {
           userId: { [db.Sequelize.Op.in]: userIds },
           [db.Sequelize.Op.or]: [
@@ -217,16 +228,13 @@ const getDuplicateCachesByFeedId = async (feeds) => {
   const articleHashIdsByUserId = new Map(userIds.map(id => [id, createSharedUserArticleHashIds()]));
 
   for (const article of userContentSourceHashArticles) {
+    assertDuplicateCacheSeedFilterState(article);
     const articleHashIds = articleHashIdsByUserId.get(article.userId);
-    if (article.contentTextHash) {
-      articleHashIds?.contentTextHashIds.set(article.contentTextHash, article.id);
-    }
-    if (article.contentSourceHash) {
-      articleHashIds?.contentSourceHashIds.set(article.contentSourceHash, article.id);
-    }
+    if (articleHashIds) addSharedUserArticleHashes(articleHashIds, article);
   }
 
   for (const [index, feed] of feeds.entries()) {
+    feedArticleLists[index].forEach(assertDuplicateCacheSeedFilterState);
     cachesByFeedId.set(
       feed.id,
       createArticleDuplicateCache(

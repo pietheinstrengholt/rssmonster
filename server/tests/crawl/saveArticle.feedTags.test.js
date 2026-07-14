@@ -262,7 +262,8 @@ describe('saveArticle feed tags', () => {
       null,
       {
         shouldDelete: true,
-        status: 'delete',
+        status: 'unread',
+        filteredInd: false,
         favoriteInd: 1,
         clickedAmount: 2,
         hotInd: true,
@@ -274,7 +275,8 @@ describe('saveArticle feed tags', () => {
     expect(mocked.tagCreate).not.toHaveBeenCalled();
     expect(mocked.articleCreate).toHaveBeenCalledWith(
       expect.objectContaining({
-        status: 'delete',
+        status: 'unread',
+        filteredInd: true,
         favoriteInd: undefined,
         clickedAmount: undefined,
         hotInd: undefined,

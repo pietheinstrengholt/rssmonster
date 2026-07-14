@@ -111,6 +111,32 @@ describe('updateArticle', () => {
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
   });
 
+  it('matches a filtered article by external publisher identity', async () => {
+    const article = storedArticle({ filteredInd: true });
+    mocked.articleFindOne.mockResolvedValue(article);
+    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      title: 'Revised filtered article title'
+    }));
+
+    expect(mocked.articleFindOne).toHaveBeenCalledWith({
+      where: {
+        userId: 42,
+        feedId: 7,
+        externalId: 'publisher-id',
+        externalIdType: 'guid'
+      }
+    });
+    expect(mocked.articleFindOne.mock.calls[0][0].where).not.toHaveProperty('filteredInd');
+    expect(result).toMatchObject({
+      article,
+      matched: true,
+      changed: true,
+      changes: { titleChanged: true }
+    });
+  });
+
   it('classifies changed body fields without mutating the article', async () => {
     const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({

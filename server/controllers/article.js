@@ -155,7 +155,11 @@ const getDuplicateArticles = async (req, res) => {
     }
 
     const articles = await Article.findAll({
-      where: { userId, duplicateOfArticleId: articleId },
+      where: {
+        userId,
+        duplicateOfArticleId: articleId,
+        filteredInd: false
+      },
       include: [
         {
           model: Feed,

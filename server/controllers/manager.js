@@ -108,6 +108,7 @@ const buildOverviewWhere = async ({ userId, grouping }) => {
   const baseWhere = {
     userId,
     ...canonicalArticleWhere(),
+    filteredInd: false,
     advertisementScore: { [Op.gte]: settings?.minAdvertisementScore ?? 0 },
     sentimentScore: { [Op.gte]: settings?.minSentimentScore ?? 0 },
     qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }

@@ -14,9 +14,7 @@ export const DUPLICATE_SIMILARITY_THRESHOLD = Number.parseFloat(
 export function canonicalArticleWhere() {
   return {
     duplicateOfArticleId: { [Op.is]: null },
-    [Op.and]: [
-      { status: { [Op.ne]: 'delete' } }
-    ]
+    filteredInd: false
   };
 }
 

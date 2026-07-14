@@ -58,7 +58,7 @@ describe('applyActions searchable article fields', () => {
     expect(result[scoreField]).toBe(0);
   });
 
-  it('marks delete matches for persistence with delete status', () => {
+  it('marks delete matches without changing the default reading status', () => {
     const result = applyActions([{
       name: 'Delete matching articles',
       actionType: 'delete',
@@ -67,7 +67,27 @@ describe('applyActions searchable article fields', () => {
 
     expect(result).toMatchObject({
       shouldDelete: true,
-      status: 'delete'
+      status: 'unread'
+    });
+  });
+
+  it('does not overwrite a reading status set before a delete match', () => {
+    const result = applyActions([
+      {
+        name: 'Read matching articles',
+        actionType: 'read',
+        regularExpression: 'Rendered publisher body'
+      },
+      {
+        name: 'Delete matching articles',
+        actionType: 'delete',
+        regularExpression: 'Rendered publisher body'
+      }
+    ], article);
+
+    expect(result).toMatchObject({
+      shouldDelete: true,
+      status: 'read'
     });
   });
 

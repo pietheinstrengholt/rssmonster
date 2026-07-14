@@ -18,13 +18,13 @@ describe('analyzeArticleContent response validation', () => {
     vi.resetModules();
     completionsCreate.mockReset();
     OpenAIMock.mockClear();
-    process.env.OPENAI_API_KEY = 'test-key';
-    process.env.OPENAI_MODEL_CRAWL = 'test-model';
+    vi.stubEnv('OPENAI_API_KEY', 'test-key');
+    vi.stubEnv('OPENAI_MODEL_CRAWL', 'test-model');
+    vi.stubEnv('SKIP_OPENAI_ANALYSIS', '');
   });
 
   afterEach(() => {
-    delete process.env.OPENAI_API_KEY;
-    delete process.env.OPENAI_MODEL_CRAWL;
+    vi.unstubAllEnvs();
   });
 
   it('normalizes invalid categories and falls back for non-numeric scores', async () => {

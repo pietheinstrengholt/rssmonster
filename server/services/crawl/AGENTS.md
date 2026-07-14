@@ -122,7 +122,6 @@ On the creation path, the entry must also:
 
 - not match an existing publisher identity that should be updated instead
 - not match duplicate evidence
-- not be rejected by user rules
 
 Expensive AI work should only happen after eligibility has been established.
 
@@ -251,15 +250,19 @@ Content, title, and description changes rerun actions and analysis; author, publ
 and lead-image-only changes remain source-only. URL changes rerun actions and refresh
 official-source and hotlink metadata without rerunning AI analysis.
 
-Delete rules are creation filters. If a delete rule is set, do the following:
+Delete action rules persist matching entries as filtered records. If a delete action rule is set, do the following:
 
 existing article found
 → revised source matches delete rule
 → update source/read-copy fields
-→ set the status to delete
+→ set filteredInd to true
 → skip lightweight enrichment
 → keep vector, cluster, event, topic, and island state unchanged
 → hide article from normal queries
+
+When a later revision reruns actions and no longer matches a delete rule, set `filteredInd` back to
+false and continue the normal lightweight enrichment path. Source-only revisions that do not rerun
+actions preserve the existing filteredInd state.
 
 Generated, feed, and rule tags have explicit provenance and may be reconciled during updates.
 Null or unknown tag types are treated as manual and are preserved. Existing read, favorite,
@@ -286,6 +289,12 @@ title is at least 20 characters, and publication dates are within seven days.
 
 Content hashes are lookup signals, not database uniqueness constraints. Exact and normalized URL
 hashes are protected by feed-scoped unique constraints.
+
+Filtered articles remain part of publisher identity and insert-race handling, so later revisions
+update the same stored row. They do not participate in content-hash or title-based duplicate
+suppression; a hidden article must not prevent another active source from entering the library.
+Feed-scoped URL identity continues to include filtered rows because database URL uniqueness and
+the publisher-update flow require one stored row for the same feed URL.
 
 Duplicate detection never updates existing articles.
 
@@ -435,16 +444,16 @@ and source HTML, descriptions, lazy attributes, and the strongest valid `srcset`
 
 ---
 
-# User Rules
+# User Action Rules
 
-User rules execute after duplicate prevention but before persistence.
+User action rules execute after duplicate prevention but before persistence.
 
 Each regular expression tests the available `contentHtml`, `contentText`, title, description, and
 URL independently. Invalid regular expressions are skipped.
 
 Rules may:
 
-- reject articles
+- set filterInd to true, so articles are hidden from normal queries and skipped for AI enrichment
 - mark read
 - favourite
 - add tags
@@ -453,7 +462,7 @@ Rules may:
 Advertisement and quality scores use higher-is-better semantics. Advertisement and bad-quality
 actions therefore override their respective scores to zero.
 
-Rejected articles never reach AI enrichment.
+Filtered articles never reach AI enrichment.
 
 The article row and all generated, feed, and rule tags are persisted in one transaction.
 
@@ -495,7 +504,7 @@ normalized description text. Language detection uses the same canonical visible 
 
 HTML processing only returns outbound hotlink candidates; it does not write them. Candidates are
 persisted after a new article is successfully inserted or an accepted publisher update commits.
-Duplicates, rejected creations, failed writes, unchanged entries, and delete-matched revisions do
+Duplicates, articles with a filterInd = true, failed writes, unchanged entries, and delete-matched revisions do
 not contribute hotlinks.
 
 Only HTTP(S) links outside the article host are candidates. The apex host and its leading `www.`
@@ -511,9 +520,10 @@ Only articles that:
 - are eligible
 - are not updates
 - are not duplicates
-- are not rejected
 
 are inserted into the database.
+
+Delete-matched entries are inserted with `filteredInd = true` and skip enrichment and tag writes.
 
 Concurrent crawlers discovering the same article should still produce exactly one persisted record.
 
@@ -542,7 +552,7 @@ Callers should be able to distinguish:
 - processed feeds
 - whether the overall crawl timed out
 
-Skipped, unchanged, duplicate, and rule-rejected entries currently share the zero-change result
+Skipped, unchanged, and duplicate entries currently share the zero-change result
 and are not exposed as separate aggregate counters.
 
 An empty crawl can still be completely successful.

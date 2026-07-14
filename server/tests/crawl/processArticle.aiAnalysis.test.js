@@ -472,7 +472,7 @@ describe('processArticle AI analysis controls', () => {
     );
   });
 
-  it('updates an externally identified article before enrichment and duplicate checks', async () => {
+  it('updates and reactivates an externally identified article before duplicate checks', async () => {
     const hotlinkBatcher = { add: vi.fn() };
     const duplicateCache = { update: vi.fn() };
     const storedArticle = {
@@ -482,7 +482,8 @@ describe('processArticle AI analysis controls', () => {
       title: 'Old article title',
       published: new Date('2026-07-01T00:00:00Z'),
       contentTextHash: 'old-text-hash',
-      contentSourceHash: 'old-source-hash'
+      contentSourceHash: 'old-source-hash',
+      filteredInd: true
     };
     mocked.applyActions.mockReturnValue({
       shouldDelete: false,
@@ -555,6 +556,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.saveArticle).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
       derivedValues: expect.objectContaining({
+        filteredInd: false,
         contentSummaryBullets: ['Updated bullet'],
         advertisementScore: 0,
         sentimentScore: 90,
@@ -569,6 +571,7 @@ describe('processArticle AI analysis controls', () => {
     }));
     expect(duplicateCache.update).toHaveBeenCalledWith({
       id: 123,
+      filteredInd: true,
       urlHash: 'old-url-hash',
       normalizedUrlHash: 'old-normalized-url-hash',
       title: 'Old article title',
@@ -590,6 +593,7 @@ describe('processArticle AI analysis controls', () => {
     });
     expect(result).not.toHaveProperty('semanticUpdate');
     const derivedValues = mocked.applyArticleUpdate.mock.calls[0][0].derivedValues;
+    expect(derivedValues.filteredInd).toBe(false);
     expect(derivedValues).not.toHaveProperty('articleVector');
     expect(derivedValues).not.toHaveProperty('embedding_model');
     expect(derivedValues).not.toHaveProperty('eventId');
@@ -800,10 +804,12 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('persists only source fields when a changed existing article matches a delete rule', async () => {
-    mocked.updateArticle.mockResolvedValue(changedUpdatePlan({
+    const updatePlan = changedUpdatePlan({
       contentChanged: true,
       urlChanged: true
-    }));
+    });
+    updatePlan.article.status = 'read';
+    mocked.updateArticle.mockResolvedValue(updatePlan);
     mocked.applyActions.mockReturnValue({
       shouldDelete: true,
       status: 'unread',
@@ -845,7 +851,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.resolveOfficialSourceForArticle).not.toHaveBeenCalled();
     expect(hotlinkCountCache.count).not.toHaveBeenCalled();
     expect(mocked.applyArticleUpdate).toHaveBeenCalledWith(expect.objectContaining({
-      derivedValues: { status: 'delete' },
+      derivedValues: { filteredInd: true },
       tagUpdates: null,
       userId: 42
     }));
@@ -855,6 +861,7 @@ describe('processArticle AI analysis controls', () => {
       updatedArticles: 1,
       errors: 0
     });
+    expect(result.article.status).toBe('read');
     expect(result).not.toHaveProperty('semanticUpdate');
   });
 
@@ -941,7 +948,8 @@ describe('processArticle AI analysis controls', () => {
     });
     mocked.applyActions.mockReturnValue({
       shouldDelete: true,
-      status: 'delete',
+      status: 'unread',
+      filteredInd: false,
       favoriteInd: false,
       clickedAmount: 0,
       hotInd: false,
@@ -971,7 +979,11 @@ describe('processArticle AI analysis controls', () => {
         contentTextHash: 'rejected-text-hash'
       }),
       null,
-      expect.objectContaining({ shouldDelete: true, status: 'delete' })
+      expect.objectContaining({
+        shouldDelete: true,
+        status: 'unread',
+        filteredInd: false
+      })
     );
     expect(mocked.hotlinkCount).not.toHaveBeenCalled();
     expect(hotlinkBatcher.add).not.toHaveBeenCalled();

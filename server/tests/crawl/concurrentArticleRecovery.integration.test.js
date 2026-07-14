@@ -133,6 +133,35 @@ describe('concurrent article recovery integration', () => {
     });
   });
 
+  it('recovers an exact filtered URL winner', async () => {
+    const suffix = uniqueName('filtered-url');
+    const link = `https://example.com/race/${suffix}`;
+    const filteredResult = await saveArticle(feed, articleData(`${suffix}-filtered`, {
+      link,
+      normalizedUrl: link
+    }), null, {
+      ...actionResult,
+      shouldDelete: true
+    });
+    const raced = await saveArticle(feed, articleData(`${suffix}-incoming`, {
+      link,
+      normalizedUrl: `${link}/revised`
+    }), analysis, actionResult);
+
+    expect(filteredResult).toMatchObject({
+      created: true,
+      article: { filteredInd: true }
+    });
+    expect(raced).toMatchObject({
+      created: false,
+      article: {
+        id: filteredResult.article.id,
+        filteredInd: true
+      },
+      conflict: { identity: 'urlHash', recovered: true }
+    });
+  });
+
   it('keeps same-content articles distinct and recovers the requested URL winner', async () => {
     const suffix = uniqueName('same-content');
     const sharedContent = {

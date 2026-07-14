@@ -9,6 +9,21 @@ const createSharedUserArticleHashIds = () => ({
   contentSourceHashIds: new Map()
 });
 
+// This function determines whether an article may suppress active content or title duplicates.
+const isActiveDuplicateCandidate = article => !Boolean(article.filteredInd);
+
+// This function adds an active article to the shared user-wide content hash indexes.
+const addSharedUserArticleHashes = (sharedUserArticleHashIds, article) => {
+  if (!isActiveDuplicateCandidate(article)) return;
+
+  if (article.contentTextHash) {
+    sharedUserArticleHashIds.contentTextHashIds.set(article.contentTextHash, article.id);
+  }
+  if (article.contentSourceHash) {
+    sharedUserArticleHashIds.contentSourceHashIds.set(article.contentSourceHash, article.id);
+  }
+};
+
 // This function creates an in-memory duplicate index for one feed crawl.
 const createArticleDuplicateCache = (articles = [], userArticleHashIds = createSharedUserArticleHashIds()) => {
   const articleIdsByUrlHash = new Map();
@@ -24,6 +39,9 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
   const add = (article) => {
     if (article.urlHash) articleIdsByUrlHash.set(article.urlHash, article.id);
     if (article.normalizedUrlHash) articleIdsByNormalizedUrlHash.set(article.normalizedUrlHash, article.id);
+
+    if (!isActiveDuplicateCandidate(article)) return;
+
     const titleKey = normalizeTitleKey(article.title);
     if (titleKey) {
       const matches = articlesByTitle.get(titleKey) || [];
@@ -33,12 +51,7 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
       });
       articlesByTitle.set(titleKey, matches);
     }
-    if (article.contentTextHash) {
-      sharedUserArticleHashIds.contentTextHashIds.set(article.contentTextHash, article.id);
-    }
-    if (article.contentSourceHash) {
-      sharedUserArticleHashIds.contentSourceHashIds.set(article.contentSourceHash, article.id);
-    }
+    addSharedUserArticleHashes(sharedUserArticleHashIds, article);
   };
 
   // This function removes one article from a title index without disturbing other matches.
@@ -114,4 +127,8 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
 };
 
 export default createArticleDuplicateCache;
-export { createSharedUserArticleHashIds };
+export {
+  addSharedUserArticleHashes,
+  createSharedUserArticleHashIds,
+  isActiveDuplicateCandidate
+};
