@@ -155,7 +155,7 @@ const getFallbackCategory = async (userId, excludeCategoryId = null) => {
 
 const getArticleContent = (article) =>
   article.contentOriginal ||
-  article.contentStripped ||
+  article.contentHtml ||
   article.description ||
   '';
 

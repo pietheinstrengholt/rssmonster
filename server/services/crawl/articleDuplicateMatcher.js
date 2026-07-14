@@ -3,8 +3,8 @@ import normalizeUrl from './normalizeUrl.js';
 import {
   findByFeedNormalizedUrlHash,
   findByFeedUrlHash,
-  findByUserContentHash,
-  findByUserContentStrippedHash,
+  findByUserContentSourceHash,
+  findByUserContentTextHash,
   findFeedTitleCandidates
 } from './findExistingArticle.js';
 
@@ -32,8 +32,8 @@ export function buildArticleIdentity({
   title,
   link,
   normalizedUrl = null,
-  contentHash = null,
-  contentStrippedHash = null,
+  contentSourceHash = null,
+  contentTextHash = null,
   published = null
 }) {
   const resolvedNormalizedUrl = normalizedUrl || (link ? normalizeUrl(link) : null);
@@ -45,8 +45,8 @@ export function buildArticleIdentity({
     title,
     link,
     normalizedUrl: resolvedNormalizedUrl,
-    contentHash,
-    contentStrippedHash,
+    contentSourceHash,
+    contentTextHash,
     published,
     hasStrongUrl,
     urlHash: hasStrongUrl ? hashValue(link) : null,
@@ -120,17 +120,17 @@ const matchDatabaseTitleFallback = async identity => {
 export async function matchArticleDuplicate(identity, duplicateCache = null) {
   const checks = [
     [
-      'findByUserContentStrippedHash',
-      findByUserContentStrippedHash,
-      identity.contentStrippedHash,
-      'contentStrippedHash',
+      'findByUserContentTextHash',
+      findByUserContentTextHash,
+      identity.contentTextHash,
+      'contentTextHash',
       'user'
     ],
     [
-      'findByUserContentHash',
-      findByUserContentHash,
-      identity.contentHash,
-      'contentHash',
+      'findByUserContentSourceHash',
+      findByUserContentSourceHash,
+      identity.contentSourceHash,
+      'contentSourceHash',
       'user'
     ],
     [

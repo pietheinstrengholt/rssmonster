@@ -18,7 +18,7 @@ The crawler is responsible for:
 - Preventing duplicate articles from being created.
 - Normalizing unsafe publisher content.
 - Applying user-defined rules.
-- Enriching newly created articles.
+- Enriching newly created and meaningfully revised articles.
 - Reporting progress.
 
 The crawler owns the transition from an external feed entry to a local article.
@@ -90,7 +90,8 @@ RSSMonster preserves enough publisher information to support:
 - AI analysis
 - language detection
 
-Original publisher content should never be destroyed unnecessarily.
+The selected feed body is retained verbatim as `contentOriginal`. Publisher compatibility,
+cleanup, URL rewriting, and sanitization operate only on derived content.
 
 ---
 
@@ -109,14 +110,19 @@ An entry is eligible when it satisfies all required conditions.
 Required:
 
 - belongs to the current user
-- newer than crawlSince
-- contains a valid article URL
+- is not older than `crawlSince` when a parseable publication date is available
+- contains a non-empty article link
 - contains either:
   - article body
   - description
   - structured media
-- is not already represented by article identity
-- is not rejected by user rules
+  - lead image
+
+On the creation path, the entry must also:
+
+- not match an existing publisher identity that should be updated instead
+- not match duplicate evidence
+- not be rejected by user rules
 
 Expensive AI work should only happen after eligibility has been established.
 
@@ -131,9 +137,11 @@ Extract feed fields
         ↓
 Resolve external article identity
         ↓
-Normalize HTML and visible text
+Extract structured media, including recognized provider iframes
         ↓
-Extract structured media
+Derive compatible, cleaned, URL-normalized, sanitized HTML and visible text
+        ↓
+Extract description fallback, language, title, and lead image
         ↓
 Update existing article by external identity
         ↓
@@ -143,7 +151,9 @@ Apply user actions
         ↓
 AI enrichment
         ↓
-Persist article
+Persist article and crawl-owned tags transactionally
+        ↓
+Persist accepted hotlink observations
 ```
 
 The order is intentional.
@@ -182,7 +192,8 @@ Preferred for RSS feeds.
 
 Used only when no stable publisher identity exists.
 
-Tracking parameters and URL noise should be removed before comparison.
+Normalization removes fragments, known tracking parameters, and trailing path slashes while
+preserving meaningful query parameters. It does not perform publisher-specific URL guessing.
 
 ---
 
@@ -213,7 +224,8 @@ Updates compare the mutable publisher fields.
 Meaningful changes include:
 
 - title
-- contentHash
+- author
+- original, sanitized, or visible content and their hashes
 - description
 - URL
 - lead image
@@ -233,6 +245,20 @@ Updates preserve user state such as:
 
 Publisher revisions should never reset user interaction.
 
+Update matching is two-phase: normalized source values are classified without writing, then
+source fields, affected derived fields, and crawl-owned tags are committed in one transaction.
+Content, title, and description changes rerun actions and analysis; author, publication, media,
+and lead-image-only changes remain source-only. URL changes rerun actions and refresh
+official-source and hotlink metadata without rerunning AI analysis.
+
+Delete rules are creation filters. If an existing article revision newly matches a delete rule,
+RSSMonster keeps the row, applies the source update, and skips derived enrichment and hotlink
+writes for that revision.
+
+Generated, feed, and rule tags have explicit provenance and may be reconciled during updates.
+Null or unknown tag types are treated as manual and are preserved. Existing read, favorite,
+click, and attention state is also preserved because action-versus-user provenance is not stored.
+
 ---
 
 # Duplicate Detection
@@ -241,15 +267,19 @@ Duplicate detection is only executed for entries that were **not** matched throu
 
 Its purpose is preventing multiple local articles representing the same information.
 
-Duplicate detection relies on progressively weaker evidence.
+Duplicate checks run in this implemented order:
 
-Typical signals include:
+1. visible-text hash within the user
+2. original-source hash within the user
+3. normalized URL hash within the feed
+4. exact URL hash within the feed
+5. exact title fallback within the feed
 
-- exact URL
-- normalized URL
-- original content hash
-- visible text hash
-- title and publication fallback
+The title fallback is only available when the entry lacks a strong HTTP(S) URL, the normalized
+title is at least 20 characters, and publication dates are within seven days.
+
+Content hashes are lookup signals, not database uniqueness constraints. Exact and normalized URL
+hashes are protected by feed-scoped unique constraints.
 
 Duplicate detection never updates existing articles.
 
@@ -261,9 +291,8 @@ Feed content is stored in multiple complementary forms.
 
 ## contentOriginal
 
-Publisher content after minimal normalization.
-
-Preserves the original article body as closely as possible.
+The raw selected body value supplied by the feed parser, without compatibility transforms,
+entity decoding, sanitization, or DOM serialization.
 
 Used for:
 
@@ -273,9 +302,9 @@ Used for:
 
 ---
 
-## contentStripped
+## contentHtml
 
-Safe HTML.
+Sanitized display HTML stored as a fragment without `html`, `head`, or `body` wrappers.
 
 Suitable for rendering inside RSSMonster.
 
@@ -294,7 +323,44 @@ Used for:
 
 ---
 
-When article bodies are missing, descriptions may provide visible text while remaining separate feed metadata.
+When article bodies are missing, normalized description text becomes the canonical analysis text
+while remaining separate feed metadata. If an otherwise valid body contains media but no visible
+text, the description is appended as a plain paragraph and the complete fragment is sanitized
+again before persistence.
+
+Plain-text feed bodies preserve paragraph boundaries, are HTML-escaped, and are stored as
+paragraph markup. Processing failures must also return safe display HTML; failure is never a
+reason to bypass sanitization semantics.
+
+---
+
+# HTML Compatibility and Sanitization
+
+HTML processing has one final security boundary: every persisted non-null `contentHtml` value
+must conform to `sanitizeHtmlContent`.
+
+The derived HTML path runs in this order:
+
+1. WordPress source-shortcode compatibility
+2. HTML parsing and WordPress DOM compatibility
+3. structure-dependent compatibility preparation
+4. lazy and responsive image recovery
+5. recognized Vimeo conversion before unsafe embeds disappear
+6. removal of scripts, unknown iframes, forms, buttons, and other dropped elements
+7. URL normalization against the article URL
+8. publisher-card normalization and generic cleanup
+9. Mastodon link-visibility repair
+10. outbound hotlink collection
+11. article-fragment serialization and allowlist sanitization
+12. visible-text derivation from sanitized HTML
+
+Compatibility transformers live in `compatibility/` and operate only on derived content. They
+must be structure-driven, conservative, and no-ops when their identifying markup is absent.
+Substack isolation additionally requires at least 300 normalized visible characters before it
+replaces the document body. Compatibility transformers do not replace the generic sanitizer.
+
+HTML bodies are not entity-decoded before parsing. Text-only titles and plain-text bodies decode
+entities in their own text-specific paths.
 
 ---
 
@@ -302,9 +368,9 @@ When article bodies are missing, descriptions may provide visible text while rem
 
 RSSMonster maintains two different hashes.
 
-## contentHash
+## contentSourceHash
 
-Hash of the normalized original publisher content.
+SHA-256 hash of `contentOriginal` after newline normalization and outer trimming only.
 
 Purpose:
 
@@ -314,9 +380,11 @@ Purpose:
 
 Small publisher changes should result in a different hash.
 
+Absent original content produces a null source hash.
+
 ---
 
-## contentStrippedHash
+## contentTextHash
 
 Hash of visible plain text.
 
@@ -326,6 +394,9 @@ Purpose:
 - semantic identity
 
 Equivalent visible text should generate the same hash even if HTML differs.
+
+Whitespace-only or absent visible text produces a null text hash; empty text must never create a
+shared empty-string identity.
 
 ---
 
@@ -339,19 +410,28 @@ Supported concepts include:
 - audio
 - image galleries
 
-Media metadata is normalized into structured JSON.
+Media metadata is normalized into structured JSON. Relative enclosure and Media RSS URLs resolve
+against the article URL.
+
+Recognized YouTube and Vimeo iframes are inspected before generic iframe removal. Supported
+providers become structured media or inert RSSMonster-owned cards; unknown iframes are removed.
 
 Media does not replace richer article content.
 
 When an article primarily consists of media, structured media is sufficient for the article to be considered valid.
 
-Lead images remain article metadata rather than article identity.
+A valid lead image by itself is also sufficient for eligibility. Lead images remain article
+metadata rather than article identity. Lead-image selection considers feed metadata, sanitized
+and source HTML, descriptions, lazy attributes, and the strongest valid `srcset` candidate.
 
 ---
 
 # User Rules
 
 User rules execute after duplicate prevention but before persistence.
+
+Each regular expression tests the available `contentHtml`, `contentText`, title, description, and
+URL independently. Invalid regular expressions are skipped.
 
 Rules may:
 
@@ -361,13 +441,23 @@ Rules may:
 - add tags
 - adjust scores
 
+Advertisement and quality scores use higher-is-better semantics. Advertisement and bad-quality
+actions therefore override their respective scores to zero.
+
 Rejected articles never reach AI enrichment.
+
+The article row and all generated, feed, and rule tags are persisted in one transaction.
+
+Creation and publisher updates share one pure persistence mapper. Update-specific sparse-feed
+policy is resolved before selecting mutable fields from that canonical mapping.
 
 ---
 
 # Analysis
 
-Only genuinely new articles are enriched.
+Genuinely new articles are enriched unless AI analysis is disabled for the feed. Existing
+publisher identities are re-enriched only when content, title, or description changes.
+Source-only changes do not spend an AI call.
 
 Typical enrichment includes:
 
@@ -380,7 +470,25 @@ Typical enrichment includes:
 - embeddings
 - clustering
 
-Existing articles updated through publisher revisions are not automatically re-analysed.
+Actions and analysis receive one canonical representation: sanitized body HTML when available,
+otherwise safe description HTML, plus visible body text when available, otherwise normalized
+description text. Language detection uses the same canonical visible text.
+
+Analysis-relevant updates invalidate stored embedding metadata so downstream semantic processing
+can rebuild it.
+
+---
+
+# Hotlinks
+
+HTML processing only returns outbound hotlink candidates; it does not write them. Candidates are
+persisted after a new article is successfully inserted or an accepted publisher update commits.
+Duplicates, rejected creations, failed writes, unchanged entries, and delete-matched revisions do
+not contribute hotlinks.
+
+Only HTTP(S) links outside the article host are candidates. The apex host and its leading `www.`
+alias are treated as the same host, while other subdomains remain distinct. Hotlink URLs use the
+same conservative URL normalization as article identity.
 
 ---
 
@@ -397,7 +505,15 @@ are inserted into the database.
 
 Concurrent crawlers discovering the same article should still produce exactly one persisted record.
 
-Losing a race to another crawler is considered a successful outcome.
+Creation and crawl-owned tag writes share one transaction. Publisher source updates, affected
+derived fields, and crawl-owned tag reconciliation also share one transaction. Hotlink ingestion
+occurs only after those transactions succeed.
+
+Insert-race recovery is limited to recognized feed-scoped exact-URL and normalized-URL unique
+constraints. The winner is reloaded using exactly the fields in the violated constraint, then the
+normal update classifier is applied to that specific row. Unknown unique errors are rethrown.
+
+Losing a recognized race to another crawler is considered a successful outcome.
 
 ---
 
@@ -409,9 +525,13 @@ Callers should be able to distinguish:
 
 - new articles
 - updated articles
-- skipped articles
-- duplicate articles
 - errors
+- timeouts
+- processed feeds
+- whether the overall crawl timed out
+
+Skipped, unchanged, duplicate, and rule-rejected entries currently share the zero-change result
+and are not exposed as separate aggregate counters.
 
 An empty crawl can still be completely successful.
 

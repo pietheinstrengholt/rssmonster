@@ -17,4 +17,7 @@ export const normalizeVisibleText = value => String(value || '')
 export const hashOriginalContent = value => hashValue(normalizeOriginalContent(value));
 
 // This function hashes normalized visible article text.
-export const hashVisibleText = value => hashValue(normalizeVisibleText(value));
+export const hashVisibleText = value => {
+  const normalized = normalizeVisibleText(value);
+  return normalized ? hashValue(normalized) : null;
+};

@@ -113,7 +113,7 @@ export default {
     clickedAmount: { type: Number, default: 0 },
     imageUrl: { type: String, default: '' },
     media: { type: [Boolean, Object, Array, String], default: null },
-    contentStripped: { type: String, default: '' },
+    contentHtml: { type: String, default: '' },
     language: { type: String, default: '' },
     createdAt: { type: [String, Date], default: '' },
     updatedAt: { type: [String, Date], default: '' },
@@ -167,12 +167,12 @@ export default {
         'attentionScore',
         'articlevector',
         'articleVector',
-        'contenthash',
-        'contentHash',
+        'contentsourcehash',
+        'contentSourceHash',
         'contenttext',
         'contentText',
-        'contentstrippedhash',
-        'contentStrippedHash',
+        'contenttexthash',
+        'contentTextHash',
         'description',
         'embedding_model',
         'embeddingModel',
@@ -212,7 +212,7 @@ export default {
     },
     // Returns article body content, falling back to the feed description.
     displayContent() {
-      return this.content || this.description || '';
+      return this.contentHtml || this.content || this.description || '';
     },
     // Converts the quality score to a percentage.
     roundedQuality() {

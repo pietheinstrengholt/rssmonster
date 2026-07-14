@@ -1,12 +1,17 @@
 import { load } from 'cheerio';
 import language from '../../utils/language.js';
-import hotlink from '../../controllers/hotlink.js';
 import normalizeUrl from './normalizeUrl.js';
 import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
-import cleanupHtmlContent from './cleanupHtmlContent.js';
+import {
+  finalizeHtmlContent,
+  prepareHtmlContent
+} from './cleanupHtmlContent.js';
 import normalizeHtmlUrls from './normalizeHtmlUrls.js';
 import sanitizeHtmlContent from './sanitizeHtmlContent.js';
-import { transformWordPressContent } from './compatibility/transformWordPressContent.js';
+import {
+  transformWordPressContent,
+  transformWordPressSourceContent
+} from './compatibility/transformWordPressContent.js';
 import { hashOriginalContent, hashVisibleText } from '../../utils/articleContentHashes.js';
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;
@@ -24,11 +29,34 @@ function isPlainText(value) {
   return typeof value === 'string' && !HTML_TAG_PATTERN.test(value);
 }
 
-// This function normalizes plain text for safe storage and duplicate detection.
+// This function treats the conventional www host alias as the publisher's apex host.
+function normalizeComparableHostname(value) {
+  return String(value || '').toLowerCase().replace(/^www\./, '');
+}
+
+// This function encodes normalized paragraphs as display-safe HTML.
+function renderPlainTextHtml(paragraphs) {
+  const values = paragraphs.length ? paragraphs : [''];
+
+  return values.map(paragraph => {
+    const $ = load('<p></p>', null, false);
+    $('p').text(paragraph);
+    return $.html();
+  }).join('\n');
+}
+
+// This function preserves plain-text paragraphs while deriving safe HTML and visible text.
 function normalizePlainText(value) {
-  return decodeHtmlEntities(value)
-    .replace(/\s+/g, ' ')
-    .trim();
+  const paragraphs = decodeHtmlEntities(value)
+    .replace(/\r\n?/g, '\n')
+    .split(/\n[\t ]*\n+/)
+    .map(paragraph => paragraph.replace(/\s+/g, ' ').trim())
+    .filter(Boolean);
+
+  return {
+    html: renderPlainTextHtml(paragraphs),
+    text: paragraphs.join('\n\n')
+  };
 }
 
 // This function avoids language detection for text too short to identify reliably.
@@ -46,23 +74,28 @@ function shouldDetectPlainTextLanguage(text) {
    - Detects language
    - Computes content hash for duplication checks
 ====================================================== */
-function processHtmlContent(content, _description, entryLink, feed, entryTitle, hotlinkBatcher = null) {
+function processHtmlContent(content, _description, entryLink, feed, entryTitle) {
   let contentOriginal;
-  let contentStripped;
+  let contentHtml;
   let contentText;
+  const hotlinkUrls = [];
 
   try {
     // Use only feed body content here; feed summaries belong in description.
-    contentOriginal = transformWordPressContent(content);
-    // Start contentStripped from the original source before applying HTML cleanup.
-    contentStripped = contentOriginal;
+    contentOriginal = content;
     if (!contentOriginal) return null;
 
-    if (isPlainText(contentStripped)) {
-      const text = normalizePlainText(contentStripped);
+    // Apply publisher compatibility transforms only to derived content.
+    contentHtml = transformWordPressSourceContent(contentOriginal);
+    if (!contentHtml) return null;
+
+    if (isPlainText(contentHtml)) {
+      const normalized = normalizePlainText(contentHtml);
+      const { text } = normalized;
       contentText = text;
-      const contentHash = hashOriginalContent(contentOriginal);
-      const contentStrippedHash = hashVisibleText(text);
+      contentHtml = normalized.html;
+      const contentSourceHash = hashOriginalContent(contentOriginal);
+      const contentTextHash = hashVisibleText(text);
 
       if (entryTitle === 'Untitled' && text) {
         const sentenceMatch = text.match(/^[^.!?:]*[.!?:]/);
@@ -85,30 +118,32 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
 
       return {
         content: contentOriginal,
-        stripped: contentStripped,
+        html: contentHtml,
         text: contentText,
         language: detectedLanguage,
-        contentHash,
-        contentStrippedHash,
+        contentSourceHash,
+        contentTextHash,
+        hotlinkUrls,
         title: entryTitle
       };
     }
 
     // Parse pre-cleaned HTML content into a mutable DOM.
-    const $ = load(contentStripped);
+    const $ = load(contentHtml);
 
-    cleanupHtmlContent($);
+    transformWordPressContent($);
+    prepareHtmlContent($);
     normalizeHtmlUrls($, entryLink);
+    finalizeHtmlContent($);
 
-    // Execute hotlink feature by collecting all the links in each RSS post
+    // Collect hotlink candidates; the caller persists them only after article acceptance.
     // https://github.com/passiomatic/coldsweat/issues/68#issuecomment-272963268
     let articleHostname = null;
-    try {
-      if (!entryLink) return;
-      articleHostname = new URL(entryLink).hostname;
-    } catch {}
-
-    const hotlinkUrls = [];
+    if (entryLink) {
+      try {
+        articleHostname = normalizeComparableHostname(new URL(entryLink).hostname);
+      } catch {}
+    }
 
     // Fetch all URLs referenced to other websites
     $('a[href]').each((_, el) => {
@@ -118,7 +153,10 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
         const parsedHref = new URL(href);
         if (
           !['http:', 'https:'].includes(parsedHref.protocol) ||
-          (articleHostname && parsedHref.hostname === articleHostname)
+          (
+            articleHostname &&
+            normalizeComparableHostname(parsedHref.hostname) === articleHostname
+          )
         ) {
           return;
         }
@@ -130,20 +168,12 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
       } catch {}
     });
 
-    // Queue hotlinks for the feed batch when available; retain per-article writes
-    // for callers that do not provide a batcher.
-    if (hotlinkBatcher) {
-      hotlinkBatcher.add(hotlinkUrls);
-    } else {
-      hotlink.setMany(hotlinkUrls, feed.id, feed.userId).catch(console.error);
-    }
-
-    // Serialize cleaned HTML before security sanitization.
-    const cleanedHtml = $.html();
-    contentStripped = sanitizeHtmlContent(cleanedHtml);
+    // Serialize only the cleaned article fragment before security sanitization.
+    const cleanedHtml = $('body').html() || '';
+    contentHtml = sanitizeHtmlContent(cleanedHtml);
 
     // Strip final sanitized HTML for language detection & content analysis.
-    const text = load(contentStripped)('body')
+    const text = load(contentHtml)('body')
       .text()
       .replace(/\s+/g, ' ')
       .trim();
@@ -157,8 +187,8 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
       }
     }
 
-    const contentHash = hashOriginalContent(contentOriginal);
-    const contentStrippedHash = hashVisibleText(text);
+    const contentSourceHash = hashOriginalContent(contentOriginal);
+    const contentTextHash = hashVisibleText(text);
 
     let detectedLanguage = 'unknown';
 
@@ -173,16 +203,18 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
 
     return {
       content: contentOriginal,
-      stripped: contentStripped,
+      html: contentHtml,
       text: contentText,
       language: detectedLanguage,
-      contentHash,
-      contentStrippedHash,
+      contentSourceHash,
+      contentTextHash,
+      hotlinkUrls,
       title: entryTitle
     };
   } catch (err) {
-    const stripped = stripHtml(contentOriginal);
-    contentText = stripped;
+    const text = stripHtml(contentOriginal);
+    const html = renderPlainTextHtml([text]);
+    contentText = text;
 
     console.error(
       `[${feed.feedName}] Error parsing content for article "${entryTitle}":`,
@@ -190,11 +222,12 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
     );
     return {
       content: contentOriginal,
-      stripped,
+      html,
       text: contentText,
       language: 'unknown',
-      contentHash: hashOriginalContent(contentOriginal),
-      contentStrippedHash: hashVisibleText(stripped),
+      contentSourceHash: hashOriginalContent(contentOriginal),
+      contentTextHash: hashVisibleText(text),
+      hotlinkUrls,
       title: entryTitle
     };
   }

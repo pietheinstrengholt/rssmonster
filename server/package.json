@@ -12,7 +12,7 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:semantic-ad-event": "vitest run tests/semanticRegression.incremental.adEvent.test.js",
+    "test:semantic-ad-event": "vitest run tests/semantic/semanticRegression.incremental.adEvent.test.js",
     "fixture:semantic-export": "node scripts/exportSemanticRegressionFixture.js",
     "fixture:semantic-vectors": "node scripts/generateSemanticRegressionVectors.js",
     "fixture:semantic-incremental-vectors": "node scripts/generateSemanticRegressionIncrementalVectors.js",

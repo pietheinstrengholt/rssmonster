@@ -627,14 +627,14 @@ const updateArticleStatus = async (userId, articleId, status) => {
 };
 
 // Compute attention bucket based on visible seconds and content length
-const attentionBucketFromSeconds = (visibleSeconds, contentStripped) => {
+const attentionBucketFromSeconds = (visibleSeconds, contentHtml) => {
   if (!visibleSeconds || visibleSeconds <= 0) {
     return 0; // not read
   }
 
   // Word count from stripped content
-  const wordCount = contentStripped
-    ? contentStripped.trim().split(/\s+/).length
+  const wordCount = contentHtml
+    ? contentHtml.trim().split(/\s+/).length
     : 0;
 
   // Expected reading time (seconds)
@@ -698,7 +698,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Compute attention bucket
     const attentionBucket = attentionBucketFromSeconds(
       visibleSeconds,
-      article.contentStripped
+      article.contentHtml
     );
 
     // Start with empty payload

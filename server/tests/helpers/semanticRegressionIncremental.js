@@ -70,7 +70,7 @@ export function hashContent(content) {
 export function buildVectorMap(vectorFixture) {
   return new Map(
     vectorFixture.articles.map(article => [
-      article.contentHash,
+      article.contentSourceHash,
       {
         articleVector: article.articleVector,
         embeddingModel: article.embeddingModel || vectorFixture.embeddingModel
@@ -82,7 +82,7 @@ export function buildVectorMap(vectorFixture) {
 // This function picks the content field used by semantic vector fixtures.
 export function articleContent(fixtureArticle) {
   return (
-    fixtureArticle.contentStripped ||
+    fixtureArticle.contentHtml ||
     fixtureArticle.contentOriginal ||
     fixtureArticle.content ||
     fixtureArticle.title ||
@@ -189,7 +189,7 @@ export async function findIncrementalArticleIds(userId, fixture = null) {
   const rows = await Article.findAll({
     where: {
       userId,
-      contentHash: { [Op.in]: contentHashes }
+      contentSourceHash: { [Op.in]: contentHashes }
     },
     attributes: ['id'],
     raw: true
@@ -199,7 +199,7 @@ export async function findIncrementalArticleIds(userId, fixture = null) {
 }
 
 // This function inserts any fixture articles that are not already present by content hash.
-export async function insertMissingFixtureArticles(userId, fixture, vectorByContentHash, urlPrefix) {
+export async function insertMissingFixtureArticles(userId, fixture, vectorByContentSourceHash, urlPrefix) {
   const categoryIdMap = await ensureFixtureCategories(userId, fixture.categories);
   const feedIdMap = await ensureFixtureFeeds(userId, fixture.feeds, categoryIdMap);
   const now = Date.now();
@@ -208,20 +208,20 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
 
   for (const [index, fixtureArticle] of fixture.articles.entries()) {
     const content = articleContent(fixtureArticle);
-    const contentHash = hashContent(content);
+    const contentSourceHash = hashContent(content);
     const existingArticle = await Article.findOne({
       where: {
         userId,
-        contentHash
+        contentSourceHash
       },
       attributes: ['id']
     });
 
     if (existingArticle) continue;
 
-    const vectorRecord = vectorByContentHash.get(contentHash);
+    const vectorRecord = vectorByContentSourceHash.get(contentSourceHash);
     if (!vectorRecord?.articleVector?.length) {
-      throw new Error(`Missing semantic vector for fixture article ${contentHash}`);
+      throw new Error(`Missing semantic vector for fixture article ${contentSourceHash}`);
     }
 
     const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
@@ -238,8 +238,8 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
       title: articleTitle(fixtureArticle, index),
       description: fixtureArticle.description || content.slice(0, 500),
       contentOriginal: fixtureArticle.contentOriginal || content,
-      contentStripped: fixtureArticle.contentStripped || content,
-      contentHash,
+      contentHtml: fixtureArticle.contentHtml || content,
+      contentSourceHash,
       articleVector: vectorRecord.articleVector,
       embedding_model: vectorRecord.embeddingModel,
       published,

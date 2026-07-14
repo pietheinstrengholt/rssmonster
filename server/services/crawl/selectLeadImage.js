@@ -55,6 +55,12 @@ const isUnusableCandidate = candidate => {
   return (urlLooksDecorative || altLooksDecorative) && isSmall;
 };
 
+// This function returns the largest positive dimension reported for one image URL.
+const strongestDimension = (...values) => {
+  const dimensions = values.filter(value => Number.isFinite(value) && value > 0);
+  return dimensions.length ? Math.max(...dimensions) : null;
+};
+
 // This function keeps the richest metadata when a URL appears in multiple sources.
 const mergeCandidate = (existing, incoming) => {
   const existingSourceStrength = SOURCE_STRENGTH[existing.source] || 0;
@@ -64,8 +70,8 @@ const mergeCandidate = (existing, incoming) => {
 
   return {
     url: existing.url,
-    width: existing.width ?? incoming.width,
-    height: existing.height ?? incoming.height,
+    width: strongestDimension(existing.width, incoming.width),
+    height: strongestDimension(existing.height, incoming.height),
     mimeType: existing.mimeType || incoming.mimeType,
     source: incomingSourceStrength > existingSourceStrength
       ? incoming.source

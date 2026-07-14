@@ -307,7 +307,7 @@ const postMcp = async (req, res) => {
               ...canonicalArticleWhere(),
               [Op.or]: [
                 { title: { [Op.like]: `%${search}%` } },
-                { contentStripped: { [Op.like]: `%${search}%` } },
+                { contentHtml: { [Op.like]: `%${search}%` } },
               ],
             },
             order: [["createdAt", "DESC"]],

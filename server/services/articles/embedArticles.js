@@ -41,6 +41,11 @@ export async function embedArticles(userId, options = {}) {
   // Batch size is tunable for memory/latency trade-offs during backfills.
   const batchSize = Number.parseInt(options.batchSize || DEFAULT_BATCH_SIZE, 10);
   const createdAfter = resolveCreatedAfter(options);
+  const articleIds = [...new Set((options.articleIds || []).filter(Boolean))];
+  const scopeFilters = [
+    ...(createdAfter ? [{ createdAt: { [Op.gte]: createdAfter } }] : []),
+    ...(articleIds.length ? [{ id: { [Op.in]: articleIds } }] : [])
+  ];
 
   let lastId = 0;
   let scannedCount = 0;
@@ -54,7 +59,7 @@ export async function embedArticles(userId, options = {}) {
         userId,
         id: { [Op.gt]: lastId },
         ...canonicalArticleWhere(),
-        ...(createdAfter ? { createdAt: { [Op.gte]: createdAfter } } : {})
+        ...(scopeFilters.length ? { [Op.or]: scopeFilters } : {})
       },
       include: [{
         model: Feed,

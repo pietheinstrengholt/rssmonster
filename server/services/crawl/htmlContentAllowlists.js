@@ -1,7 +1,4 @@
 const ALLOWED_TAGS = new Set([
-  'html',
-  'head',
-  'body',
   'article',
   'section',
   'div',
@@ -57,10 +54,17 @@ const GLOBAL_ATTRS = new Set([
 const TAG_ATTRS = {
   a: new Set(['class', 'href', 'target', 'rel']),
   div: new Set(['class']),
-  figure: new Set(['class']),
-  img: new Set(['class', 'src', 'loading']),
+  figure: new Set([
+    'class',
+    'data-embed-provider',
+    'data-embed-id',
+    'data-embed-url',
+    'data-embed-player-url',
+    'data-embed-aspect-ratio'
+  ]),
+  img: new Set(['class', 'src', 'srcset', 'sizes', 'loading']),
   p: new Set(['class']),
-  source: new Set(['src', 'type']),
+  source: new Set(['src', 'srcset', 'sizes', 'media', 'type']),
   span: new Set(['class']),
   strong: new Set(['class']),
   th: new Set(['colspan', 'rowspan']),
@@ -72,10 +76,12 @@ const TAG_CLASSES = {
   div: new Set(['rss-content-card__body']),
   figure: new Set([
     'rss-content-card',
+    'rss-content-card--embed',
     'rss-content-card--ghost',
     'rss-content-card--wordpress',
     'rss-content-card--twitter',
-    'rss-content-card--instagram'
+    'rss-content-card--instagram',
+    'rss-content-card--vimeo'
   ]),
   img: new Set(['rss-content-card__image']),
   p: new Set(['rss-content-card__description']),
@@ -87,7 +93,7 @@ const TAG_CLASSES = {
   strong: new Set(['rss-content-card__title'])
 };
 
-const URL_ATTRS = new Set(['href', 'src']);
+const URL_ATTRS = new Set(['href', 'src', 'data-embed-url', 'data-embed-player-url']);
 
 // This function checks whether a URL attribute uses one of the allowed URL forms.
 function isSafeUrl(value = '', attrName = '') {

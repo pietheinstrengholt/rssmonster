@@ -10,7 +10,28 @@
    - clicked
    - tag (assign tag)
 ====================================================== */
-function applyActions(actions, contentStripped, title) {
+const ACTION_SEARCH_FIELDS = [
+  'contentHtml',
+  'contentText',
+  'title',
+  'description',
+  'url'
+];
+
+// This function returns each explicit publisher field available to action rules.
+const actionSearchValues = article => ACTION_SEARCH_FIELDS
+  .map(field => article?.[field])
+  .filter(value => value !== null && value !== undefined && String(value) !== '')
+  .map(String);
+
+// This function tests fields independently so existing anchored body rules keep working.
+const actionMatches = (regex, values) => values.some(value => {
+  regex.lastIndex = 0;
+  return regex.test(value);
+});
+
+// This function applies configured actions to explicit searchable article fields.
+function applyActions(actions, article = {}) {
   const result = {
     favoriteInd: 0,
     clickedAmount: 0,
@@ -32,12 +53,12 @@ function applyActions(actions, contentStripped, title) {
       continue;
     }
 
-    if (!regex.test(contentStripped)) continue;
+    if (!actionMatches(regex, actionSearchValues(article))) continue;
 
     switch (action.actionType) {
       // Delete action: takes precedence over all others
       case 'delete':
-        console.log(`Delete action "${action.name}" matched article "${title}". Skipping article creation.`);
+        console.log(`Delete action "${action.name}" matched article "${article.title}". Rejecting this source item.`);
         result.shouldDelete = true;
         return result;
 
@@ -48,12 +69,12 @@ function applyActions(actions, contentStripped, title) {
 
       // Advertisement action: marks article as advertisement
       case 'advertisement':
-        result.advertisementScore = 100;
+        result.advertisementScore = 0;
         break;
 
       // Bad quality action
       case 'badquality':
-        result.qualityScore = 100;
+        result.qualityScore = 0;
         break;
 
       // Favorite action: marks article as a favorite

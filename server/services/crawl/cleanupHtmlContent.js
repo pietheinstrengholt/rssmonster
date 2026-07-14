@@ -2,6 +2,7 @@ import normalizePublisherCards from './normalizePublisherCards.js';
 import { transformMastodonContent } from './compatibility/transformMastodonContent.js';
 import { transformRedditContent } from './compatibility/transformRedditContent.js';
 import { transformSubstackContent } from './compatibility/transformSubstackContent.js';
+import { transformVimeoContent } from './compatibility/transformVimeoContent.js';
 
 const DROP_TAGS = new Set([
   'script',
@@ -141,6 +142,28 @@ function firstLazySrcset(node) {
   return null;
 }
 
+// This function returns the first usable URL from a responsive-image candidate list.
+function firstSrcsetSource(value) {
+  const srcset = String(value || '').trim();
+  if (!srcset || /^data:/i.test(srcset)) return null;
+
+  for (const candidate of srcset.split(',')) {
+    const source = candidate.trim().match(
+      /^(\S+)(?:\s+(?:[1-9]\d*w|(?:\d+(?:\.\d+)?|\.\d+)x))?$/i
+    )?.[1];
+    if (!source) continue;
+
+    try {
+      const parsed = new URL(source, 'https://relative.invalid');
+      if (['http:', 'https:'].includes(parsed.protocol)) return source;
+    } catch {
+      // Continue checking later candidates when one URL is malformed.
+    }
+  }
+
+  return null;
+}
+
 // This function checks whether an image source is a known publisher placeholder.
 function isPlaceholderImageSource(value) {
   const normalized = String(value || '').trim().toLowerCase();
@@ -164,14 +187,37 @@ function recoverImageSource(node) {
   if (currentSource && !placeholderSource) return false;
 
   const lazySource = firstLazyImageSource(node);
-  if (lazySource) {
-    node.attr('src', lazySource);
-    removeLazyAttributes(node, LAZY_IMAGE_ATTRS);
+  const responsiveSource = firstSrcsetSource(
+    node.attr('srcset') || firstLazySrcset(node)
+  );
+  const recoveredSource = lazySource || responsiveSource;
+
+  if (recoveredSource) {
+    node.attr('src', recoveredSource);
+    if (lazySource) removeLazyAttributes(node, LAZY_IMAGE_ATTRS);
     return placeholderSource;
   }
 
   if (placeholderSource) node.removeAttr('src');
   return false;
+}
+
+// This function recovers image sources before publisher wrappers replace their original DOM.
+function recoverImageSources($) {
+  $('img').each((_, el) => {
+    const node = $(el);
+    const replacedPlaceholder = recoverImageSource(node);
+    recoverSrcset(node);
+
+    if (
+      replacedPlaceholder &&
+      Number.parseFloat(node.attr('width')) <= 1 &&
+      Number.parseFloat(node.attr('height')) <= 1
+    ) {
+      node.removeAttr('width');
+      node.removeAttr('height');
+    }
+  });
 }
 
 // This function recovers a missing responsive-image value without parsing its candidates.
@@ -200,17 +246,6 @@ function isTrackingPixel(node) {
 function normalizeImages($) {
   $('img').each((_, el) => {
     const node = $(el);
-    const replacedPlaceholder = recoverImageSource(node);
-    recoverSrcset(node);
-
-    if (
-      replacedPlaceholder &&
-      Number.parseFloat(node.attr('width')) <= 1 &&
-      Number.parseFloat(node.attr('height')) <= 1
-    ) {
-      node.removeAttr('width');
-      node.removeAttr('height');
-    }
 
     if (
       !node.attr('src') ||
@@ -343,13 +378,19 @@ function removeEmptyWrappers($) {
   }
 }
 
-// This function cleans feed HTML structure before security sanitization.
-function cleanupHtmlContent($) {
+// This function prepares publisher HTML that still depends on its original structure.
+function prepareHtmlContent($) {
   transformSubstackContent($);
+  recoverImageSources($);
+  transformVimeoContent($);
 
   $(Array.from(DROP_TAGS).join(',')).remove();
 
   transformRedditContent($);
+}
+
+// This function finishes cleanup after embedded URLs have been normalized.
+function finalizeHtmlContent($) {
   normalizePublisherCards($);
 
   $(BOILERPLATE_SELECTORS.join(',')).remove();
@@ -364,4 +405,11 @@ function cleanupHtmlContent($) {
   removeEmptyWrappers($);
 }
 
+// This function preserves the complete cleanup API for callers without a URL base.
+function cleanupHtmlContent($) {
+  prepareHtmlContent($);
+  finalizeHtmlContent($);
+}
+
+export { finalizeHtmlContent, prepareHtmlContent };
 export default cleanupHtmlContent;

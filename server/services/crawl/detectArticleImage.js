@@ -3,13 +3,12 @@ import { load } from 'cheerio';
 import selectLeadImage from './selectLeadImage.js';
 
 const FEED_IMAGE_FIELD_NAMES = ['image', 'banner_image', 'thumbnail'];
-const IMAGE_ATTR_NAMES = [
-  'src',
+const SRCSET_ATTR_NAMES = ['srcset', 'data-srcset'];
+const IMAGE_SOURCE_ATTR_NAMES = [
   'data-src',
   'data-original',
   'data-lazy-src',
-  'srcset',
-  'data-srcset'
+  'src'
 ];
 const MAX_CANDIDATES_PER_HTML_FRAGMENT = 24;
 
@@ -41,8 +40,8 @@ function readUrlValue(value) {
   return value.url || value.href || value.src || null;
 }
 
-// This function returns the strongest URL from a srcset-like value.
-function pickFromSrcset(value = '') {
+// This function returns the strongest valid image from a srcset-like value.
+function pickFromSrcset(value = '', articleUrl = '') {
   if (typeof value !== 'string' || !value.trim()) return null;
 
   const candidates = value
@@ -53,7 +52,8 @@ function pickFromSrcset(value = '') {
       const densityMatch = descriptor.match(/^(\d+(?:\.\d+)?)x$/i);
 
       return {
-        url,
+        url: normalizeImageUrl(url, articleUrl),
+        width: widthMatch ? Number(widthMatch[1]) : null,
         score: widthMatch
           ? Number(widthMatch[1])
           : densityMatch
@@ -66,13 +66,30 @@ function pickFromSrcset(value = '') {
 
   candidates.sort((a, b) => b.score - a.score || a.index - b.index);
 
-  return candidates[0]?.url || null;
+  return candidates[0] || null;
 }
 
 // This function parses an integer-like dimension from feed or HTML metadata.
 function parseDimension(value) {
   const match = String(value ?? '').match(/\d+/);
   return match ? Number(match[0]) : null;
+}
+
+// This function keeps srcset width and fallback dimensions on one consistent aspect ratio.
+function htmlImageDimensions(attrs, responsiveImage) {
+  const originalWidth = parseDimension(attrs.width);
+  const originalHeight = parseDimension(attrs.height);
+  const responsiveWidth = responsiveImage?.width;
+
+  if (!Number.isFinite(responsiveWidth) || responsiveWidth <= 0) {
+    return { width: originalWidth, height: originalHeight };
+  }
+
+  const scaledHeight = originalWidth > 0 && originalHeight > 0
+    ? Math.round(originalHeight * responsiveWidth / originalWidth)
+    : null;
+
+  return { width: responsiveWidth, height: scaledHeight };
 }
 
 // This function returns a normalized MIME type when feed metadata provides one.
@@ -110,27 +127,31 @@ function extractHtmlCandidates(html, articleUrl, source) {
 
   $('img').each((index, el) => {
     const attrs = el.attribs || {};
-    let rawUrl = null;
+    const responsiveImage = SRCSET_ATTR_NAMES
+      .map((attrName, attrIndex) => ({
+        ...pickFromSrcset(attrs[attrName], articleUrl),
+        attrIndex
+      }))
+      .filter(candidate => candidate.url)
+      .sort((a, b) => b.score - a.score || a.attrIndex - b.attrIndex)[0];
+    let url = responsiveImage?.url || null;
 
-    for (const attrName of IMAGE_ATTR_NAMES) {
-      const rawValue = attrs[attrName];
-      if (rawValue === undefined) continue;
-
-      rawUrl = attrName.includes('srcset')
-        ? pickFromSrcset(rawValue)
-        : rawValue;
-      if (rawUrl) break;
+    if (!url) {
+      for (const attrName of IMAGE_SOURCE_ATTR_NAMES) {
+        url = normalizeImageUrl(attrs[attrName], articleUrl);
+        if (url) break;
+      }
     }
 
-    const url = normalizeImageUrl(rawUrl, articleUrl);
     if (!url) return;
+    const dimensions = htmlImageDimensions(attrs, responsiveImage);
 
     candidates.push({
       url,
       source,
       position: index,
-      width: parseDimension(attrs.width),
-      height: parseDimension(attrs.height),
+      width: dimensions.width,
+      height: dimensions.height,
       mimeType: normalizeMimeType(attrs.type),
       alt: attrs.alt || attrs.title || null,
       className: [attrs.class, attrs.id].filter(Boolean).join(' ') || null
@@ -207,13 +228,13 @@ function detectFeedProvidedImages(entry = {}, articleUrl = '') {
 export default async function detectArticleImage({
   entry,
   articleUrl,
-  contentStripped,
+  contentHtml,
   content,
   description
 } = {}) {
   const candidates = [
     ...detectFeedProvidedImages(entry, articleUrl),
-    ...extractHtmlCandidates(contentStripped, articleUrl, 'content')
+    ...extractHtmlCandidates(contentHtml, articleUrl, 'content')
       .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),
     ...extractHtmlCandidates(content, articleUrl, 'content')
       .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),

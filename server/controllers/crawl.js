@@ -181,7 +181,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
 
   console.log(`[Crawl] Building duplicate cache for articles published in the last ${DUPLICATE_CACHE_DAYS} days.`);
 
-  const [feedArticleLists, userContentHashArticles] = await Promise.all([
+  const [feedArticleLists, userContentSourceHashArticles] = await Promise.all([
     Promise.all(feeds.map(feed => Article.findAll({
       attributes: [
         'id',
@@ -189,8 +189,8 @@ const getDuplicateCachesByFeedId = async (feeds) => {
         'normalizedUrlHash',
         'title',
         'published',
-        'contentStrippedHash',
-        'contentHash'
+        'contentTextHash',
+        'contentSourceHash'
       ],
       where: {
         feedId: feed.id,
@@ -200,12 +200,12 @@ const getDuplicateCachesByFeedId = async (feeds) => {
     }))),
     userIds.length > 0
       ? Article.findAll({
-        attributes: ['id', 'userId', 'contentStrippedHash', 'contentHash'],
+        attributes: ['id', 'userId', 'contentTextHash', 'contentSourceHash'],
         where: {
           userId: { [db.Sequelize.Op.in]: userIds },
           [db.Sequelize.Op.or]: [
-            { contentStrippedHash: { [db.Sequelize.Op.not]: null } },
-            { contentHash: { [db.Sequelize.Op.not]: null } }
+            { contentTextHash: { [db.Sequelize.Op.not]: null } },
+            { contentSourceHash: { [db.Sequelize.Op.not]: null } }
           ],
           published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
         },
@@ -216,13 +216,13 @@ const getDuplicateCachesByFeedId = async (feeds) => {
 
   const articleHashIdsByUserId = new Map(userIds.map(id => [id, createSharedUserArticleHashIds()]));
 
-  for (const article of userContentHashArticles) {
+  for (const article of userContentSourceHashArticles) {
     const articleHashIds = articleHashIdsByUserId.get(article.userId);
-    if (article.contentStrippedHash) {
-      articleHashIds?.contentStrippedHashIds.set(article.contentStrippedHash, article.id);
+    if (article.contentTextHash) {
+      articleHashIds?.contentTextHashIds.set(article.contentTextHash, article.id);
     }
-    if (article.contentHash) {
-      articleHashIds?.contentHashIds.set(article.contentHash, article.id);
+    if (article.contentSourceHash) {
+      articleHashIds?.contentSourceHashIds.set(article.contentSourceHash, article.id);
     }
   }
 
@@ -291,6 +291,7 @@ const performCrawl = async (userId = null, options = {}) => {
   let crawlTimedOut = false;
   let totalNewArticles = 0;
   let totalUpdatedArticles = 0;
+  const semanticUpdates = [];
 
   const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
 
@@ -336,7 +337,8 @@ const performCrawl = async (userId = null, options = {}) => {
       processedUserIds: userId ? [userId] : [],
       crawlStartedAt,
       totalNewArticles: 0,
-      totalUpdatedArticles: 0
+      totalUpdatedArticles: 0,
+      semanticUpdates: []
     };
   }
 
@@ -445,6 +447,12 @@ const performCrawl = async (userId = null, options = {}) => {
           );
           feedNewArticles += articleResult?.newArticles || 0;
           feedUpdatedArticles += articleResult?.updatedArticles || 0;
+          if (articleResult?.semanticUpdate) {
+            semanticUpdates.push({
+              userId: feed.userId,
+              ...articleResult.semanticUpdate
+            });
+          }
         }
       } finally {
         await hotlinkBatcher.flush();
@@ -644,7 +652,8 @@ const performCrawl = async (userId = null, options = {}) => {
     processedUserIds: [...processedUserIds],
     crawlStartedAt,
     totalNewArticles,
-    totalUpdatedArticles
+    totalUpdatedArticles,
+    semanticUpdates
   };
 
   if (!options.suppressDoneEvent) {

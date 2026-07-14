@@ -1,19 +1,31 @@
-// This function returns a trimmed HTTP(S) media URL or null.
-const safeMediaUrl = value => {
+import { load } from 'cheerio';
+
+// This function resolves an HTTP(S) media URL against an optional article URL.
+const safeResolvedMediaUrl = (value, baseUrl = null) => {
+  if (typeof value !== 'string' && !(value instanceof URL)) return null;
+
   const trimmed = String(value || '').trim();
-  if (!trimmed) return null;
+  if (!trimmed || /\s/.test(trimmed)) return null;
 
   try {
-    const parsed = new URL(trimmed);
+    const parsed = baseUrl ? new URL(trimmed, baseUrl) : new URL(trimmed);
     return ['http:', 'https:'].includes(parsed.protocol) ? parsed.href : null;
   } catch {
     return null;
   }
 };
 
+// This function returns a trimmed HTTP(S) media URL or null.
+const safeMediaUrl = value => safeResolvedMediaUrl(value);
+
 // This function returns the first safe URL from ordered feed values.
 const firstSafeMediaUrl = (...values) => values
   .map(safeMediaUrl)
+  .find(Boolean) || null;
+
+// This function returns the first safe feed URL resolved against the canonical article page.
+const firstSafeResolvedMediaUrl = (baseUrl, ...values) => values
+  .map(value => safeResolvedMediaUrl(value, baseUrl))
   .find(Boolean) || null;
 
 // This function detects a media candidate type from Media RSS metadata.
@@ -165,6 +177,70 @@ const firstNormalizedValue = (normalize, ...values) => values
   .map(normalize)
   .find(value => value !== null) ?? null;
 
+// This function converts a recognized provider iframe into safe structured media.
+const normalizeProviderIframe = (node, articleUrl) => {
+  const sourceUrl = safeResolvedMediaUrl(node.attr('src'), articleUrl);
+  if (!sourceUrl) return null;
+
+  const parsed = new URL(sourceUrl);
+  const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
+  let provider;
+  let externalId;
+  let url;
+  let embedUrl;
+
+  if (['youtube.com', 'youtube-nocookie.com'].includes(hostname)) {
+    externalId = parsed.pathname.match(/^\/embed\/([A-Za-z0-9_-]{11})(?:\/|$)/)?.[1];
+    if (!externalId) return null;
+
+    provider = 'youtube';
+    url = `https://www.youtube.com/watch?v=${externalId}`;
+    embedUrl = `https://www.youtube-nocookie.com/embed/${externalId}`;
+  } else if (hostname === 'player.vimeo.com') {
+    externalId = parsed.pathname.match(/^\/video\/(\d+)(?:\/|$)/)?.[1];
+    if (!externalId) return null;
+
+    provider = 'vimeo';
+    url = `https://vimeo.com/${externalId}`;
+    embedUrl = sourceUrl;
+  } else {
+    return null;
+  }
+
+  const thumbnailUrl = [
+    node.attr('poster'),
+    node.attr('data-poster'),
+    node.attr('data-thumbnail-url'),
+    node.attr('data-thumbnail')
+  ].map(value => safeResolvedMediaUrl(value, articleUrl)).find(Boolean);
+
+  return Object.fromEntries(Object.entries({
+    type: 'video',
+    provider,
+    externalId,
+    url,
+    embedUrl,
+    thumbnailUrl,
+    width: nonNegativeInteger(node.attr('width')),
+    height: nonNegativeInteger(node.attr('height'))
+  }).filter(([, value]) => value !== undefined && value !== null));
+};
+
+// This function extracts the first recognized provider before unsafe iframes are discarded.
+const providerIframeMedia = (htmlContent, articleUrl) => {
+  const html = String(htmlContent || '');
+  if (!/<iframe\b/i.test(html)) return null;
+
+  const $ = load(html, { xml: { xmlMode: false } }, false);
+
+  for (const iframe of $('iframe[src]').toArray()) {
+    const media = normalizeProviderIframe($(iframe), articleUrl);
+    if (media) return media;
+  }
+
+  return null;
+};
+
 // This function normalizes supported feed duration formats to seconds.
 const normalizeDuration = value => {
   if (typeof value === 'number') {
@@ -196,7 +272,8 @@ const normalizeMimeType = (value, provider, contentUrl) => {
 };
 
 // This function returns the safe primary URL represented by a media candidate.
-const candidateUrl = ({ item, parent }, rawMedia) => firstSafeMediaUrl(
+const candidateUrl = ({ item, parent }, rawMedia, pageUrl) => firstSafeResolvedMediaUrl(
+  pageUrl,
   item?.url,
   item?.player?.url,
   item?.embed?.url,
@@ -207,8 +284,9 @@ const candidateUrl = ({ item, parent }, rawMedia) => firstSafeMediaUrl(
 );
 
 // This function returns the safe image URL represented by an image candidate.
-const imageCandidateUrl = ({ item, parent, source }, rawMedia) => {
-  const itemUrl = firstSafeMediaUrl(
+const imageCandidateUrl = ({ item, parent, source }, rawMedia, pageUrl) => {
+  const itemUrl = firstSafeResolvedMediaUrl(
+    pageUrl,
     item?.url,
     item?.thumbnail?.url,
     item?.thumbnail,
@@ -217,16 +295,21 @@ const imageCandidateUrl = ({ item, parent, source }, rawMedia) => {
   );
   if (itemUrl || source === 'enclosure') return itemUrl;
 
-  return firstSafeMediaUrl(parent?.thumbnails?.[0]?.url, rawMedia?.thumbnails?.[0]?.url);
+  return firstSafeResolvedMediaUrl(
+    pageUrl,
+    parent?.thumbnails?.[0]?.url,
+    rawMedia?.thumbnails?.[0]?.url
+  );
 };
 
 // This function converts one image candidate into a compact gallery item.
-const normalizeGalleryItem = (candidate, rawMedia) => {
+const normalizeGalleryItem = (candidate, rawMedia, pageUrl) => {
   const { item, parent } = candidate;
-  const url = imageCandidateUrl(candidate, rawMedia);
+  const url = imageCandidateUrl(candidate, rawMedia, pageUrl);
   if (!url) return null;
 
-  const thumbnailUrl = firstSafeMediaUrl(
+  const thumbnailUrl = firstSafeResolvedMediaUrl(
+    pageUrl,
     item?.thumbnail?.url,
     item?.thumbnail,
     item?.image,
@@ -249,15 +332,16 @@ const normalizeGalleryItem = (candidate, rawMedia) => {
 };
 
 // This function normalizes one feed media candidate into persisted JSON attributes.
-const normalizeCandidate = ({ entry, rawMedia, item, parent, type }) => {
-  const pageUrl = entryUrl(entry);
-  const contentUrl = safeMediaUrl(item?.url);
-  const playerUrl = firstSafeMediaUrl(
+const normalizeCandidate = ({ entry, rawMedia, item, parent, type, pageUrl }) => {
+  const contentUrl = safeResolvedMediaUrl(item?.url, pageUrl);
+  const playerUrl = firstSafeResolvedMediaUrl(
+    pageUrl,
     item?.player?.url,
     parent?.player?.url,
     rawMedia?.player?.url
   );
-  const suppliedEmbedUrl = firstSafeMediaUrl(
+  const suppliedEmbedUrl = firstSafeResolvedMediaUrl(
+    pageUrl,
     item?.embed?.url,
     parent?.embed?.url,
     rawMedia?.embed?.url
@@ -267,7 +351,8 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type }) => {
   const provider = detectProvider(item, urls, videoId) ||
     detectProvider(parent, urls, videoId) ||
     detectProvider(rawMedia, urls, videoId);
-  const thumbnail = firstSafeMediaUrl(
+  const thumbnail = firstSafeResolvedMediaUrl(
+    pageUrl,
     item?.thumbnails?.[0]?.url,
     item?.thumbnail?.url,
     item?.thumbnail,
@@ -326,9 +411,9 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type }) => {
 };
 
 // This function extracts normalized video, audio, or gallery attributes from a feed entry.
-function processMedia(entry) {
+function processMedia(entry, htmlContent = null, articleUrl = null) {
   const rawMedia = entry?.media || {};
-  const pageUrl = entryUrl(entry);
+  const pageUrl = firstSafeMediaUrl(articleUrl, entryUrl(entry));
   const candidates = [
     ...mediaCandidates(rawMedia),
     ...enclosureCandidates(entry)
@@ -341,13 +426,13 @@ function processMedia(entry) {
 
   const video = candidates.find(candidate =>
     candidate.type === 'video' &&
-    (candidateUrl(candidate, rawMedia) || youtubeVideoId(entry, [pageUrl].filter(Boolean)))
+    (candidateUrl(candidate, rawMedia, pageUrl) || youtubeVideoId(entry, [pageUrl].filter(Boolean)))
   );
-  if (video) return normalizeCandidate({ entry, rawMedia, ...video });
+  if (video) return normalizeCandidate({ entry, rawMedia, pageUrl, ...video });
 
   const nuVideoThumbnail = candidates
     .filter(candidate => candidate.source === 'enclosure' && candidate.type === 'image')
-    .map(candidate => safeMediaUrl(candidate.item?.url))
+    .map(candidate => safeResolvedMediaUrl(candidate.item?.url, pageUrl))
     .find(Boolean);
   if (pageUrl && isNuVideoPage(pageUrl) && nuVideoThumbnail) {
     return {
@@ -357,15 +442,18 @@ function processMedia(entry) {
     };
   }
 
+  const iframeMedia = providerIframeMedia(htmlContent, pageUrl);
+  if (iframeMedia) return iframeMedia;
+
   const audio = candidates.find(candidate =>
-    candidate.type === 'audio' && candidateUrl(candidate, rawMedia)
+    candidate.type === 'audio' && candidateUrl(candidate, rawMedia, pageUrl)
   );
-  if (audio) return normalizeCandidate({ entry, rawMedia, ...audio });
+  if (audio) return normalizeCandidate({ entry, rawMedia, pageUrl, ...audio });
 
   const galleryItemsByUrl = new Map();
   candidates
     .filter(candidate => candidate.type === 'image')
-    .map(candidate => normalizeGalleryItem(candidate, rawMedia))
+    .map(candidate => normalizeGalleryItem(candidate, rawMedia, pageUrl))
     .filter(Boolean)
     .forEach(item => {
       if (!galleryItemsByUrl.has(item.url)) galleryItemsByUrl.set(item.url, item);

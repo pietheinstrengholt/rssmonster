@@ -474,8 +474,8 @@ export default {
         { value: 'favorite', label: 'Favorite', selectLabel: 'Set favorite', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Marks the article as a favorite.' },
         { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
         { value: 'clicked', label: 'Clicked', selectLabel: 'Mark as clicked', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Sets the read-later indicator.' },
-        { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 100.' },
-        { value: 'badquality', label: 'Mark as low quality', selectLabel: 'Mark as low quality', icon: 'arrow-down-square', iconClass: 'actions-type-icon--badquality', description: 'Overrides the quality score to 100.' },
+        { value: 'advertisement', label: 'Mark as advertisement', selectLabel: 'Mark as advertisement', icon: 'megaphone', iconClass: 'actions-type-icon--advertisement', description: 'Overrides the advertisement score to 0.' },
+        { value: 'badquality', label: 'Mark as low quality', selectLabel: 'Mark as low quality', icon: 'arrow-down-square', iconClass: 'actions-type-icon--badquality', description: 'Overrides the quality score to 0.' },
         { value: 'tag', label: 'Assign tag', selectLabel: 'Assign tag', icon: 'tag', iconClass: 'actions-type-icon--tag', description: 'Adds a custom tag to the article.' }
       ]
     };

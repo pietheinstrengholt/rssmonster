@@ -4,30 +4,30 @@ import { normalizeTitleKey } from './articleDuplicateCache.js';
 
 const { Article, sequelize } = db;
 
-// This function finds an existing article with the same stripped content hash for a user.
-export async function findByUserContentStrippedHash(identity) {
-  if (!identity.contentStrippedHash) return null;
+// This function finds an existing article with the same visible-text hash for a user.
+export async function findByUserContentTextHash(identity) {
+  if (!identity.contentTextHash) return null;
 
   return Article.findOne({
     attributes: ['id'],
     raw: true,
     where: {
       userId: identity.userId,
-      contentStrippedHash: identity.contentStrippedHash
+      contentTextHash: identity.contentTextHash
     }
   });
 }
 
-// This function finds an existing article with the same content hash for a user.
-export async function findByUserContentHash(identity) {
-  if (!identity.contentHash) return null;
+// This function finds an existing article with the same original source hash for a user.
+export async function findByUserContentSourceHash(identity) {
+  if (!identity.contentSourceHash) return null;
 
   return Article.findOne({
     attributes: ['id'],
     raw: true,
     where: {
       userId: identity.userId,
-      contentHash: identity.contentHash
+      contentSourceHash: identity.contentSourceHash
     }
   });
 }

@@ -8,6 +8,16 @@ import {
   isSafeUrl
 } from './htmlContentAllowlists.js';
 
+const VIMEO_EMBED_ATTRS = [
+  'data-embed-provider',
+  'data-embed-id',
+  'data-embed-url',
+  'data-embed-player-url',
+  'data-embed-aspect-ratio'
+];
+const VIMEO_ID_PATTERN = /^\d+$/;
+const VIMEO_ASPECT_RATIO_PATTERN = /^(?:\d+(?:\.\d+)?|\.\d+)$/;
+
 // This function converts the existing allowlists into sanitize-html attributes.
 function allowedAttributesFromAllowlists() {
   return {
@@ -35,6 +45,40 @@ function filterClassAttribute(tagName, attribs) {
     safeAttribs.class = classNames.join(' ');
   } else {
     delete safeAttribs.class;
+  }
+
+  return safeAttribs;
+}
+
+// This function preserves internal Vimeo metadata only when the complete card identity is valid.
+function filterInternalEmbedAttributes(tagName, attribs) {
+  const safeAttribs = { ...attribs };
+  const classNames = new Set(String(attribs.class || '').split(/\s+/));
+  const providerId = String(attribs['data-embed-id'] || '');
+  const aspectRatio = String(attribs['data-embed-aspect-ratio'] || '');
+  const isCanonicalVimeoCard = tagName === 'figure' &&
+    classNames.has('rss-content-card') &&
+    classNames.has('rss-content-card--embed') &&
+    classNames.has('rss-content-card--vimeo') &&
+    attribs['data-embed-provider'] === 'vimeo' &&
+    VIMEO_ID_PATTERN.test(providerId) &&
+    attribs['data-embed-url'] === `https://vimeo.com/${providerId}` &&
+    attribs['data-embed-player-url'] === `https://player.vimeo.com/video/${providerId}`;
+
+  if (!isCanonicalVimeoCard) {
+    for (const attrName of VIMEO_EMBED_ATTRS) delete safeAttribs[attrName];
+    return safeAttribs;
+  }
+
+  if (aspectRatio) {
+    const numericRatio = Number(aspectRatio);
+    if (
+      !VIMEO_ASPECT_RATIO_PATTERN.test(aspectRatio) ||
+      numericRatio < 0.1 ||
+      numericRatio > 10
+    ) {
+      delete safeAttribs['data-embed-aspect-ratio'];
+    }
   }
 
   return safeAttribs;
@@ -96,7 +140,8 @@ function hardenBlankTargetLinks(tagName, attribs) {
 // This function applies custom security transforms beyond sanitize-html defaults.
 function transformTag(tagName, attribs) {
   const classFilteredAttribs = filterClassAttribute(tagName, attribs);
-  const transformed = filterUnsafeUrlAttributes(tagName, classFilteredAttribs);
+  const embedFilteredAttribs = filterInternalEmbedAttributes(tagName, classFilteredAttribs);
+  const transformed = filterUnsafeUrlAttributes(tagName, embedFilteredAttribs);
   return hardenBlankTargetLinks(transformed.tagName, transformed.attribs);
 }
 

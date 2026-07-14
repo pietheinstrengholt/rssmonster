@@ -25,12 +25,12 @@ const populateArticleHashes = article => {
   if (article.normalizedUrl && !article.normalizedUrlHash) {
     article.normalizedUrlHash = hashValue(article.normalizedUrl);
   }
-  if (!article.contentStrippedHash) {
-    article.contentStrippedHash = hashVisibleText(article.contentText);
+  if (!article.contentTextHash && article.contentText) {
+    article.contentTextHash = hashVisibleText(article.contentText);
   }
   // Missing source content must remain null so description-only articles do not share an empty hash.
-  if (!article.contentHash && article.contentOriginal) {
-    article.contentHash = hashOriginalContent(article.contentOriginal);
+  if (!article.contentSourceHash && article.contentOriginal) {
+    article.contentSourceHash = hashOriginalContent(article.contentOriginal);
   }
 };
 
@@ -210,8 +210,8 @@ export default (sequelize) => {
         allowNull: true,
         defaultValue: null
       },
-      // Stripped content with HTML removed, used for summarization and topic modeling
-      contentStripped: {
+      // Sanitized display HTML derived from the original feed payload
+      contentHtml: {
         type: DataTypes.TEXT,
         allowNull: true,
         defaultValue: null
@@ -225,13 +225,13 @@ export default (sequelize) => {
       content: {
         type: DataTypes.VIRTUAL(DataTypes.TEXT),
         get() {
-          return this.getDataValue('contentStripped');
+          return this.getDataValue('contentHtml');
         }
       },
       // SHA-256 identity of normalized visible plain text
-      contentStrippedHash: {
+      contentTextHash: {
         type: DataTypes.STRING(64),
-        allowNull: false
+        allowNull: true
       },
       // AI-generated summary bullets (array of strings), stored as JSON
       contentSummaryBullets: {
@@ -239,7 +239,7 @@ export default (sequelize) => {
         allowNull: true
       },
       // SHA-256 identity of normalized original feed source content
-      contentHash: {
+      contentSourceHash: {
         type: DataTypes.STRING(64),
         allowNull: true
       },
@@ -474,6 +474,22 @@ export default (sequelize) => {
       }
     },
     {
+      indexes: [
+        {
+          unique: true,
+          name: 'articles_feedId_urlHash_unique',
+          fields: ['feedId', 'urlHash']
+        },
+        {
+          unique: true,
+          name: 'articles_feedId_normalizedUrlHash_unique',
+          fields: ['feedId', 'normalizedUrlHash']
+        },
+        {
+          name: 'articles_userId_contentSourceHash_idx',
+          fields: ['userId', 'contentSourceHash']
+        }
+      ],
       charset: 'utf8mb4',
       collate: 'utf8mb4_unicode_ci',
       hooks: {

@@ -43,7 +43,7 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
   return `${head}\n...\n${tail}`;
 };
 
-async function analyzeArticleContent(contentStripped, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
+async function analyzeArticleContent(contentHtml, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
   // Normalize category names
   const normalizeGeneratedTag = tag =>
     normalizeTagName(tag)
@@ -57,7 +57,7 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
     : [];
 
   // Start with default analysis
-  let analysis = defaultAnalysis(contentStripped);
+  let analysis = defaultAnalysis(contentHtml);
 
   // Apply feed category tags when available
   if (hasFeedCategories) {
@@ -70,7 +70,7 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
   }
 
   // Skip analysis for very short content
-  if (!contentStripped || contentStripped.trim().length < 200) {
+  if (!contentHtml || contentHtml.trim().length < 200) {
     return analysis;
   }
 
@@ -87,8 +87,8 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
 
   // Skip OpenAI analysis for very short content (tags already set if categories exist)
   if (
-    typeof contentStripped === 'string' &&
-    contentStripped.length < 500
+    typeof contentHtml === 'string' &&
+    contentHtml.length < 500
   ) {
     return analysis;
   }
@@ -219,7 +219,7 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
       `Article Categories: ${categoryNames.join(', ')}`,
       "Article Content:",
       "```",
-      truncateContentForLLM(contentStripped),
+      truncateContentForLLM(contentHtml),
       "```"
     ].join('\n');
 
@@ -247,7 +247,7 @@ async function analyzeArticleContent(contentStripped, title, categoryNames, feed
           summary:
             typeof parsed.summary === 'string' && parsed.summary.length > 0
               ? parsed.summary
-              : contentStripped,
+              : contentHtml,
           contentSummaryBullets: Array.isArray(parsed.contentSummaryBullets)
             ? parsed.contentSummaryBullets
                 .filter(b => typeof b === 'string' && b.trim().length > 0)

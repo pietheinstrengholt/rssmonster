@@ -5,8 +5,8 @@ export const normalizeTitleKey = title =>
     : '';
 
 const createSharedUserArticleHashIds = () => ({
-  contentStrippedHashIds: new Map(),
-  contentHashIds: new Map()
+  contentTextHashIds: new Map(),
+  contentSourceHashIds: new Map()
 });
 
 // This function creates an in-memory duplicate index for one feed crawl.
@@ -16,8 +16,8 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
   const articlesByTitle = new Map();
 
   const sharedUserArticleHashIds = {
-    contentStrippedHashIds: userArticleHashIds.contentStrippedHashIds || new Map(),
-    contentHashIds: userArticleHashIds.contentHashIds || new Map()
+    contentTextHashIds: userArticleHashIds.contentTextHashIds || new Map(),
+    contentSourceHashIds: userArticleHashIds.contentSourceHashIds || new Map()
   };
 
   // This function adds an article to each applicable duplicate index.
@@ -33,23 +33,23 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
       });
       articlesByTitle.set(titleKey, matches);
     }
-    if (article.contentStrippedHash) {
-      sharedUserArticleHashIds.contentStrippedHashIds.set(article.contentStrippedHash, article.id);
+    if (article.contentTextHash) {
+      sharedUserArticleHashIds.contentTextHashIds.set(article.contentTextHash, article.id);
     }
-    if (article.contentHash) {
-      sharedUserArticleHashIds.contentHashIds.set(article.contentHash, article.id);
+    if (article.contentSourceHash) {
+      sharedUserArticleHashIds.contentSourceHashIds.set(article.contentSourceHash, article.id);
     }
   };
 
   articles.forEach(add);
 
   return {
-    findByUserContentStrippedHash(contentStrippedHash) {
-      const id = sharedUserArticleHashIds.contentStrippedHashIds.get(contentStrippedHash);
+    findByUserContentTextHash(contentTextHash) {
+      const id = sharedUserArticleHashIds.contentTextHashIds.get(contentTextHash);
       return id ? { id } : null;
     },
-    findByUserContentHash(contentHash) {
-      const id = sharedUserArticleHashIds.contentHashIds.get(contentHash);
+    findByUserContentSourceHash(contentSourceHash) {
+      const id = sharedUserArticleHashIds.contentSourceHashIds.get(contentSourceHash);
       return id ? { id } : null;
     },
     findByFeedNormalizedUrlHash(normalizedUrlHash) {

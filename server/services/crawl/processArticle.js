@@ -6,6 +6,7 @@ import { load } from 'cheerio';
 import extractEntryFields, { resolveUrlPublishedDate } from './extractEntryFields.js';
 import processMedia from './processMedia.js';
 import processHtmlContent from './processHtmlContent.js';
+import sanitizeHtmlContent from './sanitizeHtmlContent.js';
 import applyActions from './applyActions.js';
 import analyzeArticleContent from './analyzeArticleContent.js';
 import saveArticle from './saveArticle.js';
@@ -15,8 +16,11 @@ import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import detectArticleImage from './detectArticleImage.js';
 import generateTitleFromContent from './generateTitleFromContent.js';
 import articleIdentityResolver from './articleIdentityResolver.js';
-import updateArticle from './updateArticle.js';
+import updateArticle, { applyArticleUpdate } from './updateArticle.js';
 import { hashVisibleText } from '../../utils/articleContentHashes.js';
+import hotlink from '../../controllers/hotlink.js';
+import { resolveOfficialSourceForArticle } from './officialSource.js';
+import language from '../../utils/language.js';
 
 /* ------------------------------------------------------------------
  * Article Processor
@@ -24,6 +28,7 @@ import { hashVisibleText } from '../../utils/articleContentHashes.js';
 
 // Delay in milliseconds when rate limited by OpenAI API
 const RATE_LIMIT_DELAY_MS = 3000; // 3 seconds delay when rate limited
+const MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH = 20;
 
 const emptyArticleResult = {
   newArticles: 0,
@@ -31,13 +36,247 @@ const emptyArticleResult = {
   errors: 0
 };
 
-const defaultArticleAnalysis = {
+// This function creates independent default analysis state for one article.
+const createDefaultArticleAnalysis = () => ({
   summary: null,
   contentSummaryBullets: [],
   tags: [],
   advertisementScore: 70,
   sentimentScore: 70,
   qualityScore: 70
+});
+
+// This function loads actions only when the caller did not preload them.
+const resolveArticleActions = async (feed, preloadedActions) => preloadedActions ?? Action.findAll({
+  where: { userId: feed.userId }
+});
+
+// This function selects publisher fields that action regular expressions may inspect.
+const buildActionArticle = articleData => ({
+  title: articleData.title,
+  contentHtml: articleData.analysisHtml,
+  contentText: articleData.analysisText,
+  description: articleData.description,
+  url: articleData.link || articleData.url
+});
+
+// This function renders normalized description text as safe analysis-only HTML.
+const renderDescriptionHtml = descriptionText => {
+  if (!descriptionText) return '';
+
+  const $ = load('<p></p>', null, false);
+  $('p').text(descriptionText);
+  return $.html();
+};
+
+// This function appends description fallback text and restores the sanitizer boundary.
+const appendDescriptionHtml = (contentHtml, descriptionText) => {
+  const $ = load(contentHtml, null, false);
+  $.root().append($('<p>').text(descriptionText));
+  return sanitizeHtmlContent($.html());
+};
+
+// This function fills missing body-language metadata from the canonical analysis text.
+const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title }) => {
+  const fallback = currentLanguage || 'unknown';
+  if (
+    fallback !== 'unknown' ||
+    text.length < MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH ||
+    !/\p{L}/u.test(text)
+  ) {
+    return fallback;
+  }
+
+  try {
+    const detectedLanguage = language.get(text);
+    return detectedLanguage && detectedLanguage !== 'und'
+      ? detectedLanguage
+      : fallback;
+  } catch (err) {
+    console.error(
+      `[${feed.feedName}] Error detecting language for article "${title}":`,
+      err.message
+    );
+    return fallback;
+  }
+};
+
+// This function applies action-owned score overrides to a fresh analysis result.
+const applyAnalysisScoreOverrides = (analysis, actionResult) => {
+  const result = {
+    ...analysis,
+    contentSummaryBullets: [...(analysis.contentSummaryBullets || [])],
+    tags: [...(analysis.tags || [])]
+  };
+
+  if (actionResult?.advertisementScore !== null && actionResult?.advertisementScore !== undefined) {
+    result.advertisementScore = actionResult.advertisementScore;
+  }
+  if (actionResult?.qualityScore !== null && actionResult?.qualityScore !== undefined) {
+    result.qualityScore = actionResult.qualityScore;
+  }
+
+  return result;
+};
+
+// This function returns how many other-feed articles link to one normalized article URL.
+const countArticleHotlinks = async (feed, normalizedUrl, hotlinkCountCache) => hotlinkCountCache
+  ? hotlinkCountCache.count(normalizedUrl, feed.id)
+  : Hotlink.count({
+      where: {
+        userId: feed.userId,
+        feedId: { [Op.ne]: feed.id },
+        [Op.or]: [
+          { url: normalizedUrl },
+          { url: { [Op.like]: `${normalizedUrl}?%` } }
+        ]
+      }
+    });
+
+// This function persists collected hotlinks only after their source article is accepted.
+const persistAcceptedHotlinks = async (urls, feed, hotlinkBatcher) => {
+  if (!urls.length) return;
+
+  try {
+    if (hotlinkBatcher) {
+      hotlinkBatcher.add(urls);
+      return;
+    }
+
+    await hotlink.setMany(urls, feed.id, feed.userId);
+  } catch (err) {
+    console.error(`Error saving hotlinks for accepted article in feed ${feed.id}:`, err);
+  }
+};
+
+// This function selectively rebuilds derived state and atomically applies one matched update.
+const processMatchedArticleUpdate = async ({
+  feed,
+  articleData,
+  updatePlan,
+  preloadedActions,
+  hotlinkCountCache,
+  hotlinkBatcher,
+  hotlinkUrls,
+  precomputedActionResult = null,
+  precomputedAnalysis = null
+}) => {
+  const { changes } = updatePlan;
+  const requiresActions = changes.contentChanged ||
+    changes.titleChanged ||
+    changes.descriptionChanged ||
+    changes.urlChanged;
+  const requiresAnalysis = changes.contentChanged ||
+    changes.titleChanged ||
+    changes.descriptionChanged;
+  const actions = requiresActions
+    ? await resolveArticleActions(feed, preloadedActions)
+    : null;
+  const actionResult = requiresActions
+    ? precomputedActionResult || applyActions(actions, buildActionArticle(articleData))
+    : null;
+
+  // Delete rules remain creation filters and never hard-delete an existing user article.
+  // Persist source changes only so rejected content cannot trigger enrichment or external writes.
+  if (actionResult?.shouldDelete) {
+    const article = await applyArticleUpdate({
+      updatePlan,
+      derivedValues: {},
+      tagUpdates: null,
+      userId: feed.userId
+    });
+
+    return {
+      article,
+      newArticles: 0,
+      updatedArticles: 1,
+      errors: 0,
+      semanticUpdate: null
+    };
+  }
+
+  let analysis = null;
+  if (requiresAnalysis) {
+    analysis = precomputedAnalysis || (
+      feed?.applyAiAnalysis === false
+        ? createDefaultArticleAnalysis()
+        : await analyzeArticleContent(
+            articleData.analysisHtml,
+            articleData.title,
+            articleData.categories,
+            feed?.feedName || '',
+            RATE_LIMIT_DELAY_MS
+          )
+    );
+    analysis = applyAnalysisScoreOverrides(analysis, actionResult);
+  }
+
+  const derivedValues = {};
+  if (analysis) {
+    Object.assign(derivedValues, {
+      contentSummaryBullets: analysis.contentSummaryBullets,
+      advertisementScore: analysis.advertisementScore,
+      sentimentScore: analysis.sentimentScore,
+      qualityScore: analysis.qualityScore,
+      articleVector: null,
+      embedding_model: null
+    });
+  } else if (actionResult) {
+    // Score provenance is not stored, so only explicit new overrides are safe to apply here.
+    if (actionResult.advertisementScore !== null) {
+      derivedValues.advertisementScore = actionResult.advertisementScore;
+    }
+    if (actionResult.qualityScore !== null) {
+      derivedValues.qualityScore = actionResult.qualityScore;
+    }
+  }
+
+  if (changes.urlChanged) {
+    const officialSource = await resolveOfficialSourceForArticle(feed.userId, articleData.link);
+    const hotlinkCount = await countArticleHotlinks(
+      feed,
+      updatePlan.updateValues.normalizedUrl,
+      hotlinkCountCache
+    );
+    Object.assign(derivedValues, {
+      isOfficialSource: officialSource.isOfficialSource,
+      officialOrganization: officialSource.officialOrganization,
+      hotInd: hotlinkCount > 0,
+      hotlinks: hotlinkCount
+    });
+  }
+
+  const tagUpdates = requiresActions || requiresAnalysis
+    ? {
+        generatedTags: analysis ? analysis.tags : undefined,
+        feedTags: feed.feedTags,
+        ruleTags: actionResult ? actionResult.tags : undefined
+      }
+    : null;
+
+  // Engagement fields are intentionally absent because action/user provenance is not stored.
+  const article = await applyArticleUpdate({
+    updatePlan,
+    derivedValues,
+    tagUpdates,
+    userId: feed.userId
+  });
+
+  await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
+
+  return {
+    article,
+    newArticles: 0,
+    updatedArticles: 1,
+    errors: 0,
+    semanticUpdate: requiresAnalysis
+      ? {
+          articleId: article.id,
+          contentSourceHash: updatePlan.updateValues.contentSourceHash,
+          contentTextHash: updatePlan.updateValues.contentTextHash
+        }
+      : null
+  };
 };
 
 const processArticle = async (
@@ -71,10 +310,8 @@ const processArticle = async (
       fields.publishInferred = false;
     }
 
-    // Normalize HTML entities
+    // Feed titles are text fields, so decode their entities before display and comparison.
     fields.title = decodeHtmlEntities(fields.title);
-    fields.content = decodeHtmlEntities(fields.content);
-    fields.description = decodeHtmlEntities(fields.description);
 
     // Skip processing if the article is older than the feed's crawlSince
     if (feed?.crawlSince && fields.published) {
@@ -91,12 +328,14 @@ const processArticle = async (
     if (!fields.link) return emptyArticleResult;
 
     let contentOriginal = null;
-    let contentStripped = null;
+    let contentHtml = null;
     let contentText = null;
     let contentLanguage = 'unknown';
-    let contentHash = null;
-    let contentStrippedHash = null;
-    const media = processMedia(entry);
+    let contentSourceHash = null;
+    let contentTextHash = null;
+    let hotlinkUrls = [];
+    // Extract known provider iframes before generic HTML cleanup removes unsafe embed tags.
+    const media = processMedia(entry, fields.content, fields.link);
 
     // If generic content is found, use the raw entry content. Override media content.
     if (fields.content) {
@@ -105,16 +344,16 @@ const processArticle = async (
         null,
         fields.link,
         feed,
-        fields.title,
-        hotlinkBatcher
+        fields.title
       );
       if (htmlResult) {
         contentOriginal = htmlResult.content;
-        contentStripped = htmlResult.stripped;
+        contentHtml = htmlResult.html;
         contentText = htmlResult.text;
         contentLanguage = htmlResult.language;
-        contentHash = htmlResult.contentHash;
-        contentStrippedHash = htmlResult.contentStrippedHash;
+        contentSourceHash = htmlResult.contentSourceHash;
+        contentTextHash = htmlResult.contentTextHash;
+        hotlinkUrls = htmlResult.hotlinkUrls || [];
         fields.title = htmlResult.title || fields.title; // Prefer title extracted from content if available
       }
     }
@@ -128,30 +367,37 @@ const processArticle = async (
       : null;
 
     // If the body contains no text, append the description while preserving media HTML.
-    if (contentStripped && !contentText && descriptionText) {
+    if (contentHtml && !contentText && descriptionText) {
       contentText = descriptionText;
-      const $ = load(contentStripped);
-      $('body').append($('<p>').attr('id', 'description').text(descriptionText));
-      contentStripped = $('body').html();
-      contentStrippedHash = hashVisibleText(contentText);
+      contentHtml = appendDescriptionHtml(contentHtml, descriptionText);
+      contentTextHash = hashVisibleText(contentText);
     }
 
-    // Description-only entries retain separate fields but still receive visible-text identity.
-    if (!contentOriginal && descriptionText) {
-      contentStrippedHash = hashVisibleText(descriptionText);
+    // Build one canonical representation for actions, analysis, language, and semantic text.
+    const analysisText = contentText || descriptionText || '';
+    const analysisHtml = contentHtml || renderDescriptionHtml(descriptionText);
+    if (!contentText && analysisText) {
+      contentText = analysisText;
+      contentTextHash = hashVisibleText(analysisText);
     }
+    contentLanguage = resolveAnalysisLanguage({
+      currentLanguage: contentLanguage,
+      text: analysisText,
+      feed,
+      title: fields.title
+    });
 
     // Generate a useful title for feeds whose entries do not provide one.
     if (titleWasMissing) {
       fields.title = generateTitleFromContent(
-        contentText || fields.description || rssFeedTitle
+        contentText || descriptionText || rssFeedTitle
       ) || 'Untitled';
     }
 
     const leadImage = await detectArticleImage({
       entry,
       articleUrl: fields.link,
-      contentStripped,
+      contentHtml,
       content: fields.content,
       description: fields.description
     });
@@ -161,11 +407,13 @@ const processArticle = async (
       ...fields,
       ...externalIdentity,
       normalizedUrl,
-      contentStripped,
+      analysisHtml,
+      analysisText,
+      contentHtml,
       contentText,
       contentOriginal,
-      contentHash,
-      contentStrippedHash,
+      contentSourceHash,
+      contentTextHash,
       media,
       leadImage,
       language: contentLanguage,
@@ -174,17 +422,25 @@ const processArticle = async (
       publishInferred: fields.publishInferred
     };
 
-    // Add or update articles only when body content, media content, or a feed description was found.
-    if (!contentOriginal && !fields.description && !media) return emptyArticleResult;
+    // Add or update articles only when body content, a description, media, or a lead image was found.
+    if (!contentOriginal && !fields.description && !media && !leadImage) {
+      return emptyArticleResult;
+    }
 
     // Update known external identities before duplicate checks or expensive enrichment work.
     const updateResult = await updateArticle(feed, articleData);
     if (updateResult.matched) {
-      return {
-        newArticles: 0,
-        updatedArticles: updateResult.changed ? 1 : 0,
-        errors: 0
-      };
+      if (!updateResult.changed) return emptyArticleResult;
+
+      return processMatchedArticleUpdate({
+        feed,
+        articleData,
+        updatePlan: updateResult,
+        preloadedActions,
+        hotlinkCountCache,
+        hotlinkBatcher,
+        hotlinkUrls
+      });
     }
 
     const articleIdentity = buildArticleIdentity({
@@ -192,8 +448,8 @@ const processArticle = async (
       title: fields.title,
       link: fields.link,
       normalizedUrl,
-      contentHash,
-      contentStrippedHash,
+      contentSourceHash,
+      contentTextHash,
       published: fields.published
     });
 
@@ -203,78 +459,70 @@ const processArticle = async (
 
     // Retrieve actions for applying rules to the article
     // Do this BEFORE OpenAI analysis to avoid wasting API calls on deleted articles
-    const actions = preloadedActions ?? await Action.findAll({
-      where: { userId: feed.userId }
-    });
+    const actions = await resolveArticleActions(feed, preloadedActions);
 
     // Apply each action to the article
     // Actions allow users to automatically modify article properties based on regex patterns
-    const actionResult = applyActions(
-      actions,
-      contentStripped,
-      fields.title
-    );
+    const actionResult = applyActions(actions, buildActionArticle(articleData));
 
     // Skip article creation if delete action matched
     if (actionResult.shouldDelete) return emptyArticleResult;
 
     // Analyze content once (summary + tags + scores) unless disabled for this feed.
     // Done AFTER delete check to avoid wasting API calls.
-    const analysis = feed?.applyAiAnalysis === false
-      ? { ...defaultArticleAnalysis }
+    let analysis = feed?.applyAiAnalysis === false
+      ? createDefaultArticleAnalysis()
       : await analyzeArticleContent(
-        contentStripped,
+        analysisHtml,
         fields.title,
         fields.categories,
         feed?.feedName || '',
         RATE_LIMIT_DELAY_MS
       );
 
-    // Apply action overrides for scores after analysis
-    if (actionResult.advertisementScore !== null) {
-      analysis.advertisementScore = actionResult.advertisementScore;
-    }
-    if (actionResult.qualityScore !== null) {
-      analysis.qualityScore = actionResult.qualityScore;
-    }
+    analysis = applyAnalysisScoreOverrides(analysis, actionResult);
 
     // Search if the article link is a hotlink.
     // Hotness is determined by counting how often other articles link to this article URL.
-    const hotlinkCount = hotlinkCountCache
-      ? hotlinkCountCache.count(normalizedUrl, feed.id)
-      : await Hotlink.count({
-        where: {
-          userId: feed.userId,
-          feedId: { [Op.ne]: feed.id }, // Exclude same feed
-          [Op.or]: [
-            { url: normalizedUrl },
-            { url: { [Op.like]: `${normalizedUrl}?%` } }
-          ]
-        }
-      });
+    const hotlinkCount = await countArticleHotlinks(feed, normalizedUrl, hotlinkCountCache);
 
     // Create article with analysis results
-    const savedArticle = await saveArticle(
+    const saveResult = await saveArticle(
       feed,
       {
         ...articleData,
-        hotlinkInd: hotlinkCount > 0,
-        hotlinkCount: hotlinkCount
+        hotInd: hotlinkCount > 0,
+        hotlinks: hotlinkCount
       },
       analysis,
       actionResult
     );
 
-    if (!savedArticle) {
-      // A concurrent crawler inserted this URL first; treat as updated for progress counters.
-      return {
-        newArticles: 0,
-        updatedArticles: 1,
-        errors: 0
-      };
+    const savedArticle = saveResult.article;
+
+    if (!saveResult.created) {
+      // Classify the exact winning row so a URL race cannot target a different article.
+      const concurrentUpdate = await updateArticle(feed, articleData, { article: savedArticle });
+      duplicateCache?.add(savedArticle);
+      if (!concurrentUpdate.changed) return emptyArticleResult;
+
+      const matchedUpdateResult = await processMatchedArticleUpdate({
+        feed,
+        articleData,
+        updatePlan: concurrentUpdate,
+        preloadedActions,
+        hotlinkCountCache,
+        hotlinkBatcher,
+        hotlinkUrls,
+        precomputedActionResult: actionResult,
+        precomputedAnalysis: analysis
+      });
+      duplicateCache?.add(matchedUpdateResult.article);
+      return matchedUpdateResult;
     }
 
     duplicateCache?.add(savedArticle);
+    await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
 
     return {
       newArticles: 1,

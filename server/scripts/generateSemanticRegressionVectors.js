@@ -26,7 +26,7 @@ function hashContent(content) {
 function articleContent(article) {
   return (
     article.contentText ||
-    article.contentStripped ||
+    article.contentHtml ||
     article.contentOriginal ||
     article.content ||
     article.title ||
@@ -65,7 +65,7 @@ async function loadExistingVectors() {
   try {
     const vectorFixture = await readFile(VECTOR_FIXTURE_PATH, 'utf8').then(JSON.parse);
     return new Map(
-      vectorFixture.articles.map(article => [article.contentHash, article])
+      vectorFixture.articles.map(article => [article.contentSourceHash, article])
     );
   } catch (err) {
     if (err.code === 'ENOENT') return new Map();
@@ -88,14 +88,14 @@ async function main() {
       .slice(index, index + BATCH_SIZE)
       .map((article, offset) => {
         const articleIndex = index + offset;
-        const contentHash = hashContent(articleContent(article));
-        const existingVector = existingVectors.get(contentHash);
+        const contentSourceHash = hashContent(articleContent(article));
+        const existingVector = existingVectors.get(contentSourceHash);
         const embeddingInput = buildEmbeddingInput(article, articleIndex);
 
         return {
           article,
           articleIndex,
-          contentHash,
+          contentSourceHash,
           embeddingInput,
           existingVector
         };
@@ -122,8 +122,8 @@ async function main() {
 
       response.data.forEach((result, resultIndex) => {
         const item = missing[resultIndex];
-        generatedByHash.set(item.contentHash, {
-          contentHash: item.contentHash,
+        generatedByHash.set(item.contentSourceHash, {
+          contentSourceHash: item.contentSourceHash,
           embeddingModel: EMBEDDING_MODEL,
           articleVector: result.embedding
         });
@@ -132,8 +132,8 @@ async function main() {
 
     for (const item of batch) {
       vectorRows.push(
-        generatedByHash.get(item.contentHash) || {
-          contentHash: item.contentHash,
+        generatedByHash.get(item.contentSourceHash) || {
+          contentSourceHash: item.contentSourceHash,
           embeddingModel: item.existingVector.embeddingModel,
           articleVector: item.existingVector.articleVector
         }

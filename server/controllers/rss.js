@@ -12,7 +12,7 @@ const buildRssXml = (articles, meta) => {
     link: article.url,
     guid: article.id,
     pubDate: new Date(article.published || article.createdAt || Date.now()).toUTCString(),
-    description: article.contentStripped || article.content || '',
+    description: article.contentHtml || article.content || '',
     category: article.Feed?.title ? [article.Feed.title] : undefined
   }));
 

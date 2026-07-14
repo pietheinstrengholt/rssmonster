@@ -39,7 +39,7 @@ function parseIntegerOption(name) {
 function articleContent(article) {
   return (
     article.contentText ||
-    article.contentStripped ||
+    article.contentHtml ||
     article.contentOriginal ||
     article.description ||
     article.title ||
@@ -144,7 +144,7 @@ async function main() {
         'title',
         'description',
         'contentOriginal',
-        'contentStripped',
+        'contentHtml',
         'contentText',
         'published'
       ],
@@ -179,7 +179,7 @@ async function main() {
       .map(article => ({
         title: article.title || '',
         contentOriginal: article.contentOriginal || '',
-        contentStripped: article.contentStripped || articleContent(article),
+        contentHtml: article.contentHtml || articleContent(article),
         contentText: article.contentText || articleContent(article),
         published: articlePublished(article),
         feedId: feedIdMap.get(article.feedId),
