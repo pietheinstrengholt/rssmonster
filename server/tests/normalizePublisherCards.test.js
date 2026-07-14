@@ -1,8 +1,8 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import cleanupHtmlContent from './cleanupHtmlContent.js';
-import normalizePublisherCards from './normalizePublisherCards.js';
+import cleanupHtmlContent from '../services/crawl/cleanupHtmlContent.js';
+import normalizePublisherCards from '../services/crawl/normalizePublisherCards.js';
 
 // This function loads publisher fragments without parser-driven card repair.
 function loadFragment(html) {

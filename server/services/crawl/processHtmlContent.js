@@ -6,7 +6,7 @@ import decodeHtmlEntities from '../../utils/decodeHtmlEntities.js';
 import cleanupHtmlContent from './cleanupHtmlContent.js';
 import normalizeHtmlUrls from './normalizeHtmlUrls.js';
 import sanitizeHtmlContent from './sanitizeHtmlContent.js';
-import removeKnownShortcodes from './removeKnownShortcodes.js';
+import { transformWordPressContent } from './compatibility/transformWordPressContent.js';
 import { hashOriginalContent, hashVisibleText } from '../../utils/articleContentHashes.js';
 
 const HTML_TAG_PATTERN = /<\/?[a-z][\w:-]*(?:\s[^<>]*)?>/i;
@@ -53,7 +53,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle, 
 
   try {
     // Use only feed body content here; feed summaries belong in description.
-    contentOriginal = removeKnownShortcodes(content);
+    contentOriginal = transformWordPressContent(content);
     // Start contentStripped from the original source before applying HTML cleanup.
     contentStripped = contentOriginal;
     if (!contentOriginal) return null;

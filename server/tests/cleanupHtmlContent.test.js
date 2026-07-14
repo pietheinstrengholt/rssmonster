@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import cleanupHtmlContent from './cleanupHtmlContent.js';
+import cleanupHtmlContent from '../services/crawl/cleanupHtmlContent.js';
 
 // This function loads malformed HTML without allowing the parser to repair it first.
 function loadFragment(html) {
@@ -139,7 +139,7 @@ describe('cleanupHtmlContent', () => {
     expect($('div > p > em').text()).toBe('Value');
   });
 
-  it('preserves existing image, boilerplate, truncated-link, and empty-wrapper cleanup', () => {
+  it('preserves existing image, boilerplate, Mastodon-link, and empty-wrapper cleanup', () => {
     const $ = loadFragment(
       '<div class="newsletter">Remove me</div>' +
       '<img data-src="https://example.com/image.jpg">' +
@@ -156,8 +156,10 @@ describe('cleanupHtmlContent', () => {
     expect($('.newsletter')).toHaveLength(0);
     expect($('img').attr('src')).toBe('https://example.com/image.jpg');
     expect($('img').attr('loading')).toBe('lazy');
-    expect($('a').text()).toBe('example.com/article…');
-    expect($('div, span')).toHaveLength(0);
+    expect($('a').text()).toBe('https://example.com/article/full');
+    expect($('a span.invisible')).toHaveLength(0);
+    expect($('a span')).toHaveLength(3);
+    expect($('div')).toHaveLength(0);
   });
 
   it('removes empty and whitespace-only wrappers', () => {

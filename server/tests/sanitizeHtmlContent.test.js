@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import sanitizeHtmlContent from './sanitizeHtmlContent.js';
+import sanitizeHtmlContent from '../services/crawl/sanitizeHtmlContent.js';
 
 describe('sanitizeHtmlContent publisher cards', () => {
   it('preserves canonical card content and classes on their intended elements', () => {

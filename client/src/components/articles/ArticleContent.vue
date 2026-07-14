@@ -56,8 +56,8 @@ export default {
   computed: {
     // Returns whether this article has renderable content.
     hasContent() { return this.content !== NULL_CONTENT; },
-    // Returns article content with known embeds converted to safe native players.
-    renderedContent() { return this.renderArticleEmbeds(this.content); },
+    // Returns article content with known compatibility markup normalized for display.
+    renderedContent() { return this.renderArticleContent(this.content); },
     // Returns whether the article body contains readable text.
     hasArticleContent() { if (!this.hasContent) return false; const text = String(this.content || '').replace(/<(.|\n)*?>/g, ' ').replace(/&nbsp;/gi, ' ').trim(); return text.length > 0; },
     // Returns whether the rendered article body contains an image or picture element.
@@ -148,8 +148,8 @@ export default {
     },
     // This function strips HTML for summarized article previews.
     stripHTML(value) { return value.replace(/<(.|\n)*?>/g, '').split(/\s+/).slice(0, 100).join(' '); },
-    // This function converts known article embed placeholders into iframe markup.
-    renderArticleEmbeds(value) {
+    // This function normalizes legacy article markup before rendering it.
+    renderArticleContent(value) {
       const html = String(value || '');
 
       if (typeof DOMParser === 'undefined') {
@@ -157,6 +157,7 @@ export default {
       }
 
       const document = new DOMParser().parseFromString(html, 'text/html');
+      this.normalizeMastodonLinks(document);
       const embedFigures = document.querySelectorAll('figure.rssmonster-embed[data-provider="youtube"], figure.embed-youtube');
 
       embedFigures.forEach(figure => {
@@ -167,6 +168,30 @@ export default {
       });
 
       return document.body.innerHTML;
+    },
+    // This function makes every segment of legacy Mastodon-formatted links visible.
+    normalizeMastodonLinks(document) {
+      document.querySelectorAll('a').forEach(link => {
+        const children = Array.from(link.children);
+        const visibleParts = children.filter(child => child.matches('span:not(.invisible)'));
+        const invisibleParts = children.filter(child => child.matches('span.invisible'));
+        const hasUnexpectedText = Array.from(link.childNodes)
+          .some(child => child.nodeType === 3 && child.textContent.trim());
+
+        if (
+          visibleParts.length !== 1 ||
+          invisibleParts.length === 0 ||
+          children.length !== visibleParts.length + invisibleParts.length ||
+          hasUnexpectedText
+        ) {
+          return;
+        }
+
+        invisibleParts.forEach(part => part.classList.remove('invisible'));
+        children.forEach(part => {
+          if (!String(part.getAttribute('class') || '').trim()) part.removeAttribute('class');
+        });
+      });
     },
     // This function extracts a validated YouTube video id from known figure formats.
     youtubeVideoIdFromFigure(figure) {

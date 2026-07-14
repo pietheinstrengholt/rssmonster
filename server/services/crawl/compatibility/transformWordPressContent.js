@@ -36,11 +36,7 @@ function replaceKnownEmbeds(html = '') {
   });
 }
 
-// This function removes or converts known CMS shortcodes that feeds expose as text.
-function removeKnownShortcodes(html = '') {
-  return replaceKnownEmbeds(html)
-    .replace(CAPTION_OPEN_SHORTCODE_PATTERN, '')
-    .replace(CAPTION_CLOSE_SHORTCODE_PATTERN, '');
-}
-
-export default removeKnownShortcodes;
+// This function removes or converts WordPress shortcodes that feeds expose as text.
+export const transformWordPressContent = (html = '') => replaceKnownEmbeds(html)
+  .replace(CAPTION_OPEN_SHORTCODE_PATTERN, '')
+  .replace(CAPTION_CLOSE_SHORTCODE_PATTERN, '');

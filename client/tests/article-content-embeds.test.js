@@ -13,6 +13,19 @@ function mountArticleContent(content) {
 }
 
 describe('ArticleContent embeds', () => {
+  it('makes every segment of legacy Mastodon-formatted links visible', () => {
+    const wrapper = mountArticleContent(
+      '<p>Article <a href="https://eff.org/summer" target="_blank" rel="nofollow noopener" translate="no">' +
+      '<span class="invisible">https://</span><span class="">eff.org/summer</span>' +
+      '<span class="invisible"></span></a></p>'
+    );
+    const content = wrapper.find('.article-full-content');
+
+    expect(content.text()).toContain('https://eff.org/summer');
+    expect(content.html()).not.toContain('invisible');
+    expect(content.html()).not.toContain('class=""');
+  });
+
   it('renders rssmonster YouTube placeholders as iframe embeds', () => {
     const wrapper = mountArticleContent(`
       <p>Intro</p>

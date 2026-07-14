@@ -1,5 +1,7 @@
 import normalizePublisherCards from './normalizePublisherCards.js';
+import { transformMastodonContent } from './compatibility/transformMastodonContent.js';
 import { transformRedditContent } from './compatibility/transformRedditContent.js';
+import { transformSubstackContent } from './compatibility/transformSubstackContent.js';
 
 const DROP_TAGS = new Set([
   'script',
@@ -234,39 +236,6 @@ function normalizePictureSources($) {
   });
 }
 
-// This function converts publisher-styled truncated links into standalone readable text.
-function normalizeTruncatedLinks($) {
-  $('a').each((_, el) => {
-    const node = $(el);
-    const children = node.children();
-    const ellipsisParts = children.filter('span.ellipsis');
-    const invisibleParts = children.filter('span.invisible');
-    const hasUnexpectedText = node
-      .contents()
-      .toArray()
-      .some(child => child.type === 'text' && $(child).text().trim());
-
-    if (
-      ellipsisParts.length !== 1 ||
-      invisibleParts.length === 0 ||
-      children.length !== ellipsisParts.length + invisibleParts.length ||
-      hasUnexpectedText
-    ) {
-      return;
-    }
-
-    const label = ellipsisParts.text().replace(/\s+/g, ' ').trim();
-    if (!label) return;
-
-    const hasHiddenSuffix = ellipsisParts
-      .nextAll('span.invisible')
-      .toArray()
-      .some(part => $(part).text().trim());
-
-    node.text(`${label}${hasHiddenSuffix ? '…' : ''}`);
-  });
-}
-
 // This function wraps adjacent orphan list items in unordered lists.
 function repairOrphanListItems($) {
   const candidates = $('li')
@@ -376,6 +345,8 @@ function removeEmptyWrappers($) {
 
 // This function cleans feed HTML structure before security sanitization.
 function cleanupHtmlContent($) {
+  transformSubstackContent($);
+
   $(Array.from(DROP_TAGS).join(',')).remove();
 
   transformRedditContent($);
@@ -385,7 +356,7 @@ function cleanupHtmlContent($) {
 
   normalizePictureSources($);
   normalizeImages($);
-  normalizeTruncatedLinks($);
+  transformMastodonContent($);
 
   repairOrphanListItems($);
   repairOrphanTableElements($);

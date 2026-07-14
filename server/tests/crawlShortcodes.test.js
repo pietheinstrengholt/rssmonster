@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest';
 
 import processHtmlContent from '../services/crawl/processHtmlContent.js';
-import removeKnownShortcodes from '../services/crawl/removeKnownShortcodes.js';
+import { transformWordPressContent } from '../services/crawl/compatibility/transformWordPressContent.js';
 
 describe('crawl shortcode cleanup', () => {
   it('removes WordPress caption wrappers while preserving their content', () => {
@@ -13,7 +13,7 @@ describe('crawl shortcode cleanup', () => {
       '[/caption]'
     ].join('');
 
-    const cleaned = removeKnownShortcodes(html);
+    const cleaned = transformWordPressContent(html);
 
     expect(cleaned).not.toContain('[caption');
     expect(cleaned).not.toContain('[/caption]');

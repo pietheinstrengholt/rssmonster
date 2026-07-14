@@ -126,10 +126,11 @@ describe('crawl content sanitization', () => {
     );
 
     expect(result.content).toBe(source);
-    expect(result.text).toBe('eff.org/deeplinks/2026/06/are-…');
+    expect(result.text).toBe(href);
     expect(result.stripped).toContain(`href="${href}"`);
-    expect(result.stripped).toContain('>eff.org/deeplinks/2026/06/are-…</a>');
-    expect(result.stripped).not.toMatch(/class="(?:invisible|ellipsis)"/);
+    expect(result.stripped).toContain('<span>https://www.</span>');
+    expect(result.stripped).toContain('<span class="ellipsis">eff.org/deeplinks/2026/06/are-</span>');
+    expect(result.stripped).not.toContain('class="invisible"');
   });
 
   it('does not add an ellipsis when a publisher-styled link has no hidden suffix', () => {
@@ -141,7 +142,23 @@ describe('crawl content sanitization', () => {
       'Visible link test'
     );
 
-    expect(result.text).toBe('example.com/article');
+    expect(result.text).toBe('https://example.com/article');
+  });
+
+  it('normalizes a Mastodon link whose visible span has an empty class', () => {
+    const source = '<a href="https://eff.org/summer" target="_blank" rel="nofollow noopener" translate="no"><span class="invisible">https://</span><span class="">eff.org/summer</span><span class="invisible"></span></a>';
+    const result = processHtmlContent(
+      source,
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Mastodon visible link test'
+    );
+
+    expect(result.content).toBe(source);
+    expect(result.text).toBe('https://eff.org/summer');
+    expect(result.stripped).toContain('<span>https://</span><span>eff.org/summer</span>');
+    expect(result.stripped).not.toContain('class="invisible"');
   });
 
   it('preserves unrelated invisible elements and mixed-content links', () => {

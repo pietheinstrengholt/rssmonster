@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import normalizeHtmlUrls from './normalizeHtmlUrls.js';
+import normalizeHtmlUrls from '../services/crawl/normalizeHtmlUrls.js';
 
 const BASE_URL = 'https://example.com/articles/current';
 
