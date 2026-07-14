@@ -2,10 +2,26 @@ name: Docker Publish
 
 on:
   workflow_run:
-    workflows: ["CI"]
-    types: [completed]
-    branches: [master]
+    workflows:
+      - CI
+    types:
+      - completed
+    branches:
+      - master
+
   workflow_dispatch:
+    inputs:
+      ref:
+        description: Git ref, branch, tag, or commit SHA to publish
+        required: true
+        default: master
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docker-publish-${{ github.event.workflow_run.head_sha || inputs.ref }}
+  cancel-in-progress: false
 
 jobs:
   docker:
@@ -13,12 +29,39 @@ jobs:
     runs-on: ubuntu-latest
 
     if: >
-      github.event_name == 'workflow_dispatch' ||
-      github.event.workflow_run.conclusion == 'success'
+      (github.event_name == 'workflow_run' &&
+       github.event.workflow_run.conclusion == 'success') ||
+      github.event_name == 'workflow_dispatch'
 
     steps:
-      - name: Checkout
+      - name: Resolve source revision
+        id: source
+        shell: bash
+        run: |
+          if [[ "${{ github.event_name }}" == "workflow_run" ]]; then
+            echo "ref=${{ github.event.workflow_run.head_sha }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "ref=${{ inputs.ref }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Checkout tested revision
         uses: actions/checkout@v5
+        with:
+          ref: ${{ steps.source.outputs.ref }}
+          fetch-depth: 0
+
+      - name: Resolve commit SHA
+        id: commit
+        shell: bash
+        run: |
+          echo "sha=$(git rev-parse HEAD)" >> "$GITHUB_OUTPUT"
+          echo "short_sha=$(git rev-parse --short=7 HEAD)" >> "$GITHUB_OUTPUT"
+
+      - name: Verify workflow revision
+        if: github.event_name == 'workflow_run'
+        shell: bash
+        run: |
+          test "${{ steps.commit.outputs.sha }}" = "${{ github.event.workflow_run.head_sha }}"
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3
@@ -38,16 +81,41 @@ jobs:
         with:
           images: rssmonster/rssmonster
           tags: |
-            type=raw,value=latest
-            type=sha,prefix=sha-
+            type=raw,value=latest,enable=${{ github.event_name == 'workflow_run' }}
+            type=raw,value=sha-${{ steps.commit.outputs.short_sha }}
             type=ref,event=tag
+          labels: |
+            org.opencontainers.image.title=RSSMonster
+            org.opencontainers.image.description=Self-hosted RSS aggregator and reader
+            org.opencontainers.image.revision=${{ steps.commit.outputs.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
 
       - name: Build and push
+        id: build
         uses: docker/build-push-action@v6
         with:
           context: .
           file: ./Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          pull: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: mode=max
+          sbom: true
+
+      - name: Publish summary
+        shell: bash
+        run: |
+          {
+            echo "## Docker image published"
+            echo
+            echo "- Commit: \`${{ steps.commit.outputs.sha }}\`"
+            echo "- Digest: \`${{ steps.build.outputs.digest }}\`"
+            echo "- Tags:"
+            echo '```'
+            echo "${{ steps.meta.outputs.tags }}"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
