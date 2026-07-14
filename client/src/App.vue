@@ -190,12 +190,34 @@ export default {
           this.password_repeat = '';
         }
       } catch (error) {
-        console.error("Registration error:", error);
-        if (error.response?.data?.message) {
-          this.message = error.response.data.message;
-        } else {
-          this.message = 'Registration failed. Please try again.';
+        console.error('Registration error:', error);
+
+        // Explain connection failures when no response reached the browser.
+        if (!error.response) {
+          const isTimeout = error.code === 'ECONNABORTED' ||
+            /timeout/i.test(error.message || '');
+
+          this.message = isTimeout
+            ? 'The registration request timed out. The server may be unavailable or busy. Please try again.'
+            : 'Cannot connect to RSSMonster. Please check that the server is running and reachable.';
+          return;
         }
+
+        // Preserve useful validation messages returned by the server.
+        if (error.response.data?.message && error.response.status < 500) {
+          this.message = error.response.data.message;
+          return;
+        }
+
+        // Explain server failures without exposing internal error details.
+        if (error.response.status >= 500) {
+          this.message =
+            `The server encountered an error (HTTP ${error.response.status}) and could not complete registration. Please try again later.`;
+          return;
+        }
+
+        this.message =
+          `The server rejected the registration request (HTTP ${error.response.status}). Please check your details and try again.`;
       }
     },
     logout() {
