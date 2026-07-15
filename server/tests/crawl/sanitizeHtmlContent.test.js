@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import sanitizeHtmlContent from '../../services/crawl/sanitizeHtmlContent.js';
+import sanitizeHtmlContent from '../../services/crawl/content/sanitizeHtmlContent.js';
 
 describe('sanitizeHtmlContent publisher cards', () => {
   it('removes document wrappers from sanitized fragments', () => {

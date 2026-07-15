@@ -1,10 +1,10 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import cleanupHtmlContent from '../../services/crawl/cleanupHtmlContent.js';
-import processHtmlContent from '../../services/crawl/processHtmlContent.js';
-import sanitizeHtmlContent from '../../services/crawl/sanitizeHtmlContent.js';
-import { transformVimeoContent } from '../../services/crawl/compatibility/transformVimeoContent.js';
+import cleanupHtmlContent from '../../services/crawl/content/cleanupHtmlContent.js';
+import processHtmlContent from '../../services/crawl/content/processHtmlContent.js';
+import sanitizeHtmlContent from '../../services/crawl/content/sanitizeHtmlContent.js';
+import { transformVimeoContent } from '../../services/crawl/content/compatibility/transformVimeoContent.js';
 
 // This function loads a source fragment and applies only the Vimeo transformer.
 function transform(source) {

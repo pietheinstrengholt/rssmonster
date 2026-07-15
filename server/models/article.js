@@ -1,6 +1,6 @@
 import { DataTypes } from 'sequelize';
 import { createHash } from 'node:crypto';
-import normalizeUrl from '../services/crawl/normalizeUrl.js';
+import normalizeUrl from '../services/crawl/content/normalizeUrl.js';
 import { hashOriginalContent, hashVisibleText } from '../utils/articleContentHashes.js';
 
 const TAU_HOURS = 48; // tune this globally

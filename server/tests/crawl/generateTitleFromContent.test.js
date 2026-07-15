@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import generateTitleFromContent from '../../services/crawl/generateTitleFromContent.js';
+import generateTitleFromContent from '../../services/crawl/extraction/generateTitleFromContent.js';
 
 describe('generateTitleFromContent', () => {
   it('returns the first sentence from plain text', () => {

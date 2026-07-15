@@ -33,11 +33,25 @@ export default (sequelize) => {
         type: DataTypes.TEXT,
         allowNull: true,
         defaultValue: null
+      },
+      newArticles: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
+      updatedArticles: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
       }
     },
     {
       indexes: [
         { fields: ['userId'] },
+        {
+          name: 'crawl_runs_userId_startedAt_idx',
+          fields: ['userId', 'startedAt']
+        },
         {
           name: 'crawl_runs_active_user_unique',
           unique: true,

@@ -64,18 +64,24 @@ describe('crawl run lifecycle', () => {
     expect(createSpy).toHaveBeenCalledOnce();
     expect(createSpy).toHaveBeenCalledWith({
       userId: user.id,
-      status: 'running'
+      status: 'running',
+      newArticles: 0,
+      updatedArticles: 0
     });
     expect(updateSpy).toHaveBeenCalledOnce();
     expect(updateSpy).toHaveBeenCalledWith({
       status: 'completed',
-      completedAt: expect.any(Date)
+      completedAt: expect.any(Date),
+      newArticles: 0,
+      updatedArticles: 0
     });
     expect(crawlRuns).toHaveLength(1);
     expect(crawlRuns[0]).toMatchObject({
       userId: user.id,
       status: 'completed',
-      errorMessage: null
+      errorMessage: null,
+      newArticles: 0,
+      updatedArticles: 0
     });
     expect(crawlRuns[0].startedAt).toBeInstanceOf(Date);
     expect(crawlRuns[0].completedAt).toBeInstanceOf(Date);
@@ -99,13 +105,17 @@ describe('crawl run lifecycle', () => {
     expect(updateSpy).toHaveBeenCalledWith({
       status: 'failed',
       completedAt: expect.any(Date),
-      errorMessage: crawlError.message
+      errorMessage: crawlError.message,
+      newArticles: 0,
+      updatedArticles: 0
     });
     expect(crawlRuns).toHaveLength(1);
     expect(crawlRuns[0]).toMatchObject({
       userId: failingUser.id,
       status: 'failed',
-      errorMessage: crawlError.message
+      errorMessage: crawlError.message,
+      newArticles: 0,
+      updatedArticles: 0
     });
     expect(crawlRuns[0].startedAt).toBeInstanceOf(Date);
     expect(crawlRuns[0].completedAt).toBeInstanceOf(Date);

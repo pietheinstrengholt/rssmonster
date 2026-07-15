@@ -3,7 +3,7 @@ import extractEntryFields, {
   resolveEntryPublishedDate,
   resolveFeedPublishedDate,
   resolveUrlPublishedDate
-} from '../../services/crawl/extractEntryFields.js';
+} from '../../services/crawl/extraction/extractEntryFields.js';
 
 describe('extract entry fields', () => {
   it('resolves entry published dates from expanded FeedSmith candidates', () => {

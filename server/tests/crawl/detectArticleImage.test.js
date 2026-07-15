@@ -8,7 +8,7 @@ vi.mock('../../models/index.js', () => ({
   }
 }));
 
-const { default: detectArticleImage } = await import('../../services/crawl/detectArticleImage.js');
+const { default: detectArticleImage } = await import('../../services/crawl/media/detectArticleImage.js');
 
 describe('detectArticleImage', () => {
   it('prefers a large content image over feed candidates without useful dimensions', async () => {

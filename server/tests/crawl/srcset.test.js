@@ -5,7 +5,7 @@ import {
   parseSrcset,
   selectBestSrcsetCandidate,
   serializeSrcset
-} from '../../services/crawl/srcset.js';
+} from '../../services/crawl/content/srcset.js';
 
 describe('srcset utility', () => {
   it('resolves relative URLs against the article URL', () => {

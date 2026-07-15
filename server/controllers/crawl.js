@@ -2,15 +2,17 @@ import db from '../models/index.js';
 const { Action, Article, CrawlRun, Feed, Hotlink } = db;
 import discoverRssLink from '../services/feeds/discoverRssLink.js';
 import parseFeed from '../services/feeds/parser.js';
-import processArticle from '../services/crawl/processArticle.js';
-import { resolveFeedPublishedDate } from '../services/crawl/extractEntryFields.js';
+import {
+  processArticle,
+  runPostCrawlSemanticPipeline
+} from '../services/crawl/index.js';
+import { resolveFeedPublishedDate } from '../services/crawl/extraction/extractEntryFields.js';
 import createArticleDuplicateCache, {
   addSharedUserArticleHashes,
   createSharedUserArticleHashIds
-} from '../services/crawl/articleDuplicateCache.js';
-import createHotlinkCountCache from '../services/crawl/hotlinkCountCache.js';
-import createHotlinkBatcher from '../services/crawl/hotlinkBatcher.js';
-import { runPostCrawlSemanticPipeline } from '../services/crawl/postCrawlSemanticPipeline.js';
+} from '../services/crawl/identity/articleDuplicateCache.js';
+import createHotlinkCountCache from '../services/crawl/runtime/hotlinkCountCache.js';
+import createHotlinkBatcher from '../services/crawl/runtime/hotlinkBatcher.js';
 
 /* ------------------------------------------------------------------
  * Configuration
@@ -288,6 +290,10 @@ const getHotlinkCountCachesByUserId = async (feeds) => {
 // This function performs the feed-level work for one crawl invocation.
 const runCrawl = async (userId = null, options = {}) => {
   const crawlStartedAt = new Date();
+  const crawlStats = options.crawlStats || {
+    newArticles: 0,
+    updatedArticles: 0
+  };
   const emitProgress = (event) => {
     if (typeof options.onProgress !== 'function') {
       return;
@@ -463,15 +469,18 @@ const runCrawl = async (userId = null, options = {}) => {
             feedObject.feed?.title,
             feedObject.format
           );
-          feedNewArticles += articleResult?.newArticles || 0;
-          feedUpdatedArticles += articleResult?.updatedArticles || 0;
+          const newArticles = Number(articleResult?.newArticles || 0);
+          const updatedArticles = Number(articleResult?.updatedArticles || 0);
+          feedNewArticles += newArticles;
+          feedUpdatedArticles += updatedArticles;
+          totalNewArticles += newArticles;
+          totalUpdatedArticles += updatedArticles;
+          crawlStats.newArticles = totalNewArticles;
+          crawlStats.updatedArticles = totalUpdatedArticles;
         }
       } finally {
         await hotlinkBatcher.flush();
       }
-
-      totalNewArticles += feedNewArticles;
-      totalUpdatedArticles += feedUpdatedArticles;
 
       emitProgress({
         type: 'articles_inserted_updated',
@@ -693,7 +702,7 @@ const findActiveCrawlRun = userId => CrawlRun.findOne({
     userId,
     status: 'running'
   },
-  attributes: ['id', 'startedAt']
+  attributes: ['id', 'startedAt', 'newArticles', 'updatedArticles']
 });
 
 // This function checks whether a running crawl exceeds the configured duration.
@@ -715,7 +724,9 @@ const recoverStaleCrawlRun = async (userId, crawlRun, now = new Date()) => {
     {
       status: 'failed',
       completedAt: now,
-      errorMessage: STALE_CRAWL_ERROR_MESSAGE
+      errorMessage: STALE_CRAWL_ERROR_MESSAGE,
+      newArticles: crawlRun.newArticles ?? 0,
+      updatedArticles: crawlRun.updatedArticles ?? 0
     },
     {
       where: {
@@ -789,12 +800,18 @@ const performCrawl = async (userId = null, options = {}) => {
   }
 
   let crawlRun = null;
+  const crawlStats = {
+    newArticles: 0,
+    updatedArticles: 0
+  };
 
   if (userId) {
     try {
       crawlRun = await CrawlRun.create({
         userId,
-        status: 'running'
+        status: 'running',
+        newArticles: 0,
+        updatedArticles: 0
       });
     } catch (err) {
       if (!isActiveCrawlConstraintError(err)) {
@@ -813,14 +830,19 @@ const performCrawl = async (userId = null, options = {}) => {
   let result;
 
   try {
-    result = await runCrawl(userId, options);
+    result = await runCrawl(userId, {
+      ...options,
+      crawlStats
+    });
   } catch (err) {
     if (crawlRun) {
       try {
         await crawlRun.update({
           status: 'failed',
           completedAt: new Date(),
-          errorMessage: err?.message || String(err) || 'Unknown crawl error'
+          errorMessage: err?.message || String(err) || 'Unknown crawl error',
+          newArticles: crawlStats.newArticles,
+          updatedArticles: crawlStats.updatedArticles
         });
       } catch (crawlRunErr) {
         console.error('Error recording failed crawl run:', crawlRunErr);
@@ -833,7 +855,9 @@ const performCrawl = async (userId = null, options = {}) => {
   if (crawlRun) {
     await crawlRun.update({
       status: 'completed',
-      completedAt: new Date()
+      completedAt: new Date(),
+      newArticles: crawlStats.newArticles,
+      updatedArticles: crawlStats.updatedArticles
     });
   }
 

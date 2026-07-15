@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import cleanupHtmlContent from '../../services/crawl/cleanupHtmlContent.js';
+import cleanupHtmlContent from '../../services/crawl/content/cleanupHtmlContent.js';
 
 // This function loads malformed HTML without allowing the parser to repair it first.
 function loadFragment(html) {

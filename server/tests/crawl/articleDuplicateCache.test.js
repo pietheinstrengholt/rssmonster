@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import createArticleDuplicateCache, {
   addSharedUserArticleHashes,
   createSharedUserArticleHashIds
-} from '../../services/crawl/articleDuplicateCache.js';
+} from '../../services/crawl/identity/articleDuplicateCache.js';
 
 describe('article duplicate cache', () => {
   it('looks up feed URL hashes and title candidates plus user-wide content hashes', () => {

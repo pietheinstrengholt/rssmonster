@@ -30,7 +30,7 @@ describe('find existing article duplicate lookups', () => {
   });
 
   it('limits visible-text duplicate lookup to active articles for one user', async () => {
-    const { findByUserContentTextHash } = await import('../../services/crawl/findExistingArticle.js');
+    const { findByUserContentTextHash } = await import('../../services/crawl/identity/findExistingArticle.js');
 
     await findByUserContentTextHash({
       userId: 42,
@@ -47,7 +47,7 @@ describe('find existing article duplicate lookups', () => {
   });
 
   it('limits original-content duplicate lookup to active articles for one user', async () => {
-    const { findByUserContentSourceHash } = await import('../../services/crawl/findExistingArticle.js');
+    const { findByUserContentSourceHash } = await import('../../services/crawl/identity/findExistingArticle.js');
 
     await findByUserContentSourceHash({
       userId: 42,
@@ -64,7 +64,7 @@ describe('find existing article duplicate lookups', () => {
   });
 
   it('limits title fallback to active articles in the same feed and user', async () => {
-    const { findFeedTitleCandidates } = await import('../../services/crawl/findExistingArticle.js');
+    const { findFeedTitleCandidates } = await import('../../services/crawl/identity/findExistingArticle.js');
 
     await findFeedTitleCandidates({
       userId: 42,
@@ -86,7 +86,7 @@ describe('find existing article duplicate lookups', () => {
     const {
       findByFeedNormalizedUrlHash,
       findByFeedUrlHash
-    } = await import('../../services/crawl/findExistingArticle.js');
+    } = await import('../../services/crawl/identity/findExistingArticle.js');
     const identity = {
       userId: 42,
       feedId: 7,

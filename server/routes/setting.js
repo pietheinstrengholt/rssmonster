@@ -6,6 +6,7 @@ export const router = express.Router();
 
 // GET /api/setting
 router.get('/', userMiddleware.isLoggedIn, settingController.getSettings);
+router.get('/crawl-statistics', userMiddleware.isLoggedIn, settingController.getCrawlStatistics);
 router.get('/islands', userMiddleware.isLoggedIn, settingController.getIslandsOverview);
 router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOverview);
 router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);

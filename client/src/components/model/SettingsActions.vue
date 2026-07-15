@@ -6,7 +6,7 @@
       <div class="actions-type-grid" aria-label="Available action types">
         <article v-for="actionType in actionTypes" :key="actionType.value" class="actions-type-card"><span class="actions-type-icon" :class="actionType.iconClass" aria-hidden="true"><BootstrapIcon :icon="actionType.icon" /></span><div><h4>{{ actionType.label }}</h4><p>{{ actionType.description }}</p></div></article>
       </div>
-      <div class="actions-note"><BootstrapIcon icon="lightning-charge" aria-hidden="true" /><p><strong>Performance tip:</strong> Delete actions are processed before AI analysis, saving API costs by skipping unwanted content early.</p></div>
+      <div class="actions-note"><BootstrapIcon icon="lightning-charge" aria-hidden="true" /><p><strong>Performance tip:</strong> Discard actions are processed before AI analysis, saving API costs by skipping unwanted content early.</p></div>
     </section>
 
     <section class="actions-list-section" aria-labelledby="actions-list-title">
@@ -24,7 +24,7 @@
         </article>
       </div>
       <p v-else class="actions-empty-state">No actions yet. Add one to automate how incoming articles are handled.</p>
-      <div class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Delete action matches, the article will not be saved and no other actions will be applied.</p></div>
+      <div class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Discard action matches, the article will be set with a filtered indicator ensuring it will not show up in queries.</p></div>
     </section>
     <div class="actions-save-area"><button class="actions-save-button" type="button" @click="save">Save Changes</button></div>
   </div>
@@ -135,7 +135,7 @@
   font-size: 16px;
 }
 
-.actions-type-icon--delete {
+.actions-type-icon--discard {
   background: var(--settings-danger-bg);
   color: var(--settings-danger-text);
 }
@@ -441,7 +441,7 @@
 </style>
 
 <style>
-:root[data-theme="dark"] .actions-settings .actions-type-icon--delete { background: var(--settings-icon-danger-bg-dark); color: var(--settings-icon-danger-text-dark); }
+:root[data-theme="dark"] .actions-settings .actions-type-icon--discard { background: var(--settings-icon-danger-bg-dark); color: var(--settings-icon-danger-text-dark); }
 :root[data-theme="dark"] .actions-settings .actions-type-icon--star { background: var(--settings-icon-yellow-bg-dark); color: var(--settings-icon-yellow-text-dark); }
 :root[data-theme="dark"] .actions-settings .actions-type-icon--read { background: var(--settings-icon-primary-bg-dark); color: var(--settings-icon-primary-text-dark); }
 :root[data-theme="dark"] .actions-settings .actions-type-icon--clicked { background: var(--settings-icon-info-bg-dark); color: var(--settings-icon-info-text-dark); }
@@ -470,7 +470,7 @@ export default {
     return {
       actions: [],
       actionTypes: [
-        { value: 'delete', label: 'Delete', selectLabel: 'Delete article', icon: 'trash', iconClass: 'actions-type-icon--delete', description: 'Prevents the article from being saved.' },
+        { value: 'discard', label: 'Discard', selectLabel: 'Discard article', icon: 'trash', iconClass: 'actions-type-icon--discard', description: 'Hides the article from normal queries.' },
         { value: 'favorite', label: 'Favorite', selectLabel: 'Set favorite', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Marks the article as a favorite.' },
         { value: 'read', label: 'Read', selectLabel: 'Mark as read', icon: 'eye', iconClass: 'actions-type-icon--read', description: 'Automatically marks the article as read.' },
         { value: 'clicked', label: 'Clicked', selectLabel: 'Mark as clicked', icon: 'cursor', iconClass: 'actions-type-icon--clicked', description: 'Sets the read-later indicator.' },

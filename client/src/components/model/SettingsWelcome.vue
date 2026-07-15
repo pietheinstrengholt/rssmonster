@@ -27,7 +27,7 @@
       <h6 class="mb-2"><strong>Actions</strong></h6>
       <p class="small text-muted mb-0">
         Define automated rules using regular expressions to process articles during crawl.
-        Automatically delete unwanted content, mark articles as read, flag promotions, or favorite important topics —
+        Automatically discard unwanted content, mark articles as read, flag promotions, or favorite important topics —
         all before AI analysis runs, saving API costs.
       </p>
     </div>

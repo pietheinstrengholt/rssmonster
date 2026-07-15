@@ -136,11 +136,11 @@ describe('articleSearch.service', () => {
       qualityScore: 20
     });
 
-    articles.deleted = await Article.create({
+    articles.discarded = await Article.create({
       userId: user.id,
       feedId: feed.id,
-      url: 'https://example.com/article-deleted',
-      title: 'Delete-rule article',
+      url: 'https://example.com/article-discarded',
+      title: 'Discard-rule article',
       description: 'This row is retained for ingestion history.',
       contentOriginal: '<p>This row must stay hidden from normal queries.</p>',
       contentHtml: 'This row must stay hidden from normal queries.',
@@ -173,7 +173,7 @@ describe('articleSearch.service', () => {
       // starred and clicked are read
       expect(result.itemIds).not.toContain(articles.starred.id);
       expect(result.itemIds).not.toContain(articles.clicked.id);
-      expect(result.itemIds).not.toContain(articles.deleted.id);
+      expect(result.itemIds).not.toContain(articles.discarded.id);
     });
 
     it('throws when userId is missing', async () => {
@@ -183,7 +183,7 @@ describe('articleSearch.service', () => {
     it('returns all statuses when status is %', async () => {
       const result = await searchArticles({ userId: user.id, status: '%' });
       expect(result.itemIds.length).toBe(5);
-      expect(result.itemIds).not.toContain(articles.deleted.id);
+      expect(result.itemIds).not.toContain(articles.discarded.id);
     });
 
     it('returns favorite articles when status is favorite', async () => {

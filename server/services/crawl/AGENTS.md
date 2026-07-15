@@ -2,7 +2,7 @@
 
 Crawl is the subsystem responsible for keeping RSSMonster's article library current, clean, and trustworthy. It converts external RSS and Atom entries into local articles while preserving user intent, preventing duplicate noise, updating revised articles, and preparing new content for downstream processing.
 
-This document describes the architectural contract of Crawl. It intentionally focuses on behaviour rather than implementation.
+This document describes the architectural contract of Crawl. It intentionally focuses on behaviour rather than its exact implementation.
 
 ---
 
@@ -252,17 +252,17 @@ Content, title, and description changes rerun actions and analysis; author, publ
 and lead-image-only changes remain source-only. URL changes rerun actions and refresh
 official-source and hotlink metadata without rerunning AI analysis.
 
-Delete action rules persist matching entries as filtered records. If a delete action rule is set, do the following:
+Discard action rules persist matching entries as filtered records. If a discard action rule is set, do the following:
 
 existing article found
-→ revised source matches delete rule
+→ revised source matches discard rule
 → update source/read-copy fields
 → set filteredInd to true
 → skip lightweight enrichment
 → keep vector, cluster, event, topic, and island state unchanged
 → hide article from normal queries
 
-When a later revision reruns actions and no longer matches a delete rule, set `filteredInd` back to
+When a later revision reruns actions and no longer matches a discard rule, set `filteredInd` back to
 false and continue the normal lightweight enrichment path. Source-only revisions that do not rerun
 actions preserve the existing filteredInd state.
 
@@ -323,7 +323,7 @@ Used for:
 
 Sanitized display HTML stored as a fragment without `html`, `head`, or `body` wrappers.
 
-Suitable for rendering inside RSSMonster.
+Suitable for rendering inside RSSMonster. This is what the frontend uses as input for rendering. contentOriginal is never used for rendering.
 
 ---
 
@@ -353,31 +353,23 @@ reason to bypass sanitization semantics.
 
 # HTML Compatibility and Sanitization
 
-HTML processing has one final security boundary: every persisted non-null `contentHtml` value
-must conform to `sanitizeHtmlContent`.
+Every persisted non-null `contentHtml` must pass through a single canonical processing pipeline and ultimately conform to the `sanitizeHtmlContent` security policy.
 
-The derived HTML path runs in this order:
+The derived HTML processing flow is:
 
-1. WordPress source-shortcode compatibility
-2. HTML parsing and WordPress DOM compatibility
-3. structure-dependent compatibility preparation
-4. lazy and responsive image recovery
-5. recognized Vimeo conversion before unsafe embeds disappear
-6. removal of scripts, unknown iframes, forms, buttons, and other dropped elements
-7. URL normalization against the article URL
-8. publisher-card normalization and generic cleanup
-9. Mastodon link-visibility repair
-10. outbound hotlink collection
-11. article-fragment serialization and allowlist sanitization
-12. visible-text derivation from sanitized HTML
+1. Apply publisher-specific compatibility transforms.
+2. Parse and normalize the document structure.
+3. Recover and normalize media, images, and responsive resources.
+4. Remove unsupported, unsafe, and non-content elements.
+5. Resolve and normalize URLs against the article URL.
+6. Normalize publisher-specific presentation into RSSMonster's canonical HTML structure.
+7. Collect outbound hotlinks.
+8. Sanitize the final HTML using the allowlist policy.
+9. Derive the canonical visible text from the sanitized HTML.
 
-Compatibility transformers live in `compatibility/` and operate only on derived content. They
-must be structure-driven, conservative, and no-ops when their identifying markup is absent.
-Substack isolation additionally requires at least 300 normalized visible characters before it
-replaces the document body. Compatibility transformers do not replace the generic sanitizer.
+Compatibility transformers live in `compatibility/` and operate only on derived content. They must be conservative, structure-driven, idempotent where practical, and become no-ops when their identifying markup is absent. Compatibility transforms improve publisher compatibility but never replace the final sanitizer.
 
-HTML bodies are not entity-decoded before parsing. Text-only titles and plain-text bodies decode
-entities in their own text-specific paths.
+Plain-text content follows a separate normalization path before entering the canonical content model.
 
 ---
 
@@ -458,7 +450,7 @@ URL independently. Invalid regular expressions are skipped.
 
 Rules may:
 
-- set filteredInd to true, so articles are hidden from normal queries and skipped for AI enrichment
+- set filteredInd to true, so articles are hidden from normal queries and skipped for AI enrichment. In the front-end this is called discard.
 - mark read
 - favourite
 - add tags
@@ -467,7 +459,7 @@ Rules may:
 Advertisement and quality scores use higher-is-better semantics. Advertisement and bad-quality
 actions therefore override their respective scores to zero.
 
-Filtered articles never reach article-level AI analysis. Post-crawl embedding,
+Filtered (discarded) articles never reach article-level AI analysis. Post-crawl embedding,
 duplicate, event, topic, and interest-score services must also explicitly
 exclude filtered articles.
 
@@ -516,7 +508,7 @@ normalized description text. Language detection uses the same canonical visible 
 
 HTML processing only returns outbound hotlink candidates; it does not write them. Candidates are
 persisted after a new article is successfully inserted or an accepted publisher update commits.
-Duplicates, articles with a filteredInd = true, failed writes, unchanged entries, and delete-matched revisions do
+Duplicates, articles with a filteredInd = true, failed writes, unchanged entries, and discard-matched revisions do
 not contribute hotlinks.
 
 Only HTTP(S) links outside the article host are candidates. The apex host and its leading `www.`
@@ -535,7 +527,7 @@ Only articles that:
 
 are inserted into the database.
 
-Delete-matched entries are inserted with `filteredInd = true` and skip enrichment and tag writes.
+Discard-matched entries are inserted with `filteredInd = true` and skip enrichment and tag writes.
 
 Concurrent crawlers discovering the same article should still produce exactly one persisted record.
 

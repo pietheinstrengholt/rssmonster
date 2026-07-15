@@ -1,10 +1,10 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 
 import db from '../../models/index.js';
-import saveArticle from '../../services/crawl/saveArticle.js';
+import saveArticle from '../../services/crawl/persistence/saveArticle.js';
 import updateArticle, {
   applyArticleUpdate
-} from '../../services/crawl/updateArticle.js';
+} from '../../services/crawl/persistence/updateArticle.js';
 
 const { User, Category, Feed, Article } = db;
 
@@ -141,7 +141,7 @@ describe('concurrent article recovery integration', () => {
       normalizedUrl: link
     }), null, {
       ...actionResult,
-      shouldDelete: true
+      shouldDiscard: true
     });
     const raced = await saveArticle(feed, articleData(`${suffix}-incoming`, {
       link,

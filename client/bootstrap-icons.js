@@ -25,6 +25,7 @@ export const bootstrapIconNames = [
   'check2',
   'circle',
   'circle-fill',
+  'clipboard-data-fill',
   'clock-fill',
   'cloud-fill',
   'collection-fill',

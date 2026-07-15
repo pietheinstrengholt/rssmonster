@@ -94,7 +94,7 @@ describe('saveArticle feed tags', () => {
   });
 
   it('adds feed tags as extra article-level tags', async () => {
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await saveArticle(
       {
@@ -193,7 +193,7 @@ describe('saveArticle feed tags', () => {
       { entity: 'Nintendo', domain: 'nintendo.com' }
     ]);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await saveArticle(
       {
@@ -238,8 +238,8 @@ describe('saveArticle feed tags', () => {
     );
   });
 
-  it('stores delete matches without official-source or tag enrichment', async () => {
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+  it('stores discard matches without official-source or tag enrichment', async () => {
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await saveArticle(
       {
@@ -248,20 +248,20 @@ describe('saveArticle feed tags', () => {
         feedTags: ['feed-tag']
       },
       {
-        link: 'https://example.com/deleted-article',
-        normalizedUrl: 'https://example.com/deleted-article',
-        title: 'Deleted article',
-        contentOriginal: '<p>Deleted body</p>',
-        contentHtml: '<p>Deleted body</p>',
-        contentText: 'Deleted body',
-        contentTextHash: 'deleted-visible-text-hash',
-        contentSourceHash: 'deleted-source-content-hash',
+        link: 'https://example.com/discarded-article',
+        normalizedUrl: 'https://example.com/discarded-article',
+        title: 'Discarded article',
+        contentOriginal: '<p>Discarded body</p>',
+        contentHtml: '<p>Discarded body</p>',
+        contentText: 'Discarded body',
+        contentTextHash: 'discarded-visible-text-hash',
+        contentSourceHash: 'discarded-source-content-hash',
         language: 'en',
         published: new Date('2026-07-01T00:00:00Z')
       },
       null,
       {
-        shouldDelete: true,
+        shouldDiscard: true,
         status: 'unread',
         filteredInd: false,
         favoriteInd: 1,
@@ -281,11 +281,11 @@ describe('saveArticle feed tags', () => {
         clickedAmount: undefined,
         hotInd: undefined,
         hotlinks: undefined,
-        contentOriginal: '<p>Deleted body</p>',
-        contentHtml: '<p>Deleted body</p>',
-        contentText: 'Deleted body',
-        contentTextHash: 'deleted-visible-text-hash',
-        contentSourceHash: 'deleted-source-content-hash'
+        contentOriginal: '<p>Discarded body</p>',
+        contentHtml: '<p>Discarded body</p>',
+        contentText: 'Discarded body',
+        contentTextHash: 'discarded-visible-text-hash',
+        contentSourceHash: 'discarded-source-content-hash'
       }),
       { transaction: mocked.transaction }
     );
@@ -295,7 +295,7 @@ describe('saveArticle feed tags', () => {
     const tagError = uniqueConstraintError('tags_articleId_name_unique');
     mocked.tagCreate.mockRejectedValue(tagError);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await expect(saveArticle(...saveArguments())).rejects.toBe(tagError);
     expect(mocked.articleCreate).toHaveBeenCalledWith(
@@ -315,7 +315,7 @@ describe('saveArticle feed tags', () => {
     mocked.articleCreate.mockRejectedValue(uniqueError);
     mocked.articleFindOne.mockResolvedValue(winner);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
     const result = await saveArticle(...saveArguments());
 
     expect(mocked.articleFindOne).toHaveBeenCalledTimes(1);
@@ -351,7 +351,7 @@ describe('saveArticle feed tags', () => {
     mocked.articleCreate.mockRejectedValue(uniqueError);
     mocked.articleFindOne.mockResolvedValue(winner);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
     const result = await saveArticle(...args);
 
     expect(mocked.articleFindOne).toHaveBeenCalledWith({
@@ -368,7 +368,7 @@ describe('saveArticle feed tags', () => {
     mocked.articleCreate.mockRejectedValue(uniqueError);
     mocked.articleFindOne.mockResolvedValue({ id: 900, userId: 42, feedId: 7 });
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
     await saveArticle(...saveArguments());
 
     const where = mocked.articleFindOne.mock.calls[0][0].where;
@@ -382,7 +382,7 @@ describe('saveArticle feed tags', () => {
     );
     mocked.articleCreate.mockRejectedValue(uniqueError);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await expect(saveArticle(...saveArguments())).rejects.toBe(uniqueError);
     expect(mocked.articleFindOne).not.toHaveBeenCalled();
@@ -392,7 +392,7 @@ describe('saveArticle feed tags', () => {
     const uniqueError = uniqueConstraintError('articles_feedId_urlHash_unique');
     mocked.articleCreate.mockRejectedValue(uniqueError);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await expect(saveArticle(...saveArguments())).rejects.toBe(uniqueError);
   });
@@ -401,7 +401,7 @@ describe('saveArticle feed tags', () => {
     const uniqueError = uniqueConstraintError('articles_unknown_unique');
     mocked.articleCreate.mockRejectedValue(uniqueError);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await expect(saveArticle(...saveArguments())).rejects.toBe(uniqueError);
     expect(mocked.articleFindOne).not.toHaveBeenCalled();
@@ -413,7 +413,7 @@ describe('saveArticle feed tags', () => {
     );
     mocked.articleCreate.mockRejectedValue(uniqueError);
 
-    const { default: saveArticle } = await import('../../services/crawl/saveArticle.js');
+    const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await expect(saveArticle(...saveArguments())).rejects.toBe(uniqueError);
     expect(mocked.articleFindOne).not.toHaveBeenCalled();
@@ -421,7 +421,7 @@ describe('saveArticle feed tags', () => {
 
   it('resolves unambiguous Sequelize field metadata without relying on an index property', async () => {
     const { buildConcurrentWinnerLookup } = await import(
-      '../../services/crawl/saveArticle.js'
+      '../../services/crawl/persistence/saveArticle.js'
     );
     const articleValues = {
       userId: 42,

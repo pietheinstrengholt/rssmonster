@@ -1,6 +1,6 @@
 import { describe, expect, it, vi } from 'vitest';
 
-import applyActions from '../../services/crawl/applyActions.js';
+import applyActions from '../../services/crawl/enrichment/applyActions.js';
 
 // This function creates a tagging action for one searchable-field assertion.
 const tagAction = regularExpression => ({
@@ -58,20 +58,20 @@ describe('applyActions searchable article fields', () => {
     expect(result[scoreField]).toBe(0);
   });
 
-  it('marks delete matches without changing the default reading status', () => {
+  it('marks discard matches without changing the default reading status', () => {
     const result = applyActions([{
-      name: 'Delete matching articles',
-      actionType: 'delete',
+      name: 'Discard matching articles',
+      actionType: 'discard',
       regularExpression: 'Rendered publisher body'
     }], article);
 
     expect(result).toMatchObject({
-      shouldDelete: true,
+      shouldDiscard: true,
       status: 'unread'
     });
   });
 
-  it('does not overwrite a reading status set before a delete match', () => {
+  it('does not overwrite a reading status set before a discard match', () => {
     const result = applyActions([
       {
         name: 'Read matching articles',
@@ -79,14 +79,14 @@ describe('applyActions searchable article fields', () => {
         regularExpression: 'Rendered publisher body'
       },
       {
-        name: 'Delete matching articles',
-        actionType: 'delete',
+        name: 'Discard matching articles',
+        actionType: 'discard',
         regularExpression: 'Rendered publisher body'
       }
     ], article);
 
     expect(result).toMatchObject({
-      shouldDelete: true,
+      shouldDiscard: true,
       status: 'read'
     });
   });

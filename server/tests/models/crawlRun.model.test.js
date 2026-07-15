@@ -35,6 +35,8 @@ describe('CrawlRun model', () => {
     expect(crawlRun.startedAt).toBeInstanceOf(Date);
     expect(crawlRun.completedAt).toBeNull();
     expect(crawlRun.errorMessage).toBeNull();
+    expect(crawlRun.newArticles).toBeNull();
+    expect(crawlRun.updatedArticles).toBeNull();
     expect(crawlRun.createdAt).toBeInstanceOf(Date);
     expect(crawlRun.updatedAt).toBeInstanceOf(Date);
   });
@@ -45,6 +47,11 @@ describe('CrawlRun model', () => {
       'completed',
       'failed'
     ]);
+  });
+
+  it('declares nullable crawl article counters', () => {
+    expect(CrawlRun.rawAttributes.newArticles.allowNull).toBe(true);
+    expect(CrawlRun.rawAttributes.updatedArticles.allowNull).toBe(true);
   });
 
   it('allows multiple terminal crawl rows for the same user', async () => {

@@ -18,6 +18,9 @@ export const fetchIslandsOverview = () =>
 export const fetchTopicsOverview = () =>
   api.get('/setting/topics');
 
+export const fetchCrawlStatistics = (params = {}) =>
+  api.get('/setting/crawl-statistics', { params });
+
 export const fetchOfficialSources = () =>
   api.get('/setting/official-sources');
 

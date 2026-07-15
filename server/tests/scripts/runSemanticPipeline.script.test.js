@@ -24,8 +24,8 @@ vi.mock('../../controllers/crawl.js', () => ({
   }
 }));
 
-vi.mock('../../services/crawl/postCrawlSemanticPipeline.js', () => ({
-  default: mocked.runPostCrawlSemanticPipeline
+vi.mock('../../services/crawl/index.js', () => ({
+  runPostCrawlSemanticPipeline: mocked.runPostCrawlSemanticPipeline
 }));
 
 describe('incremental crawl pipeline command', () => {

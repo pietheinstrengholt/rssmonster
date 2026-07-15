@@ -8,7 +8,7 @@ const mocked = vi.hoisted(() => ({
   findFeedTitleCandidates: vi.fn()
 }));
 
-vi.mock('../../services/crawl/findExistingArticle.js', () => ({
+vi.mock('../../services/crawl/identity/findExistingArticle.js', () => ({
   findByUserContentTextHash: mocked.findByUserContentTextHash,
   findByUserContentSourceHash: mocked.findByUserContentSourceHash,
   findByFeedNormalizedUrlHash: mocked.findByFeedNormalizedUrlHash,
@@ -27,7 +27,7 @@ describe('article duplicate matcher', () => {
   });
 
   it('checks cache in content, normalized URL, raw URL priority order', async () => {
-    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/articleDuplicateMatcher.js');
+    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/identity/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
       title: 'A long enough article title',
@@ -55,7 +55,7 @@ describe('article duplicate matcher', () => {
   });
 
   it('falls back to database lookups when cache misses', async () => {
-    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/articleDuplicateMatcher.js');
+    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/identity/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
       title: 'A long enough article title',
@@ -78,7 +78,7 @@ describe('article duplicate matcher', () => {
   });
 
   it('skips visible-text lookup when content has no text identity', async () => {
-    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/articleDuplicateMatcher.js');
+    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/identity/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
       title: 'Media-only article with a strong URL',
@@ -99,7 +99,7 @@ describe('article duplicate matcher', () => {
   });
 
   it('does not use title fallback for normal strong URLs', async () => {
-    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/articleDuplicateMatcher.js');
+    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/identity/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
       title: 'A long enough article title',
@@ -118,7 +118,7 @@ describe('article duplicate matcher', () => {
   });
 
   it('uses guarded title fallback only for weak URLs near the publish date', async () => {
-    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/articleDuplicateMatcher.js');
+    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/identity/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
       title: 'A LONG enough article title',
@@ -144,7 +144,7 @@ describe('article duplicate matcher', () => {
   });
 
   it('rejects short weak-URL titles', async () => {
-    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/articleDuplicateMatcher.js');
+    const { buildArticleIdentity, matchArticleDuplicate } = await import('../../services/crawl/identity/articleDuplicateMatcher.js');
     const identity = buildArticleIdentity({
       feed: { id: 7, userId: 42 },
       title: 'Untitled',

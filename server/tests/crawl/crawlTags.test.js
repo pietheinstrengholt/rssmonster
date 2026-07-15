@@ -27,7 +27,7 @@ describe('crawl tag helpers', () => {
   });
 
   it('normalizes names and de-duplicates tag sources by priority', async () => {
-    const { buildArticleTags } = await import('../../services/crawl/tags.js');
+    const { buildArticleTags } = await import('../../services/crawl/persistence/tags.js');
 
     expect(buildArticleTags({
       generatedTags: ['Hardware', 'geekcomputerspcs', ''],
@@ -49,7 +49,7 @@ describe('crawl tag helpers', () => {
       { name: 'feed-existing', tagType: 'feed' },
       { name: 'manual-tag', tagType: null }
     ]);
-    const { replaceArticleDerivedTags } = await import('../../services/crawl/tags.js');
+    const { replaceArticleDerivedTags } = await import('../../services/crawl/persistence/tags.js');
 
     await replaceArticleDerivedTags({
       articleId: 123,

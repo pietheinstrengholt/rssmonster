@@ -1,10 +1,22 @@
 import db from '../models/index.js';
-const { Island, OfficialSource, Setting } = db;
+const { CrawlRun, Island, OfficialSource, Setting } = db;
+
+const DEFAULT_CRAWL_STATISTICS_DAYS = 30;
+const MAX_CRAWL_STATISTICS_DAYS = 365;
 
 // This function formats a ratio as a one-decimal percentage number.
 const percentage = (part, total) => total
   ? Number(((part / total) * 100).toFixed(1))
   : 0;
+
+// This function validates the bounded calendar-day range for crawl statistics.
+const parseCrawlStatisticsDays = value => {
+  if (value === undefined) return DEFAULT_CRAWL_STATISTICS_DAYS;
+  if (!/^\d+$/.test(String(value))) return null;
+
+  const days = Number(value);
+  return days >= 1 && days <= MAX_CRAWL_STATISTICS_DAYS ? days : null;
+};
 
 // This function normalizes an official source domain before storage.
 const normalizeOfficialSourceDomain = (value) => {
@@ -50,6 +62,87 @@ export const getOfficialSources = async (req, res, _next) => {
     });
   } catch (err) {
     console.error('Error in getOfficialSources:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// This function returns terminal crawl statistics grouped by calendar day for the current user.
+export const getCrawlStatistics = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const days = parseCrawlStatisticsDays(req.query.days);
+    if (!days) {
+      return res.status(400).json({
+        error: `days must be an integer between 1 and ${MAX_CRAWL_STATISTICS_DAYS}`
+      });
+    }
+
+    const calendarDate = db.Sequelize.fn('DATE', db.Sequelize.col('startedAt'));
+    const crawlStatistics = await CrawlRun.findAll({
+      attributes: [
+        [calendarDate, 'date'],
+        [
+          db.Sequelize.fn(
+            'COALESCE',
+            db.Sequelize.fn('SUM', db.Sequelize.col('newArticles')),
+            0
+          ),
+          'newArticles'
+        ],
+        [
+          db.Sequelize.fn(
+            'COALESCE',
+            db.Sequelize.fn('SUM', db.Sequelize.col('updatedArticles')),
+            0
+          ),
+          'updatedArticles'
+        ],
+        [
+          db.Sequelize.fn(
+            'SUM',
+            db.Sequelize.literal("CASE WHEN `status` = 'completed' THEN 1 ELSE 0 END")
+          ),
+          'completedCrawls'
+        ],
+        [
+          db.Sequelize.fn(
+            'SUM',
+            db.Sequelize.literal("CASE WHEN `status` = 'failed' THEN 1 ELSE 0 END")
+          ),
+          'failedCrawls'
+        ]
+      ],
+      where: {
+        userId,
+        status: { [db.Sequelize.Op.in]: ['completed', 'failed'] },
+        startedAt: {
+          [db.Sequelize.Op.gte]: db.Sequelize.literal(
+            `DATE_SUB(CURDATE(), INTERVAL ${days - 1} DAY)`
+          )
+        }
+      },
+      group: [calendarDate],
+      order: [[calendarDate, 'DESC']],
+      raw: true
+    });
+
+    return res.status(200).json({
+      days,
+      crawlStatistics: crawlStatistics.map(row => ({
+        date: row.date,
+        newArticles: Number(row.newArticles || 0),
+        updatedArticles: Number(row.updatedArticles || 0),
+        completedCrawls: Number(row.completedCrawls || 0),
+        failedCrawls: Number(row.failedCrawls || 0)
+      }))
+    });
+  } catch (err) {
+    console.error('Error in getCrawlStatistics:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -815,6 +908,7 @@ export const getTopicsOverview = async (req, res, _next) => {
 };
 
 export default {
+  getCrawlStatistics,
   getOfficialSources,
   setOfficialSources,
   getSettings,

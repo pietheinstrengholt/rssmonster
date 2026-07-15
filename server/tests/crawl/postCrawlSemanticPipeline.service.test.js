@@ -75,7 +75,7 @@ describe('runPostCrawlSemanticPipeline', () => {
       fallbackScoredCount: 1
     });
 
-    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/postCrawlSemanticPipeline.js');
+    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
     const result = await runPostCrawlSemanticPipeline({
       processedUserIds: [42],
       crawlStartedAt
@@ -102,5 +102,4 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(result.results[0].interestScores.updatedCount).toBe(5);
   });
 });
-
 

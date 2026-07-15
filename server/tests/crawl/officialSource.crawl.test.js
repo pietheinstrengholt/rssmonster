@@ -20,7 +20,7 @@ describe('official source crawl detection', () => {
   it('matches root domains and subdomains without matching lookalike suffixes', async () => {
     const {
       doesHostnameMatchSourceDomain
-    } = await import('../../services/crawl/officialSource.js');
+    } = await import('../../services/crawl/enrichment/officialSource.js');
 
     expect(doesHostnameMatchSourceDomain('https://www.nintendo.com/us/news/', 'nintendo.com')).toBe(true);
     expect(doesHostnameMatchSourceDomain('news.nintendo.com', 'nintendo.com')).toBe(true);
@@ -35,7 +35,7 @@ describe('official source crawl detection', () => {
 
     const {
       resolveOfficialSourceForArticle
-    } = await import('../../services/crawl/officialSource.js');
+    } = await import('../../services/crawl/enrichment/officialSource.js');
 
     await expect(
       resolveOfficialSourceForArticle(42, 'https://www.nintendo.com/us/news/')

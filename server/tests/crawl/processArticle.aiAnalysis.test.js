@@ -39,46 +39,46 @@ vi.mock('../../controllers/hotlink.js', () => ({
   }
 }));
 
-vi.mock('../../services/crawl/extractEntryFields.js', () => ({
+vi.mock('../../services/crawl/extraction/extractEntryFields.js', () => ({
   default: mocked.extractEntryFields,
   resolveUrlPublishedDate: mocked.resolveUrlPublishedDate
 }));
 
-vi.mock('../../services/crawl/articleDuplicateMatcher.js', () => ({
+vi.mock('../../services/crawl/identity/articleDuplicateMatcher.js', () => ({
   buildArticleIdentity: mocked.buildArticleIdentity,
   matchArticleDuplicate: mocked.matchArticleDuplicate
 }));
 
-vi.mock('../../services/crawl/processMedia.js', () => ({
+vi.mock('../../services/crawl/media/processMedia.js', () => ({
   default: mocked.processMedia
 }));
 
-vi.mock('../../services/crawl/processHtmlContent.js', () => ({
+vi.mock('../../services/crawl/content/processHtmlContent.js', () => ({
   default: mocked.processHtmlContent
 }));
 
-vi.mock('../../services/crawl/applyActions.js', () => ({
+vi.mock('../../services/crawl/enrichment/applyActions.js', () => ({
   default: mocked.applyActions
 }));
 
-vi.mock('../../services/crawl/analyzeArticleContent.js', () => ({
+vi.mock('../../services/crawl/enrichment/analyzeArticleContent.js', () => ({
   default: mocked.analyzeArticleContent
 }));
 
-vi.mock('../../services/crawl/saveArticle.js', () => ({
+vi.mock('../../services/crawl/persistence/saveArticle.js', () => ({
   default: mocked.saveArticle
 }));
 
-vi.mock('../../services/crawl/updateArticle.js', () => ({
+vi.mock('../../services/crawl/persistence/updateArticle.js', () => ({
   default: mocked.updateArticle,
   applyArticleUpdate: mocked.applyArticleUpdate
 }));
 
-vi.mock('../../services/crawl/officialSource.js', () => ({
+vi.mock('../../services/crawl/enrichment/officialSource.js', () => ({
   resolveOfficialSourceForArticle: mocked.resolveOfficialSourceForArticle
 }));
 
-vi.mock('../../services/crawl/normalizeUrl.js', () => ({
+vi.mock('../../services/crawl/content/normalizeUrl.js', () => ({
   default: mocked.normalizeUrl
 }));
 
@@ -86,7 +86,7 @@ vi.mock('../../utils/decodeHtmlEntities.js', () => ({
   default: mocked.decodeHtmlEntities
 }));
 
-vi.mock('../../services/crawl/detectArticleImage.js', () => ({
+vi.mock('../../services/crawl/media/detectArticleImage.js', () => ({
   default: mocked.detectArticleImage
 }));
 
@@ -168,7 +168,7 @@ describe('processArticle AI analysis controls', () => {
       title: 'Article title'
     });
     mocked.applyActions.mockReturnValue({
-      shouldDelete: false,
+      shouldDiscard: false,
       status: 'unread',
       favoriteInd: false,
       clickedAmount: 0,
@@ -201,7 +201,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('skips OpenAI analysis when the feed disables AI analysis', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     const result = await processArticle(
       {
@@ -272,7 +272,7 @@ describe('processArticle AI analysis controls', () => {
         }
       });
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       {
         id: 1,
@@ -315,7 +315,7 @@ describe('processArticle AI analysis controls', () => {
       title: 'Article title'
     });
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'Accepted feed', applyAiAnalysis: false },
       {},
@@ -333,7 +333,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('generates a missing article title from content before RSS feed metadata', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
       title: 'Untitled',
@@ -373,7 +373,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('uses description before RSS feed metadata when content text is missing', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
       title: 'Untitled',
@@ -404,7 +404,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('uses RSS feed metadata when the description contains only markup', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
       title: 'Untitled',
@@ -435,7 +435,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('falls back to content text when feed title and description are missing', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
       title: 'Untitled',
@@ -486,7 +486,7 @@ describe('processArticle AI analysis controls', () => {
       filteredInd: true
     };
     mocked.applyActions.mockReturnValue({
-      shouldDelete: false,
+      shouldDiscard: false,
       status: 'read',
       favoriteInd: 1,
       clickedAmount: 1,
@@ -525,7 +525,7 @@ describe('processArticle AI analysis controls', () => {
       }
     });
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       {
         id: 1,
@@ -618,7 +618,7 @@ describe('processArticle AI analysis controls', () => {
       changed: false
     });
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42 },
       { guid: { value: 'article-6402680' } },
@@ -646,7 +646,7 @@ describe('processArticle AI analysis controls', () => {
       metadataChanged: true
     }));
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'Title update feed' },
       {},
@@ -675,7 +675,7 @@ describe('processArticle AI analysis controls', () => {
       metadataChanged: true
     }, { author: 'Revised author' }));
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'Author update feed' },
       {},
@@ -714,7 +714,7 @@ describe('processArticle AI analysis controls', () => {
     });
     const hotlinkCountCache = { count: vi.fn(() => 3) };
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'URL update feed' },
       {},
@@ -758,7 +758,7 @@ describe('processArticle AI analysis controls', () => {
   ])('persists a %s-only change without rerunning AI analysis', async (_name, changes) => {
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan(changes));
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     await processArticle(
       { id: 1, userId: 42, feedName: 'Media update feed' },
       {},
@@ -776,7 +776,7 @@ describe('processArticle AI analysis controls', () => {
   it('uses fresh default derived analysis for changed content when AI is disabled', async () => {
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({ contentChanged: true }));
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     await processArticle(
       {
         id: 1,
@@ -803,7 +803,7 @@ describe('processArticle AI analysis controls', () => {
     }));
   });
 
-  it('persists only source fields when a changed existing article matches a delete rule', async () => {
+  it('persists only source fields when a changed existing article matches a discard rule', async () => {
     const updatePlan = changedUpdatePlan({
       contentChanged: true,
       urlChanged: true
@@ -811,7 +811,7 @@ describe('processArticle AI analysis controls', () => {
     updatePlan.article.status = 'read';
     mocked.updateArticle.mockResolvedValue(updatePlan);
     mocked.applyActions.mockReturnValue({
-      shouldDelete: true,
+      shouldDiscard: true,
       status: 'unread',
       favoriteInd: 0,
       clickedAmount: 0,
@@ -832,12 +832,12 @@ describe('processArticle AI analysis controls', () => {
     const hotlinkBatcher = { add: vi.fn() };
     const hotlinkCountCache = { count: vi.fn() };
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       {
         id: 1,
         userId: 42,
-        feedName: 'Existing delete-rule feed'
+        feedName: 'Existing discard-rule feed'
       },
       {},
       [],
@@ -866,7 +866,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('skips article creation when duplicate matcher finds an existing article', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const hotlinkBatcher = { add: vi.fn() };
 
     mocked.processHtmlContent.mockReturnValue({
@@ -934,7 +934,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('persists a delete-matched article without enrichment or hotlinks', async () => {
+  it('persists a discard-matched article without enrichment or hotlinks', async () => {
     const hotlinkBatcher = { add: vi.fn() };
     mocked.processHtmlContent.mockReturnValue({
       content: '<p>Rejected body</p>',
@@ -947,7 +947,7 @@ describe('processArticle AI analysis controls', () => {
       title: 'Rejected article'
     });
     mocked.applyActions.mockReturnValue({
-      shouldDelete: true,
+      shouldDiscard: true,
       status: 'unread',
       filteredInd: false,
       favoriteInd: false,
@@ -958,7 +958,7 @@ describe('processArticle AI analysis controls', () => {
       qualityScore: null
     });
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'Rule feed', applyAiAnalysis: false },
       {},
@@ -980,7 +980,7 @@ describe('processArticle AI analysis controls', () => {
       }),
       null,
       expect.objectContaining({
-        shouldDelete: true,
+        shouldDiscard: true,
         status: 'unread',
         filteredInd: false
       })
@@ -1006,7 +1006,7 @@ describe('processArticle AI analysis controls', () => {
     });
     mocked.saveArticle.mockRejectedValue(new Error('Article insert failed'));
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'Failed feed', applyAiAnalysis: false },
       {},
@@ -1023,7 +1023,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('keeps description HTML separate while using its text for enrichment', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
       title: 'Description-only article',
@@ -1099,7 +1099,7 @@ describe('processArticle AI analysis controls', () => {
       language: 'eng'
     }));
 
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42, feedName: 'Description update feed' },
       {},
@@ -1128,7 +1128,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('saves an entry whose only content is a single lead image', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const leadImage = {
       url: 'https://cdn.example/photo.jpg',
       width: 1600,
@@ -1194,7 +1194,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('passes feed description through unchanged when body content is present', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.extractEntryFields.mockReturnValue({
       title: 'Article with description',
@@ -1237,7 +1237,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('decodes only title text while preserving HTML-bearing fields for parsing', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const content = '<p>Use &lt;script&gt; for this example</p>';
     const description = '<p>Summary &lt;strong&gt; text</p>';
 
@@ -1304,7 +1304,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('appends the description when sanitized content contains an image but no body text', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const imageContent = '<div class="media-content enclosure"> <img src="https://example.com/disruption.jpg" loading="lazy"> </div>';
     const description = 'Door een stroomstoring rijden er geen treinen.';
 
@@ -1354,7 +1354,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('uses duplicate matcher hits without saving the article', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
 
     mocked.matchArticleDuplicate.mockResolvedValue({
       matchedArticleId: 100,
@@ -1386,7 +1386,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('uses feed-level published fallback when the entry has no date', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const feedFallback = '2026-07-08T10:00:00.000Z';
 
     mocked.extractEntryFields.mockReturnValue({
@@ -1427,7 +1427,7 @@ describe('processArticle AI analysis controls', () => {
   });
 
   it('uses URL published fallback when entry and feed dates are missing', async () => {
-    const { default: processArticle } = await import('../../services/crawl/processArticle.js');
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const urlFallback = '2026-07-08T00:00:00.000Z';
 
     mocked.extractEntryFields.mockReturnValue({

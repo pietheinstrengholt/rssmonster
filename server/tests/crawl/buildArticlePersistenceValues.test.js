@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import buildArticlePersistenceValues, {
   selectMutableArticleSourceValues
-} from '../../services/crawl/buildArticlePersistenceValues.js';
+} from '../../services/crawl/persistence/buildArticlePersistenceValues.js';
 
 // This function returns the SHA-256 value expected for direct URL and content inputs.
 const hashValue = value => createHash('sha256').update(value).digest('hex');

@@ -1,7 +1,7 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import { transformSubstackContent } from '../../services/crawl/compatibility/transformSubstackContent.js';
+import { transformSubstackContent } from '../../services/crawl/content/compatibility/transformSubstackContent.js';
 
 // This function loads HTML as a document so the transformer can replace its body.
 function loadDocument(html) {

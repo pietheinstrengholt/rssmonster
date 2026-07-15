@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import normalizeUrl from '../../services/crawl/normalizeUrl.js';
+import normalizeUrl from '../../services/crawl/content/normalizeUrl.js';
 
 describe('normalizeUrl', () => {
   it('normalizes identity noise while preserving meaningful query params', () => {

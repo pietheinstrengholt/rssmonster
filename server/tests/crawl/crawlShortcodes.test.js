@@ -1,11 +1,11 @@
 import { load } from 'cheerio';
 import { describe, expect, it } from 'vitest';
 
-import processHtmlContent from '../../services/crawl/processHtmlContent.js';
+import processHtmlContent from '../../services/crawl/content/processHtmlContent.js';
 import {
   transformWordPressContent,
   transformWordPressSourceContent
-} from '../../services/crawl/compatibility/transformWordPressContent.js';
+} from '../../services/crawl/content/compatibility/transformWordPressContent.js';
 import { hashOriginalContent } from '../../utils/articleContentHashes.js';
 
 // This function applies the WordPress DOM stage to an HTML fragment.

@@ -19,7 +19,7 @@ vi.mock('../../models/index.js', () => ({
   }
 }));
 
-vi.mock('../../services/crawl/tags.js', () => ({
+vi.mock('../../services/crawl/persistence/tags.js', () => ({
   replaceArticleDerivedTags: mocked.replaceArticleDerivedTags
 }));
 
@@ -93,7 +93,7 @@ describe('updateArticle', () => {
   });
 
   it('returns an unchanged plan without writing for identical normalized source state', async () => {
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle());
 
     expect(result).toMatchObject({
@@ -114,7 +114,7 @@ describe('updateArticle', () => {
   it('matches a filtered article by external publisher identity', async () => {
     const article = storedArticle({ filteredInd: true });
     mocked.articleFindOne.mockResolvedValue(article);
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
 
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
       title: 'Revised filtered article title'
@@ -138,7 +138,7 @@ describe('updateArticle', () => {
   });
 
   it('classifies changed body fields without mutating the article', async () => {
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
       contentOriginal: '<p>Revised body</p>',
       contentHtml: '<p>Revised body</p>',
@@ -190,7 +190,7 @@ describe('updateArticle', () => {
       }
     }, { leadImageChanged: true }]
   ])('classifies a %s-only source change', async (_name, overrides, expectedChanges) => {
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle(
       { id: 7, userId: 42 },
       incomingArticle(overrides)
@@ -204,7 +204,7 @@ describe('updateArticle', () => {
   it('preserves sparse incoming fields while classifying meaningful values', async () => {
     const article = storedArticle();
     mocked.articleFindOne.mockResolvedValue(article);
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, {
       externalId: 'publisher-id',
       externalIdType: 'guid',
@@ -235,7 +235,7 @@ describe('updateArticle', () => {
 
   it('uses an exact winner without requiring external identity or another lookup', async () => {
     const winner = storedArticle({ title: 'Winning title' });
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle(
       { id: 7, userId: 42 },
       incomingArticle({ externalId: null, externalIdType: null }),
@@ -249,7 +249,7 @@ describe('updateArticle', () => {
 
   it('reports an identical supplied winner as unchanged without writing', async () => {
     const winner = storedArticle();
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle(
       { id: 7, userId: 42 },
       incomingArticle({ externalId: null, externalIdType: null }),
@@ -271,7 +271,7 @@ describe('updateArticle', () => {
     ['another feed', { feedId: 99 }, /feed ownership/]
   ])('rejects a supplied winner owned by %s', async (_label, overrides, message) => {
     const winner = storedArticle(overrides);
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
 
     await expect(updateArticle(
       { id: 7, userId: 42 },
@@ -286,7 +286,7 @@ describe('updateArticle', () => {
   it('atomically applies source fields, derived fields, and tag reconciliation', async () => {
     const article = storedArticle();
     mocked.articleFindOne.mockResolvedValue(article);
-    const module = await import('../../services/crawl/updateArticle.js');
+    const module = await import('../../services/crawl/persistence/updateArticle.js');
     const updatePlan = await module.default({ id: 7, userId: 42 }, incomingArticle({
       title: 'Revised title'
     }));
@@ -333,7 +333,7 @@ describe('updateArticle', () => {
   it('propagates tag reconciliation failure through the shared transaction', async () => {
     const tagError = new Error('Tag reconciliation failed');
     mocked.replaceArticleDerivedTags.mockRejectedValue(tagError);
-    const module = await import('../../services/crawl/updateArticle.js');
+    const module = await import('../../services/crawl/persistence/updateArticle.js');
     const updatePlan = await module.default({ id: 7, userId: 42 }, incomingArticle({
       title: 'Revised title'
     }));
@@ -351,7 +351,7 @@ describe('updateArticle', () => {
   });
 
   it('skips lookup when external identity is incomplete', async () => {
-    const { default: updateArticle } = await import('../../services/crawl/updateArticle.js');
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
 
     await expect(updateArticle({ id: 7, userId: 42 }, {})).resolves.toMatchObject({
       article: null,

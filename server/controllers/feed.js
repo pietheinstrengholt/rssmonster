@@ -7,8 +7,8 @@ import parseFeed from "../services/feeds/parser.js";
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/auth.js';
 import crawlController from './crawl.js';
-import crawlJobManager from '../services/crawl/crawlJobManager.js';
-import { normalizeTagList } from '../services/crawl/tags.js';
+import { crawlJobManager } from '../services/crawl/index.js';
+import { normalizeTagList } from '../services/crawl/persistence/tags.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { calculateFeedTrustForAllFeeds } from '../scripts/calculateFeedTrust.js';
 

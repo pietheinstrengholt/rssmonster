@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import processMedia from '../../services/crawl/processMedia.js';
+import processMedia from '../../services/crawl/media/processMedia.js';
 
 describe('processMedia', () => {
   it('returns null for a normal article with one JPEG enclosure', () => {

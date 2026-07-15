@@ -6,7 +6,7 @@ vi.mock('../../controllers/hotlink.js', () => ({
   default: { setMany }
 }));
 
-const { default: createHotlinkBatcher } = await import('../../services/crawl/hotlinkBatcher.js');
+const { default: createHotlinkBatcher } = await import('../../services/crawl/runtime/hotlinkBatcher.js');
 
 const feed = { id: 10, userId: 20 };
 

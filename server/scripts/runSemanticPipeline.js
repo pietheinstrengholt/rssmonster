@@ -20,7 +20,7 @@ dotenv.config();
 // ---- Runtime bootstrap ----
 import db from '../models/index.js';
 import crawlController from '../controllers/crawl.js';
-import runPostCrawlSemanticPipeline from '../services/crawl/postCrawlSemanticPipeline.js';
+import { runPostCrawlSemanticPipeline } from '../services/crawl/index.js';
 
 const { User, sequelize } = db;
 

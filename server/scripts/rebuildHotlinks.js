@@ -14,7 +14,7 @@
  */
 
 import db from '../models/index.js';
-import normalizeUrl from '../services/crawl/normalizeUrl.js';
+import normalizeUrl from '../services/crawl/content/normalizeUrl.js';
 import { Op } from 'sequelize';
 
 const { Article, Hotlink } = db;

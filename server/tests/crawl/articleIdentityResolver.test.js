@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import articleIdentityResolver from '../../services/crawl/articleIdentityResolver.js';
+import articleIdentityResolver from '../../services/crawl/extraction/articleIdentityResolver.js';
 
 describe('article identity resolver', () => {
   it('resolves a FeedSmith RSS guid as the external identity', () => {

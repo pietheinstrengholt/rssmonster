@@ -43,7 +43,7 @@ describe('analyzeArticleContent response validation', () => {
     });
 
     const { default: analyzeArticleContent } = await import(
-      '../../services/crawl/analyzeArticleContent.js'
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
     );
     const content = 'Article content '.repeat(40);
     const result = await analyzeArticleContent(
