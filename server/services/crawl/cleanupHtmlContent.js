@@ -3,6 +3,7 @@ import { transformMastodonContent } from './compatibility/transformMastodonConte
 import { transformRedditContent } from './compatibility/transformRedditContent.js';
 import { transformSubstackContent } from './compatibility/transformSubstackContent.js';
 import { transformVimeoContent } from './compatibility/transformVimeoContent.js';
+import { parseSrcset } from './srcset.js';
 
 const DROP_TAGS = new Set([
   'script',
@@ -144,24 +145,7 @@ function firstLazySrcset(node) {
 
 // This function returns the first usable URL from a responsive-image candidate list.
 function firstSrcsetSource(value) {
-  const srcset = String(value || '').trim();
-  if (!srcset || /^data:/i.test(srcset)) return null;
-
-  for (const candidate of srcset.split(',')) {
-    const source = candidate.trim().match(
-      /^(\S+)(?:\s+(?:[1-9]\d*w|(?:\d+(?:\.\d+)?|\.\d+)x))?$/i
-    )?.[1];
-    if (!source) continue;
-
-    try {
-      const parsed = new URL(source, 'https://relative.invalid');
-      if (['http:', 'https:'].includes(parsed.protocol)) return source;
-    } catch {
-      // Continue checking later candidates when one URL is malformed.
-    }
-  }
-
-  return null;
+  return parseSrcset(value)[0]?.url || null;
 }
 
 // This function checks whether an image source is a known publisher placeholder.

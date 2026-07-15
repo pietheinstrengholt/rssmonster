@@ -44,6 +44,7 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
       userId: article.userId,
       id: { [Op.lt]: article.id },
       ...canonicalArticleWhere(),
+      filteredInd: false,
       articleVector: { [Op.ne]: null },
       published: duplicateCandidateWindow(article)
     },
@@ -138,6 +139,7 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
   const where = {
     userId,
     ...canonicalArticleWhere(),
+    filteredInd: false,
     articleVector: { [Op.ne]: null }
   };
 

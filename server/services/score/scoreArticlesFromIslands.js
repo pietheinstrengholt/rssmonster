@@ -100,6 +100,7 @@ async function applyVectorFallbackScores(userId, options = {}) {
       userId,
       status: SCORABLE_ARTICLE_STATUS,
       ...canonicalArticleWhere(),
+      filteredInd: false,
       articleVector: { [Op.ne]: null }
     },
     attributes: ['id', 'interestScore', 'articleVector'],
@@ -143,6 +144,7 @@ async function resetArticleInterestScores(userId, options = {}) {
     WHERE userId = :userId
       AND status = :status
       AND duplicateOfArticleId IS NULL
+      AND filteredInd = false
     `,
     {
       replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
@@ -177,6 +179,7 @@ async function applyTopicPathScores(userId, options = {}) {
        AND src.userId = :userId
        AND src.status = :status
        AND src.duplicateOfArticleId IS NULL
+       AND src.filteredInd = false
       GROUP BY atp.articleId
     ) scored
       ON scored.articleId = a.id
@@ -184,6 +187,7 @@ async function applyTopicPathScores(userId, options = {}) {
     WHERE a.userId = :userId
       AND a.status = :status
       AND a.duplicateOfArticleId IS NULL
+      AND a.filteredInd = false
     `,
     {
       replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
@@ -213,6 +217,7 @@ async function applyTopicPathScores(userId, options = {}) {
       WHERE a.userId = :userId
         AND a.status = :status
         AND a.duplicateOfArticleId IS NULL
+        AND a.filteredInd = false
         AND a.interestScore <> 0
       GROUP BY a.id, a.interestScore
       ORDER BY a.id ASC
@@ -256,6 +261,5 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
 }
 
 export default scoreArticlesFromIslandsForUser;
-
 
 

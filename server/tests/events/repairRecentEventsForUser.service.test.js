@@ -2,6 +2,7 @@ import { describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import assignArticleToEvent, { EventCache } from '../../services/events/assignArticleToEvent.js';
+import { markDuplicateArticlesForUser } from '../../services/duplicates/articleDuplicates.js';
 import {
   runIncrementalEventsForUser,
   repairRecentEventsForUser,
@@ -54,6 +55,44 @@ function recentDateWithOffset(offsetMs = 0) {
 }
 
 describe('repairRecentEventsForUser', () => {
+  it('excludes filtered articles from semantic duplicate candidates', async () => {
+    const { user, feed } = await createUserGraph('filtered-duplicate');
+    await Article.create(articlePayload(user, feed, 1, {
+      filteredInd: true,
+      articleVector: [1, 0, 0]
+    }));
+    const visibleArticle = await Article.create(articlePayload(user, feed, 2, {
+      articleVector: [1, 0, 0]
+    }));
+
+    const result = await markDuplicateArticlesForUser(user.id);
+
+    await visibleArticle.reload();
+
+    expect(result.scannedCount).toBe(1);
+    expect(result.duplicateCount).toBe(0);
+    expect(visibleArticle.duplicateOfArticleId).toBeNull();
+  });
+
+  it('excludes filtered articles from incremental event candidates', async () => {
+    const { user, feed } = await createUserGraph('filtered-incremental');
+    const filteredArticle = await Article.create(articlePayload(user, feed, 1, {
+      filteredInd: true,
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0]
+    }));
+
+    const result = await runIncrementalEventsForUser(user.id, {
+      skipTopicAssignment: true
+    });
+
+    await filteredArticle.reload();
+
+    expect(result.articleCount).toBe(0);
+    expect(filteredArticle.eventId).toBeNull();
+    expect(await Event.count({ where: { userId: user.id } })).toBe(0);
+  });
+
   it('does not clear or delete foreign events referenced by stale article data', async () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');
@@ -615,4 +654,3 @@ describe('repairRecentEventsForUser', () => {
     expect(events[0].articles).toHaveLength(2);
   });
 });
-

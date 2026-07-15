@@ -128,7 +128,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
         language: detectedLanguage,
         contentSourceHash,
         contentTextHash,
-        hotlinkUrls,
+        hotlinkUrls: [...new Set(hotlinkUrls)],
         title: entryTitle
       };
     }
@@ -204,7 +204,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
       language: detectedLanguage,
       contentSourceHash,
       contentTextHash,
-      hotlinkUrls,
+      hotlinkUrls: [...new Set(hotlinkUrls)],
       title: entryTitle
     };
   } catch (err) {
@@ -223,7 +223,7 @@ function processHtmlContent(content, _description, entryLink, feed, entryTitle) 
       language: 'unknown',
       contentSourceHash: hashOriginalContent(contentOriginal),
       contentTextHash: hashVisibleText(text),
-      hotlinkUrls,
+      hotlinkUrls: [...new Set(hotlinkUrls)],
       title: entryTitle
     };
   }

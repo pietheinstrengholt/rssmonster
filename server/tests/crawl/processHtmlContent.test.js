@@ -133,6 +133,23 @@ describe('crawl content sanitization', () => {
     ]);
   });
 
+  it('returns repeated outbound links only once in discovery order', () => {
+    const result = processHtmlContent(
+      '<a href="https://first.example/article">First</a>' +
+      '<a href="https://second.example/article">Second</a>' +
+      '<a href="https://first.example/article">First again</a>',
+      null,
+      'https://origin.example/feed-item',
+      feed,
+      'Duplicate hotlink test'
+    );
+
+    expect(result.hotlinkUrls).toEqual([
+      'https://first.example/article',
+      'https://second.example/article'
+    ]);
+  });
+
   it('does not collect a normalized same-origin link as a hotlink', () => {
     const result = processHtmlContent(
       '<a href="/internal/story">Internal story</a>',

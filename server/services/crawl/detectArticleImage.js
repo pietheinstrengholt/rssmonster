@@ -1,6 +1,7 @@
 import { load } from 'cheerio';
 
 import selectLeadImage from './selectLeadImage.js';
+import { selectBestSrcsetCandidate } from './srcset.js';
 
 const FEED_IMAGE_FIELD_NAMES = ['image', 'banner_image', 'thumbnail'];
 const SRCSET_ATTR_NAMES = ['srcset', 'data-srcset'];
@@ -38,35 +39,6 @@ function readUrlValue(value) {
   if (!value || typeof value !== 'object') return null;
 
   return value.url || value.href || value.src || null;
-}
-
-// This function returns the strongest valid image from a srcset-like value.
-function pickFromSrcset(value = '', articleUrl = '') {
-  if (typeof value !== 'string' || !value.trim()) return null;
-
-  const candidates = value
-    .split(',')
-    .map((item, index) => {
-      const [url, descriptor = ''] = item.trim().split(/\s+/);
-      const widthMatch = descriptor.match(/^(\d+)w$/i);
-      const densityMatch = descriptor.match(/^(\d+(?:\.\d+)?)x$/i);
-
-      return {
-        url: normalizeImageUrl(url, articleUrl),
-        width: widthMatch ? Number(widthMatch[1]) : null,
-        score: widthMatch
-          ? Number(widthMatch[1])
-          : densityMatch
-            ? Number(densityMatch[1])
-            : 0,
-        index
-      };
-    })
-    .filter(candidate => candidate.url);
-
-  candidates.sort((a, b) => b.score - a.score || a.index - b.index);
-
-  return candidates[0] || null;
 }
 
 // This function parses an integer-like dimension from feed or HTML metadata.
@@ -129,7 +101,7 @@ function extractHtmlCandidates(html, articleUrl, source) {
     const attrs = el.attribs || {};
     const responsiveImage = SRCSET_ATTR_NAMES
       .map((attrName, attrIndex) => ({
-        ...pickFromSrcset(attrs[attrName], articleUrl),
+        ...selectBestSrcsetCandidate(attrs[attrName], articleUrl),
         attrIndex
       }))
       .filter(candidate => candidate.url)

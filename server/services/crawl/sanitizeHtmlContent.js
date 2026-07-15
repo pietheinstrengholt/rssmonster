@@ -7,6 +7,7 @@ import {
   URL_ATTRS,
   isSafeUrl
 } from './htmlContentAllowlists.js';
+import { parseSrcset, serializeSrcset } from './srcset.js';
 
 const VIMEO_EMBED_ATTRS = [
   'data-embed-provider',
@@ -101,6 +102,19 @@ function filterUnsafeUrlAttributes(tagName, attribs) {
 
     if (URL_ATTRS.has(attrName) && !isSafeUrl(value, attrName)) {
       delete safeAttribs[name];
+    }
+  }
+
+  if (safeAttribs.srcset) {
+    const normalizedSrcset = serializeSrcset(
+      parseSrcset(safeAttribs.srcset)
+        .filter(candidate => !candidate.url.startsWith('//'))
+    );
+
+    if (normalizedSrcset) {
+      safeAttribs.srcset = normalizedSrcset;
+    } else {
+      delete safeAttribs.srcset;
     }
   }
 

@@ -129,6 +129,61 @@ describe('detectArticleImage', () => {
     });
   });
 
+  it('does not hard-reject an editorial image based on natural-language alt text', async () => {
+    const result = await detectArticleImage({
+      entry: {},
+      articleUrl: 'https://news.example/posts/1',
+      contentHtml: `
+        <img
+          src="/new-ceo.jpg"
+          width="1200"
+          height="675"
+          alt="Profile of the new CEO"
+        >
+      `
+    });
+
+    expect(result).toEqual({
+      url: 'https://news.example/new-ceo.jpg',
+      width: 1200,
+      height: 675,
+      mimeType: null,
+      source: 'content'
+    });
+  });
+
+  it.each([
+    ['URL', '<img src="/brand-logo.png" width="1200" height="675" alt="Brand mark">'],
+    ['class', '<img src="/brand-mark.png" class="site-icon" width="1200" height="675" alt="Brand mark">']
+  ])('still hard-rejects a true logo or icon based on its %s', async (_signal, contentHtml) => {
+    const result = await detectArticleImage({
+      entry: {},
+      articleUrl: 'https://news.example/posts/1',
+      contentHtml
+    });
+
+    expect(result).toBeNull();
+  });
+
+  it('soft-penalizes decorative alt text without rejecting the image', async () => {
+    const preferredResult = await detectArticleImage({
+      entry: {},
+      articleUrl: 'https://news.example/posts/1',
+      contentHtml: `
+        <img src="/first.jpg" width="640" height="360" alt="Author profile">
+        <img src="/second.jpg" width="640" height="360" alt="Editorial portrait">
+      `
+    });
+    const fallbackResult = await detectArticleImage({
+      entry: {},
+      articleUrl: 'https://news.example/posts/1',
+      contentHtml: '<img src="/first.jpg" width="300" height="200" alt="Author profile">'
+    });
+
+    expect(preferredResult?.url).toBe('https://news.example/second.jpg');
+    expect(fallbackResult?.url).toBe('https://news.example/first.jpg');
+  });
+
   it('prefers the strongest valid srcset image over a fallback src', async () => {
     const result = await detectArticleImage({
       entry: {},

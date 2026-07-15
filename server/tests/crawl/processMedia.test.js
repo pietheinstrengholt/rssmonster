@@ -190,6 +190,45 @@ describe('processMedia', () => {
     expect(media).not.toHaveProperty('mimeType');
   });
 
+  it('persists only canonical registered provider metadata', () => {
+    const known = processMedia({
+      media: {
+        contents: [{
+          url: 'https://cdn.example.com/video.mp4',
+          type: 'video/mp4',
+          provider: ' YouTube   Video '
+        }]
+      }
+    });
+    const unknown = processMedia({
+      media: {
+        contents: [{
+          url: 'https://cdn.example.com/video.mp4',
+          type: 'video/mp4',
+          provider: 'JWPlayer'
+        }]
+      }
+    });
+
+    expect(known).toHaveProperty('provider', 'youtube');
+    expect(unknown).not.toHaveProperty('provider');
+  });
+
+  it('prefers a known provider URL over conflicting provider metadata', () => {
+    const media = processMedia({
+      media: {
+        contents: [{
+          url: 'https://cdn.example.com/video.mp4',
+          type: 'video/mp4',
+          provider: 'spotify',
+          player: { url: 'https://player.vimeo.com/video/123456789' }
+        }]
+      }
+    });
+
+    expect(media).toHaveProperty('provider', 'vimeo');
+  });
+
   it('extracts a YouTube iframe before HTML cleanup removes the original embed', () => {
     const media = processMedia(
       {},

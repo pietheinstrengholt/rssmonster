@@ -55,14 +55,20 @@ describe('scoreArticlesFromIslandsForUser', () => {
       status: 'read',
       interestScore: 0.9
     }));
+    const filteredArticle = await Article.create(articlePayload(user.id, feed.id, 3, suffix, {
+      filteredInd: true,
+      interestScore: 0.95
+    }));
 
     await scoreArticlesFromIslandsForUser(user.id);
 
     await unreadArticle.reload();
     await readArticle.reload();
+    await filteredArticle.reload();
 
     expect(unreadArticle.interestScore).toBe(0);
     expect(readArticle.interestScore).toBe(0.9);
+    expect(filteredArticle.interestScore).toBe(0.95);
   });
 
   it('rescoring from topic islands only updates unread articles', async () => {
@@ -90,6 +96,11 @@ describe('scoreArticlesFromIslandsForUser', () => {
       status: 'read',
       interestScore: 0.9
     }));
+    const filteredArticle = await Article.create(articlePayload(user.id, feed.id, 3, suffix, {
+      topicId: topic.id,
+      filteredInd: true,
+      interestScore: 0.95
+    }));
 
     await Promise.all([
       ArticleTopic.create({
@@ -99,6 +110,11 @@ describe('scoreArticlesFromIslandsForUser', () => {
       }),
       ArticleTopic.create({
         articleId: readArticle.id,
+        topicId: topic.id,
+        confidence: 1
+      }),
+      ArticleTopic.create({
+        articleId: filteredArticle.id,
         topicId: topic.id,
         confidence: 1
       }),
@@ -113,11 +129,12 @@ describe('scoreArticlesFromIslandsForUser', () => {
 
     await unreadArticle.reload();
     await readArticle.reload();
+    await filteredArticle.reload();
 
     expect(unreadArticle.interestScore).toBe(0.42);
     expect(readArticle.interestScore).toBe(0.9);
+    expect(filteredArticle.interestScore).toBe(0.95);
   });
 });
-
 
 

@@ -1,5 +1,7 @@
 import { load } from 'cheerio';
 
+import { detectMediaProvider } from '../../utils/mediaProviderRegistry.js';
+
 // This function resolves an HTTP(S) media URL against an optional article URL.
 const safeResolvedMediaUrl = (value, baseUrl = null) => {
   if (typeof value !== 'string' && !(value instanceof URL)) return null;
@@ -126,30 +128,6 @@ const youtubeVideoId = (entry, urls) => {
       }
 
       if (/^[A-Za-z0-9_-]{11}$/.test(String(videoId || ''))) return videoId;
-    } catch {
-      // Ignore malformed provider URLs and continue checking other feed values.
-    }
-  }
-
-  return null;
-};
-
-// This function detects a known provider from feed metadata or media URLs.
-const detectProvider = (source, urls, videoId) => {
-  if (source?.provider) return String(source.provider).toLowerCase();
-  if (videoId) return 'youtube';
-
-  const providers = [
-    ['vimeo.com', 'vimeo'],
-    ['spotify.com', 'spotify'],
-    ['soundcloud.com', 'soundcloud']
-  ];
-
-  for (const value of urls) {
-    try {
-      const hostname = new URL(value).hostname.toLowerCase();
-      const match = providers.find(([domain]) => hostname === domain || hostname.endsWith(`.${domain}`));
-      if (match) return match[1];
     } catch {
       // Ignore malformed provider URLs and continue checking other feed values.
     }
@@ -348,9 +326,11 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type, pageUrl }) =>
   );
   const urls = [pageUrl, contentUrl, playerUrl, suppliedEmbedUrl].filter(Boolean);
   const videoId = youtubeVideoId(entry, urls);
-  const provider = detectProvider(item, urls, videoId) ||
-    detectProvider(parent, urls, videoId) ||
-    detectProvider(rawMedia, urls, videoId);
+  const provider = detectMediaProvider({
+    videoId,
+    urls,
+    metadataValues: [item?.provider, parent?.provider, rawMedia?.provider]
+  });
   const thumbnail = firstSafeResolvedMediaUrl(
     pageUrl,
     item?.thumbnails?.[0]?.url,

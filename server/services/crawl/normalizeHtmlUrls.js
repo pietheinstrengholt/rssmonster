@@ -1,3 +1,5 @@
+import { normalizeSrcset } from './srcset.js';
+
 const URL_ATTRIBUTES = [
   { selector: 'a[href]', attribute: 'href', link: true, preserveFragment: true },
   { selector: 'area[href]', attribute: 'href', link: true },
@@ -43,71 +45,6 @@ function resolveUrl(value, baseUrl, { link = false, preserveFragment = false } =
   } catch {
     return null;
   }
-}
-
-// This function handles common srcset syntax and keeps data URL commas in one rejected candidate.
-function parseSrcset(value) {
-  const input = String(value || '');
-  const candidates = [];
-  let position = 0;
-
-  while (position < input.length) {
-    while (position < input.length && /[\s,]/.test(input[position])) position += 1;
-    if (position >= input.length) break;
-
-    const dataUrl = input.slice(position).toLowerCase().startsWith('data:');
-    let url = '';
-
-    while (
-      position < input.length &&
-      !/\s/.test(input[position]) &&
-      (dataUrl || input[position] !== ',')
-    ) {
-      url += input[position];
-      position += 1;
-    }
-
-    if (!dataUrl && input[position] === ',') {
-      position += 1;
-      candidates.push({ url, descriptor: '' });
-      continue;
-    }
-
-    while (position < input.length && /\s/.test(input[position])) position += 1;
-
-    let descriptor = '';
-    while (position < input.length && input[position] !== ',') {
-      descriptor += input[position];
-      position += 1;
-    }
-    if (input[position] === ',') position += 1;
-
-    candidates.push({
-      url,
-      descriptor: descriptor.trim()
-    });
-  }
-
-  return candidates;
-}
-
-// This function validates the common width and pixel-density srcset descriptors.
-function isValidSrcsetDescriptor(descriptor) {
-  return !descriptor || /^\d+w$/.test(descriptor) || /^(?:\d+|\d*\.\d+)x$/.test(descriptor);
-}
-
-// This function resolves valid srcset candidates while preserving their descriptors.
-function normalizeSrcset(value, baseUrl) {
-  const candidates = parseSrcset(value)
-    .filter(candidate => isValidSrcsetDescriptor(candidate.descriptor))
-    .map(candidate => ({
-      ...candidate,
-      url: resolveUrl(candidate.url, baseUrl)
-    }))
-    .filter(candidate => candidate.url)
-    .map(candidate => `${candidate.url}${candidate.descriptor ? ` ${candidate.descriptor}` : ''}`);
-
-  return candidates.length > 0 ? candidates.join(', ') : null;
 }
 
 // This function resolves embedded HTML URLs against the article URL.

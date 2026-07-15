@@ -48,7 +48,8 @@ describe('embedArticles', () => {
       attributes: expect.arrayContaining(['contentText']),
       where: expect.objectContaining({
         userId: 42,
-        id: expect.any(Object)
+        id: expect.any(Object),
+        filteredInd: false
       }),
       include: [{
         model: expect.any(Object),

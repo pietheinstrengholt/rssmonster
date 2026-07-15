@@ -147,6 +147,8 @@ Update existing article by external identity
 Duplicate detection
         ↓
 Apply user actions
+   ├─ filter match → persist articles using filteredInd = true
+   └─ accepted (filteredInd = false) → AI enrichment → persist article and tags
         ↓
 AI enrichment
         ↓
@@ -453,7 +455,7 @@ URL independently. Invalid regular expressions are skipped.
 
 Rules may:
 
-- set filterInd to true, so articles are hidden from normal queries and skipped for AI enrichment
+- set filteredInd to true, so articles are hidden from normal queries and skipped for AI enrichment
 - mark read
 - favourite
 - add tags
@@ -462,7 +464,9 @@ Rules may:
 Advertisement and quality scores use higher-is-better semantics. Advertisement and bad-quality
 actions therefore override their respective scores to zero.
 
-Filtered articles never reach AI enrichment.
+Filtered articles never reach article-level AI analysis. Post-crawl embedding,
+duplicate, event, topic, and interest-score services must also explicitly
+exclude filtered articles.
 
 The article row and all generated, feed, and rule tags are persisted in one transaction.
 
@@ -504,7 +508,7 @@ normalized description text. Language detection uses the same canonical visible 
 
 HTML processing only returns outbound hotlink candidates; it does not write them. Candidates are
 persisted after a new article is successfully inserted or an accepted publisher update commits.
-Duplicates, articles with a filterInd = true, failed writes, unchanged entries, and delete-matched revisions do
+Duplicates, articles with a filteredInd = true, failed writes, unchanged entries, and delete-matched revisions do
 not contribute hotlinks.
 
 Only HTTP(S) links outside the article host are candidates. The apex host and its leading `www.`
@@ -570,3 +574,6 @@ Duplicate noise never reaches the reader.
 New articles become immediately searchable, readable, taggable and ready for downstream recommendation and semantic processing.
 
 The crawler succeeds when external feed chaos consistently produces one clean, trustworthy article library.
+
+# Potential concurrent-race filtering inconsistency
+

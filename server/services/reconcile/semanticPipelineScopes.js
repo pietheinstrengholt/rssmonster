@@ -483,6 +483,7 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
     status: 'unread',
     userId,
     ...canonicalArticleWhere(),
+    filteredInd: false,
     eventId: null
   };
 
@@ -944,4 +945,3 @@ export async function rebuildAllTopicsForUser(userId, options = {}) {
 }
 
 export default repairRecentEventsForUser;
-

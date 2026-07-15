@@ -59,6 +59,7 @@ export async function embedArticles(userId, options = {}) {
         userId,
         id: { [Op.gt]: lastId },
         ...canonicalArticleWhere(),
+        filteredInd: false,
         ...(scopeFilters.length ? { [Op.or]: scopeFilters } : {})
       },
       include: [{

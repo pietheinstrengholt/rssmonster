@@ -43,16 +43,14 @@ const isUnusableCandidate = candidate => {
 
   const urlText = candidate.url;
   const classText = candidate.className || '';
-  const altText = candidate.alt || '';
-  if (HARD_REJECT_PATTERN.test(`${urlText} ${classText} ${altText}`)) return true;
+  if (HARD_REJECT_PATTERN.test(`${urlText} ${classText}`)) return true;
   if (URL_CLASS_REJECT_PATTERN.test(`${urlText} ${classText}`)) return true;
   if (DECORATIVE_PATTERN.test(classText)) return true;
 
   const urlLooksDecorative = DECORATIVE_PATTERN.test(urlText);
-  const altLooksDecorative = DECORATIVE_PATTERN.test(altText);
   const isSmall = (width !== null && width < 320) || (height !== null && height < 180);
 
-  return (urlLooksDecorative || altLooksDecorative) && isSmall;
+  return urlLooksDecorative && isSmall;
 };
 
 // This function returns the largest positive dimension reported for one image URL.
