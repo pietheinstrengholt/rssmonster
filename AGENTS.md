@@ -96,6 +96,10 @@ Use this sequence for most tasks:
 - Let API errors bubble; avoid redundant per-method error wrappers.
 - `client/src/store/`: options-style Pinia stores; alias API imports with `API` suffix.
 
+### 4.8 HTML URL Processing
+- `normalizeHtmlUrls()` owns canonicalization and converts relative URLs into absolute HTTP(S) URLs.
+- `sanitizeHtmlContent()` owns safety by validating and filtering URLs and attributes, but does not guarantee canonical absolute URLs on its own.
+
 ---
 
 ## 5) Quality Gates (What to Run)
@@ -138,6 +142,13 @@ Testing notes:
 - Forgetting `.js` extension in server local imports.
 - Modifying existing migrations instead of adding new ones.
 - Introducing frontend patterns inconsistent with existing Options API code.
+
+All post-crawl semantic processing operates only on **new, unfiltered articles**.
+Every downstream candidate query must independently enforce the matching `userId`,
+`Article.createdAt >= createdAtFrom`, and `filteredInd = false`. Embedding must also
+require a missing article vector. This scope must never use `updatedAt`; publisher
+revisions update `updatedAt` and do not re-enter the semantic pipeline.
+Historical semantic processing requires an explicit rebuild workflow.
 
 ---
 

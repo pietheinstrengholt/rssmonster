@@ -1,3 +1,4 @@
+import { Op } from 'sequelize';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
@@ -26,7 +27,7 @@ describe('embedArticles', () => {
     mocked.embedArticle.mockReset();
   });
 
-  it('only scans articles from feeds that allow embeddings', async () => {
+  it('selects a newly created active article from a feed that allows embeddings', async () => {
     const article = {
       id: 7,
       title: 'Vector article',
@@ -49,7 +50,8 @@ describe('embedArticles', () => {
       where: expect.objectContaining({
         userId: 42,
         id: expect.any(Object),
-        filteredInd: false
+        filteredInd: false,
+        articleVector: { [Op.is]: null }
       }),
       include: [{
         model: expect.any(Object),
@@ -77,35 +79,59 @@ describe('embedArticles', () => {
     const { embedArticles } = await import('../../services/articles/embedArticles.js');
     await embedArticles(42, {
       batchSize: 10,
-      createdAfter: crawlStartedAt
+      createdAtFrom: crawlStartedAt
     });
 
-    expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: expect.objectContaining({
-        userId: 42,
-        id: expect.any(Object)
-      })
-    }));
+    const where = mocked.articleFindAll.mock.calls[0][0].where;
+    expect(where).toMatchObject({
+      userId: 42,
+      filteredInd: false,
+      articleVector: { [Op.is]: null },
+      createdAt: { [Op.gte]: crawlStartedAt }
+    });
   });
 
-  it('includes explicitly changed articles outside the creation-time boundary', async () => {
+  it('excludes filtered articles from every embedding scan', async () => {
+    mocked.articleFindAll.mockResolvedValueOnce([]);
+
+    const { embedArticles } = await import('../../services/articles/embedArticles.js');
+    await embedArticles(42, { batchSize: 10 });
+
+    expect(mocked.articleFindAll.mock.calls[0][0].where.filteredInd).toBe(false);
+  });
+
+  it('does not use a recent update time as the post-crawl boundary', async () => {
     const crawlStartedAt = new Date('2026-07-01T12:00:00.000Z');
     mocked.articleFindAll.mockResolvedValueOnce([]);
 
     const { embedArticles } = await import('../../services/articles/embedArticles.js');
     await embedArticles(42, {
       batchSize: 10,
-      createdAfter: crawlStartedAt,
+      createdAtFrom: crawlStartedAt
+    });
+
+    const where = mocked.articleFindAll.mock.calls[0][0].where;
+    expect(where.createdAt).toEqual({ [Op.gte]: crawlStartedAt });
+    expect(where).not.toHaveProperty('updatedAt');
+  });
+
+  it('keeps a revised article id inside the new-article and missing-vector scope', async () => {
+    const crawlStartedAt = new Date('2026-07-01T12:00:00.000Z');
+    mocked.articleFindAll.mockResolvedValueOnce([]);
+
+    const { embedArticles } = await import('../../services/articles/embedArticles.js');
+    await embedArticles(42, {
+      batchSize: 10,
+      createdAtFrom: crawlStartedAt,
       articleIds: [99, 99]
     });
 
     const where = mocked.articleFindAll.mock.calls[0][0].where;
-    const scopeFilters = Object.getOwnPropertySymbols(where)
-      .flatMap(symbol => Array.isArray(where[symbol]) ? where[symbol] : []);
-    expect(scopeFilters).toEqual(expect.arrayContaining([
-      expect.objectContaining({ createdAt: expect.any(Object) }),
-      expect.objectContaining({ id: expect.any(Object) })
-    ]));
+    expect(where.createdAt).toEqual({ [Op.gte]: crawlStartedAt });
+    expect(where.articleVector).toEqual({ [Op.is]: null });
+    expect(where.id[Op.in]).toEqual([99]);
+    expect(where.id[Op.gt]).toBe(0);
+    expect(where[Op.or]).toBeUndefined();
   });
 
   it('can opt out of the recent-article guard for intentional historical backfills', async () => {
@@ -121,8 +147,10 @@ describe('embedArticles', () => {
       where: expect.objectContaining({
         userId: 42,
         id: expect.any(Object),
-        duplicateOfArticleId: expect.any(Object)
+        duplicateOfArticleId: expect.any(Object),
+        articleVector: { [Op.is]: null }
       })
     }));
+    expect(mocked.articleFindAll.mock.calls[0][0].where).not.toHaveProperty('createdAt');
   });
 });

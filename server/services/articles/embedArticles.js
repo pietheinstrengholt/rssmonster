@@ -21,8 +21,8 @@ const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.ARTICLE_EMBED_BATCH_SIZE 
 const DEFAULT_MAX_AGE_DAYS = Number.parseInt(process.env.ARTICLE_EMBED_MAX_AGE_DAYS || '7', 10);
 
 // This function resolves the oldest article creation time eligible for vector creation.
-function resolveCreatedAfter(options = {}) {
-  if (options.createdAfter) return options.createdAfter;
+function resolveCreatedAtFrom(options = {}) {
+  if (options.createdAtFrom) return options.createdAtFrom;
   if (options.maxAgeDays === null) return null;
 
   const maxAgeDays = Number.parseInt(
@@ -40,12 +40,8 @@ function resolveCreatedAfter(options = {}) {
 export async function embedArticles(userId, options = {}) {
   // Batch size is tunable for memory/latency trade-offs during backfills.
   const batchSize = Number.parseInt(options.batchSize || DEFAULT_BATCH_SIZE, 10);
-  const createdAfter = resolveCreatedAfter(options);
+  const createdAtFrom = resolveCreatedAtFrom(options);
   const articleIds = [...new Set((options.articleIds || []).filter(Boolean))];
-  const scopeFilters = [
-    ...(createdAfter ? [{ createdAt: { [Op.gte]: createdAfter } }] : []),
-    ...(articleIds.length ? [{ id: { [Op.in]: articleIds } }] : [])
-  ];
 
   let lastId = 0;
   let scannedCount = 0;
@@ -57,10 +53,14 @@ export async function embedArticles(userId, options = {}) {
     const articles = await Article.findAll({
       where: {
         userId,
-        id: { [Op.gt]: lastId },
+        id: {
+          [Op.gt]: lastId,
+          ...(articleIds.length ? { [Op.in]: articleIds } : {})
+        },
         ...canonicalArticleWhere(),
         filteredInd: false,
-        ...(scopeFilters.length ? { [Op.or]: scopeFilters } : {})
+        articleVector: { [Op.is]: null },
+        ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
       },
       include: [{
         model: Feed,

@@ -2,6 +2,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
   embedArticles: vi.fn(),
+  markDuplicateArticlesForUser: vi.fn(),
   runIncrementalEventsForUser: vi.fn(),
   scoreArticlesFromIslandsForUser: vi.fn(),
   runIslandCalibrationForUser: vi.fn()
@@ -9,6 +10,10 @@ const mocked = vi.hoisted(() => ({
 
 vi.mock('../../services/articles/embedArticles.js', () => ({
   embedArticles: mocked.embedArticles
+}));
+
+vi.mock('../../services/duplicates/articleDuplicates.js', () => ({
+  markDuplicateArticlesForUser: mocked.markDuplicateArticlesForUser
 }));
 
 vi.mock('../../services/reconcile/semanticPipelineScopes.js', () => ({
@@ -26,6 +31,7 @@ vi.mock('../../services/islands/runIslandCalibration.js', () => ({
 describe('runPostCrawlSemanticPipeline', () => {
   beforeEach(() => {
     mocked.embedArticles.mockReset();
+    mocked.markDuplicateArticlesForUser.mockReset();
     mocked.runIncrementalEventsForUser.mockReset();
     mocked.scoreArticlesFromIslandsForUser.mockReset();
     mocked.runIslandCalibrationForUser.mockReset();
@@ -37,6 +43,10 @@ describe('runPostCrawlSemanticPipeline', () => {
     mocked.embedArticles.mockResolvedValue({
       embeddedCount: 2,
       skippedCount: 1
+    });
+    mocked.markDuplicateArticlesForUser.mockResolvedValue({
+      scannedCount: 3,
+      duplicateCount: 0
     });
     mocked.runIncrementalEventsForUser.mockResolvedValue({
       userId: 42,
@@ -72,14 +82,19 @@ describe('runPostCrawlSemanticPipeline', () => {
     });
 
     expect(mocked.embedArticles).toHaveBeenCalledWith(42, {
-      createdAfter: crawlStartedAt
+      createdAtFrom: crawlStartedAt
+    });
+    expect(mocked.markDuplicateArticlesForUser).toHaveBeenCalledWith(42, {
+      createdAtFrom: crawlStartedAt
     });
     expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(42, {
-      createdAfter: crawlStartedAt,
+      createdAtFrom: crawlStartedAt,
       skipTopicAssignment: false
     });
     expect(mocked.runIslandCalibrationForUser).not.toHaveBeenCalled();
-    expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(42);
+    expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(42, {
+      createdAtFrom: crawlStartedAt
+    });
     expect(result.users).toBe(1);
     expect(result.embedded).toBe(2);
     expect(result.skipped).toBe(1);
@@ -87,7 +102,5 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(result.results[0].interestScores.updatedCount).toBe(5);
   });
 });
-
-
 
 

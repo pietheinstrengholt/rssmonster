@@ -444,6 +444,9 @@ A valid lead image by itself is also sufficient for eligibility. Lead images rem
 metadata rather than article identity. Lead-image selection considers feed metadata, sanitized
 and source HTML, descriptions, lazy attributes, and the strongest valid `srcset` candidate.
 
+normalizeHtmlUrls owns canonical absolute URLs;
+sanitizeHtmlContent owns safety.
+
 ---
 
 # User Action Rules
@@ -472,6 +475,11 @@ The article row and all generated, feed, and rule tags are persisted in one tran
 
 Creation and publisher updates share one pure persistence mapper. Update-specific sparse-feed
 policy is resolved before selecting mutable fields from that canonical mapping.
+
+Crawler refreshes action filtering for new articles and publisher revisions.
+
+Creating, changing, or deleting an action requires a separate bulk
+reevaluation of existing articles.
 
 ---
 
@@ -575,5 +583,20 @@ New articles become immediately searchable, readable, taggable and ready for dow
 
 The crawler succeeds when external feed chaos consistently produces one clean, trustworthy article library.
 
-# Potential concurrent-race filtering inconsistency
+# CrawlRun concurrency
 
+Every complete user crawl must acquire a `crawl_runs` row through the centralized per-user crawl
+entry point before loading feeds, actions, or article caches. A database-enforced unique active-user
+constraint allows only one `running` row per user across all workers. A duplicate acquisition is a
+normal `crawl_already_running` outcome; crawls for different users may still run concurrently.
+
+A running row older than `CRAWL_RUN_MAX_RUNNING_MINUTES` (60 minutes by default) is conditionally
+marked `failed` before replacement. The same unique constraint arbitrates concurrent recovery
+attempts, so only one replacement can become active. The threshold must remain longer than a valid
+user crawl because this first recovery design intentionally has no heartbeat or renewable lease.
+
+Serializing normal ingestion per user keeps the crawl's loaded action set, duplicate caches,
+publisher-update classification, and filtering decisions from being interleaved by another crawl.
+Article identity constraints and recognized insert-race recovery remain defense-in-depth for writes
+already in flight. New crawl entry points must reuse this acquisition path rather than creating
+`CrawlRun` rows or invoking feed/article processing directly.

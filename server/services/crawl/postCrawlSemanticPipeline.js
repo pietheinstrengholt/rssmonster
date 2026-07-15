@@ -40,7 +40,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
 
   for (const userId of userIds) {
     const embedSummary = await embedArticles(userId, {
-      createdAfter: result?.crawlStartedAt || null
+      createdAtFrom: result?.crawlStartedAt || null
     });
     embedded += embedSummary.embeddedCount || 0;
     skipped += embedSummary.skippedCount || 0;
@@ -51,7 +51,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     );
 
     const duplicateResult = await markDuplicateArticlesForUser(userId, {
-      createdAfter: result?.crawlStartedAt || null
+      createdAtFrom: result?.crawlStartedAt || null
     });
 
     console.log(
@@ -61,7 +61,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     );
 
     const eventResult = await runIncrementalEventsForUser(userId, {
-      createdAfter: result?.crawlStartedAt || null,
+      createdAtFrom: result?.crawlStartedAt || null,
       skipTopicAssignment: false
     });
 
@@ -71,19 +71,21 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       `newEvents=${eventResult.newEventsCreatedCount} ` +
       `linked=${eventResult.linkedToExistingEventCount} ` +
       `unassigned=${eventResult.unassignedCount} ` +
-      `touchedEvents=${eventResult.touchedEventIds.length}`
+      `touchedEvents=${eventResult.touchedEventIds?.length || 0}`
     );
 
     const topicStats = eventResult.topicAssignment?.stats || {};
     console.log(
       `[SEMANTIC] user=${userId} stage=topics ` +
-      `touchedTopics=${eventResult.touchedTopicIds.length} ` +
+      `touchedTopics=${eventResult.touchedTopicIds?.length || 0} ` +
       `createdTopics=${topicStats.newTopicsCreated || 0} ` +
       `matchedEvents=${topicStats.eventsMatched || 0} ` +
       `unmatchedEvents=${topicStats.eventsUnmatched || 0}`
     );
 
-    const scoringResult = await scoreArticlesFromIslandsForUser(userId);
+    const scoringResult = await scoreArticlesFromIslandsForUser(userId, {
+      createdAtFrom: result?.crawlStartedAt || null
+    });
 
     console.log(
       `[SEMANTIC] user=${userId} stage=interest-scores ` +
@@ -119,6 +121,3 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
 }
 
 export default runPostCrawlSemanticPipeline;
-
-
-

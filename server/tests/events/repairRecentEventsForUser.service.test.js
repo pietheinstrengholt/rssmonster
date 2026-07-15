@@ -9,7 +9,7 @@ import {
   rebuildAllEventsForUser
 } from '../../services/reconcile/semanticPipelineScopes.js';
 
-const { Article, Category, Event, EventTopic, Feed, Topic, User } = db;
+const { sequelize, Article, Category, Event, EventTopic, Feed, Topic, User } = db;
 
 async function createUserGraph(prefix) {
   const hash = await bcrypt.hash('secret', 4);
@@ -91,6 +91,43 @@ describe('repairRecentEventsForUser', () => {
     expect(result.articleCount).toBe(0);
     expect(filteredArticle.eventId).toBeNull();
     expect(await Event.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it('does not treat publisher revisions as new semantic candidates', async () => {
+    const { user, feed } = await createUserGraph('publisher-revision');
+    const article = await Article.create(articlePayload(user, feed, 1, {
+      published: recentDateWithOffset(),
+      articleVector: [1, 0, 0]
+    }));
+    const createdAtFrom = new Date('2026-07-01T12:00:00.000Z');
+
+    await sequelize.query(
+      `
+      UPDATE articles
+      SET createdAt = :oldCreatedAt,
+          updatedAt = :recentUpdatedAt
+      WHERE id = :articleId
+      `,
+      {
+        replacements: {
+          oldCreatedAt: new Date('2026-06-01T12:00:00.000Z'),
+          recentUpdatedAt: new Date('2026-07-02T12:00:00.000Z'),
+          articleId: article.id
+        }
+      }
+    );
+
+    const duplicateResult = await markDuplicateArticlesForUser(user.id, { createdAtFrom });
+    const eventResult = await runIncrementalEventsForUser(user.id, {
+      createdAtFrom,
+      skipTopicAssignment: true
+    });
+
+    await article.reload();
+
+    expect(duplicateResult.scannedCount).toBe(0);
+    expect(eventResult.articleCount).toBe(0);
+    expect(article.eventId).toBeNull();
   });
 
   it('does not clear or delete foreign events referenced by stale article data', async () => {

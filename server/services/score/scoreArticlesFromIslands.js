@@ -81,7 +81,7 @@ function updatedRowCount(result, metadata) {
 
 // This function scores articles by direct vector similarity when topic links do not produce a stronger score.
 async function applyVectorFallbackScores(userId, options = {}) {
-  const { transaction } = options;
+  const { createdAtFrom, transaction } = options;
   const threshold = options.threshold ?? DEFAULT_ISLAND_ARTICLE_SCORE_THRESHOLD;
 
   const islands = await Island.findAll({
@@ -101,7 +101,8 @@ async function applyVectorFallbackScores(userId, options = {}) {
       status: SCORABLE_ARTICLE_STATUS,
       ...canonicalArticleWhere(),
       filteredInd: false,
-      articleVector: { [Op.ne]: null }
+      articleVector: { [Op.ne]: null },
+      ...(createdAtFrom ? { createdAt: { [Op.gte]: createdAtFrom } } : {})
     },
     attributes: ['id', 'interestScore', 'articleVector'],
     order: [['id', 'ASC']],
@@ -136,7 +137,7 @@ async function applyVectorFallbackScores(userId, options = {}) {
 
 // This function clears previous interest scores before applying current island state.
 async function resetArticleInterestScores(userId, options = {}) {
-  const { transaction } = options;
+  const { createdAtFrom, transaction } = options;
   await sequelize.query(
     `
     UPDATE articles
@@ -145,9 +146,10 @@ async function resetArticleInterestScores(userId, options = {}) {
       AND status = :status
       AND duplicateOfArticleId IS NULL
       AND filteredInd = false
+      ${createdAtFrom ? 'AND createdAt >= :createdAtFrom' : ''}
     `,
     {
-      replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
+      replacements: { userId, status: SCORABLE_ARTICLE_STATUS, createdAtFrom },
       type: db.Sequelize.QueryTypes.UPDATE,
       transaction
     }
@@ -156,7 +158,7 @@ async function resetArticleInterestScores(userId, options = {}) {
 
 // This function scores articles through topic-to-island memberships.
 async function applyTopicPathScores(userId, options = {}) {
-  const { transaction } = options;
+  const { createdAtFrom, transaction } = options;
   const [result, metadata] = await sequelize.query(
     `
     UPDATE articles a
@@ -180,6 +182,7 @@ async function applyTopicPathScores(userId, options = {}) {
        AND src.status = :status
        AND src.duplicateOfArticleId IS NULL
        AND src.filteredInd = false
+       ${createdAtFrom ? 'AND src.createdAt >= :createdAtFrom' : ''}
       GROUP BY atp.articleId
     ) scored
       ON scored.articleId = a.id
@@ -188,9 +191,10 @@ async function applyTopicPathScores(userId, options = {}) {
       AND a.status = :status
       AND a.duplicateOfArticleId IS NULL
       AND a.filteredInd = false
+      ${createdAtFrom ? 'AND a.createdAt >= :createdAtFrom' : ''}
     `,
     {
-      replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
+      replacements: { userId, status: SCORABLE_ARTICLE_STATUS, createdAtFrom },
       type: db.Sequelize.QueryTypes.UPDATE,
       transaction
     }
@@ -219,11 +223,12 @@ async function applyTopicPathScores(userId, options = {}) {
         AND a.duplicateOfArticleId IS NULL
         AND a.filteredInd = false
         AND a.interestScore <> 0
+        ${createdAtFrom ? 'AND a.createdAt >= :createdAtFrom' : ''}
       GROUP BY a.id, a.interestScore
       ORDER BY a.id ASC
       `,
       {
-        replacements: { userId, status: SCORABLE_ARTICLE_STATUS },
+        replacements: { userId, status: SCORABLE_ARTICLE_STATUS, createdAtFrom },
         type: db.Sequelize.QueryTypes.SELECT,
         transaction
       }
@@ -243,11 +248,12 @@ async function applyTopicPathScores(userId, options = {}) {
 // This function scores unread articles for one user from existing island state.
 // It first applies topic/island memberships, then fills stronger vector fallback scores.
 export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
-  const { transaction } = options;
+  const { createdAtFrom, transaction } = options;
 
-  await resetArticleInterestScores(userId, { transaction });
-  const topicScoredCount = await applyTopicPathScores(userId, { transaction });
+  await resetArticleInterestScores(userId, { createdAtFrom, transaction });
+  const topicScoredCount = await applyTopicPathScores(userId, { createdAtFrom, transaction });
   const fallbackScoredCount = await applyVectorFallbackScores(userId, {
+    createdAtFrom,
     transaction,
     threshold: options.articleScoreThreshold
   });
@@ -261,5 +267,3 @@ export async function scoreArticlesFromIslandsForUser(userId, options = {}) {
 }
 
 export default scoreArticlesFromIslandsForUser;
-
-

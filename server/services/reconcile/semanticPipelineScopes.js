@@ -473,7 +473,7 @@ async function runEventAssignmentPass(userId, articles, scope, options = {}) {
 
 // This function runs the incremental event scope for recent unread articles that do not yet belong to an event.
 export async function runIncrementalEventsForUser(userId, options = {}) {
-  const { createdAfter = null, skipTopicAssignment = false } = options;
+  const { createdAtFrom = null, skipTopicAssignment = false } = options;
   console.log(`[EVENT] Incremental event assignment for user ${userId}`);
 
   const cacheWindowHours = rollingEventWindowHours();
@@ -487,8 +487,8 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
     eventId: null
   };
 
-  if (createdAfter) {
-    articleWhere.createdAt = { [Op.gte]: createdAfter };
+  if (createdAtFrom) {
+    articleWhere.createdAt = { [Op.gte]: createdAtFrom };
   } else {
     articleWhere.published = { [Op.gte]: cutoffDate };
   }

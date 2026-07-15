@@ -44,6 +44,19 @@ describe('srcset utility', () => {
     });
   });
 
+  it('prefers the largest width when descriptor families are mixed', () => {
+    const candidate = selectBestSrcsetCandidate(
+      '/narrow.jpg 1w, /dense.jpg 3x, /wide.jpg 2w',
+      'https://example.com/story'
+    );
+
+    expect(candidate).toMatchObject({
+      url: 'https://example.com/wide.jpg',
+      descriptor: '2w',
+      width: 2
+    });
+  });
+
   it('keeps commas inside candidate URLs', () => {
     expect(normalizeSrcset(
       '/image,small.jpg 1x, /image,large.jpg 2x',

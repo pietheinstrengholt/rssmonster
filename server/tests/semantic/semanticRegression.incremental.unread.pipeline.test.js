@@ -428,7 +428,7 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     );
     insertedArticleIdsForReport = insertedArticleIds;
 
-    await runIncrementalEventsForUser(userId, { createdAfter: incrementalInsertedAfter });
+    await runIncrementalEventsForUser(userId, { createdAtFrom: incrementalInsertedAfter });
     await scoreArticlesFromIslandsForUser(userId);
 
     const markedReadCount = await Article.count({
@@ -468,7 +468,6 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     });
   }, 60000);
 });
-
 
 
 

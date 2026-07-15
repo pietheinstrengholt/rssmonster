@@ -124,8 +124,16 @@ function selectBestSrcsetCandidate(value, baseUrl) {
     })
     .filter(candidate => candidate.url);
 
-  candidates.sort((a, b) => b.score - a.score || a.index - b.index);
-  return candidates[0] || null;
+  const widthCandidates = candidates.filter(candidate => candidate.width !== null);
+  const densityCandidates = candidates.filter(candidate => candidate.density !== null);
+  const eligibleCandidates = widthCandidates.length
+    ? widthCandidates
+    : densityCandidates.length
+      ? densityCandidates
+      : candidates;
+
+  eligibleCandidates.sort((a, b) => b.score - a.score || a.index - b.index);
+  return eligibleCandidates[0] || null;
 }
 
 export {

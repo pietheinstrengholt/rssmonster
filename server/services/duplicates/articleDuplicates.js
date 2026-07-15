@@ -143,8 +143,8 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
     articleVector: { [Op.ne]: null }
   };
 
-  if (options.createdAfter) {
-    where.createdAt = { [Op.gte]: options.createdAfter };
+  if (options.createdAtFrom) {
+    where.createdAt = { [Op.gte]: options.createdAtFrom };
   }
 
   const articles = await Article.findAll({

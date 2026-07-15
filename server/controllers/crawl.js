@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { Action, Article, Feed, Hotlink } = db;
+const { Action, Article, CrawlRun, Feed, Hotlink } = db;
 import discoverRssLink from '../services/feeds/discoverRssLink.js';
 import parseFeed from '../services/feeds/parser.js';
 import processArticle from '../services/crawl/processArticle.js';
@@ -37,6 +37,18 @@ const PARALLELPROCESSFLAG = Number(process.env.PARALLELPROCESSFLAG || 0);
 let rateLimitDelay = 0;
 
 const MINUTE_MS = 60 * 1000;
+const ACTIVE_CRAWL_INDEX = 'crawl_runs_active_user_unique';
+const parsedMaxRunningMinutes = Number.parseInt(
+  process.env.CRAWL_RUN_MAX_RUNNING_MINUTES,
+  10
+);
+const CRAWL_RUN_MAX_RUNNING_MINUTES = Number.isInteger(parsedMaxRunningMinutes) &&
+  parsedMaxRunningMinutes > 0
+  ? parsedMaxRunningMinutes
+  : 60;
+const STALE_CRAWL_ERROR_MESSAGE =
+  `Crawl run exceeded the maximum running duration of ` +
+  `${CRAWL_RUN_MAX_RUNNING_MINUTES} minutes and was marked stale.`;
 
 /* ------------------------------------------------------------------
  * Helpers
@@ -273,8 +285,8 @@ const getHotlinkCountCachesByUserId = async (feeds) => {
  * Core crawl logic
  * ------------------------------------------------------------------ */
 
-// Core crawl function with shared feed processing
-const performCrawl = async (userId = null, options = {}) => {
+// This function performs the feed-level work for one crawl invocation.
+const runCrawl = async (userId = null, options = {}) => {
   const crawlStartedAt = new Date();
   const emitProgress = (event) => {
     if (typeof options.onProgress !== 'function') {
@@ -675,12 +687,188 @@ const performCrawl = async (userId = null, options = {}) => {
   return result;
 };
 
+// This function loads the active crawl row used by acquisition outcomes.
+const findActiveCrawlRun = userId => CrawlRun.findOne({
+  where: {
+    userId,
+    status: 'running'
+  },
+  attributes: ['id', 'startedAt']
+});
+
+// This function checks whether a running crawl exceeds the configured duration.
+const isStaleCrawlRun = (crawlRun, now = new Date()) => {
+  const startedAt = new Date(crawlRun?.startedAt).getTime();
+  if (!Number.isFinite(startedAt)) {
+    return false;
+  }
+
+  return startedAt <= now.getTime() - CRAWL_RUN_MAX_RUNNING_MINUTES * MINUTE_MS;
+};
+
+// This function conditionally fails the stale row without touching a newer run.
+const recoverStaleCrawlRun = async (userId, crawlRun, now = new Date()) => {
+  const staleBefore = new Date(
+    now.getTime() - CRAWL_RUN_MAX_RUNNING_MINUTES * MINUTE_MS
+  );
+  const [updatedCount] = await CrawlRun.update(
+    {
+      status: 'failed',
+      completedAt: now,
+      errorMessage: STALE_CRAWL_ERROR_MESSAGE
+    },
+    {
+      where: {
+        id: crawlRun.id,
+        userId,
+        status: 'running',
+        startedAt: { [db.Sequelize.Op.lte]: staleBefore }
+      }
+    }
+  );
+
+  if (updatedCount > 0) {
+    console.warn(
+      `[Crawl] Marked stale crawl run ${crawlRun.id} as failed for user ${userId}.`
+    );
+  }
+
+  return updatedCount > 0;
+};
+
+// This function recognizes the database constraint dedicated to active crawls.
+const isActiveCrawlConstraintError = err => {
+  if (err?.name !== 'SequelizeUniqueConstraintError') {
+    return false;
+  }
+
+  if (Object.prototype.hasOwnProperty.call(err.fields || {}, ACTIVE_CRAWL_INDEX)) {
+    return true;
+  }
+
+  return [err?.message, err?.parent?.sqlMessage, err?.original?.sqlMessage]
+    .filter(Boolean)
+    .some(message => message.includes(ACTIVE_CRAWL_INDEX));
+};
+
+// This function returns the normal no-op result for a crawl already in progress.
+const crawlAlreadyRunningResult = (userId, activeCrawlRun) => {
+  console.log(
+    `[Crawl] Crawl already running for user ${userId} ` +
+    `(crawlRunId=${activeCrawlRun.id}).`
+  );
+
+  return {
+    total: 0,
+    processed: 0,
+    errors: 0,
+    timeouts: 0,
+    crawlTimedOut: false,
+    processedUserIds: [],
+    crawlStartedAt: null,
+    totalNewArticles: 0,
+    totalUpdatedArticles: 0,
+    userId,
+    crawlRunId: activeCrawlRun.id,
+    skipped: true,
+    reused: true,
+    reason: 'crawl_already_running'
+  };
+};
+
+// This function records the terminal lifecycle of one complete user crawl.
+const performCrawl = async (userId = null, options = {}) => {
+  const activeCrawlRun = userId ? await findActiveCrawlRun(userId) : null;
+
+  if (activeCrawlRun && !isStaleCrawlRun(activeCrawlRun)) {
+    return crawlAlreadyRunningResult(userId, activeCrawlRun);
+  }
+
+  if (activeCrawlRun) {
+    await recoverStaleCrawlRun(userId, activeCrawlRun);
+  }
+
+  let crawlRun = null;
+
+  if (userId) {
+    try {
+      crawlRun = await CrawlRun.create({
+        userId,
+        status: 'running'
+      });
+    } catch (err) {
+      if (!isActiveCrawlConstraintError(err)) {
+        throw err;
+      }
+
+      const concurrentCrawlRun = await findActiveCrawlRun(userId);
+      if (!concurrentCrawlRun) {
+        throw err;
+      }
+
+      return crawlAlreadyRunningResult(userId, concurrentCrawlRun);
+    }
+  }
+
+  let result;
+
+  try {
+    result = await runCrawl(userId, options);
+  } catch (err) {
+    if (crawlRun) {
+      try {
+        await crawlRun.update({
+          status: 'failed',
+          completedAt: new Date(),
+          errorMessage: err?.message || String(err) || 'Unknown crawl error'
+        });
+      } catch (crawlRunErr) {
+        console.error('Error recording failed crawl run:', crawlRunErr);
+      }
+    }
+
+    throw err;
+  }
+
+  if (crawlRun) {
+    await crawlRun.update({
+      status: 'completed',
+      completedAt: new Date()
+    });
+  }
+
+  return result;
+};
+
 // This function runs a crawl and then groups crawled articles semantically.
 const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => {
   const result = await performCrawl(userId, {
     ...options,
     suppressDoneEvent: true
   });
+
+  if (result.reason === 'crawl_already_running') {
+    if (typeof options.onProgress === 'function') {
+      options.onProgress({
+        type: 'done',
+        event: 'crawl_already_running',
+        message: 'Crawl already running for this user.',
+        crawlRunId: result.crawlRunId,
+        feedId: null,
+        feedName: null,
+        currentFeed: 0,
+        totalFeeds: 0,
+        processedFeeds: 0,
+        newArticles: 0,
+        updatedArticles: 0,
+        errors: 0,
+        timeouts: 0,
+        crawlTimedOut: false
+      });
+    }
+
+    return result;
+  }
 
   await runPostCrawlSemanticPipeline(result, {
     userId,

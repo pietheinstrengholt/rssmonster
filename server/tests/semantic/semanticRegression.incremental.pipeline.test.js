@@ -160,7 +160,7 @@ semanticRegressionDescribe('semantic regression incremental event pipeline', () 
     expect(preClusteredIncrementalCount).toBe(0);
 
     const eventResult = await runIncrementalEventsForUser(userId, {
-      createdAfter: incrementalInsertedAfter,
+      createdAtFrom: incrementalInsertedAfter,
       skipTopicAssignment: true
     });
     const [
