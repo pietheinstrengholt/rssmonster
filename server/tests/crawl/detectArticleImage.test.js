@@ -9,10 +9,19 @@ vi.mock('../../models/index.js', () => ({
 }));
 
 const { default: detectArticleImage } = await import('../../services/crawl/media/detectArticleImage.js');
+const { normalizeImageCandidates } = await import('../../services/feeds/feedsmith/normalizeMedia.js');
+
+// This function adapts raw parser fixtures before exercising crawl-side image selection.
+const detectImageFromFeedFixture = options => detectArticleImage({
+  ...options,
+  entry: {
+    imageCandidates: normalizeImageCandidates(options.entry, options.articleUrl)
+  }
+});
 
 describe('detectArticleImage', () => {
   it('prefers a large content image over feed candidates without useful dimensions', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {
         media: {
           contents: [
@@ -48,7 +57,7 @@ describe('detectArticleImage', () => {
   });
 
   it('prefers a stronger image enclosure over a thumbnail-shaped candidate', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {
         media: {
           group: {
@@ -79,7 +88,7 @@ describe('detectArticleImage', () => {
   });
 
   it('keeps the strongest dimensions when the same image appears in multiple sources', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {
         media: {
           thumbnails: [{
@@ -110,7 +119,7 @@ describe('detectArticleImage', () => {
   });
 
   it('balances image position and dimensions within cleaned article content', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: `
@@ -130,7 +139,7 @@ describe('detectArticleImage', () => {
   });
 
   it('does not hard-reject an editorial image based on natural-language alt text', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: `
@@ -156,7 +165,7 @@ describe('detectArticleImage', () => {
     ['URL', '<img src="/brand-logo.png" width="1200" height="675" alt="Brand mark">'],
     ['class', '<img src="/brand-mark.png" class="site-icon" width="1200" height="675" alt="Brand mark">']
   ])('still hard-rejects a true logo or icon based on its %s', async (_signal, contentHtml) => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml
@@ -166,7 +175,7 @@ describe('detectArticleImage', () => {
   });
 
   it('soft-penalizes decorative alt text without rejecting the image', async () => {
-    const preferredResult = await detectArticleImage({
+    const preferredResult = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: `
@@ -174,7 +183,7 @@ describe('detectArticleImage', () => {
         <img src="/second.jpg" width="640" height="360" alt="Editorial portrait">
       `
     });
-    const fallbackResult = await detectArticleImage({
+    const fallbackResult = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: '<img src="/first.jpg" width="300" height="200" alt="Author profile">'
@@ -185,7 +194,7 @@ describe('detectArticleImage', () => {
   });
 
   it('prefers the strongest valid srcset image over a fallback src', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: `
@@ -207,7 +216,7 @@ describe('detectArticleImage', () => {
   });
 
   it('scales responsive image height from the fallback aspect ratio', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: `
@@ -230,7 +239,7 @@ describe('detectArticleImage', () => {
   });
 
   it('drops fallback height when a responsive width cannot be scaled safely', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: `
@@ -252,7 +261,7 @@ describe('detectArticleImage', () => {
   });
 
   it('prefers an explicit lazy source over a fallback src', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: '<img src="/fallback-320.jpg" data-original="/full-size.jpg">'
@@ -268,7 +277,7 @@ describe('detectArticleImage', () => {
   });
 
   it('returns metadata for the strongest body fallback candidate', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {},
       articleUrl: 'https://news.example/posts/1',
       contentHtml: '<p>No images here.</p>',
@@ -295,7 +304,7 @@ describe('detectArticleImage', () => {
   });
 
   it('returns null when no safe meaningful image is available', async () => {
-    const result = await detectArticleImage({
+    const result = await detectImageFromFeedFixture({
       entry: {
         media: {
           thumbnails: [

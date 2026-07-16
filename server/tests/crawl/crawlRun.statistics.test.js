@@ -58,10 +58,8 @@ describe('crawl run article statistics', () => {
       url: feed.url,
       parsedFeed: {
         format: 'rss',
-        feed: {
-          title: feed.feedName,
-          entries: [{ id: 'new' }, { id: 'updated' }]
-        }
+        title: feed.feedName,
+        entries: [{ externalId: 'new' }, { externalId: 'updated' }]
       }
     }));
     mocked.processArticle.mockReset();

@@ -6,7 +6,6 @@ import {
   processArticle,
   runPostCrawlSemanticPipeline
 } from '../services/crawl/index.js';
-import { resolveFeedPublishedDate } from '../services/crawl/extraction/extractEntryFields.js';
 import createArticleDuplicateCache, {
   addSharedUserArticleHashes,
   createSharedUserArticleHashIds
@@ -425,17 +424,14 @@ const runCrawl = async (userId = null, options = {}) => {
         throw new Error('Unable to discover RSS/Atom URL');
       }
 
-      // parse the feed using feedsmith
-      const feedObject = discoveryResult?.parsedFeed || await parseFeed.process(url);
+      const parsedFeed = discoveryResult?.parsedFeed || await parseFeed.process(url);
 
       // Sanity check
-      if (!feedObject) {
+      if (!parsedFeed) {
         throw new Error('No valid feed data returned');
       }
 
-      // feedsmith: entries are in feedObject.feed.entries
-      const entries = feedObject?.feed?.entries ?? feedObject?.feed?.items ?? [];
-      const feedPublishedFallback = resolveFeedPublishedDate(feedObject.feed);
+      const entries = parsedFeed.entries || [];
 
       emitProgress({
         type: 'feed_parsed',
@@ -465,9 +461,9 @@ const runCrawl = async (userId = null, options = {}) => {
             duplicateCache,
             hotlinkCountCache,
             hotlinkBatcher,
-            feedPublishedFallback,
-            feedObject.feed?.title,
-            feedObject.format
+            parsedFeed.published,
+            parsedFeed.title,
+            parsedFeed.format
           );
           const newArticles = Number(articleResult?.newArticles || 0);
           const updatedArticles = Number(articleResult?.updatedArticles || 0);
@@ -498,16 +494,9 @@ const runCrawl = async (userId = null, options = {}) => {
       });
 
       // Update feed metadata to use latest info from feed
-      // feedsmith: image info is often in feedObject.feed.image.url
-      const faviconUrl =
-        feedObject.feed?.icon ||
-        feedObject.feed?.logo ||
-        feedObject.feed?.image?.url ||
-        null;
-
       const updateData = {
-        feedType: feedObject.format || null,
-        favicon: faviconUrl,
+        feedType: parsedFeed.format || null,
+        favicon: parsedFeed.faviconUrl,
         url: url,
         errorCount: 0,
         errorMessage: null,

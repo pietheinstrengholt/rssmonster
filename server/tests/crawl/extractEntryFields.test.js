@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import extractEntryFields, {
+import normalizeEntry, {
   resolveEntryPublishedDate,
   resolveFeedPublishedDate,
   resolveUrlPublishedDate
-} from '../../services/crawl/extraction/extractEntryFields.js';
+} from '../../services/feeds/feedsmith/normalizeEntry.js';
 
 describe('extract entry fields', () => {
   it('resolves entry published dates from expanded FeedSmith candidates', () => {
@@ -35,7 +35,7 @@ describe('extract entry fields', () => {
   });
 
   it('uses the resolver when extracting entry fields', () => {
-    const fields = extractEntryFields({
+    const fields = normalizeEntry({
       title: 'Article',
       link: 'https://example.com/article',
       dcterms: {
@@ -47,21 +47,21 @@ describe('extract entry fields', () => {
   });
 
   it('maps feed summary or description to description without inventing a fallback', () => {
-    expect(extractEntryFields({
+    expect(normalizeEntry({
       title: 'Article',
       link: 'https://example.com/article',
       description: '<p>Feed description</p>',
       summary: '<p>Feed summary</p>'
     }).description).toBe('<p>Feed description</p>');
 
-    expect(extractEntryFields({
+    expect(normalizeEntry({
       title: 'Article',
       link: 'https://example.com/article',
       description: '',
       summary: '<p>Feed summary</p>'
     }).description).toBe('<p>Feed summary</p>');
 
-    expect(extractEntryFields({
+    expect(normalizeEntry({
       title: 'Article',
       link: 'https://example.com/article',
       description: ''

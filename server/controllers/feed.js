@@ -362,23 +362,15 @@ const validateFeed = async (req, res, _next) => {
       });
     }
 
-    const feedItem = discoveryResult?.parsedFeed || await parseFeed.process(url);
-    if (!feedItem) {
+    const parsedFeed = discoveryResult?.parsedFeed || await parseFeed.process(url);
+    if (!parsedFeed) {
       return res.status(400).json({
         error_msg: 'Feed has no meta attributes'
       });
     }
 
-    //extract feed data
-    const feed = feedItem.feed;
-
-    //sanity check
-    if (!feed || typeof feed !== "object") {
-      throw new Error("Invalid feed structure");
-    }
-
     //use self link as rss url if available
-    const feedUrl = feedItem.self || url;
+    const feedUrl = parsedFeed.selfUrl || url;
 
     //check if feed already exists
     const existingFeed = await Feed.findOne({
@@ -396,19 +388,19 @@ const validateFeed = async (req, res, _next) => {
 
     // --- Resolve feed title
     const feedName =
-      feed?.title ||
+      parsedFeed.title ||
       null;
 
     // --- Resolve feed description
     const feedDesc =
-      feedItem.format === "rss"
-        ? feed?.description || null
+      parsedFeed.format === "rss"
+        ? parsedFeed.description || null
         : null;
     
     // --- Resolve favicon / image
     const favicon =
-      feedItem.format === "rss"
-        ? feed?.image?.url || null
+      parsedFeed.format === "rss"
+        ? parsedFeed.faviconUrl || null
         : null;
 
     //return feed data to the frontend, the frontend will create the feed by invoking the newFeed endpoint
@@ -417,8 +409,8 @@ const validateFeed = async (req, res, _next) => {
       categoryId,
       feedName,
       feedDesc,
-      feedType: feedItem.format || null,
-      url: feedItem.self || url || req.body.url,
+      feedType: parsedFeed.format || null,
+      url: parsedFeed.selfUrl || url || req.body.url,
       favicon
     });
   } catch (err) {

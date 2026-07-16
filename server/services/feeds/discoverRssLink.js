@@ -1,9 +1,9 @@
 // Discovers valid RSS or Atom feed URLs from website URLs, social profile URLs, or fallback feed paths.
 // It validates candidates by content type and feed parsing, and can persist successful discoveries on feed models.
 import { load } from 'cheerio';
-import { parseFeed } from 'feedsmith';
 import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
 import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
+import { parseFeedSource } from './feedsmith/parseFeed.js';
 
 // Checks whether a string looks like an absolute HTTP(S) URL.
 const isURL = (str) => {
@@ -93,7 +93,7 @@ const isLikelyFeedContentType = (ct = "") => /xml|rss|atom/i.test(ct);
 // Parses a response body once and returns null when it is not a valid feed.
 const parseFeedBody = (body) => {
   try {
-    return parseFeed(String(body));
+    return parseFeedSource(body);
   } catch {
     return null;
   }

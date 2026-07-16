@@ -278,7 +278,7 @@ Duplicate detection is only executed for entries that were **not** matched throu
 
 Its purpose is preventing multiple local articles representing the same information.
 
-Duplicate checks run in this implemented order:
+Duplicate checks run in this architectural order:
 
 1. visible-text hash within the user
 2. original-source hash within the user
@@ -357,17 +357,17 @@ Every persisted non-null `contentHtml` must pass through a single canonical proc
 
 The derived HTML processing flow is:
 
-1. Apply publisher-specific compatibility transforms.
-2. Parse and normalize the document structure.
-3. Recover and normalize media, images, and responsive resources.
-4. Remove unsupported, unsafe, and non-content elements.
-5. Resolve and normalize URLs against the article URL.
-6. Normalize publisher-specific presentation into RSSMonster's canonical HTML structure.
+1. Apply compatibility transforms.
+2. Parse and normalize the document.
+3. Recover media and responsive resources.
+4. Remove unsupported and unsafe elements.
+5. Normalize URLs.
+6. Normalize the document into RSSMonster's canonical representation.
 7. Collect outbound hotlinks.
-8. Sanitize the final HTML using the allowlist policy.
-9. Derive the canonical visible text from the sanitized HTML.
+8. Sanitize.
+9. Derive visible text.
 
-Compatibility transformers live in `compatibility/` and operate only on derived content. They must be conservative, structure-driven, idempotent where practical, and become no-ops when their identifying markup is absent. Compatibility transforms improve publisher compatibility but never replace the final sanitizer.
+Compatibility transforms are modular and may evolve independently without changing the architectural contract.
 
 Plain-text content follows a separate normalization path before entering the canonical content model.
 

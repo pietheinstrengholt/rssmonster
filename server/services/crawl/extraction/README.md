@@ -1,13 +1,12 @@
 Purpose
 
-Converts raw RSS or Atom entry structures into normalized publisher fields and stable source identity inputs.
+Converts RSSMonster canonical entries into normalized publisher fields used by crawl processing.
 
 # Expected responsibilities:
 
-understand RSS, Atom, JSON Feed, and parser field shapes;
-select title, description, content, author, publication, categories, links, GUIDs, and Atom IDs;
-preserve publisher field priority;
-normalize external identity values;
+consume parser-independent canonical entry fields;
+select title, description, content, author, publication, categories, URL, and identity;
+preserve the canonical adapter's publisher field priority;
 generate a fallback title when publisher title is missing;
 return publisher source information without persistence;
 remain deterministic and testable.

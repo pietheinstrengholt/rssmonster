@@ -533,7 +533,8 @@ describe('processArticle AI analysis controls', () => {
         feedName: 'Update feed'
       },
       {
-        guid: { value: 'article-6402680' }
+        externalId: 'article-6402680',
+        externalIdType: 'guid'
       },
       [],
       duplicateCache,
@@ -621,7 +622,7 @@ describe('processArticle AI analysis controls', () => {
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const result = await processArticle(
       { id: 1, userId: 42 },
-      { guid: { value: 'article-6402680' } },
+      { externalId: 'article-6402680', externalIdType: 'guid' },
       [],
       null,
       { count: () => 0 },
@@ -1156,7 +1157,7 @@ describe('processArticle AI analysis controls', () => {
         applyAiAnalysis: false
       },
       {
-        enclosures: [{ url: leadImage.url, type: leadImage.mimeType }]
+        imageCandidates: [leadImage]
       },
       [],
       null,

@@ -61,7 +61,8 @@ describe('discoverRssLink', () => {
     expect(result.url).toBe(rssUrl);
     expect(result.parsedFeed).toMatchObject({
       format: 'atom',
-      feed: { title: 'Reddit' }
+      title: 'Reddit',
+      entries: []
     });
     expect(fetchURL).toHaveBeenCalledTimes(1);
   });

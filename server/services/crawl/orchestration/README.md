@@ -73,7 +73,6 @@ Island scoring
 
 implement HTML sanitization;
 parse feed-specific media;
-contain raw Sequelize query logic;
 calculate URL hashes directly;
 implement tag persistence;
 implement duplicate matching algorithms;

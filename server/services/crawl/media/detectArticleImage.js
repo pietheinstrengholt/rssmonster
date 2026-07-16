@@ -3,7 +3,6 @@ import { load } from 'cheerio';
 import selectLeadImage from './selectLeadImage.js';
 import { selectBestSrcsetCandidate } from '../content/srcset.js';
 
-const FEED_IMAGE_FIELD_NAMES = ['image', 'banner_image', 'thumbnail'];
 const SRCSET_ATTR_NAMES = ['srcset', 'data-srcset'];
 const IMAGE_SOURCE_ATTR_NAMES = [
   'data-src',
@@ -33,14 +32,6 @@ function normalizeImageUrl(value = '', articleUrl = '') {
   }
 }
 
-// This function reads common URL shapes from feed image objects.
-function readUrlValue(value) {
-  if (typeof value === 'string') return value;
-  if (!value || typeof value !== 'object') return null;
-
-  return value.url || value.href || value.src || null;
-}
-
 // This function parses an integer-like dimension from feed or HTML metadata.
 function parseDimension(value) {
   const match = String(value ?? '').match(/\d+/);
@@ -64,30 +55,11 @@ function htmlImageDimensions(attrs, responsiveImage) {
   return { width: responsiveWidth, height: scaledHeight };
 }
 
-// This function returns a normalized MIME type when feed metadata provides one.
+// This function returns a normalized MIME type when candidate metadata provides one.
 function normalizeMimeType(value) {
   if (typeof value !== 'string' || !value.trim()) return null;
   const mimeType = value.trim().toLowerCase();
   return mimeType.startsWith('image/') ? mimeType : null;
-}
-
-// This function normalizes one discovered feed image into a selection candidate.
-function createFeedCandidate(value, articleUrl, source, mimeType = null) {
-  const url = normalizeImageUrl(readUrlValue(value), articleUrl);
-  if (!url) return null;
-
-  const metadata = value && typeof value === 'object' ? value : {};
-
-  return {
-    url,
-    width: parseDimension(metadata.width),
-    height: parseDimension(metadata.height),
-    mimeType: normalizeMimeType(mimeType || metadata.type || metadata.mimeType),
-    source,
-    position: null,
-    alt: typeof metadata.alt === 'string' ? metadata.alt : null,
-    className: null
-  };
 }
 
 // This function extracts candidate images from one HTML fragment.
@@ -133,69 +105,6 @@ function extractHtmlCandidates(html, articleUrl, source) {
   return candidates;
 }
 
-// This function returns nested FeedSmit media:content items.
-function mediaContents(media = {}) {
-  return [
-    ...(Array.isArray(media.contents) ? media.contents : []),
-    ...(Array.isArray(media.group?.contents) ? media.group.contents : []),
-    ...(Array.isArray(media.groups)
-      ? media.groups.flatMap(group => Array.isArray(group.contents) ? group.contents : [])
-      : [])
-  ];
-}
-
-// This function returns nested FeedSmit media:thumbnail items.
-function mediaThumbnails(media = {}) {
-  const contentThumbnails = mediaContents(media)
-    .flatMap(content => Array.isArray(content.thumbnails) ? content.thumbnails : []);
-
-  return [
-    ...(Array.isArray(media.thumbnails) ? media.thumbnails : []),
-    ...(Array.isArray(media.group?.thumbnails) ? media.group.thumbnails : []),
-    ...(Array.isArray(media.groups)
-      ? media.groups.flatMap(group => Array.isArray(group.thumbnails) ? group.thumbnails : [])
-      : []),
-    ...contentThumbnails
-  ];
-}
-
-// This function discovers feed-provided image candidates in the existing source order.
-function detectFeedProvidedImages(entry = {}, articleUrl = '') {
-  const media = entry.media || {};
-  const candidates = [];
-
-  mediaContents(media).forEach(content => {
-    const type = normalizeMimeType(content?.type);
-    const medium = String(content?.medium || '').toLowerCase();
-    if (!type && medium !== 'image') return;
-
-    const candidate = createFeedCandidate(content, articleUrl, 'media-content', type);
-    if (candidate) candidates.push(candidate);
-  });
-
-  mediaThumbnails(media).forEach(thumbnail => {
-    const candidate = createFeedCandidate(thumbnail, articleUrl, 'media-thumbnail');
-    if (candidate) candidates.push(candidate);
-  });
-
-  if (Array.isArray(entry.enclosures)) {
-    entry.enclosures.forEach(enclosure => {
-      const type = normalizeMimeType(enclosure?.type);
-      if (!type) return;
-
-      const candidate = createFeedCandidate(enclosure, articleUrl, 'enclosure', type);
-      if (candidate) candidates.push(candidate);
-    });
-  }
-
-  for (const fieldName of FEED_IMAGE_FIELD_NAMES) {
-    const candidate = createFeedCandidate(entry[fieldName], articleUrl, 'publisher');
-    if (candidate) candidates.push(candidate);
-  }
-
-  return candidates;
-}
-
 // This function detects the best article image using feed metadata, cleaned content, and body fallback.
 export default async function detectArticleImage({
   entry,
@@ -205,7 +114,7 @@ export default async function detectArticleImage({
   description
 } = {}) {
   const candidates = [
-    ...detectFeedProvidedImages(entry, articleUrl),
+    ...(Array.isArray(entry?.imageCandidates) ? entry.imageCandidates : []),
     ...extractHtmlCandidates(contentHtml, articleUrl, 'content')
       .slice(0, MAX_CANDIDATES_PER_HTML_FRAGMENT),
     ...extractHtmlCandidates(content, articleUrl, 'content')
@@ -218,6 +127,5 @@ export default async function detectArticleImage({
 }
 
 export {
-  detectFeedProvidedImages,
   extractHtmlCandidates
 };

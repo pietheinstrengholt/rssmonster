@@ -2,7 +2,7 @@ import { load } from 'cheerio';
 import { describe, it, expect } from 'vitest';
 
 const { default: processHtmlContent } = await import('../../services/crawl/content/processHtmlContent.js');
-const { default: processMedia } = await import('../../services/crawl/media/processMedia.js');
+const { processStructuredMedia: processMedia } = await import('../../services/feeds/feedsmith/normalizeMedia.js');
 
 const feed = {
   id: 10,

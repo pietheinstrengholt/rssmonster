@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import articleIdentityResolver from '../../services/crawl/extraction/articleIdentityResolver.js';
+import articleIdentityResolver from '../../services/feeds/feedsmith/normalizeIdentity.js';
 
 describe('article identity resolver', () => {
   it('resolves a FeedSmith RSS guid as the external identity', () => {
@@ -27,6 +27,16 @@ describe('article identity resolver', () => {
     })).toEqual({
       externalId: 'https://www.theverge.com/?p=963759',
       externalIdType: 'atom-id'
+    });
+  });
+
+  it('resolves a JSON Feed item id without classifying it as an Atom id', () => {
+    expect(articleIdentityResolver({
+      id: 'json-item-1',
+      url: 'https://example.com/json-item-1'
+    }, 'json')).toEqual({
+      externalId: 'json-item-1',
+      externalIdType: 'json-id'
     });
   });
 
