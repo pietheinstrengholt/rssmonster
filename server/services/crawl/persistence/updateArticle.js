@@ -31,6 +31,21 @@ const FINGERPRINT_FIELDS = [
   'description',
   'media'
 ];
+const COMPARABLE_MEDIA_FIELDS = new Set([
+  'type',
+  'provider',
+  'externalId',
+  'url',
+  'embedUrl',
+  'thumbnailUrl',
+  'durationSeconds',
+  'width',
+  'height',
+  'mimeType',
+  'fileSize',
+  'isLive',
+  'items'
+]);
 
 // This function reads a stored value from a Sequelize article or a plain test object.
 const storedValue = (article, field) => typeof article.getDataValue === 'function'
@@ -71,6 +86,19 @@ const stableValue = value => {
   );
 };
 
+// This function selects predictable media attributes and ignores volatile or unknown metadata.
+const comparableMediaValue = value => {
+  if (Array.isArray(value)) return value.map(comparableMediaValue);
+  if (!value || typeof value !== 'object') return value ?? null;
+
+  return Object.fromEntries(
+    Object.keys(value)
+      .filter(key => COMPARABLE_MEDIA_FIELDS.has(key))
+      .sort()
+      .map(key => [key, comparableMediaValue(value[key])])
+  );
+};
+
 // This function normalizes persisted values before deterministic change comparison.
 const comparableValue = (field, value) => {
   if (PUBLISHED_FIELDS.includes(field) && field !== 'publishInferred') {
@@ -78,7 +106,7 @@ const comparableValue = (field, value) => {
     const date = new Date(value);
     return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
   }
-  if (field === 'media') return JSON.stringify(stableValue(value ?? null));
+  if (field === 'media') return JSON.stringify(stableValue(comparableMediaValue(value)));
   return value ?? null;
 };
 
@@ -101,12 +129,42 @@ const diagnosticValue = (field, value) => {
   };
 };
 
+// This function formats one scalar media value with its type for comparison diagnostics.
+const diagnosticMediaScalar = value => ({
+  type: value === null ? 'null' : typeof value,
+  value: value ?? null
+});
+
+// This function returns the exact structured-media leaf values that differ.
+const mediaDifferences = (stored, incoming, path = 'media') => {
+  if (stored === incoming) return [];
+
+  const storedIsObject = stored !== null && typeof stored === 'object';
+  const incomingIsObject = incoming !== null && typeof incoming === 'object';
+  if (!storedIsObject || !incomingIsObject) {
+    return [{
+      path,
+      stored: diagnosticMediaScalar(stored),
+      incoming: diagnosticMediaScalar(incoming)
+    }];
+  }
+
+  const keys = [...new Set([...Object.keys(stored), ...Object.keys(incoming)])].sort();
+  return keys.flatMap(key => mediaDifferences(stored[key], incoming[key], `${path}.${key}`));
+};
+
 // This function logs enough detail to diagnose publisher fields that change on every crawl.
 const logArticleUpdate = ({ feed, article, data, changedFields, storedValues, updateValues }) => {
   const differences = Object.fromEntries(changedFields.map(field => [field, {
     stored: diagnosticValue(field, storedValues[field]),
     incoming: diagnosticValue(field, updateValues[field])
   }]));
+  const structuredMediaDifferences = changedFields.includes('media')
+    ? mediaDifferences(
+        comparableMediaValue(storedValues.media),
+        comparableMediaValue(updateValues.media)
+      )
+    : undefined;
 
   console.info('[CRAWL_ARTICLE_UPDATE]', JSON.stringify({
     articleId: storedValue(article, 'id'),
@@ -115,7 +173,8 @@ const logArticleUpdate = ({ feed, article, data, changedFields, storedValues, up
     externalIdType: data.externalIdType || storedValue(article, 'externalIdType') || null,
     externalId: data.externalId || storedValue(article, 'externalId') || null,
     changedFields,
-    differences
+    differences,
+    mediaDifferences: structuredMediaDifferences
   }));
 };
 

@@ -209,7 +209,7 @@ describe('updateArticle', () => {
       normalizedUrl: 'https://official.example/revised'
     }, { urlChanged: true }],
     ['media', {
-      media: { type: 'video', url: 'https://video.example/watch/1', views: 11 }
+      media: { type: 'video', url: 'https://video.example/watch/2', views: 11 }
     }, { mediaChanged: true }],
     ['lead image', {
       leadImage: {
@@ -230,6 +230,64 @@ describe('updateArticle', () => {
     expect(result.changed).toBe(true);
     expect(result.changes).toMatchObject(expectedChanges);
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
+  });
+
+  it('logs exact comparable structured-media leaf differences including value types', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+
+    await updateArticle(
+      { id: 7, userId: 42, feedName: 'Example feed' },
+      incomingArticle({
+        media: {
+          type: 'video',
+          url: 'https://video.example/watch/2',
+          views: 11,
+          likes: 3
+        }
+      })
+    );
+
+    const payload = JSON.parse(consoleInfo.mock.calls[0][1]);
+    expect(payload).toMatchObject({
+      articleId: 123,
+      feedName: 'Example feed',
+      changedFields: ['media'],
+      mediaDifferences: [{
+        path: 'media.url',
+        stored: { type: 'string', value: 'https://video.example/watch/1' },
+        incoming: { type: 'string', value: 'https://video.example/watch/2' }
+      }]
+    });
+    consoleInfo.mockRestore();
+  });
+
+  it('ignores volatile and unknown structured-media attributes by default', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+
+    const result = await updateArticle(
+      { id: 7, userId: 42 },
+      incomingArticle({
+        media: {
+          type: 'video',
+          url: 'https://video.example/watch/1',
+          views: 11,
+          rating: 4.9,
+          ratingCount: 12,
+          comments: 5,
+          likes: 8,
+          mostRecentUpdate: '2026-07-16T10:00:00Z'
+        }
+      })
+    );
+
+    expect(result).toMatchObject({
+      changed: false,
+      changes: { mediaChanged: false, changedFields: [] }
+    });
+    expect(consoleInfo).not.toHaveBeenCalled();
+    consoleInfo.mockRestore();
   });
 
   it('preserves sparse incoming fields while classifying meaningful values', async () => {
