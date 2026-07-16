@@ -248,6 +248,7 @@ describe('processArticle AI analysis controls', () => {
     );
     expect(result).toEqual({
       newArticles: 1,
+      filteredArticles: 0,
       updatedArticles: 0,
       errors: 0
     });
@@ -337,7 +338,12 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.saveArticle.mock.invocationCallOrder[0]).toBeLessThan(
       mocked.hotlinkSetMany.mock.invocationCallOrder[0]
     );
-    expect(result).toEqual({ newArticles: 1, updatedArticles: 0, errors: 0 });
+    expect(result).toEqual({
+      newArticles: 1,
+      filteredArticles: 0,
+      updatedArticles: 0,
+      errors: 0
+    });
   });
 
   it('generates a missing article title from content before RSS feed metadata', async () => {
@@ -1000,7 +1006,12 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.hotlinkCount).not.toHaveBeenCalled();
     expect(hotlinkBatcher.add).not.toHaveBeenCalled();
     expect(mocked.hotlinkSetMany).not.toHaveBeenCalled();
-    expect(result).toEqual({ newArticles: 1, updatedArticles: 0, errors: 0 });
+    expect(result).toEqual({
+      newArticles: 0,
+      filteredArticles: 1,
+      updatedArticles: 0,
+      errors: 0
+    });
   });
 
   it('does not persist hotlinks when article persistence fails', async () => {
@@ -1200,6 +1211,7 @@ describe('processArticle AI analysis controls', () => {
     );
     expect(result).toEqual({
       newArticles: 1,
+      filteredArticles: 0,
       updatedArticles: 0,
       errors: 0
     });

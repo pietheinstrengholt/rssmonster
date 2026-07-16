@@ -83,6 +83,28 @@ describe('crawl run article statistics', () => {
     });
   });
 
+  it('does not count filtered inserts as new visible articles', async () => {
+    const { user } = await createUserFeed('filteredcrawlstats');
+    mocked.processArticle
+      .mockResolvedValueOnce({
+        newArticles: 0,
+        filteredArticles: 1,
+        updatedArticles: 0,
+        errors: 0
+      })
+      .mockResolvedValueOnce({ newArticles: 0, updatedArticles: 0, errors: 0 });
+
+    await crawlController.performCrawl(user.id);
+
+    const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+
+    expect(crawlRun).toMatchObject({
+      status: 'completed',
+      newArticles: 0,
+      updatedArticles: 0
+    });
+  });
+
   it('persists accumulated totals when the crawl fails after article writes', async () => {
     const { user } = await createUserFeed('failedcrawlstats');
     const crawlError = new Error('Unable to update feed metadata');

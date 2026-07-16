@@ -114,7 +114,8 @@ const processNewArticle = async ({
   }
 
   return {
-    newArticles: 1,
+    newArticles: actionResult.shouldDiscard ? 0 : 1,
+    filteredArticles: actionResult.shouldDiscard ? 1 : 0,
     updatedArticles: 0,
     errors: 0
   };
