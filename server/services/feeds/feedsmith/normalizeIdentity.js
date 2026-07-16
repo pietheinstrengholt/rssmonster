@@ -1,4 +1,5 @@
 import normalizeUrl from '../../crawl/content/normalizeUrl.js';
+import resolveArticleLink from './resolveArticleLink.js';
 
 const MAX_EXTERNAL_ID_LENGTH = 1024;
 
@@ -12,21 +13,9 @@ const normalizeExternalId = value => {
   return externalId;
 };
 
-// This function returns the article URL exposed by RSS or Atom entry shapes.
-const resolveArticleUrl = entry => {
-  const atomLink = entry?.links?.find(link =>
-    link?.href && (!link.rel || link.rel === 'alternate')
-  ) || entry?.links?.find(link => link?.href);
-
-  return normalizeExternalId(atomLink?.href) ||
-    normalizeExternalId(entry?.link) ||
-    normalizeExternalId(entry?.url) ||
-    normalizeExternalId(entry?.external_url);
-};
-
 // This function resolves a normalized complete article URL as the safest fallback identity.
 const resolveNormalizedUrlExternalId = entry => {
-  const articleUrl = resolveArticleUrl(entry);
+  const articleUrl = resolveArticleLink(entry);
   if (!articleUrl) return null;
 
   try {

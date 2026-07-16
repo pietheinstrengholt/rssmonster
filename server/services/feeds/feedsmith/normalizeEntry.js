@@ -1,5 +1,6 @@
 import normalizeIdentity from './normalizeIdentity.js';
 import normalizeMedia from './normalizeMedia.js';
+import resolveArticleLink from './resolveArticleLink.js';
 
 // This function converts parseable feed dates to the stored ISO format.
 const normalizeDate = value => {
@@ -187,9 +188,7 @@ function normalizeEntry(entry, feedFormat = null) {
       .filter(name => !name.includes('|'))
   )];
 
-  const link = entry.links?.find(linkValue =>
-    linkValue?.href && (!linkValue.rel || linkValue.rel === 'alternate')
-  )?.href || entry.links?.[0]?.href || entry.link || entry.url || entry.external_url;
+  const link = resolveArticleLink(entry);
   const content = entry.content?.encoded ||
     entry.content ||
     entry.content_html ||

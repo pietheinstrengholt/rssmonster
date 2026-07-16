@@ -3,6 +3,25 @@ import { describe, expect, it } from 'vitest';
 import { processStructuredMedia as processMedia } from '../../services/feeds/feedsmith/normalizeMedia.js';
 
 describe('processMedia', () => {
+  it('uses the alternate article link as the media base URL', () => {
+    const media = processMedia({
+      link: 'https://fallback.example/articles/item',
+      links: [
+        { rel: 'self', href: 'https://feeds.example/entry' },
+        { rel: 'alternate', href: 'https://publisher.example/articles/item' }
+      ],
+      enclosures: [{
+        url: '/media/audio.mp3',
+        type: 'audio/mpeg'
+      }]
+    });
+
+    expect(media).toEqual(expect.objectContaining({
+      type: 'audio',
+      url: 'https://publisher.example/media/audio.mp3'
+    }));
+  });
+
   it('returns null for a normal article with one JPEG enclosure', () => {
     expect(processMedia({
       link: 'https://www.engadget.com/article',
@@ -268,6 +287,34 @@ describe('processMedia', () => {
       width: 1280,
       height: 720
     });
+  });
+
+  it('normalizes the same Vimeo external id from Media RSS and enclosures', () => {
+    const mediaRss = processMedia({
+      media: {
+        contents: [{
+          url: 'https://player.vimeo.com/video/123456789?h=private',
+          type: 'video/mp4'
+        }]
+      }
+    });
+    const enclosure = processMedia({
+      enclosures: [{
+        url: 'https://vimeo.com/123456789',
+        type: 'video/mp4'
+      }]
+    });
+
+    expect(mediaRss).toEqual(expect.objectContaining({
+      type: 'video',
+      provider: 'vimeo',
+      externalId: '123456789'
+    }));
+    expect(enclosure).toEqual(expect.objectContaining({
+      type: 'video',
+      provider: 'vimeo',
+      externalId: '123456789'
+    }));
   });
 
   it('does not extract unknown or provider-lookalike iframes', () => {

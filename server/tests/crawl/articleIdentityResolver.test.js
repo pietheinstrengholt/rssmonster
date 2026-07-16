@@ -98,6 +98,19 @@ describe('article identity resolver', () => {
     });
   });
 
+  it('uses the alternate article link for normalized URL identity', () => {
+    expect(articleIdentityResolver({
+      link: 'https://example.com/rss-fallback',
+      links: [
+        { rel: 'self', href: 'https://example.com/feed-entry' },
+        { href: 'https://example.com/canonical-article' }
+      ]
+    })).toEqual({
+      externalId: 'https://example.com/canonical-article',
+      externalIdType: 'normalized-url'
+    });
+  });
+
   it('does not guess identities from numeric path segments', () => {
     expect(articleIdentityResolver({
       link: 'https://example.com/articles/1234/title'

@@ -1,6 +1,11 @@
 import { load } from 'cheerio';
 
-import { detectMediaProvider } from '../../../utils/mediaProviderRegistry.js';
+import {
+  detectMediaProvider,
+  mediaProviderExternalId,
+  providerFromUrl
+} from '../../../utils/mediaProviderRegistry.js';
+import resolveArticleLink from './resolveArticleLink.js';
 
 // This function resolves an HTTP(S) media URL against an optional article URL.
 const safeResolvedMediaUrl = (value, baseUrl = null) => {
@@ -103,16 +108,6 @@ const attachmentCandidates = entry => (Array.isArray(entry?.attachments)
     source: 'enclosure'
   }));
 
-// This function returns the first feed URL suitable as the media page URL.
-const entryUrl = entry => {
-  const atomLinks = Array.isArray(entry?.links) ? entry.links : [];
-  const nestedAtomLinks = Array.isArray(entry?.atom?.links) ? entry.atom.links : [];
-  const alternateLink = [...atomLinks, ...nestedAtomLinks]
-    .find(link => !link?.rel || link.rel === 'alternate');
-
-  return firstSafeMediaUrl(entry?.link, alternateLink?.href);
-};
-
 // This function reports whether an article URL matches the narrow NU.nl video route.
 const isNuVideoPage = value => {
   try {
@@ -124,32 +119,11 @@ const isNuVideoPage = value => {
   }
 };
 
-// This function extracts a YouTube video id from supported feed fields and URLs.
-const youtubeVideoId = (entry, urls) => {
-  const feedVideoId = String(entry?.yt?.videoId || '');
-  if (/^[A-Za-z0-9_-]{11}$/.test(feedVideoId)) return feedVideoId;
-
-  for (const value of urls) {
-    try {
-      const parsed = new URL(value);
-      const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
-      let videoId = null;
-
-      if (hostname === 'youtu.be') {
-        videoId = parsed.pathname.split('/').filter(Boolean)[0];
-      } else if (hostname.endsWith('youtube.com')) {
-        videoId = parsed.searchParams.get('v') ||
-          parsed.pathname.match(/^\/(?:embed|shorts|v)\/([^/]+)/)?.[1];
-      }
-
-      if (/^[A-Za-z0-9_-]{11}$/.test(String(videoId || ''))) return videoId;
-    } catch {
-      // Ignore malformed provider URLs and continue checking other feed values.
-    }
-  }
-
-  return null;
-};
+// This function resolves a YouTube video id from supported feed fields and URLs.
+const youtubeVideoId = (entry, urls) => mediaProviderExternalId('youtube', {
+  structuredIds: { youtube: entry?.yt?.videoId },
+  urls
+});
 
 // This function normalizes a feed value to a non-negative integer.
 const nonNegativeInteger = value => {
@@ -177,23 +151,17 @@ const normalizeProviderIframe = (node, articleUrl) => {
 
   const parsed = new URL(sourceUrl);
   const hostname = parsed.hostname.toLowerCase().replace(/^www\./, '');
-  let provider;
-  let externalId;
+  const provider = providerFromUrl(sourceUrl);
+  const externalId = mediaProviderExternalId(provider, { urls: [sourceUrl] });
+  if (!externalId) return null;
+
   let url;
   let embedUrl;
 
   if (['youtube.com', 'youtube-nocookie.com'].includes(hostname)) {
-    externalId = parsed.pathname.match(/^\/embed\/([A-Za-z0-9_-]{11})(?:\/|$)/)?.[1];
-    if (!externalId) return null;
-
-    provider = 'youtube';
     url = `https://www.youtube.com/watch?v=${externalId}`;
     embedUrl = `https://www.youtube-nocookie.com/embed/${externalId}`;
   } else if (hostname === 'player.vimeo.com') {
-    externalId = parsed.pathname.match(/^\/video\/(\d+)(?:\/|$)/)?.[1];
-    if (!externalId) return null;
-
-    provider = 'vimeo';
     url = `https://vimeo.com/${externalId}`;
     embedUrl = sourceUrl;
   } else {
@@ -346,6 +314,10 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type, pageUrl }) =>
     urls,
     metadataValues: [item?.provider, parent?.provider, rawMedia?.provider]
   });
+  const externalId = mediaProviderExternalId(provider, {
+    structuredIds: { youtube: entry?.yt?.videoId },
+    urls
+  });
   const thumbnail = firstSafeResolvedMediaUrl(
     pageUrl,
     item?.thumbnails?.[0]?.url,
@@ -383,7 +355,7 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type, pageUrl }) =>
   const media = {
     type,
     provider,
-    externalId: provider === 'youtube' ? videoId : undefined,
+    externalId,
     url: videoId ? `https://www.youtube.com/watch?v=${videoId}` : (contentUrl || pageUrl || playerUrl),
     embedUrl: videoId
       ? `https://www.youtube-nocookie.com/embed/${videoId}`
@@ -408,7 +380,7 @@ const normalizeCandidate = ({ entry, rawMedia, item, parent, type, pageUrl }) =>
 // This function extracts normalized video, audio, or gallery attributes from a feed entry.
 function processStructuredMedia(entry, htmlContent = null, articleUrl = null) {
   const rawMedia = entry?.media || {};
-  const pageUrl = firstSafeMediaUrl(articleUrl, entryUrl(entry));
+  const pageUrl = firstSafeMediaUrl(articleUrl, resolveArticleLink(entry));
   const candidates = [
     ...mediaCandidates(rawMedia),
     ...enclosureCandidates(entry),

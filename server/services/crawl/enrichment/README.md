@@ -24,12 +24,18 @@ tags
 
 ## Article Content
 perform lightweight AI article analysis;
+create independent default article analysis state;
+apply action-owned analysis score overrides;
 generate summary bullets and tags;
 return advertisement, sentiment, and quality scores;
 normalize and validate AI output;
 respect feed AI settings;
 handle unavailable API keys and rate limits;
 avoid semantic embedding or clustering responsibilities.
+
+## Article Actions
+load user actions when callers have not preloaded them;
+keep action loading shared across new-article and revision workflows.
 
 ## Official Source
 classify whether an article URL belongs to an official source;

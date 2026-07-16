@@ -1,76 +1,18 @@
-import { Op } from 'sequelize';
-
-import db from '../../../models/index.js';
 import applyActions from '../enrichment/applyActions.js';
 import analyzeArticleContent from '../enrichment/analyzeArticleContent.js';
+import {
+  applyAnalysisScoreOverrides,
+  createDefaultArticleAnalysis
+} from '../enrichment/articleAnalysis.js';
+import { resolveArticleActions } from '../enrichment/articleActions.js';
 import { applyArticleUpdate } from '../persistence/updateArticle.js';
-import hotlink from '../../../controllers/hotlink.js';
 import { resolveOfficialSourceForArticle } from '../enrichment/officialSource.js';
+import {
+  countArticleHotlinks,
+  persistAcceptedHotlinks
+} from '../runtime/hotlinkService.js';
 
-const { Action, Hotlink } = db;
 const RATE_LIMIT_DELAY_MS = 3000;
-
-// This function creates independent default analysis state for one article.
-export const createDefaultArticleAnalysis = () => ({
-  contentSummaryBullets: [],
-  tags: [],
-  advertisementScore: 70,
-  sentimentScore: 70,
-  qualityScore: 70
-});
-
-// This function loads actions only when the caller did not preload them.
-export const resolveArticleActions = async (feed, preloadedActions) => preloadedActions ??
-  Action.findAll({ where: { userId: feed.userId } });
-
-// This function applies action-owned score overrides to a fresh analysis result.
-export const applyAnalysisScoreOverrides = (analysis, actionResult) => {
-  const result = {
-    ...analysis,
-    contentSummaryBullets: [...(analysis.contentSummaryBullets || [])],
-    tags: [...(analysis.tags || [])]
-  };
-
-  if (actionResult?.advertisementScore !== null && actionResult?.advertisementScore !== undefined) {
-    result.advertisementScore = actionResult.advertisementScore;
-  }
-  if (actionResult?.qualityScore !== null && actionResult?.qualityScore !== undefined) {
-    result.qualityScore = actionResult.qualityScore;
-  }
-
-  return result;
-};
-
-// This function returns how many other-feed articles link to one normalized article URL.
-export const countArticleHotlinks = async (feed, normalizedUrl, hotlinkCountCache) =>
-  hotlinkCountCache
-    ? hotlinkCountCache.count(normalizedUrl, feed.id)
-    : Hotlink.count({
-        where: {
-          userId: feed.userId,
-          feedId: { [Op.ne]: feed.id },
-          [Op.or]: [
-            { url: normalizedUrl },
-            { url: { [Op.like]: `${normalizedUrl}?%` } }
-          ]
-        }
-      });
-
-// This function persists collected hotlinks only after their source article is accepted.
-export const persistAcceptedHotlinks = async (urls, feed, hotlinkBatcher) => {
-  if (!urls.length) return;
-
-  try {
-    if (hotlinkBatcher) {
-      hotlinkBatcher.add(urls);
-      return;
-    }
-
-    await hotlink.setMany(urls, feed.id, feed.userId);
-  } catch (err) {
-    console.error(`Error saving hotlinks for accepted article in feed ${feed.id}:`, err);
-  }
-};
 
 // This function snapshots the identities that a committed article update may replace in the cache.
 const buildDuplicateCacheArticleState = article => ({

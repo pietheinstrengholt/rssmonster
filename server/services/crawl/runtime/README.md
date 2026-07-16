@@ -6,6 +6,8 @@ Contains crawl-run-local caches, batchers, and optimization state.
 
 batch hotlink writes;
 cache repeated hotlink counts;
+count article hotlinks through crawl-local caches or the database fallback;
+persist accepted hotlinks through batching or the controller fallback;
 store crawl-local optimization state;
 expose explicit initialization and flush behavior;
 remain scoped to one crawl or serialized user crawl;

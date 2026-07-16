@@ -46,6 +46,19 @@ describe('extract entry fields', () => {
     expect(fields.published).toBe('2026-07-05T13:15:00.000Z');
   });
 
+  it('prefers an alternate article link over other links and entry.link', () => {
+    const fields = normalizeEntry({
+      title: 'Article',
+      link: 'https://example.com/rss-fallback',
+      links: [
+        { rel: 'self', href: 'https://example.com/feed-entry' },
+        { rel: 'alternate', href: 'https://example.com/canonical-article' }
+      ]
+    });
+
+    expect(fields.url).toBe('https://example.com/canonical-article');
+  });
+
   it('maps feed summary or description to description without inventing a fallback', () => {
     expect(normalizeEntry({
       title: 'Article',

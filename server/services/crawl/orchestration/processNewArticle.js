@@ -1,19 +1,22 @@
 import applyActions from '../enrichment/applyActions.js';
 import analyzeArticleContent from '../enrichment/analyzeArticleContent.js';
 import {
+  applyAnalysisScoreOverrides,
+  createDefaultArticleAnalysis
+} from '../enrichment/articleAnalysis.js';
+import { resolveArticleActions } from '../enrichment/articleActions.js';
+import {
   createEmptyOfficialSource,
   resolveOfficialSourceForArticle
 } from '../enrichment/officialSource.js';
 import saveArticle from '../persistence/saveArticle.js';
 import { buildArticleIdentity, matchArticleDuplicate } from '../identity/articleDuplicateMatcher.js';
 import updateArticle from '../persistence/updateArticle.js';
-import processArticleRevision, {
-  applyAnalysisScoreOverrides,
+import {
   countArticleHotlinks,
-  createDefaultArticleAnalysis,
-  persistAcceptedHotlinks,
-  resolveArticleActions
-} from './processArticleRevision.js';
+  persistAcceptedHotlinks
+} from '../runtime/hotlinkService.js';
+import processArticleRevision from './processArticleRevision.js';
 
 const RATE_LIMIT_DELAY_MS = 3000;
 const emptyArticleResult = {

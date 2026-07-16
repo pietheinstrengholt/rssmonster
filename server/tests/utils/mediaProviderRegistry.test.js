@@ -4,6 +4,7 @@ import {
   MEDIA_PROVIDER_REGISTRY,
   detectMediaProvider,
   isKnownMediaProvider,
+  mediaProviderExternalId,
   providerFromMetadata,
   providerFromUrl
 } from '../../utils/mediaProviderRegistry.js';
@@ -56,5 +57,23 @@ describe('mediaProviderRegistry', () => {
     expect(isKnownMediaProvider('YouTube')).toBe(false);
     expect(isKnownMediaProvider('youtube.com')).toBe(false);
     expect(isKnownMediaProvider('jwplayer')).toBe(false);
+  });
+
+  it('resolves provider-specific external ids from structured data and URLs', () => {
+    expect(mediaProviderExternalId('youtube', {
+      structuredIds: { youtube: 'gZUDEBbZSp4' }
+    })).toBe('gZUDEBbZSp4');
+    expect(mediaProviderExternalId('youtube', {
+      urls: ['https://www.youtube.com/watch?v=gZUDEBbZSp4']
+    })).toBe('gZUDEBbZSp4');
+    expect(mediaProviderExternalId('vimeo', {
+      urls: ['https://player.vimeo.com/video/123456789?h=private']
+    })).toBe('123456789');
+    expect(mediaProviderExternalId('vimeo', {
+      urls: ['https://vimeo.com/123456789']
+    })).toBe('123456789');
+    expect(mediaProviderExternalId('spotify', {
+      urls: ['https://open.spotify.com/episode/example']
+    })).toBeNull();
   });
 });
