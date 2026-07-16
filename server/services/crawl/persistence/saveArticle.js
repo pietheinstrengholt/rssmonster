@@ -1,6 +1,5 @@
 import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
-import { resolveOfficialSourceForArticle } from '../enrichment/officialSource.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
 
 const { Article, sequelize } = db;
@@ -102,9 +101,6 @@ async function saveArticle(feed, data, analysis, actionResult) {
   }
 
   const isDiscardMatch = actionResult?.shouldDiscard === true;
-  const officialSource = isDiscardMatch
-    ? { isOfficialSource: false, officialOrganization: null }
-    : await resolveOfficialSourceForArticle(feed.userId, data.link);
   const articleValues = buildArticlePersistenceValues(feed, {
     ...data,
     status: actionResult.status,
@@ -114,8 +110,8 @@ async function saveArticle(feed, data, analysis, actionResult) {
     hotInd: isDiscardMatch ? undefined : data.hotInd ?? actionResult.hotInd,
     hotlinks: isDiscardMatch ? undefined : data.hotlinks,
     contentSummaryBullets: analysis?.contentSummaryBullets,
-    isOfficialSource: officialSource.isOfficialSource,
-    officialOrganization: officialSource.officialOrganization,
+    isOfficialSource: data.isOfficialSource,
+    officialOrganization: data.officialOrganization,
     advertisementScore: analysis?.advertisementScore,
     sentimentScore: analysis?.sentimentScore,
     qualityScore: analysis?.qualityScore,

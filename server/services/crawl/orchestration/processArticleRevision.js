@@ -12,7 +12,6 @@ const RATE_LIMIT_DELAY_MS = 3000;
 
 // This function creates independent default analysis state for one article.
 export const createDefaultArticleAnalysis = () => ({
-  summary: null,
   contentSummaryBullets: [],
   tags: [],
   advertisementScore: 70,
@@ -154,13 +153,13 @@ const processArticleRevision = async ({
     analysis = precomputedAnalysis || (
       feed?.applyAiAnalysis === false
         ? createDefaultArticleAnalysis()
-        : await analyzeArticleContent(
-            articleData.analysisHtml,
-            articleData.title,
-            articleData.categories,
-            feed?.feedName || '',
-            RATE_LIMIT_DELAY_MS
-          )
+        : await analyzeArticleContent({
+            text: articleData.analysisText,
+            title: articleData.title,
+            categories: articleData.categories,
+            feedName: feed?.feedName || '',
+            rateLimitDelayMs: RATE_LIMIT_DELAY_MS
+          })
     );
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
   }

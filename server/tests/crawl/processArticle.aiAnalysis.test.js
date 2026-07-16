@@ -75,6 +75,10 @@ vi.mock('../../services/crawl/persistence/updateArticle.js', () => ({
 }));
 
 vi.mock('../../services/crawl/enrichment/officialSource.js', () => ({
+  createEmptyOfficialSource: () => ({
+    isOfficialSource: false,
+    officialOrganization: null
+  }),
   resolveOfficialSourceForArticle: mocked.resolveOfficialSourceForArticle
 }));
 
@@ -178,7 +182,6 @@ describe('processArticle AI analysis controls', () => {
       qualityScore: null
     });
     mocked.analyzeArticleContent.mockResolvedValue({
-      summary: 'Updated summary',
       contentSummaryBullets: ['Updated bullet'],
       tags: ['updated-generated'],
       advertisementScore: 80,
@@ -223,13 +226,18 @@ describe('processArticle AI analysis controls', () => {
       '<p>Article body</p>',
       'https://example.com/article'
     );
+    expect(mocked.resolveOfficialSourceForArticle).toHaveBeenCalledWith(
+      42,
+      'https://example.com/article'
+    );
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
-        contentText: 'Article body with enough text to save.'
+        contentText: 'Article body with enough text to save.',
+        isOfficialSource: false,
+        officialOrganization: null
       }),
       {
-        summary: null,
         contentSummaryBullets: [],
         tags: [],
         advertisementScore: 70,
@@ -970,6 +978,7 @@ describe('processArticle AI analysis controls', () => {
     );
 
     expect(mocked.analyzeArticleContent).not.toHaveBeenCalled();
+    expect(mocked.resolveOfficialSourceForArticle).not.toHaveBeenCalled();
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.objectContaining({ id: 1, userId: 42 }),
       expect.objectContaining({
@@ -977,7 +986,9 @@ describe('processArticle AI analysis controls', () => {
         contentHtml: '<p>Rejected body</p>',
         contentText: 'Rejected body',
         contentSourceHash: 'rejected-content-hash',
-        contentTextHash: 'rejected-text-hash'
+        contentTextHash: 'rejected-text-hash',
+        isOfficialSource: false,
+        officialOrganization: null
       }),
       null,
       expect.objectContaining({
@@ -1057,13 +1068,13 @@ describe('processArticle AI analysis controls', () => {
       description: '<p>Raw <strong>feed</strong> description</p>',
       url: 'https://example.com/description-only'
     });
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
-      '<p>Raw feed description</p>',
-      'Description-only article',
-      [],
-      'Description feed',
-      3000
-    );
+    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith({
+      text: 'Raw feed description',
+      title: 'Description-only article',
+      categories: [],
+      feedName: 'Description feed',
+      rateLimitDelayMs: 3000
+    });
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
@@ -1117,13 +1128,13 @@ describe('processArticle AI analysis controls', () => {
       description,
       url: 'https://example.com/description-update'
     });
-    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith(
-      `<p>${description}</p>`,
-      'Description update',
-      ['Updates'],
-      'Description update feed',
-      3000
-    );
+    expect(mocked.analyzeArticleContent).toHaveBeenCalledWith({
+      text: description,
+      title: 'Description update',
+      categories: ['Updates'],
+      feedName: 'Description update feed',
+      rateLimitDelayMs: 3000
+    });
     expect(mocked.applyArticleUpdate).toHaveBeenCalledTimes(1);
     expect(result).toMatchObject({ updatedArticles: 1, errors: 0 });
   });

@@ -6,7 +6,7 @@ import { normalizeTagName } from '../persistence/tags.js';
    OpenAI analysis (rate limited)
    ------------------------------------------------------
    Generates:
-   - summary
+   - summary bullets
    - tags
    - advertisement score
    - sentiment score
@@ -24,8 +24,7 @@ let openAIQueue = Promise.resolve();
 let rateLimitDelay = 0;
 
 // Default analysis result when no API key is present
-const defaultAnalysis = text => ({
-  summary: text,
+const defaultAnalysis = () => ({
   contentSummaryBullets: [],
   tags: [],
   advertisementScore: 70,
@@ -43,13 +42,20 @@ const truncateContentForLLM = (text, maxChars = 3500) => {
   return `${head}\n...\n${tail}`;
 };
 
-async function analyzeArticleContent(contentHtml, title, categoryNames, feedName, RATE_LIMIT_DELAY_MS) {
+// This function analyzes canonical visible article text with OpenAI.
+async function analyzeArticleContent({
+  text,
+  title,
+  categories: categoryNames,
+  feedName,
+  rateLimitDelayMs = 0
+}) {
   const categories = Array.isArray(categoryNames) ? categoryNames : [];
 
   // Normalize category names
   const normalizeGeneratedTag = tag =>
     normalizeTagName(tag)
-      .replace(/[^a-z0-9]/g, '')
+      .replace(/[^\p{L}\p{N}]/gu, '')
       .slice(0, 32);
 
   // Check if feed provides categories to use as tags
@@ -59,7 +65,7 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
     : [];
 
   // Start with default analysis
-  let analysis = defaultAnalysis(contentHtml);
+  let analysis = defaultAnalysis();
 
   // Apply feed category tags when available
   if (hasFeedCategories) {
@@ -72,7 +78,7 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
   }
 
   // Skip analysis for very short content
-  if (!contentHtml || contentHtml.trim().length < 200) {
+  if (!text || text.trim().length < 200) {
     return analysis;
   }
 
@@ -89,8 +95,8 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
 
   // Skip OpenAI analysis for very short content (tags already set if categories exist)
   if (
-    typeof contentHtml === 'string' &&
-    contentHtml.length < 500
+    typeof text === 'string' &&
+    text.length < 500
   ) {
     return analysis;
   }
@@ -121,18 +127,12 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
       "",
       "Follow these rules EXACTLY:",
       "",
-      "1) Write a paragraph summary:",
-      "   - Short articles: up to 5 sentences",
-      "   - Long articles: 10-20 sentences",
-      "   - Focus strictly on factual information and key points",
-      "   - No opinions, speculation, or exaggeration",
-      "",
-      "2) Write 3-6 bullet point summaries (contentSummaryBullets):",
+      "1) Write 3-6 bullet point summaries (contentSummaryBullets):",
       "   - Each bullet expresses ONE clear fact or takeaway",
       "   - No filler, no commentary, no subjective language",
       "   - Each bullet must stand on its own",
       "",
-      "3) Provide 3-5 SEO-friendly tags:",
+      "2) Provide 3-5 SEO-friendly tags:",
       "   - EXACTLY one word per tag (no spaces)",
       "   - lowercase only",
       "   - no punctuation or symbols",
@@ -175,7 +175,7 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
       "   - At least 2 tags must refer to concrete entities or mechanisms.",
       "   - Avoid multiple tags that represent the same concept with minor wording changes.",
       "",
-      "4) Score the article from 0-100 using the following definitions:",
+      "3) Score the article from 0-100 using the following definitions:",
       "",
       "   SCORING CONSTRAINTS (MANDATORY):",
       "   - Scores MUST be one of: 0,10,20,30,40,50,60,70,80,90,100",
@@ -220,14 +220,14 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
       "STRICT OUTPUT RULES:",
       "- Return ONLY valid JSON",
       "- Use EXACTLY these keys:",
-      "  summary, contentSummaryBullets, tags, advertisementScore, sentimentScore, qualityScore",
+      "  contentSummaryBullets, tags, advertisementScore, sentimentScore, qualityScore",
       "",
       `Feed Name: ${feedName || 'unknown'}`,
       `Article Title: ${title}`,
       `Article Categories: ${categories.join(', ')}`,
       "Article Content:",
       "```",
-      truncateContentForLLM(contentHtml),
+      truncateContentForLLM(text),
       "```"
     ].join('\n');
 
@@ -252,10 +252,6 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
         }
 
         analysis = {
-          summary:
-            typeof parsed.summary === 'string' && parsed.summary.length > 0
-              ? parsed.summary
-              : contentHtml,
           contentSummaryBullets: Array.isArray(parsed.contentSummaryBullets)
             ? parsed.contentSummaryBullets
                 .filter(b => typeof b === 'string' && b.trim().length > 0)
@@ -280,7 +276,7 @@ async function analyzeArticleContent(contentHtml, title, categoryNames, feedName
           err.message?.includes('429') ||
           err.message?.toLowerCase().includes('rate limit')
         ) {
-          rateLimitDelay = RATE_LIMIT_DELAY_MS;
+          rateLimitDelay = rateLimitDelayMs;
           console.warn('[OpenAI LLM] Rate limit hit, enabling delay for subsequent requests');
         }
         console.error('Error analyzing content:', err.message);

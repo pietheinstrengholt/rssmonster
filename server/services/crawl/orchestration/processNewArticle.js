@@ -1,5 +1,9 @@
 import applyActions from '../enrichment/applyActions.js';
 import analyzeArticleContent from '../enrichment/analyzeArticleContent.js';
+import {
+  createEmptyOfficialSource,
+  resolveOfficialSourceForArticle
+} from '../enrichment/officialSource.js';
 import saveArticle from '../persistence/saveArticle.js';
 import { buildArticleIdentity, matchArticleDuplicate } from '../identity/articleDuplicateMatcher.js';
 import updateArticle from '../persistence/updateArticle.js';
@@ -38,31 +42,36 @@ const processNewArticle = async ({
   const actionResult = applyActions(actions, actionArticle);
 
   let analysis = null;
-  let persistenceData = articleData;
+  let hotlinkCount = 0;
   if (!actionResult.shouldDiscard) {
     analysis = feed?.applyAiAnalysis === false
       ? createDefaultArticleAnalysis()
-      : await analyzeArticleContent(
-        articleData.analysisHtml,
-        articleData.title,
-        articleData.categories,
-        feed?.feedName || '',
-        RATE_LIMIT_DELAY_MS
-      );
+      : await analyzeArticleContent({
+        text: articleData.analysisText,
+        title: articleData.title,
+        categories: articleData.categories,
+        feedName: feed?.feedName || '',
+        rateLimitDelayMs: RATE_LIMIT_DELAY_MS
+      });
     analysis = applyAnalysisScoreOverrides(analysis, actionResult);
 
     // Hotness is derived only for articles accepted into the normal reading pipeline.
-    const hotlinkCount = await countArticleHotlinks(
+    hotlinkCount = await countArticleHotlinks(
       feed,
       articleData.normalizedUrl,
       hotlinkCountCache
     );
-    persistenceData = {
-      ...articleData,
-      hotInd: hotlinkCount > 0,
-      hotlinks: hotlinkCount
-    };
   }
+
+  const officialSource = actionResult.shouldDiscard
+    ? createEmptyOfficialSource()
+    : await resolveOfficialSourceForArticle(feed.userId, articleData.link);
+  const persistenceData = {
+    ...articleData,
+    ...officialSource,
+    hotInd: hotlinkCount > 0,
+    hotlinks: hotlinkCount
+  };
 
   // Filtered articles remain eligible for publisher identity matching,
   // but must not suppress active articles through content hashes.

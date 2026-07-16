@@ -32,7 +32,6 @@ describe('analyzeArticleContent response validation', () => {
       choices: [{
         message: {
           content: JSON.stringify({
-            summary: 'Validated summary',
             contentSummaryBullets: [],
             tags: [],
             sentimentScore: 'invalid',
@@ -46,14 +45,15 @@ describe('analyzeArticleContent response validation', () => {
       '../../services/crawl/enrichment/analyzeArticleContent.js'
     );
     const content = 'Article content '.repeat(40);
-    const result = await analyzeArticleContent(
-      content,
-      'Validation test',
-      'not-an-array',
-      'Test feed',
-      0
-    );
+    const result = await analyzeArticleContent({
+      text: content,
+      title: 'Validation test',
+      categories: 'not-an-array',
+      feedName: 'Test feed',
+      rateLimitDelayMs: 0
+    });
 
+    expect(result).not.toHaveProperty('summary');
     expect(result.advertisementScore).toBe(70);
     expect(result.sentimentScore).toBe(70);
     expect(result.qualityScore).toBe(90);
@@ -61,5 +61,39 @@ describe('analyzeArticleContent response validation', () => {
     const prompt = completionsCreate.mock.calls[0][0].messages[1].content;
     expect(prompt).toContain('Article Categories: \n');
     expect(prompt).not.toContain('not-an-array');
+    expect(prompt).not.toContain('paragraph summary');
+  });
+
+  it('preserves Unicode letters and numbers in generated tags', async () => {
+    completionsCreate.mockResolvedValue({
+      choices: [{
+        message: {
+          content: JSON.stringify({
+            contentSummaryBullets: [],
+            tags: ['日本-経済', 'الذكاء الاصطناعي', 'Квантовые-технологии'],
+            advertisementScore: 70,
+            sentimentScore: 70,
+            qualityScore: 70
+          })
+        }
+      }]
+    });
+
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+    const result = await analyzeArticleContent({
+      text: 'Multilingual article content '.repeat(30),
+      title: 'Multilingual tags',
+      categories: [],
+      feedName: 'Test feed',
+      rateLimitDelayMs: 0
+    });
+
+    expect(result.tags).toEqual([
+      '日本経済',
+      'الذكاءالاصطناعي',
+      'квантовыетехнологии'
+    ]);
   });
 });

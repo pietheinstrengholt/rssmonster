@@ -2,6 +2,14 @@ import db from '../../../models/index.js';
 
 const { OfficialSource } = db;
 
+// This function returns empty official-source metadata.
+export function createEmptyOfficialSource() {
+  return {
+    isOfficialSource: false,
+    officialOrganization: null
+  };
+}
+
 // This function normalizes a URL or domain string into a hostname.
 export function normalizeSourceHostname(value) {
   const trimmedValue = String(value || '').trim().toLowerCase();
@@ -36,18 +44,12 @@ export function doesHostnameMatchSourceDomain(hostname, sourceDomain) {
 // This function resolves official-source metadata for an article URL.
 export async function resolveOfficialSourceForArticle(userId, articleUrl) {
   if (!userId || !articleUrl) {
-    return {
-      isOfficialSource: false,
-      officialOrganization: null
-    };
+    return createEmptyOfficialSource();
   }
 
   const articleHostname = normalizeSourceHostname(articleUrl);
   if (!articleHostname) {
-    return {
-      isOfficialSource: false,
-      officialOrganization: null
-    };
+    return createEmptyOfficialSource();
   }
 
   const sources = await OfficialSource.findAll({
@@ -64,10 +66,7 @@ export async function resolveOfficialSourceForArticle(userId, articleUrl) {
     .sort((left, right) => right.domain.length - left.domain.length)[0];
 
   if (!matchingSource) {
-    return {
-      isOfficialSource: false,
-      officialOrganization: null
-    };
+    return createEmptyOfficialSource();
   }
 
   return {

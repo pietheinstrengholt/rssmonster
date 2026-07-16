@@ -188,11 +188,7 @@ describe('saveArticle feed tags', () => {
     expect(mocked.sequelizeTransaction).toHaveBeenCalledTimes(1);
   });
 
-  it('marks articles from official source domains', async () => {
-    mocked.officialSourceFindAll.mockResolvedValue([
-      { entity: 'Nintendo', domain: 'nintendo.com' }
-    ]);
-
+  it('persists supplied official-source metadata', async () => {
     const { default: saveArticle } = await import('../../services/crawl/persistence/saveArticle.js');
 
     await saveArticle(
@@ -208,6 +204,8 @@ describe('saveArticle feed tags', () => {
         contentOriginal: '<p>Body</p>',
         contentHtml: 'Body',
         contentSourceHash: 'hash',
+        isOfficialSource: true,
+        officialOrganization: 'Nintendo',
         media: null,
         language: 'en',
         published: new Date('2026-07-01T00:00:00Z')
@@ -236,6 +234,7 @@ describe('saveArticle feed tags', () => {
       }),
       { transaction: mocked.transaction }
     );
+    expect(mocked.officialSourceFindAll).not.toHaveBeenCalled();
   });
 
   it('stores discard matches without official-source or tag enrichment', async () => {
