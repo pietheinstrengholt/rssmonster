@@ -1,3 +1,4 @@
+import { createHash } from 'node:crypto';
 import db from '../../../models/index.js';
 import buildArticlePersistenceValues, {
   selectMutableArticleSourceValues
@@ -23,6 +24,13 @@ const LEAD_IMAGE_FIELDS = [
   'imageSource'
 ];
 const PUBLISHED_FIELDS = ['published', 'publishedSource', 'publishInferred'];
+const FINGERPRINT_FIELDS = [
+  'contentOriginal',
+  'contentHtml',
+  'contentText',
+  'description',
+  'media'
+];
 
 // This function reads a stored value from a Sequelize article or a plain test object.
 const storedValue = (article, field) => typeof article.getDataValue === 'function'
@@ -77,6 +85,39 @@ const comparableValue = (field, value) => {
 // This function returns the exact persisted source fields that changed.
 const changedFieldsBetween = (incoming, stored) => Object.keys(incoming)
   .filter(field => comparableValue(field, incoming[field]) !== comparableValue(field, stored[field]));
+
+// This function summarizes large publisher values without exposing article contents in logs.
+const diagnosticValue = (field, value) => {
+  const comparable = comparableValue(field, value);
+  if (comparable === null || !FINGERPRINT_FIELDS.includes(field)) return comparable;
+
+  const serialized = typeof comparable === 'string'
+    ? comparable
+    : JSON.stringify(comparable);
+
+  return {
+    length: serialized.length,
+    sha256: createHash('sha256').update(serialized).digest('hex').slice(0, 16)
+  };
+};
+
+// This function logs enough detail to diagnose publisher fields that change on every crawl.
+const logArticleUpdate = ({ feed, article, data, changedFields, storedValues, updateValues }) => {
+  const differences = Object.fromEntries(changedFields.map(field => [field, {
+    stored: diagnosticValue(field, storedValues[field]),
+    incoming: diagnosticValue(field, updateValues[field])
+  }]));
+
+  console.info('[CRAWL_ARTICLE_UPDATE]', JSON.stringify({
+    articleId: storedValue(article, 'id'),
+    feedId: feed.id,
+    feedName: feed.feedName || null,
+    externalIdType: data.externalIdType || storedValue(article, 'externalIdType') || null,
+    externalId: data.externalId || storedValue(article, 'externalId') || null,
+    changedFields,
+    differences
+  }));
+};
 
 // This function creates the explicit deterministic change classification.
 const classifyChanges = changedFields => {
@@ -239,6 +280,17 @@ async function updateArticle(feed, data, options = {}) {
   const storedValues = buildStoredSourceValues(feed, article);
   const changedFields = changedFieldsBetween(updateValues, storedValues);
   const changes = classifyChanges(changedFields);
+
+  if (changedFields.length > 0) {
+    logArticleUpdate({
+      feed,
+      article,
+      data,
+      changedFields,
+      storedValues,
+      updateValues
+    });
+  }
 
   return {
     article,

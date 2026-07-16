@@ -138,6 +138,7 @@ describe('updateArticle', () => {
   });
 
   it('classifies changed body fields without mutating the article', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
     const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
       contentOriginal: '<p>Revised body</p>',
@@ -168,6 +169,36 @@ describe('updateArticle', () => {
       }
     });
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
+
+    expect(consoleInfo).toHaveBeenCalledOnce();
+    const [prefix, payload] = consoleInfo.mock.calls[0];
+    expect(prefix).toBe('[CRAWL_ARTICLE_UPDATE]');
+    expect(JSON.parse(payload)).toMatchObject({
+      articleId: 123,
+      feedId: 7,
+      externalIdType: 'guid',
+      externalId: 'publisher-id',
+      changedFields: [
+        'contentOriginal',
+        'contentHtml',
+        'contentText',
+        'contentSourceHash',
+        'contentTextHash'
+      ],
+      differences: {
+        contentOriginal: {
+          stored: { length: 19, sha256: expect.any(String) },
+          incoming: { length: 19, sha256: expect.any(String) }
+        },
+        contentSourceHash: {
+          stored: 'source-hash',
+          incoming: 'revised-source-hash'
+        }
+      }
+    });
+    expect(payload).not.toContain('<p>Article body</p>');
+    expect(payload).not.toContain('<p>Revised body</p>');
+    consoleInfo.mockRestore();
   });
 
   it.each([
