@@ -182,8 +182,8 @@ describe('updateArticle', () => {
         'contentOriginal',
         'contentHtml',
         'contentText',
-        'contentSourceHash',
-        'contentTextHash'
+        'contentTextHash',
+        'contentSourceHash'
       ],
       differences: {
         contentOriginal: {
