@@ -146,7 +146,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Article body</p>',
       description: 'Article description',
       categories: ['AI'],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.resolveUrlPublishedDate.mockReturnValue(null);
     mocked.buildArticleIdentity.mockImplementation(identity => ({
@@ -157,7 +157,7 @@ describe('processArticle AI analysis controls', () => {
       normalizedUrl: identity.normalizedUrl,
       contentSourceHash: identity.contentSourceHash,
       contentTextHash: identity.contentTextHash,
-      published: identity.published
+      publishedAt: identity.publishedAt
     }));
     mocked.matchArticleDuplicate.mockResolvedValue(null);
     mocked.processMedia.mockReturnValue({});
@@ -201,6 +201,37 @@ describe('processArticle AI analysis controls', () => {
       Promise.resolve(updatePlan.article)
     );
     mocked.detectArticleImage.mockResolvedValue(null);
+  });
+
+  it.each([
+    ['a JavaScript URL', 'javascript:alert(1)'],
+    ['a data URL', 'data:text/html,<script>alert(1)</script>'],
+    ['a protocol-relative URL', '//example.com/article'],
+    ['a relative URL', '/article']
+  ])('rejects %s before processing or persistence', async (_label, link) => {
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Unsafe article',
+      link,
+      content: '<p>Article body</p>',
+      description: 'Article description',
+      categories: [],
+      publishedAt: new Date('2026-07-01T00:00:00Z')
+    });
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+
+    const result = await processArticle(
+      { id: 1, userId: 42, feedName: 'Unsafe URL feed' },
+      {},
+      [],
+      null,
+      null,
+      null
+    );
+
+    expect(result).toEqual({ newArticles: 0, updatedArticles: 0, errors: 0 });
+    expect(mocked.processHtmlContent).not.toHaveBeenCalled();
+    expect(mocked.updateArticle).not.toHaveBeenCalled();
+    expect(mocked.saveArticle).not.toHaveBeenCalled();
   });
 
   it('skips OpenAI analysis when the feed disables AI analysis', async () => {
@@ -355,7 +386,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Body sentence. More body.</p>',
       description: 'Description sentence. More description.',
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.processHtmlContent.mockReturnValue({
       content: '<p>Body sentence. More body.</p>',
@@ -395,7 +426,7 @@ describe('processArticle AI analysis controls', () => {
       content: null,
       description: '<p>Description title. More description.</p>',
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
 
     await processArticle(
@@ -426,7 +457,7 @@ describe('processArticle AI analysis controls', () => {
       content: null,
       description: '<p><br><img src="https://example.com/pixel.gif"></p>',
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
 
     await processArticle(
@@ -457,7 +488,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Content title? More content.</p>',
       description: null,
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.processHtmlContent.mockReturnValue({
       content: '<p>Content title? More content.</p>',
@@ -494,7 +525,7 @@ describe('processArticle AI analysis controls', () => {
       urlHash: 'old-url-hash',
       normalizedUrlHash: 'old-normalized-url-hash',
       title: 'Old article title',
-      published: new Date('2026-07-01T00:00:00Z'),
+      publishedAt: new Date('2026-07-01T00:00:00Z'),
       contentTextHash: 'old-text-hash',
       contentSourceHash: 'old-source-hash',
       filteredInd: true
@@ -590,7 +621,7 @@ describe('processArticle AI analysis controls', () => {
       urlHash: 'old-url-hash',
       normalizedUrlHash: 'old-normalized-url-hash',
       title: 'Old article title',
-      published: new Date('2026-07-01T00:00:00Z'),
+      publishedAt: new Date('2026-07-01T00:00:00Z'),
       contentTextHash: 'old-text-hash',
       contentSourceHash: 'old-source-hash'
     }, storedArticle);
@@ -717,7 +748,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Article body</p>',
       description: 'Article description',
       categories: ['AI'],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({ urlChanged: true }, {
       url: 'https://official.example/revised',
@@ -1054,7 +1085,7 @@ describe('processArticle AI analysis controls', () => {
       content: null,
       description: '<p>Raw <strong>feed</strong> description</p>',
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
 
     await processArticle(
@@ -1110,7 +1141,7 @@ describe('processArticle AI analysis controls', () => {
       content: null,
       description,
       categories: ['Updates'],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.updateArticle.mockResolvedValue(changedUpdatePlan({
       descriptionChanged: true,
@@ -1166,7 +1197,7 @@ describe('processArticle AI analysis controls', () => {
       content: null,
       description: null,
       categories: ['Photography'],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.processMedia.mockReturnValue(null);
     mocked.detectArticleImage.mockResolvedValue(leadImage);
@@ -1226,7 +1257,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Article body</p>',
       description: '<p>Raw <strong>feed</strong> description</p>',
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
 
     await processArticle(
@@ -1271,7 +1302,7 @@ describe('processArticle AI analysis controls', () => {
       content,
       description,
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.decodeHtmlEntities.mockImplementation(value => value.replace('&amp;', '&'));
     mocked.processHtmlContent.mockReturnValue({
@@ -1338,7 +1369,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<img src="https://example.com/disruption.jpg">',
       description,
       categories: [],
-      published: new Date('2026-07-01T00:00:00Z')
+      publishedAt: new Date('2026-07-01T00:00:00Z')
     });
     mocked.processHtmlContent.mockReturnValue({
       content: '<img src="https://example.com/disruption.jpg">',
@@ -1409,7 +1440,7 @@ describe('processArticle AI analysis controls', () => {
     });
   });
 
-  it('uses feed-level published fallback when the entry has no date', async () => {
+  it('uses feed-level publishedAt fallback when the entry has no date', async () => {
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const feedFallback = '2026-07-08T10:00:00.000Z';
 
@@ -1419,7 +1450,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Article body</p>',
       description: 'Article description',
       categories: ['AI'],
-      published: null
+      publishedAt: null
     });
 
     await processArticle(
@@ -1441,7 +1472,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
-        published: feedFallback,
+        publishedAt: feedFallback,
         publishedSource: feedFallback,
         publishInferred: true
       }),
@@ -1450,7 +1481,49 @@ describe('processArticle AI analysis controls', () => {
     );
   });
 
-  it('uses URL published fallback when entry and feed dates are missing', async () => {
+  it('uses entry modification metadata as an inferred publication fallback on insertion', async () => {
+    const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
+    const modifiedAt = '2026-07-08T09:30:00.987Z';
+
+    mocked.extractEntryFields.mockReturnValue({
+      title: 'Article title',
+      link: 'https://example.com/article',
+      content: '<p>Article body</p>',
+      description: 'Article description',
+      categories: ['AI'],
+      publishedAt: null,
+      modifiedAt
+    });
+
+    await processArticle(
+      {
+        id: 1,
+        userId: 42,
+        feedName: 'Modified date feed',
+        applyAiAnalysis: false
+      },
+      {},
+      [],
+      null,
+      { count: () => 0 },
+      null,
+      '2026-07-08T10:00:00.000Z'
+    );
+
+    expect(mocked.saveArticle).toHaveBeenCalledWith(
+      expect.any(Object),
+      expect.objectContaining({
+        publishedAt: modifiedAt,
+        modifiedAt,
+        publishedSource: modifiedAt,
+        publishInferred: true
+      }),
+      expect.any(Object),
+      expect.any(Object)
+    );
+  });
+
+  it('uses URL publishedAt fallback when entry and feed dates are missing', async () => {
     const { default: processArticle } = await import('../../services/crawl/orchestration/processArticle.js');
     const urlFallback = '2026-07-08T00:00:00.000Z';
 
@@ -1460,7 +1533,7 @@ describe('processArticle AI analysis controls', () => {
       content: '<p>Article body</p>',
       description: 'Article description',
       categories: ['AI'],
-      published: null
+      publishedAt: null
     });
     mocked.resolveUrlPublishedDate.mockReturnValue(urlFallback);
 
@@ -1483,7 +1556,7 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.saveArticle).toHaveBeenCalledWith(
       expect.any(Object),
       expect.objectContaining({
-        published: urlFallback,
+        publishedAt: urlFallback,
         publishedSource: urlFallback,
         publishInferred: true
       }),

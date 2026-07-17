@@ -73,7 +73,7 @@ const getTopicArticles = async (req, res) => {
           attributes: ['id', 'name']
         }
       ],
-      order: [['published', 'DESC']]
+      order: [['publishedAt', 'DESC']]
     });
 
     return res.status(200).json({

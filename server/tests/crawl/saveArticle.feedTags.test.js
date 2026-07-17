@@ -45,7 +45,7 @@ const saveArguments = () => [
     contentTextHash: 'visible-text-hash',
     contentSourceHash: 'source-content-hash',
     language: 'en',
-    published: new Date('2026-07-01T00:00:00Z')
+    publishedAt: new Date('2026-07-01T00:00:00Z')
   },
   {
     contentSummaryBullets: [],
@@ -115,7 +115,7 @@ describe('saveArticle feed tags', () => {
         contentSourceHash: 'hash',
         media: null,
         language: 'en',
-        published: new Date('2026-07-01T00:00:00Z')
+        publishedAt: new Date('2026-07-01T00:00:00Z')
       },
       {
         summary: 'Summary',
@@ -208,7 +208,7 @@ describe('saveArticle feed tags', () => {
         officialOrganization: 'Nintendo',
         media: null,
         language: 'en',
-        published: new Date('2026-07-01T00:00:00Z')
+        publishedAt: new Date('2026-07-01T00:00:00Z')
       },
       {
         summary: 'Summary',
@@ -256,7 +256,7 @@ describe('saveArticle feed tags', () => {
         contentTextHash: 'discarded-visible-text-hash',
         contentSourceHash: 'discarded-source-content-hash',
         language: 'en',
-        published: new Date('2026-07-01T00:00:00Z')
+        publishedAt: new Date('2026-07-01T00:00:00Z')
       },
       null,
       {

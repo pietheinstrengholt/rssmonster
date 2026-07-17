@@ -48,12 +48,12 @@ function articleContent(article) {
 }
 
 function articlePublished(article) {
-  if (!article.published) return null;
+  if (!article.publishedAt) return null;
 
-  const published = new Date(article.published);
-  if (Number.isNaN(published.getTime())) return null;
+  const publishedAt = new Date(article.publishedAt);
+  if (Number.isNaN(publishedAt.getTime())) return null;
 
-  return published.toISOString();
+  return publishedAt.toISOString();
 }
 
 function isExportableArticle(article) {
@@ -146,10 +146,10 @@ async function main() {
         'contentOriginal',
         'contentHtml',
         'contentText',
-        'published'
+        'publishedAt'
       ],
       order: [
-        ['published', 'ASC'],
+        ['publishedAt', 'ASC'],
         ['id', 'ASC']
       ],
       limit: Number.isInteger(limit) ? limit : undefined
@@ -181,7 +181,7 @@ async function main() {
         contentOriginal: article.contentOriginal || '',
         contentHtml: article.contentHtml || articleContent(article),
         contentText: article.contentText || articleContent(article),
-        published: articlePublished(article),
+        publishedAt: articlePublished(article),
         feedId: feedIdMap.get(article.feedId),
         status: article.status || 'unread',
         favoriteInd: article.favoriteInd || 0,

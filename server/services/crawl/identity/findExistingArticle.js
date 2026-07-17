@@ -66,17 +66,17 @@ export async function findByFeedUrlHash(identity) {
 
 // This function finds exact title candidates near the candidate publish date in one feed.
 export async function findFeedTitleCandidates(identity, windowDays) {
-  if (!identity.title || !identity.published || !windowDays) return [];
+  if (!identity.title || !identity.publishedAt || !windowDays) return [];
 
-  const published = new Date(identity.published);
-  if (Number.isNaN(published.getTime())) return [];
+  const publishedAt = new Date(identity.publishedAt);
+  if (Number.isNaN(publishedAt.getTime())) return [];
 
   const windowMs = windowDays * 24 * 60 * 60 * 1000;
   const titleKey = normalizeTitleKey(identity.title);
   if (!titleKey) return [];
 
   return Article.findAll({
-    attributes: ['id', 'published'],
+    attributes: ['id', 'publishedAt'],
     raw: true,
     where: {
       userId: identity.userId,
@@ -86,14 +86,14 @@ export async function findFeedTitleCandidates(identity, windowDays) {
         sequelize.fn('LOWER', sequelize.fn('TRIM', sequelize.col('title'))),
         titleKey
       ),
-      published: {
+      publishedAt: {
         [Op.between]: [
-          new Date(published.getTime() - windowMs),
-          new Date(published.getTime() + windowMs)
+          new Date(publishedAt.getTime() - windowMs),
+          new Date(publishedAt.getTime() + windowMs)
         ]
       }
     },
-    order: [['published', 'DESC'], ['id', 'DESC']],
+    order: [['publishedAt', 'DESC'], ['id', 'DESC']],
     limit: 1
   });
 }

@@ -166,7 +166,7 @@ const collectSmartFolderSignals = async (
     Article.findAll({
       where: {
         userId,
-        published: { [Op.gte]: since }
+        publishedAt: { [Op.gte]: since }
       },
       attributes: [
         'feedId',
@@ -198,10 +198,10 @@ const collectSmartFolderSignals = async (
       where: {
         userId,
         favoriteInd: 1,
-        published: { [Op.gte]: since }
+        publishedAt: { [Op.gte]: since }
       },
-      attributes: ['title', 'published', 'feedId'],
-      order: [['published', 'DESC']],
+      attributes: ['title', 'publishedAt', 'feedId'],
+      order: [['publishedAt', 'DESC']],
       limit: maxFavoriteTitles,
       raw: true
     }),

@@ -14,6 +14,18 @@ import language from '../../../utils/language.js';
 
 const MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH = 20;
 
+// This function checks whether a feed entry points to an absolute HTTP(S) article URL.
+const isAbsoluteHttpUrl = value => {
+  if (typeof value !== 'string' || !value.trim()) return false;
+
+  try {
+    const url = new URL(value.trim());
+    return url.protocol === 'http:' || url.protocol === 'https:';
+  } catch {
+    return false;
+  }
+};
+
 // This function selects publisher fields that action regular expressions may inspect.
 const buildActionArticle = articleData => ({
   title: articleData.title,
@@ -76,13 +88,17 @@ const buildArticleCandidate = async ({
   const externalIdentity = articleIdentityResolver(entry, feedFormat);
   const titleWasMissing = !fields.title || fields.title === 'Untitled';
 
-  if (!fields.published && feedPublishedFallback) {
-    fields.published = feedPublishedFallback;
+  if (!fields.publishedAt && fields.modifiedAt) {
+    fields.publishedAt = fields.modifiedAt;
+    fields.publishedSource = fields.modifiedAt;
+    fields.publishInferred = true;
+  } else if (!fields.publishedAt && feedPublishedFallback) {
+    fields.publishedAt = feedPublishedFallback;
     fields.publishedSource = feedPublishedFallback;
     fields.publishInferred = true;
-  } else if (!fields.published) {
+  } else if (!fields.publishedAt) {
     const urlPublishedFallback = resolveUrlPublishedDate(fields.link);
-    fields.published = urlPublishedFallback;
+    fields.publishedAt = urlPublishedFallback;
     fields.publishedSource = urlPublishedFallback;
     fields.publishInferred = Boolean(urlPublishedFallback);
   } else {
@@ -94,15 +110,15 @@ const buildArticleCandidate = async ({
   fields.title = decodeHtmlEntities(fields.title);
 
   // Skip processing if the article is older than the feed's crawlSince.
-  if (feed?.crawlSince && fields.published) {
-    const publishedDate = new Date(fields.published);
+  if (feed?.crawlSince && fields.publishedAt) {
+    const publishedDate = new Date(fields.publishedAt);
     const sinceDate = new Date(feed.crawlSince);
     if (!isNaN(publishedDate.getTime()) && !isNaN(sinceDate.getTime())) {
       if (publishedDate < sinceDate) return null;
     }
   }
 
-  if (!fields.link) return null;
+  if (!isAbsoluteHttpUrl(fields.link)) return null;
 
   let contentOriginal = null;
   let contentHtml = null;
@@ -194,7 +210,7 @@ const buildArticleCandidate = async ({
     media,
     leadImage,
     language: contentLanguage,
-    published: fields.published,
+    publishedAt: fields.publishedAt,
     publishedSource: fields.publishedSource,
     publishInferred: fields.publishInferred
   };
@@ -213,7 +229,7 @@ const buildArticleCandidate = async ({
       normalizedUrl,
       contentSourceHash,
       contentTextHash,
-      published: fields.published
+      publishedAt: fields.publishedAt
     },
     hotlinkUrls
   };

@@ -101,7 +101,7 @@ export async function calculateFeedTrustForFeed(feedId) {
   const articles = await Article.findAll({
     where: {
       feedId: feed.id,
-      published: { [Op.gte]: since }
+      publishedAt: { [Op.gte]: since }
     },
     include: [
       { model: Event, as: 'cluster' }

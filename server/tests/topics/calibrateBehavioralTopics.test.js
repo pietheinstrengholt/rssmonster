@@ -54,7 +54,7 @@ function articlePayload(userId, feedId, index, overrides = {}) {
     favoriteInd: 0,
     clickedAmount: 0,
     attentionBucket: 3,
-    published: new Date(`2026-05-${20 + index}T10:00:00.000Z`),
+    publishedAt: new Date(`2026-05-${20 + index}T10:00:00.000Z`),
     ...overrides
   };
 }

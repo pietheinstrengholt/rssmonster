@@ -42,7 +42,7 @@ function articlePayload(user, feed, index, overrides = {}) {
     feedId: feed.id,
     title: `${user.username} article ${index}`,
     url: `https://example.com/${user.username}/article-${index}`,
-    published: new Date(`2026-05-${28 + index}T10:00:00.000Z`),
+    publishedAt: new Date(`2026-05-${28 + index}T10:00:00.000Z`),
     articleVector: [1, index / 10, 0],
     status: 'unread',
     ...overrides
@@ -78,7 +78,7 @@ describe('repairRecentEventsForUser', () => {
     const { user, feed } = await createUserGraph('filtered-incremental');
     const filteredArticle = await Article.create(articlePayload(user, feed, 1, {
       filteredInd: true,
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
 
@@ -96,7 +96,7 @@ describe('repairRecentEventsForUser', () => {
   it('does not treat publisher revisions as new semantic candidates', async () => {
     const { user, feed } = await createUserGraph('publisher-revision');
     const article = await Article.create(articlePayload(user, feed, 1, {
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
     const createdAtFrom = new Date('2026-07-01T12:00:00.000Z');
@@ -201,25 +201,25 @@ describe('repairRecentEventsForUser', () => {
       articlePayload(user, feed, 1, {
         title: 'Acme merger talks advance',
         url: `https://example.com/${user.id}/acme-1`,
-        published: minutesFromBase(0),
+        publishedAt: minutesFromBase(0),
         articleVector: sharedVector
       }),
       articlePayload(user, feedTwo, 2, {
         title: 'Acme merger talks advance again',
         url: `https://example.com/${user.id}/acme-2`,
-        published: minutesFromBase(20),
+        publishedAt: minutesFromBase(20),
         articleVector: sharedVector
       }),
       articlePayload(user, feed, 3, {
         title: 'Acme merger talks advance after delay',
         url: `https://example.com/${user.id}/acme-3`,
-        published: minutesFromBase(25 * 60),
+        publishedAt: minutesFromBase(25 * 60),
         articleVector: sharedVector
       }),
       articlePayload(user, feedTwo, 4, {
         title: 'Acme merger talks advance after delay again',
         url: `https://example.com/${user.id}/acme-4`,
-        published: minutesFromBase(25 * 60 + 20),
+        publishedAt: minutesFromBase(25 * 60 + 20),
         articleVector: sharedVector
       })
     ]);
@@ -253,13 +253,13 @@ describe('repairRecentEventsForUser', () => {
       articlePayload(user, feed, 1, {
         title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
         url: `https://example.com/${user.id}/pinball-1`,
-        published: recentDateWithOffset(),
+        publishedAt: recentDateWithOffset(),
         articleVector: [1, 0, 0]
       }),
       articlePayload(user, feedTwo, 2, {
         title: 'Windows classic 3D Space Cadet pinball is getting a physical re-creation',
         url: `https://example.com/${user.id}/pinball-2`,
-        published: recentDateWithOffset(60 * 60 * 1000),
+        publishedAt: recentDateWithOffset(60 * 60 * 1000),
         articleVector: [0.79, 0.613, 0]
       })
     ]);
@@ -291,7 +291,7 @@ describe('repairRecentEventsForUser', () => {
     const existingArticle = await Article.create(articlePayload(user, feed, 1, {
       title: 'Existing unrelated event article',
       url: `https://example.com/${user.id}/existing-event`,
-      published: recentDateWithOffset(-2 * 60 * 60 * 1000),
+      publishedAt: recentDateWithOffset(-2 * 60 * 60 * 1000),
       articleVector: [0, 1, 0]
     }));
     const existingEvent = await Event.create({
@@ -302,8 +302,8 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       eventStrength: 0.7,
       eventVector: [0, 1, 0],
-      eventWindowStartAt: existingArticle.published,
-      eventWindowEndAt: existingArticle.published,
+      eventWindowStartAt: existingArticle.publishedAt,
+      eventWindowEndAt: existingArticle.publishedAt,
       status: 'active'
     });
 
@@ -321,7 +321,7 @@ describe('repairRecentEventsForUser', () => {
       articlePayload(user, feed, 2, {
         title: 'Spanish heatwave death toll reaches 1028 in June',
         url: targetUrls[0],
-        published: basePublishedAt,
+        publishedAt: basePublishedAt,
         createdAt: beforeLatestEventUpdate,
         updatedAt: beforeLatestEventUpdate,
         articleVector: sharedVector
@@ -329,7 +329,7 @@ describe('repairRecentEventsForUser', () => {
       articlePayload(user, feedTwo, 3, {
         title: 'Spanish heatwave death toll reaches 1028 in June',
         url: targetUrls[1],
-        published: new Date(basePublishedAt.getTime() + 3 * 60 * 1000),
+        publishedAt: new Date(basePublishedAt.getTime() + 3 * 60 * 1000),
         createdAt: beforeLatestEventUpdate,
         updatedAt: beforeLatestEventUpdate,
         articleVector: sharedVector
@@ -384,13 +384,13 @@ describe('repairRecentEventsForUser', () => {
     const existingArticleA = await Article.create(articlePayload(user, feed, 1, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/assigned-candidate-a`,
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0]
     }));
     const existingArticleB = await Article.create(articlePayload(user, feed, 2, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/assigned-candidate-b`,
-      published: recentDateWithOffset(2 * 60 * 1000),
+      publishedAt: recentDateWithOffset(2 * 60 * 1000),
       articleVector: [1, 0, 0]
     }));
     const event = await Event.create({
@@ -401,14 +401,14 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       eventStrength: 0.7,
       eventVector: [0, 1, 0],
-      eventWindowStartAt: existingArticleA.published,
-      eventWindowEndAt: existingArticleB.published,
+      eventWindowStartAt: existingArticleA.publishedAt,
+      eventWindowEndAt: existingArticleB.publishedAt,
       status: 'active'
     });
     const incomingArticle = await Article.create(articlePayload(user, feed, 3, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/assigned-candidate-c`,
-      published: recentDateWithOffset(4 * 60 * 1000),
+      publishedAt: recentDateWithOffset(4 * 60 * 1000),
       articleVector: [1, 0, 0]
     }));
     const runContext = {
@@ -418,7 +418,7 @@ describe('repairRecentEventsForUser', () => {
           feedId: existingArticleA.feedId,
           title: existingArticleA.title,
           description: existingArticleA.description,
-          published: existingArticleA.published,
+          publishedAt: existingArticleA.publishedAt,
           createdAt: existingArticleA.createdAt,
           eventId: event.id,
           eventVector: existingArticleA.articleVector
@@ -428,7 +428,7 @@ describe('repairRecentEventsForUser', () => {
           feedId: existingArticleB.feedId,
           title: existingArticleB.title,
           description: existingArticleB.description,
-          published: existingArticleB.published,
+          publishedAt: existingArticleB.publishedAt,
           createdAt: existingArticleB.createdAt,
           eventId: event.id,
           eventVector: existingArticleB.articleVector
@@ -467,7 +467,7 @@ describe('repairRecentEventsForUser', () => {
     const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/inherit-read-representative`,
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
       status: 'read'
     }));
@@ -479,14 +479,14 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       eventStrength: 0.7,
       eventVector: [1, 0, 0],
-      eventWindowStartAt: representativeArticle.published,
-      eventWindowEndAt: representativeArticle.published,
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
     const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
       title: 'Spanish heatwave death toll reaches 1028 in June update',
       url: `https://example.com/${user.id}/inherit-read-incoming`,
-      published: recentDateWithOffset(5 * 60 * 1000),
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));
@@ -514,7 +514,7 @@ describe('repairRecentEventsForUser', () => {
     const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
       title: 'Acme merger talks advance in Brussels',
       url: `https://example.com/${user.id}/inherit-unread-representative`,
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));
@@ -526,14 +526,14 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       eventStrength: 0.7,
       eventVector: [1, 0, 0],
-      eventWindowStartAt: representativeArticle.published,
-      eventWindowEndAt: representativeArticle.published,
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
     const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
       title: 'Acme merger talks advance in Brussels after vote',
       url: `https://example.com/${user.id}/inherit-unread-incoming`,
-      published: recentDateWithOffset(5 * 60 * 1000),
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));
@@ -561,14 +561,14 @@ describe('repairRecentEventsForUser', () => {
     const existingArticle = await Article.create(articlePayload(user, feed, 1, {
       title: 'Luna launch mission reaches orbit',
       url: `https://example.com/${user.id}/inherit-new-event-existing`,
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
       status: 'read'
     }));
     const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
       title: 'Luna launch mission reaches orbit successfully',
       url: `https://example.com/${user.id}/inherit-new-event-incoming`,
-      published: recentDateWithOffset(5 * 60 * 1000),
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));
@@ -597,7 +597,7 @@ describe('repairRecentEventsForUser', () => {
     const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
       title: 'Market regulator opens tech probe',
       url: `https://example.com/${user.id}/inherit-special-representative`,
-      published: recentDateWithOffset(),
+      publishedAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
       status: 'read'
     }));
@@ -609,14 +609,14 @@ describe('repairRecentEventsForUser', () => {
       sourceCount: 1,
       eventStrength: 0.7,
       eventVector: [1, 0, 0],
-      eventWindowStartAt: representativeArticle.published,
-      eventWindowEndAt: representativeArticle.published,
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
       status: 'active'
     });
     const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
       title: 'Market regulator opens tech probe after complaint',
       url: `https://example.com/${user.id}/inherit-special-incoming`,
-      published: recentDateWithOffset(5 * 60 * 1000),
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'favorite'
     }));
@@ -654,13 +654,13 @@ describe('repairRecentEventsForUser', () => {
       articlePayload(user, feed, 1, {
         title: 'Historic Acme acquisition closes',
         url: `https://example.com/${user.id}/historic-acme-1`,
-        published: oldPublishedAt,
+        publishedAt: oldPublishedAt,
         articleVector: sharedVector
       }),
       articlePayload(user, feedTwo, 2, {
         title: 'Historic Acme acquisition closes',
         url: `https://example.com/${user.id}/historic-acme-2`,
-        published: new Date(oldPublishedAt.getTime() + 60 * 60 * 1000),
+        publishedAt: new Date(oldPublishedAt.getTime() + 60 * 60 * 1000),
         articleVector: sharedVector
       })
     ]);

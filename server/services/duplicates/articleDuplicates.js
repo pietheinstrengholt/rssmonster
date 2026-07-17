@@ -18,9 +18,9 @@ export function canonicalArticleWhere() {
   };
 }
 
-// This function builds a published-date candidate window around one article.
+// This function builds a publishedAt-date candidate window around one article.
 function duplicateCandidateWindow(article) {
-  const center = article?.published ? new Date(article.published) : new Date();
+  const center = article?.publishedAt ? new Date(article.publishedAt) : new Date();
   const windowMs = RECENCY_WINDOW_DAYS * 24 * 60 * 60 * 1000;
 
   return {
@@ -46,10 +46,10 @@ export async function findCanonicalDuplicateForArticle(article, options = {}) {
       ...canonicalArticleWhere(),
       filteredInd: false,
       articleVector: { [Op.ne]: null },
-      published: duplicateCandidateWindow(article)
+      publishedAt: duplicateCandidateWindow(article)
     },
     attributes: ['id', 'articleVector'],
-    order: [['published', 'DESC'], ['id', 'DESC']],
+    order: [['publishedAt', 'DESC'], ['id', 'DESC']],
     limit: options.limit || 300
   });
 
@@ -152,7 +152,7 @@ export async function markDuplicateArticlesForUser(userId, options = {}) {
     attributes: [
       'id',
       'userId',
-      'published',
+      'publishedAt',
       'articleVector',
       'duplicateOfArticleId',
       'status'

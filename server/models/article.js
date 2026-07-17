@@ -363,10 +363,10 @@ export default (sequelize) => {
       freshness: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
-          const published = this.getDataValue('published');
-          if (!published) return 0;
+          const publishedAt = this.getDataValue('publishedAt');
+          if (!publishedAt) return 0;
 
-          const ageMs = Date.now() - new Date(published).getTime();
+          const ageMs = Date.now() - new Date(publishedAt).getTime();
           const ageHours = ageMs / (1000 * 60 * 60);
 
           return Math.exp(-ageHours / TAU_HOURS);
@@ -454,10 +454,16 @@ export default (sequelize) => {
         }
       },
       // Timestamp when the article was published (from feed data, used for freshness and sorting)
-      published: {
+      publishedAt: {
         type: DataTypes.DATE,
         allowNull: false,
         defaultValue: DataTypes.NOW
+      },
+      // Timestamp when the publisher last modified the article.
+      modifiedAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
       },
       // Source publication timestamp before any fallback or inference is applied.
       publishedSource: {

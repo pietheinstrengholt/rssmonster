@@ -443,7 +443,7 @@ export const getIslandsOverview = async (req, res, _next) => {
           a.id,
           a.title,
           a.url,
-          a.published,
+          a.publishedAt,
           a.favoriteInd,
           a.clickedAmount,
           f.feedName
@@ -461,7 +461,7 @@ export const getIslandsOverview = async (req, res, _next) => {
              AND it.islandId = :islandId
             WHERE atp.articleId = a.id
           )
-        ORDER BY a.published DESC
+        ORDER BY a.publishedAt DESC
         LIMIT 3
         `,
         {

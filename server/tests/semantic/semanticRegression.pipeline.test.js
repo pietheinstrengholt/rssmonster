@@ -119,7 +119,7 @@ function articleTitle(fixtureArticle, articleIndex) {
 // This function normalizes fixture dates into a recent testing window.
 function buildFixturePublishedResolver(fixtureArticles, now = Date.now()) {
   const fixtureTimes = fixtureArticles
-    .map(article => Date.parse(article.published))
+    .map(article => Date.parse(article.publishedAt))
     .filter(Number.isFinite);
 
   if (!fixtureTimes.length) {
@@ -133,7 +133,7 @@ function buildFixturePublishedResolver(fixtureArticles, now = Date.now()) {
   const recentOffsetMs = 60 * 60 * 1000;
 
   return (fixtureArticle, fallbackPublished) => {
-    const fixtureTime = Date.parse(fixtureArticle.published);
+    const fixtureTime = Date.parse(fixtureArticle.publishedAt);
     if (!Number.isFinite(fixtureTime)) return fallbackPublished;
 
     const position = (fixtureTime - minFixtureTime) / fixtureSpanMs;
@@ -298,7 +298,7 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
       const content = articleContent(fixtureArticle);
       const contentSourceHash = hashContent(content);
       const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
-      const published = resolvePublished(fixtureArticle, fallbackPublished);
+      const publishedAt = resolvePublished(fixtureArticle, fallbackPublished);
 
       return {
         userId: user.id,
@@ -313,8 +313,8 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
         contentOriginal: fixtureArticle.contentOriginal || content,
         contentHtml: fixtureArticle.contentHtml || content,
         contentSourceHash,
-        published,
-        firstSeen: published
+        publishedAt,
+        firstSeen: publishedAt
       };
     });
 

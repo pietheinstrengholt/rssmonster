@@ -52,7 +52,7 @@ const createArticleFor = async user => {
     title: `${user.username} article`,
     contentOriginal: '<p>Article body</p>',
     contentHtml: 'Article body',
-    published: new Date('2026-05-01T10:00:00Z')
+    publishedAt: new Date('2026-05-01T10:00:00Z')
   });
 
   return { category, feed, article };

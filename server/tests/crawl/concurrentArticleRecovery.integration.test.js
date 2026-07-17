@@ -24,7 +24,7 @@ const articleData = (suffix, overrides = {}) => ({
   contentTextHash: `text-hash-${suffix}`,
   contentSourceHash: `source-hash-${suffix}`,
   language: 'en',
-  published: new Date('2026-07-14T00:00:00Z'),
+  publishedAt: new Date('2026-07-14T00:00:00Z'),
   ...overrides
 });
 

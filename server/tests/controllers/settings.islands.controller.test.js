@@ -75,7 +75,7 @@ const createArticleTopicFixture = async user => {
     contentOriginal: '<p>Article body</p>',
     contentHtml: 'Article body',
     articleVector: [1, 0, 0],
-    published: new Date('2026-05-01T10:00:00Z')
+    publishedAt: new Date('2026-05-01T10:00:00Z')
   });
 
   await ArticleTopic.create({
@@ -147,7 +147,7 @@ const createEventTopicFixture = async user => {
     contentHtml: 'Article body',
     articleVector: [1, 0, 0],
     topicId: topic.id,
-    published: new Date('2026-05-01T10:00:00Z')
+    publishedAt: new Date('2026-05-01T10:00:00Z')
   });
   const secondArticle = await Article.create({
     userId: user.id,
@@ -161,7 +161,7 @@ const createEventTopicFixture = async user => {
     contentHtml: 'Article body',
     articleVector: [0.9, 0.1, 0],
     topicId: topic.id,
-    published: new Date('2026-05-01T11:00:00Z')
+    publishedAt: new Date('2026-05-01T11:00:00Z')
   });
   const unclusteredArticle = await Article.create({
     userId: user.id,
@@ -172,7 +172,7 @@ const createEventTopicFixture = async user => {
     contentOriginal: '<p>Article body</p>',
     contentHtml: 'Article body',
     articleVector: [0, 1, 0],
-    published: new Date('2026-05-02T10:00:00Z')
+    publishedAt: new Date('2026-05-02T10:00:00Z')
   });
   const event = await Event.create({
     userId: user.id,

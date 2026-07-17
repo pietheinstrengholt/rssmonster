@@ -27,13 +27,16 @@ const entryDateCandidates = [
   entry => entry.pubDate,
   entry => entry.published,
   entry => entry.atom?.published,
-  entry => entry.updated,
-  entry => entry.atom?.updated,
   entry => entry.dc?.date,
   entry => entry.dcterms?.created,
   entry => entry.date,
-  entry => entry.created,
+  entry => entry.created
+];
+
+const entryModifiedDateCandidates = [
   entry => entry.date_modified,
+  entry => entry.updated,
+  entry => entry.atom?.updated,
   entry => entry.dcterms?.modified
 ];
 
@@ -97,7 +100,7 @@ const normalizeUrlDateParts = (yearValue, monthValue, dayValue) => {
   return date.toISOString();
 };
 
-// This function resolves the best published date exposed by feed entry formats and namespaces.
+// This function resolves the best publication date exposed by feed entry formats and namespaces.
 export function resolveEntryPublishedDate(entry) {
   if (!entry) return null;
 
@@ -109,7 +112,19 @@ export function resolveEntryPublishedDate(entry) {
   return null;
 }
 
-// This function resolves a feed-level published fallback from channel/feed metadata.
+// This function resolves the publisher's article modification timestamp without inferring one.
+export function resolveEntryModifiedDate(entry) {
+  if (!entry) return null;
+
+  for (const candidate of entryModifiedDateCandidates) {
+    const date = firstValidDate(candidate(entry));
+    if (date) return date;
+  }
+
+  return null;
+}
+
+// This function resolves a feed-level publication fallback from channel/feed metadata.
 export function resolveFeedPublishedDate(feed) {
   if (!feed) return null;
 
@@ -208,7 +223,8 @@ function normalizeEntry(entry, feedFormat = null) {
     content,
     author: resolveAuthor(entry),
     categories: categoryNames,
-    published: resolveEntryPublishedDate(entry),
+    publishedAt: resolveEntryPublishedDate(entry),
+    modifiedAt: resolveEntryModifiedDate(entry),
     ...identity,
     media: normalizedMedia.media,
     imageCandidates: normalizedMedia.imageCandidates

@@ -115,7 +115,7 @@ export async function assignSemanticUnitToTopic({
     }
   }
 
-  const now = semanticUnit.published || new Date();
+  const now = semanticUnit.publishedAt || new Date();
 
   if (matchedCandidates.length) {
     const rankedCandidates = matchedCandidates

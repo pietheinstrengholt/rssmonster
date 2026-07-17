@@ -212,13 +212,13 @@ const getDuplicateCachesByFeedId = async (feeds) => {
         'urlHash',
         'normalizedUrlHash',
         'title',
-        'published',
+        'publishedAt',
         'contentTextHash',
         'contentSourceHash'
       ],
       where: {
         feedId: feed.id,
-        published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
+        publishedAt: { [db.Sequelize.Op.gte]: duplicateCacheSince }
       },
       raw: true
     }))),
@@ -231,7 +231,7 @@ const getDuplicateCachesByFeedId = async (feeds) => {
             { contentTextHash: { [db.Sequelize.Op.not]: null } },
             { contentSourceHash: { [db.Sequelize.Op.not]: null } }
           ],
-          published: { [db.Sequelize.Op.gte]: duplicateCacheSince }
+          publishedAt: { [db.Sequelize.Op.gte]: duplicateCacheSince }
         },
         raw: true
       })
@@ -461,7 +461,7 @@ const runCrawl = async (userId = null, options = {}) => {
             duplicateCache,
             hotlinkCountCache,
             hotlinkBatcher,
-            parsedFeed.published,
+            parsedFeed.publishedAt,
             parsedFeed.title,
             parsedFeed.format
           );

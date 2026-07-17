@@ -11,7 +11,7 @@ The canonical feed contract contains:
 - `title`
 - `description`
 - `faviconUrl`
-- `published`
+- `publishedAt`
 - `selfUrl`
 - `entries`
 
@@ -23,7 +23,8 @@ Each canonical entry contains:
 - `content`
 - `author`
 - `categories`
-- `published`
+- `publishedAt`
+- `modifiedAt`
 - `externalId`
 - `externalIdType`
 - `media`

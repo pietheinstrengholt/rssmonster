@@ -54,14 +54,14 @@ export const buildArticleSearchQuery = ({
   }
 
   if (needsFreshness) {
-    if (!queryAttributes.includes('published')) {
-      queryAttributes.push('published');
+    if (!queryAttributes.includes('publishedAt')) {
+      queryAttributes.push('publishedAt');
     }
     if (!queryAttributes.includes('qualityScore')) {
       queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
     }
-  } else if (needsPublished && !queryAttributes.includes('published')) {
-    queryAttributes.push('published');
+  } else if (needsPublished && !queryAttributes.includes('publishedAt')) {
+    queryAttributes.push('publishedAt');
   }
 
   if (needsAttention) {
@@ -104,7 +104,7 @@ export const buildArticleSearchQuery = ({
   if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
     const sqlSortDirection = toSqlSortDirection(workingSort);
     articleQuery.order = [
-      ['published', sqlSortDirection],
+      ['publishedAt', sqlSortDirection],
       ['id', sqlSortDirection]
     ];
   }

@@ -79,7 +79,7 @@ export default class ArticleEventCandidateCache {
     const where = {
       userId,
       ...canonicalArticleWhere(),
-      published: { [Op.gte]: cutoff },
+      publishedAt: { [Op.gte]: cutoff },
       articleVector: { [Op.ne]: null }
     };
 
@@ -96,12 +96,12 @@ export default class ArticleEventCandidateCache {
         'eventId',
         'title',
         'description',
-        'published',
+        'publishedAt',
         'createdAt',
         'articleVector'
       ],
       order: [
-        ['published', 'ASC'],
+        ['publishedAt', 'ASC'],
         ['id', 'ASC']
       ],
       limit: options.limit || MAX_CANDIDATES * 4
@@ -131,7 +131,7 @@ export default class ArticleEventCandidateCache {
       eventId: article.eventId ?? null,
       title: article.title,
       description: article.description,
-      published: article.published,
+      publishedAt: article.publishedAt,
       createdAt: article.createdAt,
       eventVector,
       normalizedEventVector,

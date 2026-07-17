@@ -143,7 +143,7 @@ async function seedAdHeatwaveArticles(userId) {
     expect(vectorRecord?.articleVector?.length, `missing vector for ${fixtureArticle.sourceId}`)
       .toBeGreaterThan(0);
 
-    const published = new Date(basePublishedAt.getTime() + index * 3 * 60 * 1000);
+    const publishedAt = new Date(basePublishedAt.getTime() + index * 3 * 60 * 1000);
 
     insertedArticles.push(await Article.create({
       userId,
@@ -160,8 +160,8 @@ async function seedAdHeatwaveArticles(userId) {
       contentSourceHash,
       articleVector: vectorRecord.articleVector,
       embedding_model: vectorRecord.embeddingModel,
-      published,
-      firstSeen: published
+      publishedAt,
+      firstSeen: publishedAt
     }));
   }
 

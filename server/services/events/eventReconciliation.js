@@ -114,7 +114,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
       userId,
       ...canonicalArticleWhere()
     },
-    attributes: ['id', 'eventId', 'feedId', 'published', 'createdAt', 'articleVector']
+    attributes: ['id', 'eventId', 'feedId', 'publishedAt', 'createdAt', 'articleVector']
   });
 
   const articlesByEventId = {};

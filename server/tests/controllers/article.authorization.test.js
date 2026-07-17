@@ -50,7 +50,7 @@ const createArticleFor = async user => {
     contentOriginal: '<p>Article body</p>',
     contentHtml: 'Article body',
     contentText: 'Article body',
-    published: new Date('2026-05-01T10:00:00Z')
+    publishedAt: new Date('2026-05-01T10:00:00Z')
   });
 
   return { category, feed, article };
@@ -123,7 +123,7 @@ describe('article ownership authorization', () => {
       title: `${owner.username} duplicate`,
       contentOriginal: '<p>Duplicate body</p>',
       contentHtml: 'Duplicate body',
-      published: new Date('2026-05-01T11:00:00Z')
+      publishedAt: new Date('2026-05-01T11:00:00Z')
     });
     await Article.create({
       userId: owner.id,
@@ -135,7 +135,7 @@ describe('article ownership authorization', () => {
       title: `${owner.username} filtered duplicate`,
       contentOriginal: '<p>Filtered duplicate body</p>',
       contentHtml: 'Filtered duplicate body',
-      published: new Date('2026-05-01T12:00:00Z')
+      publishedAt: new Date('2026-05-01T12:00:00Z')
     });
 
     const ownerResponse = await request(app)
@@ -163,7 +163,7 @@ describe('article ownership authorization', () => {
       title: `${owner.username} filtered article`,
       contentOriginal: '<p>Filtered article body</p>',
       contentHtml: 'Filtered article body',
-      published: new Date('2026-05-01T12:00:00Z')
+      publishedAt: new Date('2026-05-01T12:00:00Z')
     });
 
     const res = await request(app)
@@ -211,7 +211,7 @@ describe('article ownership authorization', () => {
       title: `${owner.username} related article`,
       contentOriginal: '<p>Related body</p>',
       contentHtml: 'Related body',
-      published: new Date('2026-05-01T11:00:00Z')
+      publishedAt: new Date('2026-05-01T11:00:00Z')
     });
     const event = await Event.create({
       userId: owner.id,

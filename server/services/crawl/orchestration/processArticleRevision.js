@@ -21,7 +21,7 @@ const buildDuplicateCacheArticleState = article => ({
   urlHash: article.urlHash,
   normalizedUrlHash: article.normalizedUrlHash,
   title: article.title,
-  published: article.published,
+  publishedAt: article.publishedAt,
   contentTextHash: article.contentTextHash,
   contentSourceHash: article.contentSourceHash
 });

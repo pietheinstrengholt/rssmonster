@@ -70,7 +70,7 @@ describe('find existing article duplicate lookups', () => {
       userId: 42,
       feedId: 7,
       title: 'A sufficiently long fallback title',
-      published: '2026-07-14T00:00:00.000Z'
+      publishedAt: '2026-07-14T00:00:00.000Z'
     }, 7);
 
     expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({

@@ -160,7 +160,7 @@ const getArticleContent = (article) =>
   '';
 
 const getArticleReaderTime = (article) =>
-  article.firstSeen || article.createdAt || article.published || new Date(0);
+  article.firstSeen || article.createdAt || article.publishedAt || new Date(0);
 
 const toUsecString = (date) => String(new Date(date).getTime() * 1000);
 
@@ -187,7 +187,7 @@ const parseReaderTimestamp = (value) => {
 };
 
 const createContinuation = (article) =>
-  `${new Date(article.published).getTime()}:${article.id}`;
+  `${new Date(article.publishedAt).getTime()}:${article.id}`;
 
 const applyContinuationFilter = (where, continuation, order) => {
   if (!continuation) {
@@ -199,15 +199,15 @@ const applyContinuationFilter = (where, continuation, order) => {
   const id = Number(idRaw);
 
   if (Number.isFinite(publishedMs) && Number.isFinite(id)) {
-    const published = new Date(publishedMs);
+    const publishedAt = new Date(publishedMs);
     where[Op.or] = order === 'o'
       ? [
-          { published: { [Op.gt]: published } },
-          { published, id: { [Op.gt]: id } }
+          { publishedAt: { [Op.gt]: publishedAt } },
+          { publishedAt, id: { [Op.gt]: id } }
         ]
       : [
-          { published: { [Op.lt]: published } },
-          { published, id: { [Op.lt]: id } }
+          { publishedAt: { [Op.lt]: publishedAt } },
+          { publishedAt, id: { [Op.lt]: id } }
         ];
     return;
   }
@@ -233,8 +233,8 @@ const serializeArticle = (article) => {
   return {
     id: toItemId(article.id),
     crawlTimeMsec: String(getArticleReaderTime(article).getTime()),
-    timestampUsec: toUsecString(article.published),
-    published: Math.floor(new Date(article.published).getTime() / 1000),
+    timestampUsec: toUsecString(article.publishedAt),
+    published: Math.floor(new Date(article.publishedAt).getTime() / 1000),
     title: article.title || '',
     summary: {
       content: getArticleContent(article)
@@ -708,7 +708,7 @@ export const getUnreadCount = async (req, res) => {
       const newestArticle = await Article.findOne({
         where: { feedId: feed.id, userId: user.id, ...canonicalArticleWhere() },
         order: [['createdAt', 'DESC']],
-        attributes: ['createdAt', 'firstSeen', 'published']
+        attributes: ['createdAt', 'firstSeen', 'publishedAt']
       });
       
       const lastUpdate = newestArticle ? getArticleReaderTime(newestArticle).getTime() * 1000 : 0;
@@ -808,7 +808,7 @@ export const getStreamContents = async (req, res) => {
       where,
       include: articleInclude,
       order: [
-        ['published', order === 'o' ? 'ASC' : 'DESC'],
+        ['publishedAt', order === 'o' ? 'ASC' : 'DESC'],
         ['id', order === 'o' ? 'ASC' : 'DESC']
       ],
       limit: count + 1 // Fetch one extra to check for continuation
@@ -873,9 +873,9 @@ export const getStreamItemIds = async (req, res) => {
     
     const articles = await Article.findAll({
       where,
-      attributes: ['id', 'published'],
+      attributes: ['id', 'publishedAt'],
       order: [
-        ['published', order === 'o' ? 'ASC' : 'DESC'],
+        ['publishedAt', order === 'o' ? 'ASC' : 'DESC'],
         ['id', order === 'o' ? 'ASC' : 'DESC']
       ],
       limit: count + 1
@@ -1029,7 +1029,7 @@ export const markAllAsRead = async (req, res) => {
     
     const olderThan = parseReaderTimestamp(timestamp) || new Date();
     
-    const where = { userId: user.id, ...canonicalArticleWhere(), published: { [Op.lte]: olderThan } };
+    const where = { userId: user.id, ...canonicalArticleWhere(), publishedAt: { [Op.lte]: olderThan } };
     await applyStreamFilter(where, streamId, user.id);
     
     await Article.update(

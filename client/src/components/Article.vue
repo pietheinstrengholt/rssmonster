@@ -27,7 +27,7 @@
         </div>
       </div>
       <div class="article-list-actions">
-        <span class="article-list-time">{{ formatDate(published) }}</span>
+        <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
         <ArticleActionsMenu :favoriteInd="favoriteInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
           <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
@@ -44,7 +44,7 @@
         <div class="article-layout">
           <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :clusterCountTotal="clusterCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
-            <ArticleMeta :published="published" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" @view-duplicate-articles="viewDuplicateArticles" />
+            <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
           </div>
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
@@ -101,7 +101,7 @@ export default {
     id: { type: [Number, String], required: true },
     url: { type: String, default: '' },
     title: { type: String, default: '' },
-    published: { type: [String, Date], default: '' },
+    publishedAt: { type: [String, Date], default: '' },
     feed: { type: Object, default: () => ({}) },
     content: { type: String, default: '' },
     description: { type: String, default: '' },

@@ -17,7 +17,7 @@ describe('article duplicate cache', () => {
           urlHash: 'url-hash',
           normalizedUrlHash: 'normalized-url-hash',
           title: 'Existing article',
-          published: '2026-07-01T00:00:00.000Z',
+          publishedAt: '2026-07-01T00:00:00.000Z',
           contentTextHash: 'feed-stripped-hash',
           contentSourceHash: 'feed-hash'
         }
@@ -28,7 +28,7 @@ describe('article duplicate cache', () => {
     expect(cache.findByFeedUrlHash('url-hash')).toEqual({ id: 1 });
     expect(cache.findByFeedNormalizedUrlHash('normalized-url-hash')).toEqual({ id: 1 });
     expect(cache.findFeedTitleCandidates('  existing ARTICLE  ')).toEqual([
-      { id: 1, published: '2026-07-01T00:00:00.000Z' }
+      { id: 1, publishedAt: '2026-07-01T00:00:00.000Z' }
     ]);
     expect(cache.findByUserContentTextHash('other-feed-stripped-hash')).toEqual({ id: 8 });
     expect(cache.findByUserContentSourceHash('other-feed-hash')).toEqual({ id: 9 });
@@ -43,7 +43,7 @@ describe('article duplicate cache', () => {
       urlHash: 'new-url-hash',
       normalizedUrlHash: 'new-normalized-url-hash',
       title: 'New article',
-      published: '2026-07-02T00:00:00.000Z',
+      publishedAt: '2026-07-02T00:00:00.000Z',
       contentTextHash: 'new-stripped-hash',
       contentSourceHash: 'new-hash'
     });
@@ -53,7 +53,7 @@ describe('article duplicate cache', () => {
     expect(cache.findByFeedUrlHash('new-url-hash')).toEqual({ id: 2 });
     expect(cache.findByFeedNormalizedUrlHash('new-normalized-url-hash')).toEqual({ id: 2 });
     expect(cache.findFeedTitleCandidates('new ARTICLE')).toEqual([
-      { id: 2, published: '2026-07-02T00:00:00.000Z' }
+      { id: 2, publishedAt: '2026-07-02T00:00:00.000Z' }
     ]);
   });
 
@@ -65,7 +65,7 @@ describe('article duplicate cache', () => {
       filteredInd: true,
       urlHash: 'new-filtered-url-hash',
       title: 'New filtered article',
-      published: '2026-07-02T00:00:00.000Z',
+      publishedAt: '2026-07-02T00:00:00.000Z',
       contentTextHash: 'new-filtered-text-hash',
       contentSourceHash: 'new-filtered-source-hash'
     });
@@ -82,7 +82,7 @@ describe('article duplicate cache', () => {
       urlHash: 'old-url-hash',
       normalizedUrlHash: 'old-normalized-url-hash',
       title: 'Old title',
-      published: '2026-07-03T00:00:00.000Z',
+      publishedAt: '2026-07-03T00:00:00.000Z',
       contentTextHash: 'old-text-hash',
       contentSourceHash: 'old-source-hash'
     };
@@ -92,7 +92,7 @@ describe('article duplicate cache', () => {
       urlHash: 'new-url-hash',
       normalizedUrlHash: 'new-normalized-url-hash',
       title: 'New title',
-      published: '2026-07-04T00:00:00.000Z',
+      publishedAt: '2026-07-04T00:00:00.000Z',
       contentTextHash: 'new-text-hash',
       contentSourceHash: 'new-source-hash'
     };
@@ -109,7 +109,7 @@ describe('article duplicate cache', () => {
     expect(cache.findByUserContentTextHash('new-text-hash')).toEqual({ id: 3 });
     expect(cache.findByUserContentSourceHash('new-source-hash')).toEqual({ id: 3 });
     expect(cache.findFeedTitleCandidates('New title')).toEqual([
-      { id: 3, published: '2026-07-04T00:00:00.000Z' }
+      { id: 3, publishedAt: '2026-07-04T00:00:00.000Z' }
     ]);
   });
 
@@ -153,7 +153,7 @@ describe('article duplicate cache', () => {
         urlHash: 'filtered-url-hash',
         normalizedUrlHash: 'filtered-normalized-url-hash',
         title: 'Filtered article title',
-        published: '2026-07-05T00:00:00.000Z',
+        publishedAt: '2026-07-05T00:00:00.000Z',
         contentTextHash: 'filtered-text-hash',
         contentSourceHash: 'filtered-source-hash'
       },
@@ -161,7 +161,7 @@ describe('article duplicate cache', () => {
         id: 7,
         filteredInd: false,
         title: 'Active article title',
-        published: '2026-07-05T00:00:00.000Z',
+        publishedAt: '2026-07-05T00:00:00.000Z',
         contentTextHash: 'active-text-hash',
         contentSourceHash: 'active-source-hash'
       }
@@ -175,7 +175,7 @@ describe('article duplicate cache', () => {
     expect(cache.findByUserContentTextHash('active-text-hash')).toEqual({ id: 7 });
     expect(cache.findByUserContentSourceHash('active-source-hash')).toEqual({ id: 7 });
     expect(cache.findFeedTitleCandidates('Active article title')).toEqual([
-      { id: 7, published: '2026-07-05T00:00:00.000Z' }
+      { id: 7, publishedAt: '2026-07-05T00:00:00.000Z' }
     ]);
   });
 
@@ -228,7 +228,7 @@ describe('article duplicate cache', () => {
       filteredInd: false,
       urlHash: 'transition-url-hash',
       title: 'Transition article title',
-      published: '2026-07-06T00:00:00.000Z',
+      publishedAt: '2026-07-06T00:00:00.000Z',
       contentTextHash: 'transition-text-hash',
       contentSourceHash: 'transition-source-hash'
     };
@@ -251,7 +251,7 @@ describe('article duplicate cache', () => {
       filteredInd: true,
       urlHash: 'reactivated-url-hash',
       title: 'Previously filtered article',
-      published: '2026-07-07T00:00:00.000Z',
+      publishedAt: '2026-07-07T00:00:00.000Z',
       contentTextHash: 'old-filtered-text-hash',
       contentSourceHash: 'old-filtered-source-hash'
     };
@@ -271,7 +271,7 @@ describe('article duplicate cache', () => {
     expect(cache.findByUserContentTextHash('reactivated-text-hash')).toEqual({ id: 11 });
     expect(cache.findByUserContentSourceHash('reactivated-source-hash')).toEqual({ id: 11 });
     expect(cache.findFeedTitleCandidates('Reactivated article title')).toEqual([
-      { id: 11, published: '2026-07-07T00:00:00.000Z' }
+      { id: 11, publishedAt: '2026-07-07T00:00:00.000Z' }
     ]);
   });
 

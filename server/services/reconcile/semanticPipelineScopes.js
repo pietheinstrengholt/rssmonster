@@ -35,7 +35,7 @@ function rollingEventWindowHours() {
 // This function returns the latest event-time timestamp from articles in one event assignment batch.
 function latestArticleEventDate(articles = []) {
   const timestamps = articles
-    .flatMap(article => [article.published, article.createdAt])
+    .flatMap(article => [article.publishedAt, article.createdAt])
     .map(value => value ? new Date(value).getTime() : null)
     .filter(Number.isFinite);
 
@@ -490,7 +490,7 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
   if (createdAtFrom) {
     articleWhere.createdAt = { [Op.gte]: createdAtFrom };
   } else {
-    articleWhere.published = { [Op.gte]: cutoffDate };
+    articleWhere.publishedAt = { [Op.gte]: cutoffDate };
   }
 
   const articles = await Article.findAll({
@@ -501,7 +501,7 @@ export async function runIncrementalEventsForUser(userId, options = {}) {
       required: false
     }],
     order: [
-      ['published', 'ASC'],
+      ['publishedAt', 'ASC'],
       ['id', 'ASC']
     ]
   });
@@ -566,7 +566,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
     where: {
       userId,
       ...canonicalArticleWhere(),
-      published: { [Op.gte]: cutoffDate }
+      publishedAt: { [Op.gte]: cutoffDate }
     },
     include: [{
       model: Feed,
@@ -574,7 +574,7 @@ export async function repairRecentEventsForUser(userId, options = {}) {
       required: false
     }],
     order: [
-      ['published', 'ASC'],
+      ['publishedAt', 'ASC'],
       ['id', 'ASC']
     ]
   });

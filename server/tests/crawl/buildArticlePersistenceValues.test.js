@@ -27,7 +27,7 @@ describe('buildArticlePersistenceValues', () => {
         contentOriginal: '<p>Article body</p>',
         contentHtml: '<p>Article body</p>',
         contentText: 'Article body',
-        published: new Date('2026-07-01T00:00:00Z'),
+        publishedAt: new Date('2026-07-01T00:00:00Z'),
         publishInferred: false
       }
     );
@@ -50,7 +50,8 @@ describe('buildArticlePersistenceValues', () => {
       contentHtml: '<p>Article body</p>',
       contentText: 'Article body',
       contentSourceHash: hashValue('<p>Article body</p>'),
-      contentTextHash: hashValue('Article body')
+      contentTextHash: hashValue('Article body'),
+      modifiedAt: null
     });
   });
 
@@ -83,16 +84,18 @@ describe('buildArticlePersistenceValues', () => {
     expect(mutableValues).not.toHaveProperty('feedId');
   });
 
-  it('normalizes publication timestamps to whole-second database precision', () => {
+  it('normalizes article timestamps to whole-second database precision', () => {
     const values = buildArticlePersistenceValues(
       { id: 7, userId: 42 },
       {
-        published: '2026-07-13T13:30:00.987Z',
+        publishedAt: '2026-07-13T13:30:00.987Z',
+        modifiedAt: '2026-07-13T14:45:00.987654Z',
         publishedSource: new Date('2026-07-13T13:30:00.654Z')
       }
     );
 
-    expect(values.published).toEqual(new Date('2026-07-13T13:30:00.000Z'));
+    expect(values.publishedAt).toEqual(new Date('2026-07-13T13:30:00.000Z'));
+    expect(values.modifiedAt).toEqual(new Date('2026-07-13T14:45:00.000Z'));
     expect(values.publishedSource).toEqual(new Date('2026-07-13T13:30:00.000Z'));
   });
 

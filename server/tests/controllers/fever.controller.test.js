@@ -31,7 +31,7 @@ const createFixture = async () => {
     url: 'https://example.com/hot',
     title: 'Hot Article',
     description: 'Linked by another article',
-    published: new Date('2026-05-01T10:00:00Z'),
+    publishedAt: new Date('2026-05-01T10:00:00Z'),
     hotlinks: 2
   });
   const unlinkedArticle = await Article.create({
@@ -41,7 +41,7 @@ const createFixture = async () => {
     url: 'https://example.com/cold',
     title: 'Cold Article',
     description: 'Not linked',
-    published: new Date('2026-05-01T11:00:00Z')
+    publishedAt: new Date('2026-05-01T11:00:00Z')
   });
 
   await Hotlink.create({

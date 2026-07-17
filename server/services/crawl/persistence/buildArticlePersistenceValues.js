@@ -18,7 +18,7 @@ const MUTABLE_ARTICLE_SOURCE_FIELDS = [
   'contentHtml',
   'contentText',
   'language',
-  'published',
+  'publishedAt',
   'publishedSource',
   'publishInferred',
   'urlHash',
@@ -33,8 +33,8 @@ export const hashArticleUrl = value => value
   ? createHash('sha256').update(value).digest('hex')
   : null;
 
-// This function matches publication timestamps to MySQL DATETIME whole-second precision.
-const normalizePublicationDate = value => {
+// This function matches article timestamps to MySQL DATETIME whole-second precision.
+export const normalizeArticleDate = value => {
   if (value === null || value === undefined || value === '') return null;
 
   const date = new Date(value);
@@ -109,8 +109,9 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
     advertisementScore: data.advertisementScore,
     sentimentScore: data.sentimentScore,
     qualityScore: data.qualityScore,
-    published: normalizePublicationDate(data.published),
-    publishedSource: normalizePublicationDate(data.publishedSource),
+    publishedAt: normalizeArticleDate(data.publishedAt),
+    modifiedAt: normalizeArticleDate(data.modifiedAt),
+    publishedSource: normalizeArticleDate(data.publishedSource),
     publishInferred: Boolean(data.publishInferred)
   };
 }

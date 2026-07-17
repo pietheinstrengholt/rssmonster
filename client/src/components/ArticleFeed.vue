@@ -740,7 +740,7 @@ export default {
 
     // Returns an article publication timestamp used for relative bulk actions.
     articlePublishedTime(article) {
-      const value = article?.published;
+      const value = article?.publishedAt;
       const time = Date.parse(value);
       return Number.isFinite(time) ? time : NaN;
     },

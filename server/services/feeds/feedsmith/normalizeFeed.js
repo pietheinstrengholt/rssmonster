@@ -27,7 +27,7 @@ export default function normalizeFeed(parsedFeed) {
       readUrl(sourceFeed.icon) ||
       readUrl(sourceFeed.logo) ||
       readUrl(sourceFeed.image),
-    published: resolveFeedPublishedDate(sourceFeed),
+    publishedAt: resolveFeedPublishedDate(sourceFeed),
     selfUrl: readUrl(parsedFeed.self) ||
       selfLink ||
       readUrl(sourceFeed.feed_url) ||

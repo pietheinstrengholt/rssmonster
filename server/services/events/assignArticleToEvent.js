@@ -305,7 +305,7 @@ async function deriveEventTopicAssignments({
       sourceCount: event.sourceCount,
       eventStrength: event.eventStrength,
       status: event.status,
-      published: event.eventWindowEndAt || event.updatedAt || new Date()
+      publishedAt: event.eventWindowEndAt || event.updatedAt || new Date()
     },
     semanticVector: eventTopicVector,
     topicsCache,
@@ -595,13 +595,13 @@ async function findCandidateArticles({ article, articleEventVector }) {
       userId: article.userId,
       id: { [Op.ne]: article.id },
       ...canonicalArticleWhere(),
-      published: {
+      publishedAt: {
         [Op.gte]: cutoff,
         [Op.lte]: upperBound
       }
     },
-    attributes: ['id', 'feedId', 'eventId', 'title', 'description', 'published', 'createdAt', 'articleVector'],
-    order: [['published', 'DESC']],
+    attributes: ['id', 'feedId', 'eventId', 'title', 'description', 'publishedAt', 'createdAt', 'articleVector'],
+    order: [['publishedAt', 'DESC']],
     limit: MAX_CANDIDATES
   });
 
@@ -769,7 +769,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       feedId: article.feedId,
       title: article.title,
       description: article.description,
-      published: article.published,
+      publishedAt: article.publishedAt,
       createdAt: article.createdAt,
       topicId: null,
       topicAssignments: [],
@@ -898,7 +898,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       feedId: article.feedId,
       title: article.title,
       description: article.description,
-      published: article.published,
+      publishedAt: article.publishedAt,
       createdAt: article.createdAt,
       topicId: primaryTopicId(eventTopicAssignments),
       topicAssignments: eventTopicAssignments,
@@ -1034,7 +1034,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         feedId: article.feedId,
         title: article.title,
         description: article.description,
-        published: article.published,
+        publishedAt: article.publishedAt,
         createdAt: article.createdAt,
         topicId: primaryTopicId(eventTopicAssignments),
         topicAssignments: eventTopicAssignments,
@@ -1082,7 +1082,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       feedId: article.feedId,
       title: article.title,
       description: article.description,
-      published: article.published,
+      publishedAt: article.publishedAt,
       createdAt: article.createdAt,
       topicId: null,
       topicAssignments: [],
@@ -1136,7 +1136,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     feedId: article.feedId,
     title: article.title,
     description: article.description,
-    published: article.published,
+    publishedAt: article.publishedAt,
     createdAt: article.createdAt,
     topicId: primaryTopicId(eventTopicAssignments),
     topicAssignments: eventTopicAssignments,

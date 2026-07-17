@@ -9,7 +9,7 @@ function mountArticle(props = {}) {
       id: 1,
       title: 'Test article',
       url: 'https://example.com/article',
-      published: '2026-06-07T10:00:00.000Z',
+      publishedAt: '2026-06-07T10:00:00.000Z',
       feed: {
         url: 'https://example.com/feed.xml',
         feedName: 'Example Feed'
@@ -50,10 +50,10 @@ describe('Article date formatting', () => {
     vi.setSystemTime(new Date('2026-06-07T10:00:00.000Z'));
 
     const wrapper = mountArticle({
-      published: '2026-06-07T10:07:00.000Z'
+      publishedAt: '2026-06-07T10:07:00.000Z'
     });
 
-    expect(wrapper.vm.formatDate(wrapper.props('published'))).toBe('7 minutes ago');
+    expect(wrapper.vm.formatDate(wrapper.props('publishedAt'))).toBe('7 minutes ago');
   });
 
   it('keeps normal relative time formatting for past publication dates', () => {
@@ -61,9 +61,9 @@ describe('Article date formatting', () => {
     vi.setSystemTime(new Date('2026-06-07T10:07:00.000Z'));
 
     const wrapper = mountArticle({
-      published: '2026-06-07T10:00:00.000Z'
+      publishedAt: '2026-06-07T10:00:00.000Z'
     });
 
-    expect(wrapper.vm.formatDate(wrapper.props('published'))).toBe('7 minutes ago');
+    expect(wrapper.vm.formatDate(wrapper.props('publishedAt'))).toBe('7 minutes ago');
   });
 });

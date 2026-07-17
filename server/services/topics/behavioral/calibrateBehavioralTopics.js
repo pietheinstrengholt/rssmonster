@@ -54,7 +54,7 @@ function engagementScore(article) {
 
 // This function resolves the calendar day that contributes behavioral evidence.
 function behaviorDay(article) {
-  const value = article.published || article.updatedAt || article.createdAt;
+  const value = article.publishedAt || article.updatedAt || article.createdAt;
   if (!value) return null;
 
   return new Date(value).toISOString().slice(0, 10);
@@ -70,7 +70,7 @@ function buildArticleProfile(article) {
     title: article.title,
     vector: Array.isArray(article.articleVector) ? article.articleVector : null,
     score,
-    published: article.published,
+    publishedAt: article.publishedAt,
     day: behaviorDay(article)
   };
 }
@@ -147,7 +147,7 @@ function topicNameForCommunity(community) {
 // This function finds the latest behavioral evidence timestamp in a community.
 function lastBehaviorAt(community) {
   const timestamps = community.articles
-    .map(article => article.published ? new Date(article.published).getTime() : null)
+    .map(article => article.publishedAt ? new Date(article.publishedAt).getTime() : null)
     .filter(value => Number.isFinite(value));
 
   if (!timestamps.length) return null;
@@ -283,7 +283,7 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
       'favoriteInd',
       'clickedAmount',
       'attentionBucket',
-      'published',
+      'publishedAt',
       'createdAt',
       'updatedAt'
     ],
@@ -291,7 +291,7 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
       ['favoriteInd', 'DESC'],
       ['clickedAmount', 'DESC'],
       ['attentionBucket', 'DESC'],
-      ['published', 'DESC'],
+      ['publishedAt', 'DESC'],
       ['id', 'ASC']
     ]
   });

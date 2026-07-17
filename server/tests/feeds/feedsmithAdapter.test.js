@@ -38,11 +38,12 @@ describe('Feedsmith adapter', () => {
         content: '<p>Article body</p>',
         externalId: 'article-1',
         externalIdType: 'guid',
-        published: '2026-07-15T10:00:00.000Z'
+        publishedAt: '2026-07-15T10:00:00.000Z'
       }]
     });
     expect(feed).not.toHaveProperty('feed');
     expect(feed.entries[0]).not.toHaveProperty('guid');
+    expect(feed.entries[0].modifiedAt).toBeNull();
     expect(feed.entries[0].imageCandidates).toEqual([
       expect.objectContaining({
         url: 'https://example.com/article.jpg',
@@ -69,6 +70,7 @@ describe('Feedsmith adapter', () => {
         content_html: '<p>JSON article body</p>',
         summary: 'JSON summary',
         date_published: '2026-07-16T08:30:00Z',
+        date_modified: '2026-07-16T09:45:00.987654Z',
         tags: ['JSON', 'Feeds'],
         authors: [{ name: 'Jane JSON' }],
         image: 'https://example.com/article-image.jpg',
@@ -94,7 +96,8 @@ describe('Feedsmith adapter', () => {
         content: '<p>JSON article body</p>',
         author: 'Jane JSON',
         categories: ['JSON', 'Feeds'],
-        published: '2026-07-16T08:30:00.000Z',
+        publishedAt: '2026-07-16T08:30:00.000Z',
+        modifiedAt: '2026-07-16T09:45:00.987Z',
         externalId: 'json-item-1',
         externalIdType: 'json-id',
         media: {

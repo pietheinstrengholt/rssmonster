@@ -251,7 +251,7 @@ export const postFever = async (req, res, _next) => {
               url: article.url,
               is_saved: parseInt(article.favoriteInd),
               is_read: (article.status === 'read' ? 1 : 0),
-              created_on_time: Math.floor(article.published / 1000)
+              created_on_time: Math.floor(article.publishedAt / 1000)
             };
             items.push(articleObject);
           });
@@ -392,7 +392,7 @@ export const postFever = async (req, res, _next) => {
             await Article.update(update, {
               where: {
                 feedId: markId,
-                published: {
+                publishedAt: {
                   [Op.lte]: timestamp
                 },
                 userId: loggedInUser.id,
@@ -404,7 +404,7 @@ export const postFever = async (req, res, _next) => {
           //per group, a group should be specified with an id not equal to zero
           if (mark === "group" && markId !== undefined) {
             const where = {
-              published: {
+              publishedAt: {
                 [Op.lte]: timestamp
               },
               userId: loggedInUser.id,

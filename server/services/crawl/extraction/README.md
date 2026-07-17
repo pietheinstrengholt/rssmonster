@@ -20,7 +20,8 @@ content
 link
 externalId
 externalIdType
-published
+publishedAt
+modifiedAt
 publishedSource
 publishInferred
 categories

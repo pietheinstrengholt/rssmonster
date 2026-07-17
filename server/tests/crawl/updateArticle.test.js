@@ -45,7 +45,8 @@ const storedArticle = (overrides = {}) => ({
   contentSourceHash: 'source-hash',
   contentTextHash: 'text-hash',
   language: 'en',
-  published: new Date('2026-07-13T13:30:00Z'),
+  publishedAt: new Date('2026-07-13T13:30:00Z'),
+  modifiedAt: null,
   publishedSource: null,
   publishInferred: false,
   update: mocked.articleUpdate,
@@ -75,7 +76,8 @@ const incomingArticle = (overrides = {}) => ({
   contentSourceHash: 'source-hash',
   contentTextHash: 'text-hash',
   language: 'en',
-  published: '2026-07-13T13:30:00.000Z',
+  publishedAt: '2026-07-13T13:30:00.000Z',
+  modifiedAt: null,
   publishedSource: null,
   publishInferred: false,
   ...overrides
@@ -111,29 +113,109 @@ describe('updateArticle', () => {
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
   });
 
+  it('does not compare or persist modification metadata without another source change', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      modifiedAt: '2026-07-14T10:00:00.987Z'
+    }));
+
+    expect(result.changed).toBe(false);
+    expect(result.changes.changedFields).toEqual([]);
+    expect(result.updateValues).not.toHaveProperty('modifiedAt');
+  });
+
+  it('does not compare a changing modification-based publication fallback', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      publishedAt: '2026-07-14T10:00:00.000Z',
+      modifiedAt: '2026-07-14T10:00:00.000Z',
+      publishedSource: '2026-07-14T10:00:00.000Z',
+      publishInferred: true
+    }));
+
+    expect(result.changed).toBe(false);
+    expect(result.changes.changedFields).toEqual([]);
+    expect(result.updateValues).toMatchObject({
+      publishedAt: new Date('2026-07-13T13:30:00.000Z'),
+      publishedSource: null,
+      publishInferred: false
+    });
+    expect(result.updateValues).not.toHaveProperty('modifiedAt');
+  });
+
+  it('uses normalized publisher modification metadata for a confirmed revision', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      title: 'Revised article title',
+      modifiedAt: '2026-07-14T10:00:00.987Z'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: { titleChanged: true, changedFields: ['title'] },
+      updateValues: { modifiedAt: new Date('2026-07-14T10:00:00.000Z') }
+    });
+  });
+
+  it('uses the normalized detection time when a confirmed revision has no publisher modification date', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-14T11:22:33.987Z'));
+
+    try {
+      const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+      const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+        title: 'Revised article title'
+      }));
+
+      expect(result.updateValues.modifiedAt).toEqual(new Date('2026-07-14T11:22:33.000Z'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
+  it('keeps modification time monotonic when confirmed revision metadata is stale', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-07-15T12:00:00.987Z'));
+    mocked.articleFindOne.mockResolvedValue(storedArticle({
+      modifiedAt: new Date('2026-07-14T12:00:00Z')
+    }));
+
+    try {
+      const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+      const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+        title: 'Revised article title',
+        modifiedAt: '2026-07-13T12:00:00Z'
+      }));
+
+      expect(result.updateValues.modifiedAt).toEqual(new Date('2026-07-15T12:00:00.000Z'));
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it('ignores publication timestamp differences below database precision', async () => {
     const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
-      published: '2026-07-13T13:30:00.987Z'
+      publishedAt: '2026-07-13T13:30:00.987Z'
     }));
 
     expect(result).toMatchObject({
       changed: false,
       changes: { publishedChanged: false, changedFields: [] },
-      updateValues: { published: new Date('2026-07-13T13:30:00.000Z') }
+      updateValues: { publishedAt: new Date('2026-07-13T13:30:00.000Z') }
     });
   });
 
   it('detects publication timestamp differences of at least one second', async () => {
     const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
-      published: '2026-07-13T13:30:01.001Z'
+      publishedAt: '2026-07-13T13:30:01.001Z'
     }));
 
     expect(result).toMatchObject({
       changed: true,
-      changes: { publishedChanged: true, changedFields: ['published'] },
-      updateValues: { published: new Date('2026-07-13T13:30:01.000Z') }
+      changes: { publishedChanged: true, changedFields: ['publishedAt'] },
+      updateValues: { publishedAt: new Date('2026-07-13T13:30:01.000Z') }
     });
   });
 

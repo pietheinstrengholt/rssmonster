@@ -67,7 +67,7 @@ describe('articleSearch.service', () => {
       contentHtml: 'A new JavaScript framework has been released today with exciting features.',
       status: 'unread',
       firstSeen: hoursAgo(0.5),
-      published: hoursAgo(1),
+      publishedAt: hoursAgo(1),
       advertisementScore: 90,
       sentimentScore: 80,
       qualityScore: 85
@@ -82,7 +82,7 @@ describe('articleSearch.service', () => {
       contentOriginal: '<p>Here are some useful Python programming tips and tricks for developers.</p>',
       contentHtml: 'Here are some useful Python programming tips and tricks for developers.',
       status: 'unread',
-      published: hoursAgo(72),
+      publishedAt: hoursAgo(72),
       advertisementScore: 70,
       sentimentScore: 70,
       qualityScore: 70
@@ -99,7 +99,7 @@ describe('articleSearch.service', () => {
       status: 'read',
       favoriteInd: 1,
       firstSeen: hoursAgo(23),
-      published: hoursAgo(24),
+      publishedAt: hoursAgo(24),
       advertisementScore: 95,
       sentimentScore: 90,
       qualityScore: 90
@@ -115,7 +115,7 @@ describe('articleSearch.service', () => {
       contentHtml: 'Learn the best practices for running Docker containers in production environments.',
       status: 'read',
       clickedAmount: 3,
-      published: hoursAgo(48),
+      publishedAt: hoursAgo(48),
       advertisementScore: 80,
       sentimentScore: 75,
       qualityScore: 80
@@ -130,7 +130,7 @@ describe('articleSearch.service', () => {
       contentOriginal: '<p>Buy our amazing product now! Limited time offer! Act fast!</p>',
       contentHtml: 'Buy our amazing product now! Limited time offer! Act fast!',
       status: 'unread',
-      published: hoursAgo(6),
+      publishedAt: hoursAgo(6),
       advertisementScore: 10,
       sentimentScore: 30,
       qualityScore: 20
@@ -146,7 +146,7 @@ describe('articleSearch.service', () => {
       contentHtml: 'This row must stay hidden from normal queries.',
       status: 'unread',
       filteredInd: true,
-      published: hoursAgo(2),
+      publishedAt: hoursAgo(2),
       advertisementScore: 90,
       sentimentScore: 90,
       qualityScore: 90
@@ -370,7 +370,7 @@ describe('articleSearch.service', () => {
   // ============================
 
   describe('sorting', () => {
-    it('sorts by published DESC by default', async () => {
+    it('sorts by publishedAt DESC by default', async () => {
       const result = await searchArticles({ userId: user.id, status: '%' });
       // Articles should be newest first
       const recentIdx = result.itemIds.indexOf(articles.recent.id);
@@ -378,7 +378,7 @@ describe('articleSearch.service', () => {
       expect(recentIdx).toBeLessThan(oldIdx);
     });
 
-    it('sorts by published ASC when specified', async () => {
+    it('sorts by publishedAt ASC when specified', async () => {
       const result = await searchArticles({ userId: user.id, sort: 'asc', status: '%' });
       const recentIdx = result.itemIds.indexOf(articles.recent.id);
       const oldIdx = result.itemIds.indexOf(articles.old.id);
@@ -409,7 +409,7 @@ describe('articleSearch.service', () => {
           contentOriginal: '<p>Single-source local incident report.</p>',
           contentHtml: 'Single-source local incident report.',
           status: 'unread',
-          published: now,
+          publishedAt: now,
           advertisementScore: 75,
           sentimentScore: 75,
           qualityScore: 75
@@ -424,7 +424,7 @@ describe('articleSearch.service', () => {
           contentOriginal: '<p>Multi-source reporting of a major event.</p>',
           contentHtml: 'Multi-source reporting of a major event.',
           status: 'unread',
-          published: now,
+          publishedAt: now,
           advertisementScore: 75,
           sentimentScore: 75,
           qualityScore: 75

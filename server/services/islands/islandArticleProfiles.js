@@ -27,7 +27,7 @@ export function computeArticleSignals(article) {
   const clicks = Math.min(article.clickedAmount || 0, 3);
   const deepReads = (article.attentionBucket || 0) >= 3 ? 1 : 0;
   const negative = article.negativeInd === 1 ? 1 : 0;
-  const recency = topicRecencyWeight(article.published);
+  const recency = topicRecencyWeight(article.publishedAt);
 
   const positiveScore = (
     positives * SIGNAL_WEIGHTS.positive +
@@ -63,7 +63,7 @@ function computeBehavioralArticleProfile(article) {
     vector: Array.isArray(article.articleVector) ? article.articleVector : null,
     score,
     positiveSignals: articleSignals.positiveSignals,
-    published: article.published
+    publishedAt: article.publishedAt
   };
 }
 
@@ -195,14 +195,14 @@ export async function buildInterestIslandProfilesForUser(userId, options = {}) {
       'clickedAmount',
       'attentionBucket',
       'negativeInd',
-      'published'
+      'publishedAt'
     ],
     order: [
       ['positiveInd', 'DESC'],
       ['favoriteInd', 'DESC'],
       ['clickedAmount', 'DESC'],
       ['attentionBucket', 'DESC'],
-      ['published', 'DESC'],
+      ['publishedAt', 'DESC'],
       ['id', 'ASC']
     ]
   });

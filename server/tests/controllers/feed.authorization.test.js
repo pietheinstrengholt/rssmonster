@@ -82,7 +82,7 @@ describe('feed ownership authorization', () => {
       status: 'unread',
       url: `https://example.com/${owner.username}/coverage-${index}`,
       title: `${owner.username} coverage article ${index}`,
-      published: new Date('2026-06-01T10:00:00Z')
+      publishedAt: new Date('2026-06-01T10:00:00Z')
     })));
 
     const event = await Event.create({
@@ -239,7 +239,7 @@ describe('feed ownership authorization', () => {
       status: 'unread',
       url: `https://example.com/${owner.username}/article`,
       title: `${owner.username} article`,
-      published: new Date('2026-05-01T10:00:00Z')
+      publishedAt: new Date('2026-05-01T10:00:00Z')
     });
 
     const res = await request(app)

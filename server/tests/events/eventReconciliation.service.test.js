@@ -36,7 +36,7 @@ async function createArticle(user, feed, index, overrides = {}) {
     feedId: feed.id,
     title: `${user.username} article ${index}`,
     url: `https://example.com/${user.username}/article-${index}`,
-    published: new Date(`2026-05-${20 + index}T10:00:00.000Z`),
+    publishedAt: new Date(`2026-05-${20 + index}T10:00:00.000Z`),
     articleVector: [1, index / 10, 0],
     ...overrides
   });

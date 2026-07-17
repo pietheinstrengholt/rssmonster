@@ -37,12 +37,12 @@ async function rebuildHotlinks() {
     }
   );
 
-  // Fetch all articles with URLs published in the last two weeks
+  // Fetch all articles with URLs publishedAt in the last two weeks
   const twoWeeksAgo = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000);
   const articles = await Article.findAll({
     attributes: ['id', 'url', 'userId', 'feedId'],
     where: {
-      published: { [Op.gte]: twoWeeksAgo }
+      publishedAt: { [Op.gte]: twoWeeksAgo }
     },
     raw: true
   });

@@ -105,7 +105,7 @@ export function articleTitle(fixtureArticle, articleIndex) {
 // This function parses fixture dates with a deterministic fallback.
 export function buildFixturePublishedResolver(fixtureArticles, now = Date.now()) {
   const fixtureTimes = fixtureArticles
-    .map(article => Date.parse(article.published))
+    .map(article => Date.parse(article.publishedAt))
     .filter(Number.isFinite);
 
   if (!fixtureTimes.length) {
@@ -119,7 +119,7 @@ export function buildFixturePublishedResolver(fixtureArticles, now = Date.now())
   const recentOffsetMs = 60 * 60 * 1000;
 
   return (fixtureArticle, fallbackPublished) => {
-    const fixtureTime = Date.parse(fixtureArticle.published);
+    const fixtureTime = Date.parse(fixtureArticle.publishedAt);
     if (!Number.isFinite(fixtureTime)) return fallbackPublished;
 
     const position = (fixtureTime - minFixtureTime) / fixtureSpanMs;
@@ -225,7 +225,7 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
     }
 
     const fallbackPublished = new Date(now - (fixture.articles.length - index) * 5 * 60 * 1000);
-    const published = resolvePublished(fixtureArticle, fallbackPublished);
+    const publishedAt = resolvePublished(fixtureArticle, fallbackPublished);
 
     await Article.create({
       userId,
@@ -242,8 +242,8 @@ export async function insertMissingFixtureArticles(userId, fixture, vectorByCont
       contentSourceHash,
       articleVector: vectorRecord.articleVector,
       embedding_model: vectorRecord.embeddingModel,
-      published,
-      firstSeen: fixtureArticle.firstSeen ? new Date(fixtureArticle.firstSeen) : published
+      publishedAt,
+      firstSeen: fixtureArticle.firstSeen ? new Date(fixtureArticle.firstSeen) : publishedAt
     });
 
     insertedCount++;

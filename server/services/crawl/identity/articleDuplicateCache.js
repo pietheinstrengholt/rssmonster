@@ -47,7 +47,7 @@ const createArticleDuplicateCache = (articles = [], userArticleHashIds = createS
       const matches = articlesByTitle.get(titleKey) || [];
       matches.push({
         id: article.id,
-        published: article.published
+        publishedAt: article.publishedAt
       });
       articlesByTitle.set(titleKey, matches);
     }

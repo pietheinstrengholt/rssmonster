@@ -1,6 +1,7 @@
 import { createHash } from 'node:crypto';
 import db from '../../../models/index.js';
 import buildArticlePersistenceValues, {
+  normalizeArticleDate,
   selectMutableArticleSourceValues
 } from './buildArticlePersistenceValues.js';
 import { replaceArticleDerivedTags } from './tags.js';
@@ -22,7 +23,8 @@ const LEAD_IMAGE_FIELDS = [
   'imageMimeType',
   'imageSource'
 ];
-const PUBLISHED_FIELDS = ['published', 'publishedSource', 'publishInferred'];
+const PUBLISHED_FIELDS = ['publishedAt', 'publishedSource', 'publishInferred'];
+const NON_REVISION_DATE_FIELDS = new Set(['publishedSource', 'publishInferred']);
 const FINGERPRINT_FIELDS = [
   'contentOriginal',
   'contentHtml',
@@ -209,11 +211,38 @@ const classifyChanges = changedFields => {
   };
 };
 
+// This function reports whether a source change confirms an article revision independently of modification metadata.
+const confirmsArticleRevision = changedFields => changedFields.some(
+  field => !NON_REVISION_DATE_FIELDS.has(field)
+);
+
+// This function returns a valid whole-second article timestamp or null.
+const validArticleDate = value => {
+  const normalized = normalizeArticleDate(value);
+  if (!(normalized instanceof Date) || Number.isNaN(normalized.getTime())) return null;
+  return normalized;
+};
+
+// This function advances the best-known modification time for a confirmed article revision.
+const resolveConfirmedModifiedAt = (article, incomingModifiedAt) => {
+  const incoming = validArticleDate(incomingModifiedAt);
+  const stored = validArticleDate(storedValue(article, 'modifiedAt'));
+  const detected = validArticleDate(new Date());
+
+  if (incoming && (!stored || incoming > stored)) return incoming;
+  if (detected && (!stored || detected > stored)) return detected;
+  return stored;
+};
+
 // This function normalizes incoming sparse source data against one stored article.
 const buildResolvedSourceValues = (feed, article, data) => {
   const hasIncomingContentOriginal = hasIncomingValue(data.contentOriginal);
   const hasIncomingContentHtml = hasIncomingValue(data.contentHtml);
-  const hasIncomingPublished = hasIncomingValue(data.published);
+  const hasIncomingPublished = hasIncomingValue(data.publishedAt);
+  const hasStoredPublished = hasIncomingValue(storedValue(article, 'publishedAt'));
+  const shouldUseIncomingPublished = hasIncomingPublished && (
+    !data.publishInferred || !hasStoredPublished
+  );
   const storedUrl = storedValue(article, 'url');
   const incomingUrl = data.link || data.url;
   const resolvedUrl = preferIncomingValue(incomingUrl, storedUrl);
@@ -273,11 +302,13 @@ const buildResolvedSourceValues = (feed, article, data) => {
     contentHtml,
     contentText,
     language: preferIncomingValue(data.language, storedValue(article, 'language')),
-    published: preferIncomingValue(data.published, storedValue(article, 'published')),
-    publishedSource: hasIncomingPublished
+    publishedAt: shouldUseIncomingPublished
+      ? data.publishedAt
+      : storedValue(article, 'publishedAt'),
+    publishedSource: shouldUseIncomingPublished
       ? data.publishedSource || null
       : storedValue(article, 'publishedSource'),
-    publishInferred: hasIncomingPublished
+    publishInferred: shouldUseIncomingPublished
       ? Boolean(data.publishInferred)
       : storedValue(article, 'publishInferred'),
     contentTextHash,
@@ -309,7 +340,7 @@ const buildStoredSourceValues = (feed, article) => selectMutableArticleSourceVal
     contentTextHash: storedValue(article, 'contentTextHash'),
     language: storedValue(article, 'language'),
     media: storedValue(article, 'media'),
-    published: storedValue(article, 'published'),
+    publishedAt: storedValue(article, 'publishedAt'),
     publishedSource: storedValue(article, 'publishedSource'),
     publishInferred: storedValue(article, 'publishInferred')
   })
@@ -349,6 +380,10 @@ async function updateArticle(feed, data, options = {}) {
   const meaningfulChangedFields = sourceChangedFields
     .filter(field => !RAW_SOURCE_FIELDS.includes(field));
   const changes = classifyChanges(meaningfulChangedFields);
+
+  if (confirmsArticleRevision(meaningfulChangedFields)) {
+    updateValues.modifiedAt = resolveConfirmedModifiedAt(article, data.modifiedAt);
+  }
 
   if (meaningfulChangedFields.length > 0) {
     logArticleUpdate({

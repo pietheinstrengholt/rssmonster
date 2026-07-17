@@ -42,7 +42,7 @@ function computeTopicProfile(topic) {
         (engagementByArticleId.get(articleId) || 0) + articleSignals.engagementScore
       );
 
-      const publishedTs = article.published ? new Date(article.published).getTime() : null;
+      const publishedTs = article.publishedAt ? new Date(article.publishedAt).getTime() : null;
       if (Number.isFinite(publishedTs)) {
         const bucketMs = Math.max(1, DEFAULT_ENGAGEMENT_TIME_BUCKET_HOURS) * 60 * 60 * 1000;
         const bucket = Math.floor(publishedTs / bucketMs);
@@ -304,7 +304,7 @@ export async function buildTopicInterestIslandProfilesForUser(userId, options = 
       as: 'articles',
       required: false,
       where: { userId },
-      attributes: ['id', 'positiveInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'published'],
+      attributes: ['id', 'positiveInd', 'favoriteInd', 'clickedAmount', 'attentionBucket', 'negativeInd', 'publishedAt'],
       through: { attributes: [] }
     }],
     order: [

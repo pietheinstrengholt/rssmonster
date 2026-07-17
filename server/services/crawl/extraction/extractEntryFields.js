@@ -6,10 +6,12 @@ const extractEntryFields = entry => ({
   content: entry?.content ?? null,
   author: entry?.author ?? null,
   categories: Array.isArray(entry?.categories) ? entry.categories : [],
-  published: entry?.published ?? null
+  publishedAt: entry?.publishedAt ?? null,
+  modifiedAt: entry?.modifiedAt ?? null
 });
 
 export {
+  resolveEntryModifiedDate,
   resolveEntryPublishedDate,
   resolveFeedPublishedDate,
   resolveUrlPublishedDate

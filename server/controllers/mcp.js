@@ -42,7 +42,7 @@ function generateArticlesHtml(articles, options = {}) {
       html += `${emoji ? emoji + ' ' : ''}<a class="article-link" target="_blank" href="${article.url || '#'}">${article.title || 'No Title'}</a>`;
       html += '</h5>';
       html += '<div class="feedname">';
-      html += `<span class="article-published">${article.published ? new Date(article.published).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;
+      html += `<span class="article-published">${article.publishedAt ? new Date(article.publishedAt).toLocaleString() : new Date(article.createdAt).toLocaleString()}</span>`;
       if (article.author || feedName) {
         html += '<span class="break">by</span>';
         html += '<span class="article-source">';
@@ -612,7 +612,7 @@ const postMcp = async (req, res) => {
       `
       Retrieves all hot articles. Hot articles are determined by a hotlink cache,
       which provides a list of URLs that should be considered hot.
-      Results are sorted by the 'published' field in the requested order.
+      Results are sorted by the 'publishedAt' field in the requested order.
 
       You may optionally provide a status:
       - If "status" is provided, only articles with that status are returned.
@@ -623,7 +623,7 @@ const postMcp = async (req, res) => {
       {
         sort: z.enum(["ASC", "DESC"])
           .default("DESC")
-          .describe("Sorting order for the 'published' field."),
+          .describe("Sorting order for the 'publishedAt' field."),
 
         status: z.enum(["read", "unread"])
           .default("unread")
@@ -640,7 +640,7 @@ const postMcp = async (req, res) => {
               ...canonicalArticleWhere(),
               hotInd: 1
             },
-            order: [["published", sort]],
+            order: [["publishedAt", sort]],
             raw: true
           });
 

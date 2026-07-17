@@ -46,6 +46,15 @@ describe('model schema declarations', () => {
     expect(Article.rawAttributes.contentText.type.toString()).toBe('MEDIUMTEXT');
   });
 
+  it('declares separate article publication and modification timestamps', () => {
+    expect(Article.rawAttributes.publishedAt.allowNull).toBe(false);
+    expect(Article.rawAttributes.modifiedAt).toMatchObject({
+      allowNull: true,
+      defaultValue: null
+    });
+    expect(Article.rawAttributes.published).toBeUndefined();
+  });
+
   it('declares filtered articles with a false default', () => {
     expect(Article.rawAttributes.filteredInd).toMatchObject({
       allowNull: false,

@@ -262,7 +262,7 @@ export async function collectEventArticleTitles(userId, eventId) {
   const articles = await Article.findAll({
     where: { userId, eventId, ...canonicalArticleWhere() },
     attributes: ['title'],
-    order: [['published', 'ASC'], ['id', 'ASC']],
+    order: [['publishedAt', 'ASC'], ['id', 'ASC']],
     limit: 6,
     raw: true
   });

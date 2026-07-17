@@ -115,7 +115,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
     advertisementScore: analysis?.advertisementScore,
     sentimentScore: analysis?.sentimentScore,
     qualityScore: analysis?.qualityScore,
-    published: data.published || new Date()
+    publishedAt: data.publishedAt || new Date()
   });
   try {
     const article = await sequelize.transaction(async transaction => {

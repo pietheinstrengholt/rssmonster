@@ -187,7 +187,7 @@ export const searchArticles = async ({
 
     // Apply date range filter if present (supports all date patterns)
     if (dateRange) {
-      baseWhere.published = { [Op.between]: [dateRange.start, dateRange.end] };
+      baseWhere.publishedAt = { [Op.between]: [dateRange.start, dateRange.end] };
     }
 
     // Apply tag filter if present (restricts to specific article IDs)

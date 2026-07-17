@@ -11,7 +11,7 @@ const buildRssXml = (articles, meta) => {
     title: article.title || 'No title',
     link: article.url,
     guid: article.id,
-    pubDate: new Date(article.published || article.createdAt || Date.now()).toUTCString(),
+    pubDate: new Date(article.publishedAt || article.createdAt || Date.now()).toUTCString(),
     description: article.contentHtml || article.content || '',
     category: article.Feed?.title ? [article.Feed.title] : undefined
   }));
@@ -75,7 +75,7 @@ const generateRss = async (req, res, next) => {
       where,
       include: [feedInclude],
       order: [
-        ['published', 'DESC'],
+        ['publishedAt', 'DESC'],
         ['createdAt', 'DESC']
       ],
       limit: queryLimit

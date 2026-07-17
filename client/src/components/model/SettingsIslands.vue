@@ -117,7 +117,7 @@
               >
                 <div>
                   <strong>{{ article.title }}</strong>
-                  <p>{{ article.feedName || 'Unknown feed' }} &middot; {{ formatDate(article.published) }}</p>
+                  <p>{{ article.feedName || 'Unknown feed' }} &middot; {{ formatDate(article.publishedAt) }}</p>
                 </div>
                 <div class="interest-article-meta">
                   <span

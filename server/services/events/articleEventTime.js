@@ -6,7 +6,7 @@ export const HOUR_MS = 1000 * 60 * 60;
 export function articleEventTimestamp(article) {
   if (!article) return null;
 
-  for (const value of [article.published, article.createdAt]) {
+  for (const value of [article.publishedAt, article.createdAt]) {
     if (!value) continue;
 
     const timestamp = new Date(value).getTime();

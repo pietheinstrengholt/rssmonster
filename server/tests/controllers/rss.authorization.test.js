@@ -78,7 +78,7 @@ describe('RSS authorization', () => {
       title: 'Authenticated user article',
       url: 'https://example.com/authenticated-user-article',
       contentHtml: 'Visible to the authenticated user',
-      published: new Date('2026-05-31T10:00:00Z')
+      publishedAt: new Date('2026-05-31T10:00:00Z')
     });
 
     await Article.create({
@@ -87,7 +87,7 @@ describe('RSS authorization', () => {
       title: 'Spoofed query user article',
       url: 'https://example.com/spoofed-query-user-article',
       contentHtml: 'This should not leak',
-      published: new Date('2026-05-31T11:00:00Z')
+      publishedAt: new Date('2026-05-31T11:00:00Z')
     });
 
     const res = await request(app)

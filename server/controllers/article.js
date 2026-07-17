@@ -172,7 +172,7 @@ const getDuplicateArticles = async (req, res) => {
           attributes: ['id', 'name', 'tagType']
         }
       ],
-      order: [['published', 'DESC']]
+      order: [['publishedAt', 'DESC']]
     });
 
     return res.status(200).json({ articles });

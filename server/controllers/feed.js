@@ -94,7 +94,7 @@ const getFeeds = async (req, res, _next) => {
       where: { 
         userId: userId,
         ...canonicalArticleWhere(),
-        published: { [db.Sequelize.Op.gte]: thirtyDaysAgo }
+        publishedAt: { [db.Sequelize.Op.gte]: thirtyDaysAgo }
       },
       group: ['feedId'],
       raw: true

@@ -53,7 +53,7 @@ const createFixture = async () => {
     description: 'Fallback description',
     contentOriginal: '<p>Current article body</p>',
     contentHtml: 'Current article body',
-    published: new Date('2026-05-01T10:00:00Z'),
+    publishedAt: new Date('2026-05-01T10:00:00Z'),
     firstSeen: new Date('2026-05-01T10:05:00Z')
   });
 
@@ -119,7 +119,7 @@ describe('Google Reader API compatibility', () => {
       favoriteInd: 0,
       url: 'https://example.com/second',
       title: 'Second Article',
-      published: new Date('2026-05-02T10:00:00Z'),
+      publishedAt: new Date('2026-05-02T10:00:00Z'),
       firstSeen: new Date('2026-05-02T10:05:00Z')
     });
 
@@ -137,7 +137,7 @@ describe('Google Reader API compatibility', () => {
       status: 'unread',
       url: 'https://other.example.com/article',
       title: 'Other Article',
-      published: new Date('2026-05-03T10:00:00Z')
+      publishedAt: new Date('2026-05-03T10:00:00Z')
     });
 
     const res = await request(app)

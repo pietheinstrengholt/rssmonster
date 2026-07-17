@@ -34,7 +34,7 @@ export function buildArticleIdentity({
   normalizedUrl = null,
   contentSourceHash = null,
   contentTextHash = null,
-  published = null
+  publishedAt = null
 }) {
   const resolvedNormalizedUrl = normalizedUrl || (link ? normalizeUrl(link) : null);
   const hasStrongUrl = isStrongHttpUrl(link) && isStrongHttpUrl(resolvedNormalizedUrl);
@@ -47,7 +47,7 @@ export function buildArticleIdentity({
     normalizedUrl: resolvedNormalizedUrl,
     contentSourceHash,
     contentTextHash,
-    published,
+    publishedAt,
     hasStrongUrl,
     urlHash: hasStrongUrl ? hashValue(link) : null,
     normalizedUrlHash: hasStrongUrl ? hashValue(resolvedNormalizedUrl) : null
@@ -58,7 +58,7 @@ export function buildArticleIdentity({
 export function canUseTitleFallback(identity) {
   if (!identity?.title || typeof identity.title !== 'string') return false;
   if (identity.title.trim().length < MIN_TITLE_FALLBACK_LENGTH) return false;
-  if (!identity.published || Number.isNaN(new Date(identity.published).getTime())) return false;
+  if (!identity.publishedAt || Number.isNaN(new Date(identity.publishedAt).getTime())) return false;
 
   return !identity.hasStrongUrl;
 }
@@ -95,8 +95,8 @@ const matchCachedTitleFallback = (duplicateCache, identity) => {
 
   const candidates = duplicateCache.findFeedTitleCandidates(identity.title);
   const candidate = candidates.find(article => {
-    const candidatePublished = new Date(article.published);
-    const identityPublished = new Date(identity.published);
+    const candidatePublished = new Date(article.publishedAt);
+    const identityPublished = new Date(identity.publishedAt);
     if (Number.isNaN(candidatePublished.getTime()) || Number.isNaN(identityPublished.getTime())) {
       return false;
     }
