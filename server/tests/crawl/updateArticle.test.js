@@ -111,6 +111,32 @@ describe('updateArticle', () => {
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
   });
 
+  it('ignores publication timestamp differences below database precision', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      published: '2026-07-13T13:30:00.987Z'
+    }));
+
+    expect(result).toMatchObject({
+      changed: false,
+      changes: { publishedChanged: false, changedFields: [] },
+      updateValues: { published: new Date('2026-07-13T13:30:00.000Z') }
+    });
+  });
+
+  it('detects publication timestamp differences of at least one second', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      published: '2026-07-13T13:30:01.001Z'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: { publishedChanged: true, changedFields: ['published'] },
+      updateValues: { published: new Date('2026-07-13T13:30:01.000Z') }
+    });
+  });
+
   it('matches a filtered article by external publisher identity', async () => {
     const article = storedArticle({ filteredInd: true });
     mocked.articleFindOne.mockResolvedValue(article);
@@ -198,6 +224,73 @@ describe('updateArticle', () => {
     });
     expect(payload).not.toContain('<p>Article body</p>');
     expect(payload).not.toContain('<p>Revised body</p>');
+    consoleInfo.mockRestore();
+  });
+
+  it('ignores raw publisher source changes when cleaned content is unchanged', async () => {
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      contentOriginal: '<p id="publisher-random-53880">Article body</p>',
+      contentSourceHash: 'volatile-source-hash'
+    }));
+
+    expect(result).toMatchObject({
+      changed: false,
+      changes: { contentChanged: false, changedFields: [] },
+      sourceChangedFields: ['contentOriginal', 'contentSourceHash']
+    });
+    expect(consoleInfo).not.toHaveBeenCalled();
+    consoleInfo.mockRestore();
+  });
+
+  it('ignores temporary Kickstarter signatures for the same cleaned video asset', async () => {
+    const storedVideoUrl = 'https://v2.kickstarter.com/1784287802-old%2Bsignature%3D/assets/016/537/184/video.mp4';
+    const incomingVideoUrl = 'https://v2.kickstarter.com/1784287803-new%2Fsignature%3D/assets/016/537/184/video.mp4';
+    mocked.articleFindOne.mockResolvedValue(storedArticle({
+      contentOriginal: `<video src="${storedVideoUrl}"></video>`,
+      contentHtml: `<video src="${storedVideoUrl}"></video>`,
+      contentSourceHash: 'stored-kickstarter-source-hash'
+    }));
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      contentOriginal: `<video src="${incomingVideoUrl}"></video>`,
+      contentHtml: `<video src="${incomingVideoUrl}"></video>`,
+      contentSourceHash: 'incoming-kickstarter-source-hash'
+    }));
+
+    expect(result).toMatchObject({
+      changed: false,
+      changes: { contentChanged: false, changedFields: [] },
+      sourceChangedFields: ['contentOriginal', 'contentSourceHash']
+    });
+    expect(consoleInfo).not.toHaveBeenCalled();
+    consoleInfo.mockRestore();
+  });
+
+  it('detects a different Kickstarter video asset as meaningful cleaned content', async () => {
+    const storedVideoUrl = 'https://v2.kickstarter.com/1784287802-old-signature/assets/016/537/184/video.mp4';
+    const incomingVideoUrl = 'https://v2.kickstarter.com/1784287803-new-signature/assets/016/537/999/video.mp4';
+    mocked.articleFindOne.mockResolvedValue(storedArticle({
+      contentOriginal: `<video src="${storedVideoUrl}"></video>`,
+      contentHtml: `<video src="${storedVideoUrl}"></video>`,
+      contentSourceHash: 'stored-kickstarter-source-hash'
+    }));
+    const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      contentOriginal: `<video src="${incomingVideoUrl}"></video>`,
+      contentHtml: `<video src="${incomingVideoUrl}"></video>`,
+      contentSourceHash: 'incoming-kickstarter-source-hash'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: { contentChanged: true, changedFields: ['contentHtml'] },
+      sourceChangedFields: ['contentOriginal', 'contentHtml', 'contentSourceHash']
+    });
+    expect(consoleInfo).toHaveBeenCalledOnce();
     consoleInfo.mockRestore();
   });
 

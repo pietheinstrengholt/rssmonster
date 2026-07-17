@@ -7,11 +7,10 @@ import { replaceArticleDerivedTags } from './tags.js';
 
 const { Article, sequelize } = db;
 
+const RAW_SOURCE_FIELDS = ['contentOriginal', 'contentSourceHash'];
 const CONTENT_FIELDS = [
-  'contentOriginal',
   'contentHtml',
   'contentText',
-  'contentSourceHash',
   'contentTextHash',
   'language'
 ];
@@ -99,6 +98,14 @@ const comparableMediaValue = value => {
   );
 };
 
+// This function removes temporary Kickstarter signatures while retaining stable video identities.
+const comparableContentHtml = value => typeof value === 'string'
+  ? value.replace(
+      /https:\/\/v2\.kickstarter\.com\/\d+-[^/\s"'<>]+\/assets\//g,
+      'https://v2.kickstarter.com/assets/'
+    )
+  : value;
+
 // This function normalizes persisted values before deterministic change comparison.
 const comparableValue = (field, value) => {
   if (PUBLISHED_FIELDS.includes(field) && field !== 'publishInferred') {
@@ -107,6 +114,7 @@ const comparableValue = (field, value) => {
     return Number.isNaN(date.getTime()) ? String(value) : date.toISOString();
   }
   if (field === 'media') return JSON.stringify(stableValue(comparableMediaValue(value)));
+  if (field === 'contentHtml') return comparableContentHtml(value) ?? null;
   return value ?? null;
 };
 
@@ -337,15 +345,17 @@ async function updateArticle(feed, data, options = {}) {
 
   const updateValues = buildResolvedSourceValues(feed, article, data);
   const storedValues = buildStoredSourceValues(feed, article);
-  const changedFields = changedFieldsBetween(updateValues, storedValues);
-  const changes = classifyChanges(changedFields);
+  const sourceChangedFields = changedFieldsBetween(updateValues, storedValues);
+  const meaningfulChangedFields = sourceChangedFields
+    .filter(field => !RAW_SOURCE_FIELDS.includes(field));
+  const changes = classifyChanges(meaningfulChangedFields);
 
-  if (changedFields.length > 0) {
+  if (meaningfulChangedFields.length > 0) {
     logArticleUpdate({
       feed,
       article,
       data,
-      changedFields,
+      changedFields: sourceChangedFields,
       storedValues,
       updateValues
     });
@@ -354,8 +364,9 @@ async function updateArticle(feed, data, options = {}) {
   return {
     article,
     matched: true,
-    changed: changedFields.length > 0,
+    changed: meaningfulChangedFields.length > 0,
     changes,
+    sourceChangedFields,
     updateValues
   };
 }

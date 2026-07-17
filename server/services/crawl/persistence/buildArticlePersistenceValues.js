@@ -33,6 +33,17 @@ export const hashArticleUrl = value => value
   ? createHash('sha256').update(value).digest('hex')
   : null;
 
+// This function matches publication timestamps to MySQL DATETIME whole-second precision.
+const normalizePublicationDate = value => {
+  if (value === null || value === undefined || value === '') return null;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return value;
+
+  date.setUTCMilliseconds(0);
+  return date;
+};
+
 // This function normalizes string and object lead-image inputs into persisted metadata.
 const normalizeLeadImage = data => {
   if (typeof data.leadImage === 'string') return { url: data.leadImage };
@@ -98,8 +109,8 @@ export default function buildArticlePersistenceValues(feed, data = {}) {
     advertisementScore: data.advertisementScore,
     sentimentScore: data.sentimentScore,
     qualityScore: data.qualityScore,
-    published: data.published ?? null,
-    publishedSource: data.publishedSource || null,
+    published: normalizePublicationDate(data.published),
+    publishedSource: normalizePublicationDate(data.publishedSource),
     publishInferred: Boolean(data.publishInferred)
   };
 }

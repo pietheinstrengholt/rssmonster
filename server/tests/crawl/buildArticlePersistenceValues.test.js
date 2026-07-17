@@ -83,6 +83,19 @@ describe('buildArticlePersistenceValues', () => {
     expect(mutableValues).not.toHaveProperty('feedId');
   });
 
+  it('normalizes publication timestamps to whole-second database precision', () => {
+    const values = buildArticlePersistenceValues(
+      { id: 7, userId: 42 },
+      {
+        published: '2026-07-13T13:30:00.987Z',
+        publishedSource: new Date('2026-07-13T13:30:00.654Z')
+      }
+    );
+
+    expect(values.published).toEqual(new Date('2026-07-13T13:30:00.000Z'));
+    expect(values.publishedSource).toEqual(new Date('2026-07-13T13:30:00.000Z'));
+  });
+
   it.each([undefined, null, '', '   \n  '])(
     'does not create a visible-text hash for absent contentText value %s',
     contentText => {
