@@ -43,6 +43,21 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true,
         defaultValue: null
+      },
+      articleErrors: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
+      errors: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
+      durationMs: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
       }
     },
     {

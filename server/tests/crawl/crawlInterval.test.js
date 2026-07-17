@@ -1,7 +1,11 @@
-import { describe, expect, it } from 'vitest';
-import crawlController from '../../controllers/crawl.js';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import crawlController, { withTimeout } from '../../controllers/crawl.js';
 
 describe('crawl interval controls', () => {
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
   it('allows feeds whose interval has elapsed', () => {
     const feed = {
       lastFetched: new Date('2026-07-01T00:00:00Z'),
@@ -35,5 +39,34 @@ describe('crawl interval controls', () => {
     const now = new Date('2026-07-01T00:30:00Z');
 
     expect(crawlController.shouldCrawlFeed(feed, now)).toBe(false);
+  });
+
+  it('waits for timed-out feed work to settle before rejecting', async () => {
+    vi.useFakeTimers();
+    let resolveOperation;
+    let operationSignal;
+    let completed = false;
+    const operation = new Promise(resolve => {
+      resolveOperation = resolve;
+    });
+    const resultPromise = withTimeout(signal => {
+      operationSignal = signal;
+      return operation;
+    }, 1000);
+    void resultPromise.finally(() => {
+      completed = true;
+    }).catch(() => {});
+
+    await vi.advanceTimersByTimeAsync(1000);
+
+    expect(operationSignal.aborted).toBe(true);
+    expect(completed).toBe(false);
+
+    resolveOperation();
+
+    await expect(resultPromise).rejects.toThrow(
+      'Feed processing timed out after 1 seconds'
+    );
+    expect(completed).toBe(true);
   });
 });

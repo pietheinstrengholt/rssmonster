@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
 
 const fetchURL = vi.fn();
 
@@ -7,6 +7,10 @@ vi.mock('../../utils/fetchURL.js', () => ({
 }));
 
 const { discoverRssLink } = await import('../../services/feeds/discoverRssLink.js');
+
+afterEach(() => {
+  vi.useRealTimers();
+});
 
 describe('discoverRssLink', () => {
   it('accepts Reddit RSS URL directly', async () => {
@@ -36,7 +40,7 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(rssUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 2);
+    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 1, 5000);
   });
 
   it('returns the parsed direct feed without fetching it twice', async () => {
@@ -89,7 +93,7 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(profileUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 2);
+    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 0, 3000);
   });
 
   it('discovers Mastodon profile RSS by appending .rss', async () => {
@@ -113,6 +117,50 @@ describe('discoverRssLink', () => {
     });
 
     await expect(discoverRssLink(profileUrl)).resolves.toBe(rssUrl);
-    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 2);
+    expect(fetchURL).toHaveBeenCalledWith(rssUrl, 0, 3000);
+  });
+
+  it('does not fetch the original URL again after the initial attempt', async () => {
+    fetchURL.mockReset();
+    const pageUrl = 'https://example.com/news';
+
+    fetchURL.mockRejectedValue(new Error('fetch failed'));
+
+    await expect(discoverRssLink(pageUrl)).resolves.toBeUndefined();
+
+    const originalCalls = fetchURL.mock.calls.filter(([candidate]) => (
+      candidate === pageUrl
+    ));
+    expect(originalCalls).toHaveLength(1);
+  });
+
+  it('limits all candidate fetches to the overall discovery budget', async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
+    fetchURL.mockReset();
+
+    fetchURL.mockImplementation(async (_candidate, _retries, timeoutMs) => {
+      vi.setSystemTime(Date.now() + timeoutMs);
+      const error = new Error('The fetch operation timed out');
+      error.name = 'TimeoutError';
+      throw error;
+    });
+
+    await expect(
+      discoverRssLink('https://example.com/news')
+    ).resolves.toBeUndefined();
+
+    const allocatedMs = fetchURL.mock.calls.reduce(
+      (total, call) => total + call[2],
+      0
+    );
+    expect(allocatedMs).toBe(15000);
+    expect(fetchURL.mock.calls[0]).toEqual([
+      'https://example.com/news',
+      1,
+      5000
+    ]);
+    expect(fetchURL.mock.calls.slice(1).every((call) => call[1] === 0)).toBe(true);
+
   });
 });

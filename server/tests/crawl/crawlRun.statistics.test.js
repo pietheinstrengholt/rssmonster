@@ -79,7 +79,10 @@ describe('crawl run article statistics', () => {
     expect(crawlRun).toMatchObject({
       status: 'completed',
       newArticles: 1,
-      updatedArticles: 1
+      updatedArticles: 1,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
   });
 
@@ -101,8 +104,44 @@ describe('crawl run article statistics', () => {
     expect(crawlRun).toMatchObject({
       status: 'completed',
       newArticles: 0,
-      updatedArticles: 0
+      updatedArticles: 0,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
+  });
+
+  it('persists article errors and leaves the feed in an error state', async () => {
+    const { user, feed } = await createUserFeed('articleerrorcrawlstats');
+    const onProgress = vi.fn();
+    mocked.processArticle
+      .mockResolvedValueOnce({ newArticles: 0, updatedArticles: 0, errors: 1 })
+      .mockResolvedValueOnce({ newArticles: 0, updatedArticles: 0, errors: 1 });
+
+    const result = await crawlController.performCrawl(user.id, { onProgress });
+
+    const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    await feed.reload();
+
+    expect(result).toMatchObject({
+      errors: 1,
+      totalArticleErrors: 2
+    });
+    expect(crawlRun).toMatchObject({
+      status: 'completed',
+      newArticles: 0,
+      updatedArticles: 0,
+      articleErrors: 2,
+      errors: 1,
+      durationMs: expect.any(Number)
+    });
+    expect(feed.errorCount).toBe(1);
+    expect(feed.errorMessage).toBe('2 articles failed during processing');
+    expect(onProgress).toHaveBeenCalledWith(expect.objectContaining({
+      type: 'progress',
+      status: 'error',
+      articleErrors: 2
+    }));
   });
 
   it('persists accumulated totals when the crawl fails after article writes', async () => {
@@ -121,7 +160,10 @@ describe('crawl run article statistics', () => {
       status: 'failed',
       errorMessage: crawlError.message,
       newArticles: 1,
-      updatedArticles: 1
+      updatedArticles: 1,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
   });
 });

@@ -60,21 +60,34 @@ const catchAsync = fn => (req, res, next) => {
   fn(req, res, next).catch(next);
 };
 
-// Helper function to add timeout to a promise
-const withTimeout = (promise, timeoutMs, _feedUrl) => Promise.race([
-  promise,
-  new Promise((_, reject) =>
-    setTimeout(
-      () =>
-        reject(
-          new Error(
-            `Feed processing timed out after ${timeoutMs / 1000} seconds`
-          )
-        ),
-      timeoutMs
-    )
-  )
-]);
+// This function throws the abort reason at safe feed-processing boundaries.
+const throwIfAborted = signal => {
+  if (!signal?.aborted) return;
+
+  throw signal.reason instanceof Error
+    ? signal.reason
+    : new Error('Feed processing aborted');
+};
+
+// This function aborts overdue work but waits for the active operation to settle safely.
+export const withTimeout = async (operation, timeoutMs) => {
+  const controller = new AbortController();
+  const timeoutError = new Error(
+    `Feed processing timed out after ${timeoutMs / 1000} seconds`
+  );
+  const timeoutId = setTimeout(() => controller.abort(timeoutError), timeoutMs);
+
+  try {
+    const result = await operation(controller.signal);
+    throwIfAborted(controller.signal);
+    return result;
+  } catch (err) {
+    throwIfAborted(controller.signal);
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
+};
 
 // Reset rate limit delay after crawl completes
 const resetRateLimitDelay = () => {
@@ -291,7 +304,9 @@ const runCrawl = async (userId = null, options = {}) => {
   const crawlStartedAt = new Date();
   const crawlStats = options.crawlStats || {
     newArticles: 0,
-    updatedArticles: 0
+    updatedArticles: 0,
+    articleErrors: 0,
+    errors: 0
   };
   const emitProgress = (event) => {
     if (typeof options.onProgress !== 'function') {
@@ -316,6 +331,7 @@ const runCrawl = async (userId = null, options = {}) => {
   let crawlTimedOut = false;
   let totalNewArticles = 0;
   let totalUpdatedArticles = 0;
+  let totalArticleErrors = 0;
 
   const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
 
@@ -329,6 +345,7 @@ const runCrawl = async (userId = null, options = {}) => {
     totalFeeds: feeds.length,
     newArticles: 0,
     updatedArticles: 0,
+    articleErrors: 0,
     errors: 0,
     timeouts: 0,
     processedFeeds: 0
@@ -345,6 +362,7 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: 0,
         newArticles: 0,
         updatedArticles: 0,
+        articleErrors: 0,
         errors: 0,
         timeouts: 0,
         processedFeeds: 0,
@@ -361,7 +379,8 @@ const runCrawl = async (userId = null, options = {}) => {
       processedUserIds: userId ? [userId] : [],
       crawlStartedAt,
       totalNewArticles: 0,
-      totalUpdatedArticles: 0
+      totalUpdatedArticles: 0,
+      totalArticleErrors: 0
     };
   }
 
@@ -389,11 +408,13 @@ const runCrawl = async (userId = null, options = {}) => {
     await feed.update(updateData);
   };
 
-  const processSingleFeed = async (feed, currentFeed) => {
+  const processSingleFeed = async (feed, currentFeed, signal) => {
     let feedNewArticles = 0;
     let feedUpdatedArticles = 0;
+    let feedArticleErrors = 0;
 
     try {
+      throwIfAborted(signal);
       emitProgress({
         type: 'feed_started',
         feedId: feed.id,
@@ -402,6 +423,7 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
         processedFeeds: processedCount
@@ -414,6 +436,7 @@ const runCrawl = async (userId = null, options = {}) => {
         feed,
         { includeParsedFeed: true }
       );
+      throwIfAborted(signal);
 
       // If Cloudflare blocks discovery, fall back to the original URL so the parser can try it directly
       const url = typeof discoveryResult === 'string'
@@ -425,6 +448,7 @@ const runCrawl = async (userId = null, options = {}) => {
       }
 
       const parsedFeed = discoveryResult?.parsedFeed || await parseFeed.process(url);
+      throwIfAborted(signal);
 
       // Sanity check
       if (!parsedFeed) {
@@ -442,6 +466,7 @@ const runCrawl = async (userId = null, options = {}) => {
         entries: entries.length,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
         processedFeeds: processedCount
@@ -467,15 +492,27 @@ const runCrawl = async (userId = null, options = {}) => {
           );
           const newArticles = Number(articleResult?.newArticles || 0);
           const updatedArticles = Number(articleResult?.updatedArticles || 0);
+          const articleErrors = Number(articleResult?.errors || 0);
           feedNewArticles += newArticles;
           feedUpdatedArticles += updatedArticles;
+          feedArticleErrors += articleErrors;
           totalNewArticles += newArticles;
           totalUpdatedArticles += updatedArticles;
+          totalArticleErrors += articleErrors;
           crawlStats.newArticles = totalNewArticles;
           crawlStats.updatedArticles = totalUpdatedArticles;
+          crawlStats.articleErrors = totalArticleErrors;
+          throwIfAborted(signal);
         }
       } finally {
         await hotlinkBatcher.flush();
+      }
+
+      throwIfAborted(signal);
+
+      if (feedArticleErrors > 0) {
+        const articleLabel = feedArticleErrors === 1 ? 'article' : 'articles';
+        throw new Error(`${feedArticleErrors} ${articleLabel} failed during processing`);
       }
 
       emitProgress({
@@ -486,8 +523,10 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         feedNewArticles,
         feedUpdatedArticles,
+        feedArticleErrors,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
         processedFeeds: processedCount
@@ -504,6 +543,7 @@ const runCrawl = async (userId = null, options = {}) => {
         status: 'active'
       };
       await feed.update(updateData);
+      throwIfAborted(signal);
 
       processedCount++;
       console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
@@ -516,17 +556,23 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         feedNewArticles,
         feedUpdatedArticles,
+        feedArticleErrors,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
         processedFeeds: processedCount
       });
+
+      return { status: 'success', message: null };
     } catch (err) {
+      throwIfAborted(signal);
       const errMsg = err?.message || String(err) || 'Unknown error';
       console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
       await markError(feed, errMsg);
       errorCount++;
+      crawlStats.errors = errorCount;
 
       emitProgress({
         type: 'feed_error',
@@ -536,6 +582,7 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
         processedFeeds: processedCount,
@@ -550,12 +597,16 @@ const runCrawl = async (userId = null, options = {}) => {
         totalFeeds: feeds.length,
         feedNewArticles,
         feedUpdatedArticles,
+        feedArticleErrors,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount,
         processedFeeds: processedCount
       });
+
+      return { status: 'error', message: errMsg };
     } finally {
       //update lastFetched
       await feed.update({
@@ -571,7 +622,12 @@ const runCrawl = async (userId = null, options = {}) => {
     let message = null;
 
     try {
-      await withTimeout(processSingleFeed(feed, currentFeed), FEED_TIMEOUT_MS, feed.url);
+      const feedResult = await withTimeout(
+        signal => processSingleFeed(feed, currentFeed, signal),
+        FEED_TIMEOUT_MS
+      );
+      status = feedResult.status;
+      message = feedResult.message;
     } catch (err) {
       const errMsg = err?.message || String(err) || 'Unknown error';
 
@@ -590,6 +646,7 @@ const runCrawl = async (userId = null, options = {}) => {
           totalFeeds: feeds.length,
           newArticles: totalNewArticles,
           updatedArticles: totalUpdatedArticles,
+          articleErrors: totalArticleErrors,
           errors: errorCount + 1,
           timeouts: timeoutCount,
           processedFeeds: processedCount,
@@ -603,6 +660,7 @@ const runCrawl = async (userId = null, options = {}) => {
       }
 
       errorCount++;
+      crawlStats.errors = errorCount;
     } finally {
       if (feed.userId) processedUserIds.add(feed.userId);
 
@@ -619,6 +677,7 @@ const runCrawl = async (userId = null, options = {}) => {
         processedFeeds: processedCount,
         newArticles: totalNewArticles,
         updatedArticles: totalUpdatedArticles,
+        articleErrors: totalArticleErrors,
         errors: errorCount,
         timeouts: timeoutCount
       });
@@ -628,17 +687,24 @@ const runCrawl = async (userId = null, options = {}) => {
   if (runParallel) {
     console.log('[Parallel Mode] Processing feeds in parallel...');
     const remaining = CRAWL_TIMEOUT_MS - (Date.now() - (crawlDeadline - CRAWL_TIMEOUT_MS));
+    const feedRuns = Promise.all(
+      feeds.map((feed, index) => runFeedWithTimeout(feed, index + 1))
+    );
+    let crawlTimeoutId;
     const results = await Promise.race([
-      Promise.all(feeds.map((feed, index) => runFeedWithTimeout(feed, index + 1))),
-      new Promise(resolve =>
-        setTimeout(() => {
+      feedRuns,
+      new Promise(resolve => {
+        crawlTimeoutId = setTimeout(() => {
           crawlTimedOut = true;
           resolve('timeout');
-        }, Math.max(remaining, 0))
-      )
+        }, Math.max(remaining, 0));
+      })
     ]);
+    clearTimeout(crawlTimeoutId);
     if (results === 'timeout') {
       console.log(`[Crawl] Crawl timed out after ${CRAWL_TIMEOUT_MS / 1000}s (parallel mode)`);
+      // Do not release the crawl run while timed-out feed work is still settling.
+      await feedRuns;
     }
   } else {
     console.log('[Sequential Mode] Processing feeds sequentially...');
@@ -662,7 +728,8 @@ const runCrawl = async (userId = null, options = {}) => {
     processedUserIds: [...processedUserIds],
     crawlStartedAt,
     totalNewArticles,
-    totalUpdatedArticles
+    totalUpdatedArticles,
+    totalArticleErrors
   };
 
   if (!options.suppressDoneEvent) {
@@ -676,6 +743,7 @@ const runCrawl = async (userId = null, options = {}) => {
       processedFeeds: result.processed,
       newArticles: totalNewArticles,
       updatedArticles: totalUpdatedArticles,
+      articleErrors: totalArticleErrors,
       errors: result.errors,
       timeouts: result.timeouts,
       crawlTimedOut: result.crawlTimedOut
@@ -691,7 +759,14 @@ const findActiveCrawlRun = userId => CrawlRun.findOne({
     userId,
     status: 'running'
   },
-  attributes: ['id', 'startedAt', 'newArticles', 'updatedArticles']
+  attributes: [
+    'id',
+    'startedAt',
+    'newArticles',
+    'updatedArticles',
+    'articleErrors',
+    'errors'
+  ]
 });
 
 // This function checks whether a running crawl exceeds the configured duration.
@@ -704,18 +779,28 @@ const isStaleCrawlRun = (crawlRun, now = new Date()) => {
   return startedAt <= now.getTime() - CRAWL_RUN_MAX_RUNNING_MINUTES * MINUTE_MS;
 };
 
+// This function calculates a non-negative terminal crawl duration in milliseconds.
+const calculateCrawlDurationMs = (startedAt, completedAt) => Math.max(
+  0,
+  completedAt.getTime() - new Date(startedAt).getTime()
+);
+
 // This function conditionally fails the stale row without touching a newer run.
 const recoverStaleCrawlRun = async (userId, crawlRun, now = new Date()) => {
   const staleBefore = new Date(
     now.getTime() - CRAWL_RUN_MAX_RUNNING_MINUTES * MINUTE_MS
   );
+  const durationMs = calculateCrawlDurationMs(crawlRun.startedAt, now);
   const [updatedCount] = await CrawlRun.update(
     {
       status: 'failed',
       completedAt: now,
       errorMessage: STALE_CRAWL_ERROR_MESSAGE,
       newArticles: crawlRun.newArticles ?? 0,
-      updatedArticles: crawlRun.updatedArticles ?? 0
+      updatedArticles: crawlRun.updatedArticles ?? 0,
+      articleErrors: crawlRun.articleErrors ?? 0,
+      errors: crawlRun.errors ?? 0,
+      durationMs
     },
     {
       where: {
@@ -768,6 +853,7 @@ const crawlAlreadyRunningResult = (userId, activeCrawlRun) => {
     crawlStartedAt: null,
     totalNewArticles: 0,
     totalUpdatedArticles: 0,
+    totalArticleErrors: 0,
     userId,
     crawlRunId: activeCrawlRun.id,
     skipped: true,
@@ -791,7 +877,9 @@ const performCrawl = async (userId = null, options = {}) => {
   let crawlRun = null;
   const crawlStats = {
     newArticles: 0,
-    updatedArticles: 0
+    updatedArticles: 0,
+    articleErrors: 0,
+    errors: 0
   };
 
   if (userId) {
@@ -800,7 +888,9 @@ const performCrawl = async (userId = null, options = {}) => {
         userId,
         status: 'running',
         newArticles: 0,
-        updatedArticles: 0
+        updatedArticles: 0,
+        articleErrors: 0,
+        errors: 0
       });
     } catch (err) {
       if (!isActiveCrawlConstraintError(err)) {
@@ -826,12 +916,16 @@ const performCrawl = async (userId = null, options = {}) => {
   } catch (err) {
     if (crawlRun) {
       try {
+        const completedAt = new Date();
         await crawlRun.update({
           status: 'failed',
-          completedAt: new Date(),
+          completedAt,
           errorMessage: err?.message || String(err) || 'Unknown crawl error',
           newArticles: crawlStats.newArticles,
-          updatedArticles: crawlStats.updatedArticles
+          updatedArticles: crawlStats.updatedArticles,
+          articleErrors: crawlStats.articleErrors,
+          errors: crawlStats.errors,
+          durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
         });
       } catch (crawlRunErr) {
         console.error('Error recording failed crawl run:', crawlRunErr);
@@ -842,11 +936,15 @@ const performCrawl = async (userId = null, options = {}) => {
   }
 
   if (crawlRun) {
+    const completedAt = new Date();
     await crawlRun.update({
       status: 'completed',
-      completedAt: new Date(),
+      completedAt,
       newArticles: crawlStats.newArticles,
-      updatedArticles: crawlStats.updatedArticles
+      updatedArticles: crawlStats.updatedArticles,
+      articleErrors: crawlStats.articleErrors,
+      errors: crawlStats.errors,
+      durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
     });
   }
 
@@ -874,6 +972,7 @@ const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => 
         processedFeeds: 0,
         newArticles: 0,
         updatedArticles: 0,
+        articleErrors: 0,
         errors: 0,
         timeouts: 0,
         crawlTimedOut: false
@@ -899,6 +998,7 @@ const performCrawlWithSemanticGrouping = async (userId = null, options = {}) => 
       processedFeeds: result.processed,
       newArticles: result.totalNewArticles || 0,
       updatedArticles: result.totalUpdatedArticles || 0,
+      articleErrors: result.totalArticleErrors || 0,
       errors: result.errors,
       timeouts: result.timeouts,
       crawlTimedOut: result.crawlTimedOut

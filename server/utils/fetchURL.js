@@ -9,6 +9,7 @@ const isRetryableFetchError = err => {
   const msg = err?.message || '';
   return (
     err?.name === 'AbortError' ||
+    err?.name === 'TimeoutError' ||
     msg.includes('socket hang up') ||
     msg.includes('ECONNRESET') ||
     msg.includes('ETIMEDOUT') ||
@@ -16,16 +17,29 @@ const isRetryableFetchError = err => {
   );
 };
 
-// Fetches a URL with a hard timeout and a small retry budget for transient failures.
-export const fetchURL = async (url, retries = 2) => {
+// Creates a consistent timeout error when the total fetch budget is exhausted.
+const createTimeoutError = () => {
+  const error = new Error('The fetch operation timed out');
+  error.name = 'TimeoutError';
+  return error;
+};
+
+// Fetches a URL within one total timeout budget, including retries and body consumption.
+export const fetchURL = async (url, retries = 1, timeoutMs = 5000) => {
+  const startedAt = Date.now();
+  const deadline = startedAt + timeoutMs;
+
   // Performs one fetch attempt and recursively retries retryable failures.
   const attemptFetch = async attempt => {
-    const controller = new AbortController();
-    // Set a hard timeout of 5 seconds for the entire fetch operation
-    const timeoutId = setTimeout(() => controller.abort(), 5000);
+    const remainingMs = deadline - Date.now();
+    if (remainingMs <= 0) throw createTimeoutError();
+
+    const attemptStartedAt = Date.now();
+    // Keep the signal alive after headers arrive so response body reads share the deadline.
+    const signal = AbortSignal.timeout(remainingMs);
 
     const options = {
-      signal: controller.signal,
+      signal,
       redirect: 'follow',  // Explicitly follow redirects
       headers: {
         'User-Agent':
@@ -39,7 +53,6 @@ export const fetchURL = async (url, retries = 2) => {
 
     try {
       const response = await fetch(url, options);
-      clearTimeout(timeoutId);
       
       // Log redirects for debugging
       if (response.url && response.url !== url) {
@@ -48,11 +61,16 @@ export const fetchURL = async (url, retries = 2) => {
       
       return response;
     } catch (err) {
-      clearTimeout(timeoutId);
-
       if (isRetryableFetchError(err) && attempt < retries) {
-        const waitTime = 1000 * (attempt + 1);
-        console.log(`[Error] Fetch attempt ${attempt + 1} failed for ${url}, retrying in ${waitTime}ms...`);
+        const remainingAfterFailureMs = deadline - Date.now();
+        const waitTime = Math.min(500 * (attempt + 1), remainingAfterFailureMs);
+        if (waitTime <= 0) throw err;
+
+        const elapsedMs = Date.now() - attemptStartedAt;
+        console.log(
+          `[Error] Fetch attempt ${attempt + 1} failed after ${elapsedMs}ms ` +
+          `for ${url}, retrying in ${waitTime}ms...`
+        );
         await delay(waitTime);
         return attemptFetch(attempt + 1);
       }

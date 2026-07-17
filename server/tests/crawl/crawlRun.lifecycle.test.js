@@ -66,14 +66,19 @@ describe('crawl run lifecycle', () => {
       userId: user.id,
       status: 'running',
       newArticles: 0,
-      updatedArticles: 0
+      updatedArticles: 0,
+      articleErrors: 0,
+      errors: 0
     });
     expect(updateSpy).toHaveBeenCalledOnce();
     expect(updateSpy).toHaveBeenCalledWith({
       status: 'completed',
       completedAt: expect.any(Date),
       newArticles: 0,
-      updatedArticles: 0
+      updatedArticles: 0,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
     expect(crawlRuns).toHaveLength(1);
     expect(crawlRuns[0]).toMatchObject({
@@ -81,7 +86,10 @@ describe('crawl run lifecycle', () => {
       status: 'completed',
       errorMessage: null,
       newArticles: 0,
-      updatedArticles: 0
+      updatedArticles: 0,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
     expect(crawlRuns[0].startedAt).toBeInstanceOf(Date);
     expect(crawlRuns[0].completedAt).toBeInstanceOf(Date);
@@ -107,7 +115,10 @@ describe('crawl run lifecycle', () => {
       completedAt: expect.any(Date),
       errorMessage: crawlError.message,
       newArticles: 0,
-      updatedArticles: 0
+      updatedArticles: 0,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
     expect(crawlRuns).toHaveLength(1);
     expect(crawlRuns[0]).toMatchObject({
@@ -115,7 +126,10 @@ describe('crawl run lifecycle', () => {
       status: 'failed',
       errorMessage: crawlError.message,
       newArticles: 0,
-      updatedArticles: 0
+      updatedArticles: 0,
+      articleErrors: 0,
+      errors: 0,
+      durationMs: expect.any(Number)
     });
     expect(crawlRuns[0].startedAt).toBeInstanceOf(Date);
     expect(crawlRuns[0].completedAt).toBeInstanceOf(Date);

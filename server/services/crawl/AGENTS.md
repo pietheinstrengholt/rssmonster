@@ -226,7 +226,7 @@ Meaningful changes include:
 
 - title
 - author
-- original, sanitized, or visible content and their hashes. Important note; for the real comparison only the contentText can be used. Often the contentOriginal and contentHtml can be different but the visible text is the same, so it is not a meaningful change. This is because providers use dynamic timestamps or other non-visible content to update the HTML without changing the visible text.
+- contentText
 - description
 - URL
 - lead image
@@ -234,6 +234,8 @@ Meaningful changes include:
 - publication date
 
 If none of these changed, no database update is performed.
+
+Important note; for the real comparison only the contentText can be used. Often the contentOriginal and contentHtml can be different but the visible text is the same, so it is not a meaningful change. This is because providers use dynamic timestamps or other non-visible content to update the HTML without changing the visible text.
 
 Updates preserve user state such as:
 
@@ -274,29 +276,9 @@ click, and attention state is also preserved because action-versus-user provenan
 
 # Duplicate Detection
 
-Duplicate detection is only executed for entries that were **not** matched through external identity.
+Duplicate detection is only executed for entries using different external identity or URLs. For instance, a feed may publish the same article with different URLs and different external IDs. Duplicate detection is not responsible for deciding whether two entries represent the same published article.
 
-Its purpose is preventing multiple local articles representing the same information.
-
-Duplicate checks run in this architectural order:
-
-1. visible-text hash within the user
-2. original-source hash within the user
-3. normalized URL hash within the feed
-4. exact URL hash within the feed
-5. exact title fallback within the feed
-
-The title fallback is only available when the entry lacks a strong HTTP(S) URL, the normalized
-title is at least 20 characters, and publication dates are within seven days.
-
-Content hashes are lookup signals, not database uniqueness constraints. Exact and normalized URL
-hashes are protected by feed-scoped unique constraints.
-
-Filtered articles remain part of publisher identity and insert-race handling, so later revisions
-update the same stored row. They do not participate in content-hash or title-based duplicate
-suppression; a hidden article must not prevent another active source from entering the library.
-Feed-scoped URL identity continues to include filtered rows because database URL uniqueness and
-the publisher-update flow require one stored row for the same feed URL.
+The duplicate detection is part of the semantic pipeline and is executed after the update detection. It uses the contentText and similarity cosine distance to determine whether two articles are duplicates.
 
 Duplicate detection never updates existing articles.
 

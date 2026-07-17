@@ -135,9 +135,24 @@ const unique = (arr) => {
 };
 
 // Re-exports centralized URL fetching for callers that import it from this module.
-export const fetchURL = async (url, retries = 2) =>
+export const fetchURL = async (url, retries = 1, timeoutMs = 5000) =>
   // Backwards-compatible export: throw on failure so callers can handle
-  fetchURLInternal(url, retries);
+  fetchURLInternal(url, retries, timeoutMs);
+
+const DIRECT_FETCH_RETRIES = 1;
+const DIRECT_FETCH_TIMEOUT_MS = 5000;
+const FALLBACK_FETCH_RETRIES = 0;
+const FALLBACK_FETCH_TIMEOUT_MS = 3000;
+const DISCOVERY_TIMEOUT_MS = 15000;
+
+// Creates an error when RSS discovery has exhausted its overall time budget.
+const createDiscoveryTimeoutError = () => {
+  const error = new Error(
+    `RSS discovery timed out after ${DISCOVERY_TIMEOUT_MS}ms`
+  );
+  error.name = 'TimeoutError';
+  return error;
+};
 
 // Attempts RSS discovery from direct feeds, HTML link tags, social URL conventions, and common fallback paths.
 export const discoverRssLink = async (url, feed, options = {}) => {
@@ -146,6 +161,8 @@ export const discoverRssLink = async (url, feed, options = {}) => {
       await registerDiscoveryError(feed, 'Invalid URL');
       return undefined;
     }
+
+    const discoveryDeadline = Date.now() + DISCOVERY_TIMEOUT_MS;
 
     // YouTube short-circuit
     if (url.includes('youtube.com') || url.includes('youtu.be')) {
@@ -163,9 +180,21 @@ export const discoverRssLink = async (url, feed, options = {}) => {
     // Build candidate list, and validate each candidate by fetching + parsing.
     // This ensures that if one "looks" like a feed but fails to parse, we keep trying.
 
+    // Fetches without allowing one candidate to exceed the remaining discovery budget.
+    const fetchCandidate = async (candidate, retries, timeoutMs) => {
+      const remainingMs = discoveryDeadline - Date.now();
+      if (remainingMs <= 0) throw createDiscoveryTimeoutError();
+
+      return fetchURL(candidate, retries, Math.min(timeoutMs, remainingMs));
+    };
+
     let initialResponse;
     try {
-      initialResponse = await fetchURL(url);
+      initialResponse = await fetchCandidate(
+        url,
+        DIRECT_FETCH_RETRIES,
+        DIRECT_FETCH_TIMEOUT_MS
+      );
     } catch (e) {
       // Still try fallbacks based on the URL we were given.
       console.log(`[Error] Initial fetch failed for ${url}: ${e.message}`);
@@ -248,10 +277,8 @@ export const discoverRssLink = async (url, feed, options = {}) => {
       '/feeds/posts/default'
     ];
 
-    // Include the original URL and the redirected URL as top candidates
+    // The original and redirected URLs were already checked by the initial fetch.
     const fallbackCandidates = unique([
-      responseUrl,  // Try the redirected URL first
-      url,          // Then the original URL
       blueskyRssCandidate,
       mastodonRssCandidate,
       ...htmlCandidates,
@@ -259,10 +286,15 @@ export const discoverRssLink = async (url, feed, options = {}) => {
       ...(baseUrl ? commonPaths.map(p => resolveLink(baseUrl, p)) : [])
     ]);
 
+    let discoveryError = 'No RSS link discovered';
     for (const candidate of fallbackCandidates) {
       try {
         console.log(`Trying RSS candidate: ${candidate}`);
-        const candidateResponse = await fetchURL(candidate);
+        const candidateResponse = await fetchCandidate(
+          candidate,
+          FALLBACK_FETCH_RETRIES,
+          FALLBACK_FETCH_TIMEOUT_MS
+        );
         
         if (!candidateResponse?.ok) continue;
         
@@ -290,7 +322,11 @@ export const discoverRssLink = async (url, feed, options = {}) => {
                 console.log(`Found meta refresh from ${candidate} → ${resolvedMetaUrl}`);
                 // Try the meta refresh URL immediately
                 try {
-                  const metaResponse = await fetchURL(resolvedMetaUrl);
+                  const metaResponse = await fetchCandidate(
+                    resolvedMetaUrl,
+                    FALLBACK_FETCH_RETRIES,
+                    FALLBACK_FETCH_TIMEOUT_MS
+                  );
                   if (metaResponse?.ok) {
                     const metaBody = await metaResponse.text();
                     const parsedFeed = parseFeedBody(metaBody);
@@ -310,10 +346,14 @@ export const discoverRssLink = async (url, feed, options = {}) => {
       } catch (e) {
         // Candidate failed (fetch or parse). Continue to next candidate.
         console.log(`[Error] Candidate failed: ${candidate} - ${e.message}`);
+        if (e.name === 'TimeoutError' && Date.now() >= discoveryDeadline) {
+          discoveryError = e.message;
+          break;
+        }
       }
     }
 
-    await registerDiscoveryError(feed, 'No RSS link discovered');
+    await registerDiscoveryError(feed, discoveryError);
     return undefined;
 
   } catch (e) {
