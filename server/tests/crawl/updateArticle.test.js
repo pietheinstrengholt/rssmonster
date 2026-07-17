@@ -209,13 +209,29 @@ describe('updateArticle', () => {
   it('detects publication timestamp differences of at least one second', async () => {
     const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
-      publishedAt: '2026-07-13T13:30:01.001Z'
+      publishedAt: '2026-07-13T13:30:01.001Z',
+      modifiedAt: '2026-07-14T10:00:00.987Z'
     }));
 
     expect(result).toMatchObject({
       changed: true,
       changes: { publishedChanged: true, changedFields: ['publishedAt'] },
       updateValues: { publishedAt: new Date('2026-07-13T13:30:01.000Z') }
+    });
+    expect(result.updateValues).not.toHaveProperty('modifiedAt');
+  });
+
+  it('advances modification time for a description-only content revision', async () => {
+    const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
+    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
+      description: 'Revised article description',
+      modifiedAt: '2026-07-14T10:00:00.987Z'
+    }));
+
+    expect(result).toMatchObject({
+      changed: true,
+      changes: { descriptionChanged: true, changedFields: ['description'] },
+      updateValues: { modifiedAt: new Date('2026-07-14T10:00:00.000Z') }
     });
   });
 
@@ -276,6 +292,7 @@ describe('updateArticle', () => {
         contentTextHash: 'revised-text-hash'
       }
     });
+    expect(result.updateValues.modifiedAt).toBeInstanceOf(Date);
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
 
     expect(consoleInfo).toHaveBeenCalledOnce();
@@ -377,15 +394,16 @@ describe('updateArticle', () => {
   });
 
   it.each([
-    ['title', { title: 'Revised title' }, { titleChanged: true, metadataChanged: true }],
-    ['author', { author: 'Revised author' }, { authorChanged: true, metadataChanged: true }],
+    ['title', { title: 'Revised title' }, { titleChanged: true, metadataChanged: true }, true],
+    ['author', { author: 'Revised author' }, { authorChanged: true, metadataChanged: true }, false],
     ['URL', {
       link: 'https://official.example/revised',
       normalizedUrl: 'https://official.example/revised'
-    }, { urlChanged: true }],
+    }, { urlChanged: true }, false],
     ['media', {
       media: { type: 'video', url: 'https://video.example/watch/2', views: 11 }
-    }, { mediaChanged: true }],
+    }, { mediaChanged: true }, false],
+    ['language', { language: 'nl' }, { contentChanged: true }, false],
     ['lead image', {
       leadImage: {
         url: 'https://example.com/image.jpg',
@@ -394,16 +412,29 @@ describe('updateArticle', () => {
         mimeType: 'image/jpeg',
         source: 'content'
       }
-    }, { leadImageChanged: true }]
-  ])('classifies a %s-only source change', async (_name, overrides, expectedChanges) => {
+    }, { leadImageChanged: true }, false]
+  ])('classifies a %s-only source change', async (
+    _name,
+    overrides,
+    expectedChanges,
+    isContentRevision
+  ) => {
     const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
     const result = await updateArticle(
       { id: 7, userId: 42 },
-      incomingArticle(overrides)
+      incomingArticle({
+        modifiedAt: '2026-07-14T10:00:00.987Z',
+        ...overrides
+      })
     );
 
     expect(result.changed).toBe(true);
     expect(result.changes).toMatchObject(expectedChanges);
+    if (isContentRevision) {
+      expect(result.updateValues.modifiedAt).toBeInstanceOf(Date);
+    } else {
+      expect(result.updateValues).not.toHaveProperty('modifiedAt');
+    }
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
   });
 

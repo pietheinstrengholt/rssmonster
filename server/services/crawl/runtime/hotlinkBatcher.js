@@ -13,26 +13,24 @@ const createHotlinkBatcher = (feed, options = {}) => {
 
   // This function flushes the queued URLs without allowing failures to interrupt crawling.
   const flush = async () => {
-    if (flushPromise) {
+    while (flushPromise || pendingUrls.size > 0) {
+      if (flushPromise) {
+        await flushPromise;
+        continue;
+      }
+
+      const urls = [...pendingUrls];
+      pendingUrls.clear();
+      flushPromise = hotlink.setMany(urls, feed.id, feed.userId)
+        .catch(err => {
+          console.error(`Error saving hotlink batch for feed ${feed.id}:`, err);
+        })
+        .finally(() => {
+          flushPromise = null;
+        });
+
       await flushPromise;
-      return;
     }
-
-    if (pendingUrls.size === 0) {
-      return;
-    }
-
-    const urls = [...pendingUrls];
-    pendingUrls.clear();
-    flushPromise = hotlink.setMany(urls, feed.id, feed.userId)
-      .catch(err => {
-        console.error(`Error saving hotlink batch for feed ${feed.id}:`, err);
-      })
-      .finally(() => {
-        flushPromise = null;
-      });
-
-    await flushPromise;
   };
 
   return {

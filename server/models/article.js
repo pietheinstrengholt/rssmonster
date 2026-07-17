@@ -459,7 +459,11 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: DataTypes.NOW
       },
-      // Timestamp when the publisher last modified the article.
+      // Best-known timestamp for the article's latest confirmed content revision.
+      // This is intentionally hybrid metadata: it stores the publisher-provided modification
+      // timestamp when available, or the time RSSMonster detects a confirmed content revision otherwise.
+      // It remains null when neither raw metadata nor a confirmed content revision exists.
+      // Incoming modification timestamps are informational and never drive revision comparison.
       modifiedAt: {
         type: DataTypes.DATE,
         allowNull: true,

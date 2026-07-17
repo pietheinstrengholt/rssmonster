@@ -24,7 +24,13 @@ const LEAD_IMAGE_FIELDS = [
   'imageSource'
 ];
 const PUBLISHED_FIELDS = ['publishedAt', 'publishedSource', 'publishInferred'];
-const NON_REVISION_DATE_FIELDS = new Set(['publishedSource', 'publishInferred']);
+const CONTENT_REVISION_FIELDS = new Set([
+  'contentHtml',
+  'contentText',
+  'contentTextHash',
+  'title',
+  'description'
+]);
 const FINGERPRINT_FIELDS = [
   'contentOriginal',
   'contentHtml',
@@ -211,9 +217,9 @@ const classifyChanges = changedFields => {
   };
 };
 
-// This function reports whether a source change confirms an article revision independently of modification metadata.
-const confirmsArticleRevision = changedFields => changedFields.some(
-  field => !NON_REVISION_DATE_FIELDS.has(field)
+// This function distinguishes body, title, or description revisions from metadata corrections.
+const confirmsContentRevision = changedFields => changedFields.some(
+  field => CONTENT_REVISION_FIELDS.has(field)
 );
 
 // This function returns a valid whole-second article timestamp or null.
@@ -223,7 +229,7 @@ const validArticleDate = value => {
   return normalized;
 };
 
-// This function advances the best-known modification time for a confirmed article revision.
+// This function advances the best-known modification time for a confirmed content revision.
 const resolveConfirmedModifiedAt = (article, incomingModifiedAt) => {
   const incoming = validArticleDate(incomingModifiedAt);
   const stored = validArticleDate(storedValue(article, 'modifiedAt'));
@@ -381,7 +387,7 @@ async function updateArticle(feed, data, options = {}) {
     .filter(field => !RAW_SOURCE_FIELDS.includes(field));
   const changes = classifyChanges(meaningfulChangedFields);
 
-  if (confirmsArticleRevision(meaningfulChangedFields)) {
+  if (confirmsContentRevision(meaningfulChangedFields)) {
     updateValues.modifiedAt = resolveConfirmedModifiedAt(article, data.modifiedAt);
   }
 

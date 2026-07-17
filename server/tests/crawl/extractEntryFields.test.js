@@ -16,7 +16,7 @@ describe('extract entry fields', () => {
 
     expect(resolveEntryPublishedDate({
       date_modified: '2026-07-03T11:30:00Z'
-    })).toBe('2026-07-03T11:30:00.000Z');
+    })).toBeNull();
 
     expect(resolveEntryPublishedDate({
       atom: {
@@ -51,6 +51,12 @@ describe('extract entry fields', () => {
         created: '2026-07-02T09:00:00Z'
       }
     })).toBe('2026-07-01T09:00:00.000Z');
+
+    expect(resolveEntryPublishedDate({
+      dcterms: {
+        dates: ['not-a-date', '2026-07-03T09:00:00Z']
+      }
+    }, 'rss')).toBe('2026-07-03T09:00:00.000Z');
   });
 
   it('uses the resolver when extracting entry fields', () => {
@@ -62,7 +68,8 @@ describe('extract entry fields', () => {
       }
     });
 
-    expect(fields.publishedAt).toBe('2026-07-05T13:15:00.000Z');
+    expect(fields.publishedAt).toBeNull();
+    expect(fields.modifiedAt).toBe('2026-07-05T13:15:00.000Z');
   });
 
   it('prefers an alternate article link over other links and entry.link', () => {

@@ -54,6 +54,140 @@ describe('Feedsmith adapter', () => {
     ]);
   });
 
+  it('uses RSS date namespace precedence and keeps modification metadata separate', () => {
+    const feed = parseFeedSource(`
+      <rss version="2.0"
+        xmlns:atom="http://www.w3.org/2005/Atom"
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcterms="http://purl.org/dc/terms/">
+        <channel>
+          <title>RSS dates</title>
+          <link>https://example.com</link>
+          <description>RSS date precedence</description>
+          <item>
+            <title>RSS article</title>
+            <link>https://example.com/rss-dates</link>
+            <guid>rss-dates</guid>
+            <pubDate>Wed, 15 Jul 2026 10:00:00 GMT</pubDate>
+            <atom:published>2026-07-15T11:00:00Z</atom:published>
+            <dc:date>2026-07-15T12:00:00Z</dc:date>
+            <dcterms:date>2026-07-15T13:00:00Z</dcterms:date>
+            <atom:updated>2026-07-15T14:00:00Z</atom:updated>
+            <dcterms:modified>2026-07-15T15:00:00Z</dcterms:modified>
+          </item>
+        </channel>
+      </rss>
+    `);
+
+    expect(feed.entries[0]).toMatchObject({
+      publishedAt: '2026-07-15T10:00:00.000Z',
+      modifiedAt: '2026-07-15T14:00:00.000Z'
+    });
+  });
+
+  it('uses Atom published and updated before Dublin Core fallbacks', () => {
+    const feed = parseFeedSource(`
+      <feed xmlns="http://www.w3.org/2005/Atom"
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcterms="http://purl.org/dc/terms/">
+        <title>Atom dates</title>
+        <id>https://example.com/atom</id>
+        <updated>2026-07-15T09:00:00Z</updated>
+        <entry>
+          <title>Atom article</title>
+          <id>atom-dates</id>
+          <link href="https://example.com/atom-dates" />
+          <published>2026-07-15T10:00:00Z</published>
+          <updated>2026-07-15T11:00:00Z</updated>
+          <dc:date>2026-07-15T12:00:00Z</dc:date>
+          <dcterms:date>2026-07-15T13:00:00Z</dcterms:date>
+          <dcterms:modified>2026-07-15T14:00:00Z</dcterms:modified>
+        </entry>
+      </feed>
+    `);
+
+    expect(feed.entries[0]).toMatchObject({
+      publishedAt: '2026-07-15T10:00:00.000Z',
+      modifiedAt: '2026-07-15T11:00:00.000Z'
+    });
+  });
+
+  it('uses RDF Atom dates before repeated Dublin Core fallbacks', () => {
+    const feed = parseFeedSource(`
+      <rdf:RDF
+        xmlns:rdf="http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+        xmlns="http://purl.org/rss/1.0/"
+        xmlns:atom="http://www.w3.org/2005/Atom"
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcterms="http://purl.org/dc/terms/">
+        <channel rdf:about="https://example.com/rdf">
+          <title>RDF dates</title>
+          <link>https://example.com</link>
+          <description>RDF date precedence</description>
+          <items>
+            <rdf:Seq><rdf:li rdf:resource="https://example.com/rdf-dates" /></rdf:Seq>
+          </items>
+        </channel>
+        <item rdf:about="https://example.com/rdf-dates">
+          <title>RDF article</title>
+          <link>https://example.com/rdf-dates</link>
+          <atom:published>2026-07-15T10:00:00Z</atom:published>
+          <atom:updated>2026-07-15T11:00:00Z</atom:updated>
+          <dc:date>not-a-date</dc:date>
+          <dc:date>2026-07-15T12:00:00Z</dc:date>
+          <dcterms:date>not-a-date</dcterms:date>
+          <dcterms:date>2026-07-15T13:00:00Z</dcterms:date>
+          <dcterms:modified>2026-07-15T14:00:00Z</dcterms:modified>
+        </item>
+      </rdf:RDF>
+    `);
+
+    expect(feed.entries[0]).toMatchObject({
+      publishedAt: '2026-07-15T10:00:00.000Z',
+      modifiedAt: '2026-07-15T11:00:00.000Z'
+    });
+  });
+
+  it('uses the first parseable repeated Dublin Core date', () => {
+    const feed = parseFeedSource(`
+      <rss version="2.0"
+        xmlns:dc="http://purl.org/dc/elements/1.1/"
+        xmlns:dcterms="http://purl.org/dc/terms/">
+        <channel>
+          <title>Repeated dates</title>
+          <link>https://example.com</link>
+          <description>Repeated date fallback</description>
+          <item>
+            <title>DC article</title>
+            <link>https://example.com/dc-dates</link>
+            <guid>dc-dates</guid>
+            <dc:date>not-a-date</dc:date>
+            <dc:date>2026-07-15T12:00:00Z</dc:date>
+            <dcterms:date>2026-07-15T13:00:00Z</dcterms:date>
+          </item>
+          <item>
+            <title>DCTERMS article</title>
+            <link>https://example.com/dcterms-dates</link>
+            <guid>dcterms-dates</guid>
+            <dcterms:date>not-a-date</dcterms:date>
+            <dcterms:date>2026-07-16T13:00:00Z</dcterms:date>
+          </item>
+        </channel>
+      </rss>
+    `);
+
+    expect(feed.entries).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        externalId: 'dc-dates',
+        publishedAt: '2026-07-15T12:00:00.000Z'
+      }),
+      expect.objectContaining({
+        externalId: 'dcterms-dates',
+        publishedAt: '2026-07-16T13:00:00.000Z'
+      })
+    ]));
+  });
+
   it('normalizes native JSON Feed metadata, HTML content, identity, and attachments', () => {
     const feed = parseFeedSource(JSON.stringify({
       version: 'https://jsonfeed.org/version/1.1',

@@ -22,18 +22,65 @@ const firstValidDate = value => {
   return normalizeDate(value);
 };
 
-const entryDateCandidates = [
+// This function preserves repeated Dublin Core date order while supporting singular parser shapes.
+const dublinCoreDates = namespace => namespace?.dates?.length
+  ? namespace.dates
+  : namespace?.date;
+
+const publishedDateCandidatesByFormat = {
+  rss: [
+    entry => entry.pubDate,
+    entry => entry.atom?.published,
+    entry => dublinCoreDates(entry.dc),
+    entry => dublinCoreDates(entry.dcterms)
+  ],
+  atom: [
+    entry => entry.published,
+    entry => dublinCoreDates(entry.dc),
+    entry => dublinCoreDates(entry.dcterms)
+  ],
+  rdf: [
+    entry => entry.atom?.published,
+    entry => dublinCoreDates(entry.dc),
+    entry => dublinCoreDates(entry.dcterms)
+  ],
+  json: [
+    entry => entry.date_published
+  ]
+};
+
+const modifiedDateCandidatesByFormat = {
+  rss: [
+    entry => entry.atom?.updated,
+    entry => entry.dcterms?.modified
+  ],
+  atom: [
+    entry => entry.updated,
+    entry => entry.dcterms?.modified
+  ],
+  rdf: [
+    entry => entry.atom?.updated,
+    entry => entry.dcterms?.modified
+  ],
+  json: [
+    entry => entry.date_modified
+  ]
+};
+
+// These lower-priority aliases retain compatibility for callers without a known feed format.
+const fallbackPublishedDateCandidates = [
   entry => entry.date_published,
   entry => entry.pubDate,
   entry => entry.published,
   entry => entry.atom?.published,
-  entry => entry.dc?.date,
+  entry => dublinCoreDates(entry.dc),
+  entry => dublinCoreDates(entry.dcterms),
   entry => entry.dcterms?.created,
   entry => entry.date,
   entry => entry.created
 ];
 
-const entryModifiedDateCandidates = [
+const fallbackModifiedDateCandidates = [
   entry => entry.date_modified,
   entry => entry.updated,
   entry => entry.atom?.updated,
@@ -101,10 +148,12 @@ const normalizeUrlDateParts = (yearValue, monthValue, dayValue) => {
 };
 
 // This function resolves the best publication date exposed by feed entry formats and namespaces.
-export function resolveEntryPublishedDate(entry) {
+export function resolveEntryPublishedDate(entry, feedFormat = null) {
   if (!entry) return null;
 
-  for (const candidate of entryDateCandidates) {
+  const candidates = publishedDateCandidatesByFormat[feedFormat] ||
+    fallbackPublishedDateCandidates;
+  for (const candidate of candidates) {
     const date = firstValidDate(candidate(entry));
     if (date) return date;
   }
@@ -113,10 +162,12 @@ export function resolveEntryPublishedDate(entry) {
 }
 
 // This function resolves the publisher's article modification timestamp without inferring one.
-export function resolveEntryModifiedDate(entry) {
+export function resolveEntryModifiedDate(entry, feedFormat = null) {
   if (!entry) return null;
 
-  for (const candidate of entryModifiedDateCandidates) {
+  const candidates = modifiedDateCandidatesByFormat[feedFormat] ||
+    fallbackModifiedDateCandidates;
+  for (const candidate of candidates) {
     const date = firstValidDate(candidate(entry));
     if (date) return date;
   }
@@ -223,8 +274,8 @@ function normalizeEntry(entry, feedFormat = null) {
     content,
     author: resolveAuthor(entry),
     categories: categoryNames,
-    publishedAt: resolveEntryPublishedDate(entry),
-    modifiedAt: resolveEntryModifiedDate(entry),
+    publishedAt: resolveEntryPublishedDate(entry, feedFormat),
+    modifiedAt: resolveEntryModifiedDate(entry, feedFormat),
     ...identity,
     media: normalizedMedia.media,
     imageCandidates: normalizedMedia.imageCandidates

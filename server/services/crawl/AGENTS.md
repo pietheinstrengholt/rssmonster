@@ -226,7 +226,7 @@ Meaningful changes include:
 
 - title
 - author
-- original, sanitized, or visible content and their hashes
+- original, sanitized, or visible content and their hashes. Important note; for the real comparison only the contentText can be used. Often the contentOriginal and contentHtml can be different but the visible text is the same, so it is not a meaningful change. This is because providers use dynamic timestamps or other non-visible content to update the HTML without changing the visible text.
 - description
 - URL
 - lead image
@@ -313,7 +313,7 @@ entity decoding, sanitization, or DOM serialization.
 
 Used for:
 
-- update detection
+- as input for update detection
 - content hashing
 - future reparsing
 
@@ -386,7 +386,7 @@ SHA-256 hash of `contentOriginal` after newline normalization and outer trimming
 
 Purpose:
 
-- update detection
+- as input for update detection. A change of hash indicates a publisher revision, but doesn't realy tell whether the real visible content has been changed. For that, the contentTextHash is used.
 - duplicate detection
 - publisher revision detection
 
