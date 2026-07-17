@@ -176,7 +176,7 @@ export default (sequelize) => {
         allowNull: false
       },
       imageUrl: {
-        type: DataTypes.STRING(1024),
+        type: DataTypes.TEXT,
         allowNull: true
       },
       imageWidth: {
@@ -208,7 +208,7 @@ export default (sequelize) => {
       },
       // Original author string from feed (not normalized or linked to an Author model, just stored for reference)
       author: DataTypes.TEXT,
-      description: DataTypes.TEXT,
+      description: DataTypes.TEXT('medium'),
       // Full original content (HTML or text) from the feed, used for processing and vectorization but not sent to client
       contentOriginal: {
         type: DataTypes.TEXT('medium'),
@@ -217,13 +217,13 @@ export default (sequelize) => {
       },
       // Sanitized display HTML derived from the original feed payload
       contentHtml: {
-        type: DataTypes.TEXT,
+        type: DataTypes.TEXT('medium'),
         allowNull: true,
         defaultValue: null
       },
       // Plain text content for NLP extraction and storage
       contentText: {
-        type: DataTypes.TEXT,
+        type: DataTypes.TEXT('medium'),
         allowNull: true,
         defaultValue: null
       },

@@ -39,6 +39,13 @@ describe('model schema declarations', () => {
     expect(Article.rawAttributes.contentStripped).toBeUndefined();
   });
 
+  it('declares publisher-controlled article fields with expanded storage', () => {
+    expect(Article.rawAttributes.imageUrl.type.toString()).toBe('TEXT');
+    expect(Article.rawAttributes.description.type.toString()).toBe('MEDIUMTEXT');
+    expect(Article.rawAttributes.contentHtml.type.toString()).toBe('MEDIUMTEXT');
+    expect(Article.rawAttributes.contentText.type.toString()).toBe('MEDIUMTEXT');
+  });
+
   it('declares filtered articles with a false default', () => {
     expect(Article.rawAttributes.filteredInd).toMatchObject({
       allowNull: false,
