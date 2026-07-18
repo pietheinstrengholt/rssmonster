@@ -71,9 +71,15 @@ describe('incremental crawl pipeline command', () => {
     const result = await runSemanticPipeline({ userBatchSize: 2 });
 
     expect(mocked.performCrawl).toHaveBeenCalledTimes(3);
-    expect(mocked.performCrawl).toHaveBeenNthCalledWith(1, 1);
-    expect(mocked.performCrawl).toHaveBeenNthCalledWith(2, 2);
-    expect(mocked.performCrawl).toHaveBeenNthCalledWith(3, 3);
+    expect(mocked.performCrawl).toHaveBeenNthCalledWith(1, 1, {
+      triggerType: 'scheduled'
+    });
+    expect(mocked.performCrawl).toHaveBeenNthCalledWith(2, 2, {
+      triggerType: 'scheduled'
+    });
+    expect(mocked.performCrawl).toHaveBeenNthCalledWith(3, 3, {
+      triggerType: 'scheduled'
+    });
     expect(maxActiveCrawls).toBe(2);
     expect(mocked.runPostCrawlSemanticPipeline).toHaveBeenCalledWith(
       expect.objectContaining({

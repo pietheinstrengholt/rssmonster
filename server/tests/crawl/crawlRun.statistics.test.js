@@ -82,6 +82,10 @@ describe('crawl run article statistics', () => {
       updatedArticles: 1,
       articleErrors: 0,
       errors: 0,
+      processedFeeds: 1,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
+      triggerType: 'api',
       durationMs: expect.any(Number)
     });
   });
@@ -107,6 +111,9 @@ describe('crawl run article statistics', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
+      processedFeeds: 1,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
   });
@@ -133,6 +140,9 @@ describe('crawl run article statistics', () => {
       updatedArticles: 0,
       articleErrors: 2,
       errors: 1,
+      processedFeeds: 0,
+      failedFeeds: 1,
+      timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
     expect(feed.errorCount).toBe(1);
@@ -162,8 +172,25 @@ describe('crawl run article statistics', () => {
       newArticles: 1,
       updatedArticles: 1,
       articleErrors: 0,
-      errors: 0,
+      errors: 1,
+      processedFeeds: 0,
+      failedFeeds: 1,
+      timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
+  });
+
+  it('records scheduled crawls separately from API crawls', async () => {
+    const { user } = await createUserFeed('scheduledcrawlstats');
+    mocked.processArticle.mockResolvedValue({
+      newArticles: 0,
+      updatedArticles: 0,
+      errors: 0
+    });
+
+    await crawlController.performCrawl(user.id, { triggerType: 'scheduled' });
+
+    const crawlRun = await CrawlRun.findOne({ where: { userId: user.id } });
+    expect(crawlRun.triggerType).toBe('scheduled');
   });
 });

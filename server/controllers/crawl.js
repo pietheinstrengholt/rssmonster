@@ -39,6 +39,7 @@ let rateLimitDelay = 0;
 
 const MINUTE_MS = 60 * 1000;
 const ACTIVE_CRAWL_INDEX = 'crawl_runs_active_user_unique';
+const CRAWL_TRIGGER_TYPES = new Set(['scheduled', 'api']);
 const parsedMaxRunningMinutes = Number.parseInt(
   process.env.CRAWL_RUN_MAX_RUNNING_MINUTES,
   10
@@ -306,7 +307,10 @@ const runCrawl = async (userId = null, options = {}) => {
     newArticles: 0,
     updatedArticles: 0,
     articleErrors: 0,
-    errors: 0
+    errors: 0,
+    processedFeeds: 0,
+    failedFeeds: 0,
+    timedOutFeeds: 0
   };
   const emitProgress = (event) => {
     if (typeof options.onProgress !== 'function') {
@@ -332,6 +336,26 @@ const runCrawl = async (userId = null, options = {}) => {
   let totalNewArticles = 0;
   let totalUpdatedArticles = 0;
   let totalArticleErrors = 0;
+  let failedFeedCount = 0;
+  const feedErrorIds = new Set();
+
+  // This function records one terminal error outcome per feed.
+  const recordFeedError = (feed, timedOut = false) => {
+    if (feedErrorIds.has(feed.id)) return;
+
+    feedErrorIds.add(feed.id);
+    errorCount++;
+    crawlStats.errors = errorCount;
+
+    if (timedOut) {
+      timeoutCount++;
+      crawlStats.timedOutFeeds = timeoutCount;
+      return;
+    }
+
+    failedFeedCount++;
+    crawlStats.failedFeeds = failedFeedCount;
+  };
 
   const crawlDeadline = Date.now() + CRAWL_TIMEOUT_MS;
 
@@ -380,7 +404,9 @@ const runCrawl = async (userId = null, options = {}) => {
       crawlStartedAt,
       totalNewArticles: 0,
       totalUpdatedArticles: 0,
-      totalArticleErrors: 0
+      totalArticleErrors: 0,
+      failedFeeds: 0,
+      timedOutFeeds: 0
     };
   }
 
@@ -546,6 +572,7 @@ const runCrawl = async (userId = null, options = {}) => {
       throwIfAborted(signal);
 
       processedCount++;
+      crawlStats.processedFeeds = processedCount;
       console.log( `[Success] Successfully processed feed: ${feed.url} with ${entries.length} items.`);
 
       emitProgress({
@@ -570,9 +597,8 @@ const runCrawl = async (userId = null, options = {}) => {
       throwIfAborted(signal);
       const errMsg = err?.message || String(err) || 'Unknown error';
       console.log(`[Error] Failed to process feed: ${feed.url} - ${errMsg}`);
+      recordFeedError(feed);
       await markError(feed, errMsg);
-      errorCount++;
-      crawlStats.errors = errorCount;
 
       emitProgress({
         type: 'feed_error',
@@ -635,7 +661,7 @@ const runCrawl = async (userId = null, options = {}) => {
         console.log(`Timeout processing feed: ${feed.url} - skipping to next feed`);
         status = 'timeout';
         message = errMsg;
-        timeoutCount++;
+        recordFeedError(feed, true);
         await markError(feed, errMsg);
 
         emitProgress({
@@ -647,7 +673,7 @@ const runCrawl = async (userId = null, options = {}) => {
           newArticles: totalNewArticles,
           updatedArticles: totalUpdatedArticles,
           articleErrors: totalArticleErrors,
-          errors: errorCount + 1,
+          errors: errorCount,
           timeouts: timeoutCount,
           processedFeeds: processedCount,
           message: errMsg
@@ -656,11 +682,9 @@ const runCrawl = async (userId = null, options = {}) => {
         console.log(`Failed to process feed: ${feed.url} - ${errMsg}`);
         status = 'error';
         message = errMsg;
+        recordFeedError(feed);
         await markError(feed, errMsg);
       }
-
-      errorCount++;
-      crawlStats.errors = errorCount;
     } finally {
       if (feed.userId) processedUserIds.add(feed.userId);
 
@@ -729,7 +753,9 @@ const runCrawl = async (userId = null, options = {}) => {
     crawlStartedAt,
     totalNewArticles,
     totalUpdatedArticles,
-    totalArticleErrors
+    totalArticleErrors,
+    failedFeeds: failedFeedCount,
+    timedOutFeeds: timeoutCount
   };
 
   if (!options.suppressDoneEvent) {
@@ -765,7 +791,10 @@ const findActiveCrawlRun = userId => CrawlRun.findOne({
     'newArticles',
     'updatedArticles',
     'articleErrors',
-    'errors'
+    'errors',
+    'processedFeeds',
+    'failedFeeds',
+    'timedOutFeeds'
   ]
 });
 
@@ -800,6 +829,9 @@ const recoverStaleCrawlRun = async (userId, crawlRun, now = new Date()) => {
       updatedArticles: crawlRun.updatedArticles ?? 0,
       articleErrors: crawlRun.articleErrors ?? 0,
       errors: crawlRun.errors ?? 0,
+      processedFeeds: crawlRun.processedFeeds ?? 0,
+      failedFeeds: crawlRun.failedFeeds ?? 0,
+      timedOutFeeds: crawlRun.timedOutFeeds ?? 0,
       durationMs
     },
     {
@@ -854,6 +886,8 @@ const crawlAlreadyRunningResult = (userId, activeCrawlRun) => {
     totalNewArticles: 0,
     totalUpdatedArticles: 0,
     totalArticleErrors: 0,
+    failedFeeds: 0,
+    timedOutFeeds: 0,
     userId,
     crawlRunId: activeCrawlRun.id,
     skipped: true,
@@ -862,8 +896,19 @@ const crawlAlreadyRunningResult = (userId, activeCrawlRun) => {
   };
 };
 
+// This function validates the source recorded for a crawl run.
+const resolveCrawlTriggerType = triggerType => {
+  const resolvedTriggerType = triggerType || 'api';
+  if (!CRAWL_TRIGGER_TYPES.has(resolvedTriggerType)) {
+    throw new Error(`Unsupported crawl trigger type: ${resolvedTriggerType}`);
+  }
+
+  return resolvedTriggerType;
+};
+
 // This function records the terminal lifecycle of one complete user crawl.
 const performCrawl = async (userId = null, options = {}) => {
+  const triggerType = resolveCrawlTriggerType(options.triggerType);
   const activeCrawlRun = userId ? await findActiveCrawlRun(userId) : null;
 
   if (activeCrawlRun && !isStaleCrawlRun(activeCrawlRun)) {
@@ -879,7 +924,10 @@ const performCrawl = async (userId = null, options = {}) => {
     newArticles: 0,
     updatedArticles: 0,
     articleErrors: 0,
-    errors: 0
+    errors: 0,
+    processedFeeds: 0,
+    failedFeeds: 0,
+    timedOutFeeds: 0
   };
 
   if (userId) {
@@ -890,7 +938,11 @@ const performCrawl = async (userId = null, options = {}) => {
         newArticles: 0,
         updatedArticles: 0,
         articleErrors: 0,
-        errors: 0
+        errors: 0,
+        processedFeeds: 0,
+        failedFeeds: 0,
+        timedOutFeeds: 0,
+        triggerType
       });
     } catch (err) {
       if (!isActiveCrawlConstraintError(err)) {
@@ -925,6 +977,9 @@ const performCrawl = async (userId = null, options = {}) => {
           updatedArticles: crawlStats.updatedArticles,
           articleErrors: crawlStats.articleErrors,
           errors: crawlStats.errors,
+          processedFeeds: crawlStats.processedFeeds,
+          failedFeeds: crawlStats.failedFeeds,
+          timedOutFeeds: crawlStats.timedOutFeeds,
           durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
         });
       } catch (crawlRunErr) {
@@ -944,6 +999,9 @@ const performCrawl = async (userId = null, options = {}) => {
       updatedArticles: crawlStats.updatedArticles,
       articleErrors: crawlStats.articleErrors,
       errors: crawlStats.errors,
+      processedFeeds: crawlStats.processedFeeds,
+      failedFeeds: crawlStats.failedFeeds,
+      timedOutFeeds: crawlStats.timedOutFeeds,
       durationMs: calculateCrawlDurationMs(crawlRun.startedAt, completedAt)
     });
   }
@@ -1017,7 +1075,7 @@ const crawlRssLinks = catchAsync(async (req, res, next) => {
   console.log(`[Crawl] HTTP trigger by userId: ${userId ?? 'unknown'}`);
   try {
     // For HTTP requests, start crawling asynchronously and return immediately
-    performCrawlWithSemanticGrouping(userId)
+    performCrawlWithSemanticGrouping(userId, { triggerType: 'api' })
       .then(async result => {
         resetRateLimitDelay();
         console.log(

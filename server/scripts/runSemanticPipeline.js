@@ -42,6 +42,11 @@ function aggregateCrawlResults(results) {
   return {
     total: results.reduce((sum, result) => sum + (result.total || 0), 0),
     processed: results.reduce((sum, result) => sum + (result.processed || 0), 0),
+    failedFeeds: results.reduce((sum, result) => sum + (result.failedFeeds || 0), 0),
+    timedOutFeeds: results.reduce(
+      (sum, result) => sum + (result.timedOutFeeds || 0),
+      0
+    ),
     errors: results.reduce((sum, result) => sum + (result.errors || 0), 0),
     timeouts: results.reduce((sum, result) => sum + (result.timeouts || 0), 0),
     crawlTimedOut: results.some(result => result.crawlTimedOut),
@@ -70,7 +75,9 @@ async function crawlUsersInBatches(users, userBatchSize) {
   for (let offset = 0; offset < users.length; offset += userBatchSize) {
     const userBatch = users.slice(offset, offset + userBatchSize);
     const batchResults = await Promise.all(
-      userBatch.map(user => crawlController.performCrawl(user.id))
+      userBatch.map(user => crawlController.performCrawl(user.id, {
+        triggerType: 'scheduled'
+      }))
     );
     results.push(...batchResults);
   }

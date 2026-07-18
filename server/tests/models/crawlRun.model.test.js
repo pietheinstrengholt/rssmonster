@@ -40,6 +40,10 @@ describe('CrawlRun model', () => {
     expect(crawlRun.articleErrors).toBeNull();
     expect(crawlRun.errors).toBeNull();
     expect(crawlRun.durationMs).toBeNull();
+    expect(crawlRun.processedFeeds).toBeNull();
+    expect(crawlRun.failedFeeds).toBeNull();
+    expect(crawlRun.timedOutFeeds).toBeNull();
+    expect(crawlRun.triggerType).toBeNull();
     expect(crawlRun.createdAt).toBeInstanceOf(Date);
     expect(crawlRun.updatedAt).toBeInstanceOf(Date);
   });
@@ -58,6 +62,16 @@ describe('CrawlRun model', () => {
     expect(CrawlRun.rawAttributes.articleErrors.allowNull).toBe(true);
     expect(CrawlRun.rawAttributes.errors.allowNull).toBe(true);
     expect(CrawlRun.rawAttributes.durationMs.allowNull).toBe(true);
+    expect(CrawlRun.rawAttributes.processedFeeds.allowNull).toBe(true);
+    expect(CrawlRun.rawAttributes.failedFeeds.allowNull).toBe(true);
+    expect(CrawlRun.rawAttributes.timedOutFeeds.allowNull).toBe(true);
+  });
+
+  it('declares only supported crawl trigger types', () => {
+    expect(CrawlRun.rawAttributes.triggerType.values).toEqual([
+      'scheduled',
+      'api'
+    ]);
   });
 
   it('allows multiple terminal crawl rows for the same user', async () => {

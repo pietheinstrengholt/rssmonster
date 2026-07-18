@@ -527,6 +527,7 @@ const startRefresh = async (req, res) => {
     });
 
     crawlController.performCrawlWithSemanticGrouping(userId, {
+      triggerType: 'api',
       onProgress: (event) => {
         crawlJobManager.publishEvent(jobId, event);
       }

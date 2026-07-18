@@ -58,6 +58,26 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true,
         defaultValue: null
+      },
+      processedFeeds: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
+      failedFeeds: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
+      timedOutFeeds: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
+      triggerType: {
+        type: DataTypes.ENUM('scheduled', 'api'),
+        allowNull: true,
+        defaultValue: null
       }
     },
     {

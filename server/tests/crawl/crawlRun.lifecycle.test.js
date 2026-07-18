@@ -68,7 +68,11 @@ describe('crawl run lifecycle', () => {
       newArticles: 0,
       updatedArticles: 0,
       articleErrors: 0,
-      errors: 0
+      errors: 0,
+      processedFeeds: 0,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
+      triggerType: 'api'
     });
     expect(updateSpy).toHaveBeenCalledOnce();
     expect(updateSpy).toHaveBeenCalledWith({
@@ -78,6 +82,9 @@ describe('crawl run lifecycle', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
+      processedFeeds: 0,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
     expect(crawlRuns).toHaveLength(1);
@@ -89,6 +96,10 @@ describe('crawl run lifecycle', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
+      processedFeeds: 0,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
+      triggerType: 'api',
       durationMs: expect.any(Number)
     });
     expect(crawlRuns[0].startedAt).toBeInstanceOf(Date);
@@ -118,6 +129,9 @@ describe('crawl run lifecycle', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
+      processedFeeds: 0,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
       durationMs: expect.any(Number)
     });
     expect(crawlRuns).toHaveLength(1);
@@ -129,6 +143,10 @@ describe('crawl run lifecycle', () => {
       updatedArticles: 0,
       articleErrors: 0,
       errors: 0,
+      processedFeeds: 0,
+      failedFeeds: 0,
+      timedOutFeeds: 0,
+      triggerType: 'api',
       durationMs: expect.any(Number)
     });
     expect(crawlRuns[0].startedAt).toBeInstanceOf(Date);
