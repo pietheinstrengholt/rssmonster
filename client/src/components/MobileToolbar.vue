@@ -271,6 +271,44 @@
   }
 }
 
+/* Keeps only the phone portrait brand row compact without affecting the filter dropdowns. */
+@media (max-width: 766px) and (orientation: portrait) {
+  .mobile-toolbar-brand-row {
+    min-height: 56px;
+    margin: -8px -4px 4px;
+  }
+
+  .mobile-toolbar-brand {
+    flex: 1 1 auto;
+    min-width: 0;
+    gap: 8px;
+    font-size: 20px;
+  }
+
+  .mobile-toolbar-brand span {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .mobile-toolbar-logo {
+    flex: 0 0 auto;
+    width: 38px;
+    height: 38px;
+  }
+
+  .mobile-toolbar-actions {
+    flex: 0 0 auto;
+    gap: 2px;
+  }
+
+  .mobile-toolbar-button {
+    width: 40px;
+    height: 40px;
+  }
+}
+
 .dropdown-item.active {
   color: var(--color-primary);
   background-color: var(--color-primary-soft);

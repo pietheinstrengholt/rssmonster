@@ -514,5 +514,14 @@ export default (sequelize) => {
     }
   );
 
+  const sequelizeToJSON = Article.prototype.toJSON;
+
+  // This function keeps raw publisher HTML available internally but out of serialized articles.
+  Article.prototype.toJSON = function toJSON() {
+    const values = sequelizeToJSON.call(this);
+    delete values.contentOriginal;
+    return values;
+  };
+
   return Article;
 };

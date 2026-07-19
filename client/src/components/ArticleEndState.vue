@@ -1,21 +1,25 @@
 <template>
   <div class="article-end-state">
-    <div class="article-end-state-icon" aria-hidden="true">
-      <i class="bi bi-check-lg"></i>
+    <div class="article-end-state-summary">
+      <div class="article-end-state-icon" aria-hidden="true">
+        <i class="bi bi-check-lg"></i>
+      </div>
+
+      <div class="article-end-state-copy">
+        <h3 class="article-end-state-title">
+          You've reached the end.
+        </h3>
+
+        <p class="article-end-state-text">
+          {{ endStateText }}
+        </p>
+      </div>
     </div>
-
-    <h3 class="article-end-state-title">
-      You've reached the end.
-    </h3>
-
-    <p class="article-end-state-text">
-      {{ endStateText }}
-    </p>
 
     <div v-if="showActions" class="article-end-state-actions">
       <button class="article-end-state-primary" type="button" @click="$emit('mark-all-read')">
         <i class="bi bi-check-lg" aria-hidden="true"></i>
-        Mark all as read
+        Mark {{ unreadCount }} as read
       </button>
 
       <button class="article-end-state-secondary" type="button" @click="$emit('dismiss')">
@@ -151,11 +155,39 @@ export default {
   }
 }
 
-@media (max-width: 766px) {
+@media (max-width: 766px) and (orientation: portrait) {
   .article-end-state {
-    margin: 24px auto 32px;
+    margin: 20px auto 28px;
     max-width: 100%;
-    padding: 22px;
+    padding: 16px;
+  }
+
+  .article-end-state-summary {
+    align-items: center;
+    display: flex;
+    gap: 12px;
+    text-align: left;
+  }
+
+  .article-end-state-icon {
+    flex: 0 0 40px;
+    font-size: 20px;
+    height: 40px;
+    margin-bottom: 0;
+    width: 40px;
+  }
+
+  .article-end-state-copy {
+    min-width: 0;
+  }
+
+  .article-end-state-title {
+    font-size: 17px;
+    margin-bottom: 4px;
+  }
+
+  .article-end-state-actions {
+    margin-top: 16px;
   }
 }
 

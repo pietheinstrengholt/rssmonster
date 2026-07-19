@@ -247,7 +247,7 @@ export const postFever = async (req, res, _next) => {
               feed_id: parseInt(article.feedId),
               title: article.title,
               author: article.author || '',
-              html: article.contentOriginal || article.contentHtml || article.description || '',
+              html: article.contentHtml || article.description || '',
               url: article.url,
               is_saved: parseInt(article.favoriteInd),
               is_read: (article.status === 'read' ? 1 : 0),

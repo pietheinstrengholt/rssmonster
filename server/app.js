@@ -61,6 +61,12 @@ import errorController from "./controllers/error.js";
 // --------------------
 const app = express();
 
+// This function removes server-only article source fields from every JSON response.
+const omitServerOnlyJsonFields = (key, value) =>
+  key === 'contentOriginal' ? undefined : value;
+
+app.set('json replacer', omitServerOnlyJsonFields);
+
 // Logging
 app.use(
   morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-time ms)')

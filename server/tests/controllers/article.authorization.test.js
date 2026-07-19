@@ -77,6 +77,10 @@ describe('article ownership authorization', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.article.contentHtml).toBe('Article body');
+    expect(article.contentOriginal).toBe('<p>Article body</p>');
+    expect(res.body.article).not.toHaveProperty('contentOriginal');
+    expect(JSON.stringify(res.body)).not.toContain('<p>Article body</p>');
+    expect(app.get('json replacer')('contentOriginal', article.contentOriginal)).toBeUndefined();
     expect(res.body.article.contentSourceHash).toMatch(/^[a-f0-9]{64}$/);
     expect(res.body.article.contentTextHash).toMatch(/^[a-f0-9]{64}$/);
     expect(res.body.article).not.toHaveProperty('contentStripped');
@@ -147,6 +151,7 @@ describe('article ownership authorization', () => {
 
     expect(ownerResponse.status).toBe(200);
     expect(ownerResponse.body.articles.map(item => item.id)).toEqual([duplicate.id]);
+    expect(ownerResponse.body.articles[0]).not.toHaveProperty('contentOriginal');
     expect(foreignResponse.status).toBe(404);
     expect(foreignResponse.body).toEqual({ error: 'Article not found' });
   });

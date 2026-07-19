@@ -154,7 +154,6 @@ const getFallbackCategory = async (userId, excludeCategoryId = null) => {
 };
 
 const getArticleContent = (article) =>
-  article.contentOriginal ||
   article.contentHtml ||
   article.description ||
   '';

@@ -51,8 +51,8 @@ const createFixture = async () => {
     title: 'Example Article',
     author: 'Reporter',
     description: 'Fallback description',
-    contentOriginal: '<p>Current article body</p>',
-    contentHtml: 'Current article body',
+    contentOriginal: '<script>window.rawPublisherScript = true</script><p>Raw article body</p>',
+    contentHtml: '<p>Sanitized article body</p>',
     publishedAt: new Date('2026-05-01T10:00:00Z'),
     firstSeen: new Date('2026-05-01T10:05:00Z')
   });
@@ -81,7 +81,8 @@ describe('Google Reader API compatibility', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.items).toHaveLength(1);
-    expect(res.body.items[0].summary.content).toBe('<p>Current article body</p>');
+    expect(res.body.items[0].summary.content).toBe('<p>Sanitized article body</p>');
+    expect(JSON.stringify(res.body)).not.toContain('rawPublisherScript');
     expect(res.body.items[0].origin.streamId).toBe(`feed/${encodeURIComponent(feed.url)}`);
     expect(res.body.items[0].categories).toContain('user/-/label/Tech%20%2F%20News');
   });

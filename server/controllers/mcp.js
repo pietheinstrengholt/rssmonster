@@ -8,6 +8,8 @@ import { Op, fn, col, literal } from 'sequelize';
 import crawlController from "./crawl.js";
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
+const EXTERNAL_ARTICLE_ATTRIBUTES = { exclude: ['contentOriginal'] };
+
 // Shared helper to build tool result
 function makeResult({ structured, error=false }) {
   const text = JSON.stringify(structured);
@@ -300,6 +302,7 @@ const postMcp = async (req, res) => {
         console.log('[MCP Tool Called] search_articles_by_keyword - search:', search, 'feedId:', feedId, 'status:', status);
         try {
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: {
               userId: userId,
               status: status,
@@ -379,6 +382,7 @@ const postMcp = async (req, res) => {
           const fromTime = new Date(now.getTime() - seconds * 1000);
 
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: {
               userId: userId,
               status: status,
@@ -485,6 +489,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: whereClause,
             order: [["createdAt", "DESC"]],
             raw: true,
@@ -575,6 +580,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: whereClause,
             order: [["createdAt", "DESC"]],
             raw: true,
@@ -633,6 +639,7 @@ const postMcp = async (req, res) => {
         console.log('[MCP Tool Called] hot_articles - sort:', sort, 'status:', status);
         try {
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: {
               url: hotArticleIds,
               userId: userId,
@@ -830,6 +837,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: { id: articleIds, userId: userId, ...canonicalArticleWhere() },
             order: [["createdAt", "DESC"]],
             raw: true
@@ -928,6 +936,7 @@ const postMcp = async (req, res) => {
           }
 
           const articles = await Article.findAll({
+            attributes: EXTERNAL_ARTICLE_ATTRIBUTES,
             where: whereClause,
             order: [["updatedAt", "DESC"]],
             raw: true,

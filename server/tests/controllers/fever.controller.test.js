@@ -31,6 +31,8 @@ const createFixture = async () => {
     url: 'https://example.com/hot',
     title: 'Hot Article',
     description: 'Linked by another article',
+    contentOriginal: '<script>window.rawFeverScript = true</script><p>Raw Fever body</p>',
+    contentHtml: '<p>Sanitized Fever body</p>',
     publishedAt: new Date('2026-05-01T10:00:00Z'),
     hotlinks: 2
   });
@@ -116,6 +118,23 @@ describe('Fever API compatibility', () => {
     expect(res.body.auth).toBe(1);
     expect(res.body.links.map(link => link.id)).toContain(linkedArticle.id);
     expect(res.body.links.map(link => link.id)).not.toContain(unlinkedArticle.id);
+  });
+
+  it('returns only sanitized article HTML in item payloads', async () => {
+    const { user, linkedArticle } = await createFixture();
+
+    const res = await request(app)
+      .post('/api/fever')
+      .query({ api_key: user.hash, items: '', with_ids: String(linkedArticle.id) });
+
+    expect(res.status).toBe(200);
+    expect(res.body.items).toEqual(expect.arrayContaining([
+      expect.objectContaining({
+        id: linkedArticle.id,
+        html: '<p>Sanitized Fever body</p>'
+      })
+    ]));
+    expect(JSON.stringify(res.body)).not.toContain('rawFeverScript');
   });
 
   it('returns favicons only for feeds owned by the authenticated user', async () => {

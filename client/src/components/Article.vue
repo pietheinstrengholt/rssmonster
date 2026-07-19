@@ -25,6 +25,14 @@
           <span v-if="duplicateCount > 0" class="duplicate-badge" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
           <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
         </div>
+        <div v-if="!hasArticlePreview" class="article-preview-empty">
+          <span class="article-preview-empty__message">No preview available</span>
+          <span aria-hidden="true" class="article-preview-empty__separator">-</span>
+          <a :href="url" class="article-preview-empty__link" target="_blank" rel="noopener noreferrer" aria-label="Open original article in a new tab" @click.stop="articleClicked">
+            <span>Open original article</span>
+            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+          </a>
+        </div>
       </div>
       <div class="article-list-actions">
         <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
@@ -46,6 +54,14 @@
           <div class="meta-row">
             <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :cluster="cluster" :clusterCountTotal="clusterCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-cluster-articles="viewClusterArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
+          </div>
+          <div v-if="!hasArticlePreview" class="article-preview-empty">
+            <span class="article-preview-empty__message">No preview available</span>
+            <span aria-hidden="true" class="article-preview-empty__separator">-</span>
+            <a :href="url" class="article-preview-empty__link" target="_blank" rel="noopener noreferrer" aria-label="Open original article in a new tab" @click.stop="articleClicked">
+              <span>Open original article</span>
+              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+            </a>
           </div>
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
             <template v-for="(signal, index) in articleSignals" :key="signal.label">
@@ -87,6 +103,7 @@ import ArticleMedia from './articles/ArticleMedia.vue';
 import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
+import { hasRenderableContent } from '../utils/content';
 
 const NEUTRAL_SCORE = 70;
 const SWIPE_MAX = 128;
@@ -105,7 +122,6 @@ export default {
     feed: { type: Object, default: () => ({}) },
     content: { type: String, default: '' },
     description: { type: String, default: '' },
-    contentOriginal: { type: String, default: '' },
     author: { type: String, default: '' },
     hotInd: { type: Number, default: 0 },
     status: { type: String, default: '' },
@@ -169,6 +185,8 @@ export default {
         'articleVector',
         'contentsourcehash',
         'contentSourceHash',
+        'contentoriginal',
+        'contentOriginal',
         'contenttext',
         'contentText',
         'contenttexthash',
@@ -213,6 +231,12 @@ export default {
     // Returns article body content, falling back to the feed description.
     displayContent() {
       return this.contentHtml || this.content || this.description || '';
+    },
+    // Returns whether the article card will actually render content, a description, or video media.
+    hasArticlePreview() {
+      return hasRenderableContent(this.contentHtml)
+        || hasRenderableContent(this.description)
+        || this.shouldRenderMedia;
     },
     // Converts the quality score to a percentage.
     roundedQuality() {
@@ -1742,6 +1766,49 @@ span.similar-badge {
   margin-left: 0;
 }
 
+.article-preview-empty {
+  align-items: center;
+  color: #6B7280;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  gap: 0.3rem;
+  line-height: 1.35;
+  margin-top: 0.45rem;
+}
+
+.article-preview-empty__message,
+.article-preview-empty__separator {
+  color: inherit;
+}
+
+.article-preview-empty__link {
+  align-items: center;
+  color: #6B7280;
+  display: inline-flex;
+  font-weight: 500;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+.article-preview-empty__link:hover {
+  color: #2563EB;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-preview-empty__link:focus-visible {
+  border-radius: 0.2rem;
+  color: #2563EB;
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+.article-preview-empty__link .bi {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+}
+
 .article-list-actions {
   display: flex;
   align-items: center;
@@ -2216,6 +2283,17 @@ span.similar-badge {
 
   .article-list-card > .article-media {
     background: var(--dark-bg-page, var(--dark-page-surface));
+  }
+
+  .article-preview-empty,
+  .article-preview-empty__link {
+    color: #9CA3AF;
+  }
+
+  .article-preview-empty__link:hover,
+  .article-preview-empty__link:focus-visible {
+    color: #60A5FA;
+    outline-color: #60A5FA;
   }
 }
 </style>

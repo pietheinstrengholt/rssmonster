@@ -12,6 +12,7 @@ export const bootstrapIconNames = [
   'book-fill',
   'bookmark',
   'bookmark-fill',
+  'box-arrow-up-right',
   'box-arrow-right',
   'briefcase-fill',
   'brightness-high',

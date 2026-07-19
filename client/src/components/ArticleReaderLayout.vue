@@ -82,15 +82,17 @@
         </div>
       </div>
 
-      <button
+      <div
         v-for="article in articles"
         :key="article.id"
-        type="button"
         class="readerArticleListItem"
         :class="{ readerArticleListItemSelected: article.id === selectedArticleId }"
+        role="button"
+        tabindex="0"
         :aria-current="article.id === selectedArticleId ? 'true' : null"
         :ref="element => setArticleItemRef(element, article.id)"
         @click="selectArticle(article.id)"
+        @keydown.space.stop.prevent="selectArticle(article.id)"
       >
         <span class="readerArticleListItemContent">
           <span class="readerArticleListItemTitle">{{ article.title }}</span>
@@ -99,6 +101,21 @@
             <span>{{ feedName(article) }}</span>
             <span v-if="publishedLabel(article)">{{ publishedLabel(article) }}</span>
           </span>
+          <span v-if="!hasArticlePreview(article)" class="article-preview-empty">
+            <span class="article-preview-empty__message">No preview available</span>
+            <span aria-hidden="true" class="article-preview-empty__separator">-</span>
+            <a
+              :href="article.url"
+              class="article-preview-empty__link"
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label="Open original article in a new tab"
+              @click.stop="trackOriginalArticleClick(article)"
+            >
+              <span>Open original article</span>
+              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+            </a>
+          </span>
           <span class="readerArticleListItemBadges">
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
@@ -106,7 +123,7 @@
           </span>
         </span>
         <img v-if="thumbnailUrl(article)" class="readerArticleListThumbnail" :src="thumbnailUrl(article)" alt="" loading="lazy" />
-      </button>
+      </div>
 
       <div id="article-load-sentinel" class="article-load-sentinel" aria-hidden="true"></div>
 
@@ -150,6 +167,8 @@ import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
+import { hasRenderableContent, usableHttpUrl } from '../utils/content';
+import { markClicked as markArticleClickedAPI } from '../api/articles';
 
 const PREVIEW_LENGTH = 150;
 
@@ -528,13 +547,33 @@ export default {
     },
     // Returns a short plain-text preview for a row in the reader article list.
     articlePreview(article) {
-      const source = article.contentSummary || article.summary || article.contentSummaryBullets?.join(' ') || article.contentOriginal || '';
+      const source = article.contentSummary || article.summary || article.contentSummaryBullets?.join(' ') || article.description || article.contentHtml || '';
+      if (!hasRenderableContent(source)) return '';
       const text = String(source).replace(/<[^>]*>/g, ' ').replace(/&nbsp;/gi, ' ').replace(/\s+/g, ' ').trim();
       return text.length > PREVIEW_LENGTH ? `${text.slice(0, PREVIEW_LENGTH).trim()}...` : text;
     },
+    // Returns whether the list item has meaningful body text, a summary, or an image.
+    hasArticlePreview(article) {
+      const contentCandidates = [
+        article.contentHtml,
+        article.description,
+        article.contentSummary,
+        article.summary,
+        article.contentSummaryBullets?.join(' ')
+      ];
+
+      return contentCandidates.some(hasRenderableContent) || Boolean(this.thumbnailUrl(article));
+    },
     // Returns an image thumbnail URL for a row in the reader article list.
     thumbnailUrl(article) {
-      return article.imageUrl || article.image || article.enclosureUrl || '';
+      return [article.imageUrl, article.image, article.enclosureUrl]
+        .map(usableHttpUrl)
+        .find(Boolean) || '';
+    },
+    // Tracks an original-article link through the same clicked-article behavior as the reader panel.
+    trackOriginalArticleClick(article) {
+      markArticleClickedAPI(article.id)
+      .finally(() => this.$emit('update-clicked', { id: article.id, clickedAmount: 1 }));
     },
     // Returns the related article count when available.
     similarCount(article) {
@@ -820,6 +859,49 @@ export default {
   -webkit-line-clamp: 2;
 }
 
+.article-preview-empty {
+  align-items: center;
+  color: #6B7280;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.8125rem;
+  gap: 0.3rem;
+  line-height: 1.35;
+  margin-top: 0.45rem;
+}
+
+.article-preview-empty__message,
+.article-preview-empty__separator {
+  color: inherit;
+}
+
+.article-preview-empty__link {
+  align-items: center;
+  color: #6B7280;
+  display: inline-flex;
+  font-weight: 500;
+  gap: 0.25rem;
+  text-decoration: none;
+}
+
+.article-preview-empty__link:hover {
+  color: #2563EB;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.article-preview-empty__link:focus-visible {
+  border-radius: 0.2rem;
+  color: #2563EB;
+  outline: 2px solid #2563EB;
+  outline-offset: 2px;
+}
+
+.article-preview-empty__link .bi {
+  flex: 0 0 auto;
+  font-size: 0.75rem;
+}
+
 .readerArticleListItemBadges {
   display: flex;
   flex-wrap: wrap;
@@ -926,6 +1008,17 @@ export default {
 
 :global(:root[data-theme='dark']) .readerArticleListItem .readerArticleListItemPreview {
   color: var(--reader-list-item-preview);
+}
+
+:global(:root[data-theme='dark']) .article-preview-empty,
+:global(:root[data-theme='dark']) .article-preview-empty__link {
+  color: #9CA3AF;
+}
+
+:global(:root[data-theme='dark']) .article-preview-empty__link:hover,
+:global(:root[data-theme='dark']) .article-preview-empty__link:focus-visible {
+  color: #60A5FA;
+  outline-color: #60A5FA;
 }
 
 :global(:root[data-theme='dark']) .readerArticleListItemSelected {
