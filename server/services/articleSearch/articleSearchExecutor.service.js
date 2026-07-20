@@ -158,7 +158,9 @@ export const buildArticleSearchQuery = ({
   }
 
   if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
-    const effectiveStatus = hasSearchIntent && !['favorite', 'star', 'hot', 'clicked'].includes(status) ? '%' : status;
+    const effectiveStatus = status === 'briefing' || (hasSearchIntent && !['favorite', 'star', 'hot', 'clicked'].includes(status))
+      ? '%'
+      : status;
 
     if (effectiveStatus === 'favorite' || effectiveStatus === 'star') {
       articleQuery.where.favoriteInd = 1;

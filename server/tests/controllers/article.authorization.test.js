@@ -159,6 +159,10 @@ describe('article ownership authorization', () => {
   it('manager overview counts only unfiltered articles', async () => {
     const owner = await createUser(uniqueName('manager-filtered-owner'));
     const { feed, article } = await createArticleFor(owner);
+    await article.update({
+      interestScore: 0.5,
+      publishedAt: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+    });
     await Article.create({
       userId: owner.id,
       feedId: feed.id,
@@ -178,6 +182,7 @@ describe('article ownership authorization', () => {
 
     expect(res.status).toBe(200);
     expect(res.body.total).toBe(1);
+    expect(res.body.briefingCount).toBe(1);
     expect(res.body.unreadCount).toBe(1);
     expect(res.body.categories[0].feeds[0].unreadCount).toBe(1);
     expect(article.filteredInd).toBe(false);

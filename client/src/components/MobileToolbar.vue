@@ -33,9 +33,10 @@
         <!-- Read Mode Dropdown -->
         <div class="dropdown mobile-toolbar-filter">
       <button class="dropdown-toggle mobile-filter-button" type="button" id="readModeDropdown" data-bs-toggle="dropdown" aria-expanded="false">
-        {{ capitalize(currentStatus) }} {{ getStatusCount() }}
+        {{ currentStatus === 'briefing' ? 'Daily briefing' : capitalize(currentStatus) }} {{ getStatusCount() }}
       </button>
       <div class="dropdown-menu" aria-labelledby="readModeDropdown">
+        <button v-if="currentSelection.AIEnabled" type="button" class="dropdown-item" :class="{ active: currentStatus === 'briefing' }" @click="statusClicked('briefing')">Daily briefing {{ $store.data.briefingCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'unread' }" @click="statusClicked('unread')">Unread {{ $store.data.unreadCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'favorite' }" @click="statusClicked('favorite')">Favorite {{ $store.data.favoriteCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'hot' }" @click="statusClicked('hot')">Hot {{ $store.data.hotCount }}</button>
@@ -508,6 +509,7 @@
 const MOBILE_LANDSCAPE_WIDTH = 767;
 
 const statusCountMap = {
+  briefing: 'briefingCount',
   unread: 'unreadCount',
   favorite: 'favoriteCount',
   hot: 'hotCount',

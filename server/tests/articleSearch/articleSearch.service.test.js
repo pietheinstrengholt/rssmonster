@@ -454,6 +454,10 @@ describe('articleSearch.service', () => {
           search: 'briefing:true',
           status: '%'
         });
+        const includedByStatus = await searchArticles({
+          userId: user.id,
+          status: 'briefing'
+        });
         const excluded = await searchArticles({
           userId: user.id,
           search: 'briefing:false',
@@ -466,6 +470,7 @@ describe('articleSearch.service', () => {
         expect(included.itemIds).toContain(eventMemberTwo.id);
         expect(included.itemIds).not.toContain(singleEvent.id);
         expect(included.itemIds).not.toContain(notBriefing.id);
+        expect(includedByStatus.itemIds).toEqual(included.itemIds);
 
         expect(excluded.itemIds).not.toContain(positiveInterest.id);
         expect(excluded.itemIds).not.toContain(negativeInterest.id);

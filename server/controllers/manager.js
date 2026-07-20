@@ -5,6 +5,8 @@ import Sequelize from "sequelize";
 import { Op } from 'sequelize';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
+const DEFAULT_BRIEFING_WINDOW_DAYS = 7;
+
 const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow => {
   const category = categoryRow.get({ plain: true });
 
@@ -123,6 +125,20 @@ const loadOverviewTotals = async baseWhere => {
   const totals = await Article.findOne({
     where: baseWhere,
     attributes: [
+      [Sequelize.literal(`COUNT(CASE WHEN
+        publishedAt >= NOW() - INTERVAL ${DEFAULT_BRIEFING_WINDOW_DAYS} DAY
+        AND publishedAt <= NOW()
+        AND (
+          interestScore <> 0
+          OR EXISTS (
+            SELECT 1
+            FROM events briefing_event
+            WHERE briefing_event.id = articles.eventId
+              AND briefing_event.userId = articles.userId
+              AND briefing_event.articleCount > 1
+          )
+        )
+      THEN 1 END)`), 'briefingCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
       [Sequelize.literal("COUNT(CASE WHEN favoriteInd = 1 THEN 1 END)"), 'favoriteCount'],
@@ -133,6 +149,7 @@ const loadOverviewTotals = async baseWhere => {
   });
 
   return {
+    briefingCount: Number(totals?.briefingCount) || 0,
     unreadCount: Number(totals?.unreadCount) || 0,
     readCount: Number(totals?.readCount) || 0,
     favoriteCount: Number(totals?.favoriteCount) || 0,

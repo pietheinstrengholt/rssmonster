@@ -101,6 +101,7 @@ export const bootstrapIconNames = [
   'sliders',
   'star',
   'stars',
+  'sunrise-fill',
   'tag',
   'tag-fill',
   'three-dots',

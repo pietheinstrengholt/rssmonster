@@ -12,6 +12,8 @@ import {
   fetchOverviewCounts as fetchOverviewCountsAPI
 } from '../api/manager';
 
+const DEFAULT_BRIEFING_DATE_FILTER = '@lastweek';
+
 const defaultSelection = () => ({
   status: 'unread',
   categoryId: '%',
@@ -61,6 +63,7 @@ export const useStore = defineStore('data', {
     smartFolders: [],
     topTags: [],
 
+    briefingCount: null,
     unreadCount: 0,
     readCount: 0,
     favoriteCount: 0,
@@ -120,11 +123,12 @@ export const useStore = defineStore('data', {
     },
 
     updateOverview(
-      { unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
+      { briefingCount, unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
       { initial = false, forceUpdate = false } = {}
     ) {
       const previousUnreadCount = this.unreadCount;
 
+      this.briefingCount = briefingCount ?? this.briefingCount;
       this.unreadCount = unreadCount;
       this.readCount = readCount;
       this.favoriteCount = favoriteCount;
@@ -154,11 +158,12 @@ export const useStore = defineStore('data', {
     },
 
     updateOverviewCounts(
-      { unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
+      { briefingCount, unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
       { initial = false, forceUpdate = false } = {}
     ) {
       const previousUnreadCount = this.unreadCount;
 
+      this.briefingCount = briefingCount ?? this.briefingCount;
       this.unreadCount = unreadCount;
       this.readCount = readCount;
       this.favoriteCount = favoriteCount;
@@ -233,7 +238,7 @@ export const useStore = defineStore('data', {
     setSelectedStatus(status) {
       Object.assign(this.currentSelection, {
         status,
-        search: null,
+        search: status === 'briefing' ? `briefing:true ${DEFAULT_BRIEFING_DATE_FILTER}` : null,
         smartFolderId: null
       });
 
@@ -456,6 +461,7 @@ export const useStore = defineStore('data', {
     getCurrentSelection: s => s.currentSelection,
     getCategories: s => s.categories,
 
+    getBriefingCount: s => s.briefingCount,
     getUnreadCount: s => s.unreadCount,
     getReadCount: s => s.readCount,
     getFavoriteCount: s => s.favoriteCount,

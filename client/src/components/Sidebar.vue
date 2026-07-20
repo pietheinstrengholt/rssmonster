@@ -75,7 +75,7 @@
       />
 
       <SidebarNavItem
-        v-for="filter in statusFilters"
+        v-for="filter in visibleStatusFilters"
         :key="filter.status"
         :icon="filter.icon"
         :icon-class="filter.iconClass"
@@ -362,6 +362,7 @@ const refreshProgress = reactive({
 });
 
 const statusFilters = [
+  { status: 'briefing', label: 'Daily briefing', icon: 'sunrise-fill', iconClass: 'icon-briefing' },
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
   { status: 'read', label: 'Read', icon: 'circle-fill', iconClass: 'icon-read' },
   { status: 'favorite', label: 'Favorites', icon: 'bookmark-fill', iconClass: 'icon-star' },
@@ -371,6 +372,9 @@ const statusFilters = [
 
 const orderList = computed(() => store.data.categories.map(category => category.id));
 const topTagsDisplay = computed(() => store.data.topTags.slice(0, 5));
+const visibleStatusFilters = computed(() => statusFilters.filter(
+  filter => filter.status !== 'briefing' || store.data.currentSelection.AIEnabled
+));
 
 onBeforeMount(() => {
   Promise.allSettled([

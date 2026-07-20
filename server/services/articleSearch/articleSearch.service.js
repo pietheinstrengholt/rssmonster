@@ -11,6 +11,8 @@ import { fetchFeedIds, fetchTaggedArticleIds } from './articleSearchDataAccess.s
 import { buildTextSearchWhereClause } from './articleTextSearch.service.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 
+const DEFAULT_BRIEFING_SEARCH = 'briefing:true @lastweek';
+
 const articleValue = (article, key) => (
   typeof article.get === 'function' ? article.get(key) : article[key]
 );
@@ -71,7 +73,7 @@ export const searchArticles = async ({
 
     console.log(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
 
-    const rawSearch = search.trim();
+    const rawSearch = search.trim() || (status === 'briefing' ? DEFAULT_BRIEFING_SEARCH : '');
     const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'desc' });
     const {
       filters = {},
@@ -98,8 +100,9 @@ export const searchArticles = async ({
       event = null,
       hot: hotFilter = null,
       island: islandFilter = null,
-      briefing: briefingFilter = null
+      briefing: parsedBriefingFilter = null
     } = filters;
+    const briefingFilter = parsedBriefingFilter ?? (status === 'briefing' ? true : null);
     const eventCountFilter = Number.isFinite(filters.eventCount) ? filters.eventCount : null;
 
     let dateRange = null;

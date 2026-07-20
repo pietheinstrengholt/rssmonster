@@ -274,6 +274,7 @@ export default {
       const selection = this.$store.data.currentSelection;
       if (selection.smartFolderId !== null) return 'bi bi-folder-fill';
       if (selection.tag) return 'bi bi-tag-fill';
+      if (selection.status === 'briefing') return 'bi bi-sunrise-fill';
       if (selection.search) return 'bi bi-search';
       if (selection.feedId !== '%') return 'bi bi-rss-fill';
       if (selection.categoryId !== '%') return 'bi bi-folder-fill';
@@ -298,6 +299,7 @@ export default {
       }
 
       if (selection.tag) return this.formatTagName(selection.tag);
+      if (selection.status === 'briefing') return 'Daily briefing';
       if (selection.search) return `Search: ${selection.search}`;
 
       const categoryId = Number(selection.categoryId);
