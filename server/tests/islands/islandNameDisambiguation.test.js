@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   buildDisambiguatedIslandName,
+  buildUniqueIslandName,
   compareIslandStrength,
   isNearDuplicateIslandName,
   normalizeIslandName,
@@ -30,6 +31,16 @@ function island(overrides = {}) {
 describe('island name disambiguation', () => {
   it('normalizes simple punctuation and whitespace differences', () => {
     expect(normalizeIslandName('  AI   Companions! ')).toBe('ai companions');
+  });
+
+  it('adds an incrementing suffix to make newly created island names unique', () => {
+    const usedNames = new Set([
+      normalizeIslandName('AI Companions'),
+      normalizeIslandName('AI Companions (2)')
+    ]);
+
+    expect(buildUniqueIslandName('AI Companions', usedNames)).toBe('AI Companions (3)');
+    expect(buildUniqueIslandName('Energy', usedNames)).toBe('Energy');
   });
 
   it('treats same-name high-similarity islands as near duplicates', () => {

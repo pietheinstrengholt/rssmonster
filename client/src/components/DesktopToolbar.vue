@@ -758,6 +758,7 @@ export default {
       selectedThemeMode: getThemeMode(),
       windowWidth: window.innerWidth,
       statusOptions: [
+        { value: 'briefing', label: 'Daily briefing', requiresAI: true },
         { value: 'unread', label: 'Unread' },
         { value: 'favorite', label: 'Favorite' },
         { value: 'hot', label: 'Hot' },
@@ -774,6 +775,7 @@ export default {
       sortOptions: [
         { value: 'asc', label: 'Oldest' },
         { value: 'desc', label: 'Newest' },
+        { value: 'trust', label: 'Trust' },
         { value: 'recommended', label: 'Recommended', requiresAI: true },
         { value: 'quality', label: 'Quality', requiresAI: true },
         { value: 'attention', label: 'Most Engaged', requiresAI: true }
@@ -946,6 +948,7 @@ export default {
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
       const selectedSortOption = this.sortOptions.find((option) => option.value === this.selectedSort);
       const selectedViewModeOption = this.viewModeOptions.find((option) => option.value === this.selectedViewMode);
+      const selectedStatusOption = this.statusOptions.find((option) => option.value === this.selectedStatus);
       const selectedGroupingOption = this.groupingOptions.find((option) => option.value === this.currentSelection.grouping);
 
       const dropdowns = [
@@ -961,9 +964,9 @@ export default {
           id: 'statusDropdown',
           type: 'status',
           label: 'Status',
-          selectedLabel: this.capitalize(this.selectedStatus),
+          selectedLabel: selectedStatusOption ? selectedStatusOption.label : this.capitalize(this.selectedStatus),
           selectedValue: this.selectedStatus,
-          options: this.statusOptions
+          options: visibleOptions(this.statusOptions)
         },
         {
           id: 'sortDropdown',

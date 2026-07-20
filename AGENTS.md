@@ -100,6 +100,10 @@ Use this sequence for most tasks:
 - `normalizeHtmlUrls()` owns canonicalization and converts relative URLs into absolute HTTP(S) URLs.
 - `sanitizeHtmlContent()` owns safety by validating and filtering URLs and attributes, but does not guarantee canonical absolute URLs on its own.
 
+### 4.9 Daily Briefing Preferences
+- `BriefingPreference` is a one-to-one, user-owned record; do not create more than one row per user.
+- `selectionPeriod` persists only `24h` or `7d`, with `7d` as the default.
+
 ---
 
 ## 5) Quality Gates (What to Run)

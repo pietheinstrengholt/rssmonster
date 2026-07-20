@@ -29,24 +29,25 @@ const buildUtcDayRange = (year, month, day) => ({
 });
 
 // Resolves supported date filter tokens into the range object expected by Sequelize queries.
-export const resolveDateFilterToRange = dateFilter => {
+export const resolveDateFilterToRange = (dateFilter, now = new Date()) => {
   if (!dateFilter || !dateFilter.type) {
     return null;
   }
 
+  const referenceNow = new Date(now);
+
   if (dateFilter.type === 'today') {
-    const now = new Date();
     return {
       dateToken: 'today',
       dateRange: {
-        start: new Date(now.getTime() - 24 * 60 * 60 * 1000),
-        end: now
+        start: new Date(referenceNow.getTime() - 24 * 60 * 60 * 1000),
+        end: referenceNow
       }
     };
   }
 
   if (dateFilter.type === 'yesterday') {
-    const today = new Date();
+    const today = referenceNow;
     return {
       dateToken: 'yesterday',
       dateRange: buildUtcDayRange(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - 1)
@@ -54,12 +55,11 @@ export const resolveDateFilterToRange = dateFilter => {
   }
 
   if (dateFilter.type === 'lastweek') {
-    const now = new Date();
     return {
       dateToken: 'lastweek',
       dateRange: {
-        start: new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000),
-        end: now
+        start: new Date(referenceNow.getTime() - 7 * 24 * 60 * 60 * 1000),
+        end: referenceNow
       }
     };
   }
@@ -75,7 +75,7 @@ export const resolveDateFilterToRange = dateFilter => {
   }
 
   if (dateFilter.type === 'daysAgo' && Number.isInteger(dateFilter.value)) {
-    const today = new Date();
+    const today = referenceNow;
     const target = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate() - dateFilter.value, 0, 0, 0, 0));
     return {
       dateToken: `${dateFilter.value} days ago`,
@@ -90,7 +90,7 @@ export const resolveDateFilterToRange = dateFilter => {
       return null;
     }
 
-    const today = new Date();
+    const today = referenceNow;
     const currentDay = today.getUTCDay();
     let daysBack = currentDay - targetDay;
     if (daysBack <= 0) {

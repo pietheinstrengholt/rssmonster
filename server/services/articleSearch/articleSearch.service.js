@@ -1,7 +1,7 @@
 // Coordinates article search across query parsing, settings thresholds, tag/feed lookups, and sorting.
 // The service returns article ids while keeping database filtering and in-memory ranking behind helper modules.
 import db from '../../models/index.js';
-const { Setting } = db;
+const { BriefingPreference, Setting } = db;
 import { Op } from 'sequelize';
 import { sortArticles } from './articleSort.service.js';
 import { resolveDateFilterToRange } from './articleDateParser.service.js';
@@ -19,7 +19,7 @@ const articleValue = (article, key) => (
 
 const normalizeSort = sortValue => {
   const normalized = String(sortValue || 'desc').toLowerCase();
-  return ['asc', 'desc', 'recommended', 'quality', 'attention'].includes(normalized)
+  return ['asc', 'desc', 'trust', 'recommended', 'quality', 'attention'].includes(normalized)
     ? normalized
     : 'desc';
 };
@@ -28,7 +28,7 @@ const normalizeSort = sortValue => {
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
  * event:true/false, island:true/false, briefing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
- * sort:desc/asc/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
+ * sort:desc/asc/trust/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
 export const searchArticles = async ({
@@ -73,7 +73,42 @@ export const searchArticles = async ({
 
     console.log(`\x1b[32mScore thresholds: adv=${finalMinAdvertisementScore}, sentiment=${finalMinSentimentScore}, quality=${finalMinQualityScore}\x1b[0m`);
 
-    const rawSearch = search.trim() || (status === 'briefing' ? DEFAULT_BRIEFING_SEARCH : '');
+    let rawSearch = search.trim() || (status === 'briefing' ? DEFAULT_BRIEFING_SEARCH : '');
+    let briefingMinDistinctSources = 1;
+    let briefingShowOnlyInterestMatchedArticles = false;
+    let briefingShowOnlyDevelopingEventArticles = false;
+
+    if (status === 'briefing') {
+        const briefingPreferences = await BriefingPreference.findOne({
+            where: { userId },
+            attributes: [
+                'selectionPeriod',
+                'includeOnlyUnreadArticles',
+                'minDistinctSources',
+                'prioritizeHighTrust',
+                'showOnlyInterestMatchedArticles',
+                'showOnlyDevelopingEventArticles'
+            ],
+            raw: true
+        });
+
+        if (briefingPreferences) {
+            briefingMinDistinctSources = Number(briefingPreferences.minDistinctSources) || 1;
+            briefingShowOnlyInterestMatchedArticles = Boolean(
+                Number(briefingPreferences.showOnlyInterestMatchedArticles)
+            );
+            briefingShowOnlyDevelopingEventArticles = Boolean(
+                Number(briefingPreferences.showOnlyDevelopingEventArticles)
+            );
+            rawSearch = [
+                'briefing:true',
+                Number(briefingPreferences.includeOnlyUnreadArticles) ? 'unread:true' : null,
+                briefingPreferences.selectionPeriod === '24h' ? '@today' : '@lastweek',
+                Number(briefingPreferences.prioritizeHighTrust) ? 'sort:trust' : null
+            ].filter(Boolean).join(' ');
+        }
+    }
+
     const parsedQuery = parseArticleQuery({ search: rawSearch, defaultSort: sort || 'desc' });
     const {
       filters = {},
@@ -121,13 +156,14 @@ export const searchArticles = async ({
      * Determine final filter values.
      * Field filters from search string take precedence over query parameters.
      */
-    // Sort: search token (sort:asc/desc/recommended/quality/attention) overrides query param
+    // Sort: search token (sort:asc/desc/trust/recommended/quality/attention) overrides query param
     // Smart folder optimization: skip sort entirely (only counting articles)
     const logicalSort = normalizeSort(sortFilter !== null ? sortFilter : sort);
     const sortRecommended = logicalSort === 'recommended';
     const sortQuality = logicalSort === 'quality';
     const sortAttention = logicalSort === 'attention';
-    const databaseSort = ['recommended', 'quality', 'attention'].includes(logicalSort)
+    const sortTrust = logicalSort === 'trust';
+    const databaseSort = ['trust', 'recommended', 'quality', 'attention'].includes(logicalSort)
       ? 'desc'
       : logicalSort;
     console.log(`\x1b[31mFinal sort value: "${databaseSort}" (logical: ${logicalSort}, smartFolder: ${smartFolderSearch})\x1b[0m`);
@@ -207,6 +243,7 @@ export const searchArticles = async ({
       sortRecommended,
       sortQuality,
       sortAttention,
+      sortTrust,
       workingSort: databaseSort,
       qualityFilter,
       freshnessFilter,
@@ -221,6 +258,9 @@ export const searchArticles = async ({
       event,
       islandFilter,
       briefingFilter,
+      briefingMinDistinctSources,
+      briefingShowOnlyInterestMatchedArticles,
+      briefingShowOnlyDevelopingEventArticles,
       grouping,
       eventCountFilter,
       firstSeenAgeFilter,

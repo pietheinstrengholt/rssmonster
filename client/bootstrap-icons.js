@@ -99,6 +99,7 @@ export const bootstrapIconNames = [
   'shield-lock-fill',
   'slash-circle-fill',
   'sliders',
+  'sliders2',
   'star',
   'stars',
   'sunrise-fill',

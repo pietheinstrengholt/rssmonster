@@ -1,6 +1,7 @@
 <template>
   <div id="main-container">
     <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
+      <DailyBriefingIntro v-if="currentSelection === 'briefing'" />
       <Article
         v-for="article in articles"
         v-bind="article"
@@ -51,13 +52,15 @@ import Article from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
+import DailyBriefingIntro from "./DailyBriefingIntro.vue";
 
 export default {
   components: {
     Article,
     ArticleEmptyState,
     ArticleEndState,
-    ArticleLoadingState
+    ArticleLoadingState,
+    DailyBriefingIntro
   },
   emits: [
     'update-favorite',

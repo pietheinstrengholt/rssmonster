@@ -1,11 +1,12 @@
 import db from '../models/index.js';
-const { Feed, Category, Article, Setting } = db;
+const { Feed, Category, Article, BriefingPreference, Setting } = db;
 
 import Sequelize from "sequelize";
 import { Op } from 'sequelize';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { briefingEligibilitySql } from '../services/articleSearch/briefingEligibility.service.js';
 
-const DEFAULT_BRIEFING_WINDOW_DAYS = 7;
+const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
 
 const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow => {
   const category = categoryRow.get({ plain: true });
@@ -121,23 +122,50 @@ const buildOverviewWhere = async ({ userId, grouping }) => {
   return baseWhere;
 };
 
-const loadOverviewTotals = async baseWhere => {
+const loadOverviewTotals = async (baseWhere, userId) => {
+  const briefingPreferences = await BriefingPreference.findOne({
+    where: { userId },
+    attributes: [
+      'selectionPeriod',
+      'includeOnlyUnreadArticles',
+      'minDistinctSources',
+      'prioritizeHighTrust',
+      'showOnlyInterestMatchedArticles',
+      'showOnlyDevelopingEventArticles'
+    ],
+    raw: true
+  });
+  const briefingSelectionPeriod = briefingPreferences?.selectionPeriod === '24h'
+    ? '24h'
+    : DEFAULT_BRIEFING_SELECTION_PERIOD;
+  const briefingWindowDays = briefingSelectionPeriod === '24h' ? 1 : 7;
+  const briefingIncludeOnlyUnreadArticles = Boolean(
+    Number(briefingPreferences?.includeOnlyUnreadArticles)
+  );
+  const briefingStatusCondition = briefingIncludeOnlyUnreadArticles
+    ? "AND status = 'unread'"
+    : '';
+  const briefingMinDistinctSources = Number(briefingPreferences?.minDistinctSources) || 1;
+  const briefingPrioritizeHighTrust = Boolean(
+    Number(briefingPreferences?.prioritizeHighTrust)
+  );
+  const briefingEligibility = briefingEligibilitySql({
+    minDistinctSources: briefingMinDistinctSources,
+    showOnlyInterestMatchedArticles: Boolean(
+      Number(briefingPreferences?.showOnlyInterestMatchedArticles)
+    ),
+    showOnlyDevelopingEventArticles: Boolean(
+      Number(briefingPreferences?.showOnlyDevelopingEventArticles)
+    )
+  });
   const totals = await Article.findOne({
     where: baseWhere,
     attributes: [
       [Sequelize.literal(`COUNT(CASE WHEN
-        publishedAt >= NOW() - INTERVAL ${DEFAULT_BRIEFING_WINDOW_DAYS} DAY
+        publishedAt >= NOW() - INTERVAL ${briefingWindowDays} DAY
         AND publishedAt <= NOW()
-        AND (
-          interestScore <> 0
-          OR EXISTS (
-            SELECT 1
-            FROM events briefing_event
-            WHERE briefing_event.id = articles.eventId
-              AND briefing_event.userId = articles.userId
-              AND briefing_event.articleCount > 1
-          )
-        )
+        AND ${briefingEligibility}
+        ${briefingStatusCondition}
       THEN 1 END)`), 'briefingCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
@@ -149,6 +177,10 @@ const loadOverviewTotals = async baseWhere => {
   });
 
   return {
+    briefingSelectionPeriod,
+    briefingIncludeOnlyUnreadArticles,
+    briefingMinDistinctSources,
+    briefingPrioritizeHighTrust,
     briefingCount: Number(totals?.briefingCount) || 0,
     unreadCount: Number(totals?.unreadCount) || 0,
     readCount: Number(totals?.readCount) || 0,
@@ -249,7 +281,7 @@ export const getOverviewCounts = async (req, res, _next) => {
 
     const categories = buildCategoriesStructure(categoriesRaw);
     const [totals, grouped] = await Promise.all([
-      loadOverviewTotals(baseWhere),
+      loadOverviewTotals(baseWhere, userId),
       loadGroupedFeedCounts(baseWhere)
     ]);
 
@@ -281,7 +313,7 @@ export const getOverview = async (req, res, _next) => {
     ]);
     const categories = buildCategoriesStructure(categoriesRaw);
     const [totals, grouped] = await Promise.all([
-      loadOverviewTotals(baseWhere),
+      loadOverviewTotals(baseWhere, userId),
       loadGroupedFeedCounts(baseWhere)
     ]);
 

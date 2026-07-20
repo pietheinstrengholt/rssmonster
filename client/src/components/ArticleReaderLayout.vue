@@ -1,4 +1,8 @@
 <template>
+  <DailyBriefingIntro
+    v-if="currentSelection === 'briefing' && hasLoadedContent && container.length === 0"
+    reader-mode
+  />
   <ArticleEmptyState
     v-if="hasLoadedContent && container.length === 0"
     class="readerEmptyState"
@@ -8,7 +12,13 @@
   />
 
   <div v-else class="readerLayout">
-    <aside class="readerArticleList" aria-label="Article list">
+    <aside
+      ref="articleListScrollRef"
+      class="readerArticleList"
+      aria-label="Article list"
+      @scroll="handleArticleListScroll"
+    >
+      <DailyBriefingIntro v-if="currentSelection === 'briefing'" reader-mode />
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
           <div class="article-list-bulk-title">
@@ -165,6 +175,7 @@
 import Article from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
+import DailyBriefingIntro from "./DailyBriefingIntro.vue";
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent, usableHttpUrl } from '../utils/content';
@@ -176,7 +187,8 @@ export default {
   components: {
     Article,
     ArticleEmptyState,
-    ArticleEndState
+    ArticleEndState,
+    DailyBriefingIntro
   },
   emits: [
     'update-favorite',
@@ -245,7 +257,8 @@ export default {
       selectedArticleId: null,
       isReaderEndStateDismissed: false,
       isBulkMenuOpen: false,
-      bulkMenuStyle: {}
+      bulkMenuStyle: {},
+      articleListScrollTimeout: null
     };
   },
   mounted() {
@@ -259,6 +272,10 @@ export default {
     window.removeEventListener('resize', this.updateBulkMenuPosition);
     window.removeEventListener('scroll', this.updateBulkMenuPosition, true);
     document.removeEventListener('click', this.closeBulkMenu);
+
+    if (this.articleListScrollTimeout) {
+      clearTimeout(this.articleListScrollTimeout);
+    }
   },
   computed: {
     // Returns the article currently shown in the reader panel.
@@ -405,6 +422,23 @@ export default {
     }
   },
   methods: {
+    // Shows the article-list scrollbar while the user is actively scrolling.
+    handleArticleListScroll() {
+      const articleList = this.$refs.articleListScrollRef;
+
+      if (!articleList) return;
+
+      articleList.classList.add('is-scrolling');
+
+      if (this.articleListScrollTimeout) {
+        clearTimeout(this.articleListScrollTimeout);
+      }
+
+      this.articleListScrollTimeout = setTimeout(() => {
+        articleList.classList.remove('is-scrolling');
+        this.articleListScrollTimeout = null;
+      }, 1000);
+    },
     // Formats stored tag names for display.
     formatTagName,
     // Opens or closes the reader bulk action menu.
@@ -594,10 +628,36 @@ export default {
 }
 
 .readerArticleList {
+  --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong);
   border-right: 1px solid var(--border-subtle);
   max-height: calc(100vh - 58px);
   overflow-y: auto;
   padding: 0 10px 24px;
+  scrollbar-color: var(--color-transparent) var(--color-transparent);
+  scrollbar-width: thin;
+  transition: scrollbar-color 0.2s ease;
+}
+
+.readerArticleList::-webkit-scrollbar {
+  height: 6px;
+  width: 6px;
+}
+
+.readerArticleList::-webkit-scrollbar-track {
+  background: var(--color-transparent);
+}
+
+.readerArticleList::-webkit-scrollbar-thumb {
+  background-color: var(--color-transparent);
+  transition: background-color 0.2s ease;
+}
+
+.readerArticleList.is-scrolling {
+  scrollbar-color: var(--article-list-scrollbar-thumb) var(--color-transparent);
+}
+
+.readerArticleList.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: var(--article-list-scrollbar-thumb);
 }
 
 .article-list-bulk-header {
@@ -965,6 +1025,7 @@ export default {
 }
 
 :global(:root[data-theme='dark']) .readerArticleList {
+  --article-list-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
   border-color: var(--border-color);
 }
 

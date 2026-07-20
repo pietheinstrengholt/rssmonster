@@ -36,7 +36,7 @@
         {{ currentStatus === 'briefing' ? 'Daily briefing' : capitalize(currentStatus) }} {{ getStatusCount() }}
       </button>
       <div class="dropdown-menu" aria-labelledby="readModeDropdown">
-        <button v-if="currentSelection.AIEnabled" type="button" class="dropdown-item" :class="{ active: currentStatus === 'briefing' }" @click="statusClicked('briefing')">Daily briefing {{ $store.data.briefingCount }}</button>
+        <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentStatus === 'briefing' }" @click="statusClicked('briefing')">Daily briefing {{ $store.data.briefingCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'unread' }" @click="statusClicked('unread')">Unread {{ $store.data.unreadCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'favorite' }" @click="statusClicked('favorite')">Favorite {{ $store.data.favoriteCount }}</button>
         <button type="button" class="dropdown-item" :class="{ active: currentStatus === 'hot' }" @click="statusClicked('hot')">Hot {{ $store.data.hotCount }}</button>
@@ -45,6 +45,7 @@
         <li><hr class="dropdown-divider"></li>
         <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'asc' }" @click="sortClicked('asc')">Oldest</button>
         <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'desc' }" @click="sortClicked('desc')">Newest</button>
+        <button type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'trust' }" @click="sortClicked('trust')">Trust</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'recommended' }" @click="sortClicked('recommended')">Recommended</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'quality' }" @click="sortClicked('quality')">Quality</button>
         <button v-if="isAIEnabled" type="button" class="dropdown-item" :class="{ active: currentSelection.sort === 'attention' }" @click="sortClicked('attention')">Most Engaged</button>

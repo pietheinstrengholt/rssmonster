@@ -35,7 +35,7 @@
     "@vue/test-utils": "^2.4.11",
     "baseline-browser-mapping": "^2.10.43",
     "eslint": "^10.7.0",
-    "eslint-plugin-vue": "^10.9.2",
+    "eslint-plugin-vue": "^10.10.0",
     "favicons": "^7.3.0",
     "globals": "^17.7.0",
     "jsdom": "^29.1.1",

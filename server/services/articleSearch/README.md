@@ -134,6 +134,48 @@ negative score, or when its associated event has `articleCount > 1`. This filter
 does not require event or topic grouping; grouping only controls which
 representative articles are returned after eligibility is established.
 
+### Daily Briefing composition
+
+The Daily Briefing starts with two article groups:
+
+1. **Interest-matched articles:** canonical, unfiltered articles whose stored
+   `interestScore` is not zero. Both positive and negative nonzero values qualify.
+2. **Developing-event articles:** canonical, unfiltered articles belonging to an
+   event owned by the user where `articleCount > 1`. These articles qualify even
+   when their individual `interestScore` is zero.
+
+Conceptually, the base selection is:
+
+```text
+interest-scored articles
+UNION
+articles from multi-article events
+```
+
+This is implemented as one SQL query with an `OR`, rather than concatenating two
+result arrays. An article matching both branches therefore appears only once.
+
+For the Daily Briefing pseudo-status, the stored user preferences further
+restrict this combined set:
+
+- `selectionPeriod` limits publication time to the rolling last 24 hours or
+  seven days.
+- `includeOnlyUnreadArticles` optionally requires `status = 'unread'`.
+- `minDistinctSources` requires qualifying events to contain canonical,
+  unfiltered articles from the configured number of distinct feeds. A value of
+  one preserves the base behavior, including qualifying standalone articles.
+- `showOnlyInterestMatchedArticles` replaces the base union with only articles
+  whose stored `interestScore` is nonzero.
+- `showOnlyDevelopingEventArticles` replaces the base union with only articles
+  belonging to a user-owned event where `articleCount > 1`.
+
+The two `showOnly` preferences are mutually exclusive. When both are disabled,
+the normal interest-matched and developing-event union is used.
+
+When `prioritizeHighTrust` is enabled, the Daily Briefing adds `sort:trust`.
+This changes ordering to feed trust descending, then publication time and
+article ID descending. It does not change eligibility or the sidebar count.
+
 Tag values should currently be a single unquoted token. Quoted tag values retain
 their quote characters and therefore should not be used.
 
@@ -186,11 +228,12 @@ status scope.
 | --- | --- |
 | `sort:desc` | Newest publication first. This is the normal default. |
 | `sort:asc` | Oldest publication first. |
+| `sort:trust` | Feed trust descending, then newest publication first. |
 | `sort:recommended` | Recommendation score descending. Uses freshness, interest, quality, event coverage, publisher diversity, corroboration, event boost, and rule-tag boost. |
 | `sort:quality` | Computed article quality descending. |
 | `sort:attention` | Computed attention score descending. |
 
-Score-based sorts are performed in memory. When multiple `sort:` tokens are
+Computed score sorts are performed in memory. Trust sorting is performed in the database. When multiple `sort:` tokens are
 present, the last recognized token wins.
 
 ## Limits

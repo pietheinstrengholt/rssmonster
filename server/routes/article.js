@@ -6,6 +6,7 @@ export const router = express.Router();
 
 // GET /api/articles
 router.get('/', userMiddleware.isLoggedIn, articleController.getArticles);
+router.get('/briefing', userMiddleware.isLoggedIn, articleController.getDailyBriefing);
 router.get('/duplicates/:articleId', userMiddleware.isLoggedIn, articleController.getDuplicateArticles);
 router.get('/:articleId', userMiddleware.isLoggedIn, articleController.getArticle);
 router.post('/markasread', userMiddleware.isLoggedIn, articleController.markAsRead);

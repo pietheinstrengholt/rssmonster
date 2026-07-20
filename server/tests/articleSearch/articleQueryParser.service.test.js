@@ -79,9 +79,9 @@ describe('articleQueryParser.service', () => {
   });
 
   it('parses sort and limit', () => {
-    const result = parseArticleQuery({ search: 'sort:asc limit:50', defaultSort: 'desc' });
+    const result = parseArticleQuery({ search: 'sort:trust limit:50', defaultSort: 'desc' });
 
-    expect(result.sort).toBe('asc');
+    expect(result.sort).toBe('trust');
     expect(result.limit).toBe(50);
     expect(result.hasSearchIntent).toBe(true);
   });

@@ -44,6 +44,7 @@ import IslandTaxonomyModel from './islandTaxonomy.js';
 import HotlinkModel from './hotlink.js';
 import OfficialSourceModel from './officialSource.js';
 import CrawlRunModel from './crawlRun.js';
+import BriefingPreferenceModel from './briefingPreference.js';
 
 // ---- Initialize models ----
 const User = UserModel(sequelize);
@@ -64,6 +65,7 @@ const IslandTaxonomy = IslandTaxonomyModel(sequelize);
 const Hotlink = HotlinkModel(sequelize);
 const OfficialSource = OfficialSourceModel(sequelize);
 const CrawlRun = CrawlRunModel(sequelize);
+const BriefingPreference = BriefingPreferenceModel(sequelize);
 
 // ---- Associations ----
 
@@ -90,6 +92,14 @@ OfficialSource.belongsTo(User, { foreignKey: 'userId' });
 // User ↔ CrawlRun
 User.hasMany(CrawlRun, { foreignKey: 'userId', onDelete: 'CASCADE' });
 CrawlRun.belongsTo(User, { foreignKey: 'userId' });
+
+// User ↔ BriefingPreference
+User.hasOne(BriefingPreference, {
+  foreignKey: 'userId',
+  as: 'briefingPreference',
+  onDelete: 'CASCADE'
+});
+BriefingPreference.belongsTo(User, { foreignKey: 'userId', as: 'user' });
 
 // Category ↔ Feed
 Category.hasMany(Feed, { foreignKey: 'categoryId', onDelete: 'CASCADE' });
@@ -222,5 +232,6 @@ export default {
   IslandTaxonomy,
   Hotlink,
   OfficialSource,
-  CrawlRun
+  CrawlRun,
+  BriefingPreference
 };

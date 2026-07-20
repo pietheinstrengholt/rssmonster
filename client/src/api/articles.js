@@ -6,6 +6,10 @@ import api from './client';
 export const fetchArticleIds = params =>
   api.get('/articles', { params: { ...params, includeFirstPage: true } });
 
+// This function fetches the structured Daily Briefing for the selected period and status.
+export const fetchDailyBriefing = params =>
+  api.get('/articles/briefing', { params });
+
 /**
  * Fetch article details by IDs
  */

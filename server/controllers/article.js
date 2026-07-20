@@ -1,7 +1,11 @@
 import db from '../models/index.js';
-const { Article, Feed, Tag, Event } = db;
+const { Article, BriefingPreference, Feed, Tag, Event } = db;
 import { Op, fn, col } from 'sequelize';
 import { searchArticles } from "../services/articleSearch/articleSearch.service.js";
+import {
+  DailyBriefingRequestError,
+  getDailyBriefing as getDailyBriefingService
+} from '../services/dailyBriefing/dailyBriefing.service.js';
 import { resolvePredictedAffinity } from '../services/recommendations/predictedAffinityResolver.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
@@ -97,6 +101,52 @@ const loadArticleDetails = async (userId, articlesArray) => {
   attachPredictedAffinity(articles);
 
   return articles;
+};
+
+// This function returns the authenticated user's structured, read-only Daily Briefing.
+export const getDailyBriefing = async (req, res, _next) => {
+  const userId = req.userData?.userId;
+
+  if (!userId) {
+    return res.status(401).json({ error: 'Unauthorized: missing userId' });
+  }
+
+  try {
+    const briefingPreferences = await BriefingPreference.findOne({
+      where: { userId },
+      attributes: [
+        'selectionPeriod',
+        'includeOnlyUnreadArticles',
+        'minDistinctSources',
+        'showOnlyInterestMatchedArticles',
+        'showOnlyDevelopingEventArticles'
+      ],
+      raw: true
+    });
+    const briefing = await getDailyBriefingService({
+      userId,
+      period: briefingPreferences?.selectionPeriod || req.query.period,
+      status: briefingPreferences
+        ? (Number(briefingPreferences.includeOnlyUnreadArticles) ? 'unread' : 'all')
+        : req.query.status,
+      minDistinctSources: Number(briefingPreferences?.minDistinctSources) || 1,
+      showOnlyInterestMatchedArticles: Boolean(
+        Number(briefingPreferences?.showOnlyInterestMatchedArticles)
+      ),
+      showOnlyDevelopingEventArticles: Boolean(
+        Number(briefingPreferences?.showOnlyDevelopingEventArticles)
+      )
+    });
+
+    return res.status(200).json(briefing);
+  } catch (err) {
+    if (err instanceof DailyBriefingRequestError) {
+      return res.status(400).json({ error: err.message });
+    }
+
+    console.error('Error in getDailyBriefing:', err);
+    return res.status(500).json({ error: 'Unable to load Daily Briefing' });
+  }
 };
 
 export const getArticles = async (req, res) => {
@@ -967,6 +1017,7 @@ const articleMarkAllAsRead = async (req, res, _next) => {
 };
 
 export default {
+  getDailyBriefing,
   getArticles,
   getDuplicateArticles,
   getArticle,

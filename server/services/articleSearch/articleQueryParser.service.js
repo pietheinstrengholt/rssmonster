@@ -177,7 +177,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
       continue;
     }
 
-    const sortMatch = cleaned.match(/^sort:\s*(desc|asc|recommended|quality|attention)$/i);
+    const sortMatch = cleaned.match(/^sort:\s*(desc|asc|trust|recommended|quality|attention)$/i);
     if (sortMatch) {
       sort = sortMatch[1].toLowerCase();
       sortExplicit = true;

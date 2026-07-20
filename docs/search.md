@@ -29,7 +29,7 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - Event size: `eventCount:>=3` keeps articles whose event has at least 3 articles. `eventCount:3` is accepted as the same minimum-count shorthand.
 - Interest islands: `island:true` keeps articles whose event has at least one primary or secondary topic linked to one of the user's active interest islands. `island:false` keeps articles without such a link, including articles without an event. Archived islands are not applicable.
 - Briefing: `briefing:true` keeps articles with a nonzero interest score or membership in an event containing more than one article. `briefing:false` keeps articles with neither signal.
-- Sort: `sort:desc|asc|recommended|quality|attention`. Recommended, quality, and attention sorts are computed in memory after fetching.
+- Sort: `sort:desc|asc|trust|recommended|quality|attention`. Trust orders by feed trust and then newest publication; recommended, quality, and attention sorts are computed in memory after fetching.
 - Limit: `limit:50` caps results (overrides defaults).
 
 ---

@@ -125,7 +125,7 @@ Date filters:
 - @yesterday
 
 Sorting:
-- sort:desc | sort:asc | sort:recommended | sort:quality | sort:attention
+- sort:desc | sort:asc | sort:trust | sort:recommended | sort:quality | sort:attention
 
 --------------------
 RULES

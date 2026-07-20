@@ -28,7 +28,7 @@ Note: Endpoints may require specific payload shapes; see controller code for det
 
 ## Search & Sorting
 - Use the `search` query parameter on article endpoints. Syntax matches the [Search Guide](search.md) (tokens like `unread:true`, `tag:ai`, `@today`, `event:true`, `island:true`, `sort:recommended`).
-- Sorting: `sort` accepts `desc`, `asc`, `recommended`, `quality`, or `attention` (computed in memory).
+- Sorting: `sort` accepts `desc`, `asc`, `trust`, `recommended`, `quality`, or `attention`. Trust sorts by feed trust and then newest publication; recommended, quality, and attention are computed in memory.
 
 ---
 

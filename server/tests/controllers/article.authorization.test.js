@@ -4,7 +4,7 @@ import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
-const { Article, Category, Event, Feed, User, sequelize } = db;
+const { Article, BriefingPreference, Category, Event, Feed, User, sequelize } = db;
 
 let app;
 
@@ -166,6 +166,17 @@ describe('article ownership authorization', () => {
     await Article.create({
       userId: owner.id,
       feedId: feed.id,
+      status: 'read',
+      interestScore: 0.5,
+      url: `https://example.com/${owner.username}/recent-read-article`,
+      title: `${owner.username} recent read article`,
+      contentOriginal: '<p>Recent read article body</p>',
+      contentHtml: 'Recent read article body',
+      publishedAt: new Date(Date.now() - 2 * 60 * 60 * 1000)
+    });
+    await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
       status: 'unread',
       filteredInd: true,
       url: `https://example.com/${owner.username}/filtered-article`,
@@ -181,11 +192,61 @@ describe('article ownership authorization', () => {
       .send({ grouping: 'none' });
 
     expect(res.status).toBe(200);
-    expect(res.body.total).toBe(1);
-    expect(res.body.briefingCount).toBe(1);
+    expect(res.body.total).toBe(2);
+    expect(res.body.briefingCount).toBe(2);
+    expect(res.body.briefingSelectionPeriod).toBe('7d');
+    expect(res.body.briefingIncludeOnlyUnreadArticles).toBe(false);
+    expect(res.body.briefingPrioritizeHighTrust).toBe(false);
     expect(res.body.unreadCount).toBe(1);
     expect(res.body.categories[0].feeds[0].unreadCount).toBe(1);
     expect(article.filteredInd).toBe(false);
+
+    await BriefingPreference.create({
+      userId: owner.id,
+      selectionPeriod: '24h'
+    });
+
+    const oneDayResponse = await request(app)
+      .post('/api/manager/overview-counts')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none' });
+
+    expect(oneDayResponse.status).toBe(200);
+    expect(oneDayResponse.body.briefingSelectionPeriod).toBe('24h');
+    expect(oneDayResponse.body.briefingIncludeOnlyUnreadArticles).toBe(false);
+    expect(oneDayResponse.body.briefingCount).toBe(1);
+
+    await BriefingPreference.update(
+      { includeOnlyUnreadArticles: true },
+      { where: { userId: owner.id } }
+    );
+
+    const unreadOnlyResponse = await request(app)
+      .post('/api/manager/overview-counts')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none' });
+
+    expect(unreadOnlyResponse.status).toBe(200);
+    expect(unreadOnlyResponse.body.briefingIncludeOnlyUnreadArticles).toBe(true);
+    expect(unreadOnlyResponse.body.briefingCount).toBe(0);
+
+    await BriefingPreference.update(
+      {
+        selectionPeriod: '7d',
+        includeOnlyUnreadArticles: false,
+        minDistinctSources: 2
+      },
+      { where: { userId: owner.id } }
+    );
+
+    const multipleSourcesResponse = await request(app)
+      .post('/api/manager/overview-counts')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none' });
+
+    expect(multipleSourcesResponse.status).toBe(200);
+    expect(multipleSourcesResponse.body.briefingMinDistinctSources).toBe(2);
+    expect(multipleSourcesResponse.body.briefingCount).toBe(0);
   });
 
   it('mark-as-seen rejects foreign-user article without mutating it', async () => {

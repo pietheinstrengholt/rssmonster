@@ -2,7 +2,11 @@ import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { buildPopulationAuditEntry, appendPopulationAudit } from './islandAudit.js';
 import { evolveIslandTopicMemberships } from './islandMemberships.js';
-import { disambiguateDuplicateIslandNamesForUser } from './islandNameDisambiguation.js';
+import {
+  buildUniqueIslandName,
+  disambiguateDuplicateIslandNamesForUser,
+  normalizeIslandName
+} from './islandNameDisambiguation.js';
 import {
   DEFAULT_ARCHIVE_CONFIDENCE_THRESHOLD,
   DEFAULT_ISLAND_MATCH_THRESHOLD,
@@ -74,6 +78,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
     where: { userId },
     transaction
   }));
+  const usedIslandNames = new Set(
+    existingIslands.map(island => normalizeIslandName(island.label))
+  );
 
   const taxonomyRows = await IslandTaxonomy.findAll({
     where: {
@@ -148,6 +155,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
         archivedInd: false,
         archivedAt: null
       }, { transaction });
+      usedIslandNames.add(normalizeIslandName(updatedIsland.label));
 
       matchedIslandIds.add(updatedIsland.id);
       updatedIslandCount += 1;
@@ -196,8 +204,9 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       continue;
     }
 
+    const uniqueLabel = buildUniqueIslandName(resolvedLabel, usedIslandNames);
     const island = await Island.create({
-      label: resolvedLabel,
+      label: uniqueLabel,
       weight: profile.weight,
       userId,
       islandVector: profile.vector,
@@ -206,11 +215,12 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
       archivedInd: false,
       archivedAt: null
     }, { transaction });
+    usedIslandNames.add(normalizeIslandName(uniqueLabel));
     createdIslandCount += 1;
 
     console.log(
       `[ISLAND] new-island=${island.id} ` +
-      `name="${logSafeIslandName(resolvedLabel)}" ` +
+      `name="${logSafeIslandName(uniqueLabel)}" ` +
       `seedTopics=${profile.topics.length} ` +
       `seedArticles=${(profile.articles || []).length} ` +
       `avgSim=${formatIslandMetric(averageSimilarity(islandRows))}`

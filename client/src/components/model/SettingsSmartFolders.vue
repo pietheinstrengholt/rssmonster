@@ -403,6 +403,7 @@
                                 <span>Sort by</span>
                                 <select v-model="draftConfig.sort.field" class="form-select">
                                     <option value="">None</option>
+                                    <option value="trust">Trust</option>
                                     <option v-if="aiEnabled" value="recommended">Recommended</option>
                                     <option v-if="aiEnabled" value="attention">Most Engaged</option>
                                     <option v-if="aiEnabled" value="quality">Quality</option>
@@ -1181,7 +1182,7 @@ export default {
         applySortToken(token) {
             const sortValue = token.split(':')[1];
 
-            if (['recommended', 'quality', 'attention'].includes(sortValue)) {
+            if (['trust', 'recommended', 'quality', 'attention'].includes(sortValue)) {
                 this.draftConfig.sort.field = sortValue;
                 return;
             }

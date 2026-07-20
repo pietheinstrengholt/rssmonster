@@ -19,6 +19,38 @@ describe('Sidebar manager', () => {
 
 		expect(store.currentSelection.status).toBe('briefing');
 		expect(store.currentSelection.search).toBe('briefing:true @lastweek');
+
+		store.setBriefingSelectionPeriod('24h');
+
+		expect(store.briefingSelectionPeriod).toBe('24h');
+		expect(store.currentSelection.search).toBe('briefing:true @today');
+
+		store.setBriefingSelectionPeriod('7d');
+
+		expect(store.currentSelection.search).toBe('briefing:true @lastweek');
+
+		store.setBriefingFilters({
+			selectionPeriod: '7d',
+			includeOnlyUnreadArticles: true,
+			prioritizeHighTrust: false
+		});
+
+		expect(store.briefingIncludeOnlyUnreadArticles).toBe(true);
+		expect(store.currentSelection.search).toBe('briefing:true unread:true @lastweek');
+
+		store.setBriefingFilters({
+			selectionPeriod: '7d',
+			includeOnlyUnreadArticles: true,
+			prioritizeHighTrust: true
+		});
+
+		expect(store.briefingPrioritizeHighTrust).toBe(true);
+		expect(store.currentSelection.search)
+			.toBe('briefing:true unread:true @lastweek sort:trust');
+
+		store.refreshBriefingSelection();
+
+		expect(store.currentSelection.briefingRevision).toBe(1);
 	});
 
 	it('renders the live Daily briefing row before Unread and updates category order', async () => {

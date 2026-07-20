@@ -622,6 +622,97 @@ describe('articleSearch.service', () => {
       expect(oldIdx).toBeLessThan(recentIdx);
     });
 
+    it('sorts by feed trust, then publication date, then article id', async () => {
+      const testSuffix = `${Date.now()}-${Math.random()}`;
+      const highTrustFeed = await Feed.create({
+        userId: user.id,
+        categoryId: category.id,
+        feedName: 'High Trust Feed',
+        url: `https://example.com/high-trust-${testSuffix}.xml`,
+        feedTrust: 0.9
+      });
+      const lowTrustFeed = await Feed.create({
+        userId: user.id,
+        categoryId: category.id,
+        feedName: 'Low Trust Feed',
+        url: `https://example.com/low-trust-${testSuffix}.xml`,
+        feedTrust: 0.2
+      });
+      const sharedPublishedAt = new Date('2026-01-02T12:00:00.000Z');
+      const createdArticles = [];
+
+      try {
+        const highTrustOlder = await Article.create({
+          userId: user.id,
+          feedId: highTrustFeed.id,
+          url: `https://example.com/high-trust-older-${testSuffix}`,
+          title: 'High trust older article',
+          status: 'unread',
+          publishedAt: new Date('2026-01-01T12:00:00.000Z')
+        });
+        const highTrustTieFirst = await Article.create({
+          userId: user.id,
+          feedId: highTrustFeed.id,
+          url: `https://example.com/high-trust-tie-first-${testSuffix}`,
+          title: 'High trust tie first article',
+          status: 'unread',
+          publishedAt: sharedPublishedAt
+        });
+        const highTrustTieSecond = await Article.create({
+          userId: user.id,
+          feedId: highTrustFeed.id,
+          url: `https://example.com/high-trust-tie-second-${testSuffix}`,
+          title: 'High trust tie second article',
+          status: 'unread',
+          publishedAt: sharedPublishedAt
+        });
+        const lowTrustNewest = await Article.create({
+          userId: user.id,
+          feedId: lowTrustFeed.id,
+          url: `https://example.com/low-trust-newest-${testSuffix}`,
+          title: 'Low trust newest article',
+          status: 'unread',
+          publishedAt: new Date('2026-01-03T12:00:00.000Z')
+        });
+        createdArticles.push(
+          highTrustOlder,
+          highTrustTieFirst,
+          highTrustTieSecond,
+          lowTrustNewest
+        );
+
+        const result = await searchArticles({
+          userId: user.id,
+          sort: 'trust',
+          status: '%'
+        });
+
+        const overrideResult = await searchArticles({
+          userId: user.id,
+          search: 'sort:trust',
+          sort: 'asc',
+          status: '%',
+          persistSettings: true
+        });
+
+        expect(result.itemIds.indexOf(highTrustOlder.id))
+          .toBeLessThan(result.itemIds.indexOf(lowTrustNewest.id));
+        expect(result.itemIds.indexOf(highTrustTieSecond.id))
+          .toBeLessThan(result.itemIds.indexOf(highTrustTieFirst.id));
+        expect(result.itemIds.indexOf(highTrustTieFirst.id))
+          .toBeLessThan(result.itemIds.indexOf(highTrustOlder.id));
+        expect(overrideResult.itemIds.indexOf(highTrustOlder.id))
+          .toBeLessThan(overrideResult.itemIds.indexOf(lowTrustNewest.id));
+
+        const persistedSetting = await Setting.findOne({ where: { userId: user.id } });
+        expect(persistedSetting.sort).toBe('trust');
+      } finally {
+        await Article.destroy({ where: { id: createdArticles.map(article => article.id) } });
+        await Feed.destroy({ where: { id: [highTrustFeed.id, lowTrustFeed.id] } });
+        await Setting.update({ sort: 'desc' }, { where: { userId: user.id } });
+      }
+    });
+
     it('sorts by recommended using loaded cluster attributes', async () => {
       let lowCoverageArticle;
       let highCoverageArticle;

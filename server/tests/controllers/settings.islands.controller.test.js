@@ -288,9 +288,20 @@ describe('settings islands overview', () => {
       id: island.id,
       topicCount: 2,
       relatedArticleCount: 1,
+      sourceArticleCount: 1,
+      evidenceSignalCount: 2,
       favoriteCount: 1,
       clickCount: 1,
       interactionCount: 2
+    });
+    expect(res.body.islands[0].sourceArticles).toHaveLength(1);
+    expect(res.body.islands[0].sourceArticles[0]).toMatchObject({
+      id: article.id,
+      title: 'Island overview article',
+      evidence: [
+        { type: 'favorite', label: 'Favorite' },
+        { type: 'click', label: '2 clicks' }
+      ]
     });
     expect(res.body.islands[0].relatedArticles).toHaveLength(1);
     expect(res.body.islands[0].relatedArticles[0]).toMatchObject({
@@ -298,6 +309,48 @@ describe('settings islands overview', () => {
       title: 'Island overview article',
       isPopulationSource: true,
       isNewArticle: false
+    });
+    expect(res.body.islands[0].relatedArticles[0].connectionTopics).toEqual(expect.arrayContaining([
+      expect.objectContaining({ id: topic.id, name: topic.name }),
+      expect.objectContaining({ id: secondaryTopic.id, name: secondaryTopic.name })
+    ]));
+  });
+
+  it('explains an article-seeded island that has no topic memberships', async () => {
+    const user = await User.create({
+      username: uniqueName('source-island-user'),
+      password: 'hashed-password',
+      hash: uniqueName('source-island-hash'),
+      role: 'user'
+    });
+    const { article } = await createArticleTopicFixture(user);
+    await article.update({ favoriteInd: 0, clickedAmount: 0, attentionBucket: 3 });
+    const island = await Island.create({
+      userId: user.id,
+      label: 'PC Gaming',
+      weight: 0.39,
+      islandVector: [1, 0, 0],
+      populationAudit: [{
+        articleIds: [article.id],
+        sourceArticles: { articles: [{ id: article.id }] }
+      }]
+    });
+
+    const res = await request(app)
+      .get('/api/setting/islands')
+      .set('Authorization', authHeaderFor(user));
+
+    expect(res.status).toBe(200);
+    expect(res.body.islands[0]).toMatchObject({
+      id: island.id,
+      topicCount: 0,
+      relatedArticleCount: 0,
+      sourceArticleCount: 1,
+      evidenceSignalCount: 1
+    });
+    expect(res.body.islands[0].sourceArticles[0]).toMatchObject({
+      id: article.id,
+      evidence: [{ type: 'deepRead', label: 'Deep read' }]
     });
   });
 });

@@ -12,7 +12,24 @@ import {
   fetchOverviewCounts as fetchOverviewCountsAPI
 } from '../api/manager';
 
-const DEFAULT_BRIEFING_DATE_FILTER = '@lastweek';
+const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
+
+// This function maps a stored Briefing period to the existing article date filters.
+const briefingDateFilter = selectionPeriod => (
+  selectionPeriod === '24h' ? '@today' : '@lastweek'
+);
+
+// This function builds the existing article-search query for configured Briefing filters.
+const briefingSearchQuery = ({
+  selectionPeriod,
+  includeOnlyUnreadArticles,
+  prioritizeHighTrust
+}) => [
+  'briefing:true',
+  includeOnlyUnreadArticles ? 'unread:true' : null,
+  briefingDateFilter(selectionPeriod),
+  prioritizeHighTrust ? 'sort:trust' : null
+].filter(Boolean).join(' ');
 
 const defaultSelection = () => ({
   status: 'unread',
@@ -26,12 +43,13 @@ const defaultSelection = () => ({
   minQualityScore: 0,
   sort: 'desc',
   viewMode: 'full',
-  grouping: 'none'
+  grouping: 'none',
+  briefingRevision: 0
 });
 
 const normalizeSort = value => {
   const normalized = String(value ?? 'desc').toLowerCase();
-  return ['asc', 'desc', 'recommended', 'quality', 'attention'].includes(normalized)
+  return ['asc', 'desc', 'trust', 'recommended', 'quality', 'attention'].includes(normalized)
     ? normalized
     : 'desc';
 };
@@ -41,7 +59,7 @@ const removeSortTokens = query => {
 
   const cleaned = String(query)
     .split(/([\s,]+)/)
-    .filter(part => !/^sort:(desc|asc|recommended|quality|attention)[.,;]*$/i.test(part.trim()))
+    .filter(part => !/^sort:(desc|asc|trust|recommended|quality|attention)[.,;]*$/i.test(part.trim()))
     .join('')
     .replace(/\s+/g, ' ')
     .trim();
@@ -63,7 +81,10 @@ export const useStore = defineStore('data', {
     smartFolders: [],
     topTags: [],
 
-    briefingCount: null,
+    briefingCount: 0,
+    briefingSelectionPeriod: DEFAULT_BRIEFING_SELECTION_PERIOD,
+    briefingIncludeOnlyUnreadArticles: false,
+    briefingPrioritizeHighTrust: false,
     unreadCount: 0,
     readCount: 0,
     favoriteCount: 0,
@@ -123,12 +144,30 @@ export const useStore = defineStore('data', {
     },
 
     updateOverview(
-      { briefingCount, unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
+      {
+        briefingCount,
+        briefingSelectionPeriod,
+        briefingIncludeOnlyUnreadArticles,
+        briefingPrioritizeHighTrust,
+        unreadCount,
+        readCount,
+        favoriteCount,
+        hotCount,
+        clickedCount,
+        categories
+      },
       { initial = false, forceUpdate = false } = {}
     ) {
       const previousUnreadCount = this.unreadCount;
 
       this.briefingCount = briefingCount ?? this.briefingCount;
+      this.setBriefingFilters({
+        selectionPeriod: briefingSelectionPeriod ?? this.briefingSelectionPeriod,
+        includeOnlyUnreadArticles: briefingIncludeOnlyUnreadArticles
+          ?? this.briefingIncludeOnlyUnreadArticles,
+        prioritizeHighTrust: briefingPrioritizeHighTrust
+          ?? this.briefingPrioritizeHighTrust
+      });
       this.unreadCount = unreadCount;
       this.readCount = readCount;
       this.favoriteCount = favoriteCount;
@@ -158,12 +197,30 @@ export const useStore = defineStore('data', {
     },
 
     updateOverviewCounts(
-      { briefingCount, unreadCount, readCount, favoriteCount, hotCount, clickedCount, categories },
+      {
+        briefingCount,
+        briefingSelectionPeriod,
+        briefingIncludeOnlyUnreadArticles,
+        briefingPrioritizeHighTrust,
+        unreadCount,
+        readCount,
+        favoriteCount,
+        hotCount,
+        clickedCount,
+        categories
+      },
       { initial = false, forceUpdate = false } = {}
     ) {
       const previousUnreadCount = this.unreadCount;
 
       this.briefingCount = briefingCount ?? this.briefingCount;
+      this.setBriefingFilters({
+        selectionPeriod: briefingSelectionPeriod ?? this.briefingSelectionPeriod,
+        includeOnlyUnreadArticles: briefingIncludeOnlyUnreadArticles
+          ?? this.briefingIncludeOnlyUnreadArticles,
+        prioritizeHighTrust: briefingPrioritizeHighTrust
+          ?? this.briefingPrioritizeHighTrust
+      });
       this.unreadCount = unreadCount;
       this.readCount = readCount;
       this.favoriteCount = favoriteCount;
@@ -238,11 +295,71 @@ export const useStore = defineStore('data', {
     setSelectedStatus(status) {
       Object.assign(this.currentSelection, {
         status,
-        search: status === 'briefing' ? `briefing:true ${DEFAULT_BRIEFING_DATE_FILTER}` : null,
+        search: status === 'briefing'
+          ? briefingSearchQuery({
+            selectionPeriod: this.briefingSelectionPeriod,
+            includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles,
+            prioritizeHighTrust: this.briefingPrioritizeHighTrust
+          })
+          : null,
         smartFolderId: null
       });
 
       this.chatAssistantOpen = false;
+    },
+
+    // This function applies configured Briefing filters to future and active selections.
+    setBriefingFilters({
+      selectionPeriod,
+      includeOnlyUnreadArticles,
+      prioritizeHighTrust
+    }) {
+      const normalizedPeriod = selectionPeriod === '24h'
+        ? '24h'
+        : DEFAULT_BRIEFING_SELECTION_PERIOD;
+      this.briefingSelectionPeriod = normalizedPeriod;
+      this.briefingIncludeOnlyUnreadArticles = Boolean(includeOnlyUnreadArticles);
+      this.briefingPrioritizeHighTrust = Boolean(prioritizeHighTrust);
+
+      if (this.currentSelection.status !== 'briefing') return;
+
+      const search = briefingSearchQuery({
+        selectionPeriod: normalizedPeriod,
+        includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles,
+        prioritizeHighTrust: this.briefingPrioritizeHighTrust
+      });
+      if (this.currentSelection.search !== search) {
+        this.currentSelection.search = search;
+      }
+    },
+
+    // This function applies only a Briefing period while preserving the unread preference.
+    setBriefingSelectionPeriod(selectionPeriod) {
+      this.setBriefingFilters({
+        selectionPeriod,
+        includeOnlyUnreadArticles: this.briefingIncludeOnlyUnreadArticles,
+        prioritizeHighTrust: this.briefingPrioritizeHighTrust
+      });
+    },
+
+    // This function invalidates the active Briefing list after non-query preferences change.
+    refreshBriefingSelection() {
+      if (this.currentSelection.status !== 'briefing') return;
+      this.currentSelection.briefingRevision = Number(
+        this.currentSelection.briefingRevision || 0
+      ) + 1;
+    },
+
+    // This function refreshes sidebar counts after Briefing preferences change.
+    async refreshOverviewCounts() {
+      try {
+        const { data } = await fetchOverviewCountsAPI(this.currentSelection);
+        this.updateOverviewCounts(data, { forceUpdate: true });
+      } catch (err) {
+        if (import.meta.env.DEV) {
+          console.warn('Overview counts refresh failed', err);
+        }
+      }
     },
 
     setSelectedCategoryId(categoryId) {

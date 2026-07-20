@@ -9,6 +9,7 @@ export const ISLAND_DUPLICATE_NAME_SIMILARITY_THRESHOLD = Number.parseFloat(
 );
 
 const MAX_ISLAND_NAME_LENGTH = 90;
+const MAX_STORED_ISLAND_NAME_LENGTH = 255;
 const GENERIC_WORDS = new Set([
   'a',
   'an',
@@ -53,6 +54,22 @@ export function normalizeIslandName(name = '') {
     .replace(/[^\p{L}\p{N}\s]+/gu, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+}
+
+// This function appends a numeric suffix until an island name is unique.
+export function buildUniqueIslandName(name, usedNames = new Set()) {
+  const baseName = String(name || '').trim() || 'Interest Island';
+  const storedBaseName = baseName.slice(0, MAX_STORED_ISLAND_NAME_LENGTH);
+  if (!usedNames.has(normalizeIslandName(storedBaseName))) return storedBaseName;
+
+  let suffixNumber = 2;
+
+  while (true) {
+    const suffix = ` (${suffixNumber})`;
+    const nextName = `${baseName.slice(0, MAX_STORED_ISLAND_NAME_LENGTH - suffix.length)}${suffix}`;
+    if (!usedNames.has(normalizeIslandName(nextName))) return nextName;
+    suffixNumber += 1;
+  }
 }
 
 // This function groups island rows by normalized label.

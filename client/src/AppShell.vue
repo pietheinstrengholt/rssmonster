@@ -12,9 +12,7 @@
       </div>
       <div
         id="home"
-        ref="homeScrollRef"
         class="col-md-9 offset-md-3 col-sm-12"
-        @scroll="handleHomeScroll"
       >
         <!-- MobileToolbar events -->
         <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
@@ -50,6 +48,8 @@
     <app-cleanup v-if="$store.data.getShowModal === 'Cleanup'"></app-cleanup>
     <!-- Manage users modal -->
     <app-manage-users v-if="$store.data.getShowModal === 'ManageUsers'"></app-manage-users>
+    <!-- Briefing preferences modal -->
+    <app-briefing-preferences-modal v-if="$store.data.getShowModal === 'BriefingPreferences'"></app-briefing-preferences-modal>
 
   </div>
 </template>
@@ -127,41 +127,17 @@
     height: 100vh;
     overflow-y: auto;
     overflow-x: hidden;
-    scrollbar-width: thin;
-    scrollbar-color: var(--color-transparent) var(--color-transparent);
-    transition: scrollbar-color 0.2s ease;
+    scrollbar-width: none;
   }
 
   #home::-webkit-scrollbar {
-    width: 6px;
-    height: 6px;
-  }
-
-  #home::-webkit-scrollbar-track {
-    background: var(--color-transparent);
-  }
-
-  #home::-webkit-scrollbar-thumb {
-    background-color: var(--color-transparent);
-    transition: background-color 0.2s ease;
-  }
-
-  #home.is-scrolling {
-    scrollbar-color: var(--home-scrollbar-thumb) var(--color-transparent);
-  }
-
-  #home.is-scrolling::-webkit-scrollbar-thumb {
-    background-color: var(--home-scrollbar-thumb);
+    display: none;
   }
 
   :root[data-theme='dark'] {
     #sidebar {
       background-color: var(--bg-secondary);
       --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
-    }
-
-    #home {
-      --home-scrollbar-thumb: var(--scrollbar-thumb-strong-dark);
     }
   }
 }
@@ -186,10 +162,6 @@ div.row {
 #sidebar {
   position: fixed;
   --sidebar-scrollbar-thumb: var(--scrollbar-thumb-strong);
-}
-
-#home {
-  --home-scrollbar-thumb: var(--scrollbar-thumb-strong);
 }
 
 .app-error {
@@ -254,6 +226,7 @@ const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "
 const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/model/UpdateFeed.vue"));
 const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/model/Cleanup.vue"));
 const SettingsManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/SettingsManageUsers.vue"));
+const BriefingPreferencesModal = defineAsyncComponent(() => import(/* webpackChunkName: "briefingpreferences" */ "./components/model/BriefingPreferencesModal.vue"));
 
 //import onboarding component
 const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/onboarding/InitialFeeds.vue"));
@@ -279,6 +252,7 @@ export default {
     appUpdateFeed: UpdateFeed,
     appCleanup: Cleanup,
     appManageUsers: SettingsManageUsers,
+    appBriefingPreferencesModal: BriefingPreferencesModal,
     appInitialFeeds: InitialFeeds
   },
   data() {
@@ -291,7 +265,6 @@ export default {
       overviewIntervalId: null,
       overviewLoaded: false,
       sidebarScrollTimeout: null,
-      homeScrollTimeout: null,
       unsubscribeFromSystemTheme: null
     };
   },
@@ -356,10 +329,6 @@ export default {
     if (this.sidebarScrollTimeout) {
       clearTimeout(this.sidebarScrollTimeout);
     }
-
-    if (this.homeScrollTimeout) {
-      clearTimeout(this.homeScrollTimeout);
-    }
   },
   methods: {
     handleSidebarScroll() {
@@ -376,22 +345,6 @@ export default {
       this.sidebarScrollTimeout = setTimeout(() => {
         sidebar.classList.remove('is-scrolling');
         this.sidebarScrollTimeout = null;
-      }, 1000);
-    },
-    handleHomeScroll() {
-      const home = this.$refs.homeScrollRef;
-
-      if (!home) return;
-
-      home.classList.add('is-scrolling');
-
-      if (this.homeScrollTimeout) {
-        clearTimeout(this.homeScrollTimeout);
-      }
-
-      this.homeScrollTimeout = setTimeout(() => {
-        home.classList.remove('is-scrolling');
-        this.homeScrollTimeout = null;
       }, 1000);
     },
     mobileClick(value) {

@@ -87,30 +87,37 @@
               <div>
                 <h5>{{ island.label || `Island #${island.id}` }}</h5>
                 <p>
-                  {{ island.relatedArticleCount }} related articles &middot; {{ island.topicCount }} topics linked
+                  {{ formatCountLabel(island.sourceArticleCount, 'source article') }} &middot;
+                  {{ formatCountLabel(island.topicCount, 'topic') }} linked &middot;
+                  {{ formatCountLabel(island.relatedArticleCount, 'topic-related article') }}
                 </p>
               </div>
             </div>
 
             <div class="interest-island-affinity">
-              <span>Affinity</span>
+              <span>Interest weight</span>
               <strong>{{ formatNormalizedAffinity(island.effectiveWeight) }}</strong>
             </div>
 
             <div class="interest-island-badges">
-              <span class="badge text-bg-primary">{{ island.favoriteCount }} {{ island.favoriteCount === 1 ? 'favorite' : 'favorites' }}</span>
-              <span class="badge text-bg-info">{{ island.clickCount }} {{ island.clickCount === 1 ? 'click' : 'clicks' }}</span>
-              <span class="badge text-bg-secondary">{{ island.interactionCount }} interactions</span>
+              <span class="badge text-bg-secondary">
+                {{ formatCountLabel(island.evidenceSignalCount, 'behavioral signal') }}
+              </span>
               <span class="badge" :class="island.archivedInd ? 'text-bg-dark' : 'text-bg-success'">
                 {{ island.archivedInd ? 'Archived' : 'Active' }}
               </span>
             </div>
 
-            <div v-if="island.relatedArticles?.length" class="interest-article-list">
-              <div class="interest-article-heading">Recent related articles</div>
+            <div v-if="island.sourceArticles?.length" class="interest-article-list">
+              <div class="interest-article-heading">
+                Why this island exists
+                <span v-if="island.sourceArticleCount > island.sourceArticles.length">
+                  &middot; Showing {{ island.sourceArticles.length }} of {{ island.sourceArticleCount }}
+                </span>
+              </div>
               <a
-                v-for="article in island.relatedArticles"
-                :key="article.id"
+                v-for="article in island.sourceArticles"
+                :key="`source-${article.id}`"
                 class="interest-article-row"
                 :href="article.url"
                 target="_blank"
@@ -121,13 +128,39 @@
                 </div>
                 <div class="interest-article-meta">
                   <span
+                    v-for="signal in article.evidence"
+                    :key="`${article.id}-${signal.type}`"
                     class="badge"
-                    :class="article.isPopulationSource ? 'text-bg-primary' : 'text-bg-warning'"
+                    :class="evidenceBadgeClass(signal.type)"
                   >
-                    {{ article.isPopulationSource ? 'Population source' : 'New to island' }}
+                    {{ signal.label }}
                   </span>
-                  <small>{{ article.favoriteInd === 1 ? 'Favorite' : 'Not favorite' }}</small>
-                  <small>{{ article.clickedAmount > 0 ? `${article.clickedAmount} clicks` : 'No clicks' }}</small>
+                  <small v-if="!article.evidence?.length">Behavioral source</small>
+                  <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
+                    Also connected through {{ topic.name }}
+                  </small>
+                </div>
+              </a>
+            </div>
+
+            <div v-if="topicRelatedArticles(island).length" class="interest-article-list">
+              <div class="interest-article-heading">Connected through topics</div>
+              <a
+                v-for="article in topicRelatedArticles(island)"
+                :key="article.id"
+                class="interest-article-row"
+                :href="article.url"
+                target="_blank"
+              >
+                <div>
+                  <strong>{{ article.title }}</strong>
+                  <p>{{ article.feedName || 'Unknown feed' }} &middot; {{ formatDate(article.publishedAt) }}</p>
+                </div>
+                <div class="interest-article-meta">
+                  <span v-if="article.isPopulationSource" class="badge text-bg-primary">Source article</span>
+                  <small v-for="topic in article.connectionTopics" :key="`${article.id}-topic-${topic.id}`">
+                    Via {{ topic.name }}
+                  </small>
                 </div>
               </a>
             </div>
@@ -475,6 +508,22 @@ export default {
     },
     formatNormalizedAffinity(value) {
       return Number(value || 0).toFixed(2);
+    },
+    // This function formats a count with a singular or plural label.
+    formatCountLabel(value, singular) {
+      const count = Number(value || 0);
+      return `${count} ${singular}${count === 1 ? '' : 's'}`;
+    },
+    // This function maps behavioral evidence to an existing Bootstrap badge color.
+    evidenceBadgeClass(type) {
+      if (type === 'favorite' || type === 'positive') return 'text-bg-primary';
+      if (type === 'click' || type === 'deepRead') return 'text-bg-info';
+      if (type === 'negative') return 'text-bg-dark';
+      return 'text-bg-secondary';
+    },
+    // This function avoids repeating source articles in the topic-connected list.
+    topicRelatedArticles(island) {
+      return (island.relatedArticles || []).filter(article => !article.isPopulationSource);
     },
     formatDate(value) {
       if (!value) return 'Unknown date';

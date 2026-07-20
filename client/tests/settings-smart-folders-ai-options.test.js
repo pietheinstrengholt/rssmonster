@@ -53,6 +53,7 @@ describe('SettingsSmartFolders AI options', () => {
     expect(wrapper.text()).not.toContain('Events & Clusters');
     expect(optionLabels).toEqual([
       'None',
+      'Trust',
       'Published date (newest)',
       'Published date (oldest)'
     ]);

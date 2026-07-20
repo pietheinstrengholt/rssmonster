@@ -486,19 +486,154 @@ export const getIslandsOverview = async (req, res, _next) => {
       const populationSourceArticleIds = [...new Set(
         populationAudit.flatMap(entry => {
           const source = entry?.sourceArticles || {};
+          const auditArticleIds = Array.isArray(entry?.articleIds) ? entry.articleIds : [];
           const starred = Array.isArray(source.starredArticleIds) ? source.starredArticleIds : [];
           const clicked = Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : [];
           const negative = Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : [];
           const articles = Array.isArray(source.articles) ? source.articles.map(article => article.id) : [];
-          return [...starred, ...clicked, ...negative, ...articles]
+          return [...auditArticleIds, ...starred, ...clicked, ...negative, ...articles]
             .map(Number)
             .filter(Number.isFinite);
         })
       )];
 
+      const sourceArticleSnapshots = new Map();
+      const historicalStarredIds = new Set();
+      const historicalClickedIds = new Set();
+      const historicalNegativeIds = new Set();
+      for (const entry of populationAudit) {
+        const source = entry?.sourceArticles || {};
+        for (const articleId of Array.isArray(source.starredArticleIds) ? source.starredArticleIds : []) {
+          historicalStarredIds.add(Number(articleId));
+        }
+        for (const articleId of Array.isArray(source.clickedArticleIds) ? source.clickedArticleIds : []) {
+          historicalClickedIds.add(Number(articleId));
+        }
+        for (const articleId of Array.isArray(source.negativeArticleIds) ? source.negativeArticleIds : []) {
+          historicalNegativeIds.add(Number(articleId));
+        }
+        const articles = Array.isArray(entry?.sourceArticles?.articles)
+          ? entry.sourceArticles.articles
+          : [];
+
+        for (const article of articles) {
+          const articleId = Number(article?.id);
+          if (!Number.isFinite(articleId)) continue;
+
+          const previous = sourceArticleSnapshots.get(articleId) || {};
+          sourceArticleSnapshots.set(articleId, {
+            favoriteInd: Math.max(Number(previous.favoriteInd || 0), Number(article.favoriteInd || 0)),
+            clickedAmount: Math.max(Number(previous.clickedAmount || 0), Number(article.clickedAmount || 0)),
+            negativeInd: Math.max(Number(previous.negativeInd || 0), Number(article.negativeInd || 0))
+          });
+        }
+      }
+
+      const sourceArticlesRaw = populationSourceArticleIds.length
+        ? await db.sequelize.query(
+          `
+          SELECT
+            a.id,
+            a.title,
+            a.url,
+            a.publishedAt,
+            a.favoriteInd,
+            a.clickedAmount,
+            a.positiveInd,
+            a.attentionBucket,
+            a.negativeInd,
+            f.feedName
+          FROM articles a
+          LEFT JOIN feeds f
+            ON f.id = a.feedId
+           AND f.userId = :userId
+          WHERE a.userId = :userId
+            AND a.duplicateOfArticleId IS NULL
+            AND a.id IN (:sourceArticleIds)
+          ORDER BY a.publishedAt DESC
+          `,
+          {
+            replacements: { userId, sourceArticleIds: populationSourceArticleIds },
+            type: db.Sequelize.QueryTypes.SELECT
+          }
+        )
+        : [];
+
+      const relatedArticleIds = relatedArticles.map(article => Number(article.id));
+      const connectedArticleIds = [...new Set([
+        ...relatedArticleIds,
+        ...sourceArticlesRaw.map(article => Number(article.id))
+      ])];
+      const relatedTopicRows = connectedArticleIds.length
+        ? await db.sequelize.query(
+          `
+          SELECT DISTINCT
+            atp.articleId,
+            t.id AS topicId,
+            t.name AS topicName,
+            it.similarity,
+            it.confidence
+          FROM article_topics atp
+          INNER JOIN island_topics it
+            ON it.topicId = atp.topicId
+           AND it.islandId = :islandId
+          INNER JOIN topics t
+            ON t.id = atp.topicId
+           AND t.userId = :userId
+          WHERE atp.articleId IN (:connectedArticleIds)
+          ORDER BY atp.articleId, it.confidence DESC, t.id
+          `,
+          {
+            replacements: { userId, islandId: island.id, connectedArticleIds },
+            type: db.Sequelize.QueryTypes.SELECT
+          }
+        )
+        : [];
+
+      const topicsByArticleId = new Map();
+      for (const row of relatedTopicRows) {
+        const articleId = Number(row.articleId);
+        const topics = topicsByArticleId.get(articleId) || [];
+        topics.push({
+          id: Number(row.topicId),
+          name: row.topicName,
+          similarity: Number(row.similarity || 0),
+          confidence: Number(row.confidence || 0)
+        });
+        topicsByArticleId.set(articleId, topics);
+      }
+
       const populationSourceSet = new Set(populationSourceArticleIds);
       const favoriteCount = Number(islandStats?.starredArticles || 0);
       const clickCount = Number(islandStats?.clickedArticles || 0);
+      const allSourceArticles = sourceArticlesRaw.map(article => {
+        const articleId = Number(article.id);
+        const snapshot = sourceArticleSnapshots.get(articleId) || {};
+        const evidence = [];
+        const clickedAmount = Math.max(Number(article.clickedAmount || 0), Number(snapshot.clickedAmount || 0));
+
+        if (Number(article.positiveInd || 0) === 1) evidence.push({ type: 'positive', label: 'Positive feedback' });
+        if (Number(article.favoriteInd || 0) === 1 || Number(snapshot.favoriteInd || 0) === 1 || historicalStarredIds.has(articleId)) {
+          evidence.push({ type: 'favorite', label: 'Favorite' });
+        }
+        if (clickedAmount > 0 || historicalClickedIds.has(articleId)) {
+          const clickLabel = clickedAmount > 0
+            ? `${clickedAmount} ${clickedAmount === 1 ? 'click' : 'clicks'}`
+            : 'Clicked';
+          evidence.push({ type: 'click', label: clickLabel });
+        }
+        if (Number(article.attentionBucket || 0) >= 3) evidence.push({ type: 'deepRead', label: 'Deep read' });
+        if (Number(article.negativeInd || 0) === 1 || Number(snapshot.negativeInd || 0) === 1 || historicalNegativeIds.has(articleId)) {
+          evidence.push({ type: 'negative', label: 'Negative feedback' });
+        }
+
+        return {
+          ...article,
+          evidence,
+          connectionTopics: topicsByArticleId.get(articleId) || []
+        };
+      });
+      const sourceArticles = allSourceArticles.slice(0, 5);
 
       islands.push({
         ...island,
@@ -508,6 +643,9 @@ export const getIslandsOverview = async (req, res, _next) => {
         relatedArticleCount: Number(islandStats?.relatedArticleCount || 0),
         populationAudit,
         populationSourceArticleIds,
+        sourceArticleCount: populationSourceArticleIds.length,
+        sourceArticles,
+        evidenceSignalCount: allSourceArticles.reduce((sum, article) => sum + article.evidence.length, 0),
         effectiveWeight: Number(island.weight || 0),
         favoriteCount,
         clickCount,
@@ -519,7 +657,8 @@ export const getIslandsOverview = async (req, res, _next) => {
           return {
             ...article,
             isPopulationSource,
-            isNewArticle: !isPopulationSource
+            isNewArticle: !isPopulationSource,
+            connectionTopics: topicsByArticleId.get(articleId) || []
           };
         })
       });

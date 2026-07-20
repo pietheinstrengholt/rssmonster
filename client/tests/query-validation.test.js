@@ -43,6 +43,13 @@ describe('query validation briefing filters', () => {
   });
 });
 
+describe('query validation trust sorting', () => {
+  it('accepts trust sorting in searches and smart folders', () => {
+    expect(validateSearchQuery('sort:trust')).toEqual({ valid: true, error: '' });
+    expect(validateSmartFolderQuery('unread:true sort:trust')).toEqual({ valid: true, error: '' });
+  });
+});
+
 describe('query validation calendar dates', () => {
   it('accepts real dates, including leap days', () => {
     expect(validateSearchQuery('@2024-02-29')).toEqual({ valid: true, error: '' });

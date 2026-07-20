@@ -2,6 +2,7 @@
 // It keeps database predicate construction separate from higher-level search orchestration.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
+import { applyBriefingEligibility } from './briefingEligibility.service.js';
 
 const { Article, Event, Feed, Tag } = db;
 
@@ -23,6 +24,7 @@ export const buildArticleSearchQuery = ({
   sortRecommended,
   sortQuality,
   sortAttention,
+  sortTrust,
   workingSort,
   qualityFilter,
   freshnessFilter,
@@ -37,6 +39,9 @@ export const buildArticleSearchQuery = ({
   event,
   islandFilter,
   briefingFilter,
+  briefingMinDistinctSources,
+  briefingShowOnlyInterestMatchedArticles,
+  briefingShowOnlyDevelopingEventArticles,
   grouping,
   eventCountFilter,
   firstSeenAgeFilter,
@@ -49,7 +54,7 @@ export const buildArticleSearchQuery = ({
   const needsFreshness = freshnessFilter || sortRecommended;
   const needsAttention = sortAttention;
   const needsInterestScore = sortRecommended;
-  const needsPublished = !smartFolderSearch || needsFreshness;
+  const needsPublished = !smartFolderSearch || needsFreshness || sortTrust;
 
   if (needsQuality) {
     queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
@@ -79,7 +84,7 @@ export const buildArticleSearchQuery = ({
     where: baseWhere
   };
 
-  if (sortRecommended || needsQuality) {
+  if (sortRecommended || needsQuality || sortTrust) {
     articleQuery.include = [
       {
         model: Feed,
@@ -103,7 +108,13 @@ export const buildArticleSearchQuery = ({
     }
   }
 
-  if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
+  if (sortTrust) {
+    articleQuery.order = [
+      [Feed, 'feedTrust', 'DESC'],
+      ['publishedAt', 'DESC'],
+      ['id', 'DESC']
+    ];
+  } else if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
     const sqlSortDirection = toSqlSortDirection(workingSort);
     articleQuery.order = [
       ['publishedAt', sqlSortDirection],
@@ -202,20 +213,11 @@ export const buildArticleSearchQuery = ({
   }
 
   if (briefingFilter !== null) {
-    const briefingPredicate = `(
-      articles.interestScore <> 0
-      OR EXISTS (
-        SELECT 1
-        FROM events briefing_event
-        WHERE briefing_event.id = articles.eventId
-          AND briefing_event.userId = articles.userId
-          AND briefing_event.articleCount > 1
-      )
-    )`;
-    appendAndCondition(
-      articleQuery.where,
-      Article.sequelize.literal(briefingFilter ? briefingPredicate : `NOT ${briefingPredicate}`)
-    );
+    applyBriefingEligibility(articleQuery.where, briefingFilter, {
+      minDistinctSources: briefingMinDistinctSources,
+      showOnlyInterestMatchedArticles: briefingShowOnlyInterestMatchedArticles,
+      showOnlyDevelopingEventArticles: briefingShowOnlyDevelopingEventArticles
+    });
   }
 
   if (Number.isFinite(eventCountFilter)) {

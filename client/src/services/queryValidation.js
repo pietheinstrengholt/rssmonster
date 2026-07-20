@@ -23,7 +23,7 @@ export const expressionPatterns = [
     { name: 'title', regex: /^title:(.+)$/i },
     { name: 'author', regex: /^author:(.+)$/i },
     { name: 'language', regex: /^language:[a-z]{2,3}$/i },
-    { name: 'sort', regex: /^sort:(desc|asc|recommended|quality|attention)$/ },
+    { name: 'sort', regex: /^sort:(desc|asc|trust|recommended|quality|attention)$/ },
     { name: 'limit', regex: /^limit:\s*(\d+)$/i },
     { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'freshness', regex: /^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
