@@ -42,7 +42,7 @@ function createStore(AIEnabled) {
 
 // This function finds the status dropdown rendered by the desktop toolbar.
 function desktopStatusDropdown(wrapper) {
-  return wrapper.findAll('.toolbar-filter').find(filter => filter.get('.toolbar-filter-label').text() === 'Status:');
+  return wrapper.findAll('.toolbar-filter').find(filter => filter.get('.toolbar-filter-label').text() === 'Show:');
 }
 
 // This function finds the sort dropdown rendered by the desktop toolbar.

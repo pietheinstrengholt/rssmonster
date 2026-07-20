@@ -942,7 +942,7 @@ export default {
     selectedSort() {
       return this.currentSelection.sort;
     },
-    // This function builds the configured view, status, and sort dropdowns.
+    // This function builds the configured view, show, and sort dropdowns.
     toolbarDropdowns() {
       // This function filters out AI-only options when AI is unavailable.
       const visibleOptions = (options) => options.filter((option) => this.isAIEnabled || !option.requiresAI);
@@ -963,7 +963,7 @@ export default {
         {
           id: 'statusDropdown',
           type: 'status',
-          label: 'Status',
+          label: 'Show',
           selectedLabel: selectedStatusOption ? selectedStatusOption.label : this.capitalize(this.selectedStatus),
           selectedValue: this.selectedStatus,
           options: visibleOptions(this.statusOptions)
