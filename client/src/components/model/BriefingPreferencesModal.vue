@@ -914,17 +914,14 @@ export default {
   .briefing-preferences-backdrop {
     align-items: end;
 
-    padding: 0;
+    padding: 0.75rem;
   }
 
   .briefing-preferences-modal {
     width: 100%;
-    max-height: calc(100dvh - 1rem);
+    max-height: calc(100dvh - 1.5rem);
 
-    border-right: 0;
-    border-bottom: 0;
-    border-left: 0;
-    border-radius: 0.75rem 0.75rem 0 0;
+    border-radius: 0.75rem;
   }
 
   .briefing-preferences-header,

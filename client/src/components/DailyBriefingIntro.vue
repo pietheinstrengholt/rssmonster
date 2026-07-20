@@ -318,6 +318,10 @@ export default {
   .briefing-morning-summary-text {
     font-size: 0.8125rem;
   }
+
+  .briefing-summary-excerpt {
+    display: none;
+  }
 }
 
 :global(:root[data-theme='dark'] .daily-briefing-intro) {
