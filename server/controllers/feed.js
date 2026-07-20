@@ -77,7 +77,7 @@ const getFeeds = async (req, res, _next) => {
       attributes: [
         'feedId',
         [Article.sequelize.fn('COUNT', Article.sequelize.col('id')), 'articleCount'],
-        [Article.sequelize.fn('COUNT', Article.sequelize.col('eventId')), 'clusteredArticleCount']
+        [Article.sequelize.fn('COUNT', Article.sequelize.col('eventId')), 'eventArticleCount']
       ],
       where: { userId: userId, ...canonicalArticleWhere() },
       group: ['feedId'],
@@ -102,13 +102,13 @@ const getFeeds = async (req, res, _next) => {
 
     const countsByFeedId = articleCounts.reduce((acc, row) => {
       const articleCount = Number(row.articleCount) || 0;
-      const clusteredArticleCount = Number(row.clusteredArticleCount) || 0;
+      const eventArticleCount = Number(row.eventArticleCount) || 0;
 
       acc[row.feedId] = {
         articleCount,
-        clusteredArticleCount,
-        clusterCoveragePct: articleCount > 0
-          ? Math.round((clusteredArticleCount * 1000) / articleCount) / 10
+        eventArticleCount,
+        eventCoveragePct: articleCount > 0
+          ? Math.round((eventArticleCount * 1000) / articleCount) / 10
           : 0
       };
       return acc;
@@ -124,8 +124,8 @@ const getFeeds = async (req, res, _next) => {
       ...feed.toJSON(),
       articleCount: countsByFeedId[feed.id]?.articleCount ?? 0,
       articlesPerDay: ingestionByFeedId[feed.id] ?? 0,
-      clusteredArticleCount: countsByFeedId[feed.id]?.clusteredArticleCount ?? 0,
-      clusterCoveragePct: countsByFeedId[feed.id]?.clusterCoveragePct ?? 0
+      eventArticleCount: countsByFeedId[feed.id]?.eventArticleCount ?? 0,
+      eventCoveragePct: countsByFeedId[feed.id]?.eventCoveragePct ?? 0
     }));
 
     return res.status(200).json({ feeds: feedsWithCounts });

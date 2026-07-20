@@ -55,9 +55,9 @@ const MUTE_STALE_MONTHS = 6;
 // Prevents old, stale data from influencing current feed trust
 const LOOKBACK_DAYS = 30;
 
-// DUPLICATION_CLUSTER_THRESHOLD: Articles in clusters of 2+ are considered duplicates/syndication
-// A cluster with 1 article = original; 2+ articles = the content appears elsewhere (less original)
-const DUPLICATION_CLUSTER_THRESHOLD = 2;
+// Articles in events of 2+ are considered duplicates or syndicated coverage.
+// An event with 1 article is original; 2+ means the content appears elsewhere.
+const DUPLICATION_EVENT_ARTICLE_THRESHOLD = 2;
 
 /* ------------------------------------------------------------------
  * Helpers
@@ -104,7 +104,7 @@ export async function calculateFeedTrustForFeed(feedId) {
       publishedAt: { [Op.gte]: since }
     },
     include: [
-      { model: Event, as: 'cluster' }
+      { model: Event, as: 'event' }
     ]
   });
 
@@ -143,9 +143,9 @@ export async function calculateFeedTrustForFeed(feedId) {
   let duplicationSamples = 0;
 
   for (const article of articles) {
-    if (!article.cluster) continue;
+    if (!article.event) continue;
     duplicationSamples++;
-    if ((article.cluster.articleCount || 1) >= DUPLICATION_CLUSTER_THRESHOLD) {
+    if ((article.event.articleCount || 1) >= DUPLICATION_EVENT_ARTICLE_THRESHOLD) {
       duplicatedArticles++;
     }
   }
@@ -160,27 +160,27 @@ export async function calculateFeedTrustForFeed(feedId) {
    * ============================================================ */
 
   let representativeCount = 0;
-  let totalClusterSize = 0;
-  let clusterSamples = 0;
+  let totalEventArticleCount = 0;
+  let eventSamples = 0;
 
   for (const article of articles) {
-    if (!article.cluster) continue;
-    clusterSamples++;
-    totalClusterSize += article.cluster.articleCount || 1;
-    if (article.cluster.representativeArticleId === article.id) {
+    if (!article.event) continue;
+    eventSamples++;
+    totalEventArticleCount += article.event.articleCount || 1;
+    if (article.event.representativeArticleId === article.id) {
       representativeCount++;
     }
   }
 
   const representativeRatio =
-    clusterSamples > 0 ? representativeCount / clusterSamples : 0.5;
+    eventSamples > 0 ? representativeCount / eventSamples : 0.5;
 
-  const avgClusterSize =
-    clusterSamples > 0 ? totalClusterSize / clusterSamples : 1;
+  const averageEventArticleCount =
+    eventSamples > 0 ? totalEventArticleCount / eventSamples : 1;
 
   const baseOriginality = clamp(
     0.65 * representativeRatio +
-    0.35 * (1 / Math.log2(avgClusterSize + 1))
+    0.35 * (1 / Math.log2(averageEventArticleCount + 1))
   );
 
   const originality = clamp(

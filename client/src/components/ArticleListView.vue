@@ -16,8 +16,8 @@
         @minimal-article-closed="$emit('minimal-article-closed', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
         @toggle-minimal-read-status="$emit('toggle-minimal-read-status', $event)"
-        @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
-        @cluster-articles-collapsed="$emit('cluster-articles-collapsed', $event)"
+        @event-articles-loaded="$emit('event-articles-loaded', $event)"
+        @event-articles-collapsed="$emit('event-articles-collapsed', $event)"
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
@@ -66,8 +66,8 @@ export default {
     'minimal-article-closed',
     'toggle-read-status',
     'toggle-minimal-read-status',
-    'cluster-articles-loaded',
-    'cluster-articles-collapsed',
+    'event-articles-loaded',
+    'event-articles-collapsed',
     'duplicate-articles-loaded',
     'duplicate-articles-collapsed',
     'article-not-interested',

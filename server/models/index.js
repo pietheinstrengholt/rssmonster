@@ -119,7 +119,7 @@ Event.belongsTo(User, { foreignKey: 'userId' });
 User.hasMany(Island, { foreignKey: 'userId', onDelete: 'CASCADE' });
 Island.belongsTo(User, { foreignKey: 'userId' });
 
-// ---- Semantic Clustering & Topic Grouping ----
+// ---- Semantic Grouping ----
 //
 // Relationship structure:
 //   Article <-> Topic via article_topics (ranked, confidence-scored, primary flag)
@@ -135,7 +135,6 @@ Event.belongsTo(Topic, { foreignKey: 'topicId', as: 'primaryTopic' });
 // Event ↔ Article
 Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'articles' });
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
-Article.belongsTo(Event, { foreignKey: 'eventId', as: 'cluster' });
 
 // Article duplicate traceability
 Article.belongsTo(Article, { foreignKey: 'duplicateOfArticleId', as: 'canonicalArticle' });

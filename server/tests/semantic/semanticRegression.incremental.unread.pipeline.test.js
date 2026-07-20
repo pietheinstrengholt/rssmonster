@@ -366,7 +366,7 @@ async function printTopUnreadRecommendedDebug(userId) {
         coverage: Number(breakdown.coverage.toFixed(4)),
         crossSource: Number(breakdown.crossSource.toFixed(4)),
         corroboration: Number(breakdown.corroboration.toFixed(4)),
-        clusterSize: breakdown.clusterSize,
+        eventArticleCount: breakdown.eventArticleCount,
         sourceCount: breakdown.sourceCount,
         recommended: Number(recommended.toFixed(4)),
         title: String(article.title || '').slice(0, 80)
@@ -468,6 +468,5 @@ semanticRegressionDescribe('semantic regression incremental unread ranking', () 
     });
   }, 60000);
 });
-
 
 

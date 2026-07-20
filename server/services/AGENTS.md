@@ -164,7 +164,7 @@ The semantic pipeline always flows in one direction.
 ```
 Articles
     ↓
-Event clustering
+Event creation and assignment
     ↓
 Topic assignment
     ↓

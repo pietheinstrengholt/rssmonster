@@ -268,7 +268,7 @@ export default (sequelize) => {
         type: DataTypes.JSON,
         allowNull: true
       },
-      // Denormalized event/cluster link for convenience/performance. Nullable because articles may exist before being assigned to a cluster.
+      // Denormalized event link for convenience/performance. Nullable because articles may exist before being assigned to an event.
       eventId: {
         type: DataTypes.INTEGER,
         allowNull: true
@@ -422,24 +422,24 @@ export default (sequelize) => {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
           /**
-           * Uniqueness score: penalizes articles in larger clusters (duplicates/near-duplicates).
+           * Uniqueness score: penalizes articles covered by larger events.
            *
            * Scoring semantics (0–1):
-           * - 1.0 = standalone article or small cluster (highly unique)
-           * - 0.6–0.8 = part of a small cluster (2–4 similar articles)
-           * - 0.3–0.5 = part of a medium cluster (5–16 similar articles)
-           * - <0.3 = part of a large cluster (17+ similar articles, very redundant)
+           * - 1.0 = standalone article or small event (highly unique)
+           * - 0.6–0.8 = part of a small event (2–4 related articles)
+           * - 0.3–0.5 = part of a medium event (5–16 related articles)
+           * - <0.3 = part of a large event (17+ related articles, very redundant)
            *
            * Used in importance ranking to suppress redundant articles.
            */
-          const cluster = this.get('event') || this.get('cluster');
+          const event = this.get('event');
 
-          if (!cluster || !cluster.articleCount || cluster.articleCount <= 1) {
+          if (!event || !event.articleCount || event.articleCount <= 1) {
             return 1.0;
           }
 
-          const clusterSize = cluster.articleCount;
-          const uniqueness = 1 / Math.log2(clusterSize + 1);
+          const eventArticleCount = event.articleCount;
+          const uniqueness = 1 / Math.log2(eventArticleCount + 1);
 
           return Math.max(0, Math.min(1, uniqueness));
         }
@@ -449,8 +449,8 @@ export default (sequelize) => {
         get() {
           const topic = this.get('topic');
           if (topic?.topicKey) return topic.topicKey;
-          const cluster = this.get('cluster');
-          return cluster?.topicKey ?? null;
+          const event = this.get('event');
+          return event?.topicKey ?? null;
         }
       },
       // Timestamp when the article was published (from feed data, used for freshness and sorting)

@@ -14,26 +14,20 @@ function compactEventName(name) {
     .join(' ');
 }
 
-// Reads the associated event or cluster name from either Sequelize getters or plain properties.
-function resolveEventName(article) {
-  const cluster =
-    article?.get?.('cluster') ??
-    article?.cluster ??
-    article?.get?.('event') ??
+// Reads the associated event from either Sequelize getters or plain properties.
+function resolveEvent(article) {
+  return article?.get?.('event') ??
     article?.event;
-
-  return cluster?.name || '';
 }
 
-// Reads the associated event or cluster id from either Sequelize getters or plain properties.
-function resolveEventId(article) {
-  const cluster =
-    article?.get?.('cluster') ??
-    article?.cluster ??
-    article?.get?.('event') ??
-    article?.event;
+// Reads the associated event name from either Sequelize getters or plain properties.
+function resolveEventName(article) {
+  return resolveEvent(article)?.name || '';
+}
 
-  return cluster?.id ?? article?.eventId ?? null;
+// Reads the associated event id from either Sequelize getters or plain properties.
+function resolveEventId(article) {
+  return resolveEvent(article)?.id ?? article?.eventId ?? null;
 }
 
 // Logs recommended-score inputs and output for a scored article list in development mode.
@@ -69,7 +63,7 @@ export function debugRecommendedScores(scored) {
           corroboration: Number(bd.corroboration.toFixed(4)),
           eventBoost: Number(bd.eventBoost.toFixed(4)),
           ruleBoost: Number(bd.ruleBoost.toFixed(4)),
-          clusterSize: bd.clusterSize,
+          eventArticleCount: bd.eventArticleCount,
           sourceCount: bd.sourceCount,
           recommended: Number(recommended.toFixed(4))
         };

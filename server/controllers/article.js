@@ -61,7 +61,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
       },
       {
         model: Event,
-        as: 'cluster',
+        as: 'event',
         required: false,
         attributes: ['id', 'articleCount', 'sourceCount', 'topicId']
       }
@@ -70,7 +70,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
   });
 
   // Compute topic-level article counts in one grouped query for topic grouping badges.
-  const topicIds = [...new Set(articles.map(article => article.cluster?.topicId).filter(Boolean))];
+  const topicIds = [...new Set(articles.map(article => article.event?.topicId).filter(Boolean))];
   if (topicIds.length > 0) {
     const topicRows = await Event.findAll({
       where: { userId, topicId: { [Op.in]: topicIds } },
@@ -81,10 +81,10 @@ const loadArticleDetails = async (userId, articlesArray) => {
     const topicCountMap = new Map(topicRows.map(row => [row.topicId, Number(row.topicArticleCount) || 0]));
 
     for (const article of articles) {
-      if (article.cluster?.topicId) {
-        article.cluster.setDataValue(
+      if (article.event?.topicId) {
+        article.event.setDataValue(
           'topicArticleCount',
-          topicCountMap.get(article.cluster.topicId) ?? article.cluster.articleCount ?? 0
+          topicCountMap.get(article.event.topicId) ?? article.event.articleCount ?? 0
         );
       }
     }
@@ -340,7 +340,7 @@ const markAsRead = async (req, res, _next) => {
         attributes: ['id', 'eventId'],
         include: [{
           model: Event,
-          as: 'cluster',
+          as: 'event',
           required: false,
           attributes: ['topicId']
         }]
@@ -350,7 +350,7 @@ const markAsRead = async (req, res, _next) => {
         const topicIds = [
           ...new Set(
             selectedArticles
-              .map(article => article.cluster?.topicId)
+              .map(article => article.event?.topicId)
               .filter(topicId => topicId !== null && topicId !== undefined)
           )
         ];
@@ -684,7 +684,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
         },
         {
           model: Event,
-          as: 'cluster',
+          as: 'event',
           required: false,
           attributes: ['id', 'articleCount']
         }
@@ -738,16 +738,16 @@ const articleMarkAsSeen = async (req, res, _next) => {
     // Prepare response object
     const response = updatedArticle.toJSON();
 
-    // Only add clusterCount when:
+    // Only add eventArticleCount when:
     // - unread → read transition
-    // - AND article actually has a cluster loaded
+    // - AND article actually has an event loaded
     if (
       selectedStatus === 'unread' &&
       updatedArticle.eventId &&
-      response.cluster &&
-      Number.isInteger(response.cluster.articleCount)
+      response.event &&
+      Number.isInteger(response.event.articleCount)
     ) {
-      response.clusterCount = response.cluster.articleCount;
+      response.eventArticleCount = response.event.articleCount;
     }
 
     // If event grouping is enabled and article has an eventId, update all articles in the same event using the same payload.
@@ -756,19 +756,19 @@ const articleMarkAsSeen = async (req, res, _next) => {
     if ((grouping === 'event' || grouping === 'topic') && article.eventId) {
       console.log(`${grouping} grouping enabled: marking related articles for event ${article.eventId} as seen`);
 
-      // Exclude the firstSeen and overwrite it again for the whole cluster. The parent is leading
-      // If status should be marked as read, ensure it is set for the cluster update as well
-      const clusterPayload = { ...payload };
+      // Exclude firstSeen and overwrite it for the whole event. The representative article is leading.
+      // If status should be marked as read, ensure it is set for the event update as well.
+      const eventPayload = { ...payload };
       if (shouldMarkRead) {
-        clusterPayload.status = 'read';
+        eventPayload.status = 'read';
       } else {
         // Remove status if not updating
-        delete clusterPayload.status;
+        delete eventPayload.status;
       }
       let relatedEventIds = [article.eventId];
 
       if (grouping === 'topic') {
-        const cluster = await Event.findOne({
+        const event = await Event.findOne({
           where: {
             id: article.eventId,
             userId
@@ -776,11 +776,11 @@ const articleMarkAsSeen = async (req, res, _next) => {
           attributes: ['topicId']
         });
 
-        if (cluster?.topicId) {
+        if (event?.topicId) {
           const topicEvents = await Event.findAll({
             where: {
               userId,
-              topicId: cluster.topicId
+              topicId: event.topicId
             },
             attributes: ['id']
           });
@@ -788,7 +788,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
         }
       }
 
-      const clusterWhere = {
+      const eventWhere = {
         id: { [Op.ne]: articleId },
         userId: userId,
         ...canonicalArticleWhere(),
@@ -796,9 +796,9 @@ const articleMarkAsSeen = async (req, res, _next) => {
       };
 
       if (shouldMarkRead) {
-        const unreadClusterArticles = await Article.findAll({
+        const unreadEventArticles = await Article.findAll({
           where: {
-            ...clusterWhere,
+            ...eventWhere,
             status: 'unread'
           },
           attributes: ['id', 'feedId'],
@@ -809,16 +809,16 @@ const articleMarkAsSeen = async (req, res, _next) => {
           }]
         });
         readArticles.push(
-          ...unreadClusterArticles.map(clusterArticle => ({
-            id: Number(clusterArticle.id),
-            feedId: clusterArticle.feedId,
-            feed: clusterArticle.feed
+          ...unreadEventArticles.map(eventArticle => ({
+            id: Number(eventArticle.id),
+            feedId: eventArticle.feedId,
+            feed: eventArticle.feed
           }))
         );
       }
 
-      await Article.update(clusterPayload, {
-        where: clusterWhere
+      await Article.update(eventPayload, {
+        where: eventWhere
       });
     }
 

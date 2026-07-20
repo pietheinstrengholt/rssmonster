@@ -141,7 +141,7 @@
   --article-hot-background: #FFFFF4;
   --article-starred-background: #FFFAFA;
   --article-highlight-border: #F3A712;
-  --article-cluster-background: #f6f9fe;
+  --article-event-background: #f6f9fe;
   --shadow-article: 0 2px 4px rgba(0, 0, 0, 0.08);
 
   /* Article icons and recommendation indicators */
@@ -388,7 +388,7 @@
 
   /* Dark article colors */
   --article-surface-dark: #1A202C;
-  --article-cluster-background-dark: #11161D;
+  --article-event-background-dark: #11161D;
   --article-content-text: #D1D5DB;
   --article-heading-text: #E5E7EB;
   --article-link-dark: var(--color-link);

@@ -151,8 +151,8 @@
         @update-favorite="$emit('update-favorite', $event)"
         @update-clicked="$emit('update-clicked', $event)"
         @toggle-read-status="$emit('toggle-read-status', $event)"
-        @cluster-articles-loaded="$emit('cluster-articles-loaded', $event)"
-        @cluster-articles-collapsed="$emit('cluster-articles-collapsed', $event)"
+        @event-articles-loaded="$emit('event-articles-loaded', $event)"
+        @event-articles-collapsed="$emit('event-articles-collapsed', $event)"
         @duplicate-articles-loaded="$emit('duplicate-articles-loaded', $event)"
         @duplicate-articles-collapsed="$emit('duplicate-articles-collapsed', $event)"
         @article-not-interested="$emit('article-not-interested', $event)"
@@ -182,8 +182,8 @@ export default {
     'update-favorite',
     'update-clicked',
     'toggle-read-status',
-    'cluster-articles-loaded',
-    'cluster-articles-collapsed',
+    'event-articles-loaded',
+    'event-articles-collapsed',
     'duplicate-articles-loaded',
     'duplicate-articles-collapsed',
     'article-not-interested',
@@ -331,7 +331,7 @@ export default {
     eventCount() {
       const eventIds = new Set();
       for (const article of this.articles) {
-        const eventId = article.cluster?.id || article.eventId || article.clusterId;
+        const eventId = article.event?.id || article.eventId;
         if (eventId) eventIds.add(eventId);
       }
       return eventIds.size;
@@ -577,7 +577,7 @@ export default {
     },
     // Returns the related article count when available.
     similarCount(article) {
-      return article.clusterCountTotal > 1 ? article.clusterCountTotal - 1 : 0;
+      return article.eventArticleCountTotal > 1 ? article.eventArticleCountTotal - 1 : 0;
     }
   }
 }

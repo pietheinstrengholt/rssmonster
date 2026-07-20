@@ -15,7 +15,7 @@ function mountArticleHeader(props = {}) {
       title: 'Article title',
       hasInterestScore: true,
       isGroupedView: true,
-      clusterCountTotal: 3,
+      eventArticleCountTotal: 3,
       ...props
     },
     global: {

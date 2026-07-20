@@ -36,7 +36,7 @@ export const buildArticleSearchQuery = ({
   rawSearch,
   event,
   grouping,
-  clusterCountFilter,
+  eventCountFilter,
   firstSeenAgeFilter,
   authorFilter,
   languageFilter
@@ -89,7 +89,7 @@ export const buildArticleSearchQuery = ({
     if (sortRecommended) {
       articleQuery.include.unshift({
         model: Event,
-        as: 'cluster',
+        as: 'event',
         attributes: ['id', 'name', 'articleCount', 'eventStrength', 'sourceDiversityScore', 'sourceCount', 'topicId'],
         required: false
       });
@@ -174,12 +174,12 @@ export const buildArticleSearchQuery = ({
     articleQuery.where.eventId = event ? { [Op.not]: null } : { [Op.is]: null };
   }
 
-  if (Number.isFinite(clusterCountFilter)) {
+  if (Number.isFinite(eventCountFilter)) {
     const countLiteral = Article.sequelize.literal(
       '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
     );
     appendAndCondition(articleQuery.where,
-      Article.sequelize.where(countLiteral, { [Op.gte]: clusterCountFilter })
+      Article.sequelize.where(countLiteral, { [Op.gte]: eventCountFilter })
     );
   }
 

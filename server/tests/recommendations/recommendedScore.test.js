@@ -2,12 +2,12 @@ import { describe, expect, it } from 'vitest';
 import { computeRecommended } from '../../services/recommendations/recommendedScore.js';
 
 describe('computeRecommended', () => {
-  it('ranks larger corroborated clusters higher with equal freshness/quality', () => {
+  it('ranks larger corroborated events higher with equal freshness/quality', () => {
     const standalone = {
       freshness: 0.5,
       quality: 0.7,
       get: key => {
-        if (key === 'cluster') return { articleCount: 1, sourceDiversityScore: 0 };
+        if (key === 'event') return { articleCount: 1, sourceDiversityScore: 0 };
         if (key === 'Tags') return [];
         return undefined;
       }
@@ -17,7 +17,7 @@ describe('computeRecommended', () => {
       freshness: 0.5,
       quality: 0.7,
       get: key => {
-        if (key === 'cluster') return { articleCount: 32, sourceDiversityScore: 2.0 };
+        if (key === 'event') return { articleCount: 32, sourceDiversityScore: 2.0 };
         if (key === 'Tags') return [];
         return undefined;
       }
@@ -26,11 +26,11 @@ describe('computeRecommended', () => {
     expect(computeRecommended(highlyCorroborated)).toBeGreaterThan(computeRecommended(standalone));
   });
 
-  it('reads cluster associations from plain object properties when get() is not present', () => {
+  it('reads event associations from plain object properties when get() is not present', () => {
     const article = {
       freshness: 0.6,
       quality: 0.7,
-      cluster: { articleCount: 20, sourceDiversityScore: 1.8 },
+      event: { articleCount: 20, sourceDiversityScore: 1.8 },
       Tags: []
     };
 
@@ -40,11 +40,11 @@ describe('computeRecommended', () => {
     expect(score).toBeLessThanOrEqual(1);
   });
 
-  it('strongly prioritizes same-size clusters when corroborated by more sources', () => {
+  it('strongly prioritizes same-size events when corroborated by more sources', () => {
     const sameSizeSingleSource = {
       freshness: 0.5,
       quality: 0.7,
-      cluster: {
+      event: {
         articleCount: 24,
         sourceCount: 1,
         sourceDiversityScore: 0
@@ -55,7 +55,7 @@ describe('computeRecommended', () => {
     const sameSizeMultiSource = {
       freshness: 0.5,
       quality: 0.7,
-      cluster: {
+      event: {
         articleCount: 24,
         sourceCount: 8,
         sourceDiversityScore: 2.4
@@ -75,7 +75,7 @@ describe('computeRecommended', () => {
       freshness: 1,
       quality: 0.7,
       interestScore: 0,
-      cluster: {
+      event: {
         articleCount: 1,
         sourceCount: 1,
         sourceDiversityScore: 0
@@ -87,7 +87,7 @@ describe('computeRecommended', () => {
       freshness: 0.55,
       quality: 0.7,
       interestScore: 0,
-      cluster: {
+      event: {
         articleCount: 8,
         sourceCount: 6,
         sourceDiversityScore: 1.9
@@ -102,7 +102,7 @@ describe('computeRecommended', () => {
     const baseArticle = {
       freshness: 0.5,
       quality: 0.7,
-      cluster: {
+      event: {
         articleCount: 12,
         sourceCount: 3,
         sourceDiversityScore: 1.4

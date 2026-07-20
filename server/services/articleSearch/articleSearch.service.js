@@ -214,7 +214,7 @@ export const searchArticles = async ({
       rawSearch,
       event,
       grouping,
-      clusterCountFilter: eventCountFilter,
+      eventCountFilter,
       firstSeenAgeFilter,
       authorFilter,
       languageFilter

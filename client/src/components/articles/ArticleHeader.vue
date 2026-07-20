@@ -14,7 +14,7 @@
           <BootstrapIcon v-if="favoriteInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
           <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
           <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon" icon="award-fill" class="article-kind-icon recommendation-icon" />
-          <BootstrapIcon v-else-if="isGroupedView && clusterCountTotal > 1 && !hasSourceIcon" icon="megaphone-fill" class="article-kind-icon cluster-icon" />
+          <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon" icon="megaphone-fill" class="article-kind-icon event-icon" />
         </template>
         <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </div>
@@ -39,7 +39,7 @@ export default {
     favoriteInd: { type: Number, default: 0 }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
     viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false },
     hasInterestScore: { type: Boolean, default: false },
-    isGroupedView: { type: Boolean, default: false }, clusterCountTotal: { type: Number, default: 0 }
+    isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 }
   },
   computed: {
     // Returns whether the article links to a Bluesky profile post.

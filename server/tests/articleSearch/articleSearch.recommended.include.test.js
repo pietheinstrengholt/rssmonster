@@ -21,21 +21,21 @@ describe('articleSearch recommended include wiring', () => {
     vi.restoreAllMocks();
   });
 
-  it('includes cluster association when sorting by recommended', async () => {
+  it('includes event association when sorting by recommended', async () => {
     await searchArticles({ userId: 1, sort: 'recommended', status: '%' });
 
     expect(Article.findAll).toHaveBeenCalledTimes(1);
     const query = Article.findAll.mock.calls[0][0];
 
     expect(query.include).toBeDefined();
-    const clusterInclude = query.include.find(item => item.as === 'cluster');
-    expect(clusterInclude).toBeDefined();
-    expect(clusterInclude.attributes).toEqual(
+    const eventInclude = query.include.find(item => item.as === 'event');
+    expect(eventInclude).toBeDefined();
+    expect(eventInclude.attributes).toEqual(
       expect.arrayContaining(['articleCount', 'sourceDiversityScore', 'sourceCount'])
     );
   });
 
-  it('includes cluster association in smartFolderSearch mode when sort:recommended is requested', async () => {
+  it('includes event association in smartFolderSearch mode when sort:recommended is requested', async () => {
     await searchArticles({
       userId: 1,
       search: 'sort:recommended',
@@ -46,8 +46,8 @@ describe('articleSearch recommended include wiring', () => {
     expect(Article.findAll).toHaveBeenCalledTimes(1);
     const query = Article.findAll.mock.calls[0][0];
 
-    const clusterInclude = query.include.find(item => item.as === 'cluster');
-    expect(clusterInclude).toBeDefined();
+    const eventInclude = query.include.find(item => item.as === 'event');
+    expect(eventInclude).toBeDefined();
   });
 
   it('includes feed quality fields when sorting by quality', async () => {

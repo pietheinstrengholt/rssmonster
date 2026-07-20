@@ -72,7 +72,7 @@ describe('feed ownership authorization', () => {
     expect(res.body).toEqual({ message: 'Feed not found' });
   });
 
-  it('GET feeds includes clustered article coverage metrics', async () => {
+  it('GET feeds includes event article coverage metrics', async () => {
     const owner = await createUser(uniqueName('feed-owner'));
     const { feed } = await createFeedFor(owner);
 
@@ -106,8 +106,8 @@ describe('feed ownership authorization', () => {
     expect(res.status).toBe(200);
     expect(feedResponse).toMatchObject({
       articleCount: 4,
-      clusteredArticleCount: 3,
-      clusterCoveragePct: 75
+      eventArticleCount: 3,
+      eventCoveragePct: 75
     });
   });
 

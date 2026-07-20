@@ -10,6 +10,8 @@ const RECOMMENDED_WEIGHTS = {
   corroboration: 0.13
 };
 
+const MAX_EVENT_ARTICLE_COUNT_FOR_FULL_COVERAGE = 64;
+
 function normalizeInterestScore(rawInterestScore) {
   if (!Number.isFinite(rawInterestScore)) return 0;
   // Keep signed interest so negative values apply an explicit ranking penalty.
@@ -30,38 +32,33 @@ export function computeRecommended(article) {
   // (includes feedTrust boost via the Article model's quality virtual field)
   const quality = article.quality ?? 0.7;
 
-  // Coverage signal: articles in larger clusters rank higher (more corroborated reporting)
-  // More articles covering the same event/topic = greater recommended weight.
-  // Normalize by log scale so growth stays bounded and robust for very large clusters.
+  // Coverage signal: articles in larger events rank higher (more corroborated reporting)
+  // More articles covering the same event produce a greater recommendation weight.
+  // Normalize by log scale so growth stays bounded and robust for very large events.
   // This gives: standalone=0.00, 2 articles≈0.17, 4 articles≈0.33, 16 articles≈0.67, 64+ articles=1.00
-  const cluster =
-    article.get?.('event') ??
-    article.event ??
-    article.get?.('cluster') ??
-    article.cluster;
-  const rawClusterSize = Number(cluster?.articleCount);
-  const clusterSize = Number.isFinite(rawClusterSize) && rawClusterSize > 0 ? rawClusterSize : 1;
-  const MAX_COVERAGE_CLUSTER_SIZE = 64;
+  const event = article.get?.('event') ?? article.event;
+  const rawEventArticleCount = Number(event?.articleCount);
+  const eventArticleCount = Number.isFinite(rawEventArticleCount) && rawEventArticleCount > 0 ? rawEventArticleCount : 1;
   const coverage = Math.min(
-    Math.log2(clusterSize) / Math.log2(MAX_COVERAGE_CLUSTER_SIZE),
+    Math.log2(eventArticleCount) / Math.log2(MAX_EVENT_ARTICLE_COUNT_FOR_FULL_COVERAGE),
     1
   );
 
   // Source diversity: boosts articles confirmed by multiple unique publishers
-  // sourceDiversityScore = log(sourceCount + 1), stored on the cluster
+  // sourceDiversityScore = log(sourceCount + 1), stored on the event.
   // Normalized to 0–1 range: log(1+1)=0.69 → ~0.28, log(5+1)=1.79 → ~0.71, log(10+1)=2.40 → ~0.96
   // Cap at log(12+1)≈2.56 to keep the range sensible
-  const rawDiversity = Number(cluster?.sourceDiversityScore ?? 0);
+  const rawDiversity = Number(event?.sourceDiversityScore ?? 0);
   const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
 
   // Source spread fallback when only sourceCount is available.
   // This specifically rewards corroboration across multiple distinct publishers.
-  const rawSourceCount = Number(cluster?.sourceCount);
+  const rawSourceCount = Number(event?.sourceCount);
   const sourceCount = Number.isFinite(rawSourceCount) && rawSourceCount > 0 ? rawSourceCount : 1;
   const sourceSpread = Math.min(Math.log2(sourceCount) / Math.log2(8), 1);
 
   // Cross-source corroboration (strong signal): only high when both
-  // cluster coverage and publisher diversity are high.
+  // event coverage and publisher diversity are high.
   const crossSource = Math.max(sourceDiversity, sourceSpread);
   const corroboration = coverage * crossSource;
 
@@ -72,8 +69,8 @@ export function computeRecommended(article) {
 
   // Event boost: explicitly rewards meaningful multi-article events.
   const eventBoost =
-    clusterSize >= 8 ? 0.10 :
-    clusterSize >= 4 ? 0.05 :
+    eventArticleCount >= 8 ? 0.10 :
+    eventArticleCount >= 4 ? 0.05 :
     0;
 
   // Weighted sum: emphasizes event importance while preserving freshness,
@@ -98,23 +95,18 @@ export function computeRecommendedBreakdown(article) {
   const interestScore = normalizeInterestScore(rawInterestScore);
   const quality = article.quality ?? 0.7;
 
-  const cluster =
-    article.get?.('event') ??
-    article.event ??
-    article.get?.('cluster') ??
-    article.cluster;
-  const rawClusterSize = Number(cluster?.articleCount);
-  const clusterSize = Number.isFinite(rawClusterSize) && rawClusterSize > 0 ? rawClusterSize : 1;
-  const MAX_COVERAGE_CLUSTER_SIZE = 64;
+  const event = article.get?.('event') ?? article.event;
+  const rawEventArticleCount = Number(event?.articleCount);
+  const eventArticleCount = Number.isFinite(rawEventArticleCount) && rawEventArticleCount > 0 ? rawEventArticleCount : 1;
   const coverage = Math.min(
-    Math.log2(clusterSize) / Math.log2(MAX_COVERAGE_CLUSTER_SIZE),
+    Math.log2(eventArticleCount) / Math.log2(MAX_EVENT_ARTICLE_COUNT_FOR_FULL_COVERAGE),
     1
   );
 
-  const rawDiversity = Number(cluster?.sourceDiversityScore ?? 0);
+  const rawDiversity = Number(event?.sourceDiversityScore ?? 0);
   const sourceDiversity = Math.min(rawDiversity / 2.56, 1);
 
-  const rawSourceCount = Number(cluster?.sourceCount);
+  const rawSourceCount = Number(event?.sourceCount);
   const sourceCount = Number.isFinite(rawSourceCount) && rawSourceCount > 0 ? rawSourceCount : 1;
   const sourceSpread = Math.min(Math.log2(sourceCount) / Math.log2(8), 1);
 
@@ -125,8 +117,8 @@ export function computeRecommendedBreakdown(article) {
   const hasRuleTag = tags.some(t => t.tagType === 'rule');
   const ruleBoost = hasRuleTag ? 0.15 : 0;
   const eventBoost =
-    clusterSize >= 8 ? 0.10 :
-    clusterSize >= 4 ? 0.05 :
+    eventArticleCount >= 8 ? 0.10 :
+    eventArticleCount >= 4 ? 0.05 :
     0;
 
   const recommended = Math.max(0, Math.min(1,
@@ -149,7 +141,7 @@ export function computeRecommendedBreakdown(article) {
     corroboration,
     eventBoost,
     ruleBoost,
-    clusterSize,
+    eventArticleCount,
     sourceCount,
     recommended
   };

@@ -425,7 +425,7 @@ function buildTraceRow({
     coverage: Number(breakdown.coverage || 0),
     crossSource: Number(breakdown.crossSource || 0),
     corroboration: Number(breakdown.corroboration || 0),
-    clusterSize: Number(breakdown.clusterSize || 1),
+    eventArticleCount: Number(breakdown.eventArticleCount || 1),
     sourceCount: Number(breakdown.sourceCount || 1),
     recommended: Number(recommended || 0)
   };
