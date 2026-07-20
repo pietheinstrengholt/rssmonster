@@ -197,7 +197,6 @@
 
 .mobile-toolbar-filters {
   gap: 8px;
-  padding-bottom: 2px;
   overflow: visible;
 }
 
@@ -275,13 +274,13 @@
 @media (max-width: 766px) and (orientation: portrait) {
   .mobile-toolbar-brand-row {
     min-height: 56px;
-    margin: -8px -4px 4px;
+    margin: -10px -4px 0px;
   }
 
   .mobile-toolbar-brand {
     flex: 1 1 auto;
     min-width: 0;
-    gap: 8px;
+    gap: 10px;
     font-size: 20px;
   }
 
