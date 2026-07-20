@@ -127,7 +127,7 @@
   top: 0;
   z-index: 100;
   width: 100%;
-  padding: 8px 12px 10px;
+  padding: 8px 12px 8px;
   color: var(--text-primary);
   background-color: var(--desktop-toolbar-background);
   border-bottom: 1px solid var(--border-color);
@@ -303,8 +303,54 @@
   }
 
   .mobile-toolbar-button {
+    position: relative;
+    isolation: isolate;
     width: 40px;
     height: 40px;
+    color: var(--toolbar-text);
+    background: var(--color-transparent);
+    font-size: 20px;
+  }
+
+  .mobile-toolbar-button::before {
+    position: absolute;
+    z-index: 0;
+    inset: 2px;
+    content: '';
+    background-color: var(--bg-card);
+    border: 1px solid var(--border-input);
+    border-radius: 999px;
+    pointer-events: none;
+  }
+
+  .mobile-toolbar-button:hover,
+  .mobile-toolbar-button:focus-visible {
+    background: var(--color-transparent);
+  }
+
+  .mobile-toolbar-button:hover::before,
+  .mobile-toolbar-button:focus-visible::before {
+    background-color: var(--border-input);
+  }
+
+  .mobile-toolbar-button:focus-visible {
+    outline: 2px solid var(--color-primary);
+    outline-offset: 1px;
+  }
+
+  .mobile-toolbar-button :deep(svg) {
+    position: relative;
+    z-index: 1;
+    display: block;
+    width: 20px;
+    height: 20px;
+    margin-bottom: 0;
+  }
+
+  .mobile-filter-button {
+    height: 34px;
+    border-radius: 8px;
+    font-size: 14px;
   }
 }
 
@@ -437,6 +483,24 @@
 :global(:root[data-theme='dark'] .dropdown-item.active) {
   color: var(--text-inverted);
   background-color: var(--toolbar-active-background);
+}
+
+@media (max-width: 766px) and (orientation: portrait) {
+  :global(:root[data-theme='dark'] .mobile-toolbar-button),
+  :global(:root[data-theme='dark'] .mobile-toolbar-button:hover),
+  :global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible) {
+    background: var(--color-transparent);
+  }
+
+  :global(:root[data-theme='dark'] .mobile-toolbar-button::before) {
+    background-color: var(--bg-control);
+    border-color: var(--border-subtle);
+  }
+
+  :global(:root[data-theme='dark'] .mobile-toolbar-button:hover::before),
+  :global(:root[data-theme='dark'] .mobile-toolbar-button:focus-visible::before) {
+    background-color: var(--toolbar-settings-hover-background-dark);
+  }
 }
 </style>
 
