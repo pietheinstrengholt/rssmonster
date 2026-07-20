@@ -10,6 +10,18 @@ const dayNameToUtcIndex = {
   saturday: 6
 };
 
+// Checks that an ISO-shaped date names the same real UTC calendar day.
+export const isValidUtcCalendarDate = value => {
+  const normalizedValue = String(value);
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(normalizedValue)) {
+    return false;
+  }
+
+  const parsedDate = new Date(`${normalizedValue}T00:00:00.000Z`);
+  return !Number.isNaN(parsedDate.getTime()) &&
+    parsedDate.toISOString().slice(0, 10) === normalizedValue;
+};
+
 // Builds an inclusive UTC range for a single calendar day.
 const buildUtcDayRange = (year, month, day) => ({
   start: new Date(Date.UTC(year, month, day, 0, 0, 0, 0)),
@@ -52,7 +64,7 @@ export const resolveDateFilterToRange = dateFilter => {
     };
   }
 
-  if (dateFilter.type === 'date' && dateFilter.value) {
+  if (dateFilter.type === 'date' && isValidUtcCalendarDate(dateFilter.value)) {
     return {
       dateToken: dateFilter.value,
       dateRange: {

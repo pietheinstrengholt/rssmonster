@@ -25,7 +25,7 @@ const normalizeSort = sortValue => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
- * event:true/false, island:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
+ * event:true/false, island:true/false, briefing:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
  * sort:desc/asc/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
@@ -78,7 +78,8 @@ export const searchArticles = async ({
       sort: sortFilter = sort || 'desc',
       limit: limitFilter = null,
       text = '',
-      textMode = 'none'
+      textMode = 'none',
+      hasSearchIntent = false
     } = parsedQuery;
 
     const {
@@ -96,7 +97,8 @@ export const searchArticles = async ({
       freshness: freshnessFilter = null,
       event = null,
       hot: hotFilter = null,
-      island: islandFilter = null
+      island: islandFilter = null,
+      briefing: briefingFilter = null
     } = filters;
     const eventCountFilter = Number.isFinite(filters.eventCount) ? filters.eventCount : null;
 
@@ -212,9 +214,10 @@ export const searchArticles = async ({
       seenFilter,
       hotFilter,
       status,
-      rawSearch,
+      hasSearchIntent,
       event,
       islandFilter,
+      briefingFilter,
       grouping,
       eventCountFilter,
       firstSeenAgeFilter,
@@ -280,7 +283,7 @@ export const searchArticles = async ({
       console.log(`\x1b[31mLimited smart folder results to ${limitCount} articles\x1b[0m`);
     } else if (!smartFolderSearch && !limitFilter) {
       // Limit to 500 articles when search expressions are used (non-smart folder, no explicit limit)
-      const hasSearchExpression = rawSearch && rawSearch.trim() !== "" && rawSearch.trim() !== "%";
+      const hasSearchExpression = hasSearchIntent && rawSearch !== "%";
       if (hasSearchExpression && itemIds.length > 500) {
         itemIds = itemIds.slice(0, 500);
         console.log(`\x1b[31mLimited results to 500 articles due to search expression usage\x1b[0m`);

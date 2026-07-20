@@ -400,11 +400,122 @@ describe('articleSearch.service', () => {
     });
   });
 
+  describe('briefing filtering', () => {
+    it('combines nonzero interest scores and multi-article event membership', async () => {
+      const createdArticles = [];
+      const createdEvents = [];
+
+      try {
+        const articleValues = [
+          { slug: 'positive-interest', interestScore: 0.7 },
+          { slug: 'negative-interest', interestScore: -0.4 },
+          { slug: 'event-member-one', interestScore: 0 },
+          { slug: 'event-member-two', interestScore: 0 },
+          { slug: 'single-event', interestScore: 0 },
+          { slug: 'not-briefing', interestScore: 0 }
+        ];
+
+        for (const values of articleValues) {
+          createdArticles.push(await Article.create({
+            userId: user.id,
+            feedId: feed.id,
+            url: `https://example.com/article-briefing-${values.slug}`,
+            title: `Briefing test ${values.slug}`,
+            contentOriginal: `<p>Briefing test ${values.slug}.</p>`,
+            contentHtml: `Briefing test ${values.slug}.`,
+            status: 'unread',
+            publishedAt: new Date(),
+            advertisementScore: 80,
+            sentimentScore: 80,
+            qualityScore: 80,
+            interestScore: values.interestScore
+          }));
+        }
+
+        const [positiveInterest, negativeInterest, eventMemberOne, eventMemberTwo, singleEvent, notBriefing] = createdArticles;
+        const multiArticleEvent = await Event.create({
+          userId: user.id,
+          representativeArticleId: eventMemberOne.id,
+          articleCount: 2
+        });
+        const singletonEvent = await Event.create({
+          userId: user.id,
+          representativeArticleId: singleEvent.id,
+          articleCount: 1
+        });
+        createdEvents.push(multiArticleEvent, singletonEvent);
+
+        await eventMemberOne.update({ eventId: multiArticleEvent.id });
+        await eventMemberTwo.update({ eventId: multiArticleEvent.id });
+        await singleEvent.update({ eventId: singletonEvent.id });
+
+        const included = await searchArticles({
+          userId: user.id,
+          search: 'briefing:true',
+          status: '%'
+        });
+        const excluded = await searchArticles({
+          userId: user.id,
+          search: 'briefing:false',
+          status: '%'
+        });
+
+        expect(included.itemIds).toContain(positiveInterest.id);
+        expect(included.itemIds).toContain(negativeInterest.id);
+        expect(included.itemIds).toContain(eventMemberOne.id);
+        expect(included.itemIds).toContain(eventMemberTwo.id);
+        expect(included.itemIds).not.toContain(singleEvent.id);
+        expect(included.itemIds).not.toContain(notBriefing.id);
+
+        expect(excluded.itemIds).not.toContain(positiveInterest.id);
+        expect(excluded.itemIds).not.toContain(negativeInterest.id);
+        expect(excluded.itemIds).not.toContain(eventMemberOne.id);
+        expect(excluded.itemIds).not.toContain(eventMemberTwo.id);
+        expect(excluded.itemIds).toContain(singleEvent.id);
+        expect(excluded.itemIds).toContain(notBriefing.id);
+
+        const countResult = await searchArticles({
+          userId: user.id,
+          search: 'briefing:true',
+          status: '%',
+          countOnly: true
+        });
+        expect(countResult.articleCount).toBe(included.itemIds.length);
+      } finally {
+        for (const event of createdEvents) {
+          await event.destroy();
+        }
+        for (const article of createdArticles) {
+          await article.destroy();
+        }
+      }
+    });
+  });
+
   // ============================
   // Score thresholds
   // ============================
 
   describe('score thresholds', () => {
+    it.each(['quality:nope', 'freshness:nope'])(
+      'keeps the default unread scope for malformed numeric filter %s',
+      async malformedFilter => {
+        const result = await searchArticles({ userId: user.id, search: malformedFilter });
+
+        expect(result.itemIds).toContain(articles.recent.id);
+        expect(result.itemIds).not.toContain(articles.starred.id);
+        expect(result.itemIds).not.toContain(articles.clicked.id);
+      }
+    );
+
+    it('still relaxes the default status for a valid numeric filter', async () => {
+      const result = await searchArticles({ userId: user.id, search: 'quality:>=0' });
+
+      expect(result.itemIds).toContain(articles.recent.id);
+      expect(result.itemIds).toContain(articles.starred.id);
+      expect(result.itemIds).toContain(articles.clicked.id);
+    });
+
     it('filters out articles below minAdvertisementScore', async () => {
       const result = await searchArticles({
         userId: user.id,
@@ -629,6 +740,17 @@ describe('articleSearch.service', () => {
   // ============================
 
   describe('date filters', () => {
+    it.each(['@2026-02-31', '@2026-99-99'])(
+      'keeps the default unread scope for invalid calendar date %s',
+      async invalidDate => {
+        const result = await searchArticles({ userId: user.id, search: invalidDate });
+
+        expect(result.itemIds).toContain(articles.recent.id);
+        expect(result.itemIds).not.toContain(articles.starred.id);
+        expect(result.itemIds).not.toContain(articles.clicked.id);
+      }
+    );
+
     it('filters by @today (last 24h)', async () => {
       const result = await searchArticles({ userId: user.id, search: '@today', status: '%' });
       // recent (1h ago) and lowQuality (6h ago) are within 24h

@@ -33,9 +33,10 @@ export const buildArticleSearchQuery = ({
   seenFilter,
   hotFilter,
   status,
-  rawSearch,
+  hasSearchIntent,
   event,
   islandFilter,
+  briefingFilter,
   grouping,
   eventCountFilter,
   firstSeenAgeFilter,
@@ -157,7 +158,7 @@ export const buildArticleSearchQuery = ({
   }
 
   if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
-    const effectiveStatus = rawSearch && !['favorite', 'star', 'hot', 'clicked'].includes(status) ? '%' : status;
+    const effectiveStatus = hasSearchIntent && !['favorite', 'star', 'hot', 'clicked'].includes(status) ? '%' : status;
 
     if (effectiveStatus === 'favorite' || effectiveStatus === 'star') {
       articleQuery.where.favoriteInd = 1;
@@ -196,6 +197,23 @@ export const buildArticleSearchQuery = ({
           AND island_event.userId = articles.userId
       )
     `));
+  }
+
+  if (briefingFilter !== null) {
+    const briefingPredicate = `(
+      articles.interestScore <> 0
+      OR EXISTS (
+        SELECT 1
+        FROM events briefing_event
+        WHERE briefing_event.id = articles.eventId
+          AND briefing_event.userId = articles.userId
+          AND briefing_event.articleCount > 1
+      )
+    )`;
+    appendAndCondition(
+      articleQuery.where,
+      Article.sequelize.literal(briefingFilter ? briefingPredicate : `NOT ${briefingPredicate}`)
+    );
   }
 
   if (Number.isFinite(eventCountFilter)) {

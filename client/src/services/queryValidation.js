@@ -16,6 +16,7 @@ export const expressionPatterns = [
     { name: 'seen', regex: /^seen:(true|false)$/i },
     { name: 'event', regex: /^event:(true|false)$/i },
     { name: 'island', regex: /^island:(true|false)$/i },
+    { name: 'briefing', regex: /^briefing:(true|false)$/i },
     { name: 'eventCount', regex: /^eventCount:\s*(?:>=)?\s*(\d+)$/i },
     { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
@@ -38,7 +39,7 @@ export const expressionPatterns = [
 /**
  * Known keywords for filter expressions.
  */
-export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'island', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
+export const knownKeywords = ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'event', 'island', 'briefing', 'eventCount', 'hot', 'tag', 'title', 'author', 'language', 'sort', 'limit', 'quality', 'freshness', 'firstSeen'];
 
 export const normalizeSortValueForApi = sort => sort;
 
@@ -47,12 +48,19 @@ export const normalizeQuerySortAliasesForApi = query => query;
 /**
  * Pattern to detect wrong syntax (using = instead of :)
  */
-const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|island|eventCount|hot|tag|title|author|language|sort|limit|quality|freshness|firstSeen)=/i;
+const wrongSyntaxPattern = /\b(favorite|star|unread|read|clicked|seen|event|island|briefing|eventCount|hot|tag|title|author|language|sort|limit|quality|freshness|firstSeen)=/i;
 
 /**
  * Pattern to detect merged tokens (no space between expressions)
  */
-const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|island|eventCount|hot|tag|title|author|language|sort|limit|quality|freshness|firstSeen|@)/i;
+const mergedTokenPattern = /(\d+\.?\d*|true|false)(favorite|star|unread|read|clicked|seen|event|island|briefing|eventCount|hot|tag|title|author|language|sort|limit|quality|freshness|firstSeen|@)/i;
+
+// Checks that an ISO-shaped date names the same real UTC calendar day.
+const isValidCalendarDate = value => {
+    const parsedDate = new Date(`${value}T00:00:00.000Z`);
+    return !Number.isNaN(parsedDate.getTime()) &&
+        parsedDate.toISOString().slice(0, 10) === value;
+};
 
 /**
  * Calculate Levenshtein distance between two strings for typo detection.
@@ -134,6 +142,11 @@ export function validateQuery(query, options = { allowEmpty: true }) {
         }
 
         const cleaned = token.replace(/[.,;]+$/, '');
+
+        const specificDateMatch = cleaned.match(/^@(\d{4}-\d{2}-\d{2})$/);
+        if (specificDateMatch && !isValidCalendarDate(specificDateMatch[1])) {
+            return { valid: false, error: `Invalid calendar date: "${specificDateMatch[1]}"` };
+        }
         
         // Check if token matches any known pattern
         const isValidToken = expressionPatterns.some(p => p.regex.test(cleaned));

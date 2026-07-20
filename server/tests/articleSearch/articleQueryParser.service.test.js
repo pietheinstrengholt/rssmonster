@@ -19,7 +19,8 @@ describe('articleQueryParser.service', () => {
         }
       },
       sort: 'desc',
-      limit: null
+      limit: null,
+      hasSearchIntent: true
     });
   });
 
@@ -49,6 +50,26 @@ describe('articleQueryParser.service', () => {
     });
   });
 
+  it('accepts real calendar dates and rejects normalized or impossible dates', () => {
+    const leapDay = parseArticleQuery({ search: '@2024-02-29' });
+    const normalizedDate = parseArticleQuery({ search: '@2026-02-31' });
+    const impossibleDate = parseArticleQuery({ search: '@2026-99-99' });
+
+    expect(leapDay.filters.date).toEqual({ type: 'date', value: '2024-02-29' });
+    expect(leapDay.hasSearchIntent).toBe(true);
+    expect(normalizedDate.filters.date).toBeNull();
+    expect(impossibleDate.filters.date).toBeNull();
+    expect(normalizedDate.hasSearchIntent).toBe(false);
+    expect(impossibleDate.hasSearchIntent).toBe(false);
+  });
+
+  it('does not let an invalid date replace an earlier valid date filter', () => {
+    const result = parseArticleQuery({ search: '@today @2026-02-31' });
+
+    expect(result.filters.date).toEqual({ type: 'today' });
+    expect(result.hasSearchIntent).toBe(true);
+  });
+
   it('keeps unquoted text as terms', () => {
     const result = parseArticleQuery({ search: 'unread:true AI agents' });
 
@@ -62,6 +83,17 @@ describe('articleQueryParser.service', () => {
 
     expect(result.sort).toBe('asc');
     expect(result.limit).toBe(50);
+    expect(result.hasSearchIntent).toBe(true);
+  });
+
+  it('does not activate search intent for malformed numeric filters', () => {
+    const quality = parseArticleQuery({ search: 'quality:nope' });
+    const freshness = parseArticleQuery({ search: 'freshness:nope' });
+
+    expect(quality.filters.quality).toBeNull();
+    expect(freshness.filters.freshness).toBeNull();
+    expect(quality.hasSearchIntent).toBe(false);
+    expect(freshness.hasSearchIntent).toBe(false);
   });
 
   it('parses event and freshness filters', () => {
@@ -86,6 +118,16 @@ describe('articleQueryParser.service', () => {
 
     expect(included.filters.island).toBe(true);
     expect(excluded.filters.island).toBe(false);
+    expect(included.textMode).toBe('none');
+    expect(excluded.textMode).toBe('none');
+  });
+
+  it('parses briefing boolean filters', () => {
+    const included = parseArticleQuery({ search: 'briefing:true' });
+    const excluded = parseArticleQuery({ search: 'briefing:false' });
+
+    expect(included.filters.briefing).toBe(true);
+    expect(excluded.filters.briefing).toBe(false);
     expect(included.textMode).toBe('none');
     expect(excluded.textMode).toBe('none');
   });

@@ -1,7 +1,10 @@
 // Parses article search strings into structured filters, text search terms, sort order, and limits.
 // It understands RSS Monster's compact query language so the search service can build database predicates.
+import { isValidUtcCalendarDate } from './articleDateParser.service.js';
+
 const DATE_DAY_PATTERN = /@"?last\s+(monday|tuesday|wednesday|thursday|friday|saturday|sunday)"?/i;
 const DATE_DAYS_AGO_PATTERN = /@"?(\d+)\s+days\s+ago"?/i;
+const ISO_DATE_TOKEN_PATTERN = /^@(\d{4}-\d{2}-\d{2})$/;
 
 // Parses a boolean field token such as unread:true or hot:false.
 const parseBooleanFilter = (token, key) => {
@@ -38,8 +41,8 @@ const parseDateToken = token => {
     return { type: 'lastweek' };
   }
 
-  const isoDateMatch = token.match(/^@(\d{4}-\d{2}-\d{2})$/);
-  if (isoDateMatch) {
+  const isoDateMatch = token.match(ISO_DATE_TOKEN_PATTERN);
+  if (isoDateMatch && isValidUtcCalendarDate(isoDateMatch[1])) {
     return {
       type: 'date',
       value: isoDateMatch[1]
@@ -90,6 +93,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
   let text = '';
   let textMode = 'none';
   let sort = String(defaultSort || 'desc').toLowerCase();
+  let sortExplicit = false;
   let limit = null;
 
   const titleQuotedMatch = workingSearch.match(/title:"([^"]+)"/i);
@@ -126,7 +130,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
 
     // Simplified boolean filter parsing
     let matchedBooleanFilter = false;
-    for (const key of ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'hot', 'island']) {
+    for (const key of ['favorite', 'star', 'unread', 'read', 'clicked', 'seen', 'hot', 'island', 'briefing']) {
       const value = parseBooleanFilter(cleaned, key);
       if (value !== null) {
         filters[key === 'favorite' ? 'star' : key] = value;
@@ -176,6 +180,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     const sortMatch = cleaned.match(/^sort:\s*(desc|asc|recommended|quality|attention)$/i);
     if (sortMatch) {
       sort = sortMatch[1].toLowerCase();
+      sortExplicit = true;
       continue;
     }
 
@@ -215,6 +220,11 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
       continue;
     }
 
+    if (ISO_DATE_TOKEN_PATTERN.test(cleaned)) {
+      filters.date ??= null;
+      continue;
+    }
+
     remainingTokens.push(cleaned);
   }
 
@@ -223,11 +233,17 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     textMode = 'terms';
   }
 
+  const hasSearchIntent = textMode !== 'none' ||
+    Object.values(filters).some(value => value !== null && value !== undefined) ||
+    sortExplicit ||
+    limit !== null;
+
   return {
     text,
     textMode,
     filters,
     sort,
-    limit
+    limit,
+    hasSearchIntent
   };
 };

@@ -94,6 +94,8 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `event:false` | Articles not assigned to an event. |
 | `island:true` | Articles whose event has at least one topic linked to an active interest island for the user. |
 | `island:false` | Articles without an applicable active interest island, including articles without an event. |
+| `briefing:true` | Articles with a nonzero interest score or belonging to an event containing more than one article. |
+| `briefing:false` | Articles with a zero interest score that do not belong to a multi-article event. |
 
 Do not specify contradictory state filters such as `read:true unread:true`.
 They target the same database field, and the later executor rule (`read`) wins
@@ -125,6 +127,12 @@ Island membership follows the semantic relationship tables: an article's event
 must have an `event_topics` assignment whose topic has an `island_topics`
 assignment to a non-archived island owned by the same user. Primary and secondary
 event topics are both considered. Archived islands do not satisfy `island:true`.
+
+Briefing eligibility combines two independent signals as a union. An article
+matches `briefing:true` when its stored `interestScore` is nonzero, including a
+negative score, or when its associated event has `articleCount > 1`. This filter
+does not require event or topic grouping; grouping only controls which
+representative articles are returned after eligibility is established.
 
 Tag values should currently be a single unquoted token. Quoted tag values retain
 their quote characters and therefore should not be used.
@@ -168,6 +176,9 @@ Date filters apply to `publishedAt`.
 
 All weekday names are supported. Only one date filter should be supplied. If
 several parse successfully, later simple date tokens can replace an earlier date.
+Specific dates must be real calendar days; invalid values such as `@2026-02-31`
+or `@2026-99-99` are ignored and, when supplied alone, do not relax the current
+status scope.
 
 ## Sorting
 
@@ -264,7 +275,9 @@ the user ownership boundary remains in force.
 - Keywords and boolean values are case-insensitive.
 - Unknown tokens become free-text terms instead of producing a syntax error.
 - Malformed recognized numeric filters are consumed but produce no active score
-  filter; check saved expressions carefully.
+  filter. When they are the only tokens, they do not relax the current status
+  scope; for example, `quality:nope` in the default view still returns only
+  unread articles. Valid accompanying text or filters continue to apply normally.
 - Missing user identity is an error.
 - No matches is a successful empty result.
 
