@@ -13,7 +13,7 @@ This README documents the search language implemented by the parser and executor
 ```text
 AI agents unread:true @today sort:recommended
 "climate policy" language:en quality:>=0.7
-title:"OpenAI model" author:"Jane Smith" event:true eventCount:>=3
+title:"OpenAI model" author:"Jane Smith" event:true island:true eventCount:>=3
 tag:security favorite:true firstSeen:24h sort:desc limit:50
 event:false freshness:>0.5
 ```
@@ -92,6 +92,8 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `hot:false` | Articles not marked hot. |
 | `event:true` | Articles assigned to an event. |
 | `event:false` | Articles not assigned to an event. |
+| `island:true` | Articles whose event has at least one topic linked to an active interest island for the user. |
+| `island:false` | Articles without an applicable active interest island, including articles without an event. |
 
 Do not specify contradictory state filters such as `read:true unread:true`.
 They target the same database field, and the later executor rule (`read`) wins
@@ -118,6 +120,11 @@ firstSeen IS NULL OR firstSeen >= now - interval
 
 `eventCount` currently supports only a minimum event article count. Operators
 such as `>`, `<`, and `=` are not supported for this filter.
+
+Island membership follows the semantic relationship tables: an article's event
+must have an `event_topics` assignment whose topic has an `island_topics`
+assignment to a non-archived island owned by the same user. Primary and secondary
+event topics are both considered. Archived islands do not satisfy `island:true`.
 
 Tag values should currently be a single unquoted token. Quoted tag values retain
 their quote characters and therefore should not be used.
@@ -199,7 +206,7 @@ an override.
 For example:
 
 ```text
-"battery storage" unread:true language:en @lastweek quality:>=0.75 event:true eventCount:>=4 sort:recommended limit:25
+"battery storage" unread:true language:en @lastweek quality:>=0.75 event:true island:true eventCount:>=4 sort:recommended limit:25
 ```
 
 This returns at most 25 canonical English unread articles that:
@@ -208,8 +215,9 @@ This returns at most 25 canonical English unread articles that:
 2. were published during the rolling previous seven days;
 3. have computed quality of at least `0.75`;
 4. belong to an event containing at least four articles;
-5. pass the request/user minimum score thresholds;
-6. are ordered by recommendation score.
+5. have an event topic linked to one of the user's active interest islands;
+6. pass the request/user minimum score thresholds;
+7. are ordered by recommendation score.
 
 Another example combines a narrow title with broader content terms:
 

@@ -16,7 +16,7 @@
         </div>
 
         <!-- Smart Folder Recommendations trigger & results -->
-        <div class="smart-folders-toolbar">
+        <div v-if="aiEnabled" class="smart-folders-toolbar">
             <div>
                 <h4>Smart Folder Insights</h4>
                 <p>Let RSSMonster analyze your reading history and suggest useful smart folders.</p>
@@ -34,16 +34,16 @@
             </button>
         </div>
 
-        <div v-if="smartFolderInsightsLoading" class="settings-group d-flex align-items-center gap-2">
+        <div v-if="aiEnabled && smartFolderInsightsLoading" class="settings-group d-flex align-items-center gap-2">
             <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
             <span>Loading smart folder insights...</span>
         </div>
 
-        <div v-if="smartFolderInsightsError" class="settings-group text-danger">
+        <div v-if="aiEnabled && smartFolderInsightsError" class="settings-group text-danger">
             {{ smartFolderInsightsError }}
         </div>
 
-        <div v-if="smartFolderRecommendations.length" class="settings-group">
+        <div v-if="aiEnabled && smartFolderRecommendations.length" class="settings-group">
             <label>
                 Smart Folder Suggestions
                 <span class="info-icon" title="Suggested based on your reading behavior">
@@ -76,7 +76,7 @@
         </div>
 
         <div
-            v-else-if="smartFolderInsightsLoaded && !smartFolderInsightsLoading && !smartFolderInsightsError"
+            v-else-if="aiEnabled && smartFolderInsightsLoaded && !smartFolderInsightsLoading && !smartFolderInsightsError"
             class="settings-group text-muted small"
         >
             No smart folder insights available yet.
@@ -316,7 +316,7 @@
                         </fieldset>
 
                         <!-- Quality -->
-                        <fieldset class="smart-folder-panel">
+                        <fieldset v-if="aiEnabled" class="smart-folder-panel">
                             <legend>
                                 Quality & Scores
                                 <BootstrapIcon icon="info-circle-fill" title="Set minimum quality and freshness thresholds for matching articles." />
@@ -348,7 +348,7 @@
                         </fieldset>
 
                         <!-- Events -->
-                        <fieldset class="smart-folder-panel">
+                        <fieldset v-if="aiEnabled" class="smart-folder-panel">
                             <legend>
                                 Events & Clusters
                                 <BootstrapIcon icon="info-circle-fill" title="Filter for event articles, non-event articles, or events with a minimum article count." />
@@ -403,9 +403,9 @@
                                 <span>Sort by</span>
                                 <select v-model="draftConfig.sort.field" class="form-select">
                                     <option value="">None</option>
-                                    <option value="recommended">Recommended</option>
-                                    <option value="attention">Most Engaged</option>
-                                    <option value="quality">Quality</option>
+                                    <option v-if="aiEnabled" value="recommended">Recommended</option>
+                                    <option v-if="aiEnabled" value="attention">Most Engaged</option>
+                                    <option v-if="aiEnabled" value="quality">Quality</option>
                                     <option value="published-desc">Published date (newest)</option>
                                     <option value="published-asc">Published date (oldest)</option>
                                 </select>
@@ -922,7 +922,7 @@ const createEmptySmartFolderConfig = () => ({
         minimumCount: 2
     },
     sort: {
-        field: 'recommended'
+        field: ''
     }
 });
 
@@ -952,6 +952,9 @@ export default {
         this.fetchSmartFolders();
     },
     computed: {
+        aiEnabled() {
+            return Boolean(this.$store.data.currentSelection.AIEnabled);
+        },
         generatedSmartFolderQuery() {
             const parts = [];
 
@@ -1068,7 +1071,7 @@ export default {
             const smartFolder = {
                 localId: `local-${Date.now()}`,
                 name: 'New Smart Folder',
-                query: 'sort:recommended limit:50',
+                query: this.aiEnabled ? 'sort:recommended limit:50' : 'limit:50',
                 limitCount: 50
             };
 

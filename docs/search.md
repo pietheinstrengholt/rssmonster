@@ -27,6 +27,7 @@ Find the right articles fast with a few expressive tokens. You can mix free text
 - Freshness: `freshness:>=0.5` (operators: `>`, `<`, `>=`, `<=`, `=`; default is `>=`).
 - Events: `event:true` shows articles that belong to an event; `event:false` shows articles that are not assigned to any event.
 - Event size: `eventCount:>=3` keeps articles whose event has at least 3 articles. `eventCount:3` is accepted as the same minimum-count shorthand.
+- Interest islands: `island:true` keeps articles whose event has at least one primary or secondary topic linked to one of the user's active interest islands. `island:false` keeps articles without such a link, including articles without an event. Archived islands are not applicable.
 - Sort: `sort:desc|asc|recommended|quality|attention`. Recommended, quality, and attention sorts are computed in memory after fetching.
 - Limit: `limit:50` caps results (overrides defaults).
 
@@ -52,7 +53,7 @@ Date filters replace the normal published-date window; they are inclusive of the
 ---
 
 ## Combining Tokens
-- Mix tokens freely: `title:ai tag:ml @yesterday sort:attention limit:100`
+- Mix tokens freely: `title:ai tag:ml island:true @yesterday sort:attention limit:100`
 - Title + content: `title:typescript decorators` -> title matches "typescript", content matches any of `decorators`.
 - Status + date: `unread:true @today` keeps only unread items from the last 24 hours.
 

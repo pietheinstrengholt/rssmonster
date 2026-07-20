@@ -25,7 +25,7 @@ const normalizeSort = sortValue => {
 /**
  * Get all article IDs based on query parameters with advanced filtering.
  * Supports field filters in search string: favorite:true/false, unread:true/false, clicked:true/false,
- * event:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
+ * event:true/false, island:true/false, eventCount:>=2, tag:name, title:text, author:text, language:en,
  * sort:desc/asc/recommended/quality/attention, and date filters: @YYYY-MM-DD, @today, @yesterday, @"N days ago", @"last DayName"
  */
 // Searches article ids for a user using query-string filters, score thresholds, feed/category scope, and optional ranking.
@@ -95,7 +95,8 @@ export const searchArticles = async ({
       quality: qualityFilter = null,
       freshness: freshnessFilter = null,
       event = null,
-      hot: hotFilter = null
+      hot: hotFilter = null,
+      island: islandFilter = null
     } = filters;
     const eventCountFilter = Number.isFinite(filters.eventCount) ? filters.eventCount : null;
 
@@ -213,6 +214,7 @@ export const searchArticles = async ({
       status,
       rawSearch,
       event,
+      islandFilter,
       grouping,
       eventCountFilter,
       firstSeenAgeFilter,

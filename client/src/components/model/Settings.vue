@@ -90,7 +90,7 @@ export default {
 
       return [
         { key: 'welcome', label: 'Welcome', description: 'Settings overview', icon: 'info-circle-fill', visible: true },
-        { key: 'smartfolders', label: 'Smart Folders', description: 'Organize articles with AI', icon: 'folder-fill', visible: aiEnabled },
+        { key: 'smartfolders', label: 'Smart Folders', description: 'Create dynamic saved searches', icon: 'folder-fill', visible: true },
         { key: 'actions', label: 'Actions', description: 'Configure article actions', icon: 'lightning-charge-fill', visible: true },
         { key: 'scores', label: 'Scores', description: 'Set AI score thresholds', icon: 'bar-chart-fill', visible: aiEnabled },
         { key: 'topics', label: 'Topics', description: 'Manage events and topics', icon: 'diagram-3-fill', visible: aiEnabled },

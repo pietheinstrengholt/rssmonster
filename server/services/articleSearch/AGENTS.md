@@ -63,7 +63,7 @@ The fundamental eligibility dimensions are:
 - Canonical visibility: duplicate or non-canonical articles are excluded according to the product's canonical article rules.
 - Reading state: unread, read, favorite, clicked, seen, hot, or all.
 - Text relevance: title and article text match the requested term or phrase intent.
-- Metadata: tag, title, author, language, date, first-seen age, event state, event size, or grouping concept.
+- Metadata: tag, title, author, language, date, first-seen age, event state, event size, interest-island applicability, or grouping concept.
 - Quality gates: advertisement, sentiment, and quality thresholds are all satisfied.
 
 Eligibility is binary. Ranking must not resurrect articles that failed eligibility.

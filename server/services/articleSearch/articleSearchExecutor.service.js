@@ -35,6 +35,7 @@ export const buildArticleSearchQuery = ({
   status,
   rawSearch,
   event,
+  islandFilter,
   grouping,
   eventCountFilter,
   firstSeenAgeFilter,
@@ -172,6 +173,29 @@ export const buildArticleSearchQuery = ({
 
   if (event !== null) {
     articleQuery.where.eventId = event ? { [Op.not]: null } : { [Op.is]: null };
+  }
+
+  if (islandFilter !== null) {
+    const islandLinkPredicate = islandFilter ? 'EXISTS' : 'NOT EXISTS';
+    appendAndCondition(articleQuery.where, Article.sequelize.literal(`
+      ${islandLinkPredicate} (
+        SELECT 1
+        FROM events island_event
+        INNER JOIN event_topics island_event_topic
+          ON island_event_topic.eventId = island_event.id
+        INNER JOIN topics island_topic
+          ON island_topic.id = island_event_topic.topicId
+          AND island_topic.userId = articles.userId
+        INNER JOIN island_topics island_membership
+          ON island_membership.topicId = island_topic.id
+        INNER JOIN islands interest_island
+          ON interest_island.id = island_membership.islandId
+          AND interest_island.userId = articles.userId
+          AND interest_island.archivedInd = 0
+        WHERE island_event.id = articles.eventId
+          AND island_event.userId = articles.userId
+      )
+    `));
   }
 
   if (Number.isFinite(eventCountFilter)) {

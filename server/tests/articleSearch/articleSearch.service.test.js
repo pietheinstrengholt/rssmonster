@@ -3,7 +3,20 @@ import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import { searchArticles } from '../../services/articleSearch/articleSearch.service.js';
 
-const { sequelize, User, Category, Feed, Article, Event, Tag, Setting } = db;
+const {
+  sequelize,
+  User,
+  Category,
+  Feed,
+  Article,
+  Event,
+  Topic,
+  EventTopic,
+  Island,
+  IslandTopic,
+  Tag,
+  Setting
+} = db;
 
 describe('articleSearch.service', () => {
   let user;
@@ -283,6 +296,107 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).toContain(articles.starred.id);
       // clicked is read but not starred
       expect(result.itemIds).not.toContain(articles.clicked.id);
+    });
+  });
+
+  describe('island filtering', () => {
+    it('filters articles through active island memberships on any event topic', async () => {
+      let linkedArticle;
+      let unlinkedArticle;
+      let linkedEvent;
+      let unlinkedEvent;
+      let topic;
+      let island;
+
+      try {
+        linkedArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/article-island-linked',
+          title: 'Island-linked article',
+          contentOriginal: '<p>Linked through an event topic to an interest island.</p>',
+          contentHtml: 'Linked through an event topic to an interest island.',
+          status: 'unread',
+          publishedAt: new Date(),
+          advertisementScore: 80,
+          sentimentScore: 80,
+          qualityScore: 80
+        });
+        unlinkedArticle = await Article.create({
+          userId: user.id,
+          feedId: feed.id,
+          url: 'https://example.com/article-island-unlinked',
+          title: 'Article without an island',
+          contentOriginal: '<p>This event has no applicable interest island.</p>',
+          contentHtml: 'This event has no applicable interest island.',
+          status: 'unread',
+          publishedAt: new Date(),
+          advertisementScore: 80,
+          sentimentScore: 80,
+          qualityScore: 80
+        });
+        linkedEvent = await Event.create({
+          userId: user.id,
+          representativeArticleId: linkedArticle.id,
+          topicId: null
+        });
+        unlinkedEvent = await Event.create({
+          userId: user.id,
+          representativeArticleId: unlinkedArticle.id,
+          topicId: null
+        });
+        await linkedArticle.update({ eventId: linkedEvent.id });
+        await unlinkedArticle.update({ eventId: unlinkedEvent.id });
+
+        topic = await Topic.create({
+          userId: user.id,
+          name: 'Search island topic',
+          topicKey: 'search-island-topic'
+        });
+        island = await Island.create({
+          userId: user.id,
+          label: 'Search interest island',
+          weight: 0.8
+        });
+        await EventTopic.create({
+          eventId: linkedEvent.id,
+          topicId: topic.id,
+          confidence: 0.9,
+          rank: 1,
+          primaryInd: false
+        });
+        await IslandTopic.create({
+          islandId: island.id,
+          topicId: topic.id,
+          similarity: 0.9,
+          confidence: 0.9
+        });
+
+        const included = await searchArticles({ userId: user.id, search: 'island:true', status: '%' });
+        const excluded = await searchArticles({ userId: user.id, search: 'island:false', status: '%' });
+
+        expect(included.itemIds).toContain(linkedArticle.id);
+        expect(included.itemIds).not.toContain(unlinkedArticle.id);
+        expect(excluded.itemIds).toContain(unlinkedArticle.id);
+        expect(excluded.itemIds).not.toContain(linkedArticle.id);
+        expect(excluded.itemIds).toContain(articles.recent.id);
+
+        await island.update({ archivedInd: true, archivedAt: new Date() });
+        const archivedIncluded = await searchArticles({ userId: user.id, search: 'island:true', status: '%' });
+        const archivedExcluded = await searchArticles({ userId: user.id, search: 'island:false', status: '%' });
+
+        expect(archivedIncluded.itemIds).not.toContain(linkedArticle.id);
+        expect(archivedExcluded.itemIds).toContain(linkedArticle.id);
+      } finally {
+        if (linkedEvent) await EventTopic.destroy({ where: { eventId: linkedEvent.id } });
+        if (island) await IslandTopic.destroy({ where: { islandId: island.id } });
+        if (linkedEvent) await Event.destroy({ where: { id: linkedEvent.id } });
+        if (unlinkedEvent) await Event.destroy({ where: { id: unlinkedEvent.id } });
+        if (island) await Island.destroy({ where: { id: island.id } });
+        if (topic) await Topic.destroy({ where: { id: topic.id } });
+        if (linkedArticle) await Article.destroy({ where: { id: linkedArticle.id } });
+        if (unlinkedArticle) await Article.destroy({ where: { id: unlinkedArticle.id } });
+      }
     });
   });
 

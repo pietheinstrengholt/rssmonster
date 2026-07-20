@@ -80,6 +80,16 @@ describe('articleQueryParser.service', () => {
     expect(result.textMode).toBe('none');
   });
 
+  it('parses island boolean filters', () => {
+    const included = parseArticleQuery({ search: 'island:true' });
+    const excluded = parseArticleQuery({ search: 'island:false' });
+
+    expect(included.filters.island).toBe(true);
+    expect(excluded.filters.island).toBe(false);
+    expect(included.textMode).toBe('none');
+    expect(excluded.textMode).toBe('none');
+  });
+
   it('parses normal article view and event count shorthand', () => {
     const result = parseArticleQuery({ search: 'event:false eventCount:2' });
 

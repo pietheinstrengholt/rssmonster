@@ -115,8 +115,9 @@ Numeric filters:
 - freshness:<number>, freshness:>number, freshness:<number, freshness:>=number, freshness:<=number
 - eventCount:<number>, eventCount:>=number
 
-Event filters:
+Semantic relationship filters:
 - event:true | event:false
+- island:true | island:false
 
 Date filters:
 - @YYYY-MM-DD
