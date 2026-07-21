@@ -230,6 +230,7 @@ export const getSettings = async (req, res, _next) => {
     let minQualityScore = 0;
     let viewMode = "full";
     let grouping = "none";
+    let includeDevelopingEvents = false;
     let themeMode = 'system';
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
@@ -245,6 +246,7 @@ export const getSettings = async (req, res, _next) => {
       minQualityScore = settings.minQualityScore || 0;
       viewMode = settings.viewMode || 'full';
       grouping = settings.grouping || 'none';
+      includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
       themeMode = settings.themeMode || 'system';
     }
 
@@ -261,6 +263,7 @@ export const getSettings = async (req, res, _next) => {
       minQualityScore: minQualityScore,
       viewMode: viewMode,
       grouping: String(grouping),
+      includeDevelopingEvents,
       themeMode: themeMode,
       AIEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
@@ -277,7 +280,12 @@ export const setSettings = async (req, res, _next) => {
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
-    const { minAdvertisementScore, minSentimentScore, minQualityScore } = req.body;
+    const {
+      minAdvertisementScore,
+      minSentimentScore,
+      minQualityScore,
+      includeDevelopingEvents
+    } = req.body;
 
     // Validate score values (0-100)
     const validateScore = (score, name) => {
@@ -288,32 +296,39 @@ export const setSettings = async (req, res, _next) => {
       return numScore;
     };
 
-    const validatedScores = {
+    const validatedSettings = {
       minAdvertisementScore: validateScore(minAdvertisementScore, 'minAdvertisementScore'),
       minSentimentScore: validateScore(minSentimentScore, 'minSentimentScore'),
       minQualityScore: validateScore(minQualityScore, 'minQualityScore')
     };
+
+    if (includeDevelopingEvents !== undefined) {
+      if (typeof includeDevelopingEvents !== 'boolean') {
+        throw new Error('includeDevelopingEvents must be a boolean');
+      }
+      validatedSettings.includeDevelopingEvents = includeDevelopingEvents;
+    }
 
     // Find or create settings for user
     const settings = await Setting.findOne({ where: { userId: userId } });
 
     if (settings) {
       console.log("Updating existing settings for user:", userId);
-      console.log("Validated validatedScores:", validatedScores);
+      console.log("Validated settings:", validatedSettings);
       // Update existing settings
-      await settings.update(validatedScores);
+      await settings.update(validatedSettings);
     } else {
       // Create new settings
       await Setting.create({
         userId: userId,
-        ...validatedScores
+        ...validatedSettings
       });
     }
 
     return res.status(200).json({
       success: true,
       message: 'Settings saved successfully',
-      ...validatedScores
+      ...validatedSettings
     });
   } catch (err) {
     console.error('Error in setSettings:', err);

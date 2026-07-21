@@ -115,7 +115,165 @@ Creating a new Event is the fallback.
 
 ---
 
+# Event Article Pointers
+
+Events have two article pointers with distinct responsibilities.
+
+## Stable representative
+
+```
+representativeArticleId
+```
+
+This is the semantic and stable event identity.
+
+The stable representative is assigned when the Event is created. Normal incremental
+processing must never replace a valid `representativeArticleId` when newer Articles
+join the Event.
+
+## Developing article
+
+```
+developingArticleId
+```
+
+This is the sticky canonical Article used to represent the current developing
+coverage wave.
+
+The developing pointer may move when newer canonical coverage joins an existing
+Event. It is presentation state, not a replacement semantic identity for the Event.
+Do not call `developingArticleId` another representative in code or documentation.
+
+A valid unread developing article is sticky. It must not be replaced by newly
+linked Articles until it is read, invalid, or missing.
+
+Existing Events may validly have:
+
+```
+developingArticleId = null
+```
+
+## Grouped-event mark-read cascade
+
+When a user marks a grouped Event card as read with `grouping = event`, all
+currently linked unread canonical Articles in the same Event become read as well.
+An article-specific read with `grouping = none` never triggers this cascade.
+
+Example before marking the grouped event read:
+
+representativeArticleId = 100
+developingArticleId = 100
+
+article 100 = unread
+article 101 = unread
+article 102 = unread
+
+After the existing grouped-event read operation:
+
+article 100 = read
+article 101 = read
+article 102 = read
+
+representativeArticleId = 100
+developingArticleId = 100
+
+## Developing wave when later coverage arrives
+
+After the previous grouped event has been consumed:
+
+representativeArticleId = 100
+developingArticleId = 100
+
+article 100 = read
+article 101 = read
+article 102 = read
+
+Article 103 later joins:
+
+article 103 = unread
+
+Because the current developing article is read, update:
+
+developingArticleId = 103
+
+Keep:
+
+representativeArticleId = 100
+
+Expected grouped unread behavior:
+
+includeDevelopingEvents = false
+    Use representativeArticleId.
+    Article 100 is read.
+    Event remains hidden.
+
+includeDevelopingEvents = true
+    Use developingArticleId.
+    Article 103 is unread.
+    Event appears once as a developing story.
+
+If articles 104 and 105 arrive while article 103 remains unread:
+
+developingArticleId remains 103
+
+When the grouped event card represented by article 103 is marked read, the existing event-wide behavior marks:
+
+article 103 = read
+article 104 = read
+article 105 = read
+
+The pointer remains unchanged:
+
+developingArticleId = 103
+
+## Front-end mark-read context
+
+The front-end communicates how the read action was initiated by passing the current grouping mode.
+
+### grouping = none
+
+The request represents a normal article read.
+
+Behavior:
+
+- Only the selected Article status changes.
+- Other Event members remain unchanged.
+- `developingArticleId` remains unchanged.
+
+### grouping = event
+
+The request represents the grouped Event card.
+
+Behavior:
+
+- All currently linked unread canonical Articles in the Event are marked read.
+- `representativeArticleId` remains unchanged.
+- `developingArticleId` remains unchanged.
+
+A later unread canonical Article joining the Event starts the next developing coverage wave through the normal Event assignment process.
+
+## Shared invariants
+
+1. `representativeArticleId` is the stable event anchor.
+2. `developingArticleId` is the moving Article used to present the latest canonical coverage for an existing Event.
+3. Normal incremental processing may update `developingArticleId` but must never replace a valid `representativeArticleId`.
+4. Article read status remains Article-specific.
+5. Linking an Article to an Event must never inherit or rewrite the Article's status.
+6. The developing-stories setting controls presentation only. It does not control whether `developingArticleId` is maintained.
+7. Event lifecycle status and developing-story presentation are separate concepts.
+
+Article status changes are grouping-aware. An article-specific read changes only the
+selected Article and does not refresh the developing pointer. An event-grouped read
+acknowledges every currently linked unread canonical member while preserving both
+the stable representative and developing pointer.
+
+---
+
 # Event Lifecycle
+
+Lifecycle status describes the Event's semantic age and activity. It does not select
+the developing article and must not be used as a proxy for developing-story
+presentation.
 
 ```
 New Article
@@ -199,13 +357,17 @@ Whenever an Article joins an Event, the Event must be updated.
 Typical updates include:
 
 - event vector
-- representative article
+- developing pointer, when newer canonical coverage qualifies
 - article count
 - source count
 - source diversity
 - event window
 - event strength
 - lifecycle status
+
+The stable representative must remain unchanged during these normal updates.
+Maintaining the developing pointer is independent of whether the user enables
+developing-story presentation.
 
 The in-memory cache and persisted database state must remain consistent.
 
@@ -221,7 +383,8 @@ The cache exists only for the lifetime of the processing scope.
 
 It is never persisted.
 
-The cache should be updated immediately whenever:
+The cache should be updated immediately after the corresponding database
+transaction commits.
 
 - an Article joins an Event
 - a new Event is created

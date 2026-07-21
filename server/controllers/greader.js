@@ -11,9 +11,18 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
  * Based on: https://github.com/FreshRSS/FreshRSS/blob/edge/p/api/greader.php
  * 
  * Documentation:
- * - https://github.com/mihaip/google-reader-api
+ * - https://code.google.com/archive/p/pyrfeed/wikis/GoogleReaderAPI.wiki
  * - https://web.archive.org/web/20130718025427/http://undoc.in/
- * - https://ranchero.com/downloads/GoogleReaderAPI-2009.pdf
+ * - http://ranchero.com/downloads/GoogleReaderAPI-2009.pdf
+ * - https://github.com/mihaip/google-reader-api
+ * - https://web.archive.org/web/20210126113527/https://blog.martindoms.com/2009/08/15/using-the-google-reader-api-part-1
+ * - https://github.com/noinnion/newsplus/blob/master/extensions/GoogleReaderCloneExtension/src/com/noinnion/android/newsplus/extension/google_reader/GoogleReaderClient.java
+ * - https://github.com/ericmann/gReader-Library/blob/master/greader.class.php
+ * - https://github.com/devongovett/reader
+ * - https://github.com/theoldreader/api
+ * - https://www.inoreader.com/developers/
+ * - https://feedhq.readthedocs.io/en/latest/api/index.html
+ * - https://github.com/bazqux/bazqux-api
  */
 
 // Helper to generate auth token

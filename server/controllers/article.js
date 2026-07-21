@@ -293,6 +293,7 @@ const markAsRead = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const body = req.body || {};
+    const statusGrouping = normalizeGrouping(body.grouping);
     const articleIds = Array.isArray(body.articleIds)
       ? body.articleIds
       : String(body.articleIds || '').split(',').filter(Boolean);
@@ -302,17 +303,35 @@ const markAsRead = async (req, res, _next) => {
     }
 
     if (articleIds.length > 0) {
-      const articles = await Article.findAll({
+      const selectedArticles = await Article.findAll({
         where: {
           id: { [Op.in]: articleIds },
           userId: userId,
-          ...canonicalArticleWhere(),
-          status: "unread"
+          ...canonicalArticleWhere()
         },
-        include: [{
-          model: Feed,
-          required: true
-        }]
+        attributes: ['id', 'eventId']
+      });
+
+      const selectedEventIds = statusGrouping === 'event'
+        ? [...new Set(selectedArticles.map(article => article.eventId).filter(Boolean))]
+        : [];
+      const articles = await Article.findAll({
+        where: {
+          userId,
+          ...canonicalArticleWhere(),
+          status: 'unread',
+          ...(selectedEventIds.length > 0
+            ? {
+                [Op.or]: [
+                  { id: { [Op.in]: articleIds } },
+                  { eventId: { [Op.in]: selectedEventIds } }
+                ]
+              }
+            : {
+                id: { [Op.in]: articleIds }
+              })
+        },
+        include: [{ model: Feed, required: true }]
       });
 
       if (!articles.length) {
@@ -342,7 +361,7 @@ const markAsRead = async (req, res, _next) => {
       sort = 'desc',
       tag = null,
       viewMode = 'full',
-      grouping = body.grouping ?? 'none'
+      grouping = statusGrouping
     } = body;
 
     const normalizedGrouping = normalizeGrouping(grouping);

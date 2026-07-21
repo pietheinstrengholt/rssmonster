@@ -83,5 +83,5 @@ export const markAllAsRead = (currentSelection) =>
 /**
  * Mark selected articles as read
  */
-export const markArticlesAsRead = (articleIds) =>
-  api.post('/articles/markasread', { articleIds });
+export const markArticlesAsRead = (articleIds, grouping = 'none') =>
+  api.post('/articles/markasread', { articleIds, grouping });

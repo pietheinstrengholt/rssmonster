@@ -60,6 +60,11 @@ export default (sequelize) => {
         allowNull: false,
         defaultValue: 'none'
       },
+      includeDevelopingEvents: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: false
+      },
       themeMode: {
         type: DataTypes.STRING(10),
         allowNull: false,

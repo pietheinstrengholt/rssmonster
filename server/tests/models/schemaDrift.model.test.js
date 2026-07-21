@@ -18,6 +18,13 @@ describe('model schema declarations', () => {
     );
   });
 
+  it('declares developing-event presentation disabled by default', () => {
+    expect(Setting.rawAttributes.includeDevelopingEvents).toMatchObject({
+      allowNull: false,
+      defaultValue: false
+    });
+  });
+
   it('keeps hotlink timestamps in sync with migrations', () => {
     expect(Hotlink.rawAttributes.createdAt).toMatchObject({
       allowNull: true

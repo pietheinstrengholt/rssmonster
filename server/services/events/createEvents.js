@@ -1,6 +1,6 @@
 // services/events/createEvents.js
 // This service creates a new event from a set of corroborating articles.
-// It initializes event vectors, source diversity, lifecycle status, and optional topic assignment.
+// It assigns the stable representative and initializes event metadata and optional topic assignment.
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
@@ -59,7 +59,7 @@ function computeInitialEventStrength(articleCount) {
   ).toFixed(3));
 }
 
-// This function derives a readable event name from the representative article title.
+// This function derives a readable event name from the stable representative title.
 function generateEventName(article) {
   if (!article?.title) return null;
 
@@ -78,6 +78,9 @@ function generateEventName(article) {
 // This function resolves the vector field used when building a new event centroid.
 function resolveArticleVector(record) {
   if (Array.isArray(record?.eventVector)) return record.eventVector;
+  if (Array.isArray(record?.getDataValue?.('eventVector'))) {
+    return record.getDataValue('eventVector');
+  }
   if (Array.isArray(record?.articleVector)) return record.articleVector;
   return null;
 }
@@ -88,9 +91,68 @@ export async function createAndAssignEvent({
   article,
   cache,
   skipTopicAssignment = false,
-  assignTopicsForEvent = null
+  assignTopicsForEvent = null,
+  transaction = null
 }) {
-  const eventArticles = [...candidateArticles, article];
+  if (!transaction) {
+    return db.sequelize.transaction(managedTransaction => createAndAssignEvent({
+      candidateArticles,
+      article,
+      cache,
+      skipTopicAssignment,
+      assignTopicsForEvent,
+      transaction: managedTransaction
+    }));
+  }
+
+  const proposedArticles = [...candidateArticles, article];
+  const proposedArticlesById = new Map(
+    proposedArticles.map(item => [Number(item.id), item])
+  );
+  const eventArticleIds = [...proposedArticlesById.keys()]
+    .filter(Number.isInteger)
+    .sort((left, right) => left - right);
+
+  if (eventArticleIds.length !== proposedArticlesById.size) {
+    return null;
+  }
+
+  const lockedArticles = await Article.findAll({
+    where: {
+      id: { [Op.in]: eventArticleIds },
+      userId: article.userId,
+      eventId: null,
+      ...canonicalArticleWhere()
+    },
+    order: [['id', 'ASC']],
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+
+  if (lockedArticles.length !== eventArticleIds.length) {
+    return null;
+  }
+
+  const lockedArticlesById = new Map(
+    lockedArticles.map(item => [Number(item.id), item])
+  );
+  const lockedSeedArticle = lockedArticlesById.get(Number(article.id));
+
+  if (!lockedSeedArticle) {
+    return null;
+  }
+
+  for (const lockedArticle of lockedArticles) {
+    const proposedVector = resolveArticleVector(proposedArticlesById.get(Number(lockedArticle.id)));
+    if (proposedVector) {
+      lockedArticle.setDataValue('eventVector', proposedVector);
+    }
+  }
+
+  const eventArticles = [
+    ...lockedArticles.filter(item => Number(item.id) !== Number(lockedSeedArticle.id)),
+    lockedSeedArticle
+  ];
   const vectors = eventArticles
     .map(item => resolveArticleVector(item))
     .filter(vector => Array.isArray(vector));
@@ -102,19 +164,23 @@ export async function createAndAssignEvent({
   const centroid = averageVector(vectors);
 
   const eventWindow = eventWindowFromArticles(eventArticles);
-  const eventWindowStartAt = eventWindow.eventWindowStartAt ?? eventDateFromArticle(article);
-  const eventWindowEndAt = eventWindow.eventWindowEndAt ?? eventDateFromArticle(article);
-  const sourceCount = new Set(eventArticles.map(item => item.feedId)).size;
+  const eventWindowStartAt = eventWindow.eventWindowStartAt ?? eventDateFromArticle(lockedSeedArticle);
+  const eventWindowEndAt = eventWindow.eventWindowEndAt ?? eventDateFromArticle(lockedSeedArticle);
+  const sourceCount = new Set(
+    eventArticles
+      .map(item => item.feedId)
+      .filter(feedId => feedId != null)
+  ).size;
   const sourceDiversityScore = Math.log(sourceCount + 1);
-  const name = generateEventName(article);
+  const name = generateEventName(lockedSeedArticle);
   const eventStrength = computeInitialEventStrength(eventArticles.length);
 
-  const eventArticleIds = eventArticles.map(item => item.id);
-
+  // A new event starts with the seed article as both its stable anchor and developing article.
   const newEvent = await Event.create({
-    userId: article.userId,
+    userId: lockedSeedArticle.userId,
     topicId: null,
-    representativeArticleId: article.id,
+    representativeArticleId: lockedSeedArticle.id,
+    developingArticleId: lockedSeedArticle.id,
     name,
     articleCount: eventArticles.length,
     eventStrength,
@@ -124,7 +190,7 @@ export async function createAndAssignEvent({
     status: resolveEventStatus(eventArticles.length, eventWindowEndAt),
     sourceCount,
     sourceDiversityScore
-  });
+  }, { transaction });
 
   if (!newEvent?.id) {
     console.warn(
@@ -133,22 +199,30 @@ export async function createAndAssignEvent({
     return null;
   }
 
-  await Article.update(
+  const [assignedArticleCount] = await Article.update(
     { eventId: newEvent.id },
     {
       where: {
         id: { [Op.in]: eventArticleIds },
+        userId: lockedSeedArticle.userId,
+        eventId: null,
         ...canonicalArticleWhere()
-      }
+      },
+      transaction
     }
   );
+
+  if (assignedArticleCount !== eventArticleIds.length) {
+    throw new Error(`Failed to assign all articles to new event ${newEvent.id}`);
+  }
 
   let primaryEventTopicId = null;
 
   if (!skipTopicAssignment && typeof assignTopicsForEvent === 'function') {
     primaryEventTopicId = await assignTopicsForEvent({
       event: newEvent,
-      eventTopicVector: centroid
+      eventTopicVector: centroid,
+      transaction
     });
 
     if (primaryEventTopicId) {
@@ -157,7 +231,9 @@ export async function createAndAssignEvent({
   }
 
   if (cache) {
-    cache.add(newEvent);
+    transaction.afterCommit(() => {
+      cache.add(newEvent);
+    });
   }
 
   return newEvent.id;

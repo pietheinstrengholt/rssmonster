@@ -261,12 +261,16 @@ async function loadEventTopicAssignments(eventId) {
   return normalizeTopicAssignments(rows);
 }
 
-// This function replaces the EventTopic rows for one event and updates the event primary topic.
-async function persistEventTopicAssignments(event, topicAssignments) {
+// This function replaces EventTopic rows and optionally persists the denormalized primary topic.
+async function persistEventTopicAssignments(event, topicAssignments, options = {}) {
+  const { transaction = null, updateEvent = true } = options;
   const normalizedAssignments = normalizeTopicAssignments(topicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
 
-  await EventTopic.destroy({ where: { eventId: event.id } });
+  await EventTopic.destroy({
+    where: { eventId: event.id },
+    transaction
+  });
 
   if (normalizedAssignments.length) {
     await EventTopic.bulkCreate(
@@ -276,12 +280,15 @@ async function persistEventTopicAssignments(event, topicAssignments) {
         confidence: assignment.confidence,
         rank: assignment.rank,
         primaryInd: assignment.primaryInd
-      }))
+      })),
+      { transaction }
     );
   }
 
-  await event.update({ topicId: primaryId });
-  event.topicId = primaryId;
+  if (updateEvent) {
+    await event.update({ topicId: primaryId }, { transaction });
+    event.topicId = primaryId;
+  }
 
   return normalizedAssignments;
 }
@@ -397,7 +404,7 @@ async function createAndAssignEvent({
     article,
     cache,
     skipTopicAssignment,
-    assignTopicsForEvent: async ({ event, eventTopicVector }) => {
+    assignTopicsForEvent: async ({ event, eventTopicVector, transaction }) => {
       const eventTopicAssignments = await deriveEventTopicAssignments({
         event,
         eventTopicVector,
@@ -405,8 +412,12 @@ async function createAndAssignEvent({
         assignmentContext
       });
 
-      const persistedEventTopics = await persistEventTopicAssignments(event, eventTopicAssignments);
-      await syncEventTopicsToArticles(event.id, persistedEventTopics);
+      const persistedEventTopics = await persistEventTopicAssignments(
+        event,
+        eventTopicAssignments,
+        { transaction }
+      );
+      await syncEventTopicsToArticles(event.id, persistedEventTopics, transaction);
 
       return primaryTopicId(persistedEventTopics);
     }
@@ -866,7 +877,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   }
 
   if (bestEvent && bestSignal) {
-    await updateExistingEvent({
+    const updatedEventId = await updateExistingEvent({
       article,
       articleEventVector,
       bestEvent,
@@ -874,7 +885,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       bestScore,
       matchSignal: bestSignal,
       skipTopicAssignment,
-      assignTopicsForEvent: async ({ event, eventTopicVector }) => {
+      assignTopicsForEvent: async ({ event, eventTopicVector, transaction }) => {
         const eventTopicAssignments = await deriveEventTopicAssignments({
           event,
           eventTopicVector,
@@ -882,16 +893,22 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
           assignmentContext
         });
 
-        const persistedEventTopics = await persistEventTopicAssignments(event, eventTopicAssignments);
-        await syncEventTopicsToArticles(event.id, persistedEventTopics);
+        const persistedEventTopics = await persistEventTopicAssignments(
+          event,
+          eventTopicAssignments,
+          { transaction, updateEvent: false }
+        );
+        await syncEventTopicsToArticles(event.id, persistedEventTopics, transaction);
 
         return primaryTopicId(persistedEventTopics);
       }
     });
 
+    if (!updatedEventId) return null;
+
     const eventTopicAssignments = skipTopicAssignment
       ? []
-      : await loadEventTopicAssignments(bestEvent.id);
+      : await loadEventTopicAssignments(updatedEventId);
 
     upsertRunContextRecord(runContext, {
       id: article.id,
@@ -902,21 +919,21 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
       createdAt: article.createdAt,
       topicId: primaryTopicId(eventTopicAssignments),
       topicAssignments: eventTopicAssignments,
-      eventId: bestEvent.id,
+      eventId: updatedEventId,
       eventVector: articleEventVector
     });
 
-    incrementExistingEventAssignment(runContext, bestEvent.id);
-    articleCandidateCache?.updateEventId?.([article.id], bestEvent.id);
+    incrementExistingEventAssignment(runContext, updatedEventId);
+    articleCandidateCache?.updateEventId?.([article.id], updatedEventId);
     conciseEventLog(
-      `article=${article.id} → event=${bestEvent.id} ` +
+      `article=${article.id} → event=${updatedEventId} ` +
       `sim=${formatEventMetric(bestSignal.semantic)} ` +
       `head=${formatEventMetric(bestSignal.headline, 2)} ` +
       `temp=${formatEventMetric(bestSignal.temporal, 2)} ` +
       `overlap=${bestSignal.overlap ?? 0} decision=existing-event`
     );
 
-    return bestEvent.id;
+    return updatedEventId;
   }
 
   await assignTopicOnly({ article });
@@ -953,7 +970,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
   const corroboratedSourceCount = new Set([
     article.feedId,
     ...unassignedCandidates.map(candidate => candidate.feedId)
-  ]).size;
+  ].filter(feedId => feedId != null)).size;
 
   if (EVENT_DEBUG) {
     debugEventLog(`article=${article.id} candidate-eval`, {
@@ -998,7 +1015,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     });
 
     if (candidateEvent) {
-      await updateExistingEvent({
+      const updatedEventId = await updateExistingEvent({
         article,
         articleEventVector,
         bestEvent: candidateEvent,
@@ -1010,7 +1027,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
           acceptedCandidateCount: selectedCandidateEvent.acceptedCandidateCount
         },
         skipTopicAssignment,
-        assignTopicsForEvent: async ({ event, eventTopicVector }) => {
+        assignTopicsForEvent: async ({ event, eventTopicVector, transaction }) => {
           const eventTopicAssignments = await deriveEventTopicAssignments({
             event,
             eventTopicVector,
@@ -1018,16 +1035,22 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
             assignmentContext
           });
 
-          const persistedEventTopics = await persistEventTopicAssignments(event, eventTopicAssignments);
-          await syncEventTopicsToArticles(event.id, persistedEventTopics);
+          const persistedEventTopics = await persistEventTopicAssignments(
+            event,
+            eventTopicAssignments,
+            { transaction, updateEvent: false }
+          );
+          await syncEventTopicsToArticles(event.id, persistedEventTopics, transaction);
 
           return primaryTopicId(persistedEventTopics);
         }
       });
 
+      if (!updatedEventId) return null;
+
       const eventTopicAssignments = skipTopicAssignment
         ? []
-        : await loadEventTopicAssignments(candidateEvent.id);
+        : await loadEventTopicAssignments(updatedEventId);
 
       upsertRunContextRecord(runContext, {
         id: article.id,
@@ -1038,18 +1061,18 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         createdAt: article.createdAt,
         topicId: primaryTopicId(eventTopicAssignments),
         topicAssignments: eventTopicAssignments,
-        eventId: candidateEvent.id,
+        eventId: updatedEventId,
         eventVector: articleEventVector
       });
 
-      incrementExistingEventAssignment(runContext, candidateEvent.id);
-      articleCandidateCache?.updateEventId?.([article.id], candidateEvent.id);
+      incrementExistingEventAssignment(runContext, updatedEventId);
+      articleCandidateCache?.updateEventId?.([article.id], updatedEventId);
       const selectedCandidateSignal = strongestAcceptedCandidateSignal(
         candidateResult.evaluatedSignals,
-        candidateEvent.id
+        updatedEventId
       );
       conciseEventLog(
-        `article=${article.id} → event=${candidateEvent.id} ` +
+        `article=${article.id} → event=${updatedEventId} ` +
         `sim=${formatEventMetric(selectedCandidateEvent.averageSemantic)} ` +
         `head=${formatEventMetric(selectedCandidateSignal?.headline, 2)} ` +
         `temp=${formatEventMetric(selectedCandidateSignal?.temporal, 2)} ` +
@@ -1066,7 +1089,7 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
         });
       }
 
-      return candidateEvent.id;
+      return updatedEventId;
     }
   }
 

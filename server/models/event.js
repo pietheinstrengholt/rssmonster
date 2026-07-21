@@ -33,6 +33,12 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Moving presentation article for the event. Nullable until a developing article is selected.
+      developingArticleId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
       // Human-readable name/title for the event, used in the UI. Nullable because it may be generated after creation.
       name: {
         type: DataTypes.STRING(255),

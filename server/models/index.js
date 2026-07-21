@@ -145,6 +145,18 @@ Event.belongsTo(Topic, { foreignKey: 'topicId', as: 'primaryTopic' });
 // Event ↔ Article
 Event.hasMany(Article, { foreignKey: 'eventId', onDelete: 'SET NULL', as: 'articles' });
 Article.belongsTo(Event, { foreignKey: 'eventId', as: 'event' });
+Event.belongsTo(Article, {
+  as: 'representativeArticle',
+  foreignKey: 'representativeArticleId',
+  onUpdate: 'CASCADE',
+  onDelete: 'CASCADE'
+});
+Event.belongsTo(Article, {
+  as: 'developingArticle',
+  foreignKey: 'developingArticleId',
+  onUpdate: 'CASCADE',
+  onDelete: 'CASCADE'
+});
 
 // Article duplicate traceability
 Article.belongsTo(Article, { foreignKey: 'duplicateOfArticleId', as: 'canonicalArticle' });

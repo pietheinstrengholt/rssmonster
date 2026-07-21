@@ -6,6 +6,7 @@ import {
   EVENT_STRENGTH_CONFIG
 } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
+import { selectDevelopingArticleId } from './developingArticlePointer.js';
 import {
   articleEventTimestamp,
   eventWindowFromArticles
@@ -93,19 +94,27 @@ export function computeEventStrength({
   ).toFixed(3));
 }
 
-// This function recomputes denormalized event fields for events touched during assignment.
-export async function reconcileTouchedEvents(userId, touchedEventIds) {
-  const touchedIds = [...touchedEventIds];
+// This function recomputes event metadata while preserving the stable representative and valid developing pointer.
+export async function reconcileTouchedEvents(userId, touchedEventIds, transaction = null) {
+  if (!transaction) {
+    return db.sequelize.transaction(managedTransaction => reconcileTouchedEvents(
+      userId,
+      touchedEventIds,
+      managedTransaction
+    ));
+  }
+
+  const touchedIds = [...new Set([...touchedEventIds].map(Number).filter(Number.isInteger))]
+    .sort((left, right) => left - right);
 
   const events = await Event.findAll({
     where: {
       id: { [Op.in]: touchedIds },
       userId
     },
-    order: [
-      ['eventWindowEndAt', 'ASC'],
-      ['id', 'ASC']
-    ]
+    order: [['id', 'ASC']],
+    transaction,
+    lock: transaction.LOCK.UPDATE
   });
 
   const allEventArticles = await Article.findAll({
@@ -114,7 +123,23 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
       userId,
       ...canonicalArticleWhere()
     },
-    attributes: ['id', 'eventId', 'feedId', 'publishedAt', 'createdAt', 'articleVector']
+    attributes: [
+      'id',
+      'eventId',
+      'feedId',
+      'status',
+      'publishedAt',
+      'createdAt',
+      'articleVector'
+    ],
+    order: [
+      ['eventId', 'ASC'],
+      ['publishedAt', 'DESC'],
+      ['createdAt', 'DESC'],
+      ['id', 'DESC']
+    ],
+    transaction,
+    lock: transaction.LOCK.UPDATE
   });
 
   const articlesByEventId = {};
@@ -129,7 +154,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
     const eventArticles = articlesByEventId[event.id] || [];
 
     if (!eventArticles.length) {
-      await event.destroy();
+      await event.destroy({ transaction });
       continue;
     }
 
@@ -149,8 +174,10 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
       articleCount: eventArticles.length,
       topicEventCount: 1
     });
+    const developingArticleId = selectDevelopingArticleId(event, eventArticles);
 
     await event.update({
+      developingArticleId,
       articleCount: eventArticles.length,
       eventVector,
       eventWindowStartAt,
@@ -159,7 +186,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds) {
       sourceCount,
       sourceDiversityScore,
       eventStrength: strength
-    });
+    }, { transaction });
 
     console.log(
       `[EVENT] Reconciled event ${event.id}` +

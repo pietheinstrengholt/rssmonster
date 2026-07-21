@@ -8,14 +8,15 @@ const { Article, ArticleTopic } = db;
 
 // This function mirrors event topic assignments to each article in the event.
 // It only replaces event-owned ArticleTopic rows so behavioral evidence is preserved.
-export async function syncEventTopicsToArticles(eventId, eventTopicAssignments) {
+export async function syncEventTopicsToArticles(eventId, eventTopicAssignments, transaction = null) {
   const normalizedAssignments = normalizeTopicAssignments(eventTopicAssignments);
   const primaryId = primaryTopicId(normalizedAssignments);
 
   const eventArticles = await Article.findAll({
     where: { eventId, ...canonicalArticleWhere() },
     attributes: ['id'],
-    raw: true
+    raw: true,
+    transaction
   });
 
   const articleIds = eventArticles.map(article => Number(article.id)).filter(Boolean);
@@ -29,7 +30,8 @@ export async function syncEventTopicsToArticles(eventId, eventTopicAssignments) 
           `(SELECT id FROM topics WHERE topicType IN ('event', 'hybrid'))`
         )
       }
-    }
+    },
+    transaction
   });
 
   if (normalizedAssignments.length) {
@@ -46,7 +48,7 @@ export async function syncEventTopicsToArticles(eventId, eventTopicAssignments) 
       }
     }
 
-    await ArticleTopic.bulkCreate(rows);
+    await ArticleTopic.bulkCreate(rows, { transaction });
   }
 
   // Article.topicId represents the primary event/hybrid topic only.
@@ -56,7 +58,8 @@ export async function syncEventTopicsToArticles(eventId, eventTopicAssignments) 
     {
       where: {
         id: { [Op.in]: articleIds }
-      }
+      },
+      transaction
     }
   );
 

@@ -287,6 +287,7 @@ describe('article ownership authorization', () => {
     const event = await Event.create({
       userId: owner.id,
       representativeArticleId: article.id,
+      developingArticleId: article.id,
       name: `${owner.username} event`,
       articleCount: 2
     });
@@ -307,10 +308,146 @@ describe('article ownership authorization', () => {
 
     await article.reload();
     await relatedArticle.reload();
+    await event.reload();
 
     expect(res.status).toBe(200);
     expect(article.status).toBe('read');
     expect(relatedArticle.status).toBe('read');
+    expect(event.representativeArticleId).toBe(article.id);
+    expect(event.developingArticleId).toBe(article.id);
     expect(res.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
+  });
+
+  it('mark-as-seen keeps an article-specific read from refreshing the developing pointer', async () => {
+    const owner = await createUser(uniqueName('developing-pointer-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const newerArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/newer-developing-article`,
+      title: `${owner.username} newer developing article`,
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: article.id,
+      developingArticleId: article.id,
+      name: `${owner.username} developing event`,
+      articleCount: 2
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [article.id, newerArticle.id] } }
+    );
+
+    const res = await request(app)
+      .post(`/api/articles/markasseen/${article.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        selectedStatus: 'unread',
+        grouping: 'none',
+        visibleSeconds: 120
+      });
+
+    await article.reload();
+    await newerArticle.reload();
+    await event.reload();
+
+    expect(res.status).toBe(200);
+    expect(article.status).toBe('read');
+    expect(newerArticle.status).toBe('unread');
+    expect(event.representativeArticleId).toBe(article.id);
+    expect(event.developingArticleId).toBe(article.id);
+  });
+
+  it('mark-as-read with no grouping updates only selected articles and preserves pointers', async () => {
+    const owner = await createUser(uniqueName('ungrouped-read-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const siblingArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/ungrouped-read-sibling`,
+      title: `${owner.username} ungrouped read sibling`,
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: article.id,
+      developingArticleId: article.id,
+      name: `${owner.username} ungrouped read event`,
+      articleCount: 2
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [article.id, siblingArticle.id] } }
+    );
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: [article.id], grouping: 'none' });
+
+    await article.reload();
+    await siblingArticle.reload();
+    await event.reload();
+
+    expect(response.status).toBe(200);
+    expect(article.status).toBe('read');
+    expect(siblingArticle.status).toBe('unread');
+    expect(event.representativeArticleId).toBe(article.id);
+    expect(event.developingArticleId).toBe(article.id);
+  });
+
+  it('mark-as-read with event grouping acknowledges the event without moving pointers', async () => {
+    const owner = await createUser(uniqueName('grouped-read-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const siblingArticles = await Promise.all([
+      Article.create({
+        userId: owner.id,
+        feedId: feed.id,
+        status: 'unread',
+        url: `https://example.com/${owner.username}/grouped-read-sibling-one`,
+        title: `${owner.username} grouped read sibling one`,
+        publishedAt: new Date('2026-05-01T11:00:00Z')
+      }),
+      Article.create({
+        userId: owner.id,
+        feedId: feed.id,
+        status: 'unread',
+        url: `https://example.com/${owner.username}/grouped-read-sibling-two`,
+        title: `${owner.username} grouped read sibling two`,
+        publishedAt: new Date('2026-05-01T12:00:00Z')
+      })
+    ]);
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: article.id,
+      developingArticleId: article.id,
+      name: `${owner.username} grouped read event`,
+      articleCount: 3
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [article.id, ...siblingArticles.map(item => item.id)] } }
+    );
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: [article.id], grouping: 'event' });
+
+    await Promise.all([article.reload(), ...siblingArticles.map(item => item.reload())]);
+    await event.reload();
+
+    expect(response.status).toBe(200);
+    expect([article, ...siblingArticles].map(item => item.status)).toEqual([
+      'read',
+      'read',
+      'read'
+    ]);
+    expect(event.representativeArticleId).toBe(article.id);
+    expect(event.developingArticleId).toBe(article.id);
   });
 });

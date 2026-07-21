@@ -1,18 +1,14 @@
 // services/events/updateEvents.js
 // This service updates an existing event when a new article joins it.
-// It blends event vectors, refreshes lifecycle/source stats, and keeps event topic links in sync.
+// It preserves the stable representative while refreshing event metadata and topic links.
 import db from '../../models/index.js';
 import { EVENT_LIFECYCLE, EVENT_VECTOR_ALPHA } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { blendVector } from '../vectors/index.js';
+import { resolveDevelopingArticleIdForAssignment } from './developingArticlePointer.js';
 import { eventDateFromArticle, eventTimestamp } from './articleEventTime.js';
 
 const { Article, Event } = db;
-const INHERITABLE_ARTICLE_STATUS = 'unread';
-const READ_ARTICLE_STATUS = 'read';
-const EVENT_DEBUG = ['1', 'true', 'yes'].includes(
-  String(process.env.EVENT_DEBUG || process.env.EVENT_RECLUSTER_DEBUG || '').toLowerCase()
-) || process.env.NODE_ENV === 'development';
 
 // This function converts date-like values into timestamps for lifecycle calculations.
 function toTimestamp(value) {
@@ -49,103 +45,19 @@ function blendEventVector(existingVector, incomingVector) {
   return blendVector(existingVector, incomingVector, EVENT_VECTOR_ALPHA);
 }
 
-// This function recalculates source diversity after an article joins an event.
-async function updateSourceDiversity(eventId, userId) {
+// This function calculates source diversity within the current assignment transaction.
+async function resolveSourceDiversity(eventId, userId, transaction) {
   const sourceCount = await Article.count({
     where: { eventId, userId, ...canonicalArticleWhere() },
     distinct: true,
-    col: 'feedId'
-  });
-
-  const sourceDiversityScore = Math.log(sourceCount + 1);
-
-  await Event.update(
-    { sourceCount, sourceDiversityScore },
-    { where: { id: eventId } }
-  );
-
-  return { sourceCount, sourceDiversityScore };
-}
-
-// This function writes read-inheritance decisions when event debug logging is enabled.
-function logReadInheritanceDecision({ article, event, representativeArticleId, decision, reason = null }) {
-  if (!EVENT_DEBUG) return;
-
-  const reasonPart = reason ? ` reason=${reason}` : '';
-  console.log(
-    `[EVENT] inherited read status article=${article.id} event=${event.id} ` +
-    `representative=${representativeArticleId ?? 'none'} decision=${decision}${reasonPart}`
-  );
-}
-
-// This function marks a newly attached unread article read when the event representative was already read.
-export async function inheritReadStatusFromEventRepresentative({ article, event, transaction = null }) {
-  const representativeArticleId = event?.representativeArticleId ?? null;
-
-  if (!article || !event || !representativeArticleId) {
-    logReadInheritanceDecision({
-      article: article || { id: 'unknown' },
-      event: event || { id: 'unknown' },
-      representativeArticleId,
-      decision: 'kept-unread',
-      reason: 'missing-context'
-    });
-    return false;
-  }
-
-  if (article.status !== INHERITABLE_ARTICLE_STATUS) {
-    logReadInheritanceDecision({
-      article,
-      event,
-      representativeArticleId,
-      decision: 'kept-unread',
-      reason: 'article-not-unread'
-    });
-    return false;
-  }
-
-  const representativeArticle = await Article.findOne({
-    where: {
-      id: representativeArticleId,
-      userId: event.userId
-    },
-    attributes: ['id', 'status'],
+    col: 'feedId',
     transaction
   });
 
-  if (!representativeArticle) {
-    logReadInheritanceDecision({
-      article,
-      event,
-      representativeArticleId,
-      decision: 'kept-unread',
-      reason: 'representative-missing'
-    });
-    return false;
-  }
-
-  if (representativeArticle.status !== READ_ARTICLE_STATUS) {
-    logReadInheritanceDecision({
-      article,
-      event,
-      representativeArticleId,
-      decision: 'kept-unread',
-      reason: 'representative-unread'
-    });
-    return false;
-  }
-
-  await article.update({ status: READ_ARTICLE_STATUS }, { transaction });
-  article.status = READ_ARTICLE_STATUS;
-
-  logReadInheritanceDecision({
-    article,
-    event,
-    representativeArticleId,
-    decision: 'marked-read'
-  });
-
-  return true;
+  return {
+    sourceCount,
+    sourceDiversityScore: Math.log(sourceCount + 1)
+  };
 }
 
 // This function attaches an article to an existing event and refreshes event/topic denormalization.
@@ -160,53 +72,99 @@ export async function assignArticleToExistingEvent({
   assignTopicsForEvent = null,
   transaction = null
 }) {
-  const newCount = bestEvent.articleCount + 1;
-  const updatedEventVector = blendEventVector(bestEvent.eventVector, articleEventVector);
+  if (!transaction) {
+    return db.sequelize.transaction(managedTransaction => assignArticleToExistingEvent({
+      article,
+      articleEventVector,
+      bestEvent,
+      cache,
+      bestScore: _bestScore,
+      matchSignal: _matchSignal,
+      skipTopicAssignment,
+      assignTopicsForEvent,
+      transaction: managedTransaction
+    }));
+  }
+
+  const lockedEvent = await Event.findOne({
+    where: {
+      id: bestEvent.id,
+      userId: article.userId
+    },
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+
+  if (!lockedEvent) {
+    return null;
+  }
+
+  const lockedArticle = await Article.findOne({
+    where: {
+      id: article.id,
+      userId: article.userId,
+      ...canonicalArticleWhere()
+    },
+    attributes: [
+      'id',
+      'eventId',
+      'feedId',
+      'status',
+      'filteredInd',
+      'duplicateOfArticleId',
+      'publishedAt',
+      'createdAt'
+    ],
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+
+  if (!lockedArticle) {
+    return null;
+  }
+
+  if (lockedArticle.eventId != null) {
+    article.eventId = lockedArticle.eventId;
+    article.status = lockedArticle.status;
+    article.filteredInd = lockedArticle.filteredInd;
+    article.duplicateOfArticleId = lockedArticle.duplicateOfArticleId;
+
+    return Number(lockedArticle.eventId) === Number(lockedEvent.id)
+      ? lockedEvent.id
+      : null;
+  }
+
+  const newCount = lockedEvent.articleCount + 1;
+  const updatedEventVector = blendEventVector(lockedEvent.eventVector, articleEventVector);
 
   const seenAt = eventDateFromArticle(article);
-  const currentWindowStartTs = eventTimestamp(bestEvent.eventWindowStartAt);
+  const currentWindowStartTs = eventTimestamp(lockedEvent.eventWindowStartAt);
   const seenAtTs = eventTimestamp(seenAt);
   const eventWindowStartAt = Number.isFinite(currentWindowStartTs) && currentWindowStartTs <= seenAtTs
-    ? bestEvent.eventWindowStartAt
+    ? lockedEvent.eventWindowStartAt
     : seenAt;
-  const eventWindowEndAt = Number.isFinite(eventTimestamp(bestEvent.eventWindowEndAt)) && eventTimestamp(bestEvent.eventWindowEndAt) >= seenAtTs
-    ? bestEvent.eventWindowEndAt
+  const eventWindowEndAt = Number.isFinite(eventTimestamp(lockedEvent.eventWindowEndAt)) && eventTimestamp(lockedEvent.eventWindowEndAt) >= seenAtTs
+    ? lockedEvent.eventWindowEndAt
     : seenAt;
   const status = resolveEventStatus(newCount, eventWindowEndAt);
 
-  await article.update({ eventId: bestEvent.id }, { transaction });
-  await inheritReadStatusFromEventRepresentative({
-    article,
-    event: bestEvent,
+  await lockedArticle.update({
+    eventId: lockedEvent.id
+  }, {
     transaction
   });
+  const developingArticleId = await resolveDevelopingArticleIdForAssignment({
+    event: lockedEvent,
+    incomingArticle: lockedArticle,
+    transaction
+  });
+  const diversity = await resolveSourceDiversity(lockedEvent.id, article.userId, transaction);
 
-  const [, diversity] = await Promise.all([
-    bestEvent.update({
-      eventVector: updatedEventVector,
-      articleCount: newCount,
-      eventWindowStartAt,
-      eventWindowEndAt,
-      status
-    }, { transaction }),
-    updateSourceDiversity(bestEvent.id, article.userId)
-  ]);
-
-  let eventPrimaryTopicId = bestEvent.topicId;
+  let eventPrimaryTopicId = lockedEvent.topicId;
 
   if (!skipTopicAssignment && typeof assignTopicsForEvent === 'function') {
-    eventPrimaryTopicId = await assignTopicsForEvent({
-      event: bestEvent,
-      eventTopicVector: updatedEventVector
-    });
-
-    article.topicId = eventPrimaryTopicId;
-    bestEvent.topicId = eventPrimaryTopicId;
-  }
-
-  if (cache) {
-    cache.updateInMemory(bestEvent.id, {
-      topicId: eventPrimaryTopicId,
+    lockedEvent.set({
+      developingArticleId,
       eventVector: updatedEventVector,
       articleCount: newCount,
       eventWindowStartAt,
@@ -214,8 +172,35 @@ export async function assignArticleToExistingEvent({
       status,
       ...diversity
     });
+    eventPrimaryTopicId = await assignTopicsForEvent({
+      event: lockedEvent,
+      eventTopicVector: updatedEventVector,
+      transaction
+    });
+
+    article.topicId = eventPrimaryTopicId;
   }
 
+  const eventUpdates = {
+    topicId: eventPrimaryTopicId,
+    developingArticleId,
+    eventVector: updatedEventVector,
+    articleCount: newCount,
+    eventWindowStartAt,
+    eventWindowEndAt,
+    status,
+    ...diversity
+  };
+
+  await lockedEvent.update(eventUpdates, { transaction });
+
+  if (cache) {
+    transaction.afterCommit(() => {
+      cache.updateInMemory(lockedEvent.id, eventUpdates);
+    });
+  }
+
+  return lockedEvent.id;
 }
 
 export default assignArticleToExistingEvent;

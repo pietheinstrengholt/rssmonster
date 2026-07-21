@@ -44,6 +44,7 @@ const defaultSelection = () => ({
   sort: 'desc',
   viewMode: 'full',
   grouping: 'none',
+  includeDevelopingEvents: false,
   briefingRevision: 0
 });
 
@@ -288,7 +289,11 @@ export const useStore = defineStore('data', {
         grouping:
           selection.grouping != null
             ? normalizeGrouping(selection.grouping)
-            : normalizeGrouping(prev.grouping)
+            : normalizeGrouping(prev.grouping),
+        includeDevelopingEvents:
+          selection.includeDevelopingEvents != null
+            ? Boolean(selection.includeDevelopingEvents)
+            : Boolean(prev.includeDevelopingEvents)
       };
     },
 

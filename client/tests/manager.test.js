@@ -11,6 +11,17 @@ vi.mock('../src/api/manager', () => ({
 }));
 
 describe('Sidebar manager', () => {
+	it('hydrates the developing-events setting with a false default', () => {
+		setActivePinia(createPinia());
+		const store = useStore();
+
+		expect(store.currentSelection.includeDevelopingEvents).toBe(false);
+
+		store.setCurrentSelection({ includeDevelopingEvents: true });
+
+		expect(store.currentSelection.includeDevelopingEvents).toBe(true);
+	});
+
 	it('uses the briefing query for the Daily briefing pseudo-status', () => {
 		setActivePinia(createPinia());
 		const store = useStore();
