@@ -20,7 +20,6 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
  * - https://github.com/ericmann/gReader-Library/blob/master/greader.class.php
  * - https://github.com/devongovett/reader
  * - https://github.com/theoldreader/api
- * - https://www.inoreader.com/developers/
  * - https://feedhq.readthedocs.io/en/latest/api/index.html
  * - https://github.com/bazqux/bazqux-api
  */
