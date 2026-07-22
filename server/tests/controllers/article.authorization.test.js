@@ -4,7 +4,7 @@ import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
-const { Article, BriefingPreference, Category, Event, Feed, User, sequelize } = db;
+const { Article, BriefingPreference, Category, Event, Feed, Setting, User, sequelize } = db;
 
 let app;
 
@@ -112,6 +112,90 @@ describe('article ownership authorization', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'Article not found' });
+  });
+
+  it('returns only frontend-consumed article fields from the batch details endpoint', async () => {
+    const owner = await createUser(uniqueName('article-details-owner'));
+    const { article } = await createArticleFor(owner);
+    await article.update({
+      embedding_model: 'test-model',
+      articleVector: [0.1, 0.2, 0.3]
+    });
+
+    const response = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: String(article.id) });
+
+    expect(response.status).toBe(200);
+    expect(response.body[0]).toMatchObject({
+      id: article.id,
+      feedId: article.feedId,
+      title: article.title,
+      contentHtml: article.contentHtml,
+      status: article.status
+    });
+    expect(response.body[0]).toHaveProperty('quality');
+    expect(response.body[0]).not.toHaveProperty('articleVector');
+    expect(response.body[0]).not.toHaveProperty('embedding_model');
+    expect(response.body[0]).not.toHaveProperty('contentOriginal');
+    expect(response.body[0]).not.toHaveProperty('contentText');
+    expect(response.body[0]).not.toHaveProperty('contentTextHash');
+    expect(response.body[0]).not.toHaveProperty('contentSourceHash');
+  });
+
+  it('persists the developing-events selection from article search requests', async () => {
+    const owner = await createUser(uniqueName('developing-events-owner'));
+    await createArticleFor(owner);
+
+    const response = await request(app)
+      .get('/api/articles')
+      .query({
+        status: 'unread',
+        categoryId: '%',
+        feedId: '%',
+        includeDevelopingEvents: true
+      })
+      .set('Authorization', authHeaderFor(owner));
+
+    const settings = await Setting.findOne({ where: { userId: owner.id } });
+
+    expect(response.status).toBe(200);
+    expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+  });
+
+  it('returns event article pointers with article details', async () => {
+    const owner = await createUser(uniqueName('developing-badge-owner'));
+    const { article: representativeArticle, feed } = await createArticleFor(owner);
+    const developingArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/developing-article`,
+      title: `${owner.username} developing article`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id,
+      name: 'Developing badge event'
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [representativeArticle.id, developingArticle.id] } }
+    );
+
+    const response = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: String(developingArticle.id) });
+
+    expect(response.status).toBe(200);
+    expect(response.body[0].event).toMatchObject({
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id
+    });
   });
 
   it('GET duplicate articles returns owned duplicates and rejects foreign users', async () => {

@@ -155,7 +155,7 @@ Event.belongsTo(Article, {
   as: 'developingArticle',
   foreignKey: 'developingArticleId',
   onUpdate: 'CASCADE',
-  onDelete: 'CASCADE'
+  onDelete: 'SET NULL'
 });
 
 // Article duplicate traceability

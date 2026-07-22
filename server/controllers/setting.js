@@ -336,6 +336,39 @@ export const setSettings = async (req, res, _next) => {
   }
 };
 
+// This function updates whether the current user's selection includes developing events.
+export const setIncludeDevelopingEvents = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    const { includeDevelopingEvents } = req.body;
+    if (typeof includeDevelopingEvents !== 'boolean') {
+      return res.status(400).json({ error: 'includeDevelopingEvents must be a boolean' });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { includeDevelopingEvents }
+    });
+
+    if (!created) {
+      await settings.update({ includeDevelopingEvents });
+    }
+
+    return res.status(200).json({
+      success: true,
+      includeDevelopingEvents: Boolean(settings.includeDevelopingEvents)
+    });
+  } catch (err) {
+    console.error('Error in setIncludeDevelopingEvents:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
 // This function saves a user's selected color theme mode.
 export const setThemeMode = async (req, res, _next) => {
   try {
@@ -1067,6 +1100,7 @@ export default {
   setOfficialSources,
   getSettings,
   setSettings,
+  setIncludeDevelopingEvents,
   setThemeMode,
   getIslandsOverview,
   getTopicsOverview

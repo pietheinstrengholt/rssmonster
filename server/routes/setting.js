@@ -12,6 +12,7 @@ router.get('/topics', userMiddleware.isLoggedIn, settingController.getTopicsOver
 router.get('/official-sources', userMiddleware.isLoggedIn, settingController.getOfficialSources);
 router.post('/', userMiddleware.isLoggedIn, settingController.setSettings);
 router.post('/official-sources', userMiddleware.isLoggedIn, settingController.setOfficialSources);
+router.patch('/developing-events', userMiddleware.isLoggedIn, settingController.setIncludeDevelopingEvents);
 router.patch('/theme', userMiddleware.isLoggedIn, settingController.setThemeMode);
 
 export default router;

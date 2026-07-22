@@ -197,6 +197,11 @@ describe('reconcileTouchedEvents', () => {
         skipTopicAssignment: true,
         transaction: assignmentTransaction
       });
+      const assignedEvent = await Event.findByPk(event.id, {
+        transaction: assignmentTransaction
+      });
+
+      expect(assignedEvent.eventVector).toEqual([0.95, 0.05, 0]);
 
       reconciliationPromise = reconcileTouchedEvents(user.id, [event.id])
         .then(result => {
@@ -222,6 +227,7 @@ describe('reconcileTouchedEvents', () => {
     await event.reload();
 
     expect(event.articleCount).toBe(2);
+    expect(event.eventVector).toEqual([0.95, 0.05, 0]);
     expect(event.developingArticleId).toBe(representativeArticle.id);
   });
 });

@@ -44,6 +44,7 @@ export const searchArticles = async ({
     viewMode = "full",
     tag = null,
     grouping = 'none',
+    includeDevelopingEvents = false,
     persistSettings = false, // IMPORTANT: skip when called internally
     smartFolderSearch = false, // When true, apply smart folder optimizations
     limitCount = null, // Maximum number of results (used by smart folders)
@@ -261,6 +262,7 @@ export const searchArticles = async ({
       briefingMinDistinctSources,
       briefingShowOnlyInterestMatchedArticles,
       briefingShowOnlyDevelopingEventArticles,
+      includeDevelopingEvents,
       grouping,
       eventCountFilter,
       firstSeenAgeFilter,
@@ -365,6 +367,7 @@ export const searchArticles = async ({
         minQualityScore: finalMinQualityScore,
         viewMode: viewMode,
         grouping,
+        includeDevelopingEvents,
         themeMode: userSettings?.themeMode ?? 'system'
       };
 

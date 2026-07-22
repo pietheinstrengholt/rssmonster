@@ -86,6 +86,7 @@ export const useStore = defineStore('data', {
     briefingSelectionPeriod: DEFAULT_BRIEFING_SELECTION_PERIOD,
     briefingIncludeOnlyUnreadArticles: false,
     briefingPrioritizeHighTrust: false,
+    includeDevelopingEvents: false,
     unreadCount: 0,
     readCount: 0,
     favoriteCount: 0,
@@ -279,6 +280,10 @@ export const useStore = defineStore('data', {
       this.chatAssistantOpen = false;
 
       const prev = this.currentSelection;
+      const includeDevelopingEvents = selection.includeDevelopingEvents != null
+        ? Boolean(selection.includeDevelopingEvents)
+        : Boolean(prev.includeDevelopingEvents);
+      this.includeDevelopingEvents = includeDevelopingEvents;
       this.currentSelection = {
         ...prev,
         ...selection,
@@ -290,10 +295,7 @@ export const useStore = defineStore('data', {
           selection.grouping != null
             ? normalizeGrouping(selection.grouping)
             : normalizeGrouping(prev.grouping),
-        includeDevelopingEvents:
-          selection.includeDevelopingEvents != null
-            ? Boolean(selection.includeDevelopingEvents)
-            : Boolean(prev.includeDevelopingEvents)
+        includeDevelopingEvents
       };
     },
 

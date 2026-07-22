@@ -4,7 +4,7 @@ import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
-const { BriefingPreference, User, sequelize } = db;
+const { BriefingPreference, Setting, User, sequelize } = db;
 
 let app;
 
@@ -92,8 +92,20 @@ describe('Briefing Preferences API', () => {
 
   it('replaces preferences', async () => {
     const user = await createUser();
+    const otherUser = await createUser();
 
     await BriefingPreference.create({ userId: user.id });
+    await Setting.create({
+      userId: user.id,
+      minAdvertisementScore: 15,
+      minSentimentScore: 25,
+      minQualityScore: 35,
+      includeDevelopingEvents: false
+    });
+    await Setting.create({
+      userId: otherUser.id,
+      includeDevelopingEvents: false
+    });
 
     const response = await request(app)
       .put('/api/briefing/preferences')
@@ -101,7 +113,7 @@ describe('Briefing Preferences API', () => {
       .send({
         preferences: {
           includeOnlyUnreadArticles: false,
-          includeDevelopingEvents: false,
+          includeDevelopingEvents: true,
           showOnlyInterestMatchedArticles: true,
           showOnlyDevelopingEventArticles: false,
           minDistinctSources: 5,
@@ -113,7 +125,7 @@ describe('Briefing Preferences API', () => {
     expect(response.status).toBe(200);
     expect(response.body.preferences).toEqual({
       includeOnlyUnreadArticles: false,
-      includeDevelopingEvents: false,
+      includeDevelopingEvents: true,
       showOnlyInterestMatchedArticles: true,
       showOnlyDevelopingEventArticles: false,
       minDistinctSources: 5,
@@ -127,7 +139,7 @@ describe('Briefing Preferences API', () => {
       raw: true
     });
     expect(Boolean(storedPreferences.includeOnlyUnreadArticles)).toBe(false);
-    expect(Boolean(storedPreferences.includeDevelopingEvents)).toBe(false);
+    expect(Boolean(storedPreferences.includeDevelopingEvents)).toBe(true);
     expect(Boolean(storedPreferences.showOnlyInterestMatchedArticles)).toBe(true);
     expect(Boolean(storedPreferences.showOnlyDevelopingEventArticles)).toBe(false);
     expect(Boolean(storedPreferences.prioritizeHighTrust)).toBe(false);
@@ -135,6 +147,17 @@ describe('Briefing Preferences API', () => {
       minDistinctSources: 5,
       selectionPeriod: '24h'
     });
+
+    const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
+    const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
+
+    expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+    expect(settings).toMatchObject({
+      minAdvertisementScore: 15,
+      minSentimentScore: 25,
+      minQualityScore: 35
+    });
+    expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);
   });
 
   it('rejects an invalid complete preference replacement', async () => {

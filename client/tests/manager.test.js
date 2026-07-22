@@ -16,10 +16,12 @@ describe('Sidebar manager', () => {
 		const store = useStore();
 
 		expect(store.currentSelection.includeDevelopingEvents).toBe(false);
+		expect(store.includeDevelopingEvents).toBe(false);
 
 		store.setCurrentSelection({ includeDevelopingEvents: true });
 
 		expect(store.currentSelection.includeDevelopingEvents).toBe(true);
+		expect(store.includeDevelopingEvents).toBe(true);
 	});
 
 	it('uses the briefing query for the Daily briefing pseudo-status', () => {

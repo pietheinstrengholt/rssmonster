@@ -92,4 +92,61 @@ describe('settings controller', () => {
     expect(response.status).toBe(400);
     expect(response.body.error).toBe('includeDevelopingEvents must be a boolean');
   });
+
+  it('updates only the current user developing-events setting', async () => {
+    const user = await createUser();
+    const otherUser = await createUser();
+    await Setting.create({
+      userId: user.id,
+      minAdvertisementScore: 15,
+      minSentimentScore: 25,
+      minQualityScore: 35,
+      includeDevelopingEvents: false
+    });
+    await Setting.create({
+      userId: otherUser.id,
+      includeDevelopingEvents: false
+    });
+
+    const response = await request(app)
+      .patch('/api/setting/developing-events')
+      .set('Authorization', authHeaderFor(user))
+      .send({ includeDevelopingEvents: true });
+
+    const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
+    const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      success: true,
+      includeDevelopingEvents: true
+    });
+    expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+    expect(settings).toMatchObject({
+      minAdvertisementScore: 15,
+      minSentimentScore: 25,
+      minQualityScore: 35
+    });
+    expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);
+  });
+
+  it('creates current user settings and validates the dedicated payload', async () => {
+    const user = await createUser();
+
+    const invalidResponse = await request(app)
+      .patch('/api/setting/developing-events')
+      .set('Authorization', authHeaderFor(user))
+      .send({ includeDevelopingEvents: 'true' });
+    const validResponse = await request(app)
+      .patch('/api/setting/developing-events')
+      .set('Authorization', authHeaderFor(user))
+      .send({ includeDevelopingEvents: true });
+
+    const settings = await Setting.findOne({ where: { userId: user.id } });
+
+    expect(invalidResponse.status).toBe(400);
+    expect(invalidResponse.body.error).toBe('includeDevelopingEvents must be a boolean');
+    expect(validResponse.status).toBe(200);
+    expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+  });
 });

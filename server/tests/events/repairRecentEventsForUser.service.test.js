@@ -56,6 +56,38 @@ function recentDateWithOffset(offsetMs = 0) {
 }
 
 describe('repairRecentEventsForUser', () => {
+  it('incrementally assigns newly created read articles without changing their status', async () => {
+    const { user, feed } = await createUserGraph('incremental-read-status');
+    const sharedTitle = 'Samsung Galaxy Z Fold 8 lineup launches';
+    const publishedAt = recentDateWithOffset();
+    const articles = await Article.bulkCreate([
+      articlePayload(user, feed, 1, {
+        title: sharedTitle,
+        publishedAt,
+        articleVector: [1, 0, 0],
+        status: 'read'
+      }),
+      articlePayload(user, feed, 2, {
+        title: sharedTitle,
+        publishedAt: new Date(publishedAt.getTime() + 60 * 1000),
+        articleVector: [1, 0, 0],
+        status: 'read'
+      })
+    ]);
+
+    const result = await runIncrementalEventsForUser(user.id, {
+      skipTopicAssignment: true
+    });
+
+    await Promise.all(articles.map(article => article.reload()));
+
+    expect(result.articleCount).toBe(2);
+    expect(result.newEventsCreatedCount).toBe(1);
+    expect(articles[0].eventId).toBeTruthy();
+    expect(articles[1].eventId).toBe(articles[0].eventId);
+    expect(articles.map(article => article.status)).toEqual(['read', 'read']);
+  });
+
   it('assigns an article using its persisted article vector when vectors are not supplied', async () => {
     const { user, feed } = await createUserGraph('persisted-assignment-vector');
     const representativeArticle = await Article.create(articlePayload(user, feed, 1, {

@@ -1,6 +1,6 @@
 import db from '../models/index.js';
 
-const { BriefingPreference } = db;
+const { BriefingPreference, Setting } = db;
 const SELECTION_PERIODS = new Set(['24h', '7d']);
 
 // This function returns only the public Daily Briefing preference fields.
@@ -100,7 +100,23 @@ export const updateBriefingPreferences = async (req, res, _next) => {
       selectionPeriod: preferences.selectionPeriod
     };
 
-    await BriefingPreference.upsert(storedPreferences);
+    await db.sequelize.transaction(async transaction => {
+      await BriefingPreference.upsert(storedPreferences, { transaction });
+
+      const [settings, created] = await Setting.findOrCreate({
+        where: { userId },
+        defaults: {
+          includeDevelopingEvents: preferences.includeDevelopingEvents
+        },
+        transaction
+      });
+
+      if (!created) {
+        await settings.update({
+          includeDevelopingEvents: preferences.includeDevelopingEvents
+        }, { transaction });
+      }
+    });
 
     return res.status(200).json({
       preferences: serializePreferences(storedPreferences)

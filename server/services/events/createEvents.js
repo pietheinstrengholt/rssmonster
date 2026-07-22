@@ -5,8 +5,8 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
-import { averageVector } from '../vectors/index.js';
-import { eventDateFromArticle, eventWindowFromArticles } from './articleEventTime.js';
+import { eventDateFromArticle } from './articleEventTime.js';
+import { buildCanonicalEventProjection } from './eventProjection.js';
 
 const { Article, Event } = db;
 
@@ -75,16 +75,6 @@ function generateEventName(article) {
   return name || null;
 }
 
-// This function resolves the vector field used when building a new event centroid.
-function resolveArticleVector(record) {
-  if (Array.isArray(record?.eventVector)) return record.eventVector;
-  if (Array.isArray(record?.getDataValue?.('eventVector'))) {
-    return record.getDataValue('eventVector');
-  }
-  if (Array.isArray(record?.articleVector)) return record.articleVector;
-  return null;
-}
-
 // This function creates an event, assigns all member articles, and optionally links event topics.
 export async function createAndAssignEvent({
   candidateArticles,
@@ -133,47 +123,22 @@ export async function createAndAssignEvent({
     return null;
   }
 
-  const lockedArticlesById = new Map(
-    lockedArticles.map(item => [Number(item.id), item])
-  );
+  const lockedArticlesById = new Map(lockedArticles.map(item => [Number(item.id), item]));
   const lockedSeedArticle = lockedArticlesById.get(Number(article.id));
 
   if (!lockedSeedArticle) {
     return null;
   }
 
-  for (const lockedArticle of lockedArticles) {
-    const proposedVector = resolveArticleVector(proposedArticlesById.get(Number(lockedArticle.id)));
-    if (proposedVector) {
-      lockedArticle.setDataValue('eventVector', proposedVector);
-    }
-  }
-
-  const eventArticles = [
-    ...lockedArticles.filter(item => Number(item.id) !== Number(lockedSeedArticle.id)),
-    lockedSeedArticle
-  ];
-  const vectors = eventArticles
-    .map(item => resolveArticleVector(item))
-    .filter(vector => Array.isArray(vector));
-
-  if (!vectors.length) {
+  const projection = buildCanonicalEventProjection(lockedArticles);
+  if (!projection.eventVector) {
     return null;
   }
 
-  const centroid = averageVector(vectors);
-
-  const eventWindow = eventWindowFromArticles(eventArticles);
-  const eventWindowStartAt = eventWindow.eventWindowStartAt ?? eventDateFromArticle(lockedSeedArticle);
-  const eventWindowEndAt = eventWindow.eventWindowEndAt ?? eventDateFromArticle(lockedSeedArticle);
-  const sourceCount = new Set(
-    eventArticles
-      .map(item => item.feedId)
-      .filter(feedId => feedId != null)
-  ).size;
-  const sourceDiversityScore = Math.log(sourceCount + 1);
+  const eventWindowStartAt = projection.eventWindowStartAt ?? eventDateFromArticle(lockedSeedArticle);
+  const eventWindowEndAt = projection.eventWindowEndAt ?? eventDateFromArticle(lockedSeedArticle);
   const name = generateEventName(lockedSeedArticle);
-  const eventStrength = computeInitialEventStrength(eventArticles.length);
+  const eventStrength = computeInitialEventStrength(projection.articleCount);
 
   // A new event starts with the seed article as both its stable anchor and developing article.
   const newEvent = await Event.create({
@@ -182,14 +147,14 @@ export async function createAndAssignEvent({
     representativeArticleId: lockedSeedArticle.id,
     developingArticleId: lockedSeedArticle.id,
     name,
-    articleCount: eventArticles.length,
+    articleCount: projection.articleCount,
     eventStrength,
-    eventVector: centroid,
+    eventVector: projection.eventVector,
     eventWindowStartAt,
     eventWindowEndAt,
-    status: resolveEventStatus(eventArticles.length, eventWindowEndAt),
-    sourceCount,
-    sourceDiversityScore
+    status: resolveEventStatus(projection.articleCount, eventWindowEndAt),
+    sourceCount: projection.sourceCount,
+    sourceDiversityScore: projection.sourceDiversityScore
   }, { transaction });
 
   if (!newEvent?.id) {
@@ -221,7 +186,7 @@ export async function createAndAssignEvent({
   if (!skipTopicAssignment && typeof assignTopicsForEvent === 'function') {
     primaryEventTopicId = await assignTopicsForEvent({
       event: newEvent,
-      eventTopicVector: centroid,
+      eventTopicVector: projection.eventVector,
       transaction
     });
 

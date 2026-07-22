@@ -47,6 +47,18 @@ const getEventArticles = async (req, res) => {
           model: Tag,
           required: false,
           attributes: ['id', 'name']
+        },
+        {
+          model: Event,
+          as: 'event',
+          required: false,
+          attributes: [
+            'id',
+            'articleCount',
+            'sourceCount',
+            'representativeArticleId',
+            'developingArticleId'
+          ]
         }
       ],
       order: [['publishedAt', 'DESC']]

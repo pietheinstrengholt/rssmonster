@@ -2,11 +2,10 @@
 // This service updates an existing event when a new article joins it.
 // It preserves the stable representative while refreshing event metadata and topic links.
 import db from '../../models/index.js';
-import { EVENT_LIFECYCLE, EVENT_VECTOR_ALPHA } from '../config/semanticConfig.js';
+import { EVENT_LIFECYCLE } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
-import { blendVector } from '../vectors/index.js';
 import { resolveDevelopingArticleIdForAssignment } from './developingArticlePointer.js';
-import { eventDateFromArticle, eventTimestamp } from './articleEventTime.js';
+import { buildCanonicalEventProjection } from './eventProjection.js';
 
 const { Article, Event } = db;
 
@@ -40,30 +39,10 @@ function resolveEventStatus(articleCount, lastSeenAt) {
   return 'active';
 }
 
-// This function blends a new article vector into the existing event vector.
-function blendEventVector(existingVector, incomingVector) {
-  return blendVector(existingVector, incomingVector, EVENT_VECTOR_ALPHA);
-}
-
-// This function calculates source diversity within the current assignment transaction.
-async function resolveSourceDiversity(eventId, userId, transaction) {
-  const sourceCount = await Article.count({
-    where: { eventId, userId, ...canonicalArticleWhere() },
-    distinct: true,
-    col: 'feedId',
-    transaction
-  });
-
-  return {
-    sourceCount,
-    sourceDiversityScore: Math.log(sourceCount + 1)
-  };
-}
-
 // This function attaches an article to an existing event and refreshes event/topic denormalization.
 export async function assignArticleToExistingEvent({
   article,
-  articleEventVector,
+  articleEventVector: _articleEventVector,
   bestEvent,
   cache,
   bestScore: _bestScore,
@@ -75,7 +54,7 @@ export async function assignArticleToExistingEvent({
   if (!transaction) {
     return db.sequelize.transaction(managedTransaction => assignArticleToExistingEvent({
       article,
-      articleEventVector,
+      articleEventVector: _articleEventVector,
       bestEvent,
       cache,
       bestScore: _bestScore,
@@ -134,47 +113,41 @@ export async function assignArticleToExistingEvent({
       : null;
   }
 
-  const newCount = lockedEvent.articleCount + 1;
-  const updatedEventVector = blendEventVector(lockedEvent.eventVector, articleEventVector);
-
-  const seenAt = eventDateFromArticle(article);
-  const currentWindowStartTs = eventTimestamp(lockedEvent.eventWindowStartAt);
-  const seenAtTs = eventTimestamp(seenAt);
-  const eventWindowStartAt = Number.isFinite(currentWindowStartTs) && currentWindowStartTs <= seenAtTs
-    ? lockedEvent.eventWindowStartAt
-    : seenAt;
-  const eventWindowEndAt = Number.isFinite(eventTimestamp(lockedEvent.eventWindowEndAt)) && eventTimestamp(lockedEvent.eventWindowEndAt) >= seenAtTs
-    ? lockedEvent.eventWindowEndAt
-    : seenAt;
-  const status = resolveEventStatus(newCount, eventWindowEndAt);
-
   await lockedArticle.update({
     eventId: lockedEvent.id
   }, {
     transaction
   });
+  const eventArticles = await Article.findAll({
+    where: {
+      eventId: lockedEvent.id,
+      userId: article.userId,
+      ...canonicalArticleWhere()
+    },
+    attributes: ['id', 'feedId', 'publishedAt', 'createdAt', 'articleVector'],
+    order: [['id', 'ASC']],
+    transaction,
+    lock: transaction.LOCK.UPDATE
+  });
+  const projection = buildCanonicalEventProjection(eventArticles, lockedEvent.eventVector);
+  const status = resolveEventStatus(projection.articleCount, projection.eventWindowEndAt);
   const developingArticleId = await resolveDevelopingArticleIdForAssignment({
     event: lockedEvent,
     incomingArticle: lockedArticle,
     transaction
   });
-  const diversity = await resolveSourceDiversity(lockedEvent.id, article.userId, transaction);
 
   let eventPrimaryTopicId = lockedEvent.topicId;
 
   if (!skipTopicAssignment && typeof assignTopicsForEvent === 'function') {
     lockedEvent.set({
       developingArticleId,
-      eventVector: updatedEventVector,
-      articleCount: newCount,
-      eventWindowStartAt,
-      eventWindowEndAt,
-      status,
-      ...diversity
+      ...projection,
+      status
     });
     eventPrimaryTopicId = await assignTopicsForEvent({
       event: lockedEvent,
-      eventTopicVector: updatedEventVector,
+      eventTopicVector: projection.eventVector,
       transaction
     });
 
@@ -184,12 +157,8 @@ export async function assignArticleToExistingEvent({
   const eventUpdates = {
     topicId: eventPrimaryTopicId,
     developingArticleId,
-    eventVector: updatedEventVector,
-    articleCount: newCount,
-    eventWindowStartAt,
-    eventWindowEndAt,
-    status,
-    ...diversity
+    ...projection,
+    status
   };
 
   await lockedEvent.update(eventUpdates, { transaction });

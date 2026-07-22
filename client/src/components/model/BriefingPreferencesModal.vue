@@ -429,6 +429,9 @@ export default {
           includeOnlyUnreadArticles: data.preferences.includeOnlyUnreadArticles,
           prioritizeHighTrust: data.preferences.prioritizeHighTrust
         });
+        this.$store.data.setCurrentSelection({
+          includeDevelopingEvents: data.preferences.includeDevelopingEvents
+        });
         this.$store.data.refreshBriefingSelection();
         void this.$store.data.refreshOverviewCounts();
         this.closeModal();

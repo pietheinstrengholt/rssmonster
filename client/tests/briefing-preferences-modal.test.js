@@ -30,6 +30,7 @@ let wrapper;
 function mountModal() {
   const setShowModal = vi.fn();
   const setBriefingFilters = vi.fn();
+  const setCurrentSelection = vi.fn();
   const refreshBriefingSelection = vi.fn();
   const refreshOverviewCounts = vi.fn().mockResolvedValue();
   wrapper = mount(BriefingPreferencesModal, {
@@ -39,6 +40,7 @@ function mountModal() {
           data: {
             setShowModal,
             setBriefingFilters,
+            setCurrentSelection,
             refreshBriefingSelection,
             refreshOverviewCounts
           }
@@ -51,6 +53,7 @@ function mountModal() {
     wrapper,
     setShowModal,
     setBriefingFilters,
+    setCurrentSelection,
     refreshBriefingSelection,
     refreshOverviewCounts
   };
@@ -109,6 +112,7 @@ describe('BriefingPreferencesModal dismissal', () => {
       wrapper,
       setShowModal,
       setBriefingFilters,
+      setCurrentSelection,
       refreshBriefingSelection,
       refreshOverviewCounts
     } = mountModal();
@@ -130,6 +134,9 @@ describe('BriefingPreferencesModal dismissal', () => {
       selectionPeriod: '24h',
       includeOnlyUnreadArticles: false,
       prioritizeHighTrust: false
+    });
+    expect(setCurrentSelection).toHaveBeenCalledWith({
+      includeDevelopingEvents: false
     });
     expect(refreshBriefingSelection).toHaveBeenCalledTimes(1);
     expect(refreshOverviewCounts).toHaveBeenCalledTimes(1);

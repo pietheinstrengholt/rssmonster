@@ -1,13 +1,18 @@
 <template>
   <div class="daily-briefing-intro">
-    <aside class="briefing-context" role="note">
-      <div class="briefing-context-text">
-        <template v-if="isLoading">Loading briefing context…</template>
-        <template v-else-if="context">
-          Based on
-          <strong>{{ formatCountLabel(context.articleCount, 'article') }}</strong>
-          from
-          <strong>{{ formatCountLabel(context.sourceCount, 'source') }}</strong>,
+    <BriefingContextText
+      :article-count="context?.articleCount ?? null"
+      :source-count="context?.sourceCount ?? null"
+      :is-loading="isLoading"
+      :has-error="loadError"
+      has-details
+      loading-text="Loading briefing context…"
+      error-text="Briefing context is temporarily unavailable."
+      empty-text="No briefing context is available for this period."
+      action-label="Tune your briefing"
+      modal-name="BriefingPreferences"
+    >
+      <template v-if="context">
           across
           <strong>{{ formatCountLabel(context.eventCount, 'event') }}</strong>
           including
@@ -15,20 +20,8 @@
           <strong>{{ formatCountLabel(context.topicCount, 'topic') }}</strong>
           and
           <strong>{{ formatCountLabel(context.islandCount, 'interest area') }}</strong>
-        </template>
-        <template v-else-if="loadError">Briefing context is temporarily unavailable.</template>
-        <template v-else>No briefing context is available for this period.</template>
-      </div>
-
-      <button
-        type="button"
-        class="briefing-tune-action"
-        @click="$store.data.setShowModal('BriefingPreferences')"
-      >
-        <i class="bi bi-sliders2" aria-hidden="true"></i>
-        <span>Tune your briefing</span>
-      </button>
-    </aside>
+      </template>
+    </BriefingContextText>
 
     <section
       class="briefing-morning-summary"
@@ -66,9 +59,13 @@
 </template>
 
 <script>
+import BriefingContextText from './BriefingContextText.vue';
 import { fetchDailyBriefing } from '../api/articles';
 
 export default {
+  components: {
+    BriefingContextText
+  },
   props: {
     readerMode: {
       type: Boolean,
@@ -165,60 +162,8 @@ export default {
   border-bottom: 1px solid #e5e7eb;
 }
 
-.briefing-context {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  width: 100%;
-  margin: 0 0 0.875rem;
-  padding: 0.75rem 0.875rem;
-  color: #4b5563;
-  background-color: #f8fafc;
-  border: 1px solid #e5e7eb;
-  border-radius: 0.5rem;
-  font-size: 0.875rem;
-  font-style: normal;
-  line-height: 1.4;
-}
-
-.briefing-context-text {
-  min-width: 0;
-}
-
-.briefing-context strong {
-  color: inherit;
-  font-weight: 600;
-}
-
-.briefing-tune-action {
-  display: inline-flex;
-  flex: 0 0 auto;
-  align-items: center;
-  gap: 0.375rem;
-  padding: 0.375rem 0.5rem;
-  color: #2563eb;
-  background: transparent;
-  border: 0;
-  border-radius: 0.375rem;
-  font: inherit;
-  font-weight: 600;
-  line-height: 1.2;
-  text-align: left;
-  text-decoration: none;
-  white-space: nowrap;
-  cursor: pointer;
-}
-
-.briefing-tune-action:hover {
-  color: #1d4ed8;
-  background-color: rgba(37, 99, 235, 0.08);
-  text-decoration: none;
-}
-
-.briefing-tune-action:focus-visible {
-  outline: 2px solid currentColor;
-  outline-offset: 2px;
+.daily-briefing-intro :deep(.briefing-context) {
+  margin-bottom: 0.875rem;
 }
 
 .briefing-morning-summary {
@@ -291,11 +236,8 @@ export default {
     padding: 0.75rem;
   }
 
-  .briefing-context {
+  .daily-briefing-intro :deep(.briefing-context) {
     margin-bottom: 0.75rem;
-    padding: 0.625rem 0.75rem;
-    font-size: 0.8125rem;
-    line-height: 1.45;
   }
 
   .briefing-morning-summary {
@@ -328,31 +270,6 @@ export default {
   color: var(--text-primary);
   background-color: var(--dark-page-surface, #0b0f14);
   border-bottom-color: var(--border-color, #2a3342);
-}
-
-:global(:root[data-theme='dark'] .briefing-context) {
-  color: var(--text-secondary, #9ca3af);
-  background-color: var(--bg-control, #222836);
-  border-color: var(--border-color, #2a3342);
-}
-
-:global(:root[data-theme='dark'] .briefing-context strong) {
-  color: var(--text-primary, #e5e7eb);
-}
-
-:global(:root[data-theme='dark'] .briefing-tune-action) {
-  color: var(--color-link, #60a5fa);
-  background-color: transparent;
-}
-
-:global(:root[data-theme='dark'] .briefing-tune-action:hover) {
-  color: var(--color-link-hover, #93c5fd);
-  background-color: rgba(96, 165, 250, 0.12);
-}
-
-:global(:root[data-theme='dark'] .briefing-tune-action:focus-visible) {
-  color: var(--color-link-hover, #93c5fd);
-  outline-color: var(--border-focus, #60a5fa);
 }
 
 :global(:root[data-theme='dark'] .briefing-morning-summary) {

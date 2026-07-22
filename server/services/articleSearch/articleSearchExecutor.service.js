@@ -42,6 +42,7 @@ export const buildArticleSearchQuery = ({
   briefingMinDistinctSources,
   briefingShowOnlyInterestMatchedArticles,
   briefingShowOnlyDevelopingEventArticles,
+  includeDevelopingEvents = false,
   grouping,
   eventCountFilter,
   firstSeenAgeFilter,
@@ -230,18 +231,26 @@ export const buildArticleSearchQuery = ({
   }
 
   if (event === null && grouping === 'event') {
+    const selectedEventArticleColumn = includeDevelopingEvents
+      ? 'COALESCE(grouped_event.developingArticleId, grouped_event.representativeArticleId)'
+      : 'grouped_event.representativeArticleId';
+
     appendAndCondition(articleQuery.where, {
       [Op.or]: [
-        {
-          id: {
-            [Op.in]: Article.sequelize.literal('(SELECT representativeArticleId FROM events)')
-          }
-        },
         {
           eventId: {
             [Op.is]: null
           }
-        }
+        },
+        Article.sequelize.literal(`
+          EXISTS (
+            SELECT 1
+            FROM events grouped_event
+            WHERE grouped_event.id = articles.eventId
+              AND grouped_event.userId = articles.userId
+              AND articles.id = ${selectedEventArticleColumn}
+          )
+        `)
       ]
     });
   }

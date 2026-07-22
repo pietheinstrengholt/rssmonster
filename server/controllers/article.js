@@ -37,7 +37,37 @@ const attachPredictedAffinity = articles => {
 
 // This function batch-loads article details with presentation metadata.
 const loadArticleDetails = async (userId, articlesArray) => {
+  // Keep this projection aligned with Article.vue props and ArticleReaderLayout.vue direct reads;
+  // when either frontend consumer changes, update this list and the article-details API tests together.
   const articles = await Article.findAll({
+    attributes: [
+      'id',
+      'feedId',
+      'status',
+      'favoriteInd',
+      'clickedAmount',
+      'hotInd',
+      'media',
+      'url',
+      'imageUrl',
+      'title',
+      'author',
+      'description',
+      'contentHtml',
+      'contentSummaryBullets',
+      'isOfficialSource',
+      'officialOrganization',
+      'eventId',
+      'duplicateCount',
+      'advertisementScore',
+      'sentimentScore',
+      'qualityScore',
+      'interestScore',
+      'attentionBucket',
+      'publishedAt',
+      'firstSeen',
+      'quality'
+    ],
     include: [
       {
         model: Feed,
@@ -47,6 +77,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
           'feedName',
           'url',
           'categoryId',
+          'favicon',
           'feedTrust',
           'feedDuplicationRate',
           'feedAttentionAvg',
@@ -67,7 +98,14 @@ const loadArticleDetails = async (userId, articlesArray) => {
         model: Event,
         as: 'event',
         required: false,
-        attributes: ['id', 'articleCount', 'sourceCount', 'topicId']
+        attributes: [
+          'id',
+          'articleCount',
+          'sourceCount',
+          'topicId',
+          'representativeArticleId',
+          'developingArticleId'
+        ]
       }
     ],
     where: { userId, id: articlesArray, ...canonicalArticleWhere() }
@@ -97,6 +135,10 @@ const loadArticleDetails = async (userId, articlesArray) => {
   // Preserve incoming ID order
   const idIndexMap = new Map(articlesArray.map((id, i) => [String(id), i]));
   articles.sort((a, b) => idIndexMap.get(String(a.id)) - idIndexMap.get(String(b.id)));
+
+  for (const article of articles) {
+    article.setDataValue('quality', article.quality);
+  }
 
   attachPredictedAffinity(articles);
 
@@ -165,6 +207,7 @@ export const getArticles = async (req, res) => {
       tag: req.query.tag,
       viewMode: req.query.viewMode,
       grouping: req.query.grouping || 'none',
+      includeDevelopingEvents: req.query.includeDevelopingEvents === 'true',
       persistSettings: true
     });
 

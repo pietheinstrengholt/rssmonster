@@ -73,6 +73,23 @@ describe('Event model', () => {
     expect(event.representativeArticleId).toBe(representativeArticle.id);
   });
 
+  it('preserves the event and clears the pointer when the developing article is deleted', async () => {
+    const { user, feed } = await createUserGraph('event-developing-delete');
+    const representativeArticle = await createArticle(user, feed, 'representative');
+    const developingArticle = await createArticle(user, feed, 'developing');
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id
+    });
+
+    await developingArticle.destroy();
+    await event.reload();
+
+    expect(event.developingArticleId).toBeNull();
+    expect(event.representativeArticleId).toBe(representativeArticle.id);
+  });
+
   it('loads representative and developing article associations independently', async () => {
     const { user, feed } = await createUserGraph('event-article-associations');
     const representativeArticle = await createArticle(user, feed, 'representative');

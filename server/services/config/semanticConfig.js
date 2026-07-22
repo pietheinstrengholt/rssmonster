@@ -56,12 +56,6 @@ export const SEMANTIC_GRANULARITY = {
     vectorAlpha: Number.parseFloat(process.env.TOPIC_VECTOR_ALPHA || '0.08')
   },
 
-  // Event vector blend factor for updates.
-  // Higher alpha = faster adaptation to new event evidence.
-  eventUpdate: {
-    vectorAlpha: Number.parseFloat(process.env.EVENT_VECTOR_ALPHA || '0.45')
-  },
-
   // Final eventStrength score configuration (0..1).
   // This score is used for ranking/importance, not for initial event existence checks.
   eventStrength: {
@@ -97,6 +91,4 @@ export const EVENT_MIN_HEADLINE_SIM = SEMANTIC_GRANULARITY.minHeadlineSimilarity
 export const EVENT_MIN_SHARED_ENTITY_OVERLAP = SEMANTIC_GRANULARITY.minSharedEntityOverlap;
 export const EVENT_LIFECYCLE = SEMANTIC_GRANULARITY.eventLifecycle;
 export const TOPIC_VECTOR_ALPHA = SEMANTIC_GRANULARITY.topicUpdate.vectorAlpha;
-export const EVENT_VECTOR_ALPHA = SEMANTIC_GRANULARITY.eventUpdate.vectorAlpha;
 export const EVENT_STRENGTH_CONFIG = SEMANTIC_GRANULARITY.eventStrength;
-

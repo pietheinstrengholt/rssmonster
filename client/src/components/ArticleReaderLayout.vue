@@ -3,6 +3,11 @@
     v-if="currentSelection === 'briefing' && hasLoadedContent && container.length === 0"
     reader-mode
   />
+  <UnreadSelectionContext
+    v-if="currentSelection === 'unread' && hasLoadedContent && container.length === 0 && currentViewSourceCount !== null"
+    :article-count="currentViewUnreadCount"
+    :source-count="currentViewSourceCount"
+  />
   <ArticleEmptyState
     v-if="hasLoadedContent && container.length === 0"
     class="readerEmptyState"
@@ -19,6 +24,11 @@
       @scroll="handleArticleListScroll"
     >
       <DailyBriefingIntro v-if="currentSelection === 'briefing'" reader-mode />
+      <UnreadSelectionContext
+        v-if="currentSelection === 'unread' && currentViewSourceCount !== null"
+        :article-count="currentViewUnreadCount"
+        :source-count="currentViewSourceCount"
+      />
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
           <div class="article-list-bulk-title">
@@ -127,6 +137,7 @@
             </a>
           </span>
           <span class="readerArticleListItemBadges">
+            <span v-if="isDevelopingArticle(article.id, article.event)" class="readerArticleListBadge readerArticleListBadgeDeveloping">Developing</span>
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
@@ -176,9 +187,11 @@ import Article from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import DailyBriefingIntro from "./DailyBriefingIntro.vue";
+import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent, usableHttpUrl } from '../utils/content';
+import { isDevelopingArticle } from '../utils/events';
 import { markClicked as markArticleClickedAPI } from '../api/articles';
 
 const PREVIEW_LENGTH = 150;
@@ -188,7 +201,8 @@ export default {
     Article,
     ArticleEmptyState,
     ArticleEndState,
-    DailyBriefingIntro
+    DailyBriefingIntro,
+    UnreadSelectionContext
   },
   emits: [
     'update-favorite',
@@ -422,6 +436,8 @@ export default {
     }
   },
   methods: {
+    // Exposes the shared developing-article comparison to reader-list rows.
+    isDevelopingArticle,
     // Shows the article-list scrollbar while the user is actively scrolling.
     handleArticleListScroll() {
       const articleList = this.$refs.articleListScrollRef;
@@ -985,6 +1001,16 @@ export default {
 .readerArticleListBadgeFavorite {
   background: var(--badge-quality-bg);
   color: var(--badge-quality-text);
+}
+
+.readerArticleListBadgeDeveloping {
+  color: #1d4ed8;
+  background: #eff6ff;
+}
+
+:global(:root[data-theme='dark'] .readerArticleListBadgeDeveloping) {
+  color: #93c5fd;
+  background: rgba(37, 99, 235, 0.2);
 }
 
 .readerArticleListBadgeHot {

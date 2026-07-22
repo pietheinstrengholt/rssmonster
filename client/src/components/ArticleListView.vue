@@ -2,6 +2,11 @@
   <div id="main-container">
     <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
       <DailyBriefingIntro v-if="currentSelection === 'briefing'" />
+      <UnreadSelectionContext
+        v-if="currentSelection === 'unread' && hasLoadedContent && currentViewSourceCount !== null"
+        :article-count="currentViewUnreadCount"
+        :source-count="currentViewSourceCount"
+      />
       <Article
         v-for="article in articles"
         v-bind="article"
@@ -53,6 +58,7 @@ import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
 import DailyBriefingIntro from "./DailyBriefingIntro.vue";
+import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 
 export default {
   components: {
@@ -60,7 +66,8 @@ export default {
     ArticleEmptyState,
     ArticleEndState,
     ArticleLoadingState,
-    DailyBriefingIntro
+    DailyBriefingIntro,
+    UnreadSelectionContext
   },
   emits: [
     'update-favorite',
@@ -102,6 +109,10 @@ export default {
     currentViewUnreadCount: {
       type: Number,
       required: true
+    },
+    currentViewSourceCount: {
+      type: Number,
+      default: null
     },
     viewMode: {
       type: String,

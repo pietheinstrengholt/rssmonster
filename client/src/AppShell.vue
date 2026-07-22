@@ -50,6 +50,8 @@
     <app-manage-users v-if="$store.data.getShowModal === 'ManageUsers'"></app-manage-users>
     <!-- Briefing preferences modal -->
     <app-briefing-preferences-modal v-if="$store.data.getShowModal === 'BriefingPreferences'"></app-briefing-preferences-modal>
+    <!-- Unread configuration modal -->
+    <app-unread-configuration-modal v-if="$store.data.getShowModal === 'UnreadConfiguration'"></app-unread-configuration-modal>
 
   </div>
 </template>
@@ -227,6 +229,7 @@ const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "upda
 const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/model/Cleanup.vue"));
 const SettingsManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/SettingsManageUsers.vue"));
 const BriefingPreferencesModal = defineAsyncComponent(() => import(/* webpackChunkName: "briefingpreferences" */ "./components/model/BriefingPreferencesModal.vue"));
+const UnreadConfigurationModal = defineAsyncComponent(() => import(/* webpackChunkName: "unreadconfiguration" */ "./components/model/UnreadConfigurationModal.vue"));
 
 //import onboarding component
 const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/onboarding/InitialFeeds.vue"));
@@ -253,6 +256,7 @@ export default {
     appCleanup: Cleanup,
     appManageUsers: SettingsManageUsers,
     appBriefingPreferencesModal: BriefingPreferencesModal,
+    appUnreadConfigurationModal: UnreadConfigurationModal,
     appInitialFeeds: InitialFeeds
   },
   data() {

@@ -7,10 +7,7 @@ import {
 } from '../config/semanticConfig.js';
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { selectDevelopingArticleId } from './developingArticlePointer.js';
-import {
-  articleEventTimestamp,
-  eventWindowFromArticles
-} from './articleEventTime.js';
+import { buildCanonicalEventProjection } from './eventProjection.js';
 
 const { Article, Event } = db;
 
@@ -36,38 +33,6 @@ export function resolveEventStatus(articleCount, lastSeenAt) {
   }
 
   return 'active';
-}
-
-// This function builds an event vector from recent article vectors, weighting newer articles more heavily.
-export function buildRecencyWeightedVector(eventArticles) {
-  const embedded = eventArticles.filter(a => Array.isArray(a.articleVector));
-  if (!embedded.length) return null;
-
-  const sorted = embedded
-    .slice()
-    .sort((a, b) => (articleEventTimestamp(b) || 0) - (articleEventTimestamp(a) || 0))
-    .slice(0, 24);
-
-  const newestTs = articleEventTimestamp(sorted[0]) || 0;
-  const dim = sorted[0].articleVector.length;
-
-  const weighted = Array(dim).fill(0);
-  let totalWeight = 0;
-
-  for (const article of sorted) {
-    const ts = articleEventTimestamp(article) || 0;
-    const ageHours = Math.max(0, (newestTs - ts) / (1000 * 60 * 60));
-    const weight = Math.pow(0.5, ageHours / 12);
-
-    totalWeight += weight;
-    for (let i = 0; i < dim; i++) {
-      weighted[i] += article.articleVector[i] * weight;
-    }
-  }
-
-  if (!totalWeight) return sorted[0].articleVector;
-
-  return weighted.map(value => value / totalWeight);
 }
 
 // This function estimates event strength from article redundancy, cohesion, and topic history.
@@ -158,40 +123,25 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
       continue;
     }
 
-    // Article-level event vectors may not be persisted in some environments.
-    // Keep the existing event vector when no per-article vectors are available.
-    const eventVector = buildRecencyWeightedVector(eventArticles) ?? event.eventVector ?? null;
-
-    const { eventWindowStartAt, eventWindowEndAt } = eventWindowFromArticles(eventArticles);
-    const status = resolveEventStatus(eventArticles.length, eventWindowEndAt);
-    const sourceCount = new Set(
-      eventArticles
-        .map(article => article.feedId)
-        .filter(feedId => feedId != null)
-    ).size;
-    const sourceDiversityScore = Math.log(sourceCount + 1);
+    const projection = buildCanonicalEventProjection(eventArticles, event.eventVector);
+    const status = resolveEventStatus(projection.articleCount, projection.eventWindowEndAt);
     const strength = computeEventStrength({
-      articleCount: eventArticles.length,
+      articleCount: projection.articleCount,
       topicEventCount: 1
     });
     const developingArticleId = selectDevelopingArticleId(event, eventArticles);
 
     await event.update({
       developingArticleId,
-      articleCount: eventArticles.length,
-      eventVector,
-      eventWindowStartAt,
-      eventWindowEndAt,
+      ...projection,
       status,
-      sourceCount,
-      sourceDiversityScore,
       eventStrength: strength
     }, { transaction });
 
     console.log(
       `[EVENT] Reconciled event ${event.id}` +
-      ` articles=${eventArticles.length}` +
-      ` sources=${sourceCount}` +
+      ` articles=${projection.articleCount}` +
+      ` sources=${projection.sourceCount}` +
       ` strength=${strength}`
     );
   }

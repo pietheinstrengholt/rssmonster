@@ -692,6 +692,7 @@ describe('articleSearch.service', () => {
           search: 'sort:trust',
           sort: 'asc',
           status: '%',
+          includeDevelopingEvents: true,
           persistSettings: true
         });
 
@@ -706,10 +707,14 @@ describe('articleSearch.service', () => {
 
         const persistedSetting = await Setting.findOne({ where: { userId: user.id } });
         expect(persistedSetting.sort).toBe('trust');
+        expect(Boolean(persistedSetting.includeDevelopingEvents)).toBe(true);
       } finally {
         await Article.destroy({ where: { id: createdArticles.map(article => article.id) } });
         await Feed.destroy({ where: { id: [highTrustFeed.id, lowTrustFeed.id] } });
-        await Setting.update({ sort: 'desc' }, { where: { userId: user.id } });
+        await Setting.update(
+          { sort: 'desc', includeDevelopingEvents: false },
+          { where: { userId: user.id } }
+        );
       }
     });
 
