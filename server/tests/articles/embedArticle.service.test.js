@@ -44,7 +44,7 @@ describe('embedArticle token limit guard', () => {
 
     const input = embeddingsCreate.mock.calls[0][0].input;
     expect(input.split(/\s+/)).toHaveLength(512);
-    expect(input).toMatch(/^Oversized event input token0/);
+    expect(input).toMatch(/^Title: Oversized event input\s+Body: token0/);
   });
 
   it('builds embedding text from contentText instead of contentHtml', async () => {
@@ -58,6 +58,33 @@ describe('embedArticle token limit guard', () => {
 
     expect(text).toContain('Plain text article body');
     expect(text).not.toContain('Old sanitized HTML');
+  });
+
+  it('builds structured event text without repeating summary sentences in the body', async () => {
+    const { buildArticleEventEmbeddingText } = await import('../../services/articles/embedArticle.js');
+    const repeatedSummary = 'Prince George starts at Eton College after the summer.';
+
+    const text = buildArticleEventEmbeddingText({
+      title: 'Prince George prepares for a new school',
+      description: repeatedSummary,
+      contentText: `${repeatedSummary}\n\nHis school choice has also attracted public criticism.`
+    });
+
+    expect(text).toContain('Title: Prince George prepares for a new school');
+    expect(text).toContain(`Summary: ${repeatedSummary}`);
+    expect(text).toContain('Body: His school choice has also attracted public criticism.');
+    expect(text.match(/Prince George starts at Eton College/g)).toHaveLength(1);
+  });
+
+  it('omits a description that is effectively identical to the title', async () => {
+    const { buildArticleEventEmbeddingText } = await import('../../services/articles/embedArticle.js');
+
+    const text = buildArticleEventEmbeddingText({
+      title: 'Prince George prepares for a new school this summer',
+      description: 'Prince George prepares for a new school this summer.'
+    });
+
+    expect(text).toBe('Title: Prince George prepares for a new school this summer');
   });
 
   it('still calls provider for normal-sized event input', async () => {

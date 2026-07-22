@@ -45,15 +45,16 @@ function buildEmbeddingInput(article, articleIndex) {
   return buildArticleEventEmbeddingText({
     title: articleTitle(article, articleIndex),
     description: article.description || '',
-    contentText: article.contentText || articleContent(article)
+    contentText: article.contentText || ''
   });
 }
 
-function isExistingVectorReusable(existingVector) {
+function isExistingVectorReusable(existingVector, embeddingInputHash) {
   return (
     Array.isArray(existingVector?.articleVector) &&
     existingVector.articleVector.length > 0 &&
-    existingVector.embeddingModel === EMBEDDING_MODEL
+    existingVector.embeddingModel === EMBEDDING_MODEL &&
+    existingVector.embeddingInputHash === embeddingInputHash
   );
 }
 
@@ -91,17 +92,21 @@ async function main() {
         const contentSourceHash = hashContent(articleContent(article));
         const existingVector = existingVectors.get(contentSourceHash);
         const embeddingInput = buildEmbeddingInput(article, articleIndex);
+        const embeddingInputHash = hashContent(embeddingInput);
 
         return {
           article,
           articleIndex,
           contentSourceHash,
           embeddingInput,
+          embeddingInputHash,
           existingVector
         };
       });
 
-    const missing = batch.filter(item => !isExistingVectorReusable(item.existingVector));
+    const missing = batch.filter(item => (
+      !isExistingVectorReusable(item.existingVector, item.embeddingInputHash)
+    ));
     const shortInput = missing.filter(
       item => item.embeddingInput.length < PRODUCTION_MIN_EVENT_LENGTH
     );
@@ -125,6 +130,7 @@ async function main() {
         generatedByHash.set(item.contentSourceHash, {
           contentSourceHash: item.contentSourceHash,
           embeddingModel: EMBEDDING_MODEL,
+          embeddingInputHash: item.embeddingInputHash,
           articleVector: result.embedding
         });
       });
@@ -135,6 +141,7 @@ async function main() {
         generatedByHash.get(item.contentSourceHash) || {
           contentSourceHash: item.contentSourceHash,
           embeddingModel: item.existingVector.embeddingModel,
+          embeddingInputHash: item.embeddingInputHash,
           articleVector: item.existingVector.articleVector
         }
       );

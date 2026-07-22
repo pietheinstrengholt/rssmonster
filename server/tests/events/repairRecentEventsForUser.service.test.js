@@ -56,6 +56,161 @@ function recentDateWithOffset(offsetMs = 0) {
 }
 
 describe('repairRecentEventsForUser', () => {
+  it('assigns an article using its persisted article vector when vectors are not supplied', async () => {
+    const { user, feed } = await createUserGraph('persisted-assignment-vector');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Acme merger talks advance in Brussels',
+      publishedAt: recentDateWithOffset(),
+      articleVector: [1, 0, 0]
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [1, 0, 0],
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Acme merger talks advance in Brussels after vote',
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0]
+    }));
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle.id,
+      new EventCache([event]),
+      null,
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+  });
+
+  it('prefers an explicitly supplied event vector over the persisted article vector', async () => {
+    const { user, feed } = await createUserGraph('explicit-assignment-vector');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Acme merger talks advance in Brussels',
+      publishedAt: recentDateWithOffset(),
+      articleVector: [0, 1, 0]
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [0, 1, 0],
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Acme merger talks advance in Brussels after vote',
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0]
+    }));
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([event]),
+      { eventVector: [0, 1, 0] },
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+  });
+
+  it('keeps the topic-only no-vector path when no vector is available', async () => {
+    const { user, feed } = await createUserGraph('missing-assignment-vector');
+    const article = await Article.create(articlePayload(user, feed, 1, {
+      articleVector: null
+    }));
+    const runContext = { stats: {} };
+
+    const eventId = await assignArticleToEvent(
+      article,
+      new EventCache([]),
+      null,
+      [],
+      runContext,
+      { skipTopicAssignment: true }
+    );
+
+    await article.reload();
+
+    expect(eventId).toBeNull();
+    expect(article.eventId).toBeNull();
+    expect(runContext.stats.topicOnlyNoVectorCount).toBe(1);
+  });
+
+  it('rejects duplicate articles before event assignment', async () => {
+    const { user, feed } = await createUserGraph('duplicate-assignment-vector');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Acme merger talks advance in Brussels',
+      publishedAt: recentDateWithOffset(),
+      articleVector: [1, 0, 0]
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [1, 0, 0],
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
+      status: 'active'
+    });
+    const duplicateArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Acme merger talks advance in Brussels after vote',
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0],
+      status: 'duplicate',
+      duplicateOfArticleId: representativeArticle.id
+    }));
+    const runContext = { stats: {} };
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      duplicateArticle,
+      new EventCache([event]),
+      null,
+      [],
+      runContext,
+      { skipTopicAssignment: true }
+    );
+
+    await duplicateArticle.reload();
+    await event.reload();
+
+    expect(eventId).toBeNull();
+    expect(duplicateArticle.eventId).toBeNull();
+    expect(event.articleCount).toBe(1);
+    expect(runContext.stats).toEqual({});
+  });
+
   it('excludes filtered articles from semantic duplicate candidates', async () => {
     const { user, feed } = await createUserGraph('filtered-duplicate');
     await Article.create(articlePayload(user, feed, 1, {

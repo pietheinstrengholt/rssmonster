@@ -304,7 +304,7 @@ export const setSettings = async (req, res, _next) => {
 
     if (includeDevelopingEvents !== undefined) {
       if (typeof includeDevelopingEvents !== 'boolean') {
-        throw new Error('includeDevelopingEvents must be a boolean');
+        return res.status(400).json({ error: 'includeDevelopingEvents must be a boolean' });
       }
       validatedSettings.includeDevelopingEvents = includeDevelopingEvents;
     }

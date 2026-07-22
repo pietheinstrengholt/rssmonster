@@ -762,11 +762,11 @@ export async function assignArticleToEvent(articleIdOrObj, cache = null, vectors
     ? articleIdOrObj
     : await Article.findByPk(articleIdOrObj);
 
-  const articleEventVector = vectors?.eventVector ?? null;
-  const normalizedArticleEventVector = normalizeVector(articleEventVector);
-
   if (!article) return null;
   if (article.status === DUPLICATE_ARTICLE_STATUS || article.duplicateOfArticleId != null) return null;
+
+  const articleEventVector = vectors?.eventVector ?? resolveArticleVector(article);
+  const normalizedArticleEventVector = normalizeVector(articleEventVector);
 
   article.tokenSet ??= tokenSet(article.title || '');
   article.entitySet ??= extractEntitySet(article);

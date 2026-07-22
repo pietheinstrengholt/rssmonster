@@ -101,8 +101,8 @@ export default class ArticleEventCandidateCache {
         'articleVector'
       ],
       order: [
-        ['publishedAt', 'ASC'],
-        ['id', 'ASC']
+        ['publishedAt', 'DESC'],
+        ['id', 'DESC']
       ],
       limit: options.limit || MAX_CANDIDATES * 4
     });
@@ -115,7 +115,7 @@ export default class ArticleEventCandidateCache {
   }
 
   // This function converts a Sequelize article or plain record into the cache shape.
-  toRecord(article) {
+  toRecord(article, options = {}) {
     const eventVector = Array.isArray(article?.eventVector)
       ? article.eventVector
       : article?.articleVector;
@@ -137,13 +137,14 @@ export default class ArticleEventCandidateCache {
       normalizedEventVector,
       tokenSet: article.tokenSet instanceof Set ? article.tokenSet : tokenSet(article.title),
       entitySet: article.entitySet instanceof Set ? article.entitySet : entitySet(article),
+      currentRun: Boolean(options.currentRun),
       hourBucket
     };
   }
 
   // This function inserts or replaces one article candidate in the cache.
-  insert(article) {
-    const record = this.toRecord(article);
+  insert(article, options = {}) {
+    const record = this.toRecord(article, options);
     if (!record) return null;
 
     this.remove(record.id);
@@ -158,7 +159,7 @@ export default class ArticleEventCandidateCache {
 
   // This function updates one cached article and keeps its bucket placement valid.
   update(article) {
-    return this.insert(article);
+    return this.insert(article, { currentRun: true });
   }
 
   // This function patches only the event assignment for cached articles.
@@ -213,6 +214,15 @@ export default class ArticleEventCandidateCache {
         candidates.push(candidate);
       }
     }
+
+    candidates.sort((left, right) => {
+      const leftDistance = Math.abs(articleTs - articleEventTimestamp(left));
+      const rightDistance = Math.abs(articleTs - articleEventTimestamp(right));
+
+      return leftDistance - rightDistance ||
+        Number(right.currentRun) - Number(left.currentRun) ||
+        Number(right.id) - Number(left.id);
+    });
 
     return candidates.slice(0, MAX_CANDIDATES);
   }

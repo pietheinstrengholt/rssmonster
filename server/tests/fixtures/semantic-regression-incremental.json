@@ -1420,7 +1420,7 @@
                          "favoriteInd":  0,
                          "negativeInd":  0,
                          "clickedAmount":  0,
-                         "url":  "https://www.ad.nl/buitenland/spaanse-hitte-eist-1028-levens-in-juni-ruim-2-keer-zo-veel-doden-door-hitte-als-vorig-jaar~aab325c97/",
+                         "url":  "https://www.ad.nl/buitenland/spaanse-hitte-eist-1028-levens-in-juni-ruim-2-keer-zo-veel-doden-door-hitte-als-vorig-jaar~aab111c97/",
                          "title":  "Spaanse hitte eist 1028 levens in juni, ruim 2 keer zo veel doden door hitte als vorig jaar",
                          "description":  "Het officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar aan de gevolgen van de hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.",
                          "contentOriginal":  "\u003chtml\u003e\u003chead\u003e\u003c/head\u003e\u003cbody\u003eHet officiële Spaanse gezondheidsinstituut Carlos III brengt 1028 sterfgevallen in juni in verband met de hittegolf. Dat is veel meer dan de 407 mensen die in juni vorig jaar aan de gevolgen van de hitte overleden. Dat was de heetste maand juni in het land sinds de temperaturen stelselmatig worden bijgehouden. De maand juni van dit jaar was de op een na warmste.\u003c/body\u003e\u003c/html\u003e",
@@ -1456,7 +1456,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-21T20:18:00.000Z",
-                         "firstSeen": "2026-07-22T08:51:04.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 775,
@@ -1471,7 +1471,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T04:30:04.000Z",
-                         "firstSeen": "2026-07-22T08:50:12.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 776,
@@ -1486,7 +1486,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-21T20:18:00.000Z",
-                         "firstSeen": "2026-07-22T08:51:04.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 777,
@@ -1501,7 +1501,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T04:30:00.000Z",
-                         "firstSeen": "2026-07-22T08:50:13.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 778,
@@ -1516,7 +1516,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-21T20:18:00.000Z",
-                         "firstSeen": "2026-07-22T08:51:05.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 779,
@@ -1531,7 +1531,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T06:00:09.000Z",
-                         "firstSeen": "2026-07-22T08:49:49.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 780,
@@ -1540,13 +1540,13 @@
                          "favoriteInd": 0,
                          "negativeInd": 0,
                          "clickedAmount": 0,
-                         "url": "https://www.ad.nl/binnenland/webshopkenner-dennis-waarschuwt-voor-spookpakketten-geen-stofzuiger-van-400-euro-maar-wel-stiften~aab98e6d/",
+                         "url": "https://www.ad.nl/binnenland/webshopkenner-dennis-waarschuwt-voor-spookpakketten-geen-stofzuiger-van-400-euro-maar-wel-stiften~aab9776d/",
                          "title": "Webshopkenner Dennis waarschuwt voor spookpakketten: geen stofzuiger van 400 euro, maar wel stiften",
                          "description": "Je hebt niets besteld en krijgt toch een pakketje thuisbezorgd. Leuk? Niet als de afzender je probeert te bedonderen. Dennis Aagten uit Glanerbrug, manager bij een bedrijf dat bestellingen verwerkt voor webshops, waarschuwt voor brushing. Wat is dat?",
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T06:00:00.000Z",
-                         "firstSeen": "2026-07-22T08:49:49.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 781,
@@ -1561,7 +1561,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T09:24:00.000Z",
-                         "firstSeen": "2026-07-22T11:37:34.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 782,
@@ -1576,7 +1576,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T09:45:00.000Z",
-                         "firstSeen": "2026-07-22T11:37:24.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 783,
@@ -1585,13 +1585,13 @@
                          "favoriteInd": 0,
                          "negativeInd": 0,
                          "clickedAmount": 0,
-                         "url": "https://www.ad.nl/binnenland/trams-botsen-op-elkaar-op-erasmusbrug-15-gewonden-van-wie-een-zwaargewond~a71c3e86/",
+                         "url": "https://www.ad.nl/binnenland/trams-botsen-op-elkaar-op-erasmusbrug-15-gewonden-van-wie-een-zwaargewond~a71c3e88/",
                          "title": "Trams botsen op elkaar op Erasmusbrug: 15 gewonden, van wie één zwaargewond",
                          "description": "Woensdagochtend zijn twee trams midden op de Erasmusbrug op elkaar gebotst. Op de eerste beelden is te zien dat het voorste gedeelte van de achterste tram volledig is verwoest. Bij het incident zijn 15 gewonden gevallen, van wie één zwaargewond. In dit liveblog houden we je op de hoogte van het laatste nieuws.",
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T09:45:00.000Z",
-                         "firstSeen": "2026-07-22T11:37:25.000Z"
+                         "firstSeen":  null
                      },
                      {
                          "sourceId": 784,
@@ -1606,7 +1606,7 @@
                          "contentOriginal": null,
                          "contentHtml": null,
                          "publishedAt": "2026-07-22T09:24:00.000Z",
-                         "firstSeen": "2026-07-22T11:38:50.000Z"
+                         "firstSeen":  null
                      }
                  ]
 }

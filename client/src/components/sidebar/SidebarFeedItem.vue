@@ -68,6 +68,10 @@ const formattedCount = computed(() => formatCount(props.count));
   box-shadow: none;
 }
 
+.sidebar-feed:not(.selected):hover {
+  background-color: var(--bg-hover);
+}
+
 .sidebar-feed.error {
   background-color: var(--bg-secondary);
 }
@@ -160,6 +164,10 @@ const formattedCount = computed(() => formatCount(props.count));
 :global(:root[data-theme='dark'] .sidebar-feed.selected) {
   color: var(--sidebar-selected-text-dark) !important;
   background-color: var(--sidebar-selected-background-dark) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-feed:not(.selected):hover) {
+  background-color: var(--toolbar-search-hover-background-dark);
 }
 
 :global(:root[data-theme='dark'] .sidebar-feed.selected .sidebar-count) {

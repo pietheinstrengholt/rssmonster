@@ -55,21 +55,95 @@ function extractParagraphs(text = '') {
     .filter(p => p.length >= 40);
 }
 
-// This function builds concise event-oriented text from title and early content.
-function extractEventText({ title, contentText }) {
-  const parts = [];
+// This function normalizes text for duplicate sentence comparisons.
+function normalizeComparableText(text = '') {
+  return cleanText(text)
+    .toLowerCase()
+    .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+// This function splits cleaned article text into sentence-sized embedding units.
+function splitSentences(text = '') {
+  const cleaned = cleanText(text);
+  if (!cleaned) return [];
+
+  return cleaned.split(/(?<=[.!?])\s+/).map(sentence => sentence.trim()).filter(Boolean);
+}
+
+// This function detects exact and near-identical embedding text units.
+function isEffectivelyDuplicate(candidate, acceptedTexts) {
+  const normalizedCandidate = normalizeComparableText(candidate);
+  if (!normalizedCandidate) return true;
+
+  const candidateTokens = new Set(normalizedCandidate.split(' '));
+
+  return acceptedTexts.some(existing => {
+    const normalizedExisting = normalizeComparableText(existing);
+    if (normalizedCandidate === normalizedExisting) return true;
+
+    const existingTokens = new Set(normalizedExisting.split(' '));
+    const union = new Set([...candidateTokens, ...existingTokens]);
+    if (!union.size) return true;
+
+    let intersection = 0;
+    for (const token of candidateTokens) {
+      if (existingTokens.has(token)) intersection++;
+    }
+
+    return intersection / union.size >= 0.9;
+  });
+}
+
+// This function keeps unique sentences and records them for later section comparisons.
+function uniqueSentences(texts, acceptedTexts) {
+  const unique = [];
+
+  for (const text of texts) {
+    if (isEffectivelyDuplicate(text, acceptedTexts)) continue;
+    unique.push(text);
+    acceptedTexts.push(text);
+  }
+
+  return unique;
+}
+
+// This function builds structured event text from unique title, summary, and body evidence.
+function extractEventText({ title, description, contentText }) {
+  const sections = [];
+  const acceptedTexts = [];
 
   const t = normalizeTitle(title);
-  if (t) parts.push(t);
+  if (t) {
+    sections.push(`Title: ${t}`);
+    acceptedTexts.push(t);
+  }
 
-  if (contentText && !isLikelyHtml(contentText)) {
-    const paragraphs = extractParagraphs(contentText);
-    if (paragraphs.length) {
-      parts.push(paragraphs.slice(0, 2).join(' '));
+  if (description && !isLikelyHtml(description)) {
+    const summarySentences = uniqueSentences(splitSentences(description), acceptedTexts);
+    if (summarySentences.length) {
+      sections.push(`Summary: ${summarySentences.join(' ')}`);
     }
   }
 
-  return parts.join(' ').trim();
+  if (contentText && !isLikelyHtml(contentText)) {
+    const bodyParagraphs = [];
+
+    for (const paragraph of extractParagraphs(contentText)) {
+      const sentences = uniqueSentences(splitSentences(paragraph), acceptedTexts);
+      if (!sentences.length) continue;
+
+      bodyParagraphs.push(sentences.join(' '));
+      if (bodyParagraphs.length === 2) break;
+    }
+
+    if (bodyParagraphs.length) {
+      sections.push(`Body: ${bodyParagraphs.join(' ')}`);
+    }
+  }
+
+  return sections.join('\n').trim();
 }
 
 // This function builds longer topic-oriented text from article body content.
@@ -111,9 +185,10 @@ function isWithinEmbeddingTokenLimit(text = '') {
 // This function exposes the event embedding text builder for tests and callers.
 export function buildArticleEventEmbeddingText(articleOrInput = {}) {
   const title = articleOrInput?.title;
-  const contentText = articleOrInput?.contentText || articleOrInput?.description || '';
+  const description = articleOrInput?.description || '';
+  const contentText = articleOrInput?.contentText || '';
 
-  return extractEventText({ title, contentText });
+  return clipToEmbeddingTokenLimit(extractEventText({ title, description, contentText }));
 }
 
 // This function checks whether event embedding input is long enough to be useful.
@@ -153,9 +228,9 @@ export async function embedArticle(articleOrInput, options = {}) {
   const article = isArticleInstance(articleOrInput) ? articleOrInput : null;
 
   const title = article ? article.title : articleOrInput?.title;
-  const contentText = article
-    ? (article.contentText || article.description || '')
-    : (articleOrInput?.contentText || articleOrInput?.description || '');
+  const description = article ? article.description : articleOrInput?.description;
+  const contentText = article ? article.contentText : articleOrInput?.contentText;
+  const topicContentText = contentText || description || '';
 
   if (article && hasArticleVector(article)) {
     // Fast-path: skip provider call when vector already exists.
@@ -171,10 +246,8 @@ export async function embedArticle(articleOrInput, options = {}) {
     return null;
   }
 
-  const eventText = clipToEmbeddingTokenLimit(
-    buildArticleEventEmbeddingText({ title, contentText })
-  );
-  const topicText = extractTopicText({ contentText });
+  const eventText = buildArticleEventEmbeddingText({ title, description, contentText });
+  const topicText = extractTopicText({ contentText: topicContentText });
 
   if (!eventText || (!allowShortEventText && eventText.length < MIN_EVENT_LENGTH)) {
     return null;

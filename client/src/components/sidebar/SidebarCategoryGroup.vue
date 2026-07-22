@@ -119,6 +119,10 @@ function getFeedCount(feed) {
   box-shadow: none;
 }
 
+.sidebar-category:not(.selected):hover {
+  background-color: var(--bg-hover);
+}
+
 .sidebar-category-header {
   padding: 4px 4px 4px 12px;
   display: flex;
@@ -205,6 +209,10 @@ function getFeedCount(feed) {
 :global(:root[data-theme='dark'] .sidebar-category.selected) {
   color: var(--sidebar-selected-text-dark) !important;
   background-color: var(--sidebar-selected-background-dark) !important;
+}
+
+:global(:root[data-theme='dark'] .sidebar-category:not(.selected):hover) {
+  background-color: var(--toolbar-search-hover-background-dark);
 }
 
 :global(:root[data-theme='dark'] .sidebar-category.selected .sidebar-count) {

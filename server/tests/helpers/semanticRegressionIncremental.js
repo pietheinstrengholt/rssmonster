@@ -21,7 +21,7 @@ export const INCREMENTAL_VECTOR_FIXTURE_PATH = join(
   'semantic-regression-incremental.vectors.json'
 );
 export const FIXTURE_USERNAME = 'semantic-regression-user';
-export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 80;
+export const EXPECTED_INCREMENTAL_ARTICLE_COUNT = 91;
 
 // This function loads a JSON fixture from disk.
 export async function loadFixture(path) {
