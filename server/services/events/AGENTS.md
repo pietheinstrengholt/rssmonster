@@ -299,19 +299,26 @@ Remain eventless
 
 For every Article:
 
-1. Ensure a usable Event embedding exists.
-2. Search nearby candidate Events.
-3. If a sufficiently similar Event exists:
+1. Resolve or load the Article.
+2. Reject missing and duplicate Articles before assignment work begins.
+3. Resolve the Event vector:
+   - prefer an explicitly supplied Event vector
+   - otherwise use the persisted `articleVector`
+4. If no usable vector exists:
+   - follow the existing topic-only path
+   - preserve the existing no-vector counters
+5. Search nearby candidate Events.
+6. If a sufficiently similar Event exists:
    - join that Event.
-4. Otherwise search nearby candidate Articles.
-5. Include both:
+7. Otherwise search nearby candidate Articles.
+8. Include both:
    - assigned Articles
    - unassigned Articles
-6. If assigned Articles consistently point to one Event:
+9. If assigned Articles consistently point to one Event:
    - join that Event.
-7. If enough similar unassigned Articles exist:
+10. If enough similar unassigned Articles exist:
    - create a new Event.
-8. Otherwise:
+11. Otherwise:
    - leave the Article eventless.
 
 ---
@@ -411,6 +418,21 @@ Candidate lookup should be entirely in-memory.
 
 Normal Event assignment should not perform database searches for every Article.
 
+The historical preload should retain the newest bounded set of eligible Articles.
+
+For each Article being assigned:
+
+1. Collect eligible candidates within the hard ±24-hour Event window.
+2. Rank candidates by absolute publication-time distance from the current Article.
+3. Prefer candidates processed during the current run when time distance ties.
+4. Apply the per-Article comparison cap only after relevance ordering.
+5. Compare only the best 300 candidates.
+
+After an Article is processed, add or update it in the current-run cache. This lets
+later Articles from the same crawl use earlier Articles as corroborating evidence.
+The candidate cap must never be applied before relevance ordering, because doing so
+can hide highly similar current-run Articles behind older unrelated records.
+
 ---
 
 # Event Repair
@@ -421,7 +443,14 @@ RSSMonster supports multiple Event assignment scopes.
 
 Used during normal feed crawling.
 
-Processes only recent unassigned Articles.
+Processes only newly created, canonical, unfiltered, unassigned Articles.
+
+Article interaction status does not control semantic eligibility. `unread`, `read`,
+`favorite`, and other non-duplicate statuses are eligible when the Article is in the
+incremental scope. Event assignment must preserve the Article's existing status.
+
+Incremental scope is based on `createdAt`, never `updatedAt`. Publisher revisions may
+change `updatedAt`, but they must not re-enter the semantic pipeline as new Articles.
 
 ---
 
@@ -453,6 +482,23 @@ Do not repeatedly normalize vectors during matching.
 Similarity calculations should reuse normalized vectors.
 
 Avoid recomputing embeddings or normalization inside matching loops.
+
+An explicitly supplied Event vector takes precedence at the assignment entry point.
+When no explicit vector is supplied, a persisted `articleVector` is valid Event
+assignment input. Database-loaded Articles must not require callers to construct a
+separate vectors object.
+
+Event embedding input is structured as:
+
+```text
+Title: normalized Article title
+Summary: unique Article description sentences
+Body: up to two unique, meaningful early body paragraphs
+```
+
+Description and body text are considered independently. Exact and near-identical
+sentences must be removed across sections so repeated publisher text is not
+overweighted. The final Event embedding input is capped at 512 estimated tokens.
 
 ---
 
@@ -522,6 +568,8 @@ Avoid introducing changes that:
 - create one-article Events
 - force every Article into an Event
 - make clustering dependent on crawl order
+- apply the Article candidate cap before relevance ordering
+- use Article read status as an Event-assignment filter
 - repeatedly normalize vectors
 - query the database during every Article comparison
 - create duplicate Events

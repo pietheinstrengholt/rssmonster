@@ -89,6 +89,35 @@ describe('createAndAssignEvent', () => {
     }
   });
 
+  it('uses a later unread seed as developing coverage when an earlier candidate was read', async () => {
+    const { user, feed } = await createUserGraph('developing-event-creation');
+    const readCandidateArticle = await createArticle(user, feed, 'read-candidate', 'read');
+    const incomingArticle = await createArticle(user, feed, 'incoming');
+
+    const eventId = await createAndAssignEvent({
+      candidateArticles: [readCandidateArticle],
+      article: incomingArticle,
+      cache: null,
+      skipTopicAssignment: true
+    });
+
+    const event = await Event.findByPk(eventId);
+    await readCandidateArticle.reload();
+    await incomingArticle.reload();
+
+    expect(event.representativeArticleId).toBe(readCandidateArticle.id);
+    expect(event.developingArticleId).toBe(incomingArticle.id);
+    expect(event.name).toBe('read');
+    expect(readCandidateArticle).toMatchObject({
+      eventId,
+      status: 'read'
+    });
+    expect(incomingArticle).toMatchObject({
+      eventId,
+      status: 'unread'
+    });
+  });
+
   it('commits a managed creation transaction before adding the event to the cache', async () => {
     const { user, feed } = await createUserGraph('managed-event-creation');
     const candidateArticle = await createArticle(user, feed, 'managed-candidate');

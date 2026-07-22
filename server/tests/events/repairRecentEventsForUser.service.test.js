@@ -1008,12 +1008,15 @@ describe('repairRecentEventsForUser', () => {
 
     await existingArticle.reload();
     await incomingArticle.reload();
+    const event = await Event.findByPk(eventId);
 
     expect(eventId).toBeTruthy();
     expect(existingArticle.eventId).toBe(eventId);
     expect(incomingArticle.eventId).toBe(eventId);
     expect(existingArticle.status).toBe('read');
     expect(incomingArticle.status).toBe('unread');
+    expect(event.representativeArticleId).toBe(existingArticle.id);
+    expect(event.developingArticleId).toBe(incomingArticle.id);
   });
 
   it('does not overwrite non-unread article status when joining a read event', async () => {

@@ -220,17 +220,19 @@ export const getSettings = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    //set default values
+    const aiEnabled = Boolean(process.env.OPENAI_API_KEY);
+
+    // Set first-load defaults based on whether AI features are available.
     let categoryId = "%";
     let feedId = "%";
     let status = "unread";
-    let sort = "desc";
+    let sort = aiEnabled ? "recommended" : "desc";
     let minAdvertisementScore = 0;
     let minSentimentScore = 0;
     let minQualityScore = 0;
-    let viewMode = "full";
-    let grouping = "none";
-    let includeDevelopingEvents = false;
+    let viewMode = aiEnabled ? "reader" : "full";
+    let grouping = aiEnabled ? "event" : "none";
+    let includeDevelopingEvents = aiEnabled;
     let themeMode = 'system';
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
@@ -265,7 +267,7 @@ export const getSettings = async (req, res, _next) => {
       grouping: String(grouping),
       includeDevelopingEvents,
       themeMode: themeMode,
-      AIEnabled: Boolean(process.env.OPENAI_API_KEY)
+      AIEnabled: aiEnabled
     });
   } catch (err) {
     console.error('Error in getSettings:', err);

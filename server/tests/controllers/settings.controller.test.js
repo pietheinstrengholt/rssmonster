@@ -42,15 +42,66 @@ describe('settings controller', () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  it('serializes the false developing-events default', async () => {
+  it('returns the standard defaults when AI is disabled', async () => {
+    const originalOpenAIKey = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
     const user = await createUser();
 
-    const response = await request(app)
-      .get('/api/setting')
-      .set('Authorization', authHeaderFor(user));
+    try {
+      const response = await request(app)
+        .get('/api/setting')
+        .set('Authorization', authHeaderFor(user));
 
-    expect(response.status).toBe(200);
-    expect(response.body.includeDevelopingEvents).toBe(false);
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        categoryId: '%',
+        feedId: '%',
+        status: 'unread',
+        sort: 'desc',
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0,
+        viewMode: 'full',
+        grouping: 'none',
+        includeDevelopingEvents: false,
+        themeMode: 'system',
+        AIEnabled: false
+      });
+    } finally {
+      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+    }
+  });
+
+  it('returns AI-first defaults when AI is enabled', async () => {
+    const originalOpenAIKey = process.env.OPENAI_API_KEY;
+    process.env.OPENAI_API_KEY = 'test-api-key';
+    const user = await createUser();
+
+    try {
+      const response = await request(app)
+        .get('/api/setting')
+        .set('Authorization', authHeaderFor(user));
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        categoryId: '%',
+        feedId: '%',
+        status: 'unread',
+        sort: 'recommended',
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0,
+        viewMode: 'reader',
+        grouping: 'event',
+        includeDevelopingEvents: true,
+        themeMode: 'system',
+        AIEnabled: true
+      });
+    } finally {
+      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+    }
   });
 
   it('validates and persists the developing-events setting', async () => {

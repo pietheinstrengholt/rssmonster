@@ -75,6 +75,25 @@ function generateEventName(article) {
   return name || null;
 }
 
+// This function initializes event pointers while preserving already-seen standalone coverage.
+function selectInitialArticlePointers(lockedArticles, lockedSeedArticle) {
+  const previouslyReadArticle = lockedArticles.find(candidate =>
+    Number(candidate.id) !== Number(lockedSeedArticle.id) && candidate.status === 'read'
+  );
+
+  if (lockedSeedArticle.status === 'unread' && previouslyReadArticle) {
+    return {
+      representativeArticle: previouslyReadArticle,
+      developingArticleId: lockedSeedArticle.id
+    };
+  }
+
+  return {
+    representativeArticle: lockedSeedArticle,
+    developingArticleId: lockedSeedArticle.id
+  };
+}
+
 // This function creates an event, assigns all member articles, and optionally links event topics.
 export async function createAndAssignEvent({
   candidateArticles,
@@ -137,15 +156,19 @@ export async function createAndAssignEvent({
 
   const eventWindowStartAt = projection.eventWindowStartAt ?? eventDateFromArticle(lockedSeedArticle);
   const eventWindowEndAt = projection.eventWindowEndAt ?? eventDateFromArticle(lockedSeedArticle);
-  const name = generateEventName(lockedSeedArticle);
+  const { representativeArticle, developingArticleId } = selectInitialArticlePointers(
+    lockedArticles,
+    lockedSeedArticle
+  );
+  const name = generateEventName(representativeArticle);
   const eventStrength = computeInitialEventStrength(projection.articleCount);
 
-  // A new event starts with the seed article as both its stable anchor and developing article.
+  // Previously consumed coverage remains the stable anchor when an unread seed develops the story.
   const newEvent = await Event.create({
     userId: lockedSeedArticle.userId,
     topicId: null,
-    representativeArticleId: lockedSeedArticle.id,
-    developingArticleId: lockedSeedArticle.id,
+    representativeArticleId: representativeArticle.id,
+    developingArticleId,
     name,
     articleCount: projection.articleCount,
     eventStrength,
