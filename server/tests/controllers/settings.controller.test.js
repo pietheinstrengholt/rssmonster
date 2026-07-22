@@ -65,6 +65,7 @@ describe('settings controller', () => {
         grouping: 'none',
         includeDevelopingEvents: false,
         themeMode: 'system',
+        startupViewMode: 'last-used',
         AIEnabled: false
       });
     } finally {
@@ -96,7 +97,100 @@ describe('settings controller', () => {
         grouping: 'event',
         includeDevelopingEvents: true,
         themeMode: 'system',
+        startupViewMode: 'last-used',
         AIEnabled: true
+      });
+    } finally {
+      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+    }
+  });
+
+  it('uses built-in selection defaults while retaining durable preferences in default mode', async () => {
+    const originalOpenAIKey = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    const user = await createUser();
+
+    await Setting.create({
+      userId: user.id,
+      categoryId: '42',
+      feedId: '84',
+      status: 'favorite',
+      sort: 'quality',
+      minAdvertisementScore: 10,
+      minSentimentScore: 20,
+      minQualityScore: 30,
+      viewMode: 'minimal',
+      grouping: 'topic',
+      includeDevelopingEvents: true,
+      themeMode: 'dark',
+      startupViewMode: 'default'
+    });
+
+    try {
+      const response = await request(app)
+        .get('/api/setting')
+        .set('Authorization', authHeaderFor(user));
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        categoryId: '%',
+        feedId: '%',
+        status: 'unread',
+        sort: 'desc',
+        minAdvertisementScore: 10,
+        minSentimentScore: 20,
+        minQualityScore: 30,
+        viewMode: 'full',
+        grouping: 'none',
+        includeDevelopingEvents: true,
+        themeMode: 'dark',
+        startupViewMode: 'default',
+        AIEnabled: false
+      });
+    } finally {
+      if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
+      else process.env.OPENAI_API_KEY = originalOpenAIKey;
+    }
+  });
+
+  it('restores persisted selection and filter settings in last-used mode', async () => {
+    const originalOpenAIKey = process.env.OPENAI_API_KEY;
+    delete process.env.OPENAI_API_KEY;
+    const user = await createUser();
+
+    await Setting.create({
+      userId: user.id,
+      categoryId: '42',
+      feedId: '84',
+      status: 'favorite',
+      sort: 'quality',
+      minAdvertisementScore: 10,
+      minSentimentScore: 20,
+      minQualityScore: 30,
+      viewMode: 'minimal',
+      grouping: 'topic',
+      startupViewMode: 'last-used'
+    });
+
+    try {
+      const response = await request(app)
+        .get('/api/setting')
+        .set('Authorization', authHeaderFor(user));
+
+      expect(response.status).toBe(200);
+      expect(response.body).toMatchObject({
+        categoryId: '42',
+        feedId: '84',
+        status: 'favorite',
+        sort: 'quality',
+        minAdvertisementScore: 10,
+        minSentimentScore: 20,
+        minQualityScore: 30,
+        viewMode: 'minimal',
+        grouping: 'topic',
+        startupViewMode: 'last-used',
+        AIEnabled: false
       });
     } finally {
       if (originalOpenAIKey === undefined) delete process.env.OPENAI_API_KEY;
@@ -225,5 +319,30 @@ describe('settings controller', () => {
     expect(validResponse.status).toBe(200);
     expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
     expect(Boolean(briefingPreference.includeDevelopingEvents)).toBe(true);
+  });
+
+  it('validates and persists the startup view mode for the current user', async () => {
+    const user = await createUser();
+    const otherUser = await createUser();
+    await Setting.create({ userId: otherUser.id });
+
+    const invalidResponse = await request(app)
+      .patch('/api/setting/startup-view')
+      .set('Authorization', authHeaderFor(user))
+      .send({ startupViewMode: 'recent' });
+    const validResponse = await request(app)
+      .patch('/api/setting/startup-view')
+      .set('Authorization', authHeaderFor(user))
+      .send({ startupViewMode: 'default' });
+
+    const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
+    const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
+
+    expect(invalidResponse.status).toBe(400);
+    expect(invalidResponse.body.error).toBe('startupViewMode must be last-used or default');
+    expect(validResponse.status).toBe(200);
+    expect(validResponse.body).toMatchObject({ success: true, startupViewMode: 'default' });
+    expect(settings.startupViewMode).toBe('default');
+    expect(otherSettings.startupViewMode).toBe('last-used');
   });
 });

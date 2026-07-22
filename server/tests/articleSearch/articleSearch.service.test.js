@@ -687,6 +687,11 @@ describe('articleSearch.service', () => {
           status: '%'
         });
 
+        await Setting.update(
+          { startupViewMode: 'default' },
+          { where: { userId: user.id } }
+        );
+
         const overrideResult = await searchArticles({
           userId: user.id,
           search: 'sort:trust',
@@ -708,11 +713,12 @@ describe('articleSearch.service', () => {
         const persistedSetting = await Setting.findOne({ where: { userId: user.id } });
         expect(persistedSetting.sort).toBe('trust');
         expect(Boolean(persistedSetting.includeDevelopingEvents)).toBe(true);
+        expect(persistedSetting.startupViewMode).toBe('default');
       } finally {
         await Article.destroy({ where: { id: createdArticles.map(article => article.id) } });
         await Feed.destroy({ where: { id: [highTrustFeed.id, lowTrustFeed.id] } });
         await Setting.update(
-          { sort: 'desc', includeDevelopingEvents: false },
+          { sort: 'desc', includeDevelopingEvents: false, startupViewMode: 'last-used' },
           { where: { userId: user.id } }
         );
       }

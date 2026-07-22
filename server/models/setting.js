@@ -72,6 +72,14 @@ export default (sequelize) => {
         validate: {
           isIn: [['system', 'light', 'dark']]
         }
+      },
+      startupViewMode: {
+        type: DataTypes.STRING(16),
+        allowNull: false,
+        defaultValue: 'last-used',
+        validate: {
+          isIn: [['last-used', 'default']]
+        }
       }
     },
     {

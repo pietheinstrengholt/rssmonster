@@ -16,6 +16,10 @@ export const saveIncludeDevelopingEvents = includeDevelopingEvents =>
 export const saveThemeMode = themeMode =>
   api.patch('/setting/theme', { themeMode });
 
+// This function saves the user's preferred startup selection behavior.
+export const saveStartupViewMode = startupViewMode =>
+  api.patch('/setting/startup-view', { startupViewMode });
+
 export const fetchIslandsOverview = () =>
   api.get('/setting/islands');
 

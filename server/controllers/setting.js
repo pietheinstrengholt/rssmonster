@@ -234,22 +234,28 @@ export const getSettings = async (req, res, _next) => {
     let grouping = aiEnabled ? "event" : "none";
     let includeDevelopingEvents = aiEnabled;
     let themeMode = 'system';
+    let startupViewMode = 'last-used';
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
 
-    //use database values, if available
+    // Always restore durable preferences, regardless of the startup selection behavior.
     if (settings) {
-      categoryId = settings.categoryId;
-      feedId = settings.feedId;
-      status = settings.status;
-      sort = settings.sort;
       minAdvertisementScore = settings.minAdvertisementScore || 0;
       minSentimentScore = settings.minSentimentScore || 0;
       minQualityScore = settings.minQualityScore || 0;
-      viewMode = settings.viewMode || 'full';
-      grouping = settings.grouping || 'none';
       includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
       themeMode = settings.themeMode || 'system';
+      startupViewMode = settings.startupViewMode || 'last-used';
+
+      // Restore the previous selection only when the user opted into last-used startup behavior.
+      if (startupViewMode === 'last-used') {
+        categoryId = settings.categoryId;
+        feedId = settings.feedId;
+        status = settings.status;
+        sort = settings.sort;
+        viewMode = settings.viewMode || 'full';
+        grouping = settings.grouping || 'none';
+      }
     }
 
     //return all query params
@@ -267,6 +273,7 @@ export const getSettings = async (req, res, _next) => {
       grouping: String(grouping),
       includeDevelopingEvents,
       themeMode: themeMode,
+      startupViewMode,
       AIEnabled: aiEnabled
     });
   } catch (err) {
@@ -410,6 +417,38 @@ export const setThemeMode = async (req, res, _next) => {
     return res.status(200).json({ success: true, themeMode });
   } catch (err) {
     console.error('Error in setThemeMode:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// This function saves the current user's preferred startup selection behavior.
+export const setStartupViewMode = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const { startupViewMode } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (!['last-used', 'default'].includes(startupViewMode)) {
+      return res.status(400).json({
+        error: 'startupViewMode must be last-used or default'
+      });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { startupViewMode }
+    });
+
+    if (!created) {
+      await settings.update({ startupViewMode });
+    }
+
+    return res.status(200).json({ success: true, startupViewMode });
+  } catch (err) {
+    console.error('Error in setStartupViewMode:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -1117,6 +1156,7 @@ export default {
   setSettings,
   setIncludeDevelopingEvents,
   setThemeMode,
+  setStartupViewMode,
   getIslandsOverview,
   getTopicsOverview
 }

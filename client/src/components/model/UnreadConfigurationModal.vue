@@ -76,6 +76,32 @@
               <span class="unread-switch-control" aria-hidden="true"></span>
             </span>
           </label>
+
+          <label class="unread-preferences-option">
+            <span class="unread-preferences-option-icon" aria-hidden="true">
+              <i class="bi bi-house-door"></i>
+            </span>
+
+            <span class="unread-preferences-option-content">
+              <span class="unread-preferences-option-title">
+                Use default view on startup
+              </span>
+              <span class="unread-preferences-option-description">
+                Open the default unread view after refreshing or reopening RSSMonster.
+              </span>
+            </span>
+
+            <span class="unread-switch">
+              <input
+                v-model="form.useDefaultStartupView"
+                name="useDefaultStartupView"
+                type="checkbox"
+                role="switch"
+                :disabled="isLoading || isSaving"
+              />
+              <span class="unread-switch-control" aria-hidden="true"></span>
+            </span>
+          </label>
         </div>
 
         <footer class="unread-preferences-footer">
@@ -103,7 +129,8 @@
 <script>
 import {
   fetchSettings as fetchSettingsAPI,
-  saveIncludeDevelopingEvents as saveIncludeDevelopingEventsAPI
+  saveIncludeDevelopingEvents as saveIncludeDevelopingEventsAPI,
+  saveStartupViewMode as saveStartupViewModeAPI
 } from '../../api/settings.js';
 
 export default {
@@ -111,7 +138,8 @@ export default {
   data() {
     return {
       form: {
-        includeDevelopingEvents: false
+        includeDevelopingEvents: false,
+        useDefaultStartupView: false
       },
       isLoading: true,
       isSaving: false,
@@ -142,6 +170,7 @@ export default {
         if (requestId !== this.activeRequestId) return;
 
         this.form.includeDevelopingEvents = Boolean(data.includeDevelopingEvents);
+        this.form.useDefaultStartupView = data.startupViewMode === 'default';
       } catch (error) {
         if (requestId !== this.activeRequestId) return;
         console.error('Error loading Unread Preferences:', error);
@@ -152,7 +181,7 @@ export default {
         }
       }
     },
-    // This function persists the unread developing-events preference.
+    // This function persists the unread and startup preferences.
     async savePreferences() {
       if (this.isLoading || this.isSaving) return;
 
@@ -160,10 +189,12 @@ export default {
       this.saveError = false;
 
       try {
-        const { data } = await saveIncludeDevelopingEventsAPI(
-          this.form.includeDevelopingEvents
-        );
-        const includeDevelopingEvents = Boolean(data.includeDevelopingEvents);
+        const startupViewMode = this.form.useDefaultStartupView ? 'default' : 'last-used';
+        const [{ data: unreadData }] = await Promise.all([
+          saveIncludeDevelopingEventsAPI(this.form.includeDevelopingEvents),
+          saveStartupViewModeAPI(startupViewMode)
+        ]);
+        const includeDevelopingEvents = Boolean(unreadData.includeDevelopingEvents);
 
         this.$store.data.setCurrentSelection({ includeDevelopingEvents });
         this.closeModal();
@@ -320,6 +351,10 @@ export default {
   cursor: pointer;
 }
 
+.unread-preferences-option + .unread-preferences-option {
+  border-top: 1px solid #e5e7eb;
+}
+
 .unread-preferences-option-content {
   display: grid;
   flex: 1 1 auto;
@@ -465,7 +500,8 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .unread-preferences-header),
-:global(:root[data-theme='dark'] .unread-preferences-footer) {
+:global(:root[data-theme='dark'] .unread-preferences-footer),
+:global(:root[data-theme='dark'] .unread-preferences-option + .unread-preferences-option) {
   border-color: var(--border-color, #2a3342);
 }
 

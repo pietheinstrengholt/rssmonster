@@ -25,6 +25,13 @@ describe('model schema declarations', () => {
     });
   });
 
+  it('declares last-used as the default startup view mode', () => {
+    expect(Setting.rawAttributes.startupViewMode).toMatchObject({
+      allowNull: false,
+      defaultValue: 'last-used'
+    });
+  });
+
   it('keeps hotlink timestamps in sync with migrations', () => {
     expect(Hotlink.rawAttributes.createdAt).toMatchObject({
       allowNull: true

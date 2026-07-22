@@ -5,11 +5,16 @@ import ArticleListView from '../src/components/ArticleListView.vue';
 import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
 import UnreadSelectionContext from '../src/components/UnreadSelectionContext.vue';
 import UnreadConfigurationModal from '../src/components/model/UnreadConfigurationModal.vue';
-import { fetchSettings, saveIncludeDevelopingEvents } from '../src/api/settings.js';
+import {
+  fetchSettings,
+  saveIncludeDevelopingEvents,
+  saveStartupViewMode
+} from '../src/api/settings.js';
 
 vi.mock('../src/api/settings.js', () => ({
   fetchSettings: vi.fn(),
-  saveIncludeDevelopingEvents: vi.fn()
+  saveIncludeDevelopingEvents: vi.fn(),
+  saveStartupViewMode: vi.fn()
 }));
 
 let wrapper;
@@ -42,6 +47,7 @@ beforeEach(() => {
   fetchSettings.mockResolvedValue({
     data: {
       includeDevelopingEvents: true,
+      startupViewMode: 'default',
       minAdvertisementScore: 10,
       minSentimentScore: 20,
       minQualityScore: 30
@@ -51,6 +57,12 @@ beforeEach(() => {
   saveIncludeDevelopingEvents.mockResolvedValue({
     data: {
       includeDevelopingEvents: false
+    }
+  });
+  saveStartupViewMode.mockReset();
+  saveStartupViewMode.mockResolvedValue({
+    data: {
+      startupViewMode: 'last-used'
     }
   });
 });
@@ -144,7 +156,7 @@ describe('UnreadSelectionContext', () => {
 });
 
 describe('UnreadConfigurationModal', () => {
-  it('loads and renders only the developing-events preference', async () => {
+  it('loads and renders the unread and startup preferences', async () => {
     const setShowModal = vi.fn();
     wrapper = mount(UnreadConfigurationModal, {
       global: {
@@ -157,12 +169,16 @@ describe('UnreadConfigurationModal', () => {
 
     expect(fetchSettings).toHaveBeenCalledTimes(1);
     expect(wrapper.get('#unread-preferences-title').text()).toBe('Tune your unread selection');
-    expect(wrapper.get('.unread-preferences-option-title').text()).toBe('Developing events');
-    expect(wrapper.get('.unread-preferences-option-description').text()).toBe(
+    expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual([
+      'Developing events',
+      'Use default view on startup'
+    ]);
+    expect(wrapper.findAll('.unread-preferences-option-description')[0].text()).toBe(
       'Include new coverage for events you have already seen.'
     );
-    expect(wrapper.findAll('[role="switch"]')).toHaveLength(1);
+    expect(wrapper.findAll('[role="switch"]')).toHaveLength(2);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="useDefaultStartupView"]').element.checked).toBe(true);
   });
 
   it('saves the preference through the dedicated API call', async () => {
@@ -178,10 +194,12 @@ describe('UnreadConfigurationModal', () => {
     await flushPromises();
 
     await wrapper.get('[name="includeDevelopingEvents"]').setValue(false);
+    await wrapper.get('[name="useDefaultStartupView"]').setValue(false);
     await wrapper.get('.unread-preferences-form').trigger('submit');
     await flushPromises();
 
     expect(saveIncludeDevelopingEvents).toHaveBeenCalledWith(false);
+    expect(saveStartupViewMode).toHaveBeenCalledWith('last-used');
     expect(setCurrentSelection).toHaveBeenCalledWith({ includeDevelopingEvents: false });
     expect(setShowModal).toHaveBeenCalledWith('');
   });

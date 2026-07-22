@@ -1,5 +1,5 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { saveIncludeDevelopingEvents } from '../src/api/settings.js';
+import { saveIncludeDevelopingEvents, saveStartupViewMode } from '../src/api/settings.js';
 
 const { patch } = vi.hoisted(() => ({ patch: vi.fn() }));
 
@@ -17,6 +17,14 @@ describe('settings API', () => {
 
     expect(patch).toHaveBeenCalledWith('/setting/developing-events', {
       includeDevelopingEvents: true
+    });
+  });
+
+  it('sends the startup view mode to its dedicated endpoint', () => {
+    saveStartupViewMode('default');
+
+    expect(patch).toHaveBeenCalledWith('/setting/startup-view', {
+      startupViewMode: 'default'
     });
   });
 });
