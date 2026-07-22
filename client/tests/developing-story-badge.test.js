@@ -73,7 +73,7 @@ function mountReader(article) {
   });
 }
 
-describe('developing story badge', () => {
+describe('developing story icon', () => {
   it('matches only a distinct developing article', () => {
     expect(isDevelopingArticle(103, developingEvent)).toBe(true);
     expect(isDevelopingArticle(100, developingEvent)).toBe(false);
@@ -87,8 +87,8 @@ describe('developing story badge', () => {
     const developingWrapper = mountArticle(103);
     const representativeWrapper = mountArticle(100);
 
-    expect(developingWrapper.get('.developing-badge').text()).toBe('Developing');
-    expect(representativeWrapper.find('.developing-badge').exists()).toBe(false);
+    expect(developingWrapper.get('.developing-story-icon').classes()).toContain('bi-lightning-charge-fill');
+    expect(representativeWrapper.find('.developing-story-icon').exists()).toBe(false);
   });
 
   it('renders in the reader list for the developing article', () => {
@@ -98,6 +98,6 @@ describe('developing story badge', () => {
       event: developingEvent
     });
 
-    expect(wrapper.get('.readerArticleListBadgeDeveloping').text()).toBe('Developing');
+    expect(wrapper.get('.readerArticleListDevelopingIcon').classes()).toContain('bi-lightning-charge-fill');
   });
 });

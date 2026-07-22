@@ -7,7 +7,7 @@ import { markDuplicateArticlesForUser } from '../../services/duplicates/articleD
 import {
   runIncrementalEventsForUser,
   repairRecentEventsForUser,
-  rebuildAllEventsForUser
+  backfillHistoricalEventsForUser
 } from '../../services/reconcile/semanticPipelineScopes.js';
 
 const { sequelize, Article, Category, Event, EventTopic, Feed, Topic, User } = db;
@@ -1119,7 +1119,7 @@ describe('repairRecentEventsForUser', () => {
     expect(event.representativeArticleId).toBe(representativeArticle.id);
   });
 
-  it('full-rebuild assigns vectorized articles outside the recent repair window', async () => {
+  it('historical backfill assigns vectorized articles outside the recent repair window', async () => {
     const { user, feed } = await createUserGraph('retrospective');
     const feedTwo = await Feed.create({
       userId: user.id,
@@ -1151,7 +1151,7 @@ describe('repairRecentEventsForUser', () => {
       where: { userId: user.id }
     });
 
-    await rebuildAllEventsForUser(user.id, {
+    const backfillResult = await backfillHistoricalEventsForUser(user.id, {
       skipTopicAssignment: true,
       batchSize: 250
     });
@@ -1166,6 +1166,7 @@ describe('repairRecentEventsForUser', () => {
     });
 
     expect(recentReplayEventCount).toBe(0);
+    expect(backfillResult.mode).toBe('historical-backfill');
     expect(events).toHaveLength(1);
     expect(events[0].articleCount).toBe(2);
     expect(events[0].articles).toHaveLength(2);

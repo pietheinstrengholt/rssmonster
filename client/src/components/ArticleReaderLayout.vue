@@ -137,7 +137,7 @@
             </a>
           </span>
           <span class="readerArticleListItemBadges">
-            <span v-if="isDevelopingArticle(article.id, article.event)" class="readerArticleListBadge readerArticleListBadgeDeveloping">Developing</span>
+            <i v-if="isDevelopingArticle(article.id, article.event)" class="bi bi-lightning-charge-fill readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story"></i>
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
@@ -1003,14 +1003,14 @@ export default {
   color: var(--badge-quality-text);
 }
 
-.readerArticleListBadgeDeveloping {
+.readerArticleListDevelopingIcon {
   color: #1d4ed8;
-  background: #eff6ff;
+  font-size: 0.875rem;
+  line-height: 1;
 }
 
-:global(:root[data-theme='dark'] .readerArticleListBadgeDeveloping) {
+:global(:root[data-theme='dark'] .readerArticleListDevelopingIcon) {
   color: #93c5fd;
-  background: rgba(37, 99, 235, 0.2);
 }
 
 .readerArticleListBadgeHot {

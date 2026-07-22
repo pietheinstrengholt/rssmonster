@@ -8,13 +8,14 @@
         <BootstrapIcon v-if="isMastodonArticle" icon="mastodon" class="article-kind-icon mastodon-icon" />
         <BootstrapIcon v-if="isMediumArticle" icon="medium" class="article-kind-icon medium-icon" />
         <BootstrapIcon v-if="isPodcastArticle" icon="mic-fill" class="article-kind-icon podcast-icon" />
+        <BootstrapIcon v-if="isDeveloping" icon="lightning-charge-fill" class="article-kind-icon developing-story-icon" title="Developing story" />
         <BootstrapIcon v-if="hasVideoMedia" icon="play-btn-fill" class="article-kind-icon media-video-icon" />
         <template v-else>
           <BootstrapIcon v-if="clickedAmount > 0" icon="arrow-up-right-square-fill" class="article-kind-icon clicked-icon" />
           <BootstrapIcon v-if="favoriteInd === 1" icon="bookmark-fill" class="article-kind-icon star-icon" />
           <BootstrapIcon v-if="hotInd === 1" icon="fire" class="article-kind-icon hot-icon" />
-          <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon" icon="award-fill" class="article-kind-icon recommendation-icon" />
-          <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon" icon="megaphone-fill" class="article-kind-icon event-icon" />
+          <BootstrapIcon v-if="hasInterestScore && !hasSourceIcon && !isDeveloping" icon="award-fill" class="article-kind-icon recommendation-icon" />
+          <BootstrapIcon v-else-if="isGroupedView && eventArticleCountTotal > 1 && !hasSourceIcon && !isDeveloping" icon="megaphone-fill" class="article-kind-icon event-icon" />
         </template>
         <a class="article-link" target="_blank" :href="url" v-text="title" @click="$emit('article-clicked')"></a>
       </div>
@@ -38,6 +39,7 @@ export default {
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
     favoriteInd: { type: Number, default: 0 }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
     viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false },
+    isDeveloping: { type: Boolean, default: false },
     hasInterestScore: { type: Boolean, default: false },
     isGroupedView: { type: Boolean, default: false }, eventArticleCountTotal: { type: Number, default: 0 }
   },

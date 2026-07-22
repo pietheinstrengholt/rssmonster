@@ -433,11 +433,14 @@ Rebuilds only a configurable recent time window.
 
 ---
 
-## Full Rebuild
+## Historical Backfill
 
-Used after major semantic changes.
+Used to fill missing Event assignments across all vectorized historical Articles.
 
-Rebuilds all historical Event assignments.
+This scope preserves existing Event assignments. It does not clear, reclassify, or
+replace existing Events and must not be described as a full rebuild.
+
+A future full rebuild must be implemented as an explicit replacement workflow.
 
 ---
 

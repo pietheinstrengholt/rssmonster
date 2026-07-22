@@ -1,5 +1,5 @@
 import db from '../models/index.js';
-const { CrawlRun, Island, OfficialSource, Setting } = db;
+const { BriefingPreference, CrawlRun, Island, OfficialSource, Setting } = db;
 
 const DEFAULT_CRAWL_STATISTICS_DAYS = 30;
 const MAX_CRAWL_STATISTICS_DAYS = 365;
@@ -350,18 +350,31 @@ export const setIncludeDevelopingEvents = async (req, res, _next) => {
       return res.status(400).json({ error: 'includeDevelopingEvents must be a boolean' });
     }
 
-    const [settings, created] = await Setting.findOrCreate({
-      where: { userId },
-      defaults: { includeDevelopingEvents }
-    });
+    await db.sequelize.transaction(async transaction => {
+      const [settings, settingsCreated] = await Setting.findOrCreate({
+        where: { userId },
+        defaults: { includeDevelopingEvents },
+        transaction
+      });
 
-    if (!created) {
-      await settings.update({ includeDevelopingEvents });
-    }
+      if (!settingsCreated) {
+        await settings.update({ includeDevelopingEvents }, { transaction });
+      }
+
+      const [briefingPreference, briefingPreferenceCreated] = await BriefingPreference.findOrCreate({
+        where: { userId },
+        defaults: { includeDevelopingEvents },
+        transaction
+      });
+
+      if (!briefingPreferenceCreated) {
+        await briefingPreference.update({ includeDevelopingEvents }, { transaction });
+      }
+    });
 
     return res.status(200).json({
       success: true,
-      includeDevelopingEvents: Boolean(settings.includeDevelopingEvents)
+      includeDevelopingEvents
     });
   } catch (err) {
     console.error('Error in setIncludeDevelopingEvents:', err);

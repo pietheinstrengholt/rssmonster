@@ -4,7 +4,7 @@ import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
 
-const { Setting, User, sequelize } = db;
+const { BriefingPreference, Setting, User, sequelize } = db;
 
 let app;
 
@@ -103,7 +103,17 @@ describe('settings controller', () => {
       minQualityScore: 35,
       includeDevelopingEvents: false
     });
+    await BriefingPreference.create({
+      userId: user.id,
+      includeDevelopingEvents: false,
+      minDistinctSources: 4,
+      selectionPeriod: '24h'
+    });
     await Setting.create({
+      userId: otherUser.id,
+      includeDevelopingEvents: false
+    });
+    await BriefingPreference.create({
       userId: otherUser.id,
       includeDevelopingEvents: false
     });
@@ -115,6 +125,14 @@ describe('settings controller', () => {
 
     const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
     const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
+    const briefingPreference = await BriefingPreference.findOne({
+      where: { userId: user.id },
+      raw: true
+    });
+    const otherBriefingPreference = await BriefingPreference.findOne({
+      where: { userId: otherUser.id },
+      raw: true
+    });
 
     expect(response.status).toBe(200);
     expect(response.body).toMatchObject({
@@ -128,6 +146,12 @@ describe('settings controller', () => {
       minQualityScore: 35
     });
     expect(Boolean(otherSettings.includeDevelopingEvents)).toBe(false);
+    expect(Boolean(briefingPreference.includeDevelopingEvents)).toBe(true);
+    expect(briefingPreference).toMatchObject({
+      minDistinctSources: 4,
+      selectionPeriod: '24h'
+    });
+    expect(Boolean(otherBriefingPreference.includeDevelopingEvents)).toBe(false);
   });
 
   it('creates current user settings and validates the dedicated payload', async () => {
@@ -143,10 +167,12 @@ describe('settings controller', () => {
       .send({ includeDevelopingEvents: true });
 
     const settings = await Setting.findOne({ where: { userId: user.id } });
+    const briefingPreference = await BriefingPreference.findOne({ where: { userId: user.id } });
 
     expect(invalidResponse.status).toBe(400);
     expect(invalidResponse.body.error).toBe('includeDevelopingEvents must be a boolean');
     expect(validResponse.status).toBe(200);
     expect(Boolean(settings.includeDevelopingEvents)).toBe(true);
+    expect(Boolean(briefingPreference.includeDevelopingEvents)).toBe(true);
   });
 });

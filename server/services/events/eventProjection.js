@@ -2,6 +2,15 @@ import { averageVector } from '../vectors/index.js';
 import { eventWindowFromArticles } from './articleEventTime.js';
 
 // This function deterministically derives event metadata from persisted canonical member articles.
+/**
+ * Derives the canonical Event state exclusively from its persisted
+ * canonical member Articles.
+ *
+ * This function is the single source of truth for Event projections.
+ * Creation, incremental updates and reconciliation intentionally use
+ * the same projection so Event metadata converges regardless of how
+ * the Event was produced.
+ */
 export function buildCanonicalEventProjection(eventArticles = [], fallbackVector = null) {
   const orderedArticles = eventArticles
     .slice()

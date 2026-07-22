@@ -59,10 +59,20 @@ export const getBriefingPreferences = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const storedPreferences = await BriefingPreference.findOne({ where: { userId }, raw: true });
+    const [storedPreferences, settings] = await Promise.all([
+      BriefingPreference.findOne({ where: { userId }, raw: true }),
+      Setting.findOne({
+        where: { userId },
+        attributes: ['includeDevelopingEvents'],
+        raw: true
+      })
+    ]);
 
     const effectivePreferences = storedPreferences
       || BriefingPreference.build({ userId }).get({ plain: true });
+    if (settings) {
+      effectivePreferences.includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
+    }
 
     return res.status(200).json({
       preferences: serializePreferences(effectivePreferences)

@@ -28,6 +28,20 @@ function mountArticleHeader(props = {}) {
 }
 
 describe('ArticleHeader media icon', () => {
+  it('uses the developing icon instead of recommendation or grouped-event icons', () => {
+    const wrapper = mountArticleHeader({
+      isDeveloping: true,
+      hasInterestScore: true,
+      isGroupedView: true,
+      eventArticleCountTotal: 3
+    });
+    const icons = wrapper.findAll('.bootstrap-icon-stub').map(icon => icon.attributes('data-icon'));
+
+    expect(icons).toContain('lightning-charge-fill');
+    expect(icons).not.toContain('award-fill');
+    expect(icons).not.toContain('megaphone-fill');
+  });
+
   it('shows only the video kind icon when video media is present', () => {
     const wrapper = mountArticleHeader({
       hasVideoMedia: true,

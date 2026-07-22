@@ -14,12 +14,8 @@
     >
       <template v-if="context">
           across
-          <strong>{{ formatCountLabel(context.eventCount, 'event') }}</strong>
-          including
-          <strong>{{ formatCountLabel(context.newEventCount, 'new event') }}</strong>,
-          <strong>{{ formatCountLabel(context.topicCount, 'topic') }}</strong>
-          and
-          <strong>{{ formatCountLabel(context.islandCount, 'interest area') }}</strong>
+          <strong>{{ formatCountLabel(context.newEventCount, 'event') }}</strong>, and
+          <strong>{{ formatCountLabel(context.topicCount, 'topic') }}</strong>.
       </template>
     </BriefingContextText>
 

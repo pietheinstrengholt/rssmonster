@@ -28,7 +28,7 @@
     "semantic:repair": "NODE_ENV=production node scripts/repairSemanticPipeline.js",
     "semantic:all": "NODE_ENV=production node scripts/rebuildSemanticPipeline.js",
     "events": "node scripts/runEventsCommand.js",
-    "events:all": "node scripts/rebuildAllEventArticles.js --skipTopicAssignment",
+    "events:backfill": "node scripts/backfillHistoricalEventArticles.js --skipTopicAssignment",
     "topics": "node scripts/runTopicsCommand.js",
     "feedtrust": "NODE_ENV=production node scripts/calculateFeedTrust.js",
     "islands": "NODE_ENV=production node scripts/runIslandsCommand.js",

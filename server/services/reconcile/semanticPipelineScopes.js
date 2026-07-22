@@ -743,14 +743,14 @@ export async function repairRecentEventsForUser(userId, options = {}) {
   return repairResult;
 }
 
-// This function runs the full-rebuild event scope over all vectorized articles for a user.
-export async function rebuildAllEventsForUser(userId, options = {}) {
+// This function backfills missing historical events from all vectorized articles for a user.
+export async function backfillHistoricalEventsForUser(userId, options = {}) {
   const {
     skipTopicAssignment = false,
     batchSize = 250
   } = options;
 
-  console.log(`[EVENT] Full-rebuild event assignment for user ${userId}`);
+  console.log(`[EVENT] Historical event backfill for user ${userId}`);
 
   await clearForeignEventReferencesForUser(userId);
 
@@ -781,7 +781,7 @@ export async function rebuildAllEventsForUser(userId, options = {}) {
     const batchResult = await runEventAssignmentPass(
       userId,
       articles,
-      'full-rebuild',
+      'historical-backfill',
       {
         skipTopicAssignment,
         useTemporalEventCandidates: true
@@ -796,7 +796,7 @@ export async function rebuildAllEventsForUser(userId, options = {}) {
     totalProcessed += articles.length;
     lastId = articles[articles.length - 1].id;
 
-    console.log(`[EVENT] Full-rebuild processed=${totalProcessed}, lastId=${lastId}`);
+    console.log(`[EVENT] Historical backfill processed=${totalProcessed}, lastId=${lastId}`);
   }
 
   if (!skipTopicAssignment && touchedTopicIds.length) {
@@ -804,13 +804,13 @@ export async function rebuildAllEventsForUser(userId, options = {}) {
   }
 
   console.log(
-    `[EVENT] Finished full-rebuild event assignment for user ${userId}, ` +
+    `[EVENT] Finished historical event backfill for user ${userId}, ` +
     `articles=${totalProcessed}`
   );
 
   return {
     userId,
-    mode: 'full-rebuild',
+    mode: 'historical-backfill',
     articleCount: totalProcessed,
     touchedEventIds,
     touchedTopicIds,

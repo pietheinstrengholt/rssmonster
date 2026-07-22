@@ -148,10 +148,10 @@ describe('DailyBriefingIntro', () => {
     expect(fetchDailyBriefing).toHaveBeenCalledWith({ period: '7d', status: 'all' });
     expect(wrapper.get('.briefing-context').text()).toContain('12 articles');
     expect(wrapper.get('.briefing-context').text()).toContain('15 sources');
-    expect(wrapper.get('.briefing-context').text()).toContain('7 events');
-    expect(wrapper.get('.briefing-context').text()).toContain('4 new events');
-    expect(wrapper.get('.briefing-context').text()).toContain('38 topics');
-    expect(wrapper.get('.briefing-context').text()).toContain('6 interest areas');
+    expect(wrapper.get('.briefing-context').text()).toContain('across 4 events, and 38 topics.');
+    expect(wrapper.get('.briefing-context').text()).not.toContain('7 events');
+    expect(wrapper.get('.briefing-context').text()).not.toContain('new events');
+    expect(wrapper.get('.briefing-context').text()).not.toContain('interest areas');
     expect(wrapper.get('#briefing-morning-title').text()).toBe('The stories shaping your morning');
     expect(wrapper.findAll('.briefing-morning-summary-text p')).toHaveLength(2);
     expect(wrapper.get('.briefing-summary-headline').text()).toBe('EU AI Act enters into force');

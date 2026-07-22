@@ -90,6 +90,25 @@ describe('Briefing Preferences API', () => {
     expect(await BriefingPreference.count({ where: { userId: user.id } })).toBe(0);
   });
 
+  it('uses the shared developing-events setting when stored preferences have drifted', async () => {
+    const user = await createUser();
+    await BriefingPreference.create({
+      userId: user.id,
+      includeDevelopingEvents: false
+    });
+    await Setting.create({
+      userId: user.id,
+      includeDevelopingEvents: true
+    });
+
+    const response = await request(app)
+      .get('/api/briefing/preferences')
+      .set('Authorization', authHeaderFor(user));
+
+    expect(response.status).toBe(200);
+    expect(response.body.preferences.includeDevelopingEvents).toBe(true);
+  });
+
   it('replaces preferences', async () => {
     const user = await createUser();
     const otherUser = await createUser();

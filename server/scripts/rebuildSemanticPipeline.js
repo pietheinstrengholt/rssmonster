@@ -14,7 +14,7 @@ dotenv.config();
 import db from '../models/index.js';
 import {
   rebuildAllTopicsForUser,
-  rebuildAllEventsForUser
+  backfillHistoricalEventsForUser
 } from '../services/reconcile/semanticPipelineScopes.js';
 import { runIslandCalibrationForUser } from '../services/islands/runIslandCalibration.js';
 
@@ -57,8 +57,8 @@ async function loadUsers(userId = null) {
 
 // This function runs the full semantic rebuild pipeline for one user.
 async function rebuildUser(userId, options = {}) {
-  console.log(`[SEMANTIC] user=${userId} Stage 1 Events`);
-  const eventResult = await rebuildAllEventsForUser(userId, {
+  console.log(`[SEMANTIC] user=${userId} Stage 1 Historical Event Backfill`);
+  const eventResult = await backfillHistoricalEventsForUser(userId, {
     batchSize: options.batchSize,
     skipTopicAssignment: true
   });
@@ -155,6 +155,5 @@ if (process.argv[1]?.includes('rebuildSemanticPipeline')) {
       process.exit(1);
     });
 }
-
 
 
