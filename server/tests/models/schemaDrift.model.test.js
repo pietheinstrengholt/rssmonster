@@ -69,6 +69,13 @@ describe('model schema declarations', () => {
     expect(Article.rawAttributes.published).toBeUndefined();
   });
 
+  it('declares an optional explicit article read timestamp', () => {
+    expect(Article.rawAttributes.readAt).toMatchObject({
+      allowNull: true,
+      defaultValue: null
+    });
+  });
+
   it('declares filtered articles with a false default', () => {
     expect(Article.rawAttributes.filteredInd).toMatchObject({
       allowNull: false,

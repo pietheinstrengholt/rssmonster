@@ -7,6 +7,7 @@ import { EVENT_LIFECYCLE, EVENT_STRENGTH_CONFIG } from '../config/semanticConfig
 import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { eventDateFromArticle } from './articleEventTime.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
+import { wasReadBeforeArticleArrived } from './developingArticlePointer.js';
 
 const { Article, Event } = db;
 
@@ -78,7 +79,8 @@ function generateEventName(article) {
 // This function initializes event pointers while preserving already-seen standalone coverage.
 function selectInitialArticlePointers(lockedArticles, lockedSeedArticle) {
   const previouslyReadArticle = lockedArticles.find(candidate =>
-    Number(candidate.id) !== Number(lockedSeedArticle.id) && candidate.status === 'read'
+    Number(candidate.id) !== Number(lockedSeedArticle.id) &&
+    wasReadBeforeArticleArrived(candidate, lockedSeedArticle)
   );
 
   if (lockedSeedArticle.status === 'unread' && previouslyReadArticle) {

@@ -137,7 +137,7 @@
             </a>
           </span>
           <span class="readerArticleListItemBadges">
-            <i v-if="isDevelopingArticle(article.id, article.event)" class="bi bi-lightning-charge-fill readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story"></i>
+            <i v-if="isDevelopingArticle(article.id, article.event, article.status)" class="bi bi-lightning-charge-fill readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story"></i>
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>

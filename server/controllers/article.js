@@ -345,6 +345,8 @@ const markAsRead = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
+    const readAt = new Date();
+
     if (articleIds.length > 0) {
       const selectedArticles = await Article.findAll({
         where: {
@@ -385,7 +387,7 @@ const markAsRead = async (req, res, _next) => {
       }
 
       const updatedArticles = await Promise.all(
-        articles.map(article => article.update({ status: "read" }))
+        articles.map(article => article.update({ status: "read", readAt }))
       );
 
       return res.status(200).json({
@@ -506,7 +508,7 @@ const markAsRead = async (req, res, _next) => {
     };
 
     const [updatedCount] = await Article.update(
-      { status: 'read' },
+      { status: 'read', readAt },
       { where: updateWhere }
     );
 
@@ -735,7 +737,10 @@ const updateArticleStatus = async (userId, articleId, status) => {
       return { success: false, statusCode: 404, message: "Article not found" };
     }
 
-    await article.update({ status: status });
+    await article.update({
+      status,
+      readAt: status === 'read' ? new Date() : null
+    });
     return { success: true, statusCode: 200, article: article };
   } catch (error) {
     return { success: false, statusCode: 400, error: error };
@@ -831,6 +836,7 @@ const articleMarkAsSeen = async (req, res, _next) => {
     const readArticles = [];
     if (selectedStatus === 'unread') {
       payload.status = 'read';
+      payload.readAt = new Date();
       shouldMarkRead = true;
       if (article.status === 'unread') {
         readArticles.push({
@@ -1063,7 +1069,8 @@ const articleMarkAllAsRead = async (req, res, _next) => {
     }
 
     await Article.update({
-      status: "read"
+      status: "read",
+      readAt: new Date()
     }, {
       where: {
         status: "unread",

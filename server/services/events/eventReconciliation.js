@@ -93,6 +93,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
       'eventId',
       'feedId',
       'status',
+      'readAt',
       'publishedAt',
       'createdAt',
       'articleVector'

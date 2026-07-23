@@ -356,7 +356,7 @@ export const postFever = async (req, res, _next) => {
           // Mark recently read items as unread (within last 24 hours)
           const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
           await Article.update(
-            { status: 'unread' },
+            { status: 'unread', readAt: null },
             {
               where: {
                 status: 'read',
@@ -472,12 +472,14 @@ function genUpdate(req_body_as) {
   switch (req_body_as) {
     case "read":
       return {
-        status: 'read'
+        status: 'read',
+        readAt: new Date()
       };
 
     case "unread":
       return {
-        status: 'unread'
+        status: 'unread',
+        readAt: null
       };
 
     case "saved":

@@ -486,6 +486,12 @@ export default (sequelize) => {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null
+      },
+      // Timestamp when the article was explicitly marked as read.
+      readAt: {
+        type: DataTypes.DATE,
+        allowNull: true,
+        defaultValue: null
       }
     },
     {

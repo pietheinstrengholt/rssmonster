@@ -33,13 +33,14 @@ function createStore(viewMode = 'minimal') {
 }
 
 // This function mounts the compact article row with event pointer metadata.
-function mountArticle(id, event = developingEvent) {
+function mountArticle(id, event = developingEvent, status = 'unread') {
   return shallowMount(Article, {
     props: {
       id,
       title: 'Event coverage',
       url: 'https://example.com/event-coverage',
       feed: { feedName: 'Example Feed' },
+      status,
       event
     },
     global: {
@@ -75,12 +76,13 @@ function mountReader(article) {
 
 describe('developing story icon', () => {
   it('matches only a distinct developing article', () => {
-    expect(isDevelopingArticle(103, developingEvent)).toBe(true);
-    expect(isDevelopingArticle(100, developingEvent)).toBe(false);
+    expect(isDevelopingArticle(103, developingEvent, 'unread')).toBe(true);
+    expect(isDevelopingArticle(103, developingEvent, 'read')).toBe(false);
+    expect(isDevelopingArticle(100, developingEvent, 'unread')).toBe(false);
     expect(isDevelopingArticle(100, {
       representativeArticleId: 100,
       developingArticleId: 100
-    })).toBe(false);
+    }, 'unread')).toBe(false);
   });
 
   it('renders on the developing compact article only', () => {
@@ -95,9 +97,23 @@ describe('developing story icon', () => {
     const wrapper = mountReader({
       id: 103,
       title: 'Developing coverage',
+      status: 'unread',
       event: developingEvent
     });
 
     expect(wrapper.get('.readerArticleListDevelopingIcon').classes()).toContain('bi-lightning-charge-fill');
+  });
+
+  it('does not render for a read developing article', () => {
+    const compactWrapper = mountArticle(103, developingEvent, 'read');
+    const readerWrapper = mountReader({
+      id: 103,
+      title: 'Read developing coverage',
+      status: 'read',
+      event: developingEvent
+    });
+
+    expect(compactWrapper.find('.developing-story-icon').exists()).toBe(false);
+    expect(readerWrapper.find('.readerArticleListDevelopingIcon').exists()).toBe(false);
   });
 });

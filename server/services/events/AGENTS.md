@@ -192,7 +192,11 @@ Article 103 later joins:
 
 article 103 = unread
 
-Because the current developing article is read, update:
+Because the current developing article was read before Article 103 arrived:
+
+article 100 readAt < article 103 createdAt
+
+update:
 
 developingArticleId = 103
 
@@ -211,6 +215,14 @@ includeDevelopingEvents = true
     Use developingArticleId.
     Article 103 is unread.
     Event appears once as a developing story.
+
+Current read status alone is insufficient. If the current pointer was read only
+after the incoming Article had already arrived, preserve the current pointer:
+
+article 100 readAt >= article 103 createdAt
+
+The front end displays the developing icon only while the pointed Article remains
+unread. Reading the Article does not clear or replace `developingArticleId`.
 
 If articles 104 and 105 arrive while article 103 remains unread:
 

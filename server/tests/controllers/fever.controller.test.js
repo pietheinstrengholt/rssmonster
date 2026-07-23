@@ -137,6 +137,40 @@ describe('Fever API compatibility', () => {
     expect(JSON.stringify(res.body)).not.toContain('rawFeverScript');
   });
 
+  it('keeps readAt synchronized with Fever read status changes', async () => {
+    const { user, linkedArticle } = await createFixture();
+
+    const readResponse = await request(app)
+      .post('/api/fever')
+      .query({
+        api_key: user.hash,
+        mark: 'item',
+        as: 'read',
+        id: linkedArticle.id
+      });
+
+    await linkedArticle.reload();
+
+    expect(readResponse.status).toBe(200);
+    expect(linkedArticle.status).toBe('read');
+    expect(linkedArticle.readAt).toBeInstanceOf(Date);
+
+    const unreadResponse = await request(app)
+      .post('/api/fever')
+      .query({
+        api_key: user.hash,
+        mark: 'item',
+        as: 'unread',
+        id: linkedArticle.id
+      });
+
+    await linkedArticle.reload();
+
+    expect(unreadResponse.status).toBe(200);
+    expect(linkedArticle.status).toBe('unread');
+    expect(linkedArticle.readAt).toBeNull();
+  });
+
   it('returns favicons only for feeds owned by the authenticated user', async () => {
     const { user, feed, otherFeed } = await createFaviconFixture();
 

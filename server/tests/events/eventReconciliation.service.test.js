@@ -138,7 +138,8 @@ describe('reconcileTouchedEvents', () => {
     const owner = await createUserGraph('repair-pointer-owner');
     const foreign = await createUserGraph('repair-pointer-foreign');
     const representativeArticle = await createArticle(owner.user, owner.feed, 1, {
-      status: 'read'
+      status: 'read',
+      readAt: new Date('2026-05-25T10:15:00.000Z')
     });
     const olderUnreadArticle = await createArticle(owner.user, owner.feed, 2, {
       publishedAt: new Date('2026-05-25T10:00:00.000Z'),

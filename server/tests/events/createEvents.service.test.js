@@ -33,14 +33,15 @@ async function createUserGraph(prefix) {
 }
 
 // This function creates a canonical article with an event vector.
-async function createArticle(user, feed, label, status = 'unread') {
+async function createArticle(user, feed, label, status = 'unread', overrides = {}) {
   return Article.create({
     userId: user.id,
     feedId: feed.id,
     title: `${label} article`,
     url: `https://example.com/${user.id}/${label}-${Date.now()}`,
     status,
-    articleVector: [1, 0, 0]
+    articleVector: [1, 0, 0],
+    ...overrides
   });
 }
 
@@ -91,8 +92,13 @@ describe('createAndAssignEvent', () => {
 
   it('uses a later unread seed as developing coverage when an earlier candidate was read', async () => {
     const { user, feed } = await createUserGraph('developing-event-creation');
-    const readCandidateArticle = await createArticle(user, feed, 'read-candidate', 'read');
-    const incomingArticle = await createArticle(user, feed, 'incoming');
+    const readCandidateArticle = await createArticle(user, feed, 'read-candidate', 'read', {
+      createdAt: new Date('2026-07-23T08:00:00Z'),
+      readAt: new Date('2026-07-23T08:30:00Z')
+    });
+    const incomingArticle = await createArticle(user, feed, 'incoming', 'unread', {
+      createdAt: new Date('2026-07-23T09:00:00Z')
+    });
 
     const eventId = await createAndAssignEvent({
       candidateArticles: [readCandidateArticle],
@@ -116,6 +122,29 @@ describe('createAndAssignEvent', () => {
       eventId,
       status: 'unread'
     });
+  });
+
+  it('does not create developing coverage when the earlier article was read after arrival', async () => {
+    const { user, feed } = await createUserGraph('non-developing-event-creation');
+    const candidateArticle = await createArticle(user, feed, 'candidate', 'read', {
+      createdAt: new Date('2026-07-23T08:00:00Z'),
+      readAt: new Date('2026-07-23T09:30:00Z')
+    });
+    const incomingArticle = await createArticle(user, feed, 'incoming', 'unread', {
+      createdAt: new Date('2026-07-23T09:00:00Z')
+    });
+
+    const eventId = await createAndAssignEvent({
+      candidateArticles: [candidateArticle],
+      article: incomingArticle,
+      cache: null,
+      skipTopicAssignment: true
+    });
+
+    const event = await Event.findByPk(eventId);
+
+    expect(event.representativeArticleId).toBe(incomingArticle.id);
+    expect(event.developingArticleId).toBe(incomingArticle.id);
   });
 
   it('commits a managed creation transaction before adding the event to the cache', async () => {

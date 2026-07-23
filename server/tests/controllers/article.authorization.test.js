@@ -352,6 +352,7 @@ describe('article ownership authorization', () => {
     expect(res.body).toEqual({ error: 'Error: article not found' });
     expect(article.status).toBe('unread');
     expect(article.firstSeen).toBeNull();
+    expect(article.readAt).toBeNull();
     expect(article.attentionBucket).toBe(0);
   });
 
@@ -397,6 +398,8 @@ describe('article ownership authorization', () => {
     expect(res.status).toBe(200);
     expect(article.status).toBe('read');
     expect(relatedArticle.status).toBe('read');
+    expect(article.readAt).toBeInstanceOf(Date);
+    expect(relatedArticle.readAt).toBeInstanceOf(Date);
     expect(event.representativeArticleId).toBe(article.id);
     expect(event.developingArticleId).toBe(article.id);
     expect(res.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
@@ -479,7 +482,9 @@ describe('article ownership authorization', () => {
 
     expect(response.status).toBe(200);
     expect(article.status).toBe('read');
+    expect(article.readAt).toBeInstanceOf(Date);
     expect(siblingArticle.status).toBe('unread');
+    expect(siblingArticle.readAt).toBeNull();
     expect(event.representativeArticleId).toBe(article.id);
     expect(event.developingArticleId).toBe(article.id);
   });
@@ -531,7 +536,27 @@ describe('article ownership authorization', () => {
       'read',
       'read'
     ]);
+    expect([article, ...siblingArticles].every(item => item.readAt instanceof Date)).toBe(true);
     expect(event.representativeArticleId).toBe(article.id);
     expect(event.developingArticleId).toBe(article.id);
+  });
+
+  it('clears readAt when an article is marked unread', async () => {
+    const owner = await createUser(uniqueName('mark-unread-owner'));
+    const { article } = await createArticleFor(owner);
+    await article.update({
+      status: 'read',
+      readAt: new Date('2026-05-01T12:00:00Z')
+    });
+
+    const response = await request(app)
+      .post(`/api/articles/marktounread/${article.id}`)
+      .set('Authorization', authHeaderFor(owner));
+
+    await article.reload();
+
+    expect(response.status).toBe(200);
+    expect(article.status).toBe('unread');
+    expect(article.readAt).toBeNull();
   });
 });

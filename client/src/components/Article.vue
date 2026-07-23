@@ -269,7 +269,7 @@ export default {
     },
     // Returns whether this article is the event's newer developing story.
     isDeveloping() {
-      return isDevelopingArticle(this.id, this.event);
+      return isDevelopingArticle(this.id, this.event, this.status);
     },
     // Returns the summary bullet limit for the article affinity.
     visibleBulletCount() {

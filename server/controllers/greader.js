@@ -982,12 +982,14 @@ export const editTag = async (req, res) => {
     if (numericIds.length === 0) {
       return res.type('text/plain').send('OK');
     }
+
+    const readAt = new Date();
     
     // Process add tags
     for (const tag of addTags) {
       if (tag === 'user/-/state/com.google/read') {
         await Article.update(
-          { status: 'read' },
+          { status: 'read', readAt },
           { where: { id: { [Op.in]: numericIds }, userId: user.id, ...canonicalArticleWhere() } }
         );
       } else if (tag === 'user/-/state/com.google/starred') {
@@ -1002,7 +1004,7 @@ export const editTag = async (req, res) => {
     for (const tag of removeTags) {
       if (tag === 'user/-/state/com.google/read') {
         await Article.update(
-          { status: 'unread' },
+          { status: 'unread', readAt: null },
           { where: { id: { [Op.in]: numericIds }, userId: user.id, ...canonicalArticleWhere() } }
         );
       } else if (tag === 'user/-/state/com.google/starred') {
@@ -1040,7 +1042,7 @@ export const markAllAsRead = async (req, res) => {
     await applyStreamFilter(where, streamId, user.id);
     
     await Article.update(
-      { status: 'read' },
+      { status: 'read', readAt: new Date() },
       { where }
     );
     

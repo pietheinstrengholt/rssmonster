@@ -647,7 +647,7 @@ describe('repairRecentEventsForUser', () => {
     expect(eventId).toBe(event.id);
     expect(incomingArticle.eventId).toBe(event.id);
     expect(event.articleCount).toBe(3);
-    expect(event.developingArticleId).toBe(incomingArticle.id);
+    expect(event.developingArticleId).toBe(existingArticleA.id);
     expect(runContext.stats.linkedToExistingEventCount).toBe(1);
   });
 
@@ -886,8 +886,10 @@ describe('repairRecentEventsForUser', () => {
       title: 'Spanish heatwave death toll reaches 1028 in June',
       url: `https://example.com/${user.id}/read-developing-representative`,
       publishedAt: recentDateWithOffset(),
+      createdAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
-      status: 'read'
+      status: 'read',
+      readAt: recentDateWithOffset(2 * 60 * 1000)
     }));
     const event = await Event.create({
       userId: user.id,
@@ -906,6 +908,7 @@ describe('repairRecentEventsForUser', () => {
       title: 'Spanish heatwave death toll reaches 1028 in June update',
       url: `https://example.com/${user.id}/read-developing-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      createdAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));
@@ -928,6 +931,58 @@ describe('repairRecentEventsForUser', () => {
     expect(incomingArticle.eventId).toBe(event.id);
     expect(incomingArticle.status).toBe('unread');
     expect(event.developingArticleId).toBe(incomingArticle.id);
+  });
+
+  it('preserves a read developing pointer when it was read after the incoming article arrived', async () => {
+    const { user, feed } = await createUserGraph('late-read-developing');
+    const representativeArticle = await Article.create(articlePayload(user, feed, 1, {
+      title: 'Regional rail plan receives approval',
+      url: `https://example.com/${user.id}/late-read-developing-representative`,
+      publishedAt: recentDateWithOffset(),
+      createdAt: recentDateWithOffset(),
+      articleVector: [1, 0, 0],
+      status: 'read',
+      readAt: recentDateWithOffset(10 * 60 * 1000)
+    }));
+    const event = await Event.create({
+      userId: user.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: representativeArticle.id,
+      name: representativeArticle.title,
+      articleCount: 1,
+      sourceCount: 1,
+      eventStrength: 0.7,
+      eventVector: [1, 0, 0],
+      eventWindowStartAt: representativeArticle.publishedAt,
+      eventWindowEndAt: representativeArticle.publishedAt,
+      status: 'active'
+    });
+    const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
+      title: 'Regional rail plan receives approval after vote',
+      url: `https://example.com/${user.id}/late-read-developing-incoming`,
+      publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      createdAt: recentDateWithOffset(5 * 60 * 1000),
+      articleVector: [1, 0, 0],
+      status: 'unread'
+    }));
+
+    await representativeArticle.update({ eventId: event.id });
+
+    const eventId = await assignArticleToEvent(
+      incomingArticle,
+      new EventCache([event]),
+      { eventVector: incomingArticle.articleVector },
+      [],
+      null,
+      { skipTopicAssignment: true }
+    );
+
+    await incomingArticle.reload();
+    await event.reload();
+
+    expect(eventId).toBe(event.id);
+    expect(incomingArticle.eventId).toBe(event.id);
+    expect(event.developingArticleId).toBe(representativeArticle.id);
   });
 
   it('keeps incoming status and preserves an unread developing pointer', async () => {
@@ -986,13 +1041,16 @@ describe('repairRecentEventsForUser', () => {
       title: 'Luna launch mission reaches orbit',
       url: `https://example.com/${user.id}/new-event-status-existing`,
       publishedAt: recentDateWithOffset(),
+      createdAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
-      status: 'read'
+      status: 'read',
+      readAt: recentDateWithOffset(2 * 60 * 1000)
     }));
     const incomingArticle = await Article.create(articlePayload(user, feed, 2, {
       title: 'Luna launch mission reaches orbit successfully',
       url: `https://example.com/${user.id}/new-event-status-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      createdAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));
@@ -1025,8 +1083,10 @@ describe('repairRecentEventsForUser', () => {
       title: 'Market regulator opens tech probe',
       url: `https://example.com/${user.id}/special-status-representative`,
       publishedAt: recentDateWithOffset(),
+      createdAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
-      status: 'read'
+      status: 'read',
+      readAt: recentDateWithOffset(2 * 60 * 1000)
     }));
     const event = await Event.create({
       userId: user.id,
@@ -1045,6 +1105,7 @@ describe('repairRecentEventsForUser', () => {
       title: 'Market regulator opens tech probe after complaint',
       url: `https://example.com/${user.id}/special-status-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      createdAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'favorite'
     }));
@@ -1076,8 +1137,10 @@ describe('repairRecentEventsForUser', () => {
       title: 'Coastal rail project receives final approval',
       url: `https://example.com/${owner.user.id}/invalid-pointer-representative`,
       publishedAt: recentDateWithOffset(),
+      createdAt: recentDateWithOffset(),
       articleVector: [1, 0, 0],
-      status: 'read'
+      status: 'read',
+      readAt: recentDateWithOffset(2 * 60 * 1000)
     }));
     const foreignArticle = await Article.create(articlePayload(foreign.user, foreign.feed, 1, {
       url: `https://example.com/${foreign.user.id}/invalid-pointer-foreign`
@@ -1099,6 +1162,7 @@ describe('repairRecentEventsForUser', () => {
       title: 'Coastal rail project receives final approval after review',
       url: `https://example.com/${owner.user.id}/invalid-pointer-incoming`,
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
+      createdAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0],
       status: 'unread'
     }));

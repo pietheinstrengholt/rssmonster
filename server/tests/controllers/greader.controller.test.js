@@ -158,6 +158,35 @@ describe('Google Reader API compatibility', () => {
     expect(article.status).toBe('unread');
   });
 
+  it('keeps readAt synchronized with Google Reader read tags', async () => {
+    const { user, article } = await createFixture();
+    const itemId = `tag:google.com,2005:reader/item/${article.id.toString(16).padStart(16, '0')}`;
+
+    const readResponse = await request(app)
+      .post('/api/greader/reader/api/0/edit-tag')
+      .type('form')
+      .send({ i: itemId, a: 'user/-/state/com.google/read' })
+      .set('Authorization', greaderAuthHeaderFor(user));
+
+    await article.reload();
+
+    expect(readResponse.status).toBe(200);
+    expect(article.status).toBe('read');
+    expect(article.readAt).toBeInstanceOf(Date);
+
+    const unreadResponse = await request(app)
+      .post('/api/greader/reader/api/0/edit-tag')
+      .type('form')
+      .send({ i: itemId, r: 'user/-/state/com.google/read' })
+      .set('Authorization', greaderAuthHeaderFor(user));
+
+    await article.reload();
+
+    expect(unreadResponse.status).toBe(200);
+    expect(article.status).toBe('unread');
+    expect(article.readAt).toBeNull();
+  });
+
   it('preserves feeds and articles when disabling a category', async () => {
     const { user, category, fallbackCategory, feed, article } = await createFixture();
 
