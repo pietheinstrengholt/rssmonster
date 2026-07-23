@@ -29,6 +29,22 @@ export function wasReadBeforeArticleArrived(article, incomingArticle) {
     readAt < incomingCreatedAt;
 }
 
+// This function returns an Article's arrival timestamp or sorts invalid values last.
+function articleArrivalTimestamp(article) {
+  const timestamp = new Date(article?.createdAt).getTime();
+  return Number.isFinite(timestamp) ? timestamp : Number.POSITIVE_INFINITY;
+}
+
+// This function returns the earliest-arriving Article without mutating the caller's collection.
+function oldestArrivingArticle(articles) {
+  return articles
+    .slice()
+    .sort((left, right) =>
+      articleArrivalTimestamp(left) - articleArrivalTimestamp(right) ||
+      Number(left.id) - Number(right.id)
+    )[0] ?? null;
+}
+
 // This function preserves a valid developing pointer or deterministically repairs it.
 export function selectDevelopingArticleId(event, canonicalEventArticles) {
   const currentArticle = canonicalEventArticles.find(
@@ -44,14 +60,22 @@ export function selectDevelopingArticleId(event, canonicalEventArticles) {
   );
 
   if (representativeArticle) {
-    return canonicalEventArticles.find(article =>
-      article.status === 'unread' &&
-      wasReadBeforeArticleArrived(representativeArticle, article)
-    )?.id ?? representativeArticle.id;
+    const firstUnreadAfterConsumption = oldestArrivingArticle(
+      canonicalEventArticles.filter(article =>
+        article.status === 'unread' &&
+        wasReadBeforeArticleArrived(representativeArticle, article)
+      )
+    );
+
+    return firstUnreadAfterConsumption?.id ?? representativeArticle.id;
   }
 
-  return canonicalEventArticles.find(article => article.status === 'unread')?.id ??
-    canonicalEventArticles[0]?.id ??
+  const firstUnreadArticle = oldestArrivingArticle(
+    canonicalEventArticles.filter(article => article.status === 'unread')
+  );
+
+  return firstUnreadArticle?.id ??
+    oldestArrivingArticle(canonicalEventArticles)?.id ??
     null;
 }
 

@@ -142,7 +142,6 @@ coverage wave.
 
 The developing pointer may move when newer canonical coverage joins an existing
 Event. It is presentation state, not a replacement semantic identity for the Event.
-Do not call `developingArticleId` another representative in code or documentation.
 
 A valid unread developing article is sticky. It must not be replaced by newly
 linked Articles until it is read, invalid, or missing.

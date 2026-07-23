@@ -3,7 +3,6 @@ import { shallowMount } from '@vue/test-utils';
 
 import Article from '../src/components/Article.vue';
 import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
-import { isDevelopingArticle } from '../src/utils/events.js';
 
 const developingEvent = {
   representativeArticleId: 100,
@@ -32,16 +31,17 @@ function createStore(viewMode = 'minimal') {
   };
 }
 
-// This function mounts the compact article row with event pointer metadata.
-function mountArticle(id, event = developingEvent, status = 'unread') {
+// This function mounts the compact article row with API-provided developing-story state.
+function mountArticle(id, isDevelopingStory = false) {
   return shallowMount(Article, {
     props: {
       id,
       title: 'Event coverage',
       url: 'https://example.com/event-coverage',
       feed: { feedName: 'Example Feed' },
-      status,
-      event
+      status: 'unread',
+      event: developingEvent,
+      isDevelopingStory
     },
     global: {
       mocks: {
@@ -75,19 +75,9 @@ function mountReader(article) {
 }
 
 describe('developing story icon', () => {
-  it('matches only a distinct developing article', () => {
-    expect(isDevelopingArticle(103, developingEvent, 'unread')).toBe(true);
-    expect(isDevelopingArticle(103, developingEvent, 'read')).toBe(false);
-    expect(isDevelopingArticle(100, developingEvent, 'unread')).toBe(false);
-    expect(isDevelopingArticle(100, {
-      representativeArticleId: 100,
-      developingArticleId: 100
-    }, 'unread')).toBe(false);
-  });
-
-  it('renders on the developing compact article only', () => {
-    const developingWrapper = mountArticle(103);
-    const representativeWrapper = mountArticle(100);
+  it('renders on a compact article only when the API marks it as developing', () => {
+    const developingWrapper = mountArticle(103, true);
+    const representativeWrapper = mountArticle(100, false);
 
     expect(developingWrapper.get('.developing-story-icon').classes()).toContain('bi-lightning-charge-fill');
     expect(representativeWrapper.find('.developing-story-icon').exists()).toBe(false);
@@ -98,18 +88,20 @@ describe('developing story icon', () => {
       id: 103,
       title: 'Developing coverage',
       status: 'unread',
+      isDevelopingStory: true,
       event: developingEvent
     });
 
     expect(wrapper.get('.readerArticleListDevelopingIcon').classes()).toContain('bi-lightning-charge-fill');
   });
 
-  it('does not render for a read developing article', () => {
-    const compactWrapper = mountArticle(103, developingEvent, 'read');
+  it('does not render when the API developing-story field is false', () => {
+    const compactWrapper = mountArticle(103, false);
     const readerWrapper = mountReader({
       id: 103,
-      title: 'Read developing coverage',
-      status: 'read',
+      title: 'Ordinary coverage',
+      status: 'unread',
+      isDevelopingStory: false,
       event: developingEvent
     });
 

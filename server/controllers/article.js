@@ -66,6 +66,7 @@ const loadArticleDetails = async (userId, articlesArray) => {
       'attentionBucket',
       'publishedAt',
       'firstSeen',
+      'isDevelopingStory',
       'quality'
     ],
     include: [

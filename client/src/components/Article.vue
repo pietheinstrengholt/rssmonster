@@ -21,7 +21,7 @@
           <span class="article-list-feed">{{ author || feed.feedName }}</span>
           <span class="article-list-dot">·</span>
           <span v-if="event && eventArticleCountTotal > 1 && $store.data.currentSelection.grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
-          <i v-if="isDeveloping" class="bi bi-lightning-charge-fill developing-story-icon" title="Developing story" aria-label="Developing story"></i>
+          <i v-if="isDevelopingStory" class="bi bi-lightning-charge-fill developing-story-icon" title="Developing story" aria-label="Developing story"></i>
           <span v-if="event && eventArticleCountTotal > 1 && $store.data.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</span>
           <span v-if="duplicateCount > 0" class="duplicate-badge" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
           <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
@@ -51,7 +51,7 @@
       </div>
       <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
         <div class="article-layout">
-          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDeveloping" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
+          <ArticleHeader :url="url" :title="title" :clickedAmount="clickedAmount" :favoriteInd="favoriteInd" :hotInd="hotInd" :status="status" :viewMode="$store.data.currentSelection.viewMode" :hasVideoMedia="hasVideoMedia" :isDeveloping="isDevelopingStory" :hasInterestScore="hasInterestScore" :isGroupedView="isGroupedView" :eventArticleCountTotal="eventArticleCountTotal" @article-clicked="articleClicked" @toggle-favorite="markAsFavorite" @toggle-read-status="$emit('toggle-read-status', { id, status })" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
           <div class="meta-row">
             <ArticleMeta :published-at="publishedAt" :feed="feed" :author="author" :event="event" :eventArticleCountTotal="eventArticleCountTotal" :duplicateCount="duplicateCount" :grouping="$store.data.currentSelection.grouping" :ruleTags="ruleTags" :isMobilePortrait="isMobilePortrait" :quality="quality" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :neutralScore="NEUTRAL_SCORE" :formatDate="formatDate" :mainURL="mainURL" :getQualityIcon="getQualityIcon" :getQualityClass="getQualityClass" :getSentimentClass="getSentimentClass" :scoreLabel="scoreLabel" @select-category="selectCategory" @select-tag="selectTag" @view-event-articles="viewEventArticles" @view-duplicate-articles="viewDuplicateArticles" />
             <ArticleTagsScores v-if="$store.data.currentSelection.viewMode !== 'minimal'" :categoryName="categoryName" :tags="tags || []" :roundedQuality="roundedQuality" :advertisementScore="advertisementScore" :sentimentScore="sentimentScore" :qualityScore="qualityScore" :neutralScore="NEUTRAL_SCORE" :scoreLabel="scoreLabel" :showQuality="quality !== undefined && roundedQuality !== NEUTRAL_SCORE" :showAdvertisement="advertisementScore !== undefined && advertisementScore < NEUTRAL_SCORE" :showSentiment="sentimentScore !== undefined && sentimentScore !== NEUTRAL_SCORE" :showWritingQuality="qualityScore !== undefined && qualityScore !== NEUTRAL_SCORE" @select-category="selectCategory" @select-tag="selectTag" />
@@ -105,7 +105,6 @@ import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent } from '../utils/content';
-import { isDevelopingArticle } from '../utils/events';
 
 const NEUTRAL_SCORE = 70;
 const SWIPE_MAX = 128;
@@ -145,6 +144,7 @@ export default {
     isOfficialSource: { type: Boolean, default: false },
     officialOrganization: { type: String, default: '' },
     interestScore: { type: [Number, String], default: 0 },
+    isDevelopingStory: { type: Boolean, default: false },
     event: { type: Object, default: null },
     duplicateCount: { type: Number, default: 0 },
     contentSummaryBullets: { type: Array, default: () => [] },
@@ -266,10 +266,6 @@ export default {
     // Determines whether the article is unread.
     isUnread() {
       return this.status === 'unread';
-    },
-    // Returns whether this article is the event's newer developing story.
-    isDeveloping() {
-      return isDevelopingArticle(this.id, this.event, this.status);
     },
     // Returns the summary bullet limit for the article affinity.
     visibleBulletCount() {

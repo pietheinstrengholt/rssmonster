@@ -136,12 +136,48 @@ describe('article ownership authorization', () => {
       status: article.status
     });
     expect(response.body[0]).toHaveProperty('quality');
+    expect(response.body[0]).toHaveProperty('isDevelopingStory', false);
     expect(response.body[0]).not.toHaveProperty('articleVector');
     expect(response.body[0]).not.toHaveProperty('embedding_model');
     expect(response.body[0]).not.toHaveProperty('contentOriginal');
     expect(response.body[0]).not.toHaveProperty('contentText');
     expect(response.body[0]).not.toHaveProperty('contentTextHash');
     expect(response.body[0]).not.toHaveProperty('contentSourceHash');
+  });
+
+  it('serializes developing-story presentation state from the Article model', async () => {
+    const owner = await createUser(uniqueName('developing-story-details-owner'));
+    const { article: representativeArticle, feed } = await createArticleFor(owner);
+    const developingArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/developing-article`,
+      title: `${owner.username} developing article`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id,
+      name: `${owner.username} developing event`,
+      articleCount: 2
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [representativeArticle.id, developingArticle.id] } }
+    );
+
+    const response = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: `${representativeArticle.id},${developingArticle.id}` });
+
+    const articlesById = new Map(response.body.map(article => [article.id, article]));
+
+    expect(response.status).toBe(200);
+    expect(articlesById.get(representativeArticle.id).isDevelopingStory).toBe(false);
+    expect(articlesById.get(developingArticle.id).isDevelopingStory).toBe(true);
   });
 
   it('persists the developing-events selection from article search requests', async () => {

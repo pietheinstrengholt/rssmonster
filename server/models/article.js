@@ -273,6 +273,27 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: true
       },
+      // Show whether this article is the developing story for its event. This is a virtual field derived from the event's developingArticleId and representativeArticleId.
+      isDevelopingStory: {
+        type: DataTypes.VIRTUAL(DataTypes.BOOLEAN),
+        get() {
+          const event = this.get('event');
+          if (!event) return false;
+
+          const articleId = Number(this.getDataValue('id'));
+          const representativeArticleId = Number(event.representativeArticleId);
+          const developingArticleId = event.developingArticleId == null
+            ? null
+            : Number(event.developingArticleId);
+
+          return (
+            this.getDataValue('status') === 'unread' &&
+            developingArticleId != null &&
+            developingArticleId !== representativeArticleId &&
+            articleId === developingArticleId
+          );
+        }
+      },
       topicId: {
         /**
          * Denormalized topic link for convenience/performance.

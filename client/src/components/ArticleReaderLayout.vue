@@ -137,7 +137,7 @@
             </a>
           </span>
           <span class="readerArticleListItemBadges">
-            <i v-if="isDevelopingArticle(article.id, article.event, article.status)" class="bi bi-lightning-charge-fill readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story"></i>
+            <i v-if="article.isDevelopingStory" class="bi bi-lightning-charge-fill readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story"></i>
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
@@ -191,7 +191,6 @@ import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent, usableHttpUrl } from '../utils/content';
-import { isDevelopingArticle } from '../utils/events';
 import { markClicked as markArticleClickedAPI } from '../api/articles';
 
 const PREVIEW_LENGTH = 150;
@@ -436,8 +435,6 @@ export default {
     }
   },
   methods: {
-    // Exposes the shared developing-article comparison to reader-list rows.
-    isDevelopingArticle,
     // Shows the article-list scrollbar while the user is actively scrolling.
     handleArticleListScroll() {
       const articleList = this.$refs.articleListScrollRef;

@@ -134,7 +134,7 @@ describe('reconcileTouchedEvents', () => {
     expect(event.developingArticleId).toBe(currentArticle.id);
   });
 
-  it('repairs an invalid developing pointer using deterministic canonical ordering', async () => {
+  it('repairs an invalid developing pointer using earliest arrival order', async () => {
     const owner = await createUserGraph('repair-pointer-owner');
     const foreign = await createUserGraph('repair-pointer-foreign');
     const representativeArticle = await createArticle(owner.user, owner.feed, 1, {
@@ -164,7 +164,7 @@ describe('reconcileTouchedEvents', () => {
     await reconcileTouchedEvents(owner.user.id, [event.id]);
     await event.reload();
 
-    expect(event.developingArticleId).toBe(newestUnreadArticle.id);
+    expect(event.developingArticleId).toBe(olderUnreadArticle.id);
     expect(event.representativeArticleId).toBe(representativeArticle.id);
   });
 
