@@ -22,6 +22,10 @@ import morgan from 'morgan';
 import cors from 'cors';
 import fs from 'fs';
 import https from 'https';
+import {
+  apiRateLimiter,
+  mcpRateLimiter
+} from './middleware/rateLimit.js';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
@@ -78,6 +82,10 @@ app.use(express.static("dist"));
 
 // CORS
 app.use(cors());
+
+// Rate limiting
+app.use(['/api', '/mcp', '/rss'], apiRateLimiter);
+app.use('/mcp', mcpRateLimiter);
 
 // Body parsing
 app.use(express.urlencoded({ extended: true }));

@@ -60,6 +60,7 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
     "express": "^5.2.1",
+    "express-rate-limit": "^8.2.1",
     "feedsmith": "^2.9.6",
     "franc-min": "^6.2.0",
     "he": "^1.2.0",
