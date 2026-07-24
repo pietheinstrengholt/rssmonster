@@ -2,6 +2,25 @@
 // Video URLs are rejected because they do not represent a channel feed.
 import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
 
+const YOUTUBE_HOSTNAMES = new Set([
+  'youtube.com',
+  'www.youtube.com',
+  'youtu.be'
+]);
+
+// Checks whether an absolute HTTP(S) URL uses an explicitly supported YouTube hostname.
+export const isYoutubeUrl = (input) => {
+  try {
+    const url = new URL(input);
+    return (
+      ['http:', 'https:'].includes(url.protocol) &&
+      YOUTUBE_HOSTNAMES.has(url.hostname)
+    );
+  } catch {
+    return false;
+  }
+};
+
 // Converts supported YouTube inputs into the corresponding channel RSS URL.
 export const getYoutubeRssFromHandle = async (input) => {
   let url;
@@ -14,6 +33,8 @@ export const getYoutubeRssFromHandle = async (input) => {
   } catch {
     return undefined;
   }
+
+  if (!isYoutubeUrl(url.toString())) return undefined;
 
   // Reject video URLs
   if (url.hostname === 'youtu.be' || url.searchParams.has('v')) {

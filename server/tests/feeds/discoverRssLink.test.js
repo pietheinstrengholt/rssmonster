@@ -7,12 +7,38 @@ vi.mock('../../utils/fetchURL.js', () => ({
 }));
 
 const { discoverRssLink } = await import('../../services/feeds/discoverRssLink.js');
+const {
+  getYoutubeRssFromHandle,
+  isYoutubeUrl
+} = await import('../../services/feeds/getYoutubeRssFromHandle.js');
 
 afterEach(() => {
   vi.useRealTimers();
 });
 
 describe('discoverRssLink', () => {
+  it('recognizes only explicitly allowed YouTube hosts', () => {
+    expect(isYoutubeUrl('https://youtube.com/channel/example')).toBe(true);
+    expect(isYoutubeUrl('https://www.youtube.com/@example')).toBe(true);
+    expect(isYoutubeUrl('https://youtu.be/example')).toBe(true);
+    expect(isYoutubeUrl('https://youtube.com.evil.example/@example')).toBe(false);
+    expect(isYoutubeUrl('https://evil.example/youtube.com/@example')).toBe(false);
+    expect(isYoutubeUrl('https://evil.example/?next=youtube.com')).toBe(false);
+    expect(isYoutubeUrl('https://youtube.com@evil.example/@example')).toBe(false);
+  });
+
+  it('rejects non-YouTube URLs in the YouTube resolver', async () => {
+    fetchURL.mockReset();
+
+    await expect(
+      getYoutubeRssFromHandle(
+        'https://youtube.com@evil.example/channel/UC12345678901234567890'
+      )
+    ).resolves.toBeUndefined();
+
+    expect(fetchURL).not.toHaveBeenCalled();
+  });
+
   it('accepts Reddit RSS URL directly', async () => {
     fetchURL.mockReset();
     const rssUrl = 'https://www.reddit.com/.rss';

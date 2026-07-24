@@ -2,7 +2,10 @@
 // It validates candidates by content type and feed parsing, and can persist successful discoveries on feed models.
 import { load } from 'cheerio';
 import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
-import { getYoutubeRssFromHandle } from './getYoutubeRssFromHandle.js';
+import {
+  getYoutubeRssFromHandle,
+  isYoutubeUrl
+} from './getYoutubeRssFromHandle.js';
 import { parseFeedSource } from './feedsmith/parseFeed.js';
 
 // Checks whether a string looks like an absolute HTTP(S) URL.
@@ -165,7 +168,7 @@ export const discoverRssLink = async (url, feed, options = {}) => {
     const discoveryDeadline = Date.now() + DISCOVERY_TIMEOUT_MS;
 
     // YouTube short-circuit
-    if (url.includes('youtube.com') || url.includes('youtu.be')) {
+    if (isYoutubeUrl(url)) {
       const ytRss = await getYoutubeRssFromHandle(url);
 
       if (ytRss) {
