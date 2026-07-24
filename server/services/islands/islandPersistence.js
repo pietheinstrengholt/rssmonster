@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
+import { formatLogString } from '../../utils/logging.js';
 import { buildPopulationAuditEntry, appendPopulationAudit } from './islandAudit.js';
 import { evolveIslandTopicMemberships } from './islandMemberships.js';
 import {
@@ -36,11 +37,6 @@ function formatIslandMetric(value, digits = 3) {
 function debugIslandLog(message) {
   if (!ISLAND_DEBUG) return;
   console.log(`[ISLAND] ${message}`);
-}
-
-// This function escapes island names in single-line logs.
-function logSafeIslandName(name = '') {
-  return String(name || '').replace(/"/g, '\\"');
 }
 
 // This function returns a human-readable article engagement label for island logs.
@@ -220,7 +216,7 @@ export async function persistInterestIslandProfiles(userId, profiles, transactio
 
     console.log(
       `[ISLAND] new-island=${island.id} ` +
-      `name="${logSafeIslandName(uniqueLabel)}" ` +
+      `name=${formatLogString(uniqueLabel)} ` +
       `seedTopics=${profile.topics.length} ` +
       `seedArticles=${(profile.articles || []).length} ` +
       `avgSim=${formatIslandMetric(averageSimilarity(islandRows))}`

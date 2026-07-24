@@ -10,6 +10,7 @@ import {
   upsertTopicInCache
 } from '../shared/topicHelpers.js';
 import { generateTopicName } from '../shared/topicName.service.js';
+import { formatLogString } from '../../../utils/logging.js';
 
 const { Topic } = db;
 
@@ -20,11 +21,6 @@ const { Topic } = db;
 function formatTopicMetric(value, digits = 3) {
   const numeric = Number(value);
   return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
-}
-
-// This function escapes topic names in single-line logs.
-function logSafeTopicName(name = '') {
-  return String(name || '').replace(/"/g, '\\"');
 }
 
 export async function createTopic({
@@ -116,7 +112,7 @@ export async function createTopic({
 
   console.log(
     `[TOPIC] new-topic=${createdTopic.id} event=${currentEventId} ` +
-    `name="${logSafeTopicName(topicName)}" ` +
+    `name=${formatLogString(topicName)} ` +
     `seeds=${topicSeedEvents.length} articles=${seedArticleCount} ` +
     `topSim=${formatTopicMetric(topSeedSimilarity)} gate=${creationGate.reason}`
   );
@@ -146,4 +142,3 @@ export async function createTopic({
 }
 
 export default createTopic;
-

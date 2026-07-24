@@ -1,5 +1,6 @@
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
+import { formatLogString } from '../../utils/logging.js';
 import { cosineSimilarity } from './islandVectorUtils.js';
 
 const { Island, IslandTopic } = db;
@@ -268,8 +269,8 @@ export function buildDisambiguatedIslandName(baseName, island, topicNames = [], 
 function logIslandRename({ island, from, to, strongerIsland, similarity }) {
   console.log(
     `[ISLAND] renamed island=${island.id} ` +
-    `from="${String(from || '').replace(/"/g, '\\"')}" ` +
-    `to="${String(to || '').replace(/"/g, '\\"')}" ` +
+    `from=${formatLogString(from)} ` +
+    `to=${formatLogString(to)} ` +
     `reason=duplicate-name-low-sim stronger=${strongerIsland.id} ` +
     `sim=${Number(similarity || 0).toFixed(3)}`
   );
