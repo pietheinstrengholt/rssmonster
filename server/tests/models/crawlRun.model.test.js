@@ -19,7 +19,7 @@ describe('CrawlRun model', () => {
     user = await User.create({
       username,
       password,
-      hash: `${username}-${hash}`,
+      feverCredentialHash: `${username}-${hash}`,
       role: 'user'
     });
   });

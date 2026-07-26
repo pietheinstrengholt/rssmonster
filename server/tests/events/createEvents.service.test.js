@@ -14,7 +14,7 @@ async function createUserGraph(prefix) {
   const user = await User.create({
     username,
     password: 'secret',
-    hash,
+    feverCredentialHash: hash,
     role: 'user'
   });
   const category = await Category.create({

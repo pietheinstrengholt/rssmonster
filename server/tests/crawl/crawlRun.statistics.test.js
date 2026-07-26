@@ -29,7 +29,7 @@ async function createUserFeed(prefix) {
   const user = await User.create({
     username,
     password: 'secret',
-    hash: uniqueName(`${prefix}hash`),
+    feverCredentialHash: uniqueName(`${prefix}hash`),
     role: 'user'
   });
   const category = await Category.create({

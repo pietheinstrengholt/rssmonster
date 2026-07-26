@@ -1,18 +1,32 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import request from 'supertest';
 import db from '../../models/index.js';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash
+} from '../../utils/apiCredentials.js';
 
 const { Article, Category, Feed, Hotlink, User, sequelize } = db;
 
 let app;
 
-const createFixture = async () => {
+// This function creates a user with a standard Fever protocol credential.
+const createFeverUser = async prefix => {
+  const username = `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  const password = 'password';
+  const apiKey = createFeverApiKey(username, password);
   const user = await User.create({
-    username: `fever-${Date.now()}`,
-    password: 'password',
-    hash: `fever-api-key-${Date.now()}`,
+    username,
+    password: 'password-hash-not-used-by-fever',
+    feverCredentialHash: createFeverCredentialHash(apiKey),
     role: 'user'
   });
+
+  return { apiKey, user };
+};
+
+const createFixture = async () => {
+  const { apiKey, user } = await createFeverUser('fever');
   const category = await Category.create({
     userId: user.id,
     name: 'Fever',
@@ -52,22 +66,12 @@ const createFixture = async () => {
     url: linkedArticle.url
   });
 
-  return { user, linkedArticle, unlinkedArticle };
+  return { apiKey, user, linkedArticle, unlinkedArticle };
 };
 
 const createFaviconFixture = async () => {
-  const user = await User.create({
-    username: `fever-favicon-${Date.now()}`,
-    password: 'password',
-    hash: `fever-favicon-api-key-${Date.now()}`,
-    role: 'user'
-  });
-  const otherUser = await User.create({
-    username: `fever-other-${Date.now()}`,
-    password: 'password',
-    hash: `fever-other-api-key-${Date.now()}`,
-    role: 'user'
-  });
+  const { apiKey, user } = await createFeverUser('fever-favicon');
+  const { user: otherUser } = await createFeverUser('fever-other');
   const category = await Category.create({
     userId: user.id,
     name: 'Fever Favicons',
@@ -93,7 +97,7 @@ const createFaviconFixture = async () => {
     favicon: 'data:image/png;base64,other'
   });
 
-  return { user, feed, otherFeed };
+  return { apiKey, user, feed, otherFeed };
 };
 
 describe('Fever API compatibility', () => {
@@ -107,12 +111,28 @@ describe('Fever API compatibility', () => {
     await sequelize.authenticate();
   }, 50_000);
 
-  it('returns articles whose URLs are present in the user hotlink table', async () => {
-    const { user, linkedArticle, unlinkedArticle } = await createFixture();
+  it('accepts the standard MD5 protocol key without storing it directly', async () => {
+    const { apiKey, user } = await createFeverUser('fever-auth');
 
     const res = await request(app)
       .post('/api/fever')
-      .query({ api_key: user.hash, links: '' });
+      .type('form')
+      .send({ api_key: apiKey });
+
+    expect(res.status).toBe(200);
+    expect(res.body.auth).toBe(1);
+    expect(user.feverCredentialHash).toBe(
+      createFeverCredentialHash(apiKey)
+    );
+    expect(user.feverCredentialHash).not.toBe(apiKey);
+  });
+
+  it('returns articles whose URLs are present in the user hotlink table', async () => {
+    const { apiKey, linkedArticle, unlinkedArticle } = await createFixture();
+
+    const res = await request(app)
+      .post('/api/fever')
+      .query({ api_key: apiKey, links: '' });
 
     expect(res.status).toBe(200);
     expect(res.body.auth).toBe(1);
@@ -121,11 +141,11 @@ describe('Fever API compatibility', () => {
   });
 
   it('returns only sanitized article HTML in item payloads', async () => {
-    const { user, linkedArticle } = await createFixture();
+    const { apiKey, linkedArticle } = await createFixture();
 
     const res = await request(app)
       .post('/api/fever')
-      .query({ api_key: user.hash, items: '', with_ids: String(linkedArticle.id) });
+      .query({ api_key: apiKey, items: '', with_ids: String(linkedArticle.id) });
 
     expect(res.status).toBe(200);
     expect(res.body.items).toEqual(expect.arrayContaining([
@@ -138,12 +158,12 @@ describe('Fever API compatibility', () => {
   });
 
   it('keeps readAt synchronized with Fever read status changes', async () => {
-    const { user, linkedArticle } = await createFixture();
+    const { apiKey, linkedArticle } = await createFixture();
 
     const readResponse = await request(app)
       .post('/api/fever')
       .query({
-        api_key: user.hash,
+        api_key: apiKey,
         mark: 'item',
         as: 'read',
         id: linkedArticle.id
@@ -158,7 +178,7 @@ describe('Fever API compatibility', () => {
     const unreadResponse = await request(app)
       .post('/api/fever')
       .query({
-        api_key: user.hash,
+        api_key: apiKey,
         mark: 'item',
         as: 'unread',
         id: linkedArticle.id
@@ -172,11 +192,11 @@ describe('Fever API compatibility', () => {
   });
 
   it('returns favicons only for feeds owned by the authenticated user', async () => {
-    const { user, feed, otherFeed } = await createFaviconFixture();
+    const { apiKey, feed, otherFeed } = await createFaviconFixture();
 
     const res = await request(app)
       .post('/api/fever')
-      .query({ api_key: user.hash, favicons: '' });
+      .query({ api_key: apiKey, favicons: '' });
 
     expect(res.status).toBe(200);
     expect(res.body.auth).toBe(1);

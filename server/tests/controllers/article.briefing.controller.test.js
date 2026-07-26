@@ -28,7 +28,7 @@ const hoursAgo = hours => new Date(Date.now() - hours * 60 * 60 * 1000);
 const createUser = username => User.create({
   username,
   password: 'hashed-password',
-  hash: `${username}-hash`,
+  feverCredentialHash: `${username}-hash`,
   role: 'user'
 });
 

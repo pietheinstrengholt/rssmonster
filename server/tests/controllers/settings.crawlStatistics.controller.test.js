@@ -27,7 +27,7 @@ const authHeaderFor = user => {
 const createUser = () => User.create({
   username: uniqueName('crawl-statistics-user'),
   password: 'hashed-password',
-  hash: uniqueName('crawl-statistics-hash'),
+  feverCredentialHash: uniqueName('crawl-statistics-hash'),
   role: 'user'
 });
 

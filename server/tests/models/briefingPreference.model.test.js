@@ -15,7 +15,7 @@ async function createUser(prefix) {
   return User.create({
     username,
     password,
-    hash: `${username}-${hash}`,
+    feverCredentialHash: `${username}-${hash}`,
     role: 'user'
   });
 }

@@ -63,6 +63,8 @@ jobs:
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
+          JWT_SECRET: test-secret-used-for-sign-and-verify
+          FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
         run: |
           npx sequelize db:migrate:undo:all
           npx sequelize db:migrate
@@ -75,6 +77,8 @@ jobs:
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
+          JWT_SECRET: test-secret-used-for-sign-and-verify
+          FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
         run: npx sequelize db:seed:all
 
       - name: Test server
@@ -85,6 +89,8 @@ jobs:
           DB_USERNAME: rssmonster
           DB_PASSWORD: rssmonster
           DB_HOSTNAME: 127.0.0.1
+          JWT_SECRET: test-secret-used-for-sign-and-verify
+          FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
         run: npm test --if-present
 
       # -----------------------

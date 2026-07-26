@@ -2,8 +2,11 @@ import db from '../models/index.js';
 const { User } = db;
 import jwt from "jsonwebtoken";
 import bcrypt from "bcryptjs";
-import crypto from 'node:crypto';
 import { getJwtSecret } from '../config/auth.js';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash
+} from '../utils/apiCredentials.js';
 
 const register = async (req, res, _next) => {
   try {        
@@ -20,9 +23,8 @@ const register = async (req, res, _next) => {
 
     // Hash the password
     const hashedPassword = await bcrypt.hash(password, 10);
-    const hash = crypto.createHash('md5')
-      .update(`${username}:${password}`)
-      .digest('hex');
+    const feverApiKey = createFeverApiKey(username, password);
+    const feverCredentialHash = createFeverCredentialHash(feverApiKey);
     
     // Check if this is the first user (will be admin)
     const userCount = await User.count();
@@ -32,7 +34,7 @@ const register = async (req, res, _next) => {
     await User.create({
       username,
       password: hashedPassword,
-      hash,
+      feverCredentialHash,
       role
     });
 
@@ -110,7 +112,7 @@ const validate = async (req, res, _next) => {
     const user = await User.findOne({ 
       where: { id: req.userData.userId }, 
       attributes: {
-        exclude: ['password']
+        exclude: ['password', 'feverCredentialHash']
       }
     });
 

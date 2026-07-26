@@ -1,10 +1,11 @@
 import db from '../models/index.js';
 const { Feed, Category, Article, User } = db;
 
-import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import { Op } from 'sequelize';
 import { generateOpml } from './opml.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { createGreaderAuthToken } from '../utils/apiCredentials.js';
 
 /**
  * Google Reader API compatible implementation
@@ -25,10 +26,7 @@ import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.
  */
 
 // Helper to generate auth token
-const generateAuthToken = (user) => {
-  const salt = process.env.GREADER_SALT || 'rssmonster-greader-salt';
-  return crypto.createHash('sha1').update(salt + user.username + user.hash).digest('hex');
-};
+const generateAuthToken = user => createGreaderAuthToken(user);
 
 // Helper to generate action token (57 chars as per spec)
 const generateActionToken = (user) => {
@@ -341,9 +339,9 @@ export const clientLogin = async (req, res) => {
       return unauthorized(res);
     }
     
-    // Validate password using the hash (md5 of username:password)
-    const expectedHash = crypto.createHash('md5').update(`${email}:${passwd}`).digest('hex');
-    if (user.hash !== expectedHash) {
+    // Validate the raw Google Reader password against the slow account hash.
+    const passwordMatches = await bcrypt.compare(passwd, user.password);
+    if (!passwordMatches) {
       return unauthorized(res);
     }
     

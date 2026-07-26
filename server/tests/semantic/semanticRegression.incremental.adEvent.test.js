@@ -100,7 +100,7 @@ async function findOrCreateRegressionUser() {
   return User.create({
     username: FIXTURE_USERNAME,
     password: FIXTURE_PASSWORD,
-    hash: apiHash,
+    feverCredentialHash: apiHash,
     role: 'user'
   });
 }

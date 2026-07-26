@@ -22,7 +22,7 @@ export default (sequelize) => {
           notEmpty: true
         }
       },
-      hash: {
+      feverCredentialHash: {
         type: DataTypes.STRING,
         allowNull: false,
         unique: true
@@ -43,6 +43,14 @@ export default (sequelize) => {
       collate: 'utf8mb4_unicode_ci'
     }
   );
+
+  // This function prevents stored credentials from being serialized in API responses.
+  User.prototype.toJSON = function toJSON() {
+    const values = { ...this.get({ plain: true }) };
+    delete values.password;
+    delete values.feverCredentialHash;
+    return values;
+  };
 
   return User;
 };

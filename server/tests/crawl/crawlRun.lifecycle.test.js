@@ -21,7 +21,7 @@ describe('crawl run lifecycle', () => {
     user = await User.create({
       username,
       password,
-      hash: `${username}-${hash}`,
+      feverCredentialHash: `${username}-${hash}`,
       role: 'user'
     });
 
@@ -29,7 +29,7 @@ describe('crawl run lifecycle', () => {
     failingUser = await User.create({
       username: failingUsername,
       password,
-      hash: `${failingUsername}-${hash}`,
+      feverCredentialHash: `${failingUsername}-${hash}`,
       role: 'user'
     });
 
@@ -161,7 +161,7 @@ describe('crawl run lifecycle', () => {
     const overlapUser = await User.create({
       username,
       password: 'secret',
-      hash: uniqueName('overlappingcrawlhash'),
+      feverCredentialHash: uniqueName('overlappingcrawlhash'),
       role: 'user'
     });
     const activeCrawlRun = await CrawlRun.create({
@@ -202,7 +202,7 @@ describe('crawl run lifecycle', () => {
     const staleUser = await User.create({
       username,
       password: 'secret',
-      hash: uniqueName('stalecrawlhash'),
+      feverCredentialHash: uniqueName('stalecrawlhash'),
       role: 'user'
     });
     const staleCrawlRun = await CrawlRun.create({
@@ -233,7 +233,7 @@ describe('crawl run lifecycle', () => {
     const atomicUser = await User.create({
       username,
       password: 'secret',
-      hash: uniqueName('atomiccrawlhash'),
+      feverCredentialHash: uniqueName('atomiccrawlhash'),
       role: 'user'
     });
     const originalFindOne = CrawlRun.findOne.bind(CrawlRun);
@@ -288,7 +288,7 @@ describe('crawl run lifecycle', () => {
     const staleUser = await User.create({
       username,
       password: 'secret',
-      hash: uniqueName('concurrentstalecrawlhash'),
+      feverCredentialHash: uniqueName('concurrentstalecrawlhash'),
       role: 'user'
     });
     const staleCrawlRun = await CrawlRun.create({
@@ -349,14 +349,14 @@ describe('crawl run lifecycle', () => {
     const activeUser = await User.create({
       username: activeUsername,
       password: 'secret',
-      hash: uniqueName('activeotherusercrawlhash'),
+      feverCredentialHash: uniqueName('activeotherusercrawlhash'),
       role: 'user'
     });
     const allowedUsername = uniqueName('allowedotherusercrawl');
     const allowedUser = await User.create({
       username: allowedUsername,
       password: 'secret',
-      hash: uniqueName('allowedotherusercrawlhash'),
+      feverCredentialHash: uniqueName('allowedotherusercrawlhash'),
       role: 'user'
     });
     await CrawlRun.create({

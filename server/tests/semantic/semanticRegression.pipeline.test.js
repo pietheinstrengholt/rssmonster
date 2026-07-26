@@ -255,7 +255,7 @@ semanticRegressionDescribe('semantic regression fixture pipeline', () => {
     const user = await User.create({
       username: FIXTURE_USERNAME,
       password: passwordHash,
-      hash: apiHash,
+      feverCredentialHash: apiHash,
       role: 'user'
     });
     semanticRegressionUserId = user.id;

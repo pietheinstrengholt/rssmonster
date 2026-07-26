@@ -19,11 +19,28 @@ describe('User model', () => {
     const user = await User.create({
       username,
       password,
-      hash: `${username}-${hash}`,
+      feverCredentialHash: `${username}-${hash}`,
       role: 'user'
     });
 
     expect(user.id).toBeDefined();
     expect(user.username).toBe(username);
+  });
+
+  it('omits stored credentials when serialized without hiding them internally', async () => {
+    const username = uniqueName('serialized-user');
+    const password = 'stored-password';
+    const hash = `${username}-api-hash`;
+    const user = await User.create({
+      username,
+      password,
+      feverCredentialHash: hash,
+      role: 'user'
+    });
+
+    expect(user.password).toBe(password);
+    expect(user.feverCredentialHash).toBe(hash);
+    expect(user.toJSON()).not.toHaveProperty('password');
+    expect(user.toJSON()).not.toHaveProperty('feverCredentialHash');
   });
 });

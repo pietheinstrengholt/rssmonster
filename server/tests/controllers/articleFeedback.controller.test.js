@@ -13,7 +13,7 @@ const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(3
 const createUser = username => User.create({
   username,
   password: 'hashed-password',
-  hash: `${username}-hash`
+  feverCredentialHash: `${username}-hash`
 });
 
 const authHeaderFor = user => {

@@ -2,6 +2,7 @@ import db from '../models/index.js';
 const { Feed, Category, Article, User, Hotlink } = db;
 import { Op } from 'sequelize';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
+import { createFeverCredentialHash } from '../utils/apiCredentials.js';
 
 //use Fever API
 //specs: https://github.com/dasmurphy/tinytinyrss-fever-plugin/blob/master/fever-api.md
@@ -27,9 +28,10 @@ export const postFever = async (req, res, _next) => {
     //check if api_key is provided, clients implement the api_key in different ways
     if (apiKey) {
       console.log("api_key found");
+      const credentialHash = createFeverCredentialHash(apiKey);
       const loggedInUser = await User.findOne({
           where: {
-            hash: apiKey
+            feverCredentialHash: credentialHash
           }
         });
       if (!loggedInUser?.id) {

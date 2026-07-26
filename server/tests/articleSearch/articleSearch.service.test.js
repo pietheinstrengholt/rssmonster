@@ -33,7 +33,7 @@ describe('articleSearch.service', () => {
     user = await User.create({
       username: 'searchtestuser',
       password,
-      hash,
+      feverCredentialHash: hash,
       role: 'user'
     });
 

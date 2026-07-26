@@ -15,7 +15,7 @@ async function createUserGraph() {
   const user = await User.create({
     username: `behavioral-${Date.now()}-${userSequence}`,
     password: 'secret',
-    hash,
+    feverCredentialHash: hash,
     role: 'user'
   });
 

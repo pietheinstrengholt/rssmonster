@@ -3,6 +3,10 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash
+} from '../../utils/apiCredentials.js';
 
 const { User, sequelize } = db;
 
@@ -13,7 +17,7 @@ const uniqueName = prefix => `${prefix}-${Date.now()}-${Math.random().toString(3
 const createUser = (username, role = 'user') => User.create({
   username,
   password: 'hashed-password',
-  hash: `${username}-hash`,
+  feverCredentialHash: `${username}-hash`,
   role
 });
 
@@ -52,7 +56,7 @@ describe('user admin authorization', () => {
     expect(res.body.user.id).toBe(target.id);
     expect(res.body.user.username).toBe(target.username);
     expect(res.body.user).not.toHaveProperty('password');
-    expect(res.body.user).not.toHaveProperty('hash');
+    expect(res.body.user).not.toHaveProperty('feverCredentialHash');
   });
 
   it('GET user by ID rejects non-admin users', async () => {
@@ -67,5 +71,35 @@ describe('user admin authorization', () => {
     expect(res.body).toEqual({
       message: 'Access denied. Only admins can view all users.'
     });
+  });
+
+  it('POST user update does not return stored credentials', async () => {
+    const admin = await createUser(uniqueName('admin'), 'admin');
+    const target = await createUser(uniqueName('target'));
+
+    const res = await request(app)
+      .post(`/api/users/${target.id}`)
+      .set('Authorization', authHeaderFor(admin))
+      .send({
+        username: target.username,
+        role: target.role,
+        password: 'updated-password'
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body.user.id).toBe(target.id);
+    expect(res.body.user.username).toBe(target.username);
+    expect(res.body.user).not.toHaveProperty('password');
+    expect(res.body.user).not.toHaveProperty('feverCredentialHash');
+
+    await target.reload();
+    const feverApiKey = createFeverApiKey(
+      target.username,
+      'updated-password'
+    );
+    expect(target.feverCredentialHash).toBe(
+      createFeverCredentialHash(feverApiKey)
+    );
+    expect(target.feverCredentialHash).not.toBe(feverApiKey);
   });
 });

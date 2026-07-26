@@ -16,7 +16,7 @@ const createUser = username => {
   return User.create({
     username: uniqueUsername,
     password: 'hashed-password',
-    hash: `${uniqueUsername}-hash`
+    feverCredentialHash: `${uniqueUsername}-hash`
   });
 };
 

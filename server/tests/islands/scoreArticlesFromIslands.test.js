@@ -11,7 +11,7 @@ async function createUserGraph() {
   const user = await User.create({
     username: `interest-scores-${suffix}`,
     password: 'secret',
-    hash: `interest-scores-${suffix}`,
+    feverCredentialHash: `interest-scores-${suffix}`,
     role: 'user'
   });
 

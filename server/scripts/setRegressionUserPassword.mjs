@@ -1,20 +1,25 @@
-import crypto from 'node:crypto';
 import bcrypt from 'bcryptjs';
 import db from '../models/index.js';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash
+} from '../utils/apiCredentials.js';
 
 const { User } = db;
 const username = 'semantic-regression-user';
 const password = 'rssmonster';
 
 const passwordHash = await bcrypt.hash(password, 10);
-const apiHash = crypto.createHash('md5').update(`${username}:${password}`).digest('hex');
+const apiHash = createFeverCredentialHash(
+  createFeverApiKey(username, password)
+);
 
 const [user, created] = await User.findOrCreate({
   where: { username },
   defaults: {
     username,
     password: passwordHash,
-    hash: apiHash,
+    feverCredentialHash: apiHash,
     role: 'user'
   }
 });
@@ -22,7 +27,7 @@ const [user, created] = await User.findOrCreate({
 if (!created) {
   await user.update({
     password: passwordHash,
-    hash: apiHash,
+    feverCredentialHash: apiHash,
     role: 'user'
   });
 }
@@ -33,7 +38,7 @@ console.log(JSON.stringify({
   created,
   id: user.id,
   passwordHashStored: Boolean(user.password),
-  hashStored: Boolean(user.hash),
+  feverCredentialHashStored: Boolean(user.feverCredentialHash),
   passwordMatches: isMatch,
   passwordHashPreview: user.password.slice(0, 30)
 }, null, 2));

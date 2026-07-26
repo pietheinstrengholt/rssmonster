@@ -53,7 +53,7 @@ describe('concurrent article recovery integration', () => {
     const user = await User.create({
       username,
       password: 'secret',
-      hash: `${username}-hash`,
+      feverCredentialHash: `${username}-hash`,
       role: 'user'
     });
     const category = await Category.create({

@@ -18,7 +18,10 @@ const {
   Sequelize
 } = db;
 import bcrypt from "bcryptjs";
-import crypto from 'node:crypto';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash
+} from '../utils/apiCredentials.js';
 
 const { Op } = Sequelize;
 
@@ -98,7 +101,7 @@ const getUsers = async (req, res, _next) => {
     const users = await User.findAll({
       order: [["username", "ASC"]],
       attributes: {
-        exclude: ['password', 'hash']
+        exclude: ['password', 'feverCredentialHash']
       }
     });
 
@@ -131,7 +134,7 @@ const getUser = async (req, res, _next) => {
     const { userId } = req.params;
     const user = await User.findByPk(userId, {
       attributes: {
-        exclude: ['password', 'hash']
+        exclude: ['password', 'feverCredentialHash']
       }
     });
     
@@ -172,12 +175,16 @@ const postUsers = async (req, res, _next) => {
     if (req.body.password) {
       // Hash the password
       const hash = await bcrypt.hash(req.body.password, 10);
+      const feverApiKey = createFeverApiKey(
+        req.body.username,
+        req.body.password
+      );
       // Update the user with the new password, username, and role
       await user.update({
         username: req.body.username,
         role: req.body.role,
         password: hash,
-        hash: crypto.createHash('md5').update(req.body.username + ":" + req.body.password).digest('hex')
+        feverCredentialHash: createFeverCredentialHash(feverApiKey)
       });
     } else {
       // Update the user with the new username and role only

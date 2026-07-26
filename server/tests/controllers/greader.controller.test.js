@@ -1,27 +1,27 @@
 import { beforeAll, describe, expect, it } from 'vitest';
-import crypto from 'node:crypto';
+import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import db from '../../models/index.js';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash,
+  createGreaderAuthToken
+} from '../../utils/apiCredentials.js';
 
 const { Article, Category, Feed, User, sequelize } = db;
 
 let app;
 
-const createUser = username => User.create({
+const createUser = async username => User.create({
   username,
-  password: 'hashed-password',
-  hash: crypto.createHash('md5').update(`${username}:password`).digest('hex')
+  password: await bcrypt.hash('password', 10),
+  feverCredentialHash: createFeverCredentialHash(
+    createFeverApiKey(username, 'password')
+  )
 });
 
-const greaderAuthHeaderFor = user => {
-  const salt = process.env.GREADER_SALT || 'rssmonster-greader-salt';
-  const token = crypto
-    .createHash('sha1')
-    .update(salt + user.username + user.hash)
-    .digest('hex');
-
-  return `GoogleLogin auth=${user.username}/${token}`;
-};
+const greaderAuthHeaderFor = user =>
+  `GoogleLogin auth=${user.username}/${createGreaderAuthToken(user)}`;
 
 const createFixture = async () => {
   const user = await createUser(`greader-${Date.now()}`);
@@ -70,6 +70,29 @@ describe('Google Reader API compatibility', () => {
 
     await sequelize.authenticate();
   }, 50_000);
+
+  it('authenticates ClientLogin with the bcrypt account password', async () => {
+    const user = await createUser(`greader-login-${Date.now()}`);
+
+    const res = await request(app)
+      .post('/api/greader/accounts/ClientLogin')
+      .type('form')
+      .send({ Email: user.username, Passwd: 'password' });
+
+    expect(res.status).toBe(200);
+    expect(res.text).toContain(`Auth=${user.username}/`);
+  });
+
+  it('rejects an incorrect ClientLogin password', async () => {
+    const user = await createUser(`greader-rejected-${Date.now()}`);
+
+    const res = await request(app)
+      .post('/api/greader/accounts/ClientLogin')
+      .type('form')
+      .send({ Email: user.username, Passwd: 'wrong-password' });
+
+    expect(res.status).toBe(401);
+  });
 
   it('serializes stream contents with current article fields and encoded category labels', async () => {
     const { user, feed } = await createFixture();

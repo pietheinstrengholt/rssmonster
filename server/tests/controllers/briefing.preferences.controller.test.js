@@ -24,7 +24,7 @@ const authHeaderFor = user => {
 const createUser = () => User.create({
   username: uniqueName('briefing-preferences-user'),
   password: 'hashed-password',
-  hash: uniqueName('briefing-preferences-hash'),
+  feverCredentialHash: uniqueName('briefing-preferences-hash'),
   role: 'user'
 });
 

@@ -244,7 +244,7 @@ describe('settings islands overview', () => {
     const user = await User.create({
       username: uniqueName('islands-user'),
       password: 'hashed-password',
-      hash: uniqueName('islands-hash'),
+      feverCredentialHash: uniqueName('islands-hash'),
       role: 'user'
     });
     const { article, secondaryTopic, topic } = await createArticleTopicFixture(user);
@@ -320,7 +320,7 @@ describe('settings islands overview', () => {
     const user = await User.create({
       username: uniqueName('source-island-user'),
       password: 'hashed-password',
-      hash: uniqueName('source-island-hash'),
+      feverCredentialHash: uniqueName('source-island-hash'),
       role: 'user'
     });
     const { article } = await createArticleTopicFixture(user);
@@ -370,7 +370,7 @@ describe('settings topics overview', () => {
     const user = await User.create({
       username: uniqueName('topics-user'),
       password: 'hashed-password',
-      hash: uniqueName('topics-hash'),
+      feverCredentialHash: uniqueName('topics-hash'),
       role: 'user'
     });
     const { event, hybridTopic, topic } = await createEventTopicFixture(user);

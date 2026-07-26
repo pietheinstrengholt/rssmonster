@@ -17,7 +17,6 @@ import SmartFoldersGridOverview from "./SmartFoldersGridOverview.vue";
 import {
   fetchArticleIds,
   fetchArticleDetails,
-  markAllAsRead,
   markArticlesAsRead,
   markArticleUnread,
   markArticleSeen,
@@ -452,12 +451,16 @@ export default {
       this.addToPool(poolArticleId);
     },
 
-    // Marks all unread articles in the current selection as read.
+    // Reconciles every article from the loaded list as read.
     async flushPool() {
       if (!this.container.length || this.isFlushed) return;
 
       try {
-        await markAllAsRead(this.$store.data.currentSelection);
+        const articleIds = [...new Set(this.container)];
+        await markArticlesAsRead(
+          articleIds,
+          this.$store.data.currentSelection.grouping
+        );
         this.articles = this.articles.map(article => ({ ...article, status: 'read' }));
         this.isFlushed = true;
         await this.$store.data.fetchOverviewSplit({ forceUpdate: true });

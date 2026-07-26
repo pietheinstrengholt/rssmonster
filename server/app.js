@@ -5,7 +5,9 @@ const requiredEnvVars = [
   'DB_DATABASE',
   'DB_USERNAME',
   'DB_PASSWORD',
-  'DB_HOSTNAME'
+  'DB_HOSTNAME',
+  'JWT_SECRET',
+  'FEVER_CREDENTIAL_SECRET'
 ];
 
 for (const key of requiredEnvVars) {
@@ -26,6 +28,7 @@ import {
   apiRateLimiter,
   mcpRateLimiter
 } from './middleware/rateLimit.js';
+import { redactSensitiveQueryValues } from './utils/requestLogging.js';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
@@ -73,8 +76,14 @@ const omitServerOnlyJsonFields = (key, value) =>
 app.set('json replacer', omitServerOnlyJsonFields);
 
 // Logging
+morgan.token('redacted-url', req =>
+  redactSensitiveQueryValues(req.originalUrl || req.url)
+);
 app.use(
-  morgan('[:date[clf]] :remote-addr - :method :url -> :status (:response-time ms)')
+  morgan(
+    '[:date[clf]] :remote-addr - :method :redacted-url -> ' +
+    ':status (:response-time ms)'
+  )
 );
 
 // Static assets

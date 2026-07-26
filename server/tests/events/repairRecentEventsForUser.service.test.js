@@ -17,7 +17,7 @@ async function createUserGraph(prefix) {
   const user = await User.create({
     username: `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2)}`,
     password: 'secret',
-    hash,
+    feverCredentialHash: hash,
     role: 'user'
   });
 

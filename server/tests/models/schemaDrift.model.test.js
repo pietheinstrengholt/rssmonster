@@ -6,7 +6,7 @@ const { Article, Feed, Hotlink, Setting, User } = db;
 describe('model schema declarations', () => {
   it('keeps model uniqueness in sync with migrations', () => {
     expect(User.rawAttributes.username.unique).toBe(true);
-    expect(User.rawAttributes.hash.unique).toBe(true);
+    expect(User.rawAttributes.feverCredentialHash.unique).toBe(true);
     expect(Setting.rawAttributes.userId.unique).toBe(true);
     expect(Feed.options.indexes).toEqual(
       expect.arrayContaining([

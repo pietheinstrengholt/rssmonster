@@ -1,6 +1,8 @@
 // Centralized URL fetching with timeout, retry logic, redirects, and RSS-friendly request headers.
 // Uses native fetch from Node.js 18+ so feed discovery and parsing share consistent network behavior.
 
+import { fetchWithOutboundRequestSafeguard } from './outboundRequestSafeguard.js';
+
 // Waits for a retry backoff interval.
 const delay = ms => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -40,7 +42,6 @@ export const fetchURL = async (url, retries = 1, timeoutMs = 5000) => {
 
     const options = {
       signal,
-      redirect: 'follow',  // Explicitly follow redirects
       headers: {
         'User-Agent':
           'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
@@ -52,7 +53,7 @@ export const fetchURL = async (url, retries = 1, timeoutMs = 5000) => {
     };
 
     try {
-      const response = await fetch(url, options);
+      const response = await fetchWithOutboundRequestSafeguard(url, options);
       
       // Log redirects for debugging
       if (response.url && response.url !== url) {

@@ -1,8 +1,11 @@
 import { beforeAll, describe, expect, it } from 'vitest';
 import bcrypt from 'bcryptjs';
-import crypto from 'node:crypto';
 import request from 'supertest';
 import db from '../../models/index.js';
+import {
+  createFeverApiKey,
+  createFeverCredentialHash
+} from '../../utils/apiCredentials.js';
 
 const { User, sequelize } = db;
 
@@ -22,6 +25,29 @@ describe('auth controller', () => {
     await sequelize.authenticate();
   }, 50_000);
 
+  it('stores a protected Fever credential when registering', async () => {
+    const username = uniqueName('registered-user');
+    const password = 'correct-password';
+    const feverApiKey = createFeverApiKey(username, password);
+
+    const registerRes = await request(app)
+      .post('/api/auth/register')
+      .send({
+        username,
+        password,
+        password_repeat: password
+      });
+
+    expect(registerRes.status).toBe(201);
+
+    const user = await User.findOne({ where: { username } });
+    expect(await bcrypt.compare(password, user.password)).toBe(true);
+    expect(user.feverCredentialHash).toBe(
+      createFeverCredentialHash(feverApiKey)
+    );
+    expect(user.feverCredentialHash).not.toBe(feverApiKey);
+  });
+
   it('validates a login token signed with JWT_SECRET', async () => {
     const username = uniqueName('jwt-secret-user');
     const password = 'correct-password';
@@ -29,7 +55,7 @@ describe('auth controller', () => {
     await User.create({
       username,
       password: passwordHash,
-      hash: crypto.createHash('md5').update(`${username}:${password}`).digest('hex'),
+      feverCredentialHash: createFeverCredentialHash(createFeverApiKey(username, password)),
       role: 'user'
     });
 
@@ -39,6 +65,9 @@ describe('auth controller', () => {
 
     expect(loginRes.status).toBe(200);
     expect(loginRes.body.token).toBeTruthy();
+    expect(loginRes.body.user.username).toBe(username);
+    expect(loginRes.body.user).not.toHaveProperty('password');
+    expect(loginRes.body.user).not.toHaveProperty('feverCredentialHash');
 
     const validateRes = await request(app)
       .post('/api/auth/validate')
@@ -46,5 +75,9 @@ describe('auth controller', () => {
 
     expect(validateRes.status).toBe(200);
     expect(validateRes.body.user.username).toBe(username);
+    expect(validateRes.body.user).not.toHaveProperty('password');
+    expect(validateRes.body.user).not.toHaveProperty(
+      'feverCredentialHash'
+    );
   });
 });

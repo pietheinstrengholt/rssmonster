@@ -73,6 +73,7 @@
     "sanitize-html": "^2.17.6",
     "sequelize": "^6.37.8",
     "sequelize-cli": "^6.6.5",
+    "undici": "^7.19.0",
     "xml2js": "^0.6.2",
     "zod": "^4.4.3"
   },
