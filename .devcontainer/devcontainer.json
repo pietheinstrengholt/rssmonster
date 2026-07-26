@@ -40,7 +40,7 @@
 	"forwardPorts": [3000, 3306, 8080],
 
 	"containerEnv": {
-		"DB_HOST": "mysql"
+		"DB_HOSTNAME": "mysql"
 	},
 
 	// Use 'postCreateCommand' to run commands after the container is created.
