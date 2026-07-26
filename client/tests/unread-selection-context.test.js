@@ -153,6 +153,34 @@ describe('UnreadSelectionContext', () => {
 
     expect(wrapper.findAllComponents(UnreadSelectionContext)).toHaveLength(1);
   });
+
+  it.each([
+    ['standard', ArticleListView, { pool: new Set(), viewMode: 'full' }],
+    ['reader', ArticleReaderLayout, {}]
+  ])('is hidden in the loaded %s unread list when no posts are found', (_mode, component, extraProps) => {
+    wrapper = shallowMount(component, {
+      props: {
+        articles: [],
+        container: [],
+        currentSelection: 'unread',
+        currentViewUnreadCount: 0,
+        currentViewSourceCount: 0,
+        remainingItems: 0,
+        fetchCount: 20,
+        hasLoadedContent: true,
+        isFlushed: false,
+        distance: 0,
+        ...extraProps
+      },
+      global: {
+        mocks: {
+          $store: createStore()
+        }
+      }
+    });
+
+    expect(wrapper.findComponent(UnreadSelectionContext).exists()).toBe(false);
+  });
 });
 
 describe('UnreadConfigurationModal', () => {

@@ -3,7 +3,7 @@
     <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
       <DailyBriefingIntro v-if="currentSelection === 'briefing'" />
       <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && hasLoadedContent && currentViewSourceCount !== null"
+        v-if="currentSelection === 'unread' && hasLoadedContent && container.length > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
         :source-count="currentViewSourceCount"
       />

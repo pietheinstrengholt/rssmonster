@@ -3,11 +3,6 @@
     v-if="currentSelection === 'briefing' && hasLoadedContent && container.length === 0"
     reader-mode
   />
-  <UnreadSelectionContext
-    v-if="currentSelection === 'unread' && hasLoadedContent && container.length === 0 && currentViewSourceCount !== null"
-    :article-count="currentViewUnreadCount"
-    :source-count="currentViewSourceCount"
-  />
   <ArticleEmptyState
     v-if="hasLoadedContent && container.length === 0"
     class="readerEmptyState"
@@ -25,7 +20,7 @@
     >
       <DailyBriefingIntro v-if="currentSelection === 'briefing'" reader-mode />
       <UnreadSelectionContext
-        v-if="currentSelection === 'unread' && currentViewSourceCount !== null"
+        v-if="currentSelection === 'unread' && container.length > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
         :source-count="currentViewSourceCount"
       />
