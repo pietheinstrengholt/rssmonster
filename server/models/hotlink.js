@@ -12,6 +12,11 @@ export default (sequelize) => {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      sourceArticleId: {
+        type: DataTypes.INTEGER,
+        allowNull: true,
+        defaultValue: null
+      },
       url: {
         type: DataTypes.TEXT('medium'),
         allowNull: false

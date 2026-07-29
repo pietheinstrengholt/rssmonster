@@ -2,9 +2,23 @@ import express from "express";
 import userMiddleware from "../middleware/users.js";
 import opmlController from "../controllers/opml.js";
 import multer from "multer";
+import { OPML_IMPORT_MAX_BYTES } from "../services/feeds/opmlImport.js";
 
 // Configure multer for file upload (store in memory)
-const upload = multer({ storage: multer.memoryStorage() });
+const upload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: OPML_IMPORT_MAX_BYTES, files: 1 }
+});
+
+// This middleware returns a stable error for rejected in-memory OPML uploads.
+const uploadOpml = (req, res, next) => {
+  upload.single('opmlFile')(req, res, error => {
+    if (error) {
+      return res.status(400).json({ error: 'Invalid OPML upload' });
+    }
+    return next();
+  });
+};
 
 const router = express.Router();
 
@@ -12,6 +26,6 @@ const router = express.Router();
 router.get("/export", userMiddleware.isLoggedIn, opmlController.exportOpml);
 
 // Import OPML
-router.post("/import", userMiddleware.isLoggedIn, upload.single('opmlFile'), opmlController.importOpml);
+router.post("/import", userMiddleware.isLoggedIn, uploadOpml, opmlController.importOpml);
 
 export default router;

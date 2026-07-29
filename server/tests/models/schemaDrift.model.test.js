@@ -40,6 +40,13 @@ describe('model schema declarations', () => {
     expect(Hotlink.options.createdAt).not.toBe(false);
   });
 
+  it('declares optional hotlink source article provenance', () => {
+    expect(Hotlink.rawAttributes.sourceArticleId).toMatchObject({
+      allowNull: true,
+      defaultValue: null
+    });
+  });
+
   it('declares required feed ownership columns explicitly', () => {
     expect(Feed.rawAttributes.userId.allowNull).toBe(false);
     expect(Feed.rawAttributes.categoryId.allowNull).toBe(false);

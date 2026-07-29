@@ -1,10 +1,11 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import request from 'supertest';
 import db from '../../models/index.js';
 import {
   createFeverApiKey,
   createFeverCredentialHash,
+  createGreaderActionToken,
   createGreaderAuthToken
 } from '../../utils/apiCredentials.js';
 
@@ -22,6 +23,10 @@ const createUser = async username => User.create({
 
 const greaderAuthHeaderFor = user =>
   `GoogleLogin auth=${user.username}/${createGreaderAuthToken(user)}`;
+
+// This function creates the action token required by mutation tests.
+const greaderActionTokenFor = user =>
+  createGreaderActionToken(user, createGreaderAuthToken(user));
 
 const createFixture = async () => {
   const user = await createUser(`greader-${Date.now()}`);
@@ -181,6 +186,47 @@ describe('Google Reader API compatibility', () => {
     expect(article.status).toBe('unread');
   });
 
+  it('uses one grouped article query and includes zero-count feeds and categories', async () => {
+    const { user, fallbackCategory } = await createFixture();
+    const emptyFeed = await Feed.create({
+      userId: user.id,
+      categoryId: fallbackCategory.id,
+      feedName: 'Empty Feed',
+      url: `https://empty-${Date.now()}.example.com/rss.xml`
+    });
+    const articleFindAll = vi.spyOn(Article, 'findAll');
+    const articleCount = vi.spyOn(Article, 'count');
+    const articleFindOne = vi.spyOn(Article, 'findOne');
+
+    try {
+      const res = await request(app)
+        .get('/api/greader/reader/api/0/unread-count')
+        .query({ output: 'json' })
+        .set('Authorization', greaderAuthHeaderFor(user));
+
+      expect(res.status).toBe(200);
+      expect(articleFindAll).toHaveBeenCalledTimes(1);
+      expect(articleCount).not.toHaveBeenCalled();
+      expect(articleFindOne).not.toHaveBeenCalled();
+      expect(res.body.unreadcounts).toEqual(expect.arrayContaining([
+        {
+          id: `feed/${encodeURIComponent(emptyFeed.url)}`,
+          count: 0,
+          newestItemTimestampUsec: '0'
+        },
+        {
+          id: `user/-/label/${encodeURIComponent(fallbackCategory.name)}`,
+          count: 0,
+          newestItemTimestampUsec: '0'
+        }
+      ]));
+    } finally {
+      articleFindAll.mockRestore();
+      articleCount.mockRestore();
+      articleFindOne.mockRestore();
+    }
+  });
+
   it('keeps readAt synchronized with Google Reader read tags', async () => {
     const { user, article } = await createFixture();
     const itemId = `tag:google.com,2005:reader/item/${article.id.toString(16).padStart(16, '0')}`;
@@ -188,7 +234,11 @@ describe('Google Reader API compatibility', () => {
     const readResponse = await request(app)
       .post('/api/greader/reader/api/0/edit-tag')
       .type('form')
-      .send({ i: itemId, a: 'user/-/state/com.google/read' })
+      .send({
+        i: itemId,
+        a: 'user/-/state/com.google/read',
+        T: greaderActionTokenFor(user)
+      })
       .set('Authorization', greaderAuthHeaderFor(user));
 
     await article.reload();
@@ -200,7 +250,11 @@ describe('Google Reader API compatibility', () => {
     const unreadResponse = await request(app)
       .post('/api/greader/reader/api/0/edit-tag')
       .type('form')
-      .send({ i: itemId, r: 'user/-/state/com.google/read' })
+      .send({
+        i: itemId,
+        r: 'user/-/state/com.google/read',
+        T: greaderActionTokenFor(user)
+      })
       .set('Authorization', greaderAuthHeaderFor(user));
 
     await article.reload();
@@ -216,7 +270,10 @@ describe('Google Reader API compatibility', () => {
     const res = await request(app)
       .post('/api/greader/reader/api/0/disable-tag')
       .type('form')
-      .send({ s: `user/-/label/${encodeURIComponent(category.name)}` })
+      .send({
+        s: `user/-/label/${encodeURIComponent(category.name)}`,
+        T: greaderActionTokenFor(user)
+      })
       .set('Authorization', greaderAuthHeaderFor(user));
 
     expect(res.status).toBe(200);
@@ -227,7 +284,12 @@ describe('Google Reader API compatibility', () => {
 
     expect(deletedCategory).toBeNull();
     expect(persistedFeed).not.toBeNull();
-    expect(persistedFeed.categoryId).toBe(fallbackCategory.id);
+    const defaultCategory = await Category.findOne({
+      where: { userId: user.id, name: 'Uncategorized' }
+    });
+    expect(defaultCategory).not.toBeNull();
+    expect(persistedFeed.categoryId).toBe(defaultCategory.id);
+    expect(persistedFeed.categoryId).not.toBe(fallbackCategory.id);
     expect(persistedArticle).not.toBeNull();
   });
 });

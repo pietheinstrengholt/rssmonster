@@ -1,9 +1,7 @@
 import db from '../models/index.js';
 const { Feed, Article, Category } = db;
 
-import discoverRssLink from "../services/feeds/discoverRssLink.js";
 import { rediscoverRssUrl } from '../services/feeds/rediscoverRssUrl.js';
-import parseFeed from "../services/feeds/parser.js";
 import jwt from 'jsonwebtoken';
 import { getJwtSecret } from '../config/auth.js';
 import crawlController from './crawl.js';
@@ -11,13 +9,14 @@ import { crawlJobManager } from '../services/crawl/index.js';
 import { normalizeTagList } from '../services/crawl/persistence/tags.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 import { calculateFeedTrustForAllFeeds } from '../scripts/calculateFeedTrust.js';
-
-const findOwnedCategory = (categoryId, userId) => Category.findOne({
-  where: {
-    id: categoryId,
-    userId
-  }
-});
+import {
+  addFeedSubscription,
+  discoverFeedSubscription,
+  isFeedManagementError,
+  normalizeFeedUrl,
+  removeFeedSubscription,
+  updateFeedSubscription
+} from '../services/feeds/feedManagement.js';
 
 const UPDATE_INTERVAL_MINUTES = [null, 0, 5, 15, 30, 60, 120, 360, 720, 1440];
 
@@ -56,6 +55,34 @@ const normalizeBooleanControl = (value, fieldName) => {
   }
 
   throw new Error(`Invalid ${fieldName}`);
+};
+
+// This function maps shared feed-management failures to regular API responses.
+const sendFeedManagementError = (res, error) => {
+  if (!isFeedManagementError(error)) {
+    return res.status(500).json({ error: error.message });
+  }
+  if (error.code === 'FEED_NOT_FOUND') {
+    return res.status(404).json({ message: 'Feed not found' });
+  }
+  if (error.code === 'FEED_EXISTS') {
+    return res.status(409).json({ error_msg: 'Feed already exists.' });
+  }
+  if (error.code === 'CLOUDFLARE_BLOCKED') {
+    return res.status(403).json({
+      error_msg:
+        'This feed is protected by Cloudflare bot detection and cannot be validated automatically.',
+      cloudflare: true,
+      feedUrl: error.details.feedUrl
+    });
+  }
+  if (error.code === 'CATEGORY_NOT_FOUND') {
+    return res.status(400).json({ error: 'Category not found' });
+  }
+
+  return res.status(400).json({
+    error_msg: 'Feed url is invalid. Are you sure the RSS feed is correct?'
+  });
 };
 
 const getFeeds = async (req, res, _next) => {
@@ -168,20 +195,14 @@ const updateFeed = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const feedId = req.params.feedId;
     const feed = await Feed.findOne({
       where: {
-        id: feedId,
+        id: req.params.feedId,
         userId: userId
       }
     });
     if (!feed) {
       return res.status(404).json({ message: 'Feed not found' });
-    }
-
-    const category = await findOwnedCategory(req.body.categoryId, userId);
-    if (!category) {
-      return res.status(400).json({ error: 'Category not found' });
     }
 
     let updateIntervalMinutes;
@@ -206,24 +227,27 @@ const updateFeed = async (req, res, _next) => {
       return res.status(400).json({ error: validationError.message });
     }
 
-    await feed.update({
+    const updatedFeed = await updateFeedSubscription({
       userId: userId,
-      feedName: req.body.feedName,
-      feedDesc: req.body.feedDesc,
-      categoryId: category.id,
-      url: req.body.url,
-      favicon: req.body.favicon,
-      status: req.body.status,
-      updateIntervalMinutes,
-      feedTags,
-      generateEmbeddings,
-      applyAiAnalysis,
-      errorCount: 0
+      feedId: feed.id,
+      categoryId: req.body.categoryId,
+      updates: {
+        feedName: req.body.feedName,
+        feedDesc: req.body.feedDesc,
+        url: normalizeFeedUrl(req.body.url),
+        favicon: req.body.favicon,
+        status: req.body.status,
+        updateIntervalMinutes,
+        feedTags,
+        generateEmbeddings,
+        applyAiAnalysis,
+        errorCount: 0
+      }
     });
-    return res.status(200).json({ feed });
+    return res.status(200).json({ feed: updatedFeed });
   } catch (err) {
     console.error('Error in updateFeed:', err);
-    return res.status(500).json({ error: err.message });
+    return sendFeedManagementError(res, err);
   }
 };
 
@@ -236,57 +260,19 @@ const newFeed = async (req, res, _next) => {
     }
 
     // Map crawlSince selector (e.g., '7d', '1m', '3m', '1y', 'all') to a Date or null
-    const toCrawlSinceDate = (value) => {
-      const now = new Date();
-      const v = (value || '7d').toString();
-      try {
-        switch (v) {
-          case '7d': {
-            const d = new Date(now); d.setDate(d.getDate() - 7); return d;
-          }
-          case '1m': {
-            const d = new Date(now); d.setMonth(d.getMonth() - 1); return d;
-          }
-          case '3m': {
-            const d = new Date(now); d.setMonth(d.getMonth() - 3); return d;
-          }
-          case '1y': {
-            const d = new Date(now); d.setFullYear(d.getFullYear() - 1); return d;
-          }
-          case 'all':
-            return null; // no limit
-          default: {
-            // If an ISO date string or timestamp is provided, attempt to parse
-            const parsed = new Date(v);
-            return isNaN(parsed.getTime()) ? new Date(now.setDate(now.getDate() - 7)) : parsed;
-          }
-        }
-      } catch {
-        const d = new Date(now); d.setDate(d.getDate() - 7); return d;
-      }
-    };
-
-    const crawlSince = toCrawlSinceDate(req.body.crawlSince);
-    const category = await findOwnedCategory(req.body.categoryId, userId);
-    if (!category) {
-      return res.status(400).json({ error: 'Category not found' });
-    }
-
-    const feed = await Feed.create({
-      userId: req.userData.userId,
-      categoryId: category.id,
-      feedName: req.body.feedName,
-      feedDesc: req.body.feedDesc,
-      feedType: req.body.feedType,
-      url: req.body.url,
-      favicon: req.body.favicon,
+    const result = await addFeedSubscription({
+      userId,
+      inputUrl: req.body.url,
+      categoryId: req.body.categoryId,
+      title: req.body.feedName,
+      description: req.body.feedDesc,
       status: req.body.status,
-      crawlSince
+      crawlSince: req.body.crawlSince
     });
-    return res.status(201).json({ feed });
+    return res.status(201).json({ feed: result.feed });
   } catch (err) {
     console.error('Error in newFeed:', err);
-    return res.status(500).json({ error: err.message });
+    return sendFeedManagementError(res, err);
   }
 };
 
@@ -298,22 +284,13 @@ const deleteFeed = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const feedId = req.params.feedId;
-    const feed = await Feed.findOne({
-      where: {
-        id: feedId,
-        userId: userId
-      }
+    const feed = await removeFeedSubscription({
+      userId,
+      feedId: req.params.feedId
     });
     if (!feed) {
       return res.status(404).json({ message: 'Feed not found' });
     }
-    //delete all articles
-    await Article.destroy({
-      where: { feedId: feed.id }
-    });
-    //delete feed
-    await feed.destroy();
     return res.status(204).send();
   } catch (err) {
     console.error('Error in deleteFeed:', err);
@@ -328,96 +305,53 @@ const validateFeed = async (req, res, _next) => {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
     }
 
-    const categoryId = req.body.categoryId;
-
-    const discoveryResult = await discoverRssLink.discoverRssLink(
-      req.body.url,
-      undefined,
-      { includeParsedFeed: true }
-    );
-    console.log("Discovery result:", discoveryResult);
-
-    // Cloudflare bot protection detected — inform front end
-    if (discoveryResult && typeof discoveryResult === 'object' && discoveryResult.cloudflare) {
-      return res.status(403).json({
-        error_msg: 'This feed is protected by Cloudflare bot detection and cannot be validated automatically.',
-        cloudflare: true,
-        feedUrl: discoveryResult.url
-      });
-    }
-
-    const url = typeof discoveryResult === 'string'
-      ? discoveryResult
-      : discoveryResult?.url;
-
-    if (typeof url === 'undefined') {
-      return res.status(400).json({
-        error_msg: 'Feed url is invalid. Are you sure the RSS feed is correct?'
-      });
-    }
-    
-    if (typeof categoryId === 'undefined') {
+    if (typeof req.body.categoryId === 'undefined') {
       return res.status(400).json({
         error_msg: 'Category is invalid.'
       });
     }
 
-    const parsedFeed = discoveryResult?.parsedFeed || await parseFeed.process(url);
-    if (!parsedFeed) {
-      return res.status(400).json({
-        error_msg: 'Feed has no meta attributes'
-      });
+    const category = await Category.findOne({
+      where: { id: req.body.categoryId, userId }
+    });
+    if (!category) {
+      return res.status(400).json({ error_msg: 'Category is invalid.' });
     }
 
-    //use self link as rss url if available
-    const feedUrl = parsedFeed.selfUrl || url;
+    const discovery = await discoverFeedSubscription({
+      userId,
+      inputUrl: req.body.url
+    });
 
     //check if feed already exists
-    const existingFeed = await Feed.findOne({
-      where: {
-        userId: userId,
-        url: feedUrl
-      }
-    });
-    
-    if (existingFeed) {
+    if (discovery.existingFeed) {
       return res.status(409).json({
         error_msg: 'Feed already exists.'
       });
     }
 
     // --- Resolve feed title
-    const feedName =
-      parsedFeed.title ||
-      null;
+    const feedName = discovery.feedName || null;
 
     // --- Resolve feed description
-    const feedDesc =
-      parsedFeed.format === "rss"
-        ? parsedFeed.description || null
-        : null;
+    const feedDesc = discovery.feedDesc || null;
     
     // --- Resolve favicon / image
-    const favicon =
-      parsedFeed.format === "rss"
-        ? parsedFeed.faviconUrl || null
-        : null;
+    const favicon = discovery.favicon || null;
 
     //return feed data to the frontend, the frontend will create the feed by invoking the newFeed endpoint
     return res.status(200).json({
       userId,
-      categoryId,
+      categoryId: category.id,
       feedName,
       feedDesc,
-      feedType: parsedFeed.format || null,
-      url: parsedFeed.selfUrl || url || req.body.url,
+      feedType: discovery.feedType,
+      url: discovery.feedUrl,
       favicon
     });
   } catch (err) {
     console.error('Error in validateFeed:', err);
-    return res.status(500).json({
-      error_msg: err.message
-    });
+    return sendFeedManagementError(res, err);
   }
 };
 

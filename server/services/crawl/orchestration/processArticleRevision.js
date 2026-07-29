@@ -156,7 +156,12 @@ const processArticleRevision = async ({
   refreshDuplicateCache(duplicateCache, previousArticleState, article);
 
   // Hotlinks are persisted only after the article transaction commits.
-  await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
+  await persistAcceptedHotlinks(
+    hotlinkUrls,
+    feed,
+    article.id,
+    hotlinkBatcher
+  );
 
   return {
     article,

@@ -1,6 +1,6 @@
 import db from '../models/index.js';
 import { Op } from 'sequelize';
-const { Hotlink } = db;
+const { Hotlink, sequelize } = db;
 
 export const clearCache = async () => {
   try {
@@ -30,11 +30,59 @@ export const set = async (url, feedId, userId) => {
   await Hotlink.create({ url, feedId, userId });
 };
 
-// This function stores a batch of outbound links in one database query.
-export const setMany = async (urls, feedId, userId) => {
-  if (!urls.length) return;
+// This function atomically replaces outbound links for multiple source articles.
+export const replaceMany = async (hotlinkSets, feedId, userId) => {
+  const replacements = hotlinkSets
+    .filter(hotlinkSet => hotlinkSet.sourceArticleId)
+    .map(hotlinkSet => ({
+      sourceArticleId: hotlinkSet.sourceArticleId,
+      urls: [...new Set(hotlinkSet.urls.filter(Boolean))]
+    }));
 
-  await Hotlink.bulkCreate(urls.map(url => ({ url, feedId, userId })));
+  if (!replacements.length) return;
+
+  await sequelize.transaction(async transaction => {
+    await Hotlink.destroy({
+      where: {
+        userId,
+        feedId,
+        sourceArticleId: {
+          [Op.in]: replacements.map(replacement => replacement.sourceArticleId)
+        }
+      },
+      transaction
+    });
+
+    const rows = replacements.flatMap(replacement =>
+      replacement.urls.map(url => ({
+        url,
+        feedId,
+        userId,
+        sourceArticleId: replacement.sourceArticleId
+      }))
+    );
+
+    if (!rows.length) return;
+    await Hotlink.bulkCreate(rows, { transaction });
+  });
+};
+
+// This function stores a batch of outbound links in one database query.
+export const setMany = async (urls, feedId, userId, sourceArticleId = null) => {
+  const uniqueUrls = [...new Set(urls.filter(Boolean))];
+
+  if (!sourceArticleId) {
+    if (!uniqueUrls.length) return;
+    await Hotlink.bulkCreate(uniqueUrls.map(url => ({ url, feedId, userId })));
+    return;
+  }
+
+  await replaceMany([
+    {
+      sourceArticleId,
+      urls: uniqueUrls
+    }
+  ], feedId, userId);
 };
 
 export const get = (url, feedId, userId) => Hotlink.findOne({ where: { url, feedId, userId } });
@@ -45,6 +93,7 @@ export default {
   clearCache,
   set,
   setMany,
+  replaceMany,
   get,
   all
 };

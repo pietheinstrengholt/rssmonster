@@ -110,7 +110,12 @@ const processNewArticle = async ({
   duplicateCache?.add(savedArticle);
   if (!actionResult.shouldDiscard) {
     // Hotlinks are persisted only after the article transaction commits.
-    await persistAcceptedHotlinks(hotlinkUrls, feed, hotlinkBatcher);
+    await persistAcceptedHotlinks(
+      hotlinkUrls,
+      feed,
+      savedArticle.id,
+      hotlinkBatcher
+    );
   }
 
   return {

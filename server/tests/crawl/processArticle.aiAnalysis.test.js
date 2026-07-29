@@ -365,7 +365,7 @@ describe('processArticle AI analysis controls', () => {
       null
     );
 
-    expect(mocked.hotlinkSetMany).toHaveBeenCalledWith(hotlinkUrls, 1, 42);
+    expect(mocked.hotlinkSetMany).toHaveBeenCalledWith(hotlinkUrls, 1, 42, 1);
     expect(mocked.saveArticle.mock.invocationCallOrder[0]).toBeLessThan(
       mocked.hotlinkSetMany.mock.invocationCallOrder[0]
     );
@@ -628,7 +628,10 @@ describe('processArticle AI analysis controls', () => {
     expect(mocked.applyArticleUpdate.mock.invocationCallOrder[0]).toBeLessThan(
       duplicateCache.update.mock.invocationCallOrder[0]
     );
-    expect(hotlinkBatcher.add).toHaveBeenCalledWith(['https://outside.example/updated']);
+    expect(hotlinkBatcher.add).toHaveBeenCalledWith(
+      ['https://outside.example/updated'],
+      123
+    );
     expect(mocked.updateArticle.mock.invocationCallOrder[0]).toBeLessThan(
       hotlinkBatcher.add.mock.invocationCallOrder[0]
     );

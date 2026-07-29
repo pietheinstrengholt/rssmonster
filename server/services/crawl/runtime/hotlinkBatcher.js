@@ -7,21 +7,30 @@ const DEFAULT_MAX_PENDING_URLS = 1000;
 const createHotlinkBatcher = (feed, options = {}) => {
   const flushThreshold = options.flushThreshold || DEFAULT_FLUSH_THRESHOLD;
   const maxPendingUrls = options.maxPendingUrls || DEFAULT_MAX_PENDING_URLS;
-  const pendingUrls = new Set();
+  const pendingUrlsByArticleId = new Map();
+  let pendingUrlCount = 0;
   let flushPromise = null;
   let overflowLogged = false;
 
   // This function flushes the queued URLs without allowing failures to interrupt crawling.
   const flush = async () => {
-    while (flushPromise || pendingUrls.size > 0) {
+    while (flushPromise || pendingUrlsByArticleId.size > 0) {
       if (flushPromise) {
         await flushPromise;
         continue;
       }
 
-      const urls = [...pendingUrls];
-      pendingUrls.clear();
-      flushPromise = hotlink.setMany(urls, feed.id, feed.userId)
+      const pendingWrites = [...pendingUrlsByArticleId.entries()];
+      pendingUrlsByArticleId.clear();
+      pendingUrlCount = 0;
+      flushPromise = hotlink.replaceMany(
+        pendingWrites.map(([sourceArticleId, urls]) => ({
+          sourceArticleId,
+          urls: [...urls]
+        })),
+        feed.id,
+        feed.userId
+      )
         .catch(err => {
           console.error(`Error saving hotlink batch for feed ${feed.id}:`, err);
         })
@@ -34,12 +43,20 @@ const createHotlinkBatcher = (feed, options = {}) => {
   };
 
   return {
-    // This function queues unique URLs and starts a best-effort periodic flush.
-    add(urls) {
-      for (const url of urls) {
-        if (pendingUrls.has(url)) continue;
+    // This function queues one article's unique URLs and starts a best-effort periodic flush.
+    add(urls, sourceArticleId) {
+      if (!sourceArticleId) return;
 
-        if (pendingUrls.size >= maxPendingUrls) {
+      const previousUrls = pendingUrlsByArticleId.get(sourceArticleId);
+      if (previousUrls) {
+        pendingUrlCount -= previousUrls.size;
+      }
+
+      const articleUrls = new Set();
+      for (const url of urls) {
+        if (articleUrls.has(url)) continue;
+
+        if (pendingUrlCount + articleUrls.size >= maxPendingUrls) {
           if (!overflowLogged) {
             console.warn(`Hotlink batch queue reached ${maxPendingUrls} URLs for feed ${feed.id}; dropping excess URLs.`);
             overflowLogged = true;
@@ -47,10 +64,12 @@ const createHotlinkBatcher = (feed, options = {}) => {
           break;
         }
 
-        pendingUrls.add(url);
+        articleUrls.add(url);
       }
+      pendingUrlsByArticleId.set(sourceArticleId, articleUrls);
+      pendingUrlCount += articleUrls.size;
 
-      if (pendingUrls.size >= flushThreshold) {
+      if (pendingUrlCount >= flushThreshold) {
         void flush();
       }
     },

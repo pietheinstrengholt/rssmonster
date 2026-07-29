@@ -21,16 +21,21 @@ export const countArticleHotlinks = async (feed, normalizedUrl, hotlinkCountCach
       });
 
 // This function persists collected hotlinks only after their source article is accepted.
-export const persistAcceptedHotlinks = async (urls, feed, hotlinkBatcher) => {
-  if (!urls.length) return;
+export const persistAcceptedHotlinks = async (
+  urls,
+  feed,
+  sourceArticleId,
+  hotlinkBatcher
+) => {
+  if (!sourceArticleId) return;
 
   try {
     if (hotlinkBatcher) {
-      hotlinkBatcher.add(urls);
+      hotlinkBatcher.add(urls, sourceArticleId);
       return;
     }
 
-    await hotlink.setMany(urls, feed.id, feed.userId);
+    await hotlink.setMany(urls, feed.id, feed.userId, sourceArticleId);
   } catch (err) {
     console.error(`Error saving hotlinks for accepted article in feed ${feed.id}:`, err);
   }

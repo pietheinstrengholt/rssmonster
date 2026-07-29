@@ -1,6 +1,9 @@
 import db from '../models/index.js';
 const { Feed, Category } = db;
-import { parseStringPromise } from 'xml2js';
+import {
+  OpmlImportError,
+  importOpmlSubscriptions
+} from '../services/feeds/opmlImport.js';
 
 /**
  * Generate OPML content for a user's feeds
@@ -13,7 +16,8 @@ export const generateOpml = async (userId) => {
     where: { userId: userId },
     include: [{
       model: Feed,
-      required: false
+      required: false,
+      where: { userId }
     }],
     order: [
       ["categoryOrder", "ASC"],
@@ -74,7 +78,7 @@ export const exportOpml = async (req, res, _next) => {
     return res.status(200).send(opml);
   } catch (err) {
     console.error('Error exporting OPML:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'OPML export failed' });
   }
 };
 
@@ -102,112 +106,21 @@ export const importOpml = async (req, res, _next) => {
       return res.status(400).json({ error: 'No OPML file provided' });
     }
 
-    const opmlContent = req.file.buffer.toString('utf-8');
-
-    // Parse OPML XML
-    const result = await parseStringPromise(opmlContent, { 
-      trim: true,
-      explicitArray: false 
+    const result = await importOpmlSubscriptions({
+      userId,
+      content: req.file.buffer
     });
-
-    if (!result.opml || !result.opml.body || !result.opml.body.outline) {
-      return res.status(400).json({ error: 'Invalid OPML format' });
-    }
-
-    let outlines = result.opml.body.outline;
-    // Ensure outlines is always an array
-    if (!Array.isArray(outlines)) {
-      outlines = [outlines];
-    }
-
-    let categoriesCreated = 0;
-    let feedsCreated = 0;
-    const errors = [];
-
-    // Get the maximum categoryOrder to append new categories at the end
-    const maxOrderCategory = await Category.findOne({
-      where: { userId: userId },
-      order: [['categoryOrder', 'DESC']],
-      attributes: ['categoryOrder']
-    });
-    let categoryOrder = maxOrderCategory ? maxOrderCategory.categoryOrder + 1 : 1;
-
-    // Process each outline (category)
-    for (const outline of outlines) {
-      try {
-        const categoryName = outline.$.text || outline.$.title || 'Uncategorized';
-
-        // Check if category already exists
-        let category = await Category.findOne({
-          where: { userId: userId, name: categoryName }
-        });
-
-        // Create category if it doesn't exist
-        if (!category) {
-          category = await Category.create({
-            userId: userId,
-            name: categoryName,
-            categoryOrder: categoryOrder++
-          });
-          categoriesCreated++;
-        }
-
-        // Process feeds within this category
-        if (outline.outline) {
-          let feeds = outline.outline;
-          // Ensure feeds is always an array
-          if (!Array.isArray(feeds)) {
-            feeds = [feeds];
-          }
-
-          for (const feedOutline of feeds) {
-            try {
-              const feedAttrs = feedOutline.$;
-              const xmlUrl = feedAttrs.xmlUrl;
-
-              // Skip if no xmlUrl (required for RSS feeds)
-              if (!xmlUrl) {
-                continue;
-              }
-
-              // Check if feed already exists for this user
-              const existingFeed = await Feed.findOne({
-                where: { userId: userId, url: xmlUrl }
-              });
-
-              if (!existingFeed) {
-                await Feed.create({
-                  userId: userId,
-                  categoryId: category.id,
-                  url: xmlUrl,
-                  feedName: feedAttrs.text || feedAttrs.title || xmlUrl,
-                  feedDesc: feedAttrs.description || null,
-                  favicon: null,
-                  errorCount: 0
-                });
-                feedsCreated++;
-              }
-            } catch (feedError) {
-              console.error('Error creating feed:', feedError);
-              errors.push(`Failed to create feed: ${feedError.message}`);
-            }
-          }
-        }
-      } catch (categoryError) {
-        console.error('Error processing category:', categoryError);
-        errors.push(`Failed to process category: ${categoryError.message}`);
-      }
-    }
 
     return res.status(200).json({
       message: 'OPML import completed',
-      categoriesCreated,
-      feedsCreated,
-      errors: errors.length > 0 ? errors : undefined
+      ...result
     });
   } catch (err) {
     console.error('Error importing OPML:', err);
-    return res.status(500).json({ error: err.message });
+    if (err instanceof OpmlImportError) {
+      return res.status(400).json({ error: err.message });
+    }
+    return res.status(500).json({ error: 'OPML import failed' });
   }
 };
 

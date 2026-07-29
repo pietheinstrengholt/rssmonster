@@ -410,6 +410,10 @@ RSSMonster is compatible with the Fever API, enabling integration with third-par
 
 RSSMonster supports the Google Reader API, providing compatibility with a wide range of RSS clients.
 
+See the [Google Reader API compatibility matrix](docs/google-reader-api.md)
+for the exact endpoint contract, authentication examples, client checklist,
+identifier formats, and unsupported behavior.
+
 ### Configuration
 
 - **API Endpoint:** `http://your-rssmonster-url/api/greader`

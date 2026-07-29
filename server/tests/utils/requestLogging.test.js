@@ -12,10 +12,26 @@ describe('request logging', () => {
 
     expect(
       redactSensitiveQueryValues(
+        '/api/fever?action=login&username=user&password=secret'
+      )
+    ).toBe(
+      '/api/fever?action=login&username=user&password=[REDACTED]'
+    );
+
+    expect(
+      redactSensitiveQueryValues(
         '/api/greader/accounts/ClientLogin?Email=user&Passwd=secret'
       )
     ).toBe(
       '/api/greader/accounts/ClientLogin?Email=user&Passwd=[REDACTED]'
+    );
+
+    expect(
+      redactSensitiveQueryValues(
+        '/api/greader/reader/api/0/edit-tag?i=1&T=action-token'
+      )
+    ).toBe(
+      '/api/greader/reader/api/0/edit-tag?i=1&T=[REDACTED]'
     );
   });
 });

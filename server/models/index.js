@@ -109,6 +109,17 @@ Feed.belongsTo(Category, { foreignKey: 'categoryId' });
 Feed.hasMany(Article, { foreignKey: 'feedId', onDelete: 'CASCADE' });
 Article.belongsTo(Feed, { foreignKey: 'feedId' });
 
+// Article ↔ Hotlink
+Article.hasMany(Hotlink, {
+  foreignKey: 'sourceArticleId',
+  as: 'outboundHotlinks',
+  onDelete: 'CASCADE'
+});
+Hotlink.belongsTo(Article, {
+  foreignKey: 'sourceArticleId',
+  as: 'sourceArticle'
+});
+
 // Article ↔ Tag
 Article.hasMany(Tag, { foreignKey: 'articleId', onDelete: 'CASCADE' });
 Tag.belongsTo(Article, { foreignKey: 'articleId' });
