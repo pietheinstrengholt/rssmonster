@@ -558,7 +558,6 @@
 <script>
 import { validateFeed, createFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
-import helper from '../../services/helper.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'NewFeed',
@@ -631,12 +630,7 @@ export default {
                 });
 
                 this.feed = result.data.feed;
-                this.feed.unreadCount = 0;
-                this.feed.readCount = 0;
-                this.feed.favoriteCount = 0;
-
-                var index = helper.findIndexById(this.$store.data.categories, this.selectedCategory);
-                this.$store.data.categories[index].feeds.push(this.feed);
+                this.$store.data.addFeed(this.selectedCategory, this.feed);
                 this.$store.data.increaseRefreshCategories();
                 this.$store.data.setShowModal('');
             } catch (error) {
@@ -661,16 +655,8 @@ export default {
                 //overwrite results with results from the database
                 this.feed = result.data.feed;
 
-                //add missing count properties, since these are populated dynamically on an initial load
-                this.feed.unreadCount = 0;
-                this.feed.readCount = 0;
-                this.feed.favoriteCount = 0;
-
-                //find the index of the category
-                var index = helper.findIndexById(this.$store.data.categories, this.selectedCategory);
-
-                //push the new feed to the store
-                this.$store.data.categories[index].feeds.push(this.feed);
+                // Reconcile the API response through the store's normalization contract.
+                this.$store.data.addFeed(this.selectedCategory, this.feed);
 
                 //send event to refresh the categories. This triggers a re-fetch of the categories and updates the counts
                 this.$store.data.increaseRefreshCategories();

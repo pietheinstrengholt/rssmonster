@@ -221,20 +221,12 @@ export default {
 
       try {
         const response = await markAsFavorite(id, updateType);
-        const category = this.$store.data.categories.find(
-          item => item.id === response.data.feed?.categoryId
-        );
         const delta = newFavoriteInd ? 1 : -1;
-
-        if (category) {
-          category.favoriteCount += delta;
-          const feed = category.feeds?.find(item => item.id === response.data.feedId);
-          if (feed) feed.favoriteCount += delta;
-        }
-
-        newFavoriteInd
-          ? this.$store.data.increaseFavoriteCount()
-          : this.$store.data.decreaseFavoriteCount();
+        this.$store.data.applyFavoriteDelta({
+          categoryId: response.data.feed?.categoryId,
+          feedId: response.data.feedId,
+          delta
+        });
 
         this.updateFavoriteInd({ id, favoriteInd: newFavoriteInd });
       } catch (error) {
@@ -281,17 +273,11 @@ export default {
 
     // Applies the local and overview count changes for a favorited reader article.
     applyReaderFavoriteResponse(updatedArticle) {
-      const category = this.$store.data.categories.find(
-        item => item.id === updatedArticle.feed?.categoryId
-      );
-
-      if (category) {
-        category.favoriteCount++;
-        const feed = category.feeds?.find(item => item.id === updatedArticle.feedId);
-        if (feed) feed.favoriteCount++;
-      }
-
-      this.$store.data.increaseFavoriteCount();
+      this.$store.data.applyFavoriteDelta({
+        categoryId: updatedArticle.feed?.categoryId,
+        feedId: updatedArticle.feedId,
+        delta: 1
+      });
       this.updateFavoriteInd({ id: updatedArticle.id, favoriteInd: 1 });
     },
 

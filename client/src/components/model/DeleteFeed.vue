@@ -39,7 +39,6 @@
 <script>
 import { deleteFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
-import helper from '../../services/helper.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'DeleteFeed',
@@ -52,20 +51,10 @@ export default {
 
             try {
                 await deleteFeed(this.$store.data.currentSelection.feedId);
-                //find the index of both the category and feed
-                const indexCategory = helper.findIndexById(this.$store.data.categories, this.$store.data.currentSelection.categoryId);
-
-                //find the feed using the indexCategory
-                this.inputFeed = helper.findArrayById(this.$store.data.categories[indexCategory].feeds, this.$store.data.currentSelection.feedId);
-
-                //remove the feed from the store
-                this.$store.data.categories[indexCategory].feeds = helper.arrayRemove(
-                    this.$store.data.categories[indexCategory].feeds,
-                    this.inputFeed
-                );
+                this.$store.data.removeFeed(this.$store.data.currentSelection.feedId);
 
                 //set the feed selection back to all
-                this.$store.data.setSelectedFeedId("%");
+                this.$store.data.selectFeed("%");
 
                 //close the modal
                 this.$store.data.setShowModal('');

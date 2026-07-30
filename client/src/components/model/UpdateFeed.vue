@@ -253,7 +253,6 @@
 <script>
 import { deleteFeed as deleteFeedAPI, rediscoverRss, updateFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
-import helper from '../../services/helper.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
@@ -368,30 +367,7 @@ export default {
 
     // This function removes a deleted feed from local store state.
     removeFeedFromStore(feedId) {
-      for (const category of this.$store.data.categories) {
-        const feedIndex = helper.findIndexById(category.feeds || [], feedId);
-
-        if (feedIndex === -1) {
-          continue;
-        }
-
-        const [deletedFeed] = category.feeds.splice(feedIndex, 1);
-        const unreadCount = deletedFeed?.unreadCount || 0;
-        const readCount = deletedFeed?.readCount || 0;
-        const favoriteCount = deletedFeed?.favoriteCount || 0;
-
-        category.unreadCount = Math.max((category.unreadCount || 0) - unreadCount, 0);
-        category.readCount = Math.max((category.readCount || 0) - readCount, 0);
-        category.favoriteCount = Math.max((category.favoriteCount || 0) - favoriteCount, 0);
-
-        this.$store.data.unreadCount = Math.max((this.$store.data.unreadCount || 0) - unreadCount, 0);
-        this.$store.data.readCount = Math.max((this.$store.data.readCount || 0) - readCount, 0);
-        this.$store.data.favoriteCount = Math.max((this.$store.data.favoriteCount || 0) - favoriteCount, 0);
-
-        return true;
-      }
-
-      return false;
+      return this.$store.data.removeFeed(feedId);
     },
 
     // This function deletes the selected feed and clears selection state.
@@ -409,7 +385,7 @@ export default {
       try {
         await deleteFeedAPI(this.feed.id);
         this.removeFeedFromStore(this.feed.id);
-        this.$store.data.setSelectedFeedId('%');
+        this.$store.data.selectFeed('%');
         this.$store.data.setShowModal('');
       } catch (error) {
         console.error(`Error deleting feed ${this.feed.id}:`, error);
@@ -421,24 +397,11 @@ export default {
 
     // This function updates the feed and syncs category changes in the store.
     async updateFeed() {
-      const selectedCategoryId = this.feed.categoryId;
-      const currentCategoryId = this.originalFeed.categoryId;
-
-      const currentIndexCategory =
-        helper.findIndexById(this.$store.data.categories, currentCategoryId);
-      const currentIndexFeed =
-        helper.findIndexById(
-          this.$store.data.categories[currentIndexCategory].feeds,
-          this.feed.id
-        );
-      const newIndexCategory =
-        helper.findIndexById(this.$store.data.categories, selectedCategoryId);
-
       try {
         const result = await updateFeed(this.feed.id, {
           feedName: this.feed.feedName,
           feedDesc: this.feed.feedDesc,
-          categoryId: selectedCategoryId,
+          categoryId: this.feed.categoryId,
           url: this.feed.url,
           status: this.feed.status,
           updateIntervalMinutes: this.feed.updateIntervalMinutes,
@@ -447,30 +410,12 @@ export default {
           applyAiAnalysis: this.feed.applyAiAnalysis
         });
 
-        if (currentIndexFeed === -1 || currentIndexCategory === -1) {
-          console.log('Store update failed');
-          return;
-        }
-
         const updatedFeed = result.data.feed;
-
-        Object.assign(
-          this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed],
-          updatedFeed,
-          { errorCount: 0 }
-        );
-
-        if (currentCategoryId !== updatedFeed.categoryId) {
-          this.$store.data.categories[newIndexCategory].feeds.push(
-            this.$store.data.categories[currentIndexCategory].feeds[currentIndexFeed]
-          );
-
-          this.$store.data.categories[currentIndexCategory].feeds.splice(
-            currentIndexFeed,
-            1
-          );
-
-          this.$store.data.setSelectedCategoryId(updatedFeed.categoryId);
+        if (!this.$store.data.updateFeed({ ...updatedFeed, errorCount: 0 })) {
+          console.warn(`Feed ${this.feed.id} was not found in the local overview.`);
+        }
+        if (String(this.originalFeed.categoryId) !== String(updatedFeed.categoryId)) {
+          this.$store.data.selectFeed(updatedFeed.id, updatedFeed.categoryId);
         }
 
         this.$store.data.setShowModal('');

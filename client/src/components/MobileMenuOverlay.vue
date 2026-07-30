@@ -36,7 +36,7 @@
               v-bind:id="category.id"
               class="options-row category"
               @click="selectCategory(category.id)"
-              v-bind:class="{'selected': $store.data.currentSelection.categoryId === category.id}"
+              v-bind:class="{'selected': String($store.data.currentSelection.categoryId) === String(category.id)}"
             >
               <span class="glyphicon" aria-hidden="true">
                 <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
@@ -558,18 +558,17 @@ export default {
       }
     },
     chatAssistant() {
-      this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
+      this.$store.data.setChatAssistantOpen(!this.$store.data.chatAssistantOpen);
       this.emitClickEvent('mobile', null);
     },
     selectCategory(categoryId) {
-      this.$store.data.currentSelection.categoryId = categoryId;
-      this.$store.data.currentSelection.feedId = '%';
+      this.$store.data.selectCategory(categoryId);
       setTimeout(() => {
         this.emitClickEvent('mobile', null);
       }, 150);
     },
     selectViewMode(mode) {
-      this.$store.data.currentSelection.viewMode = mode;
+      this.$store.data.setViewMode(mode);
       setTimeout(() => {
         this.emitClickEvent('mobile', null);
       }, 150);

@@ -217,6 +217,10 @@ import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
 import ArticleFeed from "./components/ArticleFeed.vue";
 import ActionErrorNotice from './components/ActionErrorNotice.vue';
 
+// This function identifies request timeouts that should preserve the current online state.
+const isOverviewTimeout = error =>
+  error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '');
+
 //import components
 import { defineAsyncComponent } from 'vue'
 const Sidebar = defineAsyncComponent(() => import("./components/Sidebar.vue"));
@@ -450,16 +454,15 @@ export default {
           this.updateSelection(this.$store.data.currentSelection);
         }
       } catch (error) {
-        console.error('Error loading the application overview:', error);
+        if (!isOverviewTimeout(error)) {
+          console.error('Error loading the application overview:', error);
+        }
         this.handleOverviewFailure(error);
       }
     },
     // This function preserves authentication while classifying overview failures for retry.
     handleOverviewFailure(error) {
-      const isTimeoutError = error?.code === 'ECONNABORTED' ||
-        /timeout/i.test(error?.message || '');
-
-      if (isTimeoutError) {
+      if (isOverviewTimeout(error)) {
         console.warn('Overview request timed out, keeping current online state.', error?.message || error);
         this.overviewLoaded = true;
         return;

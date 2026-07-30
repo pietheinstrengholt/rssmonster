@@ -25,18 +25,11 @@ export const articleActionMethods = {
 
     markArticleAsFavoriteAPI(this.id, updateType)
     .then(response => {
-      const category = this.$store.data.categories.find(
-        c => c.id === response.data.feed.categoryId
-      );
-      if (category) {
-        const delta = newFavoriteInd ? 1 : -1;
-        category.favoriteCount += delta;
-        const feed = category.feeds.find(f => f.id === response.data.feedId);
-        if (feed) feed.favoriteCount += delta;
-      }
-      newFavoriteInd
-        ? this.$store.data.increaseFavoriteCount()
-        : this.$store.data.decreaseFavoriteCount();
+      this.$store.data.applyFavoriteDelta({
+        categoryId: response.data.feed?.categoryId,
+        feedId: response.data.feedId,
+        delta: newFavoriteInd ? 1 : -1
+      });
 
       this.$emit('update-favorite', { id: this.id, favoriteInd: newFavoriteInd });
     })

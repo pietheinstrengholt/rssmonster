@@ -39,7 +39,6 @@
 <script>
 import { deleteCategory } from '../../api/categories';
 import { setAuthToken } from '../../api/client';
-import helper from '../../services/helper.js';
 import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'DeleteCategory',
@@ -50,18 +49,13 @@ export default {
         async deleteCategory() {
             try {
                 await deleteCategory(this.$store.data.currentSelection.categoryId);
-                //remove the category from the store
-                this.$store.data.categories = helper.arrayRemove(
-                    this.$store.data.categories,
-                    helper.findArrayById(this.$store.data.categories, this.$store.data.currentSelection.categoryId)
-                );
+                this.$store.data.removeCategory(this.$store.data.currentSelection.categoryId);
 
                 //close the modal
                 this.$store.data.setShowModal('');
                 
                 //set the selection back to all
-                this.$store.data.setSelectedCategoryId("%");
-                this.$store.data.setSelectedFeedId("%");
+                this.$store.data.selectCategory("%");
             } catch (error) {
                 console.error(`Error deleting category ${this.$store.data.currentSelection.categoryId}:`, error);
                 notifyActionError('Could not delete this category. Please try again.', error);

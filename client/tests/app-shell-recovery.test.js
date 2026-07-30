@@ -38,6 +38,7 @@ describe('AppShell offline recovery', () => {
     context.$store.data.fatalError = null;
     context.$store.data.fetchOverviewSplit.mockRejectedValue(timeout);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await AppShell.methods.getOverview.call(context, false);
 
@@ -45,6 +46,7 @@ describe('AppShell offline recovery', () => {
     expect(context.overviewLoaded).toBe(true);
     expect(context.stopOverviewPolling).not.toHaveBeenCalled();
     expect(context.$store.data.setFatalError).not.toHaveBeenCalled();
+    expect(console.error).not.toHaveBeenCalled();
   });
 
   it('retains authentication and enters offline mode after a connection failure', async () => {

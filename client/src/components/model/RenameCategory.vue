@@ -180,9 +180,11 @@ export default {
                     this.category.name,
                     this.category.iconName
                 );
-                //update the store with the returned name of the category
-                this.$store.data.categories[this.index].name = result.data.name;
-                this.$store.data.categories[this.index].iconName = this.category.iconName;
+                // Reconcile the API-backed category fields through the store.
+                this.$store.data.updateCategory(
+                    this.$store.data.currentSelection.categoryId,
+                    { ...result.data, iconName: this.category.iconName }
+                );
 
                 //close the modal
                 this.$store.data.setShowModal('');

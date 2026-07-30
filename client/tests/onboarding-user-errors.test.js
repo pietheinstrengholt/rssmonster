@@ -20,18 +20,31 @@ vi.mock('../src/api/users', () => ({
   updateUser: vi.fn()
 }));
 
-// This function mounts onboarding with a mutable category store.
-const mountInitialFeeds = () => mount(InitialFeeds, {
-  global: {
-    mocks: {
-      $store: {
-        data: {
-          categories: []
+// This function mounts onboarding with action-backed category reconciliation.
+const mountInitialFeeds = () => {
+  const categories = [];
+  const addCategory = vi.fn(category => {
+    categories.push({ ...category, feeds: [] });
+  });
+  const addFeed = vi.fn((categoryId, feed) => {
+    categories.find(category => String(category.id) === String(categoryId))
+      ?.feeds.push(feed);
+  });
+
+  return mount(InitialFeeds, {
+    global: {
+      mocks: {
+        $store: {
+          data: {
+            categories,
+            addCategory,
+            addFeed
+          }
         }
       }
     }
-  }
-});
+  });
+};
 
 // This function mounts user management with the requested authorization role.
 const mountManageUsers = (role = 'admin') => mount(SettingsManageUsers, {

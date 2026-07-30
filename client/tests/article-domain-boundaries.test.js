@@ -228,20 +228,14 @@ describe('Article API actions', () => {
         feed: { categoryId: 2 }
       }
     });
-    const category = {
-      id: 2,
-      favoriteCount: 4,
-      feeds: [{ id: 3, favoriteCount: 1 }]
-    };
+    const applyFavoriteDelta = vi.fn();
     const context = {
       id: 42,
       favoriteInd: 0,
       $emit: vi.fn(),
       $store: {
         data: {
-          categories: [category],
-          increaseFavoriteCount: vi.fn(),
-          decreaseFavoriteCount: vi.fn()
+          applyFavoriteDelta
         }
       }
     };
@@ -250,9 +244,11 @@ describe('Article API actions', () => {
     await flushPromises();
 
     expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark');
-    expect(category.favoriteCount).toBe(5);
-    expect(category.feeds[0].favoriteCount).toBe(2);
-    expect(context.$store.data.increaseFavoriteCount).toHaveBeenCalledOnce();
+    expect(applyFavoriteDelta).toHaveBeenCalledWith({
+      categoryId: 2,
+      feedId: 3,
+      delta: 1
+    });
     expect(context.$emit).toHaveBeenCalledWith(
       'update-favorite',
       { id: 42, favoriteInd: 1 }

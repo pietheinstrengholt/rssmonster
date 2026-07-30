@@ -639,8 +639,7 @@ export default {
         },
         openFeedEdit(feed) {
             if (!feed) return;
-            this.$store.data.setSelectedCategoryId(feed.categoryId ?? '%');
-            this.$store.data.setSelectedFeedId(feed.id);
+            this.$store.data.selectFeed(feed.id, feed.categoryId ?? '%');
             this.$store.data.setShowModal('UpdateFeed');
         },
         async downloadOpml() {

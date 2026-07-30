@@ -13,6 +13,34 @@ import {
 } from '../api/manager';
 
 const DEFAULT_BRIEFING_SELECTION_PERIOD = '7d';
+const COUNT_FIELDS = ['unreadCount', 'readCount', 'favoriteCount'];
+
+// This function compares identifiers consistently across numeric API data and string selections.
+const idsMatch = (left, right) => String(left) === String(right);
+
+// This function converts count values to nonnegative finite numbers.
+const normalizeCount = value => Math.max(Number(value) || 0, 0);
+
+// This function fills missing feed counters without discarding API fields.
+const normalizeFeed = (feed = {}) => ({
+  ...feed,
+  unreadCount: normalizeCount(feed.unreadCount),
+  readCount: normalizeCount(feed.readCount),
+  favoriteCount: normalizeCount(feed.favoriteCount),
+  errorCount: normalizeCount(feed.errorCount)
+});
+
+// This function fills missing category collections and counters without discarding API fields.
+const normalizeCategory = (category = {}) => ({
+  ...category,
+  unreadCount: normalizeCount(category.unreadCount),
+  readCount: normalizeCount(category.readCount),
+  favoriteCount: normalizeCount(category.favoriteCount),
+  feeds: (category.feeds || []).map(normalizeFeed)
+});
+
+// This function normalizes every category in an overview response.
+const normalizeCategories = categories => (categories || []).map(normalizeCategory);
 
 // This function maps a stored Briefing period to the existing article date filters.
 const briefingDateFilter = selectionPeriod => (
@@ -183,7 +211,7 @@ export const useStore = defineStore('data', {
       this.favoriteCount = favoriteCount;
       this.hotCount = hotCount;
       this.clickedCount = clickedCount;
-      this.categories = categories;
+      this.categories = normalizeCategories(categories);
       this.chatAssistantOpen = false;
 
       if (initial || forceUpdate) {
@@ -198,7 +226,7 @@ export const useStore = defineStore('data', {
       { categories },
       { initial = false, forceUpdate = false } = {}
     ) {
-      this.categories = categories;
+      this.categories = normalizeCategories(categories);
       this.chatAssistantOpen = false;
 
       if (initial || forceUpdate) {
@@ -236,7 +264,7 @@ export const useStore = defineStore('data', {
       this.favoriteCount = favoriteCount;
       this.hotCount = hotCount;
       this.clickedCount = clickedCount;
-      this.categories = categories;
+      this.categories = normalizeCategories(categories);
       this.chatAssistantOpen = false;
 
       if (initial || forceUpdate) {
@@ -312,8 +340,19 @@ export const useStore = defineStore('data', {
       };
     },
 
+    // This function applies selection and related UI changes as one coherent Pinia transition.
+    applySelection(selection, { closeChat = true } = {}) {
+      this.$patch({
+        currentSelection: {
+          ...this.currentSelection,
+          ...selection
+        },
+        ...(closeChat ? { chatAssistantOpen: false } : {})
+      });
+    },
+
     setSelectedStatus(status) {
-      Object.assign(this.currentSelection, {
+      this.applySelection({
         status,
         search: status === 'briefing'
           ? briefingSearchQuery({
@@ -324,8 +363,6 @@ export const useStore = defineStore('data', {
           : null,
         smartFolderId: null
       });
-
-      this.chatAssistantOpen = false;
     },
 
     // This function applies configured Briefing filters to future and active selections.
@@ -382,55 +419,60 @@ export const useStore = defineStore('data', {
       }
     },
 
-    setSelectedCategoryId(categoryId) {
-      Object.assign(this.currentSelection, {
+    // This function selects a category, clears its feed, and removes competing filters atomically.
+    selectCategory(categoryId) {
+      this.applySelection({
         categoryId: String(categoryId),
+        feedId: '%',
         tag: null,
         search: null,
         smartFolderId: null
       });
-
-      this.chatAssistantOpen = false;
     },
 
-    setSelectedFeedId(feedId) {
-      Object.assign(this.currentSelection, {
+    // This compatibility action delegates category selection to the atomic contract.
+    setSelectedCategoryId(categoryId) {
+      this.selectCategory(categoryId);
+    },
+
+    // This function selects a feed and optional parent category in one coherent transition.
+    selectFeed(feedId, categoryId = this.currentSelection.categoryId) {
+      this.applySelection({
+        categoryId: String(categoryId),
         feedId: String(feedId),
         tag: null,
         search: null,
         smartFolderId: null
       });
+    },
 
-      this.chatAssistantOpen = false;
+    // This compatibility action preserves the selected category while selecting a feed.
+    setSelectedFeedId(feedId) {
+      this.selectFeed(feedId);
     },
 
     setSelectedSearch(search) {
-      Object.assign(this.currentSelection, {
+      this.applySelection({
         search,
         tag: null
       });
-
-      this.chatAssistantOpen = false;
     },
 
     setSelectedSort(sort) {
-      Object.assign(this.currentSelection, {
+      this.applySelection({
         sort: normalizeSort(sort),
         search: removeSortTokens(this.currentSelection.search)
       });
-      this.chatAssistantOpen = false;
     },
 
     setTag(tag) {
-      Object.assign(this.currentSelection, {
+      this.applySelection({
         tag,
         categoryId: '%',
         feedId: '%',
         search: null,
         smartFolderId: null
       });
-
-      this.chatAssistantOpen = false;
     },
 
     setSmartFolder(smartFolder) {
@@ -439,7 +481,7 @@ export const useStore = defineStore('data', {
           (smartFolder.limitCount ? ` limit:${smartFolder.limitCount}` : '')
         : null;
 
-      Object.assign(this.currentSelection, {
+      this.applySelection({
         categoryId: '%',
         feedId: '%',
         status: 'unread',
@@ -448,8 +490,6 @@ export const useStore = defineStore('data', {
         smartFolderId: smartFolder?.id ?? null,
         search
       });
-
-      this.chatAssistantOpen = false;
     },
 
     /* --------------------------------------------------
@@ -469,8 +509,7 @@ export const useStore = defineStore('data', {
     },
 
     setViewMode(value) {
-      this.currentSelection.viewMode = value;
-      this.chatAssistantOpen = false;
+      this.applySelection({ viewMode: value });
     },
 
     setGrouping(value) {
@@ -486,12 +525,30 @@ export const useStore = defineStore('data', {
      * Counters + UI flags
      * -------------------------------------------------- */
 
-    increaseFavoriteCount() {
-      this.favoriteCount++;
+    // This function reconciles one favorite transition across global, category, and feed counts.
+    applyFavoriteDelta({ categoryId, feedId, delta }) {
+      const safeDelta = Number(delta) || 0;
+      if (!safeDelta) return;
+
+      this.favoriteCount = normalizeCount(this.favoriteCount + safeDelta);
+      const category = this.categories.find(item => idsMatch(item.id, categoryId));
+      if (!category) return;
+
+      category.favoriteCount = normalizeCount(category.favoriteCount + safeDelta);
+      const feed = category.feeds.find(item => idsMatch(item.id, feedId));
+      if (feed) {
+        feed.favoriteCount = normalizeCount(feed.favoriteCount + safeDelta);
+      }
     },
 
+    // This compatibility action changes only the global favorite total.
+    increaseFavoriteCount() {
+      this.favoriteCount = normalizeCount(this.favoriteCount + 1);
+    },
+
+    // This compatibility action changes only the global favorite total.
     decreaseFavoriteCount() {
-      if (this.favoriteCount > 0) this.favoriteCount--;
+      this.favoriteCount = normalizeCount(this.favoriteCount - 1);
     },
 
     increaseRefreshCategories() {
@@ -512,6 +569,142 @@ export const useStore = defineStore('data', {
 
     setSearchQuery(q) {
       this.searchQuery = q;
+    },
+
+    /* --------------------------------------------------
+     * Category + feed reconciliation
+     * -------------------------------------------------- */
+
+    // This function adds a normalized category returned by the API.
+    addCategory(category) {
+      const normalized = normalizeCategory(category);
+      const existingIndex = this.categories.findIndex(item => idsMatch(item.id, normalized.id));
+      if (existingIndex === -1) {
+        this.categories.push(normalized);
+      } else {
+        this.categories.splice(existingIndex, 1, normalized);
+      }
+      return normalized;
+    },
+
+    // This function updates a stored category's API-backed display fields.
+    updateCategory(categoryId, category = {}) {
+      const stored = this.categories.find(item => idsMatch(item.id, categoryId));
+      if (!stored) return false;
+
+      if (category.name !== undefined) stored.name = category.name;
+      if (category.iconName !== undefined) stored.iconName = category.iconName;
+      return true;
+    },
+
+    // This function removes a category and reconciles its contribution to global counts.
+    removeCategory(categoryId) {
+      const index = this.categories.findIndex(item => idsMatch(item.id, categoryId));
+      if (index === -1) return false;
+
+      const [removed] = this.categories.splice(index, 1);
+      for (const field of COUNT_FIELDS) {
+        this[field] = normalizeCount(this[field] - normalizeCount(removed[field]));
+      }
+      return true;
+    },
+
+    // This function applies either an ordered category list or an ordered list of category IDs.
+    applyCategoryOrder(order = []) {
+      const orderedIds = order.map(item => (
+        typeof item === 'object' && item !== null ? item.id : item
+      ));
+      const ordered = orderedIds
+        .map(id => this.categories.find(category => idsMatch(category.id, id)))
+        .filter(Boolean);
+      const includedIds = new Set(ordered.map(category => String(category.id)));
+      this.categories = [
+        ...ordered,
+        ...this.categories.filter(category => !includedIds.has(String(category.id)))
+      ];
+    },
+
+    // This function adds a normalized feed to an existing category.
+    addFeed(categoryId, feed) {
+      const category = this.categories.find(item => idsMatch(item.id, categoryId));
+      if (!category) return false;
+
+      const normalized = normalizeFeed({ ...feed, categoryId: feed?.categoryId ?? category.id });
+      const existingIndex = category.feeds.findIndex(item => idsMatch(item.id, normalized.id));
+      if (existingIndex === -1) {
+        category.feeds.push(normalized);
+      } else {
+        category.feeds.splice(existingIndex, 1, normalized);
+      }
+      return true;
+    },
+
+    // This function updates or atomically moves a stored feed using an API response.
+    updateFeed(feed) {
+      const sourceCategory = this.categories.find(category =>
+        category.feeds.some(item => idsMatch(item.id, feed?.id))
+      );
+      const storedFeed = sourceCategory?.feeds.find(item => idsMatch(item.id, feed?.id));
+      if (!sourceCategory || !storedFeed) return false;
+
+      const destinationCategory = this.categories.find(category =>
+        idsMatch(category.id, feed.categoryId ?? sourceCategory.id)
+      );
+      if (!destinationCategory) return false;
+
+      if (!idsMatch(sourceCategory.id, destinationCategory.id)) {
+        return this.moveFeed(feed.id, destinationCategory.id, feed);
+      }
+
+      Object.assign(storedFeed, normalizeFeed({ ...storedFeed, ...feed }));
+      return true;
+    },
+
+    // This function moves a feed and its counters between existing categories atomically.
+    moveFeed(feedId, destinationCategoryId, updates = {}) {
+      const sourceCategory = this.categories.find(category =>
+        category.feeds.some(item => idsMatch(item.id, feedId))
+      );
+      const storedFeed = sourceCategory?.feeds.find(item => idsMatch(item.id, feedId));
+      const destinationCategory = this.categories.find(category =>
+        idsMatch(category.id, destinationCategoryId)
+      );
+      if (!sourceCategory || !storedFeed || !destinationCategory) return false;
+
+      const updatedFeed = normalizeFeed({
+        ...storedFeed,
+        ...updates,
+        categoryId: updates.categoryId ?? destinationCategory.id
+      });
+      if (idsMatch(sourceCategory.id, destinationCategory.id)) {
+        Object.assign(storedFeed, updatedFeed);
+        return true;
+      }
+
+      for (const field of COUNT_FIELDS) {
+        sourceCategory[field] = normalizeCount(sourceCategory[field] - updatedFeed[field]);
+        destinationCategory[field] = normalizeCount(destinationCategory[field] + updatedFeed[field]);
+      }
+      sourceCategory.feeds = sourceCategory.feeds.filter(item => !idsMatch(item.id, updatedFeed.id));
+      destinationCategory.feeds.push(updatedFeed);
+      return true;
+    },
+
+    // This function removes a feed and reconciles category and global counts.
+    removeFeed(feedId) {
+      const category = this.categories.find(item =>
+        item.feeds.some(feed => idsMatch(feed.id, feedId))
+      );
+      if (!category) return false;
+
+      const feedIndex = category.feeds.findIndex(feed => idsMatch(feed.id, feedId));
+      const [removed] = category.feeds.splice(feedIndex, 1);
+      for (const field of COUNT_FIELDS) {
+        const count = normalizeCount(removed[field]);
+        category[field] = normalizeCount(category[field] - count);
+        this[field] = normalizeCount(this[field] - count);
+      }
+      return true;
     },
 
     /* --------------------------------------------------
@@ -615,7 +808,7 @@ export const useStore = defineStore('data', {
     getSelectedCategory: state => {
       const id = Number(state.currentSelection.categoryId);
       return Number.isFinite(id)
-        ? state.categories.find(c => c.id === id) || null
+        ? state.categories.find(c => idsMatch(c.id, id)) || null
         : null;
     },
 
@@ -624,8 +817,8 @@ export const useStore = defineStore('data', {
       const feedId = Number(state.currentSelection.feedId);
       if (!Number.isFinite(catId) || !Number.isFinite(feedId)) return null;
 
-      const category = state.categories.find(c => c.id === catId);
-      const feed = category?.feeds?.find(f => f.id === feedId);
+      const category = state.categories.find(c => idsMatch(c.id, catId));
+      const feed = category?.feeds?.find(f => idsMatch(f.id, feedId));
 
       return feed ? { feed } : null;
     }

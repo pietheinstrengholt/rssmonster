@@ -163,14 +163,8 @@ export default {
                     //create new local category in data object
                     this.category = result.data;
 
-                    //add missing count properties, since these are populated dynamically
-                    this.category.unreadCount = 0;
-                    this.category.readCount = 0;
-                    this.category.favoriteCount = 0;
-                    this.category.feeds = [];
-
-                    //push the new category to categories in store
-                    this.$store.data.categories.push(this.category);
+                    // Reconcile the API response through the store's normalization contract.
+                    this.$store.data.addCategory(this.category);
 
                     //close the modal
                     this.$store.data.setShowModal('');

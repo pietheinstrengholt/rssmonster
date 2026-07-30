@@ -221,14 +221,7 @@ export default {
         try {
           const result = await createCategory(name);
 
-          const category = result.data;
-
-          category.unreadCount = 0;
-          category.readCount = 0;
-          category.favoriteCount = 0;
-          category.feeds = [];
-
-          this.$store.data.categories.push(category);
+          this.$store.data.addCategory(result.data);
           existingNames.push(name);
           resultSummary.createdCount += 1;
 
@@ -275,14 +268,7 @@ export default {
           });
 
           const newFeed = result.data.feed ?? result.data;
-
-          // Normalize feed object
-          newFeed.unreadCount = 0;
-          newFeed.readCount = 0;
-          newFeed.favoriteCount = 0;
-          newFeed.errorCount = 0;
-
-          category.feeds.push(newFeed);
+          this.$store.data.addFeed(category.id, newFeed);
           resultSummary.createdCount += 1;
 
         } catch (err) {

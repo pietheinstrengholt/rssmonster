@@ -51,8 +51,7 @@ export default {
             try {
                 await cleanupOldArticles();
                 //set the selection back to all and refresh the page
-                this.$store.data.setSelectedCategoryId("%");
-                this.$store.data.setSelectedFeedId("%");
+                this.$store.data.selectCategory("%");
                 location.reload();
             } catch (error) {
                 console.error('Error cleaning up old articles:', error);

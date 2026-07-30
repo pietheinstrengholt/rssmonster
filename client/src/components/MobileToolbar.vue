@@ -92,7 +92,7 @@
       </button>
       <div class="dropdown-menu" aria-labelledby="categoriesDropdown">
         <button type="button" class="dropdown-item" :class="{ active: currentSelection.categoryId === '%' }"
-          @click="$store.data.setSelectedCategoryId('%')"
+          @click="$store.data.selectCategory('%')"
         >
           {{ 'All categories' }}
         </button>
@@ -102,7 +102,7 @@
           class="dropdown-item"
           :class="{ active: Number(currentSelection.categoryId) === category.id }"
           type="button"
-          @click="$store.data.setSelectedCategoryId(category.id)"
+          @click="$store.data.selectCategory(category.id)"
         >
           {{ category.name }} {{ getCategoryCount(category) }}
         </button>
@@ -113,7 +113,7 @@
     <div v-if="showSearch" class="mobile-search-panel">
       <input
         ref="searchInput"
-        v-model="$store.data.searchQuery"
+        v-model="searchQuery"
         @input="updateSearch"
         type="text"
         class="mobile-search-input"
@@ -605,6 +605,15 @@ export default {
     }
   },
   computed: {
+    // This computed field routes shared search changes through the store action contract.
+    searchQuery: {
+      get() {
+        return this.$store.data.searchQuery;
+      },
+      set(value) {
+        this.$store.data.setSearchQuery(value);
+      }
+    },
     currentSelection() {
       return this.$store.data.currentSelection;
     },

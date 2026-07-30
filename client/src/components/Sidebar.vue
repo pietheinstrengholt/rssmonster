@@ -117,7 +117,11 @@
 
       <SidebarSectionTitle title="Categories" />
 
-      <draggable v-model="$store.data.categories" item-key="id" @end="updateSortOrder">
+      <draggable
+        :model-value="$store.data.categories"
+        item-key="id"
+        @update:model-value="applyCategoryOrder"
+      >
         <template #item="{ element }">
           <SidebarCategoryGroup
             :category="element"
@@ -432,19 +436,17 @@ function loadType(status) {
 
 // This function selects a category and clears the selected feed.
 function loadCategory(category) {
-  store.data.setSelectedCategoryId(category.id);
-  store.data.setSelectedFeedId('%');
+  store.data.selectCategory(category.id);
 }
 
 // This function selects a feed.
 function loadFeed(feed) {
-  store.data.setSelectedFeedId(feed.id);
+  store.data.selectFeed(feed.id, feed.categoryId);
 }
 
 // This function selects all categories and feeds.
 function loadAll() {
-  store.data.setSelectedCategoryId('%');
-  store.data.setSelectedFeedId('%');
+  store.data.selectCategory('%');
 }
 
 // This function marks articles in the current selection as read.
@@ -667,5 +669,11 @@ function updateSortOrder() {
     });
 }
 
-defineExpose({ refreshFeeds, updateSortOrder });
+// This function reconciles a drag result through the store before persisting its ID order.
+function applyCategoryOrder(categories) {
+  store.data.applyCategoryOrder(categories);
+  updateSortOrder();
+}
+
+defineExpose({ refreshFeeds, updateSortOrder, applyCategoryOrder });
 </script>

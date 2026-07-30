@@ -404,14 +404,12 @@ export default {
     },
     // Selects a tag in the current view.
     selectTag(tag) {
-      if (this.$store.data.currentSelection) {
-        this.$store.data.currentSelection.tag = tag?.name || '';
-      }
+      this.$store.data.setTag(tag?.name || '');
     },
     // Selects the article feed's category.
     selectCategory() {
       if (this.feed?.categoryId) {
-        this.$store.data.setSelectedCategoryId(this.feed.categoryId);
+        this.$store.data.selectCategory(this.feed.categoryId);
       }
     }
   }

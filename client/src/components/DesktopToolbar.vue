@@ -30,7 +30,7 @@
         <input
           ref="searchInput"
           type="text"
-          v-model="$store.data.searchQuery"
+          v-model="searchQuery"
           @input="debounceSearchEvent"
           @keydown.esc="closeCompactSearch"
           :placeholder="searchPlaceholder"
@@ -913,8 +913,8 @@ export default {
     },
     // This function toggles the chat assistant and clears the search field.
     chatAssistant: function() {
-      this.$store.data.searchQuery = null;
-      this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;
+      this.$store.data.setSearchQuery(null);
+      this.$store.data.setChatAssistantOpen(!this.$store.data.chatAssistantOpen);
     }
   },
   // This function clears a pending search update before the component is removed.
@@ -932,6 +932,15 @@ export default {
     }
   },
   computed:{
+    // This computed field routes shared search changes through the store action contract.
+    searchQuery: {
+      get() {
+        return this.$store.data.searchQuery;
+      },
+      set(value) {
+        this.$store.data.setSearchQuery(value);
+      }
+    },
     // This function returns the currently active article selection from the store.
     currentSelection() {
       return this.$store.data.currentSelection;
