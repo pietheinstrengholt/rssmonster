@@ -24,7 +24,7 @@
       aria-labelledby="briefing-morning-title"
     >
       <div class="briefing-morning-summary-icon" aria-hidden="true">
-        <i class="bi bi-sunrise-fill"></i>
+        <BootstrapIcon icon="sunrise-fill" />
       </div>
 
       <div class="briefing-morning-summary-content">

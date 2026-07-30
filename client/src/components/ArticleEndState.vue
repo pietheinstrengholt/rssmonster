@@ -2,7 +2,7 @@
   <div class="article-end-state">
     <div class="article-end-state-summary">
       <div class="article-end-state-icon" aria-hidden="true">
-        <i class="bi bi-check-lg"></i>
+        <BootstrapIcon icon="check-lg" />
       </div>
 
       <div class="article-end-state-copy">
@@ -18,7 +18,7 @@
 
     <div v-if="showActions" class="article-end-state-actions">
       <button class="article-end-state-primary" type="button" @click="$emit('mark-all-read')">
-        <i class="bi bi-check-lg" aria-hidden="true"></i>
+        <BootstrapIcon icon="check-lg" aria-hidden="true" />
         Mark {{ unreadCount }} as read
       </button>
 

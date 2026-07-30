@@ -8,6 +8,7 @@ export default [
       '**/node_modules/**',
       '**/dist/**',
       '**/dev-dist/**',
+      '**/coverage/**',
       '**/public/**'
     ]
   },

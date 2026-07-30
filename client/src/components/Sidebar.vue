@@ -213,7 +213,14 @@
 }
 
 .sidebar-brand {
-  background: url('../assets/images/monster.png') 14px 14px no-repeat;
+  background-color: transparent;
+  background-image: url('../assets/images/monster-ui-64.webp');
+  background-image: image-set(
+    url('../assets/images/monster-ui-64.webp') 1x,
+    url('../assets/images/monster-ui-128.webp') 2x
+  );
+  background-position: 14px 14px;
+  background-repeat: no-repeat;
   background-size: 60px 60px;
   height: 90px;
 }
@@ -338,6 +345,7 @@ import SidebarCategoryGroup from './sidebar/SidebarCategoryGroup.vue';
 import SidebarNavItem from './sidebar/SidebarNavItem.vue';
 import SidebarSectionTitle from './sidebar/SidebarSectionTitle.vue';
 import { formatTagName } from '../utils/tags';
+import { notifyActionError } from '../services/actionNotifications.js';
 
 const emit = defineEmits(['forceReload']);
 const instance = getCurrentInstance();
@@ -449,7 +457,8 @@ async function markAsRead(currentSelection) {
     markingAsRead.value = false;
   } catch (error) {
     markingAsRead.value = false;
-    console.log('oops something went wrong', error);
+    console.error('Error marking the current selection as read:', error);
+    notifyActionError('Could not mark these articles as read. Please try again.', error);
   }
 }
 
@@ -611,7 +620,9 @@ async function fallbackRefresh(error) {
   } catch (fallbackError) {
     refreshing.value = false;
     refreshProgress.visible = false;
-    console.log('oops something went wrong', fallbackError || error);
+    const refreshError = fallbackError || error;
+    console.error('Error refreshing feeds after stream fallback:', refreshError);
+    notifyActionError('Could not refresh feeds. Please try again.', refreshError);
   }
 }
 
@@ -650,7 +661,10 @@ function selectSmartFolder(smartFolder) {
 function updateSortOrder() {
   updateCategoryOrder(orderList.value)
     .then(response => console.log(response.status))
-    .catch(error => console.log('oops something went wrong', error));
+    .catch(error => {
+      console.error('Error saving category order:', error);
+      notifyActionError('Could not save the category order. Please try again.', error);
+    });
 }
 
 defineExpose({ refreshFeeds, updateSortOrder });

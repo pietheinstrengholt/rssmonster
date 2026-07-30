@@ -1,8 +1,10 @@
 import db from '../../models/index.js';
 import { Op } from 'sequelize';
 
+// Provides the shared dependencies used by this service.
 const { Article } = db;
 
+// Defines the briefing eligibility sql enforced by this service.
 export const BRIEFING_ELIGIBILITY_SQL = `(
   articles.interestScore <> 0
   OR EXISTS (
@@ -14,7 +16,9 @@ export const BRIEFING_ELIGIBILITY_SQL = `(
   )
 )`;
 
+// Defines the interest matched eligibility sql enforced by this service.
 const INTEREST_MATCHED_ELIGIBILITY_SQL = 'articles.interestScore <> 0';
+// Defines the developing event eligibility sql enforced by this service.
 const DEVELOPING_EVENT_ELIGIBILITY_SQL = `EXISTS (
   SELECT 1
   FROM events briefing_event
@@ -25,7 +29,9 @@ const DEVELOPING_EVENT_ELIGIBILITY_SQL = `EXISTS (
 
 // This function normalizes the configured distinct-source threshold.
 const normalizeMinimumDistinctSources = value => {
+  // Coerces the numeric value into the representation required while normalizing minimum distinct sources.
   const numericValue = Number(value);
+  // Selects the result based on whether numeric value is an integer and numeric value exceeds 1.
   return Number.isInteger(numericValue) && numericValue > 1
     ? Math.min(numericValue, 127)
     : 1;
@@ -37,14 +43,18 @@ export function briefingEligibilitySql({
   showOnlyInterestMatchedArticles = false,
   showOnlyDevelopingEventArticles = false
 } = {}) {
+  // Normalizes the minimum sources before performing briefing eligibility sql.
   const minimumSources = normalizeMinimumDistinctSources(minDistinctSources);
+  // Selects the base eligibility sql based on whether show only interest matched articles is available.
   const baseEligibilitySql = showOnlyInterestMatchedArticles
     ? INTEREST_MATCHED_ELIGIBILITY_SQL
     : (showOnlyDevelopingEventArticles
       ? DEVELOPING_EVENT_ELIGIBILITY_SQL
       : BRIEFING_ELIGIBILITY_SQL);
+  // Collects the conditions while performing briefing eligibility sql.
   const conditions = [baseEligibilitySql];
 
+  // Handles the case where minimum sources exceeds 1.
   if (minimumSources > 1) {
     conditions.push(`(
       SELECT COUNT(DISTINCT briefing_source_article.feedId)
@@ -56,6 +66,7 @@ export function briefingEligibilitySql({
     ) >= ${minimumSources}`);
   }
 
+  // Selects the result based on whether conditions count is 1.
   return conditions.length === 1
     ? baseEligibilitySql
     : `(${conditions.join('\n    AND ')})`;
@@ -63,7 +74,9 @@ export function briefingEligibilitySql({
 
 // This function returns the shared SQL literal for included or excluded briefing articles.
 export function briefingEligibilityLiteral(included = true, options = {}) {
+  // Derives the eligibility sql through briefing eligibility sql while performing briefing eligibility literal.
   const eligibilitySql = briefingEligibilitySql(options);
+  // Selects the predicate based on whether included is available.
   const predicate = included
     ? eligibilitySql
     : `NOT ${eligibilitySql}`;

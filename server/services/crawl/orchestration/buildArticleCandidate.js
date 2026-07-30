@@ -12,13 +12,16 @@ import articleIdentityResolver from '../extraction/articleIdentityResolver.js';
 import { hashVisibleText } from '../../../utils/articleContentHashes.js';
 import language from '../../../utils/language.js';
 
+// Defines the min analysis language text length enforced by this service.
 const MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH = 20;
 
 // This function checks whether a feed entry points to an absolute HTTP(S) article URL.
 const isAbsoluteHttpUrl = value => {
+  // Rejects the value when value is not string or trim is unavailable.
   if (typeof value !== 'string' || !value.trim()) return false;
 
   try {
+    // Derives the url required while checking absolute http url.
     const url = new URL(value.trim());
     return url.protocol === 'http:' || url.protocol === 'https:';
   } catch {
@@ -37,8 +40,10 @@ const buildActionArticle = articleData => ({
 
 // This function renders normalized description text as safe analysis-only HTML.
 const renderDescriptionHtml = descriptionText => {
+  // Returns early when description text is unavailable.
   if (!descriptionText) return '';
 
+  // Performs the load operation while performing render description html.
   const $ = load('<p></p>', null, false);
   $('p').text(descriptionText);
   return $.html();
@@ -46,6 +51,7 @@ const renderDescriptionHtml = descriptionText => {
 
 // This function appends description fallback text and restores the sanitizer boundary.
 const appendDescriptionHtml = (contentHtml, descriptionText) => {
+  // Performs the load operation while performing append description html.
   const $ = load(contentHtml, null, false);
   $.root().append($('<p>').text(descriptionText));
   return sanitizeHtmlContent($.html());
@@ -53,7 +59,9 @@ const appendDescriptionHtml = (contentHtml, descriptionText) => {
 
 // This function fills missing body-language metadata from the canonical analysis text.
 const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title }) => {
+  // Derives the fallback required while resolving analysis language.
   const fallback = currentLanguage || 'unknown';
+  // Returns early when fallback is not unknown or text count is below min analysis language text length or text does not match the expected format.
   if (
     fallback !== 'unknown' ||
     text.length < MIN_ANALYSIS_LANGUAGE_TEXT_LENGTH ||
@@ -63,7 +71,9 @@ const resolveAnalysisLanguage = ({ currentLanguage, text, feed, title }) => {
   }
 
   try {
+    // Derives the detected language through get while resolving analysis language.
     const detectedLanguage = language.get(text);
+    // Selects the result based on whether detected language is available and detected language is not und.
     return detectedLanguage && detectedLanguage !== 'und'
       ? detectedLanguage
       : fallback;
@@ -84,19 +94,26 @@ const buildArticleCandidate = async ({
   rssFeedTitle = null,
   feedFormat = null
 }) => {
+  // Extracts the entry fields while building article candidate.
   const fields = extractEntryFields(entry);
+  // Derives the external identity through article identity resolver while building article candidate.
   const externalIdentity = articleIdentityResolver(entry, feedFormat);
+  // Derives the title was missing required while building article candidate.
   const titleWasMissing = !fields.title || fields.title === 'Untitled';
 
+  // Handles the case where fields published at is unavailable and fields modified at is available.
   if (!fields.publishedAt && fields.modifiedAt) {
     fields.publishedAt = fields.modifiedAt;
     fields.publishedSource = fields.modifiedAt;
     fields.publishInferred = true;
+  // Handles the case where fields published at is unavailable and feed published fallback is available.
   } else if (!fields.publishedAt && feedPublishedFallback) {
     fields.publishedAt = feedPublishedFallback;
     fields.publishedSource = feedPublishedFallback;
     fields.publishInferred = true;
+  // Handles the case where fields published at is unavailable.
   } else if (!fields.publishedAt) {
+    // Resolves the url published date while building article candidate.
     const urlPublishedFallback = resolveUrlPublishedDate(fields.link);
     fields.publishedAt = urlPublishedFallback;
     fields.publishedSource = urlPublishedFallback;
@@ -111,13 +128,18 @@ const buildArticleCandidate = async ({
 
   // Skip processing if the article is older than the feed's crawlSince.
   if (feed?.crawlSince && fields.publishedAt) {
+    // Normalizes the published date used while building article candidate.
     const publishedDate = new Date(fields.publishedAt);
+    // Normalizes the since date used while building article candidate.
     const sinceDate = new Date(feed.crawlSince);
+    // Handles the case where get time is not na n and get time is not na n.
     if (!isNaN(publishedDate.getTime()) && !isNaN(sinceDate.getTime())) {
+      // Returns no result when published date is below since date.
       if (publishedDate < sinceDate) return null;
     }
   }
 
+  // Returns no result when fields link is not absolute http url.
   if (!isAbsoluteHttpUrl(fields.link)) return null;
 
   let contentOriginal = null;
@@ -126,6 +148,7 @@ const buildArticleCandidate = async ({
   let contentLanguage = 'unknown';
   let contentSourceHash = null;
   let contentTextHash = null;
+  // Collects the hotlink url while building article candidate.
   let hotlinkUrls = [];
 
   // Extract known provider iframes before generic HTML cleanup removes unsafe embed tags.
@@ -133,6 +156,7 @@ const buildArticleCandidate = async ({
 
   // Generic content overrides media content while preserving structured media metadata.
   if (fields.content) {
+    // Derives the html result through process html content while building article candidate.
     const htmlResult = processHtmlContent(
       fields.content,
       null,
@@ -140,6 +164,7 @@ const buildArticleCandidate = async ({
       feed,
       fields.title
     );
+    // Handles the case where html result is available.
     if (htmlResult) {
       contentOriginal = htmlResult.content;
       contentHtml = htmlResult.html;
@@ -169,7 +194,9 @@ const buildArticleCandidate = async ({
 
   // Build one canonical representation for actions, analysis, language, and semantic text.
   const analysisText = contentText || descriptionText || '';
+  // Derives the analysis html required while building article candidate.
   const analysisHtml = contentHtml || renderDescriptionHtml(descriptionText);
+  // Handles the case where content text is unavailable and analysis text is available.
   if (!contentText && analysisText) {
     contentText = analysisText;
     contentTextHash = hashVisibleText(analysisText);
@@ -188,6 +215,7 @@ const buildArticleCandidate = async ({
     ) || 'Untitled';
   }
 
+  // Detects the article image while building article candidate.
   const leadImage = await detectArticleImage({
     entry,
     articleUrl: fields.link,
@@ -195,7 +223,9 @@ const buildArticleCandidate = async ({
     content: fields.content,
     description: fields.description
   });
+  // Normalizes the url before building article candidate.
   const normalizedUrl = normalizeUrl(fields.link);
+  // Builds the article data assembled while building article candidate.
   const articleData = {
     ...fields,
     ...externalIdentity,

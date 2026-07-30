@@ -16,20 +16,27 @@ import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
  * `embedArticle` so storage logic is not duplicated.
  */
 
+// Provides the shared dependencies used by this service.
 const { Article, Feed } = db;
+// Defines the default batch size enforced by this service.
 const DEFAULT_BATCH_SIZE = Number.parseInt(process.env.ARTICLE_EMBED_BATCH_SIZE || '200', 10);
+// Defines the default max age days enforced by this service.
 const DEFAULT_MAX_AGE_DAYS = Number.parseInt(process.env.ARTICLE_EMBED_MAX_AGE_DAYS || '7', 10);
 
 // This function resolves the oldest article creation time eligible for vector creation.
 function resolveCreatedAtFrom(options = {}) {
+  // Returns early when options created at from is available.
   if (options.createdAtFrom) return options.createdAtFrom;
+  // Returns no result when options max age days is value.
   if (options.maxAgeDays === null) return null;
 
+  // Parses the int while resolving created at from.
   const maxAgeDays = Number.parseInt(
     options.maxAgeDays ?? DEFAULT_MAX_AGE_DAYS,
     10
   );
 
+  // Returns no result when max age days is not finite or max age days is at most value.
   if (!Number.isFinite(maxAgeDays) || maxAgeDays <= 0) return null;
 
   return new Date(Date.now() - maxAgeDays * 24 * 60 * 60 * 1000);
@@ -40,7 +47,9 @@ function resolveCreatedAtFrom(options = {}) {
 export async function embedArticles(userId, options = {}) {
   // Batch size is tunable for memory/latency trade-offs during backfills.
   const batchSize = Number.parseInt(options.batchSize || DEFAULT_BATCH_SIZE, 10);
+  // Resolves the created at from while performing embed articles.
   const createdAtFrom = resolveCreatedAtFrom(options);
+  // Collects the article id while performing embed articles.
   const articleIds = [...new Set((options.articleIds || []).filter(Boolean))];
 
   let lastId = 0;
@@ -49,7 +58,9 @@ export async function embedArticles(userId, options = {}) {
   let embeddedCount = 0;
   let skippedCount = 0;
 
+  // Repeats this processing step while eligible work remains.
   while (true) {
+    // Selects the articles based on whether article id is non-empty.
     const articles = await Article.findAll({
       where: {
         userId,
@@ -82,8 +93,10 @@ export async function embedArticles(userId, options = {}) {
       ]
     });
 
+    // Stops collecting values when articles is empty.
     if (!articles.length) break;
 
+    // Processes each articles entry in turn.
     for (const article of articles) {
       scannedCount++;
       lastId = article.id;
@@ -91,11 +104,13 @@ export async function embedArticles(userId, options = {}) {
       // `embedArticle` handles both reuse checks and persistence.
       const vectors = await embedArticle(article, { persist: true });
 
+      // Handles the case where event vector is unavailable.
       if (!vectors?.eventVector) {
         skippedCount++;
         continue;
       }
 
+      // Handles the case where vectors reused is available.
       if (vectors.reused) {
         reusedCount++;
       } else {

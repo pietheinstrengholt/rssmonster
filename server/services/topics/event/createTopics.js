@@ -12,6 +12,7 @@ import {
 import { generateTopicName } from '../shared/topicName.service.js';
 import { formatLogString } from '../../../utils/logging.js';
 
+// Provides the shared dependencies used by this service.
 const { Topic } = db;
 
 // This service creates event topics after validating that an event has enough corroborating evidence.
@@ -19,10 +20,13 @@ const { Topic } = db;
 
 // This function formats topic creation similarity values for concise logs.
 function formatTopicMetric(value, digits = 3) {
+  // Coerces the numeric into the representation required while performing format topic metric.
   const numeric = Number(value);
+  // Selects the result based on whether numeric is finite.
   return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
 }
 
+// Creates the topic.
 export async function createTopic({
   semanticUnit,
   semanticVector,
@@ -34,19 +38,26 @@ export async function createTopic({
   // This function creates a new event topic when seed events and article evidence pass the topic gate.
   // It chooses a name, stores the averaged topic vector, and returns the primary assignment shape.
   const topicSeedEvents = await collectTopicSeedEvents(semanticUnit.userId, semanticVector, currentEventId);
+  // Coerces the top seed similarity into the representation required while creating topic.
   const topSeedSimilarity = Number((topicSeedEvents[0]?.similarity || 0).toFixed(4));
+  // Aggregates source values into the seed article count used while creating topic.
   const seedArticleCount = topicSeedEvents.reduce(
     (sum, item) => sum + Math.max(0, Number(item.event.articleCount || 0)),
     0
   );
+  // Derives the current event required while creating topic.
   const currentEvent = topicSeedEvents.find(
     item => Number(item.event.id) === Number(currentEventId)
   )?.event ?? semanticUnit;
+  // Derives the topic name through generate topic name while creating topic.
   const topicName = generateTopicName({ semanticUnit, seedEvents: topicSeedEvents });
+  // Coerces the current article count into the representation required while creating topic.
   const currentArticleCount = Number(currentEvent?.articleCount || 0);
+  // Selects the current event article titles based on whether current article count is 2.
   const currentEventArticleTitles = currentArticleCount === 2
     ? await collectEventArticleTitles(semanticUnit.userId, currentEventId)
     : [];
+  // Derives the creation gate through evaluate topic creation gate while creating topic.
   const creationGate = evaluateTopicCreationGate({
     semanticUnit,
     currentEvent,
@@ -71,6 +82,7 @@ export async function createTopic({
     status: currentEvent?.status ?? null
   });
 
+  // Handles the case where creation gate passed is unavailable.
   if (!creationGate.passed) {
     console.log(
       `[TOPIC] gated event=${currentEventId}` +
@@ -96,7 +108,9 @@ export async function createTopic({
     return [];
   }
 
+  // Derives the topic vector required while creating topic.
   const topicVector = averageVector(topicSeedEvents.map(item => item.event.eventVector)) || semanticVector;
+  // Performs the create operation while creating topic.
   const createdTopic = await Topic.create({
     userId: semanticUnit.userId,
     name: topicName,

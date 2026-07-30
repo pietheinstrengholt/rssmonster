@@ -32,6 +32,7 @@ const actionMatches = (regex, values) => values.some(value => {
 
 // This function applies configured actions to explicit searchable article fields.
 function applyActions(actions, article = {}) {
+  // Builds the result assembled while applying actions.
   const result = {
     favoriteInd: 0,
     clickedAmount: 0,
@@ -43,7 +44,9 @@ function applyActions(actions, article = {}) {
     tags: []
   };
 
+  // Processes each actions entry in turn.
   for (const action of actions) {
+    // Skips the current entry when action regular expression is unavailable.
     if (!action.regularExpression) continue;
 
     let regex;
@@ -54,8 +57,10 @@ function applyActions(actions, article = {}) {
       continue;
     }
 
+    // Skips the current entry when action matches is unavailable.
     if (!actionMatches(regex, actionSearchValues(article))) continue;
 
+    // Selects behavior from the supported action type values.
     switch (action.actionType) {
       // Discard action: takes precedence over all others
       case 'discard':
@@ -80,6 +85,7 @@ function applyActions(actions, article = {}) {
 
       // Favorite action: marks article as a favorite
       case 'favorite':
+      // Applies the star-specific behavior.
       case 'star':
         result.favoriteInd = 1;
         break;
@@ -91,6 +97,7 @@ function applyActions(actions, article = {}) {
 
       // Tag action: assign a tag to the article
       case 'tag':
+        // Handles the case where action tag value is available.
         if (action.tagValue) {
           result.tags.push(action.tagValue);
         }

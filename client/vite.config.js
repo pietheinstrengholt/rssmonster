@@ -63,14 +63,14 @@ export default defineConfig({
       bootstrapIconsSprite(),
       VitePWA({
           devOptions: {
-              enabled: true
+              enabled: false
           },
           registerType: 'autoUpdate',
           injectRegister: 'auto',
           workbox: {
             sourcemap: false,
             globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,vue,txt,woff2}'],
-            cleanupOutdatedCaches: false,
+            cleanupOutdatedCaches: true,
           },
           // Favicons generates the manifest and all of its icon assets.
           manifest: false

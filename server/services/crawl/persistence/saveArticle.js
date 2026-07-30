@@ -2,8 +2,10 @@ import db from '../../../models/index.js';
 import { saveArticleTags } from './tags.js';
 import buildArticlePersistenceValues from './buildArticlePersistenceValues.js';
 
+// Provides the shared dependencies used by this service.
 const { Article, sequelize } = db;
 
+// Defines the article unique conflicts enforced by this service.
 const ARTICLE_UNIQUE_CONFLICTS = [
   {
     identity: 'urlHash',
@@ -44,33 +46,42 @@ const metadataContainsConstraint = (metadata, constraint) => metadata.some(value
 
 // This function identifies an article unique index from explicit field metadata.
 const conflictFromFields = error => {
+  // Tracks distinct field names while performing conflict from fields.
   const fieldNames = new Set([
     ...Object.keys(error?.fields || {}),
     ...(error?.errors || []).map(item => item?.path)
   ].filter(Boolean));
+  // Keeps the matches entries eligible while performing conflict from fields.
   const matches = ARTICLE_UNIQUE_CONFLICTS.filter(conflict => (
     fieldNames.has(conflict.identity) &&
     [...fieldNames].every(field => conflict.fields.includes(field))
   ));
 
+  // Selects the result based on whether matches count is 1.
   return matches.length === 1 ? matches[0] : null;
 };
 
 // This function maps one recognized article constraint to one exact winner lookup.
 export const buildConcurrentWinnerLookup = ({ error, articleValues }) => {
+  // Derives the metadata through unique error metadata while building concurrent winner lookup.
   const metadata = uniqueErrorMetadata(error);
+  // Keeps the named matches entries eligible while building concurrent winner lookup.
   const namedMatches = ARTICLE_UNIQUE_CONFLICTS.filter(conflict => (
     metadataContainsConstraint(metadata, conflict.constraint)
   ));
+  // Selects the conflict based on whether named matches count is 1.
   const conflict = namedMatches.length === 1
     ? namedMatches[0]
     : namedMatches.length === 0
       ? conflictFromFields(error)
       : null;
 
+  // Returns no result when conflict is unavailable.
   if (!conflict) return null;
+  // Rejects conflict recovery when any required lookup field is missing.
   if (conflict.fields.some(field => !articleValues?.[field])) return null;
 
+  // Maps source values into the result produced while building concurrent winner lookup.
   return {
     identity: conflict.identity,
     constraint: conflict.constraint,
@@ -82,10 +93,14 @@ export const buildConcurrentWinnerLookup = ({ error, articleValues }) => {
 
 // This function reloads the exact article that won a recognized unique-key insert race.
 const findConcurrentWinner = async ({ articleValues, error }) => {
+  // Builds the concurrent winner lookup while finding concurrent winner.
   const conflict = buildConcurrentWinnerLookup({ error, articleValues });
+  // Returns no result when conflict is unavailable.
   if (!conflict) return null;
 
+  // Loads the article needed while finding concurrent winner.
   const article = await Article.findOne({ where: conflict.where });
+  // Selects the result based on whether article is available.
   return article ? { article, conflict } : null;
 };
 
@@ -100,7 +115,9 @@ async function saveArticle(feed, data, analysis, actionResult) {
     throw new Error('Invalid feed: userId is missing. Cannot save article without valid userId.');
   }
 
+  // Derives the is discard match required while performing save article.
   const isDiscardMatch = actionResult?.shouldDiscard === true;
+  // Selects the article values based on whether is discard match is available.
   const articleValues = buildArticlePersistenceValues(feed, {
     ...data,
     status: actionResult.status,
@@ -118,9 +135,12 @@ async function saveArticle(feed, data, analysis, actionResult) {
     publishedAt: data.publishedAt || new Date()
   });
   try {
+    // Derives the article through transaction while performing save article.
     const article = await sequelize.transaction(async transaction => {
+      // Performs the create operation while performing save article.
       const createdArticle = await Article.create(articleValues, { transaction });
 
+      // Handles the case where is discard match is unavailable.
       if (!isDiscardMatch) {
         await saveArticleTags({
           articleId: createdArticle.id,
@@ -137,6 +157,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
 
     return { article, created: true };
   } catch (err) {
+    // Rejects processing when err name is not sequelize unique constraint error.
     if (err.name !== 'SequelizeUniqueConstraintError') throw err;
 
     // The failed transaction has rolled back; reload the concurrently committed winner.
@@ -144,6 +165,7 @@ async function saveArticle(feed, data, analysis, actionResult) {
       articleValues,
       error: err
     });
+    // Rejects processing when recovery is unavailable.
     if (!recovery) throw err;
 
     return {

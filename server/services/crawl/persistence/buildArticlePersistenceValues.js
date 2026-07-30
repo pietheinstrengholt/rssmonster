@@ -3,6 +3,7 @@ import { createHash } from 'node:crypto';
 import normalizeUrl from '../content/normalizeUrl.js';
 import { hashOriginalContent, hashVisibleText } from '../../../utils/articleContentHashes.js';
 
+// Defines the mutable article source fields enforced by this service.
 const MUTABLE_ARTICLE_SOURCE_FIELDS = [
   'media',
   'url',
@@ -35,9 +36,12 @@ export const hashArticleUrl = value => value
 
 // This function matches article timestamps to MySQL DATETIME whole-second precision.
 export const normalizeArticleDate = value => {
+  // Returns no result when value is value or value is undefined or value is value.
   if (value === null || value === undefined || value === '') return null;
 
+  // Normalizes the date used while normalizing article date.
   const date = new Date(value);
+  // Returns early when get time is na n.
   if (Number.isNaN(date.getTime())) return value;
 
   date.setUTCMilliseconds(0);
@@ -46,7 +50,9 @@ export const normalizeArticleDate = value => {
 
 // This function normalizes string and object lead-image inputs into persisted metadata.
 const normalizeLeadImage = data => {
+  // Returns early when data is string.
   if (typeof data.leadImage === 'string') return { url: data.leadImage };
+  // Returns early when data lead image is available.
   if (data.leadImage) return data.leadImage;
 
   return {
@@ -60,14 +66,20 @@ const normalizeLeadImage = data => {
 
 // This function builds the canonical database values for one processed article.
 export default function buildArticlePersistenceValues(feed, data = {}) {
+  // Derives the url required while building article persistence values.
   const url = data.link || data.url || null;
+  // Selects the normalized url based on whether url is available.
   const normalizedUrl = data.normalizedUrl || (url ? normalizeUrl(url) : null);
+  // Normalizes the lead image before building article persistence values.
   const leadImage = normalizeLeadImage(data);
+  // Derives the content original required while building article persistence values.
   const contentOriginal = data.contentOriginal ?? null;
+  // Selects the content text based on whether data is string and trim succeeds.
   const contentText = typeof data.contentText === 'string' && data.contentText.trim()
     ? data.contentText
     : null;
 
+  // Selects the result based on whether content text is available.
   return {
     externalId: data.externalId || null,
     externalIdType: data.externalIdType || null,

@@ -27,7 +27,12 @@ const createTimeoutError = () => {
 };
 
 // Fetches a URL within one total timeout budget, including retries and body consumption.
-export const fetchURL = async (url, retries = 1, timeoutMs = 5000) => {
+export const fetchURL = async (
+  url,
+  retries = 1,
+  timeoutMs = 5000,
+  fetchImplementation
+) => {
   const startedAt = Date.now();
   const deadline = startedAt + timeoutMs;
 
@@ -53,7 +58,12 @@ export const fetchURL = async (url, retries = 1, timeoutMs = 5000) => {
     };
 
     try {
-      const response = await fetchWithOutboundRequestSafeguard(url, options);
+      const response = await fetchWithOutboundRequestSafeguard(
+        url,
+        options,
+        undefined,
+        fetchImplementation
+      );
       
       // Log redirects for debugging
       if (response.url && response.url !== url) {

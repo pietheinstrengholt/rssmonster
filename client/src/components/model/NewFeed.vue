@@ -559,6 +559,7 @@
 import { validateFeed, createFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
+import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'NewFeed',
     created: function() {
@@ -597,13 +598,13 @@ export default {
                 if (data?.cloudflare) {
                     this.isCloudflare = true;
                     this.cloudflareUrl = data.feedUrl || this.url;
-                    this.error_msg = data.error_msg;
+                    this.error_msg = 'This site could not be validated automatically.';
                 } else {
                     this.isCloudflare = false;
                     this.cloudflareUrl = null;
-                    this.error_msg = data?.error_msg || "Error validating feed";
+                    this.error_msg = 'Could not validate this feed. Check the URL and try again.';
                 }
-                console.log(error);
+                console.error(`Error validating feed URL ${this.url}:`, error);
             } finally {
                 this.ajaxRequest = false;
             }
@@ -639,8 +640,8 @@ export default {
                 this.$store.data.increaseRefreshCategories();
                 this.$store.data.setShowModal('');
             } catch (error) {
-                this.error_msg = error.response?.data?.error || "Error adding feed";
-                console.log(error);
+                this.error_msg = 'Could not add this feed. Please try again.';
+                console.error(`Error force-adding feed URL ${this.cloudflareUrl || this.url}:`, error);
             }
         },
         async newFeed() {
@@ -677,7 +678,8 @@ export default {
                 //close modal
                 this.$store.data.setShowModal('');
             } catch (error) {
-                console.log("oops something went wrong", error);
+                console.error(`Error adding feed URL ${this.feed.url}:`, error);
+                notifyActionError('Could not add this feed. Please try again.', error);
             }
         }
     }

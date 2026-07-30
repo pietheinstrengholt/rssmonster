@@ -102,7 +102,9 @@ export const useStore = defineStore('data', {
     searchQuery: '',
     themeMode: null,
 
-    fatalError: null
+    fatalError: null,
+    overviewRequestId: 0,
+    smartFolderRequestId: 0
   }),
 
   actions: {
@@ -129,13 +131,19 @@ export const useStore = defineStore('data', {
     },
 
     async fetchOverviewSplit({ initial = false, forceUpdate = false } = {}) {
+      const requestId = ++this.overviewRequestId;
+
       if (initial) await this.fetchSettings();
+      if (requestId !== this.overviewRequestId) return;
 
       const { data } = await fetchOverviewLiteAPI();
+      if (requestId !== this.overviewRequestId) return;
+
       this.updateOverviewStructure(data, { initial, forceUpdate });
 
       void fetchOverviewCountsAPI(this.currentSelection)
         .then(({ data: countsData }) => {
+          if (requestId !== this.overviewRequestId) return;
           this.updateOverviewCounts(countsData, { initial, forceUpdate });
         })
         .catch(err => {
@@ -244,7 +252,10 @@ export const useStore = defineStore('data', {
      * -------------------------------------------------- */
 
     async fetchSmartFolders() {
+      const requestId = ++this.smartFolderRequestId;
       const { data } = await fetchSmartFoldersAPI();
+      if (requestId !== this.smartFolderRequestId) return;
+
       this.smartFolders = (data.smartFolders || []).map(folder => ({
         ...folder,
         ArticleCount: folder.ArticleCount ?? 0
@@ -252,6 +263,8 @@ export const useStore = defineStore('data', {
 
       void fetchSmartFolderCountsAPI()
         .then(({ data: countsData }) => {
+          if (requestId !== this.smartFolderRequestId) return;
+
           const countMap = new Map(
             (countsData.smartFolders || []).map(folder => [folder.id, folder.ArticleCount ?? 0])
           );

@@ -27,7 +27,7 @@
       <div class="article-list-bulk-header" @click.stop>
         <div class="article-list-bulk-summary">
           <div class="article-list-bulk-title">
-            <i :class="selectionIcon" aria-hidden="true"></i>
+            <BootstrapIcon :icon="selectionIcon" aria-hidden="true" />
             <span>{{ selectionTitle }}</span>
           </div>
 
@@ -61,35 +61,35 @@
             :aria-expanded="isBulkMenuOpen ? 'true' : 'false'"
             @click.stop="toggleBulkMenu"
           >
-            <i class="bi bi-three-dots" aria-hidden="true"></i>
+            <BootstrapIcon icon="three-dots" aria-hidden="true" />
           </button>
 
           <div v-if="isBulkMenuOpen" class="bulk-action-menu" :style="bulkMenuStyle" role="menu">
             <div class="bulk-action-menu-section">
               <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-read')">
-                <i class="bi bi-check2-circle" aria-hidden="true"></i>
+                <BootstrapIcon icon="check2-circle" aria-hidden="true" />
                 <span>Mark all visible as read</span>
               </button>
               <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="!selectedArticle" @click="runBulkAction('mark-older-read')">
-                <i class="bi bi-clock-history" aria-hidden="true"></i>
+                <BootstrapIcon icon="clock-history" aria-hidden="true" />
                 <span>Mark older than current article as read</span>
               </button>
               <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex <= 0" @click="runBulkAction('mark-above-read')">
-                <i class="bi bi-arrow-up-short" aria-hidden="true"></i>
+                <BootstrapIcon icon="arrow-up-short" aria-hidden="true" />
                 <span>Mark articles above as read</span>
               </button>
               <button type="button" class="bulk-action-menu-item" role="menuitem" :disabled="selectedArticleIndex === -1 || selectedArticleIndex >= articles.length - 1" @click="runBulkAction('mark-below-read')">
-                <i class="bi bi-arrow-down-short" aria-hidden="true"></i>
+                <BootstrapIcon icon="arrow-down-short" aria-hidden="true" />
                 <span>Mark articles below as read</span>
               </button>
             </div>
             <div class="bulk-action-menu-section">
               <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('favorite-visible')">
-                <i class="bi bi-bookmark" aria-hidden="true"></i>
+                <BootstrapIcon icon="bookmark" aria-hidden="true" />
                 <span>Favorite all visible</span>
               </button>
               <button type="button" class="bulk-action-menu-item" role="menuitem" @click="runBulkAction('mark-visible-clicked')">
-                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
                 <span>Mark all visible as clicked</span>
               </button>
             </div>
@@ -107,6 +107,7 @@
         :aria-current="article.id === selectedArticleId ? 'true' : null"
         :ref="element => setArticleItemRef(element, article.id)"
         @click="selectArticle(article.id)"
+        @keydown.enter.stop.prevent="selectArticle(article.id)"
         @keydown.space.stop.prevent="selectArticle(article.id)"
       >
         <span class="readerArticleListItemContent">
@@ -128,11 +129,11 @@
               @click.stop="trackOriginalArticleClick(article)"
             >
               <span>Open original article</span>
-              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+              <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
             </a>
           </span>
           <span class="readerArticleListItemBadges">
-            <i v-if="article.isDevelopingStory" class="bi bi-lightning-charge-fill readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story"></i>
+            <BootstrapIcon v-if="article.isDevelopingStory" icon="lightning-charge-fill" class="readerArticleListDevelopingIcon" title="Developing story" aria-label="Developing story" />
             <span v-if="article.favoriteInd === 1" class="readerArticleListBadge readerArticleListBadgeFavorite">Favorite</span>
             <span v-if="article.hotInd === 1" class="readerArticleListBadge readerArticleListBadgeHot">Hot</span>
             <span v-if="similarCount(article)" class="readerArticleListBadge">{{ similarCount(article) }} similar</span>
@@ -294,15 +295,15 @@ export default {
     selectedArticleIndex() {
       return this.articles.findIndex(article => article.id === this.selectedArticleId);
     },
-    // Returns the icon class that matches the active reader collection.
+    // Returns the icon name that matches the active reader collection.
     selectionIcon() {
       const selection = this.$store.data.currentSelection;
-      if (selection.smartFolderId !== null) return 'bi bi-folder-fill';
-      if (selection.tag) return 'bi bi-tag-fill';
-      if (selection.status === 'briefing') return 'bi bi-sunrise-fill';
-      if (selection.search) return 'bi bi-search';
-      if (selection.feedId !== '%') return 'bi bi-rss-fill';
-      if (selection.categoryId !== '%') return 'bi bi-folder-fill';
+      if (selection.smartFolderId !== null) return 'folder-fill';
+      if (selection.tag) return 'tag-fill';
+      if (selection.status === 'briefing') return 'sunrise-fill';
+      if (selection.search) return 'search';
+      if (selection.feedId !== '%') return 'rss-fill';
+      if (selection.categoryId !== '%') return 'folder-fill';
 
       const icons = {
         unread: 'record-circle-fill',
@@ -312,7 +313,7 @@ export default {
         clicked: 'arrow-up-right-square-fill'
       };
 
-      return `bi bi-${icons[selection.status] || 'collection-fill'}`;
+      return icons[selection.status] || 'collection-fill';
     },
     // Returns the display name for the active reader collection.
     selectionTitle() {
@@ -702,7 +703,7 @@ export default {
   white-space: nowrap;
 }
 
-.article-list-bulk-title i {
+.article-list-bulk-title .bi {
   color: var(--text-secondary);
   flex: 0 0 auto;
   font-size: 15px;
@@ -842,7 +843,7 @@ export default {
   opacity: 0.55;
 }
 
-.bulk-action-menu-item i {
+.bulk-action-menu-item .bi {
   color: var(--text-secondary);
   flex: 0 0 18px;
   width: 18px;

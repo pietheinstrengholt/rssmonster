@@ -2,13 +2,16 @@
 // It sanitizes model output into strict JSON before returning suggestions to callers.
 import OpenAI from 'openai';
 
+// Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+// Selects the client based on whether has api key is available.
 const client = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 // Safely extracts JSON from raw LLM output, including fenced or prose-wrapped responses.
 function safeJsonParse(raw) {
+  // Returns no result when raw is unavailable or raw is not string.
   if (!raw || typeof raw !== 'string') return null;
 
   // Remove markdown fences if present
@@ -25,6 +28,7 @@ function safeJsonParse(raw) {
   } catch {
     // Attempt to extract first JSON object
     const match = cleaned.match(/\{[\s\S]*\}/);
+    // Returns no result when match is unavailable.
     if (!match) return null;
 
     try {
@@ -37,10 +41,12 @@ function safeJsonParse(raw) {
 
 // Requests personalized smart-folder recommendations from the LLM.
 export async function getSmartFolderRecommendations({ insights }) {
+  // Rejects processing when client is unavailable.
   if (!client) {
     throw new Error('OpenAI API key not configured');
   }
 
+// Derives the prompt required while performing get smart folder recommendations.
 const prompt = `
 You generate PERSONALIZED Smart Folder suggestions for an RSS reader.
 
@@ -168,6 +174,7 @@ OUTPUT (STRICT JSON ONLY)
 }
 `;
 
+  // Performs the create operation while performing get smart folder recommendations.
   const response = await client.chat.completions.create({
     model: 'gpt-4.1-mini',
     messages: [
@@ -181,8 +188,10 @@ OUTPUT (STRICT JSON ONLY)
   const raw = response.choices?.[0]?.message?.content;
   console.log('Smart Folder LLM raw response:', raw);
 
+  // Derives the parsed through safe json parse while performing get smart folder recommendations.
   const parsed = safeJsonParse(raw);
 
+  // Handles the case where parsed is unavailable or parsed smart folders is not an array.
   if (!parsed || !Array.isArray(parsed.smartFolders)) {
     console.warn('LLM returned invalid JSON, falling back to empty result');
     return { smartFolders: [] }; // ✅ graceful fallback

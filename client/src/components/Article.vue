@@ -2,12 +2,12 @@
   <div class="article-card" :id="`article-${id}`" :class="[{ 'event-article': isEventArticle }, { 'article-list-card': isMinimalView }]" v-bind="filteredAttrs">
     <div v-if="isMinimalView" class="mobile-swipe-shell">
       <div class="mobile-swipe-action" aria-hidden="true">
-        <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-x-fill' : 'bi-bookmark-fill']" aria-hidden="true"></i>
+        <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
       <div class="article-list-row mobile-swipe-content" :class="{ 'is-read': status === 'read', favorited: favoriteInd === 1, hot: hotInd === 1 }" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
       <button class="article-list-status" type="button" :aria-label="statusToggleLabel" :title="statusToggleLabel" @click.stop="toggleMinimalReadStatus">
-        <i :class="['bi', status === 'read' ? 'bi-circle-fill' : 'bi-record-circle-fill']" aria-hidden="true"></i>
+        <BootstrapIcon :icon="status === 'read' ? 'circle-fill' : 'record-circle-fill'" aria-hidden="true" />
       </button>
       <div class="article-list-source" aria-hidden="true">
         <img v-if="feedFavicon" :src="feedFavicon" class="favicon" alt="" />
@@ -21,7 +21,7 @@
           <span class="article-list-feed">{{ author || feed.feedName }}</span>
           <span class="article-list-dot">·</span>
           <span v-if="event && eventArticleCountTotal > 1 && $store.data.currentSelection.grouping !== 'none' && event.sourceCount >= 2" class="source-badge" :title="`${event.sourceCount} unique sources`"><BootstrapIcon icon="people-fill" class="source-diversity-icon" />{{ event.sourceCount }} sources</span>
-          <i v-if="isDevelopingStory" class="bi bi-lightning-charge-fill developing-story-icon" title="Developing story" aria-label="Developing story"></i>
+          <BootstrapIcon v-if="isDevelopingStory" icon="lightning-charge-fill" class="developing-story-icon" title="Developing story" aria-label="Developing story" />
           <span v-if="event && eventArticleCountTotal > 1 && $store.data.currentSelection.grouping !== 'none'" class="similar-badge" @click.stop="viewEventArticles(event.id)">+{{ eventArticleCountTotal - 1 }} similar article{{ eventArticleCountTotal - 1 === 1 ? '' : 's' }}</span>
           <span v-if="duplicateCount > 0" class="duplicate-badge" @click.stop="viewDuplicateArticles">{{ duplicateCount }} duplicate{{ duplicateCount === 1 ? '' : 's' }}</span>
           <span v-for="tag in ruleTags" :key="'list-rule-' + tag.id" class="tag tag-rule mobile-rule-tag" @click.stop="selectTag(tag)">{{ formatTagName(tag.name) }}</span>
@@ -31,7 +31,7 @@
           <span aria-hidden="true" class="article-preview-empty__separator">-</span>
           <a :href="url" class="article-preview-empty__link" target="_blank" rel="noopener noreferrer" aria-label="Open original article in a new tab" @click.stop="articleClicked">
             <span>Open original article</span>
-            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+            <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
           </a>
         </div>
       </div>
@@ -39,14 +39,14 @@
         <span class="article-list-time">{{ formatDate(publishedAt) }}</span>
         <ArticleActionsMenu :favoriteInd="favoriteInd" @toggle-favorite="markAsFavorite" @not-interested="markNotInterested" @more-like-this="moreLikeThis" @less-like-this="lessLikeThis" @ignore-topic="ignoreTopic" @mute-feed="muteFeedSevenDays" />
         <button class="article-list-action-button article-list-favorite-button" type="button" :aria-label="favoriteLabel" :title="favoriteLabel" @click.stop="markAsFavorite">
-          <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-fill' : 'bi-bookmark']" aria-hidden="true"></i>
+          <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-fill' : 'bookmark'" aria-hidden="true" />
         </button>
       </div>
       </div>
     </div>
     <div v-else class="mobile-swipe-shell">
       <div class="mobile-swipe-action" aria-hidden="true">
-        <i :class="['bi', favoriteInd === 1 ? 'bi-bookmark-x-fill' : 'bi-bookmark-fill']" aria-hidden="true"></i>
+        <BootstrapIcon :icon="favoriteInd === 1 ? 'bookmark-x-fill' : 'bookmark-fill'" aria-hidden="true" />
         <span>{{ favoriteInd === 1 ? 'Remove favorite' : 'Add to favorites' }}</span>
       </div>
       <div class="article-body mobile-swipe-content" :class="[{ favorited: favoriteInd === 1, hot: hotInd === 1 }, isUnread && predictedAffinity ? `affinity-${predictedAffinity}` : '']" :style="mobileSwipeStyle" @click="articleTouched($event)" @touchstart.passive="onSwipeTouchStart" @touchmove="onSwipeTouchMove" @touchend="onSwipeTouchEnd" @touchcancel="resetSwipe">
@@ -61,14 +61,14 @@
             <span aria-hidden="true" class="article-preview-empty__separator">-</span>
             <a :href="url" class="article-preview-empty__link" target="_blank" rel="noopener noreferrer" aria-label="Open original article in a new tab" @click.stop="articleClicked">
               <span>Open original article</span>
-              <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+              <BootstrapIcon icon="box-arrow-up-right" aria-hidden="true" />
             </a>
           </div>
           <div v-if="articleSignals.length" class="article-signal-bar" aria-label="Article relevance signals">
             <template v-for="(signal, index) in articleSignals" :key="signal.label">
               <span v-if="index > 0" class="signal-divider" aria-hidden="true"></span>
               <span class="signal-badge">
-                <span :class="['signal-icon', signal.icon]" aria-hidden="true"></span>
+                <BootstrapIcon :icon="signal.icon" class="signal-icon" aria-hidden="true" />
                 {{ signal.label }}
               </span>
             </template>
@@ -105,6 +105,7 @@ import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent } from '../utils/content';
+import { notifyActionError } from '../services/actionNotifications.js';
 
 const NEUTRAL_SCORE = 70;
 const SWIPE_MAX = 128;
@@ -302,19 +303,19 @@ export default {
       const signals = [];
 
       if (this.hasHighQualitySignal) {
-        signals.push({ label: 'High quality', icon: 'bi bi-stars' });
+        signals.push({ label: 'High quality', icon: 'stars' });
       }
 
       if (this.hasMajorEventSignal) {
-        signals.push({ label: 'Major event', icon: 'bi bi-broadcast' });
+        signals.push({ label: 'Major event', icon: 'broadcast' });
       } else if (this.hasTrendingSignal) {
-        signals.push({ label: 'Trending', icon: 'bi bi-graph-up-arrow' });
+        signals.push({ label: 'Trending', icon: 'graph-up-arrow' });
       }
 
       if (this.hasOfficialSourceSignal) {
-        signals.push({ label: this.officialSourceLabel, icon: 'bi bi-patch-check-fill' });
+        signals.push({ label: this.officialSourceLabel, icon: 'patch-check-fill' });
       } else if (this.hasTrustedSourceSignal) {
-        signals.push({ label: this.trustedSourceLabel, icon: 'bi bi-shield-fill-check' });
+        signals.push({ label: this.trustedSourceLabel, icon: 'shield-fill-check' });
       }
 
       return signals;
@@ -610,6 +611,10 @@ export default {
           : this.$store.data.decreaseFavoriteCount();
 
         this.$emit('update-favorite', { id: this.id, favoriteInd: newFavoriteInd });
+      })
+      .catch(error => {
+        console.error(`Error updating favorite state for article ${this.id}:`, error);
+        notifyActionError('Could not update the favorite. Please try again.', error);
       });
     },
     // Marks the article as not interesting.
@@ -619,6 +624,10 @@ export default {
       .then(() => {
         console.log('Marked as not interested:', this.id);
         this.$emit('article-not-interested', { id: this.id });
+      })
+      .catch(error => {
+        console.error(`Error marking article ${this.id} as not interested:`, error);
+        notifyActionError('Could not update this article. Please try again.', error);
       });
     },
     // Marks the article as similar to the user's interests.
@@ -626,6 +635,10 @@ export default {
       markMoreLikeThis(this.id)
       .then(() => {
         console.log('Marked as more like this:', this.id);
+      })
+      .catch(error => {
+        console.error(`Error marking article ${this.id} as more like this:`, error);
+        notifyActionError('Could not update this article. Please try again.', error);
       });
     },
     // Marks the article as less similar to the user's interests.
@@ -645,6 +658,10 @@ export default {
         muteFeed(this.feedId, mutedUntil.toISOString())
         .then(() => {
           console.log('Feed muted until:', mutedUntil);
+        })
+        .catch(error => {
+          console.error(`Error muting feed ${this.feedId}:`, error);
+          notifyActionError('Could not mute this feed. Please try again.', error);
         });
       }
     },
@@ -673,6 +690,7 @@ export default {
       })
       .catch(error => {
         console.error(`Error fetching ${grouping} articles:`, error);
+        notifyActionError('Could not load related articles. Please try again.', error);
       });
     },
     // Expands or collapses duplicates belonging to this canonical article.
@@ -693,6 +711,7 @@ export default {
       })
       .catch(error => {
         console.error('Error fetching duplicate articles:', error);
+        notifyActionError('Could not load duplicate articles. Please try again.', error);
       });
     }
   }

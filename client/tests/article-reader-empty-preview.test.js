@@ -174,7 +174,10 @@ describe('Article empty previews', () => {
     }, viewMode);
 
     expect(wrapper.get('.article-preview-empty').text()).toContain('No preview available');
-    expect(wrapper.find('.bi-box-arrow-up-right').exists()).toBe(true);
+    expect(
+      wrapper.findAllComponents({ name: 'BootstrapIcon' })
+        .some(icon => icon.props('icon') === 'box-arrow-up-right')
+    ).toBe(true);
   });
 
   it('shows the fallback when a standalone image URL is not rendered without article content', () => {

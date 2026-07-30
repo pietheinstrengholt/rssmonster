@@ -12,14 +12,21 @@ import OpenAI from 'openai';
  * This is the single source of truth for article-vector creation and storage.
  */
 
+// Defines the embedding model enforced by this service.
 export const EMBEDDING_MODEL = 'text-embedding-3-small';
 
+// Defines the min event length enforced by this service.
 const MIN_EVENT_LENGTH = 60;
+// Defines the min topic length enforced by this service.
 const MIN_TOPIC_LENGTH = 120;
+// Defines the max topic length enforced by this service.
 const MAX_TOPIC_LENGTH = 2200;
+// Defines the max embedding input tokens enforced by this service.
 const MAX_EMBEDDING_INPUT_TOKENS = 512;
 
+// Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+// Selects the openai based on whether has api key is available.
 const openai = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
@@ -49,6 +56,7 @@ function cleanText(text = '') {
 
 // This function extracts usable plain-text paragraphs from article body text.
 function extractParagraphs(text = '') {
+  // Maps source values into the result produced while extracting paragraphs.
   return text
     .split(/\n{2,}/)
     .map(p => cleanText(p))
@@ -66,29 +74,43 @@ function normalizeComparableText(text = '') {
 
 // This function splits cleaned article text into sentence-sized embedding units.
 function splitSentences(text = '') {
+  // Normalizes the cleaned before performing split sentences.
   const cleaned = cleanText(text);
+  // Returns an empty result when cleaned is unavailable.
   if (!cleaned) return [];
 
+  // Maps source values into the result produced while performing split sentences.
   return cleaned.split(/(?<=[.!?])\s+/).map(sentence => sentence.trim()).filter(Boolean);
 }
 
 // This function detects exact and near-identical embedding text units.
 function isEffectivelyDuplicate(candidate, acceptedTexts) {
+  // Normalizes the candidate before checking effectively duplicate.
   const normalizedCandidate = normalizeComparableText(candidate);
+  // Returns early when normalized candidate is unavailable.
   if (!normalizedCandidate) return true;
 
+  // Tracks distinct candidate tokens while checking effectively duplicate.
   const candidateTokens = new Set(normalizedCandidate.split(' '));
 
+  // Checks candidate values while checking effectively duplicate.
   return acceptedTexts.some(existing => {
+    // Normalizes the existing before checking effectively duplicate.
     const normalizedExisting = normalizeComparableText(existing);
+    // Returns early when normalized candidate is normalized existing.
     if (normalizedCandidate === normalizedExisting) return true;
 
+    // Tracks distinct existing tokens while checking effectively duplicate.
     const existingTokens = new Set(normalizedExisting.split(' '));
+    // Tracks distinct union while checking effectively duplicate.
     const union = new Set([...candidateTokens, ...existingTokens]);
+    // Returns early when union size is unavailable.
     if (!union.size) return true;
 
     let intersection = 0;
+    // Processes each candidate tokens entry in turn.
     for (const token of candidateTokens) {
+      // Handles the case where existing tokens contains token.
       if (existingTokens.has(token)) intersection++;
     }
 
@@ -98,9 +120,12 @@ function isEffectivelyDuplicate(candidate, acceptedTexts) {
 
 // This function keeps unique sentences and records them for later section comparisons.
 function uniqueSentences(texts, acceptedTexts) {
+  // Collects the unique while performing unique sentences.
   const unique = [];
 
+  // Processes each texts entry in turn.
   for (const text of texts) {
+    // Skips the current entry when text is effectively duplicate.
     if (isEffectivelyDuplicate(text, acceptedTexts)) continue;
     unique.push(text);
     acceptedTexts.push(text);
@@ -111,33 +136,47 @@ function uniqueSentences(texts, acceptedTexts) {
 
 // This function builds structured event text from unique title, summary, and body evidence.
 function extractEventText({ title, description, contentText }) {
+  // Collects the sections while extracting event text.
   const sections = [];
+  // Collects the accepted texts while extracting event text.
   const acceptedTexts = [];
 
+  // Normalizes the t before extracting event text.
   const t = normalizeTitle(title);
+  // Handles the case where t is available.
   if (t) {
     sections.push(`Title: ${t}`);
     acceptedTexts.push(t);
   }
 
+  // Handles the case where description is available and description is not likely html.
   if (description && !isLikelyHtml(description)) {
+    // Derives the summary sentences through unique sentences while extracting event text.
     const summarySentences = uniqueSentences(splitSentences(description), acceptedTexts);
+    // Handles the case where summary sentences is non-empty.
     if (summarySentences.length) {
       sections.push(`Summary: ${summarySentences.join(' ')}`);
     }
   }
 
+  // Handles the case where content text is available and content text is not likely html.
   if (contentText && !isLikelyHtml(contentText)) {
+    // Collects the body paragraphs while extracting event text.
     const bodyParagraphs = [];
 
+    // Processes each extract paragraphs entry in turn.
     for (const paragraph of extractParagraphs(contentText)) {
+      // Derives the sentences through unique sentences while extracting event text.
       const sentences = uniqueSentences(splitSentences(paragraph), acceptedTexts);
+      // Skips the current entry when sentences is empty.
       if (!sentences.length) continue;
 
       bodyParagraphs.push(sentences.join(' '));
+      // Stops collecting values when body paragraphs count is 2.
       if (bodyParagraphs.length === 2) break;
     }
 
+    // Handles the case where body paragraphs is non-empty.
     if (bodyParagraphs.length) {
       sections.push(`Body: ${bodyParagraphs.join(' ')}`);
     }
@@ -148,9 +187,12 @@ function extractEventText({ title, description, contentText }) {
 
 // This function builds longer topic-oriented text from article body content.
 function extractTopicText({ contentText }) {
+  // Returns early when content text is unavailable or content text is likely html.
   if (!contentText || isLikelyHtml(contentText)) return '';
 
+  // Extracts the paragraphs while extracting topic text.
   const paragraphs = extractParagraphs(contentText);
+  // Returns early when paragraphs is empty.
   if (!paragraphs.length) return '';
 
   return paragraphs
@@ -161,17 +203,23 @@ function extractTopicText({ contentText }) {
 
 // This function estimates token count with a conservative whitespace heuristic.
 function estimateTokenCount(text = '') {
+  // Normalizes the normalized before performing estimate token count.
   const normalized = String(text || '').trim();
+  // Returns early when normalized is unavailable.
   if (!normalized) return 0;
   return normalized.split(/\s+/).length;
 }
 
 // This function clips text to the embedding token budget using the local token estimate.
 function clipToEmbeddingTokenLimit(text = '') {
+  // Normalizes the normalized before performing clip to embedding token limit.
   const normalized = String(text || '').trim();
+  // Returns early when normalized is unavailable.
   if (!normalized) return '';
 
+  // Derives the tokens through split while performing clip to embedding token limit.
   const tokens = normalized.split(/\s+/);
+  // Returns early when tokens count is at most max embedding input tokens.
   if (tokens.length <= MAX_EMBEDDING_INPUT_TOKENS) return normalized;
 
   return tokens.slice(0, MAX_EMBEDDING_INPUT_TOKENS).join(' ');
@@ -185,7 +233,9 @@ function isWithinEmbeddingTokenLimit(text = '') {
 // This function exposes the event embedding text builder for tests and callers.
 export function buildArticleEventEmbeddingText(articleOrInput = {}) {
   const title = articleOrInput?.title;
+  // Derives the description required while building article event embedding text.
   const description = articleOrInput?.description || '';
+  // Derives the content text required while building article event embedding text.
   const contentText = articleOrInput?.contentText || '';
 
   return clipToEmbeddingTokenLimit(extractEventText({ title, description, contentText }));
@@ -198,10 +248,12 @@ export function isArticleEventEmbeddingTextUsable(text = '') {
 
 // This function sends text to the embedding provider and returns the vector.
 async function embed(text) {
+  // Returns no result when text is not within embedding token limit.
   if (!isWithinEmbeddingTokenLimit(text)) {
     return null;
   }
 
+  // Performs the create operation while performing embed.
   const response = await openai.embeddings.create({
     model: EMBEDDING_MODEL,
     input: text
@@ -225,13 +277,19 @@ function isArticleInstance(record) {
 export async function embedArticle(articleOrInput, options = {}) {
   // `persist=true` means this function owns writing vectors to the Article row.
   const { allowShortEventText = false, persist = true } = options;
+  // Selects the article based on whether article or input is article instance.
   const article = isArticleInstance(articleOrInput) ? articleOrInput : null;
 
+  // Selects the title based on whether article is available.
   const title = article ? article.title : articleOrInput?.title;
+  // Selects the description based on whether article is available.
   const description = article ? article.description : articleOrInput?.description;
+  // Selects the content text based on whether article is available.
   const contentText = article ? article.contentText : articleOrInput?.contentText;
+  // Derives the topic content text required while performing embed article.
   const topicContentText = contentText || description || '';
 
+  // Returns early when article is available and has article vector succeeds.
   if (article && hasArticleVector(article)) {
     // Fast-path: skip provider call when vector already exists.
     return {
@@ -242,18 +300,23 @@ export async function embedArticle(articleOrInput, options = {}) {
     };
   }
 
+  // Returns no result when has api key is unavailable.
   if (!hasApiKey) {
     return null;
   }
 
+  // Builds the article event embedding text while performing embed article.
   const eventText = buildArticleEventEmbeddingText({ title, description, contentText });
+  // Extracts the topic text while performing embed article.
   const topicText = extractTopicText({ contentText: topicContentText });
 
+  // Returns no result when event text is unavailable or allow short event text is unavailable and event text count is below min event length.
   if (!eventText || (!allowShortEventText && eventText.length < MIN_EVENT_LENGTH)) {
     return null;
   }
 
   try {
+    // Selects the values based on whether topic text count reaches min topic length and topic text is within embedding token limit.
     const [eventVector, topicVector] = await Promise.all([
       embed(eventText),
       topicText.length >= MIN_TOPIC_LENGTH
@@ -262,6 +325,7 @@ export async function embedArticle(articleOrInput, options = {}) {
         : Promise.resolve(null)
     ]);
 
+    // Handles the case where article is available and persist is available and event vector is available.
     if (article && persist && eventVector) {
       // Keep persistence logic centralized in this module.
       await article.update({

@@ -20,13 +20,13 @@ export default {
       return {
         offline: 'You are offline',
         unauthorized: 'Session expired'
-      }[this.type] || 'Something went wrong';
+      }[this.type] || 'RSSMonster is unavailable';
     },
     message() {
       return {
         offline: 'Cannot reach the RSSMonster backend.',
         unauthorized: 'Please log in again.'
-      }[this.type] || 'Unexpected error occurred.';
+      }[this.type] || 'Reload the page or try again shortly.';
     },
     retry() {
       return this.type === 'offline';

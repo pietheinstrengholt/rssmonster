@@ -254,6 +254,7 @@
 import { deleteFeed as deleteFeedAPI, rediscoverRss, updateFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
+import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
   name: 'UpdateFeed',
@@ -358,7 +359,7 @@ export default {
         if (err.response?.data) {
           this.rediscoveredRss = err.response.data;
         } else {
-          alert('Could not rediscover RSS feed.');
+          notifyActionError('Could not rediscover this feed. Please try again.', err);
         }
       } finally {
         this.rediscovering = false;
@@ -411,7 +412,8 @@ export default {
         this.$store.data.setSelectedFeedId('%');
         this.$store.data.setShowModal('');
       } catch (error) {
-        console.error('Delete feed failed:', error);
+        console.error(`Error deleting feed ${this.feed.id}:`, error);
+        notifyActionError('Could not delete this feed. Please try again.', error);
       } finally {
         this.deleting = false;
       }
@@ -473,8 +475,8 @@ export default {
 
         this.$store.data.setShowModal('');
       } catch (error) {
-        console.error('Update feed failed:', error);
-        this.$store.data.setShowModal('');
+        console.error(`Error updating feed ${this.feed.id}:`, error);
+        notifyActionError('Could not save this feed. Please try again.', error);
       }
     }
   }

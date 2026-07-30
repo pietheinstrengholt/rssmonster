@@ -10,7 +10,7 @@
       <header class="unread-preferences-header">
         <div class="unread-preferences-heading">
           <div class="unread-preferences-heading-icon" aria-hidden="true">
-            <i class="bi bi-sliders2"></i>
+            <BootstrapIcon icon="sliders2" />
           </div>
 
           <div>
@@ -29,7 +29,7 @@
           aria-label="Close unread preferences"
           @click="closeModal"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          <BootstrapIcon icon="x-lg" aria-hidden="true" />
         </button>
       </header>
 
@@ -53,7 +53,7 @@
 
           <label class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
-              <i class="bi bi-graph-up-arrow"></i>
+              <BootstrapIcon icon="graph-up-arrow" />
             </span>
 
             <span class="unread-preferences-option-content">
@@ -79,7 +79,7 @@
 
           <label class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
-              <i class="bi bi-house-door"></i>
+              <BootstrapIcon icon="house-door" />
             </span>
 
             <span class="unread-preferences-option-content">

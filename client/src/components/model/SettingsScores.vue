@@ -26,11 +26,11 @@
       </div>
 
       <div class="scores-info-row">
-        <i class="bi bi-funnel" aria-hidden="true"></i>
+        <BootstrapIcon icon="funnel" aria-hidden="true" />
         <p><strong>Filtering:</strong> Articles scoring above your threshold are automatically hidden. Set a threshold to 100 to see everything.</p>
       </div>
       <div class="scores-info-row">
-        <i class="bi bi-key" aria-hidden="true"></i>
+        <BootstrapIcon icon="key" aria-hidden="true" />
         <p><strong>Requirements:</strong> Scoring requires an OpenAI API key configured in your backend environment. Without it, articles receive default scores of 70.</p>
       </div>
     </section>
@@ -42,7 +42,7 @@
           <p>Choose the maximum score an article can have before it is hidden from your feed.</p>
         </div>
         <button type="button" class="scores-reset-button" @click="resetToDefaults">
-          <i class="bi bi-arrow-counterclockwise" aria-hidden="true"></i>
+          <BootstrapIcon icon="arrow-counterclockwise" aria-hidden="true" />
           Reset to Defaults
         </button>
       </div>
@@ -180,7 +180,7 @@
   color: var(--settings-info-text);
 }
 
-.scores-info-row i {
+.scores-info-row .bi {
   margin-top: 2px;
 }
 
@@ -354,6 +354,7 @@
 
 <script>
 import { saveSettings } from '../../api/settings';
+import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
   emits: ['close', 'saved', 'forceReload'],
@@ -454,8 +455,8 @@ export default {
         this.$emit('forceReload');
         this.$emit('close');
       } catch (error) {
-          console.error('Error saving settings:', error);
-          alert('Failed to save settings. Please try again.');
+          console.error('Error saving article score settings:', error);
+          notifyActionError('Could not save score settings. Please try again.', error);
       }
     }
   }

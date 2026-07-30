@@ -52,21 +52,26 @@ const loadCategoriesStructure = userId => Category.findAll({
   order: ['categoryOrder', 'name']
 });
 
-const applyGroupingFilter = (baseWhere, grouping) => {
+// Applies the selected grouping while honoring developing-event presentation.
+const applyGroupingFilter = (baseWhere, grouping, includeDevelopingEvents) => {
   if (grouping === 'event') {
+    const selectedEventArticleColumn = includeDevelopingEvents
+      ? 'COALESCE(grouped_event.developingArticleId, grouped_event.representativeArticleId)'
+      : 'grouped_event.representativeArticleId';
+
     baseWhere[Op.or] = [
-      {
-        id: {
-          [Op.in]: Sequelize.literal(
-            `(SELECT representativeArticleId FROM events)`
-          )
-        }
-      },
       {
         eventId: {
           [Op.is]: null
         }
-      }
+      },
+      Sequelize.literal(`EXISTS (
+        SELECT 1
+        FROM events grouped_event
+        WHERE grouped_event.id = articles.eventId
+          AND grouped_event.userId = articles.userId
+          AND articles.id = ${selectedEventArticleColumn}
+      )`)
     ];
   }
 
@@ -97,7 +102,8 @@ const applyGroupingFilter = (baseWhere, grouping) => {
   }
 };
 
-const buildOverviewWhere = async ({ userId, grouping }) => {
+// Builds the user-owned article scope used by all overview counts.
+const buildOverviewWhere = async ({ userId, grouping, includeDevelopingEvents }) => {
   const settings = await Setting.findOne({
     where: { userId },
     attributes: [
@@ -117,7 +123,7 @@ const buildOverviewWhere = async ({ userId, grouping }) => {
     qualityScore: { [Op.gte]: settings?.minQualityScore ?? 0 }
   };
 
-  applyGroupingFilter(baseWhere, grouping);
+  applyGroupingFilter(baseWhere, grouping, includeDevelopingEvents);
 
   return baseWhere;
 };
@@ -274,8 +280,9 @@ export const getOverviewCounts = async (req, res, _next) => {
 
   try {
     const grouping = String(req.body?.grouping || 'none');
+    const includeDevelopingEvents = req.body?.includeDevelopingEvents === true;
     const [baseWhere, categoriesRaw] = await Promise.all([
-      buildOverviewWhere({ userId, grouping }),
+      buildOverviewWhere({ userId, grouping, includeDevelopingEvents }),
       loadCategoriesStructure(userId)
     ]);
 
@@ -307,8 +314,9 @@ export const getOverview = async (req, res, _next) => {
 
   try {
     const grouping = String(req.body?.grouping || 'none');
+    const includeDevelopingEvents = req.body?.includeDevelopingEvents === true;
     const [baseWhere, categoriesRaw] = await Promise.all([
-      buildOverviewWhere({ userId, grouping }),
+      buildOverviewWhere({ userId, grouping, includeDevelopingEvents }),
       loadCategoriesStructure(userId)
     ]);
     const categories = buildCategoriesStructure(categoriesRaw);

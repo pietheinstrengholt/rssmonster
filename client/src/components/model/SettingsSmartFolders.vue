@@ -888,6 +888,7 @@
 import { saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';
 import { setAuthToken } from '../../api/client';
 import { validateSmartFolderQuery } from '../../services/queryValidation';
+import { notifyActionError } from '../../services/actionNotifications.js';
 
 const createEmptySmartFolderConfig = () => ({
     name: '',
@@ -1057,7 +1058,7 @@ export default {
             );
 
             if (exists) {
-                alert('This Smart Folder already exists.');
+                notifyActionError('That Smart Folder is already in your list.');
                 return;
             }
 
@@ -1263,7 +1264,7 @@ export default {
                 this.$emit('close');
             } catch (err) {
                 console.error('Error saving smart folders:', err);
-                alert('Failed to save smart folders. Please try again.');
+                notifyActionError('Could not save Smart Folders. Please try again.', err);
             }
         }
     }

@@ -3,7 +3,6 @@ import App from './App.vue'
 import { createPinia } from 'pinia'
 import axios from 'axios'
 import 'bootstrap/dist/js/bootstrap.bundle.min.js'
-import 'bootstrap-icons/font/bootstrap-icons.css'
 import './assets/styles/theme.css'
 import { applyTheme, getPreferredTheme } from './services/theme.js'
 
@@ -33,9 +32,6 @@ axios.interceptors.response.use(
     return Promise.reject(error);
   }
 );
-
-//progressive web app
-import './services/registerServiceWorker.js'
 
 import { BootstrapIcon } from '@dvuckovic/vue3-bootstrap-icons'
 import { injectBootstrapIcons } from '@dvuckovic/vue3-bootstrap-icons/utils'

@@ -4,6 +4,7 @@ import { computeRecommendedBreakdown } from '../recommendations/recommendedScore
 
 // Normalizes long event names for compact debug-table output.
 function compactEventName(name) {
+  // Returns early when name is unavailable or name is not string.
   if (!name || typeof name !== 'string') return '';
 
   return name
@@ -32,13 +33,16 @@ function resolveEventId(article) {
 
 // Logs recommended-score inputs and output for a scored article list in development mode.
 export function debugRecommendedScores(scored) {
+  // Handles the case where process env node env is development.
   if (process.env.NODE_ENV === 'development') {
     const totalArticles = scored.length;
+    // Keeps the event id entries eligible while performing debug recommended scores.
     const eventIds = scored
       .map(({ article }) => resolveEventId(article))
       .filter(eventId => eventId != null);
     const articlesWithEvents = eventIds.length;
     const distinctEvents = new Set(eventIds).size;
+    // Selects the event coverage pct based on whether total articles is available.
     const eventCoveragePct = totalArticles
       ? Number(((articlesWithEvents / totalArticles) * 100).toFixed(1))
       : 0;
@@ -50,8 +54,10 @@ export function debugRecommendedScores(scored) {
       `events=${distinctEvents} ` +
       `eventCoverage=${eventCoveragePct}%`
     );
+    // Maps source values into the result produced while performing debug recommended scores.
     console.table(
       scored.slice(0, 250).map(({ article, recommended }) => {
+        // Computes the recommended breakdown while performing debug recommended scores.
         const bd = computeRecommendedBreakdown(article);
         return {
           articleId: article.id,

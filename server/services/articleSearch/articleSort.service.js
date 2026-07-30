@@ -5,11 +5,17 @@ import { debugRecommendedScores } from './articleDebug.service.js';
 
 // Applies a numeric comparison operator to a score value.
 const compareValues = (left, operator, right) => {
+  // Selects behavior from the supported operator values.
   switch (operator) {
+    // Applies the =-specific behavior.
     case '=': return left === right;
+    // Applies the >-specific behavior.
     case '>': return left > right;
+    // Applies the <-specific behavior.
     case '<': return left < right;
+    // Applies the >=-specific behavior.
     case '>=': return left >= right;
+    // Applies the <=-specific behavior.
     case '<=': return left <= right;
     default: return true;
   }
@@ -30,6 +36,7 @@ export function sortArticles(articles, { sortRecommended, sortQuality, sortAtten
   // Apply quality score filter if present
   if (qualityFilter) {
     const beforeQualityCount = articles.length;
+    // Filters source values to the entries eligible while performing sort articles.
     articles = articles.filter(article => compareValues(article.quality, qualityFilter.operator, qualityFilter.value));
     console.log(`\x1b[31mApplied quality filter (${qualityFilter.operator}${qualityFilter.value}): ${beforeQualityCount} → ${articles.length} articles\x1b[0m`);
   }
@@ -37,6 +44,7 @@ export function sortArticles(articles, { sortRecommended, sortQuality, sortAtten
   // Apply freshness score filter if present
   if (freshnessFilter) {
     const beforeFreshnessCount = articles.length;
+    // Filters source values to the entries eligible while performing sort articles.
     articles = articles.filter(article => compareValues(article.freshness, freshnessFilter.operator, freshnessFilter.value));
     console.log(`\x1b[31mApplied freshness filter (${freshnessFilter.operator}${freshnessFilter.value}): ${beforeFreshnessCount} → ${articles.length} articles\x1b[0m`);
   }
@@ -44,10 +52,15 @@ export function sortArticles(articles, { sortRecommended, sortQuality, sortAtten
   // Unified sorting logic
   if (sortRecommended) {
     articles = sortByScore(articles, computeRecommended);
+    // Maps source values into the result produced while performing sort articles.
     debugRecommendedScores(articles.map(article => ({ article, recommended: computeRecommended(article) })));
+  // Handles the case where sort quality is available.
   } else if (sortQuality) {
+    // Runs the callback required while performing sort articles.
     articles = sortByScore(articles, article => article.quality);
+  // Handles the case where sort attention is available.
   } else if (sortAttention) {
+    // Runs the callback required while performing sort articles.
     articles = sortByScore(articles, article => article.attentionScore || 0);
   }
 

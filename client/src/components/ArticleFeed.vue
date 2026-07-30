@@ -24,6 +24,7 @@ import {
   markManyClicked,
   markManyAsFavorite
 } from '../api/articles';
+import { notifyActionError } from '../services/actionNotifications.js';
 
 export default {
   components: {
@@ -190,7 +191,8 @@ export default {
             this.observeLoadMoreSentinel();
           });
         } else if (this.container.length > 0) {
-          this.getContent();
+          this.isLoading = false;
+          await this.getContent(requestId);
         } else {
           this.hasLoadedContent = true;
           this.$nextTick(() => this.observeLoadMoreSentinel());
@@ -384,7 +386,7 @@ export default {
     },
 
     // Fetches and appends details for the next page of article IDs.
-    async getContent() {
+    async getContent(requestId = this.activeRequestId) {
       if (!this.container.length || this.isLoading) return;
 
       this.isLoading = true;
@@ -396,6 +398,7 @@ export default {
           ids,
           this.$store.data.getSelectedSort
         );
+        if (requestId !== this.activeRequestId) return;
 
         this.hasLoadedContent = true;
 
@@ -412,9 +415,12 @@ export default {
           this.observeLoadMoreSentinel();
         });
       } catch (error) {
+        if (requestId !== this.activeRequestId) return;
         console.error("Error fetching article details:", error);
       } finally {
-        this.isLoading = false;
+        if (requestId === this.activeRequestId) {
+          this.isLoading = false;
+        }
       }
     },
 
@@ -466,6 +472,7 @@ export default {
         await this.$store.data.fetchOverviewSplit({ forceUpdate: true });
       } catch (error) {
         console.error('Error marking all articles as read:', error);
+        notifyActionError('Could not mark these articles as read. Please try again.', error);
       }
     },
 
@@ -503,7 +510,7 @@ export default {
           updateReadCounts: this.$store.data.currentSelection.status === 'unread'
         });
       } catch (error) {
-        console.log("oops something went wrong", error);
+        console.error(`Error recording seen state for article ${articleId}:`, error);
       }
     },
 
@@ -611,6 +618,7 @@ export default {
         this.pool.add(normalizedArticleId);
       } catch (error) {
         console.error('Error toggling minimal article read status:', error);
+        notifyActionError('Could not update the article status. Please try again.', error);
       } finally {
         this.pendingReadStatusArticleIds.delete(normalizedArticleId);
       }
@@ -651,6 +659,7 @@ export default {
         this.pool.add(pendingArticleId);
       } catch (error) {
         console.error('Error toggling article read status:', error);
+        notifyActionError('Could not update the article status. Please try again.', error);
       } finally {
         this.pendingReadStatusArticleIds.delete(pendingArticleId);
       }
@@ -683,6 +692,7 @@ export default {
         this.updateFavoriteInd({ id, favoriteInd: newFavoriteInd });
       } catch (error) {
         console.error('Error toggling article favorite:', error);
+        notifyActionError('Could not update the favorite. Please try again.', error);
       }
     },
 
@@ -705,6 +715,7 @@ export default {
         await this.markReaderArticlesRead(articles);
       } catch (error) {
         console.error('Error handling reader bulk action:', error);
+        notifyActionError('Could not update the selected articles. Please try again.', error);
       }
     },
 

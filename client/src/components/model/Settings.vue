@@ -1,6 +1,6 @@
 <template>
   <div class="settings-overlay">
-    <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <section class="settings-dialog" role="dialog" aria-modal="true" aria-labelledby="settings-title" @keydown.esc="$emit('close')">
       <header class="settings-header">
         <div>
           <h2 id="settings-title" class="settings-title">Settings</h2>
@@ -8,6 +8,7 @@
         </div>
 
         <button
+          ref="settingsCloseButton"
           class="settings-close-button"
           type="button"
           aria-label="Close settings"
@@ -49,16 +50,38 @@
 <style src="../../assets/css/settings.css"></style>
 
 <script>
+import { defineAsyncComponent } from 'vue';
 import SettingsWelcome from './SettingsWelcome.vue';
-import SettingsSmartFolders from './SettingsSmartFolders.vue';
-import SettingsActions from './SettingsActions.vue';
-import SettingsScores from './SettingsScores.vue';
-import SettingsIslands from './SettingsIslands.vue';
-import SettingsTopics from './SettingsTopics.vue';
-import SettingsCrawlStatistics from './SettingsCrawlStatistics.vue';
-import SettingsFeedsOverview from './SettingsFeedsOverview.vue';
-import SettingsOfficialSources from './SettingsOfficialSources.vue';
-import SettingsManageUsers from './SettingsManageUsers.vue';
+import SettingsSectionError from './SettingsSectionError.vue';
+import SettingsSectionLoading from './SettingsSectionLoading.vue';
+
+// This function creates a lazy settings section with shared loading and error behavior.
+const createAsyncSettingsSection = loader => defineAsyncComponent({
+  loader,
+  loadingComponent: SettingsSectionLoading,
+  errorComponent: SettingsSectionError,
+  delay: 120,
+  timeout: 20000,
+  suspensible: false,
+  onError(error, retry, fail, attempts) {
+    if (attempts <= 2) {
+      retry();
+      return;
+    }
+
+    fail(error);
+  }
+});
+
+const SettingsSmartFolders = createAsyncSettingsSection(() => import('./SettingsSmartFolders.vue'));
+const SettingsActions = createAsyncSettingsSection(() => import('./SettingsActions.vue'));
+const SettingsScores = createAsyncSettingsSection(() => import('./SettingsScores.vue'));
+const SettingsIslands = createAsyncSettingsSection(() => import('./SettingsIslands.vue'));
+const SettingsTopics = createAsyncSettingsSection(() => import('./SettingsTopics.vue'));
+const SettingsCrawlStatistics = createAsyncSettingsSection(() => import('./SettingsCrawlStatistics.vue'));
+const SettingsFeedsOverview = createAsyncSettingsSection(() => import('./SettingsFeedsOverview.vue'));
+const SettingsOfficialSources = createAsyncSettingsSection(() => import('./SettingsOfficialSources.vue'));
+const SettingsManageUsers = createAsyncSettingsSection(() => import('./SettingsManageUsers.vue'));
 
 export default {
   name: 'SettingsModal',
@@ -80,6 +103,7 @@ export default {
   },
   mounted() {
     document.body.classList.add('modal-open');
+    this.$nextTick(() => this.$refs.settingsCloseButton?.focus());
   },
   beforeUnmount() {
     document.body.classList.remove('modal-open');

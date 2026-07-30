@@ -40,6 +40,7 @@
 import { deleteFeed } from '../../api/feeds';
 import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
+import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'DeleteFeed',
     created: function() {
@@ -69,8 +70,8 @@ export default {
                 //close the modal
                 this.$store.data.setShowModal('');
             } catch (error) {
-                console.log("oops something went wrong", error);
-                this.$store.data.setShowModal('');
+                console.error(`Error deleting feed ${this.$store.data.currentSelection.feedId}:`, error);
+                notifyActionError('Could not delete this feed. Please try again.', error);
             }
         }
     }

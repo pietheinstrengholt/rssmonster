@@ -12,14 +12,19 @@ import { eventWindowFromArticles } from './articleEventTime.js';
  * the Event was produced.
  */
 export function buildCanonicalEventProjection(eventArticles = [], fallbackVector = null) {
+  // Derives the ordered articles through sort while building canonical event projection.
   const orderedArticles = eventArticles
     .slice()
     .sort((left, right) => Number(left.id) - Number(right.id));
+  // Keeps the vectors entries eligible while building canonical event projection.
   const vectors = orderedArticles
     .map(article => article.articleVector)
     .filter(vector => Array.isArray(vector) && vector.length);
+  // Derives the event vector required while building canonical event projection.
   const eventVector = averageVector(vectors) ?? fallbackVector ?? null;
+  // Derives the values through event window from articles while building canonical event projection.
   const { eventWindowStartAt, eventWindowEndAt } = eventWindowFromArticles(orderedArticles);
+  // Maps source values into the result produced while building canonical event projection.
   const sourceCount = new Set(
     orderedArticles
       .map(article => article.feedId)

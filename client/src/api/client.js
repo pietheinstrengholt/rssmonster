@@ -13,6 +13,7 @@ export const setAuthToken = (token) => {
     api.defaults.headers.common.Authorization = `Bearer ${token}`;
   } else {
     delete api.defaults.headers.common.Authorization;
+    delete axios.defaults.headers.common.Authorization;
   }
 };
 

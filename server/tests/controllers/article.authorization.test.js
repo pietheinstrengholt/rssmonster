@@ -369,6 +369,46 @@ describe('article ownership authorization', () => {
     expect(multipleSourcesResponse.body.briefingCount).toBe(0);
   });
 
+  // Verifies grouped counts use the unread developing pointer selected by the article list.
+  it('manager overview counts the developing event article when enabled', async () => {
+    const owner = await createUser(uniqueName('manager-developing-owner'));
+    const { article: representativeArticle, feed } = await createArticleFor(owner);
+    await representativeArticle.update({ status: 'read' });
+    const developingArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/developing-overview-article`,
+      title: `${owner.username} developing overview article`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: representativeArticle.id,
+      developingArticleId: developingArticle.id,
+      name: `${owner.username} developing overview event`,
+      articleCount: 2
+    });
+    await Article.update(
+      { eventId: event.id },
+      { where: { id: [representativeArticle.id, developingArticle.id] } }
+    );
+
+    const response = await request(app)
+      .post('/api/manager/overview-counts')
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        grouping: 'event',
+        includeDevelopingEvents: true
+      });
+
+    expect(response.status).toBe(200);
+    expect(response.body.total).toBe(1);
+    expect(response.body.unreadCount).toBe(1);
+    expect(response.body.readCount).toBe(0);
+    expect(response.body.categories[0].feeds[0].unreadCount).toBe(1);
+  });
+
   it('mark-as-seen rejects foreign-user article without mutating it', async () => {
     const owner = await createUser(uniqueName('article-owner'));
     const foreignUser = await createUser(uniqueName('article-marker'));

@@ -3,7 +3,14 @@
     <nav id="mobile-toolbar" class="mobile-toolbar" aria-label="Mobile article toolbar">
       <div class="mobile-toolbar-brand-row">
         <div class="mobile-toolbar-brand">
-          <img class="mobile-toolbar-logo" src="../assets/images/monster.png" alt="" />
+          <img
+            class="mobile-toolbar-logo"
+            src="../assets/images/monster-ui-64.webp"
+            srcset="../assets/images/monster-ui-64.webp 1x, ../assets/images/monster-ui-128.webp 2x"
+            width="42"
+            height="42"
+            alt=""
+          />
           <span>RSSMonster</span>
         </div>
         <div class="mobile-toolbar-actions">

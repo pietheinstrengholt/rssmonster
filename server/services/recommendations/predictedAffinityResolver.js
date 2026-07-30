@@ -7,7 +7,9 @@ const clamp = (value, min = 0, max = 1) =>
 
 // Normalizes feed behavior metrics into the expected 0-1 range.
 const metric = value => {
+  // Coerces the numeric value into the representation required while performing metric.
   const numericValue = Number(value);
+  // Selects the result based on whether numeric value is finite.
   return Number.isFinite(numericValue) ? clamp(numericValue) : 0;
 };
 
@@ -41,14 +43,23 @@ export function resolvePredictedAffinity({ article, feed }) {
     feedAttentionSampleSize = 0
   } = feed;
 
+  // Derives the attention score through metric while resolving predicted affinity.
   const attentionScore = metric(feedAttentionAvg);
+  // Derives the deep read ratio through metric while resolving predicted affinity.
   const deepReadRatio = metric(feedDeepReadRatio);
+  // Derives the skim ratio through metric while resolving predicted affinity.
   const skimRatio = metric(feedSkimRatio);
+  // Derives the ignore ratio through metric while resolving predicted affinity.
   const ignoreRatio = metric(feedIgnoreRatio);
+  // Derives the click ratio through metric while resolving predicted affinity.
   const clickRatio = metric(feedClickRatio);
+  // Derives the click avg signal through clamp while resolving predicted affinity.
   const clickAvgSignal = clamp(Math.log2(Math.max(Number(feedClickAvg) || 0, 0) + 1) / 2);
+  // Derives the click signal through clamp while resolving predicted affinity.
   const clickSignal = clamp(clickRatio * 0.7 + clickAvgSignal * 0.3);
+  // Derives the sample size through max while resolving predicted affinity.
   const sampleSize = Math.max(Number(feedAttentionSampleSize) || 0, 0);
+  // Derives the engagement score through clamp while resolving predicted affinity.
   const engagementScore = clamp(
     attentionScore * 0.5 +
     deepReadRatio * 0.2 +
@@ -102,6 +113,7 @@ export function resolvePredictedAffinity({ article, feed }) {
       deepReadRatio * 0.5 +
       Math.min(sampleSize / 50, 0.15)
     );
+  // Handles the case where engagement score reaches 0.27 or attention score reaches 0.3 or click signal reaches 0.18.
   } else if (
     engagementScore >= 0.27 ||
     attentionScore >= 0.30 ||
@@ -115,6 +127,7 @@ export function resolvePredictedAffinity({ article, feed }) {
       clickSignal * 0.25 +
       Math.min(sampleSize / 100, 0.15)
     );
+  // Handles the case where attention score reaches 0.18 or skim ratio reaches 0.6 or click signal reaches 0.08.
   } else if (
     attentionScore >= 0.18 ||
     skimRatio >= 0.60 ||

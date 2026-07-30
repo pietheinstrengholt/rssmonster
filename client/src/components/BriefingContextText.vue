@@ -17,7 +17,7 @@
       class="briefing-tune-action"
       @click="$store.data.setShowModal(modalName)"
     >
-      <i class="bi bi-sliders2" aria-hidden="true"></i>
+      <BootstrapIcon icon="sliders2" aria-hidden="true" />
       <span>{{ actionLabel }}</span>
     </button>
   </aside>

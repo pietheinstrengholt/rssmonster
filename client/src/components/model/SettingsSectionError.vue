@@ -1,0 +1,48 @@
+<template>
+  <section class="settings-section-state settings-section-state--error" role="alert">
+    <BootstrapIcon icon="exclamation-triangle" aria-hidden="true" />
+    <div>
+      <h3>Could not load this section</h3>
+      <p>Choose another section and try again. If the problem continues, reopen Settings.</p>
+    </div>
+  </section>
+</template>
+
+<style scoped>
+.settings-section-state {
+  align-items: flex-start;
+  background: var(--bg-muted);
+  border: 1px solid var(--border-subtle);
+  border-radius: 10px;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 12px;
+  margin: 20px;
+  padding: 18px;
+}
+
+.settings-section-state .bi {
+  color: var(--text-danger);
+  flex: 0 0 auto;
+  font-size: 20px;
+  margin-top: 2px;
+}
+
+.settings-section-state h3 {
+  color: var(--text-primary);
+  font-size: 15px;
+  margin: 0 0 4px;
+}
+
+.settings-section-state p {
+  margin: 0;
+}
+
+@media (prefers-color-scheme: dark) {
+  .settings-section-state {
+    background: var(--bg-muted);
+    border-color: var(--border-color);
+    color: var(--text-secondary);
+  }
+}
+</style>

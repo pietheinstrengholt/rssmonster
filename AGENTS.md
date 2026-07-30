@@ -163,8 +163,19 @@ Historical semantic processing requires an explicit rebuild workflow.
   - `PascalCase`: Vue components
   - `UPPER_SNAKE_CASE`: constants
 - Keep functions cohesive and readable; prefer early returns.
-- Comment each function with a brief sentence what this is about. For example // This function handles user login. Complex logic should have inline comments.
 - Follow lint rules rather than personal formatting preferences.
+
+### 7.1 Commenting and Documentation
+
+- Add a concise `//` comment immediately above every function declaration, function expression, arrow-function declaration, exported function, and class method.
+- For inline callbacks that cannot receive a preceding comment without restructuring code, comment the containing declaration or operation instead.
+- Explain the purpose, business meaning, decision, or effect of the code rather than translating its syntax.
+- Mention important semantics such as user scoping, ownership, filtering, fallbacks, thresholds, processing state, and error handling where applicable.
+- Keep comments concise, preferably one sentence in sentence case that starts with a capital letter and ends with a period.
+- Do not add comments above imports, simple object properties, obvious assignments, closing braces, or return statements unless they clarify non-obvious behavior.
+- Avoid duplicate, stale, speculative, or syntax-only comments; describe only behavior that can be verified from the code and its callers.
+- Do not restructure or reformat executable code solely to make room for a comment.
+- Add a concise business-meaning comment immediately above every explicit Sequelize model attribute.
 
 ---
 

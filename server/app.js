@@ -29,6 +29,7 @@ import {
   mcpRateLimiter
 } from './middleware/rateLimit.js';
 import { redactSensitiveQueryValues } from './utils/requestLogging.js';
+import { getTrustProxySetting } from './utils/trustProxy.js';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
@@ -68,6 +69,8 @@ import errorController from "./controllers/error.js";
 // Express app
 // --------------------
 const app = express();
+
+app.set('trust proxy', getTrustProxySetting());
 
 // This function removes server-only article source fields from every JSON response.
 const omitServerOnlyJsonFields = (key, value) =>

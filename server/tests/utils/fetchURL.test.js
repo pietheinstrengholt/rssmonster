@@ -23,22 +23,29 @@ describe('fetchURL', () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
     const response = { ok: true, url: 'https://example.com/feed' };
-    vi.spyOn(global, 'fetch')
+    const fetchMock = vi
+      .fn()
       .mockRejectedValueOnce(new TypeError('fetch failed'))
       .mockResolvedValueOnce(response);
 
-    const resultPromise = fetchURL('https://example.com/feed', 1, 5000);
+    const resultPromise = fetchURL(
+      'https://example.com/feed',
+      1,
+      5000,
+      fetchMock
+    );
     await vi.advanceTimersByTimeAsync(500);
 
     await expect(resultPromise).resolves.toBe(response);
-    expect(fetch).toHaveBeenCalledTimes(2);
-    expect(fetch.mock.calls[1][1].signal).toBeInstanceOf(AbortSignal);
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(fetchMock.mock.calls[1][1].signal).toBeInstanceOf(AbortSignal);
   });
 
   it('does not reset the timeout budget after a timed-out attempt', async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date('2026-01-01T00:00:00.000Z'));
-    vi.spyOn(global, 'fetch').mockImplementation(async () => {
+    // Simulates an attempt that consumes the complete timeout budget.
+    const fetchMock = vi.fn().mockImplementation(async () => {
       vi.setSystemTime(Date.now() + 5000);
       const error = new Error('The operation timed out');
       error.name = 'TimeoutError';
@@ -46,9 +53,9 @@ describe('fetchURL', () => {
     });
 
     await expect(
-      fetchURL('https://example.com/feed', 1, 5000)
+      fetchURL('https://example.com/feed', 1, 5000, fetchMock)
     ).rejects.toMatchObject({ name: 'TimeoutError' });
-    expect(fetch).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(1);
   });
 
   it('keeps the timeout active while the response body is read', async () => {
@@ -77,16 +84,16 @@ describe('fetchURL', () => {
   });
 
   it('blocks literal loopback and IPv4-mapped IPv6 destinations', async () => {
-    const fetchSpy = vi.spyOn(global, 'fetch');
+    const fetchMock = vi.fn();
 
     await expect(
-      fetchURL('http://127.0.0.1/internal', 0, 1000)
+      fetchURL('http://127.0.0.1/internal', 0, 1000, fetchMock)
     ).rejects.toMatchObject({ code: 'SSRF_BLOCKED' });
     await expect(
-      fetchURL('http://[::ffff:127.0.0.1]/internal', 0, 1000)
+      fetchURL('http://[::ffff:127.0.0.1]/internal', 0, 1000, fetchMock)
     ).rejects.toMatchObject({ code: 'SSRF_BLOCKED' });
 
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it('blocks hostnames that resolve to non-public addresses', async () => {
@@ -121,15 +128,20 @@ describe('fetchURL', () => {
   });
 
   it('rejects non-HTTP schemes and URL credentials before fetching', async () => {
-    const fetchSpy = vi.spyOn(global, 'fetch');
+    const fetchMock = vi.fn();
 
     await expect(
-      fetchURL('file:///etc/passwd', 0, 1000)
+      fetchURL('file:///etc/passwd', 0, 1000, fetchMock)
     ).rejects.toMatchObject({ code: 'SSRF_BLOCKED' });
     await expect(
-      fetchURL('https://user:password@example.com/feed', 0, 1000)
+      fetchURL(
+        'https://user:password@example.com/feed',
+        0,
+        1000,
+        fetchMock
+      )
     ).rejects.toMatchObject({ code: 'SSRF_BLOCKED' });
 
-    expect(fetchSpy).not.toHaveBeenCalled();
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 });

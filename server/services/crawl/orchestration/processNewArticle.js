@@ -18,7 +18,9 @@ import {
 } from '../runtime/hotlinkService.js';
 import processArticleRevision from './processArticleRevision.js';
 
+// Defines the rate limit delay ms enforced by this service.
 const RATE_LIMIT_DELAY_MS = 3000;
+// Builds the empty article result assembled for this service.
 const emptyArticleResult = {
   newArticles: 0,
   updatedArticles: 0,
@@ -35,18 +37,24 @@ const processNewArticle = async ({
   hotlinkBatcher
 }) => {
   const { articleData, actionArticle, hotlinkUrls, identityInput } = candidate;
+  // Builds the article identity while processing new article.
   const articleIdentity = buildArticleIdentity(identityInput);
 
+  // Derives the duplicate match through match article duplicate while processing new article.
   const duplicateMatch = await matchArticleDuplicate(articleIdentity, duplicateCache);
+  // Returns early when duplicate match is available.
   if (duplicateMatch) return emptyArticleResult;
 
   // Retrieve actions before enrichment so discard matches can take the persistence-only path.
   const actions = await resolveArticleActions(feed, preloadedActions);
+  // Derives the action result through apply actions while processing new article.
   const actionResult = applyActions(actions, actionArticle);
 
   let analysis = null;
   let hotlinkCount = 0;
+  // Handles the case where action result should discard is unavailable.
   if (!actionResult.shouldDiscard) {
+    // Selects the result based on whether apply ai analysis is value.
     analysis = feed?.applyAiAnalysis === false
       ? createDefaultArticleAnalysis()
       : await analyzeArticleContent({
@@ -66,9 +74,11 @@ const processNewArticle = async ({
     );
   }
 
+  // Selects the official source based on whether action result should discard is available.
   const officialSource = actionResult.shouldDiscard
     ? createEmptyOfficialSource()
     : await resolveOfficialSourceForArticle(feed.userId, articleData.link);
+  // Builds the persistence data assembled while processing new article.
   const persistenceData = {
     ...articleData,
     ...officialSource,
@@ -86,9 +96,11 @@ const processNewArticle = async ({
   );
   const savedArticle = saveResult.article;
 
+  // Handles the case where save result created is unavailable.
   if (!saveResult.created) {
     // Classify the exact winning row so a URL race cannot target a different article.
     const concurrentUpdate = await updateArticle(feed, articleData, { article: savedArticle });
+    // Handles the case where concurrent update changed is unavailable.
     if (!concurrentUpdate.changed) {
       duplicateCache?.add(savedArticle);
       return emptyArticleResult;
@@ -108,6 +120,7 @@ const processNewArticle = async ({
   }
 
   duplicateCache?.add(savedArticle);
+  // Handles the case where action result should discard is unavailable.
   if (!actionResult.shouldDiscard) {
     // Hotlinks are persisted only after the article transaction commits.
     await persistAcceptedHotlinks(
@@ -118,6 +131,7 @@ const processNewArticle = async ({
     );
   }
 
+  // Selects the result based on whether action result should discard is available.
   return {
     newArticles: actionResult.shouldDiscard ? 0 : 1,
     filteredArticles: actionResult.shouldDiscard ? 1 : 0,

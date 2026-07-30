@@ -11,7 +11,9 @@ import {
 
 // This function formats topic drift similarity values for concise logs.
 function formatTopicMetric(value, digits = 3) {
+  // Coerces the numeric into the representation required while performing format topic metric.
   const numeric = Number(value);
+  // Selects the result based on whether numeric is finite.
   return Number.isFinite(numeric) ? numeric.toFixed(digits) : 'n/a';
 }
 
@@ -35,15 +37,20 @@ export async function updateMatchedTopics({
   now,
   topicsCache
 }) {
+  // Transforms source values into the updates required while updating matched topics.
   const updates = rankedCandidates.map(candidate => {
+    // Derives the can drift through should drift topic vector while updating matched topics.
     const canDrift = shouldDriftTopicVector(candidate.sim, assignmentContext);
 
+    // Handles the case where primary candidate is available and candidate topic id is primary candidate topic id and can drift is available.
     if (primaryCandidate && candidate.topic.id === primaryCandidate.topic.id && canDrift) {
+      // Derives the blended topic vector through blend topic vector while updating matched topics.
       const blendedTopicVector = blendTopicVector(
         candidate.topic.topicVector,
         semanticVector
       );
 
+      // Derives the anchored vector through blend topic vector with alpha while updating matched topics.
       const anchoredVector = blendTopicVectorWithAlpha(
         candidate.topic.topicVector,
         blendedTopicVector,
@@ -65,9 +72,12 @@ export async function updateMatchedTopics({
     return candidate.topic.update({ lastActivityAt: now });
   });
 
+  // Derives the updated topics through all while updating matched topics.
   const updatedTopics = await Promise.all(updates);
 
+  // Handles the case where topics cache is available.
   if (topicsCache) {
+    // Processes each updated topics entry in turn.
     for (const updatedTopic of updatedTopics) {
       upsertTopicInCache(topicsCache, updatedTopic);
     }
@@ -84,7 +94,9 @@ export async function updateIdentityTopic({
   now,
   topicsCache
 }) {
+  // Derives the can drift through should drift topic vector while updating identity topic.
   const canDrift = shouldDriftTopicVector(bestTopicSim, assignmentContext);
+  // Handles the case where can drift is available.
   if (canDrift) {
     logTopicDrift({
       topicId: bestTopic.id,
@@ -93,6 +105,7 @@ export async function updateIdentityTopic({
     });
   }
 
+  // Selects the updated topic based on whether can drift is available.
   const updatedTopic = canDrift
     ? await bestTopic.update({
       topicVector: blendTopicVectorWithAlpha(
@@ -120,6 +133,7 @@ export async function updateTopicByKey({
   now,
   topicsCache
 }) {
+  // Derives the updated topic through update while updating topic by key.
   const updatedTopic = await topic.update({ lastActivityAt: now });
   upsertTopicInCache(topicsCache, updatedTopic);
 

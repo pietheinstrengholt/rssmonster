@@ -3,6 +3,7 @@ import { Op } from 'sequelize';
 import hotlink from '../../../controllers/hotlink.js';
 import db from '../../../models/index.js';
 
+// Provides the shared dependencies used by this service.
 const { Hotlink } = db;
 
 // This function returns how many other-feed articles link to one normalized article URL.
@@ -27,9 +28,11 @@ export const persistAcceptedHotlinks = async (
   sourceArticleId,
   hotlinkBatcher
 ) => {
+  // Returns early when source article id is unavailable.
   if (!sourceArticleId) return;
 
   try {
+    // Handles the case where hotlink batcher is available.
     if (hotlinkBatcher) {
       hotlinkBatcher.add(urls, sourceArticleId);
       return;

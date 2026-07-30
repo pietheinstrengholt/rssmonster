@@ -4,6 +4,7 @@ import db from '../../models/index.js';
 import { Op } from 'sequelize';
 import { applyBriefingEligibility } from './briefingEligibility.service.js';
 
+// Provides the shared dependencies used by this service.
 const { Article, Event, Feed, Tag } = db;
 
 // Converts search-language sort values to the SQL directions Sequelize/MySQL expect.
@@ -49,42 +50,55 @@ export const buildArticleSearchQuery = ({
   authorFilter,
   languageFilter
 }) => {
+  // Collects the query attributes while building article search query.
   const queryAttributes = ['id', 'feedId'];
 
+  // Derives the needs quality required while building article search query.
   const needsQuality = qualityFilter || sortQuality;
+  // Derives the needs freshness required while building article search query.
   const needsFreshness = freshnessFilter || sortRecommended;
   const needsAttention = sortAttention;
   const needsInterestScore = sortRecommended;
+  // Derives the needs published required while building article search query.
   const needsPublished = !smartFolderSearch || needsFreshness || sortTrust;
 
+  // Handles the case where needs quality is available.
   if (needsQuality) {
     queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
   }
 
+  // Handles the case where needs freshness is available.
   if (needsFreshness) {
+    // Handles the case where query attributes does not contain published at.
     if (!queryAttributes.includes('publishedAt')) {
       queryAttributes.push('publishedAt');
     }
+    // Handles the case where query attributes does not contain quality score.
     if (!queryAttributes.includes('qualityScore')) {
       queryAttributes.push('advertisementScore', 'sentimentScore', 'qualityScore');
     }
+  // Handles the case where needs published is available and query attributes does not contain published at.
   } else if (needsPublished && !queryAttributes.includes('publishedAt')) {
     queryAttributes.push('publishedAt');
   }
 
+  // Handles the case where needs attention is available.
   if (needsAttention) {
     queryAttributes.push('attentionBucket', 'clickedAmount');
   }
 
+  // Handles the case where needs interest score is available.
   if (needsInterestScore) {
     queryAttributes.push('interestScore');
   }
 
+  // Builds the article query assembled while building article search query.
   const articleQuery = {
     attributes: queryAttributes,
     where: baseWhere
   };
 
+  // Handles the case where sort recommended is available or needs quality is available or sort trust is available.
   if (sortRecommended || needsQuality || sortTrust) {
     articleQuery.include = [
       {
@@ -94,6 +108,7 @@ export const buildArticleSearchQuery = ({
       }
     ];
 
+    // Handles the case where sort recommended is available.
     if (sortRecommended) {
       articleQuery.include.unshift({
         model: Event,
@@ -109,13 +124,16 @@ export const buildArticleSearchQuery = ({
     }
   }
 
+  // Handles the case where sort trust is available.
   if (sortTrust) {
     articleQuery.order = [
       [Feed, 'feedTrust', 'DESC'],
       ['publishedAt', 'DESC'],
       ['id', 'DESC']
     ];
+  // Handles the case where smart folder search is unavailable and sort recommended is unavailable and sort quality is unavailable and sort attention is unavailable.
   } else if (!smartFolderSearch && !sortRecommended && !sortQuality && !sortAttention) {
+    // Derives the sql sort direction through to sql sort direction while building article search query.
     const sqlSortDirection = toSqlSortDirection(workingSort);
     articleQuery.order = [
       ['publishedAt', sqlSortDirection],
@@ -123,8 +141,10 @@ export const buildArticleSearchQuery = ({
     ];
   }
 
+  // Handles the case where first seen age filter is available.
   if (firstSeenAgeFilter) {
     const { value, unit } = firstSeenAgeFilter;
+    // Selects the interval unit based on whether unit is h.
     const intervalUnit = unit === 'h' ? 'HOUR' : 'DAY';
     appendAndCondition(articleQuery.where, {
       [Op.or]: [
@@ -134,63 +154,88 @@ export const buildArticleSearchQuery = ({
     });
   }
 
+  // Handles the case where author filter is available.
   if (authorFilter) {
     articleQuery.where.author = { [Op.like]: `%${authorFilter}%` };
   }
 
+  // Handles the case where language filter is available.
   if (languageFilter) {
     articleQuery.where.language = languageFilter;
   }
 
+  // Handles the case where star filter is not value.
   if (starFilter !== null) {
+    // Selects the result based on whether star filter is available.
     articleQuery.where.favoriteInd = starFilter ? 1 : 0;
   }
 
+  // Handles the case where unread filter is not value.
   if (unreadFilter !== null) {
+    // Selects the result based on whether unread filter is available.
     articleQuery.where.status = unreadFilter ? 'unread' : 'read';
   }
 
+  // Handles the case where read filter is not value.
   if (readFilter !== null) {
+    // Selects the result based on whether read filter is available.
     articleQuery.where.status = readFilter ? 'read' : 'unread';
   }
 
+  // Handles the case where clicked filter is not value.
   if (clickedFilter !== null) {
+    // Selects the result based on whether clicked filter is available.
     articleQuery.where.clickedAmount = clickedFilter ? { [Op.gt]: 0 } : 0;
   }
 
+  // Handles the case where seen filter is not value.
   if (seenFilter !== null) {
+    // Selects the result based on whether seen filter is available.
     articleQuery.where.firstSeen = seenFilter ? { [Op.not]: null } : { [Op.is]: null };
   }
 
+  // Handles the case where hot filter is not value.
   if (hotFilter !== null) {
+    // Selects the result based on whether hot filter is available.
     articleQuery.where.hotInd = hotFilter ? 1 : 0;
+    // Handles the case where hot filter is available.
     if (hotFilter) {
       delete articleQuery.where.feedId;
     }
   }
 
+  // Handles the case where star filter is value and unread filter is value and read filter is value and clicked filter is value and hot filter is value.
   if (starFilter === null && unreadFilter === null && readFilter === null && clickedFilter === null && hotFilter === null) {
+    // Selects the effective status based on whether status is briefing or has search intent is available and value does not contain status.
     const effectiveStatus = status === 'briefing' || (hasSearchIntent && !['favorite', 'star', 'hot', 'clicked'].includes(status))
       ? '%'
       : status;
 
+    // Handles the case where effective status is favorite or effective status is star.
     if (effectiveStatus === 'favorite' || effectiveStatus === 'star') {
       articleQuery.where.favoriteInd = 1;
+    // Handles the case where effective status is hot.
     } else if (effectiveStatus === 'hot') {
       delete articleQuery.where.feedId;
       articleQuery.where.hotInd = 1;
+    // Handles the case where effective status is clicked.
     } else if (effectiveStatus === 'clicked') {
       articleQuery.where.clickedAmount = { [Op.gt]: 0 };
+    // Handles the case where effective status is not %.
     } else if (effectiveStatus !== '%') {
       articleQuery.where.status = effectiveStatus;
     }
   }
 
+  // Handles the case where event is not value.
   if (event !== null) {
+    // Selects the result based on whether event is available.
     articleQuery.where.eventId = event ? { [Op.not]: null } : { [Op.is]: null };
   }
 
+  // Handles the case where island filter is not value.
   if (islandFilter !== null) {
+    // Selects the island link predicate based on whether island filter is available.
     const islandLinkPredicate = islandFilter ? 'EXISTS' : 'NOT EXISTS';
     appendAndCondition(articleQuery.where, Article.sequelize.literal(`
       ${islandLinkPredicate} (
@@ -213,6 +258,7 @@ export const buildArticleSearchQuery = ({
     `));
   }
 
+  // Handles the case where briefing filter is not value.
   if (briefingFilter !== null) {
     applyBriefingEligibility(articleQuery.where, briefingFilter, {
       minDistinctSources: briefingMinDistinctSources,
@@ -221,7 +267,9 @@ export const buildArticleSearchQuery = ({
     });
   }
 
+  // Handles the case where event count filter is finite.
   if (Number.isFinite(eventCountFilter)) {
+    // Derives the count literal through literal while building article search query.
     const countLiteral = Article.sequelize.literal(
       '(SELECT e.articleCount FROM events e WHERE e.id = articles.eventId)'
     );
@@ -230,7 +278,9 @@ export const buildArticleSearchQuery = ({
     );
   }
 
+  // Handles the case where event is value and grouping is event.
   if (event === null && grouping === 'event') {
+    // Selects the selected event article column based on whether include developing events is available.
     const selectedEventArticleColumn = includeDevelopingEvents
       ? 'COALESCE(grouped_event.developingArticleId, grouped_event.representativeArticleId)'
       : 'grouped_event.representativeArticleId';
@@ -255,6 +305,7 @@ export const buildArticleSearchQuery = ({
     });
   }
 
+  // Handles the case where event is value and grouping is topic.
   if (event === null && grouping === 'topic') {
     appendAndCondition(articleQuery.where, {
       id: {

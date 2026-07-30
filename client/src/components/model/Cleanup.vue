@@ -40,6 +40,7 @@
 <script>
 import { cleanupOldArticles } from '../../api/cleanup';
 import { setAuthToken } from '../../api/client';
+import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'Cleanup',
     created: function() {
@@ -54,8 +55,8 @@ export default {
                 this.$store.data.setSelectedFeedId("%");
                 location.reload();
             } catch (error) {
-                console.log("oops something went wrong", error);
-                this.$store.data.setShowModal('');
+                console.error('Error cleaning up old articles:', error);
+                notifyActionError('Could not clean up old articles. Please try again.', error);
             }
         }
     }

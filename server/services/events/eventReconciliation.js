@@ -9,25 +9,33 @@ import { canonicalArticleWhere } from '../duplicates/articleDuplicates.js';
 import { selectDevelopingArticleId } from './developingArticlePointer.js';
 import { buildCanonicalEventProjection } from './eventProjection.js';
 
+// Provides the shared dependencies used by this service.
 const { Article, Event } = db;
 
 // This function maps event age and size into the lifecycle status used by event queries.
 export function resolveEventStatus(articleCount, lastSeenAt) {
+  // Derives the now through now while resolving event status.
   const now = Date.now();
+  // Selects the last seen ts based on whether last seen at is available.
   const lastSeenTs = lastSeenAt ? new Date(lastSeenAt).getTime() : null;
 
+  // Returns early when last seen ts is not finite.
   if (!Number.isFinite(lastSeenTs)) return 'archived';
 
+  // Derives the age hours through max while resolving event status.
   const ageHours = Math.max(0, (now - lastSeenTs) / (1000 * 60 * 60));
 
+  // Returns early when age hours reaches event lifecycle cooling hours.
   if (ageHours >= EVENT_LIFECYCLE.coolingHours) {
     return 'archived';
   }
 
+  // Returns early when age hours exceeds event lifecycle active fresh hours.
   if (ageHours > EVENT_LIFECYCLE.activeFreshHours) {
     return 'cooling';
   }
 
+  // Returns early when article count is at most event lifecycle emerging article max.
   if (articleCount <= EVENT_LIFECYCLE.emergingArticleMax) {
     return 'emerging';
   }
@@ -40,11 +48,13 @@ export function computeEventStrength({
   articleCount,
   topicEventCount
 }) {
+  // Derives the redundancy score through min while computing event strength.
   const redundancyScore = Math.min(
     articleCount / EVENT_STRENGTH_CONFIG.maxArticleRedundancyCount,
     1
   );
 
+  // Derives the topic score through min while computing event strength.
   const topicScore = Math.min(
     Math.log2((topicEventCount ?? 1) + 1) / EVENT_STRENGTH_CONFIG.maxTopicEventLogBase,
     1
@@ -61,7 +71,9 @@ export function computeEventStrength({
 
 // This function recomputes event metadata while preserving the stable representative and valid developing pointer.
 export async function reconcileTouchedEvents(userId, touchedEventIds, transaction = null) {
+  // Returns early when transaction is unavailable.
   if (!transaction) {
+    // Runs the callback required while performing reconcile touched events.
     return db.sequelize.transaction(managedTransaction => reconcileTouchedEvents(
       userId,
       touchedEventIds,
@@ -69,9 +81,11 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     ));
   }
 
+  // Derives the touched id through sort while performing reconcile touched events.
   const touchedIds = [...new Set([...touchedEventIds].map(Number).filter(Number.isInteger))]
     .sort((left, right) => left - right);
 
+  // Loads the events needed while performing reconcile touched events.
   const events = await Event.findAll({
     where: {
       id: { [Op.in]: touchedIds },
@@ -82,6 +96,7 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     lock: transaction.LOCK.UPDATE
   });
 
+  // Loads the all event articles needed while performing reconcile touched events.
   const allEventArticles = await Article.findAll({
     where: {
       eventId: { [Op.in]: touchedIds },
@@ -108,28 +123,38 @@ export async function reconcileTouchedEvents(userId, touchedEventIds, transactio
     lock: transaction.LOCK.UPDATE
   });
 
+  // Builds the articles by event id assembled while performing reconcile touched events.
   const articlesByEventId = {};
+  // Processes each all event articles entry in turn.
   for (const article of allEventArticles) {
+    // Handles the case where articles by event id event id is unavailable.
     if (!articlesByEventId[article.eventId]) {
       articlesByEventId[article.eventId] = [];
     }
     articlesByEventId[article.eventId].push(article);
   }
 
+  // Processes each events entry in turn.
   for (const event of events) {
+    // Derives the event articles required while performing reconcile touched events.
     const eventArticles = articlesByEventId[event.id] || [];
 
+    // Handles the case where event articles is empty.
     if (!eventArticles.length) {
       await event.destroy({ transaction });
       continue;
     }
 
+    // Builds the canonical event projection while performing reconcile touched events.
     const projection = buildCanonicalEventProjection(eventArticles, event.eventVector);
+    // Resolves the event status while performing reconcile touched events.
     const status = resolveEventStatus(projection.articleCount, projection.eventWindowEndAt);
+    // Computes the event strength while performing reconcile touched events.
     const strength = computeEventStrength({
       articleCount: projection.articleCount,
       topicEventCount: 1
     });
+    // Selects the developing article id while performing reconcile touched events.
     const developingArticleId = selectDevelopingArticleId(event, eventArticles);
 
     await event.update({

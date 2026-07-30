@@ -18,7 +18,7 @@
       <span v-else class="article-media-placeholder" aria-hidden="true"></span>
       <span class="article-media-badge">Video</span>
       <span class="article-media-play" aria-hidden="true">
-        <i class="bi bi-play-fill"></i>
+        <BootstrapIcon icon="play-fill" />
       </span>
       <span v-if="metadata" class="article-media-metadata">{{ metadata }}</span>
     </a>
@@ -175,7 +175,7 @@ export default {
   transform: translate(-50%, -50%);
 }
 
-.article-media-play i {
+.article-media-play .bi {
   margin-left: 4px;
   font-size: 34px;
   line-height: 1;
@@ -192,7 +192,7 @@ export default {
     height: 54px;
   }
 
-  .article-media-play i {
+  .article-media-play .bi {
     font-size: 30px;
   }
 }

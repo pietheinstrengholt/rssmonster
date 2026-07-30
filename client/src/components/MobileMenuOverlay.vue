@@ -91,7 +91,17 @@
           <div class="options-section-header">
             <h3 id="notification-options-heading">Notifications</h3>
           </div>
-          <button @click="subscribeNotifications()" type="button" class="options-action-button options-action-button--neutral">Subscribe to notifications</button>
+          <button
+            type="button"
+            class="options-action-button options-action-button--neutral"
+            :disabled="notificationButtonDisabled"
+            @click="subscribeNotifications"
+          >
+            {{ notificationButtonLabel }}
+          </button>
+          <p v-if="notificationMessage" class="options-status-message" aria-live="polite">
+            {{ notificationMessage }}
+          </p>
         </section>
 
         <section v-if="$store.data.currentSelection.AIEnabled" class="options-section options-section--secondary" aria-labelledby="chat-options-heading">
@@ -380,6 +390,18 @@
   filter: none;
 }
 
+.options-action-button:disabled {
+  cursor: default;
+  opacity: 0.7;
+}
+
+.options-status-message {
+  color: var(--options-muted-text, var(--text-muted));
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 8px 4px 0;
+}
+
 .options-view-card:hover,
 .options-view-card:focus-visible {
   filter: brightness(0.98);
@@ -456,11 +478,36 @@
 <script>
 export default {
   props: ["mobile"],
+  data() {
+    return {
+      notificationMessage: '',
+      notificationPermission: 'unsupported',
+      notificationRequestPending: false
+    };
+  },
+  computed: {
+    notificationButtonDisabled() {
+      return this.notificationRequestPending ||
+        this.notificationPermission === 'granted' ||
+        this.notificationPermission === 'denied' ||
+        this.notificationPermission === 'unsupported';
+    },
+    notificationButtonLabel() {
+      if (this.notificationRequestPending) return 'Requesting permission…';
+      if (this.notificationPermission === 'granted') return 'Notifications enabled';
+      if (this.notificationPermission === 'denied') return 'Notifications blocked in browser';
+      if (this.notificationPermission === 'unsupported') return 'Notifications unavailable';
+      return 'Enable notifications';
+    }
+  },
   watch: {
     mobile: {
       immediate: true,
       handler(isOpen) {
         document.body.classList.toggle('mobile-options-open', isOpen);
+        if (isOpen) {
+          this.syncNotificationPermission();
+        }
       }
     }
   },
@@ -478,13 +525,37 @@ export default {
     refreshFeeds() {
       this.$emit('refresh');
     },
-    subscribeNotifications() {
-      //register service worker
-      Notification.requestPermission().then(function(permission) {
-        if (permission !== 'granted') {
-          throw new Error('Permission not granted for Notification')
+    // This function syncs local UI state with the browser's notification permission.
+    syncNotificationPermission() {
+      this.notificationPermission = 'Notification' in window
+        ? Notification.permission
+        : 'unsupported';
+      this.notificationMessage = '';
+    },
+    // This function requests notification permission after the user presses the button.
+    async subscribeNotifications() {
+      if (!('Notification' in window) || Notification.permission !== 'default') {
+        this.syncNotificationPermission();
+        return;
+      }
+
+      this.notificationRequestPending = true;
+      this.notificationMessage = '';
+
+      try {
+        await Notification.requestPermission();
+        this.syncNotificationPermission();
+
+        if (this.notificationPermission === 'denied') {
+          this.notificationMessage = 'Enable notifications in your browser settings to receive alerts.';
         }
-      });
+      } catch (error) {
+        console.error('Error requesting browser notification permission:', error);
+        this.syncNotificationPermission();
+        this.notificationMessage = 'Could not request notification permission. Please try again.';
+      } finally {
+        this.notificationRequestPending = false;
+      }
     },
     chatAssistant() {
       this.$store.data.chatAssistantOpen = !this.$store.data.chatAssistantOpen;

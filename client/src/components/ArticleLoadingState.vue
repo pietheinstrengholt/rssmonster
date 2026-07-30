@@ -7,7 +7,13 @@
   >
     <div class="article-loading-state__header">
       <div class="article-loading-state__mascot" aria-hidden="true">
-        <img src="../assets/images/monster.png" alt="">
+        <img
+          src="../assets/images/monster-ui-64.webp"
+          srcset="../assets/images/monster-ui-64.webp 1x, ../assets/images/monster-ui-128.webp 2x"
+          width="52"
+          height="52"
+          alt=""
+        >
       </div>
 
       <h2 class="article-loading-state__title">

@@ -118,6 +118,7 @@
 import { updateCategory } from '../../api/categories';
 import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';
+import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'DeleteCategory',
     data() {
@@ -186,8 +187,8 @@ export default {
                 //close the modal
                 this.$store.data.setShowModal('');
             } catch (error) {
-                console.log("oops something went wrong", error);
-                this.$store.data.setShowModal('');
+                console.error(`Error updating category ${this.$store.data.currentSelection.categoryId}:`, error);
+                notifyActionError('Could not save this category. Please try again.', error);
             }
         }
     }

@@ -1,3 +1,4 @@
+// Defines the semantic granularity enforced by this service.
 export const SEMANTIC_GRANULARITY = {
   // Minimum cosine similarity for attaching an article to an existing event.
   // Higher value = stricter event matching (fewer merges, more fragmentation).
@@ -77,18 +78,33 @@ export const SEMANTIC_GRANULARITY = {
   }
 };
 
+// Defines the event sim threshold enforced by this service.
 export const EVENT_SIM_THRESHOLD = SEMANTIC_GRANULARITY.eventSimilarityThreshold;
+// Defines the topic sim threshold enforced by this service.
 export const TOPIC_SIM_THRESHOLD = SEMANTIC_GRANULARITY.topicSimilarityThreshold;
+// Defines the topic identity threshold enforced by this service.
 export const TOPIC_IDENTITY_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.identityThreshold;
+// Defines the primary topic threshold enforced by this service.
 export const PRIMARY_TOPIC_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.primaryThreshold;
+// Defines the secondary topic threshold enforced by this service.
 export const SECONDARY_TOPIC_THRESHOLD = SEMANTIC_GRANULARITY.topicAssignment.secondaryThreshold;
+// Defines the max topics per article enforced by this service.
 export const MAX_TOPICS_PER_ARTICLE = SEMANTIC_GRANULARITY.topicAssignment.maxTopicsPerArticle;
+// Defines the max candidates enforced by this service.
 export const MAX_CANDIDATES = SEMANTIC_GRANULARITY.maxCandidates;
+// Defines the recency window days enforced by this service.
 export const RECENCY_WINDOW_DAYS = SEMANTIC_GRANULARITY.recencyWindowDays;
+// Defines the event max gap hours enforced by this service.
 export const EVENT_MAX_GAP_HOURS = SEMANTIC_GRANULARITY.maxEventGapHours;
+// Defines the event recency half life hours enforced by this service.
 export const EVENT_RECENCY_HALF_LIFE_HOURS = SEMANTIC_GRANULARITY.eventRecencyHalfLifeHours;
+// Defines the event min headline sim enforced by this service.
 export const EVENT_MIN_HEADLINE_SIM = SEMANTIC_GRANULARITY.minHeadlineSimilarity;
+// Defines the event min shared entity overlap enforced by this service.
 export const EVENT_MIN_SHARED_ENTITY_OVERLAP = SEMANTIC_GRANULARITY.minSharedEntityOverlap;
+// Defines the event lifecycle enforced by this service.
 export const EVENT_LIFECYCLE = SEMANTIC_GRANULARITY.eventLifecycle;
+// Defines the topic vector alpha enforced by this service.
 export const TOPIC_VECTOR_ALPHA = SEMANTIC_GRANULARITY.topicUpdate.vectorAlpha;
+// Defines the event strength config enforced by this service.
 export const EVENT_STRENGTH_CONFIG = SEMANTIC_GRANULARITY.eventStrength;

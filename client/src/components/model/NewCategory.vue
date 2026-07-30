@@ -114,6 +114,7 @@
 <script>
 import { createCategory } from '../../api/categories';
 import { setAuthToken } from '../../api/client';
+import { notifyActionError } from '../../services/actionNotifications.js';
 export default {
     name: 'NewCategory',
     created: function() {
@@ -174,8 +175,8 @@ export default {
                     //close the modal
                     this.$store.data.setShowModal('');
                 } catch (error) {
-                    console.log("oops something went wrong", error);
-                    this.$store.data.setShowModal('');
+                    console.error(`Error creating category "${this.categoryName}":`, error);
+                    notifyActionError('Could not create this category. Please try again.', error);
                 }
             }
         }

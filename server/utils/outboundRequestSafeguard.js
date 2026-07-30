@@ -1,7 +1,7 @@
 import { lookup } from 'node:dns/promises';
 import { BlockList, isIP } from 'node:net';
 
-import { Agent, buildConnector } from 'undici';
+import { Agent, buildConnector, fetch as undiciFetch } from 'undici';
 
 const ALLOWLIST_ENV_NAME = 'RSSMONSTER_INTERNAL_HOST_ALLOWLIST';
 const DEFAULT_MAX_REDIRECTS = 10;
@@ -312,14 +312,15 @@ const unwrapBlockedRequestError = error => {
 export const fetchWithOutboundRequestSafeguard = async (
   input,
   options = {},
-  maxRedirects = DEFAULT_MAX_REDIRECTS
+  maxRedirects = DEFAULT_MAX_REDIRECTS,
+  fetchImplementation = undiciFetch
 ) => {
   let currentUrl = validateOutboundUrl(input);
 
   for (let redirectCount = 0; ; redirectCount += 1) {
     let response;
     try {
-      response = await fetch(currentUrl, {
+      response = await fetchImplementation(currentUrl, {
         ...options,
         redirect: 'manual',
         dispatcher: guardedDispatcher

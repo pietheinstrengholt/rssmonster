@@ -612,8 +612,8 @@ export default {
                     this.feeds = [];
                 }
             } catch (err) {
-                console.error('Failed to fetch feeds:', err);
-                this.feedsError = 'Failed to fetch feeds';
+                console.error('Error loading the Settings feed overview:', err);
+                this.feedsError = 'Could not load feeds. Please try again.';
             } finally {
                 this.feedsLoading = false;
             }
@@ -663,8 +663,8 @@ export default {
                 document.body.removeChild(link);
                 URL.revokeObjectURL(downloadUrl);
             } catch (err) {
-                console.error('Failed to export OPML:', err);
-                this.opmlError = 'Failed to download OPML export.';
+                console.error('Error exporting feeds as OPML:', err);
+                this.opmlError = 'Could not download the OPML export. Please try again.';
             }
         },
         async handleFileSelect(event) {
@@ -683,8 +683,8 @@ export default {
                 await this.fetchFeeds();
                 this.$emit('saved');
             } catch (err) {
-                console.error('Failed to import OPML:', err);
-                this.opmlError = err?.response?.data?.error || 'Failed to import OPML file.';
+                console.error('Error importing feeds from OPML:', err);
+                this.opmlError = 'Could not import this OPML file. Check the file and try again.';
             } finally {
                 if (event?.target) {
                     event.target.value = '';
@@ -707,8 +707,8 @@ export default {
                 await this.fetchFeeds();
                 this.$emit('saved');
             } catch (err) {
-                console.error('Failed to recalculate feed trust:', err);
-                this.feedTrustError = err?.response?.data?.error || 'Failed to recalculate feed scores.';
+                console.error('Error recalculating feed trust scores:', err);
+                this.feedTrustError = 'Could not recalculate feed scores. Please try again.';
             } finally {
                 this.feedTrustLoading = false;
             }

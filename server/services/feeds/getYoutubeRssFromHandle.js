@@ -2,6 +2,7 @@
 // Video URLs are rejected because they do not represent a channel feed.
 import { fetchURL as fetchURLInternal } from '../../utils/fetchURL.js';
 
+// Defines the youtube hostnames enforced by this service.
 const YOUTUBE_HOSTNAMES = new Set([
   'youtube.com',
   'www.youtube.com',
@@ -11,6 +12,7 @@ const YOUTUBE_HOSTNAMES = new Set([
 // Checks whether an absolute HTTP(S) URL uses an explicitly supported YouTube hostname.
 export const isYoutubeUrl = (input) => {
   try {
+    // Derives the url required while checking youtube url.
     const url = new URL(input);
     return (
       ['http:', 'https:'].includes(url.protocol) &&
@@ -34,6 +36,7 @@ export const getYoutubeRssFromHandle = async (input) => {
     return undefined;
   }
 
+  // Returns early when to string is not youtube url.
   if (!isYoutubeUrl(url.toString())) return undefined;
 
   // Reject video URLs
@@ -55,12 +58,15 @@ export const getYoutubeRssFromHandle = async (input) => {
     return undefined;
   }
 
+  // Returns early when ok is unavailable.
   if (!res?.ok) return undefined;
 
+  // Derives the html through text while performing get youtube rss from handle.
   const html = await res.text();
 
   // YouTube embeds channelId in page JSON
   const match = html.match(/"channelId":"(UC[a-zA-Z0-9_-]{20,})"/);
+  // Returns early when match is unavailable.
   if (!match) return undefined;
 
   const channelId = match[1];

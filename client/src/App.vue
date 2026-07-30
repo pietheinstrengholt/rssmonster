@@ -8,7 +8,14 @@
     <main v-else-if="!isAuthenticated" class="auth-page">
       <section class="auth-card" aria-labelledby="auth-title">
         <header class="auth-brand">
-          <img class="auth-logo" src="./assets/images/monster.png" alt="" />
+          <img
+            class="auth-logo"
+            src="./assets/images/monster-ui-64.webp"
+            srcset="./assets/images/monster-ui-64.webp 1x, ./assets/images/monster-ui-128.webp 2x"
+            width="64"
+            height="64"
+            alt=""
+          />
           <h1 id="auth-title">RSSMonster</h1>
           <p>Your intelligent RSS reader</p>
         </header>

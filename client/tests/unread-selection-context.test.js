@@ -96,7 +96,7 @@ describe('UnreadSelectionContext', () => {
 
     const action = wrapper.get('.briefing-tune-action');
     expect(action.text()).toBe('Tune your unread selection');
-    expect(action.get('i').classes()).toContain('bi-sliders2');
+    expect(action.getComponent({ name: 'BootstrapIcon' }).props('icon')).toBe('sliders2');
 
     await action.trigger('click');
 

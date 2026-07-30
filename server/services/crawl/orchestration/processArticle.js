@@ -3,6 +3,7 @@ import buildArticleCandidate from './buildArticleCandidate.js';
 import processNewArticle from './processNewArticle.js';
 import processArticleRevision from './processArticleRevision.js';
 
+// Builds the empty article result assembled for this service.
 const emptyArticleResult = {
   newArticles: 0,
   updatedArticles: 0,
@@ -22,6 +23,7 @@ const processArticle = async (
   feedFormat = null
 ) => {
   try {
+    // Builds the article candidate while processing article.
     const candidate = await buildArticleCandidate({
       feed,
       entry,
@@ -29,12 +31,15 @@ const processArticle = async (
       rssFeedTitle,
       feedFormat
     });
+    // Returns early when candidate is unavailable.
     if (!candidate) return emptyArticleResult;
 
     // Publisher identity matching happens before duplicate suppression because
     // identity determines revisions while duplicate matching detects equivalent content.
     const updatePlan = await updateArticle(feed, candidate.articleData);
+    // Handles the case where update plan matched is available.
     if (updatePlan.matched) {
+      // Returns early when update plan changed is unavailable.
       if (!updatePlan.changed) return emptyArticleResult;
 
       return await processArticleRevision({

@@ -31,6 +31,12 @@
     </div>
     <!-- Mobile events -->
     <app-mobile-menu-overlay :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile-menu-overlay>
+    <action-error-notice
+      v-if="actionErrorMessage"
+      :key="actionErrorId"
+      :message="actionErrorMessage"
+      @dismiss="dismissActionError"
+    />
 
     <!-- New category modal -->
     <app-new-category v-if="$store.data.getShowModal === 'NewCategory'"></app-new-category>
@@ -205,40 +211,41 @@ html, #app, body {
 <script>
 // client/src/AppShell.vue
 
-//import idb-keyval
-import { get, set } from 'idb-keyval';
 import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
+import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
 
 import ArticleFeed from "./components/ArticleFeed.vue";
+import ActionErrorNotice from './components/ActionErrorNotice.vue';
 
 //import components
 import { defineAsyncComponent } from 'vue'
-const Sidebar = defineAsyncComponent(() => import(/* webpackChunkName: "sidebar" */ "./components/Sidebar.vue"));
-const DesktopToolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "desktoptoolbar" */ "./components/DesktopToolbar.vue"));
-const MobileToolbar = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobiletoolbar" */ "./components/MobileToolbar.vue"));
-const MobileMenuOverlay = defineAsyncComponent(() =>  import(/* webpackChunkName: "mobilemenuoverlay" */ "./components/MobileMenuOverlay.vue"));
-const ChatAssistant = defineAsyncComponent(() =>  import(/* webpackChunkName: "chatassistant" */ "./components/ChatAssistant.vue"));
+const Sidebar = defineAsyncComponent(() => import("./components/Sidebar.vue"));
+const DesktopToolbar = defineAsyncComponent(() =>  import("./components/DesktopToolbar.vue"));
+const MobileToolbar = defineAsyncComponent(() =>  import("./components/MobileToolbar.vue"));
+const MobileMenuOverlay = defineAsyncComponent(() =>  import("./components/MobileMenuOverlay.vue"));
+const ChatAssistant = defineAsyncComponent(() =>  import("./components/ChatAssistant.vue"));
 
 //import modals
-const NewCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "newcategory" */ "./components/model/NewCategory.vue"));
-const NewFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "newfeed" */ "./components/model/NewFeed.vue"));
-const DeleteCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletecategory" */ "./components/model/DeleteCategory.vue"));
-const DeleteFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "deletefeed" */ "./components/model/DeleteFeed.vue"));
-const RenameCategory = defineAsyncComponent(() =>  import(/* webpackChunkName: "renamecategory" */ "./components/model/RenameCategory.vue"));
-const UpdateFeed = defineAsyncComponent(() =>  import(/* webpackChunkName: "updatefeed" */ "./components/model/UpdateFeed.vue"));
-const Cleanup = defineAsyncComponent(() =>  import(/* webpackChunkName: "cleanup" */ "./components/model/Cleanup.vue"));
-const SettingsManageUsers = defineAsyncComponent(() =>  import(/* webpackChunkName: "manageusers" */ "./components/model/SettingsManageUsers.vue"));
-const BriefingPreferencesModal = defineAsyncComponent(() => import(/* webpackChunkName: "briefingpreferences" */ "./components/model/BriefingPreferencesModal.vue"));
-const UnreadConfigurationModal = defineAsyncComponent(() => import(/* webpackChunkName: "unreadconfiguration" */ "./components/model/UnreadConfigurationModal.vue"));
+const NewCategory = defineAsyncComponent(() =>  import("./components/model/NewCategory.vue"));
+const NewFeed = defineAsyncComponent(() =>  import("./components/model/NewFeed.vue"));
+const DeleteCategory = defineAsyncComponent(() =>  import("./components/model/DeleteCategory.vue"));
+const DeleteFeed = defineAsyncComponent(() =>  import("./components/model/DeleteFeed.vue"));
+const RenameCategory = defineAsyncComponent(() =>  import("./components/model/RenameCategory.vue"));
+const UpdateFeed = defineAsyncComponent(() =>  import("./components/model/UpdateFeed.vue"));
+const Cleanup = defineAsyncComponent(() =>  import("./components/model/Cleanup.vue"));
+const SettingsManageUsers = defineAsyncComponent(() =>  import("./components/model/SettingsManageUsers.vue"));
+const BriefingPreferencesModal = defineAsyncComponent(() => import("./components/model/BriefingPreferencesModal.vue"));
+const UnreadConfigurationModal = defineAsyncComponent(() => import("./components/model/UnreadConfigurationModal.vue"));
 
 //import onboarding component
-const InitialFeeds = defineAsyncComponent(() =>  import(/* webpackChunkName: "initialfeeds" */ "./components/onboarding/InitialFeeds.vue"));
+const InitialFeeds = defineAsyncComponent(() =>  import("./components/onboarding/InitialFeeds.vue"));
 
 //import error component
-const Error = defineAsyncComponent(() =>  import(/* webpackChunkName: "error" */ "./components/AppError.vue"));
+const Error = defineAsyncComponent(() =>  import("./components/AppError.vue"));
 
 export default {
   components: {
+    ActionErrorNotice,
     appSidebar: Sidebar,
     appArticleFeed: ArticleFeed,
     appDesktopToolbar: DesktopToolbar,
@@ -261,10 +268,12 @@ export default {
   },
   data() {
     return {
+      actionErrorId: 0,
+      actionErrorMessage: '',
+      actionErrorTimer: null,
       category: {},
       feed: {},
       mobile: null,
-      notificationStatus: null,
       offlineStatus: false,
       overviewIntervalId: null,
       overviewLoaded: false,
@@ -273,52 +282,12 @@ export default {
     };
   },
   async created() {
-    // Global error handling
-    window.addEventListener('app:error', (e) => {
-      this.$store.data.setFatalError(e.detail);
-    });
-
-    // Handle auth expiration
-    window.addEventListener('auth:expired', () => {
-      this.$store.auth.setToken(null);
-      this.$store.data.setFatalError({
-        type: 'unauthorized',
-        message: 'Your session has expired'
-      });
-    });
+    this.registerGlobalListeners();
 
     //fetch all category and feed information for an complete overview including total read and unread counts
     this.getOverview(true);
 
-    //Trigger PWA notification support
-    if ('Notification' in window && 'serviceWorker' in navigator && 'indexedDB' in window) {
-
-      get('notificationStatus').then((val) => {
-        if (val === undefined) {
-          //notificationStatus isn't set, thus ask for permissions to install WPA
-          Notification.requestPermission(result => {
-            if (result !== 'granted') {
-              set('notificationStatus', false);
-              this.notificationStatus = false;
-            } else {
-              set('notificationStatus', true);
-              this.notificationStatus = true;
-            }
-          })
-        } else {
-          //update local data
-          this.notificationStatus = val;
-        }
-      });
-
-      //save reference to 'this', while it's still this!
-      const self = this;
-
-      //background update overview every five minutes
-      this.overviewIntervalId = setInterval(() => {
-        self.getOverview(false);
-      }, 300 * 1000);
-    }
+    this.startOverviewPolling();
 
     applyTheme(getPreferredTheme());
     this.unsubscribeFromSystemTheme = subscribeToSystemTheme(applyTheme);
@@ -329,12 +298,87 @@ export default {
   },
   beforeUnmount() {
     this.unsubscribeFromSystemTheme?.();
+    this.removeGlobalListeners();
 
-    if (this.sidebarScrollTimeout) {
+    if (this.actionErrorTimer !== null) {
+      clearTimeout(this.actionErrorTimer);
+      this.actionErrorTimer = null;
+    }
+
+    this.stopOverviewPolling();
+
+    if (this.sidebarScrollTimeout !== null) {
       clearTimeout(this.sidebarScrollTimeout);
+      this.sidebarScrollTimeout = null;
     }
   },
   methods: {
+    // This function handles recoverable action error events.
+    handleActionError(event) {
+      this.showActionError(event.detail?.message);
+    },
+    // This function handles fatal application error events.
+    handleAppError(event) {
+      this.$store.data.setFatalError(event.detail);
+    },
+    // This function handles authentication expiry events.
+    handleAuthExpired() {
+      this.$store.auth.setToken(null);
+      this.$store.data.setFatalError({
+        type: 'unauthorized',
+        message: 'Your session has expired'
+      });
+    },
+    // This function registers the window listeners owned by the app shell.
+    registerGlobalListeners() {
+      this.removeGlobalListeners();
+      window.addEventListener(ACTION_ERROR_EVENT, this.handleActionError);
+      window.addEventListener('app:error', this.handleAppError);
+      window.addEventListener('auth:expired', this.handleAuthExpired);
+    },
+    // This function removes the window listeners owned by the app shell.
+    removeGlobalListeners() {
+      window.removeEventListener(ACTION_ERROR_EVENT, this.handleActionError);
+      window.removeEventListener('app:error', this.handleAppError);
+      window.removeEventListener('auth:expired', this.handleAuthExpired);
+    },
+    // This function starts overview polling once per app shell instance.
+    startOverviewPolling() {
+      if (this.overviewIntervalId !== null) return;
+
+      this.overviewIntervalId = setInterval(() => {
+        this.getOverview(false);
+      }, 300 * 1000);
+    },
+    // This function stops overview polling for the app shell instance.
+    stopOverviewPolling() {
+      if (this.overviewIntervalId === null) return;
+
+      clearInterval(this.overviewIntervalId);
+      this.overviewIntervalId = null;
+    },
+    // This function displays a temporary recoverable action error.
+    showActionError(message) {
+      this.actionErrorMessage = message || 'Could not complete that action. Please try again.';
+      this.actionErrorId += 1;
+
+      if (this.actionErrorTimer) {
+        clearTimeout(this.actionErrorTimer);
+      }
+
+      this.actionErrorTimer = setTimeout(() => {
+        this.dismissActionError();
+      }, 6000);
+    },
+    // This function dismisses the current recoverable action error.
+    dismissActionError() {
+      this.actionErrorMessage = '';
+
+      if (this.actionErrorTimer) {
+        clearTimeout(this.actionErrorTimer);
+        this.actionErrorTimer = null;
+      }
+    },
     handleSidebarScroll() {
       const sidebar = this.$refs.sidebarScrollRef;
 
@@ -413,12 +457,9 @@ export default {
           return;
         }
 
-        console.error("There was an error!", error);
+        console.error('Error loading the application overview:', error);
 
-        if (this.overviewIntervalId) {
-          clearInterval(this.overviewIntervalId);
-          this.overviewIntervalId = null;
-        }
+        this.stopOverviewPolling();
 
         this.$store.auth.setToken(null);
         this.offlineStatus = true;
@@ -426,15 +467,21 @@ export default {
       }
     },
     async showNotification(input) {
-      if ('serviceWorker' in navigator) {
-        if(Notification.permission === 'granted') {
-          navigator.serviceWorker.ready // returns a Promise, the active SW registration
-            .then(swreg => swreg.showNotification('New articles', {
-              body: input + ' new articles arrived',
-              icon: '/img/icons/android-chrome-192x192.png',
-              vibrate: [300, 200, 300]
-          }))
-        }
+      if (
+        !('Notification' in window) ||
+        Notification.permission !== 'granted' ||
+        !('serviceWorker' in navigator)
+      ) return;
+
+      try {
+        const serviceWorkerRegistration = await navigator.serviceWorker.ready;
+        await serviceWorkerRegistration.showNotification('New articles', {
+          body: input + ' new articles arrived',
+          icon: '/img/icons/android-chrome-192x192.png',
+          vibrate: [300, 200, 300]
+        });
+      } catch (error) {
+        console.error('Error showing the new article notification:', error);
       }
     },
     async forceReload() {
@@ -445,6 +492,8 @@ export default {
       try {
         // Refresh overview (this also fetches settings)
         await this.$store.data.fetchOverviewSplit({ initial: true });
+        this.overviewLoaded = true;
+        this.startOverviewPolling();
 
         // Reload articles if feed exists
         const ref = this.$refs.articleFeed;
@@ -460,7 +509,8 @@ export default {
             ref.fetchArticleIds(this.$store.data.currentSelection);
           }
         }
-      } catch {
+      } catch (error) {
+        console.error('Error reloading application data:', error);
         // Recovery failed → re-enter fatal error mode
         this.$store.data.setFatalError({
           type: 'offline',

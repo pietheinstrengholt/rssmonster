@@ -10,10 +10,12 @@ const BASE_URL = import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/auth';
 export const validateSession = async (token) => {
   if (!token) throw new Error('No token');
 
-  // bootstrap call → raw axios
-  axios.defaults.headers.common.Authorization = `Bearer ${token}`;
-
-  const response = await axios.post(`${BASE_URL}/validate`);
+  // Keep the bootstrap token scoped to this request.
+  const response = await axios.post(`${BASE_URL}/validate`, undefined, {
+    headers: {
+      Authorization: `Bearer ${token}`
+    }
+  });
   return response.data;
 };
 

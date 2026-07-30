@@ -6,6 +6,7 @@ import { createRateLimiter } from '../../middleware/rateLimit.js';
 // This function creates a small Express app with the production limiter structure.
 const createTestApp = ({ apiLimit = 2, mcpLimit = 1 } = {}) => {
   const app = express();
+  app.set('trust proxy', 'loopback');
   const apiLimiter = createRateLimiter({
     windowMs: 60_000,
     limit: apiLimit,
@@ -72,5 +73,22 @@ describe('rate limiting middleware', () => {
 
     await request(app).get('/rss').expect(200);
     await request(app).get('/rss').expect(429);
+  });
+
+  it('applies limits separately to clients forwarded by a trusted proxy', async () => {
+    const app = createTestApp({ apiLimit: 1 });
+
+    await request(app)
+      .get('/api/data')
+      .set('X-Forwarded-For', '192.0.2.1')
+      .expect(200);
+    await request(app)
+      .get('/api/data')
+      .set('X-Forwarded-For', '192.0.2.1')
+      .expect(429);
+    await request(app)
+      .get('/api/data')
+      .set('X-Forwarded-For', '192.0.2.2')
+      .expect(200);
   });
 });

@@ -156,7 +156,9 @@ describe('DailyBriefingIntro', () => {
     expect(wrapper.findAll('.briefing-morning-summary-text p')).toHaveLength(2);
     expect(wrapper.get('.briefing-summary-headline').text()).toBe('EU AI Act enters into force');
     expect(wrapper.get('.briefing-summary-excerpt').text()).toContain('phased compliance timeline');
-    expect(wrapper.get('.briefing-morning-summary-icon i').classes()).toContain('bi-sunrise-fill');
+    expect(
+      wrapper.get('.briefing-morning-summary-icon').getComponent({ name: 'BootstrapIcon' }).props('icon')
+    ).toBe('sunrise-fill');
   });
 
   it('hides the morning-summary article text in reader mode', async () => {
@@ -202,7 +204,7 @@ describe('DailyBriefingIntro', () => {
     const action = wrapper.get('.briefing-tune-action');
     expect(action.element.tagName).toBe('BUTTON');
     expect(action.text()).toBe('Tune your briefing');
-    expect(action.get('i').classes()).toContain('bi-sliders2');
+    expect(action.getComponent({ name: 'BootstrapIcon' }).props('icon')).toBe('sliders2');
 
     await action.trigger('click');
 

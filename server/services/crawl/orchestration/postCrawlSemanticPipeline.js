@@ -5,6 +5,7 @@ import scoreArticlesFromIslandsForUser from '../../score/scoreArticlesFromIsland
 
 // This function returns the users whose articles should be processed after a crawl.
 function getPostCrawlUserIds(result, userId = null) {
+  // Returns an empty result when user id is available.
   if (userId) {
     return [userId];
   }
@@ -14,11 +15,14 @@ function getPostCrawlUserIds(result, userId = null) {
 
 // This function runs the incremental semantic hierarchy for users touched by a crawl.
 export async function runPostCrawlSemanticPipeline(result, options = {}) {
+  // Derives the user id through get post crawl user id while performing run post crawl semantic pipeline.
   const userIds = getPostCrawlUserIds(result, options.userId);
+  // Selects the on progress based on whether options is function.
   const onProgress = typeof options.onProgress === 'function'
     ? options.onProgress
     : null;
 
+  // Returns early when user id is empty.
   if (!userIds.length) {
     return {
       users: 0,
@@ -30,6 +34,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
 
   let embedded = 0;
   let skipped = 0;
+  // Collects the results while performing run post crawl semantic pipeline.
   const results = [];
 
   onProgress?.({
@@ -38,7 +43,9 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
     users: userIds.length
   });
 
+  // Processes each user id entry in turn.
   for (const userId of userIds) {
+    // Derives the embed summary through embed articles while performing run post crawl semantic pipeline.
     const embedSummary = await embedArticles(userId, {
       createdAtFrom: result?.crawlStartedAt || null
     });
@@ -50,6 +57,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       `embedded=${embedSummary.embeddedCount || 0} skipped=${embedSummary.skippedCount || 0}`
     );
 
+    // Derives the duplicate result through mark duplicate articles for user while performing run post crawl semantic pipeline.
     const duplicateResult = await markDuplicateArticlesForUser(userId, {
       createdAtFrom: result?.crawlStartedAt || null
     });
@@ -60,6 +68,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       `duplicates=${duplicateResult.duplicateCount || 0}`
     );
 
+    // Derives the event result through run incremental events for user while performing run post crawl semantic pipeline.
     const eventResult = await runIncrementalEventsForUser(userId, {
       createdAtFrom: result?.crawlStartedAt || null,
       skipTopicAssignment: false
@@ -74,6 +83,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       `touchedEvents=${eventResult.touchedEventIds?.length || 0}`
     );
 
+    // Tracks topic stats for the processing summary.
     const topicStats = eventResult.topicAssignment?.stats || {};
     console.log(
       `[SEMANTIC] user=${userId} stage=topics ` +
@@ -83,6 +93,7 @@ export async function runPostCrawlSemanticPipeline(result, options = {}) {
       `unmatchedEvents=${topicStats.eventsUnmatched || 0}`
     );
 
+    // Derives the scoring result through score articles from islands for user while performing run post crawl semantic pipeline.
     const scoringResult = await scoreArticlesFromIslandsForUser(userId, {
       createdAtFrom: result?.crawlStartedAt || null
     });

@@ -42,7 +42,7 @@
     "reset:semantic": "node scripts/resetSemanticState.js"
   },
   "engines": {
-    "node": ">=20.x"
+    "node": ">=22.19.0"
   },
   "license": "MIT",
   "devDependencies": {

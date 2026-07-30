@@ -15,12 +15,14 @@ import { normalizeTagName } from '../persistence/tags.js';
 
 // OpenAI client
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+// Selects the client based on whether has api key is available.
 const client = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
 
 // Mutex for sequential OpenAI API calls
 let openAIQueue = Promise.resolve();
+// Resolves the rate limit delay that governs this service.
 let rateLimitDelay = 0;
 
 // Default analysis result when no API key is present
@@ -34,9 +36,12 @@ const defaultAnalysis = () => ({
 
 // Truncate content to fit within LLM token limits while preserving head and tail
 const truncateContentForLLM = (text, maxChars = 3500) => {
+  // Returns early when text is unavailable or text count is at most max chars.
   if (!text || text.length <= maxChars) return text;
 
+  // Derives the head through slice while performing truncate content for llm.
   const head = text.slice(0, 3000);
+  // Derives the tail through slice while performing truncate content for llm.
   const tail = text.slice(-500);
 
   return `${head}\n...\n${tail}`;
@@ -50,6 +55,7 @@ async function analyzeArticleContent({
   feedName,
   rateLimitDelayMs = 0
 }) {
+  // Selects the categories based on whether category names is an array.
   const categories = Array.isArray(categoryNames) ? categoryNames : [];
 
   // Normalize category names
@@ -60,6 +66,7 @@ async function analyzeArticleContent({
 
   // Check if feed provides categories to use as tags
   const hasFeedCategories = categories.length > 0;
+  // Selects the feed category tags based on whether has feed categories is available.
   const feedCategoryTags = hasFeedCategories
     ? [...new Set(categories.map(normalizeGeneratedTag).filter(Boolean))].slice(0, 5)
     : [];
@@ -103,9 +110,12 @@ async function analyzeArticleContent({
 
   // Helper to bucket scores to nearest 10
   const bucketScore = (value, fallback = 70) => {
+    // Coerces the number into the representation required while performing bucket score.
     const number = Number(value);
+    // Returns early when number is not finite.
     if (!Number.isFinite(number)) return fallback;
 
+    // Selects the result based on whether abs is below abs.
     return [0, 10, 20, 30, 40, 50, 60, 70, 80, 90, 100]
       .reduce((previous, current) =>
         Math.abs(current - number) < Math.abs(previous - number)
@@ -116,12 +126,16 @@ async function analyzeArticleContent({
 
   // Queue execution to respect rate limits
   await new Promise(resolve => {
+    // Runs the callback required while performing analyze article content.
     openAIQueue = openAIQueue.then(async () => {
       try {
+        // Handles the case where rate limit delay exceeds value.
         if (rateLimitDelay > 0) {
+          // Runs the callback required while performing analyze article content.
           await new Promise(r => setTimeout(r, rateLimitDelay));
         }
 
+    // Derives the prompt through join while performing analyze article content.
     const prompt = [
       "You are a precise, neutral, and reliable assistant analyzing a single RSS article.",
       "",
@@ -231,6 +245,7 @@ async function analyzeArticleContent({
       "```"
     ].join('\n');
 
+        // Performs the create operation while performing analyze article content.
         const response = await client.chat.completions.create({
           model,
           messages: [
@@ -241,16 +256,20 @@ async function analyzeArticleContent({
           max_completion_tokens: 350 // ~500 words
         });
 
+        // Derives the raw required while performing analyze article content.
         const raw = response.choices?.[0]?.message?.content || '';
         let parsed;
 
         try {
           parsed = JSON.parse(raw);
         } catch {
+          // Derives the match through match while performing analyze article content.
           const match = raw.match(/\{[\s\S]*\}/);
+          // Selects the result based on whether match is available.
           parsed = match ? JSON.parse(match[0]) : {};
         }
 
+        // Selects the result based on whether parsed content summary bullets is an array.
         analysis = {
           contentSummaryBullets: Array.isArray(parsed.contentSummaryBullets)
             ? parsed.contentSummaryBullets
@@ -272,6 +291,7 @@ async function analyzeArticleContent({
 
         console.log(`[OpenAI LLM] Analysis completed for "${title}"`);
       } catch (err) {
+        // Handles the case where includes is available or includes is available.
         if (
           err.message?.includes('429') ||
           err.message?.toLowerCase().includes('rate limit')

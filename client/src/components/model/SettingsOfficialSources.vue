@@ -396,8 +396,8 @@ export default {
         this.message = 'Official sources saved.';
         this.$emit('saved');
       } catch (err) {
-        console.error('Failed to save official sources:', err);
-        this.error = err.response?.data?.error || 'Failed to save official sources.';
+        console.error('Error saving official sources:', err);
+        this.error = 'Could not save official sources. Please try again.';
       } finally {
         this.saving = false;
       }

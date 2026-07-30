@@ -79,7 +79,7 @@ describe('developing story icon', () => {
     const developingWrapper = mountArticle(103, true);
     const representativeWrapper = mountArticle(100, false);
 
-    expect(developingWrapper.get('.developing-story-icon').classes()).toContain('bi-lightning-charge-fill');
+    expect(developingWrapper.getComponent('.developing-story-icon').props('icon')).toBe('lightning-charge-fill');
     expect(representativeWrapper.find('.developing-story-icon').exists()).toBe(false);
   });
 
@@ -92,7 +92,7 @@ describe('developing story icon', () => {
       event: developingEvent
     });
 
-    expect(wrapper.get('.readerArticleListDevelopingIcon').classes()).toContain('bi-lightning-charge-fill');
+    expect(wrapper.getComponent('.readerArticleListDevelopingIcon').props('icon')).toBe('lightning-charge-fill');
   });
 
   it('does not render when the API developing-story field is false', () => {

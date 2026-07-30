@@ -2,9 +2,9 @@
   <section class="article-empty-state" aria-labelledby="article-empty-state-title">
     <div class="article-empty-state-illustration" aria-hidden="true">
       <div class="article-empty-state-circle">
-        <i class="bi bi-newspaper"></i>
+        <BootstrapIcon icon="newspaper" />
       </div>
-      <i class="bi bi-send article-empty-state-plane"></i>
+      <BootstrapIcon icon="send" class="article-empty-state-plane" />
     </div>
 
     <h2 id="article-empty-state-title" class="article-empty-state-title">
@@ -18,12 +18,12 @@
 
     <div class="article-empty-state-actions">
       <button type="button" class="article-empty-state-primary" @click="$emit('clear-filters')">
-        <i class="bi bi-search" aria-hidden="true"></i>
+        <BootstrapIcon icon="search" aria-hidden="true" />
         Clear filters
       </button>
 
       <button type="button" class="article-empty-state-secondary" @click="$emit('refresh-feeds')">
-        <i class="bi bi-arrow-clockwise" aria-hidden="true"></i>
+        <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
         Refresh feeds
       </button>
     </div>
@@ -33,7 +33,7 @@
     </div>
 
     <button type="button" class="article-empty-state-link" @click="$emit('open-smart-folders')">
-      <i class="bi bi-folder" aria-hidden="true"></i>
+      <BootstrapIcon icon="folder" aria-hidden="true" />
       Explore smart folders
     </button>
   </section>

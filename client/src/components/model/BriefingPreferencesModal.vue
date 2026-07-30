@@ -10,7 +10,7 @@
       <header class="briefing-preferences-header">
         <div class="briefing-preferences-heading">
           <div class="briefing-preferences-heading-icon" aria-hidden="true">
-            <i class="bi bi-sliders2"></i>
+            <BootstrapIcon icon="sliders2" />
           </div>
 
           <div>
@@ -36,7 +36,7 @@
           aria-label="Close briefing preferences"
           @click="closeModal"
         >
-          <i class="bi bi-x-lg" aria-hidden="true"></i>
+          <BootstrapIcon icon="x-lg" aria-hidden="true" />
         </button>
       </header>
 
@@ -66,7 +66,7 @@
 
             <label class="briefing-preferences-option">
               <span class="briefing-preferences-option-icon" aria-hidden="true">
-                <i class="bi bi-envelope-fill"></i>
+                <BootstrapIcon icon="envelope-fill" />
               </span>
 
               <span class="briefing-preferences-option-content">
@@ -93,7 +93,7 @@
 
             <label class="briefing-preferences-option">
               <span class="briefing-preferences-option-icon" aria-hidden="true">
-                <i class="bi bi-graph-up-arrow"></i>
+                <BootstrapIcon icon="graph-up-arrow" />
               </span>
 
               <span class="briefing-preferences-option-content">
@@ -120,7 +120,7 @@
 
             <label class="briefing-preferences-option">
               <span class="briefing-preferences-option-icon" aria-hidden="true">
-                <i class="bi bi-stars"></i>
+                <BootstrapIcon icon="stars" />
               </span>
 
               <span class="briefing-preferences-option-content">
@@ -148,7 +148,7 @@
 
             <label class="briefing-preferences-option">
               <span class="briefing-preferences-option-icon" aria-hidden="true">
-                <i class="bi bi-diagram-3-fill"></i>
+                <BootstrapIcon icon="diagram-3-fill" />
               </span>
 
               <span class="briefing-preferences-option-content">
@@ -184,7 +184,7 @@
             <div class="briefing-preferences-field-heading">
               <div>
                 <div class="briefing-preferences-field-title">
-                  <i class="bi bi-clock-fill" aria-hidden="true"></i>
+                  <BootstrapIcon icon="clock-fill" aria-hidden="true" />
                   Lookback period
                 </div>
 
@@ -241,7 +241,7 @@
                   class="briefing-preferences-option-icon"
                   aria-hidden="true"
                 >
-                  <i class="bi bi-diagram-3-fill"></i>
+                  <BootstrapIcon icon="diagram-3-fill" />
                 </span>
 
                 <div>
@@ -274,7 +274,7 @@
 
             <label class="briefing-preferences-option">
               <span class="briefing-preferences-option-icon" aria-hidden="true">
-                <i class="bi bi-shield-fill-check"></i>
+                <BootstrapIcon icon="shield-fill-check" />
               </span>
 
               <span class="briefing-preferences-option-content">
@@ -666,7 +666,7 @@ export default {
   margin-bottom: 0.15rem;
 }
 
-.briefing-preferences-field-title i {
+.briefing-preferences-field-title .bi {
   color: #2563eb;
 }
 
@@ -992,7 +992,7 @@ export default {
   background-color: var(--color-primary-surface-dark);
 }
 
-:global(:root[data-theme='dark'] .briefing-preferences-field-title i),
+:global(:root[data-theme='dark'] .briefing-preferences-field-title .bi),
 :global(:root[data-theme='dark'] .briefing-preferences-reset) {
   color: var(--color-link);
 }

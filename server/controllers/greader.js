@@ -380,10 +380,10 @@ export const editSubscription = async (req, res) => {
 
     return res.type('text/plain').send('OK');
   } catch (err) {
-    console.error('Error in editSubscription:', err);
     if (err instanceof GreaderStreamError) {
       return badRequest(res, err.message);
     }
+    console.error('Error in editSubscription:', err);
     if (isFeedManagementError(err)) {
       return badRequest(res, 'Unable to update subscription');
     }
@@ -577,10 +577,10 @@ export const getStreamContents = async (req, res) => {
     
     res.json(response);
   } catch (err) {
-    console.error('Error in getStreamContents:', err);
     if (err instanceof GreaderStreamError) {
       return badRequest(res, err.message);
     }
+    console.error('Error in getStreamContents:', err);
     return internalError(res);
   }
 };
@@ -611,10 +611,10 @@ export const getStreamItemIds = async (req, res) => {
     
     res.json(response);
   } catch (err) {
-    console.error('Error in getStreamItemIds:', err);
     if (err instanceof GreaderStreamError) {
       return badRequest(res, err.message);
     }
+    console.error('Error in getStreamItemIds:', err);
     return internalError(res);
   }
 };
@@ -759,10 +759,10 @@ export const markAllAsRead = async (req, res) => {
     
     res.type('text/plain').send('OK');
   } catch (err) {
-    console.error('Error in markAllAsRead:', err);
     if (err instanceof GreaderStreamError) {
       return badRequest(res, err.message);
     }
+    console.error('Error in markAllAsRead:', err);
     return internalError(res);
   }
 };
@@ -799,10 +799,10 @@ export const renameTag = async (req, res) => {
     
     res.type('text/plain').send('OK');
   } catch (err) {
-    console.error('Error in renameTag:', err);
     if (err instanceof GreaderStreamError) {
       return badRequest(res, err.message);
     }
+    console.error('Error in renameTag:', err);
     return internalError(res);
   }
 };

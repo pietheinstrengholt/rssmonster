@@ -35,7 +35,9 @@ const MAX_BUFFERED_EVENTS = 500;
 //   _maxAgeTimer – NodeJS.Timeout (hard safety cleanup timer)
 const jobs = new Map();
 
+// Performs the to sse message operation.
 const toSseMessage = (event) => {
+  // Derives the event type required while performing to sse message.
   const eventType = event?.type || 'progress';
   return `event: ${eventType}\ndata: ${JSON.stringify(event)}\n\n`;
 };
@@ -46,10 +48,14 @@ const toSseMessage = (event) => {
 
 // This function creates a new job entry and returns its UUID.
 function createJob(userId = null) {
+  // Derives the id through random uuid while creating job.
   const id = randomUUID();
 
+  // Derives the max age timer through set timeout while creating job.
   const maxAgeTimer = setTimeout(() => {
+    // Derives the job through get while creating job.
     const job = jobs.get(id);
+    // Returns early when job is unavailable.
     if (!job) return;
 
     // Close any lingering subscribers before dropping stale job state.
@@ -78,7 +84,9 @@ function createJob(userId = null) {
 // and appends it to the event buffer so late-connecting clients receive history.
 // Calling with type 'done' or 'error' marks the job complete and schedules GC.
 function publishEvent(jobId, event) {
+  // Derives the job through get while performing publish event.
   const job = jobs.get(jobId);
+  // Returns early when job is unavailable.
   if (!job) return;
 
   // Enforce ring-buffer limit
@@ -87,7 +95,9 @@ function publishEvent(jobId, event) {
   }
   job.events.push(event);
 
+  // Derives the payload through to sse message while performing publish event.
   const payload = toSseMessage(event);
+  // Processes each subscribers entry in turn.
   for (const res of job.subscribers) {
     try {
       res.write(payload);
@@ -108,14 +118,19 @@ function publishEvent(jobId, event) {
     }
     job.subscribers.clear();
 
+    // Runs the callback required while performing publish event.
     job._gcTimer = setTimeout(() => {
+      // Derives the stale job through get while performing publish event.
       const staleJob = jobs.get(jobId);
+      // Returns early when stale job is unavailable.
       if (!staleJob) return;
+      // Handles the case where stale job  max age timer is available.
       if (staleJob._maxAgeTimer) {
         clearTimeout(staleJob._maxAgeTimer);
       }
       jobs.delete(jobId);
     }, JOB_TTL_MS);
+  // Handles the case where job status is pending.
   } else if (job.status === 'pending') {
     job.status = 'running';
   }
@@ -126,8 +141,10 @@ function publishEvent(jobId, event) {
 // registers the response for future events. Automatically unsubscribes
 // when the client disconnects. Returns false if the job does not exist.
 function subscribe(jobId, req, res) {
+  // Derives the job through get while performing subscribe.
   const job = jobs.get(jobId);
 
+  // Handles the case where job is unavailable.
   if (!job) {
     res.write(toSseMessage({ type: 'error', message: 'Job not found' }));
     res.end();
@@ -161,7 +178,9 @@ function subscribe(jobId, req, res) {
 
 // This function removes a response object from a job's subscriber set.
 function unsubscribe(jobId, res) {
+  // Derives the job through get while performing unsubscribe.
   const job = jobs.get(jobId);
+  // Handles the case where job is available.
   if (job) {
     job.subscribers.delete(res);
   }
@@ -170,7 +189,9 @@ function unsubscribe(jobId, res) {
 // This function returns a plain read-only snapshot of a job's metadata.
 // Returns null if the job does not exist or has already been garbage-collected.
 function getJob(jobId) {
+  // Derives the job through get while performing get job.
   const job = jobs.get(jobId);
+  // Returns no result when job is unavailable.
   if (!job) return null;
   return {
     id: job.id,
@@ -185,9 +206,12 @@ function getJob(jobId) {
 
 // This function returns an active (pending/running) job for a user, if any.
 function getActiveJobForUser(userId) {
+  // Returns no result when user id is unavailable.
   if (!userId) return null;
 
+  // Processes each values entry in turn.
   for (const job of jobs.values()) {
+    // Returns early when job user id is user id and job status is pending or job status is running.
     if (job.userId === userId && (job.status === 'pending' || job.status === 'running')) {
       return {
         id: job.id,

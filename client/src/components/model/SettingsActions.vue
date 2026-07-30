@@ -463,6 +463,7 @@
 <script>
 import { fetchActions, saveActions } from '../../api/actions';
 import { setAuthToken } from '../../api/client';
+import { notifyActionError } from '../../services/actionNotifications.js';
 
 export default {
   emits: ['close', 'saved'],
@@ -483,14 +484,14 @@ export default {
   async created() { setAuthToken(this.$store.auth.token); this.fetchActions(); },
   methods: {
     actionTypeMeta(actionType) { return this.actionTypes.find((type) => type.value === actionType) || { label: 'Select type', icon: 'lightning-charge', iconClass: 'actions-type-icon--default' }; },
-    async fetchActions() { try { const resp = await fetchActions(); if (resp && resp.data && Array.isArray(resp.data.actions)) this.actions = resp.data.actions.map(a => ({ name: a.name || '', actionType: a.actionType || '', regularExpression: a.regularExpression || '', tagValue: a.tagValue || '' })); } catch (err) { console.error('Failed to fetch actions:', err); } },
+    async fetchActions() { try { const resp = await fetchActions(); if (resp && resp.data && Array.isArray(resp.data.actions)) this.actions = resp.data.actions.map(a => ({ name: a.name || '', actionType: a.actionType || '', regularExpression: a.regularExpression || '', tagValue: a.tagValue || '' })); } catch (err) { console.error('Error loading article actions:', err); notifyActionError('Could not load article actions. Please try again.', err); } },
     addAction() { this.actions.push({ name: '', actionType: '', regularExpression: '', tagValue: '' }); },
     removeAction(index) { this.actions.splice(index, 1); },
     focusActionName(index) { this.$el.querySelector(`#action-name-${index}`)?.focus(); },
     async save() {
       // Persist actions to the server
       const filteredActions = this.actions.filter(a => a && a.actionType && a.actionType.trim() !== '');
-      try { const resp = await saveActions(filteredActions); console.log('Actions saved:', resp.data); } catch (err) { console.error('Error saving actions:', err); alert('Failed to save actions. Please try again.'); }
+      try { const resp = await saveActions(filteredActions); console.log('Actions saved:', resp.data); } catch (err) { console.error('Error saving article actions:', err); notifyActionError('Could not save article actions. Please try again.', err); return; }
       this.$emit('saved'); this.$emit('close');
     },
     closeActionsModal() { this.showActionsModal = false; }

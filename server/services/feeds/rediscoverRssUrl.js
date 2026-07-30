@@ -2,7 +2,9 @@
 // The response is expected to be strict JSON with a URL, confidence score, and user-facing reason.
 import OpenAI from 'openai';
 
+// Coerces the has api key into the representation required for this service.
 const hasApiKey = Boolean(process.env.OPENAI_API_KEY);
+// Selects the client based on whether has api key is available.
 const client = hasApiKey
   ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY })
   : null;
@@ -13,10 +15,12 @@ export async function rediscoverRssUrl({
   websiteUrl,
   oldRssUrl
 }) {
+  // Rejects processing when client is unavailable.
   if (!client) {
     throw new Error('OpenAI API key not configured');
   }
 
+  // Derives the prompt required while performing rediscover rss url.
   const prompt = `
   You are an expert in RSS and Atom feeds.
 
@@ -57,6 +61,7 @@ export async function rediscoverRssUrl({
   - Example: "This is the website’s official RSS feed that replaces the previously broken feed."
   `;
 
+  // Performs the create operation while performing rediscover rss url.
   const response = await client.chat.completions.create({
     model: 'gpt-4.1-mini',
     messages: [

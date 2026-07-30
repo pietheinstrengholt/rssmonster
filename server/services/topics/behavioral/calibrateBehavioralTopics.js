@@ -11,29 +11,36 @@ import {
   weightedAverageVector
 } from '../../vectors/index.js';
 
+// Provides the shared dependencies used by this service.
 const { Article, ArticleTopic, Topic } = db;
 
 // This service calibrates durable behavioral topics from articles a user has explicitly engaged with.
 // It uses the existing Topic and ArticleTopic tables so behavioral interests can coexist with event topics.
 
+// Defines the signal weights enforced by this service.
 const SIGNAL_WEIGHTS = {
   star: 4,
   click: 1.5,
   deepRead: 3
 };
 
+// Defines the default community similarity threshold enforced by this service.
 const DEFAULT_COMMUNITY_SIMILARITY_THRESHOLD = Number.parseFloat(
   process.env.BEHAVIORAL_TOPIC_COMMUNITY_SIMILARITY_THRESHOLD || '0.64'
 );
+// Defines the default topic match threshold enforced by this service.
 const DEFAULT_TOPIC_MATCH_THRESHOLD = Number.parseFloat(
   process.env.BEHAVIORAL_TOPIC_MATCH_THRESHOLD || '0.78'
 );
+// Defines the default engagement threshold enforced by this service.
 const DEFAULT_ENGAGEMENT_THRESHOLD = Number.parseFloat(
   process.env.BEHAVIORAL_TOPIC_ENGAGEMENT_THRESHOLD || '8'
 );
+// Defines the default vector blend alpha enforced by this service.
 const DEFAULT_VECTOR_BLEND_ALPHA = Number.parseFloat(
   process.env.BEHAVIORAL_TOPIC_VECTOR_ALPHA || '0.35'
 );
+// Defines the min articles per behavioral topic enforced by this service.
 const MIN_ARTICLES_PER_BEHAVIORAL_TOPIC = 3;
 
 // This helper keeps derived scores and blend weights inside a known numeric range.
@@ -41,8 +48,11 @@ const clamp = (value, min = 0, max = 1) => Math.max(min, Math.min(max, value));
 
 // This function scores positive behavioral evidence for an article.
 function engagementScore(article) {
+  // Selects the stars based on whether article favorite status is 1.
   const stars = article.favoriteInd === 1 ? 1 : 0;
+  // Derives the clicks through min while performing engagement score.
   const clicks = Math.min(Number(article.clickedAmount || 0), 3);
+  // Selects the deep reads based on whether number reaches 3.
   const deepReads = Number(article.attentionBucket || 0) >= 3 ? 1 : 0;
 
   return (
@@ -54,7 +64,9 @@ function engagementScore(article) {
 
 // This function resolves the calendar day that contributes behavioral evidence.
 function behaviorDay(article) {
+  // Derives the value required while performing behavior day.
   const value = article.publishedAt || article.updatedAt || article.createdAt;
+  // Returns no result when value is unavailable.
   if (!value) return null;
 
   return new Date(value).toISOString().slice(0, 10);
@@ -62,8 +74,10 @@ function behaviorDay(article) {
 
 // This function converts an article model into a behavioral clustering profile.
 function buildArticleProfile(article) {
+  // Derives the score through engagement score while building article profile.
   const score = engagementScore(article);
 
+  // Selects the result based on whether article article vector is an array.
   return {
     articleId: Number(article.id),
     feedId: Number(article.feedId),
@@ -77,6 +91,7 @@ function buildArticleProfile(article) {
 
 // This function adds one article profile to an existing vector community.
 function addArticleToCommunity(community, profile) {
+  // Avoids adding the same article evidence to a community twice.
   if (community.articles.some(article => article.articleId === profile.articleId)) return;
 
   community.articles.push(profile);
@@ -86,12 +101,16 @@ function addArticleToCommunity(community, profile) {
 
 // This function clusters engaged article vectors into behavioral communities.
 function buildBehavioralCommunities(articleProfiles, similarityThreshold) {
+  // Collects the communities while building behavioral communities.
   const communities = [];
+  // Derives the sorted through sort while building behavioral communities.
   const sorted = articleProfiles
     .slice()
     .sort((a, b) => (b.score - a.score) || (a.articleId - b.articleId));
 
+  // Processes each sorted entry in turn.
   for (const profile of sorted) {
+    // Derives the ranked through sort while building behavioral communities.
     const ranked = communities
       .map(community => ({
         community,
@@ -99,7 +118,9 @@ function buildBehavioralCommunities(articleProfiles, similarityThreshold) {
       }))
       .sort((a, b) => b.similarity - a.similarity);
 
+    // Derives the best required while building behavioral communities.
     const best = ranked[0] || null;
+    // Handles the case where best is available and best similarity reaches similarity threshold.
     if (best && best.similarity >= similarityThreshold) {
       addArticleToCommunity(best.community, profile);
       continue;
@@ -112,6 +133,7 @@ function buildBehavioralCommunities(articleProfiles, similarityThreshold) {
     });
   }
 
+  // Maps source values into the result produced while building behavioral communities.
   return communities
     .map(community => ({
       ...community,
@@ -122,12 +144,15 @@ function buildBehavioralCommunities(articleProfiles, similarityThreshold) {
 
 // This function totals engagement evidence for a community.
 function totalScore(community) {
+  // Aggregates source values into the result produced while performing total score.
   return community.articles.reduce((sum, article) => sum + article.score, 0);
 }
 
 // This function checks whether evidence spans multiple feeds or days.
 function hasBehavioralBreadth(community) {
+  // Tracks distinct feed id while checking behavioral breadth.
   const feedIds = new Set(community.articles.map(article => article.feedId).filter(Boolean));
+  // Tracks distinct days while checking behavioral breadth.
   const days = new Set(community.articles.map(article => article.day).filter(Boolean));
 
   return feedIds.size >= 2 || days.size >= 2;
@@ -135,6 +160,7 @@ function hasBehavioralBreadth(community) {
 
 // This function chooses a stable topic label from the strongest article title.
 function topicNameForCommunity(community) {
+  // Loads the title needed while performing topic name for community.
   const title = community.articles
     .slice()
     .sort((a, b) => (b.score - a.score) || (a.articleId - b.articleId))
@@ -146,17 +172,21 @@ function topicNameForCommunity(community) {
 
 // This function finds the latest behavioral evidence timestamp in a community.
 function lastBehaviorAt(community) {
+  // Selects the timestamps based on whether article published at is available.
   const timestamps = community.articles
     .map(article => article.publishedAt ? new Date(article.publishedAt).getTime() : null)
     .filter(value => Number.isFinite(value));
 
+  // Returns no result when timestamps is empty.
   if (!timestamps.length) return null;
   return new Date(Math.max(...timestamps));
 }
 
 // This function builds the Topic payload for creating or updating a behavioral topic.
 function topicPayload({ userId, community, existingTopic = null, vectorBlendAlpha }) {
+  // Normalizes the incoming vector before performing topic payload.
   const incomingVector = normalizeVector(community.vector);
+  // Selects the topic vector based on whether existing topic is available.
   const topicVector = existingTopic
     ? normalizeVector(blendTopicVectorWithAlpha(
       existingTopic.topicVector,
@@ -165,6 +195,7 @@ function topicPayload({ userId, community, existingTopic = null, vectorBlendAlph
     ))
     : incomingVector;
 
+  // Selects the result based on whether topic type is hybrid.
   return {
     userId,
     name: existingTopic?.name || topicNameForCommunity(community),
@@ -182,18 +213,23 @@ function topicPayload({ userId, community, existingTopic = null, vectorBlendAlph
 function findBestExistingTopic(community, existingTopics, matchThreshold) {
   let best = null;
 
+  // Processes each existing topics entry in turn.
   for (const topic of existingTopics) {
+    // Derives the similarity through cosine similarity while finding best existing topic.
     const similarity = cosineSimilarity(community.vector, topic.topicVector);
+    // Handles the case where best is unavailable or similarity exceeds best similarity.
     if (!best || similarity > best.similarity) {
       best = { topic, similarity };
     }
   }
 
+  // Selects the result based on whether similarity reaches match threshold.
   return best?.similarity >= matchThreshold ? best : null;
 }
 
 // This function upserts article-topic evidence rows for a behavioral community.
 async function upsertArticleTopicRows(topic, community, transaction) {
+  // Transforms source values into the rows required while performing upsert article topic rows.
   const rows = community.articles.map(article => ({
     articleId: article.articleId,
     topicId: topic.id,
@@ -212,6 +248,7 @@ async function upsertArticleTopicRows(topic, community, transaction) {
 
 // This function removes stale article-topic evidence for pure behavioral topics.
 async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transaction) {
+  // Loads the behavioral topics needed while performing cleanup stale behavioral article topic rows.
   const behavioralTopics = await Topic.findAll({
     where: {
       userId,
@@ -222,16 +259,20 @@ async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transa
     transaction
   });
 
+  // Keeps the behavioral topic id entries eligible while performing cleanup stale behavioral article topic rows.
   const behavioralTopicIds = behavioralTopics
     .map(topic => Number(topic.id))
     .filter(Number.isFinite);
 
+  // Returns early when behavioral topic id is empty.
   if (!behavioralTopicIds.length) return 0;
 
+  // Tracks distinct active keys while performing cleanup stale behavioral article topic rows.
   const activeKeys = new Set(
     activeRows.map(row => `${Number(row.topicId)}:${Number(row.articleId)}`)
   );
 
+  // Loads the existing rows needed while performing cleanup stale behavioral article topic rows.
   const existingRows = await ArticleTopic.findAll({
     where: {
       topicId: { [Op.in]: behavioralTopicIds }
@@ -241,11 +282,13 @@ async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transa
     transaction
   });
 
+  // Keeps the stale row id entries eligible while performing cleanup stale behavioral article topic rows.
   const staleRowIds = existingRows
     .filter(row => !activeKeys.has(`${Number(row.topicId)}:${Number(row.articleId)}`))
     .map(row => Number(row.id))
     .filter(Number.isFinite);
 
+  // Returns early when stale row id is empty.
   if (!staleRowIds.length) return 0;
 
   return ArticleTopic.destroy({
@@ -258,12 +301,17 @@ async function cleanupStaleBehavioralArticleTopicRows(userId, activeRows, transa
 
 // This function calibrates behavioral topics for one user's engaged articles.
 export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
+  // Resolves the community similarity threshold that governs performing calibrate behavioral topics for user.
   const communitySimilarityThreshold =
     options.communitySimilarityThreshold ?? DEFAULT_COMMUNITY_SIMILARITY_THRESHOLD;
+  // Resolves the topic match threshold that governs performing calibrate behavioral topics for user.
   const topicMatchThreshold = options.topicMatchThreshold ?? DEFAULT_TOPIC_MATCH_THRESHOLD;
+  // Resolves the engagement threshold that governs performing calibrate behavioral topics for user.
   const engagementThreshold = options.engagementThreshold ?? DEFAULT_ENGAGEMENT_THRESHOLD;
+  // Derives the vector blend alpha required while performing calibrate behavioral topics for user.
   const vectorBlendAlpha = options.vectorBlendAlpha ?? DEFAULT_VECTOR_BLEND_ALPHA;
 
+  // Loads the articles needed while performing calibrate behavioral topics for user.
   const articles = await Article.findAll({
     where: {
       userId,
@@ -296,21 +344,26 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
     ]
   });
 
+  // Keeps the profiles entries eligible while performing calibrate behavioral topics for user.
   const profiles = articles
     .map(buildArticleProfile)
     .filter(profile => Array.isArray(profile.vector) && profile.vector.length)
     .filter(profile => profile.score > 0);
 
+  // Keeps the communities entries eligible while performing calibrate behavioral topics for user.
   const communities = buildBehavioralCommunities(profiles, communitySimilarityThreshold)
     .filter(community => community.articles.length >= MIN_ARTICLES_PER_BEHAVIORAL_TOPIC)
     .filter(community => totalScore(community) >= engagementThreshold)
     .filter(hasBehavioralBreadth);
 
+  // Handles the case where communities is empty.
   if (!communities.length) {
+    // Derives the stale article topic link count through transaction while performing calibrate behavioral topics for user.
     const staleArticleTopicLinkCount = await db.sequelize.transaction(transaction =>
       cleanupStaleBehavioralArticleTopicRows(userId, [], transaction)
     );
 
+    // Selects the result based on whether profiles is non-empty.
     return {
       topicCount: 0,
       articleTopicLinkCount: 0,
@@ -319,6 +372,7 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
     };
   }
 
+  // Loads the existing topics needed while performing calibrate behavioral topics for user.
   const existingTopics = await Topic.findAll({
     where: {
       userId,
@@ -331,12 +385,18 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
   let topicCount = 0;
   let articleTopicLinkCount = 0;
   let staleArticleTopicLinkCount = 0;
+  // Collects the touched topic id while performing calibrate behavioral topics for user.
   const touchedTopicIds = [];
+  // Collects the active article topic rows while performing calibrate behavioral topics for user.
   const activeArticleTopicRows = [];
 
+  // Runs the callback required while performing calibrate behavioral topics for user.
   await db.sequelize.transaction(async transaction => {
+    // Processes each communities entry in turn.
     for (const community of communities) {
+      // Finds the best existing topic while performing calibrate behavioral topics for user.
       const best = findBestExistingTopic(community, existingTopics, topicMatchThreshold);
+      // Derives the payload through topic payload while performing calibrate behavioral topics for user.
       const payload = topicPayload({
         userId,
         community,
@@ -344,14 +404,17 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
         vectorBlendAlpha
       });
 
+      // Selects the topic based on whether best is available.
       const topic = best
         ? await best.topic.update(payload, { transaction })
         : await Topic.create(payload, { transaction });
 
+      // Handles the case where best is unavailable.
       if (!best) existingTopics.push(topic);
 
       articleTopicLinkCount += await upsertArticleTopicRows(topic, community, transaction);
       touchedTopicIds.push(Number(topic.id));
+      // Maps source values into the result produced while performing calibrate behavioral topics for user.
       activeArticleTopicRows.push(...community.articles.map(article => ({
         articleId: article.articleId,
         topicId: topic.id
@@ -378,6 +441,7 @@ export async function calibrateBehavioralTopicsForUser(userId, options = {}) {
 // This function runs behavioral topic generation from a simple options object.
 export async function calibrateBehavioralTopics(options = {}) {
   const { userId } = options;
+  // Rejects processing when user id is unavailable.
   if (!userId) throw new Error('calibrateBehavioralTopics requires a userId');
 
   return calibrateBehavioralTopicsForUser(userId, options);
