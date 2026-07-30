@@ -79,5 +79,8 @@
   },
   "optionalDependencies": {
     "fsevents": "^2.3.3"
+  },
+  "overrides": {
+    "postcss": "8.5.18"
   }
 }
