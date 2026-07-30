@@ -12,6 +12,8 @@
     "lint": "eslint .",
     "generate:favicons": "node scripts/generate-favicons.js",
     "build": "npm run generate:favicons && vite build",
+    "check:bundle-size": "node scripts/check-bundle-size.js",
+    "verify:build": "npm run build && npm run check:bundle-size",
     "preview": "vite preview --port 8080"
   },
   "engines": {
@@ -22,7 +24,6 @@
     "@vue/server-renderer": "^3.5.40",
     "axios": "^1.19.0",
     "bootstrap": "^5.3.8",
-    "bootstrap-icons": "^1.13.1",
     "bootswatch": "^5.3.8",
     "js-cookie": "^3.0.8",
     "pinia": "^4.0.2",
@@ -35,6 +36,7 @@
     "@vue/compiler-sfc": "^3.5.40",
     "@vue/test-utils": "^2.4.11",
     "baseline-browser-mapping": "^2.11.7",
+    "bootstrap-icons": "^1.13.1",
     "eslint": "^10.8.0",
     "eslint-plugin-vue": "^10.10.0",
     "favicons": "^7.3.1",

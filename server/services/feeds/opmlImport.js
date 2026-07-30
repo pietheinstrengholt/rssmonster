@@ -57,10 +57,11 @@ const collectFeedImports = (outlines, inheritedCategory = '') =>
 
 // This function imports OPML through the same guarded subscription service as the API.
 export const importOpmlSubscriptions = async ({ userId, content }) => {
-  // Selects the buffer based on whether content is buffer.
-  const buffer = Buffer.isBuffer(content)
-    ? content
-    : Buffer.from(String(content || ''), 'utf8');
+  // Rejects non-buffer input so request parameter types cannot alter validation.
+  if (!Buffer.isBuffer(content)) {
+    throw new OpmlImportError('Invalid OPML content');
+  }
+  const buffer = content;
   // Rejects processing when buffer is empty.
   if (!buffer.length) throw new OpmlImportError('No OPML file provided');
   // Rejects processing when buffer count exceeds opml import max bytes.

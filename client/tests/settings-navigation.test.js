@@ -1,6 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { describe, expect, it, vi } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
 import Settings from '../src/components/model/Settings.vue';
+import SettingsSectionError from '../src/components/model/SettingsSectionError.vue';
+import SettingsSectionLoading from '../src/components/model/SettingsSectionLoading.vue';
 
 // This function returns the settings navigation for the requested AI state.
 const getSettingsNavigation = (AIEnabled, role = 'user') => Settings.computed.settingsNavigation.call({
@@ -11,7 +13,8 @@ const getSettingsNavigation = (AIEnabled, role = 'user') => Settings.computed.se
 });
 
 // This function mounts Settings with the requested feature and role visibility.
-const mountSettings = ({ AIEnabled = false, role = 'user' } = {}) => mount(Settings, {
+const mountSettings = ({ AIEnabled = false, role = 'user', stubs = {} } = {}) => mount(Settings, {
+  attachTo: document.body,
   global: {
     mocks: {
       $store: {
@@ -29,20 +32,28 @@ const mountSettings = ({ AIEnabled = false, role = 'user' } = {}) => mount(Setti
           token: null
         }
       }
-    }
+    },
+    stubs
   }
 });
 
 // This function selects a settings section by its visible navigation label.
 const selectSettingsSection = async (wrapper, label) => {
+  await flushPromises();
   const navigationButton = wrapper
     .findAll('.settings-sidebar-item')
     .find(button => button.text() === label);
 
   expect(navigationButton).toBeDefined();
+  navigationButton.element.focus();
   await navigationButton.trigger('click');
   await flushPromises();
+  return navigationButton;
 };
+
+afterEach(() => {
+  document.body.innerHTML = '';
+});
 
 describe('Settings navigation', () => {
   it('shows Smart Folders when AI features are disabled', () => {
@@ -74,12 +85,13 @@ describe('Settings navigation', () => {
 
     expect(wrapper.get('#settings-welcome-title').text()).toBe('Welcome to Settings');
 
-    await selectSettingsSection(wrapper, 'Smart Folders');
+    const navigationButton = await selectSettingsSection(wrapper, 'Smart Folders');
     await vi.waitFor(() => {
       expect(wrapper.find('.smart-folders-hero h3').exists()).toBe(true);
     });
 
     expect(wrapper.get('.smart-folders-hero h3').text()).toBe('Smart Folders');
+    expect(document.activeElement).toBe(navigationButton.element);
     wrapper.unmount();
   });
 
@@ -93,6 +105,39 @@ describe('Settings navigation', () => {
 
     expect(wrapper.get('#scores-intro-title').text()).toBe('About AI Content Scoring');
     expect(wrapper.get('.settings-subtitle').text()).toContain('Scores');
+    wrapper.unmount();
+  });
+
+  it('keeps navigation focus while an async section is loading', async () => {
+    const wrapper = mountSettings({
+      stubs: {
+        SettingsSmartFolders: SettingsSectionLoading
+      }
+    });
+
+    const navigationButton = await selectSettingsSection(wrapper, 'Smart Folders');
+    const loadingState = wrapper.get('[role="status"]');
+
+    expect(loadingState.attributes('aria-live')).toBe('polite');
+    expect(loadingState.attributes('aria-atomic')).toBe('true');
+    expect(document.activeElement).toBe(navigationButton.element);
+    wrapper.unmount();
+  });
+
+  it('keeps navigation focus when an async section shows its error state', async () => {
+    const wrapper = mountSettings({
+      stubs: {
+        SettingsSmartFolders: SettingsSectionError
+      }
+    });
+
+    const navigationButton = await selectSettingsSection(wrapper, 'Smart Folders');
+    const errorState = wrapper.get('[role="alert"]');
+
+    expect(errorState.text()).toContain('Could not load this section');
+    expect(errorState.attributes('aria-live')).toBe('assertive');
+    expect(errorState.attributes('aria-atomic')).toBe('true');
+    expect(document.activeElement).toBe(navigationButton.element);
     wrapper.unmount();
   });
 });

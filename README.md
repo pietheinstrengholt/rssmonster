@@ -75,7 +75,7 @@ Batch reclustering is available through `npm run recluster`. It rebuilds semanti
 
 ## Prerequisites
 
-- **Node.js**: Version 20.x or higher
+- **Node.js**: Version 22.x or higher
 - **npm**: Comes bundled with Node.js
 - **Git**: For cloning the repository
 - **MySQL**: Or any compatible database (with configuration adjustments)

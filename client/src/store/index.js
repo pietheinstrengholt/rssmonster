@@ -1,17 +1,13 @@
-// src/store/index.js
-import state from "./state.js"
-import authStore from "./auth"
-import dataStore from "./data"
-import { defineStore } from 'pinia';
+import useAuthStore from './auth.js';
+import useDataStore from './data.js';
 
-export const store = defineStore('core', {  
-  state: () => state,
-  actions: {
-    setStores() {
-      this.auth = authStore(),
-      this.data = dataStore()
-    }
-  }
-})
+// Creates the legacy $store surface from stores owned by the installed Pinia instance.
+export function createStoreBridge(pinia) {
+  return Object.freeze({
+    auth: useAuthStore(pinia),
+    data: useDataStore(pinia),
+    version: '1.0.0'
+  });
+}
 
-export default store
+export default createStoreBridge;

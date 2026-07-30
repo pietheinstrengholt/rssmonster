@@ -245,6 +245,7 @@ const mergeCountsIntoStructure = (categories, groupedRows) => {
   return categories;
 };
 
+// Loads the user's category and feed structure without article counts.
 export const getOverviewLite = async (req, res, _next) => {
   const userId = req.userData.userId;
 
@@ -266,11 +267,12 @@ export const getOverviewLite = async (req, res, _next) => {
       categories
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json(err);
+    console.error('Error in getOverviewLite:', err);
+    return res.status(500).json({ error: 'Unable to load overview' });
   }
 };
 
+// Loads the user's article counts grouped into their category and feed structure.
 export const getOverviewCounts = async (req, res, _next) => {
   const userId = req.userData.userId;
 
@@ -300,11 +302,12 @@ export const getOverviewCounts = async (req, res, _next) => {
       categories
     });
   } catch (err) {
-    console.error(err);
-    return res.status(500).json(err);
+    console.error('Error in getOverviewCounts:', err);
+    return res.status(500).json({ error: 'Unable to load overview counts' });
   }
 };
 
+// Loads the user's complete category, feed, and article count overview.
 export const getOverview = async (req, res, _next) => {
   const userId = req.userData.userId;
 
@@ -334,11 +337,12 @@ export const getOverview = async (req, res, _next) => {
     });
 
   } catch (err) {
-    console.error(err);
-    return res.status(500).json(err);
+    console.error('Error in getOverview:', err);
+    return res.status(500).json({ error: 'Unable to load overview' });
   }
 };
 
+// Updates the display order of categories owned by the user.
 export const categoryUpdateOrder = async (req, res, _next) => {
 
   const userId = req.userData.userId;
@@ -376,11 +380,12 @@ export const categoryUpdateOrder = async (req, res, _next) => {
 
     return res.status(200).json("order updated");
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in categoryUpdateOrder:', err);
+    return res.status(500).json({ error: 'Unable to update category order' });
   }
 };
 
+// Moves a user-owned feed into a user-owned category.
 export const feedChangeCategory = async (req, res, _next) => {
   const userId = req.userData.userId;
 
@@ -419,17 +424,14 @@ export const feedChangeCategory = async (req, res, _next) => {
       });
     }
 
-    if (feed && category) {
-      feed
-        .update({
-          categoryId: req.body.categoryId
-        }, { where: { userId: userId } })
-        .then(() => res.status(200).json(feed))
-        .catch(error => res.status(400).json(error));
-    }
+    await feed.update({
+      categoryId: req.body.categoryId
+    }, { where: { userId: userId } });
+
+    return res.status(200).json(feed);
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in feedChangeCategory:', err);
+    return res.status(500).json({ error: 'Unable to change feed category' });
   }
 };
 

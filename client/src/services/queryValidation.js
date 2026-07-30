@@ -17,7 +17,7 @@ export const expressionPatterns = [
     { name: 'event', regex: /^event:(true|false)$/i },
     { name: 'island', regex: /^island:(true|false)$/i },
     { name: 'briefing', regex: /^briefing:(true|false)$/i },
-    { name: 'eventCount', regex: /^eventCount:\s*(?:>=)?\s*(\d+)$/i },
+    { name: 'eventCount', regex: /^eventCount:\s*(?:>=\s*)?(\d+)$/i },
     { name: 'hot', regex: /^hot:(true|false)$/i },
     { name: 'tag', regex: /^tag:(.+)$/i },
     { name: 'title', regex: /^title:(.+)$/i },

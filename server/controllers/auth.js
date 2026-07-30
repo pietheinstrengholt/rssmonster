@@ -125,7 +125,8 @@ const validate = async (req, res, _next) => {
     return res.status(200).json({ 
       message: 'This is the secret content. Only logged in users can see that!', 
       data: req.userData, 
-      user 
+      user,
+      agenticFeaturesEnabled: Boolean(process.env.OPENAI_API_KEY)
     });
   } catch (err) {
     console.error('Validation error:', err);

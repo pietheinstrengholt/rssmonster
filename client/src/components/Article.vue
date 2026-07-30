@@ -85,32 +85,28 @@
 </template>
 
 <script>
-import {
-  markAsFavorite as markArticleAsFavoriteAPI,
-  markClicked,
-  markNotInterested,
-  markMoreLikeThis,
-  fetchDuplicateArticles
-} from '../api/articles';
-
-import { muteFeed } from '../api/feeds';
-import { fetchEventArticles } from '../api/events';
-import { fetchTopicArticles } from '../api/topics';
 import ArticleHeader from './articles/ArticleHeader.vue';
 import ArticleMeta from './articles/ArticleMeta.vue';
 import ArticleTagsScores from './articles/ArticleTagsScores.vue';
 import ArticleContent from './articles/ArticleContent.vue';
 import ArticleMedia from './articles/ArticleMedia.vue';
 import ArticleActionsMenu from './articles/ArticleActionsMenu.vue';
+import { articleActionMethods } from './articles/articleActions.js';
+import {
+  createArticleExpansionState,
+  articleExpansionMethods
+} from './articles/articleExpansion.js';
+import { articleSignalComputed } from './articles/articleSignals.js';
+import {
+  createArticleMobileSwipeState,
+  articleMobileSwipeComputed,
+  articleMobileSwipeMethods
+} from './articles/mobileSwipe.js';
 import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent } from '../utils/content';
-import { notifyActionError } from '../services/actionNotifications.js';
 
 const NEUTRAL_SCORE = 70;
-const SWIPE_MAX = 128;
-const SWIPE_THRESHOLD = 86;
-const TRUSTED_FEED_THRESHOLD = 0.85;
 
 export default {
   inheritAttrs: false,
@@ -155,18 +151,10 @@ export default {
   },
   data() {
     return {
+      ...createArticleExpansionState(),
+      ...createArticleMobileSwipeState(),
       showMinimalContent: false,
-      eventExpanded: false,
-      duplicatesExpanded: false,
-      NEUTRAL_SCORE,
-      isMobilePortrait: false,
-      mediaQuery: null,
-      swipeStartX: 0,
-      swipeStartY: 0,
-      swipeTranslateX: 0,
-      swipeTracking: false,
-      swipeLocked: false,
-      swipeSuppressClick: false
+      NEUTRAL_SCORE
     };
   },
   mounted() {
@@ -176,6 +164,9 @@ export default {
     this.teardownMediaQueryListener();
   },
   computed: {
+    ...articleSignalComputed,
+    ...articleMobileSwipeComputed,
+
     // Removes internal article metadata from the root element.
     filteredAttrs() {
       const attrs = { ...this.$attrs };
@@ -298,68 +289,6 @@ export default {
         viewMode === 'reader' ||
         (viewMode === 'minimal' && this.shouldShowMinimalContent);
     },
-    // Returns compact relevance signals for the current article.
-    articleSignals() {
-      const signals = [];
-
-      if (this.hasHighQualitySignal) {
-        signals.push({ label: 'High quality', icon: 'stars' });
-      }
-
-      if (this.hasMajorEventSignal) {
-        signals.push({ label: 'Major event', icon: 'broadcast' });
-      } else if (this.hasTrendingSignal) {
-        signals.push({ label: 'Trending', icon: 'graph-up-arrow' });
-      }
-
-      if (this.hasOfficialSourceSignal) {
-        signals.push({ label: this.officialSourceLabel, icon: 'patch-check-fill' });
-      } else if (this.hasTrustedSourceSignal) {
-        signals.push({ label: this.trustedSourceLabel, icon: 'shield-fill-check' });
-      }
-
-      return signals;
-    },
-    // Returns whether quality or recommendation metadata clears the high-quality threshold.
-    hasHighQualitySignal() {
-      return this.scoreAsPercent(this.qualityScore) > 90
-        || this.scoreAsPercent(this.recommendationScore) > 90;
-    },
-    // Returns whether this article was crawled from a configured official source domain.
-    hasOfficialSourceSignal() {
-      return this.isOfficialSource === true;
-    },
-    // Returns the official-source label, including organization when available.
-    officialSourceLabel() {
-      return this.officialOrganization
-        ? `Official Feed (${this.officialOrganization})`
-        : 'Official Feed';
-    },
-    // Returns whether the feed trust score clears the trusted-source threshold.
-    hasTrustedSourceSignal() {
-      const feedTrust = Number(this.feed?.feedTrust);
-      return Number.isFinite(feedTrust) && feedTrust > TRUSTED_FEED_THRESHOLD;
-    },
-    // Returns the trusted-source label, including feed name when metadata shows an author.
-    trustedSourceLabel() {
-      const feedName = this.feed?.feedName;
-      return this.author && feedName
-        ? `Trusted source (${feedName})`
-        : 'Trusted source';
-    },
-    // Returns whether event source coverage clears the trending threshold.
-    hasTrendingSignal() {
-      return this.eventSourceScore > 4;
-    },
-    // Returns whether event source coverage clears the major-event threshold.
-    hasMajorEventSignal() {
-      return this.eventSourceScore > 6;
-    },
-    // Returns the unique-source score stored on the event metadata.
-    eventSourceScore() {
-      const score = Number(this.event?.sourceCount);
-      return Number.isFinite(score) ? score : 0;
-    },
     // Returns the total number of articles in the active event view.
     eventArticleCountTotal() {
       if (!this.event) return 0;
@@ -406,18 +335,13 @@ export default {
       }
 
       return '';
-    },
-    // Returns the inline transform used while a mobile swipe is active.
-    mobileSwipeStyle() {
-      if (!this.isMobilePortrait && !this.swipeTranslateX) return {};
-
-      return {
-        transform: `translateX(${this.swipeTranslateX}px)`,
-        transition: this.swipeTracking ? 'none' : 'transform 180ms ease'
-      };
     }
   },
   methods: {
+    ...articleActionMethods,
+    ...articleExpansionMethods,
+    ...articleMobileSwipeMethods,
+
     // Formats stored tag names for display.
     formatTagName,
     // Converts score values stored as either 0-1 or 0-100 into percentages.
@@ -425,98 +349,6 @@ export default {
       const score = Number(value);
       if (!Number.isFinite(score)) return 0;
       return score <= 1 ? score * 100 : score;
-    },
-    // Sets up the listener that tracks mobile portrait orientation.
-    setupMediaQueryListener() {
-      if (typeof window === 'undefined' || !window.matchMedia) return;
-      this.mediaQuery = window.matchMedia('(max-width: 766px) and (orientation: portrait)');
-      this.isMobilePortrait = this.mediaQuery.matches;
-      if (this.mediaQuery.addEventListener) {
-        this.mediaQuery.addEventListener('change', this.handleMediaChange);
-      } else if (this.mediaQuery.addListener) {
-        this.mediaQuery.addListener(this.handleMediaChange);
-      }
-    },
-    // Removes the listener that tracks mobile portrait orientation.
-    teardownMediaQueryListener() {
-      if (this.mediaQuery) {
-        if (this.mediaQuery.removeEventListener) {
-          this.mediaQuery.removeEventListener('change', this.handleMediaChange);
-        } else if (this.mediaQuery.removeListener) {
-          this.mediaQuery.removeListener(this.handleMediaChange);
-        }
-        this.mediaQuery = null;
-      }
-    },
-    // Updates the portrait state when the media query changes.
-    handleMediaChange(event) {
-      this.isMobilePortrait = event.matches;
-      if (!event.matches) this.resetSwipe();
-    },
-    // Starts tracking a right-swipe favorite gesture in mobile portrait mode.
-    onSwipeTouchStart(event) {
-      if (!this.isMobilePortrait || event.touches.length !== 1) {
-        this.resetSwipe();
-        return;
-      }
-
-      const touch = event.touches[0];
-      this.swipeStartX = touch.clientX;
-      this.swipeStartY = touch.clientY;
-      this.swipeTranslateX = 0;
-      this.swipeTracking = true;
-      this.swipeLocked = false;
-      this.swipeSuppressClick = false;
-    },
-    // Updates the article offset while ignoring vertical scroll gestures.
-    onSwipeTouchMove(event) {
-      if (!this.swipeTracking || !this.isMobilePortrait) return;
-      if (event.touches.length !== 1) {
-        this.resetSwipe();
-        return;
-      }
-
-      const touch = event.touches[0];
-      const deltaX = touch.clientX - this.swipeStartX;
-      const deltaY = touch.clientY - this.swipeStartY;
-
-      if (!this.swipeLocked && Math.abs(deltaY) > Math.abs(deltaX)) {
-        this.resetSwipe();
-        return;
-      }
-
-      if (deltaX <= 0) {
-        this.swipeTranslateX = 0;
-        return;
-      }
-
-      this.swipeLocked = true;
-      this.swipeSuppressClick = true;
-      this.swipeTranslateX = Math.min(deltaX, SWIPE_MAX);
-      if (event.cancelable) event.preventDefault();
-    },
-    // Toggles favorite status when the swipe crosses the threshold.
-    onSwipeTouchEnd() {
-      if (!this.swipeTracking) return;
-
-      const shouldToggle = this.swipeTranslateX >= SWIPE_THRESHOLD;
-      this.swipeTracking = false;
-
-      if (shouldToggle) this.markAsFavorite();
-
-      this.resetSwipe(false);
-      if (this.swipeSuppressClick) {
-        window.setTimeout(() => {
-          this.swipeSuppressClick = false;
-        }, 250);
-      }
-    },
-    // Resets all swipe gesture state.
-    resetSwipe(clearSuppressClick = true) {
-      this.swipeTranslateX = 0;
-      this.swipeTracking = false;
-      this.swipeLocked = false;
-      if (clearSuppressClick) this.swipeSuppressClick = false;
     },
     // Returns the icon name for a quality score.
     getQualityIcon(score) {
@@ -581,232 +413,12 @@ export default {
       if (this.feed?.categoryId) {
         this.$store.data.setSelectedCategoryId(this.feed.categoryId);
       }
-    },
-    // Marks the article as clicked and updates its parent.
-    articleClicked() {
-      markClicked(this.id)
-      .finally(() =>
-        this.$emit('update-clicked', { id: this.id, clickedAmount: 1 })
-      );
-    },
-    // Toggles the article's favorite status.
-    markAsFavorite() {
-      // Toggle favorite status.
-      const updateType = this.favoriteInd ? 'unmark' : 'mark';
-      const newFavoriteInd = this.favoriteInd ? 0 : 1;
-      
-      markArticleAsFavoriteAPI(this.id, updateType)
-      .then(response => {
-        const category = this.$store.data.categories.find(
-          c => c.id === response.data.feed.categoryId
-        );
-        if (category) {
-          const delta = newFavoriteInd ? 1 : -1;
-          category.favoriteCount += delta;
-          const feed = category.feeds.find(f => f.id === response.data.feedId);
-          if (feed) feed.favoriteCount += delta;
-        }
-        newFavoriteInd
-          ? this.$store.data.increaseFavoriteCount()
-          : this.$store.data.decreaseFavoriteCount();
-
-        this.$emit('update-favorite', { id: this.id, favoriteInd: newFavoriteInd });
-      })
-      .catch(error => {
-        console.error(`Error updating favorite state for article ${this.id}:`, error);
-        notifyActionError('Could not update the favorite. Please try again.', error);
-      });
-    },
-    // Marks the article as not interesting.
-    markNotInterested() {
-      // Mark article with negativeInd flag
-      markNotInterested(this.id)
-      .then(() => {
-        console.log('Marked as not interested:', this.id);
-        this.$emit('article-not-interested', { id: this.id });
-      })
-      .catch(error => {
-        console.error(`Error marking article ${this.id} as not interested:`, error);
-        notifyActionError('Could not update this article. Please try again.', error);
-      });
-    },
-    // Marks the article as similar to the user's interests.
-    moreLikeThis() {
-      markMoreLikeThis(this.id)
-      .then(() => {
-        console.log('Marked as more like this:', this.id);
-      })
-      .catch(error => {
-        console.error(`Error marking article ${this.id} as more like this:`, error);
-        notifyActionError('Could not update this article. Please try again.', error);
-      });
-    },
-    // Marks the article as less similar to the user's interests.
-    lessLikeThis() {
-      this.markNotInterested();
-    },
-    // Ignores the topic by marking the article as not interesting.
-    ignoreTopic() {
-      this.markNotInterested();
-    },
-    // Mutes the article feed for seven days after confirmation.
-    muteFeedSevenDays() {
-      if (confirm(`Mute "${this.feed.feedName}" for 7 days?`)) {
-        const mutedUntil = new Date();
-        mutedUntil.setDate(mutedUntil.getDate() + 7);
-        
-        muteFeed(this.feedId, mutedUntil.toISOString())
-        .then(() => {
-          console.log('Feed muted until:', mutedUntil);
-        })
-        .catch(error => {
-          console.error(`Error muting feed ${this.feedId}:`, error);
-          notifyActionError('Could not mute this feed. Please try again.', error);
-        });
-      }
-    },
-    // Expands or collapses related articles for the selected event or topic.
-    viewEventArticles(eventId) {
-      if (this.eventExpanded) {
-        this.eventExpanded = false;
-        this.$emit('event-articles-collapsed', { articleId: this.id });
-        return;
-      }
-
-      const grouping = this.$store.data.currentSelection.grouping;
-      const fetchRelatedArticles = grouping === 'topic'
-        ? fetchTopicArticles
-        : fetchEventArticles;
-
-      console.log(`Fetching ${grouping} articles for event:`, eventId);
-      fetchRelatedArticles(eventId, this.id)
-      .then(response => {
-        this.eventExpanded = true;
-        this.$emit('event-articles-loaded', {
-          articleId: this.id,
-          eventId,
-          articles: response.data.articles || []
-        });
-      })
-      .catch(error => {
-        console.error(`Error fetching ${grouping} articles:`, error);
-        notifyActionError('Could not load related articles. Please try again.', error);
-      });
-    },
-    // Expands or collapses duplicates belonging to this canonical article.
-    viewDuplicateArticles() {
-      if (this.duplicatesExpanded) {
-        this.duplicatesExpanded = false;
-        this.$emit('duplicate-articles-collapsed', { articleId: this.id });
-        return;
-      }
-
-      fetchDuplicateArticles(this.id)
-      .then(response => {
-        this.duplicatesExpanded = true;
-        this.$emit('duplicate-articles-loaded', {
-          articleId: this.id,
-          articles: response.data.articles || []
-        });
-      })
-      .catch(error => {
-        console.error('Error fetching duplicate articles:', error);
-        notifyActionError('Could not load duplicate articles. Please try again.', error);
-      });
     }
   }
 };
 </script>
 
-<style>
-.article-card .article-full-content iframe {
-  display: none;
-}
-
-.article-card .article-full-content iframe.rssmonster-youtube-frame {
-  display: block;
-  width: 100% !important;
-  max-width: 760px !important;
-  aspect-ratio: 16 / 9;
-  height: auto !important;
-  border: 0;
-  border-radius: 8px;
-  background: #000;
-}
-
-/* Override css that comes from other websites */
-.article-content-wrapper img, .article-content-wrapper div {
-  float: none !important;
-}
-
-/* Override css that comes from other websites */
-.article-content-wrapper iframe {
-    width: 100% !important;
-    height: auto !important;
-}
-
-/* Override css that comes from other websites */
-.article-body {
-  max-width: 100% !important;
-}
-
-.article-card .article-content-wrapper img, .article-card .article-content-wrapper figure {
-  display: block;
-  max-width: 100% !important;
-  height: auto !important;
-  margin-bottom: 10px !important;
-}
-
-.article-card .article-content-wrapper figure {
-  margin: 0 0 10px !important;
-  padding: 0 !important;
-}
-
-.article-card .article-content-wrapper figure.rssmonster-youtube-embed {
-  width: 100% !important;
-  max-width: 760px !important;
-  margin: 14px 0 !important;
-}
-
-.article-card .article-content-wrapper figure video,
-.article-card .article-content-wrapper video {
-  width: 100% !important;
-  height: auto !important;
-  display: block;
-}
-
-.article-card .article-content-wrapper figure.wp-block-video {
-  max-width: 100% !important;
-  width: 100% !important;
-}
-
-@media (min-width: 1200px) {
-  .article-card .article-content-wrapper img {
-    max-width: 100% !important;
-  }
-}
-
-@media (min-width: 1500px) {
-  .article-card .article-content-wrapper img {
-    max-width: 90% !important;
-  }
-}
-
-@media (min-width: 2000px) {
-  .article-card .article-content-wrapper img {
-    max-width: 80% !important;
-  }
-}
-
-.article-card .article-content-wrapper p {
-  display: inline !important;
-}
-
-/* Remove position: relative from all elements in article body */
-.article-full-content * {
-  position: static !important;
-}
-</style>
+<style src="./articles/articleContentOverrides.css"></style>
 
 <style>
 .article-body.affinity-muted {

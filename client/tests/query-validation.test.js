@@ -50,6 +50,14 @@ describe('query validation trust sorting', () => {
   });
 });
 
+// Verifies both supported event-count forms without ambiguous whitespace matching.
+describe('query validation event count filters', () => {
+  it('accepts event counts with and without the minimum-count operator', () => {
+    expect(validateSearchQuery('eventCount:2')).toEqual({ valid: true, error: '' });
+    expect(validateSearchQuery('eventCount:>=3')).toEqual({ valid: true, error: '' });
+  });
+});
+
 describe('query validation calendar dates', () => {
   it('accepts real dates, including leap days', () => {
     expect(validateSearchQuery('@2024-02-29')).toEqual({ valid: true, error: '' });

@@ -1,5 +1,5 @@
 <template>
-  <section class="settings-section-state settings-section-state--error" role="alert">
+  <section class="settings-section-state settings-section-state--error" role="alert" aria-live="assertive" aria-atomic="true">
     <BootstrapIcon icon="exclamation-triangle" aria-hidden="true" />
     <div>
       <h3>Could not load this section</h3>

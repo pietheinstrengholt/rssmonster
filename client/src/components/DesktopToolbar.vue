@@ -65,11 +65,25 @@
           </button>
         </div>
       </div>
-      <div class="toolbar-settings-button" @click="settingsClicked" title="Settings">
+      <button
+        ref="settingsButton"
+        type="button"
+        class="toolbar-settings-button"
+        title="Settings"
+        aria-label="Open settings"
+        aria-haspopup="dialog"
+        :aria-expanded="showSettingsModal ? 'true' : 'false'"
+        @click="settingsClicked"
+      >
         <BootstrapIcon icon="gear-fill" size="20" />
-      </div>
+      </button>
     </div>
-    <Settings v-if="showSettingsModal" @close="closeSettingsModal" @forceReload="handleForceReload" />
+    <Settings
+      v-if="showSettingsModal"
+      :return-focus-to="$refs.settingsButton"
+      @close="closeSettingsModal"
+      @forceReload="handleForceReload"
+    />
   </nav>
 </template>
 
@@ -243,6 +257,7 @@
   color: var(--toolbar-text);
   background-color: var(--bg-card);
   font-size: 20px;
+  padding: 0;
 }
 
 .toolbar-theme-button {
@@ -740,6 +755,7 @@
 <script>
 import Settings from './model/Settings.vue';
 import { saveThemeMode as saveThemeModeAPI } from '../api/settings.js';
+import { notifyActionError } from '../services/actionNotifications.js';
 import { validateSearchQuery } from '../services/queryValidation.js';
 import { getThemeMode, setThemeMode } from '../services/theme.js';
 
@@ -883,6 +899,7 @@ export default {
         this.selectedThemeMode = previousThemeMode;
         setThemeMode(previousThemeMode);
         this.$store.data.setThemeMode(previousThemeMode);
+        notifyActionError('Could not save the theme preference. Please try again.', err);
       }
     },
     // This function closes the settings modal.

@@ -1,0 +1,32 @@
+{
+  "entryJavaScript": {
+    "label": "Initial-entry JavaScript",
+    "rawBytes": 207000,
+    "gzipBytes": 57500
+  },
+  "mainCss": {
+    "label": "Initial-entry CSS",
+    "rawBytes": 400000,
+    "gzipBytes": 57000
+  },
+  "iconsVendor": {
+    "label": "Icons vendor chunk",
+    "rawBytes": 212000,
+    "gzipBytes": 79000
+  },
+  "vueVendor": {
+    "label": "Vue vendor chunk",
+    "rawBytes": 6500,
+    "gzipBytes": 3200
+  },
+  "axiosVendor": {
+    "label": "Axios vendor chunk",
+    "rawBytes": 49000,
+    "gzipBytes": 19000
+  },
+  "bootstrapVendor": {
+    "label": "Bootstrap vendor chunk",
+    "rawBytes": 82000,
+    "gzipBytes": 25000
+  }
+}

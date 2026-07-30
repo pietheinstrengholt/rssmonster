@@ -261,7 +261,7 @@ export const parseArticleQuery = ({ search = '', defaultSort = 'desc' } = {}) =>
     }
 
     // Derives the event count match through match while parsing article query.
-    const eventCountMatch = cleaned.match(/^eventCount:\s*(?:>=)?\s*(\d+)$/i);
+    const eventCountMatch = cleaned.match(/^eventCount:\s*(?:>=\s*)?(\d+)$/i);
     // Handles the case where event count match is available.
     if (eventCountMatch) {
       filters.eventCount = parseInt(eventCountMatch[1], 10);

@@ -1,5 +1,5 @@
 <template>
-  <section class="settings-section-state" role="status" aria-live="polite">
+  <section class="settings-section-state" role="status" aria-live="polite" aria-atomic="true">
     <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
     <p>Loading settings…</p>
   </section>

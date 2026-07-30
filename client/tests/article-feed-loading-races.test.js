@@ -131,6 +131,50 @@ describe('ArticleFeed loading races', () => {
     expect(context.isLoading).toBe(false);
   });
 
+  it('loads another page only when the sentinel intersects and loading is ready', () => {
+    const context = createLoadingContext();
+    context.container = [1, 2];
+    context.distance = 1;
+    context.hasLoadedContent = true;
+    context.getContent = vi.fn();
+
+    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: false }]);
+    context.isLoading = true;
+    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+    context.isLoading = false;
+    context.hasLoadedContent = false;
+    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+    context.hasLoadedContent = true;
+    ArticleFeed.methods.handleLoadMoreIntersections.call(context, [{ isIntersecting: true }]);
+
+    expect(context.getContent).toHaveBeenCalledOnce();
+  });
+
+  it('releases the loading guard after a detail failure so pagination can retry', async () => {
+    const failure = new Error('temporary detail failure');
+    fetchArticleDetails
+      .mockRejectedValueOnce(failure)
+      .mockResolvedValueOnce({ data: [{ id: 1, title: 'Recovered article' }] });
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const context = createLoadingContext();
+    context.container = [1];
+
+    await context.getContent();
+
+    expect(context.isLoading).toBe(false);
+    expect(context.distance).toBe(0);
+    expect(console.error).toHaveBeenCalledWith(
+      'Error fetching article details:',
+      failure
+    );
+
+    await context.getContent();
+
+    expect(context.articles).toEqual([{ id: 1, title: 'Recovered article' }]);
+    expect(context.distance).toBe(1);
+    expect(context.isLoading).toBe(false);
+  });
+
   it('reconciles every article returned as read by the server', async () => {
     const context = createLoadingContext();
     context.articles = [

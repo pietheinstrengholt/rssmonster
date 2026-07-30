@@ -39,7 +39,7 @@ import BootstrapIcons from 'virtual:bootstrap-icons-sprite'
 import '@dvuckovic/vue3-bootstrap-icons/dist/style.css'
 injectBootstrapIcons(BootstrapIcons)
 
-import store from "./store/index"
+import { createStoreBridge } from './store/index.js'
 
 // create an instance using the function
 const app = createApp(App)
@@ -54,10 +54,9 @@ if (import.meta.env.VITE_NODE_ENV == 'development') {
 	app.config.silent = true;
 }
 
-// setup pinia and store
-app.use(createPinia())
-export const $store = store()
+// Install Pinia before creating the compatibility store bridge.
+const pinia = createPinia()
+app.use(pinia)
+export const $store = createStoreBridge(pinia)
 app.config.globalProperties.$store = $store
-app.config.globalProperties.$store.setStores()
-$store.setStores()
 app.mount('#app');

@@ -221,7 +221,7 @@ export const getArticles = async (req, res) => {
     res.status(200).json(result);
   } catch (err) {
     console.error("getArticles error:", err);
-    res.status(500).json({ error: err.message });
+    res.status(500).json({ error: 'Unable to load articles' });
   }
 };
 
@@ -272,7 +272,7 @@ const getDuplicateArticles = async (req, res) => {
     return res.status(200).json({ articles });
   } catch (err) {
     console.error('Error in getDuplicateArticles:', err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to load duplicate articles' });
   }
 };
 
@@ -328,7 +328,7 @@ const getArticle = async (req, res, _next) => {
     res.status(200).json({ article: article });
   } catch (err) {
     console.error("Error in getArticle:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to load article' });
   }
 };
 
@@ -521,7 +521,7 @@ const markAsRead = async (req, res, _next) => {
     });
   } catch (err) {
     console.error("Error in markAsRead:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to mark articles as read' });
   }
 };
 
@@ -590,7 +590,7 @@ const markClicked = async (req, res, _next) => {
     });
   } catch (err) {
     console.error("Error in markClicked:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to mark article as clicked' });
   }
 };
 
@@ -628,7 +628,7 @@ const markNotInterested = async (req, res, _next) => {
     });
   } catch (err) {
     console.error("Error in markNotInterested:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to mark article as not interested' });
   }
 };
 
@@ -669,7 +669,7 @@ const markMoreLikeThis = async (req, res, _next) => {
     });
   } catch (err) {
     console.error("Error in markMoreLikeThis:", err);
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: 'Unable to mark article as more like this' });
   }
 };
 
@@ -701,8 +701,8 @@ const articleDetails = async (req, res, _next) => {
 
     return res.status(200).json(articles);
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in articleDetails:', err);
+    return res.status(500).json({ error: 'Unable to load article details' });
   }
 };
 
@@ -954,8 +954,8 @@ const articleMarkAsSeen = async (req, res, _next) => {
     return res.status(200).json(response);
 
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in articleMarkAsRead:', err);
+    return res.status(500).json({ error: 'Unable to mark article as read' });
   }
 };
 
@@ -979,8 +979,8 @@ const articleMarkToUnread = async (req, res, _next) => {
     
     return res.status(result.statusCode).json(result.article);
   } catch (err) {
-    console.log(err);
-    return res.status(500).json(err);
+    console.error('Error in articleMarkToUnread:', err);
+    return res.status(500).json({ error: 'Unable to mark article as unread' });
   }
 };
 
@@ -1056,7 +1056,7 @@ const articleMarkAsFavorite = async (req, res, _next) => {
     return res.status(200).json(article);
   } catch (err) {
     console.error('Error in articleMarkAsFavorite:', err);
-    return res.status(500).json(err);
+    return res.status(500).json({ error: 'Unable to update article favorite status' });
   }
 };
 

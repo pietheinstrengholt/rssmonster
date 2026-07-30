@@ -73,4 +73,55 @@ describe('AppShell lifecycle', () => {
     expect(context.actionErrorTimer).toBeNull();
     expect(vi.getTimerCount()).toBe(0);
   });
+
+  it('replaces and automatically dismisses recoverable action notices', () => {
+    const context = {
+      actionErrorId: 0,
+      actionErrorMessage: '',
+      actionErrorTimer: null
+    };
+    // This function connects the timeout callback to the component method.
+    context.dismissActionError = () => AppShell.methods.dismissActionError.call(context);
+
+    AppShell.methods.showActionError.call(context, 'First failure');
+    const firstTimer = context.actionErrorTimer;
+    AppShell.methods.showActionError.call(context, 'Latest failure');
+
+    expect(context.actionErrorMessage).toBe('Latest failure');
+    expect(context.actionErrorId).toBe(2);
+    expect(context.actionErrorTimer).not.toBe(firstTimer);
+    expect(vi.getTimerCount()).toBe(1);
+
+    vi.advanceTimersByTime(6000);
+
+    expect(context.actionErrorMessage).toBe('');
+    expect(context.actionErrorTimer).toBeNull();
+  });
+
+  it('routes fatal and authentication events into the existing fatal flow', () => {
+    const context = {
+      $store: {
+        auth: {
+          setToken: vi.fn()
+        },
+        data: {
+          setFatalError: vi.fn()
+        }
+      }
+    };
+    const fatalError = {
+      message: 'Backend unavailable',
+      type: 'offline'
+    };
+
+    AppShell.methods.handleAppError.call(context, { detail: fatalError });
+    AppShell.methods.handleAuthExpired.call(context);
+
+    expect(context.$store.data.setFatalError).toHaveBeenNthCalledWith(1, fatalError);
+    expect(context.$store.auth.setToken).toHaveBeenCalledWith(null);
+    expect(context.$store.data.setFatalError).toHaveBeenNthCalledWith(2, {
+      message: 'Your session has expired',
+      type: 'unauthorized'
+    });
+  });
 });

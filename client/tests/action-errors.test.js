@@ -2,6 +2,7 @@ import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 import ActionErrorNotice from '../src/components/ActionErrorNotice.vue';
 import ArticleFeed from '../src/components/ArticleFeed.vue';
+import DesktopToolbar from '../src/components/DesktopToolbar.vue';
 import NewFeed from '../src/components/model/NewFeed.vue';
 import SettingsActions from '../src/components/model/SettingsActions.vue';
 import {
@@ -12,6 +13,7 @@ import {
 import { markArticleUnread } from '../src/api/articles';
 import { createFeed } from '../src/api/feeds';
 import { saveActions } from '../src/api/actions';
+import { saveThemeMode } from '../src/api/settings';
 
 vi.mock('../src/api/articles', () => ({
   fetchArticleDetails: vi.fn(),
@@ -32,6 +34,10 @@ vi.mock('../src/api/feeds', () => ({
 vi.mock('../src/api/actions', () => ({
   fetchActions: vi.fn(),
   saveActions: vi.fn()
+}));
+
+vi.mock('../src/api/settings', () => ({
+  saveThemeMode: vi.fn()
 }));
 
 // This function captures the next recoverable action error notification.
@@ -134,5 +140,29 @@ describe('recoverable action errors', () => {
     });
     expect(context.$emit).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith('Error saving article actions:', error);
+  });
+
+  it('notifies and rolls back when saving a theme preference fails', async () => {
+    const error = { response: { status: 500 } };
+    saveThemeMode.mockRejectedValueOnce(error);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const notification = captureActionError();
+    const context = {
+      selectedThemeMode: 'auto',
+      $store: {
+        data: {
+          setThemeMode: vi.fn()
+        }
+      }
+    };
+
+    await DesktopToolbar.methods.selectThemeMode.call(context, 'dark');
+
+    await expect(notification).resolves.toEqual({
+      message: 'Could not save the theme preference. Please try again.'
+    });
+    expect(context.selectedThemeMode).toBe('auto');
+    expect(context.$store.data.setThemeMode).toHaveBeenLastCalledWith('auto');
+    expect(console.error).toHaveBeenCalledWith('Error saving theme mode:', error);
   });
 });

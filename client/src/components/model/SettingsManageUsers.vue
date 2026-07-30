@@ -19,7 +19,7 @@
                   <button class="btn btn-secondary" @click="returnToUserList">Cancel</button>
                 </div>
               </section>
-              <p v-if="message" class="manage-users__message manage-users__message--error">{{ message }}</p>
+              <p v-if="message" class="manage-users__message manage-users__message--error" role="alert">{{ message }}</p>
             </div>
 
     <div v-else-if="user" class="manage-users__editor">
@@ -52,7 +52,7 @@
                 <button type="button" class="btn btn-primary" @click="updateUser">Save changes</button>
                 <button type="button" class="btn btn-secondary" @click="returnToUserList">Cancel</button>
               </div>
-              <p v-if="message" class="manage-users__message manage-users__message--error">{{ message }}</p>
+              <p v-if="message" class="manage-users__message manage-users__message--error" role="alert">{{ message }}</p>
             </div>
 
     <div v-else class="manage-users__directory">
@@ -66,7 +66,14 @@
                   <p>Review RSSMonster accounts, update roles, and manage user access from one place.</p>
                 </div>
               </section>
-              <p v-if="message" class="manage-users__message manage-users__message--success">{{ message }}</p>
+              <p
+                v-if="message"
+                class="manage-users__message"
+                :class="`manage-users__message--${messageType}`"
+                :role="messageType === 'error' ? 'alert' : 'status'"
+              >
+                {{ message }}
+              </p>
               <div v-if="users.length !== 0" class="manage-users__table-wrap">
                 <table class="manage-users__table">
                   <thead>
@@ -98,7 +105,7 @@
                   </tbody>
                 </table>
               </div>
-              <div v-else class="manage-users__empty">
+              <div v-else-if="messageType !== 'error'" class="manage-users__empty">
                 <BootstrapIcon icon="people" aria-hidden="true" />
                 <p>No users found.</p>
               </div>
@@ -502,10 +509,12 @@
 <script>
 import { fetchUsers, updateUser, deleteUser } from '../../api/users';
 import { setAuthToken } from '../../api/client';
+import { isFatalActionError } from '../../services/actionNotifications.js';
 
 export default {
     name: 'SettingsManageUsers',
     emits: ['close'],
+    // This function applies authentication and loads the admin-only user directory.
     created: function() {
         setAuthToken(this.$store.auth.token);
         if (!this.isAdmin) {
@@ -514,40 +523,55 @@ export default {
         }
         this.fetchUsers(); // Fetch users when the component is created
     },
+    // This function creates user-management view state.
     data() {
         return {
           users: [], // This will hold the list of users
           user: null, // This will hold the user being edited
           message: '',
+          messageType: 'success',
           userIdToDelete: null // This will hold the ID of the deleted user
         };
     },
     computed: {
+      // This function returns whether the current account may manage users.
       isAdmin() {
         return this.$store.auth.getRole === 'admin';
       }
     },
     methods: {
+      // This function prevents user-management actions when admin rights are absent.
       hasAdminRights() {
         if (this.isAdmin) {
           return true;
         }
 
         this.message = 'You need admin rights to manage users.';
+        this.messageType = 'error';
         return false;
       },
-      async fetchUsers() {
+      // This function loads the user directory with an optional partial-success message.
+      async fetchUsers(failureMessage = 'Could not load users. Please try again.') {
         if (!this.hasAdminRights()) {
-          return;
+          return false;
         }
+
+        this.message = '';
 
         try {
           const response = await fetchUsers();
           this.users = response.data.users;
+          return true;
         } catch (error) {
-          console.error("Error fetching users:", error);
+          console.error('Error loading the user directory:', error);
+          if (!isFatalActionError(error)) {
+            this.message = failureMessage;
+            this.messageType = 'error';
+          }
+          return false;
         }
       },
+      // This function opens a safe editable copy of the selected user.
       editUser(userId) {
         if (!this.hasAdminRights()) {
           return;
@@ -558,12 +582,24 @@ export default {
         this.user = JSON.parse(JSON.stringify(user));
         // You can implement the logic to open a modal or redirect to an edit page
       },
+      // This function returns to and refreshes the user directory.
       returnToUserList() {
         this.user = null; // Clear the user being edited
         this.userIdToDelete = null; // Clear the user ID to delete
         this.message = null; // Clear any previous messages
         this.fetchUsers(); // Refresh the user list
       },
+      // This function validates an optional replacement password before saving.
+      validatePassword(password, repeatedPassword) {
+        if (password.length > 0 && password.length < 8) {
+          return 'Password must be at least 8 characters long.';
+        }
+        if (password !== repeatedPassword) {
+          return 'Passwords do not match.';
+        }
+        return '';
+      },
+      // This function updates a user and reports recoverable failures without exposing backend details.
       async updateUser() {
         if (!this.hasAdminRights()) {
           return;
@@ -572,51 +608,68 @@ export default {
         // Logic to update user
         const userPassword = this.$el.querySelector('#password').value;
         const userPasswordRepeat = this.$el.querySelector('#password-repeat').value;
+        const validationMessage = this.validatePassword(userPassword, userPasswordRepeat);
+
+        if (validationMessage) {
+          this.message = validationMessage;
+          this.messageType = 'error';
+          return;
+        }
+
+        const userId = this.user.id;
+        this.message = '';
 
         try {
-          // Validate password length
-          if (userPassword.length > 0) {
-            if (userPassword.length < 8) {
-              this.message = "Password must be at least 8 characters long";
-              throw new Error("Password must be at least 8 characters long");
-            }
-
-            if (userPassword !== userPasswordRepeat) {
-              this.message = "Passwords do not match";
-              throw new Error("Passwords do not match");
-            }
-          }
-
-          await updateUser(this.user.id, {
+          await updateUser(userId, {
             username: this.user.username,
             role: this.user.role,
             password: userPassword
           });
-          this.message = null;
           this.user = null;
-          this.fetchUsers();
+          const refreshed = await this.fetchUsers(
+            'User changes were saved, but the user list could not be refreshed.'
+          );
+          if (refreshed) {
+            this.message = 'User updated successfully.';
+            this.messageType = 'success';
+          }
         } catch (error) {
-          console.error("Error updating user:", error);
-          this.message = error.message || "Error updating user";
+          console.error(`Error updating user ${userId}:`, error);
+          if (!isFatalActionError(error)) {
+            this.message = 'Could not update this user. Please try again.';
+            this.messageType = 'error';
+          }
         }
       },
+      // This function deletes a user and preserves the confirmation state when deletion fails.
       async deleteUser(userId) {
         if (!this.hasAdminRights()) {
           return;
         }
 
+        this.message = '';
+
         // Logic to delete user
         try {
           await deleteUser(userId);
-          this.fetchUsers();
           this.user = null;
           this.userIdToDelete = null;
-          this.message = "User deleted successfully";
+          const refreshed = await this.fetchUsers(
+            'The user was deleted, but the user list could not be refreshed.'
+          );
+          if (refreshed) {
+            this.message = 'User deleted successfully.';
+            this.messageType = 'success';
+          }
         } catch (error) {
-          console.error("Error deleting user:", error);
-          this.message = "Error deleting user. " + (error.response?.data?.message || error.message);
+          console.error(`Error deleting user ${userId}:`, error);
+          if (!isFatalActionError(error)) {
+            this.message = 'Could not delete this user. Please try again.';
+            this.messageType = 'error';
+          }
         }
       },
+      // This function opens the deletion confirmation for the selected user.
       showDeleteForm(userId) {
         if (!this.hasAdminRights()) {
           return;

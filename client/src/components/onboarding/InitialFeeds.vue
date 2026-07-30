@@ -25,9 +25,18 @@
       </li>
     </ul>
 
+    <div
+      v-if="setupMessage"
+      class="alert"
+      :class="`alert-${setupMessageType}`"
+      role="alert"
+    >
+      {{ setupMessage }}
+    </div>
+
     <div class="actions">
-      <button class="btn btn-primary" @click="start">
-        Start with selected feeds
+      <button type="button" class="btn btn-primary" :disabled="setupPending" @click="start">
+        {{ setupPending ? 'Adding selected feeds…' : 'Start with selected feeds' }}
       </button>
     </div>
   </div>
@@ -42,11 +51,16 @@
 <script>
 import { createCategory } from '../../api/categories';
 import { createFeed } from '../../api/feeds';
+import { isFatalActionError } from '../../services/actionNotifications.js';
 
 export default {
   name: "InitialFeeds",
+  // This function creates the initial onboarding form state.
   data() {
     return {
+        setupMessage: '',
+        setupMessageType: 'danger',
+        setupPending: false,
         feeds: [
             // Reddit
             {
@@ -150,12 +164,41 @@ export default {
   },
 
   methods: {
+    // This function creates the selected starter data and keeps onboarding open after partial failures.
     async start() {
-      await this.createCategoriesFromSelectedFeeds();
-      await this.createFeedsFromSelectedFeeds();
-      this.$emit("completed");
+      if (this.setupPending) return;
+
+      this.setupMessage = '';
+      this.setupPending = true;
+
+      try {
+        const categoryResult = await this.createCategoriesFromSelectedFeeds();
+        if (categoryResult.fatal) return;
+
+        const feedResult = await this.createFeedsFromSelectedFeeds();
+        if (feedResult.fatal) return;
+
+        const failedCategoryCount = categoryResult.failedNames.length;
+        const failedFeedCount = feedResult.failedTitles.length;
+
+        if (failedCategoryCount || failedFeedCount) {
+          const changedCount = categoryResult.createdCount + feedResult.createdCount;
+          this.setupMessageType = changedCount > 0 ? 'warning' : 'danger';
+          this.setupMessage = this.formatSetupFailureMessage(
+            failedCategoryCount,
+            failedFeedCount,
+            changedCount > 0
+          );
+          return;
+        }
+
+        this.$emit("completed");
+      } finally {
+        this.setupPending = false;
+      }
     },
 
+    // This function creates missing categories and reports recoverable failures for safe retries.
     async createCategoriesFromSelectedFeeds() {
       const requiredCategories = [
         ...new Set(
@@ -166,6 +209,11 @@ export default {
       ];
 
       const existingNames = this.$store.data.categories.map(c => c.name);
+      const resultSummary = {
+        createdCount: 0,
+        failedNames: [],
+        fatal: false
+      };
 
       for (const name of requiredCategories) {
         if (existingNames.includes(name)) continue;
@@ -181,24 +229,42 @@ export default {
           category.feeds = [];
 
           this.$store.data.categories.push(category);
+          existingNames.push(name);
+          resultSummary.createdCount += 1;
 
         } catch (err) {
-          console.error("Failed to create category:", name, err);
+          console.error(`Error creating onboarding category "${name}":`, err);
+          if (isFatalActionError(err)) {
+            resultSummary.fatal = true;
+            return resultSummary;
+          }
+          resultSummary.failedNames.push(name);
         }
       }
+
+      return resultSummary;
     },
 
+    // This function creates missing starter feeds and leaves successful additions in retry-safe store state.
     async createFeedsFromSelectedFeeds() {
+      const resultSummary = {
+        createdCount: 0,
+        failedTitles: [],
+        fatal: false
+      };
 
       for (const feed of this.feeds.filter(f => f.selected)) {
         const category = this.$store.data.categories.find(
           c => c.name === feed.category
         );
 
-        if (!category) continue;
+        if (!category) {
+          resultSummary.failedTitles.push(feed.title);
+          continue;
+        }
 
         // Prevent duplicate feeds
-        const exists = category.feeds.some(f => f.url === feed.url);
+        const exists = category.feeds.some(f => f.url === feed.url || f.feedUrl === feed.url);
         if (exists) continue;
 
         try {
@@ -217,11 +283,36 @@ export default {
           newFeed.errorCount = 0;
 
           category.feeds.push(newFeed);
+          resultSummary.createdCount += 1;
 
         } catch (err) {
-          console.error("Failed to create feed:", feed.title, err);
+          console.error(`Error creating onboarding feed "${feed.title}":`, err);
+          if (isFatalActionError(err)) {
+            resultSummary.fatal = true;
+            return resultSummary;
+          }
+          resultSummary.failedTitles.push(feed.title);
         }
       }
+
+      return resultSummary;
+    },
+
+    // This function summarizes incomplete onboarding without exposing backend details.
+    formatSetupFailureMessage(failedCategoryCount, failedFeedCount, hasPartialSuccess) {
+      const failures = [];
+      if (failedCategoryCount) {
+        failures.push(`${failedCategoryCount} ${failedCategoryCount === 1 ? 'category' : 'categories'}`);
+      }
+      if (failedFeedCount) {
+        failures.push(`${failedFeedCount} selected ${failedFeedCount === 1 ? 'feed' : 'feeds'}`);
+      }
+
+      const prefix = hasPartialSuccess
+        ? 'Some starter content was added, but'
+        : 'Setup could not finish because';
+
+      return `${prefix} ${failures.join(' and ')} could not be added. You can retry safely.`;
     }
   }
 };

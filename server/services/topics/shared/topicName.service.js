@@ -226,8 +226,8 @@ function compactTopicName(value) {
     .replace(/\s+/g, ' ')
     .replace(/\s*\/\s*/g, ' / ')
     .replace(/\s+([,:;])/g, '$1')
-    .replace(/(?:\s*\/\s*)+$/g, '')
-    .replace(/^(?:\s*\/\s*)+/g, '')
+    .replace(/[\s/]+$/, '')
+    .replace(/^[\s/]+/, '')
     .trim();
 
   // Returns early when compact is unavailable.

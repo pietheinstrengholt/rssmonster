@@ -79,5 +79,8 @@ describe('auth controller', () => {
     expect(validateRes.body.user).not.toHaveProperty(
       'feverCredentialHash'
     );
+    expect(validateRes.body.agenticFeaturesEnabled).toBe(
+      loginRes.body.agenticFeaturesEnabled
+    );
   });
 });

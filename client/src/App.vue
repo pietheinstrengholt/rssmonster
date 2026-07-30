@@ -71,8 +71,10 @@
 <script>
 import AppShell from './AppShell.vue';
 import Cookies from 'js-cookie';
+import { mapStores } from 'pinia';
 import { setAuthToken } from './api/client';
 import * as authApi from './api/auth';
+import { useStore as useAuthStore } from './store/auth.js';
 
 export default {
   components: {
@@ -98,6 +100,9 @@ export default {
   beforeUnmount() {
     window.removeEventListener('auth:expired', this.handleAuthExpired);
   },
+  computed: {
+    ...mapStores(useAuthStore)
+  },
   methods: {
     handleAuthExpired() {
       console.warn('Session expired — logging out');
@@ -116,8 +121,11 @@ export default {
 
         authApi.applyAuthToken(token);
 
-        this.$store.auth.setToken(token);
-        this.$store.auth.setRole(data.user.role);
+        this.authStore.setSession({
+          token,
+          role: data.user.role,
+          agenticFeaturesEnabled: data.agenticFeaturesEnabled
+        });
         this.isAuthenticated = true;
       } catch (error) {
         console.error('Session validation error:', error);
@@ -142,11 +150,11 @@ export default {
 
         setAuthToken(response.token);
 
-        this.$store.auth.setToken(response.token);
-        this.$store.auth.setRole(response.user.role);
-        this.$store.auth.setAgenticFeaturesEnabled(
-          response.agenticFeaturesEnabled || false
-        );
+        this.authStore.setSession({
+          token: response.token,
+          role: response.user.role,
+          agenticFeaturesEnabled: response.agenticFeaturesEnabled
+        });
 
         this.isAuthenticated = true;
 
@@ -230,8 +238,7 @@ export default {
     logout() {
       setAuthToken(null); // 👈 CLEAR API CLIENT TOKEN
 
-      this.$store.auth.setToken(null);
-      this.$store.auth.setRole(null);
+      this.authStore.clearSession();
       Cookies.remove('token');
 
       this.isAuthenticated = false;

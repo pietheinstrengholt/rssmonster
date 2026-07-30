@@ -65,4 +65,51 @@ describe('AppShell offline recovery', () => {
     expect(context.startOverviewPolling).toHaveBeenCalledOnce();
     expect(context.$store.data.setFatalError).not.toHaveBeenCalled();
   });
+
+  it('synchronizes the current selection after an initial overview succeeds', async () => {
+    const context = createRecoveryContext();
+    context.$store.data.fetchOverviewSplit.mockResolvedValue();
+
+    await AppShell.methods.getOverview.call(context, true);
+
+    expect(context.$store.data.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
+    expect(context.offlineStatus).toBe(false);
+    expect(context.overviewLoaded).toBe(true);
+    expect(context.updateSelection)
+      .toHaveBeenCalledWith(context.$store.data.currentSelection);
+  });
+
+  it('reloads every mounted article feed after reconnecting', async () => {
+    const context = createRecoveryContext();
+    const firstFeed = { fetchArticleIds: vi.fn() };
+    const secondFeed = { fetchArticleIds: vi.fn() };
+    context.$refs.articleFeed = [firstFeed, null, secondFeed];
+    context.$store.data.fetchOverviewSplit.mockResolvedValue();
+
+    await AppShell.methods.forceReload.call(context);
+
+    expect(firstFeed.fetchArticleIds)
+      .toHaveBeenCalledWith(context.$store.data.currentSelection);
+    expect(secondFeed.fetchArticleIds)
+      .toHaveBeenCalledWith(context.$store.data.currentSelection);
+  });
+
+  it('returns to fatal offline state when reconnecting fails', async () => {
+    const failure = new Error('backend connection failed');
+    const context = createRecoveryContext();
+    context.$store.data.fetchOverviewSplit.mockRejectedValue(failure);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await AppShell.methods.forceReload.call(context);
+
+    expect(context.$store.data.setFatalError).toHaveBeenCalledWith({
+      message: 'Backend unreachable',
+      type: 'offline'
+    });
+    expect(context.startOverviewPolling).not.toHaveBeenCalled();
+    expect(console.error).toHaveBeenCalledWith(
+      'Error reloading application data:',
+      failure
+    );
+  });
 });

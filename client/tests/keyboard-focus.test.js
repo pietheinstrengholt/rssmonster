@@ -74,7 +74,7 @@ afterEach(() => {
 });
 
 describe('keyboard access and focus', () => {
-  it('moves focus into Settings and closes it with Escape', async () => {
+  it('moves initial focus into Settings and closes it with Escape', async () => {
     const wrapper = mountSettings();
     await flushPromises();
     const closeButton = wrapper.get('.settings-close-button');
@@ -84,6 +84,54 @@ describe('keyboard access and focus', () => {
 
     expect(wrapper.emitted('close')).toHaveLength(1);
     wrapper.unmount();
+  });
+
+  it('wraps forward and backward Tab focus inside Settings', async () => {
+    const wrapper = mountSettings();
+    await flushPromises();
+    const dialog = wrapper.get('.settings-dialog');
+    const focusableElements = wrapper.vm.getFocusableElements();
+    const firstElement = focusableElements[0];
+    const lastElement = focusableElements[focusableElements.length - 1];
+
+    lastElement.focus();
+    await dialog.trigger('keydown', { key: 'Tab' });
+    expect(document.activeElement).toBe(firstElement);
+
+    firstElement.focus();
+    await dialog.trigger('keydown', { key: 'Tab', shiftKey: true });
+    expect(document.activeElement).toBe(lastElement);
+    wrapper.unmount();
+  });
+
+  it('restores focus to the Settings opener after unmount', async () => {
+    const opener = document.createElement('button');
+    opener.textContent = 'Open settings';
+    document.body.appendChild(opener);
+    opener.focus();
+    const wrapper = mount(Settings, {
+      attachTo: document.body,
+      props: {
+        returnFocusTo: opener
+      },
+      global: {
+        mocks: {
+          $store: {
+            auth: { getRole: 'user' },
+            data: {
+              currentSelection: { AIEnabled: false },
+              smartFolders: []
+            }
+          }
+        }
+      }
+    });
+    await flushPromises();
+
+    expect(document.activeElement).not.toBe(opener);
+    wrapper.unmount();
+
+    expect(document.activeElement).toBe(opener);
   });
 
   it.each([

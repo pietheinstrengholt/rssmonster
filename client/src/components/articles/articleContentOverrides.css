@@ -1,0 +1,87 @@
+.article-card .article-full-content iframe {
+  display: none;
+}
+
+.article-card .article-full-content iframe.rssmonster-youtube-frame {
+  display: block;
+  width: 100% !important;
+  max-width: 760px !important;
+  aspect-ratio: 16 / 9;
+  height: auto !important;
+  border: 0;
+  border-radius: 8px;
+  background: #000;
+}
+
+/* Override css that comes from other websites */
+.article-content-wrapper img, .article-content-wrapper div {
+  float: none !important;
+}
+
+/* Override css that comes from other websites */
+.article-content-wrapper iframe {
+    width: 100% !important;
+    height: auto !important;
+}
+
+/* Override css that comes from other websites */
+.article-body {
+  max-width: 100% !important;
+}
+
+.article-card .article-content-wrapper img, .article-card .article-content-wrapper figure {
+  display: block;
+  max-width: 100% !important;
+  height: auto !important;
+  margin-bottom: 10px !important;
+}
+
+.article-card .article-content-wrapper figure {
+  margin: 0 0 10px !important;
+  padding: 0 !important;
+}
+
+.article-card .article-content-wrapper figure.rssmonster-youtube-embed {
+  width: 100% !important;
+  max-width: 760px !important;
+  margin: 14px 0 !important;
+}
+
+.article-card .article-content-wrapper figure video,
+.article-card .article-content-wrapper video {
+  width: 100% !important;
+  height: auto !important;
+  display: block;
+}
+
+.article-card .article-content-wrapper figure.wp-block-video {
+  max-width: 100% !important;
+  width: 100% !important;
+}
+
+@media (min-width: 1200px) {
+  .article-card .article-content-wrapper img {
+    max-width: 100% !important;
+  }
+}
+
+@media (min-width: 1500px) {
+  .article-card .article-content-wrapper img {
+    max-width: 90% !important;
+  }
+}
+
+@media (min-width: 2000px) {
+  .article-card .article-content-wrapper img {
+    max-width: 80% !important;
+  }
+}
+
+.article-card .article-content-wrapper p {
+  display: inline !important;
+}
+
+/* Remove position: relative from all elements in article body */
+.article-full-content * {
+  position: static !important;
+}
