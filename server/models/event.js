@@ -4,78 +4,74 @@ export default (sequelize) => {
   const Event = sequelize.define(
     'events',
     {
+      // Provides the stable identifier for this evolving group of related articles.
       id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         primaryKey: true
       },
+      // Identifies the user who owns this event and its member articles.
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Links to the event's primary topic for efficient grouping; null before topic assignment.
       topicId: {
-        /**
-         * Structural topic grouping link.
-         * 
-         * Events are semantically similar articles grouped under one topic.
-         * Multiple events can belong to the same topic (e.g., a news story evolving).
-         * 
-         * This is the primary structural relationship: Event -> Topic.
-         * Articles reference topics denormally for direct access (Article.topicId).
-         * 
-         * See: services/topics/event/assignEventToTopic.js for topic resolution.
-         */
         type: DataTypes.INTEGER,
         allowNull: true
       },
-      // Representative article for the event, used for display and summarization. Nullable because an event may be created before a representative article is assigned.
+      // Identifies the event's representative article used for display and summarization.
       representativeArticleId: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
-      // Moving presentation article for the event. Nullable until a developing article is selected.
+      // Identifies the current developing-story article; null until one is selected.
       developingArticleId: {
         type: DataTypes.INTEGER,
         allowNull: true,
         defaultValue: null
       },
-      // Human-readable name/title for the event, used in the UI. Nullable because it may be generated after creation.
+      // Stores the event title shown in the UI; null until a name is generated.
       name: {
         type: DataTypes.STRING(255),
         allowNull: true
       },
-      // Denormalized counts and scores for efficient querying and sorting
+      // Caches the number of articles grouped into the event, starting with its representative.
       articleCount: {
         type: DataTypes.INTEGER,
         defaultValue: 1
       },
-      // Count of unique source feeds contributing to the event, used for source diversity and strength calculations
+      // Caches the number of distinct source feeds represented in the event.
       sourceCount: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      // Measures how broadly the event is corroborated across distinct sources.
       sourceDiversityScore: {
         type: DataTypes.FLOAT,
         defaultValue: 0
       },
+      // Scores the event's overall significance from its membership and source evidence.
       eventStrength: {
         type: DataTypes.FLOAT,
         defaultValue: 0
       },
+      // Stores the aggregate embedding representing the event; null before vectorization.
       eventVector: {
         type: DataTypes.JSON,
         allowNull: true
       },
-      // Event windowing start, derived from member article event times.
+      // Records the earliest member-article event time; null before the window is derived.
       eventWindowStartAt: {
         type: DataTypes.DATE,
         allowNull: true
       },
-      // Event windowing end, used for lifecycle status, recency scoring, and topic activity.
+      // Records the latest member-article event time; null before the window is derived.
       eventWindowEndAt: {
         type: DataTypes.DATE,
         allowNull: true
       },
+      // Tracks the event lifecycle as emerging, active, cooling, or archived.
       status: {
         type: DataTypes.ENUM('emerging', 'active', 'cooling', 'archived'),
         defaultValue: 'emerging'

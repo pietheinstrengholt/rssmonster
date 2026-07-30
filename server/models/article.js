@@ -82,115 +82,138 @@ export default (sequelize) => {
   const Article = sequelize.define(
     'articles',
     {
+      // Provides the stable identifier for this stored feed article.
       id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         allowNull: false,
         primaryKey: true
       },
-      // Publisher-provided article identifier, such as a feed GUID, UUID, numeric ID, or URL
+      // Stores the publisher-provided article identity; null when the feed supplies none.
       externalId: {
         type: DataTypes.STRING(1024),
         allowNull: true,
         defaultValue: null
       },
-      // Describes the publisher-specific identifier pattern used by externalId
+      // Records the publisher identity source, such as a GUID or URL; null with no external identity.
       externalIdType: {
         type: DataTypes.STRING(64),
         allowNull: true,
         defaultValue: null
       },
+      // Identifies the user who owns this article and its derived data.
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Identifies the subscribed feed from which this article was ingested.
       feedId: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Tracks the reading state, defaulting to unread and also supporting duplicate suppression.
       status: {
         type: DataTypes.STRING,
         allowNull: false,
         defaultValue: 'unread'
       },
+      // Marks articles discarded by an action so they remain stored but are excluded from user and semantic queries.
       filteredInd: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
+      // Links a duplicate to its canonical article; null when this article is canonical.
       duplicateOfArticleId: {
         type: DataTypes.INTEGER,
         allowNull: true
       },
+      // Counts duplicate articles consolidated under this canonical article.
       duplicateCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
+      // Marks whether the user has saved the article as a favorite.
       favoriteInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      // Marks explicit negative-interest feedback for behavioral learning.
       negativeInd: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
+      // Marks explicit positive-interest feedback for behavioral learning.
       positiveInd: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
+      // Counts the user's outbound link clicks from this article.
       clickedAmount: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      // Marks whether the article contains at least one collected outbound hotlink.
       hotInd: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      // Counts outbound hotlinks collected from the article content.
       hotlinks: {
         type: DataTypes.INTEGER,
         allowNull: false,
         defaultValue: 0
       },
+      // Stores normalized media attachments; null when the article has no supported media.
       media: {
         type: DataTypes.JSON,
         allowNull: true,
         defaultValue: null
       },
+      // Stores the publisher URL used to open and identify the article.
       url: {
         type: DataTypes.STRING(1024),
         allowNull: false
       },
+      // Stores the SHA-256 identity of the publisher URL for feed-local deduplication.
       urlHash: {
         type: DataTypes.STRING(64),
         allowNull: false
       },
+      // Stores the canonicalized article URL used to match equivalent publisher links.
       normalizedUrl: {
         type: DataTypes.STRING(1024),
         allowNull: false
       },
+      // Stores the SHA-256 identity of the canonicalized URL for feed-local deduplication.
       normalizedUrlHash: {
         type: DataTypes.STRING(64),
         allowNull: false
       },
+      // Stores the selected lead-image URL; null when no suitable image is found.
       imageUrl: {
         type: DataTypes.TEXT,
         allowNull: true
       },
+      // Stores the selected lead image's pixel width; null when unknown.
       imageWidth: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: true
       },
+      // Stores the selected lead image's pixel height; null when unknown.
       imageHeight: {
         type: DataTypes.INTEGER.UNSIGNED,
         allowNull: true
       },
+      // Stores the selected lead image's media type; null when unknown.
       imageMimeType: {
         type: DataTypes.STRING(100),
         allowNull: true
       },
+      // Records where the lead image was discovered; null when no source is selected.
       imageSource: {
         type: DataTypes.ENUM(
           'media-content',
@@ -202,78 +225,83 @@ export default (sequelize) => {
         ),
         allowNull: true
       },
+      // Stores the article headline displayed to the user.
       title: {
         type: DataTypes.TEXT,
         allowNull: false
       },
-      // Original author string from feed (not normalized or linked to an Author model, just stored for reference)
+      // Stores the publisher-provided author text; null when the feed omits it.
       author: DataTypes.TEXT,
+      // Stores the publisher-provided article description; null when the feed omits it.
       description: DataTypes.TEXT('medium'),
-      // Full original content (HTML or text) from the feed, used for processing and vectorization but not sent to client
+      // Preserves the raw feed content for processing; null when no source body is available.
       contentOriginal: {
         type: DataTypes.TEXT('medium'),
         allowNull: true,
         defaultValue: null
       },
-      // Sanitized display HTML derived from the original feed payload
+      // Stores sanitized display HTML derived from source content; null when unavailable.
       contentHtml: {
         type: DataTypes.TEXT('medium'),
         allowNull: true,
         defaultValue: null
       },
-      // Plain text content for NLP extraction and storage
+      // Stores visible plain text used for analysis and embeddings; null when unavailable.
       contentText: {
         type: DataTypes.TEXT('medium'),
         allowNull: true,
         defaultValue: null
       },
+      // Exposes sanitized HTML through the legacy content property without storing another copy.
       content: {
         type: DataTypes.VIRTUAL(DataTypes.TEXT),
         get() {
           return this.getDataValue('contentHtml');
         }
       },
-      // SHA-256 identity of normalized visible plain text
+      // Stores the SHA-256 identity of normalized visible text; null when no text is available.
       contentTextHash: {
         type: DataTypes.STRING(64),
         allowNull: true
       },
-      // AI-generated summary bullets (array of strings), stored as JSON
+      // Stores AI-generated factual summary bullets; null when analysis has not produced them.
       contentSummaryBullets: {
         type: DataTypes.JSON,
         allowNull: true
       },
-      // SHA-256 identity of normalized original feed source content
+      // Stores the SHA-256 identity of normalized source content; null when no source body exists.
       contentSourceHash: {
         type: DataTypes.STRING(64),
         allowNull: true
       },
+      // Marks whether the article URL matches an enabled official-source domain for its user.
       isOfficialSource: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
+      // Names the matched official organization; null when no official source matches.
       officialOrganization: {
         type: DataTypes.STRING(128),
         allowNull: true,
         defaultValue: null
       },
-      // Embedding vector for semantic search and topic modeling, stored as JSON array of floats
+      // Records which embedding model produced the article vector; null before embedding.
       embedding_model: {
         type: DataTypes.STRING(64),
         allowNull: true
       },
-      // The actual embedding vector, stored as JSON array of floats. Nullable because not all articles may have embeddings (e.g. if processing failed or is pending).
+      // Stores the article embedding for semantic processing; null when pending, disabled, or failed.
       articleVector: {
         type: DataTypes.JSON,
         allowNull: true
       },
-      // Denormalized event link for convenience/performance. Nullable because articles may exist before being assigned to an event.
+      // Links to the article's semantic event; null before assignment or for standalone articles.
       eventId: {
         type: DataTypes.INTEGER,
         allowNull: true
       },
-      // Show whether this article is the developing story for its event. This is a virtual field derived from the event's developingArticleId and representativeArticleId.
+      // Indicates whether this unread article is its event's non-representative developing-story selection.
       isDevelopingStory: {
         type: DataTypes.VIRTUAL(DataTypes.BOOLEAN),
         get() {
@@ -294,36 +322,29 @@ export default (sequelize) => {
           );
         }
       },
+      // Caches the article's primary event topic for direct queries; null before topic assignment.
       topicId: {
-        /**
-         * Denormalized topic link for convenience/performance.
-         * 
-         * Article participates in two distinct relationships:
-         * 1. Structural: Article -> Event -> Topic (primary grouping)
-         * 2. Denormalized: Article -> Topic (direct link for queries)
-         * 
-         * When an article is assigned to an event, topicId is set from event.topicId
-         * for efficient topic-level queries without JOIN traversal. This maintains
-         * consistency: article.topicId always equals article.event.topicId (if event exists).
-         * 
-         * See: services/events/assignArticleToEvent.js for assignment logic.
-         */
         type: DataTypes.INTEGER,
         allowNull: true
       },
+      // Stores the feed-provided article language; null when unspecified.
       language: DataTypes.TEXT('tiny'),
+      // Scores the absence of promotional content from 0 to 100, defaulting to zero.
       advertisementScore: {
         type: DataTypes.INTEGER,
         defaultValue: 0
       },
+      // Scores emotional neutrality and tone quality from 0 to 100, defaulting to 50.
       sentimentScore: {
         type: DataTypes.INTEGER,
         defaultValue: 50
       },
+      // Scores writing and informational quality from 0 to 100, defaulting to 50.
       qualityScore: {
         type: DataTypes.INTEGER,
         defaultValue: 50
       },
+      // Stores the predicted user-interest affinity, with zero representing no match.
       interestScore: {
         type: DataTypes.FLOAT,
         allowNull: false,
@@ -335,11 +356,13 @@ export default (sequelize) => {
       // 2 = read
       // 3 = deep read
       // 4 = highly engaged
+      // Classifies engagement from zero for passed through four for highly engaged.
       attentionBucket: {
         type: DataTypes.TINYINT,
         allowNull: false,
         defaultValue: 0
       },
+      // Derives normalized engagement from the attention bucket with a bounded click boost.
       attentionScore: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
@@ -381,6 +404,7 @@ export default (sequelize) => {
         }
       },
       // Freshness score: >0.7 = today, 0.3–0.7 = recent (1–2 days), 0.1–0.3 = aging, <0.1 = stale
+      // Derives time-decayed freshness from publication time, returning zero when unavailable.
       freshness: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
@@ -393,6 +417,7 @@ export default (sequelize) => {
           return Math.exp(-ageHours / TAU_HOURS);
         }
       },
+      // Derives normalized overall quality from content scores and loaded feed-quality evidence.
       quality: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
@@ -439,6 +464,7 @@ export default (sequelize) => {
           return applyFeedQualityAdjustment(baseQuality, this.get('Feed'));
         }
       },
+      // Derives a uniqueness score that decreases as the associated event grows.
       uniqueness: {
         type: DataTypes.VIRTUAL(DataTypes.FLOAT),
         get() {
@@ -465,6 +491,7 @@ export default (sequelize) => {
           return Math.max(0, Math.min(1, uniqueness));
         }
       },
+      // Exposes the loaded primary topic's semantic key; null when no key is available.
       topicKey: {
         type: DataTypes.VIRTUAL(DataTypes.STRING),
         get() {
@@ -475,6 +502,7 @@ export default (sequelize) => {
         }
       },
       // Timestamp when the article was published (from feed data, used for freshness and sorting)
+      // Stores the effective publication time used for sorting and freshness, defaulting to ingestion time.
       publishedAt: {
         type: DataTypes.DATE,
         allowNull: false,
@@ -485,30 +513,35 @@ export default (sequelize) => {
       // timestamp when available, or the time RSSMonster detects a confirmed content revision otherwise.
       // It remains null when neither raw metadata nor a confirmed content revision exists.
       // Incoming modification timestamps are informational and never drive revision comparison.
+      // Stores the best-known confirmed content-revision time; null before a revision is known.
       modifiedAt: {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null
       },
       // Source publication timestamp before any fallback or inference is applied.
+      // Preserves the publication timestamp selected from source signals; null when none was available.
       publishedSource: {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null
       },
       // Whether the stored publication timestamp was inferred from fallback signals.
+      // Marks whether the effective publication time came from fallback rather than explicit publication metadata.
       publishInferred: {
         type: DataTypes.BOOLEAN,
         allowNull: false,
         defaultValue: false
       },
       // Timestamp when the article was first seen on the screen (used for freshness tracking and UI purposes)
+      // Records when the article was first displayed to the user; null until first presentation.
       firstSeen: {
         type: DataTypes.DATE,
         allowNull: true,
         defaultValue: null
       },
       // Timestamp when the article was explicitly marked as read.
+      // Records when the article was explicitly marked read; null while unread or when no read time is known.
       readAt: {
         type: DataTypes.DATE,
         allowNull: true,

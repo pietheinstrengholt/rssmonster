@@ -4,29 +4,29 @@ export default (sequelize) => {
   const SmartFolder = sequelize.define(
     'smartFolder',
     {
+      // Provides the stable identifier for this saved smart folder.
       id: {
         type: DataTypes.INTEGER,
         autoIncrement: true,
         allowNull: false,
         primaryKey: true
       },
+      // Identifies the user who owns and can execute this smart folder.
       userId: {
         type: DataTypes.INTEGER,
         allowNull: false
       },
+      // Stores the user-facing name of the saved search.
       name: {
         type: DataTypes.STRING(255),
         allowNull: false
       },
-      /**
-       * Advanced search expression
-       * Example:
-       *   "tag:ai unread:true quality:>0.6"
-       */
+      // Stores the advanced article-search expression evaluated by the smart folder.
       query: {
         type: DataTypes.TEXT,
         allowNull: false
       },
+      // Caps the number of matching articles returned, defaulting to 50.
       limitCount: {
         type: DataTypes.INTEGER,
         allowNull: false,
