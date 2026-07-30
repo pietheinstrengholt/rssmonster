@@ -541,27 +541,33 @@ export default {
     window.removeEventListener('rssmonster:focus-search', this.focusSearchInput);
   },
   methods: {
+    // This function emits a toolbar selection event.
     emitClickEvent(eventType, value) {
       this.$emit(eventType, value);
     },
+    // This function closes mobile search when the layout becomes wide enough.
     handleResize() {
       // Close search when switching from portrait to landscape
       if (this.showSearch && window.innerWidth >= MOBILE_LANDSCAPE_WIDTH) {
         this.toggleSearch();
       }
     },
+    // This function applies the current mobile search query.
     updateSearch() {
       this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
     },
+    // This function toggles the mobile search controls and shared state.
     toggleSearch() {
       this.showSearch = !this.showSearch;
       this.$store.data.setMobileSearchOpen(this.showSearch);
     },
+    // This function opens and focuses the mobile search input.
     focusSearchInput() {
       this.showSearch = true;
       this.$store.data.setMobileSearchOpen(true);
       this.$nextTick(() => this.$refs.searchInput?.focus());
     },
+    // This function changes the grouping only when the value differs.
     setGrouping: function(value) {
       // Don't trigger if already at the selected value
       if (this.$store.data.currentSelection.grouping === value) {
@@ -569,26 +575,31 @@ export default {
       }
       this.$store.data.setGrouping(value);
     },
+    // This function applies a non-empty mobile search query.
     performSearch() {
       if (this.$store.data.searchQuery.trim()) {
         this.$store.data.setSelectedSearch(this.$store.data.searchQuery);
         this.toggleSearch();
       }
     },
+    // This function updates the active article sort order.
     sortClicked: function(sort) {
       this.$store.data.setSelectedSort(sort);
     },
+    // This function updates the selected status, clearing smart folders before reloading.
     statusClicked: function(status) {
-      //if user selects current selection, then do a forceReload by emitting an event to parent
-      if (status === this.$store.data.getSelectedStatus) {
+      const currentSelection = this.$store.data.currentSelection;
+      if (status === currentSelection.status && currentSelection.smartFolderId === null) {
         this.$emit('forceReload');
       } else {
         this.$store.data.setSelectedStatus(status);
       }
     },
+    // This function returns the count for the active article status.
     getStatusCount() {
       return this.$store.data[statusCountMap[this.currentStatus]] ?? 0;
     },
+    // This function returns a category count for the active article status.
     getCategoryCount(category) {
       return category[statusCountMap[this.currentStatus]] ?? 0;
     }

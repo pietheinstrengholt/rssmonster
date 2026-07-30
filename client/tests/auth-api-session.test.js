@@ -1,15 +1,17 @@
 import axios from 'axios';
 import { afterEach, describe, expect, it, vi } from 'vitest';
+import api from '../src/api/client.js';
 import { validateSession } from '../src/api/auth.js';
 
 afterEach(() => {
   vi.restoreAllMocks();
+  delete api.defaults.headers.common.Authorization;
   delete axios.defaults.headers.common.Authorization;
 });
 
 describe('session validation API', () => {
   it('scopes the bootstrap Authorization header to the validation request', async () => {
-    const post = vi.spyOn(axios, 'post').mockResolvedValue({
+    const post = vi.spyOn(api, 'post').mockResolvedValue({
       data: { user: { role: 'user' } }
     });
 
@@ -18,19 +20,21 @@ describe('session validation API', () => {
     });
 
     expect(post).toHaveBeenCalledWith(
-      expect.stringContaining('/api/auth/validate'),
+      '/auth/validate',
       undefined,
       {
         headers: {
           Authorization: 'Bearer saved-token'
-        }
+        },
+        suppressGlobalError: true
       }
     );
+    expect(api.defaults.headers.common.Authorization).toBeUndefined();
     expect(axios.defaults.headers.common.Authorization).toBeUndefined();
   });
 
   it('rejects validation without a token before making a request', async () => {
-    const post = vi.spyOn(axios, 'post');
+    const post = vi.spyOn(api, 'post');
 
     await expect(validateSession()).rejects.toThrow('No token');
     expect(post).not.toHaveBeenCalled();

@@ -1,20 +1,14 @@
-import axios from 'axios';
 import api, { setAuthToken } from './client';
 
-const BASE_URL = import.meta.env.VITE_VUE_APP_HOSTNAME + '/api/auth';
-
-/**
- * Validate an existing session.
- * IMPORTANT: backend expects Authorization header ONLY.
- */
+// This function validates a saved session without persisting its bootstrap token.
 export const validateSession = async (token) => {
   if (!token) throw new Error('No token');
 
-  // Keep the bootstrap token scoped to this request.
-  const response = await axios.post(`${BASE_URL}/validate`, undefined, {
+  const response = await api.post('/auth/validate', undefined, {
     headers: {
       Authorization: `Bearer ${token}`
-    }
+    },
+    suppressGlobalError: true
   });
   return response.data;
 };

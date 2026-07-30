@@ -277,6 +277,7 @@ export default {
       offlineStatus: false,
       overviewIntervalId: null,
       overviewLoaded: false,
+      overviewReloading: false,
       sidebarScrollTimeout: null,
       unsubscribeFromSystemTheme: null
     };
@@ -319,28 +320,24 @@ export default {
     },
     // This function handles fatal application error events.
     handleAppError(event) {
+      if (event.detail?.type === 'offline') {
+        this.offlineStatus = true;
+        this.overviewLoaded = true;
+        this.stopOverviewPolling();
+      }
+
       this.$store.data.setFatalError(event.detail);
-    },
-    // This function handles authentication expiry events.
-    handleAuthExpired() {
-      this.$store.auth.setToken(null);
-      this.$store.data.setFatalError({
-        type: 'unauthorized',
-        message: 'Your session has expired'
-      });
     },
     // This function registers the window listeners owned by the app shell.
     registerGlobalListeners() {
       this.removeGlobalListeners();
       window.addEventListener(ACTION_ERROR_EVENT, this.handleActionError);
       window.addEventListener('app:error', this.handleAppError);
-      window.addEventListener('auth:expired', this.handleAuthExpired);
     },
     // This function removes the window listeners owned by the app shell.
     removeGlobalListeners() {
       window.removeEventListener(ACTION_ERROR_EVENT, this.handleActionError);
       window.removeEventListener('app:error', this.handleAppError);
-      window.removeEventListener('auth:expired', this.handleAuthExpired);
     },
     // This function starts overview polling once per app shell instance.
     startOverviewPolling() {
@@ -437,10 +434,14 @@ export default {
         }
       }
     },
+    // This function refreshes overview data without conflating auth, timeout, and connectivity failures.
     async getOverview(initial) {
       try {
         await this.$store.data.fetchOverviewSplit({ initial });
 
+        if (['offline', 'overview'].includes(this.$store.data.fatalError?.type)) {
+          this.$store.data.clearFatalError();
+        }
         this.offlineStatus = false;
         this.overviewLoaded = true;
 
@@ -449,22 +450,42 @@ export default {
           this.updateSelection(this.$store.data.currentSelection);
         }
       } catch (error) {
-        const isTimeoutError = error?.code === 'ECONNABORTED' || /timeout/i.test(error?.message || '');
-
-        if (isTimeoutError) {
-          console.warn('Overview request timed out, keeping current online state.', error?.message || error);
-          this.overviewLoaded = true;
-          return;
-        }
-
         console.error('Error loading the application overview:', error);
-
-        this.stopOverviewPolling();
-
-        this.$store.auth.setToken(null);
-        this.offlineStatus = true;
-        this.overviewLoaded = true;
+        this.handleOverviewFailure(error);
       }
+    },
+    // This function preserves authentication while classifying overview failures for retry.
+    handleOverviewFailure(error) {
+      const isTimeoutError = error?.code === 'ECONNABORTED' ||
+        /timeout/i.test(error?.message || '');
+
+      if (isTimeoutError) {
+        console.warn('Overview request timed out, keeping current online state.', error?.message || error);
+        this.overviewLoaded = true;
+        return;
+      }
+
+      if (error?.response?.status === 401) {
+        return;
+      }
+
+      this.stopOverviewPolling();
+      this.overviewLoaded = true;
+
+      if (!error?.response) {
+        this.offlineStatus = true;
+        this.$store.data.setFatalError({
+          type: 'offline',
+          message: 'Backend unreachable'
+        });
+        return;
+      }
+
+      this.offlineStatus = false;
+      this.$store.data.setFatalError({
+        type: 'overview',
+        message: 'Could not load the application overview'
+      });
     },
     async showNotification(input) {
       if (
@@ -484,14 +505,18 @@ export default {
         console.error('Error showing the new article notification:', error);
       }
     },
+    // This function coalesces retries and restores polling after one successful recovery.
     async forceReload() {
-      // Exit error mode immediately
-      this.$store.data.clearFatalError();
-      this.offlineStatus = false;
+      if (this.overviewReloading) return;
 
+      this.overviewReloading = true;
       try {
         // Refresh overview (this also fetches settings)
         await this.$store.data.fetchOverviewSplit({ initial: true });
+        if (['offline', 'overview'].includes(this.$store.data.fatalError?.type)) {
+          this.$store.data.clearFatalError();
+        }
+        this.offlineStatus = false;
         this.overviewLoaded = true;
         this.startOverviewPolling();
 
@@ -511,11 +536,10 @@ export default {
         }
       } catch (error) {
         console.error('Error reloading application data:', error);
-        // Recovery failed → re-enter fatal error mode
-        this.$store.data.setFatalError({
-          type: 'offline',
-          message: 'Backend unreachable'
-        });
+        // Keep the retry surface aligned with the actual failure type.
+        this.handleOverviewFailure(error);
+      } finally {
+        this.overviewReloading = false;
       }
     },
     refreshFeeds() {

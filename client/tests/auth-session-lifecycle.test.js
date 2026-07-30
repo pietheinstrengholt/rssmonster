@@ -32,6 +32,25 @@ beforeEach(() => {
 });
 
 describe('authentication lifecycle', () => {
+  it('owns one session-expiry listener and removes it on unmount', async () => {
+    const context = {
+      checkSession: vi.fn().mockResolvedValue(),
+      handleAuthExpired: vi.fn(),
+      isLoading: true
+    };
+
+    await App.created.call(context);
+    await App.created.call(context);
+    window.dispatchEvent(new Event('auth:expired'));
+
+    expect(context.handleAuthExpired).toHaveBeenCalledOnce();
+    expect(context.isLoading).toBe(false);
+
+    App.beforeUnmount.call(context);
+    window.dispatchEvent(new Event('auth:expired'));
+    expect(context.handleAuthExpired).toHaveBeenCalledOnce();
+  });
+
   it('validates a saved session and applies its role and token', async () => {
     vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
     authApi.validateSession.mockResolvedValue({

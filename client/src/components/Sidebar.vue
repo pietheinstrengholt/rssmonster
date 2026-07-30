@@ -423,7 +423,7 @@ function loadType(status) {
   if (status === 'refresh') {
     store.data.setSmartFolder(null);
     emit('forceReload');
-  } else if (status !== store.data.getSelectedStatus) {
+  } else if (status !== store.data.currentSelection.status) {
     store.data.setSelectedStatus(status);
   } else if (store.data.currentSelection.smartFolderId !== null) {
     store.data.setSelectedStatus(status);

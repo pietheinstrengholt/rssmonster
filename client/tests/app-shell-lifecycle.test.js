@@ -8,7 +8,6 @@ const createLifecycleContext = () => {
     actionErrorTimer: null,
     handleActionError: vi.fn(),
     handleAppError: vi.fn(),
-    handleAuthExpired: vi.fn(),
     overviewIntervalId: null,
     sidebarScrollTimeout: null,
     unsubscribeFromSystemTheme: vi.fn()
@@ -52,6 +51,24 @@ describe('AppShell lifecycle', () => {
     expect(vi.getTimerCount()).toBe(1);
   });
 
+  it('keeps one effective copy of each global listener across registration', () => {
+    const context = createLifecycleContext();
+
+    AppShell.methods.registerGlobalListeners.call(context);
+    AppShell.methods.registerGlobalListeners.call(context);
+    window.dispatchEvent(new CustomEvent(ACTION_ERROR_EVENT, {
+      detail: { message: 'Retry later' }
+    }));
+    window.dispatchEvent(new CustomEvent('app:error', {
+      detail: { type: 'offline' }
+    }));
+
+    expect(context.handleActionError).toHaveBeenCalledOnce();
+    expect(context.handleAppError).toHaveBeenCalledOnce();
+
+    AppShell.methods.removeGlobalListeners.call(context);
+  });
+
   it('removes global listeners and clears timers during unmount', () => {
     const context = createLifecycleContext();
     const removeEventListenerSpy = vi.spyOn(window, 'removeEventListener');
@@ -66,7 +83,7 @@ describe('AppShell lifecycle', () => {
       context.handleActionError
     );
     expect(removeEventListenerSpy).toHaveBeenCalledWith('app:error', context.handleAppError);
-    expect(removeEventListenerSpy).toHaveBeenCalledWith('auth:expired', context.handleAuthExpired);
+    expect(removeEventListenerSpy.mock.calls.some(([type]) => type === 'auth:expired')).toBe(false);
     expect(context.unsubscribeFromSystemTheme).toHaveBeenCalledOnce();
     expect(context.overviewIntervalId).toBeNull();
     expect(context.sidebarScrollTimeout).toBeNull();
@@ -98,12 +115,12 @@ describe('AppShell lifecycle', () => {
     expect(context.actionErrorTimer).toBeNull();
   });
 
-  it('routes fatal and authentication events into the existing fatal flow', () => {
+  it('routes offline events into the fatal flow and stops polling', () => {
     const context = {
+      offlineStatus: false,
+      overviewLoaded: false,
+      stopOverviewPolling: vi.fn(),
       $store: {
-        auth: {
-          setToken: vi.fn()
-        },
         data: {
           setFatalError: vi.fn()
         }
@@ -115,13 +132,10 @@ describe('AppShell lifecycle', () => {
     };
 
     AppShell.methods.handleAppError.call(context, { detail: fatalError });
-    AppShell.methods.handleAuthExpired.call(context);
 
-    expect(context.$store.data.setFatalError).toHaveBeenNthCalledWith(1, fatalError);
-    expect(context.$store.auth.setToken).toHaveBeenCalledWith(null);
-    expect(context.$store.data.setFatalError).toHaveBeenNthCalledWith(2, {
-      message: 'Your session has expired',
-      type: 'unauthorized'
-    });
+    expect(context.$store.data.setFatalError).toHaveBeenCalledWith(fatalError);
+    expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
+    expect(context.offlineStatus).toBe(true);
+    expect(context.overviewLoaded).toBe(true);
   });
 });

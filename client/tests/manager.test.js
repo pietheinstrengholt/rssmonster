@@ -127,7 +127,13 @@ describe('Sidebar manager', () => {
 		expect(statusRows[1].text()).toContain('Unread');
 
 		await statusRows[0].trigger('click');
-		expect(setSelectedStatus).toHaveBeenCalledWith('briefing');
+		expect(setSelectedStatus).not.toHaveBeenCalled();
+
+		wrapper.vm.$store.data.currentSelection.status = 'unread';
+		wrapper.vm.$store.data.currentSelection.smartFolderId = 42;
+		await wrapper.vm.$nextTick();
+		await statusRows[1].trigger('click');
+		expect(setSelectedStatus).toHaveBeenCalledWith('unread');
 
 		wrapper.vm.$store.data.currentSelection.AIEnabled = false;
 		await wrapper.vm.$nextTick();

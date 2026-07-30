@@ -92,6 +92,7 @@ export default {
     };
   },
   async created() {
+    window.removeEventListener('auth:expired', this.handleAuthExpired);
     window.addEventListener('auth:expired', this.handleAuthExpired);
 
     await this.checkSession();
@@ -104,6 +105,7 @@ export default {
     ...mapStores(useAuthStore)
   },
   methods: {
+    // This function routes session expiry through the root session cleanup flow.
     handleAuthExpired() {
       console.warn('Session expired — logging out');
       this.logout();
@@ -235,8 +237,9 @@ export default {
           `The server rejected the registration request (HTTP ${error.response.status}). Please check your details and try again.`;
       }
     },
+    // This function clears Axios, Pinia, and cookie authentication state together.
     logout() {
-      setAuthToken(null); // 👈 CLEAR API CLIENT TOKEN
+      setAuthToken(null);
 
       this.authStore.clearSession();
       Cookies.remove('token');

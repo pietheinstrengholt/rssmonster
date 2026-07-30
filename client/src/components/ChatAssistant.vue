@@ -33,7 +33,7 @@
                     <strong>You:</strong> {{ message.content }}
                 </div>
                 <div class="assistant-message" v-else-if="message.role === 'assistant'">
-                    <strong>Assistant:</strong> <span v-html="message.content"></span>
+                    <strong>Assistant:</strong> <span class="assistant-message-content">{{ message.content }}</span>
                 </div>
               </div>
         </div>
@@ -61,6 +61,10 @@ div#inputArea {
   padding: 10px;
   margin-bottom: 10px;
   border-radius: 5px;
+}
+
+.assistant-message-content {
+  white-space: pre-wrap;
 }
 
 .loading-spinner {
@@ -167,42 +171,34 @@ div#inputArea {
 </style>
 
 <script>
-import store from "../store";
 import { sendChatMessages } from '../api/agent';
 
 export default {
     name: "app-assistant",
+    // This function initializes the conversation input, messages, and loading state.
     data() {
         return {
-            store: store,
             chatInput: '',
-            chatOutput: '',
             messages: [],
             isLoading: false
         };
     },
-    created() {
-        this.chatInput = '';
-        this.chatOutput = '';
-    },
     methods: {
+        // This function submits non-empty user input and appends the assistant response.
         submitChat: function() {
-            //prevent empty input
             if (!this.chatInput || !this.chatInput.trim()) return;
-            //add user input to messages
+
             const inputMessage = { role: 'user', content: this.chatInput };
             this.messages.push(inputMessage);
-            //empty input field
             this.chatInput = '';
-            //set loading state
             this.isLoading = true;
-            //send messages to server
+
+            // This operation records either the assistant output or a safe fallback message.
             sendChatMessages(this.messages)
             .then(response => {
-              this.chatOutput = response.data.output;
               this.messages.push({
                 role: 'assistant',
-                content: this.chatOutput
+                content: response.data.output
               });
             })
             .catch(error => {
@@ -213,13 +209,12 @@ export default {
                 });
             })
             .finally(() => {
-                //clear loading state
                 this.isLoading = false;
             });
         },
+        // This function clears all messages from the current conversation.
         clearConversation: function() {
             this.messages = [];
-            this.chatOutput = '';
         }
     }
 };

@@ -89,7 +89,7 @@ export const articleFeedPaginationMethods = {
 
       const response = await fetchArticleDetails(
         ids,
-        this.$store.data.getSelectedSort
+        this.$store.data.currentSelection.sort
       );
       if (requestId !== this.activeRequestId) return;
 

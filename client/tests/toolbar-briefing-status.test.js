@@ -17,7 +17,6 @@ function createStore(AIEnabled) {
         smartFolderId: null,
         categoryId: '%'
       },
-      getSelectedStatus: 'unread',
       briefingCount: 8,
       unreadCount: 12,
       favoriteCount: 3,
@@ -87,6 +86,33 @@ describe('toolbar Daily Briefing status', () => {
     await briefingOption.trigger('click');
 
     expect(store.data.setSelectedStatus).toHaveBeenCalledWith('briefing');
+  });
+
+  // This test preserves the toolbar reload behavior for an ordinary current status.
+  it.each([DesktopToolbar, MobileToolbar])('reloads the current status in %s', async (component) => {
+    const store = createStore(true);
+    const wrapper = component === DesktopToolbar
+      ? shallowMount(component, { global: { mocks: { $store: store } } })
+      : mount(component, { global: { mocks: { $store: store } } });
+
+    wrapper.vm.statusClicked('unread');
+
+    expect(wrapper.emitted('forceReload')).toHaveLength(1);
+    expect(store.data.setSelectedStatus).not.toHaveBeenCalled();
+  });
+
+  // This test preserves status navigation out of a smart-folder selection.
+  it.each([DesktopToolbar, MobileToolbar])('leaves a smart folder through the current status in %s', async (component) => {
+    const store = createStore(true);
+    store.data.currentSelection.smartFolderId = 42;
+    const wrapper = component === DesktopToolbar
+      ? shallowMount(component, { global: { mocks: { $store: store } } })
+      : mount(component, { global: { mocks: { $store: store } } });
+
+    wrapper.vm.statusClicked('unread');
+
+    expect(store.data.setSelectedStatus).toHaveBeenCalledWith('unread');
+    expect(wrapper.emitted('forceReload')).toBeUndefined();
   });
 });
 

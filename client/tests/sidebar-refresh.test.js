@@ -42,7 +42,6 @@ const createDataStore = () => reactive({
   favoriteCount: 0,
   fetchSmartFolders: vi.fn().mockResolvedValue({}),
   fetchTopTags: vi.fn().mockResolvedValue({}),
-  getSelectedStatus: 'unread',
   hotCount: 0,
   readCount: 0,
   setSelectedCategoryId: vi.fn(),

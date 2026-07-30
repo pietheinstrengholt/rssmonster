@@ -855,7 +855,8 @@ export default {
     },
     // This function updates the selected article status or reloads the current one.
     statusClicked: function(status) {
-      if (status === this.$store.data.getSelectedStatus) {
+      const currentSelection = this.$store.data.currentSelection;
+      if (status === currentSelection.status && currentSelection.smartFolderId === null) {
         this.$emit('forceReload');
       } else {
         this.$store.data.setSelectedStatus(status);
