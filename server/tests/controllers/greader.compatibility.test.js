@@ -11,6 +11,7 @@ import request from 'supertest';
 import { Op } from 'sequelize';
 import db from '../../models/index.js';
 import { createGreaderAuthToken } from '../../utils/apiCredentials.js';
+import { MAX_STREAM_ITEM_ID_COUNT } from '../../services/greader/streamQuery.js';
 import {
   LABEL_PREFIX,
   READ_STREAM,
@@ -690,6 +691,30 @@ describe('Google Reader API compatibility foundation', () => {
   });
 
   describe('item IDs', () => {
+    it('[Reeder] accepts the 10,000-item state reconciliation request', async () => {
+      const fixture = await createFixture();
+      const articleFindAll = vi.spyOn(Article, 'findAll');
+
+      try {
+        const response = await request(app)
+          .get('/api/greader/reader/api/0/stream/items/ids')
+          .query({
+            n: MAX_STREAM_ITEM_ID_COUNT,
+            s: READING_LIST_STREAM,
+            xt: READ_STREAM,
+            output: 'json'
+          })
+          .set('Authorization', greaderAuthHeaderFor(fixture.user));
+
+        expect(response.status).toBe(200);
+        expect(articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+          limit: MAX_STREAM_ITEM_ID_COUNT + 1
+        }));
+      } finally {
+        articleFindAll.mockRestore();
+      }
+    });
+
     it('[current] emits decimal IDs from stream/items/ids', async () => {
       const fixture = await createFixture();
 

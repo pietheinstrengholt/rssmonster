@@ -5,6 +5,7 @@ import {
 } from '../../utils/greaderParameters.js';
 import {
   DEFAULT_STREAM_ITEM_COUNT,
+  MAX_STREAM_ITEM_ID_COUNT,
   MAX_STREAM_ITEM_COUNT,
   GreaderStreamError,
   parseStreamCount
@@ -39,6 +40,17 @@ describe('Google Reader parameter normalization', () => {
     expect(parseStreamCount([])).toBe(DEFAULT_STREAM_ITEM_COUNT);
     expect(parseStreamCount([String(MAX_STREAM_ITEM_COUNT + 1)]))
       .toBe(MAX_STREAM_ITEM_COUNT);
+  });
+
+  it('supports the larger item-ID reconciliation bound', () => {
+    expect(parseStreamCount(
+      [String(MAX_STREAM_ITEM_ID_COUNT)],
+      MAX_STREAM_ITEM_ID_COUNT
+    )).toBe(MAX_STREAM_ITEM_ID_COUNT);
+    expect(parseStreamCount(
+      [String(MAX_STREAM_ITEM_ID_COUNT + 1)],
+      MAX_STREAM_ITEM_ID_COUNT
+    )).toBe(MAX_STREAM_ITEM_ID_COUNT);
   });
 
   it.each(['-1', '1.5', 'many'])(

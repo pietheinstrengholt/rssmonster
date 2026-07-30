@@ -15,6 +15,7 @@ export const STARRED_STREAM = 'user/-/state/com.google/starred';
 export const UNREAD_STREAM = 'user/-/state/com.google/unread';
 export const DEFAULT_STREAM_ITEM_COUNT = 20;
 export const MAX_STREAM_ITEM_COUNT = 1000;
+export const MAX_STREAM_ITEM_ID_COUNT = 10000;
 
 // This class identifies invalid Google Reader stream requests.
 export class GreaderStreamError extends Error {
@@ -57,8 +58,11 @@ export const parseReaderTimestamp = value => {
   return Number.isNaN(date.getTime()) ? null : date;
 };
 
-// This function parses and bounds the stream result count.
-export const parseStreamCount = values => {
+// This function parses and bounds the stream result count for one endpoint.
+export const parseStreamCount = (
+  values,
+  maximum = MAX_STREAM_ITEM_COUNT
+) => {
   if (values.length === 0) return DEFAULT_STREAM_ITEM_COUNT;
   if (values.length > 1 && new Set(values).size > 1) {
     throw new GreaderStreamError('Conflicting n parameters');
@@ -67,7 +71,7 @@ export const parseStreamCount = values => {
     throw new GreaderStreamError('Invalid n parameter');
   }
 
-  return Math.min(Number(values[0]), MAX_STREAM_ITEM_COUNT);
+  return Math.min(Number(values[0]), maximum);
 };
 
 // This function parses one deterministic stream direction.
@@ -303,9 +307,13 @@ export const buildGreaderStreamScope = async ({ req, userId }) => {
 export const buildGreaderStreamQuery = async ({
   req,
   userId,
-  includeMetadata = false
+  includeMetadata = false,
+  maxCount = MAX_STREAM_ITEM_COUNT
 }) => {
-  const count = parseStreamCount(getGreaderParameterValues(req, 'n'));
+  const count = parseStreamCount(
+    getGreaderParameterValues(req, 'n'),
+    maxCount
+  );
   const order = parseStreamOrder(getGreaderParameterValues(req, 'r'));
   const continuation = parseContinuation(scalarParameter(req, 'c'));
   const { streamId, where } = await buildGreaderStreamScope({ req, userId });

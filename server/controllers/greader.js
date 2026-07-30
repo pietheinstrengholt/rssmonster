@@ -27,6 +27,7 @@ import {
   READING_LIST_STREAM,
   READ_STREAM,
   STARRED_STREAM,
+  MAX_STREAM_ITEM_ID_COUNT,
   GreaderStreamError,
   buildGreaderStreamScope,
   createStreamContinuation,
@@ -593,7 +594,8 @@ export const getStreamItemIds = async (req, res) => {
     const user = req.greaderUser;
     const page = await queryGreaderStream({
       req,
-      userId: user.id
+      userId: user.id,
+      maxCount: MAX_STREAM_ITEM_ID_COUNT
     });
     const itemRefs = page.articles.map(article => ({
       id: String(article.id)
