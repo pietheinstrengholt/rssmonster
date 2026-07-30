@@ -20,7 +20,7 @@
           <p>Your intelligent RSS reader</p>
         </header>
 
-        <form class="auth-form" @submit.prevent>
+        <form class="auth-form" @submit.prevent="submitAuthentication">
           <p class="auth-form-title" id="signin">{{ showSignup ? 'Create your account' : 'Sign in to RSSMonster' }}</p>
         
           <!-- Username input -->
@@ -31,7 +31,7 @@
 
           <!-- Password input -->
           <div class="form-outline">
-            <input class="form-control" type="password" id="password" v-model="password" @keyup.enter="!showSignup ? login() : null" />
+            <input class="form-control" type="password" id="password" v-model="password" />
             <label class="form-label" for="password">Password</label>
           </div>
 
@@ -42,18 +42,19 @@
           </div>
 
           <!-- Submit button -->
-          <button v-if="showSignup" type="submit" class="auth-submit btn btn-primary btn-block" @click="register" value="Register">Register</button>
-          <button v-if="!showSignup" type="submit" class="auth-submit btn btn-primary btn-block" @click="login" value="Login">Sign in</button>
+          <button type="submit" class="auth-submit btn btn-primary btn-block" :disabled="isSubmitting">
+            {{ isSubmitting ? (showSignup ? 'Registering...' : 'Signing in...') : (showSignup ? 'Register' : 'Sign in') }}
+          </button>
 
-          <p v-if="message" class="auth-message">{{ message }}</p>
+          <p v-if="message" class="auth-message" role="status" aria-live="polite">{{ message }}</p>
         </form>
 
         <div class="auth-divider">
           <span>or</span>
         </div>
 
-        <p v-if="showSignup" class="auth-register">Already a member? <a href="#!" @click="showSignup = false">Click here to sign in</a></p>
-        <p v-else class="auth-register">Not a member? <a href="#!" @click="showSignup = true">Create an account</a></p>
+        <p v-if="showSignup" class="auth-register">Already a member? <a href="#!" @click.prevent="switchAuthMode(false)">Click here to sign in</a></p>
+        <p v-else class="auth-register">Not a member? <a href="#!" @click.prevent="switchAuthMode(true)">Create an account</a></p>
       </section>
 
       <footer class="auth-footer">
@@ -88,7 +89,8 @@ export default {
       message: '',
       showSignup: false,
       isAuthenticated: false,
-      isLoading: true
+      isLoading: true,
+      isSubmitting: false
     };
   },
   async created() {
@@ -134,6 +136,29 @@ export default {
         this.logout();
       }
     },
+    // This function submits the operation for the active authentication mode once.
+    async submitAuthentication() {
+      if (this.isSubmitting) return;
+
+      this.isSubmitting = true;
+      this.message = '';
+
+      try {
+        if (this.showSignup) {
+          await this.register();
+        } else {
+          await this.login();
+        }
+      } finally {
+        this.isSubmitting = false;
+      }
+    },
+    // This function switches authentication modes without retaining stale feedback.
+    switchAuthMode(showSignup) {
+      this.showSignup = showSignup;
+      this.message = '';
+    },
+    // This function authenticates the entered credentials and establishes the session.
     async login() {
       try {
         const credentials = {
@@ -191,6 +216,7 @@ export default {
           'Login failed. Please try again.';
       }
     },
+    // This function creates an account and returns to sign-in after confirmed success.
     async register() {
       try {
         const credentials = {
@@ -200,7 +226,7 @@ export default {
         };
         const response = await authApi.register(credentials);
         this.message = response.message;
-        if (response.message === 'Registered!') {
+        if (response.registered === true) {
           this.showSignup = false;
           this.username = '';
           this.password = '';

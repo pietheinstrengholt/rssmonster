@@ -39,6 +39,7 @@ describe('auth controller', () => {
       });
 
     expect(registerRes.status).toBe(201);
+    expect(registerRes.body.registered).toBe(true);
 
     const user = await User.findOne({ where: { username } });
     expect(await bcrypt.compare(password, user.password)).toBe(true);

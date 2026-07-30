@@ -92,4 +92,20 @@ describe('App registration errors', () => {
       'The server rejected the registration request (HTTP 403). Please check your details and try again.'
     );
   });
+
+  it('recognizes structured registration success regardless of message wording', async () => {
+    authApi.register.mockResolvedValueOnce({
+      message: 'Your account is ready.',
+      registered: true
+    });
+    const context = createRegistrationContext();
+
+    await App.methods.register.call(context);
+
+    expect(context.message).toBe('Your account is ready.');
+    expect(context.showSignup).toBe(false);
+    expect(context.username).toBe('');
+    expect(context.password).toBe('');
+    expect(context.password_repeat).toBe('');
+  });
 });
