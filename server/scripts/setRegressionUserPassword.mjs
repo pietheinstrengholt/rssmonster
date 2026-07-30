@@ -32,13 +32,8 @@ if (!created) {
   });
 }
 
-const isMatch = await bcrypt.compare(password, user.password);
 console.log(JSON.stringify({
   username,
   created,
-  id: user.id,
-  passwordHashStored: Boolean(user.password),
-  feverCredentialHashStored: Boolean(user.feverCredentialHash),
-  passwordMatches: isMatch,
-  passwordHashPreview: user.password.slice(0, 30)
+  id: user.id
 }, null, 2));

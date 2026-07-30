@@ -1,5 +1,5 @@
 <template>
-    <div class="modal" tabindex="-1" role="dialog">
+    <div class="modal category-dialog" tabindex="-1" role="dialog">
         <div class="modal-dialog" role="document">
             <div class="modal-content">
             <div class="modal-header">
@@ -42,79 +42,8 @@
     </div>
 </template>
 
-<style scoped>
-.modal {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background: var(--overlay-backdrop);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-}
-
-.modal-dialog{
-    max-width: 600px;
-    width: 100%;
-}
-
-.category-icon-grid {
-    display: grid;
-    grid-template-columns: repeat(6, minmax(0, 1fr));
-    gap: 8px;
-}
-
-.category-icon-option {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    min-height: 38px;
-    padding: 8px;
-    color: var(--text-secondary);
-    background: var(--bg-secondary);
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
-}
-
-.category-icon-option:hover {
-    color: var(--text-primary);
-    background: var(--bg-hover);
-}
-
-.category-icon-option.selected {
-    color: var(--color-primary);
-    background: var(--color-primary-soft);
-    border-color: var(--color-primary);
-}
-
-.category-icon-option :deep(svg) {
-    width: 18px;
-    height: 18px;
-}
-
-:global(:root[data-theme='dark']) {
-    .category-icon-option {
-        color: var(--text-muted);
-        background: var(--bg-control);
-        border-color: var(--border-color);
-    }
-
-    .category-icon-option:hover {
-        color: var(--text-inverted);
-        background: var(--bg-hover);
-    }
-
-    .category-icon-option.selected {
-        color: var(--text-inverted);
-        background: var(--bg-selected);
-        border-color: var(--bg-selected);
-    }
-}
-</style>
-
 <script>
+import './categoryDialog.css';
 import { updateCategory } from '../../api/categories';
 import { setAuthToken } from '../../api/client';
 import helper from '../../services/helper.js';

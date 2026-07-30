@@ -116,9 +116,6 @@
 .settings-data-panel {
   margin-bottom: 18px;
   padding: 20px;
-  background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
 }
 
 .settings-section-heading h4 {
@@ -187,38 +184,7 @@
   border-bottom: 0;
 }
 
-.settings-refresh-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.settings-refresh-button {
-  display: inline-flex;
-  height: 40px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-  background: var(--color-primary);
-  border: 0;
-  border-radius: 8px;
-  color: var(--text-inverted);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.settings-refresh-button:hover {
-  background: var(--color-primary-hover);
-}
-
-.settings-refresh-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.90;
-}
-
-:global(:root[data-theme='dark']) .crawl-statistics-toolbar .form-select,
-:global(:root[data-theme='dark']) .settings-data-panel {
+:global(:root[data-theme='dark']) .crawl-statistics-toolbar .form-select {
   background-color: var(--bg-modal);
   border-color: var(--border-color);
 }

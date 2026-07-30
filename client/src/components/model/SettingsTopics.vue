@@ -161,13 +161,6 @@
   color: var(--text-primary);
 }
 
-.settings-data-panel,
-.settings-metric-card {
-  background: var(--bg-primary);
-  border: 1px solid var(--border-subtle);
-  border-radius: 14px;
-}
-
 .settings-data-panel h4 {
   margin: 0;
   color: var(--text-primary);
@@ -196,22 +189,6 @@
 
 .settings-metric-card {
   padding: 16px;
-}
-
-.settings-metric-label {
-  display: block;
-  margin-bottom: 6px;
-  color: var(--text-muted);
-  font-size: 11px;
-  font-weight: 700;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-}
-
-.settings-metric-card strong {
-  color: var(--text-primary);
-  font-size: 24px;
-  font-weight: 700;
 }
 
 .settings-data-panel {
@@ -292,42 +269,6 @@
 .settings-object-row p {
   margin: 3px 0 0;
   font-size: 12px;
-}
-
-.settings-refresh-actions {
-  display: flex;
-  justify-content: flex-end;
-  margin-top: 20px;
-}
-
-.settings-refresh-button {
-  display: inline-flex;
-  height: 40px;
-  align-items: center;
-  gap: 8px;
-  padding: 0 14px;
-  background: var(--color-primary);
-  border: 0;
-  border-radius: 8px;
-  color: var(--text-inverted);
-  font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
-}
-
-.settings-refresh-button:hover {
-  background: var(--color-primary-hover);
-}
-
-.settings-refresh-button:disabled {
-  cursor: not-allowed;
-  opacity: 0.90;
-}
-
-:global(:root[data-theme='dark']) .settings-data-panel,
-:global(:root[data-theme='dark']) .settings-metric-card {
-  background: var(--bg-modal);
-  border-color: var(--border-color);
 }
 
 :global(:root[data-theme='dark']) .settings-object-row {

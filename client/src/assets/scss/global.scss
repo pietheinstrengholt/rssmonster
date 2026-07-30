@@ -1,5 +1,47 @@
+@use "sass:map";
+
+@import "bootstrap/scss/functions";
 @import "bootswatch/dist/flatly/variables";
-@import "bootstrap/scss/bootstrap";
+@import "bootstrap/scss/variables";
+@import "bootstrap/scss/variables-dark";
+@import "bootstrap/scss/maps";
+@import "bootstrap/scss/mixins";
+@import "bootstrap/scss/utilities";
+
+@import "bootstrap/scss/root";
+@import "bootstrap/scss/reboot";
+@import "bootstrap/scss/type";
+@import "bootstrap/scss/grid";
+@import "bootstrap/scss/forms";
+@import "bootstrap/scss/buttons";
+@import "bootstrap/scss/transitions";
+@import "bootstrap/scss/dropdown";
+@import "bootstrap/scss/badge";
+@import "bootstrap/scss/alert";
+@import "bootstrap/scss/list-group";
+@import "bootstrap/scss/close";
+@import "bootstrap/scss/modal";
+@import "bootstrap/scss/spinners";
+@import "bootstrap/scss/helpers";
+
+$utilities: (
+  "display": map.merge(map.get($utilities, "display"), (responsive: false)),
+  "flex-grow": map.merge(map.get($utilities, "flex-grow"), (responsive: false)),
+  "justify-content": map.merge(map.get($utilities, "justify-content"), (responsive: false)),
+  "align-items": map.merge(map.get($utilities, "align-items"), (responsive: false)),
+  "align-self": map.merge(map.get($utilities, "align-self"), (responsive: false)),
+  "margin-top": map.merge(map.get($utilities, "margin-top"), (responsive: false)),
+  "margin-end": map.merge(map.get($utilities, "margin-end"), (responsive: false)),
+  "margin-bottom": map.merge(map.get($utilities, "margin-bottom"), (responsive: false)),
+  "margin-start": map.merge(map.get($utilities, "margin-start"), (responsive: false)),
+  "gap": map.merge(map.get($utilities, "gap"), (responsive: false)),
+  "font-weight": map.get($utilities, "font-weight"),
+  "text-transform": map.get($utilities, "text-transform"),
+  "color": map.get($utilities, "color")
+);
+
+@import "bootstrap/scss/utilities/api";
+
 @import "bootswatch/dist/flatly/bootswatch";
 
 :root {

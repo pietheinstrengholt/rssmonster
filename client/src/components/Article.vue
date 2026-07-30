@@ -1564,11 +1564,7 @@ span.similar-badge {
     gap: 4px;
   }
 
-  .article-list-card .article-content-wrapper {
-    padding-left: 40px;
-    padding-right: 10px;
-  }
-
+  .article-list-card .article-content-wrapper,
   .article-list-card > .article-media {
     padding-left: 40px;
     padding-right: 10px;

@@ -1,0 +1,64 @@
+.category-dialog {
+    position: fixed;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--overlay-backdrop);
+}
+
+.category-dialog .modal-dialog {
+    width: 100%;
+    max-width: 600px;
+}
+
+.category-dialog .category-icon-grid {
+    display: grid;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: 8px;
+}
+
+.category-dialog .category-icon-option {
+    display: flex;
+    min-height: 38px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-subtle);
+    border-radius: 4px;
+    color: var(--text-secondary);
+}
+
+.category-dialog .category-icon-option:hover {
+    background: var(--bg-hover);
+    color: var(--text-primary);
+}
+
+.category-dialog .category-icon-option.selected {
+    background: var(--color-primary-soft);
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+}
+
+.category-dialog .category-icon-option svg {
+    width: 18px;
+    height: 18px;
+}
+
+:root[data-theme='dark'] .category-dialog .category-icon-option {
+    background: var(--bg-control);
+    border-color: var(--border-color);
+    color: var(--text-muted);
+}
+
+:root[data-theme='dark'] .category-dialog .category-icon-option:hover {
+    background: var(--bg-hover);
+    color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .category-dialog .category-icon-option.selected {
+    background: var(--bg-selected);
+    border-color: var(--bg-selected);
+    color: var(--text-inverted);
+}

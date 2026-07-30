@@ -12,8 +12,9 @@
     "lint": "eslint .",
     "generate:favicons": "node scripts/generate-favicons.js",
     "build": "npm run generate:favicons && vite build",
+    "check:bootstrap-classes": "node scripts/check-bootstrap-classes.js",
     "check:bundle-size": "node scripts/check-bundle-size.js",
-    "verify:build": "npm run build && npm run check:bundle-size",
+    "verify:build": "npm run check:bootstrap-classes && npm run build && npm run check:bundle-size",
     "preview": "vite preview --port 8080"
   },
   "engines": {

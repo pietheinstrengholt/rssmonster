@@ -255,10 +255,6 @@ export default {
 };
 </script>
 
-<style lang="scss">
-@import "./assets/scss/global.scss";
-</style>
-
 <style>
 .auth-page {
   align-items: center;
