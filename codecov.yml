@@ -1,0 +1,14 @@
+flags:
+  client:
+    paths:
+      - client/
+    carryforward: false
+  server:
+    paths:
+      - server/
+    carryforward: false
+
+comment:
+  layout: "reach, diff, flags, files"
+  behavior: default
+  require_changes: false
