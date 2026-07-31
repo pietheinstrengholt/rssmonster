@@ -97,6 +97,10 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./server/coverage/clover.xml
+          disable_search: true
+          flags: server
+          fail_ci_if_error: true
 
       # -----------------------
       # Client
@@ -129,3 +133,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./client/coverage/lcov.info
+          disable_search: true
+          flags: client
+          fail_ci_if_error: true

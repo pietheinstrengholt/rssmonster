@@ -12,7 +12,7 @@ export default defineConfig({
       include: ['src/**/*.{js,vue}'],
       exclude: ['src/main.js'],
       provider: 'v8',
-      reporter: ['text', 'json-summary', 'html'],
+      reporter: ['text', 'json-summary', 'html', ['lcov', { projectRoot: '..' }]],
       reportsDirectory: 'coverage',
       reportOnFailure: true,
       thresholds: {
