@@ -59,12 +59,14 @@ const createOverview = (overrides = {}) => ({
   clickedCount: 1,
   categories: [{
     id: 1,
+    briefingCount: 2,
     unreadCount: 5,
     readCount: 4,
     favoriteCount: 3,
     feeds: [{
       id: 10,
       categoryId: 1,
+      briefingCount: 2,
       unreadCount: 5,
       readCount: 4,
       favoriteCount: 3
@@ -171,6 +173,27 @@ describe('data store overview and count behavior', () => {
       favoriteCount: 0,
       errorCount: 0
     });
+  });
+
+  // Verifies initial split counts establish a baseline before later background changes are announced.
+  it('does not report the initial unread total as newly fetched articles', async () => {
+    const store = createStore();
+    fetchOverviewCounts
+      .mockResolvedValueOnce({ data: createOverview({ unreadCount: 5 }) })
+      .mockResolvedValueOnce({ data: createOverview({ unreadCount: 8 }) });
+
+    await store.fetchOverviewSplit({ initial: true });
+    await vi.waitFor(() => {
+      expect(store.overviewCountsStatus).toBe('success');
+    });
+
+    expect(store.unreadCount).toBe(5);
+    expect(store.unreadsSinceLastUpdate).toBe(0);
+
+    await store.fetchOverviewCounts();
+
+    expect(store.unreadCount).toBe(8);
+    expect(store.unreadsSinceLastUpdate).toBe(3);
   });
 
   // Verifies count-free structure refreshes retain known counts when the count refresh fails.

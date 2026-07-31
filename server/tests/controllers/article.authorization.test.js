@@ -334,6 +334,8 @@ describe('article ownership authorization', () => {
     expect(res.body.briefingIncludeOnlyUnreadArticles).toBe(false);
     expect(res.body.briefingPrioritizeHighTrust).toBe(false);
     expect(res.body.unreadCount).toBe(1);
+    expect(res.body.categories[0].briefingCount).toBe(2);
+    expect(res.body.categories[0].feeds[0].briefingCount).toBe(2);
     expect(res.body.categories[0].feeds[0].unreadCount).toBe(1);
     expect(article.filteredInd).toBe(false);
 
@@ -351,6 +353,8 @@ describe('article ownership authorization', () => {
     expect(oneDayResponse.body.briefingSelectionPeriod).toBe('24h');
     expect(oneDayResponse.body.briefingIncludeOnlyUnreadArticles).toBe(false);
     expect(oneDayResponse.body.briefingCount).toBe(1);
+    expect(oneDayResponse.body.categories[0].briefingCount).toBe(1);
+    expect(oneDayResponse.body.categories[0].feeds[0].briefingCount).toBe(1);
 
     await BriefingPreference.update(
       { includeOnlyUnreadArticles: true },
@@ -365,6 +369,8 @@ describe('article ownership authorization', () => {
     expect(unreadOnlyResponse.status).toBe(200);
     expect(unreadOnlyResponse.body.briefingIncludeOnlyUnreadArticles).toBe(true);
     expect(unreadOnlyResponse.body.briefingCount).toBe(0);
+    expect(unreadOnlyResponse.body.categories[0].briefingCount).toBe(0);
+    expect(unreadOnlyResponse.body.categories[0].feeds[0].briefingCount).toBe(0);
 
     await BriefingPreference.update(
       {
@@ -383,6 +389,8 @@ describe('article ownership authorization', () => {
     expect(multipleSourcesResponse.status).toBe(200);
     expect(multipleSourcesResponse.body.briefingMinDistinctSources).toBe(2);
     expect(multipleSourcesResponse.body.briefingCount).toBe(0);
+    expect(multipleSourcesResponse.body.categories[0].briefingCount).toBe(0);
+    expect(multipleSourcesResponse.body.categories[0].feeds[0].briefingCount).toBe(0);
   });
 
   // Verifies grouped counts use the unread developing pointer selected by the article list.
@@ -650,5 +658,298 @@ describe('article ownership authorization', () => {
     expect(response.status).toBe(200);
     expect(article.status).toBe('unread');
     expect(article.readAt).toBeNull();
+  });
+
+  // Verifies article-list first-page hydration returns the requested article details.
+  it('hydrates the first article page when requested', async () => {
+    const owner = await createUser(uniqueName('first-page-owner'));
+    const { article } = await createArticleFor(owner);
+
+    const response = await request(app)
+      .get('/api/articles')
+      .query({
+        status: 'unread',
+        categoryId: '%',
+        feedId: '%',
+        includeFirstPage: true,
+        viewMode: 'minimal'
+      })
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(200);
+    expect(response.body.itemIds).toContain(article.id);
+    expect(response.body.firstPage).toHaveLength(1);
+    expect(response.body.firstPage[0]).toMatchObject({
+      id: article.id,
+      title: article.title
+    });
+  });
+
+  // Verifies malformed duplicate identifiers fail before a database lookup.
+  it('rejects a malformed duplicate article identifier', async () => {
+    const owner = await createUser(uniqueName('duplicate-validation-owner'));
+
+    const response = await request(app)
+      .get('/api/articles/duplicates/not-a-number')
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: 'articleId is required' });
+  });
+
+  // Verifies explicit read requests report when no selected article remains unread.
+  it('returns an empty result when selected articles are already read', async () => {
+    const owner = await createUser(uniqueName('already-read-owner'));
+    const { article } = await createArticleFor(owner);
+    await article.update({ status: 'read', readAt: new Date() });
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: [article.id] });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      message: 'No unread articles to mark as read',
+      articles: []
+    });
+  });
+
+  // Verifies query-based bulk reads update matching canonical articles only.
+  it('marks search-matched articles as read without explicit identifiers', async () => {
+    const owner = await createUser(uniqueName('search-read-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const secondArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/second-search-result`,
+      title: `${owner.username} second search result`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const filteredArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      filteredInd: true,
+      url: `https://example.com/${owner.username}/filtered-search-result`,
+      title: `${owner.username} filtered search result`,
+      publishedAt: new Date('2026-05-01T12:00:00Z')
+    });
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none' });
+
+    await Promise.all([article.reload(), secondArticle.reload(), filteredArticle.reload()]);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toMatchObject({
+      message: 'Articles marked as read',
+      updatedCount: 2,
+      matchedCount: 2,
+      expandedEventCount: 0
+    });
+    expect([article.status, secondArticle.status]).toEqual(['read', 'read']);
+    expect(filteredArticle.status).toBe('unread');
+  });
+
+  // Verifies an empty query-based bulk read returns stable zero counts.
+  it('returns zero counts when a bulk read query has no matches', async () => {
+    const owner = await createUser(uniqueName('empty-search-read-owner'));
+
+    const response = await request(app)
+      .post('/api/articles/markasread')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ grouping: 'none' });
+
+    expect(response.status).toBe(200);
+    expect(response.body).toEqual({
+      message: 'No unread articles to mark as read',
+      updatedCount: 0,
+      matchedCount: 0,
+      expandedEventCount: 0
+    });
+  });
+
+  // Verifies batch click tracking updates owned canonical articles and reports their counts.
+  it('increments click counts for a batch of owned articles', async () => {
+    const owner = await createUser(uniqueName('batch-click-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const secondArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      clickedAmount: 4,
+      url: `https://example.com/${owner.username}/second-click`,
+      title: `${owner.username} second click`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+
+    const response = await request(app)
+      .post('/api/articles/markclicked')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: [article.id, secondArticle.id] });
+
+    await Promise.all([article.reload(), secondArticle.reload()]);
+
+    expect(response.status).toBe(200);
+    expect(response.body.articles).toEqual(expect.arrayContaining([
+      { id: article.id, clickedAmount: 1 },
+      { id: secondArticle.id, clickedAmount: 5 }
+    ]));
+    expect([article.clickedAmount, secondArticle.clickedAmount]).toEqual([1, 5]);
+  });
+
+  // Verifies click tracking validates an otherwise empty batch request.
+  it('requires an article identifier for click tracking', async () => {
+    const owner = await createUser(uniqueName('click-validation-owner'));
+
+    const response = await request(app)
+      .post('/api/articles/markclicked')
+      .set('Authorization', authHeaderFor(owner))
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ error: 'articleId is required' });
+  });
+
+  // Verifies negative feedback is persisted only for an owned article.
+  it('marks an owned article as not interested and rejects foreign ownership', async () => {
+    const owner = await createUser(uniqueName('not-interested-owner'));
+    const foreignUser = await createUser(uniqueName('not-interested-foreign'));
+    const { article } = await createArticleFor(owner);
+
+    const successResponse = await request(app)
+      .post(`/api/articles/marknotinterested/${article.id}`)
+      .set('Authorization', authHeaderFor(owner));
+    const foreignResponse = await request(app)
+      .post(`/api/articles/marknotinterested/${article.id}`)
+      .set('Authorization', authHeaderFor(foreignUser));
+
+    await article.reload();
+
+    expect(successResponse.status).toBe(200);
+    expect(successResponse.body).toMatchObject({ articleId: String(article.id) });
+    expect(foreignResponse.status).toBe(404);
+    expect(article.negativeInd).toBe(1);
+  });
+
+  // Verifies article details reject requests that omit their identifier list.
+  it('requires article identifiers for batch details', async () => {
+    const owner = await createUser(uniqueName('details-validation-owner'));
+
+    const response = await request(app)
+      .post('/api/articles/details')
+      .set('Authorization', authHeaderFor(owner))
+      .send({});
+
+    expect(response.status).toBe(400);
+    expect(response.body).toEqual({ message: 'articleIds is not set' });
+  });
+
+  // Verifies favorite actions cover validation, batch updates, and single-article clearing.
+  it('validates and updates favorite state for batch and single requests', async () => {
+    const owner = await createUser(uniqueName('favorite-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const secondArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/second-favorite`,
+      title: `${owner.username} second favorite`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+
+    const missingUpdateResponse = await request(app)
+      .post('/api/articles/markasfavorite')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ articleIds: [article.id] });
+    const missingIdsResponse = await request(app)
+      .post('/api/articles/markasfavorite')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ update: 'mark' });
+    const batchResponse = await request(app)
+      .post('/api/articles/markasfavorite')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ update: 'mark', articleIds: `${article.id},${secondArticle.id}` });
+    const singleResponse = await request(app)
+      .post(`/api/articles/markasfavorite/${article.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({ update: 'unmark' });
+
+    await Promise.all([article.reload(), secondArticle.reload()]);
+
+    expect(missingUpdateResponse.status).toBe(400);
+    expect(missingIdsResponse.status).toBe(400);
+    expect(batchResponse.status).toBe(200);
+    expect(singleResponse.status).toBe(200);
+    expect(article.favoriteInd).toBe(0);
+    expect(secondArticle.favoriteInd).toBe(1);
+  });
+
+  // Verifies mark-all-read remains user scoped and ignores filtered articles.
+  it('marks all owned canonical articles as read', async () => {
+    const owner = await createUser(uniqueName('mark-all-owner'));
+    const foreignUser = await createUser(uniqueName('mark-all-foreign'));
+    const { article, feed } = await createArticleFor(owner);
+    const { article: foreignArticle } = await createArticleFor(foreignUser);
+    const filteredArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      filteredInd: true,
+      url: `https://example.com/${owner.username}/filtered-mark-all`,
+      title: `${owner.username} filtered mark all`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+
+    const response = await request(app)
+      .post('/api/articles/markallasread')
+      .set('Authorization', authHeaderFor(owner));
+
+    await Promise.all([article.reload(), foreignArticle.reload(), filteredArticle.reload()]);
+
+    expect(response.status).toBe(200);
+    expect(response.body).toBe('marked all as read');
+    expect(article.status).toBe('read');
+    expect(article.readAt).toBeInstanceOf(Date);
+    expect(foreignArticle.status).toBe('unread');
+    expect(filteredArticle.status).toBe('unread');
+  });
+
+  // Verifies every mutating and detail controller rejects a valid token without tenant identity.
+  it('rejects article operations when the token has no user identifier', async () => {
+    const tokenWithoutUserId = jwt.sign(
+      { username: uniqueName('missing-user-id') },
+      getJwtSecret()
+    );
+    const authorization = `Bearer ${tokenWithoutUserId}`;
+    const operations = [
+      ['get', '/api/articles/briefing', undefined],
+      ['get', '/api/articles/duplicates/1', undefined],
+      ['get', '/api/articles/1', undefined],
+      ['post', '/api/articles/markasread', {}],
+      ['post', '/api/articles/markclicked', {}],
+      ['post', '/api/articles/marknotinterested/1', {}],
+      ['post', '/api/articles/markmorelikethis/1', {}],
+      ['post', '/api/articles/details', { articleIds: '1' }],
+      ['post', '/api/articles/markasseen/1', {}],
+      ['post', '/api/articles/marktounread/1', {}],
+      ['post', '/api/articles/markasfavorite/1', { update: 'mark' }],
+      ['post', '/api/articles/markallasread', {}]
+    ];
+
+    for (const [method, path, body] of operations) {
+      let operation = request(app)[method](path).set('Authorization', authorization);
+      if (body !== undefined) operation = operation.send(body);
+      const response = await operation;
+
+      expect(response.status, `${method.toUpperCase()} ${path}`).toBe(401);
+      expect(response.body, `${method.toUpperCase()} ${path}`).toEqual({
+        error: 'Unauthorized: missing userId'
+      });
+    }
   });
 });

@@ -16,6 +16,7 @@ import { useUiStore } from './ui.js';
 const COUNT_FIELDS = ['unreadCount', 'readCount', 'favoriteCount'];
 const OVERVIEW_COUNT_FIELDS = [
   ...COUNT_FIELDS,
+  'briefingCount',
   'hotCount',
   'clickedCount'
 ];
@@ -29,6 +30,7 @@ const normalizeCount = value => Math.max(Number(value) || 0, 0);
 // This function fills missing feed counters without discarding API fields.
 const normalizeFeed = (feed = {}) => ({
   ...feed,
+  briefingCount: normalizeCount(feed.briefingCount),
   unreadCount: normalizeCount(feed.unreadCount),
   readCount: normalizeCount(feed.readCount),
   favoriteCount: normalizeCount(feed.favoriteCount),
@@ -38,6 +40,7 @@ const normalizeFeed = (feed = {}) => ({
 // This function fills missing category collections and counters without discarding API fields.
 const normalizeCategory = (category = {}) => ({
   ...category,
+  briefingCount: normalizeCount(category.briefingCount),
   unreadCount: normalizeCount(category.unreadCount),
   readCount: normalizeCount(category.readCount),
   favoriteCount: normalizeCount(category.favoriteCount),
@@ -228,7 +231,7 @@ export const useOverviewStore = defineStore('overview', {
 
         this.updateOverviewStructure(data, { initial, forceUpdate });
         this.overviewStructureStatus = 'success';
-        void this.fetchOverviewCounts({ forceUpdate });
+        void this.fetchOverviewCounts({ initial, forceUpdate });
         return true;
       } catch (error) {
         if (requestId === this.overviewStructureRequestId) {
@@ -425,7 +428,7 @@ export const useOverviewStore = defineStore('overview', {
     },
 
     // This action refreshes overview counts while preserving the last successful snapshot.
-    async fetchOverviewCounts({ forceUpdate = false } = {}) {
+    async fetchOverviewCounts({ initial = false, forceUpdate = false } = {}) {
       const requestId = ++this.overviewCountsRequestId;
       const selectionStore = useSelectionStore();
       this.overviewCountsStatus = 'loading';
@@ -435,7 +438,7 @@ export const useOverviewStore = defineStore('overview', {
         const { data } = await fetchOverviewCountsAPI(selectionStore.currentSelection);
         if (requestId !== this.overviewCountsRequestId) return false;
 
-        this.updateOverviewCounts(data, { forceUpdate });
+        this.updateOverviewCounts(data, { initial, forceUpdate });
         this.overviewCountsStatus = 'success';
         return true;
       } catch (error) {

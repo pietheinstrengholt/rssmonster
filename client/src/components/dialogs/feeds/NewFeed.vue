@@ -143,7 +143,7 @@
                 type="submit"
                 form="new-feed-form"
                 class="base-dialog__button base-dialog__button--primary btn btn-primary feed-modal-action"
-                :disabled="isBusy"
+                :disabled="isBusy || !hasValidUrl"
             >
                 {{ ajaxRequest ? 'Validating…' : 'Validate feed' }}
             </button>
@@ -403,6 +403,35 @@ export default {
         // Locks incompatible actions while any feed request is pending.
         isBusy() {
             return this.ajaxRequest || this.forceAdding || this.saving;
+        },
+        // Produces an absolute HTTP(S) URL for a qualified domain, including inputs without a protocol.
+        normalizedUrl() {
+            const value = String(this.url || '').trim();
+            if (!value) {
+                return null;
+            }
+
+            try {
+                const hasProtocol = /^[a-z][a-z\d+.-]*:\/\//i.test(value);
+                const absoluteUrl = hasProtocol ? value : `https://${value}`;
+                const parsedUrl = new URL(absoluteUrl);
+                const labels = parsedUrl.hostname.split('.');
+                const hasValidLabels = labels.every(label =>
+                    /^[a-z\d](?:[a-z\d-]{0,61}[a-z\d])?$/i.test(label)
+                );
+                const isValid = ['http:', 'https:'].includes(parsedUrl.protocol)
+                    && labels.length >= 2
+                    && labels.at(-1).length >= 2
+                    && hasValidLabels;
+
+                return isValid ? absoluteUrl : null;
+            } catch {
+                return null;
+            }
+        },
+        // Reports whether the entered value can be submitted as a supported feed URL.
+        hasValidUrl() {
+            return Boolean(this.normalizedUrl);
         }
     },
     methods: {
@@ -416,7 +445,7 @@ export default {
         },
         // Discovers feed metadata for the submitted URL.
         async checkWebsite() {
-            if (this.ajaxRequest || this.forceAdding || this.saving) {
+            if (this.isBusy || !this.hasValidUrl) {
                 return;
             }
 
@@ -424,7 +453,7 @@ export default {
             this.ajaxRequest = true;
 
             try {
-                const result = await validateFeed(this.url, this.selectedCategory);
+                const result = await validateFeed(this.normalizedUrl, this.selectedCategory);
                 this.error_msg = "";
                 this.isCloudflare = false;
                 this.cloudflareUrl = null;
@@ -433,7 +462,7 @@ export default {
                 const data = error.response?.data;
                 if (data?.cloudflare) {
                     this.isCloudflare = true;
-                    this.cloudflareUrl = data.feedUrl || this.url;
+                    this.cloudflareUrl = data.feedUrl || this.normalizedUrl;
                     this.error_msg = 'This site could not be validated automatically.';
                 } else {
                     this.isCloudflare = false;

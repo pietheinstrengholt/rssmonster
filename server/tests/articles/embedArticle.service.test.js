@@ -122,4 +122,66 @@ describe('embedArticle token limit guard', () => {
     expect(result.eventVector).toEqual([0.4, 0.5, 0.6]);
     expect(embeddingsCreate).toHaveBeenCalledTimes(1);
   });
+
+  // Reuses an existing persisted vector without requiring provider access.
+  it('reuses an existing article vector', async () => {
+    const { embedArticle, EMBEDDING_MODEL } = await import('../../services/articles/embedArticle.js');
+    const article = {
+      articleVector: [0.8, 0.9],
+      embedding_model: null,
+      update: vi.fn()
+    };
+
+    await expect(embedArticle(article)).resolves.toEqual({
+      eventVector: [0.8, 0.9],
+      topicVector: null,
+      embedding_model: EMBEDDING_MODEL,
+      reused: true
+    });
+    expect(embeddingsCreate).not.toHaveBeenCalled();
+    expect(article.update).not.toHaveBeenCalled();
+  });
+
+  // Rejects short event text before calling the provider by default.
+  it('skips event text below the usefulness threshold', async () => {
+    const { embedArticle } = await import('../../services/articles/embedArticle.js');
+
+    await expect(embedArticle({ title: 'Too short' })).resolves.toBeNull();
+    expect(embeddingsCreate).not.toHaveBeenCalled();
+  });
+
+  // Persists newly generated vectors on Sequelize article instances.
+  it('persists a generated event vector on an article instance', async () => {
+    const { embedArticle, EMBEDDING_MODEL } = await import('../../services/articles/embedArticle.js');
+    embeddingsCreate.mockResolvedValue({ data: [{ embedding: [0.3, 0.4] }] });
+    const article = {
+      title: 'A sufficiently descriptive article title for embedding',
+      description: 'This summary provides enough distinct detail for the event embedding provider request.',
+      contentText: '',
+      articleVector: null,
+      update: vi.fn().mockResolvedValue(undefined)
+    };
+
+    const result = await embedArticle(article);
+
+    expect(article.update).toHaveBeenCalledWith({
+      articleVector: [0.3, 0.4],
+      embedding_model: EMBEDDING_MODEL
+    });
+    expect(article.articleVector).toEqual([0.3, 0.4]);
+    expect(result.reused).toBe(false);
+  });
+
+  // Converts provider failures into a safe skipped result for batch processing.
+  it('returns null and warns when the provider fails', async () => {
+    const { embedArticle } = await import('../../services/articles/embedArticle.js');
+    const warning = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    embeddingsCreate.mockRejectedValue(new Error('provider unavailable'));
+
+    await expect(embedArticle({
+      title: 'A sufficiently descriptive title for provider error handling',
+      description: 'A sufficiently descriptive summary that passes the minimum embedding input threshold.'
+    })).resolves.toBeNull();
+    expect(warning).toHaveBeenCalledWith('[EMBED] failed:', 'provider unavailable');
+  });
 });

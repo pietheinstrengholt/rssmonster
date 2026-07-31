@@ -10,7 +10,7 @@ It prioritizes correctness, low-risk changes, and consistency with existing code
 When you make changes in RSSMonster, optimize for:
 
 1. **Correctness first** — behavior must remain valid in production and tests.
-2. **Small diffs** — prefer minimal, focused edits over broad rewrites.
+2. **Small diffs** — prefer minimal, focused edits over broad rewrites. Unless instructed otherwise, do not refactor unrelated code.
 3. **Local consistency** — follow surrounding patterns before introducing new ones.
 4. **Verifiability** — run targeted checks for touched areas.
 5. **Clear handoff** — leave concise notes in commit/PR messages.
@@ -38,6 +38,7 @@ Key entry points:
 Use this sequence for most tasks:
 
 1. **Orient quickly**
+   - Read any `README.md` files present in the folders relevant to the task and take their context into account.
    - Read relevant module(s) and adjacent tests.
    - Confirm the existing pattern you should imitate.
 2. **Plan a minimal patch**

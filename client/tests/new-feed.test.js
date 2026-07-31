@@ -112,6 +112,46 @@ describe('NewFeed', () => {
     expect(validateFeed).toHaveBeenCalledWith('https://example.com', 3);
   });
 
+  // Enables validation only for qualified HTTP(S) domains, with or without a protocol.
+  it.each([
+    ['example.com', false],
+    ['http://www.example.com', false],
+    ['https://subdomain.example.com/feed.xml', false],
+    ['www.example.com', false],
+    ['', true],
+    ['example', true],
+    ['not-a-feed', true],
+    ['ftp://example.com/feed.xml', true],
+    ['https://example', true]
+  ])('sets the validate action disabled state for %s', async (url, disabled) => {
+    mountNewFeed();
+    await wrapper.setData({ url });
+
+    expect(wrapper.get('button[type="submit"]').element.disabled).toBe(disabled);
+  });
+
+  // Prevents invalid URLs from bypassing the disabled action through form submission.
+  it('does not submit an invalid URL', async () => {
+    mountNewFeed();
+    await wrapper.setData({ url: 'not-a-feed', selectedCategory: 3 });
+
+    await wrapper.get('form').trigger('submit');
+
+    expect(validateFeed).not.toHaveBeenCalled();
+  });
+
+  // Normalizes an accepted bare domain into the absolute URL required by feed discovery.
+  it('submits a bare domain as an HTTPS URL', async () => {
+    validateFeed.mockResolvedValue({ data: {} });
+    mountNewFeed();
+    await wrapper.setData({ url: 'example.com', selectedCategory: 3 });
+
+    await wrapper.get('form').trigger('submit');
+    await flushPromises();
+
+    expect(validateFeed).toHaveBeenCalledWith('https://example.com', 3);
+  });
+
   // Verifies successful validation exposes editable feed metadata and clears stale errors.
   it('validates a feed and exposes the save action', async () => {
     validateFeed.mockResolvedValue({
@@ -169,7 +209,7 @@ describe('NewFeed', () => {
     const error = new Error('invalid feed');
     validateFeed.mockRejectedValue(error);
     mountNewFeed();
-    await wrapper.setData({ url: 'not-a-feed', selectedCategory: 3 });
+    await wrapper.setData({ url: 'https://example.com', selectedCategory: 3 });
 
     await wrapper.get('form').trigger('submit');
     await flushPromises();
@@ -178,7 +218,7 @@ describe('NewFeed', () => {
     expect(wrapper.vm.isCloudflare).toBe(false);
     expect(wrapper.vm.cloudflareUrl).toBeNull();
     expect(wrapper.text()).toContain('Could not validate this feed');
-    expect(console.error).toHaveBeenCalledWith('Error validating feed URL not-a-feed:', error);
+    expect(console.error).toHaveBeenCalledWith('Error validating feed URL https://example.com:', error);
   });
 
   // Verifies bot-protected validation failures retain the canonical URL for manual creation.

@@ -13,6 +13,7 @@ const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow 
 
   category.readCount = 0;
   category.unreadCount = 0;
+  category.briefingCount = 0;
   category.favoriteCount = 0;
   category.hotCount = 0;
   category.clickedCount = 0;
@@ -21,6 +22,7 @@ const buildCategoriesStructure = categoriesRaw => categoriesRaw.map(categoryRow 
     ...feed,
     readCount: 0,
     unreadCount: 0,
+    briefingCount: 0,
     favoriteCount: 0,
     hotCount: 0,
     clickedCount: 0
@@ -128,7 +130,8 @@ const buildOverviewWhere = async ({ userId, grouping, includeDevelopingEvents })
   return baseWhere;
 };
 
-const loadOverviewTotals = async (baseWhere, userId) => {
+// Loads the user's preferences and builds the shared Daily Briefing count predicate.
+const loadBriefingCountConfig = async userId => {
   const briefingPreferences = await BriefingPreference.findOne({
     where: { userId },
     attributes: [
@@ -149,7 +152,7 @@ const loadOverviewTotals = async (baseWhere, userId) => {
     Number(briefingPreferences?.includeOnlyUnreadArticles)
   );
   const briefingStatusCondition = briefingIncludeOnlyUnreadArticles
-    ? "AND status = 'unread'"
+    ? "AND articles.status = 'unread'"
     : '';
   const briefingMinDistinctSources = Number(briefingPreferences?.minDistinctSources) || 1;
   const briefingPrioritizeHighTrust = Boolean(
@@ -164,15 +167,27 @@ const loadOverviewTotals = async (baseWhere, userId) => {
       Number(briefingPreferences?.showOnlyDevelopingEventArticles)
     )
   });
+
+  return {
+    briefingSelectionPeriod,
+    briefingIncludeOnlyUnreadArticles,
+    briefingMinDistinctSources,
+    briefingPrioritizeHighTrust,
+    countSql: `COUNT(CASE WHEN
+      articles.publishedAt >= NOW() - INTERVAL ${briefingWindowDays} DAY
+      AND articles.publishedAt <= NOW()
+      AND ${briefingEligibility}
+      ${briefingStatusCondition}
+    THEN 1 END)`
+  };
+};
+
+// Loads global overview totals using the same Briefing predicate as grouped counts.
+const loadOverviewTotals = async (baseWhere, briefingConfig) => {
   const totals = await Article.findOne({
     where: baseWhere,
     attributes: [
-      [Sequelize.literal(`COUNT(CASE WHEN
-        publishedAt >= NOW() - INTERVAL ${briefingWindowDays} DAY
-        AND publishedAt <= NOW()
-        AND ${briefingEligibility}
-        ${briefingStatusCondition}
-      THEN 1 END)`), 'briefingCount'],
+      [Sequelize.literal(briefingConfig.countSql), 'briefingCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'unread' THEN 1 END)"), 'unreadCount'],
       [Sequelize.literal("COUNT(CASE WHEN status = 'read' THEN 1 END)"), 'readCount'],
       [Sequelize.literal("COUNT(CASE WHEN favoriteInd = 1 THEN 1 END)"), 'favoriteCount'],
@@ -183,10 +198,10 @@ const loadOverviewTotals = async (baseWhere, userId) => {
   });
 
   return {
-    briefingSelectionPeriod,
-    briefingIncludeOnlyUnreadArticles,
-    briefingMinDistinctSources,
-    briefingPrioritizeHighTrust,
+    briefingSelectionPeriod: briefingConfig.briefingSelectionPeriod,
+    briefingIncludeOnlyUnreadArticles: briefingConfig.briefingIncludeOnlyUnreadArticles,
+    briefingMinDistinctSources: briefingConfig.briefingMinDistinctSources,
+    briefingPrioritizeHighTrust: briefingConfig.briefingPrioritizeHighTrust,
     briefingCount: Number(totals?.briefingCount) || 0,
     unreadCount: Number(totals?.unreadCount) || 0,
     readCount: Number(totals?.readCount) || 0,
@@ -196,7 +211,7 @@ const loadOverviewTotals = async (baseWhere, userId) => {
   };
 };
 
-const loadGroupedFeedCounts = baseWhere => Feed.findAll({
+const loadGroupedFeedCounts = (baseWhere, briefingConfig) => Feed.findAll({
   include: [{
     model: Article,
     attributes: [],
@@ -205,6 +220,7 @@ const loadGroupedFeedCounts = baseWhere => Feed.findAll({
   attributes: [
     'categoryId',
     ['id', 'feedId'],
+    [Sequelize.literal(briefingConfig.countSql), 'briefingCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'unread' THEN 1 END)"), 'unreadCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`status` = 'read' THEN 1 END)"), 'readCount'],
     [Sequelize.literal("COUNT(CASE WHEN `articles`.`favoriteInd` = 1 THEN 1 END)"), 'favoriteCount'],
@@ -225,18 +241,21 @@ const mergeCountsIntoStructure = (categories, groupedRows) => {
 
     const unread = Number(row.unreadCount) || 0;
     const read = Number(row.readCount) || 0;
+    const briefing = Number(row.briefingCount) || 0;
     const favorite = Number(row.favoriteCount) || 0;
     const hot = Number(row.hotCount) || 0;
     const clicked = Number(row.clickedCount) || 0;
 
     feedEntry.feed.unreadCount = unread;
     feedEntry.feed.readCount = read;
+    feedEntry.feed.briefingCount = briefing;
     feedEntry.feed.favoriteCount = favorite;
     feedEntry.feed.hotCount = hot;
     feedEntry.feed.clickedCount = clicked;
 
     feedEntry.category.unreadCount += unread;
     feedEntry.category.readCount += read;
+    feedEntry.category.briefingCount += briefing;
     feedEntry.category.favoriteCount += favorite;
     feedEntry.category.hotCount += hot;
     feedEntry.category.clickedCount += clicked;
@@ -283,15 +302,16 @@ export const getOverviewCounts = async (req, res, _next) => {
   try {
     const grouping = String(req.body?.grouping || 'none');
     const includeDevelopingEvents = req.body?.includeDevelopingEvents === true;
-    const [baseWhere, categoriesRaw] = await Promise.all([
+    const [baseWhere, categoriesRaw, briefingConfig] = await Promise.all([
       buildOverviewWhere({ userId, grouping, includeDevelopingEvents }),
-      loadCategoriesStructure(userId)
+      loadCategoriesStructure(userId),
+      loadBriefingCountConfig(userId)
     ]);
 
     const categories = buildCategoriesStructure(categoriesRaw);
     const [totals, grouped] = await Promise.all([
-      loadOverviewTotals(baseWhere, userId),
-      loadGroupedFeedCounts(baseWhere)
+      loadOverviewTotals(baseWhere, briefingConfig),
+      loadGroupedFeedCounts(baseWhere, briefingConfig)
     ]);
 
     mergeCountsIntoStructure(categories, grouped);
@@ -318,14 +338,15 @@ export const getOverview = async (req, res, _next) => {
   try {
     const grouping = String(req.body?.grouping || 'none');
     const includeDevelopingEvents = req.body?.includeDevelopingEvents === true;
-    const [baseWhere, categoriesRaw] = await Promise.all([
+    const [baseWhere, categoriesRaw, briefingConfig] = await Promise.all([
       buildOverviewWhere({ userId, grouping, includeDevelopingEvents }),
-      loadCategoriesStructure(userId)
+      loadCategoriesStructure(userId),
+      loadBriefingCountConfig(userId)
     ]);
     const categories = buildCategoriesStructure(categoriesRaw);
     const [totals, grouped] = await Promise.all([
-      loadOverviewTotals(baseWhere, userId),
-      loadGroupedFeedCounts(baseWhere)
+      loadOverviewTotals(baseWhere, briefingConfig),
+      loadGroupedFeedCounts(baseWhere, briefingConfig)
     ]);
 
     mergeCountsIntoStructure(categories, grouped);

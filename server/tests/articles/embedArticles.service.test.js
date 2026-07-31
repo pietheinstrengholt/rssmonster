@@ -153,4 +153,42 @@ describe('embedArticles', () => {
     }));
     expect(mocked.articleFindAll.mock.calls[0][0].where).not.toHaveProperty('createdAt');
   });
+
+  // Counts provider skips and reused vectors independently across multiple batches.
+  it('reports skipped and reused articles across stable batches', async () => {
+    const skippedArticle = { id: 3 };
+    const reusedArticle = { id: 8 };
+    mocked.articleFindAll
+      .mockResolvedValueOnce([skippedArticle, reusedArticle])
+      .mockResolvedValueOnce([]);
+    mocked.embedArticle
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce({ eventVector: [0.2], reused: true });
+
+    const { embedArticles } = await import('../../services/articles/embedArticles.js');
+    const summary = await embedArticles(42, { batchSize: 2 });
+
+    expect(mocked.articleFindAll).toHaveBeenCalledTimes(2);
+    expect(mocked.articleFindAll.mock.calls[1][0].where.id[Op.gt]).toBe(8);
+    expect(summary).toEqual({
+      userId: 42,
+      scannedCount: 2,
+      reusedCount: 1,
+      embeddedCount: 0,
+      skippedCount: 1
+    });
+  });
+
+  // Disables the age guard when the configured maximum is non-positive.
+  it.each([0, 'invalid'])(
+    'omits the age boundary for maxAgeDays=%s',
+    async maxAgeDays => {
+      mocked.articleFindAll.mockResolvedValueOnce([]);
+
+      const { embedArticles } = await import('../../services/articles/embedArticles.js');
+      await embedArticles(42, { maxAgeDays });
+
+      expect(mocked.articleFindAll.mock.calls[0][0].where).not.toHaveProperty('createdAt');
+    }
+  );
 });
