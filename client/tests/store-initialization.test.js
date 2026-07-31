@@ -1,47 +1,49 @@
-import { createPinia } from 'pinia';
+import { createPinia, setActivePinia } from 'pinia';
 import { describe, expect, it } from 'vitest';
 
-import { createStoreBridge } from '../src/store/index.js';
-import { useStore as useAuthStore } from '../src/store/auth.js';
-import { useStore as useDataStore } from '../src/store/data.js';
+import { useAuthStore } from '../src/store/auth.js';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
+import { useUiStore } from '../src/store/ui.js';
 import mainSource from '../src/main.js?raw';
 
 describe('Pinia store initialization', () => {
-  it('creates the bridge once after installing Pinia', () => {
+  it('installs Pinia without creating a global compatibility bridge', () => {
     const piniaInstallIndex = mainSource.indexOf('app.use(pinia)');
-    const bridgeInitializationIndex = mainSource.indexOf(
-      'createStoreBridge(pinia)'
-    );
 
     expect(piniaInstallIndex).toBeGreaterThan(-1);
-    expect(bridgeInitializationIndex).toBeGreaterThan(piniaInstallIndex);
-    expect(mainSource.match(/createStoreBridge\(pinia\)/g)).toHaveLength(1);
-    expect(mainSource).not.toContain('setStores');
+    expect(mainSource).not.toContain('createStoreBridge');
+    expect(mainSource).not.toContain('globalProperties.$store');
   });
 
-  it('creates both stores from the explicitly installed Pinia instance', () => {
+  it('creates every focused store from one explicit Pinia instance', () => {
     const pinia = createPinia();
-    const bridge = createStoreBridge(pinia);
+    setActivePinia(pinia);
 
-    expect(bridge.auth).toBe(useAuthStore(pinia));
-    expect(bridge.data).toBe(useDataStore(pinia));
-    expect(bridge.version).toBe('1.0.0');
+    expect(useAuthStore()).toBe(useAuthStore(pinia));
+    expect(useSelectionStore()).toBe(useSelectionStore(pinia));
+    expect(useOverviewStore()).toBe(useOverviewStore(pinia));
+    expect(useUiStore()).toBe(useUiStore(pinia));
   });
 
-  it('keeps the compatibility bridge stable while its Pinia stores remain mutable', () => {
+  it('keeps focused store state independently mutable', () => {
     const pinia = createPinia();
-    const bridge = createStoreBridge(pinia);
+    const authStore = useAuthStore(pinia);
+    const selectionStore = useSelectionStore(pinia);
+    const overviewStore = useOverviewStore(pinia);
+    const uiStore = useUiStore(pinia);
 
-    expect(Object.isFrozen(bridge)).toBe(true);
-
-    bridge.auth.setSession({
+    authStore.setSession({
       token: 'session-token',
-      role: 'admin',
-      agenticFeaturesEnabled: true
+      role: 'admin'
     });
+    selectionStore.selectCategory(4);
+    overviewStore.addCategory({ id: 4, name: 'Focused' });
+    uiStore.setShowModal('Settings');
 
-    expect(bridge.auth.getToken).toBe('session-token');
-    expect(bridge.auth.getRole).toBe('admin');
-    expect(bridge.auth.isAgenticFeaturesEnabled).toBe(true);
+    expect(authStore.token).toBe('session-token');
+    expect(selectionStore.currentSelection.categoryId).toBe('4');
+    expect(overviewStore.categories[0].name).toBe('Focused');
+    expect(uiStore.showModal).toBe('Settings');
   });
 });

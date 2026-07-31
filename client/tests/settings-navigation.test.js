@@ -1,41 +1,41 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import Settings from '../src/components/model/Settings.vue';
-import SettingsSectionError from '../src/components/model/SettingsSectionError.vue';
-import SettingsSectionLoading from '../src/components/model/SettingsSectionLoading.vue';
+import Settings from '../src/components/settings/Settings.vue';
+import SettingsSectionError from '../src/components/settings/SettingsSectionError.vue';
+import SettingsSectionLoading from '../src/components/settings/SettingsSectionLoading.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // This function returns the settings navigation for the requested AI state.
-const getSettingsNavigation = (AIEnabled, role = 'user') => Settings.computed.settingsNavigation.call({
-  $store: {
-    data: { currentSelection: { AIEnabled } },
-    auth: { getRole: role }
-  }
-});
+const getSettingsNavigation = (AIEnabled, role = 'user') => {
+  const stores = createFocusedStores({
+    auth: { role },
+    selection: { currentSelection: { AIEnabled } }
+  });
+  return Settings.computed.settingsNavigation.call(stores);
+};
 
 // This function mounts Settings with the requested feature and role visibility.
-const mountSettings = ({ AIEnabled = false, role = 'user', stubs = {} } = {}) => mount(Settings, {
-  attachTo: document.body,
-  global: {
-    mocks: {
-      $store: {
-        data: {
-          currentSelection: {
-            AIEnabled,
-            minAdvertisementScore: 0,
-            minSentimentScore: 0,
-            minQualityScore: 0
-          },
-          smartFolders: []
-        },
-        auth: {
-          getRole: role,
-          token: null
-        }
+const mountSettings = ({ AIEnabled = false, role = 'user', stubs = {} } = {}) => {
+  const stores = createFocusedStores({
+    auth: { role },
+    selection: {
+      currentSelection: {
+        AIEnabled,
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0
       }
     },
-    stubs
-  }
-});
+    overview: { fetchSmartFolders: vi.fn().mockResolvedValue() }
+  });
+  return mount(Settings, {
+    attachTo: document.body,
+    global: {
+      plugins: [stores.pinia],
+      stubs
+    }
+  });
+};
 
 // This function selects a settings section by its visible navigation label.
 const selectSettingsSection = async (wrapper, label) => {

@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ArticleFeed from '../src/components/ArticleFeed.vue';
-import { articleFeedClusterInsertionMethods } from '../src/components/articleFeed/clusterInsertion.js';
-import { articleFeedVisibilityMethods } from '../src/components/articleFeed/visibilityTracking.js';
+import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
+import { articleFeedClusterInsertionMethods } from '../src/components/articles/feed/clusterInsertion.js';
+import { articleFeedVisibilityMethods } from '../src/components/articles/feed/visibilityTracking.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // Creates the minimal feed state used by cluster insertion methods.
 const createClusterContext = articles => ({
@@ -75,17 +76,17 @@ describe('ArticleFeed visibility tracking', () => {
     const now = vi.spyOn(performance, 'now');
     now.mockReturnValueOnce(1000).mockReturnValueOnce(2500);
     const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: { viewMode: 'full' }
+        }
+      }),
       pool: new Set(),
       pendingSeenArticleIds: new Set(),
       seenPersistenceAttempts: new Map(),
       visibleMap: new Map(),
       visibleSince: new Map(),
       visibleDuration: new Map(),
-      $store: {
-        data: {
-          currentSelection: { viewMode: 'full' }
-        }
-      },
       markArticleSeen: vi.fn().mockResolvedValue(true)
     };
     context.finalizeVisibleDuration = articleId =>
@@ -112,16 +113,16 @@ describe('ArticleFeed visibility tracking', () => {
 
   it('does not persist seen state when a minimal article passes the viewport', async () => {
     const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: { viewMode: 'minimal' }
+        }
+      }),
       pool: new Set(),
       pendingSeenArticleIds: new Set(),
       seenPersistenceAttempts: new Map(),
       visibleSince: new Map(),
       visibleDuration: new Map(),
-      $store: {
-        data: {
-          currentSelection: { viewMode: 'minimal' }
-        }
-      },
       finalizeVisibleDuration: vi.fn(),
       markArticleSeen: vi.fn()
     };

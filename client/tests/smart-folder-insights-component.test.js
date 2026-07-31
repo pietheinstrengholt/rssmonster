@@ -1,7 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import SmartFolderInsights from '../src/components/model/smartFolders/SmartFolderInsights.vue';
+import SmartFolderInsights from '../src/components/settings/smartFolders/SmartFolderInsights.vue';
 import { fetchSmartFolderInsights } from '../src/api/smartfolders';
 
 vi.mock('../src/api/smartfolders', () => ({

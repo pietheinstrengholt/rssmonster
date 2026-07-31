@@ -8,8 +8,9 @@ import {
   markNotInterested
 } from '../src/api/articles.js';
 import { muteFeed } from '../src/api/feeds.js';
-import { articleActionMethods } from '../src/components/articles/articleActions.js';
+import { articleActionMethods } from '../src/components/articles/helpers/articleActions.js';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   markAsFavorite: vi.fn(),
@@ -27,20 +28,23 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 }));
 
 // Creates an article action context with observable store mutations and events.
-const createContext = (overrides = {}) => ({
-  id: 42,
-  feedId: 8,
-  feed: { feedName: 'Example Feed' },
-  favoriteInd: 0,
-  $emit: vi.fn(),
-  $store: {
-    data: {
+const createContext = (overrides = {}) => {
+  const stores = createFocusedStores({
+    overview: {
       applyFavoriteDelta: vi.fn()
     }
-  },
-  ...articleActionMethods,
-  ...overrides
-});
+  });
+  return {
+    ...stores,
+    id: 42,
+    feedId: 8,
+    feed: { feedName: 'Example Feed' },
+    favoriteInd: 0,
+    $emit: vi.fn(),
+    ...articleActionMethods,
+    ...overrides
+  };
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -84,7 +88,7 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(markAsFavorite).toHaveBeenCalledWith(42, 'mark');
-    expect(context.$store.data.applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: 3,
       feedId: 8,
       delta: 1
@@ -109,7 +113,7 @@ describe('articleActionMethods', () => {
     await flushPromises();
 
     expect(markAsFavorite).toHaveBeenCalledWith(42, 'unmark');
-    expect(context.$store.data.applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: undefined,
       feedId: 8,
       delta: -1

@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import SettingsFeedsOverview from '../src/components/model/SettingsFeedsOverview.vue';
+import SettingsFeedsOverview from '../src/components/settings/SettingsFeedsOverview.vue';
 import {
   fetchFeeds,
   recalculateFeedTrust
@@ -9,6 +9,7 @@ import {
   exportOpml,
   importOpml
 } from '../src/api/opml';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/feeds', () => ({
   fetchFeeds: vi.fn(),
@@ -22,15 +23,14 @@ vi.mock('../src/api/opml', () => ({
 
 // Creates a feed-overview context with live computed properties and store actions.
 const createContext = (overrides = {}) => {
+  const stores = createFocusedStores({
+    selection: { selectFeed: vi.fn() },
+    ui: { setShowModal: vi.fn() }
+  });
   const context = {
     ...SettingsFeedsOverview.data(),
+    ...stores,
     $emit: vi.fn(),
-    $store: {
-      data: {
-        selectFeed: vi.fn(),
-        setShowModal: vi.fn()
-      }
-    },
     ...SettingsFeedsOverview.methods,
     ...overrides
   };
@@ -160,9 +160,9 @@ describe('SettingsFeedsOverview actions', () => {
     context.openFeedEdit(createFeeds()[0]);
     context.openFeedEdit(null);
 
-    expect(context.$store.data.selectFeed).toHaveBeenCalledWith(1, 10);
-    expect(context.$store.data.setShowModal).toHaveBeenCalledWith('UpdateFeed');
-    expect(context.$store.data.selectFeed).toHaveBeenCalledOnce();
+    expect(context.selectionStore.selectFeed).toHaveBeenCalledWith(1, 10);
+    expect(context.uiStore.setShowModal).toHaveBeenCalledWith('UpdateFeed');
+    expect(context.selectionStore.selectFeed).toHaveBeenCalledOnce();
   });
 
   // Verifies OPML export uses the server filename and releases browser resources.

@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
-import BriefingPreferencesModal from '../src/components/model/BriefingPreferencesModal.vue';
+import BriefingPreferencesModal from '../src/components/briefing/BriefingPreferencesModal.vue';
 import {
   fetchBriefingPreferences,
   saveBriefingPreferences
 } from '../src/api/briefing.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/briefing.js', () => ({
   fetchBriefingPreferences: vi.fn(),
@@ -26,6 +27,16 @@ const preferencesResponse = {
 
 let wrapper;
 
+// Creates a controllable save request for dismissal-lock assertions.
+const createDeferred = () => {
+  let resolve;
+  const promise = new Promise((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+};
+
 // This function mounts the modal with the existing global modal-store surface.
 function mountModal() {
   const setShowModal = vi.fn();
@@ -33,19 +44,18 @@ function mountModal() {
   const setCurrentSelection = vi.fn();
   const refreshBriefingSelection = vi.fn();
   const refreshOverviewCounts = vi.fn().mockResolvedValue();
+  const stores = createFocusedStores({
+    selection: {
+      setBriefingFilters,
+      setCurrentSelection,
+      refreshBriefingSelection,
+      refreshOverviewCounts
+    },
+    ui: { setShowModal }
+  });
   wrapper = mount(BriefingPreferencesModal, {
     global: {
-      mocks: {
-        $store: {
-          data: {
-            setShowModal,
-            setBriefingFilters,
-            setCurrentSelection,
-            refreshBriefingSelection,
-            refreshOverviewCounts
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 
@@ -158,10 +168,34 @@ describe('BriefingPreferencesModal dismissal', () => {
     console.error.mockRestore();
   });
 
+  it('prevents dismissal while preferences are saving', async () => {
+    const deferred = createDeferred();
+    saveBriefingPreferences.mockReturnValue(deferred.promise);
+    const { wrapper, setShowModal } = mountModal();
+    await flushPromises();
+
+    await wrapper.get('.briefing-preferences-form').trigger('submit');
+    await wrapper.vm.$nextTick();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape', cancelable: true }));
+    await wrapper.get('.base-dialog__close').trigger('click');
+
+    expect(setShowModal).not.toHaveBeenCalled();
+    expect(wrapper.get('.base-dialog__close').attributes('disabled')).toBeDefined();
+    expect(
+      wrapper.get('.preferences-dialog__button--secondary').attributes('disabled')
+    ).toBeDefined();
+
+    deferred.resolve({ data: preferencesResponse });
+    await flushPromises();
+
+    expect(setShowModal).toHaveBeenCalledWith('');
+  });
+
   it('hides the modal from the close button', async () => {
     const { wrapper, setShowModal } = mountModal();
 
-    await wrapper.get('.briefing-preferences-close').trigger('click');
+    await wrapper.get('.base-dialog__close').trigger('click');
 
     expect(setShowModal).toHaveBeenCalledWith('');
   });
@@ -169,7 +203,7 @@ describe('BriefingPreferencesModal dismissal', () => {
   it('hides the modal from the Cancel button', async () => {
     const { wrapper, setShowModal } = mountModal();
 
-    await wrapper.get('.briefing-preferences-button-secondary').trigger('click');
+    await wrapper.get('.preferences-dialog__button--secondary').trigger('click');
 
     expect(setShowModal).toHaveBeenCalledWith('');
   });

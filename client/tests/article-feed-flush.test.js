@@ -1,7 +1,8 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ArticleFeed from '../src/components/ArticleFeed.vue';
+import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import { markArticlesAsRead } from '../src/api/articles.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchArticleIds: vi.fn(),
@@ -23,6 +24,12 @@ describe('ArticleFeed final read reconciliation', () => {
   it('marks the complete container snapshot instead of only pooled or remaining IDs', async () => {
     const fetchOverviewSplit = vi.fn().mockResolvedValue();
     const context = {
+      ...createFocusedStores({
+        overview: { fetchOverviewSplit },
+        selection: {
+          currentSelection: { grouping: 'none' }
+        }
+      }),
       container: [101, 102, 103, 103],
       pool: new Set([101, 102]),
       articles: [
@@ -30,13 +37,7 @@ describe('ArticleFeed final read reconciliation', () => {
         { id: 102, status: 'unread' },
         { id: 103, status: 'unread' }
       ],
-      isFlushed: false,
-      $store: {
-        data: {
-          currentSelection: { grouping: 'none' },
-          fetchOverviewSplit
-        }
-      }
+      isFlushed: false
     };
 
     await ArticleFeed.methods.flushPool.call(context);
@@ -56,19 +57,19 @@ describe('ArticleFeed final read reconciliation', () => {
     const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
     const fetchOverviewSplit = vi.fn();
     const context = {
+      ...createFocusedStores({
+        overview: { fetchOverviewSplit },
+        selection: {
+          currentSelection: { grouping: 'event' }
+        }
+      }),
       container: [201, 202],
       pool: new Set([201]),
       articles: [
         { id: 201, status: 'read' },
         { id: 202, status: 'unread' }
       ],
-      isFlushed: false,
-      $store: {
-        data: {
-          currentSelection: { grouping: 'event' },
-          fetchOverviewSplit
-        }
-      }
+      isFlushed: false
     };
     markArticlesAsRead.mockRejectedValue(error);
 

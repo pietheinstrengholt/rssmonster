@@ -1,7 +1,7 @@
 import { flushPromises, shallowMount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import Article from '../src/components/Article.vue';
+import Article from '../src/components/articles/Article.vue';
 import {
   fetchDuplicateArticles,
   markAsFavorite,
@@ -10,16 +10,17 @@ import {
 } from '../src/api/articles.js';
 import { fetchEventArticles } from '../src/api/events.js';
 import { fetchTopicArticles } from '../src/api/topics.js';
-import { articleActionMethods } from '../src/components/articles/articleActions.js';
+import { articleActionMethods } from '../src/components/articles/helpers/articleActions.js';
 import {
   createArticleExpansionState,
   articleExpansionMethods
-} from '../src/components/articles/articleExpansion.js';
-import { articleSignalComputed } from '../src/components/articles/articleSignals.js';
+} from '../src/components/articles/helpers/articleExpansion.js';
+import { articleSignalComputed } from '../src/components/articles/helpers/articleSignals.js';
 import {
   createArticleMobileSwipeState,
   articleMobileSwipeMethods
-} from '../src/components/articles/mobileSwipe.js';
+} from '../src/components/articles/helpers/mobileSwipe.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchDuplicateArticles: vi.fn(),
@@ -55,20 +56,32 @@ function createSwipeContext() {
 
 // Creates related-article expansion state for the requested grouping.
 function createExpansionContext(grouping = 'event') {
+  const stores = createFocusedStores({
+    selection: {
+      currentSelection: { grouping }
+    }
+  });
   return {
+    ...stores,
     ...createArticleExpansionState(),
     id: 42,
-    $emit: vi.fn(),
-    $store: {
-      data: {
-        currentSelection: { grouping }
-      }
-    }
+    $emit: vi.fn()
   };
 }
 
 // Mounts an article with the minimal store and child-component surface.
 function mountArticle(props = {}) {
+  const stores = createFocusedStores({
+    overview: {
+      categories: []
+    },
+    selection: {
+      currentSelection: {
+        grouping: 'event',
+        viewMode: 'full'
+      }
+    }
+  });
   return shallowMount(Article, {
     props: {
       id: 42,
@@ -78,6 +91,7 @@ function mountArticle(props = {}) {
       ...props
     },
     global: {
+      plugins: [stores.pinia],
       stubs: {
         ArticleActionsMenu: true,
         ArticleContent: true,
@@ -86,17 +100,6 @@ function mountArticle(props = {}) {
         ArticleMeta: true,
         ArticleTagsScores: true,
         BootstrapIcon: true
-      },
-      mocks: {
-        $store: {
-          data: {
-            categories: [],
-            currentSelection: {
-              grouping: 'event',
-              viewMode: 'full'
-            }
-          }
-        }
       }
     }
   });
@@ -231,15 +234,13 @@ describe('Article API actions', () => {
     });
     const applyFavoriteDelta = vi.fn();
     const context = {
+      ...createFocusedStores({
+        overview: { applyFavoriteDelta }
+      }),
       id: 42,
       favoriteInd: 0,
       favoriteMutationPending: false,
-      $emit: vi.fn(),
-      $store: {
-        data: {
-          applyFavoriteDelta
-        }
-      }
+      $emit: vi.fn()
     };
 
     articleActionMethods.markAsFavorite.call(context);
@@ -265,15 +266,13 @@ describe('Article API actions', () => {
     markAsFavorite.mockReturnValue(pendingFavorite);
     const applyFavoriteDelta = vi.fn();
     const context = {
+      ...createFocusedStores({
+        overview: { applyFavoriteDelta }
+      }),
       id: 42,
       favoriteInd: 0,
       favoriteMutationPending: false,
-      $emit: vi.fn(),
-      $store: {
-        data: {
-          applyFavoriteDelta
-        }
-      }
+      $emit: vi.fn()
     };
 
     const firstMutation = articleActionMethods.markAsFavorite.call(context);

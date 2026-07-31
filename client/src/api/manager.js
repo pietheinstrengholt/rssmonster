@@ -1,18 +1,18 @@
 // client/src/api/manager.js
 import api from './client';
-import { normalizeQuerySortAliasesForApi, normalizeSortValueForApi } from '../services/queryValidation';
+
+// This function limits overview requests to the filters consumed by manager endpoints.
+const overviewCountFilters = currentSelection => ({
+  grouping: String(currentSelection.grouping ?? 'none'),
+  includeDevelopingEvents: currentSelection.includeDevelopingEvents === true
+});
 
 /**
  * Fetch overview data with current selection
  * Backend expects POST with body
  */
 export const fetchOverview = (currentSelection) =>
-  api.post('/manager/overview', {
-    ...currentSelection,
-    search: normalizeQuerySortAliasesForApi(currentSelection.search),
-    sort: normalizeSortValueForApi(currentSelection.sort),
-    grouping: String(currentSelection.grouping)
-  });
+  api.post('/manager/overview', overviewCountFilters(currentSelection));
 
 /**
  * Fetch overview structure only.
@@ -24,12 +24,7 @@ export const fetchOverviewLite = () =>
  * Fetch overview counts for current selection.
  */
 export const fetchOverviewCounts = (currentSelection) =>
-  api.post('/manager/overview-counts', {
-    ...currentSelection,
-    search: normalizeQuerySortAliasesForApi(currentSelection.search),
-    sort: normalizeSortValueForApi(currentSelection.sort),
-    grouping: String(currentSelection.grouping)
-  });
+  api.post('/manager/overview-counts', overviewCountFilters(currentSelection));
 
 /**
  * Update category order

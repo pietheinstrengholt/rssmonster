@@ -8,7 +8,7 @@ import {
   quoteSmartFolderValue,
   stripSmartFolderQuotes,
   tokenizeSmartFolderQuery
-} from '../src/components/model/smartFolders/smartFolderQuery.js';
+} from '../src/components/settings/smartFolders/smartFolderQuery.js';
 
 describe('Smart Folder query domain', () => {
   it.each([

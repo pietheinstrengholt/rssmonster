@@ -1,46 +1,47 @@
 import { defineStore } from 'pinia';
+import { useOverviewStore } from './overview.js';
+import { useSelectionStore } from './selection.js';
+import { useUiStore } from './ui.js';
 
-export const useStore = defineStore('auth', {
+export const useAuthStore = defineStore('auth', {
   // This function creates a logged-out authentication state.
   state: () => ({
     token: null,
     role: null,
-    agenticFeaturesEnabled: false
+    sessionRequestId: 0
   }),
   actions: {
+    // This function starts an authentication request and invalidates older session completions.
+    beginSessionRequest() {
+      return ++this.sessionRequestId;
+    },
+    // This function reports whether an authentication response still belongs to the active session transition.
+    isSessionRequestCurrent(requestId) {
+      return requestId === this.sessionRequestId;
+    },
     // This function applies every authenticated-session field from login or validation.
-    setSession({ token, role, agenticFeaturesEnabled = false }) {
+    setSession({ token, role }) {
+      if (this.token && this.token !== token) {
+        this.clearSession();
+      }
       this.token = token;
       this.role = role;
-      this.agenticFeaturesEnabled = Boolean(agenticFeaturesEnabled);
     },
-    // This function clears every authenticated-session field on logout or expiry.
+    // This function invalidates all requests before atomically clearing every user-owned store.
     clearSession() {
+      const selectionStore = useSelectionStore();
+      const overviewStore = useOverviewStore();
+      const uiStore = useUiStore();
+
+      this.sessionRequestId++;
+      selectionStore.invalidateSessionRequests();
+      overviewStore.invalidateSessionRequests();
+
       this.token = null;
       this.role = null;
-      this.agenticFeaturesEnabled = false;
-    },
-    // This function stores or clears the active authentication token.
-    setToken(newValue) {
-      this.token = newValue;
-    },
-    // This function stores or clears the current authorization role.
-    setRole(newValue) {
-      this.role = newValue;
-    },
-    // This function records whether optional agentic features are available.
-    setAgenticFeaturesEnabled(newValue) {
-      this.agenticFeaturesEnabled = newValue;
+      selectionStore.resetSessionState();
+      overviewStore.resetSessionState();
+      uiStore.resetSessionState();
     }
   },
-  getters: {
-    // This function returns the active authentication token.
-    getToken: state => state.token,
-    // This function returns the current authorization role.
-    getRole: state => state.role,
-    // This function returns whether agentic features are enabled.
-    isAgenticFeaturesEnabled: state => state.agenticFeaturesEnabled
-  },
 });
-
-export default useStore

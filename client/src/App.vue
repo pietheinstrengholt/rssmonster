@@ -64,7 +64,7 @@
     </main>
     <!-- Main app view -->
     <main v-else id="main">
-      <app-shell></app-shell>
+      <app-shell @logout="logout"></app-shell>
     </main>
   </div>
 </template>
@@ -75,7 +75,7 @@ import Cookies from 'js-cookie';
 import { mapStores } from 'pinia';
 import { setAuthToken } from './api/client';
 import * as authApi from './api/auth';
-import { useStore as useAuthStore } from './store/auth.js';
+import { useAuthStore } from './store/auth.js';
 
 export default {
   components: {
@@ -112,26 +112,30 @@ export default {
       console.warn('Session expired — logging out');
       this.logout();
     },
+    // This function validates a saved token only while its session generation remains current.
     async checkSession() {
       const token = Cookies.get('token');
 
       if (!token) {
-        this.isAuthenticated = false;
+        this.logout();
         return;
       }
 
+      const requestId = this.authStore.beginSessionRequest();
+
       try {
         const data = await authApi.validateSession(token);
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
 
         authApi.applyAuthToken(token);
 
         this.authStore.setSession({
           token,
-          role: data.user.role,
-          agenticFeaturesEnabled: data.agenticFeaturesEnabled
+          role: data.user.role
         });
         this.isAuthenticated = true;
       } catch (error) {
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         console.error('Session validation error:', error);
         this.logout();
       }
@@ -160,6 +164,8 @@ export default {
     },
     // This function authenticates the entered credentials and establishes the session.
     async login() {
+      const requestId = this.authStore.beginSessionRequest();
+
       try {
         const credentials = {
           username: this.username,
@@ -167,6 +173,7 @@ export default {
         };
 
         const response = await authApi.login(credentials);
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         this.message = response.message;
 
         if (!response?.token) return;
@@ -179,8 +186,7 @@ export default {
 
         this.authStore.setSession({
           token: response.token,
-          role: response.user.role,
-          agenticFeaturesEnabled: response.agenticFeaturesEnabled
+          role: response.user.role
         });
 
         this.isAuthenticated = true;
@@ -189,6 +195,7 @@ export default {
         this.username = '';
         this.password = '';
       } catch (error) {
+        if (!this.authStore.isSessionRequestCurrent(requestId)) return;
         console.error('Login error:', error);
 
         // Backend unreachable / network error

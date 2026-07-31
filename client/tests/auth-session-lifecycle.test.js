@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App.vue';
 import api, { setAuthToken } from '../src/api/client.js';
 import * as authApi from '../src/api/auth';
-import { useStore as useAuthStore } from '../src/store/auth.js';
+import { useAuthStore } from '../src/store/auth.js';
 
 vi.mock('../src/api/auth', () => ({
   applyAuthToken: vi.fn(),
@@ -24,6 +24,15 @@ const createAuthContext = () => ({
   showSignup: true,
   username: 'reader'
 });
+
+// This function creates an authentication response controlled by the session-transition test.
+const deferred = () => {
+  let resolve;
+  const promise = new Promise(resolvePromise => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+};
 
 beforeEach(() => {
   setActivePinia(createPinia());
@@ -54,8 +63,7 @@ describe('authentication lifecycle', () => {
   it('validates a saved session and applies its role and token', async () => {
     vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
     authApi.validateSession.mockResolvedValue({
-      user: { role: 'admin' },
-      agenticFeaturesEnabled: true
+      user: { role: 'admin' }
     });
     const context = createAuthContext();
 
@@ -63,9 +71,8 @@ describe('authentication lifecycle', () => {
 
     expect(authApi.validateSession).toHaveBeenCalledWith('saved-token');
     expect(authApi.applyAuthToken).toHaveBeenCalledWith('saved-token');
-    expect(context.authStore.getToken).toBe('saved-token');
-    expect(context.authStore.getRole).toBe('admin');
-    expect(context.authStore.isAgenticFeaturesEnabled).toBe(true);
+    expect(context.authStore.token).toBe('saved-token');
+    expect(context.authStore.role).toBe('admin');
     expect(context.isAuthenticated).toBe(true);
   });
 
@@ -75,28 +82,15 @@ describe('authentication lifecycle', () => {
       message: 'Connected!',
       token: 'login-token',
       expiresInSeconds: 86400,
-      user: { role: 'user' },
-      agenticFeaturesEnabled: true
+      user: { role: 'user' }
     });
     const context = createAuthContext();
 
     await App.methods.login.call(context);
 
-    expect(context.authStore.getToken).toBe('login-token');
-    expect(context.authStore.getRole).toBe('user');
-    expect(context.authStore.isAgenticFeaturesEnabled).toBe(true);
+    expect(context.authStore.token).toBe('login-token');
+    expect(context.authStore.role).toBe('user');
     expect(context.isAuthenticated).toBe(true);
-  });
-
-  it('uses the safe feature default when validation omits the flag', async () => {
-    vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
-    authApi.validateSession.mockResolvedValue({ user: { role: 'admin' } });
-    const context = createAuthContext();
-    context.authStore.setAgenticFeaturesEnabled(true);
-
-    await App.methods.checkSession.call(context);
-
-    expect(context.authStore.isAgenticFeaturesEnabled).toBe(false);
   });
 
   it('logs out when session validation fails or auth expiry is received', async () => {
@@ -112,13 +106,57 @@ describe('authentication lifecycle', () => {
     expect(logout).toHaveBeenCalledTimes(2);
   });
 
+  // This test verifies logout invalidates an outstanding session validation response.
+  it('ignores session validation that resolves after logout', async () => {
+    const oldValidation = deferred();
+    vi.spyOn(Cookies, 'get').mockReturnValue('old-token');
+    vi.spyOn(Cookies, 'remove').mockImplementation(() => {});
+    authApi.validateSession.mockReturnValueOnce(oldValidation.promise);
+    const context = createAuthContext();
+    // This function exercises the same root cleanup used by production expiry and logout paths.
+    context.logout = () => App.methods.logout.call(context);
+
+    const validation = App.methods.checkSession.call(context);
+    context.logout();
+    oldValidation.resolve({ user: { role: 'admin' } });
+    await validation;
+
+    expect(authApi.applyAuthToken).not.toHaveBeenCalled();
+    expect(context.authStore).toMatchObject({ token: null, role: null });
+    expect(context.isAuthenticated).toBe(false);
+  });
+
+  // This test verifies a newer login supersedes validation still running for the previous user.
+  it('keeps the new login when the previous session validation resolves last', async () => {
+    const oldValidation = deferred();
+    vi.spyOn(Cookies, 'get').mockReturnValue('old-token');
+    vi.spyOn(Cookies, 'set').mockImplementation(() => {});
+    authApi.validateSession.mockReturnValueOnce(oldValidation.promise);
+    authApi.login.mockResolvedValueOnce({
+      message: 'Connected!',
+      token: 'new-token',
+      expiresInSeconds: 86400,
+      user: { role: 'admin' }
+    });
+    const context = createAuthContext();
+    context.authStore.setSession({ token: 'old-token', role: 'user' });
+
+    const oldRequest = App.methods.checkSession.call(context);
+    await App.methods.login.call(context);
+    oldValidation.resolve({ user: { role: 'user' } });
+    await oldRequest;
+
+    expect(context.authStore).toMatchObject({ token: 'new-token', role: 'admin' });
+    expect(context.isAuthenticated).toBe(true);
+    expect(authApi.applyAuthToken).not.toHaveBeenCalledWith('old-token');
+  });
+
   it('clears store, cookie, and every Authorization default during logout', () => {
     const context = createAuthContext();
     const removeCookie = vi.spyOn(Cookies, 'remove').mockImplementation(() => {});
     context.authStore.setSession({
       token: 'active-token',
-      role: 'admin',
-      agenticFeaturesEnabled: true
+      role: 'admin'
     });
     setAuthToken('active-token');
     axios.defaults.headers.common.Authorization = 'Bearer stale-bootstrap-token';
@@ -130,9 +168,8 @@ describe('authentication lifecycle', () => {
 
     expect(api.defaults.headers.common.Authorization).toBeUndefined();
     expect(axios.defaults.headers.common.Authorization).toBeUndefined();
-    expect(context.authStore.getToken).toBeNull();
-    expect(context.authStore.getRole).toBeNull();
-    expect(context.authStore.isAgenticFeaturesEnabled).toBe(false);
+    expect(context.authStore.token).toBeNull();
+    expect(context.authStore.role).toBeNull();
     expect(removeCookie).toHaveBeenCalledWith('token');
     expect(context.isAuthenticated).toBe(false);
     expect(context.username).toBe('');

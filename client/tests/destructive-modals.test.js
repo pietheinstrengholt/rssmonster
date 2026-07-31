@@ -1,14 +1,15 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
-import Cleanup from '../src/components/model/Cleanup.vue';
-import DeleteCategory from '../src/components/model/DeleteCategory.vue';
-import DeleteFeed from '../src/components/model/DeleteFeed.vue';
+import Cleanup from '../src/components/dialogs/Cleanup.vue';
+import DeleteCategory from '../src/components/dialogs/categories/DeleteCategory.vue';
+import DeleteFeed from '../src/components/dialogs/feeds/DeleteFeed.vue';
 import { cleanupOldArticles } from '../src/api/cleanup';
 import { deleteCategory } from '../src/api/categories';
 import { deleteFeed } from '../src/api/feeds';
 import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/cleanup', () => ({
   cleanupOldArticles: vi.fn()
@@ -34,22 +35,29 @@ let wrapper;
 
 // Mounts destructive modals with selected entities and observable store actions.
 const mountModal = (component) => {
-  const store = {
+  const store = createFocusedStores({
     auth: { token: 'token' },
-    data: {
-      currentSelection: { categoryId: 4, feedId: 9 },
-      getSelectedCategory: { name: 'Technology' },
-      getSelectedFeedDetails: { feed: { feedName: 'Example feed' } },
+    overview: {
+      categories: [{
+        id: 4,
+        name: 'Technology',
+        feeds: [{ id: 9, feedName: 'Example feed' }]
+      }],
       removeCategory: vi.fn(),
-      removeFeed: vi.fn(),
+      removeFeed: vi.fn()
+    },
+    selection: {
+      currentSelection: { categoryId: 4, feedId: 9 },
       selectCategory: vi.fn(),
-      selectFeed: vi.fn(),
+      selectFeed: vi.fn()
+    },
+    ui: {
       setShowModal: vi.fn()
     }
-  };
+  });
 
   wrapper = mount(component, {
-    global: { mocks: { $store: store } }
+    global: { plugins: [store.pinia] }
   });
 
   return { wrapper, store };
@@ -76,12 +84,12 @@ describe('Cleanup', () => {
     cleanupOldArticles.mockResolvedValue({});
     const { store } = mountModal(Cleanup);
 
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
 
     expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(cleanupOldArticles).toHaveBeenCalledOnce();
-    expect(store.data.selectCategory).toHaveBeenCalledWith('%');
+    expect(store.selectionStore.selectCategory).toHaveBeenCalledWith('%');
     expect(reload).toHaveBeenCalledOnce();
   });
 
@@ -91,16 +99,36 @@ describe('Cleanup', () => {
     cleanupOldArticles.mockRejectedValue(error);
     const { store } = mountModal(Cleanup);
 
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
-    await wrapper.get('.btn-secondary').trigger('click');
+    await wrapper.get('.confirm-dialog__cancel').trigger('click');
 
-    expect(store.data.selectCategory).not.toHaveBeenCalled();
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.selectionStore.selectCategory).not.toHaveBeenCalled();
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not clean up old articles. Please try again.',
       error
     );
+  });
+
+  // Verifies repeated cleanup confirmation cannot start concurrent requests.
+  it('blocks duplicate cleanup requests while pending', async () => {
+    const pendingRequest = Promise.withResolvers();
+    vi.stubGlobal('location', { reload: vi.fn() });
+    cleanupOldArticles.mockReturnValue(pendingRequest.promise);
+    mountModal(Cleanup);
+    const confirmButton = wrapper.get('.confirm-dialog__confirm');
+
+    await confirmButton.trigger('click');
+    await confirmButton.trigger('click');
+
+    expect(cleanupOldArticles).toHaveBeenCalledOnce();
+    expect(confirmButton.attributes('disabled')).toBeDefined();
+
+    pendingRequest.resolve({});
+    await flushPromises();
+
+    expect(confirmButton.attributes('disabled')).toBeUndefined();
   });
 });
 
@@ -111,14 +139,14 @@ describe('DeleteCategory', () => {
     const { store } = mountModal(DeleteCategory);
 
     expect(wrapper.text()).toContain('Technology');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
-    await wrapper.get('.btn-secondary').trigger('click');
+    await wrapper.get('.confirm-dialog__cancel').trigger('click');
 
     expect(deleteCategory).toHaveBeenCalledWith(4);
-    expect(store.data.removeCategory).toHaveBeenCalledWith(4);
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
-    expect(store.data.selectCategory).toHaveBeenCalledWith('%');
+    expect(store.overviewStore.removeCategory).toHaveBeenCalledWith(4);
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
+    expect(store.selectionStore.selectCategory).toHaveBeenCalledWith('%');
   });
 
   // Verifies failed category deletion preserves local state and exposes a user-facing error.
@@ -127,15 +155,34 @@ describe('DeleteCategory', () => {
     deleteCategory.mockRejectedValue(error);
     const { store } = mountModal(DeleteCategory);
 
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
 
-    expect(store.data.removeCategory).not.toHaveBeenCalled();
-    expect(store.data.setShowModal).not.toHaveBeenCalled();
+    expect(store.overviewStore.removeCategory).not.toHaveBeenCalled();
+    expect(store.uiStore.setShowModal).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not delete this category. Please try again.',
       error
     );
+  });
+
+  // Verifies repeated category confirmation cannot start concurrent deletions.
+  it('blocks duplicate category deletion requests while pending', async () => {
+    const pendingRequest = Promise.withResolvers();
+    deleteCategory.mockReturnValue(pendingRequest.promise);
+    mountModal(DeleteCategory);
+    const confirmButton = wrapper.get('.confirm-dialog__confirm');
+
+    await confirmButton.trigger('click');
+    await confirmButton.trigger('click');
+
+    expect(deleteCategory).toHaveBeenCalledOnce();
+    expect(confirmButton.attributes('disabled')).toBeDefined();
+
+    pendingRequest.resolve({});
+    await flushPromises();
+
+    expect(confirmButton.attributes('disabled')).toBeUndefined();
   });
 });
 
@@ -146,14 +193,14 @@ describe('DeleteFeed', () => {
     const { store } = mountModal(DeleteFeed);
 
     expect(wrapper.text()).toContain('Example feed');
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
-    await wrapper.get('.btn-secondary').trigger('click');
+    await wrapper.get('.confirm-dialog__cancel').trigger('click');
 
     expect(deleteFeed).toHaveBeenCalledWith(9);
-    expect(store.data.removeFeed).toHaveBeenCalledWith(9);
-    expect(store.data.selectFeed).toHaveBeenCalledWith('%');
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.overviewStore.removeFeed).toHaveBeenCalledWith(9);
+    expect(store.selectionStore.selectFeed).toHaveBeenCalledWith('%');
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
   });
 
   // Verifies failed feed deletion leaves the store unchanged and reports the failure.
@@ -162,14 +209,33 @@ describe('DeleteFeed', () => {
     deleteFeed.mockRejectedValue(error);
     const { store } = mountModal(DeleteFeed);
 
-    await wrapper.get('.btn-primary').trigger('click');
+    await wrapper.get('.confirm-dialog__confirm').trigger('click');
     await flushPromises();
 
-    expect(store.data.removeFeed).not.toHaveBeenCalled();
-    expect(store.data.setShowModal).not.toHaveBeenCalled();
+    expect(store.overviewStore.removeFeed).not.toHaveBeenCalled();
+    expect(store.uiStore.setShowModal).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not delete this feed. Please try again.',
       error
     );
+  });
+
+  // Verifies repeated feed confirmation cannot start concurrent deletions.
+  it('blocks duplicate feed deletion requests while pending', async () => {
+    const pendingRequest = Promise.withResolvers();
+    deleteFeed.mockReturnValue(pendingRequest.promise);
+    mountModal(DeleteFeed);
+    const confirmButton = wrapper.get('.confirm-dialog__confirm');
+
+    await confirmButton.trigger('click');
+    await confirmButton.trigger('click');
+
+    expect(deleteFeed).toHaveBeenCalledOnce();
+    expect(confirmButton.attributes('disabled')).toBeDefined();
+
+    pendingRequest.resolve({});
+    await flushPromises();
+
+    expect(confirmButton.attributes('disabled')).toBeUndefined();
   });
 });

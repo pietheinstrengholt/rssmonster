@@ -1,26 +1,34 @@
 import { describe, expect, it, vi } from 'vitest';
 import AppShell from '../src/AppShell.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // This function creates the component state needed by overview recovery methods.
-const createRecoveryContext = () => ({
-  offlineStatus: true,
-  overviewIntervalId: null,
-  overviewLoaded: true,
-  overviewReloading: false,
-  $refs: {},
-  $store: {
-    data: {
+const createRecoveryContext = () => {
+  const stores = createFocusedStores({
+    overview: {
+      fetchOverviewSplit: vi.fn()
+    },
+    selection: {
+      currentSelection: { status: 'unread' }
+    },
+    ui: {
       clearFatalError: vi.fn(),
-      currentSelection: { status: 'unread' },
       fatalError: { type: 'offline' },
-      fetchOverviewSplit: vi.fn(),
       setFatalError: vi.fn()
     }
-  },
-  startOverviewPolling: vi.fn(),
-  stopOverviewPolling: vi.fn(),
-  updateSelection: vi.fn()
-});
+  });
+  return {
+    ...stores,
+    offlineStatus: true,
+    overviewIntervalId: null,
+    overviewLoaded: true,
+    overviewReloading: false,
+    $refs: {},
+    startOverviewPolling: vi.fn(),
+    stopOverviewPolling: vi.fn(),
+    updateSelection: vi.fn()
+  };
+};
 
 // This function connects overview methods that call each other on a component instance.
 const connectRecoveryMethods = context => {
@@ -35,8 +43,8 @@ describe('AppShell offline recovery', () => {
     const timeout = new Error('timeout of 15000ms exceeded');
     timeout.code = 'ECONNABORTED';
     context.offlineStatus = false;
-    context.$store.data.fatalError = null;
-    context.$store.data.fetchOverviewSplit.mockRejectedValue(timeout);
+    context.uiStore.fatalError = null;
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(timeout);
     vi.spyOn(console, 'warn').mockImplementation(() => {});
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
@@ -45,20 +53,20 @@ describe('AppShell offline recovery', () => {
     expect(context.offlineStatus).toBe(false);
     expect(context.overviewLoaded).toBe(true);
     expect(context.stopOverviewPolling).not.toHaveBeenCalled();
-    expect(context.$store.data.setFatalError).not.toHaveBeenCalled();
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
     expect(console.error).not.toHaveBeenCalled();
   });
 
   it('retains authentication and enters offline mode after a connection failure', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.$store.data.fetchOverviewSplit.mockRejectedValue(new Error('Network Error'));
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(new Error('Network Error'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await AppShell.methods.getOverview.call(context, false);
 
     expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
     expect(context.offlineStatus).toBe(true);
-    expect(context.$store.data.setFatalError).toHaveBeenCalledWith({
+    expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
       message: 'Backend unreachable',
       type: 'offline'
     });
@@ -67,8 +75,8 @@ describe('AppShell offline recovery', () => {
   it('leaves 401 session cleanup to the root authentication flow', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
     context.offlineStatus = false;
-    context.$store.data.fatalError = null;
-    context.$store.data.fetchOverviewSplit.mockRejectedValue({
+    context.uiStore.fatalError = null;
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue({
       response: { status: 401 }
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -76,14 +84,14 @@ describe('AppShell offline recovery', () => {
     await AppShell.methods.getOverview.call(context, false);
 
     expect(context.stopOverviewPolling).not.toHaveBeenCalled();
-    expect(context.$store.data.setFatalError).not.toHaveBeenCalled();
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
     expect(context.offlineStatus).toBe(false);
   });
 
   it('keeps the session online and exposes 5xx failures as retryable overview errors', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.$store.data.fatalError = null;
-    context.$store.data.fetchOverviewSplit.mockRejectedValue({
+    context.uiStore.fatalError = null;
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue({
       response: { status: 503 }
     });
     vi.spyOn(console, 'error').mockImplementation(() => {});
@@ -92,7 +100,7 @@ describe('AppShell offline recovery', () => {
 
     expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
     expect(context.offlineStatus).toBe(false);
-    expect(context.$store.data.setFatalError).toHaveBeenCalledWith({
+    expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
       message: 'Could not load the application overview',
       type: 'overview'
     });
@@ -100,29 +108,29 @@ describe('AppShell offline recovery', () => {
 
   it('restarts polling after a successful reconnect', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.$store.data.fetchOverviewSplit.mockResolvedValue();
+    context.overviewStore.fetchOverviewSplit.mockResolvedValue();
 
     await AppShell.methods.forceReload.call(context);
 
-    expect(context.$store.data.clearFatalError).toHaveBeenCalledOnce();
-    expect(context.$store.data.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
+    expect(context.uiStore.clearFatalError).toHaveBeenCalledOnce();
+    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
     expect(context.offlineStatus).toBe(false);
     expect(context.overviewLoaded).toBe(true);
     expect(context.startOverviewPolling).toHaveBeenCalledOnce();
-    expect(context.$store.data.setFatalError).not.toHaveBeenCalled();
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
   });
 
   it('synchronizes the current selection after an initial overview succeeds', async () => {
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.$store.data.fetchOverviewSplit.mockResolvedValue();
+    context.overviewStore.fetchOverviewSplit.mockResolvedValue();
 
     await AppShell.methods.getOverview.call(context, true);
 
-    expect(context.$store.data.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
+    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({ initial: true });
     expect(context.offlineStatus).toBe(false);
     expect(context.overviewLoaded).toBe(true);
     expect(context.updateSelection)
-      .toHaveBeenCalledWith(context.$store.data.currentSelection);
+      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
   });
 
   it('reloads every mounted article feed after reconnecting', async () => {
@@ -130,25 +138,25 @@ describe('AppShell offline recovery', () => {
     const firstFeed = { fetchArticleIds: vi.fn() };
     const secondFeed = { fetchArticleIds: vi.fn() };
     context.$refs.articleFeed = [firstFeed, null, secondFeed];
-    context.$store.data.fetchOverviewSplit.mockResolvedValue();
+    context.overviewStore.fetchOverviewSplit.mockResolvedValue();
 
     await AppShell.methods.forceReload.call(context);
 
     expect(firstFeed.fetchArticleIds)
-      .toHaveBeenCalledWith(context.$store.data.currentSelection);
+      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
     expect(secondFeed.fetchArticleIds)
-      .toHaveBeenCalledWith(context.$store.data.currentSelection);
+      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
   });
 
   it('returns to fatal offline state when reconnecting fails', async () => {
     const failure = new Error('backend connection failed');
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.$store.data.fetchOverviewSplit.mockRejectedValue(failure);
+    context.overviewStore.fetchOverviewSplit.mockRejectedValue(failure);
     vi.spyOn(console, 'error').mockImplementation(() => {});
 
     await AppShell.methods.forceReload.call(context);
 
-    expect(context.$store.data.setFatalError).toHaveBeenCalledWith({
+    expect(context.uiStore.setFatalError).toHaveBeenCalledWith({
       message: 'Backend unreachable',
       type: 'offline'
     });
@@ -162,14 +170,14 @@ describe('AppShell offline recovery', () => {
   it('coalesces repeated retries and starts polling once after recovery', async () => {
     let resolveOverview;
     const context = connectRecoveryMethods(createRecoveryContext());
-    context.$store.data.fetchOverviewSplit.mockReturnValue(new Promise(resolve => {
+    context.overviewStore.fetchOverviewSplit.mockReturnValue(new Promise(resolve => {
       resolveOverview = resolve;
     }));
 
     const firstRetry = AppShell.methods.forceReload.call(context);
     const repeatedRetry = AppShell.methods.forceReload.call(context);
 
-    expect(context.$store.data.fetchOverviewSplit).toHaveBeenCalledOnce();
+    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledOnce();
     expect(context.startOverviewPolling).not.toHaveBeenCalled();
 
     resolveOverview();

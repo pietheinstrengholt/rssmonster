@@ -1,6 +1,6 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import SettingsCrawlStatistics from '../src/components/model/SettingsCrawlStatistics.vue';
+import SettingsCrawlStatistics from '../src/components/settings/SettingsCrawlStatistics.vue';
 
 const mocks = vi.hoisted(() => ({
   fetchCrawlStatistics: vi.fn()

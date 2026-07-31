@@ -3,14 +3,15 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import {
   articleFeedReadStateMethods,
   createArticleFeedReadState
-} from '../src/components/articleFeed/readState.js';
-import { articleFeedVisibilityMethods } from '../src/components/articleFeed/visibilityTracking.js';
+} from '../src/components/articles/feed/readState.js';
+import { articleFeedVisibilityMethods } from '../src/components/articles/feed/visibilityTracking.js';
 import {
   markArticlesAsRead,
   markArticleSeen,
   markArticleUnread
 } from '../src/api/articles.js';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   markArticlesAsRead: vi.fn(),
@@ -23,8 +24,24 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 }));
 
 // Creates a complete read-state context with observable store reconciliation.
-const createContext = (overrides = {}) => ({
-  ...createArticleFeedReadState(),
+const createContext = (overrides = {}) => {
+  const stores = createFocusedStores({
+    overview: {
+      increaseReadCount: vi.fn(),
+      decreaseReadCount: vi.fn(),
+      fetchOverviewSplit: vi.fn().mockResolvedValue()
+    },
+    selection: {
+      currentSelection: {
+        viewMode: 'full',
+        grouping: 'event',
+        status: 'unread'
+      }
+    }
+  });
+  return {
+    ...stores,
+    ...createArticleFeedReadState(),
   articles: [
     {
       id: 1,
@@ -49,22 +66,11 @@ const createContext = (overrides = {}) => ({
     }
   ],
   container: [1, 2, 3],
-  addToPool: vi.fn(),
-  $store: {
-    data: {
-      currentSelection: {
-        viewMode: 'full',
-        grouping: 'event',
-        status: 'unread'
-      },
-      increaseReadCount: vi.fn(),
-      decreaseReadCount: vi.fn(),
-      fetchOverviewSplit: vi.fn().mockResolvedValue()
-    }
-  },
-  ...articleFeedReadStateMethods,
-  ...overrides
-});
+    addToPool: vi.fn(),
+    ...articleFeedReadStateMethods,
+    ...overrides
+  };
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -83,7 +89,7 @@ describe('article feed read-state reconciliation', () => {
     context.markReaderPreviousArticleRead(1);
     expect(context.addToPool).not.toHaveBeenCalled();
 
-    context.$store.data.currentSelection.viewMode = 'reader';
+    context.selectionStore.currentSelection.viewMode = 'reader';
     context.markReaderPreviousArticleRead('1');
     context.markReaderPreviousArticleRead(2);
     context.pool.add(3);
@@ -117,7 +123,7 @@ describe('article feed read-state reconciliation', () => {
       selectedStatus: 'unread'
     });
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read', 'read']);
-    expect(context.$store.data.increaseReadCount).toHaveBeenCalledTimes(2);
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
   });
 
   // Verifies a transient automatic read failure is retried without duplicating count updates.
@@ -146,7 +152,7 @@ describe('article feed read-state reconciliation', () => {
     expect(context.pool).toContain(1);
     expect(context.pendingSeenArticleIds.size).toBe(0);
     expect(context.seenPersistenceAttempts.has(1)).toBe(false);
-    expect(context.$store.data.increaseReadCount).toHaveBeenCalledOnce();
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
   });
 
   // Verifies automatic seen persistence stops after its retry budget is exhausted.
@@ -167,13 +173,13 @@ describe('article feed read-state reconciliation', () => {
     expect(context.pool).not.toContain(1);
     expect(context.pendingSeenArticleIds.size).toBe(0);
     expect(context.seenPersistenceAttempts.get(1)).toBe(3);
-    expect(context.$store.data.increaseReadCount).not.toHaveBeenCalled();
+    expect(context.overviewStore.increaseReadCount).not.toHaveBeenCalled();
   });
 
   // Verifies minimal navigation reads the previous item and clears the active item on close.
   it('handles minimal article open, close, and duplicate in-flight requests', async () => {
     const context = createContext();
-    context.$store.data.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'minimal';
     context.activeMinimalArticleId = 1;
     markArticleSeen.mockResolvedValue({
       data: {
@@ -202,7 +208,7 @@ describe('article feed read-state reconciliation', () => {
   // Verifies minimal toggles update counts, pool membership, and active selection.
   it('toggles minimal articles between unread and read', async () => {
     const context = createContext();
-    context.$store.data.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'minimal';
     context.activeMinimalArticleId = 2;
     context.pool.add(2);
     markArticleUnread.mockResolvedValue({
@@ -216,11 +222,11 @@ describe('article feed read-state reconciliation', () => {
     await context.toggleMinimalArticleReadStatus({ id: 1, status: 'unread' });
 
     expect(markArticleUnread).toHaveBeenCalledWith(2);
-    expect(context.$store.data.decreaseReadCount).toHaveBeenCalledOnce();
+    expect(context.overviewStore.decreaseReadCount).toHaveBeenCalledOnce();
     expect(context.pool).not.toContain(2);
     expect(context.activeMinimalArticleId).toBeNull();
     expect(context.pool).toContain(1);
-    expect(context.$store.data.increaseReadCount).toHaveBeenCalledOnce();
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledOnce();
   });
 
   // Verifies shortcut routing and duplicate-submit protection across view modes.
@@ -229,12 +235,12 @@ describe('article feed read-state reconciliation', () => {
     context.toggleMinimalArticleReadStatus = vi.fn().mockResolvedValue();
     context.toggleArticleReadStatus = vi.fn().mockResolvedValue();
 
-    context.$store.data.currentSelection.viewMode = 'minimal';
+    context.selectionStore.currentSelection.viewMode = 'minimal';
     await articleFeedReadStateMethods.toggleShortcutArticleReadStatus.call(
       context,
       { id: 1, status: 'unread' }
     );
-    context.$store.data.currentSelection.viewMode = 'reader';
+    context.selectionStore.currentSelection.viewMode = 'reader';
     await articleFeedReadStateMethods.toggleShortcutArticleReadStatus.call(
       context,
       { id: 2, status: 'read' }
@@ -286,7 +292,7 @@ describe('article feed read-state reconciliation', () => {
 
     expect(markArticlesAsRead).toHaveBeenCalledWith([1, 3]);
     expect(context.pool).toEqual(new Set([1, 3]));
-    expect(context.$store.data.fetchOverviewSplit).toHaveBeenCalledWith({
+    expect(context.overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({
       forceUpdate: true
     });
   });

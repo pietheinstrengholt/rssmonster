@@ -1,10 +1,11 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import InitialFeeds from '../src/components/onboarding/InitialFeeds.vue';
-import SettingsManageUsers from '../src/components/model/SettingsManageUsers.vue';
+import SettingsManageUsers from '../src/components/settings/SettingsManageUsers.vue';
 import { createCategory } from '../src/api/categories';
 import { createFeed } from '../src/api/feeds';
 import { deleteUser, fetchUsers, updateUser } from '../src/api/users';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/categories', () => ({
   createCategory: vi.fn()
@@ -31,34 +32,21 @@ const mountInitialFeeds = () => {
       ?.feeds.push(feed);
   });
 
+  const stores = createFocusedStores({
+    overview: { addCategory, addFeed, categories }
+  });
   return mount(InitialFeeds, {
-    global: {
-      mocks: {
-        $store: {
-          data: {
-            categories,
-            addCategory,
-            addFeed
-          }
-        }
-      }
-    }
+    global: { plugins: [stores.pinia] }
   });
 };
 
 // This function mounts user management with the requested authorization role.
-const mountManageUsers = (role = 'admin') => mount(SettingsManageUsers, {
-  global: {
-    mocks: {
-      $store: {
-        auth: {
-          getRole: role,
-          token: 'admin-token'
-        }
-      }
-    }
-  }
-});
+const mountManageUsers = (role = 'admin') => {
+  const stores = createFocusedStores({ auth: { role, token: 'admin-token' } });
+  return mount(SettingsManageUsers, {
+    global: { plugins: [stores.pinia] }
+  });
+};
 
 // This function finds a button by its visible label.
 const findButton = (wrapper, label) => wrapper
@@ -125,8 +113,8 @@ describe('onboarding failure handling', () => {
     expect(wrapper.emitted('completed')).toBeUndefined();
     expect(wrapper.get('[role="alert"]').text()).toContain('Some starter content was added');
     expect(wrapper.get('[role="alert"]').text()).not.toContain(internalError.message);
-    expect(wrapper.vm.$store.data.categories).toHaveLength(1);
-    expect(wrapper.vm.$store.data.categories[0].feeds).toHaveLength(1);
+    expect(wrapper.vm.overviewStore.categories).toHaveLength(1);
+    expect(wrapper.vm.overviewStore.categories[0].feeds).toHaveLength(1);
 
     await wrapper.get('button').trigger('click');
     await flushPromises();
@@ -134,7 +122,7 @@ describe('onboarding failure handling', () => {
     expect(wrapper.emitted('completed')).toHaveLength(1);
     expect(createCategory).toHaveBeenCalledTimes(1);
     expect(createFeed).toHaveBeenCalledTimes(3);
-    expect(wrapper.vm.$store.data.categories[0].feeds).toHaveLength(2);
+    expect(wrapper.vm.overviewStore.categories[0].feeds).toHaveLength(2);
     expect(console.error).toHaveBeenCalledWith(
       'Error creating onboarding feed "Second feed":',
       internalError

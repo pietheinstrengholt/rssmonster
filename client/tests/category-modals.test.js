@@ -1,11 +1,12 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
-import NewCategory from '../src/components/model/NewCategory.vue';
-import RenameCategory from '../src/components/model/RenameCategory.vue';
+import NewCategory from '../src/components/dialogs/categories/NewCategory.vue';
+import RenameCategory from '../src/components/dialogs/categories/RenameCategory.vue';
 import { createCategory, updateCategory } from '../src/api/categories';
 import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/categories', () => ({
   createCategory: vi.fn(),
@@ -24,20 +25,24 @@ let wrapper;
 
 // Mounts a category modal with the store contract used by both components.
 const mountCategoryModal = (component, category = { id: 7, name: 'News', iconName: 'newspaper' }) => {
-  const store = {
+  const store = createFocusedStores({
     auth: { token: 'token' },
-    data: {
+    overview: {
       categories: [category],
-      currentSelection: { categoryId: 7 },
       addCategory: vi.fn(),
-      updateCategory: vi.fn(),
+      updateCategory: vi.fn()
+    },
+    selection: {
+      currentSelection: { categoryId: 7 }
+    },
+    ui: {
       setShowModal: vi.fn()
     }
-  };
+  });
 
   wrapper = mount(component, {
     global: {
-      mocks: { $store: store },
+      plugins: [store.pinia],
       stubs: { BootstrapIcon: true }
     }
   });
@@ -71,12 +76,12 @@ describe('NewCategory', () => {
 
     expect(setAuthToken).toHaveBeenCalledWith('token');
     expect(createCategory).toHaveBeenCalledWith('Engineering', 'cpu-fill');
-    expect(store.data.addCategory).toHaveBeenCalledWith({
+    expect(store.overviewStore.addCategory).toHaveBeenCalledWith({
       id: 8,
       name: 'Engineering',
       iconName: 'cpu-fill'
     });
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
   });
 
   // Verifies empty names are ignored and the secondary action closes the dialog.
@@ -87,7 +92,41 @@ describe('NewCategory', () => {
     await wrapper.get('.btn-secondary').trigger('click');
 
     expect(createCategory).not.toHaveBeenCalled();
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
+  });
+
+  // Verifies whitespace-only category names remain invalid after normalization.
+  it('does not create a whitespace-only category', async () => {
+    mountCategoryModal(NewCategory);
+
+    await wrapper.get('#new-category-name').setValue('   ');
+    await wrapper.get('.btn-primary').trigger('click');
+
+    expect(wrapper.get('.btn-primary').attributes('disabled')).toBeDefined();
+    expect(createCategory).not.toHaveBeenCalled();
+  });
+
+  // Verifies category creation trims names and blocks duplicate requests while pending.
+  it('normalizes names and blocks duplicate category creation', async () => {
+    const pendingRequest = Promise.withResolvers();
+    createCategory.mockReturnValue(pendingRequest.promise);
+    mountCategoryModal(NewCategory);
+
+    await wrapper.get('#new-category-name').setValue('  Engineering  ');
+    const saveButton = wrapper.get('.btn-primary');
+    await saveButton.trigger('click');
+    await saveButton.trigger('click');
+
+    expect(createCategory).toHaveBeenCalledOnce();
+    expect(createCategory).toHaveBeenCalledWith('Engineering', 'folder-fill');
+    expect(saveButton.attributes('disabled')).toBeDefined();
+
+    pendingRequest.resolve({
+      data: { id: 8, name: 'Engineering', iconName: 'folder-fill' }
+    });
+    await flushPromises();
+
+    expect(saveButton.attributes('disabled')).toBeUndefined();
   });
 
   // Verifies API failures leave local category state untouched and notify the user.
@@ -100,8 +139,8 @@ describe('NewCategory', () => {
     await wrapper.get('.btn-primary').trigger('click');
     await flushPromises();
 
-    expect(store.data.addCategory).not.toHaveBeenCalled();
-    expect(store.data.setShowModal).not.toHaveBeenCalled();
+    expect(store.overviewStore.addCategory).not.toHaveBeenCalled();
+    expect(store.uiStore.setShowModal).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not create this category. Please try again.',
       error
@@ -140,12 +179,12 @@ describe('RenameCategory', () => {
     await wrapper.get('.btn-secondary').trigger('click');
 
     expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'book-fill');
-    expect(store.data.updateCategory).toHaveBeenCalledWith(7, {
+    expect(store.overviewStore.updateCategory).toHaveBeenCalledWith(7, {
       id: 7,
       name: 'Reading',
       iconName: 'book-fill'
     });
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
   });
 
   // Verifies update failures do not reconcile or dismiss the category dialog.
@@ -158,11 +197,45 @@ describe('RenameCategory', () => {
     await wrapper.get('.btn-primary').trigger('click');
     await flushPromises();
 
-    expect(store.data.updateCategory).not.toHaveBeenCalled();
-    expect(store.data.setShowModal).not.toHaveBeenCalled();
+    expect(store.overviewStore.updateCategory).not.toHaveBeenCalled();
+    expect(store.uiStore.setShowModal).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not save this category. Please try again.',
       error
     );
+  });
+
+  // Verifies whitespace-only edits cannot be submitted.
+  it('does not update a category to a whitespace-only name', async () => {
+    mountCategoryModal(RenameCategory);
+
+    await wrapper.get('#category-name').setValue('   ');
+    await wrapper.get('.btn-primary').trigger('click');
+
+    expect(wrapper.get('.btn-primary').attributes('disabled')).toBeDefined();
+    expect(updateCategory).not.toHaveBeenCalled();
+  });
+
+  // Verifies category updates trim names and block duplicate requests while pending.
+  it('normalizes names and blocks duplicate category updates', async () => {
+    const pendingRequest = Promise.withResolvers();
+    updateCategory.mockReturnValue(pendingRequest.promise);
+    mountCategoryModal(RenameCategory);
+
+    await wrapper.get('#category-name').setValue('  Reading  ');
+    const saveButton = wrapper.get('.btn-primary');
+    await saveButton.trigger('click');
+    await saveButton.trigger('click');
+
+    expect(updateCategory).toHaveBeenCalledOnce();
+    expect(updateCategory).toHaveBeenCalledWith(7, 'Reading', 'newspaper');
+    expect(saveButton.attributes('disabled')).toBeDefined();
+
+    pendingRequest.resolve({
+      data: { id: 7, name: 'Reading' }
+    });
+    await flushPromises();
+
+    expect(saveButton.attributes('disabled')).toBeUndefined();
   });
 });

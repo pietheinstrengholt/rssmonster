@@ -1,13 +1,13 @@
 import { flushPromises, mount } from '@vue/test-utils';
-import { reactive } from 'vue';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Sidebar from '../src/components/Sidebar.vue';
+import Sidebar from '../src/components/sidebar/Sidebar.vue';
 import { triggerCrawl } from '../src/api/crawl';
 import {
   openFeedRefreshEvents,
   startFeedRefresh
 } from '../src/api/feeds';
 import { ACTION_ERROR_EVENT } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   markAllAsRead: vi.fn()
@@ -26,57 +26,50 @@ vi.mock('../src/api/manager', () => ({
   updateCategoryOrder: vi.fn()
 }));
 
-// This function creates the data store contract consumed by the sidebar.
-const createDataStore = () => reactive({
-  briefingCount: 0,
-  categories: [],
-  clickedCount: 0,
-  currentSelection: {
-    AIEnabled: false,
-    categoryId: '%',
-    feedId: '%',
-    smartFolderId: null,
-    status: 'unread',
-    tag: null
-  },
-  favoriteCount: 0,
-  fetchSmartFolders: vi.fn().mockResolvedValue({}),
-  fetchTopTags: vi.fn().mockResolvedValue({}),
-  hotCount: 0,
-  readCount: 0,
-  setSelectedCategoryId: vi.fn(),
-  setSelectedFeedId: vi.fn(),
-  setSelectedStatus: vi.fn(),
-  setShowModal: vi.fn(),
-  setSmartFolder: vi.fn(),
-  setTag: vi.fn(),
-  smartFolders: [],
-  topTags: [],
-  unreadCount: 2,
-  unreadsSinceLastUpdate: 0
-});
-
 // This function mounts the sidebar with stable child-component boundaries.
-const mountSidebar = () => mount(Sidebar, {
-  global: {
-    mocks: {
-      $store: {
-        auth: {
-          getToken: 'refresh-token',
-          setRole: vi.fn(),
-          setToken: vi.fn()
-        },
-        data: createDataStore()
+const mountSidebar = () => {
+  const stores = createFocusedStores({
+    auth: {
+      token: 'refresh-token'
+    },
+    overview: {
+      briefingCount: 0,
+      categories: [],
+      clickedCount: 0,
+      favoriteCount: 0,
+      fetchSmartFolders: vi.fn().mockResolvedValue({}),
+      fetchTopTags: vi.fn().mockResolvedValue({}),
+      hotCount: 0,
+      readCount: 0,
+      smartFolders: [],
+      topTags: [],
+      unreadCount: 2,
+      unreadsSinceLastUpdate: 0
+    },
+    selection: {
+      currentSelection: {
+        AIEnabled: false,
+        categoryId: '%',
+        feedId: '%',
+        smartFolderId: null,
+        status: 'unread',
+        tag: null
       }
     },
-    stubs: {
+    ui: { setShowModal: vi.fn() }
+  });
+  return mount(Sidebar, {
+    global: {
+      plugins: [stores.pinia],
+      stubs: {
       BootstrapIcon: true,
       draggable: {
         template: '<div><slot /></div>'
       }
+      }
     }
-  }
-});
+  });
+};
 
 // This function creates an event source whose server events are controlled by the test.
 const createEventSource = () => {

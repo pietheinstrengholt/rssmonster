@@ -1,8 +1,8 @@
 # RSSMonster
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-brightgreen.svg)](https://opensource.org/licenses/MIT)
-[![Client coverage](https://codecov.io/gh/pietheinstrengholt/rssmonster/branch/master/graph/badge.svg?flag=client)](https://codecov.io/gh/pietheinstrengholt/rssmonster)
-[![Server coverage](https://codecov.io/gh/pietheinstrengholt/rssmonster/branch/master/graph/badge.svg?flag=server)](https://codecov.io/gh/pietheinstrengholt/rssmonster)
+[![Client coverage](https://codecov.io/gh/pietheinstrengholt/rssmonster/branch/master/graph/badge.svg?flag=client)](https://codecov.io/github/pietheinstrengholt/rssmonster/tree/master/client)
+[![Server coverage](https://codecov.io/gh/pietheinstrengholt/rssmonster/branch/master/graph/badge.svg?flag=server)](https://codecov.io/github/pietheinstrengholt/rssmonster/tree/master/server)
 [![Docker](https://img.shields.io/docker/pulls/rssmonster/rssmonster.svg)](https://hub.docker.com/r/rssmonster/rssmonster/builds)
 [![CI](https://github.com/pietheinstrengholt/rssmonster/actions/workflows/ci.yml/badge.svg)](
   https://github.com/pietheinstrengholt/rssmonster/actions/workflows/ci.yml

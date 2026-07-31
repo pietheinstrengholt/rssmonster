@@ -1,9 +1,14 @@
 import { describe, it, expect, vi, afterEach } from 'vitest';
 import { mount } from '@vue/test-utils';
-import Article from '../src/components/Article.vue';
+import Article from '../src/components/articles/Article.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // This function mounts an article with the store shape used by the component.
 function mountArticle(props = {}) {
+  const stores = createFocusedStores({
+    overview: { categories: [] },
+    selection: { currentSelection: { viewMode: 'minimal', grouping: 'none' } }
+  });
   return mount(Article, {
     props: {
       id: 1,
@@ -24,17 +29,7 @@ function mountArticle(props = {}) {
       stubs: {
         BootstrapIcon: true
       },
-      mocks: {
-        $store: {
-          data: {
-            categories: [],
-            currentSelection: {
-              viewMode: 'minimal',
-              grouping: 'none'
-            }
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 }

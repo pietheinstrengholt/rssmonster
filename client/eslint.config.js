@@ -1,6 +1,13 @@
 import globals from 'globals';
 import vue from 'eslint-plugin-vue';
 import vueParser from 'vue-eslint-parser';
+import noPiniaDomainStateMutation from './eslint-rules/no-pinia-domain-state-mutation.js';
+
+const localRules = {
+  rules: {
+    'no-pinia-domain-state-mutation': noPiniaDomainStateMutation
+  }
+};
 
 export default [
   {
@@ -11,6 +18,28 @@ export default [
       '**/coverage/**',
       '**/public/**'
     ]
+  },
+
+  {
+    files: ['src/**/*.{js,vue}'],
+    plugins: {
+      local: localRules
+    },
+    rules: {
+      'local/no-pinia-domain-state-mutation': 'error'
+    }
+  },
+
+  {
+    files: [
+      'src/store/auth.js',
+      'src/store/overview.js',
+      'src/store/selection.js',
+      'src/store/ui.js'
+    ],
+    rules: {
+      'local/no-pinia-domain-state-mutation': 'off'
+    }
   },
 
   {

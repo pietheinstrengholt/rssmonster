@@ -4,8 +4,10 @@ import {
   buildDisambiguatedIslandName,
   buildUniqueIslandName,
   compareIslandStrength,
+  groupIslandsByNormalizedName,
   isNearDuplicateIslandName,
   normalizeIslandName,
+  sourceArticleCountForIsland,
   strongestIslandForDuplicateNameGroup
 } from '../../services/islands/islandNameDisambiguation.js';
 
@@ -92,5 +94,30 @@ describe('island name disambiguation', () => {
 
     expect(nextName).toBe('AI Companions: Future Claude Mythos');
     expect(nextName).toMatch(/^AI Companions: .+/);
+  });
+
+  it('groups only islands with usable normalized names', () => {
+    const groups = groupIslandsByNormalizedName([
+      island({ id: 1, label: 'AI!' }),
+      island({ id: 2, label: ' ai ' }),
+      island({ id: 3, label: '---' })
+    ]);
+
+    expect([...groups.keys()]).toEqual(['ai']);
+    expect(groups.get('ai').map(entry => entry.id)).toEqual([1, 2]);
+  });
+
+  it('falls back from audited metrics to source rows and then zero', () => {
+    expect(sourceArticleCountForIsland(island({
+      populationAudit: [{ metrics: {}, sourceArticles: { articles: [{}, {}] } }]
+    }))).toBe(2);
+    expect(sourceArticleCountForIsland(island({ populationAudit: null }))).toBe(0);
+  });
+
+  it('uses an id-based variant when every descriptive suffix is already used', () => {
+    const target = island({ id: 42, populationAudit: [] });
+    const usedNames = new Set([normalizeIslandName('AI Companions: Variant')]);
+
+    expect(buildDisambiguatedIslandName('AI Companions', target, [], usedNames)).toBe('AI Companions: Variant 42');
   });
 });

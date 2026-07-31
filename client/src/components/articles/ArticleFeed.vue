@@ -1,0 +1,426 @@
+<template>
+  <SmartFoldersGridOverview
+    v-if="showSmartFoldersOverview"
+    :smart-folders="overviewStore.smartFolders"
+    @selectSmartFolder="selectSmartFolderFromOverview"
+  />
+  <ArticleReaderLayout v-else-if="isReaderLayoutActive" :articles="articles" :container="container" :currentSelection="selectionStore.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @mark-previous-article-read="markReaderPreviousArticleRead" @bulk-action="handleReaderBulkAction" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @toggle-read-status="toggleReaderArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  </ArticleReaderLayout>
+  <ArticleListView v-else :articles="articles" :container="container" :pool="pool" :currentSelection="selectionStore.currentSelection.status" :current-view-unread-count="currentViewUnreadCount" :current-view-source-count="currentViewSourceCount" :view-mode="selectionStore.currentSelection.viewMode" :remainingItems="remainingItems" :fetchCount="fetchCount" :hasLoadedContent="hasLoadedContent" :isFlushed="isFlushed" :distance="distance" :activeMinimalArticleId="activeMinimalArticleId" @flush-pool="flushPool" @clear-filters="clearFilters" @refresh-feeds="refreshFeeds" @open-smart-folders="openSmartFolders" @forceReload="forceReload" @update-favorite="updateFavoriteInd" @update-clicked="updateClickedInd" @minimal-article-opened="handleMinimalArticleOpened" @minimal-article-closed="handleMinimalArticleClosed" @toggle-read-status="toggleReaderArticleReadStatus" @toggle-minimal-read-status="toggleMinimalArticleReadStatus" @shortcut-toggle-read="toggleShortcutArticleReadStatus" @shortcut-toggle-favorite="toggleShortcutArticleFavorite" @event-articles-loaded="insertClusterArticles" @event-articles-collapsed="removeClusterArticles" @duplicate-articles-loaded="insertDuplicateArticles" @duplicate-articles-collapsed="removeDuplicateArticles" @article-not-interested="removeArticle">
+  </ArticleListView>
+</template>
+
+<script>
+import { mapStores } from 'pinia';
+import { useSelectionStore } from '../../store/selection.js';
+import { useOverviewStore } from '../../store/overview.js';
+import { useUiStore } from '../../store/ui.js';
+import { defineAsyncComponent } from 'vue';
+import ArticleListView from "./ArticleListView.vue";
+import {
+  markAsFavorite,
+  markManyClicked,
+  markManyAsFavorite
+} from '../../api/articles';
+import { articleFeedClusterInsertionMethods } from './feed/clusterInsertion.js';
+import {
+  createArticleFeedPaginationState,
+  articleFeedPaginationMethods
+} from './feed/pagination.js';
+import {
+  createArticleFeedReadState,
+  articleFeedReadStateMethods
+} from './feed/readState.js';
+import {
+  createArticleFeedVisibilityState,
+  articleFeedVisibilityMethods
+} from './feed/visibilityTracking.js';
+import { notifyActionError } from '../../services/actionNotifications.js';
+
+// This async boundary defers the desktop-only reader layout until it is selected.
+const ArticleReaderLayout = defineAsyncComponent(() => import("./ArticleReaderLayout.vue"));
+
+// This async boundary defers the Smart Folders overview until the user opens it.
+const SmartFoldersGridOverview = defineAsyncComponent(() => import("./SmartFoldersGridOverview.vue"));
+
+export default {
+  components: {
+    ArticleListView,
+    ArticleReaderLayout,
+    SmartFoldersGridOverview
+  },
+
+  // Initializes article feed state and observer bookkeeping.
+  data() {
+    return {
+      ...createArticleFeedPaginationState(),
+      ...createArticleFeedReadState(),
+      ...createArticleFeedVisibilityState(),
+
+      // scroll variables for comparing the scroll positions
+      prevScroll: 0,
+      scrollDirection: "down",
+      scrollContainer: null,
+      desktopReaderQuery: null,
+      isDesktopReaderWidth: false,
+      showSmartFoldersOverview: false,
+      pendingFavoriteArticleIds: new Set()
+    };
+  },
+
+  computed: {
+
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    // calculate the remaining items in the container
+    remainingItems() {
+      return this.container.length - this.pool.size;
+    },
+
+    // adjust fetchCount based on viewMode
+    fetchCount() {
+      return this.selectionStore.currentSelection.viewMode === "minimal"
+        ? 50
+        : 20;
+    },
+
+    // Returns whether the reader layout should replace the normal stream.
+    isReaderLayoutActive() {
+      return this.selectionStore.currentSelection.viewMode === 'reader' && this.isDesktopReaderWidth;
+    },
+
+    // Returns the unread count for the currently selected article scope.
+    currentViewUnreadCount() {
+      const selection = this.selectionStore.currentSelection;
+      if (selection.status !== 'unread') return 0;
+
+      if (selection.smartFolderId !== null) {
+        const smartFolder = this.overviewStore.smartFolders.find(folder => folder.id === selection.smartFolderId);
+        return smartFolder?.ArticleCount ?? 0;
+      }
+
+      const categoryId = Number(selection.categoryId);
+      const feedId = Number(selection.feedId);
+      const category = Number.isFinite(categoryId)
+        ? this.overviewStore.categories.find(item => item.id === categoryId)
+        : null;
+
+      if (Number.isFinite(feedId) && category) {
+        const feed = category.feeds?.find(item => item.id === feedId);
+        return feed?.unreadCount ?? 0;
+      }
+
+      if (category) {
+        return category.unreadCount ?? 0;
+      }
+
+      return this.overviewStore.unreadCount;
+    }
+  },
+
+  watch: {
+    "selectionStore.currentSelection": {
+      // Reloads articles when the active selection changes.
+      handler(data) {
+        this.showSmartFoldersOverview = false;
+        this.fetchArticleIds(data);
+      },
+      deep: true,
+      immediate: true
+    },
+    isReaderLayoutActive() {
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
+    }
+  },
+
+  // Starts scroll handling and article observers after mounting.
+  mounted() {
+    this.scrollContainer = document.getElementById("home");
+    this.desktopReaderQuery = window.matchMedia('(min-width: 1024px)');
+    this.isDesktopReaderWidth = this.desktopReaderQuery.matches;
+    this.desktopReaderQuery.addEventListener('change', this.handleReaderWidthChange);
+    window.addEventListener("scroll", this.handleScroll, { passive: true });
+    window.addEventListener("keydown", this.handleGlobalShortcut);
+    this.scrollContainer?.addEventListener("scroll", this.handleScroll, { passive: true });
+    this.setupObservers();
+  },
+
+  // Removes scroll handling and disconnects observers before unmounting.
+  unmounted() {
+    window.removeEventListener("scroll", this.handleScroll);
+    window.removeEventListener("keydown", this.handleGlobalShortcut);
+    this.scrollContainer?.removeEventListener("scroll", this.handleScroll);
+    this.desktopReaderQuery?.removeEventListener('change', this.handleReaderWidthChange);
+    this.teardownObservers();
+  },
+
+  methods: {
+    ...articleFeedPaginationMethods,
+    ...articleFeedVisibilityMethods,
+    ...articleFeedReadStateMethods,
+    ...articleFeedClusterInsertionMethods,
+
+    // Updates reader layout activation when the desktop breakpoint changes.
+    handleReaderWidthChange(event) {
+      this.isDesktopReaderWidth = event.matches;
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
+    },
+
+    // Shows or hides the mobile toolbar based on scroll direction.
+    handleScroll() {
+      const mobileToolbar = document.getElementById("mobile-toolbar");
+      const curScroll =
+        Math.ceil(this.scrollContainer?.scrollTop) ||
+        Math.ceil(window.scrollY) ||
+        Math.ceil(document.documentElement.scrollTop);
+
+      const direction =
+        curScroll > this.prevScroll
+          ? "down"
+          : curScroll < this.prevScroll
+          ? "up"
+          : this.scrollDirection;
+
+      if (direction !== this.scrollDirection && direction === "up") {
+        mobileToolbar?.classList.remove("hide");
+      }
+
+      if (direction === "down" && curScroll > 200) {
+        mobileToolbar?.classList.add("hide");
+      }
+
+      this.prevScroll = curScroll;
+      this.scrollDirection = direction;
+    },
+    // Handles shortcuts that apply to every article view mode.
+    handleGlobalShortcut(event) {
+      if (this.shouldIgnoreGlobalShortcut(event)) return;
+
+      if (event.key === 'R') {
+        event.preventDefault();
+        this.forceReload();
+        return;
+      }
+
+      if (event.key === '/') {
+        event.preventDefault();
+        window.dispatchEvent(new CustomEvent('rssmonster:focus-search'));
+      }
+    },
+    // Returns whether a global shortcut should ignore the current target.
+    shouldIgnoreGlobalShortcut(event) {
+      const target = event.target;
+      const tagName = target?.tagName?.toLowerCase();
+      const isEditableTarget = ['input', 'textarea', 'select'].includes(tagName)
+        || target?.isContentEditable
+        || Boolean(target?.closest?.('[contenteditable="true"], [contenteditable=""]'));
+
+      return Boolean(event.altKey || event.ctrlKey || event.metaKey || isEditableTarget);
+    },
+
+    // Toggles an article favorite state from a keyboard shortcut.
+    async toggleShortcutArticleFavorite({ id }) {
+      const article = this.articles.find(item => String(item.id) === String(id));
+      if (!article) return;
+
+      const articleKey = String(article.id);
+      if (this.pendingFavoriteArticleIds.has(articleKey)) return;
+
+      const previousFavoriteInd = article.favoriteInd === 1 ? 1 : 0;
+      const requestedFavoriteInd = previousFavoriteInd === 1 ? 0 : 1;
+      const updateType = requestedFavoriteInd ? 'mark' : 'unmark';
+      this.pendingFavoriteArticleIds.add(articleKey);
+      try {
+        const response = await markAsFavorite(id, updateType);
+        const persistedFavoriteInd = response.data.favoriteInd === 1
+          ? 1
+          : response.data.favoriteInd === 0
+            ? 0
+            : requestedFavoriteInd;
+        const delta = persistedFavoriteInd - previousFavoriteInd;
+
+        if (delta !== 0) {
+          this.overviewStore.applyFavoriteDelta({
+            categoryId: response.data.feed?.categoryId,
+            feedId: response.data.feedId,
+            delta
+          });
+        }
+
+        this.updateFavoriteInd({ id, favoriteInd: persistedFavoriteInd });
+      } catch (error) {
+        console.error('Error toggling article favorite:', error);
+        notifyActionError('Could not update the favorite. Please try again.', error);
+      } finally {
+        this.pendingFavoriteArticleIds.delete(articleKey);
+      }
+    },
+
+    // Handles reader list bulk actions selected from the middle pane header.
+    async handleReaderBulkAction({ action, selectedArticleId }) {
+      if (this.selectionStore.currentSelection.viewMode !== 'reader') return;
+
+      try {
+        if (action === 'favorite-visible') {
+          await this.favoriteReaderArticles(this.articles);
+          return;
+        }
+
+        if (action === 'mark-visible-clicked') {
+          await this.markReaderArticlesClicked(this.articles);
+          return;
+        }
+
+        const articles = this.getReaderBulkReadArticles(action, selectedArticleId);
+        await this.markReaderArticlesRead(articles);
+      } catch (error) {
+        console.error('Error handling reader bulk action:', error);
+        notifyActionError('Could not update the selected articles. Please try again.', error);
+      }
+    },
+
+    // Favorites each visible reader article that is not already favorited.
+    async favoriteReaderArticles(articles) {
+      const unfavoritedArticles = articles.filter(article =>
+        article.favoriteInd !== 1
+        && !this.pendingFavoriteArticleIds.has(String(article.id))
+      );
+      if (!unfavoritedArticles.length) return;
+
+      const articleKeys = unfavoritedArticles.map(article => String(article.id));
+      for (const articleKey of articleKeys) {
+        this.pendingFavoriteArticleIds.add(articleKey);
+      }
+
+      try {
+        const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark');
+        const updatedArticles = response.data.articles || [];
+
+        for (const updatedArticle of updatedArticles) {
+          this.applyReaderFavoriteResponse(updatedArticle);
+        }
+      } finally {
+        for (const articleKey of articleKeys) {
+          this.pendingFavoriteArticleIds.delete(articleKey);
+        }
+      }
+    },
+
+    // Applies the local and overview count changes for a favorited reader article.
+    applyReaderFavoriteResponse(updatedArticle) {
+      const article = this.articles.find(item => String(item.id) === String(updatedArticle.id));
+      if (!article) return;
+
+      const previousFavoriteInd = article.favoriteInd === 1 ? 1 : 0;
+      const persistedFavoriteInd = updatedArticle.favoriteInd === 0 ? 0 : 1;
+      const delta = persistedFavoriteInd - previousFavoriteInd;
+
+      if (delta !== 0) {
+        this.overviewStore.applyFavoriteDelta({
+          categoryId: updatedArticle.feed?.categoryId,
+          feedId: updatedArticle.feedId,
+          delta
+        });
+      }
+      this.updateFavoriteInd({
+        id: updatedArticle.id,
+        favoriteInd: persistedFavoriteInd
+      });
+    },
+
+    // Marks each visible reader article as clicked.
+    async markReaderArticlesClicked(articles) {
+      if (!articles.length) return;
+
+      const response = await markManyClicked(articles.map(article => article.id));
+      const updatedArticles = response.data.articles || [];
+
+      for (const article of updatedArticles) {
+        this.updateClickedInd({
+          id: article.id,
+          clickedAmount: article.clickedAmount
+        });
+      }
+    },
+
+    // Requests a full feed reload from the parent component.
+    forceReload() {
+      this.$emit("forceReload");
+    },
+
+    // Clears the active article filters using the existing selection state.
+    clearFilters() {
+      this.showSmartFoldersOverview = false;
+      this.uiStore.setSearchQuery('');
+      this.selectionStore.setCurrentSelection({
+        status: 'unread',
+        categoryId: '%',
+        feedId: '%',
+        search: null,
+        tag: null,
+        smartFolderId: null,
+        minAdvertisementScore: 0,
+        minSentimentScore: 0,
+        minQualityScore: 0,
+        grouping: 'none',
+        sort: 'desc'
+      });
+    },
+
+    // Requests the existing feed refresh flow from the app shell.
+    refreshFeeds() {
+      this.$emit("refresh-feeds");
+    },
+
+    // Shows the smart folders navigation overview when smart folders are available.
+    async openSmartFolders() {
+      if (!this.overviewStore.smartFolders.length) {
+        await this.overviewStore.fetchSmartFolders();
+      }
+
+      this.showSmartFoldersOverview = true;
+    },
+
+    // Selects a smart folder from the overview using the existing store behavior.
+    selectSmartFolderFromOverview(smartFolder) {
+      this.showSmartFoldersOverview = false;
+      this.selectionStore.setSmartFolder(smartFolder);
+    },
+
+    // Updates an article's local favorite indicator.
+    updateFavoriteInd({ id, favoriteInd }) {
+      const idx = this.articles.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        this.articles[idx].favoriteInd = favoriteInd;
+      }
+    },
+
+    // Updates an article's local click count.
+    updateClickedInd({ id, clickedAmount }) {
+      const idx = this.articles.findIndex(a => a.id === id);
+      if (idx !== -1) {
+        this.articles[idx].clickedAmount = clickedAmount;
+      }
+    },
+
+    // Removes an article from the currently rendered feed.
+    removeArticle({ id }) {
+      console.log(`Removing article ${id} from view`);
+
+      const nextArticles = this.articles.filter(a => a.id !== id);
+
+      if (nextArticles.length !== this.articles.length) {
+        this.articles = nextArticles;
+        console.log(`Successfully removed article ${id}`);
+      } else {
+        console.error('Could not find article to remove:', id);
+      }
+    }
+  }
+};
+</script>

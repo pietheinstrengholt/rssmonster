@@ -1,49 +1,33 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it } from 'vitest';
-import { useStore } from '../src/store/auth.js';
+import { useAuthStore } from '../src/store/auth.js';
 
 beforeEach(() => {
   setActivePinia(createPinia());
 });
 
 describe('authentication store state', () => {
-  it('starts logged out with optional features disabled', () => {
-    const store = useStore();
+  it('starts logged out', () => {
+    const store = useAuthStore();
 
-    expect(store.getToken).toBeNull();
-    expect(store.getRole).toBeNull();
-    expect(store.isAgenticFeaturesEnabled).toBe(false);
+    expect(store.token).toBeNull();
+    expect(store.role).toBeNull();
   });
 
   it('transitions authentication state and resets it safely', () => {
-    const store = useStore();
+    const store = useAuthStore();
 
     store.setSession({
       token: 'session-token',
-      role: 'admin',
-      agenticFeaturesEnabled: true
+      role: 'admin'
     });
 
-    expect(store.getToken).toBe('session-token');
-    expect(store.getRole).toBe('admin');
-    expect(store.isAgenticFeaturesEnabled).toBe(true);
+    expect(store.token).toBe('session-token');
+    expect(store.role).toBe('admin');
 
     store.clearSession();
 
-    expect(store.getToken).toBeNull();
-    expect(store.getRole).toBeNull();
-    expect(store.isAgenticFeaturesEnabled).toBe(false);
-  });
-
-  it('defaults omitted session feature state to disabled', () => {
-    const store = useStore();
-    store.setAgenticFeaturesEnabled(true);
-
-    store.setSession({
-      token: 'validated-token',
-      role: 'user'
-    });
-
-    expect(store.isAgenticFeaturesEnabled).toBe(false);
+    expect(store.token).toBeNull();
+    expect(store.role).toBeNull();
   });
 });

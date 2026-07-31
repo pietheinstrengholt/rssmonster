@@ -1,7 +1,8 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
-import SettingsSmartFolders from '../src/components/model/SettingsSmartFolders.vue';
-import SmartFolderEditor from '../src/components/model/smartFolders/SmartFolderEditor.vue';
+import SettingsSmartFolders from '../src/components/settings/SettingsSmartFolders.vue';
+import SmartFolderEditor from '../src/components/settings/smartFolders/SmartFolderEditor.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/client', () => ({
   setAuthToken: vi.fn()
@@ -14,18 +15,17 @@ vi.mock('../src/api/smartfolders', () => ({
 
 // This function mounts Smart Folder settings after its authoritative load completes.
 const mountSettings = async (AIEnabled) => {
+  const stores = createFocusedStores({
+    auth: { token: 'test-token' },
+    overview: {
+      fetchSmartFolders: vi.fn().mockResolvedValue(),
+      smartFolders: [{ id: 1, name: 'Unread', query: 'unread:true limit:50', limitCount: 50 }]
+    },
+    selection: { currentSelection: { AIEnabled } }
+  });
   const wrapper = mount(SettingsSmartFolders, {
     global: {
-      mocks: {
-        $store: {
-          auth: { token: 'test-token' },
-          data: {
-            currentSelection: { AIEnabled },
-            smartFolders: [{ id: 1, name: 'Unread', query: 'unread:true limit:50', limitCount: 50 }],
-            fetchSmartFolders: vi.fn().mockResolvedValue()
-          }
-        }
-      },
+      plugins: [stores.pinia],
       stubs: {
         BootstrapIcon: true
       }

@@ -1,10 +1,10 @@
 import { mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import ActionErrorNotice from '../src/components/ActionErrorNotice.vue';
-import ArticleFeed from '../src/components/ArticleFeed.vue';
-import DesktopToolbar from '../src/components/DesktopToolbar.vue';
-import NewFeed from '../src/components/model/NewFeed.vue';
-import SettingsActions from '../src/components/model/SettingsActions.vue';
+import ActionErrorNotice from '../src/components/shared/ActionErrorNotice.vue';
+import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
+import DesktopToolbar from '../src/components/shell/DesktopToolbar.vue';
+import NewFeed from '../src/components/dialogs/feeds/NewFeed.vue';
+import SettingsActions from '../src/components/settings/SettingsActions.vue';
 import {
   ACTION_ERROR_EVENT,
   isFatalActionError,
@@ -14,6 +14,7 @@ import { markArticleUnread } from '../src/api/articles';
 import { createFeed } from '../src/api/feeds';
 import { fetchActions, saveActions } from '../src/api/actions';
 import { saveThemeMode } from '../src/api/settings';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchArticleDetails: vi.fn(),
@@ -79,7 +80,6 @@ describe('recoverable action errors', () => {
     const context = {
       pendingReadStatusArticleIds: new Set(),
       pool: new Set(),
-      $store: { data: {} },
       updateArticleStatusLocal: vi.fn()
     };
 
@@ -206,12 +206,12 @@ describe('recoverable action errors', () => {
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const notification = captureActionError();
     const context = {
-      selectedThemeMode: 'auto',
-      $store: {
-        data: {
+      ...createFocusedStores({
+        ui: {
           setThemeMode: vi.fn()
         }
-      }
+      }),
+      selectedThemeMode: 'auto',
     };
 
     await DesktopToolbar.methods.selectThemeMode.call(context, 'dark');
@@ -220,7 +220,7 @@ describe('recoverable action errors', () => {
       message: 'Could not save the theme preference. Please try again.'
     });
     expect(context.selectedThemeMode).toBe('auto');
-    expect(context.$store.data.setThemeMode).toHaveBeenLastCalledWith('auto');
+    expect(context.uiStore.setThemeMode).toHaveBeenLastCalledWith('auto');
     expect(console.error).toHaveBeenCalledWith('Error saving theme mode:', error);
   });
 });

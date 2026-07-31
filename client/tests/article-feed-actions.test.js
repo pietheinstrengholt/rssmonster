@@ -1,12 +1,13 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import ArticleFeed from '../src/components/ArticleFeed.vue';
+import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import {
   markAsFavorite,
   markManyAsFavorite,
   markManyClicked
 } from '../src/api/articles';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchArticleIds: vi.fn(),
@@ -24,28 +25,36 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 }));
 
 // Creates an ArticleFeed method context with observable store actions and events.
-const createContext = (overrides = {}) => ({
-  articles: [
-    { id: 1, favoriteInd: 0, clickedAmount: 0 },
-    { id: 2, favoriteInd: 1, clickedAmount: 1 }
-  ],
-  pendingFavoriteArticleIds: new Set(),
-  showSmartFoldersOverview: false,
-  $emit: vi.fn(),
-  $store: {
-    data: {
+const createContext = (overrides = {}) => {
+  const stores = createFocusedStores({
+    overview: {
       currentSelection: { viewMode: 'reader' },
       smartFolders: [],
       applyFavoriteDelta: vi.fn(),
-      setSearchQuery: vi.fn(),
+      fetchSmartFolders: vi.fn().mockResolvedValue()
+    },
+    selection: {
+      currentSelection: { viewMode: 'reader' },
       setCurrentSelection: vi.fn(),
-      fetchSmartFolders: vi.fn().mockResolvedValue(),
       setSmartFolder: vi.fn()
+    },
+    ui: {
+      setSearchQuery: vi.fn()
     }
-  },
-  ...ArticleFeed.methods,
-  ...overrides
-});
+  });
+  return {
+    ...stores,
+    articles: [
+      { id: 1, favoriteInd: 0, clickedAmount: 0 },
+      { id: 2, favoriteInd: 1, clickedAmount: 1 }
+    ],
+    pendingFavoriteArticleIds: new Set(),
+    showSmartFoldersOverview: false,
+    $emit: vi.fn(),
+    ...ArticleFeed.methods,
+    ...overrides
+  };
+};
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -100,7 +109,7 @@ describe('ArticleFeed actions', () => {
     await context.toggleShortcutArticleFavorite({ id: 99 });
 
     expect(markAsFavorite).toHaveBeenCalledWith(1, 'mark');
-    expect(context.$store.data.applyFavoriteDelta).toHaveBeenCalledWith({
+    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledWith({
       categoryId: 20,
       feedId: 10,
       delta: 1
@@ -134,7 +143,7 @@ describe('ArticleFeed actions', () => {
     });
     await Promise.all([firstMutation, secondMutation]);
 
-    expect(context.$store.data.applyFavoriteDelta).toHaveBeenCalledOnce();
+    expect(context.overviewStore.applyFavoriteDelta).toHaveBeenCalledOnce();
     expect(context.pendingFavoriteArticleIds.size).toBe(0);
   });
 
@@ -147,7 +156,7 @@ describe('ArticleFeed actions', () => {
     await context.toggleShortcutArticleFavorite({ id: 1 });
 
     expect(context.articles[0].favoriteInd).toBe(0);
-    expect(context.$store.data.applyFavoriteDelta).not.toHaveBeenCalled();
+    expect(context.overviewStore.applyFavoriteDelta).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not update the favorite. Please try again.',
       error
@@ -209,7 +218,7 @@ describe('ArticleFeed actions', () => {
     expect(context.markReaderArticlesClicked).toHaveBeenCalledWith(context.articles);
     expect(context.markReaderArticlesRead).toHaveBeenCalledWith([{ id: 2 }]);
 
-    context.$store.data.currentSelection.viewMode = 'full';
+    context.selectionStore.currentSelection.viewMode = 'full';
     await ArticleFeed.methods.handleReaderBulkAction.call(context, {
       action: 'favorite-visible',
       selectedArticleId: 1
@@ -244,8 +253,8 @@ describe('ArticleFeed actions', () => {
     await context.openSmartFolders();
     context.selectSmartFolderFromOverview(folder);
 
-    expect(context.$store.data.setSearchQuery).toHaveBeenCalledWith('');
-    expect(context.$store.data.setCurrentSelection).toHaveBeenCalledWith({
+    expect(context.uiStore.setSearchQuery).toHaveBeenCalledWith('');
+    expect(context.selectionStore.setCurrentSelection).toHaveBeenCalledWith({
       status: 'unread',
       categoryId: '%',
       feedId: '%',
@@ -258,8 +267,8 @@ describe('ArticleFeed actions', () => {
       grouping: 'none',
       sort: 'desc'
     });
-    expect(context.$store.data.fetchSmartFolders).toHaveBeenCalledOnce();
-    expect(context.$store.data.setSmartFolder).toHaveBeenCalledWith(folder);
+    expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
+    expect(context.selectionStore.setSmartFolder).toHaveBeenCalledWith(folder);
     expect(context.showSmartFoldersOverview).toBe(false);
   });
 

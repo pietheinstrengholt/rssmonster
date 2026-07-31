@@ -1,7 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
 
-import ArticleListView from '../src/components/ArticleListView.vue';
+import ArticleListView from '../src/components/articles/ArticleListView.vue';
 
 // Creates a keyboard-navigation context with rendered article references.
 const createContext = (overrides = {}) => {
@@ -192,16 +192,6 @@ describe('ArticleListView keyboard navigation', () => {
         hasLoadedContent: true,
         isFlushed: false,
         distance: 0
-      },
-      global: {
-        mocks: {
-          $store: {
-            data: {
-              mobileSearchOpen: false,
-              unreadsSinceLastUpdate: 0
-            }
-          }
-        }
       }
     });
     const handler = wrapper.vm.handleMinimalKeydown;

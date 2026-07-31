@@ -1,25 +1,16 @@
-import { mount } from '@vue/test-utils';
-import { reactive } from 'vue';
+import { config, mount } from '@vue/test-utils';
+import { createPinia, setActivePinia } from 'pinia';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Sidebar from '../src/components/Sidebar.vue';
+import Sidebar from '../src/components/sidebar/Sidebar.vue';
 import SidebarActionButton from '../src/components/sidebar/SidebarActionButton.vue';
 import SidebarCategoryGroup from '../src/components/sidebar/SidebarCategoryGroup.vue';
 import SidebarFeedItem from '../src/components/sidebar/SidebarFeedItem.vue';
 import SidebarNavItem from '../src/components/sidebar/SidebarNavItem.vue';
-import Cookies from 'js-cookie';
-import { setAuthToken } from '../src/api/client';
 import { updateCategoryOrder } from '../src/api/manager';
-
-vi.mock('js-cookie', () => ({
-  default: {
-    get: vi.fn(),
-    remove: vi.fn()
-  }
-}));
-
-vi.mock('../src/api/client', () => ({
-  setAuthToken: vi.fn()
-}));
+import { useAuthStore } from '../src/store/auth.js';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
+import { useUiStore } from '../src/store/ui.js';
 
 vi.mock('../src/api/manager', () => ({
   updateCategoryOrder: vi.fn().mockResolvedValue({ status: 200 })
@@ -40,11 +31,20 @@ vi.mock('../src/api/feeds', () => ({
 
 // This function creates the complete store contract used by sidebar behavior tests.
 const createStore = () => ({
-  auth: {
-    setRole: vi.fn(),
-    setToken: vi.fn()
-  },
-  data: reactive({
+  pinia: createPinia()
+});
+
+// This function initializes the split Pinia stores with representative sidebar data.
+const initializeStores = () => {
+  const { pinia } = createStore();
+  setActivePinia(pinia);
+  config.global.plugins = [pinia];
+  const authStore = useAuthStore(pinia);
+  const overviewStore = useOverviewStore(pinia);
+  const selectionStore = useSelectionStore(pinia);
+  const uiStore = useUiStore(pinia);
+
+  overviewStore.$patch({
     briefingCount: 4,
     categories: [{
       id: 10,
@@ -64,32 +64,11 @@ const createStore = () => ({
       feeds: []
     }],
     clickedCount: 1,
-    currentSelection: {
-      AIEnabled: true,
-      categoryId: 10,
-      feedId: '%',
-      smartFolderId: null,
-      status: 'unread',
-      tag: null
-    },
-    favoriteCount: 2,
-    fetchSmartFolders: vi.fn().mockResolvedValue({}),
-    fetchTopTags: vi.fn().mockResolvedValue({}),
-    hotCount: 6,
-    readCount: 9,
-    selectCategory: vi.fn(),
-    selectFeed: vi.fn(),
-    setSelectedStatus: vi.fn(),
-    setShowModal: vi.fn(),
-    setSmartFolder: vi.fn(),
-    setTag: vi.fn(),
-    applyCategoryOrder: vi.fn(function applyCategoryOrder(categories) {
-      this.categories = categories;
-    }),
     smartFolders: [{
       id: 30,
       name: 'Research',
-      ArticleCount: 11
+      ArticleCount: 11,
+      query: 'tag:research'
     }],
     topTags: [{
       name: 'javascript',
@@ -97,15 +76,37 @@ const createStore = () => ({
     }],
     unreadCount: 13,
     unreadsSinceLastUpdate: 0
-  })
-});
+  });
+  selectionStore.$patch({
+    currentSelection: {
+      ...selectionStore.currentSelection,
+      AIEnabled: true,
+      categoryId: 10,
+      feedId: '%',
+      smartFolderId: null,
+      status: 'unread',
+      tag: null
+    }
+  });
+  overviewStore.favoriteCount = 2;
+  overviewStore.hotCount = 6;
+  overviewStore.readCount = 9;
+  vi.spyOn(overviewStore, 'fetchSmartFolders').mockResolvedValue({});
+  vi.spyOn(overviewStore, 'fetchTopTags').mockResolvedValue({});
+  vi.spyOn(overviewStore, 'applyCategoryOrder');
+  vi.spyOn(selectionStore, 'selectCategory').mockImplementation(() => {});
+  vi.spyOn(selectionStore, 'selectFeed').mockImplementation(() => {});
+  vi.spyOn(selectionStore, 'setSelectedStatus').mockImplementation(() => {});
+  vi.spyOn(selectionStore, 'setSmartFolder').mockImplementation(() => {});
+  vi.spyOn(selectionStore, 'setTag').mockImplementation(() => {});
+  vi.spyOn(uiStore, 'setShowModal');
+
+  return { authStore, overviewStore, selectionStore, uiStore };
+};
 
 // This function mounts the sidebar with a slot-compatible draggable boundary.
-const mountSidebar = store => mount(Sidebar, {
+const mountSidebar = () => mount(Sidebar, {
   global: {
-    mocks: {
-      $store: store
-    },
     stubs: {
       BootstrapIcon: true,
       draggable: {
@@ -126,8 +127,8 @@ afterEach(() => {
 
 describe('Options API sidebar contracts', () => {
   it('renders navigation counts and forwards category and feed selections', async () => {
-    const store = createStore();
-    const wrapper = mountSidebar(store);
+    const stores = initializeStores();
+    const wrapper = mountSidebar();
 
     expect(wrapper.find('.sidebar-smart-folders').text()).toContain('Research');
     expect(wrapper.find('.sidebar-smart-folders').text()).toContain('11');
@@ -139,37 +140,58 @@ describe('Options API sidebar contracts', () => {
     await wrapper.find('[id="10"] .sidebar-category-header').trigger('click');
     await wrapper.find('[id="101"]').trigger('click');
 
-    expect(store.data.selectCategory).toHaveBeenCalledWith(10);
-    expect(store.data.selectFeed).toHaveBeenCalledWith(101, 10);
+    expect(stores.selectionStore.selectCategory).toHaveBeenCalledWith(10);
+    expect(stores.selectionStore.selectFeed).toHaveBeenCalledWith(101, 10);
   });
 
   it('retains management actions and persists the reordered category IDs', async () => {
-    const store = createStore();
-    const wrapper = mountSidebar(store);
-    const reordered = [...store.data.categories].reverse();
-    const reload = vi.fn();
-    vi.stubGlobal('location', { reload });
+    const stores = initializeStores();
+    const wrapper = mountSidebar();
+    const reordered = [...stores.overviewStore.categories].reverse();
 
     await wrapper.find('.sidebar-add-button').trigger('click');
-    expect(store.data.setShowModal).toHaveBeenCalledWith('NewCategory');
+    expect(stores.uiStore.setShowModal).toHaveBeenCalledWith('NewCategory');
 
     wrapper.vm.applyCategoryOrder(reordered);
 
-    expect(store.data.applyCategoryOrder).toHaveBeenCalledWith(reordered);
+    expect(stores.overviewStore.applyCategoryOrder).toHaveBeenCalledWith(reordered);
     expect(updateCategoryOrder).toHaveBeenCalledWith([20, 10]);
 
-    store.data.currentSelection.categoryId = '%';
-    store.data.currentSelection.feedId = '%';
+    stores.selectionStore.currentSelection.categoryId = '%';
+    stores.selectionStore.currentSelection.feedId = '%';
     await wrapper.vm.$nextTick();
     await wrapper.find('.sidebar-cleanup-button').trigger('click');
     await wrapper.find('.sidebar-logout-button').trigger('click');
 
-    expect(store.data.setShowModal).toHaveBeenCalledWith('Cleanup');
-    expect(setAuthToken).toHaveBeenCalledWith(null);
-    expect(store.auth.setToken).toHaveBeenCalledWith(null);
-    expect(store.auth.setRole).toHaveBeenCalledWith(null);
-    expect(Cookies.remove).toHaveBeenCalledWith('token');
-    expect(reload).toHaveBeenCalledOnce();
+    expect(stores.uiStore.setShowModal).toHaveBeenCalledWith('Cleanup');
+    expect(wrapper.emitted('logout')).toHaveLength(1);
+  });
+
+  // Verifies recoverable resource failures remain visible beside cached sidebar data.
+  it('presents resource-specific retries without hiding cached navigation', async () => {
+    const stores = initializeStores();
+    stores.overviewStore.$patch({
+      overviewCountsStatus: 'error',
+      smartFoldersStatus: 'success',
+      smartFolderCountsStatus: 'error',
+      topTagsStatus: 'error'
+    });
+    vi.spyOn(stores.overviewStore, 'refreshOverviewCounts').mockResolvedValue(false);
+    vi.spyOn(stores.overviewStore, 'fetchSmartFolderCounts').mockResolvedValue(false);
+    const wrapper = mountSidebar();
+
+    expect(wrapper.text()).toContain('Counts could not refresh.');
+    expect(wrapper.text()).toContain('Smart Folder counts may be outdated.');
+    expect(wrapper.text()).toContain('Top tags could not refresh.');
+    expect(wrapper.text()).toContain('Research');
+    expect(wrapper.text()).toContain('Javascript');
+
+    const retryButtons = wrapper.findAll('.sidebar-resource-error button');
+    await Promise.all(retryButtons.map(button => button.trigger('click')));
+
+    expect(stores.overviewStore.refreshOverviewCounts).toHaveBeenCalledOnce();
+    expect(stores.overviewStore.fetchSmartFolderCounts).toHaveBeenCalledOnce();
+    expect(stores.overviewStore.fetchTopTags).toHaveBeenCalledOnce();
   });
 
   it('keeps leaf component event payloads and formatted counts unchanged', async () => {

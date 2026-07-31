@@ -8,6 +8,7 @@ const createLifecycleContext = () => {
     actionErrorTimer: null,
     handleActionError: vi.fn(),
     handleAppError: vi.fn(),
+    responsiveShellQuery: null,
     overviewIntervalId: null,
     sidebarScrollTimeout: null,
     unsubscribeFromSystemTheme: vi.fn()
@@ -16,6 +17,7 @@ const createLifecycleContext = () => {
   context.getOverview = vi.fn();
   context.removeGlobalListeners = () => AppShell.methods.removeGlobalListeners.call(context);
   context.stopOverviewPolling = () => AppShell.methods.stopOverviewPolling.call(context);
+  context.teardownResponsiveShell = () => AppShell.methods.teardownResponsiveShell.call(context);
 
   return context;
 };
@@ -30,6 +32,88 @@ afterEach(() => {
 });
 
 describe('AppShell lifecycle', () => {
+  it.each([
+    [true, true],
+    [false, false]
+  ])('initializes the responsive shell from matchMedia matches=%s', (matches, expectedDesktopShell) => {
+    const mediaQuery = {
+      matches,
+      addEventListener: vi.fn(),
+      addListener: undefined
+    };
+    vi.stubGlobal('matchMedia', vi.fn(() => mediaQuery));
+    const context = {
+      handleResponsiveShellChange: vi.fn(),
+      isDesktopShell: null,
+      responsiveShellQuery: null
+    };
+
+    AppShell.methods.setupResponsiveShell.call(context);
+
+    expect(window.matchMedia).toHaveBeenCalledWith('(min-width: 767px)');
+    expect(context.isDesktopShell).toBe(expectedDesktopShell);
+    expect(mediaQuery.addEventListener).toHaveBeenCalledWith(
+      'change',
+      context.handleResponsiveShellChange
+    );
+  });
+
+  it('switches shell state when the responsive breakpoint changes', () => {
+    const context = {
+      isDesktopShell: true,
+      mobile: true,
+      mobileRefreshSidebarActive: true,
+      pendingMobileFeedRefresh: true
+    };
+
+    AppShell.methods.handleResponsiveShellChange.call(context, { matches: false });
+
+    expect(context).toMatchObject({
+      isDesktopShell: false,
+      mobile: null,
+      mobileRefreshSidebarActive: false,
+      pendingMobileFeedRefresh: false
+    });
+  });
+
+  it('removes the responsive breakpoint listener during teardown', () => {
+    const mediaQuery = {
+      removeEventListener: vi.fn(),
+      removeListener: undefined
+    };
+    const context = {
+      handleResponsiveShellChange: vi.fn(),
+      responsiveShellQuery: mediaQuery
+    };
+
+    AppShell.methods.teardownResponsiveShell.call(context);
+
+    expect(mediaQuery.removeEventListener).toHaveBeenCalledWith(
+      'change',
+      context.handleResponsiveShellChange
+    );
+    expect(context.responsiveShellQuery).toBeNull();
+  });
+
+  it('loads the Sidebar controller only when mobile feed refresh is requested', () => {
+    const refreshFeeds = vi.fn();
+    const context = {
+      mobileRefreshSidebarActive: false,
+      pendingMobileFeedRefresh: false,
+      sidebarComponent: null
+    };
+
+    AppShell.methods.refreshFeeds.call(context);
+
+    expect(context.mobileRefreshSidebarActive).toBe(true);
+    expect(context.pendingMobileFeedRefresh).toBe(true);
+
+    AppShell.methods.setSidebarRef.call(context, { refreshFeeds });
+
+    expect(refreshFeeds).toHaveBeenCalledOnce();
+    expect(context.pendingMobileFeedRefresh).toBe(false);
+  });
+
   it('polls every five minutes without notification or service-worker support', () => {
     const context = createLifecycleContext();
 
@@ -85,6 +169,7 @@ describe('AppShell lifecycle', () => {
     expect(removeEventListenerSpy).toHaveBeenCalledWith('app:error', context.handleAppError);
     expect(removeEventListenerSpy.mock.calls.some(([type]) => type === 'auth:expired')).toBe(false);
     expect(context.unsubscribeFromSystemTheme).toHaveBeenCalledOnce();
+    expect(context.responsiveShellQuery).toBeNull();
     expect(context.overviewIntervalId).toBeNull();
     expect(context.sidebarScrollTimeout).toBeNull();
     expect(context.actionErrorTimer).toBeNull();
@@ -120,10 +205,8 @@ describe('AppShell lifecycle', () => {
       offlineStatus: false,
       overviewLoaded: false,
       stopOverviewPolling: vi.fn(),
-      $store: {
-        data: {
-          setFatalError: vi.fn()
-        }
+      uiStore: {
+        setFatalError: vi.fn()
       }
     };
     const fatalError = {
@@ -133,7 +216,7 @@ describe('AppShell lifecycle', () => {
 
     AppShell.methods.handleAppError.call(context, { detail: fatalError });
 
-    expect(context.$store.data.setFatalError).toHaveBeenCalledWith(fatalError);
+    expect(context.uiStore.setFatalError).toHaveBeenCalledWith(fatalError);
     expect(context.stopOverviewPolling).toHaveBeenCalledOnce();
     expect(context.offlineStatus).toBe(true);
     expect(context.overviewLoaded).toBe(true);

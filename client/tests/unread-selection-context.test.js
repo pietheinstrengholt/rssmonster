@@ -1,15 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, shallowMount } from '@vue/test-utils';
 
-import ArticleListView from '../src/components/ArticleListView.vue';
-import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
-import UnreadSelectionContext from '../src/components/UnreadSelectionContext.vue';
-import UnreadConfigurationModal from '../src/components/model/UnreadConfigurationModal.vue';
+import ArticleListView from '../src/components/articles/ArticleListView.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
+import UnreadSelectionContext from '../src/components/articles/UnreadSelectionContext.vue';
+import UnreadConfigurationModal from '../src/components/dialogs/UnreadConfigurationModal.vue';
 import {
   fetchSettings,
   saveIncludeDevelopingEvents,
   saveStartupViewMode
 } from '../src/api/settings.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/settings.js', () => ({
   fetchSettings: vi.fn(),
@@ -19,14 +20,16 @@ vi.mock('../src/api/settings.js', () => ({
 
 let wrapper;
 
-// This function provides the global store surface used by unread components.
+// This function creates focused stores used by unread components.
 function createStore(setShowModal = vi.fn(), setCurrentSelection = vi.fn()) {
-  return {
-    data: {
-      setShowModal,
+  return createFocusedStores({
+    overview: {
+      categories: [],
+      smartFolders: [],
+      unreadsSinceLastUpdate: 0
+    },
+    selection: {
       setCurrentSelection,
-      mobileSearchOpen: false,
-      unreadsSinceLastUpdate: 0,
       currentSelection: {
         status: 'unread',
         smartFolderId: null,
@@ -35,11 +38,13 @@ function createStore(setShowModal = vi.fn(), setCurrentSelection = vi.fn()) {
         categoryId: '%',
         feedId: '%',
         viewMode: 'full'
-      },
-      smartFolders: [],
-      categories: []
+      }
+    },
+    ui: {
+      mobileSearchOpen: false,
+      setShowModal
     }
-  };
+  });
 }
 
 beforeEach(() => {
@@ -75,15 +80,14 @@ afterEach(() => {
 describe('UnreadSelectionContext', () => {
   it('shows only article and source context and opens unread configuration', async () => {
     const setShowModal = vi.fn();
+    const stores = createStore(setShowModal);
     wrapper = mount(UnreadSelectionContext, {
       props: {
         articleCount: 76,
         sourceCount: 22
       },
       global: {
-        mocks: {
-          $store: createStore(setShowModal)
-        }
+        plugins: [stores.pinia]
       }
     });
 
@@ -104,6 +108,7 @@ describe('UnreadSelectionContext', () => {
   });
 
   it('appears in the loaded standard unread list with scoped counts', () => {
+    const stores = createStore();
     wrapper = shallowMount(ArticleListView, {
       props: {
         articles: [{ id: 1 }],
@@ -120,9 +125,7 @@ describe('UnreadSelectionContext', () => {
         distance: 0
       },
       global: {
-        mocks: {
-          $store: createStore()
-        }
+        plugins: [stores.pinia]
       }
     });
 
@@ -131,6 +134,7 @@ describe('UnreadSelectionContext', () => {
   });
 
   it('appears once in the loaded reader unread list', () => {
+    const stores = createStore();
     wrapper = shallowMount(ArticleReaderLayout, {
       props: {
         articles: [{ id: 1, status: 'unread' }],
@@ -145,9 +149,7 @@ describe('UnreadSelectionContext', () => {
         distance: 0
       },
       global: {
-        mocks: {
-          $store: createStore()
-        }
+        plugins: [stores.pinia]
       }
     });
 
@@ -158,6 +160,7 @@ describe('UnreadSelectionContext', () => {
     ['standard', ArticleListView, { pool: new Set(), viewMode: 'full' }],
     ['reader', ArticleReaderLayout, {}]
   ])('is hidden in the loaded %s unread list when no posts are found', (_mode, component, extraProps) => {
+    const stores = createStore();
     wrapper = shallowMount(component, {
       props: {
         articles: [],
@@ -173,9 +176,7 @@ describe('UnreadSelectionContext', () => {
         ...extraProps
       },
       global: {
-        mocks: {
-          $store: createStore()
-        }
+        plugins: [stores.pinia]
       }
     });
 
@@ -186,17 +187,18 @@ describe('UnreadSelectionContext', () => {
 describe('UnreadConfigurationModal', () => {
   it('loads and renders the unread and startup preferences', async () => {
     const setShowModal = vi.fn();
+    const stores = createStore(setShowModal);
     wrapper = mount(UnreadConfigurationModal, {
       global: {
-        mocks: {
-          $store: createStore(setShowModal)
-        }
+        plugins: [stores.pinia]
       }
     });
     await flushPromises();
 
     expect(fetchSettings).toHaveBeenCalledTimes(1);
-    expect(wrapper.get('#unread-preferences-title').text()).toBe('Tune your unread selection');
+    expect(wrapper.get('.preferences-dialog__title').text()).toContain(
+      'Tune your unread selection'
+    );
     expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual([
       'Developing events',
       'Use default view on startup'
@@ -212,11 +214,10 @@ describe('UnreadConfigurationModal', () => {
   it('saves the preference through the dedicated API call', async () => {
     const setShowModal = vi.fn();
     const setCurrentSelection = vi.fn();
+    const stores = createStore(setShowModal, setCurrentSelection);
     wrapper = mount(UnreadConfigurationModal, {
       global: {
-        mocks: {
-          $store: createStore(setShowModal, setCurrentSelection)
-        }
+        plugins: [stores.pinia]
       }
     });
     await flushPromises();
@@ -234,26 +235,24 @@ describe('UnreadConfigurationModal', () => {
 
   it('closes from its close button', async () => {
     const setShowModal = vi.fn();
+    const stores = createStore(setShowModal);
     wrapper = mount(UnreadConfigurationModal, {
       global: {
-        mocks: {
-          $store: createStore(setShowModal)
-        }
+        plugins: [stores.pinia]
       }
     });
 
-    await wrapper.get('.unread-preferences-close').trigger('click');
+    await wrapper.get('.base-dialog__close').trigger('click');
 
     expect(setShowModal).toHaveBeenCalledWith('');
   });
 
   it('closes on Escape and removes the listener when unmounted', () => {
     const setShowModal = vi.fn();
+    const stores = createStore(setShowModal);
     wrapper = mount(UnreadConfigurationModal, {
       global: {
-        mocks: {
-          $store: createStore(setShowModal)
-        }
+        plugins: [stores.pinia]
       }
     });
 

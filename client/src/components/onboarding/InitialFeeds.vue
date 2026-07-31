@@ -49,11 +49,16 @@
 </style>
 
 <script>
+import { mapStores } from 'pinia';
+import { useOverviewStore } from '../../store/overview.js';
 import { createCategory } from '../../api/categories';
 import { createFeed } from '../../api/feeds';
 import { isFatalActionError } from '../../services/actionNotifications.js';
 
 export default {
+  computed: {
+    ...mapStores(useOverviewStore)
+  },
   name: "InitialFeeds",
   // This function creates the initial onboarding form state.
   data() {
@@ -208,7 +213,7 @@ export default {
         )
       ];
 
-      const existingNames = this.$store.data.categories.map(c => c.name);
+      const existingNames = this.overviewStore.categories.map(c => c.name);
       const resultSummary = {
         createdCount: 0,
         failedNames: [],
@@ -221,7 +226,7 @@ export default {
         try {
           const result = await createCategory(name);
 
-          this.$store.data.addCategory(result.data);
+          this.overviewStore.addCategory(result.data);
           existingNames.push(name);
           resultSummary.createdCount += 1;
 
@@ -247,7 +252,7 @@ export default {
       };
 
       for (const feed of this.feeds.filter(f => f.selected)) {
-        const category = this.$store.data.categories.find(
+        const category = this.overviewStore.categories.find(
           c => c.name === feed.category
         );
 
@@ -268,7 +273,7 @@ export default {
           });
 
           const newFeed = result.data.feed ?? result.data;
-          this.$store.data.addFeed(category.id, newFeed);
+          this.overviewStore.addFeed(category.id, newFeed);
           resultSummary.createdCount += 1;
 
         } catch (err) {

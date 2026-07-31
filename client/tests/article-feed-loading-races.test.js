@@ -1,12 +1,13 @@
 import { flushPromises } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import ArticleFeed from '../src/components/ArticleFeed.vue';
+import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import {
   fetchArticleDetails,
   fetchArticleIds
 } from '../src/api/articles';
-import { useStore } from '../src/store/data';
+import { useSelectionStore } from '../src/store/selection.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchArticleDetails: vi.fn(),
@@ -36,13 +37,22 @@ const createLoadingContext = (dataStore = {
   currentSelection: { status: 'unread', viewMode: 'full', sort: 'desc' },
   increaseReadCount: vi.fn()
 }) => {
+  const stores = createFocusedStores({
+    overview: {
+      increaseReadCount: dataStore.increaseReadCount || vi.fn()
+    },
+    selection: {
+      currentSelection: dataStore.currentSelection
+    }
+  });
+  if (dataStore.$id === 'selection') {
+    stores.selectionStore = dataStore;
+  }
   const context = {
+    ...stores,
     ...ArticleFeed.data(),
     fetchCount: 20,
     $nextTick: callback => callback(),
-    $store: {
-      data: dataStore
-    },
     observeArticles: vi.fn(),
     observeLoadMoreSentinel: vi.fn()
   };
@@ -135,15 +145,15 @@ describe('ArticleFeed loading races', () => {
   // This test exercises the article-detail contract through a real Pinia data store.
   it('requests article details with the normalized sort from the real data store', async () => {
     setActivePinia(createPinia());
-    const dataStore = useStore();
-    dataStore.setCurrentSelection({ sort: 'TrUsT' });
+    const selectionStore = useSelectionStore();
+    selectionStore.setCurrentSelection({ sort: 'TrUsT' });
     fetchArticleDetails.mockResolvedValueOnce({ data: [] });
-    const context = createLoadingContext(dataStore);
+    const context = createLoadingContext(selectionStore);
     context.container = [7];
 
     await context.getContent();
 
-    expect(dataStore.currentSelection.sort).toBe('trust');
+    expect(selectionStore.currentSelection.sort).toBe('trust');
     expect(fetchArticleDetails).toHaveBeenCalledWith([7], 'trust');
   });
 
@@ -209,6 +219,6 @@ describe('ArticleFeed loading races', () => {
     await flushPromises();
 
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read']);
-    expect(context.$store.data.increaseReadCount).toHaveBeenCalledTimes(2);
+    expect(context.overviewStore.increaseReadCount).toHaveBeenCalledTimes(2);
   });
 });

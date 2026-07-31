@@ -2,35 +2,40 @@
   <div id="app">
     <div class="row">
       <div
+        v-if="isDesktopShell === true || mobileRefreshSidebarActive"
         id="sidebar"
         ref="sidebarScrollRef"
         class="col-md-3 col-sm-0"
         @scroll="handleSidebarScroll"
       >
         <!-- Sidebar events -->
-        <app-sidebar ref="sidebar" @forceReload="forceReload"></app-sidebar>
+        <app-sidebar
+          :ref="setSidebarRef"
+          @forceReload="forceReload"
+          @logout="$emit('logout')"
+        ></app-sidebar>
       </div>
       <div
         id="home"
         class="col-md-9 offset-md-3 col-sm-12"
       >
         <!-- MobileToolbar events -->
-        <app-mobile-toolbar @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
+        <app-mobile-toolbar v-if="isDesktopShell === false" @mobile="mobileClick" @forceReload="forceReload"></app-mobile-toolbar>
         <!-- Toolbar events -->
-        <app-desktop-toolbar id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
+        <app-desktop-toolbar v-if="isDesktopShell === true" id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
 
         <!-- Error handling -->
-        <app-error v-if="$store.data.fatalError" :type="$store.data.fatalError.type" @retry="forceReload"/>
+        <app-error v-if="uiStore.fatalError" :type="uiStore.fatalError.type" @retry="forceReload"/>
 
         <!-- Add reference to home for calling child loadContent component function -->
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
-        <app-article-feed v-else-if="overviewLoaded && !offlineStatus && !$store.data.chatAssistantOpen && !$store.data.fatalError" ref="articleFeed" @forceReload="forceReload" @refresh-feeds="refreshFeeds"></app-article-feed>
+        <app-article-feed v-else-if="overviewLoaded && !offlineStatus && !uiStore.chatAssistantOpen && !uiStore.fatalError" ref="articleFeed" @forceReload="forceReload" @refresh-feeds="refreshFeeds"></app-article-feed>
         <!-- Show chat assistant -->
-        <app-chat-assistant v-if="$store.data.chatAssistantOpen"></app-chat-assistant>
+        <app-chat-assistant v-if="uiStore.chatAssistantOpen"></app-chat-assistant>
       </div>
     </div>
     <!-- Mobile events -->
-    <app-mobile-menu-overlay :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile-menu-overlay>
+    <app-mobile-menu-overlay v-if="isDesktopShell === false" :mobile="mobile" @mobile="mobileClick" @refresh="refreshFeeds"></app-mobile-menu-overlay>
     <action-error-notice
       v-if="actionErrorMessage"
       :key="actionErrorId"
@@ -38,26 +43,7 @@
       @dismiss="dismissActionError"
     />
 
-    <!-- New category modal -->
-    <app-new-category v-if="$store.data.getShowModal === 'NewCategory'"></app-new-category>
-    <!-- New feed modal -->
-    <app-new-feed v-if="$store.data.getShowModal === 'NewFeed'"></app-new-feed>
-    <!-- Delete category modal -->
-    <app-delete-category v-if="$store.data.getShowModal === 'DeleteCategory'"></app-delete-category>
-    <!-- Delete feed modal -->
-    <app-delete-feed v-if="$store.data.getShowModal === 'DeleteFeed'"></app-delete-feed>
-    <!-- Rename category modal -->
-    <app-rename-category v-if="$store.data.getShowModal === 'RenameCategory'"></app-rename-category>
-    <!-- Rename feed modal -->
-    <app-update-feed v-if="$store.data.getShowModal === 'UpdateFeed'"></app-update-feed>
-    <!-- Cleanup modal -->
-    <app-cleanup v-if="$store.data.getShowModal === 'Cleanup'"></app-cleanup>
-    <!-- Manage users modal -->
-    <app-manage-users v-if="$store.data.getShowModal === 'ManageUsers'"></app-manage-users>
-    <!-- Briefing preferences modal -->
-    <app-briefing-preferences-modal v-if="$store.data.getShowModal === 'BriefingPreferences'"></app-briefing-preferences-modal>
-    <!-- Unread configuration modal -->
-    <app-unread-configuration-modal v-if="$store.data.getShowModal === 'UnreadConfiguration'"></app-unread-configuration-modal>
+    <component :is="activeDialogComponent" v-if="activeDialogComponent" />
 
   </div>
 </template>
@@ -205,13 +191,17 @@ html, #app, body {
 </style>
 
 <script>
+import { mapStores } from 'pinia';
+import { useSelectionStore } from './store/selection.js';
+import { useOverviewStore } from './store/overview.js';
+import { useUiStore } from './store/ui.js';
 // client/src/AppShell.vue
 
 import { applyTheme, getPreferredTheme, setThemeMode, subscribeToSystemTheme } from './services/theme.js';
 import { ACTION_ERROR_EVENT } from './services/actionNotifications.js';
 
-import ArticleFeed from "./components/ArticleFeed.vue";
-import ActionErrorNotice from './components/ActionErrorNotice.vue';
+import ArticleFeed from "./components/articles/ArticleFeed.vue";
+import ActionErrorNotice from './components/shared/ActionErrorNotice.vue';
 
 // This function identifies request timeouts that should preserve the current online state.
 const isOverviewTimeout = error =>
@@ -219,31 +209,34 @@ const isOverviewTimeout = error =>
 
 //import components
 import { defineAsyncComponent } from 'vue'
-const Sidebar = defineAsyncComponent(() => import("./components/Sidebar.vue"));
-const DesktopToolbar = defineAsyncComponent(() =>  import("./components/DesktopToolbar.vue"));
-const MobileToolbar = defineAsyncComponent(() =>  import("./components/MobileToolbar.vue"));
-const MobileMenuOverlay = defineAsyncComponent(() =>  import("./components/MobileMenuOverlay.vue"));
-const ChatAssistant = defineAsyncComponent(() =>  import("./components/ChatAssistant.vue"));
+const Sidebar = defineAsyncComponent(() => import("./components/sidebar/Sidebar.vue"));
+const DesktopToolbar = defineAsyncComponent(() =>  import("./components/shell/DesktopToolbar.vue"));
+const MobileToolbar = defineAsyncComponent(() =>  import("./components/shell/MobileToolbar.vue"));
+const MobileMenuOverlay = defineAsyncComponent(() =>  import("./components/shell/MobileMenuOverlay.vue"));
+const ChatAssistant = defineAsyncComponent(() =>  import("./components/assistant/ChatAssistant.vue"));
 
-//import modals
-const NewCategory = defineAsyncComponent(() =>  import("./components/model/NewCategory.vue"));
-const NewFeed = defineAsyncComponent(() =>  import("./components/model/NewFeed.vue"));
-const DeleteCategory = defineAsyncComponent(() =>  import("./components/model/DeleteCategory.vue"));
-const DeleteFeed = defineAsyncComponent(() =>  import("./components/model/DeleteFeed.vue"));
-const RenameCategory = defineAsyncComponent(() =>  import("./components/model/RenameCategory.vue"));
-const UpdateFeed = defineAsyncComponent(() =>  import("./components/model/UpdateFeed.vue"));
-const Cleanup = defineAsyncComponent(() =>  import("./components/model/Cleanup.vue"));
-const SettingsManageUsers = defineAsyncComponent(() =>  import("./components/model/SettingsManageUsers.vue"));
-const BriefingPreferencesModal = defineAsyncComponent(() => import("./components/model/BriefingPreferencesModal.vue"));
-const UnreadConfigurationModal = defineAsyncComponent(() => import("./components/model/UnreadConfigurationModal.vue"));
+// Each supported store identifier retains an explicit lazy import boundary.
+export const DIALOG_COMPONENTS = Object.freeze({
+  NewCategory: defineAsyncComponent(() => import("./components/dialogs/categories/NewCategory.vue")),
+  NewFeed: defineAsyncComponent(() => import("./components/dialogs/feeds/NewFeed.vue")),
+  DeleteCategory: defineAsyncComponent(() => import("./components/dialogs/categories/DeleteCategory.vue")),
+  DeleteFeed: defineAsyncComponent(() => import("./components/dialogs/feeds/DeleteFeed.vue")),
+  RenameCategory: defineAsyncComponent(() => import("./components/dialogs/categories/RenameCategory.vue")),
+  UpdateFeed: defineAsyncComponent(() => import("./components/dialogs/feeds/UpdateFeed.vue")),
+  Cleanup: defineAsyncComponent(() => import("./components/dialogs/Cleanup.vue")),
+  ManageUsers: defineAsyncComponent(() => import("./components/settings/SettingsManageUsers.vue")),
+  BriefingPreferences: defineAsyncComponent(() => import("./components/briefing/BriefingPreferencesModal.vue")),
+  UnreadConfiguration: defineAsyncComponent(() => import("./components/dialogs/UnreadConfigurationModal.vue"))
+});
 
 //import onboarding component
 const InitialFeeds = defineAsyncComponent(() =>  import("./components/onboarding/InitialFeeds.vue"));
 
 //import error component
-const Error = defineAsyncComponent(() =>  import("./components/AppError.vue"));
+const Error = defineAsyncComponent(() =>  import("./components/shared/AppError.vue"));
 
 export default {
+  emits: ['logout'],
   components: {
     ActionErrorNotice,
     appSidebar: Sidebar,
@@ -253,17 +246,6 @@ export default {
     appMobileMenuOverlay: MobileMenuOverlay,
     appChatAssistant: ChatAssistant,
     appError: Error,
-    //import modals
-    appNewCategory: NewCategory,
-    appNewFeed: NewFeed,
-    appDeleteCategory: DeleteCategory,
-    appDeleteFeed: DeleteFeed,
-    appRenameCategory: RenameCategory,
-    appUpdateFeed: UpdateFeed,
-    appCleanup: Cleanup,
-    appManageUsers: SettingsManageUsers,
-    appBriefingPreferencesModal: BriefingPreferencesModal,
-    appUnreadConfigurationModal: UnreadConfigurationModal,
     appInitialFeeds: InitialFeeds
   },
   data() {
@@ -273,14 +255,23 @@ export default {
       actionErrorTimer: null,
       category: {},
       feed: {},
+      isDesktopShell: null,
       mobile: null,
+      mobileRefreshSidebarActive: false,
       offlineStatus: false,
       overviewIntervalId: null,
       overviewLoaded: false,
       overviewReloading: false,
+      pendingMobileFeedRefresh: false,
+      responsiveShellQuery: null,
+      sidebarComponent: null,
       sidebarScrollTimeout: null,
       unsubscribeFromSystemTheme: null
     };
+  },
+  // Initializes the responsive shell before its async components are rendered.
+  beforeMount() {
+    this.setupResponsiveShell();
   },
   async created() {
     this.registerGlobalListeners();
@@ -300,6 +291,7 @@ export default {
   beforeUnmount() {
     this.unsubscribeFromSystemTheme?.();
     this.removeGlobalListeners();
+    this.teardownResponsiveShell();
 
     if (this.actionErrorTimer !== null) {
       clearTimeout(this.actionErrorTimer);
@@ -314,6 +306,54 @@ export default {
     }
   },
   methods: {
+    // This function initializes the shell breakpoint without requiring browser globals during state creation.
+    setupResponsiveShell() {
+      if (typeof window === 'undefined') {
+        this.isDesktopShell = true;
+        return;
+      }
+
+      if (typeof window.matchMedia !== 'function') {
+        this.isDesktopShell = window.innerWidth >= 767;
+        return;
+      }
+
+      this.responsiveShellQuery = window.matchMedia('(min-width: 767px)');
+      this.isDesktopShell = this.responsiveShellQuery.matches;
+      if (typeof this.responsiveShellQuery.addEventListener === 'function') {
+        this.responsiveShellQuery.addEventListener('change', this.handleResponsiveShellChange);
+      } else {
+        this.responsiveShellQuery.addListener?.(this.handleResponsiveShellChange);
+      }
+    },
+    // This function removes the responsive shell listener owned by this component.
+    teardownResponsiveShell() {
+      if (typeof this.responsiveShellQuery?.removeEventListener === 'function') {
+        this.responsiveShellQuery.removeEventListener('change', this.handleResponsiveShellChange);
+      } else {
+        this.responsiveShellQuery?.removeListener?.(this.handleResponsiveShellChange);
+      }
+      this.responsiveShellQuery = null;
+    },
+    // This function swaps the mounted shell components when the application breakpoint changes.
+    handleResponsiveShellChange(event) {
+      this.isDesktopShell = event.matches;
+      this.mobile = null;
+
+      if (!event.matches) {
+        this.mobileRefreshSidebarActive = false;
+        this.pendingMobileFeedRefresh = false;
+      }
+    },
+    // This function retains the async Sidebar instance and starts a pending mobile refresh after it loads.
+    setSidebarRef(instance) {
+      this.sidebarComponent = instance || null;
+
+      if (!instance || !this.pendingMobileFeedRefresh) return;
+
+      this.pendingMobileFeedRefresh = false;
+      instance.refreshFeeds();
+    },
     // This function handles recoverable action error events.
     handleActionError(event) {
       this.showActionError(event.detail?.message);
@@ -326,7 +366,7 @@ export default {
         this.stopOverviewPolling();
       }
 
-      this.$store.data.setFatalError(event.detail);
+      this.uiStore.setFatalError(event.detail);
     },
     // This function registers the window listeners owned by the app shell.
     registerGlobalListeners() {
@@ -400,30 +440,30 @@ export default {
       this.getOverview(true);
     },
     lookupFeedById(feedId) {
-      for (let x = 0; x < this.$store.data.categories.length; x++) {
-        for (let i = 0; i < this.$store.data.categories[x].feeds.length; i++) {
-          if (this.$store.data.categories[x].feeds[i].id === feedId) {
-            return this.$store.data.categories[x].feeds[i];
+      for (let x = 0; x < this.overviewStore.categories.length; x++) {
+        for (let i = 0; i < this.overviewStore.categories[x].feeds.length; i++) {
+          if (this.overviewStore.categories[x].feeds[i].id === feedId) {
+            return this.overviewStore.categories[x].feeds[i];
           }
         }
       }
     },
     lookupCategoryById(categoryId) {
-      for (let x = 0; x < this.$store.data.categories.length; x++) {
-        if (this.$store.data.categories[x].id === categoryId) {
-          return this.$store.data.categories[x];
+      for (let x = 0; x < this.overviewStore.categories.length; x++) {
+        if (this.overviewStore.categories[x].id === categoryId) {
+          return this.overviewStore.categories[x];
         }
       }
     },
     updateSelection(data) {
       //only update the local values of some categories exist
-      if (this.$store.data.categories.length) {
+      if (this.overviewStore.categories.length) {
         //set the feed to empty when the store changes, e.g. change can be that only a category is selected
         this.feed = {};
 
         //lookup category name based on the categoryId received
         if (data.categoryId) {
-          const category = this.$store.data.categories.filter(function(a) {
+          const category = this.overviewStore.categories.filter(function(a) {
             return a.id == data.categoryId;
           })[0];
           this.category = category;
@@ -437,17 +477,17 @@ export default {
     // This function refreshes overview data without conflating auth, timeout, and connectivity failures.
     async getOverview(initial) {
       try {
-        await this.$store.data.fetchOverviewSplit({ initial });
+        await this.overviewStore.fetchOverviewSplit({ initial });
 
-        if (['offline', 'overview'].includes(this.$store.data.fatalError?.type)) {
-          this.$store.data.clearFatalError();
+        if (['offline', 'overview'].includes(this.uiStore.fatalError?.type)) {
+          this.uiStore.clearFatalError();
         }
         this.offlineStatus = false;
         this.overviewLoaded = true;
 
         // Initial load: sync local selection
         if (initial === true) {
-          this.updateSelection(this.$store.data.currentSelection);
+          this.updateSelection(this.selectionStore.currentSelection);
         }
       } catch (error) {
         if (!isOverviewTimeout(error)) {
@@ -473,7 +513,7 @@ export default {
 
       if (!error?.response) {
         this.offlineStatus = true;
-        this.$store.data.setFatalError({
+        this.uiStore.setFatalError({
           type: 'offline',
           message: 'Backend unreachable'
         });
@@ -481,7 +521,7 @@ export default {
       }
 
       this.offlineStatus = false;
-      this.$store.data.setFatalError({
+      this.uiStore.setFatalError({
         type: 'overview',
         message: 'Could not load the application overview'
       });
@@ -511,9 +551,9 @@ export default {
       this.overviewReloading = true;
       try {
         // Refresh overview (this also fetches settings)
-        await this.$store.data.fetchOverviewSplit({ initial: true });
-        if (['offline', 'overview'].includes(this.$store.data.fatalError?.type)) {
-          this.$store.data.clearFatalError();
+        await this.overviewStore.fetchOverviewSplit({ initial: true });
+        if (['offline', 'overview'].includes(this.uiStore.fatalError?.type)) {
+          this.uiStore.clearFatalError();
         }
         this.offlineStatus = false;
         this.overviewLoaded = true;
@@ -527,10 +567,10 @@ export default {
               r =>
                 r &&
                 typeof r.fetchArticleIds === 'function' &&
-                r.fetchArticleIds(this.$store.data.currentSelection)
+                r.fetchArticleIds(this.selectionStore.currentSelection)
             );
           } else if (typeof ref.fetchArticleIds === 'function') {
-            ref.fetchArticleIds(this.$store.data.currentSelection);
+            ref.fetchArticleIds(this.selectionStore.currentSelection);
           }
         }
       } catch (error) {
@@ -541,9 +581,15 @@ export default {
         this.overviewReloading = false;
       }
     },
+    // This function starts feed refresh immediately or loads its Sidebar controller on mobile.
     refreshFeeds() {
-      //call sidebar refreshFeeds function
-      this.$refs.sidebar.refreshFeeds();
+      if (this.sidebarComponent) {
+        this.sidebarComponent.refreshFeeds();
+        return;
+      }
+
+      this.pendingMobileFeedRefresh = true;
+      this.mobileRefreshSidebarActive = true;
     },
     // Safely set/clear the app badge to avoid range/type errors
     setBadge(count) {
@@ -576,24 +622,24 @@ export default {
   //watch the store.currentSelection, set local data (category, feed) based on current selection
   watch: {
     // This function applies a theme mode loaded from the user's settings.
-    "$store.data.themeMode": function(themeMode) {
+    "uiStore.themeMode": function(themeMode) {
       if (themeMode) {
         setThemeMode(themeMode);
       }
     },
-    "$store.data.currentSelection": {
+    "selectionStore.currentSelection": {
       handler: function(data) {
         this.updateSelection(data);
       },
       deep: true
     },
-    "$store.data.currentSelection.categoryId": {
+    "selectionStore.currentSelection.categoryId": {
       handler: function() {
         this.feed = {};
       },
       deep: true
     },
-    "$store.data.unreadsSinceLastUpdate": {
+    "overviewStore.unreadsSinceLastUpdate": {
       handler: function(count) {
         if (count > 0) {
           this.showNotification(count);
@@ -601,7 +647,7 @@ export default {
       },
       deep: true
     },
-    "$store.data.unreadCount": {
+    "overviewStore.unreadCount": {
       handler: function(count) {
         this.setBadge(count);
       },
@@ -609,9 +655,14 @@ export default {
     }
   },
   computed: {
+    ...mapStores(useSelectionStore, useOverviewStore, useUiStore),
+    // Resolves only explicitly supported modal identifiers to their lazy components.
+    activeDialogComponent() {
+      return DIALOG_COMPONENTS[this.uiStore.showModal] || null;
+    },
+    // Shows onboarding only after a successful empty overview load.
     showOnboarding() {
-      // Show onboarding only if overview loaded successfully (not offline) and no categories exist
-      return this.overviewLoaded && !this.offlineStatus && !this.$store.data.fatalError && (this.$store.data.categories.length === 0);
+      return this.overviewLoaded && !this.offlineStatus && !this.uiStore.fatalError && (this.overviewStore.categories.length === 0);
     }
   }
 };

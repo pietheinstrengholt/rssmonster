@@ -1,8 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import SettingsSmartFolders from '../src/components/model/SettingsSmartFolders.vue';
+import SettingsSmartFolders from '../src/components/settings/SettingsSmartFolders.vue';
 import { saveSmartFolders } from '../src/api/smartfolders';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/client', () => ({
   setAuthToken: vi.fn()
@@ -31,22 +32,23 @@ const deferred = () => {
 
 // Creates a Smart Folder coordinator context with live Options API computed values.
 const createContext = (overrides = {}) => {
+  const stores = createFocusedStores({
+    auth: { token: 'token' },
+    overview: {
+      fetchSmartFolders: vi.fn().mockResolvedValue(),
+      smartFolders: [{
+        id: 1,
+        name: 'Unread',
+        query: 'unread:true limit:25',
+        limitCount: 25
+      }]
+    },
+    selection: { currentSelection: { AIEnabled: true } }
+  });
   const context = {
     ...SettingsSmartFolders.data(),
+    ...stores,
     $emit: vi.fn(),
-    $store: {
-      auth: { token: 'token' },
-      data: {
-        currentSelection: { AIEnabled: true },
-        smartFolders: [{
-          id: 1,
-          name: 'Unread',
-          query: 'unread:true limit:25',
-          limitCount: 25
-        }],
-        fetchSmartFolders: vi.fn().mockResolvedValue()
-      }
-    },
     ...SettingsSmartFolders.methods,
     ...overrides
   };
@@ -74,7 +76,7 @@ describe('SettingsSmartFolders coordinator', () => {
 
     await context.fetchSmartFolders();
 
-    expect(context.$store.data.fetchSmartFolders).toHaveBeenCalledOnce();
+    expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.loaded).toBe(true);
     expect(context.loadError).toBe('');
     expect(context.smartFolders).toEqual([{
@@ -85,7 +87,7 @@ describe('SettingsSmartFolders coordinator', () => {
       limitCount: 25
     }]);
     context.smartFolders[0].name = 'Local edit';
-    expect(context.$store.data.smartFolders[0].name).toBe('Unread');
+    expect(context.overviewStore.smartFolders[0].name).toBe('Unread');
   });
 
   it('adds valid recommendations and prevents duplicate queries', async () => {
@@ -149,7 +151,7 @@ describe('SettingsSmartFolders coordinator', () => {
   it('commits an open editor before persisting and refreshes store state', async () => {
     const context = createContext();
     await context.fetchSmartFolders();
-    context.$store.data.fetchSmartFolders.mockClear();
+    context.overviewStore.fetchSmartFolders.mockClear();
     context.selectedSmartFolderId = 1;
     context.smartFolderEditorRef = {
       getFolderUpdate: vi.fn(() => ({
@@ -175,7 +177,7 @@ describe('SettingsSmartFolders coordinator', () => {
       query: 'unread:true limit:100',
       limitCount: 100
     });
-    expect(context.$store.data.fetchSmartFolders).toHaveBeenCalledOnce();
+    expect(context.overviewStore.fetchSmartFolders).toHaveBeenCalledOnce();
     expect(context.$emit).toHaveBeenCalledWith('saved');
     expect(context.$emit).toHaveBeenCalledWith('close');
   });
@@ -203,10 +205,10 @@ describe('SettingsSmartFolders coordinator', () => {
   it('blocks saving while the authoritative Smart Folder refresh is pending', async () => {
     const pendingLoad = deferred();
     const context = createContext();
-    context.$store.data.smartFolders = [];
-    context.$store.data.fetchSmartFolders = vi.fn(async () => {
+    context.overviewStore.smartFolders = [];
+    context.overviewStore.fetchSmartFolders = vi.fn(async () => {
       await pendingLoad.promise;
-      context.$store.data.smartFolders = [{
+      context.overviewStore.smartFolders = [{
         id: 9,
         name: 'Authoritative',
         query: 'favorite:true limit:50',
@@ -231,8 +233,8 @@ describe('SettingsSmartFolders coordinator', () => {
   it('keeps saving blocked when the authoritative refresh fails', async () => {
     const error = new Error('load failed');
     const context = createContext();
-    context.$store.data.smartFolders = [];
-    context.$store.data.fetchSmartFolders = vi.fn().mockRejectedValue(error);
+    context.overviewStore.smartFolders = [];
+    context.overviewStore.fetchSmartFolders = vi.fn().mockRejectedValue(error);
 
     await context.fetchSmartFolders();
     await context.save();

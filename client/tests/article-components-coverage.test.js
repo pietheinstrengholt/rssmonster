@@ -10,14 +10,15 @@ import ArticleHeader from '../src/components/articles/ArticleHeader.vue';
 import {
   articleExpansionMethods,
   createArticleExpansionState
-} from '../src/components/articles/articleExpansion.js';
-import { articleSignalComputed } from '../src/components/articles/articleSignals.js';
+} from '../src/components/articles/helpers/articleExpansion.js';
+import { articleSignalComputed } from '../src/components/articles/helpers/articleSignals.js';
 import {
   articleMobileSwipeComputed,
   articleMobileSwipeMethods,
   createArticleMobileSwipeState
-} from '../src/components/articles/mobileSwipe.js';
+} from '../src/components/articles/helpers/mobileSwipe.js';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles.js', () => ({
   fetchDuplicateArticles: vi.fn()
@@ -50,16 +51,19 @@ const mountArticleContent = (props = {}) => mount(ArticleContent, {
 });
 
 // Creates related-article expansion state for the requested grouping.
-const createExpansionContext = (grouping = 'event') => ({
-  ...createArticleExpansionState(),
-  id: 42,
-  $emit: vi.fn(),
-  $store: {
-    data: {
+const createExpansionContext = (grouping = 'event') => {
+  const stores = createFocusedStores({
+    selection: {
       currentSelection: { grouping }
     }
-  }
-});
+  });
+  return {
+    ...stores,
+    ...createArticleExpansionState(),
+    id: 42,
+    $emit: vi.fn()
+  };
+};
 
 // Creates swipe state with reset behavior bound as Vue exposes it.
 const createSwipeContext = (overrides = {}) => {

@@ -1,8 +1,9 @@
 import { describe, expect, it, vi } from 'vitest';
 import { shallowMount } from '@vue/test-utils';
 
-import Article from '../src/components/Article.vue';
-import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
+import Article from '../src/components/articles/Article.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 const developingEvent = {
   representativeArticleId: 100,
@@ -11,11 +12,13 @@ const developingEvent = {
 
 // This function creates the store surface shared by article badge tests.
 function createStore(viewMode = 'minimal') {
-  return {
-    data: {
+  return createFocusedStores({
+    overview: {
       categories: [],
       smartFolders: [],
-      unreadsSinceLastUpdate: 0,
+      unreadsSinceLastUpdate: 0
+    },
+    selection: {
       currentSelection: {
         status: 'unread',
         smartFolderId: null,
@@ -28,11 +31,12 @@ function createStore(viewMode = 'minimal') {
       },
       setCurrentSelection: vi.fn()
     }
-  };
+  });
 }
 
 // This function mounts the compact article row with API-provided developing-story state.
 function mountArticle(id, isDevelopingStory = false) {
+  const stores = createStore();
   return shallowMount(Article, {
     props: {
       id,
@@ -44,15 +48,14 @@ function mountArticle(id, isDevelopingStory = false) {
       isDevelopingStory
     },
     global: {
-      mocks: {
-        $store: createStore()
-      }
+      plugins: [stores.pinia]
     }
   });
 }
 
 // This function mounts the reader list with one event article.
 function mountReader(article) {
+  const stores = createStore('reader');
   return shallowMount(ArticleReaderLayout, {
     props: {
       articles: [article],
@@ -67,9 +70,7 @@ function mountReader(article) {
       distance: 0
     },
     global: {
-      mocks: {
-        $store: createStore('reader')
-      }
+      plugins: [stores.pinia]
     }
   });
 }

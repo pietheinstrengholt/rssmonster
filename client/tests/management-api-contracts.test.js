@@ -98,13 +98,16 @@ describe('actions and category API contracts', () => {
 });
 
 describe('manager API contracts', () => {
-  // Verifies full and count overviews preserve normalized selection values.
+  // Verifies overview endpoints receive only the grouping filters consumed by the server.
   it('builds overview requests', () => {
     const selection = {
+      includeDevelopingEvents: true,
       status: 'unread',
       search: 'sort:quality tag:ai',
       sort: 'quality',
-      grouping: 'topic'
+      grouping: 'topic',
+      themeMode: 'dark',
+      userId: 42
     };
 
     fetchOverview(selection);
@@ -114,12 +117,18 @@ describe('manager API contracts', () => {
     expect(post).toHaveBeenNthCalledWith(
       1,
       '/manager/overview',
-      selection
+      {
+        grouping: 'topic',
+        includeDevelopingEvents: true
+      }
     );
     expect(post).toHaveBeenNthCalledWith(
       2,
       '/manager/overview-counts',
-      selection
+      {
+        grouping: 'topic',
+        includeDevelopingEvents: true
+      }
     );
     expect(get).toHaveBeenCalledWith('/manager/overview-lite');
   });

@@ -1,10 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
-import { reactive } from 'vue';
-import Sidebar from '../src/components/Sidebar.vue';
+import Sidebar from '../src/components/sidebar/Sidebar.vue';
 import { updateCategoryOrder } from '../src/api/manager';
-import { useStore } from '../src/store/data';
+import { useSelectionStore } from '../src/store/selection.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/manager', () => ({
 	updateCategoryOrder: vi.fn().mockResolvedValue({ status: 200 })
@@ -13,20 +13,20 @@ vi.mock('../src/api/manager', () => ({
 describe('Sidebar manager', () => {
 	it('hydrates the developing-events setting with a false default', () => {
 		setActivePinia(createPinia());
-		const store = useStore();
+		const store = useSelectionStore();
 
 		expect(store.currentSelection.includeDevelopingEvents).toBe(false);
-		expect(store.includeDevelopingEvents).toBe(false);
+		expect(Object.hasOwn(store.$state, 'includeDevelopingEvents')).toBe(false);
 
 		store.setCurrentSelection({ includeDevelopingEvents: true });
 
 		expect(store.currentSelection.includeDevelopingEvents).toBe(true);
-		expect(store.includeDevelopingEvents).toBe(true);
+		expect(Object.hasOwn(store.$state, 'includeDevelopingEvents')).toBe(false);
 	});
 
 	it('uses the briefing query for the Daily briefing pseudo-status', () => {
 		setActivePinia(createPinia());
-		const store = useStore();
+		const store = useSelectionStore();
 
 		store.setSelectedStatus('briefing');
 
@@ -68,52 +68,52 @@ describe('Sidebar manager', () => {
 
 	it('renders the live Daily briefing row before Unread and updates category order', async () => {
 		const setSelectedStatus = vi.fn();
+		const stores = createFocusedStores({
+			auth: {
+				role: 'user'
+			},
+			overview: {
+				categories: [
+					{ id: 10, name: 'Tech', feeds: [] },
+					{ id: 20, name: 'News', feeds: [] }
+				],
+				smartFolders: [],
+				topTags: [],
+				briefingCount: 7,
+				unreadCount: 0,
+				readCount: 0,
+				favoriteCount: 0,
+				hotCount: 0,
+				clickedCount: 0,
+				unreadsSinceLastUpdate: 0,
+				fetchTopTags: vi.fn().mockResolvedValue({}),
+				fetchSmartFolders: vi.fn().mockResolvedValue({})
+			},
+			selection: {
+				currentSelection: {
+					AIEnabled: true,
+					status: 'briefing',
+					categoryId: '%',
+					feedId: '%',
+					search: 'briefing:true @lastweek',
+					smartFolderId: null,
+					tag: null
+				},
+				setSelectedStatus,
+				setSmartFolder: vi.fn(),
+				setTag: vi.fn()
+			},
+			ui: {
+				setShowModal: vi.fn()
+			}
+		});
 		const wrapper = mount(Sidebar, {
 			global: {
+				plugins: [stores.pinia],
 				stubs: {
 					BootstrapIcon: true,
 					draggable: {
 						template: '<div><slot /></div>'
-					}
-				},
-				mocks: {
-					$store: {
-						auth: {
-							setToken: vi.fn(),
-							setRole: vi.fn()
-						},
-						data: reactive({
-							currentSelection: {
-								AIEnabled: true,
-								status: 'briefing',
-								categoryId: '%',
-								feedId: '%',
-								search: 'briefing:true @lastweek',
-								smartFolderId: null,
-								tag: null
-							},
-							categories: [
-								{ id: 10, name: 'Tech', feeds: [] },
-								{ id: 20, name: 'News', feeds: [] }
-							],
-							smartFolders: [],
-							topTags: [],
-							briefingCount: 7,
-							unreadCount: 0,
-							readCount: 0,
-							favoriteCount: 0,
-							hotCount: 0,
-							clickedCount: 0,
-							unreadsSinceLastUpdate: 0,
-							fetchTopTags: vi.fn().mockResolvedValue({}),
-							fetchSmartFolders: vi.fn().mockResolvedValue({}),
-							setShowModal: vi.fn(),
-							setSelectedStatus,
-							setSelectedCategoryId: vi.fn(),
-							setSelectedFeedId: vi.fn(),
-							setSmartFolder: vi.fn(),
-							setTag: vi.fn()
-						})
 					}
 				}
 			}
@@ -129,13 +129,13 @@ describe('Sidebar manager', () => {
 		await statusRows[0].trigger('click');
 		expect(setSelectedStatus).not.toHaveBeenCalled();
 
-		wrapper.vm.$store.data.currentSelection.status = 'unread';
-		wrapper.vm.$store.data.currentSelection.smartFolderId = 42;
+		wrapper.vm.selectionStore.currentSelection.status = 'unread';
+		wrapper.vm.selectionStore.currentSelection.smartFolderId = 42;
 		await wrapper.vm.$nextTick();
 		await statusRows[1].trigger('click');
 		expect(setSelectedStatus).toHaveBeenCalledWith('unread');
 
-		wrapper.vm.$store.data.currentSelection.AIEnabled = false;
+		wrapper.vm.selectionStore.currentSelection.AIEnabled = false;
 		await wrapper.vm.$nextTick();
 		expect(wrapper.text()).not.toContain('Daily briefing');
 

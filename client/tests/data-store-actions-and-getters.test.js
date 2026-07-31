@@ -2,7 +2,9 @@ import { createPinia, setActivePinia } from 'pinia';
 import { flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useStore } from '../src/store/data.js';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
+import { useUiStore } from '../src/store/ui.js';
 import { fetchSettings } from '../src/api/settings';
 import {
   fetchOverviewCounts,
@@ -33,10 +35,14 @@ vi.mock('../src/api/tags', () => ({
   fetchTopTags: vi.fn()
 }));
 
-// This function creates a fresh real Pinia data store for action and getter tests.
-const createStore = () => {
+// This function creates a fresh Pinia graph for focused store action tests.
+const createStores = () => {
   setActivePinia(createPinia());
-  return useStore();
+  return {
+    overviewStore: useOverviewStore(),
+    selectionStore: useSelectionStore(),
+    uiStore: useUiStore()
+  };
 };
 
 // This function builds a complete count response for background refresh tests.
@@ -66,21 +72,20 @@ describe('data store remaining actions and getters', () => {
         includeDevelopingEvents: 1
       }
     });
-    const store = createStore();
+    const { selectionStore, uiStore } = createStores();
 
-    await store.fetchSettings();
-    expect(store.themeMode).toBe('dark');
-    expect(store.currentSelection).toMatchObject({
+    await selectionStore.fetchSettings();
+    expect(uiStore.themeMode).toBe('dark');
+    expect(selectionStore.currentSelection).toMatchObject({
       sort: 'quality',
       grouping: 'event',
       includeDevelopingEvents: true
     });
-    expect(store.includeDevelopingEvents).toBe(true);
 
-    store.setThemeMode('light');
-    store.setCurrentSelection({ sort: 'invalid', grouping: 'invalid' });
-    expect(store.themeMode).toBe('light');
-    expect(store.currentSelection).toMatchObject({
+    uiStore.setThemeMode('light');
+    selectionStore.setCurrentSelection({ sort: 'invalid', grouping: 'invalid' });
+    expect(uiStore.themeMode).toBe('light');
+    expect(selectionStore.currentSelection).toMatchObject({
       sort: 'desc',
       grouping: 'none',
       includeDevelopingEvents: true
@@ -89,7 +94,7 @@ describe('data store remaining actions and getters', () => {
 
   // Verifies sort changes remove supported query tokens while preserving other search terms.
   it('normalizes sort selections and removes embedded sort tokens', () => {
-    const store = createStore();
+    const { selectionStore: store } = createStores();
 
     store.setSelectedSearch('author:ada, sort:quality; unread:true');
     store.setSelectedSort('ATTENTION');
@@ -112,11 +117,11 @@ describe('data store remaining actions and getters', () => {
 
   // Verifies compatibility selection actions and smart-folder query construction.
   it('applies category, feed, and smart-folder selections', () => {
-    const store = createStore();
-    store.$patch({ chatAssistantOpen: true });
+    const { selectionStore: store, uiStore } = createStores();
+    uiStore.$patch({ chatAssistantOpen: true });
 
     store.applySelection({ status: 'read' }, { closeChat: false });
-    expect(store.chatAssistantOpen).toBe(true);
+    expect(uiStore.chatAssistantOpen).toBe(true);
 
     store.setSelectedCategoryId(4);
     store.setSelectedFeedId(9);
@@ -165,8 +170,11 @@ describe('data store remaining actions and getters', () => {
     fetchTopTags
       .mockResolvedValueOnce({ data: { tags: ['vue'] } })
       .mockResolvedValueOnce({ data: {} });
-    const store = createStore();
-    store.setCurrentSelection({ grouping: 'topic' });
+    const { overviewStore: store, selectionStore } = createStores();
+    selectionStore.setCurrentSelection({ grouping: 'topic' });
+    await flushPromises();
+    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic' });
+    expect(store.topTags).toEqual(['vue']);
 
     await store.fetchSmartFolders();
     await flushPromises();
@@ -176,15 +184,11 @@ describe('data store remaining actions and getters', () => {
     ]);
 
     await store.fetchTopTags();
-    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic' });
-    expect(store.topTags).toEqual(['vue']);
-    await store.fetchTopTags();
     expect(store.topTags).toEqual([]);
   });
 
   // Verifies background fetch failures remain non-fatal and retain published structure.
   it('handles background overview and smart-folder count failures', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     fetchOverviewLite.mockResolvedValue({
       data: { categories: [{ id: 1 }] }
     });
@@ -193,7 +197,7 @@ describe('data store remaining actions and getters', () => {
       data: { smartFolders: [{ id: 2 }] }
     });
     fetchSmartFolderCounts.mockRejectedValue(new Error('folder counts offline'));
-    const store = createStore();
+    const { overviewStore: store } = createStores();
 
     await store.fetchOverviewSplit();
     await store.fetchSmartFolders();
@@ -201,15 +205,10 @@ describe('data store remaining actions and getters', () => {
 
     expect(store.categories[0]).toMatchObject({ id: 1, feeds: [] });
     expect(store.smartFolders).toEqual([{ id: 2, ArticleCount: 0 }]);
-    expect(warn).toHaveBeenCalledWith(
-      'Overview counts refresh failed',
-      expect.objectContaining({ message: 'counts offline' })
-    );
-    expect(warn).toHaveBeenCalledWith(
-      'Smart folder counts refresh failed',
-      expect.objectContaining({ message: 'folder counts offline' })
-    );
-    warn.mockRestore();
+    expect(store.overviewCountsStatus).toBe('error');
+    expect(store.overviewCountsError).toMatchObject({ message: 'counts offline' });
+    expect(store.smartFolderCountsStatus).toBe('error');
+    expect(store.smartFolderCountsError).toMatchObject({ message: 'folder counts offline' });
   });
 
   // Verifies a slower initial settings request cannot start an obsolete overview fetch.
@@ -223,7 +222,7 @@ describe('data store remaining actions and getters', () => {
       data: { categories: [{ id: 2 }] }
     });
     fetchOverviewCounts.mockReturnValue(new Promise(() => {}));
-    const store = createStore();
+    const { overviewStore: store } = createStores();
 
     const initialRequest = store.fetchOverviewSplit({ initial: true });
     await store.fetchOverviewSplit();
@@ -238,41 +237,37 @@ describe('data store remaining actions and getters', () => {
 
   // Verifies direct count refreshes reset deltas and swallow recoverable API failures.
   it('refreshes overview counts and preserves state on failure', async () => {
-    const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
     fetchOverviewCounts
       .mockResolvedValueOnce({
         data: createCounts({ unreadCount: 7 })
       })
       .mockRejectedValueOnce(new Error('offline'));
-    const store = createStore();
-    store.$patch({ unreadCount: 2, unreadsSinceLastUpdate: 5 });
+    const { overviewStore, selectionStore: store } = createStores();
+    overviewStore.$patch({ unreadCount: 2, unreadsSinceLastUpdate: 5 });
 
     await store.refreshOverviewCounts();
     expect(fetchOverviewCounts).toHaveBeenCalledWith(store.currentSelection);
-    expect(store.unreadCount).toBe(7);
-    expect(store.unreadsSinceLastUpdate).toBe(0);
+    expect(overviewStore.unreadCount).toBe(7);
+    expect(overviewStore.unreadsSinceLastUpdate).toBe(0);
 
     await store.refreshOverviewCounts();
-    expect(store.unreadCount).toBe(7);
-    expect(warn).toHaveBeenCalledWith(
-      'Overview counts refresh failed',
-      expect.objectContaining({ message: 'offline' })
-    );
-    warn.mockRestore();
+    expect(overviewStore.unreadCount).toBe(7);
+    expect(overviewStore.overviewCountsStatus).toBe('error');
+    expect(overviewStore.overviewCountsError).toMatchObject({ message: 'offline' });
   });
 
   // Verifies grouping normalization survives a recoverable overview refresh failure.
   it('normalizes grouping and handles refresh failures', async () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const store = createStore();
-    vi.spyOn(store, 'fetchOverviewSplit')
+    const { selectionStore: store, overviewStore } = createStores();
+    vi.spyOn(overviewStore, 'fetchOverviewSplit')
       .mockRejectedValue(new Error('grouping offline'));
 
     store.setGrouping('unsupported');
     await flushPromises();
 
     expect(store.currentSelection.grouping).toBe('none');
-    expect(store.fetchOverviewSplit).toHaveBeenCalledWith({
+    expect(overviewStore.fetchOverviewSplit).toHaveBeenCalledWith({
       forceUpdate: true
     });
     expect(warn).toHaveBeenCalledWith(
@@ -282,30 +277,32 @@ describe('data store remaining actions and getters', () => {
     warn.mockRestore();
   });
 
-  // Verifies score, view, counter, and modal actions update only their owned state.
-  it('updates score filters, counters, and UI flags', () => {
-    const store = createStore();
+  // Verifies score and modal actions update only their owned state.
+  it('updates score filters and UI flags', () => {
+    const {
+      selectionStore,
+      uiStore
+    } = createStores();
 
-    store.setMinAdvertisementScore(0.2);
-    store.setMinSentimentScore(0.3);
-    store.setMinQualityScore(0.4);
-    store.increaseRefreshCategories();
-    store.setShowModal(true);
-    store.setMobileSearchOpen(true);
+    expect(uiStore.showModal).toBe('');
+    selectionStore.setMinAdvertisementScore(0.2);
+    selectionStore.setMinSentimentScore(0.3);
+    selectionStore.setMinQualityScore(0.4);
+    uiStore.setShowModal(true);
+    uiStore.setMobileSearchOpen(true);
 
-    expect(store.currentSelection).toMatchObject({
+    expect(selectionStore.currentSelection).toMatchObject({
       minAdvertisementScore: 0.2,
       minSentimentScore: 0.3,
       minQualityScore: 0.4
     });
-    expect(store.refreshCategories).toBe(1);
-    expect(store.showModal).toBe(true);
-    expect(store.mobileSearchOpen).toBe(true);
+    expect(uiStore.showModal).toBe(true);
+    expect(uiStore.mobileSearchOpen).toBe(true);
   });
 
   // Verifies replacement and same-category feed updates preserve normalized contracts.
   it('replaces existing categories and feeds and rejects invalid destinations', () => {
-    const store = createStore();
+    const { overviewStore: store } = createStores();
 
     store.addCategory({ id: 1, name: 'Old' });
     store.addCategory({ id: '1', name: 'New', feeds: [{ id: 10 }] });
@@ -333,7 +330,7 @@ describe('data store remaining actions and getters', () => {
   // Verifies no-op favorite changes and missing read-count owners do not mutate totals.
   it('ignores no-op favorite deltas and missing read-count ownership', () => {
     const warn = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    const store = createStore();
+    const { overviewStore: store } = createStores();
     store.addCategory({ id: 1, feeds: [] });
 
     store.applyFavoriteDelta({ categoryId: 1, feedId: 2, delta: 0 });
@@ -355,8 +352,12 @@ describe('data store remaining actions and getters', () => {
 
   // Verifies getters expose stored state and safely resolve selected domain objects.
   it('returns counts, UI state, and selected category and feed details', () => {
-    const store = createStore();
-    store.$patch({
+    const {
+      overviewStore,
+      selectionStore,
+      uiStore
+    } = createStores();
+    overviewStore.$patch({
       briefingCount: 6,
       unreadCount: 5,
       readCount: 4,
@@ -364,41 +365,45 @@ describe('data store remaining actions and getters', () => {
       hotCount: 2,
       clickedCount: 1,
       topTags: ['rss'],
-      chatAssistantOpen: true,
-      showModal: true,
       unreadsSinceLastUpdate: -2.8,
       categories: [{
         id: 7,
         feeds: [{ id: 8, feedName: 'Selected' }]
-      }],
+      }]
+    });
+    uiStore.$patch({
+      chatAssistantOpen: true,
+      showModal: true
+    });
+    selectionStore.$patch({
       currentSelection: {
-        ...store.currentSelection,
+        ...selectionStore.currentSelection,
         categoryId: '7',
         feedId: '8'
       }
     });
 
-    expect(store.getCurrentSelection).toBe(store.currentSelection);
-    expect(store.getCategories).toBe(store.categories);
+    expect(selectionStore.currentSelection.categoryId).toBe('7');
+    expect(overviewStore.categories[0].id).toBe(7);
     expect([
-      store.getBriefingCount,
-      store.getUnreadCount,
-      store.getReadCount,
-      store.getFavoriteCount,
-      store.getHotCount,
-      store.getClickedCount
+      overviewStore.briefingCount,
+      overviewStore.unreadCount,
+      overviewStore.readCount,
+      overviewStore.favoriteCount,
+      overviewStore.hotCount,
+      overviewStore.clickedCount
     ]).toEqual([6, 5, 4, 3, 2, 1]);
-    expect(store.getTopTags).toEqual(['rss']);
-    expect(store.getChatAssistantOpen).toBe(true);
-    expect(store.getShowModal).toBe(true);
-    expect(store.getUnreadsSinceLastUpdate).toBe(2);
-    expect(store.getSelectedCategory?.id).toBe(7);
-    expect(store.getSelectedFeedDetails?.feed.feedName).toBe('Selected');
+    expect(overviewStore.topTags).toEqual(['rss']);
+    expect(uiStore.chatAssistantOpen).toBe(true);
+    expect(uiStore.showModal).toBe(true);
+    expect(overviewStore.normalizedUnreadsSinceLastUpdate).toBe(2);
+    expect(overviewStore.selectedCategory?.id).toBe(7);
+    expect(overviewStore.selectedFeedDetails?.feed.feedName).toBe('Selected');
 
-    store.applySelection({ categoryId: '%', feedId: 'missing' });
-    expect(store.getSelectedCategory).toBeNull();
-    expect(store.getSelectedFeedDetails).toBeNull();
-    store.applySelection({ categoryId: '7', feedId: '999' });
-    expect(store.getSelectedFeedDetails).toBeNull();
+    selectionStore.applySelection({ categoryId: '%', feedId: 'missing' });
+    expect(overviewStore.selectedCategory).toBeNull();
+    expect(overviewStore.selectedFeedDetails).toBeNull();
+    selectionStore.applySelection({ categoryId: '7', feedId: '999' });
+    expect(overviewStore.selectedFeedDetails).toBeNull();
   });
 });

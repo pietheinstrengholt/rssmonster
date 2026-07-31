@@ -1,6 +1,7 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, describe, expect, it, vi } from 'vitest';
-import MobileMenuOverlay from '../src/components/MobileMenuOverlay.vue';
+import MobileMenuOverlay from '../src/components/shell/MobileMenuOverlay.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // This function creates the browser Notification API with mutable permission state.
 const createNotificationApi = (initialPermission = 'default') => {
@@ -18,26 +19,29 @@ const createNotificationApi = (initialPermission = 'default') => {
 };
 
 // This function mounts the mobile options menu with the minimal store state it needs.
-const mountMobileMenu = () => mount(MobileMenuOverlay, {
-  props: { mobile: true },
-  global: {
-    mocks: {
-      $store: {
-        data: {
-          categories: [],
-          chatAssistantOpen: false,
-          currentSelection: {
-            AIEnabled: false,
-            categoryId: '%',
-            feedId: '%',
-            viewMode: 'full'
-          },
-          setShowModal: vi.fn()
-        }
+const mountMobileMenu = () => {
+  const stores = createFocusedStores({
+    overview: { categories: [] },
+    selection: {
+      currentSelection: {
+        AIEnabled: false,
+        categoryId: '%',
+        feedId: '%',
+        viewMode: 'full'
       }
+    },
+    ui: {
+      chatAssistantOpen: false,
+      setShowModal: vi.fn()
     }
-  }
-});
+  });
+  return mount(MobileMenuOverlay, {
+    props: { mobile: true },
+    global: {
+      plugins: [stores.pinia]
+    }
+  });
+};
 
 afterEach(() => {
   vi.unstubAllGlobals();

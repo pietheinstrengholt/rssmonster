@@ -1,7 +1,8 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { flushPromises } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useStore } from '../src/store/data.js';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
 import {
   fetchOverviewCounts,
   fetchOverviewLite
@@ -10,6 +11,7 @@ import {
   fetchSmartFolderCounts,
   fetchSmartFolders
 } from '../src/api/smartfolders';
+import { fetchTopTags } from '../src/api/tags';
 
 vi.mock('../src/api/manager', () => ({
   fetchOverview: vi.fn(),
@@ -32,11 +34,13 @@ vi.mock('../src/api/tags', () => ({
 
 // This function creates a promise whose completion order is controlled by the test.
 const deferred = () => {
+  let reject;
   let resolve;
-  const promise = new Promise(resolvePromise => {
+  const promise = new Promise((resolvePromise, rejectPromise) => {
+    reject = rejectPromise;
     resolve = resolvePromise;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 };
 
 // This function creates an overview count response with a distinctive unread count.
@@ -65,7 +69,7 @@ describe('store response ordering', () => {
     fetchOverviewCounts
       .mockReturnValueOnce(olderCounts.promise)
       .mockReturnValueOnce(newerCounts.promise);
-    const store = useStore();
+    const store = useOverviewStore();
 
     await store.fetchOverviewSplit();
     await store.fetchOverviewSplit();
@@ -76,6 +80,8 @@ describe('store response ordering', () => {
     await flushPromises();
 
     expect(store.unreadCount).toBe(22);
+    expect(store.overviewCountsStatus).toBe('success');
+    expect(store.overviewCountsError).toBeNull();
   });
 
   it('ignores older smart-folder counts after a newer refresh', async () => {
@@ -89,7 +95,7 @@ describe('store response ordering', () => {
     fetchSmartFolderCounts
       .mockReturnValueOnce(olderCounts.promise)
       .mockReturnValueOnce(newerCounts.promise);
-    const store = useStore();
+    const store = useOverviewStore();
 
     await store.fetchSmartFolders();
     await store.fetchSmartFolders();
@@ -104,5 +110,70 @@ describe('store response ordering', () => {
     await flushPromises();
 
     expect(store.smartFolders[0].ArticleCount).toBe(12);
+    expect(store.smartFolderCountsStatus).toBe('success');
+    expect(store.smartFolderCountsError).toBeNull();
+  });
+
+  // Verifies grouping transitions refresh tags and retain only the newest grouping response.
+  it('refreshes Top Tags for grouping changes and ignores the older grouping response', async () => {
+    const eventTags = deferred();
+    const topicTags = deferred();
+    fetchTopTags
+      .mockReturnValueOnce(eventTags.promise)
+      .mockReturnValueOnce(topicTags.promise);
+    const store = useOverviewStore();
+    const selectionStore = useSelectionStore();
+    vi.spyOn(store, 'fetchOverviewSplit').mockResolvedValue(true);
+
+    selectionStore.setGrouping('event');
+    selectionStore.setGrouping('topic');
+    topicTags.resolve({ data: { tags: [{ name: 'topic-tag', count: 4 }] } });
+    await flushPromises();
+    eventTags.resolve({ data: { tags: [{ name: 'event-tag', count: 9 }] } });
+    await flushPromises();
+
+    expect(fetchTopTags).toHaveBeenNthCalledWith(1, { grouping: 'event' });
+    expect(fetchTopTags).toHaveBeenNthCalledWith(2, { grouping: 'topic' });
+    expect(store.topTags).toEqual([{ name: 'topic-tag', count: 4 }]);
+    expect(store.topTagsStatus).toBe('success');
+  });
+
+  // Verifies direct count refreshes ignore an obsolete success that resolves last.
+  it('keeps the newest direct overview-count success', async () => {
+    const olderCounts = deferred();
+    const newerCounts = deferred();
+    fetchOverviewCounts
+      .mockReturnValueOnce(olderCounts.promise)
+      .mockReturnValueOnce(newerCounts.promise);
+    const store = useOverviewStore();
+
+    const olderRequest = store.fetchOverviewCounts();
+    const newerRequest = store.fetchOverviewCounts();
+    newerCounts.resolve(overviewCounts(18));
+    await newerRequest;
+    olderCounts.resolve(overviewCounts(3));
+    await olderRequest;
+
+    expect(store.unreadCount).toBe(18);
+    expect(store.overviewCountsStatus).toBe('success');
+    expect(store.overviewCountsError).toBeNull();
+  });
+
+  // Verifies direct count refreshes ignore an obsolete failure that rejects last.
+  it('keeps the newest direct overview-count resource state after an old failure', async () => {
+    const olderCounts = deferred();
+    fetchOverviewCounts
+      .mockReturnValueOnce(olderCounts.promise)
+      .mockResolvedValueOnce(overviewCounts(21));
+    const store = useOverviewStore();
+
+    const olderRequest = store.fetchOverviewCounts();
+    await store.fetchOverviewCounts();
+    olderCounts.reject(new Error('obsolete count failure'));
+    await olderRequest;
+
+    expect(store.unreadCount).toBe(21);
+    expect(store.overviewCountsStatus).toBe('success');
+    expect(store.overviewCountsError).toBeNull();
   });
 });

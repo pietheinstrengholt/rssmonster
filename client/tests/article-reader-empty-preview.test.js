@@ -1,11 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 
-import Article from '../src/components/Article.vue';
-import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
-import articleSource from '../src/components/Article.vue?raw';
+import Article from '../src/components/articles/Article.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
+import articleSource from '../src/components/articles/Article.vue?raw';
 import { markClicked } from '../src/api/articles';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchDuplicateArticles: vi.fn(),
@@ -38,6 +39,20 @@ function createArticle(overrides = {}) {
 
 // This function mounts the reader list with its required store and child stubs.
 function mountReader(article = createArticle()) {
+  const stores = createFocusedStores({
+    overview: { categories: [], smartFolders: [] },
+    selection: {
+      currentSelection: {
+        smartFolderId: null,
+        tag: '',
+        search: '',
+        feedId: '%',
+        categoryId: '%',
+        status: 'unread'
+      },
+      setCurrentSelection: vi.fn()
+    }
+  });
   return mount(ArticleReaderLayout, {
     props: {
       articles: [article],
@@ -58,29 +73,17 @@ function mountReader(article = createArticle()) {
         ArticleEndState: true,
         BootstrapIcon: true
       },
-      mocks: {
-        $store: {
-          data: {
-            currentSelection: {
-              smartFolderId: null,
-              tag: '',
-              search: '',
-              feedId: '%',
-              categoryId: '%',
-              status: 'unread'
-            },
-            categories: [],
-            smartFolders: [],
-            setCurrentSelection: vi.fn()
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 }
 
 // This function mounts the standard article component in the requested list mode.
 function mountArticle(props = {}, viewMode = 'full') {
+  const stores = createFocusedStores({
+    overview: { categories: [] },
+    selection: { currentSelection: { viewMode, grouping: 'none' } }
+  });
   return mount(Article, {
     props: createArticle(props),
     global: {
@@ -93,17 +96,7 @@ function mountArticle(props = {}, viewMode = 'full') {
         ArticleTagsScores: true,
         BootstrapIcon: true
       },
-      mocks: {
-        $store: {
-          data: {
-            categories: [],
-            currentSelection: {
-              viewMode,
-              grouping: 'none'
-            }
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 }

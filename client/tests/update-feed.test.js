@@ -1,6 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { flushPromises, mount } from '@vue/test-utils';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-import UpdateFeed from '../src/components/model/UpdateFeed.vue';
+import UpdateFeed from '../src/components/dialogs/feeds/UpdateFeed.vue';
 import {
   deleteFeed,
   rediscoverRss,
@@ -8,6 +9,7 @@ import {
 } from '../src/api/feeds';
 import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/feeds', () => ({
   deleteFeed: vi.fn(),
@@ -23,6 +25,8 @@ vi.mock('../src/services/actionNotifications.js', () => ({
   notifyActionError: vi.fn()
 }));
 
+let wrapper;
+
 // Creates an UpdateFeed context backed by focused store action spies.
 const createContext = (overrides = {}) => {
   const sourceFeed = {
@@ -34,29 +38,78 @@ const createContext = (overrides = {}) => {
     status: 'active'
   };
   const componentData = UpdateFeed.data();
+  const stores = createFocusedStores({
+    auth: { token: 'token' },
+    overview: {
+      categories: [
+        { id: 1, feeds: [sourceFeed] },
+        { id: 2, feeds: [] }
+      ],
+      updateFeed: vi.fn().mockReturnValue(true),
+      removeFeed: vi.fn().mockReturnValue(true)
+    },
+    selection: {
+      currentSelection: {
+        feedId: '10',
+        AIEnabled: true
+      },
+      selectFeed: vi.fn()
+    },
+    ui: {
+      setShowModal: vi.fn()
+    }
+  });
 
   return {
     ...componentData,
-    $store: {
-      auth: { token: 'token' },
-      data: {
-        categories: [
-          { id: 1, feeds: [sourceFeed] },
-          { id: 2, feeds: [] }
-        ],
-        currentSelection: {
-          feedId: '10',
-          AIEnabled: true
-        },
-        updateFeed: vi.fn().mockReturnValue(true),
-        removeFeed: vi.fn().mockReturnValue(true),
-        selectFeed: vi.fn(),
-        setShowModal: vi.fn()
-      }
-    },
+    ...stores,
     ...UpdateFeed.methods,
     ...overrides
   };
+};
+
+// Mounts the complete feed dialog without relying on another async dialog's styles.
+const mountUpdateFeed = () => {
+  const feed = {
+    id: 10,
+    categoryId: 1,
+    feedName: 'Example',
+    feedDesc: 'Description',
+    url: 'https://example.com/feed',
+    status: 'error',
+    errorSince: '2026-01-01',
+    feedTags: []
+  };
+  const store = createFocusedStores({
+    auth: { token: 'token' },
+    overview: {
+      categories: [
+        { id: 1, name: 'News', feeds: [feed] },
+        { id: 2, name: 'Technology', feeds: [] }
+      ],
+      updateFeed: vi.fn().mockReturnValue(true),
+      removeFeed: vi.fn().mockReturnValue(true)
+    },
+    selection: {
+      currentSelection: {
+        feedId: '10',
+        AIEnabled: true
+      },
+      selectFeed: vi.fn()
+    },
+    ui: {
+      setShowModal: vi.fn()
+    }
+  });
+
+  wrapper = mount(UpdateFeed, {
+    attachTo: document.body,
+    global: {
+      plugins: [store.pinia]
+    }
+  });
+
+  return { wrapper, store };
 };
 
 beforeEach(() => {
@@ -67,11 +120,43 @@ beforeEach(() => {
   vi.spyOn(console, 'warn').mockImplementation(() => {});
 });
 
+afterEach(() => {
+  wrapper?.unmount();
+  wrapper = null;
+  document.body.innerHTML = '';
+  document.body.style.overflow = '';
+});
+
 describe('UpdateFeed', () => {
+  // Verifies the rendered dialog is visible through BaseDialog without generic modal CSS.
+  it('renders a visible shared dialog independently', async () => {
+    const { wrapper: dialogWrapper } = mountUpdateFeed();
+    await flushPromises();
+    const overlay = dialogWrapper.get('.base-dialog__overlay');
+
+    expect(dialogWrapper.find('.modal').exists()).toBe(false);
+    expect(dialogWrapper.get('[role="dialog"]').classes()).toContain('base-dialog__panel--lg');
+    expect(window.getComputedStyle(overlay.element).display).not.toBe('none');
+  });
+
+  // Verifies an active operation disables the form and every dismissal or mutation action.
+  it('locks rendered interactions while an operation is active', async () => {
+    const { wrapper: dialogWrapper } = mountUpdateFeed();
+
+    await dialogWrapper.setData({ updating: true });
+
+    expect(dialogWrapper.get('.update-feed__fieldset').attributes('disabled')).toBeDefined();
+    expect(dialogWrapper.get('.base-dialog__close').attributes('disabled')).toBeDefined();
+    expect(dialogWrapper.get('.update-feed__delete').attributes('disabled')).toBeDefined();
+    expect(dialogWrapper.get('.update-feed__save').attributes('disabled')).toBeDefined();
+    expect(dialogWrapper.get('.update-feed__cancel').attributes('disabled')).toBeDefined();
+    expect(dialogWrapper.get('.update-feed__save').text()).toBe('Updating…');
+  });
+
   // Verifies initialization clones the selected feed and supplies processing defaults.
   it('initializes editable state without mutating the store feed', () => {
     const context = createContext();
-    const sourceFeed = context.$store.data.categories[0].feeds[0];
+    const sourceFeed = context.overviewStore.categories[0].feeds[0];
 
     context.initializeFeed();
     context.feed.feedName = 'Changed locally';
@@ -92,7 +177,7 @@ describe('UpdateFeed', () => {
   // Verifies feed selection changes can reinitialize an existing feed while missing IDs are harmless.
   it('reinitializes when the selected feed changes', () => {
     const context = createContext();
-    context.$store.data.categories[1].feeds.push({
+    context.overviewStore.categories[1].feeds.push({
       id: 20,
       categoryId: 2,
       feedName: 'Second',
@@ -102,7 +187,7 @@ describe('UpdateFeed', () => {
       applyAiAnalysis: false
     });
 
-    context.$store.data.currentSelection.feedId = '20';
+    context.selectionStore.currentSelection.feedId = '20';
     context.initializeFeed();
     expect(context.feed).toMatchObject({
       id: 20,
@@ -113,7 +198,7 @@ describe('UpdateFeed', () => {
       applyAiAnalysis: false
     });
 
-    context.$store.data.currentSelection.feedId = 'missing';
+    context.selectionStore.currentSelection.feedId = 'missing';
     context.initializeFeed();
     expect(context.feed.id).toBe(20);
   });
@@ -164,12 +249,12 @@ describe('UpdateFeed', () => {
       generateEmbeddings: false,
       applyAiAnalysis: false
     });
-    expect(context.$store.data.updateFeed).toHaveBeenCalledWith({
+    expect(context.overviewStore.updateFeed).toHaveBeenCalledWith({
       ...context.feed,
       errorCount: 0
     });
-    expect(context.$store.data.selectFeed).toHaveBeenCalledWith(10, 2);
-    expect(context.$store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(context.selectionStore.selectFeed).toHaveBeenCalledWith(10, 2);
+    expect(context.uiStore.setShowModal).toHaveBeenCalledWith('');
   });
 
   // Verifies save failures preserve the modal and notify the user.
@@ -181,11 +266,58 @@ describe('UpdateFeed', () => {
 
     await context.updateFeed();
 
-    expect(context.$store.data.setShowModal).not.toHaveBeenCalled();
+    expect(context.uiStore.setShowModal).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not save this feed. Please try again.',
       error
     );
+  });
+
+  // Verifies an in-flight update blocks deletion, rediscovery, and duplicate updates.
+  it('prevents incompatible operations during an update', async () => {
+    const context = createContext();
+    context.initializeFeed();
+    const pendingRequest = Promise.withResolvers();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    updateFeed.mockReturnValue(pendingRequest.promise);
+
+    const updateRequest = context.updateFeed();
+    await context.rediscoverRss();
+    await context.deleteFeed();
+    await context.updateFeed();
+
+    expect(UpdateFeed.computed.isBusy.call(context)).toBe(true);
+    expect(updateFeed).toHaveBeenCalledOnce();
+    expect(rediscoverRss).not.toHaveBeenCalled();
+    expect(deleteFeed).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
+
+    pendingRequest.resolve({
+      data: { feed: { ...context.feed } }
+    });
+    await updateRequest;
+
+    expect(context.updating).toBe(false);
+  });
+
+  // Verifies rediscovery and deletion flags also block incompatible operations.
+  it('honors rediscovery and deletion operation locks', async () => {
+    const context = createContext();
+    context.initializeFeed();
+    const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+    context.rediscovering = true;
+    await context.updateFeed();
+    await context.deleteFeed();
+    context.rediscovering = false;
+    context.deleting = true;
+    await context.updateFeed();
+    await context.rediscoverRss();
+
+    expect(updateFeed).not.toHaveBeenCalled();
+    expect(deleteFeed).not.toHaveBeenCalled();
+    expect(rediscoverRss).not.toHaveBeenCalled();
+    expect(confirm).not.toHaveBeenCalled();
   });
 
   // Verifies RSS rediscovery handles suggestions, empty responses, and AI-disabled feeds.
@@ -212,7 +344,7 @@ describe('UpdateFeed', () => {
     await context.rediscoverRss();
     expect(context.rediscoveredRss.reason).toBe('No candidate');
 
-    context.$store.data.currentSelection.AIEnabled = false;
+    context.selectionStore.currentSelection.AIEnabled = false;
     expect(await context.rediscoverRss()).toBe(false);
     expect(rediscoverRss).toHaveBeenCalledTimes(2);
   });
@@ -252,9 +384,9 @@ describe('UpdateFeed', () => {
       'Delete "Example" and all related articles?'
     );
     expect(deleteFeed).toHaveBeenCalledWith(10);
-    expect(context.$store.data.removeFeed).toHaveBeenCalledWith(10);
-    expect(context.$store.data.selectFeed).toHaveBeenCalledWith('%');
-    expect(context.$store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(context.overviewStore.removeFeed).toHaveBeenCalledWith(10);
+    expect(context.selectionStore.selectFeed).toHaveBeenCalledWith('%');
+    expect(context.uiStore.setShowModal).toHaveBeenCalledWith('');
     expect(context.deleting).toBe(false);
 
     context.deleting = true;
@@ -275,7 +407,7 @@ describe('UpdateFeed', () => {
     deleteFeed.mockRejectedValue(error);
     await context.deleteFeed();
 
-    expect(context.$store.data.removeFeed).not.toHaveBeenCalled();
+    expect(context.overviewStore.removeFeed).not.toHaveBeenCalled();
     expect(context.deleting).toBe(false);
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not delete this feed. Please try again.',

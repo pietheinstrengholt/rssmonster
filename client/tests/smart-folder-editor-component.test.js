@@ -1,7 +1,7 @@
 import { mount } from '@vue/test-utils';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import SmartFolderEditor from '../src/components/model/smartFolders/SmartFolderEditor.vue';
+import SmartFolderEditor from '../src/components/settings/smartFolders/SmartFolderEditor.vue';
 
 // Mounts the extracted editor with an existing Smart Folder.
 const mountEditor = (overrides = {}) => mount(SmartFolderEditor, {

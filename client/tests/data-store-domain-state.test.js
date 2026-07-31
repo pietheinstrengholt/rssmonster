@@ -1,7 +1,9 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { nextTick, watch } from 'vue';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { useStore } from '../src/store/data';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
+import { useUiStore } from '../src/store/ui.js';
 
 vi.mock('../src/api/settings', () => ({
   fetchSettings: vi.fn()
@@ -19,10 +21,10 @@ vi.mock('../src/api/manager', () => ({
   fetchOverviewCounts: vi.fn()
 }));
 
-// This function creates a fresh real Pinia data store for each domain-state test.
+// This function creates a fresh real Pinia overview store for each domain-state test.
 const createStore = () => {
   setActivePinia(createPinia());
-  return useStore();
+  return useOverviewStore();
 };
 
 describe('data store domain reconciliation', () => {
@@ -32,7 +34,7 @@ describe('data store domain reconciliation', () => {
 
   it('normalizes, updates, reorders, and removes categories', () => {
     const store = createStore();
-    store.$patch({ unreadCount: 2, readCount: 1, favoriteCount: 1 });
+    useOverviewStore().$patch({ unreadCount: 2, readCount: 1, favoriteCount: 1 });
 
     store.addCategory({ id: 1, name: 'One' });
     store.addCategory({
@@ -109,7 +111,7 @@ describe('data store domain reconciliation', () => {
 
   it('removes feeds and clamps category and global counts at zero', () => {
     const store = createStore();
-    store.$patch({ unreadCount: 1, readCount: 0, favoriteCount: 1 });
+    useOverviewStore().$patch({ unreadCount: 1, readCount: 0, favoriteCount: 1 });
     store.addCategory({
       id: 1,
       unreadCount: 1,
@@ -138,7 +140,7 @@ describe('data store domain reconciliation', () => {
 
   it('applies favorite mark, unmark, and bulk deltas exactly once per transition', () => {
     const store = createStore();
-    store.$patch({ favoriteCount: 0 });
+    useOverviewStore().$patch({ favoriteCount: 0 });
     store.addCategory({
       id: 1,
       feeds: [{ id: 10 }]
@@ -157,13 +159,49 @@ describe('data store domain reconciliation', () => {
     expect(store.categories[0].feeds[0].favoriteCount).toBe(0);
   });
 
-  it('enforces selection and UI invariants through compound actions', async () => {
+  it('reconciles read transitions across global, category, and feed counters', () => {
     const store = createStore();
     store.$patch({
+      unreadCount: 2,
+      readCount: 1
+    });
+    store.addCategory({
+      id: 1,
+      unreadCount: 2,
+      readCount: 1,
+      feeds: [{
+        id: 10,
+        unreadCount: 2,
+        readCount: 1
+      }]
+    });
+    const article = {
+      feedId: 10,
+      feed: { categoryId: 1 }
+    };
+
+    store.increaseReadCount(article);
+    expect(store).toMatchObject({ unreadCount: 1, readCount: 2 });
+    expect(store.categories[0]).toMatchObject({ unreadCount: 1, readCount: 2 });
+    expect(store.categories[0].feeds[0]).toMatchObject({ unreadCount: 1, readCount: 2 });
+
+    store.decreaseReadCount(article);
+    expect(store).toMatchObject({ unreadCount: 2, readCount: 1 });
+    expect(store.categories[0]).toMatchObject({ unreadCount: 2, readCount: 1 });
+    expect(store.categories[0].feeds[0]).toMatchObject({ unreadCount: 2, readCount: 1 });
+  });
+
+  it('enforces selection and UI invariants through compound actions', async () => {
+    createStore();
+    const selectionStore = useSelectionStore();
+    const uiStore = useUiStore();
+    uiStore.$patch({
       chatAssistantOpen: true,
-      searchQuery: 'draft',
+      searchQuery: 'draft'
+    });
+    selectionStore.$patch({
       currentSelection: {
-        ...store.currentSelection,
+        ...selectionStore.currentSelection,
         categoryId: '1',
         feedId: '10',
         tag: 'vue',
@@ -174,30 +212,30 @@ describe('data store domain reconciliation', () => {
 
     let selectionTransitions = 0;
     const stop = watch(
-      () => store.currentSelection,
+      () => selectionStore.currentSelection,
       () => {
         selectionTransitions += 1;
       },
       { deep: true }
     );
 
-    store.selectCategory(2);
+    selectionStore.selectCategory(2);
     await nextTick();
     expect(selectionTransitions).toBe(1);
-    expect(store.currentSelection).toMatchObject({
+    expect(selectionStore.currentSelection).toMatchObject({
       categoryId: '2',
       feedId: '%',
       tag: null,
       search: null,
       smartFolderId: null
     });
-    expect(store.chatAssistantOpen).toBe(false);
+    expect(uiStore.chatAssistantOpen).toBe(false);
 
-    store.selectFeed(20, 2);
-    expect(store.currentSelection).toMatchObject({ categoryId: '2', feedId: '20' });
+    selectionStore.selectFeed(20, 2);
+    expect(selectionStore.currentSelection).toMatchObject({ categoryId: '2', feedId: '20' });
 
-    store.setTag('pinia');
-    expect(store.currentSelection).toMatchObject({
+    selectionStore.setTag('pinia');
+    expect(selectionStore.currentSelection).toMatchObject({
       categoryId: '%',
       feedId: '%',
       tag: 'pinia',
@@ -205,14 +243,21 @@ describe('data store domain reconciliation', () => {
       smartFolderId: null
     });
 
-    store.setSelectedSearch('author:test');
-    expect(store.currentSelection).toMatchObject({ search: 'author:test', tag: null });
-    store.setViewMode('reader');
-    expect(store.currentSelection.viewMode).toBe('reader');
-    store.setSearchQuery('local input');
-    store.setChatAssistantOpen(true);
-    expect(store.searchQuery).toBe('local input');
-    expect(store.chatAssistantOpen).toBe(true);
+    selectionStore.setSelectedSearch('author:test');
+    expect(selectionStore.currentSelection).toMatchObject({ search: 'author:test', tag: null });
+    selectionStore.setViewMode('reader');
+    expect(selectionStore.currentSelection.viewMode).toBe('reader');
+    uiStore.setShowModal('Settings');
+    uiStore.setSearchQuery('local input');
+    uiStore.setChatAssistantOpen(true);
+    uiStore.setMobileSearchOpen(true);
+    uiStore.setFatalError(new Error('Unrecoverable'));
+    uiStore.clearFatalError();
+    expect(uiStore.showModal).toBe('Settings');
+    expect(uiStore.searchQuery).toBe('local input');
+    expect(uiStore.chatAssistantOpen).toBe(true);
+    expect(uiStore.mobileSearchOpen).toBe(true);
+    expect(uiStore.fatalError).toBeNull();
     stop();
   });
 });

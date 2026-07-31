@@ -1,10 +1,11 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount, shallowMount } from '@vue/test-utils';
 
-import ArticleListView from '../src/components/ArticleListView.vue';
-import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
-import DailyBriefingIntro from '../src/components/DailyBriefingIntro.vue';
+import ArticleListView from '../src/components/articles/ArticleListView.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
+import DailyBriefingIntro from '../src/components/briefing/DailyBriefingIntro.vue';
 import { fetchDailyBriefing } from '../src/api/articles';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchDailyBriefing: vi.fn(),
@@ -52,21 +53,31 @@ const briefingResponse = {
 
 // This function mounts the briefing intro with the existing selected query.
 function mountDailyBriefingIntro(search = 'briefing:true @lastweek') {
+  const stores = createFocusedStores({
+    selection: {
+      currentSelection: { status: 'briefing', search }
+    }
+  });
   return mount(DailyBriefingIntro, {
     global: {
-      mocks: {
-        $store: {
-          data: {
-            currentSelection: { status: 'briefing', search }
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 }
 
 // This function mounts the standard article list with the requested selection.
 function mountArticleList(currentSelection = 'briefing') {
+  const stores = createFocusedStores({
+    overview: {
+      unreadsSinceLastUpdate: 0
+    },
+    selection: {
+      currentSelection: { status: currentSelection, viewMode: 'full' }
+    },
+    ui: {
+      mobileSearchOpen: false
+    }
+  });
   return shallowMount(ArticleListView, {
     props: {
       articles: [{ id: 1 }],
@@ -82,21 +93,30 @@ function mountArticleList(currentSelection = 'briefing') {
       distance: 0
     },
     global: {
-      mocks: {
-        $store: {
-          data: {
-            mobileSearchOpen: false,
-            unreadsSinceLastUpdate: 0,
-            currentSelection: { status: currentSelection, viewMode: 'full' }
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 }
 
 // This function mounts the reader layout in a loading or loaded-empty state.
 function mountReaderLayout(hasLoadedContent) {
+  const stores = createFocusedStores({
+    overview: {
+      categories: [],
+      smartFolders: [],
+      unreadsSinceLastUpdate: 0
+    },
+    selection: {
+      currentSelection: {
+        status: 'briefing',
+        smartFolderId: null,
+        tag: null,
+        search: 'briefing:true @lastweek',
+        categoryId: '%',
+        feedId: '%'
+      }
+    }
+  });
   return shallowMount(ArticleReaderLayout, {
     props: {
       articles: [],
@@ -111,23 +131,7 @@ function mountReaderLayout(hasLoadedContent) {
       distance: 0
     },
     global: {
-      mocks: {
-        $store: {
-          data: {
-            currentSelection: {
-              status: 'briefing',
-              smartFolderId: null,
-              tag: null,
-              search: 'briefing:true @lastweek',
-              categoryId: '%',
-              feedId: '%'
-            },
-            smartFolders: [],
-            categories: [],
-            unreadsSinceLastUpdate: 0
-          }
-        }
-      }
+      plugins: [stores.pinia]
     }
   });
 }
@@ -188,16 +192,15 @@ describe('DailyBriefingIntro', () => {
 
   it('opens Briefing Preferences from the context action', async () => {
     const setShowModal = vi.fn();
+    const stores = createFocusedStores({
+      selection: {
+        currentSelection: { status: 'briefing', search: 'briefing:true @lastweek' }
+      },
+      ui: { setShowModal }
+    });
     const wrapper = mount(DailyBriefingIntro, {
       global: {
-        mocks: {
-          $store: {
-            data: {
-              currentSelection: { status: 'briefing', search: 'briefing:true @lastweek' },
-              setShowModal
-            }
-          }
-        }
+        plugins: [stores.pinia]
       }
     });
 

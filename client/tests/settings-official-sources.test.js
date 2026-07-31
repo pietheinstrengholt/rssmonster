@@ -1,11 +1,12 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import SettingsOfficialSources from '../src/components/model/SettingsOfficialSources.vue';
+import SettingsOfficialSources from '../src/components/settings/SettingsOfficialSources.vue';
 import {
   fetchOfficialSources,
   saveOfficialSources
 } from '../src/api/settings';
 import { setAuthToken } from '../src/api/client';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/settings', () => ({
   fetchOfficialSources: vi.fn(),
@@ -17,20 +18,17 @@ vi.mock('../src/api/client', () => ({
 }));
 
 // This function mounts official-source administration with an authenticated store.
-const mountOfficialSources = () => mount(SettingsOfficialSources, {
-  global: {
-    mocks: {
-      $store: {
-        auth: {
-          token: 'admin-token'
-        }
+const mountOfficialSources = () => {
+  const stores = createFocusedStores({ auth: { token: 'admin-token' } });
+  return mount(SettingsOfficialSources, {
+    global: {
+      plugins: [stores.pinia],
+      stubs: {
+        BootstrapIcon: true
       }
-    },
-    stubs: {
-      BootstrapIcon: true
     }
-  }
-});
+  });
+};
 
 beforeEach(() => {
   vi.clearAllMocks();

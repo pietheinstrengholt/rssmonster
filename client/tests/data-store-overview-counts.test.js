@@ -1,13 +1,16 @@
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-import { useStore } from '../src/store/data.js';
+import { useOverviewStore } from '../src/store/overview.js';
+import { useSelectionStore } from '../src/store/selection.js';
+import { useUiStore } from '../src/store/ui.js';
 import { fetchSettings } from '../src/api/settings';
 import {
   fetchOverview,
   fetchOverviewCounts,
   fetchOverviewLite
 } from '../src/api/manager';
+import { fetchTopTags } from '../src/api/tags';
 
 vi.mock('../src/api/settings', () => ({
   fetchSettings: vi.fn()
@@ -28,10 +31,19 @@ vi.mock('../src/api/tags', () => ({
   fetchTopTags: vi.fn()
 }));
 
-// Creates a fresh real Pinia data store for overview and count tests.
+// This function creates a response whose completion is controlled by an ordering test.
+const deferred = () => {
+  let resolve;
+  const promise = new Promise(resolvePromise => {
+    resolve = resolvePromise;
+  });
+  return { promise, resolve };
+};
+
+// Creates a fresh real Pinia overview store for overview and count tests.
 const createStore = () => {
   setActivePinia(createPinia());
-  return useStore();
+  return useOverviewStore();
 };
 
 // Builds a complete overview response with optionally overridden fields.
@@ -76,6 +88,7 @@ beforeEach(() => {
     data: { categories: createOverview().categories }
   });
   fetchOverviewCounts.mockResolvedValue({ data: createOverview() });
+  fetchTopTags.mockResolvedValue({ data: { tags: [] } });
 });
 
 describe('data store overview and count behavior', () => {
@@ -93,7 +106,7 @@ describe('data store overview and count behavior', () => {
         sort: 'quality'
       })
     );
-    expect(store.themeMode).toBe('dark');
+    expect(useUiStore().themeMode).toBe('dark');
     expect(store.categories[0].feeds[0]).toMatchObject({
       unreadCount: 5,
       readCount: 4,
@@ -107,7 +120,7 @@ describe('data store overview and count behavior', () => {
   // Verifies ordinary and forced overview updates calculate unread deltas correctly.
   it('tracks unread deltas unless the refresh is forced', () => {
     const store = createStore();
-    store.$patch({ unreadCount: 3, unreadsSinceLastUpdate: 8 });
+    useOverviewStore().$patch({ unreadCount: 3, unreadsSinceLastUpdate: 8 });
 
     store.updateOverview(createOverview({ unreadCount: 7 }));
     expect(store.unreadsSinceLastUpdate).toBe(4);
@@ -160,6 +173,124 @@ describe('data store overview and count behavior', () => {
     });
   });
 
+  // Verifies count-free structure refreshes retain known counts when the count refresh fails.
+  it('preserves existing category and feed counts across overview-lite refresh failure', async () => {
+    const store = createStore();
+    store.$patch({
+      unreadCount: 5,
+      readCount: 4,
+      favoriteCount: 3,
+      categories: [{
+        id: 1,
+        unreadCount: 5,
+        readCount: 4,
+        favoriteCount: 3,
+        hotCount: 2,
+        clickedCount: 1,
+        feeds: [{
+          id: 10,
+          unreadCount: 5,
+          readCount: 4,
+          favoriteCount: 3,
+          hotCount: 2,
+          clickedCount: 1
+        }]
+      }]
+    });
+    fetchOverviewLite.mockResolvedValueOnce({
+      data: {
+        categories: [{
+          id: 1,
+          unreadCount: 0,
+          readCount: 0,
+          favoriteCount: 0,
+          feeds: [
+            { id: 10, unreadCount: 0, readCount: 0, favoriteCount: 0 },
+            { id: 11, unreadCount: 0, readCount: 0, favoriteCount: 0 }
+          ]
+        }, {
+          id: 2,
+          unreadCount: 0,
+          feeds: [{ id: 20, unreadCount: 0 }]
+        }]
+      }
+    });
+    fetchOverviewCounts.mockRejectedValueOnce(new Error('counts unavailable'));
+
+    await store.fetchOverviewSplit();
+    await vi.waitFor(() => {
+      expect(store.overviewCountsStatus).toBe('error');
+    });
+
+    expect(store).toMatchObject({ unreadCount: 5, readCount: 4, favoriteCount: 3 });
+    expect(store.categories[0]).toMatchObject({
+      unreadCount: 5,
+      readCount: 4,
+      favoriteCount: 3,
+      hotCount: 2,
+      clickedCount: 1
+    });
+    expect(store.categories[0].feeds[0]).toMatchObject({
+      unreadCount: 5,
+      readCount: 4,
+      favoriteCount: 3,
+      hotCount: 2,
+      clickedCount: 1
+    });
+    expect(store.categories[0].feeds[1]).toMatchObject({
+      unreadCount: 0,
+      readCount: 0,
+      favoriteCount: 0
+    });
+    expect(store.categories[1]).toMatchObject({ unreadCount: 0, readCount: 0 });
+  });
+
+  // Verifies initial Top Tags wait for persisted grouping instead of using the default.
+  it('starts initial Top Tags only after settings establish grouping', async () => {
+    const settings = deferred();
+    fetchSettings.mockReturnValueOnce(settings.promise);
+    const store = createStore();
+
+    const overviewRequest = store.fetchOverviewSplit({ initial: true });
+    expect(fetchTopTags).not.toHaveBeenCalled();
+
+    settings.resolve({ data: { grouping: 'topic' } });
+    await overviewRequest;
+
+    expect(fetchTopTags).toHaveBeenCalledOnce();
+    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic' });
+  });
+
+  // Verifies settings responses cannot inject persistence or unrelated fields into selection state.
+  it('whitelists settings fields before updating current selection', async () => {
+    fetchSettings.mockResolvedValueOnce({
+      data: {
+        AIEnabled: true,
+        grouping: 'event',
+        startupViewMode: 'default',
+        themeMode: 'dark',
+        unrelatedField: 'private',
+        userId: 42,
+        viewMode: 'reader'
+      }
+    });
+    createStore();
+    const selectionStore = useSelectionStore();
+
+    await selectionStore.fetchSettings();
+
+    expect(selectionStore.currentSelection).toMatchObject({
+      AIEnabled: true,
+      grouping: 'event',
+      viewMode: 'reader'
+    });
+    expect(selectionStore.currentSelection).not.toHaveProperty('startupViewMode');
+    expect(selectionStore.currentSelection).not.toHaveProperty('themeMode');
+    expect(selectionStore.currentSelection).not.toHaveProperty('unrelatedField');
+    expect(selectionStore.currentSelection).not.toHaveProperty('userId');
+    expect(useUiStore().themeMode).toBe('dark');
+  });
+
   // Verifies stale split responses cannot overwrite a newer overview request.
   it('ignores stale split overview responses', async () => {
     const store = createStore();
@@ -188,7 +319,8 @@ describe('data store overview and count behavior', () => {
 
   // Verifies Briefing filters normalize periods and update only active Briefing searches.
   it('builds Briefing searches with allowed periods and preferences', () => {
-    const store = createStore();
+    createStore();
+    const store = useSelectionStore();
 
     store.setSelectedStatus('briefing');
     expect(store.currentSelection.search).toBe('briefing:true @lastweek');
@@ -239,7 +371,7 @@ describe('data store overview and count behavior', () => {
     store.decreaseReadCount(article);
     expect(store).toMatchObject({ unreadCount: 5, readCount: 4 });
 
-    store.$patch({ unreadCount: 0, readCount: 0 });
+    useOverviewStore().$patch({ unreadCount: 0, readCount: 0 });
     store.categories[0].unreadCount = 0;
     store.categories[0].readCount = 0;
     store.categories[0].feeds[0].unreadCount = 0;
@@ -284,17 +416,21 @@ describe('data store overview and count behavior', () => {
     store.increaseFavoriteCount();
     expect(store.favoriteCount).toBe(1);
 
+    const uiStore = useUiStore();
     const error = new Error('fatal');
-    store.setFatalError(error);
-    expect(store.fatalError).toBe(error);
-    store.clearFatalError();
-    expect(store.fatalError).toBeNull();
+    uiStore.setFatalError(error);
+    expect(uiStore.fatalError).toBe(error);
+    uiStore.clearFatalError();
+    expect(uiStore.fatalError).toBeNull();
   });
 
   // Verifies overview API failures reject without partially replacing existing state.
   it('preserves state when full overview loading fails', async () => {
     const store = createStore();
-    store.$patch({ unreadCount: 9, categories: [{ id: 8, feeds: [] }] });
+    useOverviewStore().$patch({
+      unreadCount: 9,
+      categories: [{ id: 8, feeds: [] }]
+    });
     fetchOverview.mockRejectedValue(new Error('offline'));
 
     await expect(store.fetchOverview()).rejects.toThrow('offline');

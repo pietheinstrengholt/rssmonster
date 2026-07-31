@@ -8,6 +8,8 @@ describe('Bootstrap icon delivery', () => {
   it.each([
     'sunrise-fill',
     'sliders2',
+    'folder-plus',
+    'pencil-square',
     'lightning-charge-fill',
     'box-arrow-up-right',
     'shield-lock'

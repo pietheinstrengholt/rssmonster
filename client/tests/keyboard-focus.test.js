@@ -1,26 +1,43 @@
 import { flushPromises, mount } from '@vue/test-utils';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import Settings from '../src/components/model/Settings.vue';
-import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
+import Settings from '../src/components/settings/Settings.vue';
+import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 // This function mounts Settings with the store values required by its navigation.
-const mountSettings = () => mount(Settings, {
-  attachTo: document.body,
-  global: {
-    mocks: {
-      $store: {
-        auth: { getRole: 'user' },
-        data: {
-          currentSelection: { AIEnabled: false },
-          smartFolders: []
-        }
-      }
-    }
-  }
-});
+const mountSettings = () => {
+  const stores = createFocusedStores({
+    auth: { role: 'user' },
+    overview: { smartFolders: [] },
+    selection: { currentSelection: { AIEnabled: false } }
+  });
+  return mount(Settings, {
+    attachTo: document.body,
+    global: { plugins: [stores.pinia] }
+  });
+};
 
 // This function mounts a two-item reader list for keyboard navigation tests.
-const mountReaderLayout = () => mount(ArticleReaderLayout, {
+const mountReaderLayout = () => {
+  const stores = createFocusedStores({
+    overview: {
+      categories: [],
+      smartFolders: [],
+      topTags: [],
+      unreadsSinceLastUpdate: 0
+    },
+    selection: {
+      currentSelection: {
+        categoryId: '%',
+        feedId: '%',
+        smartFolderId: null,
+        status: 'unread',
+        tag: null
+      },
+      setCurrentSelection: vi.fn()
+    }
+  });
+  return mount(ArticleReaderLayout, {
   attachTo: document.body,
   props: {
     articles: [
@@ -38,24 +55,7 @@ const mountReaderLayout = () => mount(ArticleReaderLayout, {
     distance: 2
   },
   global: {
-    mocks: {
-      $store: {
-        data: {
-          currentSelection: {
-            categoryId: '%',
-            feedId: '%',
-            smartFolderId: null,
-            status: 'unread',
-            tag: null
-          },
-          categories: [],
-          smartFolders: [],
-          setCurrentSelection: vi.fn(),
-          topTags: [],
-          unreadsSinceLastUpdate: 0
-        }
-      }
-    },
+    plugins: [stores.pinia],
     stubs: {
       Article: true,
       ArticleEndState: true,
@@ -63,7 +63,8 @@ const mountReaderLayout = () => mount(ArticleReaderLayout, {
       UnreadSelectionContext: true
     }
   }
-});
+  });
+};
 
 beforeEach(() => {
   HTMLElement.prototype.scrollIntoView = vi.fn();
@@ -161,21 +162,18 @@ describe('keyboard access and focus', () => {
     opener.textContent = 'Open settings';
     document.body.appendChild(opener);
     opener.focus();
+    const stores = createFocusedStores({
+      auth: { role: 'user' },
+      overview: { smartFolders: [] },
+      selection: { currentSelection: { AIEnabled: false } }
+    });
     const wrapper = mount(Settings, {
       attachTo: document.body,
       props: {
         returnFocusTo: opener
       },
       global: {
-        mocks: {
-          $store: {
-            auth: { getRole: 'user' },
-            data: {
-              currentSelection: { AIEnabled: false },
-              smartFolders: []
-            }
-          }
-        }
+        plugins: [stores.pinia]
       }
     });
     await flushPromises();

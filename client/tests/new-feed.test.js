@@ -1,10 +1,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
-import NewFeed from '../src/components/model/NewFeed.vue';
+import NewFeed from '../src/components/dialogs/feeds/NewFeed.vue';
 import { createFeed, validateFeed } from '../src/api/feeds';
 import { setAuthToken } from '../src/api/client';
 import { notifyActionError } from '../src/services/actionNotifications.js';
+import { createFocusedStores } from './helpers/focusedStores.js';
 
 vi.mock('../src/api/feeds', () => ({
   createFeed: vi.fn(),
@@ -21,21 +22,32 @@ vi.mock('../src/services/actionNotifications.js', () => ({
 
 let wrapper;
 
+// Creates a controllable request promise for pending-state assertions.
+const createDeferred = () => {
+  let resolve;
+  const promise = new Promise((resolvePromise) => {
+    resolve = resolvePromise;
+  });
+
+  return { promise, resolve };
+};
+
 // Mounts the feed modal with observable store reconciliation methods.
 const mountNewFeed = (categories = [{ id: 3, name: 'Technology' }]) => {
-  const store = {
+  const store = createFocusedStores({
     auth: { token: 'token' },
-    data: {
+    overview: {
       categories,
-      addFeed: vi.fn(),
-      increaseRefreshCategories: vi.fn(),
+      addFeed: vi.fn()
+    },
+    ui: {
       setShowModal: vi.fn()
     }
-  };
+  });
 
   wrapper = mount(NewFeed, {
     global: {
-      mocks: { $store: store },
+      plugins: [store.pinia],
       stubs: { BootstrapIcon: true }
     }
   });
@@ -64,8 +76,40 @@ describe('NewFeed', () => {
     expect(wrapper.text()).toContain('First create a new category');
     expect(wrapper.find('button[type="submit"]').exists()).toBe(false);
 
-    await wrapper.get('.feed-modal-close').trigger('click');
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    await wrapper.get('.base-dialog__close').trigger('click');
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
+  });
+
+  // Verifies BaseDialog routes Escape through NewFeed's existing close contract.
+  it('closes through the shared dialog when Escape is pressed', async () => {
+    const { store } = mountNewFeed();
+
+    document.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+    await wrapper.vm.$nextTick();
+
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
+  });
+
+  // Verifies both Enter and the external footer submit control retain native form ownership.
+  it('preserves native form submission semantics', async () => {
+    validateFeed.mockResolvedValue({ data: {} });
+    mountNewFeed();
+    await wrapper.setData({
+      url: 'https://example.com',
+      selectedCategory: 3
+    });
+
+    const form = wrapper.get('#new-feed-form');
+    const urlInput = wrapper.get('#feed-url');
+    const submitButton = wrapper.get('button[type="submit"]');
+
+    expect(urlInput.element.form).toBe(form.element);
+    expect(submitButton.attributes('form')).toBe('new-feed-form');
+
+    await form.trigger('submit');
+    await flushPromises();
+
+    expect(validateFeed).toHaveBeenCalledWith('https://example.com', 3);
   });
 
   // Verifies successful validation exposes editable feed metadata and clears stale errors.
@@ -97,6 +141,27 @@ describe('NewFeed', () => {
     expect(wrapper.vm.cloudflareUrl).toBeNull();
     expect(wrapper.get('#inputFeedName').element.value).toBe('Example');
     expect(wrapper.text()).toContain('Save changes');
+  });
+
+  // Verifies repeated validation submissions share one pending request.
+  it('prevents duplicate validation submissions', async () => {
+    const deferred = createDeferred();
+    validateFeed.mockReturnValue(deferred.promise);
+    mountNewFeed();
+    await wrapper.setData({
+      url: 'https://example.com',
+      selectedCategory: 3
+    });
+
+    const firstRequest = wrapper.vm.checkWebsite();
+    await wrapper.vm.checkWebsite();
+    await wrapper.vm.$nextTick();
+
+    expect(validateFeed).toHaveBeenCalledOnce();
+    expect(wrapper.get('button[type="submit"]').attributes('disabled')).toBeDefined();
+
+    deferred.resolve({ data: {} });
+    await firstRequest;
   });
 
   // Verifies ordinary validation failures remain retryable without offering a force-add action.
@@ -158,9 +223,30 @@ describe('NewFeed', () => {
       status: 'active',
       crawlSince: '1m'
     });
-    expect(store.data.addFeed).toHaveBeenCalledWith(3, persistedFeed);
-    expect(store.data.increaseRefreshCategories).toHaveBeenCalledOnce();
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.overviewStore.addFeed).toHaveBeenCalledWith(3, persistedFeed);
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
+  });
+
+  // Verifies repeated manual-add actions cannot create the same feed twice.
+  it('prevents duplicate force-add requests', async () => {
+    const deferred = createDeferred();
+    createFeed.mockReturnValue(deferred.promise);
+    mountNewFeed();
+    await wrapper.setData({
+      isCloudflare: true,
+      selectedCategory: 3,
+      cloudflareUrl: 'https://example.com/protected.xml'
+    });
+
+    const firstRequest = wrapper.vm.forceAdd();
+    await wrapper.vm.forceAdd();
+    await wrapper.vm.$nextTick();
+
+    expect(createFeed).toHaveBeenCalledOnce();
+    expect(wrapper.get('.feed-cloudflare-warning button').attributes('disabled')).toBeDefined();
+
+    deferred.resolve({ data: { feed: { id: 9, feedName: 'example.com' } } });
+    await firstRequest;
   });
 
   // Verifies malformed manual URLs fall back to their raw value and preserve the form on failure.
@@ -180,7 +266,7 @@ describe('NewFeed', () => {
       url: 'example feed'
     }));
     expect(wrapper.vm.error_msg).toBe('Could not add this feed. Please try again.');
-    expect(store.data.addFeed).not.toHaveBeenCalled();
+    expect(store.overviewStore.addFeed).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith(
       'Error force-adding feed URL example feed:',
       error
@@ -215,10 +301,38 @@ describe('NewFeed', () => {
       crawlSince: '3m'
     });
     expect(wrapper.vm.feed).toEqual(persistedFeed);
-    expect(store.data.addFeed).toHaveBeenCalledWith(3, persistedFeed);
-    expect(store.data.increaseRefreshCategories).toHaveBeenCalledOnce();
-    expect(store.data.setShowModal).toHaveBeenCalledWith('');
+    expect(store.overviewStore.addFeed).toHaveBeenCalledWith(3, persistedFeed);
+    expect(store.uiStore.setShowModal).toHaveBeenCalledWith('');
     expect(console.log).toHaveBeenCalledWith(201);
+  });
+
+  // Verifies repeated save actions cannot persist validated metadata twice.
+  it('prevents duplicate validated-feed saves', async () => {
+    const deferred = createDeferred();
+    createFeed.mockReturnValue(deferred.promise);
+    mountNewFeed();
+    await wrapper.setData({
+      selectedCategory: 3,
+      feed: {
+        feedName: 'Draft feed',
+        feedDesc: '',
+        feedType: 'rss',
+        url: 'https://example.com/feed.xml'
+      }
+    });
+
+    const firstRequest = wrapper.vm.newFeed();
+    await wrapper.vm.newFeed();
+    await wrapper.vm.$nextTick();
+
+    expect(createFeed).toHaveBeenCalledOnce();
+    expect(wrapper.get('.feed-modal-action.btn-primary').attributes('disabled')).toBeDefined();
+
+    deferred.resolve({
+      status: 201,
+      data: { feed: { id: 10, feedName: 'Saved feed' } }
+    });
+    await firstRequest;
   });
 
   // Verifies save failures use the shared recoverable action notification.
@@ -238,7 +352,7 @@ describe('NewFeed', () => {
 
     await wrapper.vm.newFeed();
 
-    expect(store.data.addFeed).not.toHaveBeenCalled();
+    expect(store.overviewStore.addFeed).not.toHaveBeenCalled();
     expect(notifyActionError).toHaveBeenCalledWith(
       'Could not add this feed. Please try again.',
       error

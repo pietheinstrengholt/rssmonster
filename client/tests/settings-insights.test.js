@@ -1,8 +1,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { flushPromises, mount } from '@vue/test-utils';
 
-import SettingsIslands from '../src/components/model/SettingsIslands.vue';
-import SettingsTopics from '../src/components/model/SettingsTopics.vue';
+import SettingsIslands from '../src/components/settings/SettingsIslands.vue';
+import SettingsTopics from '../src/components/settings/SettingsTopics.vue';
 import { fetchIslandsOverview, fetchTopicsOverview } from '../src/api/settings';
 
 vi.mock('../src/api/settings', () => ({
