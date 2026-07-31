@@ -219,4 +219,58 @@ describe('createAndAssignEvent', () => {
     expect(seedArticle.eventId).toBe(createdEventIds[0]);
     expect(cache.add).toHaveBeenCalledOnce();
   });
+
+  it('rejects proposed membership with an invalid article id', async () => {
+    const { user, feed } = await createUserGraph('invalid-event-membership');
+    const seedArticle = await createArticle(user, feed, 'valid-seed');
+
+    await expect(createAndAssignEvent({
+      candidateArticles: [{ userId: user.id }],
+      article: seedArticle,
+      cache: null,
+      skipTopicAssignment: true
+    })).resolves.toBeNull();
+  });
+
+  it('does not create an event when persisted members have no vectors', async () => {
+    const { user, feed } = await createUserGraph('vectorless-event');
+    const candidateArticle = await createArticle(user, feed, 'vectorless-candidate', 'unread', {
+      articleVector: null
+    });
+    const seedArticle = await createArticle(user, feed, 'vectorless-seed', 'unread', {
+      articleVector: null
+    });
+
+    await expect(createAndAssignEvent({
+      candidateArticles: [candidateArticle],
+      article: seedArticle,
+      cache: null,
+      skipTopicAssignment: true
+    })).resolves.toBeNull();
+    expect(await Event.count({ where: { userId: user.id } })).toBe(0);
+  });
+
+  it('truncates long representative titles and invokes optional topic assignment', async () => {
+    const { user, feed } = await createUserGraph('named-event');
+    const candidateArticle = await createArticle(user, feed, 'named-candidate');
+    const seedArticle = await createArticle(user, feed, 'named-seed', 'unread', {
+      title: `${'important coverage '.repeat(10)}ending`
+    });
+    const assignTopicsForEvent = vi.fn().mockResolvedValue(73);
+
+    const eventId = await createAndAssignEvent({
+      candidateArticles: [candidateArticle],
+      article: seedArticle,
+      cache: null,
+      assignTopicsForEvent
+    });
+
+    const event = await Event.findByPk(eventId);
+    expect(event.name).toMatch(/\.\.\.$/);
+    expect(event.name.length).toBeLessThanOrEqual(123);
+    expect(assignTopicsForEvent).toHaveBeenCalledWith(expect.objectContaining({
+      event: expect.objectContaining({ id: eventId }),
+      eventTopicVector: expect.any(Array)
+    }));
+  });
 });

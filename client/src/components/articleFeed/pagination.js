@@ -128,6 +128,8 @@ export const articleFeedPaginationMethods = {
     this.pool = new Set();
     this.activeMinimalArticleId = null;
     this.pendingReadStatusArticleIds.clear();
+    this.pendingSeenArticleIds.clear();
+    this.seenPersistenceAttempts.clear();
     this.distance = 0;
     this.isFlushed = false;
     this.currentViewSourceCount = null;

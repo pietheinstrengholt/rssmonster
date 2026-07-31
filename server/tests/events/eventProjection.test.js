@@ -39,4 +39,15 @@ describe('buildCanonicalEventProjection', () => {
 
     expect(projection.eventVector).toEqual([0.25, 0.75, 0]);
   });
+
+  it('returns a null vector and zero source diversity for empty membership', () => {
+    expect(buildCanonicalEventProjection()).toEqual({
+      articleCount: 0,
+      eventVector: null,
+      eventWindowStartAt: null,
+      eventWindowEndAt: null,
+      sourceCount: 0,
+      sourceDiversityScore: 0
+    });
+  });
 });

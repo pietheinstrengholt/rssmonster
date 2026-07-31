@@ -10,33 +10,64 @@ import { notifyActionError } from '../../services/actionNotifications.js';
 // Groups API-backed actions initiated from an article card.
 export const articleActionMethods = {
   // Marks the article as clicked and updates its parent.
-  articleClicked() {
-    markClicked(this.id)
-    .finally(() =>
-      this.$emit('update-clicked', { id: this.id, clickedAmount: 1 })
-    );
+  async articleClicked() {
+    if (this.clickMutationPending) return;
+
+    this.clickMutationPending = true;
+    try {
+      const response = await markClicked(this.id);
+      const responseClickedAmount = Number(response?.data?.clickedAmount);
+      const currentClickedAmount = Number(this.clickedAmount) || 0;
+      this.$emit('update-clicked', {
+        id: this.id,
+        clickedAmount: Number.isFinite(responseClickedAmount)
+          ? responseClickedAmount
+          : currentClickedAmount + 1
+      });
+    } catch (error) {
+      console.error(`Error recording click for article ${this.id}:`, error);
+      notifyActionError('Could not record this article click. Please try again.', error);
+    } finally {
+      this.clickMutationPending = false;
+    }
   },
 
   // Toggles the article's favorite status.
-  markAsFavorite() {
-    // Toggle favorite status.
+  async markAsFavorite() {
+    if (this.favoriteMutationPending) return;
+
+    this.favoriteMutationPending = true;
     const updateType = this.favoriteInd ? 'unmark' : 'mark';
-    const newFavoriteInd = this.favoriteInd ? 0 : 1;
+    const previousFavoriteInd = this.favoriteInd === 1 ? 1 : 0;
+    const requestedFavoriteInd = previousFavoriteInd === 1 ? 0 : 1;
 
-    markArticleAsFavoriteAPI(this.id, updateType)
-    .then(response => {
-      this.$store.data.applyFavoriteDelta({
-        categoryId: response.data.feed?.categoryId,
-        feedId: response.data.feedId,
-        delta: newFavoriteInd ? 1 : -1
+    try {
+      const response = await markArticleAsFavoriteAPI(this.id, updateType);
+      const persistedFavoriteInd = response.data.favoriteInd === 1
+        ? 1
+        : response.data.favoriteInd === 0
+          ? 0
+          : requestedFavoriteInd;
+      const delta = persistedFavoriteInd - previousFavoriteInd;
+
+      if (delta !== 0) {
+        this.$store.data.applyFavoriteDelta({
+          categoryId: response.data.feed?.categoryId,
+          feedId: response.data.feedId,
+          delta
+        });
+      }
+
+      this.$emit('update-favorite', {
+        id: this.id,
+        favoriteInd: persistedFavoriteInd
       });
-
-      this.$emit('update-favorite', { id: this.id, favoriteInd: newFavoriteInd });
-    })
-    .catch(error => {
+    } catch (error) {
       console.error(`Error updating favorite state for article ${this.id}:`, error);
       notifyActionError('Could not update the favorite. Please try again.', error);
-    });
+    } finally {
+      this.favoriteMutationPending = false;
+    }
   },
 
   // Marks the article as not interesting.

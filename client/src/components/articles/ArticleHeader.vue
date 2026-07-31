@@ -23,7 +23,7 @@
         <button v-if="isReaderMode" class="article-read-status-button" type="button" :aria-label="statusLabel" :title="statusLabel" @click.stop="$emit('toggle-read-status')">
           <BootstrapIcon :icon="statusIcon" />
         </button>
-        <ArticleActionsMenu :favoriteInd="favoriteInd" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @less-like-this="$emit('less-like-this')" @ignore-topic="$emit('ignore-topic')" @mute-feed="$emit('mute-feed')" />
+        <ArticleActionsMenu :favoriteInd="favoriteInd" :favoritePending="favoritePending" @toggle-favorite="$emit('toggle-favorite')" @not-interested="$emit('not-interested')" @more-like-this="$emit('more-like-this')" @less-like-this="$emit('less-like-this')" @ignore-topic="$emit('ignore-topic')" @mute-feed="$emit('mute-feed')" />
       </div>
     </div>
   </h5>
@@ -37,7 +37,7 @@ export default {
   emits: ['article-clicked', 'toggle-favorite', 'toggle-read-status', 'not-interested', 'more-like-this', 'less-like-this', 'ignore-topic', 'mute-feed'],
   props: {
     url: { type: String, default: '' }, title: { type: String, default: '' }, clickedAmount: { type: Number, default: 0 },
-    favoriteInd: { type: Number, default: 0 }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
+    favoriteInd: { type: Number, default: 0 }, favoritePending: { type: Boolean, default: false }, hotInd: { type: Number, default: 0 }, status: { type: String, default: '' },
     viewMode: { type: String, default: '' }, hasVideoMedia: { type: Boolean, default: false },
     isDeveloping: { type: Boolean, default: false },
     hasInterestScore: { type: Boolean, default: false },

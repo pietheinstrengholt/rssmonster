@@ -188,6 +188,7 @@ import { formatRelativeDate } from '../utils/date';
 import { formatTagName } from '../utils/tags';
 import { hasRenderableContent, usableHttpUrl } from '../utils/content';
 import { markClicked as markArticleClickedAPI } from '../api/articles';
+import { notifyActionError } from '../services/actionNotifications.js';
 
 const PREVIEW_LENGTH = 150;
 
@@ -267,7 +268,8 @@ export default {
       isReaderEndStateDismissed: false,
       isBulkMenuOpen: false,
       bulkMenuStyle: {},
-      articleListScrollTimeout: null
+      articleListScrollTimeout: null,
+      pendingClickedArticleIds: new Set()
     };
   },
   mounted() {
@@ -616,9 +618,27 @@ export default {
         .find(Boolean) || '';
     },
     // Tracks an original-article link through the same clicked-article behavior as the reader panel.
-    trackOriginalArticleClick(article) {
-      markArticleClickedAPI(article.id)
-      .finally(() => this.$emit('update-clicked', { id: article.id, clickedAmount: 1 }));
+    async trackOriginalArticleClick(article) {
+      const articleKey = String(article.id);
+      if (this.pendingClickedArticleIds.has(articleKey)) return;
+
+      this.pendingClickedArticleIds.add(articleKey);
+      try {
+        const response = await markArticleClickedAPI(article.id);
+        const responseClickedAmount = Number(response?.data?.clickedAmount);
+        const currentClickedAmount = Number(article.clickedAmount) || 0;
+        this.$emit('update-clicked', {
+          id: article.id,
+          clickedAmount: Number.isFinite(responseClickedAmount)
+            ? responseClickedAmount
+            : currentClickedAmount + 1
+        });
+      } catch (error) {
+        console.error(`Error recording reader click for article ${article.id}:`, error);
+        notifyActionError('Could not record this article click. Please try again.', error);
+      } finally {
+        this.pendingClickedArticleIds.delete(articleKey);
+      }
     },
     // Returns the related article count when available.
     similarCount(article) {

@@ -29,6 +29,7 @@ const createContext = (overrides = {}) => ({
     { id: 1, favoriteInd: 0, clickedAmount: 0 },
     { id: 2, favoriteInd: 1, clickedAmount: 1 }
   ],
+  pendingFavoriteArticleIds: new Set(),
   showSmartFoldersOverview: false,
   $emit: vi.fn(),
   $store: {
@@ -92,7 +93,7 @@ describe('ArticleFeed actions', () => {
   it('toggles a favorite and ignores missing articles', async () => {
     const context = createContext();
     markAsFavorite.mockResolvedValue({
-      data: { id: 1, feedId: 10, feed: { categoryId: 20 } }
+      data: { id: 1, feedId: 10, feed: { categoryId: 20 }, favoriteInd: 1 }
     });
 
     await context.toggleShortcutArticleFavorite({ id: 1 });
@@ -106,6 +107,35 @@ describe('ArticleFeed actions', () => {
     });
     expect(context.articles[0].favoriteInd).toBe(1);
     expect(markAsFavorite).toHaveBeenCalledOnce();
+  });
+
+  // Verifies repeated keyboard shortcuts cannot submit duplicate favorite mutations.
+  it('guards duplicate keyboard favorite requests while persistence is pending', async () => {
+    let resolveFavorite;
+    const pendingFavorite = new Promise(resolve => {
+      resolveFavorite = resolve;
+    });
+    const context = createContext();
+    markAsFavorite.mockReturnValue(pendingFavorite);
+
+    const firstMutation = context.toggleShortcutArticleFavorite({ id: 1 });
+    const secondMutation = context.toggleShortcutArticleFavorite({ id: 1 });
+
+    expect(markAsFavorite).toHaveBeenCalledOnce();
+    expect(context.pendingFavoriteArticleIds).toContain('1');
+
+    resolveFavorite({
+      data: {
+        id: 1,
+        feedId: 10,
+        feed: { categoryId: 20 },
+        favoriteInd: 1
+      }
+    });
+    await Promise.all([firstMutation, secondMutation]);
+
+    expect(context.$store.data.applyFavoriteDelta).toHaveBeenCalledOnce();
+    expect(context.pendingFavoriteArticleIds.size).toBe(0);
   });
 
   // Verifies favorite failures preserve state and produce an actionable notification.
@@ -129,7 +159,7 @@ describe('ArticleFeed actions', () => {
     const context = createContext();
     markManyAsFavorite.mockResolvedValue({
       data: {
-        articles: [{ id: 1, feedId: 10, feed: { categoryId: 20 } }]
+        articles: [{ id: 1, feedId: 10, feed: { categoryId: 20 }, favoriteInd: 1 }]
       }
     });
     markManyClicked.mockResolvedValue({

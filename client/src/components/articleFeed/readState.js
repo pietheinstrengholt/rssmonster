@@ -12,7 +12,9 @@ export function createArticleFeedReadState() {
     pool: new Set(),
     isFlushed: false,
     activeMinimalArticleId: null,
-    pendingReadStatusArticleIds: new Set()
+    pendingReadStatusArticleIds: new Set(),
+    pendingSeenArticleIds: new Set(),
+    seenPersistenceAttempts: new Map()
   };
 }
 
@@ -61,8 +63,10 @@ export const articleFeedReadStateMethods = {
       this.applyArticleSeenResponse(response.data, {
         updateReadCounts: this.$store.data.currentSelection.status === 'unread'
       });
+      return true;
     } catch (error) {
       console.error(`Error recording seen state for article ${articleId}:`, error);
+      return false;
     }
   },
 

@@ -71,11 +71,13 @@ describe('ArticleFeed cluster insertion', () => {
 });
 
 describe('ArticleFeed visibility tracking', () => {
-  it('accumulates visible intervals before marking a passed article seen', () => {
+  it('accumulates visible intervals before marking a passed article seen', async () => {
     const now = vi.spyOn(performance, 'now');
     now.mockReturnValueOnce(1000).mockReturnValueOnce(2500);
     const context = {
       pool: new Set(),
+      pendingSeenArticleIds: new Set(),
+      seenPersistenceAttempts: new Map(),
       visibleMap: new Map(),
       visibleSince: new Map(),
       visibleDuration: new Map(),
@@ -84,7 +86,7 @@ describe('ArticleFeed visibility tracking', () => {
           currentSelection: { viewMode: 'full' }
         }
       },
-      markArticleSeen: vi.fn()
+      markArticleSeen: vi.fn().mockResolvedValue(true)
     };
     context.finalizeVisibleDuration = articleId =>
       articleFeedVisibilityMethods.finalizeVisibleDuration.call(context, articleId);
@@ -101,15 +103,18 @@ describe('ArticleFeed visibility tracking', () => {
       isIntersecting: false,
       boundingClientRect: { bottom: -1 }
     }]);
+    await Promise.resolve();
 
     expect(context.visibleDuration.get(7)).toBe(1500);
     expect(context.pool).toEqual(new Set([7]));
     expect(context.markArticleSeen).toHaveBeenCalledWith(7, 2);
   });
 
-  it('does not persist seen state when a minimal article passes the viewport', () => {
+  it('does not persist seen state when a minimal article passes the viewport', async () => {
     const context = {
       pool: new Set(),
+      pendingSeenArticleIds: new Set(),
+      seenPersistenceAttempts: new Map(),
       visibleSince: new Map(),
       visibleDuration: new Map(),
       $store: {
@@ -121,7 +126,7 @@ describe('ArticleFeed visibility tracking', () => {
       markArticleSeen: vi.fn()
     };
 
-    articleFeedVisibilityMethods.addToPool.call(context, 12);
+    await articleFeedVisibilityMethods.addToPool.call(context, 12);
 
     expect(context.pool).toEqual(new Set([12]));
     expect(context.markArticleSeen).not.toHaveBeenCalled();

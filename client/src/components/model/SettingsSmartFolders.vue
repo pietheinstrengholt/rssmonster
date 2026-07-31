@@ -15,72 +15,21 @@
             </div>
         </div>
 
-        <!-- Smart Folder Recommendations trigger & results -->
-        <div v-if="aiEnabled" class="smart-folders-toolbar">
-            <div>
-                <h4>Smart Folder Insights</h4>
-                <p>Let RSSMonster analyze your reading history and suggest useful smart folders.</p>
-            </div>
-
-            <button
-                type="button"
-                class="btn btn-primary"
-                @click="fetchSmartFolderInsights"
-                :disabled="smartFolderInsightsLoading"
-            >
-                <span v-if="smartFolderInsightsLoading" class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                <BootstrapIcon v-else icon="stars" />
-                <span>{{ smartFolderInsightsLoading ? 'Loading...' : 'Get insights' }}</span>
-            </button>
+        <div v-if="loading" class="smart-folders-load-state" role="status" aria-live="polite">
+            <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+            <span>Loading Smart Folders…</span>
         </div>
 
-        <div v-if="aiEnabled && smartFolderInsightsLoading" class="settings-group d-flex align-items-center gap-2">
-            <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-            <span>Loading smart folder insights...</span>
+        <div v-else-if="loadError" class="smart-folders-load-state smart-folders-load-state--error" role="alert">
+            <span>{{ loadError }}</span>
+            <button type="button" class="btn btn-outline-secondary btn-sm" @click="fetchSmartFolders">Retry</button>
         </div>
 
-        <div v-if="aiEnabled && smartFolderInsightsError" class="settings-group text-danger">
-            {{ smartFolderInsightsError }}
-        </div>
-
-        <div v-if="aiEnabled && smartFolderRecommendations.length" class="settings-group">
-            <label>
-                Smart Folder Suggestions
-                <span class="info-icon" title="Suggested based on your reading behavior">
-                    <BootstrapIcon icon="info-circle-fill" />
-                </span>
-            </label>
-
-            <div
-                v-for="(rec, index) in smartFolderRecommendations"
-                :key="'rec-' + index"
-                class="action-row"
-            >
-                <div class="d-flex justify-content-between align-items-start gap-3">
-                    <div class="flex-grow-1">
-                        <strong>{{ rec.name }}</strong>
-                        <div class="text-muted small mt-1">{{ rec.reason }}</div>
-                        <code class="d-block mt-2">{{ rec.query }}</code>
-                    </div>
-
-                    <button
-                        type="button"
-                        class="btn btn-add"
-                        @click="applySmartFolderRecommendation(rec)"
-                    >
-                        <BootstrapIcon icon="plus-circle-fill" />
-                        Add
-                    </button>
-                </div>
-            </div>
-        </div>
-
-        <div
-            v-else-if="aiEnabled && smartFolderInsightsLoaded && !smartFolderInsightsLoading && !smartFolderInsightsError"
-            class="settings-group text-muted small"
-        >
-            No smart folder insights available yet.
-        </div>
+        <fieldset v-else-if="loaded" class="smart-folders-editor" :disabled="saving" :aria-busy="saving ? 'true' : 'false'">
+        <SmartFolderInsights
+            v-if="aiEnabled"
+            @add="applySmartFolderRecommendation"
+        />
 
         <!-- Smart Folders -->
         <div class="smart-folders-list-header">
@@ -146,333 +95,24 @@
                     </button>
                 </div>
 
-                <!-- Expanded configuration panel -->
-                <form
+                <SmartFolderEditor
                     v-if="selectedSmartFolderId === smartFolder.localId"
-                    class="smart-folder-config"
-                    @submit.prevent="saveSmartFolderConfig(index)"
-                >
-                    <div class="smart-folder-config__top">
-                        <label class="smart-folder-field smart-folder-field--name">
-                            <span>Name</span>
-                            <input
-                                v-model.trim="draftConfig.name"
-                                type="text"
-                                class="form-control"
-                                placeholder="e.g. Hot AI Articles"
-                            />
-                        </label>
-
-                        <label class="smart-folder-field smart-folder-field--limit">
-                            <span>Maximum articles</span>
-                            <select v-model.number="draftConfig.limitCount" class="form-select">
-                                <option :value="50">50</option>
-                                <option :value="100">100</option>
-                                <option :value="250">250</option>
-                                <option :value="500">500</option>
-                            </select>
-                        </label>
-                    </div>
-
-                    <div class="smart-folder-config-grid">
-                        <!-- Status -->
-                        <fieldset class="smart-folder-panel">
-                            <legend>
-                                Status
-                                <BootstrapIcon icon="info-circle-fill" title="Filter by read state and engagement markers. Read and unread cannot be combined." />
-                            </legend>
-
-                            <label class="smart-folder-check">
-                                <input
-                                    v-model="draftConfig.status.unread"
-                                    type="checkbox"
-                                    :disabled="draftConfig.status.read"
-                                    @change="onStatusFilterChange('unread')"
-                                />
-                                <BootstrapIcon icon="record-circle-fill" />
-                                Unread
-                            </label>
-
-                            <label class="smart-folder-check">
-                                <input
-                                    v-model="draftConfig.status.read"
-                                    type="checkbox"
-                                    :disabled="draftConfig.status.unread"
-                                    @change="onStatusFilterChange('read')"
-                                />
-                                <BootstrapIcon icon="circle-fill" />
-                                Read
-                            </label>
-
-                            <label class="smart-folder-check">
-                                <input v-model="draftConfig.status.favorite" type="checkbox" />
-                                <BootstrapIcon icon="bookmark-fill" />
-                                Favorited
-                            </label>
-
-                            <label class="smart-folder-check">
-                                <input v-model="draftConfig.status.clicked" type="checkbox" />
-                                <BootstrapIcon icon="arrow-up-right-square-fill" />
-                                Clicked
-                            </label>
-
-                            <label class="smart-folder-check">
-                                <input v-model="draftConfig.status.hot" type="checkbox" />
-                                <BootstrapIcon icon="fire" />
-                                Hot
-                            </label>
-                        </fieldset>
-
-                        <!-- Date -->
-                        <fieldset class="smart-folder-panel">
-                            <legend>
-                                Date / Time
-                                <BootstrapIcon icon="info-circle-fill" title="Limit results to a fixed date range or a relative first-seen window." />
-                            </legend>
-
-                            <label class="smart-folder-field">
-                                <span>Date range</span>
-                                <select v-model="draftConfig.date.preset" class="form-select" :disabled="draftConfig.date.useRelative">
-                                    <option value="">Any time</option>
-                                    <option value="@today">Today</option>
-                                    <option value="@yesterday">Yesterday</option>
-                                    <option value="@lastweek">Last week</option>
-                                    <option value="@last7days">Last 7 days</option>
-                                    <option value="@last30days">Last 30 days</option>
-                                </select>
-                            </label>
-
-                            <label class="smart-folder-check smart-folder-check--switch">
-                                <input v-model="draftConfig.date.useRelative" type="checkbox" />
-                                Relative range
-                            </label>
-
-                            <div v-if="draftConfig.date.useRelative" class="smart-folder-inline-fields">
-                                <input
-                                    v-model.number="draftConfig.date.relativeAmount"
-                                    type="number"
-                                    min="1"
-                                    max="365"
-                                    class="form-control"
-                                />
-
-                                <select v-model="draftConfig.date.relativeUnit" class="form-select">
-                                    <option value="h">hours</option>
-                                    <option value="d">days</option>
-                                </select>
-
-                                <span>ago</span>
-                            </div>
-                        </fieldset>
-
-                        <!-- Content -->
-                        <fieldset class="smart-folder-panel">
-                            <legend>
-                                Content
-                                <BootstrapIcon icon="info-circle-fill" title="Match articles by one tag, title text, author, language, or free-text search." />
-                            </legend>
-
-                            <label class="smart-folder-field">
-                                <span>Tags</span>
-                                <input
-                                    v-model.trim="draftConfig.content.tags"
-                                    type="text"
-                                    class="form-control"
-                                    placeholder="ai"
-                                    @keydown="preventTagSeparator"
-                                    @input="normalizeDraftTag"
-                                />
-                            </label>
-
-                            <label class="smart-folder-field">
-                                <span>Title contains</span>
-                                <input
-                                    v-model.trim="draftConfig.content.title"
-                                    type="text"
-                                    class="form-control"
-                                    placeholder="e.g. javascript"
-                                />
-                            </label>
-
-                            <label class="smart-folder-field">
-                                <span>Author</span>
-                                <input
-                                    v-model.trim="draftConfig.content.author"
-                                    type="text"
-                                    class="form-control"
-                                    placeholder="e.g. John Doe"
-                                />
-                            </label>
-
-                            <label class="smart-folder-field">
-                                <span>Free text</span>
-                                <input
-                                    v-model.trim="draftConfig.content.text"
-                                    type="text"
-                                    class="form-control"
-                                    placeholder="Search in article text"
-                                />
-                            </label>
-                        </fieldset>
-
-                        <!-- Quality -->
-                        <fieldset v-if="aiEnabled" class="smart-folder-panel">
-                            <legend>
-                                Quality & Scores
-                                <BootstrapIcon icon="info-circle-fill" title="Set minimum quality and freshness thresholds for matching articles." />
-                            </legend>
-
-                            <label class="smart-folder-range">
-                                <span>Minimum quality</span>
-                                <strong>{{ Number(draftConfig.scores.quality).toFixed(2) }}</strong>
-                                <input
-                                    v-model.number="draftConfig.scores.quality"
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                />
-                            </label>
-
-                            <label class="smart-folder-range">
-                                <span>Minimum freshness</span>
-                                <strong>{{ Number(draftConfig.scores.freshness).toFixed(2) }}</strong>
-                                <input
-                                    v-model.number="draftConfig.scores.freshness"
-                                    type="range"
-                                    min="0"
-                                    max="1"
-                                    step="0.05"
-                                />
-                            </label>
-                        </fieldset>
-
-                        <!-- Events -->
-                        <fieldset v-if="aiEnabled" class="smart-folder-panel">
-                            <legend>
-                                Events & Clusters
-                                <BootstrapIcon icon="info-circle-fill" title="Filter for event articles, non-event articles, or events with a minimum article count." />
-                            </legend>
-
-                            <label class="smart-folder-check">
-                                <input
-                                    v-model="draftConfig.events.isEvent"
-                                    type="checkbox"
-                                    :disabled="draftConfig.events.useMinimumCount"
-                                    @change="onEventFilterChange('isEvent')"
-                                />
-                                Is event
-                            </label>
-
-                            <label class="smart-folder-check">
-                                <input
-                                    v-model="draftConfig.events.isNotEvent"
-                                    type="checkbox"
-                                    :disabled="draftConfig.events.useMinimumCount"
-                                    @change="onEventFilterChange('isNotEvent')"
-                                />
-                                Is not event
-                            </label>
-
-                            <label class="smart-folder-check">
-                                <input v-model="draftConfig.events.useMinimumCount" type="checkbox" @change="onEventFilterChange('useMinimumCount')" />
-                                Minimum articles in event / cluster
-                            </label>
-
-                            <div v-if="draftConfig.events.useMinimumCount" class="smart-folder-inline-fields">
-                                <select v-model.number="draftConfig.events.minimumCount" class="form-select">
-                                    <option :value="2">2</option>
-                                    <option :value="3">3</option>
-                                    <option :value="5">5</option>
-                                    <option :value="10">10</option>
-                                </select>
-
-                                <span>articles or more</span>
-                            </div>
-
-                        </fieldset>
-
-                        <!-- Sorting -->
-                        <fieldset class="smart-folder-panel">
-                            <legend>
-                                Sorting
-                                <BootstrapIcon icon="info-circle-fill" title="Choose how matching articles are ordered, or leave sorting unchanged." />
-                            </legend>
-
-                            <label class="smart-folder-field">
-                                <span>Sort by</span>
-                                <select v-model="draftConfig.sort.field" class="form-select">
-                                    <option value="">None</option>
-                                    <option value="trust">Trust</option>
-                                    <option v-if="aiEnabled" value="recommended">Recommended</option>
-                                    <option v-if="aiEnabled" value="attention">Most Engaged</option>
-                                    <option v-if="aiEnabled" value="quality">Quality</option>
-                                    <option value="published-desc">Published date (newest)</option>
-                                    <option value="published-asc">Published date (oldest)</option>
-                                </select>
-                            </label>
-
-                            <label class="smart-folder-field">
-                                <span>Language</span>
-                                <select v-model="draftConfig.content.language" class="form-select">
-                                    <option value="">Any language</option>
-                                    <option value="en">English</option>
-                                    <option value="nl">Dutch</option>
-                                    <option value="de">German</option>
-                                    <option value="fr">French</option>
-                                    <option value="es">Spanish</option>
-                                </select>
-                            </label>
-
-                        </fieldset>
-                    </div>
-
-                    <!-- Generated query -->
-                    <div class="smart-folder-generated-query">
-                        <span>Generated query</span>
-
-                        <code :class="{ 'input-invalid': generatedQueryInvalid }" :title="generatedQueryError">{{ generatedSmartFolderQuery }}</code>
-
-                        <button
-                            type="button"
-                            class="btn btn-icon"
-                            title="Copy query"
-                            @click="copyGeneratedQuery"
-                        >
-                            <BootstrapIcon icon="copy" />
-                        </button>
-                    </div>
-
-                    <p v-if="generatedQueryInvalid" class="smart-folder-query-error">
-                        {{ generatedQueryError }}
-                    </p>
-
-                    <!-- Actions -->
-                    <div class="smart-folder-config-actions">
-                        <button type="button" class="btn btn-outline-danger smart-folder-config-delete" @click="removeSmartFolder(index)">
-                            <BootstrapIcon icon="trash3-fill" />
-                            Delete
-                        </button>
-
-                        <button type="button" class="btn btn-outline-secondary" @click="cancelSmartFolderConfig">
-                            Cancel
-                        </button>
-
-                        <button type="button" class="btn btn-outline-secondary" @click="saveSmartFolderAsCopy">
-                            Save as copy
-                        </button>
-
-                        <button type="submit" class="btn btn-primary" :disabled="generatedQueryInvalid">
-                            Save and close
-                        </button>
-                    </div>
-                </form>
+                    :ref="setSmartFolderEditorRef"
+                    :smart-folder="smartFolder"
+                    :ai-enabled="aiEnabled"
+                    @validation-change="editorQueryInvalid = $event"
+                    @save="saveSmartFolderConfig(index, $event)"
+                    @save-copy="saveSmartFolderAsCopy"
+                    @cancel="cancelSmartFolderConfig"
+                    @delete="removeSmartFolder(index)"
+                />
             </article>
         </div>
 
         <div class="settings-section__actions">
-            <button class="btn btn-primary smart-folders-save" @click="save" :disabled="hasInvalidSmartFolders">Save Changes</button>
+            <button class="btn btn-primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
         </div>
+        </fieldset>
     </div>
 </template>
 
@@ -489,8 +129,28 @@
   gap: 24px;
 }
 
+.smart-folders-editor {
+    min-width: 0;
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.smart-folders-load-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    min-height: 180px;
+    color: var(--text-secondary);
+}
+
+.smart-folders-load-state--error {
+    flex-direction: column;
+    color: var(--text-danger);
+}
+
 .smart-folders-hero,
-.smart-folders-toolbar,
 .smart-folders-list-header {
   margin: 0;
 }
@@ -521,7 +181,6 @@
 }
 
 .smart-folders-hero__content h3,
-.smart-folders-toolbar h4,
 .smart-folders-list-header h4 {
   margin: 0;
   color: var(--text-primary);
@@ -530,14 +189,12 @@
 }
 
 .smart-folders-hero__content p,
-.smart-folders-toolbar p,
 .smart-folders-list-header p {
   margin: 6px 0 0;
   color: var(--text-muted);
   font-size: 13px;
 }
 
-.smart-folders-toolbar,
 .smart-folders-list-header {
   display: flex;
   align-items: center;
@@ -545,9 +202,7 @@
   gap: 16px;
 }
 
-.smart-folders-toolbar .btn,
-.smart-folders-list-header .btn,
-.smart-folder-config-actions .btn {
+.smart-folders-list-header .btn {
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -661,138 +316,6 @@
   color: var(--text-secondary);
 }
 
-.smart-folder-config {
-  padding: 16px;
-  border-top: 1px solid var(--border-subtle);
-  background: var(--bg-subtle);
-}
-
-.smart-folder-config__top {
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) 160px;
-  gap: 16px;
-  margin-bottom: 16px;
-}
-
-.smart-folder-config-grid {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 16px;
-}
-
-.smart-folder-panel {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-  padding: 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-primary);
-}
-
-.smart-folder-panel legend {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  width: auto;
-  margin: 0;
-  padding: 0;
-  color: var(--text-primary);
-  font-size: 14px;
-  font-weight: 700;
-}
-
-.smart-folder-field,
-.smart-folder-range {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-
-.smart-folder-field span,
-.smart-folder-range span {
-  color: var(--text-secondary);
-  font-size: 12px;
-  font-weight: 700;
-}
-
-.smart-folder-check {
-  display: flex;
-  align-items: center;
-  gap: 9px;
-  color: var(--text-secondary);
-  font-size: 13px;
-}
-
-.smart-folder-check input,
-.smart-folder-range input {
-  accent-color: var(--color-primary);
-}
-
-.smart-folder-inline-fields {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  color: var(--text-secondary);
-}
-
-.smart-folder-inline-fields .form-control,
-.smart-folder-inline-fields .form-select {
-  max-width: 112px;
-}
-
-.smart-folder-range {
-  display: grid;
-  grid-template-columns: 1fr auto;
-  align-items: center;
-}
-
-.smart-folder-range input {
-  grid-column: 1 / -1;
-}
-
-.smart-folder-generated-query {
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  align-items: center;
-  gap: 12px;
-  margin-top: 16px;
-  padding: 14px 16px;
-  border: 1px solid var(--border-subtle);
-  border-radius: 10px;
-  background: var(--bg-primary);
-}
-
-.smart-folder-generated-query span {
-  color: var(--text-secondary);
-  font-size: 13px;
-  font-weight: 700;
-}
-
-.smart-folder-generated-query code {
-  overflow: hidden;
-  padding: 6px 9px;
-  border-radius: 6px;
-  background: var(--settings-query-code-bg);
-  color: var(--settings-query-code-text);
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.smart-folder-query-error {
-  margin: 8px 0 0;
-  color: var(--text-danger);
-  font-size: 13px;
-}
-
-.smart-folder-config-actions {
-  display: flex;
-  justify-content: flex-end;
-  gap: 12px;
-  margin-top: 16px;
-}
-
 .smart-folders-save {
   display: inline-flex;
   height: 42px;
@@ -818,15 +341,8 @@
   opacity: 0.90;
 }
 
-:global(:root[data-theme='dark']) .smart-folder-panel,
-:global(:root[data-theme='dark']) .smart-folders-list,
-:global(:root[data-theme='dark']) .smart-folder-generated-query {
+:global(:root[data-theme='dark']) .smart-folders-list {
   background: var(--bg-modal);
-  border-color: var(--border-color);
-}
-
-:global(:root[data-theme='dark']) .smart-folder-config {
-  background: var(--bg-control);
   border-color: var(--border-color);
 }
 
@@ -835,14 +351,7 @@
   background: var(--bg-control);
 }
 
-@media (max-width: 1100px) {
-  .smart-folder-config-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 760px) {
-  .smart-folders-toolbar,
   .smart-folders-list-header,
   .smart-folders-hero {
     align-items: stretch;
@@ -859,202 +368,97 @@
     display: none;
   }
 
-  .smart-folder-config__top,
-  .smart-folder-config-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .smart-folder-generated-query {
-    grid-template-columns: 1fr auto;
-  }
-
-  .smart-folder-generated-query span {
-    grid-column: 1 / -1;
-  }
-
-  .smart-folder-config-actions {
-    flex-direction: column-reverse;
-  }
-
-  .smart-folder-config-actions .btn,
-  .smart-folders-list-header .btn,
-  .smart-folders-toolbar .btn {
+  .smart-folders-list-header .btn {
     width: 100%;
   }
 }
 </style>
 
 <script>
-import { saveSmartFolders, fetchSmartFolderInsights } from '../../api/smartfolders';
+import { saveSmartFolders } from '../../api/smartfolders';
 import { setAuthToken } from '../../api/client';
 import { validateSmartFolderQuery } from '../../services/queryValidation';
 import { notifyActionError } from '../../services/actionNotifications.js';
-
-const createEmptySmartFolderConfig = () => ({
-    name: '',
-    limitCount: 50,
-    status: {
-        unread: false,
-        read: false,
-        favorite: false,
-        clicked: false,
-        hot: false
-    },
-    date: {
-        preset: '',
-        useRelative: false,
-        relativeAmount: 7,
-        relativeUnit: 'd'
-    },
-    content: {
-        tags: '',
-        title: '',
-        author: '',
-        text: '',
-        language: ''
-    },
-    scores: {
-        quality: 0,
-        freshness: 0
-    },
-    events: {
-        isEvent: false,
-        isNotEvent: false,
-        useMinimumCount: false,
-        minimumCount: 2
-    },
-    sort: {
-        field: ''
-    }
-});
-
-const tokenizeQuery = query => String(query || '').match(/(?:[A-Za-z]+:)?"[^"]*"|\S+/g) || [];
-
-const stripQuotes = value => String(value || '').replace(/^"|"$/g, '').replace(/\\"/g, '"');
-
-const quoteIfNeeded = value => (
-    /\s/.test(value) ? `"${value.replaceAll('"', '\\"')}"` : value
-);
+import SmartFolderEditor from './smartFolders/SmartFolderEditor.vue';
+import SmartFolderInsights from './smartFolders/SmartFolderInsights.vue';
 
 export default {
+    components: {
+        SmartFolderEditor,
+        SmartFolderInsights
+    },
     emits: ['close', 'saved'],
+    // This function creates server-backed collection state and editor coordination state.
     data() {
         return {
             smartFolders: [],
             selectedSmartFolderId: null,
-            draftConfig: createEmptySmartFolderConfig(),
-            smartFolderRecommendations: [],
-            smartFolderInsightsLoading: false,
-            smartFolderInsightsLoaded: false,
-            smartFolderInsightsError: null
+            smartFolderEditorRef: null,
+            editorQueryInvalid: false,
+            loading: false,
+            loadError: '',
+            loaded: false,
+            saving: false
         };
     },
-    created() {
+    // This function authenticates and loads authoritative Smart Folders before enabling the editor.
+    async created() {
         setAuthToken(this.$store.auth.token);
-        this.fetchSmartFolders();
+        await this.fetchSmartFolders();
     },
     computed: {
+        // This function reports whether AI-powered Smart Folder controls are available.
         aiEnabled() {
             return Boolean(this.$store.data.currentSelection.AIEnabled);
         },
-        generatedSmartFolderQuery() {
-            const parts = [];
-
-            if (this.draftConfig.status.unread) parts.push('unread:true');
-            if (this.draftConfig.status.read) parts.push('read:true');
-            if (this.draftConfig.status.favorite) parts.push('favorite:true');
-            if (this.draftConfig.status.clicked) parts.push('clicked:true');
-            if (this.draftConfig.status.hot) parts.push('hot:true');
-
-            if (this.draftConfig.date.useRelative && this.draftConfig.date.relativeAmount) {
-                parts.push(`firstSeen:${this.draftConfig.date.relativeAmount}${this.draftConfig.date.relativeUnit}`);
-            } else if (this.draftConfig.date.preset === '@last7days') {
-                parts.push('firstSeen:7d');
-            } else if (this.draftConfig.date.preset === '@last30days') {
-                parts.push('firstSeen:30d');
-            } else if (this.draftConfig.date.preset) {
-                parts.push(this.draftConfig.date.preset);
-            }
-
-            if (this.draftConfig.content.tags.trim()) {
-                parts.push(`tag:${this.normalizeTagValue(this.draftConfig.content.tags)}`);
-            }
-
-            if (this.draftConfig.content.title) parts.push(`title:${quoteIfNeeded(this.draftConfig.content.title)}`);
-            if (this.draftConfig.content.author) parts.push(`author:${quoteIfNeeded(this.draftConfig.content.author)}`);
-            if (this.draftConfig.content.language) parts.push(`language:${this.draftConfig.content.language}`);
-            if (this.draftConfig.content.text) parts.push(quoteIfNeeded(this.draftConfig.content.text));
-
-            if (this.draftConfig.scores.quality > 0) parts.push(`quality:>=${Number(this.draftConfig.scores.quality).toFixed(2)}`);
-            if (this.draftConfig.scores.freshness > 0) parts.push(`freshness:>=${Number(this.draftConfig.scores.freshness).toFixed(2)}`);
-
-            if (this.draftConfig.events.isEvent) parts.push('event:true');
-            if (this.draftConfig.events.isNotEvent) parts.push('event:false');
-            if (this.draftConfig.events.useMinimumCount) parts.push(`eventCount:>=${this.draftConfig.events.minimumCount}`);
-            if (this.draftConfig.sort.field === 'published-desc') {
-                parts.push('sort:desc');
-            } else if (this.draftConfig.sort.field === 'published-asc') {
-                parts.push('sort:asc');
-            } else if (this.draftConfig.sort.field) {
-                parts.push(`sort:${this.draftConfig.sort.field}`);
-            }
-
-            parts.push(`limit:${this.draftConfig.limitCount}`);
-
-            return parts.join(' ');
-        },
-        generatedQueryValidation() {
-            return validateSmartFolderQuery(this.generatedSmartFolderQuery);
-        },
-        generatedQueryInvalid() {
-            return !this.generatedQueryValidation.valid;
-        },
-        generatedQueryError() {
-            return this.generatedQueryValidation.error;
-        },
+        // This function blocks persistence for either the open draft or a stored invalid query.
         hasInvalidSmartFolders() {
-            if (this.selectedSmartFolderId !== null && this.generatedQueryInvalid) return true;
+            if (this.selectedSmartFolderId !== null && this.editorQueryInvalid) return true;
 
-            return this.smartFolders.some(sf => {
-                if (!sf.name || sf.name.trim() === '') return false;
-                const { valid } = validateSmartFolderQuery(sf.query || '');
+            return this.smartFolders.some(smartFolder => {
+                if (!smartFolder.name || smartFolder.name.trim() === '') return false;
+                const { valid } = validateSmartFolderQuery(smartFolder.query || '');
                 return !valid;
             });
         }
     },
     methods: {
+        // This function refreshes the store from the server before taking an editable snapshot.
         async fetchSmartFolders() {
-            this.smartFolders = this.$store.data.smartFolders.map((sf, index) => ({
-                localId: sf.id || `local-${index}-${Date.now()}`,
-                id: sf.id,
-                name: sf.name,
-                query: sf.query,
-                limitCount: sf.limitCount || 50
-            }));
-        },
-        async fetchSmartFolderInsights() {
+            if (this.loading || this.saving) return;
+
+            this.loading = true;
+            this.loaded = false;
+            this.loadError = '';
+
             try {
-                this.smartFolderInsightsLoading = true;
-                this.smartFolderInsightsError = null;
-                const resp = await fetchSmartFolderInsights();
+                await this.$store.data.fetchSmartFolders();
+                if (!Array.isArray(this.$store.data.smartFolders)) {
+                    throw new Error('Invalid Smart Folders response');
+                }
 
-                console.log('Smart Folder Insights response:', resp.data);
-
-                this.smartFolderRecommendations =
-                    resp.data?.recommendations?.smartFolders || [];
+                this.smartFolders = this.$store.data.smartFolders.map((smartFolder, index) => ({
+                    localId: smartFolder.id || `local-${index}-${Date.now()}`,
+                    id: smartFolder.id,
+                    name: smartFolder.name,
+                    query: smartFolder.query,
+                    limitCount: smartFolder.limitCount || 50
+                }));
+                this.loaded = true;
             } catch (err) {
-                console.error('Failed to fetch smart folder insights:', err);
-                this.smartFolderInsightsError = 'Failed to load smart folder insights. Please try again.';
+                console.error('Error loading Smart Folders:', err);
+                this.loadError = 'Could not load Smart Folders. Your existing folders have not been changed.';
+                notifyActionError('Could not load Smart Folders. Please try again.', err);
+            } finally {
+                this.loading = false;
             }
-            this.smartFolderInsightsLoading = false;
-            this.smartFolderInsightsLoaded = true;
         },
-        applySmartFolderRecommendation(rec) {
-            if (!rec || !rec.name || !rec.query) return;
+        // This function adds a valid, nonduplicate insight recommendation to the local collection.
+        applySmartFolderRecommendation(recommendation) {
+            if (!recommendation || !recommendation.name || !recommendation.query) return;
 
-            // Avoid duplicates by query
             const exists = this.smartFolders.some(
-                sf => sf.query.trim() === rec.query.trim()
+                smartFolder => smartFolder.query.trim() === recommendation.query.trim()
             );
 
             if (exists) {
@@ -1064,11 +468,12 @@ export default {
 
             this.smartFolders.push({
                 localId: `local-${Date.now()}`,
-                name: rec.name,
-                query: rec.query,
+                name: recommendation.name,
+                query: recommendation.query,
                 limitCount: 50
             });
         },
+        // This function creates and opens a new Smart Folder using the available sort capabilities.
         addSmartFolder() {
             const smartFolder = {
                 localId: `local-${Date.now()}`,
@@ -1080,6 +485,7 @@ export default {
             this.smartFolders.push(smartFolder);
             this.toggleSmartFolder(smartFolder);
         },
+        // This function removes a local Smart Folder and closes its editor when necessary.
         removeSmartFolder(index) {
             if (this.selectedSmartFolderId === this.smartFolders[index]?.localId) {
                 this.cancelSmartFolderConfig();
@@ -1087,12 +493,15 @@ export default {
 
             this.smartFolders.splice(index, 1);
         },
+        // This function returns the stored query summary shown in each collapsed row.
         querySummary(smartFolder) {
             return smartFolder.query || 'No filters configured yet';
         },
-        resetDraftConfig() {
-            this.draftConfig = createEmptySmartFolderConfig();
+        // This function records the currently mounted editor without making it the collection owner.
+        setSmartFolderEditorRef(editor) {
+            this.smartFolderEditorRef = editor;
         },
+        // This function opens the selected editor or closes it when the row is selected again.
         toggleSmartFolder(smartFolder) {
             if (this.selectedSmartFolderId === smartFolder.localId) {
                 this.cancelSmartFolderConfig();
@@ -1100,164 +509,65 @@ export default {
             }
 
             this.selectedSmartFolderId = smartFolder.localId;
-            this.loadSmartFolderIntoDraft(smartFolder);
+            this.editorQueryInvalid = false;
         },
-        loadSmartFolderIntoDraft(smartFolder) {
-            this.resetDraftConfig();
+        // This function applies an editor result to the selected collection entry.
+        saveSmartFolderConfig(index, update) {
+            if (!update) return;
 
-            this.draftConfig.name = smartFolder.name || '';
-            this.draftConfig.limitCount = Number(smartFolder.limitCount) || 50;
-
-            // Keep parsing intentionally small; unknown tokens remain visible as free text.
-            this.parseExistingQueryIntoDraft(smartFolder.query || '');
-        },
-        parseExistingQueryIntoDraft(query) {
-            const freeText = [];
-
-            tokenizeQuery(query).forEach(token => {
-                const cleaned = token.replace(/[.,;]+$/, '');
-                const lower = cleaned.toLowerCase();
-
-                if (lower === 'unread:true') {
-                    this.draftConfig.status.unread = true;
-                    this.draftConfig.status.read = false;
-                } else if (lower === 'read:true') {
-                    this.draftConfig.status.read = true;
-                    this.draftConfig.status.unread = false;
-                } else if (lower === 'favorite:true' || lower === 'star:true') this.draftConfig.status.favorite = true;
-                else if (lower === 'clicked:true') this.draftConfig.status.clicked = true;
-                else if (lower === 'hot:true') this.draftConfig.status.hot = true;
-                else if (['@today', '@yesterday', '@lastweek'].includes(lower)) this.draftConfig.date.preset = lower;
-                else if (/^firstseen:\d+[hd]$/i.test(cleaned)) this.applyFirstSeenToken(cleaned);
-                else if (/^tag:/i.test(cleaned)) this.appendDraftTag(stripQuotes(cleaned.slice(cleaned.indexOf(':') + 1)));
-                else if (/^title:/i.test(cleaned)) this.draftConfig.content.title = stripQuotes(cleaned.slice(cleaned.indexOf(':') + 1));
-                else if (/^author:/i.test(cleaned)) this.draftConfig.content.author = stripQuotes(cleaned.slice(cleaned.indexOf(':') + 1));
-                else if (/^language:/i.test(cleaned)) this.draftConfig.content.language = cleaned.slice(cleaned.indexOf(':') + 1);
-                else if (/^quality:/i.test(cleaned)) this.draftConfig.scores.quality = this.parseScoreToken(cleaned);
-                else if (/^freshness:/i.test(cleaned)) this.draftConfig.scores.freshness = this.parseScoreToken(cleaned);
-                else if (lower === 'event:true') this.draftConfig.events.isEvent = true;
-                else if (lower === 'event:false') this.draftConfig.events.isNotEvent = true;
-                else if (/^eventcount:/i.test(cleaned)) this.applyEventCountToken(cleaned);
-                else if (/^sort:/i.test(cleaned)) this.applySortToken(cleaned);
-                else if (/^limit:/i.test(cleaned)) this.draftConfig.limitCount = Number(cleaned.split(':')[1]) || 50;
-                else freeText.push(stripQuotes(cleaned));
-            });
-
-            this.draftConfig.content.text = freeText.join(' ');
-        },
-        applyFirstSeenToken(token) {
-            const match = token.match(/^firstSeen:(\d+)([hd])$/i);
-            if (!match) return;
-
-            this.draftConfig.date.useRelative = true;
-            this.draftConfig.date.relativeAmount = Number(match[1]);
-            this.draftConfig.date.relativeUnit = match[2].toLowerCase();
-        },
-        appendDraftTag(tag) {
-            if (this.draftConfig.content.tags) return;
-
-            this.draftConfig.content.tags = this.normalizeTagValue(tag);
-        },
-        normalizeTagValue(value) {
-            return String(value || '')
-                .split(/[,\s]+/)
-                .filter(Boolean)[0] || '';
-        },
-        normalizeDraftTag() {
-            this.draftConfig.content.tags = this.normalizeTagValue(this.draftConfig.content.tags);
-        },
-        preventTagSeparator(event) {
-            if (event.key === ',' || event.key === ' ') {
-                event.preventDefault();
-            }
-        },
-        parseScoreToken(token) {
-            const match = token.match(/(\d+\.?\d*|\.\d+)$/);
-            return match ? Number(match[1]) : 0;
-        },
-        applyEventCountToken(token) {
-            const match = token.match(/(\d+)$/);
-            this.draftConfig.events.useMinimumCount = true;
-            this.draftConfig.events.minimumCount = match ? Number(match[1]) : 2;
-        },
-        applySortToken(token) {
-            const sortValue = token.split(':')[1];
-
-            if (['trust', 'recommended', 'quality', 'attention'].includes(sortValue)) {
-                this.draftConfig.sort.field = sortValue;
-                return;
-            }
-
-            if (sortValue === 'desc') this.draftConfig.sort.field = 'published-desc';
-            if (sortValue === 'asc') this.draftConfig.sort.field = 'published-asc';
-        },
-        onStatusFilterChange(changedKey) {
-            if (changedKey === 'unread' && this.draftConfig.status.unread) {
-                this.draftConfig.status.read = false;
-            }
-
-            if (changedKey === 'read' && this.draftConfig.status.read) {
-                this.draftConfig.status.unread = false;
-            }
-        },
-        onEventFilterChange(changedKey) {
-            if (changedKey === 'isEvent' && this.draftConfig.events.isEvent) {
-                this.draftConfig.events.isNotEvent = false;
-                this.draftConfig.events.useMinimumCount = false;
-            }
-
-            if (changedKey === 'isNotEvent' && this.draftConfig.events.isNotEvent) {
-                this.draftConfig.events.isEvent = false;
-                this.draftConfig.events.useMinimumCount = false;
-            }
-
-            if (changedKey === 'useMinimumCount' && this.draftConfig.events.useMinimumCount) {
-                this.draftConfig.events.isEvent = false;
-                this.draftConfig.events.isNotEvent = false;
-            }
-        },
-        saveSmartFolderConfig(index) {
             this.smartFolders.splice(index, 1, {
                 ...this.smartFolders[index],
-                name: this.draftConfig.name,
-                query: this.generatedSmartFolderQuery,
-                limitCount: this.draftConfig.limitCount
+                ...update
             });
 
             this.cancelSmartFolderConfig();
         },
-        saveSmartFolderAsCopy() {
+        // This function appends an editor result as a new Smart Folder copy.
+        saveSmartFolderAsCopy(update) {
+            if (!update) return;
+
             this.smartFolders.push({
                 localId: `local-${Date.now()}`,
-                name: `${this.draftConfig.name || 'Smart Folder'} copy`,
-                query: this.generatedSmartFolderQuery,
-                limitCount: this.draftConfig.limitCount
+                name: `${update.name || 'Smart Folder'} copy`,
+                query: update.query,
+                limitCount: update.limitCount
             });
 
             this.cancelSmartFolderConfig();
         },
+        // This function closes the active editor and clears its validation guard.
         cancelSmartFolderConfig() {
             this.selectedSmartFolderId = null;
-            this.resetDraftConfig();
+            this.smartFolderEditorRef = null;
+            this.editorQueryInvalid = false;
         },
-        async copyGeneratedQuery() {
-            await navigator.clipboard?.writeText(this.generatedSmartFolderQuery);
+        // This function commits an open editor before the complete collection is persisted.
+        commitOpenEditor() {
+            if (this.selectedSmartFolderId === null) return;
+
+            const index = this.smartFolders.findIndex(
+                smartFolder => smartFolder.localId === this.selectedSmartFolderId
+            );
+            const update = this.smartFolderEditorRef?.getFolderUpdate();
+            if (index >= 0 && update) {
+                this.saveSmartFolderConfig(index, update);
+            }
         },
+        // This function persists the valid local collection and refreshes authoritative store state.
         async save() {
+            if (!this.loaded || this.loading || this.loadError || this.saving) return;
+            if (this.editorQueryInvalid) return;
+
+            this.saving = true;
             try {
-                if (this.generatedQueryInvalid) return;
+                this.commitOpenEditor();
 
-                if (this.selectedSmartFolderId !== null) {
-                    const index = this.smartFolders.findIndex(sf => sf.localId === this.selectedSmartFolderId);
-                    if (index >= 0) this.saveSmartFolderConfig(index);
-                }
+                const filteredSmartFolders = this.smartFolders.filter(
+                    smartFolder => smartFolder && smartFolder.name && smartFolder.name.trim() !== ''
+                );
+                const response = await saveSmartFolders(filteredSmartFolders);
+                console.log('Smart folders saved:', response.data);
 
-                // Persist smart folders to the server
-                const filteredSmartFolders = this.smartFolders.filter(sf => sf && sf.name && sf.name.trim() !== '');
-                const resp = await saveSmartFolders(filteredSmartFolders);
-                console.log('Smart folders saved:', resp.data);
-
-                // Refresh smart folders from the server
                 await this.$store.data.fetchSmartFolders();
 
                 this.$emit('saved');
@@ -1265,6 +575,8 @@ export default {
             } catch (err) {
                 console.error('Error saving smart folders:', err);
                 notifyActionError('Could not save Smart Folders. Please try again.', err);
+            } finally {
+                this.saving = false;
             }
         }
     }

@@ -101,6 +101,22 @@ describe('article ownership authorization', () => {
     expect(res.body).toEqual({ error: 'Article not found' });
   });
 
+  it('returns the persisted click count after incrementing an owned article', async () => {
+    const owner = await createUser(uniqueName('article-click-owner'));
+    const { article } = await createArticleFor(owner);
+    await article.update({ clickedAmount: 2 });
+
+    const res = await request(app)
+      .post(`/api/articles/markclicked/${article.id}`)
+      .set('Authorization', authHeaderFor(owner));
+
+    await article.reload();
+
+    expect(res.status).toBe(200);
+    expect(res.body.clickedAmount).toBe(3);
+    expect(article.clickedAmount).toBe(3);
+  });
+
   it('GET article by ID hides filtered articles from their owner', async () => {
     const owner = await createUser(uniqueName('filtered-article-owner'));
     const { article } = await createArticleFor(owner);

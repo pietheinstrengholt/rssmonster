@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import { reconcileTouchedEvents } from '../../services/events/eventReconciliation.js';
@@ -60,6 +60,16 @@ async function createEvent(user, representativeArticle, overrides = {}) {
 }
 
 describe('reconcileTouchedEvents', () => {
+  it('destroys a touched event after its canonical membership becomes empty', async () => {
+    const { user, feed } = await createUserGraph('empty-reconciliation');
+    const representativeArticle = await createArticle(user, feed, 1);
+    const event = await createEvent(user, representativeArticle);
+
+    await reconcileTouchedEvents(user.id, [event.id]);
+
+    expect(await Event.findByPk(event.id)).toBeNull();
+  });
+
   it('scopes touched events and event articles to the requested user', async () => {
     const owner = await createUserGraph('owner');
     const foreign = await createUserGraph('foreign');
@@ -230,5 +240,56 @@ describe('reconcileTouchedEvents', () => {
     expect(event.articleCount).toBe(2);
     expect(event.eventVector).toEqual([0.95, 0.05, 0]);
     expect(event.developingArticleId).toBe(representativeArticle.id);
+  });
+
+  it('returns null when the selected event no longer exists', async () => {
+    const { user, feed } = await createUserGraph('missing-assignment-event');
+    const incomingArticle = await createArticle(user, feed, 1);
+
+    await expect(assignArticleToExistingEvent({
+      article: incomingArticle,
+      bestEvent: { id: 999999999 },
+      cache: null,
+      skipTopicAssignment: true
+    })).resolves.toBeNull();
+  });
+
+  it('returns null when the incoming canonical article no longer exists', async () => {
+    const { user, feed } = await createUserGraph('missing-assignment-article');
+    const representativeArticle = await createArticle(user, feed, 1);
+    const event = await createEvent(user, representativeArticle);
+    await representativeArticle.update({ eventId: event.id });
+
+    await expect(assignArticleToExistingEvent({
+      article: { id: 999999999, userId: user.id },
+      bestEvent: event,
+      cache: null,
+      skipTopicAssignment: true
+    })).resolves.toBeNull();
+  });
+
+  it('runs topic assignment and updates the cache only after commit', async () => {
+    const { user, feed } = await createUserGraph('topic-assignment-cache');
+    const representativeArticle = await createArticle(user, feed, 1);
+    const incomingArticle = await createArticle(user, feed, 2);
+    const event = await createEvent(user, representativeArticle, {
+      developingArticleId: representativeArticle.id
+    });
+    await representativeArticle.update({ eventId: event.id });
+    const cache = { updateInMemory: vi.fn() };
+    const assignTopicsForEvent = vi.fn().mockResolvedValue(null);
+
+    await expect(assignArticleToExistingEvent({
+      article: incomingArticle,
+      bestEvent: event,
+      cache,
+      assignTopicsForEvent
+    })).resolves.toBe(event.id);
+
+    expect(assignTopicsForEvent).toHaveBeenCalledOnce();
+    expect(cache.updateInMemory).toHaveBeenCalledWith(
+      event.id,
+      expect.objectContaining({ articleCount: 2 })
+    );
   });
 });

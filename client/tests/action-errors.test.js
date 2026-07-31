@@ -12,7 +12,7 @@ import {
 } from '../src/services/actionNotifications.js';
 import { markArticleUnread } from '../src/api/articles';
 import { createFeed } from '../src/api/feeds';
-import { saveActions } from '../src/api/actions';
+import { fetchActions, saveActions } from '../src/api/actions';
 import { saveThemeMode } from '../src/api/settings';
 
 vi.mock('../src/api/articles', () => ({
@@ -130,6 +130,10 @@ describe('recoverable action errors', () => {
     const notification = captureActionError();
     const context = {
       actions: [{ name: 'Archive ads', actionType: 'discard', regularExpression: 'ad' }],
+      loaded: true,
+      loading: false,
+      loadError: '',
+      saving: false,
       $emit: vi.fn()
     };
 
@@ -140,6 +144,60 @@ describe('recoverable action errors', () => {
     });
     expect(context.$emit).not.toHaveBeenCalled();
     expect(console.error).toHaveBeenCalledWith('Error saving article actions:', error);
+  });
+
+  it('blocks action saves until the authoritative load succeeds', async () => {
+    let resolveLoad;
+    const pendingLoad = new Promise(resolve => {
+      resolveLoad = resolve;
+    });
+    fetchActions.mockReturnValueOnce(pendingLoad);
+    saveActions.mockClear();
+    const context = {
+      ...SettingsActions.data(),
+      $emit: vi.fn(),
+      ...SettingsActions.methods
+    };
+
+    const loadPromise = context.fetchActions();
+    await context.save();
+
+    expect(context.loading).toBe(true);
+    expect(context.loaded).toBe(false);
+    expect(saveActions).not.toHaveBeenCalled();
+
+    resolveLoad({
+      data: {
+        actions: [{
+          name: 'Keep security',
+          actionType: 'favorite',
+          regularExpression: 'security'
+        }]
+      }
+    });
+    await loadPromise;
+
+    expect(context.loaded).toBe(true);
+    expect(context.loadError).toBe('');
+    expect(context.actions).toHaveLength(1);
+  });
+
+  it('keeps action saving blocked after the authoritative load fails', async () => {
+    const error = new Error('load failed');
+    fetchActions.mockRejectedValueOnce(error);
+    saveActions.mockClear();
+    const context = {
+      ...SettingsActions.data(),
+      $emit: vi.fn(),
+      ...SettingsActions.methods
+    };
+
+    await context.fetchActions();
+    await context.save();
+
+    expect(context.loaded).toBe(false);
+    expect(context.loadError).toContain('Could not load article actions');
+    expect(saveActions).not.toHaveBeenCalled();
   });
 
   it('notifies and rolls back when saving a theme preference fails', async () => {

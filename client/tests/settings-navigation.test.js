@@ -80,6 +80,17 @@ describe('Settings navigation', () => {
     expect(getSettingsNavigation(true, 'user').find(item => item.key === 'users')?.visible).toBe(false);
   });
 
+  // Verifies unknown section state falls back to the welcome component and overview copy.
+  it('falls back safely when an unknown section is selected', () => {
+    const context = {
+      active: 'missing',
+      activeNavigationItem: undefined
+    };
+
+    expect(Settings.computed.activeSectionDescription.call(context)).toBe('Settings — Overview');
+    expect(Settings.computed.activeComponent.call(context)).toBe('SettingsWelcome');
+  });
+
   it('opens the always-available Smart Folders async section', async () => {
     const wrapper = mountSettings();
 
@@ -88,7 +99,7 @@ describe('Settings navigation', () => {
     const navigationButton = await selectSettingsSection(wrapper, 'Smart Folders');
     await vi.waitFor(() => {
       expect(wrapper.find('.smart-folders-hero h3').exists()).toBe(true);
-    });
+    }, { timeout: 3000 });
 
     expect(wrapper.get('.smart-folders-hero h3').text()).toBe('Smart Folders');
     expect(document.activeElement).toBe(navigationButton.element);
@@ -139,5 +150,55 @@ describe('Settings navigation', () => {
     expect(errorState.attributes('aria-atomic')).toBe('true');
     expect(document.activeElement).toBe(navigationButton.element);
     wrapper.unmount();
+  });
+
+  // Verifies child save events are forwarded as a Settings refresh request.
+  it('forwards saved section events as force reload requests', async () => {
+    const wrapper = mountSettings({
+      stubs: {
+        SettingsWelcome: {
+          name: 'SettingsWelcomeStub',
+          template: '<div />',
+          emits: ['close', 'saved', 'forceReload']
+        }
+      }
+    });
+    await flushPromises();
+
+    const section = wrapper.findComponent({ name: 'SettingsWelcomeStub' });
+    section.vm.$emit('saved');
+    section.vm.$emit('forceReload');
+    section.vm.$emit('close');
+    await wrapper.get('.settings-close-button').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.vm.active).toBe('welcome');
+    expect(wrapper.emitted('forceReload')).toHaveLength(2);
+    expect(wrapper.emitted('close')).toHaveLength(1);
+    wrapper.unmount();
+  });
+
+  // Verifies section changes restore a connected navigation button when focus leaves the dialog.
+  it('restores navigation focus after a section change', () => {
+    const navigationButton = {
+      isConnected: true,
+      focus: vi.fn()
+    };
+    const context = {
+      active: 'welcome',
+      $refs: {
+        settingsDialog: {
+          contains: vi.fn(() => false)
+        }
+      },
+      $nextTick: callback => callback()
+    };
+
+    Settings.methods.selectSection.call(context, 'actions', {
+      currentTarget: navigationButton
+    });
+
+    expect(context.active).toBe('actions');
+    expect(navigationButton.focus).toHaveBeenCalledOnce();
   });
 });

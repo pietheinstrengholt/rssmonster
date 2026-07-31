@@ -55,4 +55,28 @@ describe('ArticleEventCandidateCache', () => {
     expect(candidates).toHaveLength(300);
     expect(candidates.map(candidate => candidate.id)).toContain(301);
   });
+
+  it('removes records and deletes a bucket after its final record leaves', () => {
+    const cache = new ArticleEventCandidateCache({ userId: 1 });
+    cache.insert(candidateRecord(1));
+    cache.insert(candidateRecord(2));
+
+    cache.remove(1);
+    expect(cache.findNearby(candidateRecord(3)).map(candidate => candidate.id)).toEqual([2]);
+
+    cache.remove(2);
+    cache.remove(999);
+
+    expect(cache.buckets.size).toBe(0);
+    expect(cache.articleIndex.size).toBe(0);
+  });
+
+  it('updates cached event ids and ignores unknown article ids', () => {
+    const cache = new ArticleEventCandidateCache({ userId: 1 });
+    cache.insert(candidateRecord(1));
+
+    cache.updateEventId([1, 999], 42);
+
+    expect(cache.findNearby(candidateRecord(2))[0].eventId).toBe(42);
+  });
 });

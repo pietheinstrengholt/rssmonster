@@ -530,9 +530,10 @@ const markClicked = async (req, res, _next) => {
   try {
     const userId = req.userData.userId;
     const articleId = req.params.articleId;
-    const articleIds = Array.isArray(req.body.articleIds)
-      ? req.body.articleIds
-      : String(req.body.articleIds || '').split(',').filter(Boolean);
+    const requestedArticleIds = req.body?.articleIds;
+    const articleIds = Array.isArray(requestedArticleIds)
+      ? requestedArticleIds
+      : String(requestedArticleIds || '').split(',').filter(Boolean);
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });
@@ -586,7 +587,8 @@ const markClicked = async (req, res, _next) => {
 
     res.status(200).json({ 
       message: "Article marked as clicked",
-      articleId: articleId
+      articleId: articleId,
+      clickedAmount: article.clickedAmount
     });
   } catch (err) {
     console.error("Error in markClicked:", err);

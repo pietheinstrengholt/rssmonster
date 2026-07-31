@@ -1,9 +1,10 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   articleFeedReadStateMethods,
   createArticleFeedReadState
 } from '../src/components/articleFeed/readState.js';
+import { articleFeedVisibilityMethods } from '../src/components/articleFeed/visibilityTracking.js';
 import {
   markArticlesAsRead,
   markArticleSeen,
@@ -70,6 +71,10 @@ beforeEach(() => {
   vi.spyOn(console, 'error').mockImplementation(() => {});
 });
 
+afterEach(() => {
+  vi.useRealTimers();
+});
+
 describe('article feed read-state reconciliation', () => {
   // Verifies reader navigation pools only a previous unread article.
   it('marks a previous reader article once and ignores other modes or completed articles', () => {
@@ -103,8 +108,9 @@ describe('article feed read-state reconciliation', () => {
       }
     });
 
-    await context.markArticleSeen(1, 4);
+    const persisted = await context.markArticleSeen(1, 4);
 
+    expect(persisted).toBe(true);
     expect(markArticleSeen).toHaveBeenCalledWith(1, {
       grouping: 'event',
       visibleSeconds: 4,
@@ -112,6 +118,56 @@ describe('article feed read-state reconciliation', () => {
     });
     expect(context.articles.map(article => article.status)).toEqual(['read', 'read', 'read']);
     expect(context.$store.data.increaseReadCount).toHaveBeenCalledTimes(2);
+  });
+
+  // Verifies a transient automatic read failure is retried without duplicating count updates.
+  it('retries a transient automatic seen failure before committing the pool entry', async () => {
+    vi.useFakeTimers();
+    const context = createContext({
+      visibleSince: new Map(),
+      visibleDuration: new Map([[1, 1200]])
+    });
+    const error = new Error('timeout');
+    markArticleSeen
+      .mockRejectedValueOnce(error)
+      .mockResolvedValueOnce({
+        data: {
+          ...context.articles[0],
+          status: 'read',
+          readArticles: [context.articles[0]]
+        }
+      });
+
+    const persistence = articleFeedVisibilityMethods.addToPool.call(context, 1);
+    await vi.runAllTimersAsync();
+    await persistence;
+
+    expect(markArticleSeen).toHaveBeenCalledTimes(2);
+    expect(context.pool).toContain(1);
+    expect(context.pendingSeenArticleIds.size).toBe(0);
+    expect(context.seenPersistenceAttempts.has(1)).toBe(false);
+    expect(context.$store.data.increaseReadCount).toHaveBeenCalledOnce();
+  });
+
+  // Verifies automatic seen persistence stops after its retry budget is exhausted.
+  it('bounds automatic seen retries and leaves failed articles outside the pool', async () => {
+    vi.useFakeTimers();
+    const context = createContext({
+      visibleSince: new Map(),
+      visibleDuration: new Map()
+    });
+    markArticleSeen.mockRejectedValue(new Error('offline'));
+
+    const persistence = articleFeedVisibilityMethods.addToPool.call(context, 1);
+    await vi.runAllTimersAsync();
+    await persistence;
+    await articleFeedVisibilityMethods.addToPool.call(context, 1);
+
+    expect(markArticleSeen).toHaveBeenCalledTimes(3);
+    expect(context.pool).not.toContain(1);
+    expect(context.pendingSeenArticleIds.size).toBe(0);
+    expect(context.seenPersistenceAttempts.get(1)).toBe(3);
+    expect(context.$store.data.increaseReadCount).not.toHaveBeenCalled();
   });
 
   // Verifies minimal navigation reads the previous item and clears the active item on close.

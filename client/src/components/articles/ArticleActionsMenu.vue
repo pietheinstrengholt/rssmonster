@@ -4,7 +4,7 @@
       <BootstrapIcon icon="three-dots" />
     </button>
     <ul class="dropdown-menu">
-      <li><a class="dropdown-item" href="#" @click.prevent="$emit('toggle-favorite')">{{ favoriteInd ? 'Unmark favorite' : 'Mark as favorite' }}</a></li>
+      <li><button class="dropdown-item" type="button" :disabled="favoritePending" @click="$emit('toggle-favorite')">{{ favoriteInd ? 'Unmark favorite' : 'Mark as favorite' }}</button></li>
       <li><a class="dropdown-item" href="#" @click.prevent="$emit('not-interested')">Not Interested</a></li>
       <li><hr class="dropdown-divider" /></li>
       <li><a class="dropdown-item recommendation-action-item" href="#" @click.prevent="$emit('more-like-this')"><BootstrapIcon icon="hand-thumbs-up-fill" class="recommendation-action-icon recommendation-positive-icon" />More like this</a></li>
@@ -18,6 +18,9 @@
 <script>
 export default {
   emits: ['toggle-favorite', 'not-interested', 'more-like-this', 'less-like-this', 'ignore-topic', 'mute-feed'],
-  props: { favoriteInd: { type: Number, default: 0 } }
+  props: {
+    favoriteInd: { type: Number, default: 0 },
+    favoritePending: { type: Boolean, default: false }
+  }
 };
 </script>

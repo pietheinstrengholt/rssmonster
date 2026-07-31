@@ -1,3 +1,11 @@
+const MAX_SEEN_PERSISTENCE_ATTEMPTS = 3;
+const SEEN_RETRY_BASE_DELAY_MS = 200;
+
+// Waits with linear backoff before another automatic seen-state attempt.
+const waitBeforeSeenRetry = attempt => new Promise(resolve => {
+  window.setTimeout(resolve, SEEN_RETRY_BASE_DELAY_MS * attempt);
+});
+
 // Creates observer and timing state for rendered feed articles.
 export function createArticleFeedVisibilityState() {
   return {
@@ -123,24 +131,48 @@ export const articleFeedVisibilityMethods = {
     this.visibleSince.delete(articleId);
   },
 
-  // Records a passed article and marks it seen outside minimal view.
-  addToPool(articleId) {
-    if (this.pool.has(articleId)) return;
+  // Persists a passed article with bounded retries before committing it to the pool.
+  async addToPool(articleId) {
+    if (this.pool.has(articleId) || this.pendingSeenArticleIds.has(articleId)) return;
 
     // FINALIZE VISIBILITY IF ARTICLE IS STILL VISIBLE
     if (this.visibleSince.has(articleId)) {
       this.finalizeVisibleDuration(articleId);
     }
 
-    this.pool.add(articleId);
-
     const ms = this.visibleDuration.get(articleId) || 0;
     const visibleSeconds = Math.round(ms / 1000);
 
     console.log("[MARK SEEN]", articleId, `visibleSeconds=${visibleSeconds}`);
 
-    if (this.$store.data.currentSelection.viewMode !== "minimal") {
-      this.markArticleSeen(articleId, visibleSeconds);
+    if (this.$store.data.currentSelection.viewMode === "minimal") {
+      this.pool.add(articleId);
+      return;
+    }
+
+    let attempt = this.seenPersistenceAttempts.get(articleId) || 0;
+    if (attempt >= MAX_SEEN_PERSISTENCE_ATTEMPTS) return;
+
+    this.pendingSeenArticleIds.add(articleId);
+
+    try {
+      while (attempt < MAX_SEEN_PERSISTENCE_ATTEMPTS) {
+        attempt += 1;
+        this.seenPersistenceAttempts.set(articleId, attempt);
+
+        const persisted = await this.markArticleSeen(articleId, visibleSeconds);
+        if (persisted) {
+          this.pool.add(articleId);
+          this.seenPersistenceAttempts.delete(articleId);
+          return;
+        }
+
+        if (attempt < MAX_SEEN_PERSISTENCE_ATTEMPTS) {
+          await waitBeforeSeenRetry(attempt);
+        }
+      }
+    } finally {
+      this.pendingSeenArticleIds.delete(articleId);
     }
   }
 };

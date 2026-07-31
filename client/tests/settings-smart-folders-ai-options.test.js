@@ -1,6 +1,7 @@
-import { mount } from '@vue/test-utils';
+import { flushPromises, mount } from '@vue/test-utils';
 import { describe, expect, it, vi } from 'vitest';
 import SettingsSmartFolders from '../src/components/model/SettingsSmartFolders.vue';
+import SmartFolderEditor from '../src/components/model/smartFolders/SmartFolderEditor.vue';
 
 vi.mock('../src/api/client', () => ({
   setAuthToken: vi.fn()
@@ -11,23 +12,28 @@ vi.mock('../src/api/smartfolders', () => ({
   saveSmartFolders: vi.fn()
 }));
 
-// This function mounts Smart Folder settings with one editable folder.
-const mountSettings = (AIEnabled) => mount(SettingsSmartFolders, {
-  global: {
-    mocks: {
-      $store: {
-        auth: { token: 'test-token' },
-        data: {
-          currentSelection: { AIEnabled },
-          smartFolders: [{ id: 1, name: 'Unread', query: 'unread:true limit:50', limitCount: 50 }]
+// This function mounts Smart Folder settings after its authoritative load completes.
+const mountSettings = async (AIEnabled) => {
+  const wrapper = mount(SettingsSmartFolders, {
+    global: {
+      mocks: {
+        $store: {
+          auth: { token: 'test-token' },
+          data: {
+            currentSelection: { AIEnabled },
+            smartFolders: [{ id: 1, name: 'Unread', query: 'unread:true limit:50', limitCount: 50 }],
+            fetchSmartFolders: vi.fn().mockResolvedValue()
+          }
         }
+      },
+      stubs: {
+        BootstrapIcon: true
       }
-    },
-    stubs: {
-      BootstrapIcon: true
     }
-  }
-});
+  });
+  await flushPromises();
+  return wrapper;
+};
 
 // This function opens the first Smart Folder configuration form.
 const openFirstFolder = async (wrapper) => {
@@ -44,7 +50,7 @@ const getSortOptionLabels = (wrapper) => {
 
 describe('SettingsSmartFolders AI options', () => {
   it('hides AI-dependent filters and sorts when AI is disabled', async () => {
-    const wrapper = mountSettings(false);
+    const wrapper = await mountSettings(false);
     await openFirstFolder(wrapper);
 
     const optionLabels = getSortOptionLabels(wrapper);
@@ -60,7 +66,7 @@ describe('SettingsSmartFolders AI options', () => {
   });
 
   it('shows AI-dependent filters and sorts when AI is enabled', async () => {
-    const wrapper = mountSettings(true);
+    const wrapper = await mountSettings(true);
     await openFirstFolder(wrapper);
 
     const optionLabels = getSortOptionLabels(wrapper);
@@ -75,11 +81,11 @@ describe('SettingsSmartFolders AI options', () => {
   });
 
   it('creates non-AI folders without a hidden AI sort', async () => {
-    const wrapper = mountSettings(false);
+    const wrapper = await mountSettings(false);
 
     await wrapper.get('.smart-folders-list-header .btn-add').trigger('click');
 
     expect(wrapper.vm.smartFolders.at(-1).query).toBe('limit:50');
-    expect(wrapper.vm.generatedSmartFolderQuery).toBe('limit:50');
+    expect(wrapper.findComponent(SmartFolderEditor).vm.generatedSmartFolderQuery).toBe('limit:50');
   });
 });

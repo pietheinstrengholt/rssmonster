@@ -54,7 +54,8 @@ export default {
       scrollContainer: null,
       desktopReaderQuery: null,
       isDesktopReaderWidth: false,
-      showSmartFoldersOverview: false
+      showSmartFoldersOverview: false,
+      pendingFavoriteArticleIds: new Set()
     };
   },
 
@@ -216,22 +217,36 @@ export default {
       const article = this.articles.find(item => String(item.id) === String(id));
       if (!article) return;
 
-      const newFavoriteInd = article.favoriteInd === 1 ? 0 : 1;
-      const updateType = newFavoriteInd ? 'mark' : 'unmark';
+      const articleKey = String(article.id);
+      if (this.pendingFavoriteArticleIds.has(articleKey)) return;
 
+      const previousFavoriteInd = article.favoriteInd === 1 ? 1 : 0;
+      const requestedFavoriteInd = previousFavoriteInd === 1 ? 0 : 1;
+      const updateType = requestedFavoriteInd ? 'mark' : 'unmark';
+      this.pendingFavoriteArticleIds.add(articleKey);
       try {
         const response = await markAsFavorite(id, updateType);
-        const delta = newFavoriteInd ? 1 : -1;
-        this.$store.data.applyFavoriteDelta({
-          categoryId: response.data.feed?.categoryId,
-          feedId: response.data.feedId,
-          delta
-        });
+        const persistedFavoriteInd = response.data.favoriteInd === 1
+          ? 1
+          : response.data.favoriteInd === 0
+            ? 0
+            : requestedFavoriteInd;
+        const delta = persistedFavoriteInd - previousFavoriteInd;
 
-        this.updateFavoriteInd({ id, favoriteInd: newFavoriteInd });
+        if (delta !== 0) {
+          this.$store.data.applyFavoriteDelta({
+            categoryId: response.data.feed?.categoryId,
+            feedId: response.data.feedId,
+            delta
+          });
+        }
+
+        this.updateFavoriteInd({ id, favoriteInd: persistedFavoriteInd });
       } catch (error) {
         console.error('Error toggling article favorite:', error);
         notifyActionError('Could not update the favorite. Please try again.', error);
+      } finally {
+        this.pendingFavoriteArticleIds.delete(articleKey);
       }
     },
 
@@ -260,25 +275,51 @@ export default {
 
     // Favorites each visible reader article that is not already favorited.
     async favoriteReaderArticles(articles) {
-      const unfavoritedArticles = articles.filter(article => article.favoriteInd !== 1);
+      const unfavoritedArticles = articles.filter(article =>
+        article.favoriteInd !== 1
+        && !this.pendingFavoriteArticleIds.has(String(article.id))
+      );
       if (!unfavoritedArticles.length) return;
 
-      const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark');
-      const updatedArticles = response.data.articles || [];
+      const articleKeys = unfavoritedArticles.map(article => String(article.id));
+      for (const articleKey of articleKeys) {
+        this.pendingFavoriteArticleIds.add(articleKey);
+      }
 
-      for (const updatedArticle of updatedArticles) {
-        this.applyReaderFavoriteResponse(updatedArticle);
+      try {
+        const response = await markManyAsFavorite(unfavoritedArticles.map(article => article.id), 'mark');
+        const updatedArticles = response.data.articles || [];
+
+        for (const updatedArticle of updatedArticles) {
+          this.applyReaderFavoriteResponse(updatedArticle);
+        }
+      } finally {
+        for (const articleKey of articleKeys) {
+          this.pendingFavoriteArticleIds.delete(articleKey);
+        }
       }
     },
 
     // Applies the local and overview count changes for a favorited reader article.
     applyReaderFavoriteResponse(updatedArticle) {
-      this.$store.data.applyFavoriteDelta({
-        categoryId: updatedArticle.feed?.categoryId,
-        feedId: updatedArticle.feedId,
-        delta: 1
+      const article = this.articles.find(item => String(item.id) === String(updatedArticle.id));
+      if (!article) return;
+
+      const previousFavoriteInd = article.favoriteInd === 1 ? 1 : 0;
+      const persistedFavoriteInd = updatedArticle.favoriteInd === 0 ? 0 : 1;
+      const delta = persistedFavoriteInd - previousFavoriteInd;
+
+      if (delta !== 0) {
+        this.$store.data.applyFavoriteDelta({
+          categoryId: updatedArticle.feed?.categoryId,
+          feedId: updatedArticle.feedId,
+          delta
+        });
+      }
+      this.updateFavoriteInd({
+        id: updatedArticle.id,
+        favoriteInd: persistedFavoriteInd
       });
-      this.updateFavoriteInd({ id: updatedArticle.id, favoriteInd: 1 });
     },
 
     // Marks each visible reader article as clicked.

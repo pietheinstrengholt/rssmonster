@@ -1,10 +1,11 @@
-import { describe, expect, it, vi } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 
 import Article from '../src/components/Article.vue';
 import ArticleReaderLayout from '../src/components/ArticleReaderLayout.vue';
 import articleSource from '../src/components/Article.vue?raw';
 import { markClicked } from '../src/api/articles';
+import { notifyActionError } from '../src/services/actionNotifications.js';
 
 vi.mock('../src/api/articles', () => ({
   fetchDuplicateArticles: vi.fn(),
@@ -13,6 +14,15 @@ vi.mock('../src/api/articles', () => ({
   markMoreLikeThis: vi.fn(),
   markNotInterested: vi.fn()
 }));
+
+vi.mock('../src/services/actionNotifications.js', () => ({
+  notifyActionError: vi.fn()
+}));
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  markClicked.mockResolvedValue({});
+});
 
 // This function creates an article with no preview fields by default.
 function createArticle(overrides = {}) {
@@ -155,6 +165,26 @@ describe('ArticleReaderLayout empty previews', () => {
     expect(selectArticle).not.toHaveBeenCalled();
     expect(markClicked).toHaveBeenCalledWith(1);
     expect(wrapper.emitted('update-clicked')).toEqual([[{ id: 1, clickedAmount: 1 }]]);
+  });
+
+  it('uses the persisted click count and suppresses failed reader click updates', async () => {
+    const article = createArticle({ clickedAmount: 3 });
+    const wrapper = mountReader(article);
+    markClicked.mockResolvedValueOnce({ data: { clickedAmount: 4 } });
+
+    await wrapper.vm.trackOriginalArticleClick(article);
+
+    expect(wrapper.emitted('update-clicked')).toEqual([[{ id: 1, clickedAmount: 4 }]]);
+
+    const error = new Error('offline');
+    markClicked.mockRejectedValueOnce(error);
+    await wrapper.vm.trackOriginalArticleClick(article);
+
+    expect(wrapper.emitted('update-clicked')).toHaveLength(1);
+    expect(notifyActionError).toHaveBeenCalledWith(
+      'Could not record this article click. Please try again.',
+      error
+    );
   });
 
   it('defines readable light and dark fallback colors', () => {

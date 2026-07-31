@@ -1,5 +1,8 @@
-import { describe, expect, it } from 'vitest';
+import { afterEach, describe, expect, it, vi } from 'vitest';
+import db from '../../models/index.js';
 import {
+  isCanonicalUnreadArticle,
+  resolveDevelopingArticleIdForAssignment,
   selectDevelopingArticleId,
   wasReadBeforeArticleArrived
 } from '../../services/events/developingArticlePointer.js';
@@ -30,6 +33,10 @@ const developingWave = [
 ];
 
 describe('developingArticlePointer', () => {
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('repairs a missing pointer to the first qualifying arrival regardless of input order', () => {
     const event = {
       representativeArticleId: representativeArticle.id,
@@ -80,5 +87,66 @@ describe('developingArticlePointer', () => {
       representativeArticleId: representativeArticle.id,
       developingArticleId: null
     }, [incomingArticle, representativeArticle])).toBe(representativeArticle.id);
+  });
+
+  it('rejects filtered, duplicate, and non-unread developing candidates', () => {
+    expect(isCanonicalUnreadArticle({
+      status: 'unread',
+      duplicateOfArticleId: null,
+      filteredInd: false
+    })).toBe(true);
+    expect(isCanonicalUnreadArticle({
+      status: 'read',
+      duplicateOfArticleId: null,
+      filteredInd: false
+    })).toBe(false);
+    expect(isCanonicalUnreadArticle({
+      status: 'unread',
+      duplicateOfArticleId: 1,
+      filteredInd: false
+    })).toBe(false);
+    expect(isCanonicalUnreadArticle({
+      status: 'unread',
+      duplicateOfArticleId: null,
+      filteredInd: true
+    })).toBe(false);
+  });
+
+  it('falls back to canonical event membership when both stored pointers are invalid', async () => {
+    const findOne = vi.spyOn(db.Article, 'findOne')
+      .mockResolvedValueOnce(null)
+      .mockResolvedValueOnce(null);
+    const findAll = vi.spyOn(db.Article, 'findAll').mockResolvedValue([
+      {
+        id: 13,
+        status: 'unread',
+        createdAt: new Date('2026-07-23T11:00:00Z')
+      },
+      {
+        id: 12,
+        status: 'unread',
+        createdAt: new Date('2026-07-23T10:00:00Z')
+      }
+    ]);
+
+    const result = await resolveDevelopingArticleIdForAssignment({
+      event: {
+        id: 7,
+        userId: 3,
+        representativeArticleId: 11,
+        developingArticleId: 99
+      },
+      incomingArticle: {
+        id: 13,
+        status: 'unread',
+        duplicateOfArticleId: null,
+        filteredInd: false
+      },
+      transaction: { id: 'transaction' }
+    });
+
+    expect(result).toBe(12);
+    expect(findOne).toHaveBeenCalledTimes(2);
+    expect(findAll).toHaveBeenCalledOnce();
   });
 });

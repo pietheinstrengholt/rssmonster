@@ -225,13 +225,15 @@ describe('Article API actions', () => {
     markAsFavorite.mockResolvedValue({
       data: {
         feedId: 3,
-        feed: { categoryId: 2 }
+        feed: { categoryId: 2 },
+        favoriteInd: 1
       }
     });
     const applyFavoriteDelta = vi.fn();
     const context = {
       id: 42,
       favoriteInd: 0,
+      favoriteMutationPending: false,
       $emit: vi.fn(),
       $store: {
         data: {
@@ -255,11 +257,52 @@ describe('Article API actions', () => {
     );
   });
 
+  it('guards duplicate favorite requests and applies one persisted transition', async () => {
+    let resolveFavorite;
+    const pendingFavorite = new Promise(resolve => {
+      resolveFavorite = resolve;
+    });
+    markAsFavorite.mockReturnValue(pendingFavorite);
+    const applyFavoriteDelta = vi.fn();
+    const context = {
+      id: 42,
+      favoriteInd: 0,
+      favoriteMutationPending: false,
+      $emit: vi.fn(),
+      $store: {
+        data: {
+          applyFavoriteDelta
+        }
+      }
+    };
+
+    const firstMutation = articleActionMethods.markAsFavorite.call(context);
+    const secondMutation = articleActionMethods.markAsFavorite.call(context);
+
+    expect(markAsFavorite).toHaveBeenCalledOnce();
+    expect(context.favoriteMutationPending).toBe(true);
+
+    resolveFavorite({
+      data: {
+        feedId: 3,
+        feed: { categoryId: 2 },
+        favoriteInd: 1
+      }
+    });
+    await Promise.all([firstMutation, secondMutation]);
+
+    expect(applyFavoriteDelta).toHaveBeenCalledOnce();
+    expect(context.$emit).toHaveBeenCalledOnce();
+    expect(context.favoriteMutationPending).toBe(false);
+  });
+
   it('emits the existing click and removal payloads after successful API actions', async () => {
-    markClicked.mockResolvedValue({});
+    markClicked.mockResolvedValue({ data: { clickedAmount: 4 } });
     markNotInterested.mockResolvedValue({});
     const context = {
       id: 42,
+      clickedAmount: 3,
+      clickMutationPending: false,
       $emit: vi.fn()
     };
 
@@ -271,12 +314,27 @@ describe('Article API actions', () => {
     expect(markNotInterested).toHaveBeenCalledWith(42);
     expect(context.$emit).toHaveBeenCalledWith(
       'update-clicked',
-      { id: 42, clickedAmount: 1 }
+      { id: 42, clickedAmount: 4 }
     );
     expect(context.$emit).toHaveBeenCalledWith(
       'article-not-interested',
       { id: 42 }
     );
+  });
+
+  it('does not emit a fabricated click count when persistence fails', async () => {
+    markClicked.mockRejectedValue(new Error('offline'));
+    const context = {
+      id: 42,
+      clickedAmount: 5,
+      clickMutationPending: false,
+      $emit: vi.fn()
+    };
+
+    await articleActionMethods.articleClicked.call(context);
+
+    expect(context.$emit).not.toHaveBeenCalled();
+    expect(context.clickMutationPending).toBe(false);
   });
 
   it('keeps extracted behavior on the Article Options API surface', () => {

@@ -104,6 +104,58 @@ describe('keyboard access and focus', () => {
     wrapper.unmount();
   });
 
+  // Verifies Tab falls back to the dialog when a section has no usable controls.
+  it('focuses the Settings dialog when no focusable controls remain', () => {
+    const focus = vi.fn();
+    const preventDefault = vi.fn();
+    const context = {
+      $refs: {
+        settingsDialog: { focus }
+      },
+      getFocusableElements: vi.fn(() => []),
+      $emit: vi.fn()
+    };
+
+    Settings.methods.handleDialogKeydown.call(context, {
+      key: 'Tab',
+      shiftKey: false,
+      preventDefault
+    });
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(focus).toHaveBeenCalledOnce();
+  });
+
+  // Verifies an outside focus target is wrapped into the first Settings control.
+  it('moves outside focus into Settings and ignores unrelated keys', () => {
+    const firstElement = { focus: vi.fn() };
+    const lastElement = { focus: vi.fn() };
+    const preventDefault = vi.fn();
+    const context = {
+      $refs: {
+        settingsDialog: {
+          contains: vi.fn(() => false)
+        }
+      },
+      getFocusableElements: vi.fn(() => [firstElement, lastElement]),
+      $emit: vi.fn()
+    };
+
+    Settings.methods.handleDialogKeydown.call(context, {
+      key: 'Tab',
+      shiftKey: false,
+      preventDefault
+    });
+    Settings.methods.handleDialogKeydown.call(context, {
+      key: 'ArrowDown',
+      preventDefault
+    });
+
+    expect(preventDefault).toHaveBeenCalledOnce();
+    expect(firstElement.focus).toHaveBeenCalledOnce();
+    expect(lastElement.focus).not.toHaveBeenCalled();
+  });
+
   it('restores focus to the Settings opener after unmount', async () => {
     const opener = document.createElement('button');
     opener.textContent = 'Open settings';

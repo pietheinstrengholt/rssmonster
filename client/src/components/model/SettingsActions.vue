@@ -9,24 +9,32 @@
       <div class="actions-note"><BootstrapIcon icon="lightning-charge" aria-hidden="true" /><p><strong>Performance tip:</strong> Discard actions are processed before AI analysis, saving API costs by skipping unwanted content early.</p></div>
     </section>
 
-    <section class="actions-list-section" aria-labelledby="actions-list-title">
-      <header class="actions-list-heading"><div><h3 id="actions-list-title">Your Actions</h3><p>Actions are evaluated in the order shown below.</p></div><button type="button" class="actions-add-button" @click="addAction"><BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />Add Action</button></header>
-      <div v-if="actions.length" class="actions-list">
+    <section class="actions-list-section" aria-labelledby="actions-list-title" :aria-busy="loading ? 'true' : 'false'">
+      <header class="actions-list-heading"><div><h3 id="actions-list-title">Your Actions</h3><p>Actions are evaluated in the order shown below.</p></div><button type="button" class="actions-add-button" :disabled="!loaded || saving" @click="addAction"><BootstrapIcon icon="plus-circle-fill" aria-hidden="true" />Add Action</button></header>
+      <div v-if="loading" class="actions-load-state" role="status" aria-live="polite">
+        <span class="spinner-border spinner-border-sm" aria-hidden="true"></span>
+        <span>Loading actions…</span>
+      </div>
+      <div v-else-if="loadError" class="actions-load-state actions-load-state--error" role="alert">
+        <span>{{ loadError }}</span>
+        <button type="button" class="btn btn-outline-secondary btn-sm" @click="fetchActions">Retry</button>
+      </div>
+      <div v-else-if="loaded && actions.length" class="actions-list">
         <article v-for="(action, index) in actions" :key="index" class="actions-list-row">
           <BootstrapIcon class="actions-grip" icon="grip-vertical" aria-hidden="true" /><span class="actions-row-icon" :class="actionTypeMeta(action.actionType).iconClass" aria-hidden="true"><BootstrapIcon :icon="actionTypeMeta(action.actionType).icon" /></span>
           <div class="actions-row-fields">
-            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="form-control" placeholder="Action name" /></div>
-            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="form-select"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
-            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="form-control" placeholder="e.g., important" /></div>
-            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="form-control" placeholder="e.g., /keyword|phrase/i" /></div>
+            <div class="actions-field"><label :for="`action-name-${index}`">Name</label><input :id="`action-name-${index}`" v-model="action.name" type="text" class="form-control" placeholder="Action name" :disabled="saving" /></div>
+            <div class="actions-field"><label :for="`action-type-${index}`">Type</label><div class="actions-type-control"><select :id="`action-type-${index}`" v-model="action.actionType" class="form-select" :disabled="saving"><option value="">Select action type</option><option v-for="actionType in actionTypes" :key="actionType.value" :value="actionType.value">{{ actionType.selectLabel }}</option></select><span v-if="action.actionType" class="actions-type-pill">{{ actionTypeMeta(action.actionType).label }}</span></div></div>
+            <div v-if="action.actionType === 'tag'" class="actions-field"><label :for="`action-tag-${index}`">Tag value</label><input :id="`action-tag-${index}`" v-model="action.tagValue" type="text" class="form-control" placeholder="e.g., important" :disabled="saving" /></div>
+            <div class="actions-field actions-field--regex"><label :for="`action-regex-${index}`">Regular Expression</label><input :id="`action-regex-${index}`" v-model="action.regularExpression" type="text" class="form-control" placeholder="e.g., /keyword|phrase/i" :disabled="saving" /></div>
           </div>
-          <div class="actions-row-buttons"><button type="button" class="actions-edit-button" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
+          <div class="actions-row-buttons"><button type="button" class="actions-edit-button" :disabled="saving" :aria-label="`Edit ${action.name || 'action'}`" @click="focusActionName(index)"><BootstrapIcon icon="pencil" aria-hidden="true" /><span>Edit</span></button><button type="button" class="actions-delete-button" :disabled="saving" :aria-label="`Delete ${action.name || 'action'}`" @click="removeAction(index)"><BootstrapIcon icon="trash-fill" aria-hidden="true" /></button></div>
         </article>
       </div>
-      <p v-else class="actions-empty-state">No actions yet. Add one to automate how incoming articles are handled.</p>
-      <div class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Discard action matches, the article will be set with a filtered indicator ensuring it will not show up in queries.</p></div>
+      <p v-else-if="loaded" class="actions-empty-state">No actions yet. Add one to automate how incoming articles are handled.</p>
+      <div v-if="loaded" class="actions-order-note"><BootstrapIcon icon="info-circle" aria-hidden="true" /><p>Actions are applied from top to bottom. Once a Discard action matches, the article will be set with a filtered indicator ensuring it will not show up in queries.</p></div>
     </section>
-    <div class="actions-save-area"><button class="actions-save-button" type="button" @click="save">Save Changes</button></div>
+    <div class="actions-save-area"><button class="actions-save-button" type="button" :disabled="!loaded || loading || Boolean(loadError) || saving" @click="save">{{ saving ? 'Saving…' : 'Save Changes' }}</button></div>
   </div>
 </template>
 
@@ -48,6 +56,20 @@
   padding: 26px;
   background: var(--settings-info-bg);
   border-color: var(--settings-info-border);
+}
+
+.actions-load-state {
+  align-items: center;
+  color: var(--text-secondary);
+  display: flex;
+  gap: 10px;
+  justify-content: center;
+  min-height: 140px;
+}
+
+.actions-load-state--error {
+  flex-direction: column;
+  color: var(--text-danger);
 }
 
 .actions-intro-heading,
@@ -470,6 +492,10 @@ export default {
   data() {
     return {
       actions: [],
+      loading: false,
+      loadError: '',
+      loaded: false,
+      saving: false,
       actionTypes: [
         { value: 'discard', label: 'Discard', selectLabel: 'Discard article', icon: 'trash', iconClass: 'actions-type-icon--discard', description: 'Hides the article from normal queries.' },
         { value: 'favorite', label: 'Favorite', selectLabel: 'Set favorite', icon: 'bookmark', iconClass: 'actions-type-icon--star', description: 'Marks the article as a favorite.' },
@@ -481,20 +507,83 @@ export default {
       ]
     };
   },
-  async created() { setAuthToken(this.$store.auth.token); this.fetchActions(); },
+  // This function authenticates and loads authoritative actions before enabling the editor.
+  async created() {
+    setAuthToken(this.$store.auth.token);
+    await this.fetchActions();
+  },
   methods: {
-    actionTypeMeta(actionType) { return this.actionTypes.find((type) => type.value === actionType) || { label: 'Select type', icon: 'lightning-charge', iconClass: 'actions-type-icon--default' }; },
-    async fetchActions() { try { const resp = await fetchActions(); if (resp && resp.data && Array.isArray(resp.data.actions)) this.actions = resp.data.actions.map(a => ({ name: a.name || '', actionType: a.actionType || '', regularExpression: a.regularExpression || '', tagValue: a.tagValue || '' })); } catch (err) { console.error('Error loading article actions:', err); notifyActionError('Could not load article actions. Please try again.', err); } },
-    addAction() { this.actions.push({ name: '', actionType: '', regularExpression: '', tagValue: '' }); },
-    removeAction(index) { this.actions.splice(index, 1); },
-    focusActionName(index) { this.$el.querySelector(`#action-name-${index}`)?.focus(); },
-    async save() {
-      // Persist actions to the server
-      const filteredActions = this.actions.filter(a => a && a.actionType && a.actionType.trim() !== '');
-      try { const resp = await saveActions(filteredActions); console.log('Actions saved:', resp.data); } catch (err) { console.error('Error saving article actions:', err); notifyActionError('Could not save article actions. Please try again.', err); return; }
-      this.$emit('saved'); this.$emit('close');
+    // This function returns display metadata for an action type.
+    actionTypeMeta(actionType) {
+      return this.actionTypes.find((type) => type.value === actionType) || { label: 'Select type', icon: 'lightning-charge', iconClass: 'actions-type-icon--default' };
     },
-    closeActionsModal() { this.showActionsModal = false; }
+    // This function loads the authoritative action collection before editing is allowed.
+    async fetchActions() {
+      if (this.loading || this.saving) return;
+
+      this.loading = true;
+      this.loaded = false;
+      this.loadError = '';
+
+      try {
+        const response = await fetchActions();
+        if (!Array.isArray(response?.data?.actions)) {
+          throw new Error('Invalid actions response');
+        }
+
+        this.actions = response.data.actions.map(action => ({
+          name: action.name || '',
+          actionType: action.actionType || '',
+          regularExpression: action.regularExpression || '',
+          tagValue: action.tagValue || ''
+        }));
+        this.loaded = true;
+      } catch (err) {
+        console.error('Error loading article actions:', err);
+        this.loadError = 'Could not load article actions. Your existing actions have not been changed.';
+        notifyActionError('Could not load article actions. Please try again.', err);
+      } finally {
+        this.loading = false;
+      }
+    },
+    // This function adds one editable action after the authoritative collection has loaded.
+    addAction() {
+      if (!this.loaded || this.saving) return;
+      this.actions.push({ name: '', actionType: '', regularExpression: '', tagValue: '' });
+    },
+    // This function removes one local action while the editor is available.
+    removeAction(index) {
+      if (!this.loaded || this.saving) return;
+      this.actions.splice(index, 1);
+    },
+    // This function focuses an action name while the editor is available.
+    focusActionName(index) {
+      if (!this.loaded || this.saving) return;
+      this.$el.querySelector(`#action-name-${index}`)?.focus();
+    },
+    // This function persists only a successfully loaded action collection.
+    async save() {
+      if (!this.loaded || this.loading || this.loadError || this.saving) return;
+
+      const filteredActions = this.actions.filter(a => a && a.actionType && a.actionType.trim() !== '');
+      this.saving = true;
+
+      try {
+        const response = await saveActions(filteredActions);
+        console.log('Actions saved:', response.data);
+        this.$emit('saved');
+        this.$emit('close');
+      } catch (err) {
+        console.error('Error saving article actions:', err);
+        notifyActionError('Could not save article actions. Please try again.', err);
+      } finally {
+        this.saving = false;
+      }
+    },
+    // This function closes the legacy nested actions modal state.
+    closeActionsModal() {
+      this.showActionsModal = false;
+    }
   }
 };
 </script>
