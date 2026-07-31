@@ -129,7 +129,16 @@ describe('data store overview and count behavior', () => {
         }]
       }
     });
-    fetchOverviewCounts.mockResolvedValue({
+    let resolveCounts;
+    // Holds counts until the structure-only state has been asserted.
+    fetchOverviewCounts.mockReturnValue(new Promise(resolve => {
+      resolveCounts = resolve;
+    }));
+
+    await store.fetchOverviewSplit({ forceUpdate: true });
+
+    expect(store.categories[0].feeds[0].unreadCount).toBe(0);
+    resolveCounts({
       data: createOverview({
         unreadCount: 11,
         categories: [{
@@ -140,9 +149,6 @@ describe('data store overview and count behavior', () => {
       })
     });
 
-    await store.fetchOverviewSplit({ forceUpdate: true });
-
-    expect(store.categories[0].feeds[0].unreadCount).toBe(0);
     await vi.waitFor(() => {
       expect(store.unreadCount).toBe(11);
     });
@@ -167,6 +173,8 @@ describe('data store overview and count behavior', () => {
       .mockResolvedValueOnce({
         data: { categories: [{ id: 2, feeds: [] }] }
       });
+    // Keeps background count refreshes from replacing the structure under test.
+    fetchOverviewCounts.mockReturnValue(new Promise(() => {}));
 
     const firstRequest = store.fetchOverviewSplit();
     await store.fetchOverviewSplit();

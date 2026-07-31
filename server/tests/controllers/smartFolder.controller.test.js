@@ -1,19 +1,28 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocked = vi.hoisted(() => ({
+  articleFindAll: vi.fn(),
+  feedFindAll: vi.fn(),
   smartFolderFindAll: vi.fn(),
   smartFolderDestroy: vi.fn(),
   smartFolderBulkCreate: vi.fn(),
   settingFindOne: vi.fn(),
+  tagFindAll: vi.fn(),
   searchArticles: vi.fn(),
   getSmartFolderRecommendations: vi.fn()
 }));
 
 vi.mock('../../models/index.js', () => ({
   default: {
-    Article: {},
-    Feed: {},
-    Tag: {},
+    Article: {
+      findAll: mocked.articleFindAll
+    },
+    Feed: {
+      findAll: mocked.feedFindAll
+    },
+    Tag: {
+      findAll: mocked.tagFindAll
+    },
     Setting: {
       findOne: mocked.settingFindOne
     },
@@ -49,7 +58,7 @@ const createRes = () => {
 
 describe('smartFolder controller', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
+    vi.resetAllMocks();
   });
 
   describe('getSmartFolders', () => {
@@ -127,6 +136,85 @@ describe('smartFolder controller', () => {
       expect(res.json).toHaveBeenCalledWith({ error: 'Unauthorized: missing userId' });
       expect(next).not.toHaveBeenCalled();
     });
+
+    it('skips count queries when withCounts is false', async () => {
+      const folders = [
+        { id: 1, name: 'Unread', query: 'unread:true', dataValues: {} }
+      ];
+      mocked.smartFolderFindAll.mockResolvedValue(folders);
+      const req = {
+        userData: { userId: 42 },
+        query: { withCounts: 'false' }
+      };
+      const res = createRes();
+
+      await smartFolderController.getSmartFolders(req, res, vi.fn());
+
+      expect(mocked.smartFolderFindAll).toHaveBeenCalledOnce();
+      expect(mocked.settingFindOne).not.toHaveBeenCalled();
+      expect(mocked.searchArticles).not.toHaveBeenCalled();
+      expect(res.json).toHaveBeenCalledWith({
+        total: 1,
+        smartFolders: folders
+      });
+    });
+
+    it('forwards folder-loading errors to Express', async () => {
+      const error = new Error('folder query failed');
+      mocked.smartFolderFindAll.mockRejectedValue(error);
+      const next = vi.fn();
+
+      await smartFolderController.getSmartFolders(
+        { userData: { userId: 42 }, query: {} },
+        createRes(),
+        next
+      );
+
+      expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('getSmartFolderCounts', () => {
+    it('returns count-only folder results', async () => {
+      mocked.smartFolderFindAll.mockResolvedValue([
+        { id: 1, query: 'unread:true', limitCount: null }
+      ]);
+      mocked.settingFindOne.mockResolvedValue(null);
+      mocked.searchArticles.mockResolvedValue({ articleCount: 7 });
+      const res = createRes();
+
+      await smartFolderController.getSmartFolderCounts(
+        { userData: { userId: 42 } },
+        res,
+        vi.fn()
+      );
+
+      expect(res.status).toHaveBeenCalledWith(200);
+      expect(res.json).toHaveBeenCalledWith({
+        total: 1,
+        smartFolders: [{ id: 1, ArticleCount: 7 }]
+      });
+    });
+
+    it('rejects count requests without a user and forwards query errors', async () => {
+      const unauthorizedRes = createRes();
+      await smartFolderController.getSmartFolderCounts(
+        { userData: {} },
+        unauthorizedRes,
+        vi.fn()
+      );
+      expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
+
+      const error = new Error('count query failed');
+      mocked.smartFolderFindAll.mockRejectedValue(error);
+      const next = vi.fn();
+      await smartFolderController.getSmartFolderCounts(
+        { userData: { userId: 42 } },
+        createRes(),
+        next
+      );
+      expect(next).toHaveBeenCalledWith(error);
+    });
   });
 
   describe('postSmartFolder', () => {
@@ -186,6 +274,182 @@ describe('smartFolder controller', () => {
         ]
       });
       expect(next).not.toHaveBeenCalled();
+    });
+
+    it('rejects missing users and clears folders for an empty payload', async () => {
+      const unauthorizedRes = createRes();
+      await smartFolderController.postSmartFolder(
+        { userData: {}, body: {} },
+        unauthorizedRes,
+        vi.fn()
+      );
+      expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
+
+      mocked.smartFolderDestroy.mockResolvedValue(2);
+      const emptyRes = createRes();
+      await smartFolderController.postSmartFolder(
+        { userData: { userId: 42 }, body: {} },
+        emptyRes,
+        vi.fn()
+      );
+      expect(mocked.smartFolderBulkCreate).not.toHaveBeenCalled();
+      expect(emptyRes.json).toHaveBeenCalledWith({
+        total: 0,
+        smartFolders: []
+      });
+    });
+
+    it('forwards folder persistence errors to Express', async () => {
+      const error = new Error('save failed');
+      mocked.smartFolderDestroy.mockRejectedValue(error);
+      const next = vi.fn();
+
+      await smartFolderController.postSmartFolder(
+        { userData: { userId: 42 }, body: {} },
+        createRes(),
+        next
+      );
+
+      expect(next).toHaveBeenCalledWith(error);
+    });
+  });
+
+  describe('smart folder insights', () => {
+    it('collects and distills user engagement into recommendations', async () => {
+      mocked.articleFindAll
+        .mockResolvedValueOnce([
+          {
+            feedId: 1,
+            total: '10',
+            unread: '8',
+            read: '2',
+            clicked: '3',
+            favorite: '2'
+          },
+          {
+            feedId: 999,
+            total: '5',
+            unread: '5',
+            read: '0',
+            clicked: '0',
+            favorite: '0'
+          }
+        ])
+        .mockResolvedValueOnce([
+          { feedId: 1, title: 'Favorite article' }
+        ]);
+      mocked.feedFindAll.mockResolvedValue([
+        { id: 1, feedName: 'Security Feed' },
+        { id: 2, feedName: 'Quiet Feed' }
+      ]);
+      mocked.tagFindAll.mockResolvedValue([
+        { name: 'security', count: '4' },
+        { name: 'privacy', count: null }
+      ]);
+      mocked.smartFolderFindAll.mockResolvedValue([
+        { name: 'Existing', query: 'unread:true' }
+      ]);
+      mocked.getSmartFolderRecommendations.mockResolvedValue([
+        { name: 'Security', query: 'tag:security' }
+      ]);
+      vi.spyOn(console, 'log').mockImplementation(() => {});
+      const res = createRes();
+
+      await smartFolderController.getSmartFolderInsights(
+        { userData: { userId: 42 }, query: { days: '14' } },
+        res,
+        vi.fn()
+      );
+
+      expect(mocked.articleFindAll).toHaveBeenCalledTimes(2);
+      expect(mocked.getSmartFolderRecommendations).toHaveBeenCalledWith({
+        distilledInsights: {
+          window: 'last 14 days',
+          engagement: {
+            unreadRatio: 0.8,
+            favoriteArticles: 2
+          },
+          feeds: [
+            {
+              name: 'Security Feed',
+              unreadRatio: 0.8,
+              favorite: 2
+            }
+          ],
+          interests: {
+            topTags: ['security', 'privacy'],
+            longTailTagCount: 0
+          },
+          favoriteItems: [
+            {
+              feed: 'Security Feed',
+              title: 'Favorite article'
+            }
+          ],
+          existingSmartFolders: [
+            { name: 'Existing', query: 'unread:true' }
+          ]
+        }
+      });
+      expect(res.status).toHaveBeenCalledWith(200);
+    });
+
+    it('returns raw signals with zero-safe engagement values', async () => {
+      mocked.articleFindAll
+        .mockResolvedValueOnce([])
+        .mockResolvedValueOnce([]);
+      mocked.feedFindAll.mockResolvedValue([
+        { id: 2, feedName: 'Empty Feed' }
+      ]);
+      mocked.tagFindAll.mockResolvedValue([]);
+      mocked.smartFolderFindAll.mockResolvedValue([]);
+
+      const result = await smartFolderController.collectSmartFolderSignals(
+        42,
+        { days: 7, maxFavoriteTitles: 3 }
+      );
+
+      expect(result.window).toEqual({ days: 7 });
+      expect(result.engagement).toEqual({
+        totalArticles: 0,
+        unread: 0,
+        read: 0,
+        clicked: 0,
+        favorite: 0
+      });
+      expect(result.feeds).toEqual([
+        {
+          name: 'Empty Feed',
+          total: 0,
+          unread: 0,
+          read: 0,
+          clicked: 0,
+          favorite: 0
+        }
+      ]);
+    });
+
+    it('rejects unauthenticated insight requests and forwards failures', async () => {
+      const unauthorizedRes = createRes();
+      await smartFolderController.getSmartFolderInsights(
+        { userData: {}, query: {} },
+        unauthorizedRes,
+        vi.fn()
+      );
+      expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
+
+      const error = new Error('insight query failed');
+      mocked.articleFindAll.mockRejectedValue(error);
+      mocked.feedFindAll.mockResolvedValue([]);
+      mocked.tagFindAll.mockResolvedValue([]);
+      mocked.smartFolderFindAll.mockResolvedValue([]);
+      const next = vi.fn();
+      await smartFolderController.getSmartFolderInsights(
+        { userData: { userId: 42 }, query: {} },
+        createRes(),
+        next
+      );
+      expect(next).toHaveBeenCalledWith(error);
     });
   });
 });

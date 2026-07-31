@@ -27,7 +27,7 @@ export const expressionPatterns = [
     { name: 'limit', regex: /^limit:\s*(\d+)$/i },
     { name: 'quality', regex: /^quality:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
     { name: 'freshness', regex: /^freshness:(<=|>=|<|>|=)?\s*(\d+\.?\d*|\.\d+)$/i },
-    { name: 'firstSeenAge', regex: /^firstSeen:\s*(\d+)([hd])$/i },
+    { name: 'firstSeen', regex: /^firstSeen:\s*(\d+)([hd])$/i },
     { name: 'dateSpecific', regex: /^@(\d{4}-\d{2}-\d{2})$/ },
     { name: 'today', regex: /^@today$/i },
     { name: 'yesterday', regex: /^@yesterday$/i },
@@ -156,12 +156,12 @@ export function validateQuery(query, options = { allowEmpty: true }) {
             const colonIndex = cleaned.indexOf(':');
             if (colonIndex > 0) {
                 const keyword = cleaned.substring(0, colonIndex).toLowerCase();
-                // Check for close misspellings
-                const similar = knownKeywords.find(kw => levenshteinDistance(keyword, kw) <= 2 && keyword !== kw);
-                if (similar) {
-                    return { valid: false, error: `Unknown keyword "${keyword}". Did you mean "${similar}"?` };
-                }
                 if (!knownKeywords.includes(keyword)) {
+                    // Suggest a close known keyword only when the supplied keyword is actually unknown.
+                    const similar = knownKeywords.find(kw => levenshteinDistance(keyword, kw) <= 2);
+                    if (similar) {
+                        return { valid: false, error: `Unknown keyword "${keyword}". Did you mean "${similar}"?` };
+                    }
                     return { valid: false, error: `Unknown filter: "${keyword}". Valid filters: ${knownKeywords.join(', ')}` };
                 }
             }
