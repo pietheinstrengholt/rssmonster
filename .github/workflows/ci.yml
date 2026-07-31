@@ -94,9 +94,9 @@ jobs:
         run: npm test --if-present
 
       - name: Upload server coverage reports to Codecov
-          uses: codecov/codecov-action@v5
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
 
       # -----------------------
       # Client
@@ -126,6 +126,6 @@ jobs:
         run: npm test --if-present
 
       - name: Upload client coverage reports to Codecov
-          uses: codecov/codecov-action@v5
-          with:
-            token: ${{ secrets.CODECOV_TOKEN }}
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
