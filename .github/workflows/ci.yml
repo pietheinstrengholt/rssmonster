@@ -91,7 +91,7 @@ jobs:
           DB_HOSTNAME: 127.0.0.1
           JWT_SECRET: test-secret-used-for-sign-and-verify
           FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
-        run: npm test --if-present
+        run: npm run test:coverage
 
       - name: Upload server coverage reports to Codecov
         uses: codecov/codecov-action@v5
@@ -123,7 +123,7 @@ jobs:
           VITE_APP_HOSTNAME: http://localhost:3000
           VITE_NODE_ENV: test
           VITE_ENABLE_AGENT: false
-        run: npm test --if-present
+        run: npm run test:coverage
 
       - name: Upload client coverage reports to Codecov
         uses: codecov/codecov-action@v5
