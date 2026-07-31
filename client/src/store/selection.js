@@ -155,6 +155,7 @@ export const useSelectionStore = defineStore('selection', {
 
       const previous = this.currentSelection;
       const previousGrouping = previous.grouping;
+      const previousStatus = previous.status;
       const supported = supportedSelection(selection);
       const includeDevelopingEvents = supported.includeDevelopingEvents != null
         ? Boolean(supported.includeDevelopingEvents)
@@ -170,13 +171,17 @@ export const useSelectionStore = defineStore('selection', {
           : normalizeGrouping(previous.grouping),
         includeDevelopingEvents
       };
-      if (this.currentSelection.grouping !== previousGrouping) {
+      if (
+        this.currentSelection.grouping !== previousGrouping ||
+        this.currentSelection.status !== previousStatus
+      ) {
         void useOverviewStore().fetchTopTags();
       }
     },
 
     // This action applies selection and related UI changes as one coherent transition.
     applySelection(selection, { closeChat = true } = {}) {
+      const previousStatus = this.currentSelection.status;
       this.$patch({
         currentSelection: {
           ...this.currentSelection,
@@ -184,6 +189,9 @@ export const useSelectionStore = defineStore('selection', {
         }
       });
       if (closeChat) useUiStore().setChatAssistantOpen(false);
+      if (this.currentSelection.status !== previousStatus) {
+        void useOverviewStore().fetchTopTags();
+      }
     },
 
     // This action selects an article status and constructs an active Briefing query when required.

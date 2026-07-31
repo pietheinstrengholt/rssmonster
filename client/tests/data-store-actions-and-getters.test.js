@@ -173,7 +173,7 @@ describe('data store remaining actions and getters', () => {
     const { overviewStore: store, selectionStore } = createStores();
     selectionStore.setCurrentSelection({ grouping: 'topic' });
     await flushPromises();
-    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic' });
+    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic', status: 'unread' });
     expect(store.topTags).toEqual(['vue']);
 
     await store.fetchSmartFolders();

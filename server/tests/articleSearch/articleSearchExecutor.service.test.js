@@ -95,11 +95,11 @@ describe('articleSearchExecutor.service', () => {
     expect(query.where[Op.and][0][Op.or]).toHaveLength(2);
   });
 
-  // Lets an explicit hot filter broaden source scope while retaining hot eligibility.
-  it('applies an explicit hot filter across feeds', () => {
+  // Keeps category- or feed-derived source scope when an explicit Hot filter is applied.
+  it('applies an explicit hot filter within the selected source scope', () => {
     const query = buildQuery({ hotFilter: true });
 
-    expect(query.where).not.toHaveProperty('feedId');
+    expect(query.where.feedId).toEqual([4]);
     expect(query.where.hotInd).toBe(1);
   });
 
@@ -113,7 +113,7 @@ describe('articleSearchExecutor.service', () => {
     const query = buildQuery({ status });
 
     expect(query.where[field]).toEqual(expected);
-    if (status === 'hot') expect(query.where).not.toHaveProperty('feedId');
+    expect(query.where.feedId).toEqual([4]);
   });
 
   // Distinguishes articles attached to an event from standalone articles.

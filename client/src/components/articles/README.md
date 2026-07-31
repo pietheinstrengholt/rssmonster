@@ -154,6 +154,8 @@ Presentation depends on the active reading mode and on whether meaningful text, 
 
 If no usable preview exists, the interface does not leave an unexplained blank area. It states that no preview is available and offers the original article instead.
 
+An empty tag-scoped collection names both the active state and tag, such as **No unread articles tagged Security**. The tag remains selected so the user can clear only that tag or switch to the complementary Read or Unread collection without losing the tag context.
+
 ### Images
 
 An article image is used as a fallback lead image only when the article has readable text and that same image is not already present in the body. This prevents duplicate imagery.

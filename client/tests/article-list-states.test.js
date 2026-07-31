@@ -22,6 +22,27 @@ describe('ArticleEmptyState', () => {
     expect(wrapper.emitted('refresh-feeds')).toHaveLength(1);
     expect(wrapper.emitted('open-smart-folders')).toHaveLength(1);
   });
+
+  it('preserves an empty tag selection and offers the complementary article state', async () => {
+    const wrapper = mount(ArticleEmptyState, {
+      props: {
+        selectedTag: 'security',
+        currentStatus: 'unread'
+      }
+    });
+
+    expect(wrapper.get('h2').text()).toBe('No unread articles tagged Security');
+    expect(wrapper.get('.article-empty-state-primary').text()).toContain('Clear tag');
+    expect(wrapper.get('.article-empty-state-secondary').text()).toContain('View read articles');
+    expect(wrapper.find('.article-empty-state-link').exists()).toBe(false);
+
+    await wrapper.get('.article-empty-state-primary').trigger('click');
+    await wrapper.get('.article-empty-state-secondary').trigger('click');
+
+    expect(wrapper.emitted('clear-tag')).toHaveLength(1);
+    expect(wrapper.emitted('view-tag-status')).toEqual([['read']]);
+    expect(wrapper.emitted('clear-filters')).toBeUndefined();
+  });
 });
 
 describe('ArticleEndState', () => {

@@ -124,7 +124,7 @@
     </div>
 
     <div v-if="overviewStore.topTags.length" class="sidebar-section sidebar-tags">
-      <SidebarSectionTitle title="Top tags" />
+      <SidebarSectionTitle :title="topTagsTitle" />
 
       <SidebarNavItem
         v-for="tag in topTagsDisplay"
@@ -138,7 +138,7 @@
       />
     </div>
 
-    <div v-if="selectionStore.currentSelection.status != 'hot'" class="sidebar-section sidebar-categories">
+    <div class="sidebar-section sidebar-categories">
       <SidebarSectionTitle title="All" />
 
       <SidebarNavItem
@@ -462,6 +462,18 @@ export default {
     // This limits the sidebar to the five most frequent tags.
     topTagsDisplay() {
       return this.overviewStore.topTags.slice(0, 5);
+    },
+    // This labels Top Tags with the article collection represented by their counts.
+    topTagsTitle() {
+      const labels = {
+        unread: 'Unread',
+        read: 'Read',
+        favorite: 'Favorites',
+        hot: 'Hot',
+        clicked: 'Clicked'
+      };
+      const label = labels[this.selectionStore.currentSelection.status];
+      return label ? `Top tags in ${label}` : 'Top tags';
     },
     // This hides the Daily briefing filter when AI features are disabled.
     visibleStatusFilters() {

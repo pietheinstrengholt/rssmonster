@@ -33,9 +33,13 @@
     <div id="no-more" v-if="hasLoadedContent">
       <ArticleEmptyState
         v-if="container.length === 0"
+        :current-status="currentSelection"
+        :selected-tag="selectedTag"
         @clear-filters="$emit('clear-filters')"
+        @clear-tag="$emit('clear-tag')"
         @refresh-feeds="$emit('refresh-feeds')"
         @open-smart-folders="$emit('open-smart-folders')"
+        @view-tag-status="$emit('view-tag-status', $event)"
       />
       <ArticleEndState
         v-if="showArticleEndState"
@@ -88,8 +92,10 @@ export default {
     'shortcut-toggle-favorite',
     'flush-pool',
     'clear-filters',
+    'clear-tag',
     'refresh-feeds',
     'open-smart-folders',
+    'view-tag-status',
     'forceReload'
   ],
   props: {
@@ -108,6 +114,10 @@ export default {
     currentSelection: {
       type: String,
       required: true
+    },
+    selectedTag: {
+      type: String,
+      default: ''
     },
     currentViewUnreadCount: {
       type: Number,

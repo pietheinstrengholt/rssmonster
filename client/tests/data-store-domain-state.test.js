@@ -34,7 +34,13 @@ describe('data store domain reconciliation', () => {
 
   it('normalizes, updates, reorders, and removes categories', () => {
     const store = createStore();
-    useOverviewStore().$patch({ unreadCount: 2, readCount: 1, favoriteCount: 1 });
+    useOverviewStore().$patch({
+      unreadCount: 2,
+      readCount: 1,
+      favoriteCount: 1,
+      hotCount: 2,
+      clickedCount: 1
+    });
 
     store.addCategory({ id: 1, name: 'One' });
     store.addCategory({
@@ -42,13 +48,17 @@ describe('data store domain reconciliation', () => {
       name: 'Two',
       unreadCount: 2,
       readCount: 1,
-      favoriteCount: 1
+      favoriteCount: 1,
+      hotCount: 2,
+      clickedCount: 1
     });
 
     expect(store.categories[0]).toMatchObject({
       unreadCount: 0,
       readCount: 0,
       favoriteCount: 0,
+      hotCount: 0,
+      clickedCount: 0,
       feeds: []
     });
     expect(store.updateCategory('1', { name: 'First', iconName: 'rss' })).toBe(true);
@@ -64,11 +74,21 @@ describe('data store domain reconciliation', () => {
     expect(store.unreadCount).toBe(0);
     expect(store.readCount).toBe(0);
     expect(store.favoriteCount).toBe(0);
+    expect(store.hotCount).toBe(0);
+    expect(store.clickedCount).toBe(0);
   });
 
   it('adds, updates, and atomically moves normalized feeds across mixed ID types', () => {
     const store = createStore();
-    store.addCategory({ id: 1, name: 'One', unreadCount: 3, readCount: 2, favoriteCount: 1 });
+    store.addCategory({
+      id: 1,
+      name: 'One',
+      unreadCount: 3,
+      readCount: 2,
+      favoriteCount: 1,
+      hotCount: 2,
+      clickedCount: 1
+    });
     store.addCategory({ id: 2, name: 'Two' });
 
     expect(store.addFeed('1', {
@@ -77,7 +97,9 @@ describe('data store domain reconciliation', () => {
       feedName: 'Original',
       unreadCount: 3,
       readCount: 2,
-      favoriteCount: 1
+      favoriteCount: 1,
+      hotCount: 2,
+      clickedCount: 1
     })).toBe(true);
     expect(store.addFeed('missing', { id: 99 })).toBe(false);
     expect(store.categories[0].feeds[0]).toMatchObject({ errorCount: 0 });
@@ -91,12 +113,16 @@ describe('data store domain reconciliation', () => {
       unreadCount: 0,
       readCount: 0,
       favoriteCount: 0,
+      hotCount: 0,
+      clickedCount: 0,
       feeds: []
     });
     expect(store.categories[1]).toMatchObject({
       unreadCount: 3,
       readCount: 2,
-      favoriteCount: 1
+      favoriteCount: 1,
+      hotCount: 2,
+      clickedCount: 1
     });
     expect(store.categories[1].feeds[0]).toMatchObject({
       id: '10',
@@ -111,17 +137,27 @@ describe('data store domain reconciliation', () => {
 
   it('removes feeds and clamps category and global counts at zero', () => {
     const store = createStore();
-    useOverviewStore().$patch({ unreadCount: 1, readCount: 0, favoriteCount: 1 });
+    useOverviewStore().$patch({
+      unreadCount: 1,
+      readCount: 0,
+      favoriteCount: 1,
+      hotCount: 1,
+      clickedCount: 1
+    });
     store.addCategory({
       id: 1,
       unreadCount: 1,
       readCount: 0,
       favoriteCount: 1,
+      hotCount: 1,
+      clickedCount: 1,
       feeds: [{
         id: 10,
         unreadCount: 3,
         readCount: 2,
-        favoriteCount: 4
+        favoriteCount: 4,
+        hotCount: 2,
+        clickedCount: 3
       }]
     });
 
@@ -131,11 +167,15 @@ describe('data store domain reconciliation', () => {
       unreadCount: 0,
       readCount: 0,
       favoriteCount: 0,
+      hotCount: 0,
+      clickedCount: 0,
       feeds: []
     });
     expect(store.unreadCount).toBe(0);
     expect(store.readCount).toBe(0);
     expect(store.favoriteCount).toBe(0);
+    expect(store.hotCount).toBe(0);
+    expect(store.clickedCount).toBe(0);
   });
 
   it('applies favorite mark, unmark, and bulk deltas exactly once per transition', () => {

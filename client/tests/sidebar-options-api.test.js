@@ -51,19 +51,22 @@ const initializeStores = () => {
       name: 'Technology',
       briefingCount: 3,
       unreadCount: 8,
+      hotCount: 4,
       feeds: [{
         id: 101,
         categoryId: 10,
         feedName: 'Example feed',
         status: 'active',
         briefingCount: 2,
-        unreadCount: 3
+        unreadCount: 3,
+        hotCount: 2
       }]
     }, {
       id: 20,
       name: 'News',
       briefingCount: 1,
       unreadCount: 5,
+      hotCount: 2,
       feeds: []
     }],
     clickedCount: 1,
@@ -155,6 +158,18 @@ describe('Options API sidebar contracts', () => {
 
     expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('8');
     expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('3');
+
+    stores.selectionStore.$patch({
+      currentSelection: {
+        ...stores.selectionStore.currentSelection,
+        status: 'hot'
+      }
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('.sidebar-all-categories-item .sidebar-count').text()).toBe('6');
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('4');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2');
   });
 
   it('renders navigation counts and forwards category and feed selections', async () => {
@@ -164,6 +179,7 @@ describe('Options API sidebar contracts', () => {
     expect(wrapper.find('.sidebar-smart-folders').text()).toContain('Research');
     expect(wrapper.find('.sidebar-smart-folders').text()).toContain('11');
     expect(wrapper.find('.sidebar-status-filters').text()).toContain('Unread13');
+    expect(wrapper.find('.sidebar-tags').text()).toContain('Top tags in Unread');
     expect(wrapper.find('.sidebar-tags').text()).toContain('Javascript');
     expect(wrapper.find('.sidebar-categories').text()).toContain('Technology');
     expect(wrapper.find('.sidebar-categories').text()).toContain('Example feed');

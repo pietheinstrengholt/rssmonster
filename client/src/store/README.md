@@ -38,7 +38,7 @@ Store state is in memory for the current browser session. No Pinia persistence p
 - The theme preference is also mirrored through the theme service and browser storage.
 - Article search requests may persist supported reading preferences on the server.
 
-On application startup, a saved token is validated before authenticated state is accepted. After authentication, persisted settings load before the initial overview so the first counts, grouping-dependent tags, and article query use the user's effective configuration.
+On application startup, a saved token is validated before authenticated state is accepted. After authentication, persisted settings load before the initial overview so the first counts, status-scoped tags, and article query use the user's effective configuration.
 
 ## Authentication and session isolation
 
@@ -94,7 +94,7 @@ Navigation transitions update all related fields together so watchers never obse
 | Clear a Smart Folder through Smart Folder navigation | Returns to the same all-category, all-feed, Unread, Newest baseline with no saved query |
 | Change explicit sort | Normalizes unsupported values to Newest and removes any embedded sort instruction from the query |
 | Change view mode | Changes presentation without changing article membership |
-| Change grouping | Restricts grouping to none, event, or topic; refreshes grouping-dependent tags and overview data |
+| Change grouping | Restricts grouping to none, event, or topic; invalidates any older tag request and refreshes overview data |
 
 Most selection changes close the assistant because the article collection and assistant are alternative content contexts. Callers should not manually reproduce this side effect.
 
@@ -151,7 +151,7 @@ Initial and forced refreshes reset the unread-arrival delta to zero. Ordinary ba
 
 Smart Folder definitions and Smart Folder counts are separate resources. Definitions publish first with a safe count fallback, then counts refresh in the background. A count failure retains the loaded folders and their last known counts.
 
-Top Tags are fetched for the active semantic grouping. Changing grouping requests a new tag snapshot. If grouping changes again before an older response arrives, only the newest grouping response may update the store.
+Top Tags are fetched for the active Unread, Read, Favorites, Hot, or Clicked collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event or topic grouping. Briefing clears the snapshot because its preference-driven query is not represented by a status-only tag count. If selection context changes again before an older response arrives, only the newest response may update the store.
 
 Smart Folder and Top Tag counts are snapshots. They do not reconcile on scrolling, article opening, or every read/favorite transition. Explicit refreshes and relevant management operations replace them.
 
@@ -231,7 +231,7 @@ Focused ownership does not mean the domains never coordinate. Coordination occur
 - Authentication reset invalidates and clears selection, overview, and UI state.
 - Loading persisted settings places theme in UI ownership and article filters in selection ownership.
 - Overview responses synchronize briefing filter metadata into selection ownership.
-- Grouping changes refresh overview counts and grouping-dependent tags.
+- Status changes refresh status-scoped tags, while grouping changes refresh overview counts and invalidate any older tag request.
 - Selection changes normally close the assistant through UI ownership.
 - Briefing preference saves refresh authoritative overview counts.
 

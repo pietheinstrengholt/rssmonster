@@ -6,9 +6,13 @@
   <ArticleEmptyState
     v-if="hasLoadedContent && container.length === 0"
     class="readerEmptyState"
+    :current-status="currentSelection"
+    :selected-tag="selectedTag"
     @clear-filters="$emit('clear-filters')"
+    @clear-tag="$emit('clear-tag')"
     @refresh-feeds="$emit('refresh-feeds')"
     @open-smart-folders="$emit('open-smart-folders')"
+    @view-tag-status="$emit('view-tag-status', $event)"
   />
 
   <div v-else class="readerLayout">
@@ -217,8 +221,10 @@ export default {
     'shortcut-toggle-favorite',
     'flush-pool',
     'clear-filters',
+    'clear-tag',
     'refresh-feeds',
     'open-smart-folders',
+    'view-tag-status',
     'forceReload',
     'bulk-action'
   ],
@@ -234,6 +240,10 @@ export default {
     currentSelection: {
       type: String,
       required: true
+    },
+    selectedTag: {
+      type: String,
+      default: ''
     },
     currentViewUnreadCount: {
       type: Number,

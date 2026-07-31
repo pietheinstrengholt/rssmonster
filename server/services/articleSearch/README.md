@@ -88,7 +88,7 @@ Boolean filters accept `true` or `false`, case-insensitively.
 | `clicked:false` | Articles with zero recorded clicks. |
 | `seen:true` | Articles whose `firstSeen` timestamp is present. |
 | `seen:false` | Articles whose `firstSeen` timestamp is absent. |
-| `hot:true` | Hot articles; this intentionally searches across the user's feed/category scope. |
+| `hot:true` | Hot articles within the selected feed/category scope. |
 | `hot:false` | Articles not marked hot. |
 | `event:true` | Articles assigned to an event. |
 | `event:false` | Articles not assigned to an event. |
@@ -310,8 +310,9 @@ Grouping changes which representative articles are eligible when no explicit
   each topic.
 - An explicit `event:` filter disables those grouping representative predicates.
 
-`hot:true` and the hot status view intentionally remove feed/category scope, but
-the user ownership boundary remains in force.
+`hot:true` and the hot status view retain the selected feed/category scope. With
+the all-feeds selection they search the user's complete library; with a category
+or feed selection they return only Hot articles from that source scope.
 
 ## Parsing and failure behavior
 

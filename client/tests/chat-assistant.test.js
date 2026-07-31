@@ -80,7 +80,7 @@ describe('ChatAssistant', () => {
     expect(wrapper.vm.chatInput).toBe('');
     expect(wrapper.vm.isLoading).toBe(true);
     expect(wrapper.get('.loading-spinner').text()).toContain('Agent is thinking...');
-    expect(wrapper.get('button.btn-primary').attributes('disabled')).toBeDefined();
+    expect(wrapper.get('.agent-chat-button--primary').attributes('disabled')).toBeDefined();
 
     deferred.resolve({ data: { output: 'A concise summary.' } });
     await flushPromises();
@@ -98,7 +98,7 @@ describe('ChatAssistant', () => {
     const wrapper = mountChatAssistant();
 
     await wrapper.get('#chatTextarea').setValue('What happened?');
-    await wrapper.get('button.btn-primary').trigger('click');
+    await wrapper.get('.agent-chat-button--primary').trigger('click');
     await flushPromises();
 
     expect(consoleError).toHaveBeenCalledWith('Error:', error);
@@ -115,7 +115,7 @@ describe('ChatAssistant', () => {
       messages: [{ role: 'assistant', content: 'Existing answer' }]
     });
 
-    const clearButton = wrapper.get('button.btn-secondary');
+    const clearButton = wrapper.get('.agent-chat-button--secondary');
     expect(clearButton.attributes('disabled')).toBeUndefined();
 
     await clearButton.trigger('click');

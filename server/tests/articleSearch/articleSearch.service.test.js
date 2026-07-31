@@ -210,6 +210,72 @@ describe('articleSearch.service', () => {
       expect(result.itemIds).toContain(articles.starred.id);
       expect(result.itemIds.length).toBe(1);
     });
+
+    // Verifies Hot status composes with both category and feed source scopes.
+    it('returns only Hot articles from the selected category or feed', async () => {
+      const testSuffix = `${Date.now()}-${Math.random()}`;
+      const scopedCategory = await Category.create({
+        userId: user.id,
+        name: `Hot Scope ${testSuffix}`,
+        categoryOrder: 1
+      });
+      const scopedFeeds = [];
+      const scopedArticles = [];
+
+      try {
+        scopedFeeds.push(
+          await Feed.create({
+            userId: user.id,
+            categoryId: scopedCategory.id,
+            feedName: `Hot Feed A ${testSuffix}`,
+            url: `https://example.com/hot-feed-a-${testSuffix}.xml`
+          }),
+          await Feed.create({
+            userId: user.id,
+            categoryId: scopedCategory.id,
+            feedName: `Hot Feed B ${testSuffix}`,
+            url: `https://example.com/hot-feed-b-${testSuffix}.xml`
+          })
+        );
+        for (const [index, scopedFeed] of scopedFeeds.entries()) {
+          scopedArticles.push(await Article.create({
+            userId: user.id,
+            feedId: scopedFeed.id,
+            url: `https://example.com/hot-article-${index}-${testSuffix}`,
+            title: `Scoped Hot article ${index}`,
+            status: 'unread',
+            hotInd: 1,
+            publishedAt: new Date(),
+            advertisementScore: 80,
+            sentimentScore: 80,
+            qualityScore: 80
+          }));
+        }
+
+        const categoryResult = await searchArticles({
+          userId: user.id,
+          categoryId: scopedCategory.id,
+          feedId: '%',
+          status: 'hot'
+        });
+        const feedResult = await searchArticles({
+          userId: user.id,
+          categoryId: scopedCategory.id,
+          feedId: scopedFeeds[0].id,
+          status: 'hot'
+        });
+
+        expect(categoryResult.itemIds).toEqual(expect.arrayContaining(
+          scopedArticles.map(article => article.id)
+        ));
+        expect(categoryResult.itemIds).toHaveLength(2);
+        expect(feedResult.itemIds).toEqual([scopedArticles[0].id]);
+      } finally {
+        await Article.destroy({ where: { id: scopedArticles.map(article => article.id) } });
+        await Feed.destroy({ where: { id: scopedFeeds.map(scopedFeed => scopedFeed.id) } });
+        await Category.destroy({ where: { id: scopedCategory.id } });
+      }
+    });
   });
 
   // ============================

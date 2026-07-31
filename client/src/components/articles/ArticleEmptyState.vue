@@ -8,31 +8,36 @@
     </div>
 
     <h2 id="article-empty-state-title" class="article-empty-state-title">
-      No posts found
+      {{ emptyTitle }}
     </h2>
 
     <p class="article-empty-state-text">
-      There are no articles that match your current filters.<br>
-      Try adjusting your filters or check back later.
+      <template v-if="hasTagSelection">
+        The selected tag remains active so you can choose another article state or clear it.
+      </template>
+      <template v-else>
+        There are no articles that match your current filters.<br>
+        Try adjusting your filters or check back later.
+      </template>
     </p>
 
     <div class="article-empty-state-actions">
-      <button type="button" class="article-empty-state-primary" @click="$emit('clear-filters')">
-        <BootstrapIcon icon="search" aria-hidden="true" />
-        Clear filters
+      <button type="button" class="article-empty-state-primary" @click="handlePrimaryAction">
+        <BootstrapIcon :icon="hasTagSelection ? 'x-circle' : 'search'" aria-hidden="true" />
+        {{ hasTagSelection ? 'Clear tag' : 'Clear filters' }}
       </button>
 
-      <button type="button" class="article-empty-state-secondary" @click="$emit('refresh-feeds')">
-        <BootstrapIcon icon="arrow-clockwise" aria-hidden="true" />
-        Refresh feeds
+      <button type="button" class="article-empty-state-secondary" @click="handleSecondaryAction">
+        <BootstrapIcon :icon="hasTagSelection ? 'arrow-left-right' : 'arrow-clockwise'" aria-hidden="true" />
+        {{ secondaryActionLabel }}
       </button>
     </div>
 
-    <div class="article-empty-state-divider" aria-hidden="true">
+    <div v-if="!hasTagSelection" class="article-empty-state-divider" aria-hidden="true">
       <span>OR</span>
     </div>
 
-    <button type="button" class="article-empty-state-link" @click="$emit('open-smart-folders')">
+    <button v-if="!hasTagSelection" type="button" class="article-empty-state-link" @click="$emit('open-smart-folders')">
       <BootstrapIcon icon="folder" aria-hidden="true" />
       Explore smart folders
     </button>
@@ -40,8 +45,70 @@
 </template>
 
 <script>
+import { formatTagName } from '../../utils/tags.js';
+
 export default {
-  emits: ['clear-filters', 'refresh-feeds', 'open-smart-folders']
+  emits: [
+    'clear-filters',
+    'clear-tag',
+    'refresh-feeds',
+    'open-smart-folders',
+    'view-tag-status'
+  ],
+  props: {
+    selectedTag: {
+      type: String,
+      default: ''
+    },
+    currentStatus: {
+      type: String,
+      default: 'unread'
+    }
+  },
+  computed: {
+    // This reports whether the empty collection is specifically scoped to a tag.
+    hasTagSelection() {
+      return Boolean(this.selectedTag);
+    },
+    // This describes the empty tag-state intersection without clearing either selection.
+    emptyTitle() {
+      if (!this.hasTagSelection) return 'No posts found';
+
+      const statusLabels = {
+        unread: 'unread',
+        read: 'read',
+        favorite: 'favorite',
+        hot: 'hot',
+        clicked: 'clicked'
+      };
+      const statusLabel = statusLabels[this.currentStatus] || 'matching';
+      return `No ${statusLabel} articles tagged ${formatTagName(this.selectedTag)}`;
+    },
+    // This chooses the complementary reading state offered for an empty tag selection.
+    alternateTagStatus() {
+      return this.currentStatus === 'unread' ? 'read' : 'unread';
+    },
+    // This labels the secondary action for tag-specific and generic empty states.
+    secondaryActionLabel() {
+      if (!this.hasTagSelection) return 'Refresh feeds';
+      return `View ${this.alternateTagStatus} articles`;
+    }
+  },
+  methods: {
+    // This clears only the tag when tag scope caused the empty collection.
+    handlePrimaryAction() {
+      this.$emit(this.hasTagSelection ? 'clear-tag' : 'clear-filters');
+    },
+    // This changes article state while preserving a tag, or refreshes a generic empty collection.
+    handleSecondaryAction() {
+      if (this.hasTagSelection) {
+        this.$emit('view-tag-status', this.alternateTagStatus);
+        return;
+      }
+
+      this.$emit('refresh-feeds');
+    }
+  }
 }
 </script>
 

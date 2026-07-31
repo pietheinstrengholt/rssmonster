@@ -13,13 +13,15 @@ import { normalizeResourceError } from './resourceState.js';
 import { useSelectionStore } from './selection.js';
 import { useUiStore } from './ui.js';
 
-const COUNT_FIELDS = ['unreadCount', 'readCount', 'favoriteCount'];
-const OVERVIEW_COUNT_FIELDS = [
-  ...COUNT_FIELDS,
+const COUNT_FIELDS = [
   'briefingCount',
+  'unreadCount',
+  'readCount',
+  'favoriteCount',
   'hotCount',
   'clickedCount'
 ];
+const OVERVIEW_COUNT_FIELDS = [...COUNT_FIELDS];
 
 // This function compares identifiers consistently across numeric API data and string selections.
 const idsMatch = (left, right) => String(left) === String(right);
@@ -34,6 +36,8 @@ const normalizeFeed = (feed = {}) => ({
   unreadCount: normalizeCount(feed.unreadCount),
   readCount: normalizeCount(feed.readCount),
   favoriteCount: normalizeCount(feed.favoriteCount),
+  hotCount: normalizeCount(feed.hotCount),
+  clickedCount: normalizeCount(feed.clickedCount),
   errorCount: normalizeCount(feed.errorCount)
 });
 
@@ -44,6 +48,8 @@ const normalizeCategory = (category = {}) => ({
   unreadCount: normalizeCount(category.unreadCount),
   readCount: normalizeCount(category.readCount),
   favoriteCount: normalizeCount(category.favoriteCount),
+  hotCount: normalizeCount(category.hotCount),
+  clickedCount: normalizeCount(category.clickedCount),
   feeds: (category.feeds || []).map(normalizeFeed)
 });
 
@@ -105,7 +111,8 @@ const initialOverviewState = () => ({
   smartFolderCountsRequestId: 0,
   topTagsStatus: 'idle',
   topTagsError: null,
-  topTagsRequestId: 0
+  topTagsRequestId: 0,
+  topTagsScopeStatus: null
 });
 
 export const useOverviewStore = defineStore('overview', {
@@ -403,10 +410,23 @@ export const useOverviewStore = defineStore('overview', {
       const requestId = ++this.topTagsRequestId;
       this.topTagsStatus = 'loading';
       this.topTagsError = null;
+      const selection = useSelectionStore().currentSelection;
+
+      if (this.topTagsScopeStatus !== selection.status) {
+        this.topTags = [];
+        this.topTagsScopeStatus = selection.status;
+      }
+
+      if (!['unread', 'read', 'favorite', 'hot', 'clicked'].includes(selection.status)) {
+        this.topTags = [];
+        this.topTagsStatus = 'success';
+        return true;
+      }
 
       try {
         const { data } = await fetchTopTagsAPI({
-          grouping: useSelectionStore().currentSelection.grouping
+          grouping: selection.grouping,
+          status: selection.status
         });
         if (requestId !== this.topTagsRequestId) return false;
 

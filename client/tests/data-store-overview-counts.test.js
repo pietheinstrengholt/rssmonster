@@ -282,7 +282,27 @@ describe('data store overview and count behavior', () => {
     await overviewRequest;
 
     expect(fetchTopTags).toHaveBeenCalledOnce();
-    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic' });
+    expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic', status: 'unread' });
+  });
+
+  // Verifies collection changes refresh scoped tags and unsupported Briefing scope hides them.
+  it('refreshes Top Tags when the article status changes', async () => {
+    const store = createStore();
+    const selectionStore = useSelectionStore();
+    fetchTopTags.mockResolvedValueOnce({
+      data: { tags: [{ name: 'security', count: 3 }] }
+    });
+
+    selectionStore.setSelectedStatus('favorite');
+    await vi.waitFor(() => {
+      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'none', status: 'favorite' });
+    });
+    expect(store.topTags).toEqual([{ name: 'security', count: 3 }]);
+
+    fetchTopTags.mockClear();
+    selectionStore.setSelectedStatus('briefing');
+    await vi.waitFor(() => expect(store.topTags).toEqual([]));
+    expect(fetchTopTags).not.toHaveBeenCalled();
   });
 
   // Verifies settings responses cannot inject persistence or unrelated fields into selection state.

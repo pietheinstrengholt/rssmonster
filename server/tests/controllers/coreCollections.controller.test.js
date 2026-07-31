@@ -181,20 +181,54 @@ describe('tag and cleanup controllers', () => {
     resetControllerMocks();
   });
 
-  it('returns grouped tags for the authenticated user', async () => {
-    const tags = [{ name: 'security', tagType: 'topic', count: 4 }];
+  it('returns unread tags grouped by name for the authenticated user', async () => {
+    const tags = [{ name: 'security', count: 4 }];
     mocked.tagFindAll.mockResolvedValue(tags);
     const res = createResponse();
 
-    await tagController.getTags(createRequest(), res);
+    await tagController.getTags(createRequest({ query: { status: 'unread' } }), res);
 
     expect(mocked.tagFindAll).toHaveBeenCalledWith(expect.objectContaining({
       where: { userId: 42 },
-      group: ['name', 'tagType'],
+      group: ['tags.name'],
+      include: [{
+        model: expect.any(Object),
+        attributes: [],
+        required: true,
+        where: expect.objectContaining({
+          userId: 42,
+          status: 'unread',
+          filteredInd: false
+        })
+      }],
       limit: 10
     }));
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ tags });
+  });
+
+  it.each([
+    ['favorite', 'favoriteInd', 1],
+    ['hot', 'hotInd', 1],
+    ['clicked', 'clickedAmount', { [Op.gt]: 0 }]
+  ])('scopes tags to the %s article collection', async (status, field, value) => {
+    mocked.tagFindAll.mockResolvedValue([]);
+    const res = createResponse();
+
+    await tagController.getTags(createRequest({ query: { status } }), res);
+
+    const query = mocked.tagFindAll.mock.calls[0][0];
+    expect(query.include[0].where[field]).toEqual(value);
+  });
+
+  it('rejects unsupported tag collection statuses', async () => {
+    const res = createResponse();
+
+    await tagController.getTags(createRequest({ query: { status: 'briefing' } }), res);
+
+    expect(mocked.tagFindAll).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(400);
+    expect(res.json).toHaveBeenCalledWith({ error: 'Unsupported tag status' });
   });
 
   it('returns a stable tag error without exposing database details', async () => {

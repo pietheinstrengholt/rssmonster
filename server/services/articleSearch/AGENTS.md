@@ -37,7 +37,7 @@ Every search operates inside a library scope. The broadest normal scope is all f
 
 Scope controls where results may come from. It does not decide relevance by itself. Relevance is determined after scope is established by applying text intent, state filters, metadata filters, quality thresholds, and ordering.
 
-Some views intentionally loosen normal feed/category scope when the concept being requested is not source-local. For example, a hot-article view is about the article's global attention state inside the user's library, not about one selected feed.
+Status views retain normal feed/category scope. A Hot view applies the Hot predicate within the selected source scope, while selecting all feeds applies it across the user's complete library.
 
 ## Query Intent
 

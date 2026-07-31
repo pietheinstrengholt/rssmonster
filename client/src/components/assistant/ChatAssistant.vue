@@ -16,9 +16,9 @@
                 @keydown.enter.prevent="chatInput.trim() && submitChat()"
             ></textarea>
         </div>
-        <div>
-            <button type="button" class="btn btn-primary mb-3" :disabled="!chatInput.trim() || isLoading" @click="submitChat">Submit</button>
-            <button type="button" class="btn btn-secondary mb-3 ms-2" :disabled="messages.length === 0" @click="clearConversation">Clear</button>
+        <div class="agent-chat-actions">
+            <button type="button" class="agent-chat-button agent-chat-button--primary" :disabled="!chatInput.trim() || isLoading" @click="submitChat">Submit</button>
+            <button type="button" class="agent-chat-button agent-chat-button--secondary" :disabled="messages.length === 0" @click="clearConversation">Clear</button>
         </div>
         <div v-if="isLoading" class="loading-spinner">
             <div class="spinner-border text-primary" role="status">
@@ -47,6 +47,7 @@
 <style>
 div#inputArea {
   margin-top: 70px;
+  font-family: var(--font-family);
 }
 
 .user-message {
@@ -72,6 +73,58 @@ div#inputArea {
   align-items: center;
   margin-bottom: 20px;
   color: var(--article-score-text);
+}
+
+.agent-chat-actions {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 1rem;
+}
+
+.agent-chat-button {
+  display: inline-flex;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border-radius: 8px;
+  font-family: inherit;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.agent-chat-button--primary {
+  color: var(--text-inverted);
+  background: var(--color-primary);
+  border: 1px solid var(--color-primary);
+}
+
+.agent-chat-button--primary:not(:disabled):hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.agent-chat-button--secondary {
+  color: var(--color-primary);
+  background: transparent;
+  border: 1px solid var(--color-primary);
+}
+
+.agent-chat-button--secondary:not(:disabled):hover {
+  color: var(--color-primary-hover);
+  background: var(--color-primary-soft);
+  border-color: var(--color-primary-hover);
+}
+
+.agent-chat-button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
+}
+
+.agent-chat-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 /* Override css that comes from other websites */
@@ -167,6 +220,17 @@ div#inputArea {
 
 :root[data-theme='dark'] #inputArea .form-label {
   color: var(--text-inverted);
+}
+
+:root[data-theme='dark'] .agent-chat-button--secondary {
+  color: var(--color-link);
+  border-color: var(--color-link);
+}
+
+:root[data-theme='dark'] .agent-chat-button--secondary:not(:disabled):hover {
+  color: var(--color-link-hover);
+  background: var(--color-primary-surface-dark);
+  border-color: var(--color-link-hover);
 }
 </style>
 

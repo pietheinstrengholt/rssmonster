@@ -47,11 +47,13 @@ Selecting a status changes the meaning of the counts shown for All, categories, 
 
 ### Top tags
 
-The tags section shows up to five of the most frequent tags and appears only when tag data is available. Tag labels are normalized for display.
+The tags section shows up to five of the most frequent tags in the active article-status collection and appears only when tag data is available. Its heading names that scope, such as **Top tags in Unread** or **Top tags in Favorites**, and tag labels are normalized for display.
 
 Selecting a tag scopes articles across all categories and feeds. Selecting the active tag again clears that tag selection.
 
-Tag counts are fetched snapshots for the current grouping context. They do not change merely because the user scrolls, opens articles, or changes another sidebar selection. They change when tag data is explicitly fetched again.
+Each tag count represents matching canonical articles in the active Unread, Read, Favorites, Hot, or Clicked collection. Event and topic grouping may collapse those articles visually, but does not change the article count. Switching status requests a new ranked tag snapshot, and tags without matches in that status do not appear. Daily Briefing does not expose Top Tags because its preference-driven query has no equivalent status-only tag scope.
+
+Tag counts are fetched snapshots. They do not change merely because the user scrolls or opens articles; they change when tag data is explicitly fetched again.
 
 ### Categories and feeds
 
@@ -77,7 +79,7 @@ Categories can be reordered by dragging them. The new order is reflected immedia
 
 Feed rows use the feed favicon when available and otherwise use an RSS icon. Error and disabled feeds retain health-state styling while still participating in selection and count display.
 
-The category area is hidden for the Hot view. This keeps Hot as a global collection rather than exposing category and feed navigation in that state.
+The category area remains available for the Hot view. Its All, category, and feed rows use the authoritative Hot counts from the overview hierarchy, allowing Hot articles to be scoped without deriving totals from the partially loaded article list.
 
 ### Contextual actions
 
@@ -88,7 +90,7 @@ The bottom action area changes according to the current category and feed select
 - Selecting an individual feed reveals actions to delete or edit that feed.
 - Selecting all categories and all feeds reveals cleanup and logout actions.
 
-The footer also links to the RSSMonster project and displays the current application version. Because the footer belongs to the category area, it is not shown in the Hot view.
+The footer also links to the RSSMonster project and displays the current application version.
 
 ## Selection rules
 
@@ -110,7 +112,7 @@ Counts fall into two intentionally different groups:
 | Area | Count model | Expected updates |
 | --- | --- | --- |
 | Smart folders | Fetched snapshot | Changes only when smart-folder counts are fetched again |
-| Top tags | Fetched snapshot | Changes only when tag data is fetched again |
+| Top tags | Status-scoped fetched snapshot | Changes when the article status or tag data is refreshed |
 | All feeds | Live overview state | Changes through article actions, feed refreshes, explicit reloads, and periodic overview refreshes |
 | Categories | Live aggregate of child feeds | Tracks the active status and reconciles article and feed-management changes |
 | Feeds | Live per-feed state | Tracks the active status and reconciles article changes |

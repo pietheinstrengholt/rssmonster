@@ -490,7 +490,6 @@ export default {
 }
 
 .article-card .article-body.hot {
-  background-color: var(--article-hot-background);
   border-color: var(--article-highlight-border);
 }
 
@@ -1295,7 +1294,6 @@ span.similar-badge {
 }
 
 .article-list-row.hot {
-  background-color: var(--article-hot-background);
   border-color: var(--article-highlight-border);
 }
 
