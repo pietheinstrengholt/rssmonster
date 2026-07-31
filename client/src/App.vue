@@ -42,7 +42,7 @@
           </div>
 
           <!-- Submit button -->
-          <button type="submit" class="auth-submit btn btn-primary btn-block" :disabled="isSubmitting">
+          <button type="submit" class="auth-submit btn-block" :disabled="isSubmitting">
             {{ isSubmitting ? (showSignup ? 'Registering...' : 'Signing in...') : (showSignup ? 'Register' : 'Sign in') }}
           </button>
 
@@ -344,7 +344,7 @@ export default {
 }
 
 .auth-form-title {
-  color: var(--text-primary);
+  color: var(--color-primary);
   font-size: 15px;
   font-weight: 700;
   line-height: 1.4;
@@ -391,14 +391,17 @@ export default {
 .auth-submit {
   align-items: center;
   background-color: var(--color-primary);
-  border-color: var(--color-primary);
+  border: 1px solid var(--color-primary);
   border-radius: 8px;
   color: var(--text-inverted);
+  cursor: pointer;
   display: inline-flex;
+  font: inherit;
   font-weight: 700;
   justify-content: center;
   min-height: 44px;
   margin-top: 2px;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
 }
 
 .auth-submit:hover,
@@ -410,6 +413,11 @@ export default {
 
 .auth-submit:focus-visible {
   box-shadow: var(--shadow-focus-primary);
+}
+
+.auth-submit:disabled {
+  cursor: default;
+  opacity: 0.65;
 }
 
 .btn-block {
@@ -521,9 +529,12 @@ div.form-group.row {
 }
 
 :root[data-theme='dark'] .auth-brand h1,
-:root[data-theme='dark'] .auth-form-title,
 :root[data-theme='dark'] .auth-footer strong {
   color: var(--text-primary);
+}
+
+:root[data-theme='dark'] .auth-form-title {
+  color: var(--color-primary);
 }
 
 :root[data-theme='dark'] .auth-brand p,

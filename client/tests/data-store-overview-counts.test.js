@@ -110,6 +110,7 @@ describe('data store overview and count behavior', () => {
     );
     expect(useUiStore().themeMode).toBe('dark');
     expect(store.categories[0].feeds[0]).toMatchObject({
+      briefingCount: 2,
       unreadCount: 5,
       readCount: 4,
       favoriteCount: 3,

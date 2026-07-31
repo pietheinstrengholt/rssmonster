@@ -49,17 +49,20 @@ const initializeStores = () => {
     categories: [{
       id: 10,
       name: 'Technology',
+      briefingCount: 3,
       unreadCount: 8,
       feeds: [{
         id: 101,
         categoryId: 10,
         feedName: 'Example feed',
         status: 'active',
+        briefingCount: 2,
         unreadCount: 3
       }]
     }, {
       id: 20,
       name: 'News',
+      briefingCount: 1,
       unreadCount: 5,
       feeds: []
     }],
@@ -126,6 +129,34 @@ afterEach(() => {
 });
 
 describe('Options API sidebar contracts', () => {
+  // This verifies category and feed badges remain available while switching article statuses.
+  it('renders the selected status count for categories and feeds', async () => {
+    const stores = initializeStores();
+    const wrapper = mountSidebar();
+
+    stores.selectionStore.$patch({
+      currentSelection: {
+        ...stores.selectionStore.currentSelection,
+        status: 'briefing'
+      }
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('3');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2');
+
+    stores.selectionStore.$patch({
+      currentSelection: {
+        ...stores.selectionStore.currentSelection,
+        status: 'unread'
+      }
+    });
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('8');
+    expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('3');
+  });
+
   it('renders navigation counts and forwards category and feed selections', async () => {
     const stores = initializeStores();
     const wrapper = mountSidebar();

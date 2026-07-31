@@ -59,6 +59,16 @@ beforeEach(() => {
 });
 
 describe('App authentication form', () => {
+  it('uses the application primary styling instead of Bootstrap primary styling', async () => {
+    const wrapper = await mountAuthForm();
+
+    const submitButton = wrapper.get('button[type="submit"]');
+
+    expect(submitButton.classes()).toContain('auth-submit');
+    expect(submitButton.classes()).not.toContain('btn');
+    expect(submitButton.classes()).not.toContain('btn-primary');
+  });
+
   it('submits login through the form when Enter is pressed in a login field', async () => {
     authApi.login.mockResolvedValueOnce({ message: 'Signed in.' });
     const wrapper = await mountAuthForm();
