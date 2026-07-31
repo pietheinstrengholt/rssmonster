@@ -1,5 +1,5 @@
 <template>
-  <div :class="buttonClasses" @click="emit('select')">
+  <div :class="buttonClasses" @click="$emit('select')">
     <div>
       <span class="sidebar-icon">
         <BootstrapIcon :icon="icon" color="currentColor" />
@@ -12,31 +12,34 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue';
-
-const props = defineProps({
-  icon: {
-    type: String,
-    required: true
+<script>
+export default {
+  props: {
+    icon: {
+      type: String,
+      required: true
+    },
+    label: {
+      type: String,
+      required: true
+    },
+    variant: {
+      type: [String, Array, Object],
+      default: 'sidebar-management-button'
+    },
+    loading: {
+      type: Boolean,
+      default: false
+    }
   },
-  label: {
-    type: String,
-    required: true
-  },
-  variant: {
-    type: [String, Array, Object],
-    default: 'sidebar-management-button'
-  },
-  loading: {
-    type: Boolean,
-    default: false
+  emits: ['select'],
+  computed: {
+    // This returns the configured classes for the sidebar action.
+    buttonClasses() {
+      return [this.variant];
+    }
   }
-});
-
-const emit = defineEmits(['select']);
-
-const buttonClasses = computed(() => [props.variant]);
+};
 </script>
 
 <style scoped>

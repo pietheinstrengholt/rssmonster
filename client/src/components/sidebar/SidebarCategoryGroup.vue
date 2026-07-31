@@ -3,7 +3,7 @@
     :id="category.id"
     class="sidebar-category"
     :class="{ selected: isSelectedCategory }"
-    @click="emit('select-category', category)"
+    @click="$emit('select-category', category)"
   >
     <div class="sidebar-category-header">
       <span class="sidebar-icon">
@@ -23,15 +23,14 @@
           :selected="selectedFeedId == feed.id"
           :count="getFeedCount(feed)"
           :last="index === category.feeds.length - 1"
-          @select="emit('select-feed', $event)"
+          @select="$emit('select-feed', $event)"
         />
       </div>
     </div>
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue';
+<script>
 import SidebarFeedItem from './SidebarFeedItem.vue';
 import { formatCount } from './formatCount.js';
 
@@ -62,43 +61,61 @@ const CATEGORY_ICON_NAMES = new Set([
   'chat-square-text-fill'
 ]);
 
-const props = defineProps({
-  category: {
-    type: Object,
-    required: true
+export default {
+  components: {
+    SidebarFeedItem
   },
-  selectedCategoryId: {
-    type: [String, Number],
-    required: true
-  },
-  selectedFeedId: {
-    type: [String, Number],
-    required: true
-  },
+  props: {
+    category: {
+      type: Object,
+      required: true
+    },
+    selectedCategoryId: {
+      type: [String, Number],
+      required: true
+    },
+    selectedFeedId: {
+      type: [String, Number],
+      required: true
+    },
     countResolver: {
       type: Function,
       required: true
     },
-  count: {
-    type: [String, Number],
-    default: null
+    count: {
+      type: [String, Number],
+      default: null
+    }
+  },
+  emits: ['select-category', 'select-feed'],
+  computed: {
+    // This indicates that the category itself, rather than one of its feeds, is selected.
+    isSelectedCategory() {
+      return this.selectedCategoryId == this.category.id && this.selectedFeedId === '%';
+    },
+    // This expands the feed list for the currently selected category.
+    isExpanded() {
+      return this.selectedCategoryId == this.category.id;
+    },
+    // This formats large category counts for compact sidebar display.
+    formattedCount() {
+      return formatCount(this.count);
+    },
+    // This falls back to the standard folder icon for unsupported category icons.
+    categoryIconName() {
+      return CATEGORY_ICON_NAMES.has(this.category.iconName)
+        ? this.category.iconName
+        : 'folder-fill';
+    }
+  },
+  methods: {
+    // This resolves the active-status count for a feed.
+    getFeedCount(feed) {
+      const value = this.countResolver(feed);
+      return value === undefined ? null : value;
+    }
   }
-});
-
-const emit = defineEmits(['select-category', 'select-feed']);
-
-const isSelectedCategory = computed(() => props.selectedCategoryId == props.category.id && props.selectedFeedId === '%');
-const isExpanded = computed(() => props.selectedCategoryId == props.category.id);
-const formattedCount = computed(() => formatCount(props.count));
-const categoryIconName = computed(() => CATEGORY_ICON_NAMES.has(props.category.iconName)
-  ? props.category.iconName
-  : 'folder-fill'
-);
-
-function getFeedCount(feed) {
-  const value = props.countResolver(feed);
-  return value === undefined ? null : value;
-}
+};
 </script>
 
 <style scoped>

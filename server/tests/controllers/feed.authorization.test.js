@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
+import { crawlJobManager } from '../../services/crawl/index.js';
 
 const { Article, Category, Event, Feed, User, sequelize } = db;
 
@@ -266,5 +267,58 @@ describe('feed ownership authorization', () => {
 
     expect(res.status).toBe(404);
     expect(res.body).toEqual({ error: 'Feed not found' });
+  });
+
+  it('GET refresh events rejects unauthenticated and query-token access', async () => {
+    const owner = await createUser(uniqueName('refresh-owner'));
+    const jobId = crawlJobManager.createJob(owner.id);
+    const bearerToken = authHeaderFor(owner).replace('Bearer ', '');
+
+    const unauthenticatedResponse = await request(app)
+      .get(`/api/feeds/refresh/${jobId}/events`);
+    const queryTokenResponse = await request(app)
+      .get(`/api/feeds/refresh/${jobId}/events?token=${bearerToken}`);
+
+    expect(unauthenticatedResponse.status).toBe(400);
+    expect(queryTokenResponse.status).toBe(400);
+  });
+
+  it('GET refresh events hides jobs owned by another user', async () => {
+    const owner = await createUser(uniqueName('refresh-owner'));
+    const foreignUser = await createUser(uniqueName('refresh-viewer'));
+    const jobId = crawlJobManager.createJob(owner.id);
+
+    const response = await request(app)
+      .get(`/api/feeds/refresh/${jobId}/events`)
+      .set('Authorization', authHeaderFor(foreignUser));
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ error: 'Refresh job not found' });
+  });
+
+  it('GET refresh events streams buffered progress to the authenticated owner', async () => {
+    const owner = await createUser(uniqueName('refresh-owner'));
+    const jobId = crawlJobManager.createJob(owner.id);
+    crawlJobManager.publishEvent(jobId, {
+      type: 'progress',
+      processedFeeds: 1,
+      totalFeeds: 2
+    });
+    crawlJobManager.publishEvent(jobId, {
+      type: 'done',
+      processedFeeds: 2,
+      totalFeeds: 2
+    });
+
+    const response = await request(app)
+      .get(`/api/feeds/refresh/${jobId}/events`)
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(200);
+    expect(response.headers['content-type']).toContain('text/event-stream');
+    expect(response.text).toContain('event: progress');
+    expect(response.text).toContain('"processedFeeds":1');
+    expect(response.text).toContain('event: done');
+    expect(response.text).not.toContain(authHeaderFor(owner));
   });
 });

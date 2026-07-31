@@ -2,8 +2,6 @@ import db from '../models/index.js';
 const { Feed, Article, Category } = db;
 
 import { rediscoverRssUrl } from '../services/feeds/rediscoverRssUrl.js';
-import jwt from 'jsonwebtoken';
-import { getJwtSecret } from '../config/auth.js';
 import crawlController from './crawl.js';
 import { crawlJobManager } from '../services/crawl/index.js';
 import { normalizeTagList } from '../services/crawl/persistence/tags.js';
@@ -503,17 +501,7 @@ const recalculateFeedTrust = async (req, res) => {
 
 const streamRefreshEvents = async (req, res) => {
   try {
-    let userId = req.userData?.userId || null;
-
-    // EventSource cannot set Authorization headers, so allow token in query for this SSE endpoint.
-    if (!userId && req.query?.token) {
-      try {
-        const decoded = jwt.verify(req.query.token, getJwtSecret());
-        userId = decoded?.userId || null;
-      } catch {
-        userId = null;
-      }
-    }
+    const userId = req.userData?.userId;
 
     if (!userId) {
       return res.status(401).json({ error: 'Unauthorized: missing userId' });

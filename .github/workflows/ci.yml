@@ -93,6 +93,11 @@ jobs:
           FEVER_CREDENTIAL_SECRET: test-fever-credential-secret
         run: npm test --if-present
 
+      - name: Upload server coverage reports to Codecov
+          uses: codecov/codecov-action@v5
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}
+
       # -----------------------
       # Client
       # -----------------------
@@ -119,3 +124,8 @@ jobs:
           VITE_NODE_ENV: test
           VITE_ENABLE_AGENT: false
         run: npm test --if-present
+
+      - name: Upload client coverage reports to Codecov
+          uses: codecov/codecov-action@v5
+          with:
+            token: ${{ secrets.CODECOV_TOKEN }}

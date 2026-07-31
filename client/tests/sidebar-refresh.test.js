@@ -86,6 +86,7 @@ const createEventSource = () => {
       handlers[type] = handler;
     }),
     close: vi.fn(),
+    removeEventListener: vi.fn(),
     onerror: null,
     onopen: null
   };
@@ -119,7 +120,8 @@ describe('Sidebar feed refresh', () => {
     await wrapper.vm.refreshFeeds();
 
     expect(startFeedRefresh).toHaveBeenCalledOnce();
-    expect(openFeedRefreshEvents).toHaveBeenCalledWith('job-7', 'refresh-token');
+    expect(openFeedRefreshEvents).toHaveBeenCalledWith('job-7');
+    expect(Object.keys(handlers)).toContain('progress');
     expect(wrapper.text()).toContain('Resuming live updates');
 
     handlers.progress({
@@ -176,5 +178,25 @@ describe('Sidebar feed refresh', () => {
     );
 
     window.removeEventListener(ACTION_ERROR_EVENT, handleNotification);
+  });
+
+  it('removes progress listeners and closes the live connection on unmount', async () => {
+    const { eventSource } = createEventSource();
+    startFeedRefresh.mockResolvedValue({
+      data: {
+        jobId: 'job-cleanup',
+        reused: false
+      }
+    });
+    openFeedRefreshEvents.mockReturnValue(eventSource);
+    const wrapper = mountSidebar();
+
+    await wrapper.vm.refreshFeeds();
+    wrapper.unmount();
+
+    expect(eventSource.removeEventListener).toHaveBeenCalledTimes(9);
+    expect(eventSource.close).toHaveBeenCalledOnce();
+    expect(eventSource.onopen).toBeNull();
+    expect(eventSource.onerror).toBeNull();
   });
 });

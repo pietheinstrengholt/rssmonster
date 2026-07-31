@@ -335,8 +335,7 @@
 }
 </style>
 
-<script setup>
-import { computed, getCurrentInstance, onBeforeMount, onBeforeUnmount, reactive, ref } from 'vue';
+<script>
 import draggable from 'vuedraggable';
 import Cookies from 'js-cookie';
 import { setAuthToken } from '../api/client';
@@ -351,28 +350,6 @@ import SidebarSectionTitle from './sidebar/SidebarSectionTitle.vue';
 import { formatTagName } from '../utils/tags';
 import { notifyActionError } from '../services/actionNotifications.js';
 
-const emit = defineEmits(['forceReload']);
-const instance = getCurrentInstance();
-// This proxy resolves the global store when it is used, after Vue has installed it.
-const store = new Proxy({}, {
-  get(_, property) {
-    return instance.proxy.$store?.[property];
-  }
-});
-const refreshing = ref(false);
-const markingAsRead = ref(false);
-const refreshEventSource = ref(null);
-const refreshProgress = reactive({
-  visible: false,
-  currentFeedLabel: 'Waiting to start...',
-  progressPercent: 0,
-  totalFeeds: 0,
-  processedFeeds: 0,
-  newArticles: 0,
-  errors: 0,
-  logs: []
-});
-
 const statusFilters = [
   { status: 'briefing', label: 'Daily briefing', icon: 'sunrise-fill', iconClass: 'icon-briefing' },
   { status: 'unread', label: 'Unread', icon: 'record-circle-fill', iconClass: 'icon-unread' },
@@ -382,298 +359,377 @@ const statusFilters = [
   { status: 'clicked', label: 'Clicked', icon: 'arrow-up-right-square-fill', iconClass: 'icon-clicked' }
 ];
 
-const orderList = computed(() => store.data.categories.map(category => category.id));
-const topTagsDisplay = computed(() => store.data.topTags.slice(0, 5));
-const visibleStatusFilters = computed(() => statusFilters.filter(
-  filter => filter.status !== 'briefing' || store.data.currentSelection.AIEnabled
-));
-
-onBeforeMount(() => {
-  Promise.allSettled([
-    store.data.fetchTopTags(),
-    store.data.fetchSmartFolders()
-  ]).catch(() => {});
-});
-
-onBeforeUnmount(() => {
-  closeRefreshEventSource();
-});
-
-// This function returns the count for a selected article status.
-function getStatusCount(status) {
-  return store.data[`${status}Count`];
-}
-
-// This function returns an item's count for the selected article status.
-function getItemStatusCount(item) {
-  const status = store.data.currentSelection.status;
-  const count = item[`${status}Count`];
-  return count === undefined ? null : count;
-}
-
-// This function clears the current authentication session.
-function logout() {
-  setAuthToken(null);
-  store.auth.setToken(null);
-  store.auth.setRole(null);
-  Cookies.remove('token');
-  location.reload();
-}
-
-// This function changes the selected article status.
-function loadType(status) {
-  console.log('%cLoading type:', 'color: red;', status);
-
-  if (status === 'refresh') {
-    store.data.setSmartFolder(null);
-    emit('forceReload');
-  } else if (status !== store.data.currentSelection.status) {
-    store.data.setSelectedStatus(status);
-  } else if (store.data.currentSelection.smartFolderId !== null) {
-    store.data.setSelectedStatus(status);
-  }
-}
-
-// This function selects a category and clears the selected feed.
-function loadCategory(category) {
-  store.data.selectCategory(category.id);
-}
-
-// This function selects a feed.
-function loadFeed(feed) {
-  store.data.selectFeed(feed.id, feed.categoryId);
-}
-
-// This function selects all categories and feeds.
-function loadAll() {
-  store.data.selectCategory('%');
-}
-
-// This function marks articles in the current selection as read.
-async function markAsRead(currentSelection) {
-  markingAsRead.value = true;
-
-  try {
-    await markAllAsRead(currentSelection);
-    emit('forceReload');
-    markingAsRead.value = false;
-  } catch (error) {
-    markingAsRead.value = false;
-    console.error('Error marking the current selection as read:', error);
-    notifyActionError('Could not mark these articles as read. Please try again.', error);
-  }
-}
-
-// This function starts a feed refresh and displays its progress.
-async function refreshFeeds() {
-  if (refreshing.value) return;
-
-  refreshing.value = true;
-
-  resetRefreshProgress();
-  refreshProgress.visible = true;
-  appendRefreshLog('Starting refresh...');
-
-  try {
-    const response = await startFeedRefresh();
-    const jobId = response?.data?.jobId;
-    const reused = Boolean(response?.data?.reused);
-
-    if (!jobId) {
-      throw new Error('Missing refresh job id');
-    }
-
-    if (reused) {
-      appendRefreshLog('Resuming live updates for an already running refresh job.');
-    }
-
-    openRefreshEventStream(jobId);
-  } catch (error) {
-    appendRefreshLog('Live refresh unavailable. Falling back to standard refresh.');
-    await fallbackRefresh(error);
-  }
-}
-
-// This function stops the refresh progress indicator.
-function refresh() {
-  refreshing.value = false;
-}
-
-function resetRefreshProgress() {
-  refreshProgress.currentFeedLabel = 'Waiting to start...';
-  refreshProgress.progressPercent = 0;
-  refreshProgress.totalFeeds = 0;
-  refreshProgress.processedFeeds = 0;
-  refreshProgress.newArticles = 0;
-  refreshProgress.errors = 0;
-  refreshProgress.logs = [];
-}
-
-function appendRefreshLog(message) {
-  const timestamp = new Date().toLocaleTimeString();
-  refreshProgress.logs.unshift(`${timestamp} - ${message}`);
-  refreshProgress.logs = refreshProgress.logs.slice(0, 8);
-}
-
-function updateProgressFromEvent(payload) {
-  if (!payload || typeof payload !== 'object') return;
-
-  const totalFeeds = Number(payload.totalFeeds || 0);
-  const processedFeeds = Number(payload.processedFeeds || payload.currentFeed || 0);
-
-  refreshProgress.totalFeeds = totalFeeds;
-  refreshProgress.processedFeeds = processedFeeds;
-  refreshProgress.newArticles = Number(payload.newArticles || 0);
-  refreshProgress.errors = Number(payload.errors || 0);
-
-  if (payload.feedName) {
-    const currentFeed = Number(payload.currentFeed || processedFeeds || 0);
-    refreshProgress.currentFeedLabel = `${payload.feedName} (${currentFeed}/${totalFeeds || '?'})`;
-  } else if (totalFeeds > 0) {
-    refreshProgress.currentFeedLabel = `${processedFeeds}/${totalFeeds} feeds`;
-  }
-
-  if (totalFeeds > 0) {
-    refreshProgress.progressPercent = Math.min(100, Math.round((processedFeeds / totalFeeds) * 100));
-  }
-}
-
-function openRefreshEventStream(jobId) {
-  closeRefreshEventSource();
-
-  const token = store.auth?.getToken || Cookies.get('token') || null;
-  const eventSource = openFeedRefreshEvents(jobId, token);
-  refreshEventSource.value = eventSource;
-
-  const handleEvent = (event) => {
-    try {
-      const payload = JSON.parse(event.data || '{}');
-      updateProgressFromEvent(payload);
-
-      switch (event.type) {
-        case 'refresh_started':
-          appendRefreshLog(`Refresh started for ${payload.totalFeeds || 0} feeds.`);
-          break;
-        case 'feed_started':
-          appendRefreshLog(`Started: ${payload.feedName || payload.feedId}`);
-          break;
-        case 'feed_parsed':
-          appendRefreshLog(`Parsed ${payload.entries || 0} entries from ${payload.feedName || payload.feedId}.`);
-          break;
-        case 'articles_inserted_updated':
-          appendRefreshLog(`Articles for ${payload.feedName || payload.feedId}: +${payload.feedNewArticles || 0} new, ${payload.feedUpdatedArticles || 0} updated.`);
-          break;
-        case 'feed_error':
-          appendRefreshLog(`Error in ${payload.feedName || payload.feedId}: ${payload.message || 'unknown error'}`);
-          break;
-        case 'feed_completed':
-          appendRefreshLog(`Completed: ${payload.feedName || payload.feedId}`);
-          break;
-        case 'done':
-          appendRefreshLog('Refresh completed.');
-          finishRefreshStream(true);
-          break;
-        case 'error':
-          appendRefreshLog(payload.message || 'Refresh failed.');
-          finishRefreshStream(false);
-          break;
-        default:
-          break;
+export default {
+  components: {
+    draggable,
+    SidebarActionButton,
+    SidebarCategoryGroup,
+    SidebarNavItem,
+    SidebarSectionTitle
+  },
+  emits: ['forceReload'],
+  // This initializes sidebar activity, refresh progress, and SSE cleanup state.
+  data() {
+    return {
+      refreshing: false,
+      markingAsRead: false,
+      refreshEventSource: null,
+      refreshEventListeners: [],
+      refreshStreamGeneration: 0,
+      refreshCompletionTimer: null,
+      fallbackRefreshTimer: null,
+      statusFilters,
+      refreshProgress: {
+        visible: false,
+        currentFeedLabel: 'Waiting to start...',
+        progressPercent: 0,
+        totalFeeds: 0,
+        processedFeeds: 0,
+        newArticles: 0,
+        errors: 0,
+        logs: []
       }
-    } catch (error) {
-      appendRefreshLog('Received invalid progress payload.');
-      console.log('Invalid SSE payload', error);
+    };
+  },
+  computed: {
+    // This returns category IDs in their current drag order.
+    orderList() {
+      return this.$store.data.categories.map(category => category.id);
+    },
+    // This limits the sidebar to the five most frequent tags.
+    topTagsDisplay() {
+      return this.$store.data.topTags.slice(0, 5);
+    },
+    // This hides the Daily briefing filter when AI features are disabled.
+    visibleStatusFilters() {
+      return this.statusFilters.filter(
+        filter => filter.status !== 'briefing' || this.$store.data.currentSelection.AIEnabled
+      );
     }
-  };
+  },
+  // This loads supplemental sidebar navigation before the component mounts.
+  beforeMount() {
+    Promise.allSettled([
+      this.$store.data.fetchTopTags(),
+      this.$store.data.fetchSmartFolders()
+    ]).catch(() => {});
+  },
+  // This closes live refresh resources and prevents delayed state updates after unmount.
+  beforeUnmount() {
+    this.closeRefreshEventSource();
+    clearTimeout(this.refreshCompletionTimer);
+    clearTimeout(this.fallbackRefreshTimer);
+  },
+  methods: {
+    // This returns the count for a selected article status.
+    getStatusCount(status) {
+      return this.$store.data[`${status}Count`];
+    },
 
-  eventSource.onopen = () => {
-    appendRefreshLog('Live connection established.');
-  };
+    // This function returns an item's count for the selected article status.
+    getItemStatusCount(item) {
+      const status = this.$store.data.currentSelection.status;
+      const count = item[`${status}Count`];
+      return count === undefined ? null : count;
+    },
 
-  eventSource.onerror = () => {
-    appendRefreshLog('Live updates disconnected.');
-    // Do not trigger legacy crawl here because the job is already running.
-    finishRefreshStream(false);
-  };
+    // This function clears the current authentication session.
+    logout() {
+      setAuthToken(null);
+      this.$store.auth.setToken(null);
+      this.$store.auth.setRole(null);
+      Cookies.remove('token');
+      location.reload();
+    },
 
-  [
-    'refresh_started',
-    'feed_started',
-    'feed_parsed',
-    'articles_inserted_updated',
-    'feed_error',
-    'feed_completed',
-    'done',
-    'error',
-    'progress'
-  ].forEach(type => {
-    eventSource.addEventListener(type, handleEvent);
-  });
-}
+    // This function changes the selected article status.
+    loadType(status) {
+      console.log('%cLoading type:', 'color: red;', status);
 
-async function fallbackRefresh(error) {
-  try {
-    await triggerCrawl();
-    setTimeout(() => {
-      appendRefreshLog('Standard refresh completed.');
-      refresh();
-      refreshProgress.visible = false;
-    }, 2000);
-  } catch (fallbackError) {
-    refreshing.value = false;
-    refreshProgress.visible = false;
-    const refreshError = fallbackError || error;
-    console.error('Error refreshing feeds after stream fallback:', refreshError);
-    notifyActionError('Could not refresh feeds. Please try again.', refreshError);
-  }
-}
+      if (status === 'refresh') {
+        this.$store.data.setSmartFolder(null);
+        this.$emit('forceReload');
+      } else if (status !== this.$store.data.currentSelection.status) {
+        this.$store.data.setSelectedStatus(status);
+      } else if (this.$store.data.currentSelection.smartFolderId !== null) {
+        this.$store.data.setSelectedStatus(status);
+      }
+    },
 
-function finishRefreshStream(success) {
-  closeRefreshEventSource();
+    // This function selects a category and clears the selected feed.
+    loadCategory(category) {
+      this.$store.data.selectCategory(category.id);
+    },
 
-  setTimeout(() => {
-    refreshing.value = false;
-    refreshProgress.visible = false;
-    if (success) {
-      emit('forceReload');
+    // This function selects a feed.
+    loadFeed(feed) {
+      this.$store.data.selectFeed(feed.id, feed.categoryId);
+    },
+
+    // This function selects all categories and feeds.
+    loadAll() {
+      this.$store.data.selectCategory('%');
+    },
+
+    // This function marks articles in the current selection as read.
+    async markAsRead(currentSelection) {
+      this.markingAsRead = true;
+
+      try {
+        await markAllAsRead(currentSelection);
+        this.$emit('forceReload');
+        this.markingAsRead = false;
+      } catch (error) {
+        this.markingAsRead = false;
+        console.error('Error marking the current selection as read:', error);
+        notifyActionError('Could not mark these articles as read. Please try again.', error);
+      }
+    },
+
+    // This function starts a feed refresh and displays its progress.
+    async refreshFeeds() {
+      if (this.refreshing) return;
+
+      this.refreshing = true;
+
+      this.resetRefreshProgress();
+      this.refreshProgress.visible = true;
+      this.appendRefreshLog('Starting refresh...');
+
+      try {
+        const response = await startFeedRefresh();
+        const jobId = response?.data?.jobId;
+        const reused = Boolean(response?.data?.reused);
+
+        if (!jobId) {
+          throw new Error('Missing refresh job id');
+        }
+
+        if (reused) {
+          this.appendRefreshLog('Resuming live updates for an already running refresh job.');
+        }
+
+        this.openRefreshEventStream(jobId);
+      } catch (error) {
+        this.appendRefreshLog('Live refresh unavailable. Falling back to standard refresh.');
+        await this.fallbackRefresh(error);
+      }
+    },
+
+    // This function stops the refresh progress indicator.
+    refresh() {
+      this.refreshing = false;
+    },
+
+    // This function clears the prior job's displayed refresh metrics.
+    resetRefreshProgress() {
+      this.refreshProgress.currentFeedLabel = 'Waiting to start...';
+      this.refreshProgress.progressPercent = 0;
+      this.refreshProgress.totalFeeds = 0;
+      this.refreshProgress.processedFeeds = 0;
+      this.refreshProgress.newArticles = 0;
+      this.refreshProgress.errors = 0;
+      this.refreshProgress.logs = [];
+    },
+
+    // This function adds one timestamped status line to the bounded progress log.
+    appendRefreshLog(message) {
+      const timestamp = new Date().toLocaleTimeString();
+      this.refreshProgress.logs.unshift(`${timestamp} - ${message}`);
+      this.refreshProgress.logs = this.refreshProgress.logs.slice(0, 8);
+    },
+
+    // This function applies a server progress event to the visible refresh metrics.
+    updateProgressFromEvent(payload) {
+      if (!payload || typeof payload !== 'object') return;
+
+      const totalFeeds = Number(payload.totalFeeds || 0);
+      const processedFeeds = Number(payload.processedFeeds || payload.currentFeed || 0);
+
+      this.refreshProgress.totalFeeds = totalFeeds;
+      this.refreshProgress.processedFeeds = processedFeeds;
+      this.refreshProgress.newArticles = Number(payload.newArticles || 0);
+      this.refreshProgress.errors = Number(payload.errors || 0);
+
+      if (payload.feedName) {
+        const currentFeed = Number(payload.currentFeed || processedFeeds || 0);
+        this.refreshProgress.currentFeedLabel = `${payload.feedName} (${currentFeed}/${totalFeeds || '?'})`;
+      } else if (totalFeeds > 0) {
+        this.refreshProgress.currentFeedLabel = `${processedFeeds}/${totalFeeds} feeds`;
+      }
+
+      if (totalFeeds > 0) {
+        this.refreshProgress.progressPercent = Math.min(100, Math.round((processedFeeds / totalFeeds) * 100));
+      }
+    },
+
+    // This function connects the authenticated progress stream for the owned refresh job.
+    openRefreshEventStream(jobId) {
+      this.closeRefreshEventSource();
+
+      const eventSource = openFeedRefreshEvents(jobId);
+      this.refreshEventSource = eventSource;
+      const streamGeneration = this.refreshStreamGeneration;
+
+      // This handler applies each named refresh event and closes terminal streams.
+      const handleEvent = event => {
+        if (this.refreshStreamGeneration !== streamGeneration) return;
+
+        try {
+          const payload = JSON.parse(event.data || '{}');
+          this.updateProgressFromEvent(payload);
+
+          switch (event.type) {
+            case 'refresh_started':
+              this.appendRefreshLog(`Refresh started for ${payload.totalFeeds || 0} feeds.`);
+              break;
+            case 'feed_started':
+              this.appendRefreshLog(`Started: ${payload.feedName || payload.feedId}`);
+              break;
+            case 'feed_parsed':
+              this.appendRefreshLog(`Parsed ${payload.entries || 0} entries from ${payload.feedName || payload.feedId}.`);
+              break;
+            case 'articles_inserted_updated':
+              this.appendRefreshLog(`Articles for ${payload.feedName || payload.feedId}: +${payload.feedNewArticles || 0} new, ${payload.feedUpdatedArticles || 0} updated.`);
+              break;
+            case 'feed_error':
+              this.appendRefreshLog(`Error in ${payload.feedName || payload.feedId}: ${payload.message || 'unknown error'}`);
+              break;
+            case 'feed_completed':
+              this.appendRefreshLog(`Completed: ${payload.feedName || payload.feedId}`);
+              break;
+            case 'done':
+              this.appendRefreshLog('Refresh completed.');
+              this.finishRefreshStream(true);
+              break;
+            case 'error':
+              this.appendRefreshLog(payload.message || 'Refresh failed.');
+              this.finishRefreshStream(false);
+              break;
+            default:
+              break;
+          }
+        } catch (error) {
+          this.appendRefreshLog('Received invalid progress payload.');
+          console.log('Invalid SSE payload', error);
+        }
+      };
+
+      // This handler reports when the active stream establishes a connection.
+      eventSource.onopen = () => {
+        if (this.refreshStreamGeneration === streamGeneration) {
+          this.appendRefreshLog('Live connection established.');
+        }
+      };
+
+      // This handler closes a disconnected stream without starting a duplicate crawl.
+      eventSource.onerror = () => {
+        if (this.refreshStreamGeneration !== streamGeneration) return;
+        this.appendRefreshLog('Live updates disconnected.');
+        // Do not trigger legacy crawl here because the job is already running.
+        this.finishRefreshStream(false);
+      };
+
+      // This operation retains every listener registration for explicit teardown.
+      [
+        'refresh_started',
+        'feed_started',
+        'feed_parsed',
+        'articles_inserted_updated',
+        'feed_error',
+        'feed_completed',
+        'done',
+        'error',
+        'progress'
+      ].forEach(type => {
+        eventSource.addEventListener(type, handleEvent);
+        this.refreshEventListeners.push({ type, handler: handleEvent });
+      });
+    },
+
+    // This function falls back to the legacy refresh endpoint when live startup fails.
+    async fallbackRefresh(error) {
+      try {
+        await triggerCrawl();
+        // This callback leaves fallback progress visible long enough to read.
+        this.fallbackRefreshTimer = setTimeout(() => {
+          this.appendRefreshLog('Standard refresh completed.');
+          this.refresh();
+          this.refreshProgress.visible = false;
+          this.fallbackRefreshTimer = null;
+        }, 2000);
+      } catch (fallbackError) {
+        this.refreshing = false;
+        this.refreshProgress.visible = false;
+        const refreshError = fallbackError || error;
+        console.error('Error refreshing feeds after stream fallback:', refreshError);
+        notifyActionError('Could not refresh feeds. Please try again.', refreshError);
+      }
+    },
+
+    // This function closes a terminal stream and refreshes article data after success.
+    finishRefreshStream(success) {
+      this.closeRefreshEventSource();
+
+      // This callback briefly preserves the terminal progress state before hiding it.
+      this.refreshCompletionTimer = setTimeout(() => {
+        this.refreshing = false;
+        this.refreshProgress.visible = false;
+        this.refreshCompletionTimer = null;
+        if (success) {
+          this.$emit('forceReload');
+        }
+      }, 500);
+    },
+
+    // This function releases the current stream request and cancels reconnects.
+    closeRefreshEventSource() {
+      if (!this.refreshEventSource) return;
+
+      const eventSource = this.refreshEventSource;
+      // This operation unregisters every named callback from the active stream.
+      this.refreshEventListeners.forEach(({ type, handler }) => {
+        eventSource.removeEventListener?.(type, handler);
+      });
+      this.refreshEventListeners = [];
+      eventSource.onopen = null;
+      eventSource.onerror = null;
+      eventSource.close();
+      this.refreshEventSource = null;
+      this.refreshStreamGeneration += 1;
+    },
+
+    // This function toggles a tag selection.
+    selectTag(tagName) {
+      this.$store.data.setTag(this.$store.data.currentSelection.tag === tagName ? '' : tagName);
+    },
+
+    // This function selects a smart folder.
+    selectSmartFolder(smartFolder) {
+      if (this.$store.data.currentSelection.smartFolderId !== smartFolder.id) {
+        this.$store.data.setSmartFolder(smartFolder);
+      }
+    },
+
+    // This function saves the current category order.
+    updateSortOrder() {
+      updateCategoryOrder(this.orderList)
+        .then(response => console.log(response.status))
+        .catch(error => {
+          console.error('Error saving category order:', error);
+          notifyActionError('Could not save the category order. Please try again.', error);
+        });
+    },
+
+    // This function reconciles a drag result through the store before persisting its ID order.
+    applyCategoryOrder(categories) {
+      this.$store.data.applyCategoryOrder(categories);
+      this.updateSortOrder();
+    },
+    // This formats stored tag names for user-visible sidebar labels.
+    formatTagName(tagName) {
+      return formatTagName(tagName);
     }
-  }, 500);
-}
-
-function closeRefreshEventSource() {
-  if (refreshEventSource.value) {
-    refreshEventSource.value.close();
-    refreshEventSource.value = null;
   }
-}
-
-// This function toggles a tag selection.
-function selectTag(tagName) {
-  store.data.setTag(store.data.currentSelection.tag === tagName ? '' : tagName);
-}
-
-// This function selects a smart folder.
-function selectSmartFolder(smartFolder) {
-  if (store.data.currentSelection.smartFolderId !== smartFolder.id) {
-    store.data.setSmartFolder(smartFolder);
-  }
-}
-
-// This function saves the current category order.
-function updateSortOrder() {
-  updateCategoryOrder(orderList.value)
-    .then(response => console.log(response.status))
-    .catch(error => {
-      console.error('Error saving category order:', error);
-      notifyActionError('Could not save the category order. Please try again.', error);
-    });
-}
-
-// This function reconciles a drag result through the store before persisting its ID order.
-function applyCategoryOrder(categories) {
-  store.data.applyCategoryOrder(categories);
-  updateSortOrder();
-}
-
-defineExpose({ refreshFeeds, updateSortOrder, applyCategoryOrder });
+};
 </script>

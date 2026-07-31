@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest';
 
-import { redactSensitiveQueryValues } from '../../utils/requestLogging.js';
+import {
+  REQUEST_LOG_FORMAT,
+  redactSensitiveQueryValues,
+  requestUrlForLogging
+} from '../../utils/requestLogging.js';
 
 describe('request logging', () => {
   it('redacts compatibility API credentials while preserving other parameters', () => {
@@ -33,5 +37,29 @@ describe('request logging', () => {
     ).toBe(
       '/api/greader/reader/api/0/edit-tag?i=1&T=[REDACTED]'
     );
+
+    expect(
+      redactSensitiveQueryValues(
+        '/api/feeds/refresh/job-7/events?token=primary.jwt.session-token'
+      )
+    ).toBe(
+      '/api/feeds/refresh/job-7/events?token=[REDACTED]'
+    );
+  });
+
+  it('keeps bearer credentials out of the configured request log output', () => {
+    const bearerToken = 'primary.jwt.session-token';
+    const loggedUrl = requestUrlForLogging({
+      headers: {
+        authorization: `Bearer ${bearerToken}`
+      },
+      originalUrl: `/api/feeds/refresh/job-7/events?token=${bearerToken}`
+    });
+
+    expect(loggedUrl).toBe(
+      '/api/feeds/refresh/job-7/events?token=[REDACTED]'
+    );
+    expect(loggedUrl).not.toContain(bearerToken);
+    expect(REQUEST_LOG_FORMAT).not.toContain('authorization');
   });
 });

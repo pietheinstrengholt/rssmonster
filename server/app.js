@@ -28,7 +28,10 @@ import {
   apiRateLimiter,
   mcpRateLimiter
 } from './middleware/rateLimit.js';
-import { redactSensitiveQueryValues } from './utils/requestLogging.js';
+import {
+  REQUEST_LOG_FORMAT,
+  requestUrlForLogging
+} from './utils/requestLogging.js';
 import { getTrustProxySetting } from './utils/trustProxy.js';
 
 // Sequelize + models (single source of truth)
@@ -79,15 +82,8 @@ const omitServerOnlyJsonFields = (key, value) =>
 app.set('json replacer', omitServerOnlyJsonFields);
 
 // Logging
-morgan.token('redacted-url', req =>
-  redactSensitiveQueryValues(req.originalUrl || req.url)
-);
-app.use(
-  morgan(
-    '[:date[clf]] :remote-addr - :method :redacted-url -> ' +
-    ':status (:response-time ms)'
-  )
-);
+morgan.token('redacted-url', requestUrlForLogging);
+app.use(morgan(REQUEST_LOG_FORMAT));
 
 // Static assets
 app.use(express.static("dist"));

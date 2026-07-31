@@ -1,7 +1,7 @@
 <template>
   <div
     :class="rowClasses"
-    @click="emit('select')"
+    @click="$emit('select')"
   >
     <span class="sidebar-icon">
       <BootstrapIcon :icon="icon" :class="iconClass" color="currentColor" />
@@ -13,50 +13,56 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue';
+<script>
 import { formatCount } from './formatCount.js';
 
-const props = defineProps({
-  icon: {
-    type: String,
-    required: true
+export default {
+  props: {
+    icon: {
+      type: String,
+      required: true
+    },
+    title: {
+      type: String,
+      required: true
+    },
+    count: {
+      type: [String, Number],
+      default: null
+    },
+    selected: {
+      type: Boolean,
+      default: false
+    },
+    iconClass: {
+      type: [String, Array, Object],
+      default: ''
+    },
+    rowClass: {
+      type: [String, Array, Object],
+      default: ''
+    },
+    badgeClass: {
+      type: [String, Array, Object],
+      default: ''
+    }
   },
-  title: {
-    type: String,
-    required: true
-  },
-  count: {
-    type: [String, Number],
-    default: null
-  },
-  selected: {
-    type: Boolean,
-    default: false
-  },
-  iconClass: {
-    type: [String, Array, Object],
-    default: ''
-  },
-  rowClass: {
-    type: [String, Array, Object],
-    default: ''
-  },
-  badgeClass: {
-    type: [String, Array, Object],
-    default: ''
+  emits: ['select'],
+  computed: {
+    // This combines the base, caller-provided, and selection classes for the row.
+    rowClasses() {
+      return [
+        'sidebar-item',
+        this.rowClass,
+        { selected: this.selected }
+      ];
+    },
+    // This formats large navigation counts for compact sidebar display.
+    formattedCount() {
+      return formatCount(this.count);
+    }
   }
-});
-
-const emit = defineEmits(['select']);
-
-const rowClasses = computed(() => [
-  'sidebar-item',
-  props.rowClass,
-  { selected: props.selected }
-]);
-
-const formattedCount = computed(() => formatCount(props.count));
+};
 </script>
 
 <style scoped>

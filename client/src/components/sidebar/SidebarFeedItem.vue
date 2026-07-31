@@ -3,7 +3,7 @@
     class="sidebar-feed"
     :class="feedClasses"
     :id="feed.id"
-    @click.stop="emit('select', feed)"
+    @click.stop="$emit('select', feed)"
   >
     <span class="sidebar-icon">
       <img v-if="feed.favicon" :src="feed.favicon" width="16" height="16" alt="" />
@@ -16,39 +16,45 @@
   </div>
 </template>
 
-<script setup>
-import { computed } from 'vue';
+<script>
 import { formatCount } from './formatCount.js';
 
-const props = defineProps({
-  feed: {
-    type: Object,
-    required: true
+export default {
+  props: {
+    feed: {
+      type: Object,
+      required: true
+    },
+    selected: {
+      type: Boolean,
+      default: false
+    },
+    count: {
+      type: [String, Number],
+      default: null
+    },
+    last: {
+      type: Boolean,
+      default: false
+    }
   },
-  selected: {
-    type: Boolean,
-    default: false
-  },
-  count: {
-    type: [String, Number],
-    default: null
-  },
-  last: {
-    type: Boolean,
-    default: false
+  emits: ['select'],
+  computed: {
+    // This returns feed state classes used for selection and health indicators.
+    feedClasses() {
+      return {
+        selected: this.selected,
+        error: this.feed.status === 'error',
+        disabled: this.feed.status === 'disabled',
+        last: this.last
+      };
+    },
+    // This formats large feed counts for compact sidebar display.
+    formattedCount() {
+      return formatCount(this.count);
+    }
   }
-});
-
-const emit = defineEmits(['select']);
-
-const feedClasses = computed(() => ({
-  selected: props.selected,
-  error: props.feed.status === 'error',
-  disabled: props.feed.status === 'disabled',
-  last: props.last
-}));
-
-const formattedCount = computed(() => formatCount(props.count));
+};
 </script>
 
 <style scoped>
