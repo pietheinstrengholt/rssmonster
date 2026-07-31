@@ -148,6 +148,19 @@ describe('AppShell offline recovery', () => {
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
   });
 
+  it('reloads the article feed while an overview reload is already running', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const articleFeed = { fetchArticleIds: vi.fn().mockResolvedValue() };
+    context.$refs.articleFeed = articleFeed;
+    context.overviewReloading = true;
+
+    await AppShell.methods.forceReload.call(context);
+
+    expect(articleFeed.fetchArticleIds)
+      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(context.overviewStore.fetchOverviewSplit).not.toHaveBeenCalled();
+  });
+
   it('returns to fatal offline state when reconnecting fails', async () => {
     const failure = new Error('backend connection failed');
     const context = connectRecoveryMethods(createRecoveryContext());

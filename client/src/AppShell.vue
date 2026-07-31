@@ -546,7 +546,17 @@ export default {
     },
     // This function coalesces retries and restores polling after one successful recovery.
     async forceReload() {
-      if (this.overviewReloading) return;
+      const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
+        ? this.$refs.articleFeed
+        : [this.$refs.articleFeed];
+      const articleReloads = articleFeedRefs
+        .filter(ref => ref && typeof ref.fetchArticleIds === 'function')
+        .map(ref => ref.fetchArticleIds(this.selectionStore.currentSelection));
+
+      if (this.overviewReloading) {
+        await Promise.all(articleReloads);
+        return;
+      }
 
       this.overviewReloading = true;
       try {
@@ -558,21 +568,7 @@ export default {
         this.offlineStatus = false;
         this.overviewLoaded = true;
         this.startOverviewPolling();
-
-        // Reload articles if feed exists
-        const ref = this.$refs.articleFeed;
-        if (ref) {
-          if (Array.isArray(ref)) {
-            ref.forEach(
-              r =>
-                r &&
-                typeof r.fetchArticleIds === 'function' &&
-                r.fetchArticleIds(this.selectionStore.currentSelection)
-            );
-          } else if (typeof ref.fetchArticleIds === 'function') {
-            ref.fetchArticleIds(this.selectionStore.currentSelection);
-          }
-        }
+        await Promise.all(articleReloads);
       } catch (error) {
         console.error('Error reloading application data:', error);
         // Keep the retry surface aligned with the actual failure type.
