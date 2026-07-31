@@ -11,6 +11,7 @@
   "main": "bootstrap.js",
   "scripts": {
     "test": "vitest run",
+    "test:coverage": "vitest run --coverage",
     "test:watch": "vitest",
     "test:semantic-ad-event": "vitest run tests/semantic/semanticRegression.incremental.adEvent.test.js",
     "fixture:semantic-export": "node scripts/exportSemanticRegressionFixture.js",
