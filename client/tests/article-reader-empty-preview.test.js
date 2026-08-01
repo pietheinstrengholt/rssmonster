@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 
 import Article from '../src/components/articles/Article.vue';
 import ArticleReaderLayout from '../src/components/articles/ArticleReaderLayout.vue';
@@ -7,6 +9,8 @@ import articleSource from '../src/components/articles/Article.vue?raw';
 import { markClicked } from '../src/api/articles';
 import { notifyActionError } from '../src/services/actionNotifications.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
+
+const themeSource = readFileSync(resolve(process.cwd(), 'src/assets/styles/theme.css'), 'utf8');
 
 vi.mock('../src/api/articles', () => ({
   fetchDuplicateArticles: vi.fn(),
@@ -68,7 +72,7 @@ function mountReader(article = createArticle()) {
     },
     global: {
       stubs: {
-        Article: true,
+        ArticleItem: true,
         ArticleEmptyState: true,
         ArticleEndState: true,
         BootstrapIcon: true
@@ -180,11 +184,14 @@ describe('ArticleReaderLayout empty previews', () => {
     );
   });
 
-  it('defines readable light and dark fallback colors', () => {
-    expect(articleSource).toContain('color: #6B7280');
+  it('defines readable light and dark semantic colors', () => {
+    expect(articleSource).toContain('color: var(--reader-empty-preview-text)');
+    expect(articleSource).toContain('color: var(--color-link)');
     expect(articleSource).toContain("root[data-theme='dark']");
-    expect(articleSource).toContain('color: #9CA3AF');
-    expect(articleSource).toContain('color: #60A5FA');
+    expect(themeSource).toContain('--reader-empty-preview-text: #6B7280;');
+    expect(themeSource).toContain('--reader-empty-preview-text: #9CA3AF;');
+    expect(themeSource).toContain('--color-link: #2563EB;');
+    expect(themeSource).toContain('--color-link: #60A5FA;');
   });
 });
 

@@ -686,10 +686,10 @@ export default {
 
 .article-signal-bar {
   align-items: center;
-  background: #fff7ed;
-  border: 1px solid #fed7aa;
+  background: var(--article-signal-surface);
+  border: 1px solid var(--article-signal-border);
   border-radius: 8px;
-  color: #7c2d12;
+  color: var(--article-signal-text);
   display: flex;
   flex-wrap: wrap;
   font-size: 14px;
@@ -712,20 +712,20 @@ export default {
 }
 
 .signal-divider {
-  background: #fdba74;
+  background: var(--article-signal-divider);
   height: 16px;
   opacity: 0.8;
   width: 1px;
 }
 
 :root[data-theme='dark'] .article-signal-bar {
-  background: rgba(124, 45, 18, 0.22);
-  border-color: rgba(253, 186, 116, 0.42);
-  color: #fed7aa;
+  background: var(--article-signal-surface);
+  border-color: var(--article-signal-border);
+  color: var(--article-signal-text);
 }
 
 :root[data-theme='dark'] .signal-divider {
-  background: rgba(253, 186, 116, 0.55);
+  background: var(--article-signal-divider);
 }
 
 .article-card .article-content-wrapper {
@@ -1092,7 +1092,7 @@ span.similar-badge {
 .developing-story-icon {
   display: inline-flex;
   align-items: center;
-  color: #2563eb;
+  color: var(--article-developing-icon);
   font-size: 0.875rem;
   line-height: 1;
   vertical-align: middle;
@@ -1136,7 +1136,7 @@ span.similar-badge {
 }
 
 :root[data-theme='dark'] .developing-story-icon {
-  color: #60a5fa;
+  color: var(--article-developing-icon);
 }
 
 :root[data-theme='dark'] span.similar-badge {
@@ -1317,7 +1317,7 @@ span.similar-badge {
 }
 
 .article-list-card.article-list-card-selected {
-  background: transparent;
+  background: var(--color-transparent);
 }
 
 .article-list-card.article-list-card-selected:focus {
@@ -1348,7 +1348,7 @@ span.similar-badge {
   height: 34px;
   padding: 0;
   border: 0;
-  background: transparent;
+  background: var(--color-transparent);
   color: var(--color-primary);
   cursor: pointer;
   font-size: 13px;
@@ -1426,7 +1426,7 @@ span.similar-badge {
 
 .article-preview-empty {
   align-items: center;
-  color: #6B7280;
+  color: var(--reader-empty-preview-text);
   display: flex;
   flex-wrap: wrap;
   font-size: 0.8125rem;
@@ -1442,7 +1442,7 @@ span.similar-badge {
 
 .article-preview-empty__link {
   align-items: center;
-  color: #6B7280;
+  color: var(--reader-empty-preview-text);
   display: inline-flex;
   font-weight: 500;
   gap: 0.25rem;
@@ -1450,15 +1450,15 @@ span.similar-badge {
 }
 
 .article-preview-empty__link:hover {
-  color: #2563EB;
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .article-preview-empty__link:focus-visible {
   border-radius: 0.2rem;
-  color: #2563EB;
-  outline: 2px solid #2563EB;
+  color: var(--color-link);
+  outline: 2px solid var(--color-link);
   outline-offset: 2px;
 }
 
@@ -1487,12 +1487,12 @@ span.similar-badge {
 .article-list-actions .dropdown .btn {
   width: 34px !important;
   height: 34px !important;
-  border: 1px solid transparent !important;
+  border: 1px solid var(--color-transparent) !important;
   border-radius: 8px !important;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  background: transparent !important;
+  background: var(--color-transparent) !important;
   color: var(--text-meta, var(--text-muted)) !important;
   cursor: pointer;
   opacity: 1;
@@ -1880,7 +1880,7 @@ span.similar-badge {
   .article-list-row.active,
   .article-list-row.selected,
   .article-card.active .article-list-row {
-    background: #1E3A8A;
+    background: var(--bg-selected);
   }
 
   .article-list-card.event-article,
@@ -1895,7 +1895,7 @@ span.similar-badge {
   }
 
   .article-list-card.article-list-card-selected {
-    background: transparent;
+    background: var(--color-transparent);
   }
 
   .article-list-card.article-list-card-selected:focus {
@@ -1941,13 +1941,13 @@ span.similar-badge {
 
   .article-preview-empty,
   .article-preview-empty__link {
-    color: #9CA3AF;
+    color: var(--reader-empty-preview-text);
   }
 
   .article-preview-empty__link:hover,
   .article-preview-empty__link:focus-visible {
-    color: #60A5FA;
-    outline-color: #60A5FA;
+    color: var(--color-link);
+    outline-color: var(--color-link);
   }
 }
 </style>

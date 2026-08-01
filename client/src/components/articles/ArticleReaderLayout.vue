@@ -164,7 +164,7 @@
     </aside>
 
     <section class="readerArticlePanel" aria-label="Reader">
-      <Article
+      <ArticleItem
         v-if="selectedArticle"
         ref="selectedArticleComponent"
         v-bind="selectedArticle"
@@ -186,7 +186,7 @@
 import { mapStores } from 'pinia';
 import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
-import Article from "./Article.vue";
+import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import DailyBriefingIntro from "../briefing/DailyBriefingIntro.vue";
@@ -201,7 +201,7 @@ const PREVIEW_LENGTH = 150;
 
 export default {
   components: {
-    Article,
+    ArticleItem,
     ArticleEmptyState,
     ArticleEndState,
     DailyBriefingIntro,
@@ -813,7 +813,7 @@ export default {
 
 .bulk-more-button {
   align-items: center;
-  background: transparent;
+  background: var(--color-transparent);
   border: 0;
   border-radius: 6px;
   color: var(--text-secondary);
@@ -835,7 +835,7 @@ export default {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
   border-radius: 8px;
-  box-shadow: 0 16px 36px rgba(15, 23, 42, 0.14);
+  box-shadow: 0 16px 36px var(--shadow-reader-bulk-menu-color);
   max-width: calc(100vw - 24px);
   min-width: 280px;
   padding: 8px;
@@ -859,7 +859,7 @@ export default {
 
 .bulk-action-menu-item {
   align-items: center;
-  background: transparent;
+  background: var(--color-transparent);
   border: none;
   border-radius: 6px;
   color: var(--toolbar-text);
@@ -974,7 +974,7 @@ export default {
 
 .article-preview-empty {
   align-items: center;
-  color: #6B7280;
+  color: var(--reader-empty-preview-text);
   display: flex;
   flex-wrap: wrap;
   font-size: 0.8125rem;
@@ -990,7 +990,7 @@ export default {
 
 .article-preview-empty__link {
   align-items: center;
-  color: #6B7280;
+  color: var(--reader-empty-preview-text);
   display: inline-flex;
   font-weight: 500;
   gap: 0.25rem;
@@ -998,15 +998,15 @@ export default {
 }
 
 .article-preview-empty__link:hover {
-  color: #2563EB;
+  color: var(--color-link);
   text-decoration: underline;
   text-underline-offset: 2px;
 }
 
 .article-preview-empty__link:focus-visible {
   border-radius: 0.2rem;
-  color: #2563EB;
-  outline: 2px solid #2563EB;
+  color: var(--color-link);
+  outline: 2px solid var(--color-link);
   outline-offset: 2px;
 }
 
@@ -1039,13 +1039,13 @@ export default {
 }
 
 .readerArticleListDevelopingIcon {
-  color: #1d4ed8;
+  color: var(--color-info-strong);
   font-size: 0.875rem;
   line-height: 1;
 }
 
 :global(:root[data-theme='dark'] .readerArticleListDevelopingIcon) {
-  color: #93c5fd;
+  color: var(--color-info-strong);
 }
 
 .readerArticleListBadgeHot {
@@ -1098,7 +1098,7 @@ export default {
 :global(:root[data-theme='dark']) .bulk-action-menu {
   background: var(--bg-modal);
   border-color: var(--border-color);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.36);
+  box-shadow: 0 18px 40px var(--shadow-reader-bulk-menu-color);
 }
 
 :global(:root[data-theme='dark']) .bulk-action-menu-section {
@@ -1136,13 +1136,13 @@ export default {
 
 :global(:root[data-theme='dark']) .article-preview-empty,
 :global(:root[data-theme='dark']) .article-preview-empty__link {
-  color: #9CA3AF;
+  color: var(--reader-empty-preview-text);
 }
 
 :global(:root[data-theme='dark']) .article-preview-empty__link:hover,
 :global(:root[data-theme='dark']) .article-preview-empty__link:focus-visible {
-  color: #60A5FA;
-  outline-color: #60A5FA;
+  color: var(--color-link);
+  outline-color: var(--color-link);
 }
 
 :global(:root[data-theme='dark']) .readerArticleListItemSelected {

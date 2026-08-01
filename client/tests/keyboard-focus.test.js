@@ -57,7 +57,7 @@ const mountReaderLayout = () => {
   global: {
     plugins: [stores.pinia],
     stubs: {
-      Article: true,
+      ArticleItem: true,
       ArticleEndState: true,
       DailyBriefingIntro: true,
       UnreadSelectionContext: true

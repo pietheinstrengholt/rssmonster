@@ -436,7 +436,7 @@ export default {
   padding: 1rem 0;
 
   border: 0;
-  border-bottom: 1px solid #e5e7eb;
+  border-bottom: 1px solid var(--briefing-preferences-section-border);
 }
 
 .briefing-preferences-section:last-child {
@@ -448,7 +448,7 @@ export default {
   margin: 0 0 0.75rem;
   padding: 0;
 
-  color: #64748b;
+  color: var(--briefing-preferences-section-label);
   font-size: 0.6875rem;
   font-weight: 700;
   line-height: 1.2;
@@ -468,7 +468,7 @@ export default {
 }
 
 .briefing-preferences-option + .briefing-preferences-option {
-  border-top: 1px solid #f1f5f9;
+  border-top: 1px solid var(--briefing-preferences-option-border);
 }
 
 .briefing-preferences-option-icon {
@@ -479,8 +479,8 @@ export default {
   width: 2rem;
   height: 2rem;
 
-  color: #2563eb;
-  background-color: #eff6ff;
+  color: var(--briefing-preferences-accent-icon);
+  background-color: var(--briefing-preferences-accent-surface);
   border-radius: 0.375rem;
 
   font-size: 0.9rem;
@@ -496,7 +496,7 @@ export default {
 
 .briefing-preferences-option-title,
 .briefing-preferences-field-title {
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.875rem;
   font-weight: 600;
   line-height: 1.35;
@@ -506,7 +506,7 @@ export default {
 .briefing-preferences-field-description {
   margin: 0;
 
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.75rem;
   line-height: 1.4;
 }
@@ -520,7 +520,7 @@ export default {
 }
 
 .briefing-preferences-field-title .bi {
-  color: #2563eb;
+  color: var(--briefing-preferences-field-icon);
 }
 
 .briefing-switch {
@@ -549,7 +549,7 @@ export default {
   width: 100%;
   height: 100%;
 
-  background-color: #cbd5e1;
+  background-color: var(--briefing-preferences-switch-track);
   border-radius: 999px;
 
   transition:
@@ -565,16 +565,16 @@ export default {
   width: 0.875rem;
   height: 0.875rem;
 
-  background-color: #ffffff;
+  background-color: var(--briefing-preferences-switch-thumb);
   border-radius: 50%;
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.2);
+  box-shadow: var(--shadow-briefing-preferences-switch-thumb);
 
   content: "";
   transition: transform 150ms ease;
 }
 
 .briefing-switch input:checked + .briefing-switch-control {
-  background-color: #2563eb;
+  background-color: var(--color-primary);
 }
 
 .briefing-switch input:checked + .briefing-switch-control::after {
@@ -582,9 +582,7 @@ export default {
 }
 
 .briefing-switch input:focus-visible + .briefing-switch-control {
-  box-shadow:
-    0 0 0 2px #ffffff,
-    0 0 0 4px rgba(37, 99, 235, 0.4);
+  box-shadow: var(--shadow-briefing-preferences-switch-focus);
 }
 
 .briefing-period-options {
@@ -604,17 +602,17 @@ export default {
 
   padding: 0.75rem;
 
-  background-color: #ffffff;
-  border: 1px solid #dbe1e8;
+  background-color: var(--bg-control);
+  border: 1px solid var(--briefing-preferences-period-border);
   border-radius: 0.375rem;
 
   cursor: pointer;
 }
 
 .briefing-period-option:has(input:checked) {
-  background-color: #eff6ff;
-  border-color: #60a5fa;
-  box-shadow: inset 0 0 0 1px #60a5fa;
+  background-color: var(--briefing-preferences-accent-surface);
+  border-color: var(--briefing-preferences-accent-border);
+  box-shadow: inset 0 0 0 1px var(--briefing-preferences-accent-border);
 }
 
 .briefing-period-option input {
@@ -622,7 +620,7 @@ export default {
 
   margin: 0.15rem 0 0;
 
-  accent-color: #2563eb;
+  accent-color: var(--color-primary);
 }
 
 .briefing-period-option span {
@@ -631,13 +629,13 @@ export default {
 }
 
 .briefing-period-option strong {
-  color: #111827;
+  color: var(--text-primary);
   font-size: 0.8125rem;
   font-weight: 600;
 }
 
 .briefing-period-option small {
-  color: #6b7280;
+  color: var(--text-secondary);
   font-size: 0.6875rem;
   line-height: 1.35;
 }
@@ -666,9 +664,9 @@ export default {
   height: 2.25rem;
   padding: 0 2rem 0 0.625rem;
 
-  color: #111827;
-  background-color: #ffffff;
-  border: 1px solid #d1d5db;
+  color: var(--text-primary);
+  background-color: var(--bg-control);
+  border: 1px solid var(--briefing-preferences-input-border);
   border-radius: 0.375rem;
 
   font: inherit;
@@ -676,9 +674,9 @@ export default {
 }
 
 .briefing-preferences-select:focus {
-  border-color: #60a5fa;
+  border-color: var(--briefing-preferences-input-focus-border);
   outline: 0;
-  box-shadow: 0 0 0 0.1875rem rgba(37, 99, 235, 0.14);
+  box-shadow: var(--shadow-briefing-preferences-input-focus);
 }
 
 .briefing-preferences-load-status {
@@ -689,16 +687,16 @@ export default {
 }
 
 .briefing-preferences-load-status-error {
-  color: #991b1b;
-  background-color: #fef2f2;
-  border: 1px solid #fecaca;
+  color: var(--briefing-preferences-error-text);
+  background-color: var(--briefing-preferences-error-surface);
+  border: 1px solid var(--briefing-preferences-error-border);
 }
 
 .briefing-preferences-reset {
   padding: 0;
 
-  color: #2563eb;
-  background: transparent;
+  color: var(--color-link);
+  background: var(--color-transparent);
   border: 0;
 
   font-size: 0.75rem;
@@ -708,7 +706,7 @@ export default {
 }
 
 .briefing-preferences-reset:hover {
-  color: #1d4ed8;
+  color: var(--color-link-hover);
   text-decoration: underline;
 }
 
@@ -736,7 +734,7 @@ export default {
 
 /* Dark mode */
 :global(:root[data-theme='dark'] .briefing-preferences-section) {
-  border-color: var(--border-color);
+  border-color: var(--briefing-preferences-section-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-preferences-option-title),
@@ -747,32 +745,38 @@ export default {
 
 :global(:root[data-theme='dark'] .briefing-preferences-option-description),
 :global(:root[data-theme='dark'] .briefing-preferences-field-description),
-:global(:root[data-theme='dark'] .briefing-period-option small),
-:global(:root[data-theme='dark'] .briefing-preferences-section-title) {
+:global(:root[data-theme='dark'] .briefing-period-option small) {
   color: var(--text-secondary);
 }
 
-:global(:root[data-theme='dark'] .briefing-preferences-option-icon) {
-  color: var(--color-primary-icon-dark);
-  background-color: var(--color-primary-surface-dark);
+:global(:root[data-theme='dark'] .briefing-preferences-section-title) {
+  color: var(--briefing-preferences-section-label);
 }
 
-:global(:root[data-theme='dark'] .briefing-preferences-field-title .bi),
+:global(:root[data-theme='dark'] .briefing-preferences-option-icon) {
+  color: var(--briefing-preferences-accent-icon);
+  background-color: var(--briefing-preferences-accent-surface);
+}
+
+:global(:root[data-theme='dark'] .briefing-preferences-field-title .bi) {
+  color: var(--briefing-preferences-field-icon);
+}
+
 :global(:root[data-theme='dark'] .briefing-preferences-reset) {
   color: var(--color-link);
 }
 
 :global(:root[data-theme='dark'] .briefing-preferences-option + .briefing-preferences-option) {
-  border-color: var(--border-color);
+  border-color: var(--briefing-preferences-option-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-switch-control) {
-  background-color: #4b5563;
+  background-color: var(--briefing-preferences-switch-track);
 }
 
 :global(:root[data-theme='dark'] .briefing-switch-control::after) {
-  background-color: var(--text-primary);
-  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
+  background-color: var(--briefing-preferences-switch-thumb);
+  box-shadow: var(--shadow-briefing-preferences-switch-thumb);
 }
 
 :global(:root[data-theme='dark'] .briefing-switch input:checked + .briefing-switch-control) {
@@ -780,9 +784,7 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .briefing-switch input:focus-visible + .briefing-switch-control) {
-  box-shadow:
-    0 0 0 2px var(--bg-modal),
-    0 0 0 4px var(--border-focus);
+  box-shadow: var(--shadow-briefing-preferences-switch-focus);
 }
 
 :global(:root[data-theme='dark'] .briefing-period-option),
@@ -794,20 +796,20 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .briefing-period-option:has(input:checked)) {
-  background-color: var(--color-primary-surface-dark);
-  border-color: var(--color-primary-border-dark);
-  box-shadow: inset 0 0 0 1px var(--color-primary-border-dark);
+  background-color: var(--briefing-preferences-accent-surface);
+  border-color: var(--briefing-preferences-accent-border);
+  box-shadow: inset 0 0 0 1px var(--briefing-preferences-accent-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-preferences-select:focus) {
-  border-color: var(--border-focus);
-  box-shadow: var(--shadow-focus-primary);
+  border-color: var(--briefing-preferences-input-focus-border);
+  box-shadow: var(--shadow-briefing-preferences-input-focus);
 }
 
 :global(:root[data-theme='dark'] .briefing-preferences-load-status-error) {
-  color: var(--color-danger-text-dark);
-  background-color: var(--color-danger-surface-dark);
-  border-color: var(--color-danger-border-dark);
+  color: var(--briefing-preferences-error-text);
+  background-color: var(--briefing-preferences-error-surface);
+  border-color: var(--briefing-preferences-error-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-preferences-reset:hover) {

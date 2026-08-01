@@ -295,7 +295,7 @@ export default {
   position: relative;
   width: 100%;
   height: 100%;
-  background-color: #cbd5e1;
+  background-color: var(--preferences-switch-track);
   border-radius: 999px;
   transition:
     background-color 150ms ease,

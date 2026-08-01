@@ -157,8 +157,8 @@ export default {
   width: 100%;
   flex: 0 0 auto;
   padding: 0.875rem;
-  background-color: #ffffff;
-  border-bottom: 1px solid #e5e7eb;
+  background-color: var(--bg-primary);
+  border-bottom: 1px solid var(--briefing-intro-border);
 }
 
 .daily-briefing-intro :deep(.briefing-context) {
@@ -173,14 +173,14 @@ export default {
   width: 100%;
   margin: 0;
   padding: 1rem;
-  color: #374151;
+  color: var(--briefing-summary-text);
   background: linear-gradient(
     90deg,
-    rgba(255, 247, 237, 0.96) 0%,
-    rgba(255, 251, 245, 0.82) 48%,
-    rgba(255, 247, 237, 0.96) 100%
+    var(--briefing-summary-gradient-edge) 0%,
+    var(--briefing-summary-gradient-center) 48%,
+    var(--briefing-summary-gradient-edge) 100%
   );
-  border: 1px solid #fed7aa;
+  border: 1px solid var(--briefing-summary-border);
   border-radius: 0.5rem;
 }
 
@@ -190,7 +190,7 @@ export default {
   justify-content: center;
   width: 2.75rem;
   height: 2.75rem;
-  color: #f97316;
+  color: var(--briefing-summary-icon);
   font-size: 2rem;
   line-height: 1;
 }
@@ -201,7 +201,7 @@ export default {
 
 .briefing-morning-summary-title {
   margin: 0 0 0.375rem;
-  color: #111827;
+  color: var(--text-primary);
   font-size: 1.0625rem;
   font-weight: 700;
   line-height: 1.25;
@@ -210,7 +210,7 @@ export default {
 .briefing-morning-summary-text {
   display: grid;
   gap: 0.2rem;
-  color: #4b5563;
+  color: var(--briefing-supporting-text);
   font-size: 0.875rem;
   line-height: 1.45;
 }
@@ -221,7 +221,7 @@ export default {
 
 .briefing-summary-headline {
   display: block;
-  color: #111827;
+  color: var(--text-primary);
   font-weight: 600;
 }
 
@@ -268,22 +268,22 @@ export default {
 :global(:root[data-theme='dark'] .daily-briefing-intro) {
   color: var(--text-primary);
   background-color: var(--dark-page-surface, #0b0f14);
-  border-bottom-color: var(--border-color, #2a3342);
+  border-bottom-color: var(--briefing-intro-border, #2a3342);
 }
 
 :global(:root[data-theme='dark'] .briefing-morning-summary) {
-  color: var(--text-secondary, #9ca3af);
+  color: var(--briefing-summary-text, #9ca3af);
   background: linear-gradient(
     90deg,
-    rgba(67, 42, 29, 0.7) 0%,
-    rgba(42, 34, 31, 0.82) 50%,
-    rgba(67, 42, 29, 0.7) 100%
+    var(--briefing-summary-gradient-edge) 0%,
+    var(--briefing-summary-gradient-center) 50%,
+    var(--briefing-summary-gradient-edge) 100%
   );
-  border-color: #7c4a2d;
+  border-color: var(--briefing-summary-border);
 }
 
 :global(:root[data-theme='dark'] .briefing-morning-summary-icon) {
-  color: #fb923c;
+  color: var(--briefing-summary-icon);
 }
 
 :global(:root[data-theme='dark'] .briefing-morning-summary-title) {
@@ -296,6 +296,6 @@ export default {
 
 :global(:root[data-theme='dark'] .briefing-morning-summary-text),
 :global(:root[data-theme='dark'] .briefing-summary-excerpt) {
-  color: var(--text-secondary, #9ca3af);
+  color: var(--briefing-supporting-text, #9ca3af);
 }
 </style>

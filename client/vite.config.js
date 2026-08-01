@@ -53,6 +53,9 @@ const bootstrapIconsSprite = () => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  optimizeDeps: {
+    include: ['vuedraggable']
+  },
   resolve: {
     alias: [{
       find: /^vue$/,

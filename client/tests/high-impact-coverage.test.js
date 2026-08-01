@@ -767,7 +767,7 @@ describe('Vue template handler coverage', () => {
       global: {
         plugins: [stores.pinia],
         stubs: {
-          Article: { name: 'Article', template: '<article tabindex="0">Article</article>' },
+          ArticleItem: { name: 'Article', template: '<article tabindex="0">Article</article>' },
           ArticleEndState: { name: 'ArticleEndState', template: '<button class="mark-read" @click="$emit(\'mark-all-read\')">End</button>' },
           DailyBriefingIntro: true,
           UnreadSelectionContext: true
@@ -973,7 +973,7 @@ describe('Vue template handler coverage', () => {
       global: {
         plugins: [stores.pinia],
         stubs: {
-          Article: {
+          ArticleItem: {
             name: 'Article',
             template: '<a class="article-link" href="#">Article</a>'
           },

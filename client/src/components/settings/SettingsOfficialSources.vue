@@ -269,8 +269,8 @@
   opacity: 0.90;
 }
 
-:global(:root[data-theme='dark']) .official-sources-header,
-:global(:root[data-theme='dark']) .official-sources-list {
+:global(:root[data-theme='dark'] .official-sources-header),
+:global(:root[data-theme='dark'] .official-sources-list) {
   background: var(--bg-modal);
   border-color: var(--border-color);
 }

@@ -328,9 +328,8 @@
     border-color: var(--border-subtle);
 }
 
-:global(:root[data-theme='dark']) .feed-form-icon {
-    background: var(--badge-similar-bg);
-    color: var(--badge-similar-text);
+:global(:root[data-theme='dark'] .feed-form-icon) {
+    background: var(--color-primary-surface-dark);
 }
 
 :global(:root[data-theme='dark']) .feed-form-content input,

@@ -129,6 +129,7 @@ export default {
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-weight: 700;
   white-space: nowrap;
 }
 

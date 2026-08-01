@@ -2,7 +2,7 @@
   <div class="actions-settings">
     <!-- Info text -->
     <section class="settings-insight-card settings-insight-card--stacked actions-intro-card" aria-labelledby="actions-intro-title">
-      <header class="actions-intro-heading"><span class="actions-intro-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="actions-eyebrow">Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
+      <header class="actions-intro-heading"><span class="settings-insight-icon" aria-hidden="true"><BootstrapIcon icon="lightning-charge-fill" /></span><div><p class="actions-eyebrow">Automation</p><h3 id="actions-intro-title">How Actions work</h3><p>Actions automatically process incoming articles during the crawl. When an article’s content or title matches a regular expression, the selected action is applied.</p></div></header>
       <div class="actions-type-grid" aria-label="Available action types">
         <article v-for="actionType in actionTypes" :key="actionType.value" class="actions-type-card"><span class="actions-type-icon" :class="actionType.iconClass" aria-hidden="true"><BootstrapIcon :icon="actionType.icon" /></span><div><h4>{{ actionType.label }}</h4><p>{{ actionType.description }}</p></div></article>
       </div>
@@ -81,22 +81,12 @@
   gap: 14px;
 }
 
-.actions-intro-icon,
 .actions-type-icon,
 .actions-row-icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-}
-
-.actions-intro-icon {
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
-  background: var(--bg-primary);
-  color: var(--color-primary);
-  font-size: 20px;
 }
 
 .actions-eyebrow {
@@ -402,9 +392,9 @@
   color: var(--settings-orange-text);
 }
 
-:global(:root[data-theme='dark']) .actions-intro-card,
-:global(:root[data-theme='dark']) .actions-list-section,
-:global(:root[data-theme='dark']) .actions-type-card {
+:global(:root[data-theme='dark'] .actions-intro-card),
+:global(:root[data-theme='dark'] .actions-list-section),
+:global(:root[data-theme='dark'] .actions-type-card) {
   background: var(--bg-modal);
   border-color: var(--border-color);
 }

@@ -189,7 +189,7 @@ export default {
   background-color: var(--bg-option);
 }
 
-:global(:root[data-theme='dark']) .sidebar-item:not(.selected):hover {
+:global(:root[data-theme='dark'] .sidebar-item:not(.selected):hover) {
   background-color: var(--toolbar-search-hover-background-dark);
 }
 

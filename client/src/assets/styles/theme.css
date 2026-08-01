@@ -132,6 +132,39 @@
   --mobile-sheet-handle-bg: #c7cdd6;
   --sidebar-success-action-text: #166534;
   --article-warning-text: #f59e0b;
+  --preferences-switch-track: #CBD5E1;
+
+  /* Daily briefing */
+  --briefing-supporting-text: #4B5563;
+  --briefing-context-surface: #F8FAFC;
+  --briefing-context-border: #E5E7EB;
+  --briefing-context-action-hover-surface: rgba(37, 99, 235, 0.08);
+  --briefing-intro-border: #E5E7EB;
+  --briefing-summary-text: #374151;
+  --briefing-summary-gradient-edge: rgba(255, 247, 237, 0.96);
+  --briefing-summary-gradient-center: rgba(255, 251, 245, 0.82);
+  --briefing-summary-border: #FED7AA;
+  --briefing-summary-icon: #F97316;
+
+  /* Briefing preferences */
+  --briefing-preferences-section-border: #E5E7EB;
+  --briefing-preferences-section-label: #64748B;
+  --briefing-preferences-option-border: #F1F5F9;
+  --briefing-preferences-accent-icon: #2563EB;
+  --briefing-preferences-field-icon: #2563EB;
+  --briefing-preferences-accent-surface: #EFF6FF;
+  --briefing-preferences-switch-track: var(--preferences-switch-track);
+  --briefing-preferences-switch-thumb: #FFFFFF;
+  --shadow-briefing-preferences-switch-thumb: 0 1px 2px rgba(15, 23, 42, 0.2);
+  --shadow-briefing-preferences-switch-focus: 0 0 0 2px #FFFFFF, 0 0 0 4px rgba(37, 99, 235, 0.4);
+  --briefing-preferences-period-border: #DBE1E8;
+  --briefing-preferences-accent-border: #60A5FA;
+  --briefing-preferences-input-border: #D1D5DB;
+  --briefing-preferences-input-focus-border: #60A5FA;
+  --shadow-briefing-preferences-input-focus: 0 0 0 0.1875rem rgba(37, 99, 235, 0.14);
+  --briefing-preferences-error-text: #991B1B;
+  --briefing-preferences-error-surface: #FEF2F2;
+  --briefing-preferences-error-border: #FECACA;
 
   /* Article surfaces and content */
   --article-background: #FBFBFB;
@@ -143,12 +176,17 @@
   --article-highlight-border: #F3A712;
   --article-event-background: #f6f9fe;
   --shadow-article: 0 2px 4px rgba(0, 0, 0, 0.08);
+  --article-signal-surface: #FFF7ED;
+  --article-signal-border: #FED7AA;
+  --article-signal-text: #7C2D12;
+  --article-signal-divider: #FDBA74;
 
   /* Article icons and recommendation indicators */
   --recommendation-positive-icon: #198754;
   --article-clicked-icon: #2B79C2;
   --article-star-icon: #DB2B39;
   --article-hot-icon: #F3A712;
+  --article-developing-icon: #2563EB;
 
   /* Article tags and category badges */
   --badge-similar-bg: #E8F2FE;
@@ -232,6 +270,8 @@
   --reader-list-item-selected-title: #1D4ED8;
   --reader-list-item-selected-meta: #6B7280;
   --reader-list-item-selected-preview: #6B7280;
+  --reader-empty-preview-text: #6B7280;
+  --shadow-reader-bulk-menu-color: rgba(15, 23, 42, 0.14);
 
   /* Mobile menu */
   --mobile-menu-category-background: #7F8798;
@@ -348,6 +388,35 @@
   --color-primary-surface-dark: #1e3a5f;
   --color-primary-border-dark: #4a7fc7;
   --color-primary-icon-dark: #93c5fd;
+  --preferences-switch-track: #4B5563;
+  --briefing-supporting-text: #9CA3AF;
+  --briefing-context-surface: #222836;
+  --briefing-context-border: #2A3342;
+  --briefing-context-action-hover-surface: rgba(96, 165, 250, 0.12);
+  --briefing-intro-border: #2A3342;
+  --briefing-summary-text: #9CA3AF;
+  --briefing-summary-gradient-edge: rgba(67, 42, 29, 0.7);
+  --briefing-summary-gradient-center: rgba(42, 34, 31, 0.82);
+  --briefing-summary-border: #7C4A2D;
+  --briefing-summary-icon: #FB923C;
+  --briefing-preferences-section-border: #2A3342;
+  --briefing-preferences-section-label: #9CA3AF;
+  --briefing-preferences-option-border: #2A3342;
+  --briefing-preferences-accent-icon: #93C5FD;
+  --briefing-preferences-field-icon: #60A5FA;
+  --briefing-preferences-accent-surface: #1E3A5F;
+  --briefing-preferences-switch-track: var(--preferences-switch-track);
+  --briefing-preferences-switch-thumb: #E5E7EB;
+  --shadow-briefing-preferences-switch-thumb: 0 1px 2px rgba(0, 0, 0, 0.45);
+  --shadow-briefing-preferences-switch-focus: 0 0 0 2px var(--bg-modal), 0 0 0 4px var(--border-focus);
+  --briefing-preferences-period-border: #2A3342;
+  --briefing-preferences-accent-border: #4A7FC7;
+  --briefing-preferences-input-border: #2A3342;
+  --briefing-preferences-input-focus-border: #2563EB;
+  --shadow-briefing-preferences-input-focus: var(--shadow-focus-primary);
+  --briefing-preferences-error-text: #FCA5A5;
+  --briefing-preferences-error-surface: #4A1F1F;
+  --briefing-preferences-error-border: #F87171;
   --settings-nav-active-bg-dark: #1E3A8A;
   --settings-nav-active-text-dark: #FFFFFF;
   --settings-icon-primary-bg-dark: var(--badge-similar-bg);
@@ -385,12 +454,19 @@
   --reader-list-item-selected-preview: #E5E7EB;
   --reader-list-item-selected-hover-meta: #DBEAFE;
   --reader-list-item-selected-hover-preview: #F3F4F6;
+  --reader-empty-preview-text: #9CA3AF;
+  --shadow-reader-bulk-menu-color: rgba(0, 0, 0, 0.36);
 
   /* Dark article colors */
   --article-surface-dark: #1A202C;
   --article-event-background-dark: #11161D;
   --article-content-text: #D1D5DB;
   --article-heading-text: #E5E7EB;
+  --article-signal-surface: rgba(124, 45, 18, 0.22);
+  --article-signal-border: rgba(253, 186, 116, 0.42);
+  --article-signal-text: #FED7AA;
+  --article-signal-divider: rgba(253, 186, 116, 0.55);
+  --article-developing-icon: #60A5FA;
   --article-link-dark: var(--color-link);
   --article-link-hover-dark: var(--color-link-hover);
   --article-link-visited-dark: var(--color-link-visited);

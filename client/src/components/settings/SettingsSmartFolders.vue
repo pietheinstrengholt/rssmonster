@@ -25,102 +25,108 @@
             <button type="button" class="btn btn-outline-secondary btn-sm" @click="fetchSmartFolders">Retry</button>
         </div>
 
-        <fieldset v-else-if="loaded" class="smart-folders-editor" :disabled="saving" :aria-busy="saving ? 'true' : 'false'">
-        <div
-            v-if="overviewStore.smartFolderCountsStatus === 'error'"
-            class="smart-folders-load-state smart-folders-load-state--error"
-            role="status"
-        >
-            <span>Smart Folder counts may be outdated. Your folders are still available.</span>
-            <button type="button" class="btn btn-outline-secondary btn-sm" @click="overviewStore.fetchSmartFolderCounts()">Retry counts</button>
-        </div>
-
-        <SmartFolderInsights
-            v-if="aiEnabled"
-            @add="applySmartFolderRecommendation"
-        />
-
-        <!-- Smart Folders -->
-        <div class="smart-folders-list-header">
-            <div>
-                <h4>Your Smart Folders</h4>
-                <p>Click a smart folder to configure its filters and settings.</p>
+        <fieldset v-else-if="loaded" class="smart-folders-editor smart-folders-surface" :disabled="saving" :aria-busy="saving ? 'true' : 'false'">
+            <div
+                v-if="overviewStore.smartFolderCountsStatus === 'error'"
+                class="smart-folders-load-state smart-folders-load-state--error smart-folders-surface__notice"
+                role="status"
+            >
+                <span>Smart Folder counts may be outdated. Your folders are still available.</span>
+                <button type="button" class="btn btn-outline-secondary btn-sm" @click="overviewStore.fetchSmartFolderCounts()">Retry counts</button>
             </div>
 
-            <button type="button" class="btn btn-add" @click="addSmartFolder">
-                <BootstrapIcon icon="plus-circle-fill" />
-                Add Smart Folder
-            </button>
-        </div>
+            <section v-if="aiEnabled" class="smart-folders-surface__section smart-folders-surface__insights">
+                <SmartFolderInsights @add="applySmartFolderRecommendation" />
+            </section>
 
-        <div class="smart-folders-list">
-            <article
-                v-for="(smartFolder, index) in smartFolders"
-                :key="smartFolder.localId"
-                class="smart-folder-card"
-                :class="{ 'smart-folder-card--open': selectedSmartFolderId === smartFolder.localId }"
-            >
-                <!-- Collapsed row -->
-                <div class="smart-folder-row-wrap">
-                    <button
-                        type="button"
-                        class="smart-folder-row"
-                        @click="toggleSmartFolder(smartFolder)"
-                    >
-                        <span class="smart-folder-row__drag" aria-hidden="true">
-                            <BootstrapIcon icon="grip-vertical" />
+            <!-- Smart Folders -->
+            <section class="smart-folders-surface__section smart-folders-surface__folders">
+                <div class="smart-folders-list-header">
+                    <div class="smart-folders-list-header__title">
+                        <span class="smart-folders-list-header__icon" aria-hidden="true">
+                            <BootstrapIcon icon="folder-fill" />
                         </span>
+                        <div>
+                            <h4>Your Smart Folders</h4>
+                            <p>Click a smart folder to configure its filters and settings.</p>
+                        </div>
+                    </div>
 
-                        <span class="smart-folder-row__icon" aria-hidden="true">
-                            <BootstrapIcon :icon="smartFolder.icon || 'folder-fill'" />
-                        </span>
-
-                        <span class="smart-folder-row__main">
-                            <strong>{{ smartFolder.name || 'Untitled smart folder' }}</strong>
-                            <span>{{ querySummary(smartFolder) }}</span>
-                        </span>
-
-                        <span class="smart-folder-row__limit">
-                            {{ smartFolder.limitCount || 50 }} max
-                        </span>
-
-                        <span class="smart-folder-row__status">
-                            <span class="smart-folder-row__status-dot" aria-hidden="true"></span>
-                            Active
-                        </span>
-
-                        <span class="smart-folder-row__chevron" aria-hidden="true">
-                            <BootstrapIcon :icon="selectedSmartFolderId === smartFolder.localId ? 'chevron-up' : 'chevron-down'" />
-                        </span>
-                    </button>
-
-                    <button
-                        type="button"
-                        class="btn btn-icon smart-folder-row__more"
-                        title="Remove smart folder"
-                        @click.stop="removeSmartFolder(index)"
-                    >
-                        <BootstrapIcon icon="three-dots-vertical" />
+                    <button type="button" class="btn btn-add" @click="addSmartFolder">
+                        <BootstrapIcon icon="plus-circle-fill" />
+                        Add Smart Folder
                     </button>
                 </div>
 
-                <SmartFolderEditor
-                    v-if="selectedSmartFolderId === smartFolder.localId"
-                    :ref="setSmartFolderEditorRef"
-                    :smart-folder="smartFolder"
-                    :ai-enabled="aiEnabled"
-                    @validation-change="editorQueryInvalid = $event"
-                    @save="saveSmartFolderConfig(index, $event)"
-                    @save-copy="saveSmartFolderAsCopy"
-                    @cancel="cancelSmartFolderConfig"
-                    @delete="removeSmartFolder(index)"
-                />
-            </article>
-        </div>
+                <div class="smart-folders-list">
+                    <article
+                        v-for="(smartFolder, index) in smartFolders"
+                        :key="smartFolder.localId"
+                        class="smart-folder-card"
+                        :class="{ 'smart-folder-card--open': selectedSmartFolderId === smartFolder.localId }"
+                    >
+                        <!-- Collapsed row -->
+                        <div class="smart-folder-row-wrap">
+                            <button
+                                type="button"
+                                class="smart-folder-row"
+                                @click="toggleSmartFolder(smartFolder)"
+                            >
+                                <span class="smart-folder-row__drag" aria-hidden="true">
+                                    <BootstrapIcon icon="grip-vertical" />
+                                </span>
 
-        <div class="settings-section__actions">
-            <button class="btn btn-primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
-        </div>
+                                <span class="smart-folder-row__icon" aria-hidden="true">
+                                    <BootstrapIcon :icon="smartFolder.icon || 'folder-fill'" />
+                                </span>
+
+                                <span class="smart-folder-row__main">
+                                    <strong>{{ smartFolder.name || 'Untitled smart folder' }}</strong>
+                                    <span>{{ querySummary(smartFolder) }}</span>
+                                </span>
+
+                                <span class="smart-folder-row__limit">
+                                    {{ smartFolder.limitCount || 50 }} max
+                                </span>
+
+                                <span class="smart-folder-row__status">
+                                    <span class="smart-folder-row__status-dot" aria-hidden="true"></span>
+                                    Active
+                                </span>
+
+                                <span class="smart-folder-row__chevron" aria-hidden="true">
+                                    <BootstrapIcon :icon="selectedSmartFolderId === smartFolder.localId ? 'chevron-up' : 'chevron-down'" />
+                                </span>
+                            </button>
+
+                            <button
+                                type="button"
+                                class="btn btn-icon smart-folder-row__more"
+                                title="Remove smart folder"
+                                @click.stop="removeSmartFolder(index)"
+                            >
+                                <BootstrapIcon icon="three-dots-vertical" />
+                            </button>
+                        </div>
+
+                        <SmartFolderEditor
+                            v-if="selectedSmartFolderId === smartFolder.localId"
+                            :ref="setSmartFolderEditorRef"
+                            :smart-folder="smartFolder"
+                            :ai-enabled="aiEnabled"
+                            @validation-change="editorQueryInvalid = $event"
+                            @save="saveSmartFolderConfig(index, $event)"
+                            @save-copy="saveSmartFolderAsCopy"
+                            @cancel="cancelSmartFolderConfig"
+                            @delete="removeSmartFolder(index)"
+                        />
+                    </article>
+                </div>
+            </section>
+
+            <div class="settings-section__actions smart-folders-surface__footer">
+                <button class="btn btn-primary smart-folders-save" type="button" @click="save" :disabled="hasInvalidSmartFolders || saving">{{ saving ? 'Saving…' : 'Save Changes' }}</button>
+            </div>
         </fieldset>
     </div>
 </template>
@@ -135,53 +141,79 @@
 .settings-smart-folders {
   display: flex;
   flex-direction: column;
-  gap: 24px;
+  gap: 20px;
 }
 
 .smart-folders-editor {
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    border: 0;
+  min-width: 0;
+  margin: 0;
+  padding: 0;
+}
+
+.smart-folders-surface {
+  overflow: hidden;
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: 14px;
+  box-shadow: 0 1px 3px var(--shadow-card-subtle-color);
 }
 
 .smart-folders-load-state {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 10px;
-    min-height: 180px;
-    color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 180px;
+  color: var(--text-secondary);
 }
 
 .smart-folders-load-state--error {
-    flex-direction: column;
-    color: var(--text-danger);
+  flex-direction: column;
+  color: var(--text-danger);
 }
 
-.smart-folders-hero,
-.smart-folders-list-header {
-  margin: 0;
+.smart-folders-surface__notice {
+  min-height: 0;
+  padding: 18px 24px;
+  border-bottom: 1px solid var(--border-subtle);
 }
 
 .smart-folders-hero {
   align-items: center;
+  margin: 0;
+  padding: 20px 22px;
+  background: var(--bg-surface-muted);
+  border-color: var(--border-subtle);
+}
+
+.smart-folders-surface__section {
+  padding: 22px 24px;
+}
+
+.smart-folders-surface__insights + .smart-folders-surface__folders {
+  border-top: 1px solid var(--border-subtle);
+}
+
+.smart-folders-surface__insights :deep(.settings-group) {
+  margin-top: 16px;
+  margin-bottom: 0;
 }
 
 .smart-folders-hero__icon,
+.smart-folders-list-header__icon,
 .smart-folder-row__icon {
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border-radius: 10px;
-  background: var(--bg-surface-muted);
   color: var(--color-primary);
 }
 
 .smart-folders-hero__icon {
-  width: 52px;
-  height: 52px;
-  flex: 0 0 52px;
+  width: 48px;
+  height: 48px;
+  flex: 0 0 48px;
+  background: var(--bg-card);
   font-size: 22px;
 }
 
@@ -209,21 +241,40 @@
   align-items: center;
   justify-content: space-between;
   gap: 16px;
+  margin: 0;
+}
+
+.smart-folders-list-header__title {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 12px;
+}
+
+.smart-folders-list-header__icon {
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  background: var(--bg-surface-muted);
+  font-size: 15px;
 }
 
 .smart-folders-list-header .btn {
   display: inline-flex;
+  min-height: 40px;
   align-items: center;
   justify-content: center;
   gap: 8px;
+  font-weight: 700;
   white-space: nowrap;
 }
 
 .smart-folders-list {
+  margin-top: 20px;
   overflow: hidden;
   border: 1px solid var(--border-subtle);
-  border-radius: 12px;
-  background: var(--bg-primary);
+  border-radius: 10px;
+  background: var(--bg-card);
 }
 
 .smart-folder-card + .smart-folder-card {
@@ -242,7 +293,7 @@
   align-items: center;
   width: 100%;
   gap: 16px;
-  padding: 16px;
+  padding: 14px 16px;
   border: 0;
   background: var(--color-transparent);
   color: var(--text-primary);
@@ -267,6 +318,7 @@
 .smart-folder-row__icon {
   width: 40px;
   height: 40px;
+  background: var(--bg-surface-muted);
 }
 
 .smart-folder-row__main {
@@ -350,19 +402,50 @@
   opacity: 0.90;
 }
 
-:global(:root[data-theme='dark']) .smart-folders-list {
+.smart-folders-surface__footer {
+  margin: 0;
+  padding: 16px 24px;
+  background: var(--bg-surface-muted);
+  border-top: 1px solid var(--border-subtle);
+}
+
+:global(:root[data-theme='dark'] .smart-folders-hero),
+:global(:root[data-theme='dark'] .smart-folders-surface),
+:global(:root[data-theme='dark'] .smart-folders-list) {
   background: var(--bg-modal);
   border-color: var(--border-color);
 }
 
-:global(:root[data-theme='dark']) .smart-folder-row__icon,
-:global(:root[data-theme='dark']) .smart-folders-hero__icon {
+:global(:root[data-theme='dark'] .smart-folders-surface__notice),
+:global(:root[data-theme='dark'] .smart-folders-surface__insights + .smart-folders-surface__folders),
+:global(:root[data-theme='dark'] .smart-folders-surface__footer),
+:global(:root[data-theme='dark'] .smart-folder-card + .smart-folder-card) {
+  border-color: var(--border-color);
+}
+
+:global(:root[data-theme='dark'] .smart-folders-surface__footer),
+:global(:root[data-theme='dark'] .smart-folders-hero__icon),
+:global(:root[data-theme='dark'] .smart-folders-list-header__icon),
+:global(:root[data-theme='dark'] .smart-folder-row__icon),
+:global(:root[data-theme='dark'] .smart-folder-row__limit) {
   background: var(--bg-control);
 }
 
+:global(:root[data-theme='dark'] .smart-folders-hero__icon),
+:global(:root[data-theme='dark'] .smart-folders-list-header__icon) {
+  color: var(--settings-info-text);
+}
+
 @media (max-width: 760px) {
-  .smart-folders-list-header,
   .smart-folders-hero {
+    padding: 18px;
+  }
+
+  .smart-folders-surface__section {
+    padding: 18px;
+  }
+
+  .smart-folders-list-header {
     align-items: stretch;
     flex-direction: column;
   }
@@ -379,6 +462,54 @@
 
   .smart-folders-list-header .btn {
     width: 100%;
+  }
+
+  .smart-folders-surface__notice,
+  .smart-folders-surface__footer {
+    padding: 16px 18px;
+  }
+
+  .smart-folders-save {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .smart-folders-hero {
+    gap: 12px;
+  }
+
+  .smart-folders-hero__icon {
+    width: 44px;
+    height: 44px;
+    flex-basis: 44px;
+  }
+
+  .smart-folders-list {
+    margin-top: 16px;
+  }
+
+  .smart-folder-row-wrap {
+    grid-template-columns: minmax(0, 1fr) 40px;
+  }
+
+  .smart-folder-row {
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    gap: 10px;
+    padding: 12px;
+  }
+
+  .smart-folder-row__drag {
+    display: none;
+  }
+
+  .smart-folder-row__icon {
+    width: 36px;
+    height: 36px;
+  }
+
+  .smart-folder-row__more {
+    width: 40px;
   }
 }
 </style>

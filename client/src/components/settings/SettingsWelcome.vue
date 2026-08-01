@@ -56,6 +56,13 @@
     </div>
 
     <div class="mb-3">
+      <h6 class="mb-2"><strong>Crawl Statistics</strong></h6>
+      <p class="small text-muted mb-0">
+        Review daily crawl activity, including new and updated articles and the number of completed or failed crawls.
+      </p>
+    </div>
+
+    <div class="mb-3">
       <h6 class="mb-2"><strong>Feeds Overview</strong></h6>
       <p class="small text-muted mb-0">
         Manage your RSS subscriptions, view feed metrics (trust score, duplication rate, article counts),

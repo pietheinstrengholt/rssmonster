@@ -56,6 +56,27 @@ Do not introduce new accent colors unless explicitly requested.
 * Dark mode must be designed, not inverted.
 * Ensure normal text meets WCAG AA contrast.
 
+## Hard-coded color guard
+
+Run `npm run check:hard-coded-colors` when changing Vue styles or client CSS/SCSS. The guard scans
+Vue `<style>` blocks and client-owned `.css`/`.scss` files. It excludes `theme.css`, because that file
+is the semantic-token registry where exact light- and dark-mode values are defined.
+
+The policy lives in `client/scripts/hard-coded-color-policy.js`:
+
+* `HARD_CODED_COLOR_BASELINE` records legacy literal counts by file and normalized value. A new
+  literal or an increased count fails the check.
+* `APPROVED_COLOR_EXCEPTIONS` documents capped, durable exceptions in four categories:
+  `publisher-platform-brand`, `article-content-compatibility`, `intentional-var-fallback`, and
+  `other-reviewed-exception`.
+* Every durable exception must remain narrowly matched, include a reason, and set the current maximum
+  occurrence count. Do not add an exception merely to preserve an ordinary UI color.
+
+On failure, use an existing semantic variable when its purpose and computed values match exactly. If
+none exists, add a narrowly named token to `theme.css` with exact light- and dark-mode values. When a
+migration removes literals, lower or remove the matching baseline entry in the same patch so
+the reduced count becomes the new ceiling. Never raise a baseline merely to make the guard pass.
+
 ---
 
 # Light Theme Palette
@@ -241,6 +262,12 @@ color: #FFFFFF;
 icon-color: #FFFFFF;
 ```
 
+Non-selected Categories, All Feeds, and Top Tags rows use the same dark hover surface:
+
+```css
+background: var(--toolbar-search-hover-background-dark);
+```
+
 ## Dark Hyperlinks
 
 ```css
@@ -249,6 +276,38 @@ icon-color: #FFFFFF;
 --color-link-visited: #3B82F6;
 --color-link-active: #2563EB;
 ```
+
+## Shared Icons and Switches
+
+Use the established shared treatments instead of defining visually equivalent component variants.
+
+### Primary dialog and form icons
+
+Dialog title icons and related primary form icons use the soft primary surface in light mode and the
+darker primary surface in dark mode. Keep the foreground primary blue unless the icon communicates a
+different semantic meaning.
+
+```css
+/* Light */
+background: var(--color-primary-soft);
+color: var(--color-primary);
+
+/* Dark */
+background: var(--color-primary-surface-dark);
+color: var(--color-primary);
+```
+
+### Settings insight icons
+
+Settings section intro icons should reuse `.settings-insight-icon` from `assets/css/settings.css`.
+The shared treatment owns the 42px square container, 12px radius, 20px glyph, and dark-mode surface.
+Do not create a section-specific intro-icon class when the icon has the same informational purpose.
+
+### Preference switches
+
+Use `--preferences-switch-track` for the neutral off-state track shared by preference controls. It
+resolves to `#CBD5E1` in light mode and `#4B5563` in dark mode. A feature-specific token may alias it
+when that alias clarifies ownership, but must not duplicate the values.
 
 ---
 
@@ -301,6 +360,17 @@ When adding or changing styles:
 8. Buttons should clearly read as interactive.
 9. Metadata should never compete with article titles.
 10. Article text should remain comfortable for long reading sessions.
+
+For dark rules inside a scoped Vue style block, include the complete selector inside `:global(...)`:
+
+```css
+:global(:root[data-theme='dark'] .component-element) {
+  background: var(--dark-surface-token);
+}
+```
+
+Do not split the global root from its scoped descendant. The production CSS compiler can otherwise
+drop the descendant selector, causing the light-mode declaration to remain active in dark mode.
 
 ---
 

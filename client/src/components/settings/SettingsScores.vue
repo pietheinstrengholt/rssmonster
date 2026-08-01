@@ -307,8 +307,8 @@
   background: var(--color-primary-hover) !important;
 }
 
-:global(:root[data-theme='dark']) .scores-explanation,
-:global(:root[data-theme='dark']) .scores-threshold-section {
+:global(:root[data-theme='dark'] .scores-explanation),
+:global(:root[data-theme='dark'] .scores-threshold-section) {
   background: var(--bg-modal);
   border-color: var(--border-color);
 }

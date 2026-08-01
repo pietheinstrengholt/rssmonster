@@ -1,10 +1,22 @@
 <template>
   <div id="mobile-container" v-if="mobile" class="overlay">
-    <div class="options-sheet" role="dialog" aria-modal="true" aria-labelledby="options-title">
-      <div class="options-drag-handle" aria-hidden="true"></div>
-
+    <div
+      class="options-sheet"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="options-title"
+      aria-describedby="options-description"
+    >
       <header class="options-header">
-        <h2 id="options-title">Options</h2>
+        <div class="options-heading">
+          <h2 id="options-title">
+            <span class="options-title-icon" aria-hidden="true">
+              <BootstrapIcon icon="sliders2" />
+            </span>
+            Options
+          </h2>
+          <p id="options-description">Choose how RSSMonster displays and refreshes your feeds.</p>
+        </div>
         <button
           type="button"
           class="mobile-close-button"
@@ -25,8 +37,8 @@
               @click="selectCategory('%')"
               v-bind:class="{'selected': selectionStore.currentSelection.categoryId == '%'}"
             >
-              <span class="glyphicon" aria-hidden="true">
-                <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
+              <span class="options-row-icon" aria-hidden="true">
+                <BootstrapIcon icon="folder-fill" />
               </span>
               <span>Show all categories</span>
             </li>
@@ -38,8 +50,8 @@
               @click="selectCategory(category.id)"
               v-bind:class="{'selected': String(selectionStore.currentSelection.categoryId) === String(category.id)}"
             >
-              <span class="glyphicon" aria-hidden="true">
-                <i class="far fa-folder" data-fa-transform="down-5 shrink-2"></i>
+              <span class="options-row-icon" aria-hidden="true">
+                <BootstrapIcon icon="folder-fill" />
               </span>
               <span>{{ category.name }}</span>
             </li>
@@ -117,9 +129,8 @@
 
 <style scoped>
 .overlay {
-  --options-sheet-bottom-gap: calc(12px + env(safe-area-inset-bottom));
-  align-items: flex-end;
-  background: var(--overlay-mobile-backdrop);
+  align-items: center;
+  background: var(--overlay-backdrop);
   box-sizing: border-box;
   display: flex;
   height: 100%;
@@ -127,7 +138,7 @@
   left: 0;
   overflow: hidden;
   overscroll-behavior: contain;
-  padding: 0 12px var(--options-sheet-bottom-gap);
+  padding: 12px;
   position: fixed;
   top: 0;
   width: 100%;
@@ -135,65 +146,83 @@
 }
 
 .options-sheet {
-  -webkit-overflow-scrolling: touch;
   background: var(--options-sheet-background, var(--bg-card));
   border: 1px solid var(--options-border, var(--border-color));
-  border-radius: 20px;
-  box-shadow: 0 -12px 32px var(--shadow-mobile-sheet-color);
+  border-radius: 8px;
+  box-shadow: var(--shadow-modal);
   box-sizing: border-box;
-  height: min(calc(100vh - var(--options-sheet-bottom-gap)), calc(96vh + 12px - var(--options-sheet-bottom-gap)));
-  height: min(calc(100dvh - var(--options-sheet-bottom-gap)), calc(96dvh + 12px - var(--options-sheet-bottom-gap)));
-  max-height: min(calc(100vh - var(--options-sheet-bottom-gap)), calc(96vh + 12px - var(--options-sheet-bottom-gap)));
-  max-height: min(calc(100dvh - var(--options-sheet-bottom-gap)), calc(96dvh + 12px - var(--options-sheet-bottom-gap)));
-  overflow-y: auto;
-  overscroll-behavior: contain;
-  padding: 12px 20px calc(56px + env(safe-area-inset-bottom));
+  display: flex;
+  flex-direction: column;
+  max-height: calc(100vh - 24px);
+  max-height: calc(100dvh - 24px);
+  overflow: hidden;
   width: 100%;
 }
 
-.options-drag-handle {
-  background: var(--mobile-sheet-handle-bg);
-  border-radius: 999px;
-  height: 5px;
-  margin: 4px auto 14px;
-  width: 44px;
+.options-header {
+  align-items: flex-start;
+  border-bottom: 1px solid var(--options-border, var(--border-subtle));
+  display: flex;
+  gap: 16px;
+  justify-content: space-between;
+  padding: 16px 18px;
 }
 
-.options-header {
-  align-items: center;
-  display: flex;
-  justify-content: space-between;
-  margin-bottom: 24px;
+.options-heading {
+  flex: 1;
+  min-width: 0;
 }
 
 .options-header h2 {
+  align-items: center;
   color: var(--options-text, var(--text-primary));
-  font-size: 24px;
+  display: flex;
+  font-size: 17px;
   font-weight: 700;
-  line-height: 1.2;
+  gap: 12px;
+  line-height: 1.3;
   margin: 0;
+}
+
+.options-title-icon {
+  align-items: center;
+  background: var(--options-icon-background, var(--color-primary-soft));
+  border-radius: 6px;
+  color: var(--options-icon-color, var(--color-primary));
+  display: inline-flex;
+  flex: 0 0 32px;
+  font-size: 18px;
+  height: 32px;
+  justify-content: center;
+}
+
+.options-heading p {
+  color: var(--options-muted-text, var(--text-secondary));
+  font-size: 13px;
+  line-height: 1.4;
+  margin: 3px 0 0 44px;
 }
 
 .mobile-close-button {
   align-items: center;
   background: var(--options-control-background, var(--bg-card));
   border: 0;
-  border-radius: 50%;
+  border-radius: 6px;
   color: var(--options-text, var(--text-primary));
   display: inline-flex;
-  flex: 0 0 40px;
-  height: 40px;
+  flex: 0 0 32px;
+  height: 32px;
   justify-content: center;
   padding: 0;
   position: relative;
-  width: 40px;
+  width: 32px;
 }
 
 .mobile-close-button::before,
 .mobile-close-button::after {
   background-color: var(--color-current);
   content: "";
-  height: 18px;
+  height: 14px;
   position: absolute;
   width: 2px;
 }
@@ -212,45 +241,56 @@
 }
 
 .overlay-content {
+  -webkit-overflow-scrolling: touch;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 0 18px calc(18px + env(safe-area-inset-bottom));
   text-align: left;
 }
 
+.options-section {
+  padding-bottom: 16px;
+}
+
 .options-section + .options-section {
-  margin-top: 28px;
+  border-top: 1px solid var(--options-row-border, var(--border-subtle));
 }
 
 .options-section-header {
   align-items: center;
   display: flex;
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 8px;
+  margin-bottom: 6px;
+  padding-top: 16px;
 }
 
 .options-section-header h3 {
-  color: var(--options-text, var(--text-primary));
-  font-size: 17px;
+  color: var(--options-muted-text, var(--text-secondary));
+  font-size: 11px;
   font-weight: 700;
-  line-height: 1.3;
+  letter-spacing: 0.055em;
+  line-height: 1.2;
   margin: 0;
+  text-transform: uppercase;
 }
 
 .options-section-number {
   align-items: center;
   background: var(--options-icon-background, var(--color-primary-soft));
-  border-radius: 50%;
+  border-radius: 6px;
   color: var(--options-icon-color, var(--color-primary));
   display: inline-flex;
-  flex: 0 0 24px;
-  font-size: 13px;
+  flex: 0 0 20px;
+  font-size: 11px;
   font-weight: 700;
-  height: 24px;
+  height: 20px;
   justify-content: center;
 }
 
 .options-list {
   list-style: none;
   margin: 0;
-  max-height: min(38vh, 330px);
+  max-height: min(32vh, 260px);
   overflow-y: auto;
   padding: 0;
   -webkit-overflow-scrolling: touch;
@@ -263,16 +303,24 @@
   color: var(--options-text, var(--text-primary));
   cursor: pointer;
   display: flex;
-  font-size: 15px;
-  gap: 12px;
-  min-height: 48px;
-  padding: 0 12px;
+  font-size: 14px;
+  gap: 10px;
+  min-height: 44px;
+  padding: 0 10px;
   position: relative;
 }
 
-.options-row .glyphicon {
-  color: var(--options-muted-text, var(--text-muted));
-  width: 18px;
+.options-row-icon {
+  align-items: center;
+  background: var(--options-icon-background, var(--color-primary-soft));
+  border-radius: 6px;
+  box-sizing: border-box;
+  color: var(--options-icon-color, var(--color-primary));
+  display: inline-flex;
+  flex: 0 0 32px;
+  height: 32px;
+  justify-content: center;
+  width: 32px;
 }
 
 .options-row::after {
@@ -287,7 +335,7 @@
 .options-row.selected {
   background: var(--options-selected-background, var(--color-primary-soft));
   border: 1px solid var(--options-selected-border, var(--color-primary));
-  border-radius: 10px;
+  border-radius: 6px;
   color: var(--options-selected-text, var(--color-primary-strong));
   font-weight: 600;
   margin: 2px 0;
@@ -299,42 +347,45 @@
   box-shadow: inset 0 0 0 4px var(--options-selected-background, var(--color-primary-soft));
 }
 
-.options-row.selected .glyphicon {
+.options-row.selected .options-row-icon {
+  background: var(--options-control-background, var(--bg-card));
+  border: 1px solid var(--options-selected-border, var(--color-primary));
   color: var(--options-selected-indicator, var(--color-primary));
 }
 
 .options-view-grid {
   display: grid;
-  gap: 10px;
+  gap: 8px;
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .options-view-card {
   background: var(--options-control-background, var(--bg-card));
   border: 1px solid var(--options-border, var(--border-color));
-  border-radius: 12px;
+  border-radius: 6px;
   color: var(--options-text, var(--text-primary));
   display: flex;
   flex-direction: column;
-  min-height: 78px;
-  padding: 14px;
+  min-height: 72px;
+  padding: 12px;
   text-align: left;
 }
 
 .options-view-card.selected {
   background: var(--options-selected-background, var(--color-primary-soft));
   border-color: var(--options-selected-border, var(--color-primary));
+  box-shadow: inset 0 0 0 1px var(--options-selected-border, var(--color-primary));
 }
 
 .options-view-title {
-  font-size: 15px;
-  font-weight: 700;
+  font-size: 13px;
+  font-weight: 600;
   line-height: 1.3;
 }
 
 .options-view-description {
   color: var(--options-muted-text, var(--text-muted));
-  font-size: 13px;
+  font-size: 11px;
   line-height: 1.4;
   margin-top: 5px;
 }
@@ -342,15 +393,15 @@
 .options-action-button {
   background: var(--options-control-background, var(--bg-card));
   border: 1px solid;
-  border-radius: 8px;
+  border-radius: 6px;
   box-sizing: border-box;
   cursor: pointer;
-  font-weight: 500;
-  height: 36px;
+  font-size: 13px;
+  font-weight: 600;
+  height: 40px;
   overflow: hidden;
   padding: 0 12px;
   text-align: left;
-  text-indent: 4px;
   text-overflow: ellipsis;
   white-space: nowrap;
   width: 100%;
@@ -397,7 +448,7 @@
 
 .options-status-message {
   color: var(--options-muted-text, var(--text-muted));
-  font-size: 13px;
+  font-size: 12px;
   line-height: 1.4;
   margin: 8px 4px 0;
 }
@@ -408,9 +459,10 @@
 }
 
 @media (max-width: 359px) {
-  .options-sheet {
-    padding-left: 16px;
-    padding-right: 16px;
+  .options-header,
+  .overlay-content {
+    padding-left: 14px;
+    padding-right: 14px;
   }
 
   .options-view-grid {

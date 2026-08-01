@@ -227,7 +227,7 @@ describe('DailyBriefingIntro', () => {
 
     expect(wrapper.findAllComponents(DailyBriefingIntro)).toHaveLength(1);
     expect(wrapper.html().indexOf('daily-briefing-intro-stub')).toBeLessThan(
-      wrapper.html().indexOf('article-stub')
+      wrapper.html().indexOf('article-item-stub')
     );
 
     await wrapper.setProps({ currentSelection: 'unread' });

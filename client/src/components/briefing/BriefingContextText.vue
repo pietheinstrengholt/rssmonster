@@ -97,9 +97,9 @@ export default {
   width: 100%;
   margin: 0;
   padding: 0.75rem 0.875rem;
-  color: #4b5563;
-  background-color: #f8fafc;
-  border: 1px solid #e5e7eb;
+  color: var(--briefing-supporting-text);
+  background-color: var(--briefing-context-surface);
+  border: 1px solid var(--briefing-context-border);
   border-radius: 0.5rem;
   font-size: 0.875rem;
   font-style: normal;
@@ -121,8 +121,8 @@ export default {
   align-items: center;
   gap: 0.375rem;
   padding: 0.375rem 0.5rem;
-  color: #2563eb;
-  background: transparent;
+  color: var(--color-link);
+  background: var(--color-transparent);
   border: 0;
   border-radius: 0.375rem;
   font: inherit;
@@ -134,8 +134,8 @@ export default {
 }
 
 .briefing-tune-action:hover {
-  color: #1d4ed8;
-  background-color: rgba(37, 99, 235, 0.08);
+  color: var(--color-link-hover);
+  background-color: var(--briefing-context-action-hover-surface);
 }
 
 .briefing-tune-action:focus-visible {
@@ -152,9 +152,9 @@ export default {
 }
 
 :global(:root[data-theme='dark'] .briefing-context) {
-  color: var(--text-secondary, #9ca3af);
-  background-color: var(--bg-control, #222836);
-  border-color: var(--border-color, #2a3342);
+  color: var(--briefing-supporting-text, #9ca3af);
+  background-color: var(--briefing-context-surface, #222836);
+  border-color: var(--briefing-context-border, #2a3342);
 }
 
 :global(:root[data-theme='dark'] .briefing-context strong) {
@@ -167,7 +167,7 @@ export default {
 
 :global(:root[data-theme='dark'] .briefing-tune-action:hover) {
   color: var(--color-link-hover, #93c5fd);
-  background-color: rgba(96, 165, 250, 0.12);
+  background-color: var(--briefing-context-action-hover-surface);
 }
 
 :global(:root[data-theme='dark'] .briefing-tune-action:focus-visible) {

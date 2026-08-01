@@ -1,6 +1,5 @@
 import globals from 'globals';
 import vue from 'eslint-plugin-vue';
-import vueParser from 'vue-eslint-parser';
 import noPiniaDomainStateMutation from './eslint-rules/no-pinia-domain-state-mutation.js';
 
 const localRules = {
@@ -19,6 +18,8 @@ export default [
       '**/public/**'
     ]
   },
+
+  ...vue.configs['flat/essential'],
 
   {
     files: ['src/**/*.{js,vue}'],
@@ -45,7 +46,6 @@ export default [
   {
     files: ['**/*.vue'],
     languageOptions: {
-      parser: vueParser,
       parserOptions: {
         ecmaVersion: 'latest',
         sourceType: 'module'
@@ -55,16 +55,10 @@ export default [
         ...globals.es2022
       }
     },
-    plugins: { vue },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-console': 'off',
       'prefer-const': 'error',
-
-      'vue/no-unused-components': 'warn',
-      'vue/no-mutating-props': 'warn',
-      'vue/require-v-for-key': 'error',
-      'vue/require-valid-default-prop': 'error',
 
       'brace-style': ['error', '1tbs', { allowSingleLine: true }],
       'arrow-body-style': ['error', 'as-needed'],
@@ -86,7 +80,7 @@ export default [
       }
     },
     rules: {
-      'no-unused-vars': ['warn', { argsIgnorePattern: '^_' }],
+      'no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       'no-console': 'off',
       'prefer-const': 'error',
 

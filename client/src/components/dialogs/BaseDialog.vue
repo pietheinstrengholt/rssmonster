@@ -398,8 +398,7 @@ export default {
   box-shadow: 0 4px 12px var(--shadow-settings-dialog-dark-color);
 }
 
-:global(:root[data-theme='dark']) .base-dialog__title-icon {
-  color: var(--color-primary-icon-dark);
+:global(:root[data-theme='dark'] .base-dialog__title-icon) {
   background: var(--color-primary-surface-dark);
 }
 

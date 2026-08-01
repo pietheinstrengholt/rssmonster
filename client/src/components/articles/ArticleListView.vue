@@ -7,7 +7,7 @@
         :article-count="currentViewUnreadCount"
         :source-count="currentViewSourceCount"
       />
-      <Article
+      <ArticleItem
         v-for="article in articles"
         v-bind="article"
         :key="article.id"
@@ -61,7 +61,7 @@ import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../store/overview.js';
 import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
-import Article from "./Article.vue";
+import ArticleItem from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
 import ArticleEndState from "./ArticleEndState.vue";
 import ArticleLoadingState from "./ArticleLoadingState.vue";
@@ -70,7 +70,7 @@ import UnreadSelectionContext from "./UnreadSelectionContext.vue";
 
 export default {
   components: {
-    Article,
+    ArticleItem,
     ArticleEmptyState,
     ArticleEndState,
     ArticleLoadingState,
