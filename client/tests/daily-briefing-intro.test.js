@@ -66,13 +66,20 @@ function mountDailyBriefingIntro(search = 'briefing:true @lastweek') {
 }
 
 // This function mounts the standard article list with the requested selection.
-function mountArticleList(currentSelection = 'briefing') {
+function mountArticleList(currentSelection = 'briefing', selectionOverrides = {}) {
   const stores = createFocusedStores({
     overview: {
       unreadsSinceLastUpdate: 0
     },
     selection: {
-      currentSelection: { status: currentSelection, viewMode: 'full' }
+      currentSelection: {
+        status: currentSelection,
+        viewMode: 'full',
+        categoryId: '%',
+        feedId: '%',
+        tag: null,
+        ...selectionOverrides
+      }
     },
     ui: {
       mobileSearchOpen: false
@@ -99,7 +106,7 @@ function mountArticleList(currentSelection = 'briefing') {
 }
 
 // This function mounts the reader layout in a loading or loaded-empty state.
-function mountReaderLayout(hasLoadedContent) {
+function mountReaderLayout(hasLoadedContent, selectionOverrides = {}) {
   const stores = createFocusedStores({
     overview: {
       categories: [],
@@ -113,7 +120,8 @@ function mountReaderLayout(hasLoadedContent) {
         tag: null,
         search: 'briefing:true @lastweek',
         categoryId: '%',
-        feedId: '%'
+        feedId: '%',
+        ...selectionOverrides
       }
     }
   });
@@ -227,10 +235,30 @@ describe('DailyBriefingIntro', () => {
     expect(wrapper.findComponent(DailyBriefingIntro).exists()).toBe(false);
   });
 
+  it.each([
+    ['category', { categoryId: '12' }],
+    ['feed', { categoryId: '12', feedId: '34' }],
+    ['tag', { tag: 'security' }]
+  ])('is hidden in the article list for a briefing %s selection', (_label, selectionOverrides) => {
+    const wrapper = mountArticleList('briefing', selectionOverrides);
+
+    expect(wrapper.findComponent(DailyBriefingIntro).exists()).toBe(false);
+  });
+
   it.each([false, true])('remains singular in the reader layout when loaded is %s', hasLoadedContent => {
     const wrapper = mountReaderLayout(hasLoadedContent);
 
     expect(wrapper.findAllComponents(DailyBriefingIntro)).toHaveLength(1);
     expect(wrapper.getComponent(DailyBriefingIntro).props('readerMode')).toBe(true);
+  });
+
+  it.each([
+    ['category', { categoryId: '12' }],
+    ['feed', { categoryId: '12', feedId: '34' }],
+    ['tag', { tag: 'security' }]
+  ])('is hidden in the reader layout for a briefing %s selection', (_label, selectionOverrides) => {
+    const wrapper = mountReaderLayout(true, selectionOverrides);
+
+    expect(wrapper.findComponent(DailyBriefingIntro).exists()).toBe(false);
   });
 });

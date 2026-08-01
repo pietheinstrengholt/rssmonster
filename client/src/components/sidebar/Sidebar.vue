@@ -466,6 +466,7 @@ export default {
     // This labels Top Tags with the article collection represented by their counts.
     topTagsTitle() {
       const labels = {
+        briefing: 'Daily briefing',
         unread: 'Unread',
         read: 'Read',
         favorite: 'Favorites',

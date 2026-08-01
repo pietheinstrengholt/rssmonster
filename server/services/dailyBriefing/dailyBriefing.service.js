@@ -192,8 +192,8 @@ export function resolveDailyBriefingFilters({ period, status, generatedAt = new 
   };
 }
 
-// This function builds the canonical, thresholded article scope shared by Daily Briefing reads.
-const buildBriefingArticleWhere = async ({
+// This function builds the canonical, thresholded article scope shared by Daily Briefing queries.
+export const buildBriefingArticleWhere = async ({
   userId,
   status,
   dateFrom,

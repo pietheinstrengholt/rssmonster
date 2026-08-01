@@ -151,7 +151,7 @@ Initial and forced refreshes reset the unread-arrival delta to zero. Ordinary ba
 
 Smart Folder definitions and Smart Folder counts are separate resources. Definitions publish first with a safe count fallback, then counts refresh in the background. A count failure retains the loaded folders and their last known counts.
 
-Top Tags are fetched for the active Unread, Read, Favorites, Hot, or Clicked collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event or topic grouping. Briefing clears the snapshot because its preference-driven query is not represented by a status-only tag count. If selection context changes again before an older response arrives, only the newest response may update the store.
+Top Tags are fetched for the active Daily Briefing, Unread, Read, Favorites, Hot, or Clicked collection. Changing article status requests a new ranked snapshot whose counts represent matching articles, independent of event or topic grouping. Daily Briefing preference changes refresh its snapshot so its period and eligibility rules remain aligned with the article collection. If selection context changes again before an older response arrives, only the newest response may update the store.
 
 Smart Folder and Top Tag counts are snapshots. They do not reconcile on scrolling, article opening, or every read/favorite transition. Explicit refreshes and relevant management operations replace them.
 

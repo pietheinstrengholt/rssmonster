@@ -96,4 +96,146 @@ describe('analyzeArticleContent response validation', () => {
       'квантовыетехнологии'
     ]);
   });
+
+  // Uses normalized feed categories without calling OpenAI when analysis is disabled.
+  it('returns category tags when OpenAI analysis is skipped', async () => {
+    vi.stubEnv('SKIP_OPENAI_ANALYSIS', '1');
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      title: 'Skipped analysis',
+      categories: ['Machine Learning', 'machine-learning', '---'],
+      feedName: 'Test feed'
+    });
+
+    expect(result.tags).toEqual(['machinelearning']);
+    expect(result.contentSummaryBullets).toEqual([]);
+    expect(completionsCreate).not.toHaveBeenCalled();
+  });
+
+  // Avoids remote analysis for absent, short, or medium-length source text.
+  it.each([
+    [undefined, 'test-model'],
+    ['Short text', 'test-model'],
+    ['Medium article text '.repeat(16), 'test-model'],
+    ['Long article text '.repeat(40), '']
+  ])('uses defaults for locally ineligible content %#', async (text, model) => {
+    vi.stubEnv('OPENAI_MODEL_CRAWL', model);
+    vi.stubEnv('OPENAI_MODEL_NAME', '');
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text,
+      title: 'Local fallback',
+      categories: [],
+      feedName: ''
+    });
+
+    expect(result).toMatchObject({
+      tags: [],
+      advertisementScore: 70,
+      sentimentScore: 70,
+      qualityScore: 70
+    });
+    expect(completionsCreate).not.toHaveBeenCalled();
+  });
+
+  // Uses local defaults when no API key was configured at module initialization.
+  it('does not create an OpenAI client without an API key', async () => {
+    vi.stubEnv('OPENAI_API_KEY', '');
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      title: 'No API key',
+      categories: []
+    });
+
+    expect(result.qualityScore).toBe(70);
+    expect(OpenAIMock).not.toHaveBeenCalled();
+  });
+
+  // Recovers a JSON object embedded in surrounding model text and filters invalid bullets.
+  it('recovers wrapped JSON and validates response collections', async () => {
+    completionsCreate.mockResolvedValue({
+      choices: [{
+        message: {
+          content: 'Result: {"contentSummaryBullets":[" Useful fact ","",7],"tags":"invalid","advertisementScore":25,"sentimentScore":74,"qualityScore":100} done'
+        }
+      }]
+    });
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      title: 'Wrapped JSON',
+      categories: ['Existing category']
+    });
+
+    expect(result).toMatchObject({
+      contentSummaryBullets: ['Useful fact'],
+      tags: ['existingcategory'],
+      advertisementScore: 20,
+      sentimentScore: 70,
+      qualityScore: 100
+    });
+  });
+
+  // Treats a non-JSON model response as an empty response object.
+  it('falls back safely when the model response contains no JSON object', async () => {
+    completionsCreate.mockResolvedValue({ choices: [] });
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+
+    const result = await analyzeArticleContent({
+      text: 'Long article content '.repeat(40),
+      title: 'Empty response',
+      categories: []
+    });
+
+    expect(result).toMatchObject({
+      contentSummaryBullets: [],
+      tags: [],
+      advertisementScore: 70,
+      sentimentScore: 70,
+      qualityScore: 70
+    });
+  });
+
+  // Enables a subsequent delay after a rate-limit error while preserving default analysis.
+  it('handles rate limits and delays the next queued request', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    completionsCreate
+      .mockRejectedValueOnce(new Error('429 rate limit'))
+      .mockResolvedValueOnce({ choices: [{ message: { content: '{}' } }] });
+    const { default: analyzeArticleContent } = await import(
+      '../../services/crawl/enrichment/analyzeArticleContent.js'
+    );
+    const input = {
+      text: 'Long article content '.repeat(40),
+      title: 'Rate limited',
+      categories: [],
+      rateLimitDelayMs: 1
+    };
+
+    await expect(analyzeArticleContent(input)).resolves.toMatchObject({ qualityScore: 70 });
+    await expect(analyzeArticleContent(input)).resolves.toMatchObject({ qualityScore: 70 });
+    expect(warnSpy).toHaveBeenCalledOnce();
+    expect(errorSpy).toHaveBeenCalledOnce();
+    expect(completionsCreate).toHaveBeenCalledTimes(2);
+
+    warnSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
 });

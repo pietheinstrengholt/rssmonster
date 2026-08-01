@@ -89,6 +89,7 @@ Use this sequence for most tasks:
 - Use Vue 3 **Options API** in this repo.
 - Do not introduce `<script setup>` patterns.
 - Use Bootstrap 5 and Bootstrap Icons.
+- Always follow the styling agent instructions in `client/src/assets/styles/Agents.md` for any UI or styling work.
 - Add dark-mode styling support for new UI styles:
   `@media (prefers-color-scheme: dark)`.
 

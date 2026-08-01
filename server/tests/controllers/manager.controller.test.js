@@ -94,6 +94,7 @@ describe('manager controller', () => {
           name: 'Technology',
           readCount: 0,
           unreadCount: 0,
+          briefingCount: 0,
           favoriteCount: 0,
           hotCount: 0,
           clickedCount: 0,
@@ -103,6 +104,7 @@ describe('manager controller', () => {
               feedName: 'Security Feed',
               readCount: 0,
               unreadCount: 0,
+              briefingCount: 0,
               favoriteCount: 0,
               hotCount: 0,
               clickedCount: 0

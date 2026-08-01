@@ -417,7 +417,7 @@ export const useOverviewStore = defineStore('overview', {
         this.topTagsScopeStatus = selection.status;
       }
 
-      if (!['unread', 'read', 'favorite', 'hot', 'clicked'].includes(selection.status)) {
+      if (!['briefing', 'unread', 'read', 'favorite', 'hot', 'clicked'].includes(selection.status)) {
         this.topTags = [];
         this.topTagsStatus = 'success';
         return true;

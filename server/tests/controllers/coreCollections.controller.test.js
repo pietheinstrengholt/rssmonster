@@ -7,9 +7,12 @@ const mocked = vi.hoisted(() => ({
   actionFindAll: vi.fn(),
   articleDestroy: vi.fn(),
   articleFindAll: vi.fn(),
+  articleLiteral: vi.fn(sql => ({ sql })),
+  briefingPreferenceFindOne: vi.fn(),
   eventFindAll: vi.fn(),
   eventFindOne: vi.fn(),
   tagFindAll: vi.fn(),
+  settingFindOne: vi.fn(),
   topicFindOne: vi.fn()
 }));
 
@@ -22,13 +25,22 @@ vi.mock('../../models/index.js', () => ({
     },
     Article: {
       destroy: mocked.articleDestroy,
-      findAll: mocked.articleFindAll
+      findAll: mocked.articleFindAll,
+      sequelize: {
+        literal: mocked.articleLiteral
+      }
+    },
+    BriefingPreference: {
+      findOne: mocked.briefingPreferenceFindOne
     },
     Event: {
       findAll: mocked.eventFindAll,
       findOne: mocked.eventFindOne
     },
     Feed: {},
+    Setting: {
+      findOne: mocked.settingFindOne
+    },
     Tag: {
       findAll: mocked.tagFindAll
     },
@@ -183,25 +195,27 @@ describe('tag and cleanup controllers', () => {
 
   it('returns unread tags grouped by name for the authenticated user', async () => {
     const tags = [{ name: 'security', count: 4 }];
-    mocked.tagFindAll.mockResolvedValue(tags);
+    mocked.articleFindAll.mockResolvedValue(tags);
     const res = createResponse();
 
     await tagController.getTags(createRequest({ query: { status: 'unread' } }), res);
 
-    expect(mocked.tagFindAll).toHaveBeenCalledWith(expect.objectContaining({
-      where: { userId: 42 },
+    expect(mocked.articleFindAll).toHaveBeenCalledWith(expect.objectContaining({
+      where: expect.objectContaining({
+        userId: 42,
+        status: 'unread',
+        filteredInd: false
+      }),
       group: ['tags.name'],
       include: [{
         model: expect.any(Object),
         attributes: [],
         required: true,
-        where: expect.objectContaining({
-          userId: 42,
-          status: 'unread',
-          filteredInd: false
-        })
+        where: { userId: 42 }
       }],
-      limit: 10
+      limit: 10,
+      subQuery: false,
+      raw: true
     }));
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ tags });
@@ -212,27 +226,75 @@ describe('tag and cleanup controllers', () => {
     ['hot', 'hotInd', 1],
     ['clicked', 'clickedAmount', { [Op.gt]: 0 }]
   ])('scopes tags to the %s article collection', async (status, field, value) => {
-    mocked.tagFindAll.mockResolvedValue([]);
+    mocked.articleFindAll.mockResolvedValue([]);
     const res = createResponse();
 
     await tagController.getTags(createRequest({ query: { status } }), res);
 
-    const query = mocked.tagFindAll.mock.calls[0][0];
-    expect(query.include[0].where[field]).toEqual(value);
+    const query = mocked.articleFindAll.mock.calls[0][0];
+    expect(query.where[field]).toEqual(value);
+  });
+
+  it('scopes tags to the configured Daily Briefing population', async () => {
+    mocked.briefingPreferenceFindOne.mockResolvedValue({
+      selectionPeriod: '24h',
+      includeOnlyUnreadArticles: 1,
+      minDistinctSources: 3,
+      showOnlyInterestMatchedArticles: 1,
+      showOnlyDevelopingEventArticles: 0
+    });
+    mocked.settingFindOne.mockResolvedValue({
+      minAdvertisementScore: 0.2,
+      minSentimentScore: 0.3,
+      minQualityScore: 0.4
+    });
+    mocked.articleFindAll.mockResolvedValue([]);
+    const res = createResponse();
+
+    await tagController.getTags(createRequest({ query: { status: 'briefing' } }), res);
+
+    expect(mocked.briefingPreferenceFindOne).toHaveBeenCalledWith({
+      where: { userId: 42 },
+      attributes: [
+        'selectionPeriod',
+        'includeOnlyUnreadArticles',
+        'minDistinctSources',
+        'showOnlyInterestMatchedArticles',
+        'showOnlyDevelopingEventArticles'
+      ],
+      raw: true
+    });
+    const articleWhere = mocked.articleFindAll.mock.calls[0][0].where;
+    expect(articleWhere).toMatchObject({
+      userId: 42,
+      status: 'unread',
+      filteredInd: false,
+      advertisementScore: { [Op.gte]: 0.2 },
+      sentimentScore: { [Op.gte]: 0.3 },
+      qualityScore: { [Op.gte]: 0.4 },
+      publishedAt: { [Op.between]: [expect.any(Date), expect.any(Date)] }
+    });
+    expect(articleWhere[Op.and]).toHaveLength(1);
+    expect(mocked.articleLiteral).toHaveBeenCalledWith(expect.stringContaining(
+      'articles.interestScore <> 0'
+    ));
+    expect(mocked.articleLiteral).toHaveBeenCalledWith(expect.stringContaining(
+      'COUNT(DISTINCT briefing_source_article.feedId)'
+    ));
   });
 
   it('rejects unsupported tag collection statuses', async () => {
     const res = createResponse();
 
-    await tagController.getTags(createRequest({ query: { status: 'briefing' } }), res);
+    await tagController.getTags(createRequest({ query: { status: 'archived' } }), res);
 
-    expect(mocked.tagFindAll).not.toHaveBeenCalled();
+    expect(mocked.articleFindAll).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'Unsupported tag status' });
   });
 
   it('returns a stable tag error without exposing database details', async () => {
-    mocked.tagFindAll.mockRejectedValue(new Error('sensitive database error'));
+    mocked.articleFindAll.mockRejectedValue(new Error('sensitive database error'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
     const res = createResponse();
 

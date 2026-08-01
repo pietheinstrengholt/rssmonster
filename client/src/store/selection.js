@@ -215,6 +215,8 @@ export const useSelectionStore = defineStore('selection', {
       includeOnlyUnreadArticles,
       prioritizeHighTrust
     }) {
+      const previousSelectionPeriod = this.briefingSelectionPeriod;
+      const previousIncludeOnlyUnreadArticles = this.briefingIncludeOnlyUnreadArticles;
       const normalizedPeriod = selectionPeriod === '24h'
         ? '24h'
         : DEFAULT_BRIEFING_SELECTION_PERIOD;
@@ -231,6 +233,12 @@ export const useSelectionStore = defineStore('selection', {
       });
       if (this.currentSelection.search !== search) {
         this.currentSelection.search = search;
+      }
+      if (
+        normalizedPeriod !== previousSelectionPeriod ||
+        this.briefingIncludeOnlyUnreadArticles !== previousIncludeOnlyUnreadArticles
+      ) {
+        void useOverviewStore().fetchTopTags();
       }
     },
 
@@ -249,6 +257,7 @@ export const useSelectionStore = defineStore('selection', {
       this.currentSelection.briefingRevision = Number(
         this.currentSelection.briefingRevision || 0
       ) + 1;
+      void useOverviewStore().fetchTopTags();
     },
 
     // This action delegates a forced count refresh to the overview owner.

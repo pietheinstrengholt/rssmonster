@@ -1,12 +1,53 @@
 import Sequelize from 'sequelize';
 import db from '../models/index.js';
+import {
+  buildBriefingArticleWhere,
+  resolveDailyBriefingFilters
+} from '../services/dailyBriefing/dailyBriefing.service.js';
 import { canonicalArticleWhere } from '../services/duplicates/articleDuplicates.js';
 
-const { Article, Tag } = db;
-const TOP_TAG_STATUSES = new Set(['unread', 'read', 'favorite', 'hot', 'clicked']);
+const { Article, BriefingPreference, Tag } = db;
+const TOP_TAG_STATUSES = new Set([
+  'briefing',
+  'unread',
+  'read',
+  'favorite',
+  'hot',
+  'clicked'
+]);
 
 // Builds the canonical article predicate represented by a Top Tags status collection.
-const topTagArticleWhere = ({ userId, status }) => {
+const topTagArticleWhere = async ({ userId, status }) => {
+  if (status === 'briefing') {
+    const preferences = await BriefingPreference.findOne({
+      where: { userId },
+      attributes: [
+        'selectionPeriod',
+        'includeOnlyUnreadArticles',
+        'minDistinctSources',
+        'showOnlyInterestMatchedArticles',
+        'showOnlyDevelopingEventArticles'
+      ],
+      raw: true
+    });
+    const filters = resolveDailyBriefingFilters({
+      period: preferences?.selectionPeriod,
+      status: Number(preferences?.includeOnlyUnreadArticles) ? 'unread' : 'all'
+    });
+
+    return buildBriefingArticleWhere({
+      userId,
+      ...filters,
+      minDistinctSources: Number(preferences?.minDistinctSources) || 1,
+      showOnlyInterestMatchedArticles: Boolean(
+        Number(preferences?.showOnlyInterestMatchedArticles)
+      ),
+      showOnlyDevelopingEventArticles: Boolean(
+        Number(preferences?.showOnlyDevelopingEventArticles)
+      )
+    });
+  }
+
   const where = {
     userId,
     ...canonicalArticleWhere()
@@ -39,29 +80,34 @@ const getTags = async (req, res) => {
       return res.status(400).json({ error: 'Unsupported tag status' });
     }
 
-    const articleWhere = topTagArticleWhere({ userId, status });
+    const articleWhere = await topTagArticleWhere({ userId, status });
 
-    const tags = await Tag.findAll({
-      where: { userId },
+    const tags = await Article.findAll({
+      where: articleWhere,
       attributes: [
-        'name',
+        [Sequelize.col('tags.name'), 'name'],
         [
           Sequelize.fn(
             'COUNT',
-            Sequelize.fn('DISTINCT', Sequelize.col('tags.articleId'))
+            Sequelize.fn('DISTINCT', Sequelize.col('articles.id'))
           ),
           'count'
         ]
       ],
       include: [{
-        model: Article,
+        model: Tag,
         attributes: [],
         required: true,
-        where: articleWhere
+        where: { userId }
       }],
       group: ['tags.name'],
-      order: [[Sequelize.literal('count'), 'DESC'], ['name', 'ASC']],
-      limit: 10
+      order: [
+        [Sequelize.literal('count'), 'DESC'],
+        [Sequelize.col('tags.name'), 'ASC']
+      ],
+      limit: 10,
+      subQuery: false,
+      raw: true
     });
     return res.status(200).json({ tags });
   } catch (err) {

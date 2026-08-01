@@ -75,6 +75,7 @@ export default {
       if (!this.hasTagSelection) return 'No posts found';
 
       const statusLabels = {
+        briefing: 'Daily Briefing',
         unread: 'unread',
         read: 'read',
         favorite: 'favorite',

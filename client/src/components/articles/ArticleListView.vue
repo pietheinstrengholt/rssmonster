@@ -1,7 +1,7 @@
 <template>
   <div id="main-container">
     <div id="articles" :class="{ 'mobile-search-open': mobileSearchOpen }">
-      <DailyBriefingIntro v-if="currentSelection === 'briefing'" />
+      <DailyBriefingIntro v-if="showDailyBriefingIntro" />
       <UnreadSelectionContext
         v-if="currentSelection === 'unread' && hasLoadedContent && container.length > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
@@ -59,6 +59,7 @@
 <script>
 import { mapStores } from 'pinia';
 import { useOverviewStore } from '../../store/overview.js';
+import { useSelectionStore } from '../../store/selection.js';
 import { useUiStore } from '../../store/ui.js';
 import Article from "./Article.vue";
 import ArticleEmptyState from "./ArticleEmptyState.vue";
@@ -170,7 +171,15 @@ export default {
     window.removeEventListener('keydown', this.handleMinimalKeydown);
   },
   computed: {
-    ...mapStores(useOverviewStore, useUiStore),
+    ...mapStores(useOverviewStore, useSelectionStore, useUiStore),
+    // Shows the briefing introduction only for the unfiltered all-sources briefing.
+    showDailyBriefingIntro() {
+      const selection = this.selectionStore.currentSelection;
+      return this.currentSelection === 'briefing'
+        && selection.categoryId === '%'
+        && selection.feedId === '%'
+        && !selection.tag;
+    },
     // Returns whether the mobile search dialog is currently open.
     mobileSearchOpen() {
       return this.uiStore.mobileSearchOpen;

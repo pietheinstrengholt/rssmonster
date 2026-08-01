@@ -5,8 +5,53 @@ import normalizeEntry, {
   resolveFeedPublishedDate,
   resolveUrlPublishedDate
 } from '../../services/feeds/feedsmith/normalizeEntry.js';
+import extractEntryFields from '../../services/crawl/extraction/extractEntryFields.js';
 
 describe('extract entry fields', () => {
+  // Maps every canonical publisher field without changing valid falsy values.
+  it('maps a complete canonical entry into crawl source fields', () => {
+    const publishedAt = new Date('2026-07-08T10:00:00Z');
+    const modifiedAt = new Date('2026-07-08T11:00:00Z');
+
+    expect(extractEntryFields({
+      title: 'Canonical title',
+      url: 'https://example.com/article',
+      description: '',
+      content: '<p>Body</p>',
+      author: 'Alice',
+      categories: ['News'],
+      publishedAt,
+      modifiedAt
+    })).toEqual({
+      title: 'Canonical title',
+      link: 'https://example.com/article',
+      description: '',
+      content: '<p>Body</p>',
+      author: 'Alice',
+      categories: ['News'],
+      publishedAt,
+      modifiedAt
+    });
+  });
+
+  // Supplies stable defaults when an entry or its optional fields are unavailable.
+  it.each([undefined, null, {}, {
+    title: '',
+    url: '',
+    categories: 'News'
+  }])('defaults missing canonical fields for %#', entry => {
+    expect(extractEntryFields(entry)).toEqual({
+      title: 'Untitled',
+      link: null,
+      description: null,
+      content: null,
+      author: null,
+      categories: [],
+      publishedAt: null,
+      modifiedAt: null
+    });
+  });
+
   it('resolves entry publishedAt dates from expanded FeedSmith candidates', () => {
     expect(resolveEntryPublishedDate({
       dcterms: {

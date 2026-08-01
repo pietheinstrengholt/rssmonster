@@ -1,6 +1,6 @@
 <template>
   <DailyBriefingIntro
-    v-if="currentSelection === 'briefing' && hasLoadedContent && container.length === 0"
+    v-if="showDailyBriefingIntro && hasLoadedContent && container.length === 0"
     reader-mode
   />
   <ArticleEmptyState
@@ -22,7 +22,7 @@
       aria-label="Article list"
       @scroll="handleArticleListScroll"
     >
-      <DailyBriefingIntro v-if="currentSelection === 'briefing'" reader-mode />
+      <DailyBriefingIntro v-if="showDailyBriefingIntro" reader-mode />
       <UnreadSelectionContext
         v-if="currentSelection === 'unread' && container.length > 0 && currentViewSourceCount !== null"
         :article-count="currentViewUnreadCount"
@@ -303,6 +303,14 @@ export default {
   },
   computed: {
     ...mapStores(useSelectionStore, useOverviewStore),
+    // Shows the briefing introduction only for the unfiltered all-sources briefing.
+    showDailyBriefingIntro() {
+      const selection = this.selectionStore.currentSelection;
+      return this.currentSelection === 'briefing'
+        && selection.categoryId === '%'
+        && selection.feedId === '%'
+        && !selection.tag;
+    },
     // Returns the article currently shown in the reader panel.
     selectedArticle() {
       return this.articles.find(article => article.id === this.selectedArticleId) || null;

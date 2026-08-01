@@ -147,6 +147,7 @@ describe('Options API sidebar contracts', () => {
 
     expect(wrapper.get('[id="10"] .sidebar-category-header .sidebar-count').text()).toBe('3');
     expect(wrapper.get('[id="101"] .sidebar-count').text()).toBe('2');
+    expect(wrapper.find('.sidebar-tags').text()).toContain('Top tags in Daily briefing');
 
     stores.selectionStore.$patch({
       currentSelection: {

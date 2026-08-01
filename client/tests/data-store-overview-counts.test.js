@@ -285,7 +285,7 @@ describe('data store overview and count behavior', () => {
     expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic', status: 'unread' });
   });
 
-  // Verifies collection changes refresh scoped tags and unsupported Briefing scope hides them.
+  // Verifies collection changes refresh scoped tags, including Daily Briefing.
   it('refreshes Top Tags when the article status changes', async () => {
     const store = createStore();
     const selectionStore = useSelectionStore();
@@ -301,8 +301,32 @@ describe('data store overview and count behavior', () => {
 
     fetchTopTags.mockClear();
     selectionStore.setSelectedStatus('briefing');
-    await vi.waitFor(() => expect(store.topTags).toEqual([]));
-    expect(fetchTopTags).not.toHaveBeenCalled();
+    await vi.waitFor(() => {
+      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'none', status: 'briefing' });
+    });
+    expect(store.topTags).toEqual([]);
+  });
+
+  // Verifies active Briefing membership preference changes refresh its tag snapshot.
+  it('refreshes Daily Briefing tags when eligibility preferences change', async () => {
+    createStore();
+    const selectionStore = useSelectionStore();
+    selectionStore.setSelectedStatus('briefing');
+    await vi.waitFor(() => expect(fetchTopTags).toHaveBeenCalled());
+    fetchTopTags.mockClear();
+
+    selectionStore.setBriefingFilters({
+      selectionPeriod: '24h',
+      includeOnlyUnreadArticles: true,
+      prioritizeHighTrust: false
+    });
+    await vi.waitFor(() => {
+      expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'none', status: 'briefing' });
+    });
+
+    fetchTopTags.mockClear();
+    selectionStore.refreshBriefingSelection();
+    await vi.waitFor(() => expect(fetchTopTags).toHaveBeenCalledOnce());
   });
 
   // Verifies settings responses cannot inject persistence or unrelated fields into selection state.

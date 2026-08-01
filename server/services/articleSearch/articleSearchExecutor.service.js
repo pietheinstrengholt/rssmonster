@@ -198,10 +198,6 @@ export const buildArticleSearchQuery = ({
   if (hotFilter !== null) {
     // Selects the result based on whether hot filter is available.
     articleQuery.where.hotInd = hotFilter ? 1 : 0;
-    // Handles the case where hot filter is available.
-    if (hotFilter) {
-      delete articleQuery.where.feedId;
-    }
   }
 
   // Handles the case where star filter is value and unread filter is value and read filter is value and clicked filter is value and hot filter is value.
@@ -216,7 +212,6 @@ export const buildArticleSearchQuery = ({
       articleQuery.where.favoriteInd = 1;
     // Handles the case where effective status is hot.
     } else if (effectiveStatus === 'hot') {
-      delete articleQuery.where.feedId;
       articleQuery.where.hotInd = 1;
     // Handles the case where effective status is clicked.
     } else if (effectiveStatus === 'clicked') {
