@@ -41,8 +41,8 @@ const mountInitialFeeds = () => {
 };
 
 // This function mounts user management with the requested authorization role.
-const mountManageUsers = (role = 'admin') => {
-  const stores = createFocusedStores({ auth: { role, token: 'admin-token' } });
+const mountManageUsers = (role = 'admin', userId = 1) => {
+  const stores = createFocusedStores({ auth: { role, token: 'admin-token', userId } });
   return mount(SettingsManageUsers, {
     global: { plugins: [stores.pinia] }
   });
@@ -175,6 +175,32 @@ describe('user-management failure handling', () => {
     expect(wrapper.get('[role="alert"]').text()).toBe('Could not load users. Please try again.');
     expect(wrapper.text()).not.toContain('SQL connection failed');
     expect(wrapper.find('.manage-users__empty').exists()).toBe(false);
+  });
+
+  it('prevents the current administrator from opening self-deletion', async () => {
+    fetchUsers.mockResolvedValue({
+      data: {
+        users: [
+          { id: 1, role: 'admin', username: 'admin' },
+          { id: 42, role: 'user', username: 'reader' }
+        ]
+      }
+    });
+
+    const wrapper = mountManageUsers('admin', 1);
+    await flushPromises();
+    const deleteButtons = wrapper.findAll('.manage-users__action--remove');
+
+    expect(deleteButtons[0].attributes('disabled')).toBeDefined();
+    expect(deleteButtons[0].attributes('title')).toBe('You cannot delete your own account.');
+    expect(deleteButtons[1].attributes('disabled')).toBeUndefined();
+
+    wrapper.vm.showDeleteForm(1);
+    await wrapper.vm.$nextTick();
+
+    expect(wrapper.get('[role="alert"]').text()).toBe('You cannot delete your own account.');
+    expect(wrapper.find('.manage-users__confirmation').exists()).toBe(false);
+    expect(deleteUser).not.toHaveBeenCalled();
   });
 
   it('keeps the editor open and sanitizes update failures', async () => {

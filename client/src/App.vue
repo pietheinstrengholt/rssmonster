@@ -156,7 +156,8 @@ export default {
 
         this.authStore.setSession({
           token,
-          role: data.user.role
+          role: data.user.role,
+          userId: data.user.id
         });
         this.isAuthenticated = true;
       } catch (error) {
@@ -211,7 +212,8 @@ export default {
 
         this.authStore.setSession({
           token: response.token,
-          role: response.user.role
+          role: response.user.role,
+          userId: response.user.id
         });
 
         this.isAuthenticated = true;

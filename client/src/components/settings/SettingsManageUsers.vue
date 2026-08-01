@@ -98,7 +98,12 @@
                       <td>
                         <div class="manage-users__actions">
                           <button class="manage-users__action" @click="editUser(listedUser.id)">Edit</button>
-                          <button class="manage-users__action manage-users__action--remove" @click="showDeleteForm(listedUser.id)">Delete</button>
+                          <button
+                            class="manage-users__action manage-users__action--remove"
+                            :disabled="isCurrentUser(listedUser.id)"
+                            :title="isCurrentUser(listedUser.id) ? 'You cannot delete your own account.' : undefined"
+                            @click="showDeleteForm(listedUser.id)"
+                          >Delete</button>
                         </div>
                       </td>
                     </tr>
@@ -283,7 +288,7 @@
   padding: 6px 8px;
 }
 
-.manage-users__action:hover {
+.manage-users__action:not(:disabled):hover {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
 }
@@ -292,17 +297,22 @@
   color: var(--settings-danger-text);
 }
 
-.manage-users__action--remove:hover {
+.manage-users__action--remove:not(:disabled):hover {
   background: var(--settings-danger-bg);
   color: var(--settings-danger-text);
 }
 
-:global(:root[data-theme='dark']) .manage-users__action:hover {
+.manage-users__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+:global(:root[data-theme='dark']) .manage-users__action:not(:disabled):hover {
   background: var(--settings-orange-bg);
   color: var(--settings-orange-text);
 }
 
-:global(:root[data-theme='dark']) .manage-users__action--remove:hover {
+:global(:root[data-theme='dark']) .manage-users__action--remove:not(:disabled):hover {
   background: var(--settings-danger-bg);
   color: var(--settings-danger-text);
 }
@@ -543,6 +553,10 @@ export default {
       }
     },
     methods: {
+      // This function identifies the signed-in account so it cannot delete itself.
+      isCurrentUser(userId) {
+        return String(userId) === String(this.authStore.userId);
+      },
       // This function prevents user-management actions when admin rights are absent.
       hasAdminRights() {
         if (this.isAdmin) {
@@ -675,6 +689,12 @@ export default {
       // This function opens the deletion confirmation for the selected user.
       showDeleteForm(userId) {
         if (!this.hasAdminRights()) {
+          return;
+        }
+
+        if (this.isCurrentUser(userId)) {
+          this.message = 'You cannot delete your own account.';
+          this.messageType = 'error';
           return;
         }
 

@@ -177,6 +177,33 @@ describe('action controller', () => {
     expect(res.json).toHaveBeenCalledWith({ total: 0, actions: [] });
   });
 
+  it('rejects action replacement without a user ID', async () => {
+    const res = createResponse();
+
+    await actionController.createAction(
+      createRequest({ userData: {} }),
+      res,
+      vi.fn()
+    );
+
+    expect(mocked.actionDestroy).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
+  });
+
+  it('passes action replacement errors to Express error handling', async () => {
+    const error = new Error('replacement failed');
+    mocked.actionDestroy.mockRejectedValue(error);
+    const next = vi.fn();
+
+    await actionController.createAction(
+      createRequest({ body: { actions: [] } }),
+      createResponse(),
+      next
+    );
+
+    expect(next).toHaveBeenCalledWith(error);
+  });
+
   it('passes action persistence errors to Express error handling', async () => {
     const error = new Error('database unavailable');
     mocked.actionFindAll.mockRejectedValue(error);
@@ -219,6 +246,18 @@ describe('tag and cleanup controllers', () => {
     }));
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ tags });
+  });
+
+  it('rejects tag reads without an authenticated user', async () => {
+    const res = createResponse();
+
+    await tagController.getTags(
+      createRequest({ userData: {} }),
+      res
+    );
+
+    expect(mocked.articleFindAll).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
   });
 
   it.each([
@@ -335,6 +374,17 @@ describe('tag and cleanup controllers', () => {
     expect(mocked.articleDestroy).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(401);
   });
+
+  it('returns cleanup persistence errors as server errors', async () => {
+    mocked.articleDestroy.mockRejectedValue(new Error('cleanup failed'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = createResponse();
+
+    await cleanupController.cleanup(createRequest(), res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'cleanup failed' });
+  });
 });
 
 describe('event and topic article controllers', () => {
@@ -350,6 +400,18 @@ describe('event and topic article controllers', () => {
     expect(mocked.eventFindOne).not.toHaveBeenCalled();
     expect(res.status).toHaveBeenCalledWith(400);
     expect(res.json).toHaveBeenCalledWith({ error: 'eventId is required' });
+  });
+
+  it('rejects event article requests without a user ID', async () => {
+    const res = createResponse();
+
+    await eventsController.getEventArticles(
+      createRequest({ userData: {}, body: { eventId: 8 } }),
+      res
+    );
+
+    expect(mocked.eventFindOne).not.toHaveBeenCalled();
+    expect(res.status).toHaveBeenCalledWith(401);
   });
 
   it('does not disclose an event owned by another user', async () => {
@@ -392,6 +454,55 @@ describe('event and topic article controllers', () => {
     }));
     expect(res.status).toHaveBeenCalledWith(200);
     expect(res.json).toHaveBeenCalledWith({ event, articles });
+  });
+
+  it('returns event query errors as server errors', async () => {
+    mocked.eventFindOne.mockRejectedValue(new Error('event query failed'));
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const res = createResponse();
+
+    await eventsController.getEventArticles(
+      createRequest({ body: { eventId: 8 } }),
+      res
+    );
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'event query failed' });
+  });
+
+  it('validates topic article authentication and event IDs', async () => {
+    const unauthorizedRes = createResponse();
+    await topicsController.getTopicArticles(
+      createRequest({ userData: {}, body: { eventId: 8 } }),
+      unauthorizedRes
+    );
+    expect(unauthorizedRes.status).toHaveBeenCalledWith(401);
+
+    const invalidRes = createResponse();
+    await topicsController.getTopicArticles(createRequest(), invalidRes);
+    expect(invalidRes.status).toHaveBeenCalledWith(400);
+    expect(mocked.eventFindOne).not.toHaveBeenCalled();
+  });
+
+  it('does not disclose unavailable events or topics', async () => {
+    mocked.eventFindOne.mockResolvedValueOnce(null);
+    const missingEventRes = createResponse();
+    await topicsController.getTopicArticles(
+      createRequest({ body: { eventId: 8 } }),
+      missingEventRes
+    );
+    expect(missingEventRes.status).toHaveBeenCalledWith(404);
+    expect(missingEventRes.json).toHaveBeenCalledWith({ error: 'Event not found' });
+
+    mocked.eventFindOne.mockResolvedValueOnce({ id: 8, topicId: 3 });
+    mocked.topicFindOne.mockResolvedValueOnce(null);
+    const missingTopicRes = createResponse();
+    await topicsController.getTopicArticles(
+      createRequest({ body: { eventId: 8 } }),
+      missingTopicRes
+    );
+    expect(missingTopicRes.status).toHaveBeenCalledWith(404);
+    expect(missingTopicRes.json).toHaveBeenCalledWith({ error: 'Topic not found' });
   });
 
   it('requires an event to belong to a topic', async () => {

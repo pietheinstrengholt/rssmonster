@@ -8,6 +8,7 @@ export const useAuthStore = defineStore('auth', {
   state: () => ({
     token: null,
     role: null,
+    userId: null,
     sessionRequestId: 0
   }),
   actions: {
@@ -20,12 +21,13 @@ export const useAuthStore = defineStore('auth', {
       return requestId === this.sessionRequestId;
     },
     // This function applies every authenticated-session field from login or validation.
-    setSession({ token, role }) {
+    setSession({ token, role, userId = null }) {
       if (this.token && this.token !== token) {
         this.clearSession();
       }
       this.token = token;
       this.role = role;
+      this.userId = userId;
     },
     // This function invalidates all requests before atomically clearing every user-owned store.
     clearSession() {
@@ -39,6 +41,7 @@ export const useAuthStore = defineStore('auth', {
 
       this.token = null;
       this.role = null;
+      this.userId = null;
       selectionStore.resetSessionState();
       overviewStore.resetSessionState();
       uiStore.resetSessionState();

@@ -155,6 +155,7 @@ Manage Users is restricted to administrators. It lists RSSMonster accounts and t
 Administrators can change a username, switch between user and administrator roles, and optionally replace a password. Leaving the password empty preserves the existing password. A replacement password must contain at least eight characters and match its confirmation.
 
 Deletion has a separate confirmation view because it permanently removes the account and its access. Successful edit and delete operations return to a refreshed user directory. Authorization failures are handled as access errors rather than exposing user-management data.
+The signed-in account cannot start its own deletion flow; the server also enforces this restriction.
 
 The current implementation manages existing users; account creation is not part of this section.
 

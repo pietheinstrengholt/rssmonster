@@ -78,7 +78,7 @@ describe('authentication lifecycle', () => {
   it('validates a saved session and applies its role and token', async () => {
     vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
     authApi.validateSession.mockResolvedValue({
-      user: { role: 'admin' }
+      user: { id: 7, role: 'admin' }
     });
     const context = createAuthContext();
 
@@ -88,6 +88,7 @@ describe('authentication lifecycle', () => {
     expect(authApi.applyAuthToken).toHaveBeenCalledWith('saved-token');
     expect(context.authStore.token).toBe('saved-token');
     expect(context.authStore.role).toBe('admin');
+    expect(context.authStore.userId).toBe(7);
     expect(context.isAuthenticated).toBe(true);
   });
 
@@ -194,7 +195,7 @@ describe('authentication lifecycle', () => {
       message: 'Connected!',
       token: 'login-token',
       expiresInSeconds: 86400,
-      user: { role: 'user' }
+      user: { id: 8, role: 'user' }
     });
     const context = createAuthContext();
 
@@ -202,6 +203,7 @@ describe('authentication lifecycle', () => {
 
     expect(context.authStore.token).toBe('login-token');
     expect(context.authStore.role).toBe('user');
+    expect(context.authStore.userId).toBe(8);
     expect(context.isAuthenticated).toBe(true);
   });
 

@@ -12,6 +12,7 @@ describe('authentication store state', () => {
 
     expect(store.token).toBeNull();
     expect(store.role).toBeNull();
+    expect(store.userId).toBeNull();
   });
 
   it('transitions authentication state and resets it safely', () => {
@@ -19,15 +20,18 @@ describe('authentication store state', () => {
 
     store.setSession({
       token: 'session-token',
-      role: 'admin'
+      role: 'admin',
+      userId: 7
     });
 
     expect(store.token).toBe('session-token');
     expect(store.role).toBe('admin');
+    expect(store.userId).toBe(7);
 
     store.clearSession();
 
     expect(store.token).toBeNull();
     expect(store.role).toBeNull();
+    expect(store.userId).toBeNull();
   });
 });

@@ -124,6 +124,16 @@ describe('category controller', () => {
     });
   });
 
+  it('reports errors while loading one category', async () => {
+    mocked.categoryFindOne.mockRejectedValue(new Error('category lookup failed'));
+    const res = createResponse();
+
+    await categoryController.getCategory(createRequest(), res);
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'category lookup failed' });
+  });
+
   it('creates a user-owned category with its display metadata', async () => {
     const category = createCategory();
     mocked.categoryCreate.mockResolvedValue(category);
