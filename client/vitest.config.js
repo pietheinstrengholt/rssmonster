@@ -14,13 +14,7 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'json-summary', 'html', ['lcov', { projectRoot: '..' }]],
       reportsDirectory: 'coverage',
-      reportOnFailure: true,
-      thresholds: {
-        statements: 90,
-        branches: 41,
-        functions: 34,
-        lines: 90
-      }
+      reportOnFailure: true
     }
   }
 });

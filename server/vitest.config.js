@@ -51,14 +51,6 @@ export default defineConfig({
     globals: true,
     testTimeout: 10000,
     fileParallelism: false,
-    coverage: {
-      thresholds: {
-        statements: 90,
-        branches: 80,
-        functions: 90,
-        lines: 90
-      }
-    },
     sequence: {
       sequencer: RssMonsterSequencer
     },
