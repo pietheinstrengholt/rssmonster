@@ -24,6 +24,7 @@ import {
   fetchSettings,
   fetchTopicsOverview,
   saveIncludeDevelopingEvents,
+  saveMarkAsReadOnScroll,
   saveOfficialSources,
   saveSettings,
   saveStartupViewMode,
@@ -160,6 +161,7 @@ describe('settings API contracts', () => {
     saveIncludeDevelopingEvents(true);
     saveThemeMode('dark');
     saveStartupViewMode('briefing');
+    saveMarkAsReadOnScroll(false);
 
     expect(patch).toHaveBeenNthCalledWith(
       1,
@@ -175,6 +177,11 @@ describe('settings API contracts', () => {
       3,
       '/setting/startup-view',
       { startupViewMode: 'briefing' }
+    );
+    expect(patch).toHaveBeenNthCalledWith(
+      4,
+      '/setting/mark-as-read-on-scroll',
+      { markAsReadOnScroll: false }
     );
   });
 

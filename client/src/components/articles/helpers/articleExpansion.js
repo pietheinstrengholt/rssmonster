@@ -26,7 +26,6 @@ export const articleExpansionMethods = {
       ? fetchTopicArticles
       : fetchEventArticles;
 
-    console.log(`Fetching ${grouping} articles for event:`, eventId);
     fetchRelatedArticles(eventId, this.id)
     .then(response => {
       this.eventExpanded = true;

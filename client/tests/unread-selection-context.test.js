@@ -8,6 +8,7 @@ import UnreadConfigurationModal from '../src/components/dialogs/UnreadConfigurat
 import {
   fetchSettings,
   saveIncludeDevelopingEvents,
+  saveMarkAsReadOnScroll,
   saveStartupViewMode
 } from '../src/api/settings.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -15,6 +16,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 vi.mock('../src/api/settings.js', () => ({
   fetchSettings: vi.fn(),
   saveIncludeDevelopingEvents: vi.fn(),
+  saveMarkAsReadOnScroll: vi.fn(),
   saveStartupViewMode: vi.fn()
 }));
 
@@ -52,6 +54,7 @@ beforeEach(() => {
   fetchSettings.mockResolvedValue({
     data: {
       includeDevelopingEvents: true,
+      markAsReadOnScroll: true,
       startupViewMode: 'default',
       minAdvertisementScore: 10,
       minSentimentScore: 20,
@@ -62,6 +65,12 @@ beforeEach(() => {
   saveIncludeDevelopingEvents.mockResolvedValue({
     data: {
       includeDevelopingEvents: false
+    }
+  });
+  saveMarkAsReadOnScroll.mockReset();
+  saveMarkAsReadOnScroll.mockResolvedValue({
+    data: {
+      markAsReadOnScroll: false
     }
   });
   saveStartupViewMode.mockReset();
@@ -201,13 +210,15 @@ describe('UnreadConfigurationModal', () => {
     );
     expect(wrapper.findAll('.unread-preferences-option-title').map(node => node.text())).toEqual([
       'Developing events',
+      'Mark as read while scrolling',
       'Use default view on startup'
     ]);
     expect(wrapper.findAll('.unread-preferences-option-description')[0].text()).toBe(
       'Include new coverage for events you have already seen.'
     );
-    expect(wrapper.findAll('[role="switch"]')).toHaveLength(2);
+    expect(wrapper.findAll('[role="switch"]')).toHaveLength(3);
     expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="markAsReadOnScroll"]').element.checked).toBe(true);
     expect(wrapper.get('[name="useDefaultStartupView"]').element.checked).toBe(true);
   });
 
@@ -223,13 +234,18 @@ describe('UnreadConfigurationModal', () => {
     await flushPromises();
 
     await wrapper.get('[name="includeDevelopingEvents"]').setValue(false);
+    await wrapper.get('[name="markAsReadOnScroll"]').setValue(false);
     await wrapper.get('[name="useDefaultStartupView"]').setValue(false);
     await wrapper.get('.unread-preferences-form').trigger('submit');
     await flushPromises();
 
     expect(saveIncludeDevelopingEvents).toHaveBeenCalledWith(false);
+    expect(saveMarkAsReadOnScroll).toHaveBeenCalledWith(false);
     expect(saveStartupViewMode).toHaveBeenCalledWith('last-used');
-    expect(setCurrentSelection).toHaveBeenCalledWith({ includeDevelopingEvents: false });
+    expect(setCurrentSelection).toHaveBeenCalledWith({
+      includeDevelopingEvents: false,
+      markAsReadOnScroll: false
+    });
     expect(setShowModal).toHaveBeenCalledWith('');
   });
 

@@ -20,6 +20,7 @@ const SUPPORTED_SELECTION_FIELDS = [
   'viewMode',
   'grouping',
   'includeDevelopingEvents',
+  'markAsReadOnScroll',
   'briefingRevision'
 ];
 
@@ -56,6 +57,7 @@ const defaultSelection = () => ({
   viewMode: 'full',
   grouping: 'none',
   includeDevelopingEvents: false,
+  markAsReadOnScroll: true,
   briefingRevision: 0
 });
 
@@ -160,6 +162,9 @@ export const useSelectionStore = defineStore('selection', {
       const includeDevelopingEvents = supported.includeDevelopingEvents != null
         ? Boolean(supported.includeDevelopingEvents)
         : Boolean(previous.includeDevelopingEvents);
+      const markAsReadOnScroll = supported.markAsReadOnScroll != null
+        ? Boolean(supported.markAsReadOnScroll)
+        : Boolean(previous.markAsReadOnScroll);
       this.currentSelection = {
         ...previous,
         ...supported,
@@ -169,7 +174,8 @@ export const useSelectionStore = defineStore('selection', {
         grouping: supported.grouping != null
           ? normalizeGrouping(supported.grouping)
           : normalizeGrouping(previous.grouping),
-        includeDevelopingEvents
+        includeDevelopingEvents,
+        markAsReadOnScroll
       };
       if (
         this.currentSelection.grouping !== previousGrouping ||

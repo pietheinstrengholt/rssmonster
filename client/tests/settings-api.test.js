@@ -1,5 +1,9 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
-import { saveIncludeDevelopingEvents, saveStartupViewMode } from '../src/api/settings.js';
+import {
+  saveIncludeDevelopingEvents,
+  saveMarkAsReadOnScroll,
+  saveStartupViewMode
+} from '../src/api/settings.js';
 
 const { patch } = vi.hoisted(() => ({ patch: vi.fn() }));
 
@@ -25,6 +29,14 @@ describe('settings API', () => {
 
     expect(patch).toHaveBeenCalledWith('/setting/startup-view', {
       startupViewMode: 'default'
+    });
+  });
+
+  it('sends the mark-as-read scrolling preference to its dedicated endpoint', () => {
+    saveMarkAsReadOnScroll(false);
+
+    expect(patch).toHaveBeenCalledWith('/setting/mark-as-read-on-scroll', {
+      markAsReadOnScroll: false
     });
   });
 });

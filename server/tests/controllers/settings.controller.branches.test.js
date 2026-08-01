@@ -8,6 +8,7 @@ import {
   getSettings,
   getTopicsOverview,
   setIncludeDevelopingEvents,
+  setMarkAsReadOnScroll,
   setOfficialSources,
   setSettings,
   setStartupViewMode,
@@ -40,6 +41,7 @@ describe('settings controller branch behavior', () => {
     [getSettings, {}],
     [setSettings, { body: {} }],
     [setIncludeDevelopingEvents, { body: {} }],
+    [setMarkAsReadOnScroll, { body: {} }],
     [setThemeMode, { body: {} }],
     [setStartupViewMode, { body: {} }],
     [getIslandsOverview, {}],
@@ -199,7 +201,8 @@ describe('settings controller branch behavior', () => {
   // Converts persistence failures from dedicated preference handlers into server errors.
   it.each([
     [setThemeMode, { themeMode: 'system' }],
-    [setStartupViewMode, { startupViewMode: 'last-used' }]
+    [setStartupViewMode, { startupViewMode: 'last-used' }],
+    [setMarkAsReadOnScroll, { markAsReadOnScroll: true }]
   ])('handles preference persistence failure for handler %#', async (handler, body) => {
     vi.spyOn(Setting, 'findOrCreate').mockRejectedValue(new Error('write failed'));
     vi.spyOn(console, 'error').mockImplementation(() => {});

@@ -2,8 +2,6 @@
 export const articleFeedClusterInsertionMethods = {
   // Inserts related cluster articles directly after their parent article.
   insertClusterArticles({ articleId, articles }) {
-    console.log(`Inserting ${articles.length} cluster articles after article ${articleId}`);
-
     // Remove any previously inserted cluster articles for this parent first
     this.removeClusterArticles({ articleId });
 
@@ -11,7 +9,6 @@ export const articleFeedClusterInsertionMethods = {
     const relatedArticles = articles.filter(article => article.id !== articleId);
 
     if (relatedArticles.length === 0) {
-      console.log('No related cluster articles to insert');
       return;
     }
 
@@ -47,18 +44,11 @@ export const articleFeedClusterInsertionMethods = {
 
     // Insert cluster articles right after the clicked article
     this.articles.splice(clickedIndex + 1, 0, ...markedArticles);
-
-    console.log(`Successfully inserted ${markedArticles.length} cluster articles`);
   },
 
   // Removes cluster articles currently inserted for a parent article.
   removeClusterArticles({ articleId }) {
-    const before = this.articles.length;
     this.articles = this.articles.filter(a => a.clusterParentId !== articleId);
-    const removed = before - this.articles.length;
-    if (removed > 0) {
-      console.log(`Removed ${removed} cluster articles for parent ${articleId}`);
-    }
   },
 
   // Inserts duplicate articles directly after their canonical parent article.

@@ -94,7 +94,7 @@ export const articleFeedVisibilityMethods = {
     }
   },
 
-  // Tracks article visibility and marks articles passed above the viewport.
+  // Tracks article visibility and conditionally marks unread articles passed above the viewport.
   handleArticleIntersections(entries) {
     for (const entry of entries) {
       const articleId = Number(entry.target.id.replace('article-', ''));
@@ -114,7 +114,11 @@ export const articleFeedVisibilityMethods = {
 
       this.visibleMap.set(articleId, false);
 
-      if (entry.boundingClientRect.bottom <= 0) {
+      const selection = this.selectionStore.currentSelection;
+      const automaticUnreadTransitionDisabled = selection.status === 'unread'
+        && selection.markAsReadOnScroll === false;
+
+      if (entry.boundingClientRect.bottom <= 0 && !automaticUnreadTransitionDisabled) {
         this.addToPool(articleId);
       }
     }
@@ -142,8 +146,6 @@ export const articleFeedVisibilityMethods = {
 
     const ms = this.visibleDuration.get(articleId) || 0;
     const visibleSeconds = Math.round(ms / 1000);
-
-    console.log("[MARK SEEN]", articleId, `visibleSeconds=${visibleSeconds}`);
 
     if (this.selectionStore.currentSelection.viewMode === "minimal") {
       this.pool.add(articleId);

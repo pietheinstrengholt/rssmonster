@@ -32,6 +32,13 @@ describe('model schema declarations', () => {
     });
   });
 
+  it('declares automatic mark-as-read scrolling enabled by default', () => {
+    expect(Setting.rawAttributes.markAsReadOnScroll).toMatchObject({
+      allowNull: false,
+      defaultValue: true
+    });
+  });
+
   it('keeps hotlink timestamps in sync with migrations', () => {
     expect(Hotlink.rawAttributes.createdAt).toMatchObject({
       allowNull: true

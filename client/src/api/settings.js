@@ -20,6 +20,10 @@ export const saveThemeMode = themeMode =>
 export const saveStartupViewMode = startupViewMode =>
   api.patch('/setting/startup-view', { startupViewMode });
 
+// This function saves whether scrolling past unread articles marks them as read.
+export const saveMarkAsReadOnScroll = markAsReadOnScroll =>
+  api.patch('/setting/mark-as-read-on-scroll', { markAsReadOnScroll });
+
 export const fetchIslandsOverview = () =>
   api.get('/setting/islands');
 

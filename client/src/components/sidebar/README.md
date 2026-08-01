@@ -75,7 +75,7 @@ These counts are dynamic. Reading an article, restoring it to unread, changing f
 
 Category aggregation is also dynamic when subscriptions are managed. Adding or removing a feed must add or remove its contribution. Moving a feed between categories must subtract every applicable count from the source category and add it to the destination category without changing the global totals. Removing a category or feed must also reconcile the affected aggregates. Authoritative overview refreshes recalculate the hierarchy from server data.
 
-Categories can be reordered by dragging them. The new order is reflected immediately and persisted for future sessions.
+Categories can be reordered by selecting **Reorder** and dragging them into place. Selecting **Done** returns to normal navigation. Drag-and-drop support is loaded only when reorder mode is opened, and each new order is reflected immediately and persisted for future sessions.
 
 Feed rows use the feed favicon when available and otherwise use an RSS icon. Error and disabled feeds retain health-state styling while still participating in selection and count display.
 

@@ -58,6 +58,32 @@
 
           <label class="unread-preferences-option">
             <span class="unread-preferences-option-icon" aria-hidden="true">
+              <BootstrapIcon icon="check2-circle" />
+            </span>
+
+            <span class="unread-preferences-option-content">
+              <span class="unread-preferences-option-title">
+                Mark as read while scrolling
+              </span>
+              <span class="unread-preferences-option-description">
+                Automatically mark unread articles as read after you scroll past them.
+              </span>
+            </span>
+
+            <span class="unread-switch">
+              <input
+                v-model="form.markAsReadOnScroll"
+                name="markAsReadOnScroll"
+                type="checkbox"
+                role="switch"
+                :disabled="isLoading || isSaving"
+              />
+              <span class="unread-switch-control" aria-hidden="true"></span>
+            </span>
+          </label>
+
+          <label class="unread-preferences-option">
+            <span class="unread-preferences-option-icon" aria-hidden="true">
               <BootstrapIcon icon="house-door" />
             </span>
 
@@ -94,6 +120,7 @@ import { useUiStore } from '../../store/ui.js';
 import {
   fetchSettings as fetchSettingsAPI,
   saveIncludeDevelopingEvents as saveIncludeDevelopingEventsAPI,
+  saveMarkAsReadOnScroll as saveMarkAsReadOnScrollAPI,
   saveStartupViewMode as saveStartupViewModeAPI
 } from '../../api/settings.js';
 import PreferencesDialogShell from './PreferencesDialogShell.vue';
@@ -111,6 +138,7 @@ export default {
     return {
       form: {
         includeDevelopingEvents: false,
+        markAsReadOnScroll: true,
         useDefaultStartupView: false
       },
       isLoading: true,
@@ -140,6 +168,7 @@ export default {
         if (requestId !== this.activeRequestId) return;
 
         this.form.includeDevelopingEvents = Boolean(data.includeDevelopingEvents);
+        this.form.markAsReadOnScroll = data.markAsReadOnScroll !== false;
         this.form.useDefaultStartupView = data.startupViewMode === 'default';
       } catch (error) {
         if (requestId !== this.activeRequestId) return;
@@ -160,13 +189,15 @@ export default {
 
       try {
         const startupViewMode = this.form.useDefaultStartupView ? 'default' : 'last-used';
-        const [{ data: unreadData }] = await Promise.all([
+        const [{ data: unreadData }, { data: scrollingData }] = await Promise.all([
           saveIncludeDevelopingEventsAPI(this.form.includeDevelopingEvents),
+          saveMarkAsReadOnScrollAPI(this.form.markAsReadOnScroll),
           saveStartupViewModeAPI(startupViewMode)
         ]);
         const includeDevelopingEvents = Boolean(unreadData.includeDevelopingEvents);
+        const markAsReadOnScroll = Boolean(scrollingData.markAsReadOnScroll);
 
-        this.selectionStore.setCurrentSelection({ includeDevelopingEvents });
+        this.selectionStore.setCurrentSelection({ includeDevelopingEvents, markAsReadOnScroll });
         this.closeModal();
       } catch (error) {
         console.error('Error saving Unread Preferences:', error);

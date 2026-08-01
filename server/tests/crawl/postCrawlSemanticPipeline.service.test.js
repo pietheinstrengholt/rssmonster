@@ -101,5 +101,62 @@ describe('runPostCrawlSemanticPipeline', () => {
     expect(result.results[0].events.touchedEventIds).toEqual([10, 11]);
     expect(result.results[0].interestScores.updatedCount).toBe(5);
   });
-});
 
+  // This test verifies a crawl with no affected users skips every semantic stage.
+  it('returns an empty summary when the crawl did not process any users', async () => {
+    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
+    const result = await runPostCrawlSemanticPipeline(undefined, {
+      onProgress: 'not-a-function'
+    });
+
+    expect(result).toEqual({
+      users: 0,
+      embedded: 0,
+      skipped: 0,
+      results: []
+    });
+    expect(mocked.embedArticles).not.toHaveBeenCalled();
+    expect(mocked.markDuplicateArticlesForUser).not.toHaveBeenCalled();
+    expect(mocked.runIncrementalEventsForUser).not.toHaveBeenCalled();
+    expect(mocked.scoreArticlesFromIslandsForUser).not.toHaveBeenCalled();
+  });
+
+  // This test verifies explicit ownership, default counts, and progress callbacks.
+  it('uses an explicit user once and reports zero-valued stage defaults', async () => {
+    const onProgress = vi.fn();
+    mocked.embedArticles.mockResolvedValue({});
+    mocked.markDuplicateArticlesForUser.mockResolvedValue({});
+    mocked.runIncrementalEventsForUser.mockResolvedValue({});
+    mocked.scoreArticlesFromIslandsForUser.mockResolvedValue({});
+
+    const { runPostCrawlSemanticPipeline } = await import('../../services/crawl/orchestration/postCrawlSemanticPipeline.js');
+    const result = await runPostCrawlSemanticPipeline({
+      processedUserIds: [17, 17, null]
+    }, {
+      userId: 23,
+      onProgress
+    });
+
+    expect(mocked.embedArticles).toHaveBeenCalledOnce();
+    expect(mocked.embedArticles).toHaveBeenCalledWith(23, { createdAtFrom: null });
+    expect(mocked.markDuplicateArticlesForUser).toHaveBeenCalledWith(23, { createdAtFrom: null });
+    expect(mocked.runIncrementalEventsForUser).toHaveBeenCalledWith(23, {
+      createdAtFrom: null,
+      skipTopicAssignment: false
+    });
+    expect(mocked.scoreArticlesFromIslandsForUser).toHaveBeenCalledWith(23, { createdAtFrom: null });
+    expect(onProgress).toHaveBeenNthCalledWith(1, {
+      type: 'semantic_started',
+      stage: 'semantic_pipeline',
+      users: 1
+    });
+    expect(onProgress).toHaveBeenNthCalledWith(2, {
+      type: 'semantic_completed',
+      stage: 'semantic_pipeline',
+      users: 1,
+      embedded: 0,
+      skipped: 0
+    });
+    expect(result).toMatchObject({ users: 1, embedded: 0, skipped: 0 });
+  });
+});

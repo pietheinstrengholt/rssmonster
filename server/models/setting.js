@@ -94,6 +94,12 @@ export default (sequelize) => {
         validate: {
           isIn: [['last-used', 'default']]
         }
+      },
+      // Controls whether scrolling past an article automatically marks it as read.
+      markAsReadOnScroll: {
+        type: DataTypes.BOOLEAN,
+        allowNull: false,
+        defaultValue: true
       }
     },
     {

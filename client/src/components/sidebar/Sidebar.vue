@@ -151,9 +151,39 @@
         @select="loadAll"
       />
 
-      <SidebarSectionTitle title="Categories" />
+      <div class="sidebar-category-heading">
+        <SidebarSectionTitle title="Categories" />
+        <button
+          v-if="overviewStore.categories.length > 1 || categoryReordering"
+          type="button"
+          class="sidebar-category-reorder-button"
+          :aria-pressed="categoryReordering"
+          :disabled="categoryReorderLoading"
+          @click="toggleCategoryReordering"
+        >
+          <BootstrapIcon :icon="categoryReordering ? 'check-lg' : 'grip-vertical'" aria-hidden="true" />
+          {{ categoryReorderLoading ? 'Loading...' : categoryReordering ? 'Done' : 'Reorder' }}
+        </button>
+      </div>
 
-      <draggable
+      <div v-if="!categoryReordering" class="sidebar-category-list">
+        <SidebarCategoryGroup
+          v-for="category in overviewStore.categories"
+          :key="category.id"
+          :category="category"
+          :selected-category-id="selectionStore.currentSelection.categoryId"
+          :selected-feed-id="selectionStore.currentSelection.feedId"
+          :count="getItemStatusCount(category)"
+          :count-resolver="getItemStatusCount"
+          @select-category="loadCategory"
+          @select-feed="loadFeed"
+        />
+      </div>
+
+      <component
+        :is="categoryReorderComponent"
+        v-else
+        class="sidebar-category-reorder-list"
         :model-value="overviewStore.categories"
         item-key="id"
         @update:model-value="applyCategoryOrder"
@@ -169,7 +199,7 @@
             @select-feed="loadFeed"
           />
         </template>
-      </draggable>
+      </component>
 
       <div class="sidebar-footer-actions">
         <div class="sidebar-divider"></div>
@@ -282,9 +312,55 @@
   padding: 0;
 }
 
+.sidebar-category-heading {
+  align-items: flex-end;
+  display: flex;
+  justify-content: space-between;
+  padding-right: 12px;
+}
+
+.sidebar-category-reorder-button {
+  align-items: center;
+  background: var(--color-transparent);
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-secondary);
+  display: inline-flex;
+  font-size: 12px;
+  gap: 4px;
+  margin-bottom: 3px;
+  padding: 3px 5px;
+}
+
+.sidebar-category-reorder-button:hover,
+.sidebar-category-reorder-button[aria-pressed='true'] {
+  background: var(--bg-hover);
+  color: var(--text-primary);
+}
+
+.sidebar-category-reorder-button:focus-visible {
+  outline: 2px solid var(--accent-color);
+  outline-offset: 2px;
+}
+
+.sidebar-category-reorder-button:disabled {
+  cursor: wait;
+  opacity: 0.65;
+}
+
 @media (prefers-color-scheme: dark) {
   .sidebar-resource-error {
     color: var(--text-secondary);
+  }
+
+  .sidebar-category-reorder-button {
+    color: var(--text-secondary);
+  }
+
+  .sidebar-category-reorder-button:hover,
+  .sidebar-category-reorder-button[aria-pressed='true'] {
+    background: var(--bg-hover);
+    color: var(--text-inverted);
   }
 }
 
@@ -400,7 +476,7 @@ import { useSelectionStore } from '../../store/selection.js';
 import { useOverviewStore } from '../../store/overview.js';
 import { useUiStore } from '../../store/ui.js';
 import { useAuthStore } from '../../store/auth.js';
-import draggable from 'vuedraggable';
+import { markRaw } from 'vue';
 import { markAllAsRead } from '../../api/articles';
 import { triggerCrawl } from '../../api/crawl';
 import { openFeedRefreshEvents, startFeedRefresh } from '../../api/feeds';
@@ -423,7 +499,6 @@ const statusFilters = [
 
 export default {
   components: {
-    draggable,
     SidebarActionButton,
     SidebarCategoryGroup,
     SidebarNavItem,
@@ -433,6 +508,9 @@ export default {
   // This initializes sidebar activity, refresh progress, and SSE cleanup state.
   data() {
     return {
+      categoryReorderComponent: null,
+      categoryReordering: false,
+      categoryReorderLoading: false,
       refreshing: false,
       markingAsRead: false,
       refreshEventSource: null,
@@ -494,6 +572,32 @@ export default {
     clearTimeout(this.fallbackRefreshTimer);
   },
   methods: {
+    // This function loads drag-and-drop support only when category reordering is requested.
+    async toggleCategoryReordering() {
+      if (this.categoryReordering) {
+        this.categoryReordering = false;
+        return;
+      }
+
+      if (this.categoryReorderLoading) return;
+
+      if (!this.categoryReorderComponent) {
+        this.categoryReorderLoading = true;
+
+        try {
+          const { default: draggable } = await import('vuedraggable');
+          this.categoryReorderComponent = markRaw(draggable);
+        } catch (error) {
+          console.error('Error loading category reordering:', error);
+          notifyActionError('Could not enable category reordering. Please try again.', error);
+          return;
+        } finally {
+          this.categoryReorderLoading = false;
+        }
+      }
+
+      this.categoryReordering = true;
+    },
     // This returns the count for a selected article status.
     getStatusCount(status) {
       return this.overviewStore[`${status}Count`];

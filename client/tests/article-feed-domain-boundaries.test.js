@@ -111,6 +111,57 @@ describe('ArticleFeed visibility tracking', () => {
     expect(context.markArticleSeen).toHaveBeenCalledWith(7, 2);
   });
 
+  it('keeps passed unread articles unread when automatic scrolling transitions are disabled', () => {
+    const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: {
+            status: 'unread',
+            markAsReadOnScroll: false
+          }
+        }
+      }),
+      visibleMap: new Map([[7, true]]),
+      visibleSince: new Map([[7, 1000]]),
+      finalizeVisibleDuration: vi.fn(),
+      addToPool: vi.fn()
+    };
+
+    articleFeedVisibilityMethods.handleArticleIntersections.call(context, [{
+      target: { id: 'article-7' },
+      isIntersecting: false,
+      boundingClientRect: { bottom: -1 }
+    }]);
+
+    expect(context.finalizeVisibleDuration).toHaveBeenCalledWith(7);
+    expect(context.addToPool).not.toHaveBeenCalled();
+  });
+
+  it('continues seen tracking outside unread selections when scrolling transitions are disabled', () => {
+    const context = {
+      ...createFocusedStores({
+        selection: {
+          currentSelection: {
+            status: 'favorite',
+            markAsReadOnScroll: false
+          }
+        }
+      }),
+      visibleMap: new Map([[7, false]]),
+      visibleSince: new Map(),
+      finalizeVisibleDuration: vi.fn(),
+      addToPool: vi.fn()
+    };
+
+    articleFeedVisibilityMethods.handleArticleIntersections.call(context, [{
+      target: { id: 'article-7' },
+      isIntersecting: false,
+      boundingClientRect: { bottom: -1 }
+    }]);
+
+    expect(context.addToPool).toHaveBeenCalledWith(7);
+  });
+
   it('does not persist seen state when a minimal article passes the viewport', async () => {
     const context = {
       ...createFocusedStores({

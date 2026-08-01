@@ -69,7 +69,8 @@ describe('data store remaining actions and getters', () => {
         themeMode: 'dark',
         sort: 'QUALITY',
         grouping: 'event',
-        includeDevelopingEvents: 1
+        includeDevelopingEvents: 1,
+        markAsReadOnScroll: 0
       }
     });
     const { selectionStore, uiStore } = createStores();
@@ -79,7 +80,8 @@ describe('data store remaining actions and getters', () => {
     expect(selectionStore.currentSelection).toMatchObject({
       sort: 'quality',
       grouping: 'event',
-      includeDevelopingEvents: true
+      includeDevelopingEvents: true,
+      markAsReadOnScroll: false
     });
 
     uiStore.setThemeMode('light');
@@ -88,7 +90,8 @@ describe('data store remaining actions and getters', () => {
     expect(selectionStore.currentSelection).toMatchObject({
       sort: 'desc',
       grouping: 'none',
-      includeDevelopingEvents: true
+      includeDevelopingEvents: true,
+      markAsReadOnScroll: false
     });
   });
 

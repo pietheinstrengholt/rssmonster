@@ -66,6 +66,7 @@ describe('settings controller', () => {
         includeDevelopingEvents: false,
         themeMode: 'system',
         startupViewMode: 'last-used',
+        markAsReadOnScroll: true,
         AIEnabled: false
       });
     } finally {
@@ -98,6 +99,7 @@ describe('settings controller', () => {
         includeDevelopingEvents: true,
         themeMode: 'system',
         startupViewMode: 'last-used',
+        markAsReadOnScroll: true,
         AIEnabled: true
       });
     } finally {
@@ -124,7 +126,8 @@ describe('settings controller', () => {
       grouping: 'topic',
       includeDevelopingEvents: true,
       themeMode: 'dark',
-      startupViewMode: 'default'
+      startupViewMode: 'default',
+      markAsReadOnScroll: false
     });
 
     try {
@@ -146,6 +149,7 @@ describe('settings controller', () => {
         includeDevelopingEvents: true,
         themeMode: 'dark',
         startupViewMode: 'default',
+        markAsReadOnScroll: false,
         AIEnabled: false
       });
     } finally {
@@ -344,5 +348,30 @@ describe('settings controller', () => {
     expect(validResponse.body).toMatchObject({ success: true, startupViewMode: 'default' });
     expect(settings.startupViewMode).toBe('default');
     expect(otherSettings.startupViewMode).toBe('last-used');
+  });
+
+  it('validates and persists mark-as-read scrolling for the current user', async () => {
+    const user = await createUser();
+    const otherUser = await createUser();
+    await Setting.create({ userId: otherUser.id });
+
+    const invalidResponse = await request(app)
+      .patch('/api/setting/mark-as-read-on-scroll')
+      .set('Authorization', authHeaderFor(user))
+      .send({ markAsReadOnScroll: 'false' });
+    const validResponse = await request(app)
+      .patch('/api/setting/mark-as-read-on-scroll')
+      .set('Authorization', authHeaderFor(user))
+      .send({ markAsReadOnScroll: false });
+
+    const settings = await Setting.findOne({ where: { userId: user.id }, raw: true });
+    const otherSettings = await Setting.findOne({ where: { userId: otherUser.id }, raw: true });
+
+    expect(invalidResponse.status).toBe(400);
+    expect(invalidResponse.body.error).toBe('markAsReadOnScroll must be a boolean');
+    expect(validResponse.status).toBe(200);
+    expect(validResponse.body).toMatchObject({ success: true, markAsReadOnScroll: false });
+    expect(Boolean(settings.markAsReadOnScroll)).toBe(false);
+    expect(Boolean(otherSettings.markAsReadOnScroll)).toBe(true);
   });
 });

@@ -215,6 +215,26 @@ describe('Options API sidebar contracts', () => {
     expect(wrapper.emitted('logout')).toHaveLength(1);
   });
 
+  it('loads drag-and-drop support only after entering category reorder mode', async () => {
+    initializeStores();
+    const wrapper = mountSidebar();
+
+    expect(wrapper.find('.draggable-stub').exists()).toBe(false);
+    expect(wrapper.findAll('.sidebar-category-list > [id]')).toHaveLength(2);
+
+    await wrapper.get('.sidebar-category-reorder-button').trigger('click');
+    await vi.waitFor(() => expect(wrapper.vm.categoryReordering).toBe(true));
+
+    expect(wrapper.get('.sidebar-category-reorder-button').text()).toContain('Done');
+    expect(wrapper.find('.draggable-stub').exists()).toBe(true);
+
+    await wrapper.get('.sidebar-category-reorder-button').trigger('click');
+
+    expect(wrapper.vm.categoryReordering).toBe(false);
+    expect(wrapper.find('.draggable-stub').exists()).toBe(false);
+    expect(wrapper.findAll('.sidebar-category-list > [id]')).toHaveLength(2);
+  });
+
   // Verifies recoverable resource failures remain visible beside cached sidebar data.
   it('presents resource-specific retries without hiding cached navigation', async () => {
     const stores = initializeStores();

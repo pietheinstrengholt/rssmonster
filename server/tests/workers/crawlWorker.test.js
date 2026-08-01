@@ -1,11 +1,24 @@
 import { describe, expect, it, vi } from 'vitest';
 import {
   createCrawlWorker,
+  isWorkerEntryPoint,
   parseWorkerInterval
 } from '../../src/workers/crawlWorker.js';
 
 // This test suite verifies scheduling and shutdown without connecting to feeds or MySQL.
 describe('crawl worker', () => {
+  // This test verifies PM2's process container still launches the worker lifecycle.
+  it('recognizes direct Node and PM2 entry points', () => {
+    const workerPath = new URL('../../src/workers/crawlWorker.js', import.meta.url).pathname;
+
+    expect(isWorkerEntryPoint({ argv: ['node', workerPath], env: {} })).toBe(true);
+    expect(isWorkerEntryPoint({
+      argv: ['node', '/usr/lib/node_modules/pm2/lib/ProcessContainerFork.js'],
+      env: { pm_exec_path: workerPath }
+    })).toBe(true);
+    expect(isWorkerEntryPoint({ argv: ['node', '/tmp/importer.js'], env: {} })).toBe(false);
+  });
+
   // This test verifies the documented default and strict interval validation.
   it('validates the polling interval', () => {
     expect(parseWorkerInterval(undefined)).toBe(60_000);

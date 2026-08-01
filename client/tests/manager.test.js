@@ -24,6 +24,17 @@ describe('Sidebar manager', () => {
 		expect(Object.hasOwn(store.$state, 'includeDevelopingEvents')).toBe(false);
 	});
 
+	it('hydrates mark-as-read scrolling with an enabled default', () => {
+		setActivePinia(createPinia());
+		const store = useSelectionStore();
+
+		expect(store.currentSelection.markAsReadOnScroll).toBe(true);
+
+		store.setCurrentSelection({ markAsReadOnScroll: false });
+
+		expect(store.currentSelection.markAsReadOnScroll).toBe(false);
+	});
+
 	it('uses the briefing query for the Daily briefing pseudo-status', () => {
 		setActivePinia(createPinia());
 		const store = useSelectionStore();

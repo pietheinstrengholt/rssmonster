@@ -15,5 +15,10 @@ router.post('/official-sources', userMiddleware.isLoggedIn, settingController.se
 router.patch('/developing-events', userMiddleware.isLoggedIn, settingController.setIncludeDevelopingEvents);
 router.patch('/theme', userMiddleware.isLoggedIn, settingController.setThemeMode);
 router.patch('/startup-view', userMiddleware.isLoggedIn, settingController.setStartupViewMode);
+router.patch(
+  '/mark-as-read-on-scroll',
+  userMiddleware.isLoggedIn,
+  settingController.setMarkAsReadOnScroll
+);
 
 export default router;

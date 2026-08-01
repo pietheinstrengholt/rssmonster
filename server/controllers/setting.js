@@ -235,6 +235,7 @@ export const getSettings = async (req, res, _next) => {
     let includeDevelopingEvents = aiEnabled;
     let themeMode = 'system';
     let startupViewMode = 'last-used';
+    let markAsReadOnScroll = true;
 
     const settings = await Setting.findOne({ where: { userId: userId }, raw: true });
 
@@ -246,6 +247,9 @@ export const getSettings = async (req, res, _next) => {
       includeDevelopingEvents = Boolean(settings.includeDevelopingEvents);
       themeMode = settings.themeMode || 'system';
       startupViewMode = settings.startupViewMode || 'last-used';
+      markAsReadOnScroll = settings.markAsReadOnScroll == null
+        ? true
+        : Boolean(settings.markAsReadOnScroll);
 
       // Restore the previous selection only when the user opted into last-used startup behavior.
       if (startupViewMode === 'last-used') {
@@ -274,6 +278,7 @@ export const getSettings = async (req, res, _next) => {
       includeDevelopingEvents,
       themeMode: themeMode,
       startupViewMode,
+      markAsReadOnScroll,
       AIEnabled: aiEnabled
     });
   } catch (err) {
@@ -449,6 +454,36 @@ export const setStartupViewMode = async (req, res, _next) => {
     return res.status(200).json({ success: true, startupViewMode });
   } catch (err) {
     console.error('Error in setStartupViewMode:', err);
+    return res.status(500).json({ error: err.message });
+  }
+};
+
+// This function saves whether scrolling past unread articles marks them as read.
+export const setMarkAsReadOnScroll = async (req, res, _next) => {
+  try {
+    const userId = req.userData.userId;
+    const { markAsReadOnScroll } = req.body;
+
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized: missing userId' });
+    }
+
+    if (typeof markAsReadOnScroll !== 'boolean') {
+      return res.status(400).json({ error: 'markAsReadOnScroll must be a boolean' });
+    }
+
+    const [settings, created] = await Setting.findOrCreate({
+      where: { userId },
+      defaults: { markAsReadOnScroll }
+    });
+
+    if (!created) {
+      await settings.update({ markAsReadOnScroll });
+    }
+
+    return res.status(200).json({ success: true, markAsReadOnScroll });
+  } catch (err) {
+    console.error('Error in setMarkAsReadOnScroll:', err);
     return res.status(500).json({ error: err.message });
   }
 };
@@ -1157,6 +1192,7 @@ export default {
   setIncludeDevelopingEvents,
   setThemeMode,
   setStartupViewMode,
+  setMarkAsReadOnScroll,
   getIslandsOverview,
   getTopicsOverview
 }

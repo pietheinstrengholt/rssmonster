@@ -8,6 +8,12 @@ dotenv.config({ path: path.join(serverDirectory, '.env'), quiet: true });
 
 const DEFAULT_INTERVAL_MS = 60_000;
 
+// This function recognizes direct Node and PM2 launches without starting on imports.
+export const isWorkerEntryPoint = ({ argv = process.argv, env = process.env } = {}) => {
+  const entryPath = env.pm_exec_path || argv[1];
+  return Boolean(entryPath) && path.resolve(entryPath) === workerFile;
+};
+
 // This function validates the worker polling interval before database initialization.
 export const parseWorkerInterval = value => {
   if (typeof value === 'undefined' || value === '') {
@@ -213,6 +219,6 @@ const runMain = async () => {
   }
 };
 
-if (process.argv[1] && path.resolve(process.argv[1]) === workerFile) {
+if (isWorkerEntryPoint()) {
   await runMain();
 }
