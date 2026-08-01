@@ -351,11 +351,15 @@ describe('updateArticle', () => {
     }));
     const consoleInfo = vi.spyOn(console, 'info').mockImplementation(() => {});
     const { default: updateArticle } = await import('../../services/crawl/persistence/updateArticle.js');
-    const result = await updateArticle({ id: 7, userId: 42 }, incomingArticle({
-      contentOriginal: `<video src="${incomingVideoUrl}"></video>`,
-      contentHtml: `<video src="${incomingVideoUrl}"></video>`,
-      contentSourceHash: 'incoming-kickstarter-source-hash'
-    }));
+    const result = await updateArticle(
+      { id: 7, userId: 42 },
+      incomingArticle({
+        contentOriginal: `<video src="${incomingVideoUrl}"></video>`,
+        contentHtml: `<video src="${incomingVideoUrl}"></video>`,
+        contentSourceHash: 'incoming-kickstarter-source-hash'
+      }),
+      { logArticleUpdates: true }
+    );
 
     expect(result).toMatchObject({
       changed: true,
@@ -424,7 +428,8 @@ describe('updateArticle', () => {
           views: 11,
           likes: 3
         }
-      })
+      }),
+      { logArticleUpdates: true }
     );
 
     const payload = JSON.parse(consoleInfo.mock.calls[0][1]);

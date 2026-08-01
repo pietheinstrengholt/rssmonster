@@ -46,8 +46,6 @@ const FINGERPRINT_FIELDS = [
   'description',
   'media'
 ];
-// Keeps verbose article-update diagnostics available while silencing them by default.
-const ARTICLE_UPDATE_LOGGING_ENABLED = false;
 // Defines the comparable media fields enforced by this service.
 const COMPARABLE_MEDIA_FIELDS = new Set([
   'type',
@@ -473,8 +471,8 @@ async function updateArticle(feed, data, options = {}) {
     updateValues.modifiedAt = resolveConfirmedModifiedAt(article, data.modifiedAt);
   }
 
-  // Logs meaningful article changes only when verbose diagnostics are enabled.
-  if (ARTICLE_UPDATE_LOGGING_ENABLED && meaningfulChangedFields.length > 0) {
+  // Logs meaningful article changes only when the caller explicitly enables diagnostics.
+  if (options.logArticleUpdates === true && meaningfulChangedFields.length > 0) {
     logArticleUpdate({
       feed,
       article,
