@@ -12,11 +12,13 @@ const defaultBudgetPath = resolve(clientRoot, 'bundle-size-budgets.json');
 // This function formats byte counts consistently for reports and failures.
 export const formatBytes = bytes => `${(bytes / 1024).toFixed(2)} KiB`;
 
-// This function locates the entry assets and stable manual chunks in a Vite manifest.
+// This function locates the entry graph and stable manual chunks in a Vite manifest.
 export const identifyBundleAssets = manifest => {
-  const chunks = Object.values(manifest);
-  const entry = chunks.find(chunk => chunk.isEntry && chunk.src === 'index.html')
-    || chunks.find(chunk => chunk.isEntry);
+  const chunkEntries = Object.entries(manifest);
+  const chunks = chunkEntries.map(([, chunk]) => chunk);
+  const entryRecord = chunkEntries.find(([, chunk]) => chunk.isEntry && chunk.src === 'index.html')
+    || chunkEntries.find(([, chunk]) => chunk.isEntry);
+  const [entryKey, entry] = entryRecord || [];
 
   if (!entry?.file) {
     throw new Error('Could not identify the initial JavaScript entry in the Vite manifest.');
@@ -37,10 +39,24 @@ export const identifyBundleAssets = manifest => {
     return [chunk.file];
   };
 
+  // This function follows static manifest imports and returns each initial JavaScript file once.
+  const collectInitialJavaScript = (chunkKey, visited = new Set(), files = []) => {
+    if (!chunkKey || visited.has(chunkKey)) return files;
+    visited.add(chunkKey);
+
+    const chunk = manifest[chunkKey];
+    if (!chunk) return files;
+    if (chunk.file?.endsWith('.js')) files.push(chunk.file);
+    (chunk.imports || []).forEach(importedKey => {
+      collectInitialJavaScript(importedKey, visited, files);
+    });
+    return files;
+  };
+
   return {
     entryJavaScript: [entry.file],
+    initialJavaScript: collectInitialJavaScript(entryKey),
     mainCss: entry.css,
-    iconsVendor: requireNamedChunk('icons-vendor'),
     vueVendor: requireNamedChunk('vue-vendor'),
     axiosVendor: requireNamedChunk('axios-vendor'),
     bootstrapVendor: requireNamedChunk('bootstrap-vendor')

@@ -5,9 +5,10 @@ entry assets. When `dist` already contains a current production build,
 `npm run check:bundle-size` runs the check without rebuilding.
 
 The checker reads Vite's generated `.vite/manifest.json`, so it identifies the
-entry JavaScript and CSS plus the `icons-vendor`, `vue-vendor`,
-`axios-vendor`, and `bootstrap-vendor` chunks without relying on content hashes.
-Both raw and gzip bytes are checked.
+entry JavaScript and CSS plus the `vue-vendor`, `axios-vendor`, and
+`bootstrap-vendor` chunks without relying on content hashes. It also follows
+the entry's static imports recursively and budgets the complete initial
+JavaScript graph. Both raw and gzip bytes are checked.
 
 Budgets live in `bundle-size-budgets.json`. Update them intentionally only
 after reviewing the production diff and recording a new clean-build baseline:
@@ -59,9 +60,9 @@ The build used Node.js 22.23.2, npm 10.9.8, and Vite 8.1.5 under WSL Ubuntu.
 The bundle-size checker defines initial-entry CSS as the `css` array on the
 manifest's `index.html` entry.
 
-The entry also statically imports `icons-vendor`, whose stylesheet is linked in
-the generated `index.html`. It is part of the initial network load but is not
-included in the checker's `mainCss` measurement.
+The icon component's scoped stylesheet is included in the entry CSS. The icon
+sprite is build-time application code and no longer requires a separate icon
+vendor chunk.
 
 Gzip totals are the sum of independently compressed responses, matching how the
 checker calls Node.js `gzipSync()` for each asset. No bundle-size budget was
@@ -87,3 +88,24 @@ changed when recording this baseline.
    comparable gzip measurement, use Node.js `gzipSync(contents).byteLength`.
    The style-bearing modules listed above were cross-checked against the module
    sources in an otherwise identical Vite sourcemap build outside `dist`.
+
+## Icon wrapper and Bootstrap JavaScript baseline
+
+This optimization baseline was measured on 2026-08-01 with Node.js 22.23.2 and
+Vite 8.2.0. Both builds used the same client sources apart from replacing the
+external icon wrapper, selecting Vue's runtime-only ESM build, and replacing
+the full Bootstrap JavaScript bundle with the Dropdown plugin.
+
+| Asset boundary | Before raw | Before gzip | After raw | After gzip |
+| --- | ---: | ---: | ---: | ---: |
+| Transitive initial JavaScript | 538,121 B | 176,004 B | 405,677 B | 133,016 B |
+| Bootstrap vendor | 79,030 B | 23,430 B | 40,140 B | 14,153 B |
+
+The transitive initial graph decreased by 132,444 raw bytes and 42,988 gzip
+bytes. The former `icons-vendor` chunk was removed. Some Vue runtime code moved
+into `vue-vendor`, so individual vendor-chunk differences do not represent the
+user-facing saving; the transitive initial graph is the authoritative measure.
+
+An otherwise identical sourcemap build confirmed that no `@vue/compiler-core`
+or `@vue/compiler-dom` sources remain and that the Bootstrap vendor chunk
+contains Dropdown plus only its required helpers and Popper dependency.

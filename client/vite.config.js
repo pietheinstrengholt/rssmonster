@@ -49,6 +49,12 @@ const bootstrapIconsSprite = () => {
 
 // https://vitejs.dev/config/
 export default defineConfig({
+  resolve: {
+    alias: [{
+      find: /^vue$/,
+      replacement: resolve(__dirname, 'node_modules/vue/dist/vue.runtime.esm-bundler.js')
+    }]
+  },
   css: {
     preprocessorOptions: {
       scss: {
@@ -92,7 +98,6 @@ export default defineConfig({
               if (id.includes('/vue/') || id.includes('/@vue/') || id.includes('/pinia/')) return 'vue-vendor';
               if (id.includes('/axios/')) return 'axios-vendor';
               if (id.includes('/bootstrap/') || id.includes('/@popperjs/')) return 'bootstrap-vendor';
-              if (id.includes('/@dvuckovic/vue3-bootstrap-icons/')) return 'icons-vendor';
             }
           }
         }

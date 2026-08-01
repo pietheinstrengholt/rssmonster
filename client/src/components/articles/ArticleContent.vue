@@ -56,50 +56,12 @@ export default {
   computed: {
     // Returns whether this article has renderable content.
     hasContent() { return this.content !== NULL_CONTENT; },
+    // Returns cached display HTML and image metadata from one normalization pass.
+    normalizedContent() { return this.normalizeArticleContent(this.content, this.imageUrl); },
     // Returns article content with known compatibility markup normalized for display.
-    renderedContent() { return this.renderArticleContent(this.content); },
+    renderedContent() { return this.normalizedContent.html; },
     // Returns whether the article body contains readable text.
-    hasArticleContent() { if (!this.hasContent) return false; const text = String(this.content || '').replace(/<(.|\n)*?>/g, ' ').replace(/&nbsp;/gi, ' ').trim(); return text.length > 0; },
-    // Returns whether the rendered article body contains an image or picture element.
-    hasImageInContent() {
-      const html = String(this.renderedContent || '');
-
-      if (typeof DOMParser !== 'undefined') {
-        try {
-          const document = new DOMParser().parseFromString(html, 'text/html');
-          return Boolean(document.querySelector('img, picture'));
-        } catch {
-          // Fall through to the safe regex check when parsing is unavailable.
-        }
-      }
-
-      return /<(?:img|picture)\b/i.test(html);
-    },
-    // Returns whether the fallback image is already present in the article body.
-    isImageUrlInContent() {
-      const imageUrl = normalizeImageUrl(this.imageUrl);
-      const html = String(this.renderedContent || '');
-      if (!imageUrl) return false;
-
-      if (typeof DOMParser !== 'undefined') {
-        try {
-          const document = new DOMParser().parseFromString(html, 'text/html');
-          const imageElements = document.querySelectorAll('img, source');
-
-          return Array.from(imageElements).some(element => {
-            const src = element.getAttribute('src');
-            const srcset = String(element.getAttribute('srcset') || '').split(',').map(candidate => candidate.trim().split(/\s+/)[0]);
-            return [src, ...srcset].some(candidate => normalizeImageUrl(candidate) === imageUrl);
-          });
-        } catch {
-          // Fall through to string comparison when parsing is unavailable.
-        }
-      }
-
-      const decodedHtml = html.replace(/&amp;/gi, '&');
-      const rawImageUrl = String(this.imageUrl || '').trim().replace(/&amp;/gi, '&');
-      return decodedHtml.includes(rawImageUrl) || decodedHtml.includes(imageUrl);
-    },
+    hasArticleContent() { return this.normalizedContent.hasReadableContent; },
     // Returns the persisted dimensions, or natural dimensions discovered after loading.
     leadImageDimensions() {
       const persistedWidth = Number(this.imageWidth);
@@ -132,7 +94,7 @@ export default {
       return { '--lead-thumbnail-width': `${Math.min(width, 200)}px` };
     },
     // Returns whether the article needs its image URL rendered as a fallback lead image.
-    shouldShowFallbackImage() { return this.shouldShowImage && Boolean(String(this.imageUrl || '').trim()) && this.hasArticleContent && !this.isImageUrlInContent && this.imageDisplayMode !== 'hidden'; }
+    shouldShowFallbackImage() { return this.shouldShowImage && Boolean(String(this.imageUrl || '').trim()) && this.hasArticleContent && !this.normalizedContent.containsFallbackImage && this.imageDisplayMode !== 'hidden'; }
   },
   methods: {
     // This function records natural image dimensions for runtime classification.
@@ -148,26 +110,71 @@ export default {
     },
     // This function strips HTML for summarized article previews.
     stripHTML(value) { return value.replace(/<(.|\n)*?>/g, '').split(/\s+/).slice(0, 100).join(' '); },
-    // This function normalizes legacy article markup before rendering it.
-    renderArticleContent(value) {
+    // This function normalizes display markup, readable text, and fallback-image membership in one DOM pass.
+    normalizeArticleContent(value, fallbackImageUrl = '') {
       const html = String(value || '');
 
       if (typeof DOMParser === 'undefined') {
-        return html;
+        return this.fallbackNormalizedContent(html, fallbackImageUrl);
       }
 
-      const document = new DOMParser().parseFromString(html, 'text/html');
-      this.normalizeMastodonLinks(document);
-      const embedFigures = document.querySelectorAll('figure.rssmonster-embed[data-provider="youtube"], figure.embed-youtube');
+      try {
+        const document = new DOMParser().parseFromString(html, 'text/html');
+        this.normalizeMastodonLinks(document);
+        const embedFigures = document.querySelectorAll('figure.rssmonster-embed[data-provider="youtube"], figure.embed-youtube');
 
-      embedFigures.forEach(figure => {
-        const videoId = this.youtubeVideoIdFromFigure(figure);
-        if (!videoId) return;
+        embedFigures.forEach(figure => {
+          const videoId = this.youtubeVideoIdFromFigure(figure);
+          if (!videoId) return;
 
-        figure.replaceWith(this.createYouTubeEmbed(document, videoId));
-      });
+          figure.replaceWith(this.createYouTubeEmbed(document, videoId));
+        });
 
-      return document.body.innerHTML;
+        const normalizedFallbackImageUrl = normalizeImageUrl(fallbackImageUrl);
+        let containsFallbackImage = false;
+
+        document.querySelectorAll('img, source').forEach(element => {
+          if (element.tagName.toLowerCase() === 'img') {
+            element.setAttribute('loading', 'lazy');
+            element.setAttribute('decoding', 'async');
+          }
+
+          if (!normalizedFallbackImageUrl || containsFallbackImage) return;
+
+          const src = element.getAttribute('src');
+          const srcset = String(element.getAttribute('srcset') || '')
+            .split(',')
+            .map(candidate => candidate.trim().split(/\s+/)[0]);
+          containsFallbackImage = [src, ...srcset]
+            .some(candidate => normalizeImageUrl(candidate) === normalizedFallbackImageUrl);
+        });
+
+        const hasReadableContent = html !== NULL_CONTENT
+          && Boolean(String(document.body.textContent || '').replace(/\u00a0/g, ' ').trim());
+
+        return {
+          html: document.body.innerHTML,
+          hasReadableContent,
+          containsFallbackImage
+        };
+      } catch {
+        return this.fallbackNormalizedContent(html, fallbackImageUrl);
+      }
+    },
+    // This function preserves safe string-based normalization when DOMParser is unavailable.
+    fallbackNormalizedContent(html, fallbackImageUrl = '') {
+      const normalizedFallbackImageUrl = normalizeImageUrl(fallbackImageUrl);
+      const decodedHtml = html.replace(/&amp;/gi, '&');
+      const rawFallbackImageUrl = String(fallbackImageUrl || '').trim().replace(/&amp;/gi, '&');
+      const text = html.replace(/<(.|\n)*?>/g, ' ').replace(/&nbsp;/gi, ' ').trim();
+
+      return {
+        html,
+        hasReadableContent: html !== NULL_CONTENT && text.length > 0,
+        containsFallbackImage: Boolean(normalizedFallbackImageUrl) && (
+          decodedHtml.includes(rawFallbackImageUrl) || decodedHtml.includes(normalizedFallbackImageUrl)
+        )
+      };
     },
     // This function makes every segment of legacy Mastodon-formatted links visible.
     normalizeMastodonLinks(document) {

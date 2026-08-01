@@ -285,6 +285,24 @@ describe('data store overview and count behavior', () => {
     expect(fetchTopTags).toHaveBeenCalledWith({ grouping: 'topic', status: 'unread' });
   });
 
+  // Verifies count-free structure starts without waiting for persisted selection settings.
+  it('requests initial overview structure concurrently with settings', async () => {
+    const settings = deferred();
+    fetchSettings.mockReturnValueOnce(settings.promise);
+    const store = createStore();
+
+    const overviewRequest = store.fetchOverviewSplit({ initial: true });
+
+    expect(fetchSettings).toHaveBeenCalledOnce();
+    expect(fetchOverviewLite).toHaveBeenCalledOnce();
+    expect(store.categories).toEqual([]);
+
+    settings.resolve({ data: { grouping: 'topic' } });
+    await overviewRequest;
+
+    expect(store.categories).toHaveLength(1);
+  });
+
   // Verifies collection changes refresh scoped tags, including Daily Briefing.
   it('refreshes Top Tags when the article status changes', async () => {
     const store = createStore();

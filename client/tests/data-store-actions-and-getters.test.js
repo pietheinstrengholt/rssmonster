@@ -214,7 +214,7 @@ describe('data store remaining actions and getters', () => {
     expect(store.smartFolderCountsError).toMatchObject({ message: 'folder counts offline' });
   });
 
-  // Verifies a slower initial settings request cannot start an obsolete overview fetch.
+  // Verifies a slower initial request cannot publish structure after a newer request starts.
   it('stops an initial split overview after a newer request starts', async () => {
     let resolveSettings;
     // Holds settings so a newer overview request can supersede the initial request.
@@ -234,7 +234,7 @@ describe('data store remaining actions and getters', () => {
     });
     await initialRequest;
 
-    expect(fetchOverviewLite).toHaveBeenCalledOnce();
+    expect(fetchOverviewLite).toHaveBeenCalledTimes(2);
     expect(store.categories[0].id).toBe(2);
   });
 

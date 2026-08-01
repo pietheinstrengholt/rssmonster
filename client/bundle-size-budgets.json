@@ -1,23 +1,23 @@
 {
   "entryJavaScript": {
     "label": "Initial-entry JavaScript",
-    "rawBytes": 207000,
-    "gzipBytes": 57500
+    "rawBytes": 203000,
+    "gzipBytes": 56500
+  },
+  "initialJavaScript": {
+    "label": "Transitive initial JavaScript",
+    "rawBytes": 415000,
+    "gzipBytes": 137000
   },
   "mainCss": {
     "label": "Initial-entry CSS",
-    "rawBytes": 400000,
-    "gzipBytes": 57000
-  },
-  "iconsVendor": {
-    "label": "Icons vendor chunk",
-    "rawBytes": 212000,
-    "gzipBytes": 79000
+    "rawBytes": 182000,
+    "gzipBytes": 30000
   },
   "vueVendor": {
     "label": "Vue vendor chunk",
-    "rawBytes": 6500,
-    "gzipBytes": 3200
+    "rawBytes": 121000,
+    "gzipBytes": 46500
   },
   "axiosVendor": {
     "label": "Axios vendor chunk",
@@ -26,7 +26,7 @@
   },
   "bootstrapVendor": {
     "label": "Bootstrap vendor chunk",
-    "rawBytes": 82000,
-    "gzipBytes": 25000
+    "rawBytes": 43000,
+    "gzipBytes": 15500
   }
 }

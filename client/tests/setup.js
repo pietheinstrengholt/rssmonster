@@ -1,5 +1,5 @@
 import { config } from '@vue/test-utils';
-import { BootstrapIcon } from '@dvuckovic/vue3-bootstrap-icons';
+import BootstrapIcon from '../src/components/shared/BootstrapIcon.vue';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach } from 'vitest';
 

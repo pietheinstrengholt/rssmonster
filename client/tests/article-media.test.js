@@ -30,6 +30,8 @@ describe('ArticleMedia', () => {
     expect(link.attributes('href')).toBe('https://www.nu.nl/video/123');
     expect(link.attributes('target')).toBe('_blank');
     expect(wrapper.get('img').attributes('src')).toBe('https://media.nu.nl/thumbnail.jpg');
+    expect(wrapper.get('img').attributes('loading')).toBe('lazy');
+    expect(wrapper.get('img').attributes('decoding')).toBe('async');
     expect(wrapper.get('.article-media-badge').text()).toBe('Video');
     expect(wrapper.get('.article-media-metadata').text()).toBe('NU.nl · 2:22');
     expect(wrapper.find('.article-media-play').exists()).toBe(true);

@@ -225,8 +225,7 @@ describe('ArticleContent presentation', () => {
       content: '<picture><source srcset="https://example.com/other.jpg 1x, https://example.com/image.jpg?size=large&crop=1 2x"></picture><p>Text</p>'
     });
 
-    expect(wrapper.vm.hasImageInContent).toBe(true);
-    expect(wrapper.vm.isImageUrlInContent).toBe(true);
+    expect(wrapper.vm.normalizedContent.containsFallbackImage).toBe(true);
     expect(wrapper.vm.shouldShowFallbackImage).toBe(false);
 
     await wrapper.setProps({ content: '<p>&nbsp;</p>' });
@@ -240,13 +239,13 @@ describe('ArticleContent presentation', () => {
       imageUrl: 'https://example.com/image.jpg/',
       content: '<p>Text</p><img src="https://example.com/image.jpg">'
     });
-    expect(wrapper.vm.isImageUrlInContent).toBe(true);
+    expect(wrapper.vm.normalizedContent.containsFallbackImage).toBe(true);
 
     await wrapper.setProps({
       imageUrl: '::invalid///',
       content: '<p>Text</p><img src="::invalid">'
     });
-    expect(wrapper.vm.isImageUrlInContent).toBe(true);
+    expect(wrapper.vm.normalizedContent.containsFallbackImage).toBe(true);
   });
 });
 
@@ -280,7 +279,11 @@ describe('ArticleContent compatibility markup', () => {
     const wrapper = mountArticleContent();
     vi.stubGlobal('DOMParser', undefined);
 
-    expect(wrapper.vm.renderArticleContent('<p>Original</p>')).toBe('<p>Original</p>');
+    expect(wrapper.vm.normalizeArticleContent('<p>Original</p>')).toEqual({
+      html: '<p>Original</p>',
+      hasReadableContent: true,
+      containsFallbackImage: false
+    });
   });
 });
 

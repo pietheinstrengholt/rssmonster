@@ -13,17 +13,19 @@ const manifest = {
     file: 'assets/bootstrap-vendor-hash.js',
     name: 'bootstrap-vendor'
   },
-  '_icons-vendor.js': {
-    file: 'assets/icons-vendor-hash.js',
-    name: 'icons-vendor'
+  '_runtime.js': {
+    file: 'assets/runtime-hash.js',
+    name: 'runtime'
   },
   '_vue-vendor.js': {
     file: 'assets/vue-vendor-hash.js',
+    imports: ['_runtime.js'],
     name: 'vue-vendor'
   },
   'index.html': {
     css: ['assets/index-hash.css'],
     file: 'assets/index-hash.js',
+    imports: ['_vue-vendor.js', '_axios-vendor.js', '_bootstrap-vendor.js'],
     isEntry: true,
     src: 'index.html'
   }
@@ -35,7 +37,13 @@ describe('bundle-size checking', () => {
       axiosVendor: ['assets/axios-vendor-hash.js'],
       bootstrapVendor: ['assets/bootstrap-vendor-hash.js'],
       entryJavaScript: ['assets/index-hash.js'],
-      iconsVendor: ['assets/icons-vendor-hash.js'],
+      initialJavaScript: [
+        'assets/index-hash.js',
+        'assets/vue-vendor-hash.js',
+        'assets/runtime-hash.js',
+        'assets/axios-vendor-hash.js',
+        'assets/bootstrap-vendor-hash.js'
+      ],
       mainCss: ['assets/index-hash.css'],
       vueVendor: ['assets/vue-vendor-hash.js']
     });

@@ -21,7 +21,6 @@
     "node": ">=22.19.0"
   },
   "dependencies": {
-    "@dvuckovic/vue3-bootstrap-icons": "^2.0.0",
     "@vue/server-renderer": "^3.5.40",
     "axios": "^1.19.0",
     "bootstrap": "^5.3.8",

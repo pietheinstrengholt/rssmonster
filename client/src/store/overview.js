@@ -224,8 +224,12 @@ export const useOverviewStore = defineStore('overview', {
       this.overviewCountsError = null;
 
       try {
+        const overviewStructurePromise = fetchOverviewLiteAPI();
         if (initial) {
-          await selectionStore.fetchSettings();
+          await Promise.all([
+            selectionStore.fetchSettings(),
+            overviewStructurePromise
+          ]);
           if (requestId !== this.overviewStructureRequestId) return false;
           if (topTagsRequestId === this.topTagsRequestId) {
             void this.fetchTopTags();
@@ -233,7 +237,7 @@ export const useOverviewStore = defineStore('overview', {
         }
         if (requestId !== this.overviewStructureRequestId) return false;
 
-        const { data } = await fetchOverviewLiteAPI();
+        const { data } = await overviewStructurePromise;
         if (requestId !== this.overviewStructureRequestId) return false;
 
         this.updateOverviewStructure(data, { initial, forceUpdate });

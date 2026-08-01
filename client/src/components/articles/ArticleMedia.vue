@@ -14,6 +14,8 @@
         class="article-media-thumbnail"
         :src="thumbnailUrl"
         :alt="thumbnailAlt"
+        loading="lazy"
+        decoding="async"
       />
       <span v-else class="article-media-placeholder" aria-hidden="true"></span>
       <span class="article-media-badge">Video</span>

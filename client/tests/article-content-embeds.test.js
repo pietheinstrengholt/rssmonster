@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { mount } from '@vue/test-utils';
 import ArticleContent from '../src/components/articles/ArticleContent.vue';
 
@@ -57,5 +57,31 @@ describe('ArticleContent embeds', () => {
 
     expect(wrapper.find('iframe.rssmonster-youtube-frame').exists()).toBe(false);
     expect(wrapper.text()).toContain('Watch on YouTube');
+  });
+
+  it('normalizes article images lazily during the cached content pass', async () => {
+    const parseSpy = vi.spyOn(DOMParser.prototype, 'parseFromString');
+    const wrapper = mountArticleContent(
+      '<p>Intro</p><picture><source srcset="https://example.com/image.jpg 2x"><img src="https://example.com/image.jpg"></picture>'
+    );
+    const initialParseCount = parseSpy.mock.calls.length;
+    const image = wrapper.get('.article-full-content img');
+
+    expect(image.attributes('loading')).toBe('lazy');
+    expect(image.attributes('decoding')).toBe('async');
+    expect(wrapper.vm.normalizedContent).toEqual({
+      html: expect.stringContaining('loading="lazy"'),
+      hasReadableContent: true,
+      containsFallbackImage: false
+    });
+
+    void wrapper.vm.renderedContent;
+    void wrapper.vm.hasArticleContent;
+    void wrapper.vm.shouldShowFallbackImage;
+    expect(parseSpy).toHaveBeenCalledTimes(initialParseCount);
+
+    await wrapper.setProps({ imageUrl: 'https://example.com/image.jpg' });
+    expect(parseSpy).toHaveBeenCalledTimes(initialParseCount + 1);
+    expect(wrapper.vm.normalizedContent.containsFallbackImage).toBe(true);
   });
 });
