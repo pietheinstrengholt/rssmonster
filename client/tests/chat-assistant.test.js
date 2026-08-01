@@ -82,13 +82,14 @@ describe('ChatAssistant', () => {
     expect(wrapper.get('.loading-spinner').text()).toContain('Agent is thinking...');
     expect(wrapper.get('.agent-chat-button--primary').attributes('disabled')).toBeDefined();
 
-    deferred.resolve({ data: { output: 'A concise summary.' } });
+    deferred.resolve({ data: { output: '<p>A <strong>concise</strong> summary.</p>' } });
     await flushPromises();
 
     expect(wrapper.vm.isLoading).toBe(false);
     expect(wrapper.find('.loading-spinner').exists()).toBe(false);
     expect(wrapper.get('.user-message').text()).toContain('Summarize this feed');
-    expect(wrapper.get('.assistant-message-content').text()).toBe('A concise summary.');
+    expect(wrapper.get('.assistant-message-content p').text()).toBe('A concise summary.');
+    expect(wrapper.get('.assistant-message-content strong').text()).toBe('concise');
   });
 
   it('renders a safe fallback and releases loading state when submission fails', async () => {
@@ -125,41 +126,19 @@ describe('ChatAssistant', () => {
     expect(clearButton.attributes('disabled')).toBeDefined();
   });
 
-  it('renders benign assistant output as readable plain text', async () => {
+  it('renders sanitized assistant HTML as structured content', async () => {
     const wrapper = mountChatAssistant();
     await wrapper.setData({
       messages: [{
         role: 'assistant',
-        content: 'Summary:\n- First item\n- Second item'
+        content: '<h3>Summary</h3><ul><li>First item</li><li>Second item</li></ul>'
       }]
     });
 
     const response = wrapper.get('.assistant-message-content');
 
-    expect(response.text()).toBe('Summary:\n- First item\n- Second item');
-    expect(response.attributes('style')).toBeUndefined();
-  });
-
-  it('escapes active content in assistant responses', async () => {
-    const wrapper = mountChatAssistant();
-    const maliciousContent = '<script>window.pwned = true</script>'
-      + '<img src=x onerror="window.pwned = true">'
-      + '<a href="javascript:window.pwned = true">Open</a>';
-
-    await wrapper.setData({
-      messages: [{
-        role: 'assistant',
-        content: maliciousContent
-      }]
-    });
-
-    const response = wrapper.get('.assistant-message-content');
-
-    expect(response.text()).toBe(maliciousContent);
-    expect(response.find('script').exists()).toBe(false);
-    expect(response.find('img').exists()).toBe(false);
-    expect(response.find('a').exists()).toBe(false);
-    expect(window.pwned).toBeUndefined();
+    expect(response.get('h3').text()).toBe('Summary');
+    expect(response.findAll('li').map(item => item.text())).toEqual(['First item', 'Second item']);
   });
 
   it('preserves escaped plain-text rendering for user messages', async () => {

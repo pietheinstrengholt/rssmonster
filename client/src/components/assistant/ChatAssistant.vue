@@ -33,7 +33,7 @@
                     <strong>You:</strong> {{ message.content }}
                 </div>
                 <div class="assistant-message" v-else-if="message.role === 'assistant'">
-                    <strong>Assistant:</strong> <span class="assistant-message-content">{{ message.content }}</span>
+                    <strong>Assistant:</strong> <div class="assistant-message-content" v-html="message.content"></div>
                 </div>
               </div>
         </div>
@@ -98,6 +98,22 @@ div#inputArea {
 
 .assistant-message-content {
   white-space: pre-wrap;
+}
+
+.assistant-message-content > :first-child {
+  margin-top: 0;
+}
+
+.assistant-message-content > :last-child {
+  margin-bottom: 0;
+}
+
+.assistant-message-content a {
+  color: var(--color-link);
+}
+
+.assistant-message-content a:hover {
+  color: var(--color-link-hover);
 }
 
 .loading-spinner {

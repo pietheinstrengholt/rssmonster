@@ -1,5 +1,6 @@
 // server/controllers/agent.js
 import { Agent, run, MCPServerStreamableHttp } from "@openai/agents";
+import sanitizeAgentOutput from '../utils/sanitizeAgentOutput.js';
 
 export const postAgent = async (req, res) => {
   if (!req.headers.authorization) {
@@ -74,7 +75,7 @@ export const postAgent = async (req, res) => {
     try {
         await mcpServer.connect();
         const result = await run(agent, input, { chatHistory });
-        return res.status(200).json({ output: result.finalOutput });
+        return res.status(200).json({ output: sanitizeAgentOutput(result.finalOutput) });
     } finally {
         await mcpServer.close();
     }

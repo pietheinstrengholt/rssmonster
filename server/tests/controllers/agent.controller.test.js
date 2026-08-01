@@ -125,6 +125,27 @@ describe('agent controller', () => {
     );
   });
 
+  it('sanitizes rendered HTML while preserving RSSMonster article markup', async () => {
+    mocked.run.mockResolvedValue({
+      finalOutput: '<h3>Articles</h3>'
+        + '<div class="article-card unsafe"><h5 class="article-header">'
+        + '<a class="article-link" href="https://example.com/article" target="_blank">Story</a>'
+        + '</h5></div>'
+        + '<script>window.pwned = true</script>'
+        + '<a href="javascript:window.pwned = true" onclick="window.pwned = true">Unsafe</a>'
+    });
+    const res = createResponse();
+
+    await postAgent(createRequest(), res);
+
+    expect(res.json).toHaveBeenCalledWith({
+      output: '<h3>Articles</h3>'
+        + '<div class="article-card"><h5 class="article-header">'
+        + '<a class="article-link" href="https://example.com/article" target="_blank" rel="noopener noreferrer">Story</a>'
+        + '</h5></div><a>Unsafe</a>'
+    });
+  });
+
   it('closes the MCP connection and reports agent failures', async () => {
     mocked.run.mockRejectedValue(new Error('OpenAI unavailable'));
     vi.spyOn(console, 'error').mockImplementation(() => {});
