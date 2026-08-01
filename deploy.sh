@@ -267,9 +267,6 @@ for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"; do
   fi
 done
 
-log "Saving PM2 process list"
-run_with_timeout 1m pm2 save
-
 log "Waiting for RSSMonster health check"
 
 HEALTHCHECK_PASSED=false
@@ -305,6 +302,19 @@ if [[ "$HEALTHCHECK_PASSED" != true ]]; then
   pm2 logs "$PM2_WEB_APP_NAME" --lines 100 --nostream || true
   exit 1
 fi
+
+for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"; do
+  PM2_PID="$(pm2 pid "$app_name" 2>/dev/null || true)"
+
+  if [[ ! "$PM2_PID" =~ ^[1-9][0-9]*$ ]]; then
+    echo "PM2 process stopped before deployment verification completed: $app_name"
+    pm2 describe "$app_name" || true
+    exit 1
+  fi
+done
+
+log "Saving PM2 process list"
+run_with_timeout 1m pm2 save
 
 log "PM2 status"
 pm2 status "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"

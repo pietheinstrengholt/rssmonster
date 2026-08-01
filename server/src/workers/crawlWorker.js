@@ -96,6 +96,16 @@ export const createCrawlWorker = ({
     void shutdown(signal);
   };
 
+  // This function identifies SIGTERM as the requested shutdown reason.
+  const handleSigterm = () => {
+    handleSignal('SIGTERM');
+  };
+
+  // This function identifies SIGINT as the requested shutdown reason.
+  const handleSigint = () => {
+    handleSignal('SIGINT');
+  };
+
   // This function logs fatal process errors and requests a non-zero orderly shutdown.
   const handleFatalError = (kind, error) => {
     logger.error(`[CrawlWorker] Fatal ${kind}:`, error);
@@ -117,8 +127,8 @@ export const createCrawlWorker = ({
   const installProcessHandlers = () => {
     if (!registerProcessHandlers) return;
 
-    process.once('SIGTERM', handleSignal);
-    process.once('SIGINT', handleSignal);
+    process.once('SIGTERM', handleSigterm);
+    process.once('SIGINT', handleSigint);
     process.on('unhandledRejection', handleUnhandledRejection);
     process.on('uncaughtException', handleUncaughtException);
   };
@@ -127,8 +137,8 @@ export const createCrawlWorker = ({
   const removeProcessHandlers = () => {
     if (!registerProcessHandlers) return;
 
-    process.removeListener('SIGTERM', handleSignal);
-    process.removeListener('SIGINT', handleSignal);
+    process.removeListener('SIGTERM', handleSigterm);
+    process.removeListener('SIGINT', handleSigint);
     process.removeListener('unhandledRejection', handleUnhandledRejection);
     process.removeListener('uncaughtException', handleUncaughtException);
   };

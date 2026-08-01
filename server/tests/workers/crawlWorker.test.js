@@ -20,7 +20,6 @@ describe('crawl worker', () => {
     const logger = { error: vi.fn(), log: vi.fn() };
     const closeDatabase = vi.fn().mockResolvedValue(undefined);
     let iterationCount = 0;
-    let worker;
     const runCrawl = vi.fn(async () => {
       iterationCount++;
 
@@ -31,7 +30,7 @@ describe('crawl worker', () => {
       void worker.shutdown('test complete');
     });
 
-    worker = createCrawlWorker({
+    const worker = createCrawlWorker({
       intervalMs: 1,
       loadDependencies: async () => ({ closeDatabase, runCrawl }),
       logger,

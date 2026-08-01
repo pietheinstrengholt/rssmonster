@@ -201,7 +201,7 @@ pm2 save
 
 Disable the former OS cron entry after deploying the worker, or scheduled crawls
 will be triggered twice. Older installations commonly contain this entry (with
-the locally configured port, such as `3001`):
+the locally configured port, such as `3000`):
 
 ```cron
 */5 * * * * curl http://localhost:3000/api/crawl
@@ -306,7 +306,7 @@ npm run dev
 
 To attach a debugger, start the server with `npm run debug`; Node exposes its inspector on port 9229.
 
-The client will typically run on `http://localhost:5173` and the server on `http://localhost:3000`.
+The client will typically run on `http://localhost:8080` and the server on `http://localhost:3000`.
 
 ## Production Deployment
 

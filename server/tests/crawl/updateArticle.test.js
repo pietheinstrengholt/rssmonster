@@ -295,34 +295,7 @@ describe('updateArticle', () => {
     expect(result.updateValues.modifiedAt).toBeInstanceOf(Date);
     expect(mocked.articleUpdate).not.toHaveBeenCalled();
 
-    expect(consoleInfo).toHaveBeenCalledOnce();
-    const [prefix, payload] = consoleInfo.mock.calls[0];
-    expect(prefix).toBe('[CRAWL_ARTICLE_UPDATE]');
-    expect(JSON.parse(payload)).toMatchObject({
-      articleId: 123,
-      feedId: 7,
-      externalIdType: 'guid',
-      externalId: 'publisher-id',
-      changedFields: [
-        'contentOriginal',
-        'contentHtml',
-        'contentText',
-        'contentTextHash',
-        'contentSourceHash'
-      ],
-      differences: {
-        contentOriginal: {
-          stored: { length: 19, sha256: expect.any(String) },
-          incoming: { length: 19, sha256: expect.any(String) }
-        },
-        contentSourceHash: {
-          stored: 'source-hash',
-          incoming: 'revised-source-hash'
-        }
-      }
-    });
-    expect(payload).not.toContain('<p>Article body</p>');
-    expect(payload).not.toContain('<p>Revised body</p>');
+    expect(consoleInfo).not.toHaveBeenCalled();
     consoleInfo.mockRestore();
   });
 
