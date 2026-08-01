@@ -99,6 +99,26 @@ describe('BriefingPreferencesModal dismissal', () => {
     expect(wrapper.text()).not.toContain('Muted interests');
   });
 
+  it('prevents replacing preferences when the current values fail to load', async () => {
+    const consoleError = vi.spyOn(console, 'error').mockImplementation(() => {});
+    fetchBriefingPreferences.mockRejectedValue(new Error('Load failed'));
+    const { wrapper } = mountModal();
+
+    await flushPromises();
+
+    expect(wrapper.get('[role="alert"]').text()).toContain('saving is disabled');
+    expect(
+      wrapper.get('.preferences-dialog__button--primary').attributes('disabled')
+    ).toBeDefined();
+    expect(wrapper.get('.briefing-preferences-reset').attributes('disabled')).toBeDefined();
+
+    await wrapper.get('.briefing-preferences-form').trigger('submit');
+    await flushPromises();
+
+    expect(saveBriefingPreferences).not.toHaveBeenCalled();
+    consoleError.mockRestore();
+  });
+
   it('keeps the article-type switches mutually exclusive', async () => {
     const { wrapper } = mountModal();
     await flushPromises();
@@ -115,6 +135,35 @@ describe('BriefingPreferencesModal dismissal', () => {
     await interestMatched.setValue(true);
     expect(interestMatched.element.checked).toBe(true);
     expect(developingEvents.element.checked).toBe(false);
+  });
+
+  it('resets the local draft to the briefing defaults', async () => {
+    const { wrapper } = mountModal();
+    await flushPromises();
+
+    await wrapper.get('.briefing-preferences-reset').trigger('click');
+
+    expect(wrapper.get('[name="includeOnlyUnreadArticles"]').element.checked).toBe(false);
+    expect(wrapper.get('[name="includeDevelopingEvents"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="showOnlyInterestMatchedArticles"]').element.checked).toBe(false);
+    expect(wrapper.get('[name="showOnlyDevelopingEventArticles"]').element.checked).toBe(false);
+    expect(wrapper.get('[name="selectionPeriod"][value="7d"]').element.checked).toBe(true);
+    expect(wrapper.get('[name="minDistinctSources"]').element.value).toBe('1');
+    expect(wrapper.get('[name="prioritizeHighTrust"]').element.checked).toBe(false);
+    expect(saveBriefingPreferences).not.toHaveBeenCalled();
+
+    await wrapper.get('.briefing-preferences-form').trigger('submit');
+    await flushPromises();
+
+    expect(saveBriefingPreferences).toHaveBeenCalledWith({
+      includeOnlyUnreadArticles: false,
+      includeDevelopingEvents: true,
+      showOnlyInterestMatchedArticles: false,
+      showOnlyDevelopingEventArticles: false,
+      minDistinctSources: 1,
+      prioritizeHighTrust: false,
+      selectionPeriod: '7d'
+    });
   });
 
   it('saves the preferences and closes the modal', async () => {

@@ -111,6 +111,8 @@ During a save, duplicate submission is disabled. A failed save keeps the modal o
 
 Interest matching, strict event-only filtering, and minimum-source changes may not be visible in the simple article-query text. They still trigger a briefing revision so the article list and structured summary are fetched using the newly persisted server preferences.
 
+Reset to defaults restores the local draft to a seven-day briefing with developing events enabled, one required source, and all other eligibility and trust filters disabled. The reset is persisted only when Save Changes succeeds.
+
 ## Data refresh behavior
 
 The briefing has related but distinct data surfaces:
@@ -133,11 +135,9 @@ An empty briefing is a valid result. It can occur because the lookback period is
 
 Structured briefing failures are recoverable presentation failures. The article list remains usable even when context or the morning summary cannot load.
 
-If preference loading fails, the current modal reports the failure and displays default draft values. In the current implementation, Save remains available after that failure and would submit those displayed values as a complete replacement. Future changes must treat this path deliberately to avoid accidental replacement of valid server preferences.
+If preference loading fails, the modal reports the failure and disables both Save Changes and Reset to defaults. This prevents the displayed fallback draft from replacing valid server preferences. Closing and reopening the modal starts a new load attempt.
 
 ## Current limitations
-
-The modal displays a **Reset to defaults** control, but it is not currently connected to behavior. It does not change the draft or save defaults. Future work should either implement an explicit local reset followed by normal Save behavior or remove the control; documentation and tests should be updated at the same time.
 
 The preferences modal closes on Escape but does not currently provide the full focus-trapping and focus-restoration behavior of the main Settings dialog. Any accessibility improvement should preserve Cancel and unsaved-draft semantics.
 

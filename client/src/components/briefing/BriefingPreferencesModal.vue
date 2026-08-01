@@ -5,7 +5,7 @@
     form-id="briefing-preferences-form"
     close-label="Close briefing preferences"
     :saving="isSaving"
-    :submit-disabled="isLoading"
+    :submit-disabled="isLoading || loadError"
     @close="closeModal"
   >
       <form
@@ -19,7 +19,7 @@
             class="briefing-preferences-load-status briefing-preferences-load-status-error"
             role="alert"
           >
-            Briefing preferences could not be loaded. Default values are shown.
+            Briefing preferences could not be loaded. Close and reopen this dialog to try again; saving is disabled.
           </p>
 
           <p
@@ -280,6 +280,8 @@
           <button
             class="briefing-preferences-reset"
             type="button"
+            :disabled="isLoading || isSaving || loadError"
+            @click="resetPreferences"
           >
             Reset to defaults
           </button>
@@ -296,6 +298,16 @@ import {
   saveBriefingPreferences
 } from '../../api/briefing.js';
 import PreferencesDialogShell from '../dialogs/PreferencesDialogShell.vue';
+
+const BRIEFING_RESET_DEFAULTS = Object.freeze({
+  includeOnlyUnreadArticles: false,
+  includeDevelopingEvents: true,
+  showOnlyInterestMatchedArticles: false,
+  showOnlyDevelopingEventArticles: false,
+  minDistinctSources: 1,
+  prioritizeHighTrust: false,
+  selectionPeriod: '7d'
+});
 
 export default {
   computed: {
@@ -371,9 +383,14 @@ export default {
         this.form.showOnlyInterestMatchedArticles = false;
       }
     },
+    // This function restores the requested briefing defaults in the local draft.
+    resetPreferences() {
+      this.form = { ...BRIEFING_RESET_DEFAULTS };
+      this.saveError = false;
+    },
     // This function saves a complete preference replacement.
     async savePreferences() {
-      if (this.isLoading || this.isSaving) return;
+      if (this.isLoading || this.isSaving || this.loadError) return;
 
       const preferences = { ...this.form };
 
@@ -693,6 +710,11 @@ export default {
 .briefing-preferences-reset:hover {
   color: #1d4ed8;
   text-decoration: underline;
+}
+
+.briefing-preferences-reset:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
 }
 
 /* Mobile portrait */
