@@ -11,6 +11,7 @@ import { useUiStore } from '../src/store/ui.js';
 
 // This mock prevents the toolbar's lazy Settings import from outliving the test environment.
 vi.mock('../src/components/settings/Settings.vue', () => ({
+  __esModule: true,
   default: {
     name: 'Settings',
     emits: ['close', 'forceReload'],
