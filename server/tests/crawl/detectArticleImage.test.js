@@ -8,7 +8,7 @@ vi.mock('../../models/index.js', () => ({
   }
 }));
 
-const { default: detectArticleImage } = await import('../../services/crawl/media/detectArticleImage.js');
+const { default: detectArticleImage, extractHtmlCandidates } = await import('../../services/crawl/media/detectArticleImage.js');
 const { normalizeImageCandidates } = await import('../../services/feeds/feedsmith/normalizeMedia.js');
 
 // This function adapts raw parser fixtures before exercising crawl-side image selection.
@@ -20,6 +20,42 @@ const detectImageFromFeedFixture = options => detectArticleImage({
 });
 
 describe('detectArticleImage', () => {
+  it('ignores malformed absolute image URLs when no article base URL is available', () => {
+    expect(extractHtmlCandidates(
+      '<img src="not a valid URL">',
+      '',
+      'content'
+    )).toEqual([]);
+  });
+
+  it('normalizes image MIME types and ignores non-image type metadata', () => {
+    expect(extractHtmlCandidates(`
+      <img src="https://cdn.example/photo.jpg" type=" IMAGE/JPEG ">
+      <img src="https://cdn.example/video-poster.jpg" type="video/mp4">
+    `, '', 'content')).toEqual([
+      expect.objectContaining({
+        url: 'https://cdn.example/photo.jpg',
+        mimeType: 'image/jpeg'
+      }),
+      expect.objectContaining({
+        url: 'https://cdn.example/video-poster.jpg',
+        mimeType: null
+      })
+    ]);
+  });
+
+  it('prefers srcset over an equally strong data-srcset candidate', () => {
+    expect(extractHtmlCandidates(`
+      <img
+        srcset="https://cdn.example/primary.jpg 1200w"
+        data-srcset="https://cdn.example/lazy.jpg 1200w"
+      >
+    `, '', 'content')[0]).toEqual(expect.objectContaining({
+      url: 'https://cdn.example/primary.jpg',
+      width: 1200
+    }));
+  });
+
   it('prefers a large content image over feed candidates without useful dimensions', async () => {
     const result = await detectImageFromFeedFixture({
       entry: {

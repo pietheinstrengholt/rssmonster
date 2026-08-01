@@ -256,6 +256,9 @@ describe('Google Reader API compatibility foundation', () => {
       const user = await createUser();
       const missingResponse = await request(app)
         .get('/api/greader/check/compatibility');
+      const unsupportedResponse = await request(app)
+        .get('/api/greader/check/compatibility')
+        .set('Authorization', 'Bearer unsupported');
       const forwardedResponse = await request(app)
         .get('/api/greader/check/compatibility')
         .set('Authorization', greaderAuthHeaderFor(user));
@@ -263,6 +266,10 @@ describe('Google Reader API compatibility foundation', () => {
       expect(missingResponse.status).toBe(400);
       expect(missingResponse.text).toBe(
         'FAIL Authorization header was not forwarded'
+      );
+      expect(unsupportedResponse.status).toBe(400);
+      expect(unsupportedResponse.text).toBe(
+        'FAIL Unsupported Authorization header'
       );
       expect(forwardedResponse.status).toBe(200);
       expect(forwardedResponse.text).toBe(
@@ -1118,6 +1125,59 @@ describe('Google Reader API compatibility foundation', () => {
       expect(fixture.oldUnread.status).toBe('unread');
     });
 
+    it('[compatible] rejects malformed and missing category mutation labels', async () => {
+      const fixture = await createFixture();
+      const token = greaderActionTokenFor(fixture.user);
+      const invalidPrefix = await request(app)
+        .post('/api/greader/reader/api/0/rename-tag')
+        .type('form')
+        .send({ s: 'plain-tag', dest: `${LABEL_PREFIX}Renamed`, T: token })
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+      const emptyLabel = await request(app)
+        .post('/api/greader/reader/api/0/rename-tag')
+        .type('form')
+        .send({ s: LABEL_PREFIX, dest: `${LABEL_PREFIX}Renamed`, T: token })
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+      const missingCategory = await request(app)
+        .post('/api/greader/reader/api/0/rename-tag')
+        .type('form')
+        .send({
+          s: `${LABEL_PREFIX}Missing`,
+          dest: `${LABEL_PREFIX}Renamed`,
+          T: token
+        })
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+      const conflictingSources = await request(app)
+        .post('/api/greader/reader/api/0/rename-tag')
+        .type('form')
+        .send(
+          `s=${encodeURIComponent(`${LABEL_PREFIX}First`)}` +
+          `&s=${encodeURIComponent(`${LABEL_PREFIX}Second`)}` +
+          `&dest=${encodeURIComponent(`${LABEL_PREFIX}Renamed`)}` +
+          `&T=${token}`
+        )
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+      const missingDisableLabel = await request(app)
+        .post('/api/greader/reader/api/0/disable-tag')
+        .type('form')
+        .send({ T: token })
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+      const emptyDisableLabel = await request(app)
+        .post('/api/greader/reader/api/0/disable-tag')
+        .type('form')
+        .send({ s: LABEL_PREFIX, T: token })
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+
+      expect(invalidPrefix.status).toBe(400);
+      expect(emptyLabel.status).toBe(400);
+      expect(missingCategory.status).toBe(400);
+      expect(missingCategory.text).toBe('Category not found');
+      expect(conflictingSources.status).toBe(400);
+      expect(conflictingSources.text).toBe('Conflicting s parameters');
+      expect(missingDisableLabel.status).toBe(400);
+      expect(emptyDisableLabel.status).toBe(400);
+    });
+
     it('[compatible] merges a category rename collision atomically', async () => {
       const fixture = await createFixture();
 
@@ -1203,6 +1263,28 @@ describe('Google Reader API compatibility foundation', () => {
   });
 
   describe('subscription operations', () => {
+    it('[compatible] rejects imports without OPML content and exports subscriptions', async () => {
+      const fixture = await createFixture();
+      const missingImport = await request(app)
+        .post('/api/greader/reader/api/0/subscription/import')
+        .type('form')
+        .send({ T: greaderActionTokenFor(fixture.user) })
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+      const exported = await request(app)
+        .get('/api/greader/reader/api/0/subscription/export')
+        .set('Authorization', greaderAuthHeaderFor(fixture.user));
+
+      expect(missingImport.status).toBe(400);
+      expect(missingImport.text).toBe('No OPML file provided');
+      expect(exported.status).toBe(200);
+      expect(exported.headers['content-type']).toMatch(/^application\/xml/);
+      expect(exported.headers['content-disposition']).toBe(
+        'attachment; filename="subscriptions.opml"'
+      );
+      expect(exported.text).toContain('<opml');
+      expect(exported.text).toContain(fixture.primaryFeed.url);
+    });
+
     it('[compatible] leaves subscription htmlUrl empty without publisher metadata', async () => {
       const fixture = await createFixture();
       const response = await request(app)

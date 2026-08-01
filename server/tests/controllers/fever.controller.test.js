@@ -13,6 +13,15 @@ const { Article, Category, Feed, Hotlink, User, sequelize } = db;
 let app;
 const TEST_FAVICON_BASE64 =
   'R0lGODlhAQABAIAAAObm5gAAACH5BAEAAAAALAAAAAABAAEAAAICRAEAOw==';
+const TEST_JPEG_FAVICON_BASE64 = Buffer.from('ffd8ff', 'hex').toString('base64');
+const TEST_WEBP_FAVICON_BASE64 = Buffer.from(
+  '524946460000000057454250',
+  'hex'
+).toString('base64');
+const TEST_ICO_FAVICON_BASE64 = Buffer.from(
+  '000001000100000000000000',
+  'hex'
+).toString('base64');
 
 // This function creates a user with a standard Fever protocol credential.
 const createFeverUser = async prefix => {
@@ -314,6 +323,21 @@ describe('Fever API compatibility', () => {
         auth: 0
       });
     }
+  });
+
+  it('rejects incomplete legacy login and malformed Fever cookies', async () => {
+    const incompleteLogin = await request(app)
+      .get('/api/fever')
+      .query({ action: 'login', username: 'missing-password' });
+    const malformedCookie = await request(app)
+      .post('/api/fever')
+      .set('Cookie', 'flag; session=value; fever_auth=%E0%A4%A')
+      .send({});
+
+    expect(incompleteLogin.status).toBe(200);
+    expect(incompleteLogin.body).toEqual({ api_version: 3, auth: 0 });
+    expect(malformedCookie.status).toBe(200);
+    expect(malformedCookie.body).toEqual({ api_version: 3, auth: 0 });
   });
 
   it('returns articles whose URLs are present in the user hotlink table', async () => {
@@ -1025,5 +1049,36 @@ describe('Fever API compatibility', () => {
     });
     expect(res.body.favicons.map(favicon => favicon.id)).not.toContain(urlFeed.id);
     expect(res.body.favicons.map(favicon => favicon.id)).not.toContain(otherFeed.id);
+  });
+
+  it('accepts every favicon image signature supported by Fever clients', async () => {
+    const { apiKey, user, feed } = await createFaviconFixture();
+    const faviconFormats = [
+      ['image/jpeg', TEST_JPEG_FAVICON_BASE64],
+      ['image/webp', TEST_WEBP_FAVICON_BASE64],
+      ['image/x-icon', TEST_ICO_FAVICON_BASE64],
+      ['image/vnd.microsoft.icon', TEST_ICO_FAVICON_BASE64]
+    ];
+    const feeds = await Promise.all(faviconFormats.map(([mimeType, data], index) =>
+      Feed.create({
+        userId: user.id,
+        categoryId: feed.categoryId,
+        feedName: `Signature ${index}`,
+        url: `https://example.com/signature-${index}.xml`,
+        favicon: `data:${mimeType};base64,${data}`
+      })
+    ));
+
+    const res = await request(app)
+      .post('/api/fever')
+      .query({ api_key: apiKey, favicons: '' });
+
+    for (const [index, faviconFeed] of feeds.entries()) {
+      const [mimeType, data] = faviconFormats[index];
+      expect(res.body.favicons).toContainEqual({
+        id: faviconFeed.id,
+        data: `${mimeType};base64,${data}`
+      });
+    }
   });
 });

@@ -42,4 +42,35 @@ describe('generateTopicName', () => {
 
     expect(name).toBe('OpenAI');
   });
+
+  it('trims weak words from both edges of fallback labels', () => {
+    const name = generateTopicName({
+      semanticUnit: {
+        title: 'Latest Quantum Computing Update'
+      }
+    });
+
+    expect(name).toBe('Quantum Computing');
+  });
+
+  it('caps long generated names at a complete word boundary', () => {
+    const longEntity = 'International Consortium Advanced Quantum Telecommunications Infrastructure Observatory Research Partnership';
+    const name = generateTopicName({
+      semanticUnit: { title: `${longEntity} publishes research` }
+    });
+
+    expect(name.length).toBeLessThanOrEqual(90);
+    expect(name).not.toMatch(/\s$/);
+  });
+
+  it('falls back to the default when titles contain only weak vocabulary', () => {
+    expect(generateTopicName({
+      semanticUnit: { title: 'the latest news' }
+    })).toBe('Untitled Topic');
+
+    expect(generateTopicName({
+      semanticUnit: { title: 'the latest news' },
+      seedEvents: [{ event: { name: 'live report updates' } }]
+    })).toBe('Untitled Topic');
+  });
 });

@@ -312,6 +312,19 @@ describe('feed operational controllers', () => {
     expect(missingFeedRes.status).toHaveBeenCalledWith(404);
   });
 
+  it('reports feed persistence failures while muting', async () => {
+    mocked.feedFindOne.mockRejectedValue(new Error('mute failed'));
+    const res = createResponse();
+
+    await feedController.muteFeed(
+      createRequest({ body: { mutedUntil: '2026-08-01' } }),
+      res
+    );
+
+    expect(res.status).toHaveBeenCalledWith(500);
+    expect(res.json).toHaveBeenCalledWith({ error: 'mute failed' });
+  });
+
   it('reuses active refresh jobs and starts new jobs', async () => {
     mocked.getActiveJobForUser.mockReturnValueOnce({ id: 'active-job' });
     const reusedRes = createResponse();
@@ -336,6 +349,27 @@ describe('feed operational controllers', () => {
       expect.objectContaining({ triggerType: 'api' })
     );
     expect(startedRes.json).toHaveBeenCalledWith({ jobId: 'new-job' });
+  });
+
+  it('forwards crawl progress and publishes asynchronous crawl failures', async () => {
+    mocked.createJob.mockReturnValue('new-job');
+    mocked.performCrawl.mockRejectedValue(new Error('crawl failed'));
+    const res = createResponse();
+
+    await feedController.startRefresh(createRequest(), res);
+    const crawlOptions = mocked.performCrawl.mock.calls[0][1];
+    crawlOptions.onProgress({ type: 'progress', stage: 'fetching' });
+
+    expect(mocked.publishEvent).toHaveBeenCalledWith('new-job', {
+      type: 'progress',
+      stage: 'fetching'
+    });
+    await vi.waitFor(() => {
+      expect(mocked.publishEvent).toHaveBeenCalledWith('new-job', {
+        type: 'error',
+        message: 'crawl failed'
+      });
+    });
   });
 
   it('validates refresh authentication and reports setup failures', async () => {
@@ -423,5 +457,46 @@ describe('feed operational controllers', () => {
     const foreignRes = createResponse();
     await feedController.streamRefreshEvents(createRequest(), foreignRes);
     expect(foreignRes.status).toHaveBeenCalledWith(404);
+  });
+
+  it('cleans up refresh streams when subscription or heartbeat delivery fails', async () => {
+    vi.useFakeTimers();
+    mocked.getJob.mockReturnValue({ id: 'job-1', userId: 42 });
+    mocked.subscribe.mockReturnValueOnce(false);
+    const unsubscribedRes = createResponse();
+
+    await feedController.streamRefreshEvents(createRequest(), unsubscribedRes);
+
+    expect(mocked.unsubscribe).toHaveBeenCalledWith('job-1', unsubscribedRes);
+
+    mocked.subscribe.mockReturnValueOnce(true);
+    const heartbeatRes = createResponse();
+    heartbeatRes.write
+      .mockImplementationOnce(() => true)
+      .mockImplementationOnce(() => {
+        throw new Error('connection closed');
+      });
+
+    await feedController.streamRefreshEvents(createRequest(), heartbeatRes);
+    await vi.advanceTimersByTimeAsync(15_000);
+
+    expect(mocked.unsubscribe).toHaveBeenCalledWith('job-1', heartbeatRes);
+    expect(heartbeatRes.end).toHaveBeenCalled();
+    vi.useRealTimers();
+  });
+
+  it('uses the appropriate refresh stream error response after headers are sent', async () => {
+    mocked.getJob.mockImplementation(() => {
+      throw new Error('stream failed');
+    });
+    const regularRes = createResponse();
+    await feedController.streamRefreshEvents(createRequest(), regularRes);
+    expect(regularRes.status).toHaveBeenCalledWith(500);
+
+    const streamingRes = createResponse();
+    streamingRes.headersSent = true;
+    await feedController.streamRefreshEvents(createRequest(), streamingRes);
+    expect(streamingRes.status).not.toHaveBeenCalled();
+    expect(streamingRes.end).toHaveBeenCalled();
   });
 });

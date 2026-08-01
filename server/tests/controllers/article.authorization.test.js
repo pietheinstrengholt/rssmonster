@@ -1,10 +1,21 @@
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import jwt from 'jsonwebtoken';
 import request from 'supertest';
 import db from '../../models/index.js';
 import { getJwtSecret } from '../../config/auth.js';
+import articleController from '../../controllers/article.js';
 
-const { Article, BriefingPreference, Category, Event, Feed, Setting, User, sequelize } = db;
+const {
+  Article,
+  BriefingPreference,
+  Category,
+  Event,
+  Feed,
+  Setting,
+  Topic,
+  User,
+  sequelize
+} = db;
 
 let app;
 
@@ -55,6 +66,11 @@ const createArticleFor = async user => {
 
   return { category, feed, article };
 };
+
+// Restores controller dependency spies after each error-path test.
+afterEach(() => {
+  vi.restoreAllMocks();
+});
 
 describe('article ownership authorization', () => {
   beforeAll(async () => {
@@ -505,6 +521,87 @@ describe('article ownership authorization', () => {
     expect(res.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
   });
 
+  // Verifies a topic acknowledgement reaches articles in every event under that topic.
+  it('mark-as-seen marks related topic articles as read', async () => {
+    const owner = await createUser(uniqueName('topic-seen-owner'));
+    const { article, feed } = await createArticleFor(owner);
+    const topic = await Topic.create({
+      userId: owner.id,
+      name: `${owner.username} topic`,
+      topicKey: uniqueName('topic-seen-key')
+    });
+    const firstEvent = await Event.create({
+      userId: owner.id,
+      topicId: topic.id,
+      representativeArticleId: article.id,
+      name: `${owner.username} first event`,
+      articleCount: 1
+    });
+    const relatedArticle = await Article.create({
+      userId: owner.id,
+      feedId: feed.id,
+      status: 'unread',
+      url: `https://example.com/${owner.username}/topic-related-article`,
+      title: `${owner.username} topic related article`,
+      publishedAt: new Date('2026-05-01T11:00:00Z')
+    });
+    const secondEvent = await Event.create({
+      userId: owner.id,
+      topicId: topic.id,
+      representativeArticleId: relatedArticle.id,
+      name: `${owner.username} second event`,
+      articleCount: 1
+    });
+    await article.update({ eventId: firstEvent.id, topicId: topic.id });
+    await relatedArticle.update({ eventId: secondEvent.id, topicId: topic.id });
+
+    const response = await request(app)
+      .post(`/api/articles/markasseen/${article.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        selectedStatus: 'unread',
+        grouping: 'topic',
+        visibleSeconds: 120
+      });
+
+    await Promise.all([article.reload(), relatedArticle.reload()]);
+
+    expect(response.status).toBe(200);
+    expect(article.status).toBe('read');
+    expect(relatedArticle.status).toBe('read');
+    expect(response.body.readArticleIds.sort()).toEqual([article.id, relatedArticle.id].sort());
+  });
+
+  // Verifies first-seen tracking handles no engagement without changing read state.
+  it('mark-as-seen records zero attention without marking an event read', async () => {
+    const owner = await createUser(uniqueName('zero-attention-owner'));
+    const { article } = await createArticleFor(owner);
+    const event = await Event.create({
+      userId: owner.id,
+      representativeArticleId: article.id,
+      name: `${owner.username} zero attention event`,
+      articleCount: 1
+    });
+    await article.update({ eventId: event.id, contentHtml: null });
+
+    const response = await request(app)
+      .post(`/api/articles/markasseen/${article.id}`)
+      .set('Authorization', authHeaderFor(owner))
+      .send({
+        selectedStatus: 'read',
+        grouping: 'event',
+        visibleSeconds: 0
+      });
+
+    await article.reload();
+
+    expect(response.status).toBe(200);
+    expect(article.status).toBe('unread');
+    expect(article.firstSeen).toBeInstanceOf(Date);
+    expect(article.attentionBucket).toBe(0);
+    expect(response.body).not.toHaveProperty('readArticleIds');
+  });
+
   it('mark-as-seen keeps an article-specific read from refreshing the developing pointer', async () => {
     const owner = await createUser(uniqueName('developing-pointer-owner'));
     const { article, feed } = await createArticleFor(owner);
@@ -658,6 +755,18 @@ describe('article ownership authorization', () => {
     expect(response.status).toBe(200);
     expect(article.status).toBe('unread');
     expect(article.readAt).toBeNull();
+  });
+
+  // Verifies marking an unavailable article unread returns the helper's not-found response.
+  it('returns not found when marking an unavailable article unread', async () => {
+    const owner = await createUser(uniqueName('missing-unread-owner'));
+
+    const response = await request(app)
+      .post('/api/articles/marktounread/2147483647')
+      .set('Authorization', authHeaderFor(owner));
+
+    expect(response.status).toBe(404);
+    expect(response.body).toEqual({ message: 'Article not found' });
   });
 
   // Verifies article-list first-page hydration returns the requested article details.
@@ -887,6 +996,77 @@ describe('article ownership authorization', () => {
     expect(singleResponse.status).toBe(200);
     expect(article.favoriteInd).toBe(0);
     expect(secondArticle.favoriteInd).toBe(1);
+  });
+
+  // Verifies favorite updates distinguish missing batches and unavailable single articles.
+  it('returns not found for unavailable favorite targets', async () => {
+    const owner = await createUser(uniqueName('missing-favorite-owner'));
+
+    const batchResponse = await request(app)
+      .post('/api/articles/markasfavorite')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ update: 'mark', articleIds: ['2147483647'] });
+    const singleResponse = await request(app)
+      .post('/api/articles/markasfavorite/2147483647')
+      .set('Authorization', authHeaderFor(owner))
+      .send({ update: 'mark' });
+
+    expect(batchResponse.status).toBe(404);
+    expect(batchResponse.body).toEqual({ message: 'Articles not found' });
+    expect(singleResponse.status).toBe(404);
+    expect(singleResponse.body).toEqual({ message: 'Article not found' });
+  });
+
+  // Verifies database failures are translated into stable mutation API errors.
+  it('handles article mutation database failures', async () => {
+    const owner = await createUser(uniqueName('mutation-error-owner'));
+    const authorization = authHeaderFor(owner);
+
+    vi.spyOn(Article, 'findOne').mockRejectedValueOnce(new Error('seen lookup failed'));
+    const seenResponse = await request(app)
+      .post('/api/articles/markasseen/1')
+      .set('Authorization', authorization)
+      .send({});
+
+    vi.spyOn(Article, 'findOne').mockRejectedValueOnce(new Error('unread lookup failed'));
+    const unreadResponse = await request(app)
+      .post('/api/articles/marktounread/1')
+      .set('Authorization', authorization);
+
+    vi.spyOn(Article, 'findOne').mockRejectedValueOnce(new Error('favorite lookup failed'));
+    const favoriteResponse = await request(app)
+      .post('/api/articles/markasfavorite/1')
+      .set('Authorization', authorization)
+      .send({ update: 'mark' });
+
+    expect(seenResponse.status).toBe(500);
+    expect(seenResponse.body).toEqual({ error: 'Unable to mark article as read' });
+    expect(unreadResponse.status).toBe(400);
+    expect(unreadResponse.body).toEqual({ message: 'Error updating article' });
+    expect(favoriteResponse.status).toBe(500);
+    expect(favoriteResponse.body).toEqual({ error: 'Unable to update article favorite status' });
+  });
+
+  // Verifies synchronous request failures reach the remaining controller catch handlers.
+  it('handles malformed mutation request state', async () => {
+    const requestWithBrokenUserData = {};
+    Object.defineProperty(requestWithBrokenUserData, 'userData', {
+      get: () => {
+        throw new Error('invalid request state');
+      }
+    });
+    const response = {
+      status: vi.fn().mockReturnThis(),
+      json: vi.fn().mockReturnThis()
+    };
+    const logSpy = vi.spyOn(console, 'log').mockImplementation(() => {});
+
+    await articleController.articleMarkToUnread(requestWithBrokenUserData, response);
+    await articleController.articleMarkAllAsRead(requestWithBrokenUserData, response);
+
+    expect(response.status).toHaveBeenCalledWith(500);
+    expect(response.json).toHaveBeenCalledWith({ error: 'Unable to mark article as unread' });
+    expect(logSpy).toHaveBeenCalledWith(expect.any(Error));
   });
 
   // Verifies mark-all-read remains user scoped and ignores filtered articles.

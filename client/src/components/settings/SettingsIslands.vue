@@ -66,7 +66,7 @@
         </p>
       </section>
 
-      <div v-if="!islands.length" class="alert alert-info mb-3">
+      <div v-if="!islands.length" class="settings-islands-empty alert alert-info mb-3">
         You do not have any interest islands yet. Favorite articles, click through articles, or keep reading in a topic to grow one.
       </div>
 
@@ -204,6 +204,13 @@
   margin: 0;
   color: var(--text-primary);
   font-weight: 700;
+}
+
+.settings-islands-empty {
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 400;
+  line-height: 1.5;
 }
 
 .settings-metric-grid {

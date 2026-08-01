@@ -1,0 +1,117 @@
+import { describe, expect, it } from 'vitest';
+
+import selectLeadImage, { scoreCandidate } from '../../services/crawl/media/selectLeadImage.js';
+
+describe('selectLeadImage', () => {
+  it('ignores malformed candidate URLs while retaining valid candidates', () => {
+    expect(selectLeadImage([
+      { url: 'not a valid URL', source: 'content' },
+      { url: 'https://cdn.example/lead.jpg', source: 'content' }
+    ])).toEqual({
+      url: 'https://cdn.example/lead.jpg',
+      width: null,
+      height: null,
+      mimeType: null,
+      source: 'content'
+    });
+  });
+
+  it('uses the richest duplicate metadata when ranking one image URL', () => {
+    expect(selectLeadImage([
+      {
+        url: 'https://cdn.example/shared.jpg',
+        source: 'content',
+        position: 1,
+        alt: 'Brief'
+      },
+      {
+        url: 'https://cdn.example/shared.jpg',
+        source: 'description',
+        position: 1,
+        alt: 'A detailed editorial photograph'
+      },
+      {
+        url: 'https://cdn.example/first.jpg',
+        source: 'content',
+        position: 0
+      }
+    ])).toEqual(expect.objectContaining({
+      url: 'https://cdn.example/shared.jpg',
+      source: 'content'
+    }));
+  });
+
+  it('scores moderate, extreme, and intermediate aspect ratios differently', () => {
+    const moderateRatioScore = scoreCandidate({
+      url: 'https://cdn.example/moderate.jpg',
+      width: 400,
+      height: 1000,
+      source: null,
+      position: null,
+      alt: null
+    });
+    const intermediateRatioScore = scoreCandidate({
+      url: 'https://cdn.example/intermediate.jpg',
+      width: 800,
+      height: 200,
+      source: null,
+      position: null,
+      alt: null
+    });
+    const extremeRatioScore = scoreCandidate({
+      url: 'https://cdn.example/extreme.jpg',
+      width: 2000,
+      height: 200,
+      source: null,
+      position: null,
+      alt: null
+    });
+
+    expect(moderateRatioScore).toBeGreaterThan(intermediateRatioScore);
+    expect(intermediateRatioScore).toBeGreaterThan(extremeRatioScore);
+  });
+
+  it('penalizes later article positions up to the configured cap', () => {
+    const candidate = {
+      url: 'https://cdn.example/positioned.jpg',
+      width: null,
+      height: null,
+      source: null,
+      alt: null
+    };
+
+    expect(scoreCandidate({ ...candidate, position: 3 })).toBe(-3);
+    expect(scoreCandidate({ ...candidate, position: 50 })).toBe(-30);
+  });
+
+  it('penalizes small image requests expressed through URL query parameters', () => {
+    const candidate = {
+      width: 640,
+      height: 360,
+      source: 'content',
+      position: null,
+      alt: null
+    };
+    const baselineScore = scoreCandidate({
+      ...candidate,
+      url: 'https://cdn.example/photo.jpg'
+    });
+    const smallRequestScore = scoreCandidate({
+      ...candidate,
+      url: 'https://cdn.example/photo.jpg?WIDTH=200&size=small'
+    });
+
+    expect(smallRequestScore).toBe(baselineScore - 50);
+  });
+
+  it('gives an invalid URL a noncompetitive score', () => {
+    expect(scoreCandidate({
+      url: 'not a valid URL',
+      width: null,
+      height: null,
+      source: null,
+      position: null,
+      alt: null
+    })).toBe(Number.NEGATIVE_INFINITY);
+  });
+});

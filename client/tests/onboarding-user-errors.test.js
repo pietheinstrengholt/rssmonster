@@ -56,6 +56,9 @@ const findButton = (wrapper, label) => wrapper
 beforeEach(() => {
   vi.clearAllMocks();
   vi.spyOn(console, 'error').mockImplementation(() => {});
+  fetchUsers.mockResolvedValue({ data: { users: [] } });
+  updateUser.mockResolvedValue({ data: {} });
+  deleteUser.mockResolvedValue({ data: {} });
 });
 
 afterEach(() => {
@@ -200,6 +203,136 @@ describe('user-management failure handling', () => {
 
     expect(wrapper.get('[role="alert"]').text()).toBe('You cannot delete your own account.');
     expect(wrapper.find('.manage-users__confirmation').exists()).toBe(false);
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('updates an account with a validated password and refreshes the directory', async () => {
+    fetchUsers
+      .mockResolvedValueOnce({
+        data: {
+          users: [{ id: 42, role: 'user', username: 'reader' }]
+        }
+      })
+      .mockResolvedValueOnce({
+        data: {
+          users: [{ id: 42, role: 'admin', username: 'reader' }]
+        }
+      });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Edit').trigger('click');
+    await wrapper.get('#role').setValue('admin');
+    await wrapper.get('#password').setValue('new-password');
+    await wrapper.get('#password-repeat').setValue('new-password');
+    await findButton(wrapper, 'Save changes').trigger('click');
+    await flushPromises();
+
+    expect(updateUser).toHaveBeenCalledWith(42, {
+      password: 'new-password',
+      role: 'admin',
+      username: 'reader'
+    });
+    expect(fetchUsers).toHaveBeenCalledTimes(2);
+    expect(wrapper.text()).toContain('User updated successfully.');
+    expect(wrapper.find('.manage-users__editor').exists()).toBe(false);
+  });
+
+  it.each([
+    ['short passwords', 'short', 'short', 'Password must be at least 8 characters long.'],
+    ['non-matching passwords', 'long-enough', 'different-password', 'Passwords do not match.']
+  ])('rejects %s before sending an update', async (_scenario, password, repeatedPassword, message) => {
+    fetchUsers.mockResolvedValue({
+      data: {
+        users: [{ id: 42, role: 'user', username: 'reader' }]
+      }
+    });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Edit').trigger('click');
+    await wrapper.get('#password').setValue(password);
+    await wrapper.get('#password-repeat').setValue(repeatedPassword);
+    await findButton(wrapper, 'Save changes').trigger('click');
+
+    expect(wrapper.get('[role="alert"]').text()).toBe(message);
+    expect(updateUser).not.toHaveBeenCalled();
+  });
+
+  it('cancels editing and reloads the directory', async () => {
+    fetchUsers.mockResolvedValue({
+      data: {
+        users: [{ id: 42, role: 'user', username: 'reader' }]
+      }
+    });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Edit').trigger('click');
+    await findButton(wrapper, 'Cancel').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('.manage-users__editor').exists()).toBe(false);
+    expect(fetchUsers).toHaveBeenCalledTimes(2);
+  });
+
+  it('deletes another account and refreshes the directory', async () => {
+    fetchUsers
+      .mockResolvedValueOnce({
+        data: {
+          users: [{ id: 42, role: 'user', username: 'reader' }]
+        }
+      })
+      .mockResolvedValueOnce({ data: { users: [] } });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Delete').trigger('click');
+    await findButton(wrapper, 'Delete user').trigger('click');
+    await flushPromises();
+
+    expect(deleteUser).toHaveBeenCalledWith(42);
+    expect(wrapper.text()).toContain('User deleted successfully.');
+    expect(wrapper.find('.manage-users__confirmation').exists()).toBe(false);
+  });
+
+  it('cancels deletion and returns to a refreshed directory', async () => {
+    fetchUsers.mockResolvedValue({
+      data: {
+        users: [{ id: 42, role: 'user', username: 'reader' }]
+      }
+    });
+
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    await findButton(wrapper, 'Delete').trigger('click');
+    await findButton(wrapper, 'Cancel').trigger('click');
+    await flushPromises();
+
+    expect(wrapper.find('.manage-users__confirmation').exists()).toBe(false);
+    expect(fetchUsers).toHaveBeenCalledTimes(2);
+    expect(deleteUser).not.toHaveBeenCalled();
+  });
+
+  it('stops every management action when administrator rights are revoked', async () => {
+    fetchUsers.mockResolvedValue({
+      data: {
+        users: [{ id: 42, role: 'user', username: 'reader' }]
+      }
+    });
+    const wrapper = mountManageUsers();
+    await flushPromises();
+    wrapper.vm.authStore.role = 'user';
+
+    expect(await wrapper.vm.fetchUsers()).toBe(false);
+    wrapper.vm.editUser(42);
+    await wrapper.vm.updateUser();
+    await wrapper.vm.deleteUser(42);
+    wrapper.vm.showDeleteForm(42);
+
+    expect(wrapper.vm.message).toBe('You need admin rights to manage users.');
+    expect(wrapper.vm.messageType).toBe('error');
+    expect(updateUser).not.toHaveBeenCalled();
     expect(deleteUser).not.toHaveBeenCalled();
   });
 

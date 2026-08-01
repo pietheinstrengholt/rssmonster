@@ -232,6 +232,15 @@ Build a calm, content-first reading experience inspired by Feedbin, Reeder, Read
 - Dense but not cluttered
 - Similar to Feedbin, Reeder, Readwise Reader, and Linear
 
+### Default Buttons
+
+- Use app-owned semantic button classes instead of relying on Bootstrap variant styling for new or updated controls.
+- Default buttons are compact: 40px minimum height, 8px radius, 14px text, and 700 font weight.
+- Primary actions use a solid `--color-primary` background with inverted text and `--color-primary-hover` on hover.
+- Secondary actions use `--bg-control`, `--border-input`, and `--text-primary`, with `--bg-hover` on hover.
+- Destructive actions use a solid `--color-danger` background with inverted text and `--color-danger-hover` on hover.
+- All buttons need a visible `:focus-visible` state, and disabled buttons must clearly communicate that they are unavailable.
+
 ### Avoid
 
 - Material Design dashboards

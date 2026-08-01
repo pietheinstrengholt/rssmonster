@@ -182,8 +182,8 @@
   align-items: center;
   margin: 0;
   padding: 20px 22px;
-  background: var(--bg-surface-muted);
-  border-color: var(--border-subtle);
+  background: var(--settings-info-bg);
+  border-color: var(--settings-info-border);
 }
 
 .smart-folders-surface__section {

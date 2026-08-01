@@ -1,4 +1,4 @@
-import { beforeAll, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import bcrypt from 'bcryptjs';
 import db from '../../models/index.js';
 import { createAndAssignEvent } from '../../services/events/createEvents.js';
@@ -48,6 +48,10 @@ async function createArticle(user, feed, label, status = 'unread', overrides = {
 describe('createAndAssignEvent', () => {
   beforeAll(async () => {
     await sequelize.authenticate();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
   });
 
   it('initializes both pointers and atomically links articles without changing status', async () => {
@@ -272,5 +276,89 @@ describe('createAndAssignEvent', () => {
       event: expect.objectContaining({ id: eventId }),
       eventTopicVector: expect.any(Array)
     }));
+  });
+
+  it('marks a fresh event with more than two articles as active', async () => {
+    const { user, feed } = await createUserGraph('active-event');
+    const firstCandidate = await createArticle(user, feed, 'active-first');
+    const secondCandidate = await createArticle(user, feed, 'active-second');
+    const seedArticle = await createArticle(user, feed, 'active-seed');
+
+    const eventId = await createAndAssignEvent({
+      candidateArticles: [firstCandidate, secondCandidate],
+      article: seedArticle,
+      cache: null,
+      skipTopicAssignment: true
+    });
+
+    expect(await Event.findByPk(eventId)).toMatchObject({
+      articleCount: 3,
+      status: 'active'
+    });
+  });
+
+  it('returns null when the locked membership no longer contains the seed article', async () => {
+    const candidateArticle = { id: 11 };
+    const seedArticle = { id: 12, userId: 7 };
+    const transaction = { LOCK: { UPDATE: 'UPDATE' } };
+
+    vi.spyOn(Article, 'findAll').mockResolvedValue([
+      candidateArticle,
+      { id: 13 }
+    ]);
+
+    await expect(createAndAssignEvent({
+      candidateArticles: [candidateArticle],
+      article: seedArticle,
+      cache: null,
+      skipTopicAssignment: true,
+      transaction
+    })).resolves.toBeNull();
+  });
+
+  it('warns and returns null when persistence does not provide an event id', async () => {
+    const { user, feed } = await createUserGraph('missing-event-id');
+    const candidateArticle = await createArticle(user, feed, 'missing-id-candidate');
+    const seedArticle = await createArticle(user, feed, 'missing-id-seed');
+    const transaction = await sequelize.transaction();
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    vi.spyOn(Event, 'create').mockResolvedValue(null);
+
+    try {
+      const eventId = await createAndAssignEvent({
+        candidateArticles: [candidateArticle],
+        article: seedArticle,
+        cache: null,
+        skipTopicAssignment: true,
+        transaction
+      });
+
+      expect(eventId).toBeNull();
+      expect(warnSpy).toHaveBeenCalledWith(
+        `[EVENT] Failed to create event for article ${seedArticle.id}`
+      );
+    } finally {
+      await transaction.rollback();
+    }
+  });
+
+  it('throws when not every locked article can be assigned to the new event', async () => {
+    const { user, feed } = await createUserGraph('partial-event-assignment');
+    const candidateArticle = await createArticle(user, feed, 'partial-candidate');
+    const seedArticle = await createArticle(user, feed, 'partial-seed');
+    const transaction = await sequelize.transaction();
+    vi.spyOn(Article, 'update').mockResolvedValue([1]);
+
+    try {
+      await expect(createAndAssignEvent({
+        candidateArticles: [candidateArticle],
+        article: seedArticle,
+        cache: null,
+        skipTopicAssignment: true,
+        transaction
+      })).rejects.toThrow('Failed to assign all articles to new event');
+    } finally {
+      await transaction.rollback();
+    }
   });
 });

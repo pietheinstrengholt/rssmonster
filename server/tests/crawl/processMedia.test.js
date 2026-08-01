@@ -1,8 +1,17 @@
 import { describe, expect, it } from 'vitest';
 
+import readNormalizedMedia from '../../services/crawl/media/processMedia.js';
 import { processStructuredMedia as processMedia } from '../../services/feeds/feedsmith/normalizeMedia.js';
 
 describe('processMedia', () => {
+  it('returns media already normalized by the feed adapter', () => {
+    const media = { type: 'audio', url: 'https://cdn.example/episode.mp3' };
+
+    expect(readNormalizedMedia({ media })).toBe(media);
+    expect(readNormalizedMedia({})).toBeNull();
+    expect(readNormalizedMedia()).toBeNull();
+  });
+
   it('uses the alternate article link as the media base URL', () => {
     const media = processMedia({
       link: 'https://fallback.example/articles/item',

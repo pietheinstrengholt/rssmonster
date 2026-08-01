@@ -13,7 +13,7 @@
       </div>
     </section>
 
-    <div v-if="loading" class="d-flex align-items-center gap-2 mb-3">
+    <div v-if="loading" class="settings-topics-loading d-flex align-items-center gap-2 mb-3">
       <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
       <span>Loading events and topics...</span>
     </div>
@@ -159,6 +159,13 @@
 .settings-topics {
   max-width: 1100px;
   color: var(--text-primary);
+}
+
+.settings-topics-loading {
+  color: var(--text-muted);
+  font-family: var(--font-family);
+  font-size: 14px;
+  font-weight: 500;
 }
 
 .settings-data-panel h4 {

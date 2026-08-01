@@ -15,8 +15,8 @@
                 <h6 id="delete-user-title">Delete {{ user.username }}?</h6>
                 <p>This permanently removes the account and its access to RSSMonster.</p>
                 <div class="manage-users__form-actions">
-                  <button class="btn btn-remove" @click="deleteUser(userIdToDelete)">Delete user</button>
-                  <button class="btn btn-secondary" @click="returnToUserList">Cancel</button>
+                  <button type="button" class="manage-users__button manage-users__button--danger" @click="deleteUser(userIdToDelete)">Delete user</button>
+                  <button type="button" class="manage-users__button manage-users__button--secondary" @click="returnToUserList">Cancel</button>
                 </div>
               </section>
               <p v-if="message" class="manage-users__message manage-users__message--error" role="alert">{{ message }}</p>
@@ -49,8 +49,8 @@
                 <input id="password-repeat" class="form-control" type="password" placeholder="Repeat the new password" />
               </div>
               <div class="manage-users__form-actions">
-                <button type="button" class="btn btn-primary" @click="updateUser">Save changes</button>
-                <button type="button" class="btn btn-secondary" @click="returnToUserList">Cancel</button>
+                <button type="button" class="manage-users__button manage-users__button--primary" @click="updateUser">Save changes</button>
+                <button type="button" class="manage-users__button manage-users__button--secondary" @click="returnToUserList">Cancel</button>
               </div>
               <p v-if="message" class="manage-users__message manage-users__message--error" role="alert">{{ message }}</p>
             </div>
@@ -406,8 +406,54 @@
   margin-top: 26px;
 }
 
-.manage-users__form-actions .btn {
-  margin: 0;
+.manage-users__button {
+  display: inline-flex;
+  min-height: 40px;
+  align-items: center;
+  justify-content: center;
+  padding: 0 14px;
+  border: 1px solid var(--color-transparent);
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.manage-users__button--primary {
+  background: var(--color-primary);
+  border-color: var(--color-primary);
+  color: var(--text-inverted);
+}
+
+.manage-users__button--primary:hover {
+  background: var(--color-primary-hover);
+  border-color: var(--color-primary-hover);
+}
+
+.manage-users__button--secondary {
+  background: var(--bg-control);
+  border-color: var(--border-input);
+  color: var(--text-primary);
+}
+
+.manage-users__button--secondary:hover {
+  background: var(--bg-hover);
+}
+
+.manage-users__button--danger {
+  background: var(--color-danger);
+  border-color: var(--color-danger);
+  color: var(--text-inverted);
+}
+
+.manage-users__button--danger:hover {
+  background: var(--color-danger-hover);
+  border-color: var(--color-danger-hover);
+}
+
+.manage-users__button:focus-visible {
+  outline: 2px solid var(--border-focus);
+  outline-offset: 2px;
 }
 
 .manage-users__message {

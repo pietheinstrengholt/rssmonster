@@ -10,7 +10,7 @@ import {
   backfillHistoricalEventsForUser
 } from '../../services/reconcile/semanticPipelineScopes.js';
 
-const { sequelize, Article, Category, Event, EventTopic, Feed, Topic, User } = db;
+const { sequelize, Article, ArticleTopic, Category, Event, EventTopic, Feed, Topic, User } = db;
 
 async function createUserGraph(prefix) {
   const hash = await bcrypt.hash('secret', 4);
@@ -112,6 +112,16 @@ describe('repairRecentEventsForUser', () => {
       publishedAt: recentDateWithOffset(5 * 60 * 1000),
       articleVector: [1, 0, 0]
     }));
+    const topic = await Topic.create({
+      userId: user.id,
+      name: 'Acme transaction',
+      topicKey: `persisted-assignment-${user.id}`,
+      topicType: 'event',
+      topicVector: [1, 0, 0],
+      lastActivityAt: representativeArticle.publishedAt
+    });
+    const runContext = { records: [], stats: {} };
+    const articleCandidateCache = { updateEventId: vi.fn() };
 
     await representativeArticle.update({ eventId: event.id });
 
@@ -119,15 +129,30 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle.id,
       new EventCache([event]),
       null,
-      [],
-      null,
-      { skipTopicAssignment: true }
+      [topic],
+      runContext,
+      { articleCandidateCache }
     );
 
     await incomingArticle.reload();
 
     expect(eventId).toBe(event.id);
     expect(incomingArticle.eventId).toBe(event.id);
+    expect(incomingArticle.topicId).toBe(topic.id);
+    expect(await EventTopic.count({ where: { eventId, topicId: topic.id } })).toBe(1);
+    expect(await ArticleTopic.count({
+      where: { articleId: incomingArticle.id, topicId: topic.id }
+    })).toBe(1);
+    expect(runContext.records).toContainEqual(expect.objectContaining({
+      id: incomingArticle.id,
+      eventId,
+      topicId: topic.id
+    }));
+    expect(runContext.stats.linkedToExistingEventCount).toBe(1);
+    expect(articleCandidateCache.updateEventId).toHaveBeenCalledWith(
+      [incomingArticle.id],
+      eventId
+    );
   });
 
   it('prefers an explicitly supplied event vector over the persisted article vector', async () => {
@@ -599,6 +624,14 @@ describe('repairRecentEventsForUser', () => {
       publishedAt: recentDateWithOffset(4 * 60 * 1000),
       articleVector: [1, 0, 0]
     }));
+    const topic = await Topic.create({
+      userId: user.id,
+      name: 'Spanish heatwave',
+      topicKey: `assigned-candidates-${user.id}`,
+      topicType: 'event',
+      topicVector: [1, 0, 0],
+      lastActivityAt: existingArticleA.publishedAt
+    });
     const runContext = {
       records: [
         {
@@ -636,9 +669,9 @@ describe('repairRecentEventsForUser', () => {
       incomingArticle,
       new EventCache([event]),
       { eventVector: incomingArticle.articleVector },
-      [],
+      [topic],
       runContext,
-      { skipTopicAssignment: true }
+      { assignmentContext: 'incremental' }
     );
 
     await incomingArticle.reload();
@@ -648,6 +681,13 @@ describe('repairRecentEventsForUser', () => {
     expect(incomingArticle.eventId).toBe(event.id);
     expect(event.articleCount).toBe(3);
     expect(event.developingArticleId).toBe(existingArticleA.id);
+    expect(incomingArticle.topicId).toBe(topic.id);
+    expect(await EventTopic.count({ where: { eventId, topicId: topic.id } })).toBe(1);
+    expect(runContext.records).toContainEqual(expect.objectContaining({
+      id: incomingArticle.id,
+      eventId,
+      topicId: topic.id
+    }));
     expect(runContext.stats.linkedToExistingEventCount).toBe(1);
   });
 
