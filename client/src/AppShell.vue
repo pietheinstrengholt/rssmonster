@@ -29,7 +29,12 @@
 
         <!-- Add reference to home for calling child loadContent component function -->
         <app-initial-feeds v-if="showOnboarding" @completed="completeOnboarding"></app-initial-feeds>
-        <app-article-feed v-else-if="overviewLoaded && !offlineStatus && !uiStore.chatAssistantOpen && !uiStore.fatalError" ref="articleFeed" @forceReload="forceReload" @refresh-feeds="refreshFeeds"></app-article-feed>
+        <app-mobile-pull-to-refresh
+          v-if="showMobileArticleRefresh"
+          :refreshing="databaseRefreshActive"
+          @refresh="refreshArticlesFromDatabase"
+        />
+        <app-article-feed v-if="showArticleFeed" ref="articleFeed" @forceReload="forceReload" @refresh-feeds="refreshFeeds"></app-article-feed>
         <!-- Show chat assistant -->
         <app-chat-assistant v-if="uiStore.chatAssistantOpen"></app-chat-assistant>
       </div>
@@ -65,6 +70,13 @@
     flex-direction: column;
     min-height: 100vh;
     min-height: 100dvh;
+    overscroll-behavior-y: contain;
+  }
+
+  html,
+  body,
+  #app {
+    overscroll-behavior-y: contain;
   }
 
   .mobile-toolbar {
@@ -212,6 +224,7 @@ import { defineAsyncComponent } from 'vue'
 const Sidebar = defineAsyncComponent(() => import("./components/sidebar/Sidebar.vue"));
 const DesktopToolbar = defineAsyncComponent(() =>  import("./components/shell/DesktopToolbar.vue"));
 const MobileToolbar = defineAsyncComponent(() =>  import("./components/shell/MobileToolbar.vue"));
+const MobilePullToRefresh = defineAsyncComponent(() => import("./components/shell/MobilePullToRefresh.vue"));
 const MobileMenuOverlay = defineAsyncComponent(() =>  import("./components/shell/MobileMenuOverlay.vue"));
 const ChatAssistant = defineAsyncComponent(() =>  import("./components/assistant/ChatAssistant.vue"));
 
@@ -243,6 +256,7 @@ export default {
     appArticleFeed: ArticleFeed,
     appDesktopToolbar: DesktopToolbar,
     appMobileToolbar: MobileToolbar,
+    appMobilePullToRefresh: MobilePullToRefresh,
     appMobileMenuOverlay: MobileMenuOverlay,
     appChatAssistant: ChatAssistant,
     appError: Error,
@@ -254,6 +268,7 @@ export default {
       actionErrorMessage: '',
       actionErrorTimer: null,
       category: {},
+      databaseRefreshActive: false,
       feed: {},
       isDesktopShell: null,
       mobile: null,
@@ -577,6 +592,36 @@ export default {
         this.overviewReloading = false;
       }
     },
+    // This function refreshes database-backed article results without clearing usable mobile content.
+    async refreshArticlesFromDatabase() {
+      if (this.databaseRefreshActive) return;
+
+      const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
+        ? this.$refs.articleFeed
+        : [this.$refs.articleFeed];
+      const refreshableFeeds = articleFeedRefs.filter(
+        ref => ref && typeof ref.refreshArticleIds === 'function'
+      );
+      if (!refreshableFeeds.length) return;
+
+      this.databaseRefreshActive = true;
+      document.getElementById('mobile-toolbar')?.classList.remove('hide');
+
+      try {
+        const selection = { ...this.selectionStore.currentSelection };
+        const refreshResults = await Promise.allSettled([
+          this.overviewStore.fetchOverview({ forceUpdate: true }),
+          ...refreshableFeeds.map(ref => ref.refreshArticleIds(selection))
+        ]);
+        const failedRefresh = refreshResults.find(result => result.status === 'rejected');
+        if (failedRefresh) throw failedRefresh.reason;
+      } catch (error) {
+        console.error('Error refreshing articles from the database:', error);
+        this.showActionError('Could not refresh articles. Please try again.');
+      } finally {
+        this.databaseRefreshActive = false;
+      }
+    },
     // This function starts feed refresh immediately or loads its Sidebar controller on mobile.
     refreshFeeds() {
       if (this.sidebarComponent) {
@@ -655,6 +700,18 @@ export default {
     // Resolves only explicitly supported modal identifiers to their lazy components.
     activeDialogComponent() {
       return DIALOG_COMPONENTS[this.uiStore.showModal] || null;
+    },
+    // Shows the article feed only when application data is available for reading.
+    showArticleFeed() {
+      return this.overviewLoaded
+        && !this.offlineStatus
+        && !this.uiStore.chatAssistantOpen
+        && !this.uiStore.fatalError
+        && !this.showOnboarding;
+    },
+    // Shows pull-to-refresh only for the active mobile article collection.
+    showMobileArticleRefresh() {
+      return this.isDesktopShell === false && this.showArticleFeed;
     },
     // Shows onboarding only after a successful empty overview load.
     showOnboarding() {

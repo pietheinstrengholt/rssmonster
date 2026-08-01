@@ -6,6 +6,7 @@ import { createFocusedStores } from './helpers/focusedStores.js';
 const createRecoveryContext = () => {
   const stores = createFocusedStores({
     overview: {
+      fetchOverview: vi.fn(),
       fetchOverviewSplit: vi.fn()
     },
     selection: {
@@ -23,9 +24,11 @@ const createRecoveryContext = () => {
     overviewIntervalId: null,
     overviewLoaded: true,
     overviewReloading: false,
+    databaseRefreshActive: false,
     $refs: {},
     startOverviewPolling: vi.fn(),
     stopOverviewPolling: vi.fn(),
+    showActionError: vi.fn(),
     updateSelection: vi.fn()
   };
 };
@@ -146,6 +149,38 @@ describe('AppShell offline recovery', () => {
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
     expect(secondFeed.fetchArticleIds)
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
+  });
+
+  it('refreshes database articles and overview counts without using the recovery reload path', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const articleFeed = { refreshArticleIds: vi.fn().mockResolvedValue(true) };
+    context.$refs.articleFeed = articleFeed;
+    context.overviewStore.fetchOverview.mockResolvedValue(true);
+
+    await AppShell.methods.refreshArticlesFromDatabase.call(context);
+
+    expect(context.overviewStore.fetchOverview).toHaveBeenCalledWith({ forceUpdate: true });
+    expect(articleFeed.refreshArticleIds)
+      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(context.overviewStore.fetchOverviewSplit).not.toHaveBeenCalled();
+    expect(context.databaseRefreshActive).toBe(false);
+  });
+
+  it('preserves the shell and shows a recoverable notice when database refresh fails', async () => {
+    const failure = new Error('refresh unavailable');
+    const context = connectRecoveryMethods(createRecoveryContext());
+    context.$refs.articleFeed = {
+      refreshArticleIds: vi.fn().mockRejectedValue(failure)
+    };
+    context.overviewStore.fetchOverview.mockResolvedValue(true);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+
+    await AppShell.methods.refreshArticlesFromDatabase.call(context);
+
+    expect(context.showActionError)
+      .toHaveBeenCalledWith('Could not refresh articles. Please try again.');
+    expect(context.uiStore.setFatalError).not.toHaveBeenCalled();
+    expect(context.databaseRefreshActive).toBe(false);
   });
 
   it('reloads the article feed while an overview reload is already running', async () => {

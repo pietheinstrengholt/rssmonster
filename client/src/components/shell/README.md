@@ -30,6 +30,8 @@ At desktop widths, the mobile toolbar is hidden. The sidebar is fixed at the lef
 
 The desktop sidebar and article pane scroll independently. The sidebar reveals a subtle scrollbar only while it is being scrolled. The mobile toolbar is sticky so collection controls remain reachable while the article content scrolls.
 
+At the top of an active mobile article collection, a resisted downward pull refreshes the current database-backed article query and overview counts. The gesture preserves rendered articles while the request is active, keeps the toolbar visible, and never starts the longer feed-crawl workflow.
+
 The breakpoint behavior belongs to the application shell rather than to individual article views. Changes must be checked on both sides of the breakpoint, including portrait and landscape orientations.
 
 ## Shared selection behavior

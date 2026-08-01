@@ -227,6 +227,8 @@ The article area always explains what is happening:
 
 Motion in loading and completion states is restrained and respects reduced-motion preferences.
 
+Mobile pull-to-refresh uses a separate content-preserving request path. Existing articles remain rendered until the refreshed ID list and first page are ready, and stale refresh responses cannot replace a newer selection. This database refresh does not crawl publisher feeds.
+
 ## Responsive and visual intent
 
 The article experience adapts rather than merely shrinking:

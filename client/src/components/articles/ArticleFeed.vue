@@ -179,6 +179,13 @@ export default {
         Math.ceil(window.scrollY) ||
         Math.ceil(document.documentElement.scrollTop);
 
+      if (curScroll <= 0) {
+        mobileToolbar?.classList.remove("hide");
+        this.prevScroll = 0;
+        this.scrollDirection = "up";
+        return;
+      }
+
       const direction =
         curScroll > this.prevScroll
           ? "down"

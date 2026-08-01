@@ -70,6 +70,86 @@ beforeEach(() => {
 });
 
 describe('ArticleFeed loading races', () => {
+  it('preserves rendered articles until a database refresh can replace them atomically', async () => {
+    const refreshRequest = deferred();
+    fetchArticleIds.mockReturnValueOnce(refreshRequest.promise);
+    const context = createLoadingContext();
+    context.container = [1];
+    context.articles = [{ id: 1, title: 'Existing article' }];
+    context.hasLoadedContent = true;
+
+    const refresh = ArticleFeed.methods.refreshArticleIds.call(
+      context,
+      context.selectionStore.currentSelection
+    );
+
+    expect(context.articles).toEqual([{ id: 1, title: 'Existing article' }]);
+    expect(context.hasLoadedContent).toBe(true);
+
+    refreshRequest.resolve({
+      data: {
+        itemIds: [2],
+        firstPage: [{ id: 2, title: 'New article' }],
+        sourceCount: 1
+      }
+    });
+    await refresh;
+
+    expect(context.container).toEqual([2]);
+    expect(context.articles).toEqual([{ id: 2, title: 'New article' }]);
+    expect(context.currentViewSourceCount).toBe(1);
+    expect(context.distance).toBe(1);
+    expect(context.hasLoadedContent).toBe(true);
+  });
+
+  it('keeps existing articles and reports a current database refresh failure', async () => {
+    const failure = new Error('refresh unavailable');
+    fetchArticleIds.mockRejectedValueOnce(failure);
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    const context = createLoadingContext();
+    context.container = [1];
+    context.articles = [{ id: 1, title: 'Existing article' }];
+    context.hasLoadedContent = true;
+
+    await expect(ArticleFeed.methods.refreshArticleIds.call(
+      context,
+      context.selectionStore.currentSelection
+    )).rejects.toBe(failure);
+
+    expect(context.container).toEqual([1]);
+    expect(context.articles).toEqual([{ id: 1, title: 'Existing article' }]);
+    expect(context.hasLoadedContent).toBe(true);
+    expect(context.isLoading).toBe(false);
+  });
+
+  it('does not let a stale database refresh replace a newer selection', async () => {
+    const refreshRequest = deferred();
+    fetchArticleIds
+      .mockReturnValueOnce(refreshRequest.promise)
+      .mockResolvedValueOnce({
+        data: {
+          itemIds: [2],
+          firstPage: [{ id: 2, title: 'New selection' }]
+        }
+      });
+    const context = createLoadingContext();
+    context.container = [1];
+    context.articles = [{ id: 1, title: 'Existing article' }];
+
+    const refresh = ArticleFeed.methods.refreshArticleIds.call(context, { feedId: '1', sort: 'desc' });
+    await ArticleFeed.methods.fetchArticleIds.call(context, { feedId: '2', sort: 'desc' });
+    refreshRequest.resolve({
+      data: {
+        itemIds: [3],
+        firstPage: [{ id: 3, title: 'Stale refresh' }]
+      }
+    });
+    await refresh;
+
+    expect(context.container).toEqual([2]);
+    expect(context.articles).toEqual([{ id: 2, title: 'New selection' }]);
+  });
+
   it('keeps only the newest article ID response after rapid selection changes', async () => {
     const olderRequest = deferred();
     const newerRequest = deferred();

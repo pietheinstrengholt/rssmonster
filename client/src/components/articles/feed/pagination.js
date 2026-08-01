@@ -68,6 +68,54 @@ export const articleFeedPaginationMethods = {
     }
   },
 
+  // Refreshes the active selection while preserving rendered articles until replacement data is ready.
+  async refreshArticleIds(data) {
+    const requestId = ++this.activeRequestId;
+    this.isLoading = true;
+
+    try {
+      const response = await fetchArticleIds(data);
+      if (requestId !== this.activeRequestId) return false;
+
+      const nextContainer = response.data.itemIds || [];
+      let nextArticles = Array.isArray(response.data.firstPage)
+        ? response.data.firstPage
+        : null;
+
+      if (nextContainer.length > 0 && (!nextArticles || nextArticles.length === 0)) {
+        const ids = nextContainer.slice(0, this.fetchCount);
+        const detailResponse = await fetchArticleDetails(ids, data.sort);
+        if (requestId !== this.activeRequestId) return false;
+        nextArticles = detailResponse.data || [];
+      }
+
+      await this.resetPool();
+      if (requestId !== this.activeRequestId) return false;
+
+      this.container = nextContainer;
+      this.articles = nextArticles || [];
+      this.distance = this.articles.length;
+      this.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
+        ? Number(response.data.sourceCount)
+        : null;
+      this.hasLoadedContent = true;
+      this.$nextTick(() => {
+        this.observeArticles();
+        this.observeLoadMoreSentinel();
+      });
+      return true;
+    } catch (error) {
+      if (requestId !== this.activeRequestId) return false;
+
+      console.error('Error refreshing articles:', error);
+      throw error;
+    } finally {
+      if (requestId === this.activeRequestId) {
+        this.isLoading = false;
+      }
+    }
+  },
+
   // Loads the next article page when the list boundary is reached.
   handleLoadMoreIntersections(entries) {
     if (!entries.some(entry => entry.isIntersecting)) return;
