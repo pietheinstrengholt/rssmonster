@@ -36,7 +36,7 @@
     "@vitest/coverage-v8": "^4.1.10",
     "@vue/compiler-sfc": "^3.5.40",
     "@vue/test-utils": "^2.4.11",
-    "baseline-browser-mapping": "^2.11.8",
+    "baseline-browser-mapping": "^2.11.9",
     "bootstrap-icons": "^1.13.1",
     "eslint": "^10.8.0",
     "eslint-plugin-vue": "^10.10.0",

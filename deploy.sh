@@ -7,8 +7,10 @@ SERVER_DIR="$APP_DIR/server"
 CLIENT_DIR="$APP_DIR/client"
 ENV_FILE="$SERVER_DIR/.env"
 
-PM2_APP_NAME="rssmonster-dev"
-ECOSYSTEM_FILE="ecosystem.config.cjs"
+PM2_WEB_APP_NAME="rssmonster-web"
+PM2_WORKER_APP_NAME="rssmonster-worker"
+OBSOLETE_PM2_APP_NAME="rssmonster-dev"
+ECOSYSTEM_FILE="$APP_DIR/ecosystem.config.cjs"
 
 DEPLOY_LOCK="$APP_DIR/.deploy.lock"
 DEPLOY_LOG="$APP_DIR/deploy.log"
@@ -32,11 +34,13 @@ on_error() {
   if command -v pm2 >/dev/null 2>&1; then
     echo
     echo "Current PM2 status:"
-    pm2 describe "$PM2_APP_NAME" || true
+    pm2 describe "$PM2_WEB_APP_NAME" || true
+    pm2 describe "$PM2_WORKER_APP_NAME" || true
 
     echo
     echo "Recent PM2 logs:"
-    pm2 logs "$PM2_APP_NAME" --lines 50 --nostream || true
+    pm2 logs "$PM2_WEB_APP_NAME" --lines 50 --nostream || true
+    pm2 logs "$PM2_WORKER_APP_NAME" --lines 50 --nostream || true
   fi
 
   exit "$exit_code"
@@ -109,7 +113,7 @@ fi
 
 touch "$DEPLOY_LOCK"
 
-log "Deploying RSSMonster dev"
+log "Deploying RSSMonster"
 echo "Application directory: $APP_DIR"
 
 require_command git
@@ -147,6 +151,13 @@ fi
 
 if [[ ! -f "$ENV_FILE" ]]; then
   echo "Server environment file does not exist: $ENV_FILE"
+  exit 1
+fi
+
+if pm2 describe "$OBSOLETE_PM2_APP_NAME" >/dev/null 2>&1; then
+  echo "Obsolete PM2 process is still installed: $OBSOLETE_PM2_APP_NAME"
+  echo "Remove it once before deploying the web and worker processes:"
+  echo "pm2 delete $OBSOLETE_PM2_APP_NAME && pm2 save"
   exit 1
 fi
 
@@ -237,14 +248,24 @@ log "Copying client build to server"
 rm -rf "$SERVER_DIR/dist"
 cp -R "$CLIENT_DIR/dist" "$SERVER_DIR/dist"
 
-log "Starting or restarting PM2 process"
-cd "$SERVER_DIR"
+log "Starting or reloading PM2 processes"
+cd "$APP_DIR"
 mkdir -p logs
 
-run_with_timeout 2m \
-  pm2 startOrRestart "$ECOSYSTEM_FILE" \
-  --only "$PM2_APP_NAME" \
+run_with_timeout 20m \
+  pm2 startOrReload "$ECOSYSTEM_FILE" \
+  --env production \
   --update-env
+
+for app_name in "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"; do
+  PM2_PID="$(pm2 pid "$app_name" 2>/dev/null || true)"
+
+  if [[ ! "$PM2_PID" =~ ^[1-9][0-9]*$ ]]; then
+    echo "PM2 process is not running: $app_name"
+    pm2 describe "$app_name" || true
+    exit 1
+  fi
+done
 
 log "Saving PM2 process list"
 run_with_timeout 1m pm2 save
@@ -264,7 +285,7 @@ for ((attempt = 1; attempt <= HEALTHCHECK_ATTEMPTS; attempt++)); do
     break
   fi
 
-  PM2_PID="$(pm2 pid "$PM2_APP_NAME" 2>/dev/null || true)"
+  PM2_PID="$(pm2 pid "$PM2_WEB_APP_NAME" 2>/dev/null || true)"
 
   if [[ ! "$PM2_PID" =~ ^[1-9][0-9]*$ ]]; then
     echo "PM2 process is not running."
@@ -280,12 +301,12 @@ if [[ "$HEALTHCHECK_PASSED" != true ]]; then
   echo "RSSMonster did not pass its health check:"
   echo "$HEALTHCHECK_URL"
 
-  pm2 describe "$PM2_APP_NAME" || true
-  pm2 logs "$PM2_APP_NAME" --lines 100 --nostream || true
+  pm2 describe "$PM2_WEB_APP_NAME" || true
+  pm2 logs "$PM2_WEB_APP_NAME" --lines 100 --nostream || true
   exit 1
 fi
 
 log "PM2 status"
-pm2 status "$PM2_APP_NAME"
+pm2 status "$PM2_WEB_APP_NAME" "$PM2_WORKER_APP_NAME"
 
 log "Deployment completed successfully"

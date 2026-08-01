@@ -9,6 +9,15 @@ import { useOverviewStore } from '../src/store/overview.js';
 import { useSelectionStore } from '../src/store/selection.js';
 import { useUiStore } from '../src/store/ui.js';
 
+// This mock prevents the toolbar's lazy Settings import from outliving the test environment.
+vi.mock('../src/components/settings/Settings.vue', () => ({
+  default: {
+    name: 'Settings',
+    emits: ['close', 'forceReload'],
+    template: '<button class="settings-stub" @click="$emit(\'forceReload\')">Settings</button>'
+  }
+}));
+
 vi.mock('../src/api/settings.js', async importOriginal => {
   const actual = await importOriginal();
   return {

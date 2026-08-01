@@ -169,7 +169,7 @@ npm run seed:island-taxonomy
 OPENAI_API_KEY=your-openai-api-key-here
 ```
 
-### 6. Optional: Set Up Feed Crawler
+### 6. Set Up Feed Crawler
 
 You can crawl feeds in two ways:
 
@@ -182,15 +182,34 @@ DISABLE_LISTENER=true npm run crawl
 
 This runs a synchronous crawl of all active feeds and provides a summary upon completion.
 
-**Option B: Automated crawl via cron**
+**Option B: Automated crawl with the dedicated worker**
 
-Add a cron job to crawl feeds every 5 minutes by calling the API endpoint:
+The production PM2 ecosystem runs `rssmonster-web` and exactly one
+`rssmonster-worker`. The worker runs once immediately, then polls at the interval
+configured in `server/.env`:
+
+```env
+CRAWL_WORKER_INTERVAL_MS=60000
+```
+
+Start or reload both production processes from the repository root:
 
 ```bash
+pm2 startOrReload ecosystem.config.cjs --env production --update-env
+pm2 save
+```
+
+Disable the former OS cron entry after deploying the worker, or scheduled crawls
+will be triggered twice. Older installations commonly contain this entry (with
+the locally configured port, such as `3001`):
+
+```cron
 */5 * * * * curl http://localhost:3000/api/crawl
 ```
 
-Note: The API endpoint runs the crawl asynchronously in the background and returns immediately without output.
+For an existing deployment, remove the obsolete PM2 process once with
+`pm2 delete rssmonster-dev && pm2 save`. Enable restoration after reboot with
+`pm2 startup`, run the command PM2 prints, then run `pm2 save` again.
 
 ### 7. Recommended: Rebuild Article Clusters
 

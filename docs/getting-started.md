@@ -177,13 +177,22 @@ cd server
 DISABLE_LISTENER=true npm run crawl
 ```
 
-**Option B: Automated Crawling (Recommended)**
+**Option B: Dedicated Crawl Worker (Recommended)**
 
-Add a cron job to crawl every 5 minutes:
+Set the polling interval in `server/.env`, then start both production processes
+from the repository root:
+
+```env
+CRAWL_WORKER_INTERVAL_MS=60000
+```
 
 ```bash
-*/5 * * * * curl http://localhost:3000/api/crawl
+pm2 startOrReload ecosystem.config.cjs --env production --update-env
+pm2 save
 ```
+
+Disable any existing OS cron entry that calls `/api/crawl`; leaving it enabled
+will trigger duplicate scheduled crawls alongside the worker.
 
 ---
 
@@ -298,7 +307,7 @@ kill -9 <PID>
 
 ### Feeds Not Updating
 
-- Check if the crawl cron job is running
+- Check whether `rssmonster-worker` is running in PM2
 - Manually run `npm run crawl` to test
 - Check server logs for errors
 

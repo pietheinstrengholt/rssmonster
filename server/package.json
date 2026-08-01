@@ -22,6 +22,7 @@
     "lint": "eslint .",
     "start": "node bootstrap.js",
     "start-server": "node bootstrap.js",
+    "start:worker": "node src/workers/crawlWorker.js",
     "dev": "node --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "debug": "node --inspect --watch --watch-path=./app.js --watch-path=./controllers --watch-path=./routes --watch-path=./models --watch-path=./middleware --watch-path=./services --watch-path=./utils --watch-path=./config bootstrap.js",
     "db": "./node_modules/.bin/sequelize db:migrate",
@@ -56,7 +57,7 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.30.0",
-    "@openai/agents": "^0.14.1",
+    "@openai/agents": "^0.14.2",
     "bcryptjs": "^3.0.3",
     "cheerio": "^1.2.0",
     "cors": "^2.8.6",
