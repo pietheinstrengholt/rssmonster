@@ -1,7 +1,6 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import { createPinia } from 'pinia'
-import 'bootstrap/js/dist/dropdown.js'
 import './assets/scss/global.scss'
 import './assets/styles/theme.css'
 import { applyTheme, getPreferredTheme } from './services/theme.js'
@@ -9,9 +8,6 @@ import { applyTheme, getPreferredTheme } from './services/theme.js'
 applyTheme(getPreferredTheme())
 
 import BootstrapIcon from './components/shared/BootstrapIcon.vue'
-import { injectBootstrapIcons } from './services/bootstrapIcons.js'
-import BootstrapIcons from 'virtual:bootstrap-icons-sprite'
-injectBootstrapIcons(BootstrapIcons)
 
 // create an instance using the function
 const app = createApp(App)

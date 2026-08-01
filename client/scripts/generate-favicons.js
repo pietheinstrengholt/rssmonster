@@ -41,6 +41,13 @@ const configuration = {
 
 const response = await favicons(source, configuration);
 
+// This function limits install metadata to the two standard PWA icon sizes while retaining generated files on disk.
+const selectManifestIcons = contents => {
+  const manifest = JSON.parse(contents.toString());
+  manifest.icons = manifest.icons.filter(icon => icon.sizes === '192x192' || icon.sizes === '512x512');
+  return `${JSON.stringify(manifest, null, 2)}\n`;
+};
+
 await fs.rm(outputDir, { recursive: true, force: true });
 await fs.mkdir(outputDir, { recursive: true });
 
@@ -52,9 +59,12 @@ await Promise.all([
     const fileNames = file.name === 'manifest.webmanifest'
       ? [file.name, 'site.webmanifest']
       : [file.name];
+    const contents = file.name === 'manifest.webmanifest'
+      ? selectManifestIcons(file.contents)
+      : file.contents;
 
     return fileNames.map((fileName) =>
-      fs.writeFile(path.join(publicDir, fileName), file.contents)
+      fs.writeFile(path.join(publicDir, fileName), contents)
     );
   }),
 ]);

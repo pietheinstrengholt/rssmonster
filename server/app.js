@@ -33,6 +33,7 @@ import {
   requestUrlForLogging
 } from './utils/requestLogging.js';
 import { getTrustProxySetting } from './utils/trustProxy.js';
+import { createStaticCacheHeaders } from './utils/staticCache.js';
 
 // Sequelize + models (single source of truth)
 import db from './models/index.js';
@@ -86,7 +87,9 @@ morgan.token('redacted-url', requestUrlForLogging);
 app.use(morgan(REQUEST_LOG_FORMAT));
 
 // Static assets
-app.use(express.static("dist"));
+app.use(express.static("dist", {
+  setHeaders: createStaticCacheHeaders()
+}));
 
 // CORS
 app.use(cors());

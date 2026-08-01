@@ -5,6 +5,10 @@ import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { bootstrapIconNames } from './bootstrap-icons.js'
+import {
+  OPTIONAL_ASSET_RUNTIME_CACHE,
+  PRECACHE_GLOB_PATTERNS
+} from './pwa-policy.js'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 
@@ -75,8 +79,9 @@ export default defineConfig({
           injectRegister: 'auto',
           workbox: {
             sourcemap: false,
-            globPatterns: ['**/*.{js,css,html,ico,png,svg,json,webmanifest,vue,txt,woff2}'],
+            globPatterns: PRECACHE_GLOB_PATTERNS,
             cleanupOutdatedCaches: true,
+            runtimeCaching: [OPTIONAL_ASSET_RUNTIME_CACHE],
           },
           // Favicons generates the manifest and all of its icon assets.
           manifest: false

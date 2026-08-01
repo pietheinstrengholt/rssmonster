@@ -70,12 +70,33 @@
 </template>
 
 <script>
-import AppShell from './AppShell.vue';
 import Cookies from 'js-cookie';
 import { mapStores } from 'pinia';
+import { defineAsyncComponent } from 'vue';
 import { setAuthToken } from './api/client';
 import * as authApi from './api/auth';
+import AppShellLoadError from './components/shared/AppShellLoadError.vue';
+import { loadAppShell } from './services/appShellLoader.js';
 import { useAuthStore } from './store/auth.js';
+
+// This function retries one transient shell failure before exposing the recoverable application error.
+const handleAppShellLoadError = (error, retry, fail, attempts) => {
+  console.error('App shell load error:', error);
+
+  if (attempts < 2) {
+    retry();
+    return;
+  }
+
+  fail();
+};
+
+const AppShell = defineAsyncComponent({
+  loader: loadAppShell,
+  errorComponent: AppShellLoadError,
+  delay: 0,
+  onError: handleAppShellLoadError
+});
 
 export default {
   components: {
@@ -120,6 +141,10 @@ export default {
         this.logout();
         return;
       }
+
+      loadAppShell().catch(error => {
+        console.error('App shell preload error:', error);
+      });
 
       const requestId = this.authStore.beginSessionRequest();
 

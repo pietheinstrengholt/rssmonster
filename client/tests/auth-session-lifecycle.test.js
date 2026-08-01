@@ -1,10 +1,12 @@
 import axios from 'axios';
 import Cookies from 'js-cookie';
+import { flushPromises, mount } from '@vue/test-utils';
 import { createPinia, setActivePinia } from 'pinia';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import App from '../src/App.vue';
 import api, { setAuthToken } from '../src/api/client.js';
 import * as authApi from '../src/api/auth';
+import { loadAppShell } from '../src/services/appShellLoader.js';
 import { useAuthStore } from '../src/store/auth.js';
 
 vi.mock('../src/api/auth', () => ({
@@ -12,6 +14,13 @@ vi.mock('../src/api/auth', () => ({
   login: vi.fn(),
   register: vi.fn(),
   validateSession: vi.fn()
+}));
+
+vi.mock('../src/services/appShellLoader.js', () => ({
+  loadAppShell: vi.fn().mockResolvedValue({
+    name: 'AppShellTestStub',
+    template: '<div data-test="app-shell"></div>'
+  })
 }));
 
 // This function creates the component state needed by authentication methods.
@@ -28,15 +37,21 @@ const createAuthContext = () => ({
 // This function creates an authentication response controlled by the session-transition test.
 const deferred = () => {
   let resolve;
-  const promise = new Promise(resolvePromise => {
+  let reject;
+  const promise = new Promise((resolvePromise, rejectPromise) => {
     resolve = resolvePromise;
+    reject = rejectPromise;
   });
-  return { promise, resolve };
+  return { promise, reject, resolve };
 };
 
 beforeEach(() => {
   setActivePinia(createPinia());
   vi.clearAllMocks();
+  loadAppShell.mockResolvedValue({
+    name: 'AppShellTestStub',
+    template: '<div data-test="app-shell"></div>'
+  });
   setAuthToken(null);
 });
 
@@ -74,6 +89,103 @@ describe('authentication lifecycle', () => {
     expect(context.authStore.token).toBe('saved-token');
     expect(context.authStore.role).toBe('admin');
     expect(context.isAuthenticated).toBe(true);
+  });
+
+  it('does not load the authenticated shell without a saved token', async () => {
+    vi.spyOn(Cookies, 'get').mockReturnValue(undefined);
+    const logout = vi.fn();
+
+    await App.methods.checkSession.call({ ...createAuthContext(), logout });
+
+    expect(loadAppShell).not.toHaveBeenCalled();
+    expect(logout).toHaveBeenCalledOnce();
+  });
+
+  it('starts shell preloading before saved-session validation resolves', async () => {
+    const validation = deferred();
+    vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
+    authApi.validateSession.mockReturnValueOnce(validation.promise);
+    const context = createAuthContext();
+
+    const sessionCheck = App.methods.checkSession.call(context);
+
+    expect(loadAppShell).toHaveBeenCalledOnce();
+    expect(authApi.validateSession).toHaveBeenCalledWith('saved-token');
+    expect(context.isAuthenticated).toBe(false);
+
+    validation.resolve({ user: { role: 'user' } });
+    await sessionCheck;
+
+    expect(context.isAuthenticated).toBe(true);
+  });
+
+  it('mounts the preloaded shell only after validation succeeds', async () => {
+    const validation = deferred();
+    const shell = deferred();
+    vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
+    authApi.validateSession.mockReturnValueOnce(validation.promise);
+    loadAppShell.mockReturnValue(shell.promise);
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [createPinia()]
+      }
+    });
+
+    shell.resolve({
+      name: 'AppShellTestStub',
+      template: '<button data-test="app-shell" @click="$emit(\'logout\')">Reader</button>'
+    });
+    await flushPromises();
+    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(false);
+
+    validation.resolve({ user: { role: 'user' } });
+    await flushPromises();
+
+    expect(wrapper.get('[data-test="app-shell"]').text()).toBe('Reader');
+    expect(loadAppShell.mock.results[0].value).toBe(shell.promise);
+    expect(loadAppShell.mock.results.at(-1).value).toBe(shell.promise);
+
+    await wrapper.get('[data-test="app-shell"]').trigger('click');
+    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(false);
+    expect(wrapper.find('.auth-form').exists()).toBe(true);
+  });
+
+  it('keeps login usable when saved-session validation fails', async () => {
+    vi.spyOn(Cookies, 'get').mockReturnValue('expired-token');
+    vi.spyOn(console, 'error').mockImplementation(() => {});
+    authApi.validateSession.mockRejectedValueOnce(new Error('expired'));
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [createPinia()]
+      }
+    });
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(false);
+    expect(wrapper.get('.auth-form').exists()).toBe(true);
+    expect(wrapper.get('#username').attributes('disabled')).toBeUndefined();
+  });
+
+  it('removes the authenticated shell when the session expires', async () => {
+    vi.spyOn(Cookies, 'get').mockReturnValue('saved-token');
+    vi.spyOn(console, 'warn').mockImplementation(() => {});
+    authApi.validateSession.mockResolvedValueOnce({ user: { role: 'user' } });
+
+    const wrapper = mount(App, {
+      global: {
+        plugins: [createPinia()]
+      }
+    });
+    await flushPromises();
+    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(true);
+
+    window.dispatchEvent(new Event('auth:expired'));
+    await flushPromises();
+
+    expect(wrapper.find('[data-test="app-shell"]').exists()).toBe(false);
+    expect(wrapper.find('.auth-form').exists()).toBe(true);
   });
 
   it('populates the same auth feature state after login', async () => {

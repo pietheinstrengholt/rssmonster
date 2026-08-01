@@ -1,3 +1,5 @@
+import { readFileSync } from 'node:fs';
+import { resolve } from 'node:path';
 import { afterEach, describe, expect, it } from 'vitest';
 import { mount } from '@vue/test-utils';
 import BootstrapIcon from '../src/components/shared/BootstrapIcon.vue';
@@ -68,5 +70,16 @@ describe('Bootstrap icon delivery', () => {
     expect(sprites[0].getAttribute('aria-hidden')).toBe('true');
     expect(sprites[0].querySelector('#rss')).not.toBeNull();
     expect(sprites[0].querySelector('#other')).toBeNull();
+  });
+
+  it('loads the shared sprite only from the authenticated shell boundary', () => {
+    const mainSource = readFileSync(resolve(process.cwd(), 'src/main.js'), 'utf8');
+    const authenticatedShellSource = readFileSync(
+      resolve(process.cwd(), 'src/services/authenticatedShell.js'),
+      'utf8'
+    );
+
+    expect(mainSource).not.toContain('virtual:bootstrap-icons-sprite');
+    expect(authenticatedShellSource).toContain('virtual:bootstrap-icons-sprite');
   });
 });

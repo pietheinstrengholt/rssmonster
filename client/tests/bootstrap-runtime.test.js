@@ -4,16 +4,23 @@ import { afterEach, describe, expect, it } from 'vitest';
 import Dropdown from 'bootstrap/js/dist/dropdown.js';
 
 const mainSourcePath = resolve(process.cwd(), 'src/main.js');
+const authenticatedShellSourcePath = resolve(
+  process.cwd(),
+  'src/services/authenticatedShell.js'
+);
 
 describe('Bootstrap runtime boundary', () => {
   afterEach(() => {
     document.body.innerHTML = '';
   });
 
-  it('loads only the Dropdown plugin from the application entry', () => {
+  it('loads only the Dropdown plugin from the authenticated shell boundary', () => {
     const mainSource = readFileSync(mainSourcePath, 'utf8');
+    const authenticatedShellSource = readFileSync(authenticatedShellSourcePath, 'utf8');
 
-    expect(mainSource).toContain("import 'bootstrap/js/dist/dropdown.js'");
+    expect(mainSource).not.toContain("bootstrap/js/dist/dropdown.js");
+    expect(authenticatedShellSource).toContain("import 'bootstrap/js/dist/dropdown.js'");
+    expect(authenticatedShellSource).not.toContain('bootstrap.bundle');
     expect(mainSource).not.toContain('bootstrap.bundle');
   });
 

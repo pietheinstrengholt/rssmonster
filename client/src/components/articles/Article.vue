@@ -478,6 +478,8 @@ export default {
 }
 
 .article-card {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 720px;
   margin-bottom: 0px;
 }
 
@@ -1267,8 +1269,16 @@ span.similar-badge {
 }
 
 .article-list-card {
+  contain-intrinsic-size: auto 72px;
   padding-top: 0 !important;
   margin-bottom: 0;
+}
+
+@media print {
+  .article-card {
+    content-visibility: visible;
+    contain-intrinsic-size: none;
+  }
 }
 
 .article-list-row {

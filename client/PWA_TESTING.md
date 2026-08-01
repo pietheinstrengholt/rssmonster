@@ -39,8 +39,18 @@ cannot be confused.
 5. Enable Offline in the Network panel and reload.
 6. Confirm the cached RSSMonster application shell still opens. Backend requests
    can fail while offline; those network errors are expected.
-7. Disable Offline and retry or reload. Confirm normal application content
+7. Repeat the offline reload at desktop and mobile widths. Confirm the sidebar,
+   applicable toolbar, mobile menu overlay, and saved reader mode have no missing
+   static chunk failures.
+8. Disable Offline and retry or reload. Confirm normal application content
    recovers and no new service-worker registration is created.
+
+Settings, management screens, dialogs, the assistant, and sidebar drag-and-drop
+are intentionally excluded from first-visit offline coverage. Open an optional
+feature online once to place its content-hashed JavaScript and CSS in the bounded
+`rssmonster-optional-hashed-assets-v1` runtime cache; subsequent visits can reuse
+those responses. API, authentication, article-data, and settings-data requests
+remain network-only under this static-asset policy.
 
 The following console expressions provide concise evidence:
 
