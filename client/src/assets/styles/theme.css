@@ -227,9 +227,9 @@
   --article-quality-weak: #F57C00;
 
   /* Chat assistant */
-  --chat-user-message-background: #E0F7FA;
-  --chat-assistant-message-background: #F1F8E9;
-  --chat-loading-spinner: #AAAAAA;
+  --chat-user-message-background: var(--bg-selected);
+  --chat-assistant-message-background: var(--bg-muted);
+  --chat-loading-spinner: var(--text-secondary);
 
   /* Desktop and mobile toolbars */
   --toolbar-text: #111111;
@@ -487,10 +487,6 @@
   --article-quality-good-dark: var(--badge-writing-text);
   --article-quality-okay-dark: var(--badge-ad-text);
   --article-quality-poor-dark: var(--badge-quality-text);
-
-  /* Dark chat assistant */
-  --chat-user-message-background-dark: #1A4D4F;
-  --chat-assistant-message-background-dark: #3A4A2A;
 
   /* Dark toolbar and sidebar colors */
   --toolbar-search-background-dark: #2A3342;
