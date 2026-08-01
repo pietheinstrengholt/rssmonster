@@ -163,6 +163,7 @@ fi
 
 SERVER_HOST="$(read_env_value HOST "127.0.0.1")"
 SERVER_PORT="$(read_env_value PORT)"
+SERVER_ENABLE_HTTPS="$(read_env_value ENABLE_HTTPS "false")"
 
 if [[ -z "$SERVER_PORT" ]]; then
   echo "PORT is not configured in $ENV_FILE"
@@ -189,7 +190,17 @@ if [[ "$HEALTHCHECK_HOST" == *:* && "$HEALTHCHECK_HOST" != \[*\] ]]; then
   HEALTHCHECK_HOST="[$HEALTHCHECK_HOST]"
 fi
 
-HEALTHCHECK_URL="${HEALTHCHECK_URL:-http://$HEALTHCHECK_HOST:$SERVER_PORT/api/health}"
+HEALTHCHECK_CURL_OPTIONS=()
+
+if [[ -z "${HEALTHCHECK_URL:-}" ]]; then
+  if [[ "$SERVER_ENABLE_HTTPS" == "true" ]]; then
+    HEALTHCHECK_URL="https://$HEALTHCHECK_HOST:$SERVER_PORT/api/health"
+    # The loopback address does not match the public certificate hostname.
+    HEALTHCHECK_CURL_OPTIONS+=(--insecure)
+  else
+    HEALTHCHECK_URL="http://$HEALTHCHECK_HOST:$SERVER_PORT/api/health"
+  fi
+fi
 
 echo "Server environment: $ENV_FILE"
 echo "Server host: $SERVER_HOST"
@@ -277,6 +288,7 @@ for ((attempt = 1; attempt <= HEALTHCHECK_ATTEMPTS; attempt++)); do
     --show-error \
     --fail \
     --max-time 5 \
+    "${HEALTHCHECK_CURL_OPTIONS[@]}" \
     "$HEALTHCHECK_URL" >/dev/null; then
     HEALTHCHECK_PASSED=true
     break

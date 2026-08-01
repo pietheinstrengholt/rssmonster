@@ -17,4 +17,4 @@ jobs:
     steps:
       - name: Deploy
         run: |
-          bash /home/piethein/deploy-dev.sh
+          bash /home/piethein/rssmonster-dev/deploy.sh
