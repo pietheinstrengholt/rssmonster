@@ -7,7 +7,40 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="default">
     <meta name="apple-mobile-web-app-title" content="RSSMonster">
-    <meta name="theme-color" content="#EA650D">
+    <meta name="theme-color" content="#F8FAFC">
+    <script>
+      // This initialization matches the first browser paint to the saved or system theme.
+      let initialTheme = 'system';
+
+      try {
+        const savedTheme = window.localStorage.getItem('rssmonster-theme-override');
+        initialTheme = savedTheme === 'light' || savedTheme === 'dark' ? savedTheme : 'system';
+      } catch {
+        initialTheme = 'system';
+      }
+
+      if (initialTheme === 'system') {
+        initialTheme = window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      }
+
+      const initialThemeColor = initialTheme === 'dark' ? '#0B0F14' : '#F8FAFC';
+      document.documentElement.dataset.theme = initialTheme;
+      document.documentElement.style.colorScheme = initialTheme;
+      document.querySelector('meta[name="theme-color"]').setAttribute('content', initialThemeColor);
+    </script>
+    <style>
+      html[data-theme='light'],
+      html[data-theme='light'] body,
+      html[data-theme='light'] #app {
+        background-color: #F8FAFC;
+      }
+
+      html[data-theme='dark'],
+      html[data-theme='dark'] body,
+      html[data-theme='dark'] #app {
+        background-color: #0B0F14;
+      }
+    </style>
     <link rel="icon" href="/img/icons/favicon.ico" sizes="any">
     <link rel="icon" type="image/png" sizes="32x32" href="/img/icons/favicon-32x32.png">
     <link rel="icon" type="image/png" sizes="16x16" href="/img/icons/favicon-16x16.png">

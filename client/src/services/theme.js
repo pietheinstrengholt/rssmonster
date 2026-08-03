@@ -35,7 +35,7 @@ export function applyTheme(theme) {
   document.documentElement.style.colorScheme = theme;
 
   const themeColor = getComputedStyle(document.documentElement)
-    .getPropertyValue(theme === 'dark' ? '--bg-bounce' : '--theme-color-light')
+    .getPropertyValue('--bg-bounce')
     .trim();
 
   document.body.style.background = themeColor;

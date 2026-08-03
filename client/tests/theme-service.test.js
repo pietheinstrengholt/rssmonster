@@ -80,7 +80,7 @@ describe('theme preferences', () => {
 describe('theme application', () => {
   it.each([
     ['dark', '--bg-bounce', 'rgb(17, 24, 39)'],
-    ['light', '--theme-color-light', 'rgb(248, 249, 250)']
+    ['light', '--bg-bounce', 'rgb(248, 249, 250)']
   ])('applies the %s theme and its configured browser color', (theme, property, color) => {
     document.documentElement.style.setProperty(property, color);
 
@@ -94,7 +94,7 @@ describe('theme application', () => {
 
   it('applies a theme when the browser theme-color metadata is absent', () => {
     document.querySelector('meta[name="theme-color"]').remove();
-    document.documentElement.style.setProperty('--theme-color-light', '#ffffff');
+    document.documentElement.style.setProperty('--bg-bounce', '#ffffff');
 
     expect(() => applyTheme('light')).not.toThrow();
   });
@@ -108,7 +108,7 @@ describe('theme application', () => {
     expect(window.localStorage.getItem(THEME_OVERRIDE_STORAGE_KEY)).toBe('system');
     expect(document.documentElement.dataset.theme).toBe('dark');
 
-    document.documentElement.style.setProperty('--theme-color-light', '#ffffff');
+    document.documentElement.style.setProperty('--bg-bounce', '#ffffff');
     setThemeMode('light');
     expect(document.documentElement.dataset.theme).toBe('light');
   });

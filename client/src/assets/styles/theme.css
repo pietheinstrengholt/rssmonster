@@ -26,7 +26,7 @@
   --bg-modal: var(--bg-card);
   --bg-control: var(--bg-card);
   --bg-input: var(--bg-card);
-  --bg-bounce: var(--bg-card);
+  --bg-bounce: var(--bg-page);
   --text-disabled: #D3D3D3;
   --text-danger: #B71C1C;
   --text-error: #FF0000;
@@ -52,7 +52,6 @@
   --color-link-hover: #1D4ED8;
   --color-link-visited: #1E40AF;
   --color-link-active: #1E3A8A;
-  --theme-color-light: #31344B;
   --color-current: currentColor;
   --color-transparent: transparent;
 

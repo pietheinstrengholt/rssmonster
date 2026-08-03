@@ -8,6 +8,7 @@ const clientDir = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..
 const source = path.join(clientDir, 'src/assets/images/monster.png');
 const publicDir = path.join(clientDir, 'public');
 const outputDir = path.join(clientDir, 'public/img/icons');
+const LIGHT_PAGE_COLOR = '#F8FAFC';
 
 const configuration = {
   path: '/img/icons',
@@ -19,7 +20,7 @@ const configuration = {
   dir: 'auto',
   lang: 'en-US',
   background: '#ffffff',
-  theme_color: '#EA650D',
+  theme_color: LIGHT_PAGE_COLOR,
   appleStatusBarStyle: 'default',
   display: 'standalone',
   orientation: 'any',
@@ -44,6 +45,8 @@ const response = await favicons(source, configuration);
 // This function limits install metadata to the two standard PWA icon sizes while retaining generated files on disk.
 const selectManifestIcons = contents => {
   const manifest = JSON.parse(contents.toString());
+  manifest.background_color = LIGHT_PAGE_COLOR;
+  manifest.theme_color = LIGHT_PAGE_COLOR;
   manifest.icons = manifest.icons.filter(icon => icon.sizes === '192x192' || icon.sizes === '512x512');
   return `${JSON.stringify(manifest, null, 2)}\n`;
 };
