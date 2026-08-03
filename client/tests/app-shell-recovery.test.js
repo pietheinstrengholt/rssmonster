@@ -21,6 +21,7 @@ const createRecoveryContext = () => {
   });
   return {
     ...stores,
+    articleListReloadActive: false,
     connectivityRecovering: false,
     connectivityRecoveryPromise: null,
     connectivityStatus: 'backend-unreachable',
@@ -253,6 +254,27 @@ describe('AppShell connectivity recovery', () => {
     expect(context.overviewStore.fetchOverview).toHaveBeenCalledWith({ forceUpdate: true });
     expect(articleFeed.refreshArticleIds)
       .toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(context.databaseRefreshActive).toBe(false);
+  });
+
+  it('rebuilds the full article list from the current selection without using pull refresh', async () => {
+    const context = connectRecoveryMethods(createRecoveryContext());
+    const articleFeed = {
+      fetchArticleIds: vi.fn().mockResolvedValue(true),
+      refreshArticleIds: vi.fn()
+    };
+    context.$refs.articleFeed = articleFeed;
+    context.overviewStore.fetchOverview.mockResolvedValue(true);
+    context.scrollArticlePaneToTop = vi.fn();
+
+    await AppShell.methods.reloadArticleListFromDatabase.call(context);
+
+    expect(context.scrollArticlePaneToTop).toHaveBeenCalledTimes(2);
+    expect(context.overviewStore.fetchOverview).toHaveBeenCalledWith({ forceUpdate: true });
+    expect(articleFeed.fetchArticleIds)
+      .toHaveBeenCalledWith(context.selectionStore.currentSelection);
+    expect(articleFeed.refreshArticleIds).not.toHaveBeenCalled();
+    expect(context.articleListReloadActive).toBe(false);
     expect(context.databaseRefreshActive).toBe(false);
   });
 

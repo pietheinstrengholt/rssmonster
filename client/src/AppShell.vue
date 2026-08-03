@@ -22,10 +22,10 @@
         <!-- MobileToolbar events -->
         <app-mobile-toolbar
           v-if="isDesktopShell === false"
-          :refreshing="databaseRefreshActive"
+          :refreshing="articleListReloadActive"
           @mobile="mobileClick"
           @forceReload="forceReload"
-          @refresh="refreshArticlesFromDatabase"
+          @refresh="reloadArticleListFromDatabase"
         ></app-mobile-toolbar>
         <!-- Toolbar events -->
         <app-desktop-toolbar v-if="isDesktopShell === true" id="desktop-toolbar" @forceReload="forceReload"></app-desktop-toolbar>
@@ -301,6 +301,7 @@ export default {
       actionErrorId: 0,
       actionErrorMessage: '',
       actionErrorTimer: null,
+      articleListReloadActive: false,
       category: {},
       connectivityRecovering: false,
       connectivityRecoveryPromise: null,
@@ -733,7 +734,7 @@ export default {
     },
     // This function refreshes database-backed article results without clearing usable mobile content.
     async refreshArticlesFromDatabase() {
-      if (this.databaseRefreshActive) return;
+      if (this.databaseRefreshActive || this.articleListReloadActive) return;
 
       const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
         ? this.$refs.articleFeed
@@ -760,6 +761,50 @@ export default {
       } finally {
         this.databaseRefreshActive = false;
       }
+    },
+    // This function rebuilds the mobile article list from the current selection without changing read state.
+    async reloadArticleListFromDatabase() {
+      if (this.articleListReloadActive || this.databaseRefreshActive) return;
+
+      const articleFeedRefs = Array.isArray(this.$refs.articleFeed)
+        ? this.$refs.articleFeed
+        : [this.$refs.articleFeed];
+      const reloadableFeeds = articleFeedRefs.filter(
+        ref => ref && typeof ref.fetchArticleIds === 'function'
+      );
+      if (!reloadableFeeds.length) return;
+
+      this.articleListReloadActive = true;
+      document.getElementById('mobile-toolbar')?.classList.remove('hide');
+
+      try {
+        const selection = { ...this.selectionStore.currentSelection };
+        const articleReloads = reloadableFeeds.map(ref => ref.fetchArticleIds(selection));
+        this.scrollArticlePaneToTop();
+        const reloadResults = await Promise.allSettled([
+          this.overviewStore.fetchOverview({ forceUpdate: true }),
+          ...articleReloads
+        ]);
+        const failedReload = reloadResults.find(
+          result => result.status === 'rejected' || result.value === false
+        );
+        if (failedReload) throw failedReload.reason || new Error('Article list reload failed');
+        await this.$nextTick();
+        this.scrollArticlePaneToTop();
+      } catch (error) {
+        console.error('Error reloading the article list from the database:', error);
+        this.showActionError('Could not reload articles. Please try again.');
+      } finally {
+        this.articleListReloadActive = false;
+      }
+    },
+    // This function returns the refreshed article collection to its first item across scroll layouts.
+    scrollArticlePaneToTop() {
+      const articlePane = document.getElementById('home');
+      if (articlePane) articlePane.scrollTop = 0;
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+      window.scrollTo({ top: 0, behavior: 'auto' });
     },
     // This function starts feed refresh immediately or loads its Sidebar controller on mobile.
     refreshFeeds() {

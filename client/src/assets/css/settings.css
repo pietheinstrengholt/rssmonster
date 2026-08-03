@@ -342,9 +342,26 @@ body.modal-open {
     border-color: var(--border-color);
 }
 
+:root[data-theme='dark'] .settings-dialog .badge.text-bg-primary,
+:root[data-theme='dark'] .settings-dialog .badge.text-bg-info {
+    background-color: var(--settings-info-bg) !important;
+    color: var(--settings-info-text) !important;
+}
+
 :root[data-theme='dark'] .settings-dialog .text-bg-success {
     color: var(--settings-success-text) !important;
     background-color: var(--settings-success-bg) !important;
+}
+
+:root[data-theme='dark'] .settings-dialog .badge.text-bg-secondary,
+:root[data-theme='dark'] .settings-dialog .badge.text-bg-dark {
+    background-color: var(--settings-neutral-bg) !important;
+    color: var(--settings-neutral-text) !important;
+}
+
+:root[data-theme='dark'] .settings-dialog .badge.text-bg-danger {
+    background-color: var(--settings-danger-bg) !important;
+    color: var(--settings-danger-text) !important;
 }
 
 :root[data-theme='dark'] .settings-dialog .badge.text-bg-warning {
@@ -578,24 +595,29 @@ body.modal-open {
 
 .settings-dialog .badge.text-bg-primary,
 .settings-dialog .badge.text-bg-info {
-    background-color: var(--settings-info-bg) !important;
-    color: var(--settings-info-text) !important;
+    background-color: #E8F2FE !important;
+    color: #1D4ED8 !important;
 }
 
 .settings-dialog .badge.text-bg-success {
-    background-color: var(--settings-success-bg) !important;
-    color: var(--settings-success-text) !important;
+    background-color: #EAF7EF !important;
+    color: #1F5E3A !important;
 }
 
 .settings-dialog .badge.text-bg-secondary,
 .settings-dialog .badge.text-bg-dark {
-    background-color: var(--settings-neutral-bg) !important;
-    color: var(--settings-neutral-text) !important;
+    background-color: #F3F4F6 !important;
+    color: #4B5563 !important;
 }
 
 .settings-dialog .badge.text-bg-danger {
-    background-color: var(--settings-danger-bg) !important;
-    color: var(--settings-danger-text) !important;
+    background-color: #FEEAEA !important;
+    color: #B42318 !important;
+}
+
+.settings-dialog .badge.text-bg-warning {
+    background-color: #FFEDD5 !important;
+    color: #EA650D !important;
 }
 
 .alert-info ul {

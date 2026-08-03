@@ -34,7 +34,7 @@ export const articleFeedPaginationMethods = {
       this.isLoading = true;
 
       const response = await fetchArticleIds(data);
-      if (requestId !== this.activeRequestId) return;
+      if (requestId !== this.activeRequestId) return null;
 
       this.container = response.data.itemIds;
       this.currentViewSourceCount = Number.isFinite(Number(response.data.sourceCount))
@@ -56,11 +56,13 @@ export const articleFeedPaginationMethods = {
         this.hasLoadedContent = true;
         this.$nextTick(() => this.observeLoadMoreSentinel());
       }
+      return true;
     } catch (error) {
-      if (requestId !== this.activeRequestId) return;
+      if (requestId !== this.activeRequestId) return null;
 
       console.warn('Article fetch failed', error?.message);
       this.hasLoadedContent = true;
+      return false;
     } finally {
       if (requestId === this.activeRequestId) {
         this.isLoading = false;
@@ -167,6 +169,7 @@ export const articleFeedPaginationMethods = {
 
   // Resets article, visibility, and observer state for a new selection.
   async resetPool() {
+    this.visibilityObserver?.takeRecords?.();
     for (const element of this.observedArticleElements.values()) {
       this.visibilityObserver?.unobserve(element);
     }

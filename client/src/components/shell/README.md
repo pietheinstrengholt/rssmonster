@@ -149,7 +149,9 @@ The mobile search-open state is also shared with article layout so content can a
 
 ### Article refresh
 
-The refresh button runs the same database-backed article and overview refresh as the pull-down gesture. It preserves the current article content while loading, does not reload the application or crawl publisher feeds, and disables itself until the active refresh finishes.
+The refresh button rebuilds the complete article list from a snapshot of the current selection and returns the collection to its beginning beneath the sticky mobile toolbar after the first page renders. It clears only local list, observer, and pool state, so unread articles that remained later in the previous list are not marked as read and can appear again in the refreshed selection. The button disables itself while loading and does not reload the application or crawl publisher feeds.
+
+This differs intentionally from the pull-down gesture, which preserves rendered articles until replacement data is ready and shows its own compact refresh indicator.
 
 ## Mobile Options sheet
 

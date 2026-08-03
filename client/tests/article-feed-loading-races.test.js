@@ -4,7 +4,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 import ArticleFeed from '../src/components/articles/ArticleFeed.vue';
 import {
   fetchArticleDetails,
-  fetchArticleIds
+  fetchArticleIds,
+  markArticlesAsRead
 } from '../src/api/articles';
 import { useSelectionStore } from '../src/store/selection.js';
 import { createFocusedStores } from './helpers/focusedStores.js';
@@ -182,6 +183,28 @@ describe('ArticleFeed loading races', () => {
     expect(context.articles).toEqual([{ id: 202, title: 'New selection' }]);
     expect(context.currentViewSourceCount).toBe(1);
     expect(context.isLoading).toBe(false);
+  });
+
+  it('resets remaining pool state for a full reload without marking articles as read', async () => {
+    fetchArticleIds.mockResolvedValueOnce({
+      data: {
+        itemIds: [2, 3],
+        firstPage: [{ id: 2, title: 'Still unread' }]
+      }
+    });
+    const context = createLoadingContext();
+    context.container = [1, 2, 3];
+    context.articles = [{ id: 1 }, { id: 2 }];
+    context.pool = new Set([1]);
+
+    await ArticleFeed.methods.fetchArticleIds.call(
+      context,
+      context.selectionStore.currentSelection
+    );
+
+    expect(context.container).toEqual([2, 3]);
+    expect(context.pool).toEqual(new Set());
+    expect(markArticlesAsRead).not.toHaveBeenCalled();
   });
 
   it('does not append stale detail responses after the selection changes', async () => {
